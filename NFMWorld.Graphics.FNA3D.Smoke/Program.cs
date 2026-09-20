@@ -36,6 +36,18 @@ if (!SDL.SDL_Init(SDL.SDL_InitFlags.SDL_INIT_VIDEO))
     return 1;
 }
 
+// SdlWindow.GetFullscreenDisplayModes (Milestone 7's replacement for FNA's
+// GraphicsAdapter.SupportedDisplayModes) - exercised here because the settings menu builds its
+// resolution list from it in a static field initializer, where a bad SDL call would take down
+// startup rather than a menu. The window creation below is the real proof the returned array was
+// freed correctly (and that SDL is still healthy afterwards).
+var displayModes = SdlWindow.GetFullscreenDisplayModes();
+Console.WriteLine($"DISPLAY MODES: {displayModes.Count} distinct mode(s)");
+foreach (var (modeWidth, modeHeight) in displayModes)
+    Console.WriteLine($"  {modeWidth} x {modeHeight}");
+if (displayModes.Count == 0)
+    Console.Error.WriteLine("  WARNING: no fullscreen modes reported - the settings resolution list will be built-ins only.");
+
 var windowFlags = (SDL.SDL_WindowFlags)FNA3DInterop.PrepareWindowAttributes();
 using var window = SdlWindow.Create("NFMWorld.Graphics.FNA3D smoke test", width, height, extraFlags: windowFlags);
 
@@ -157,19 +169,27 @@ while (!window.ShouldQuit)
 
     t += 0.01f;
     var clearColor = new ColorRgba(0.5f + 0.5f * MathF.Sin(t), 0.2f, 0.4f);
-    var cb = device.AcquireCommandBuffer();
-    cb.Clear(ClearOptions.Color | ClearOptions.Depth, clearColor);
 
-    // Off-screen target readback + PNG encode (IGraphicsDevice.ReadTexture / FNA3DImageCodec).
-    // Runs inside the frame's command buffer because binding the target is a command-buffer
-    // operation; it restores the backbuffer before returning, so the rest of the frame is
-    // unaffected.
+    // One-shot verifications run in their own command buffer, before the frame's: the resize check
+    // rebuilds the driver's swapchain, which must not happen with a command buffer live. Pass
+    // --verify-only to run them and exit instead of looping until the window is closed.
     if (!readbackChecked)
     {
         readbackChecked = true;
-        VerifyReadbackAndPng(device, cb, width, height);
+        var verifyCb = device.AcquireCommandBuffer();
+        VerifyBackbufferResize(device, verifyCb, width, height);
+        VerifyReadbackAndPng(device, verifyCb, width, height);
+        device.Submit(verifyCb);
+
+        if (args.Contains("--verify-only"))
+        {
+            device.Swapchain.Present();
+            break;
+        }
     }
 
+    var cb = device.AcquireCommandBuffer();
+    cb.Clear(ClearOptions.Color | ClearOptions.Depth, clearColor);
     cb.SetViewport(new Viewport(0, 0, width, height));
     cb.SetPipeline(pipeline);
 
@@ -236,6 +256,72 @@ while (!window.ShouldQuit)
 }
 
 return 0;
+
+static void VerifyBackbufferResize(FNA3DGraphicsDevice device, ICommandBuffer cb, int initialWidth, int initialHeight)
+{
+    // ISwapchain.Resize is what WorldGame calls when the OS window changes size. FNA3D has no
+    // width/height-only entry point, so it re-sends the whole presentation-parameters struct
+    // through FNA3D_ResetBackbuffer - this proves the driver really reallocated the drawable, by
+    // clearing at the new size and reading back its far corner: a stale drawable has no pixel
+    // there at all. Then resizes back, which covers the shrink direction and leaves the rest of
+    // this run (including VerifyLineDrawn's fixed-size readback) looking at the original size.
+    const int growTo = 1600, growToHeight = 900;
+    var probe = new ColorRgba(0.1f, 0.7f, 0.3f, 1f);
+
+    Console.WriteLine($"RESIZE CHECK: drawable {device.Swapchain.Width}x{device.Swapchain.Height}, resizing to {growTo}x{growToHeight}");
+
+    device.Swapchain.Resize(growTo, growToHeight);
+    var grew = device.Swapchain.Width == growTo && device.Swapchain.Height == growToHeight;
+    cb.SetViewport(new Viewport(0, 0, growTo, growToHeight));
+    cb.Clear(ClearOptions.Color | ClearOptions.Depth, probe);
+    var farCorner = ReadBackbufferPixel(device, growTo - 1, growToHeight - 1);
+    var farCornerMatches = Matches(farCorner, probe);
+    Console.WriteLine($"  after resize: swapchain reports {device.Swapchain.Width}x{device.Swapchain.Height} ({(grew ? "ok" : "WRONG")}), " +
+                      $"far corner pixel {Describe(farCorner)} ({(farCornerMatches ? "ok" : "WRONG - drawable was not reallocated")})");
+
+    device.Swapchain.Resize(initialWidth, initialHeight);
+    var shrank = device.Swapchain.Width == initialWidth && device.Swapchain.Height == initialHeight;
+    cb.SetViewport(new Viewport(0, 0, initialWidth, initialHeight));
+    cb.Clear(ClearOptions.Color | ClearOptions.Depth, probe);
+    var restoredCorner = ReadBackbufferPixel(device, initialWidth - 1, initialHeight - 1);
+    var restoredMatches = Matches(restoredCorner, probe);
+    Console.WriteLine($"  resized back: swapchain reports {device.Swapchain.Width}x{device.Swapchain.Height} ({(shrank ? "ok" : "WRONG")}), " +
+                      $"far corner pixel {Describe(restoredCorner)} ({(restoredMatches ? "ok" : "WRONG")})");
+
+    // A minimized window must be ignored rather than handing the driver a 0x0 swapchain.
+    device.Swapchain.Resize(0, 0);
+    Console.WriteLine(device.Swapchain.Width == initialWidth && device.Swapchain.Height == initialHeight
+        ? "  zero-size resize ignored (ok)"
+        : $"  zero-size resize was NOT ignored - drawable is now {device.Swapchain.Width}x{device.Swapchain.Height}");
+
+    Console.WriteLine(grew && shrank && farCornerMatches && restoredMatches
+        ? "RESIZE CHECK: pass"
+        : "RESIZE CHECK: FAILED");
+}
+
+static byte[] ReadBackbufferPixel(FNA3DGraphicsDevice device, int x, int y)
+{
+    var pixel = new byte[4];
+    var staging = Marshal.AllocHGlobal(4);
+    try
+    {
+        FNA3D.FNA3D_ReadBackbuffer(device.Handle, x, y, 1, 1, staging, 4);
+        Marshal.Copy(staging, pixel, 0, 4);
+    }
+    finally
+    {
+        Marshal.FreeHGlobal(staging);
+    }
+    return pixel;
+}
+
+// Backbuffer readback is 8-bit RGBA; a couple of units of slack covers driver rounding.
+static bool Matches(byte[] pixel, ColorRgba expected) =>
+    Math.Abs(pixel[0] - (int)(expected.R * 255f)) <= 2
+    && Math.Abs(pixel[1] - (int)(expected.G * 255f)) <= 2
+    && Math.Abs(pixel[2] - (int)(expected.B * 255f)) <= 2;
+
+static string Describe(byte[] pixel) => $"rgba({pixel[0]}, {pixel[1]}, {pixel[2]}, {pixel[3]})";
 
 static void VerifyReadbackAndPng(FNA3DGraphicsDevice device, ICommandBuffer cb, int windowWidth, int windowHeight)
 {

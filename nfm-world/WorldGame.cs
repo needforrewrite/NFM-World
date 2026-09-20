@@ -6,8 +6,6 @@ using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
 using Maxine.Extensions.Mathematics;
 using Microsoft.Extensions.Logging;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.Gameplay;
 using NFMWorld.Graphics;
@@ -103,16 +101,15 @@ public class WorldGame : IDisposable
     {
         GameThreadContext.Install();
 
-        // Uses the raw-bitmask overload rather than SDL3.Core's SDL.SDL_WindowFlags directly: this
-        // project also references FNA (transitively, via NvgSharp.FNA.Core), whose own vendored
-        // SDL3 bindings define a same-named SDL type in a different assembly, and referencing
-        // SDL3.Core directly here would make every "SDL" reference in this project ambiguous.
+        // Uses the raw-bitmask overload rather than SDL3.Core's SDL.SDL_WindowFlags directly, so
+        // the backend's native bits pass straight through without this file naming a SDL3 type.
         Window = SdlWindow.Create("NFM World", 1280, 720, FNA3DInterop.PrepareWindowAttributes());
         _device = FNA3DGraphicsDevice.Create(Window.Handle, Window.Width, Window.Height, vsync: true, debugMode: false);
         Graphics = new GraphicsSettingsShim(Window);
 
         Window.Resized += (w, h) =>
         {
+            EnsureSwapchainMatchesWindow();
             GameSparker.WindowSizeChanged(w, h);
             GameSparker.CurrentPhase.WindowSizeChanged(w, h);
             G.Scale = h / 720f;
@@ -401,6 +398,23 @@ public class WorldGame : IDisposable
         cb.SetScissorRect(new ScissorRect(0, 0, Window.Width, Window.Height));
     }
 
+    /// <summary>
+    /// Keeps the device's drawable in step with the OS window. FNA's GraphicsDeviceManager did
+    /// this on every ApplyChanges; without it the device keeps rendering into the size it was
+    /// created at while <see cref="SdlWindow.Width"/>/<see cref="SdlWindow.Height"/> - and every
+    /// SDL mouse coordinate - follow the real window. Everything laid out from
+    /// <c>Swapchain.Width/Height</c> (the NanoVG canvas and its ortho transform, <c>Scene.Render</c>'s
+    /// viewport, the particle/line "Resolution" uniforms) then stays at the old size, so the 2D UI
+    /// occupies that corner of the window and input only lands inside it.
+    /// </summary>
+    private void EnsureSwapchainMatchesWindow()
+    {
+        if (Window.Width != _device.Swapchain.Width || Window.Height != _device.Swapchain.Height)
+        {
+            _device.Swapchain.Resize(Window.Width, Window.Height);
+        }
+    }
+
     private void Draw(GameTime gameTime)
     {
         var transaction = SentrySdk.StartTransaction("GameDraw", "gameloop.draw");
@@ -408,6 +422,14 @@ public class WorldGame : IDisposable
         var alpha = LowLatency ? 1f : (float)((double)gameTime.ElapsedGameTime.Ticks / TargetElapsedTime.Ticks);
 
         var t = Stopwatch.StartNew();
+
+        // Before the command buffer, never between AcquireCommandBuffer and Submit: resetting the
+        // backbuffer rebuilds the driver's swapchain, which can't happen with a recording (even an
+        // immediate-mode one) live. This is the second call site on purpose - the Resized handler
+        // covers the common case, this covers anything that changes the window size without one
+        // (a fullscreen/borderless toggle that emits no resize event, say) so no frame can render
+        // into a drawable that no longer matches the window.
+        EnsureSwapchainMatchesWindow();
 
         var cb = _device.AcquireCommandBuffer();
         cb.Clear(ClearOptions.Color | ClearOptions.Depth | ClearOptions.Stencil,
@@ -500,31 +522,14 @@ public class WorldGame : IDisposable
         // NativeLibrary.SetDllImportResolver is scoped to the assembly that DECLARES the
         // [DllImport], not the assembly that calls it - so every project with its own P/Invoke
         // declarations against a "libs/<arch>/..." deployment layout needs its own registration.
-        // FNA.dll's own internal P/Invokes (e.g. from NvgSharp.FNA.Core/Effect.cs, still compiled
-        // into this exe even though Stage A doesn't exercise those paths yet) still need this too.
         // NFMWorld.Audio.FAudioBindings.FAudio's assembly registers its own resolver in
         // FaudioEngine's static ctor (a resolver can only be set once per assembly) - not
         // registered again here.
-        NativeLibrary.SetDllImportResolver(typeof(Game).Assembly, ImportResolver);
         NativeLibrary.SetDllImportResolver(typeof(WorldGame).Assembly, ImportResolver);
         NativeLibrary.SetDllImportResolver(typeof(NFMWorld.FNA3D.FNA3D).Assembly, ImportResolver);
         NativeLibrary.SetDllImportResolver(typeof(SDL3New::SDL3.SDL).Assembly, ImportResolver);
 
         SettingsMenu.LoadFnaRenderer();
-
-        var fnaLogger = Logging.LoggerFactory.CreateLogger("FNA");
-        FNALoggerEXT.LogError = (message) =>
-        {
-            fnaLogger.LogError(message);
-        };
-        FNALoggerEXT.LogInfo = (message) =>
-        {
-            fnaLogger.LogInformation(message);
-        };
-        FNALoggerEXT.LogWarn = (message) =>
-        {
-            fnaLogger.LogWarning(message);
-        };
 
         BackendGameSparker.Load(isHeadless: false);
 

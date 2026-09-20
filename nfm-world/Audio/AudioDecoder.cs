@@ -1,8 +1,7 @@
-using System.Buffers;
+﻿using System.Buffers;
 using System.IO.Compression;
 using Collections.Pooled;
 using Maxine.Extensions.Collections;
-using Microsoft.Xna.Framework.Audio;
 using NAudio.Flac;
 using NAudio.SoundFile;
 using NAudio.Vorbis;

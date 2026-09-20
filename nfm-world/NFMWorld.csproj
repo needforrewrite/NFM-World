@@ -87,7 +87,12 @@
         <ProjectReference Include="..\HoleyDiver\HoleyDiver.csproj" />
         <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj" />
         <ProjectReference Include="..\Maxine.Extensions\RayTech.RayLog.MEL\RayTech.RayLog.MEL.csproj" />
-        <ProjectReference Include="..\MonoGame.ImGuiNet\MonoGame.ImGuiNet\Monogame.ImGuiNet.csproj" />
+        <!--
+            Milestone 7: the MonoGame.ImGuiNet reference is gone - SdlImGuiRenderer (this project's
+            own renderer, against NFMWorld.Graphics.Abstraction) replaced it in the Milestone 6 ImGui
+            pass, and nothing here has referenced its types since. It was the last path that pulled
+            FNA's real FNA.Core/FNA.Math assemblies into the exe's build graph.
+        -->
         <ProjectReference Include="..\NanoSvgSharp\NanoSvgSharp.csproj" />
         <ProjectReference Include="..\NAudio.Flac\NAudio.Flac\NAudio.Flac.csproj" />
         <ProjectReference Include="..\NFMWorld.Api\NFMWorld.Api.csproj" />
@@ -105,14 +110,16 @@
 
         <!--
             Milestone 5 Stage A: window/device ownership via SDL3 + FNA3D instead of FNA's
-            Game/GraphicsDeviceManager. This project also still references FNA transitively (via
-            MonoGame.ImGuiNet - unused since the Milestone 6 ImGui pass replaced it with
-            SdlImGuiRenderer, but not yet removed from the project graph), whose own private,
-            separately-compiled copy of SDL3.Core's SDL type would otherwise collide (CS0433) with
-            SDL3.Core's - SDK-style transitive project references don't carry
-            NFMWorld.Platform.SDL3's own <Aliases> on its SDL3.Core reference through to this
-            project, so it's aliased again, explicitly, here. Nothing in nfm-world's own code needs
-            to reference the SDL3New-aliased type directly.
+            Game/GraphicsDeviceManager.
+
+            Note this is FNA's *vendored SDL3 bindings*, not FNA itself. The alias was originally
+            collision-avoidance: while MonoGame.ImGuiNet was still referenced, FNA.Core's own
+            private, separately-compiled copy of the SDL3.SDL type would collide (CS0433) with this
+            one, and SDK-style transitive project references don't carry NFMWorld.Platform.SDL3's
+            own <Aliases> through to this project - so it was aliased again, explicitly, here.
+            FNA.Core left the graph in Milestone 7, but the alias stays: WorldGame.Main still needs
+            to name the SDL3 assembly for its own DllImport resolver, and SDL3New::SDL3.SDL is how
+            it does that without depending on NFMWorld.Platform.SDL3 exposing its alias.
         -->
         <ProjectReference Include="..\FNA\lib\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
         <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />

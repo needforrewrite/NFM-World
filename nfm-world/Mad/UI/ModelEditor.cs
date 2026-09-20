@@ -1,9 +1,9 @@
 ﻿using System.Text;
 using Hexa.NET.ImGui;
 using Maxine.Extensions.Mathematics;
-using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.Gameplay;
+using NFMWorld.Platform.SDL3;
 using NFMWorld.Util;
 using NFMWorldLibrary;
 using NFMWorldLibrary.FixedMath;
@@ -460,9 +460,9 @@ public class ModelEditorPhase : BasePhase
         if (imguiWantsKeyboard) return;
         if (!_isOpen) return;
 
-        var keyboardState = Microsoft.Xna.Framework.Input.Keyboard.GetState();
-        bool isShiftPressed = keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.LeftShift) ||
-                             keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.RightShift);
+        var keyboardKeys = SdlWindow.GetKeyboardState();
+        bool isShiftPressed = keyboardKeys[Key.LShiftKey] ||
+                             keyboardKeys[Key.RShiftKey];
 
         switch (key)
         {
@@ -635,14 +635,14 @@ public class ModelEditorPhase : BasePhase
         if (tab != null)
         {
             // Check which button was pressed
-            var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
-            _isLeftButtonDown = mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
-            _isRightButtonDown = mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
+            var (mouseButtons, _, _) = SdlWindow.GetMouseState();
+            _isLeftButtonDown = mouseButtons.HasFlag(MouseButtons.Primary);
+            _isRightButtonDown = mouseButtons.HasFlag(MouseButtons.Secondary);
 
             // Check shift state
-            var keyboardState = Microsoft.Xna.Framework.Input.Keyboard.GetState();
-            _isShiftPressed = keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.LeftShift) ||
-                             keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.RightShift);
+            var keyboardKeys = SdlWindow.GetKeyboardState();
+            _isShiftPressed = keyboardKeys[Key.LShiftKey] ||
+                             keyboardKeys[Key.RShiftKey];
 
             // Start dragging for camera control with left or right mouse button
             if (_isLeftButtonDown || _isRightButtonDown)
@@ -698,9 +698,9 @@ public class ModelEditorPhase : BasePhase
             tab.IsDragging = false;
 
             // Update button states
-            var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
-            _isLeftButtonDown = mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
-            _isRightButtonDown = mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
+            var (mouseButtons, _, _) = SdlWindow.GetMouseState();
+            _isLeftButtonDown = mouseButtons.HasFlag(MouseButtons.Primary);
+            _isRightButtonDown = mouseButtons.HasFlag(MouseButtons.Secondary);
 
             // Process click for polygon/collision selection only if it was a simple click, not a drag
             if (wasClick && !imguiWantsMouse && tab.Object != null)

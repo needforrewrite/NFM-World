@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using Maxine.Extensions.Mathematics;
 using NFMWorld.Graphics;
 using NFMWorldLibrary;
-using BoundingSphere = Microsoft.Xna.Framework.BoundingSphere;
+using BoundingSphere = Maxine.Extensions.Mathematics.BoundingSphere;
 
 namespace NFMWorld;
 

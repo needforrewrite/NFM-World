@@ -1,10 +1,9 @@
-using System.Buffers;
+﻿using System.Buffers;
 using System.Runtime.InteropServices;
 using System.Text;
 using LibOpenMPT.NET;
 using Maxine.Extensions.Collections;
 using Microsoft.IO;
-using Microsoft.Xna.Framework.Audio;
 using NFMWorldLibrary;
 
 namespace NFMWorld.Audio;

@@ -1,5 +1,4 @@
-using System.Numerics;
-using Microsoft.Xna.Framework;
+﻿using System.Numerics;
 using NFMWorld.Reactor;
 
 namespace NFMWorld.DriverInterface.DriverInterface;

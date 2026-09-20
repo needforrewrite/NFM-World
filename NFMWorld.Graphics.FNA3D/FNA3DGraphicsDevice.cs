@@ -56,7 +56,10 @@ public sealed class FNA3DGraphicsDevice : IGraphicsDevice, IDisposable
         if (device == IntPtr.Zero)
             throw new InvalidOperationException("FNA3D_CreateDevice returned null - check that the FNA3D native library and a compatible graphics driver are available.");
 
-        return new FNA3DGraphicsDevice(device, new FNA3DSwapchain(device, windowHandle, backBufferWidth, backBufferHeight));
+        // Hand the post-creation parameters to the swapchain: FNA3D_CreateDevice may have
+        // normalized them (sample count, format), and the swapchain re-sends this struct verbatim
+        // on every resize.
+        return new FNA3DGraphicsDevice(device, new FNA3DSwapchain(device, parameters, windowHandle));
     }
 
     public ICommandBuffer AcquireCommandBuffer()

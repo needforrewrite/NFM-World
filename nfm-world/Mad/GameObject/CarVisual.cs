@@ -1,5 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
-using NFMWorld.Sfx;
+﻿using NFMWorld.Sfx;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 

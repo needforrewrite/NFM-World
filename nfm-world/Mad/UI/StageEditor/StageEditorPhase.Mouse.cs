@@ -1,11 +1,10 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using Hexa.NET.ImGui;
 using Maxine.Extensions;
 using Maxine.Extensions.Collections;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.Gameplay;
+using NFMWorld.Platform.SDL3;
 using NFMWorld.Util;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
@@ -257,8 +256,8 @@ public partial class StageEditorPhase
         }
         
         // Check if right mouse button is currently held down
-        var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
-        bool isRightButtonHeld = mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
+        var (mouseButtons, _, _) = SdlWindow.GetMouseState();
+        bool isRightButtonHeld = mouseButtons.HasFlag(MouseButtons.Secondary);
         
         // Start dragging if right button is held, we're in viewport, in Scene view, and not already dragging
         if (isRightButtonHeld && IsMouseInViewport(x, y) && ActiveTab.ViewMode == StageEditorTab.ViewModeEnum.Scene && !_isRightDragging)
@@ -302,10 +301,10 @@ public partial class StageEditorPhase
         _mouseX = x;
         _mouseY = y;
         
-        // Check if it's right mouse button via Microsoft.Xna.Framework.Input.Mouse
-        var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
+        // Check if it's right mouse button via the SDL mouse state
+        var (mouseButtons, _, _) = SdlWindow.GetMouseState();
         
-        if (mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed)
+        if (mouseButtons.HasFlag(MouseButtons.Secondary))
         {
             // Right-click for camera rotation (only in Scene view)
             _isRightButtonDown = true;
@@ -320,7 +319,7 @@ public partial class StageEditorPhase
             }
         }
         
-        if (mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed)
+        if (mouseButtons.HasFlag(MouseButtons.Primary))
         {
             // Left-click
             _isLeftButtonDown = true;
@@ -369,7 +368,7 @@ public partial class StageEditorPhase
             }
         }
         
-        if (mouseState.MiddleButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed)
+        if (mouseButtons.HasFlag(MouseButtons.Middle))
         {
             // In placement mode
             if (_pendingPlacementPartIndex >= 0)
@@ -428,9 +427,9 @@ public partial class StageEditorPhase
         base.MouseReleased(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
         
         // Check if it's right mouse button
-        var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
+        var (mouseButtons, _, _) = SdlWindow.GetMouseState();
         
-        if (mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Released && _isRightButtonDown)
+        if (!mouseButtons.HasFlag(MouseButtons.Secondary) && _isRightButtonDown)
         {
             _isRightButtonDown = false;
             
@@ -445,7 +444,7 @@ public partial class StageEditorPhase
                 _hasValidPlacementPos = false;
             }
         }
-        else if (mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Released && _isLeftButtonDown)
+        else if (!mouseButtons.HasFlag(MouseButtons.Primary) && _isLeftButtonDown)
         {
             _isLeftButtonDown = false;
             

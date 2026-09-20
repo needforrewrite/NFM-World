@@ -1,8 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using HoleyDiver;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+using Maxine.Extensions.Mathematics;
 using NFMWorld.Graphics;
 using NFMWorld.Shaders;
 using NFMWorldLibrary;
@@ -219,10 +218,6 @@ public class Mesh : IDisposable
                 new VertexAttributeDesc("TEXCOORD", 0, 40, VertexAttributeFormat.Float1),
             ],
             StrideInBytes: 44);
-    }
-
-    public virtual void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer)
-    {
     }
 
     public void RebuildMesh()

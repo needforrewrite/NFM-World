@@ -1,6 +1,5 @@
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Microsoft.Xna.Framework;
 using NFMWorld.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
@@ -114,7 +113,7 @@ public class FixFlare : IDisposable, IImmediateRenderElement
 
         if (rotDeg != 0)
         {
-            float rad = MathHelper.ToRadians(rotDeg);
+            float rad = float.DegreesToRadians(rotDeg);
             float c = MathF.Cos(rad), s = MathF.Sin(rad);
             for (int i = 0; i < 8; i++)
             {
@@ -246,8 +245,11 @@ public class FixFlare : IDisposable, IImmediateRenderElement
         p.World.SetValue(cb, Matrix.CreateBillboard(
             (Vector3)_visual.Position,
             camera.Position,
-            Vector3.Up,
-            null));
+            Vector3.UnitY,
+            // FNA took a nullable forward vector and fell back to Vector3.Forward ((0, 0, -1)) when
+            // the billboard sat within 0.01 units of the camera; System.Numerics' overload takes a
+            // non-nullable one and uses it in exactly that same degenerate branch, so pass it.
+            -Vector3.UnitZ));
         p.View.SetValue(cb, camera.ViewMatrix);
         p.Projection.SetValue(cb, camera.ProjectionMatrix);
 

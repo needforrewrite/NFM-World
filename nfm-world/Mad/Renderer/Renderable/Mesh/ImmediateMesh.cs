@@ -1,5 +1,5 @@
-﻿using Microsoft.Xna.Framework;
-using NFMWorld.Graphics;
+﻿using NFMWorld.Graphics;
+using BoundingSphere = Maxine.Extensions.Mathematics.BoundingSphere;
 using NFMWorldLibrary.Rad;
 
 namespace NFMWorld;

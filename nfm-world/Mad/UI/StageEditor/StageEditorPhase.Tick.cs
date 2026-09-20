@@ -1,9 +1,7 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using Hexa.NET.ImGui;
 using Maxine.Extensions;
 using Maxine.Extensions.Collections;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.Gameplay;
 using NFMWorld.Util;
@@ -45,7 +43,7 @@ public partial class StageEditorPhase
                 (float)Math.Sin(pitch),
                 (float)(Math.Cos(pitch) * Math.Cos(yaw))
             );
-            forward.Normalize();
+            forward = Vector3.Normalize(forward);
             
             // Calculate right vector (perpendicular to forward on XZ plane)
             var right = new Vector3(
@@ -53,7 +51,7 @@ public partial class StageEditorPhase
                 0,
                 -(float)Math.Sin(yaw)
             );
-            right.Normalize();
+            right = Vector3.Normalize(right);
             
             var up = Vector3.UnitY;
             

@@ -1,7 +1,7 @@
 ﻿using Maxine.Extensions.Mathematics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.FixedMath;
-using BoundingSphere = Microsoft.Xna.Framework.BoundingSphere;
+using BoundingSphere = Maxine.Extensions.Mathematics.BoundingSphere;
 
 namespace NFMWorld;
 

@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-
+﻿
 namespace NFMWorld;
 
 public class TimeStep(float targetDeltaTime)

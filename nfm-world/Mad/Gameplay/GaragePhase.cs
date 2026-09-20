@@ -1,5 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
-using NFMWorld.DriverInterface;
+﻿using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.UI.Cef;
 using NFMWorld.Util;

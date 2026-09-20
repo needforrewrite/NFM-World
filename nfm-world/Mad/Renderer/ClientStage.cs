@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Specialized;
-using Microsoft.Xna.Framework.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Gamemodes;

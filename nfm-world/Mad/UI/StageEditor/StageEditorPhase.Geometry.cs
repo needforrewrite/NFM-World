@@ -3,8 +3,6 @@ using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
 using Maxine.Extensions;
 using Maxine.Extensions.Collections;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.Gameplay;
 using NFMWorld.Util;
@@ -325,9 +323,9 @@ public partial class StageEditorPhase
         float ndcY = 1.0f - (2.0f * screenY) / GameSparker.Game.Window.Height;
         
         var projMatrix = activeCamera.ProjectionMatrix;
-        Matrix.Invert(ref projMatrix, out var invProj);
+        Matrix.Invert(projMatrix, out var invProj);
         var viewMatrix = activeCamera.ViewMatrix;
-        Matrix.Invert(ref viewMatrix, out var invView);
+        Matrix.Invert(viewMatrix, out var invView);
         
         if (activeCamera is OrthoCamera)
         {

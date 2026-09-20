@@ -1,5 +1,4 @@
-using Hexa.NET.ImGui;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Hexa.NET.ImGui;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Util;

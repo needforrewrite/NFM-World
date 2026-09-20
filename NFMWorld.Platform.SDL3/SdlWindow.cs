@@ -72,10 +72,9 @@ public sealed class SdlWindow : IDisposable
     /// <summary>
     /// Same as <see cref="Create(string,int,int,bool,bool,SDL.SDL_WindowFlags)"/>, but takes the
     /// extra window flags as a raw bitmask instead of <c>SDL3.Core</c>'s <c>SDL.SDL_WindowFlags</c>
-    /// enum. Lets a caller that can't reference <c>SDL3.Core</c> directly (e.g. because it also
-    /// references FNA, whose own vendored SDL3 bindings define a same-named, different <c>SDL</c>
-    /// type in a different assembly - see <c>NFMWorld.Graphics.FNA3D.FNA3DInterop.PrepareWindowAttributes</c>'s
-    /// callers) still pass backend-specific flags through without a type collision.
+    /// enum, so a graphics backend can forward what the native library hands it without this
+    /// project's SDL3 types leaking into that backend's public API. See
+    /// <c>NFMWorld.Graphics.FNA3D.FNA3DInterop.PrepareWindowAttributes</c>'s callers.
     /// </summary>
     public static SdlWindow Create(string title, int width, int height, ulong extraFlagsRaw,
         bool resizable = true, bool highPixelDensity = true)
@@ -218,6 +217,53 @@ public sealed class SdlWindow : IDisposable
 
     /// <summary>Cumulative scroll value, replacing FNA's <c>MouseState.ScrollWheelValue</c>.</summary>
     public static int GetScrollWheelValue() => _scrollWheelValue;
+
+    /// <summary>
+    /// The primary display's supported fullscreen modes, deduplicated per (width, height) - SDL
+    /// reports one entry per refresh rate - and in pixels, matching what
+    /// <see cref="SetSize"/> takes. Replaces FNA's
+    /// <c>GraphicsAdapter.DefaultAdapter.SupportedDisplayModes</c>: FNA built that list from this
+    /// same SDL call (<c>SDL3_FNAPlatform.GetGraphicsAdapters</c>), so the entries are equivalent.
+    /// </summary>
+    public static unsafe IReadOnlyList<(int Width, int Height)> GetFullscreenDisplayModes()
+    {
+        // FNA's GraphicsAdapter only worked because touching it ran its platform class's static
+        // ctor, which initializes SDL video; do the same here since the settings menu builds its
+        // resolution list from a static field initializer that can run before Create(). SDL_Init
+        // is idempotent, and Create() re-initializes anyway.
+        if (!SDL.SDL_Init(SDL.SDL_InitFlags.SDL_INIT_VIDEO))
+            throw new InvalidOperationException($"SDL_Init failed: {SDL.SDL_GetError()}");
+
+        var modes = (SDL.SDL_DisplayMode**)SDL.SDL_GetFullscreenDisplayModes(SDL.SDL_GetPrimaryDisplay(), out var count);
+        try
+        {
+            var seen = new HashSet<(int Width, int Height)>();
+            var result = new List<(int Width, int Height)>(count);
+            for (var i = 0; i < count; i++)
+            {
+                var mode = modes[i];
+                if (mode == null || mode->w <= 0 || mode->h <= 0) continue;
+                if (seen.Add((mode->w, mode->h)))
+                    result.Add((mode->w, mode->h));
+            }
+            return result;
+        }
+        finally
+        {
+            SDL.SDL_free((IntPtr)modes);
+        }
+    }
+
+    /// <summary>
+    /// <c>SDL_SetHint</c>. The renderer-selection code sets FNA3D's driver hints before the window
+    /// (and therefore the device) exists, and this project is the one that owns the SDL3-CS extern
+    /// alias - so hint access is exposed here rather than making every caller alias the assembly
+    /// itself. See this project's csproj for why the alias exists at all.
+    /// </summary>
+    public static void SetHint(string name, string value) => SDL.SDL_SetHint(name, value);
+
+    /// <summary><c>SDL_GetHint</c> - null when the hint has never been set.</summary>
+    public static string? GetHint(string name) => SDL.SDL_GetHint(name);
 
     public void Dispose()
     {

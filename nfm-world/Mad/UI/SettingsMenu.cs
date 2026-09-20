@@ -1,13 +1,12 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
 using Lua;
-using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
+using NFMWorld.Platform.SDL3;
 using NFMWorld.UI.Cef;
 using NFMWorldLibrary;
-using SDL3;
 using NFMWorld.Sentry;
 
 namespace NFMWorld.UI;
@@ -114,9 +113,9 @@ public class SettingsMenu(WorldGame game)
             "640 x 480", "800 x 600", "1024 x 768", "1280 x 720", "1280 x 1024", "1920 x 1080", "2560 x 1440",
             "3840 x 2160"
         };
-        foreach (var displayMode in GraphicsAdapter.DefaultAdapter.SupportedDisplayModes)
+        foreach (var (width, height) in SdlWindow.GetFullscreenDisplayModes())
         {
-            resolutions.Add($"{displayMode.Width} x {displayMode.Height}");
+            resolutions.Add($"{width} x {height}");
         }
         return resolutions.ToArray();
     }
@@ -682,21 +681,21 @@ public class SettingsMenu(WorldGame game)
             {
                 case "D3D11" or "D3D12" or "Vulkan":
                     Logging.Info($"Overriding FNA3D renderer to {selectedRenderer}");
-                    SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", selectedRenderer);
+                    SdlWindow.SetHint("FNA3D_FORCE_DRIVER", selectedRenderer);
                     break;
                 case "OpenGL 2.1":
                     Logging.Info($"Overriding FNA3D renderer to {selectedRenderer}");
-                    SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
+                    SdlWindow.SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
                     break;
                 case "OpenGL 4.6":
                     Logging.Info($"Overriding FNA3D renderer to {selectedRenderer} (Core Profile)");
-                    SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
-                    SDL.SDL_SetHint("FNA3D_OPENGL_FORCE_CORE_PROFILE", "1");
+                    SdlWindow.SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
+                    SdlWindow.SetHint("FNA3D_OPENGL_FORCE_CORE_PROFILE", "1");
                     break;
                 case "OpenGL ES 3.0":
                     Logging.Info($"Overriding FNA3D renderer to {selectedRenderer} (ES3)");
-                    SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
-                    SDL.SDL_SetHint("FNA3D_OPENGL_FORCE_ES3", "1");
+                    SdlWindow.SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
+                    SdlWindow.SetHint("FNA3D_OPENGL_FORCE_ES3", "1");
                     break;
             }
         }
@@ -704,13 +703,13 @@ public class SettingsMenu(WorldGame game)
 
     private static string GetFna3DRenderer()
     {
-        var driver = SDL.SDL_GetHint("FNA3D_FORCE_DRIVER");
+        var driver = SdlWindow.GetHint("FNA3D_FORCE_DRIVER");
 
         return driver switch
         {
             "D3D11" or "D3D12" or "Vulkan" => driver,
-            "OpenGL" when SDL.SDL_GetHint("FNA3D_OPENGL_FORCE_CORE_PROFILE") == "1" => "OpenGL 4.6",
-            "OpenGL" when SDL.SDL_GetHint("FNA3D_OPENGL_FORCE_ES3") == "1" => "OpenGL ES 3.0",
+            "OpenGL" when SdlWindow.GetHint("FNA3D_OPENGL_FORCE_CORE_PROFILE") == "1" => "OpenGL 4.6",
+            "OpenGL" when SdlWindow.GetHint("FNA3D_OPENGL_FORCE_ES3") == "1" => "OpenGL ES 3.0",
             "OpenGL" => "OpenGL 2.1",
             _ => "Auto"
         };

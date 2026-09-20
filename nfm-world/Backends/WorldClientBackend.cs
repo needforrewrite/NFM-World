@@ -366,9 +366,16 @@ internal sealed class WorldClientBackend(NvgContext context, IGraphicsDevice gra
 
     public void SetAllVolumes(float vol) => FaudioSoundClip.SetAllVolumes(vol);
 
+    /// <summary>
+    /// Layout-independent ("physical") key for the same press - used by the UI's
+    /// <c>KeyboardEvent.KeyCode</c>. This used to round-trip through FNA's
+    /// <c>Keyboard.GetKeyFromScancodeEXT</c> to translate a logical XNA key into its physical
+    /// position; SDL already hands us scancode-derived keys (<c>SdlKeyMap.FromScancode</c>), so the
+    /// key arriving here *is* the physical one and there is nothing left to translate.
+    /// </summary>
     public Key GetKeyFromScancode(Key key)
     {
-        return Key.FromScanCode(key);
+        return key;
     }
 }
 

@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using Lua;
-using Microsoft.Xna.Framework;
 using NFMWorld;
 using NFMWorld.ClayDom.Events;
 using NFMWorld.DriverInterface;
