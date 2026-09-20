@@ -1,35 +1,49 @@
-﻿﻿﻿﻿﻿using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Text;
 using CommunityToolkit.HighPerformance;
 using FontStashSharp;
-using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 using NFMWorld.Audio;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
+using NFMWorld.Graphics;
 using NFMWorld.Util;
 using NvgSharp;
+using DrawingColor = System.Drawing.Color;
 using TextHorizontalAlignment = NFMWorld.DriverInterface.DriverInterface.TextHorizontalAlignment;
 
 namespace NFMWorld;
 
-public class NanoVGRenderer
+/// <summary>
+/// Owns the <see cref="AbstractionNvgRenderer"/> (NanoVG's <c>INvgRenderer</c> against
+/// <see cref="IGraphicsDevice"/>) and the <c>NvgContext</c> built from it. Replaces the old
+/// <c>NvgContext(GraphicsDevice, ...)</c> XNA constructor.
+/// </summary>
+public class NanoVGRenderer : IDisposable
 {
-    private NvgContext _context;
+    private readonly NvgContext _context;
+    private readonly AbstractionNvgRenderer _renderer;
 
-    public NanoVGRenderer(GraphicsDevice graphicsDevice)
+    public NanoVGRenderer(IGraphicsDevice graphicsDevice)
     {
-        _context = new NvgContext(graphicsDevice, false, false);
-        IBackend.Backend = new WorldClientBackend(_context);
+        _renderer = new AbstractionNvgRenderer(graphicsDevice);
+        _context = new NvgContext(_renderer, edgeAntiAlias: true, stencilStrokes: false);
+        IBackend.Backend = new WorldClientBackend(_context, graphicsDevice);
     }
+
+    /// <summary>Must be called with the frame's live command buffer before any drawing is done
+    /// through <see cref="IBackend.Backend"/>'s <see cref="IGraphics"/> this frame.</summary>
+    public void BeginFrame(ICommandBuffer cb) => _renderer.BeginFrame(cb);
 
     public void Render()
     {
         _context.Flush();
+        _renderer.EndFrame();
     }
+
+    public void Dispose() => _renderer.Dispose();
 }
 
-internal sealed class WorldClientBackend(NvgContext context) : IBackend
+internal sealed class WorldClientBackend(NvgContext context, IGraphicsDevice graphicsDevice) : IBackend
 {
     public IRadicalMusic LoadMusic(string file, double tempomul) => new FaudioMusic(file, tempomul);
 
@@ -37,12 +51,12 @@ internal sealed class WorldClientBackend(NvgContext context) : IBackend
 
     public ISoundClip GetSound(string filePath) => new FaudioSoundClip(filePath);
 
-    public IGraphics Graphics { get; } = new NvgGraphics(context);
+    public IGraphics Graphics { get; } = new NvgGraphics(context, graphicsDevice);
 
     public sealed class NvgGraphics : IGraphics
     {
-        public Vector2 Viewport => new(_context.GraphicsDevice.Viewport.Width, _context.GraphicsDevice.Viewport.Height);
-        
+        public Vector2 Viewport => new(_graphicsDevice.Swapchain.Width, _graphicsDevice.Swapchain.Height);
+
         public float Scale { get; set; } = 1;
 
         private ConcurrentDictionary<string, IImage> _imageCache = new();
@@ -62,11 +76,13 @@ internal sealed class WorldClientBackend(NvgContext context) : IBackend
         
         private Dictionary<FontFamily, FontSystem> _fontSystems = new();
         private DynamicSpriteFont _font;
+        private readonly IGraphicsDevice _graphicsDevice;
 
-        public NvgGraphics(NvgContext context)
+        public NvgGraphics(NvgContext context, IGraphicsDevice graphicsDevice)
         {
             _context = context;
-            
+            _graphicsDevice = graphicsDevice;
+
             _fontSystems[FontFamily.DroidSans] = LoadFont("./data/fonts/DroidSans.ttf");
             _fontSystems[FontFamily.AdventureHollow] = LoadFont("./data/fonts/AdventureHollow.otf");
             _fontSystems[FontFamily.Adventure] = LoadFont("./data/fonts/Adventure.otf");
@@ -77,7 +93,7 @@ internal sealed class WorldClientBackend(NvgContext context) : IBackend
         public IImage LoadImage(string file)
         {
             return _imageCache.GetOrAdd(file, _ => LoadImageInternal());
-            
+
             IImage LoadImageInternal()
             {
                 using var stream = VFS.OpenRead(file);
@@ -87,10 +103,10 @@ internal sealed class WorldClientBackend(NvgContext context) : IBackend
                 }
                 if (Path.GetExtension(file) == ".dds")
                 {
-                    return new NanoVGImage(Texture2D.DDSFromStreamEXT(_context.GraphicsDevice, stream));
+                    return new NanoVGImage(DdsReader.LoadFromStream(_graphicsDevice, stream));
                 }
 
-                return new NanoVGImage(Texture2D.FromStream(_context.GraphicsDevice, stream));
+                return new NanoVGImage(TextureLoader.LoadFromStream(_graphicsDevice, stream));
             }
         }
 
@@ -98,10 +114,10 @@ internal sealed class WorldClientBackend(NvgContext context) : IBackend
         {
             if (file.Span is [(byte)'D', (byte)'D', (byte)'S', (byte)' ', ..])
             {
-                return new NanoVGImage(Texture2D.DDSFromStreamEXT(_context.GraphicsDevice, file.AsStream()));
+                return new NanoVGImage(DdsReader.LoadFromStream(_graphicsDevice, file.AsStream()));
             }
 
-            return new NanoVGImage(Texture2D.FromStream(_context.GraphicsDevice, file.AsStream()));
+            return new NanoVGImage(TextureLoader.LoadFromStream(_graphicsDevice, file.AsStream()));
         }
 
         private FontSystem LoadFont(string fontFile)
@@ -125,8 +141,8 @@ internal sealed class WorldClientBackend(NvgContext context) : IBackend
 
             _color1 = colors[0];
             _color2 = colors[1];
-            var icol = colors[0].ToXna() with { A = (byte)(_color1.A / 255f * _alpha * 255f) };
-            var ocol = colors[1].ToXna() with { A = (byte)(_color2.A / 255f * _alpha * 255f) };
+            var icol = colors[0].ToDrawing().WithAlpha((byte)(_color1.A / 255f * _alpha * 255f));
+            var ocol = colors[1].ToDrawing().WithAlpha((byte)(_color2.A / 255f * _alpha * 255f));
 
             var gradientPaint = _context.LinearGradient(x, y, x + width, y + height, icol, ocol);
             _paint = gradientPaint;
@@ -144,9 +160,9 @@ internal sealed class WorldClientBackend(NvgContext context) : IBackend
             _color1 = c;
             _color2 = c;
 
-            var xnaColor = c.ToXna() with { A = (byte)(_color1.A / 255f * _alpha * 255f) };
+            var drawingColor = c.ToDrawing().WithAlpha((byte)(_color1.A / 255f * _alpha * 255f));
 
-            _paint = new Paint(xnaColor);
+            _paint = new Paint(drawingColor);
             _context.FillPaint(_paint);
             _context.StrokePaint(_paint);
         }
@@ -206,9 +222,9 @@ internal sealed class WorldClientBackend(NvgContext context) : IBackend
             set
             {
                 _alpha = value;
-                
-                var icol = (_color1 with { A = (byte)(_color1.A / 255f * _alpha * 255f) }).ToXna();
-                var ocol = (_color2 with { A = (byte)(_color2.A / 255f * _alpha * 255f) }).ToXna();
+
+                var icol = _color1.ToDrawing().WithAlpha((byte)(_color1.A / 255f * _alpha * 255f));
+                var ocol = _color2.ToDrawing().WithAlpha((byte)(_color2.A / 255f * _alpha * 255f));
                 _paint.InnerColor = icol;
                 _paint.OuterColor = ocol;
                 _context.FillPaint(_paint);
@@ -366,9 +382,9 @@ internal readonly struct NanoVGFontMetrics(DynamicSpriteFont font) : IFontMetric
     public float LineHeight => font.LineHeight;
 }
 
-internal class NanoVGImage(Texture2D texture) : IImage
+internal class NanoVGImage(ITexture texture) : IImage
 {
-    public Texture2D Texture { get; } = texture;
+    public ITexture Texture { get; } = texture;
     public int Height => Texture.Height;
     public int Width => Texture.Width;
 }
