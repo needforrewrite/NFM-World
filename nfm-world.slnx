@@ -60,6 +60,7 @@
   <Folder Name="/FontStashSharp/">
     <Project Path="FontStashSharp.Base/src/FontStashSharp.Base/FontStashSharp.Base.csproj" />
     <Project Path="FontStashSharp.Base/src/FontStashSharp.Rasterizers.StbTrueTypeSharp/FontStashSharp.Rasterizers.StbTrueTypeSharp.csproj" />
+    <Project Path="FontStashSharp/src/FontStashSharp/FontStashSharp.PlatformAgnostic.csproj" />
     <Project Path="FontStashSharp/src/XNA/FontStashSharp.FNA.Core.csproj" />
   </Folder>
   <Folder Name="/HoleyDiver/">
@@ -71,6 +72,7 @@
     <Project Path="MonoGame.ImGuiNet/MonoGame.ImGuiNet/Monogame.ImGuiNet.csproj" />
   </Folder>
   <Folder Name="/Lua-CSharp/">
+    <Project Path="Lua-CSharp/Lua.Compiler/Lua.Compiler.csproj" />
     <Project Path="Lua-CSharp/sandbox/Benchmark/LuaBenchmark.csproj" />
     <Project Path="Lua-CSharp/sandbox/ConsoleApp1/ConsoleApp1.csproj" />
     <Project Path="Lua-CSharp/src/Lua.Annotations/Lua.Annotations.csproj" />
@@ -103,11 +105,14 @@
     <Project Path="MemoryPack/src/MemoryPack/MemoryPack.csproj" />
   </Folder>
   <Folder Name="/NvgSharp/">
+    <Project Path="NvgSharp/src/NvgSharp.Text/NvgSharp.Text.csproj" />
     <Project Path="NvgSharp/src/NvgSharp.Text/NvgSharp.Text.FNA.Core.csproj" />
+    <Project Path="NvgSharp/src/NvgSharp/NvgSharp.csproj" />
     <Project Path="NvgSharp/src/XNA/NvgSharp.FNA.Core.csproj" />
   </Folder>
   <Project Path="Apos.Shapes/Example/Platforms/FNA/FNA.csproj" />
   <Project Path="Apos.Shapes/Source/Apos.Shapes.FNA.csproj" />
+  <Project Path="c:/Users/Maxine/AppData/Local/Temp/structdefault/structdefault.csproj" />
   <Project Path="FNA/lib/SDL3-CS/SDL3/SDL3.Core.csproj" />
   <Project Path="LibTessDotNet/LibTessDotNet/LibTessDotNet.csproj" />
   <Project Path="Microsoft.UI.Reactor.Yoga/Microsoft.UI.Reactor.Yoga.csproj" />
@@ -120,6 +125,7 @@
   <Project Path="NFMWorld.ClientOnlyAnalyzer/NFMWorld.ClientOnlyAnalyzer.csproj" />
   <Project Path="NFMWorld.CrashReporter/NFMWorld.CrashReporter.csproj" />
   <Project Path="NFMWorld.Audio.FAudio/NFMWorld.Audio.FAudio.csproj" />
+  <Project Path="NFMWorld.Audio.FAudio.Smoke/NFMWorld.Audio.FAudio.Smoke.csproj" />
   <Project Path="NFMWorld.FNA3D/NFMWorld.FNA3D.csproj" />
   <Project Path="NFMWorld.GenerateHmacKey/NFMWorld.GenerateHmacKey.csproj" />
   <Project Path="NFMWorld.Graphics.Abstraction/NFMWorld.Graphics.Abstraction.csproj" />
