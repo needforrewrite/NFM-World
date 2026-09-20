@@ -94,6 +94,12 @@ public sealed class AbstractionNvgRenderer : INvgRenderer, IDisposable
     private ICommandBuffer? _cb;
     private System.Numerics.Matrix4x4 _transform;
 
+    /// <summary>
+    /// Atlas dirty rectangles that arrived when no command buffer was live, kept as *copies* so
+    /// they can be uploaded at the next <see cref="BeginFrame"/>. See <see cref="SetTextureData"/>.
+    /// </summary>
+    private readonly List<(ITexture Texture, Rectangle Bounds, byte[] Data)> _pendingTextureUpdates = [];
+
     public AbstractionNvgRenderer(IGraphicsDevice device)
     {
         _device = device;
@@ -131,7 +137,19 @@ public sealed class AbstractionNvgRenderer : INvgRenderer, IDisposable
     /// renderer's owning <c>NvgContext</c> (path/text calls can trigger texture uploads, e.g. font
     /// atlas growth, synchronously - not just <see cref="Draw"/> itself) and cleared afterward.
     /// </summary>
-    public void BeginFrame(ICommandBuffer cb) => _cb = cb;
+    public void BeginFrame(ICommandBuffer cb)
+    {
+        _cb = cb;
+
+        // Replay anything that was rasterized between frames, before this frame draws: a glyph has
+        // to reach the atlas before anything samples it.
+        foreach (var (texture, bounds, data) in _pendingTextureUpdates)
+        {
+            cb.UpdateTexture(texture, bounds.X, bounds.Y, bounds.Width, bounds.Height, data);
+        }
+        _pendingTextureUpdates.Clear();
+    }
+
     public void EndFrame() => _cb = null;
 
     public object CreateTexture(int width, int height)
@@ -145,14 +163,37 @@ public sealed class AbstractionNvgRenderer : INvgRenderer, IDisposable
         return new Point(t.Width, t.Height);
     }
 
+    /// <summary>
+    /// Uploads one font-atlas dirty rectangle.
+    /// </summary>
+    /// <remarks>
+    /// This must not drop data when no command buffer is live. FontStashSharp rasterizes a glyph
+    /// on first use - which can happen while drawing text outside this renderer's frame, or during
+    /// a measure/layout pass in Update, both of which call in here before
+    /// <see cref="BeginFrame"/> - and it hands over a *reused* scratch buffer
+    /// (<c>FontAtlas._colorBuffer</c>) that it then marks as uploaded regardless of what the
+    /// renderer did with it. Dropping the call therefore blanks that glyph for the rest of the
+    /// process: the advance is right, the pixels are never there. Deferring the copy to the next
+    /// BeginFrame loses nothing, because the glyph is only sampled after that.
+    /// </remarks>
     public void SetTextureData(object texture, Rectangle bounds, byte[] data)
     {
-        if (_cb == null)
+        // Callers pass the whole scratch buffer; only the rectangle's own pixels are meaningful.
+        var length = bounds.Width * bounds.Height * 4;
+        if (length <= 0)
         {
-            Logging.Warning("AbstractionNvgRenderer.SetTextureData called with no live command buffer - dropped.");
             return;
         }
-        _cb.UpdateTexture((ITexture)texture, bounds.X, bounds.Y, bounds.Width, bounds.Height, data);
+
+        if (_cb != null)
+        {
+            _cb.UpdateTexture((ITexture)texture, bounds.X, bounds.Y, bounds.Width, bounds.Height, data.AsSpan(0, length));
+            return;
+        }
+
+        var copy = new byte[length];
+        data.AsSpan(0, length).CopyTo(copy);
+        _pendingTextureUpdates.Add(((ITexture)texture, bounds, copy));
     }
 
     public void Draw(float devicePixelRatio, ReadOnlySpan<CallInfo> calls, Vertex[] vertexes)
