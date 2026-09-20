@@ -27,7 +27,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
     private AroundStageCamera _aroundStageCamera = new();
     private IRadicalMusic _stageSelectMusic;
 
-    public StageSelectPhase(GraphicsDevice graphicsDevice) : base(graphicsDevice)
+    public StageSelectPhase() : base()
     {
         var directories = Directory.GetDirectories("data/stages");
         foreach (var dir in directories)
@@ -173,9 +173,9 @@ public class StageSelectPhase : BaseStageRenderingPhase
 
         G.SetFont(new Font(FontFamily.DroidSans, FontStyle.Bold, 48));
         G.SetColor(new Color(0, 0, 0));
-        G.DrawStringStrokeAligned(CurrentStage.Backend.Name, 0, 60, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height, TextHorizontalAlignment.Center);
+        G.DrawStringStrokeAligned(CurrentStage.Backend.Name, 0, 60, GameSparker.Game.Window.Width, GameSparker.Game.Window.Height, TextHorizontalAlignment.Center);
         G.SetColor(new Color(255, 255, 255));
-        G.DrawStringAligned(CurrentStage.Backend.Name, 0, 60, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height, TextHorizontalAlignment.Center);
+        G.DrawStringAligned(CurrentStage.Backend.Name, 0, 60, GameSparker.Game.Window.Width, GameSparker.Game.Window.Height, TextHorizontalAlignment.Center);
     }
 
     private bool HandleSearch()

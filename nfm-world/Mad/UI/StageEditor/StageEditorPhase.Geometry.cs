@@ -1,4 +1,5 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
+using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
 using Maxine.Extensions;
 using Maxine.Extensions.Collections;
@@ -81,7 +82,7 @@ public partial class StageEditorPhase
                         break;
                 }
                 
-                ActiveTab.WallMeshes.Add(new MeshedGameObject(new Mesh(_graphicsDevice, wallPart.Rad), position, rotation));
+                ActiveTab.WallMeshes.Add(new MeshedGameObject(new Mesh(wallPart.Rad), position, rotation));
             }
         }
         
@@ -256,21 +257,24 @@ public partial class StageEditorPhase
             (float)pieces.Average(p => (double)p.Position.Z));
     }
 
-    private void ProcessOnePreviewThumbnail()
+    private void ProcessOnePreviewThumbnail(NFMWorld.Graphics.ICommandBuffer cb)
     {
         if (_previewQueue.Count == 0) return;
         var (name, rad) = _previewQueue.Dequeue();
         if (_partPreviews.ContainsKey(name)) return;
-        
+
         // Find bounding sphere to set up camera
         float maxR = rad.MaxRadius > 0 ? rad.MaxRadius : 300;
-        
-        var rt = new RenderTarget2D(_graphicsDevice, PreviewSize, PreviewSize, false, SurfaceFormat.Color, DepthFormat.Depth24);
-        
-        var prevRTs = _graphicsDevice.GetRenderTargets();
-        _graphicsDevice.SetRenderTarget(rt);
-        _graphicsDevice.Clear(new Color(45, 45, 48).ToXna());
-        
+
+        var rt = GameSparker.NewGraphicsDevice.CreateRenderTarget(
+            new NFMWorld.Graphics.RenderTargetDesc(PreviewSize, PreviewSize, NFMWorld.Graphics.TextureFormat.Rgba8));
+
+        cb.SetRenderTarget(rt);
+        cb.SetViewport(new NFMWorld.Graphics.Viewport(0, 0, PreviewSize, PreviewSize));
+        cb.Clear(
+            NFMWorld.Graphics.ClearOptions.Color | NFMWorld.Graphics.ClearOptions.Depth,
+            new NFMWorld.Graphics.ColorRgba(45 / 255f, 45 / 255f, 48 / 255f, 1f));
+
         // Set up a simple isometric-ish view camera for the preview
         float camDist = maxR * 3f;
         var eye = new Vector3(camDist * 0.7f, camDist * 0.6f, camDist * 0.7f);
@@ -278,7 +282,7 @@ public partial class StageEditorPhase
 
         var oldSnap = World.Snap;
         World.Snap = new Color3(100, 100, 100);
-        var mesh = new ImmediateMesh(_graphicsDevice, rad);
+        using var mesh = new ImmediateMesh(rad);
 
         var camera = new PerspectiveCamera()
         {
@@ -287,20 +291,18 @@ public partial class StageEditorPhase
             LookAt = target
         };
         camera.OnBeforeRender(1f);
-        mesh.Render(camera, null);
-        
-        _graphicsDevice.SetRenderTargets(prevRTs);
+        mesh.Render(cb, camera, null);
+
+        cb.SetRenderTarget(null);
+        cb.SetViewport(new NFMWorld.Graphics.Viewport(0, 0, GameSparker.Game.Window.Width, GameSparker.Game.Window.Height));
         World.Snap = oldSnap;
-        
-        // TODO(Milestone 6 follow-up): SdlImGuiRenderer.BindTexture takes NFMWorld.Graphics.ITexture,
-        // not XNA's RenderTarget2D - this whole part-preview render-to-texture path is still on the
-        // old FNA GraphicsDevice (see _graphicsDevice/SetRenderTargets above) and out of scope for
-        // this pass; not reached today since StageEditorPhase is unreachable (GameSparker.Load never
-        // pushes it). Stubbed so the project compiles.
-        var texRef = default(ImTextureRef);
-        _partPreviews[name] = (rt, texRef);
+
+        // The thumbnail is shown by ImGui, so hand it the render target's colour texture directly -
+        // this is what SdlImGuiRenderer.BindTexture(ITexture) exists for (Panels.cs flips V when it
+        // images it, which is unrelated to the texture's own orientation).
+        _partPreviews[name] = (rt, WorldGame.ImguiRenderer!.BindTexture(rt.ColorTexture));
     }
-    
+
     private void QueuePartPreview(string name, Rad3d rad)
     {
         if (!_partPreviews.ContainsKey(name))
@@ -315,9 +317,10 @@ public partial class StageEditorPhase
     /// </summary>
     private (Vector3 Origin, Vector3 Direction) GetPickRay(int screenX, int screenY)
     {
-        var viewport = _graphicsDevice.Viewport;
-        float ndcX = (2.0f * screenX) / viewport.Width - 1.0f;
-        float ndcY = 1.0f - (2.0f * screenY) / viewport.Height;
+        // The viewport is always the whole window (the old GraphicsDevice.Viewport was read for
+        // these dimensions only; screenX/screenY arrive in window pixels).
+        float ndcX = (2.0f * screenX) / GameSparker.Game.Window.Width - 1.0f;
+        float ndcY = 1.0f - (2.0f * screenY) / GameSparker.Game.Window.Height;
         
         var projMatrix = activeCamera.ProjectionMatrix;
         Matrix.Invert(ref projMatrix, out var invProj);
@@ -494,38 +497,7 @@ public partial class StageEditorPhase
         return closestWallId;
     }
 
-    private static void AddWireBoxLines(List<VertexPositionColor> verts, Vector3 min, Vector3 max, Color color)
-    {
-        var xnaColor = color.ToXna();
-        var p000 = new Vector3(min.X, min.Y, min.Z);
-        var p001 = new Vector3(min.X, min.Y, max.Z);
-        var p010 = new Vector3(min.X, max.Y, min.Z);
-        var p011 = new Vector3(min.X, max.Y, max.Z);
-        var p100 = new Vector3(max.X, min.Y, min.Z);
-        var p101 = new Vector3(max.X, min.Y, max.Z);
-        var p110 = new Vector3(max.X, max.Y, min.Z);
-        var p111 = new Vector3(max.X, max.Y, max.Z);
-
-        // Bottom rectangle
-        verts.Add(new VertexPositionColor(p000, xnaColor)); verts.Add(new VertexPositionColor(p001, xnaColor));
-        verts.Add(new VertexPositionColor(p001, xnaColor)); verts.Add(new VertexPositionColor(p101, xnaColor));
-        verts.Add(new VertexPositionColor(p101, xnaColor)); verts.Add(new VertexPositionColor(p100, xnaColor));
-        verts.Add(new VertexPositionColor(p100, xnaColor)); verts.Add(new VertexPositionColor(p000, xnaColor));
-
-        // Top rectangle
-        verts.Add(new VertexPositionColor(p010, xnaColor)); verts.Add(new VertexPositionColor(p011, xnaColor));
-        verts.Add(new VertexPositionColor(p011, xnaColor)); verts.Add(new VertexPositionColor(p111, xnaColor));
-        verts.Add(new VertexPositionColor(p111, xnaColor)); verts.Add(new VertexPositionColor(p110, xnaColor));
-        verts.Add(new VertexPositionColor(p110, xnaColor)); verts.Add(new VertexPositionColor(p010, xnaColor));
-
-        // Vertical edges
-        verts.Add(new VertexPositionColor(p000, xnaColor)); verts.Add(new VertexPositionColor(p010, xnaColor));
-        verts.Add(new VertexPositionColor(p001, xnaColor)); verts.Add(new VertexPositionColor(p011, xnaColor));
-        verts.Add(new VertexPositionColor(p100, xnaColor)); verts.Add(new VertexPositionColor(p110, xnaColor));
-        verts.Add(new VertexPositionColor(p101, xnaColor)); verts.Add(new VertexPositionColor(p111, xnaColor));
-    }
-
-    private void RenderSelectedWallHighlight(StageEditorTab tab)
+    private void RenderSelectedWallHighlight(NFMWorld.Graphics.ICommandBuffer cb, StageEditorTab tab)
     {
         if (tab.SelectedWallId < 0)
             return;
@@ -534,7 +506,7 @@ public partial class StageEditorPhase
         if (wall == null)
             return;
 
-        var verts = new List<VertexPositionColor>();
+        var boxes = new List<(Vector3 Min, Vector3 Max)>();
         var color = new Color(0.35f, 0.9f, 1f, 1f);
 
         int n = wall.Count;
@@ -555,49 +527,17 @@ public partial class StageEditorPhase
                 ? new Vector3(WALL_SEGMENT_HALF_LENGTH, WALL_SEGMENT_HALF_HEIGHT, WALL_SEGMENT_HALF_WIDTH)
                 : new Vector3(WALL_SEGMENT_HALF_WIDTH, WALL_SEGMENT_HALF_HEIGHT, WALL_SEGMENT_HALF_LENGTH);
 
-            AddWireBoxLines(verts, center - halfExtents, center + halfExtents, color);
+            boxes.Add((center - halfExtents, center + halfExtents));
         }
 
-        if (verts.Count == 0)
+        if (boxes.Count == 0)
             return;
 
-        var arr = verts.ToArray();
-        var oldDepth = _graphicsDevice.DepthStencilState;
-        _graphicsDevice.DepthStencilState = DepthStencilState.None;
-
-        using var effect = new BasicEffect(_graphicsDevice)
-        {
-            View = activeCamera.ViewMatrix,
-            Projection = activeCamera.ProjectionMatrix,
-            VertexColorEnabled = true
-        };
-
-        var camRight = new Vector3(activeCamera.ViewMatrix.M11, activeCamera.ViewMatrix.M21, activeCamera.ViewMatrix.M31);
-        var camUp = new Vector3(activeCamera.ViewMatrix.M12, activeCamera.ViewMatrix.M22, activeCamera.ViewMatrix.M32);
-        float s = 6f;
-        var thickOffsets = new[]
-        {
-            Vector3.Zero,
-            camRight * s, camRight * -s,
-            camUp * s, camUp * -s,
-        };
-
-        foreach (var offset in thickOffsets)
-        {
-            var offsetArr = offset == Vector3.Zero
-                ? arr
-                : arr.Select(v => new VertexPositionColor(v.Position + offset, v.Color)).ToArray();
-
-            foreach (var pass in effect.CurrentTechnique.Passes)
-            {
-                pass.Apply();
-                _graphicsDevice.DrawUserPrimitives(PrimitiveType.LineList, offsetArr, 0, offsetArr.Length / 2);
-            }
-        }
-
-        _graphicsDevice.DepthStencilState = oldDepth;
+        // Was a raw BasicEffect + DrawUserPrimitives with DepthStencilState.None; Debug draws the
+        // same wire boxes as thick lines through the shared debug line pipeline (depth off).
+        Debug.RenderWireBoxes(cb, GameSparker.NewGraphicsDevice, CollectionsMarshal.AsSpan(boxes), color, activeCamera);
     }
-    
+
     private bool RayIntersectsTriangle(
         Vector3 rayOrigin,
         Vector3 rayDirection,

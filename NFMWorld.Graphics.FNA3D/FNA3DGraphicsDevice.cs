@@ -105,12 +105,45 @@ public sealed class FNA3DGraphicsDevice : IGraphicsDevice, IDisposable
         return texture;
     }
 
+    public unsafe void ReadTexture(ITexture texture, int x, int y, int width, int height, Span<byte> destination, int level = 0)
+    {
+        if (texture is not FNA3DTexture fna)
+        {
+            throw new ArgumentException(
+                $"{nameof(ReadTexture)} needs a texture this backend created - got {texture.GetType().Name}.",
+                nameof(texture));
+        }
+        if (fna.Handle == IntPtr.Zero)
+        {
+            throw new ArgumentException(
+                "This texture has no native handle and cannot be read back: IRenderTarget.DepthStencilTexture is a " +
+                "placeholder (FNA3D keeps depth-stencil data in a renderbuffer, not a texture object). Read the " +
+                "target's ColorTexture instead.",
+                nameof(texture));
+        }
+
+        fixed (byte* ptr = destination)
+        {
+            FNA3D_GetTextureData2D(_device, fna.Handle, x, y, width, height, level, (IntPtr)ptr, destination.Length);
+        }
+    }
+
     public IRenderTarget CreateRenderTarget(RenderTargetDesc desc)
     {
         var colorTextureDesc = new TextureDesc(desc.Width, desc.Height, desc.ColorFormat, RenderTargetable: true);
         var colorHandle = FNA3D_CreateTexture2D(_device, desc.ColorFormat.ToNative(), desc.Width, desc.Height, 1, 1);
         var colorTexture = new FNA3DTexture(_device, colorHandle, colorTextureDesc);
-        var colorRenderbuffer = FNA3D_GenColorRenderbuffer(_device, desc.Width, desc.Height, desc.ColorFormat.ToNative(), 0, colorHandle);
+
+        // Only MSAA targets need a colour renderbuffer: FNA's own RenderTarget2D calls
+        // FNA3D_GenColorRenderbuffer when MultiSampleCount > 0 and otherwise leaves
+        // FNA3D_RenderTargetBinding.colorBuffer zero, letting FNA3D_SetRenderTargets bind the
+        // texture itself. RenderTargetDesc carries no sample count, so today this is always the
+        // null path - and it has to be, at least on the D3D11 driver: with a renderbuffer
+        // generated at sample count 0, a cleared off-screen target's ColorTexture reads back as
+        // all zeros through IGraphicsDevice.ReadTexture (measured in the smoke test, and anything
+        // sampling that texture - e.g. the shadow cascades - then sees zeros), while the null path
+        // round-trips the clear exactly. OpenGL and SDLGPU read back correctly either way.
+        IntPtr colorRenderbuffer = IntPtr.Zero;
 
         IntPtr depthRenderbuffer = IntPtr.Zero;
         ITexture? depthTexture = null;

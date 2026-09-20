@@ -19,7 +19,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
 {
     private readonly MainMenuBridge _bridge = new();
 
-    public MainMenuPhase(GraphicsDevice graphicsDevice, string stageName) : base(graphicsDevice, stageName)
+    public MainMenuPhase(string stageName) : base(stageName)
     {
         CefBridge = _bridge;
 
@@ -105,7 +105,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 IsBot = true
             }
         ];
-        var inRace = new RacePhase(GraphicsDevice, "nfm2/9_majestic", factory, players,
+        var inRace = new RacePhase("nfm2/9_majestic", factory, players,
             LocalRaceHost.Create("nfm2/9_majestic", factory, new ClientGamemodeParameters { Players = players }));
         inRace.Exited += (sender, args) =>
         {
@@ -126,12 +126,12 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void OnTTClicked()
     {
-        StageSelectPhase ssp = new(GraphicsDevice);
+        StageSelectPhase ssp = new();
         ssp.StageSelected += (sender, stageName) =>
         {
             PhaseSharedState.SelectedStageName = stageName;
 
-            GaragePhase gp = new(GraphicsDevice, stageName);
+            GaragePhase gp = new(stageName);
             gp.CarSelected += (sender, car) =>
             {
                 var factory = new LuaGamemodeFactory("nfmm/timetrial");
@@ -145,7 +145,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                         PlayerName = "MadPlayer"
                     }
                 ];
-                var inRace = new RacePhase(GraphicsDevice, stageName, factory, players,
+                var inRace = new RacePhase(stageName, factory, players,
                     LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = players }));
                 inRace.Exited += (sender, args) =>
                 {
@@ -167,7 +167,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void OnGarageClicked()
     {
-        GaragePhase gp = new GaragePhase(GraphicsDevice);
+        GaragePhase gp = new GaragePhase();
 
         gp.CarSelected += (sender, c) =>
         {

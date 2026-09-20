@@ -1,10 +1,12 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
+using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
 using Maxine.Extensions;
 using Maxine.Extensions.Collections;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
+using NFMWorld.Graphics.FNA3D;
 using NFMWorld.Gameplay;
 using NFMWorld.Util;
 using NFMWorldLibrary;
@@ -26,7 +28,7 @@ public partial class StageEditorPhase
         tab.TabName = stageName;
         tab.StageFileName = ConvertStageNameToFilename(stageName);
         tab.Stage = new EditorStage();
-        tab.StageRenderer = new ClientStageRenderer(_graphicsDevice, tab.Stage);
+        tab.StageRenderer = new ClientStageRenderer(tab.Stage);
         
         // Set default values for properties in the tab
         tab.SkyColor = new Color3(135, 206, 235);
@@ -276,7 +278,14 @@ public partial class StageEditorPhase
         }
     }
     
-    private void ExportTopDownImage()
+    /// <summary>
+    /// Renders the stage top-down into an off-screen target, keys the background out on the CPU and
+    /// writes a PNG next to the stage file. Takes the caller's command buffer because binding a
+    /// render target is a command-buffer operation - it is invoked from the frame's own render pass
+    /// (see <c>_exportRequested</c> in StageEditorPhase), never from an ImGui callback where no
+    /// buffer is live.
+    /// </summary>
+    private void ExportTopDownImage(NFMWorld.Graphics.ICommandBuffer cb)
     {
         if (ActiveTab?.Stage == null || ActiveTab.StageRenderer == null || ActiveTab.Scene == null)
         {
@@ -310,15 +319,18 @@ public partial class StageEditorPhase
         float centerZ = (minZ + maxZ) * 0.5f;
 
         // Create export render target
-        var rt = new RenderTarget2D(_graphicsDevice, _exportWidth, _exportHeight, false, SurfaceFormat.Color, DepthFormat.Depth24);
-        var prevRTs = _graphicsDevice.GetRenderTargets();
-        var prevViewport = _graphicsDevice.Viewport;
+        var rt = _graphicsDevice.CreateRenderTarget(
+            new NFMWorld.Graphics.RenderTargetDesc(_exportWidth, _exportHeight, NFMWorld.Graphics.TextureFormat.Rgba8));
 
         try
         {
-            _graphicsDevice.SetRenderTarget(rt);
-            _graphicsDevice.Viewport = new Microsoft.Xna.Framework.Graphics.Viewport(0, 0, _exportWidth, _exportHeight);
-            _graphicsDevice.Clear(Color.Transparent.ToXna());
+            cb.SetRenderTarget(rt);
+            cb.SetViewport(new NFMWorld.Graphics.Viewport(0, 0, _exportWidth, _exportHeight));
+            // Colour + depth: a freshly created target's depth is undefined, and the transparent
+            // clear matches what the pre-migration export did before Scene.Render's own clear.
+            cb.Clear(
+                NFMWorld.Graphics.ClearOptions.Color | NFMWorld.Graphics.ClearOptions.Depth,
+                new NFMWorld.Graphics.ColorRgba(0f, 0f, 0f, 0f));
 
             // Build a dedicated ortho camera sized to cover the whole stage
             var exportCam = new OrthoCamera
@@ -358,9 +370,10 @@ public partial class StageEditorPhase
 
             try
             {
-                // TODO(Milestone 5 Stage B follow-up): ActiveTab.Scene is currently always null
-                // (see StageEditorPhase.Scene.cs's RecreateScene); never reached today.
-                ActiveTab.Scene.Render(null!, 1f, false);
+                // Matches the pre-migration call: clearRenderBuffer stays at its default (true), so
+                // Scene.Render's own clear paints over the transparent one above and the sky (set to
+                // magenta just before) becomes the matte the flood-fill below keys out.
+                ActiveTab.Scene.Render(cb, 1f, false);
             }
             finally
             {
@@ -377,14 +390,17 @@ public partial class StageEditorPhase
         }
         finally
         {
-            _graphicsDevice.SetRenderTargets(prevRTs);
-            _graphicsDevice.Viewport = prevViewport;
+            cb.SetRenderTarget(null);
+            cb.SetViewport(new NFMWorld.Graphics.Viewport(0, 0, GameSparker.Game.Window.Width, GameSparker.Game.Window.Height));
         }
 
         // Remove background by sampling the dominant border color and flood-filling
         // connected pixels. This is robust even if Scene.Render clears to its own color.
         var pixels = new Color[_exportWidth * _exportHeight];
-        rt.GetData(pixels);
+        // Memory layout: FNA's/our Color packs R,G,B,A bytes on little-endian, so the tightly packed
+        // Rgba8 bytes read back here can be reinterpreted in place as the Color[] the flood-fill
+        // below operates on. The target is already unbound (see the finally above).
+        _graphicsDevice.ReadTexture(rt.ColorTexture, 0, 0, _exportWidth, _exportHeight, MemoryMarshal.AsBytes(pixels.AsSpan()));
 
         int QuantizeColor(Color c)
         {
@@ -512,9 +528,6 @@ public partial class StageEditorPhase
 
         Logging.Info($"Top-down export matte key: R={matteColor.R},G={matteColor.G},B={matteColor.B}, edgeRemoved={transparentCount}, enclosedRemoved={enclosedTransparentCount}");
 
-        // Write back to a plain Texture2D so SaveAsPng carries our modified alpha.
-        var exportTex = new Texture2D(_graphicsDevice, _exportWidth, _exportHeight, false, SurfaceFormat.Color);
-        exportTex.SetData(pixels);
 
         // Save PNG next to the stage file
         var exportDir  = "data/stages/user";
@@ -524,7 +537,7 @@ public partial class StageEditorPhase
         try
         {
             using var fs = new FileStream(filePath, FileMode.Create);
-            exportTex.SaveAsPng(fs, _exportWidth, _exportHeight);
+            FNA3DImageCodec.WritePng(fs, _exportWidth, _exportHeight, _exportWidth, _exportHeight, MemoryMarshal.AsBytes(pixels.AsSpan()));
             _exportResultMessage = $"Saved: {filePath}";
             Logging.Info($"Exported top-down image: {filePath}");
         }
@@ -537,7 +550,6 @@ public partial class StageEditorPhase
         finally
         {
             rt.Dispose();
-            exportTex.Dispose();
         }
     }
 
@@ -607,7 +619,7 @@ public partial class StageEditorPhase
             }
             Logging.Info($"Removed {removedCount} wall pieces from stage");
             
-            tab.StageRenderer = new ClientStageRenderer(_graphicsDevice, tab.Stage);
+            tab.StageRenderer = new ClientStageRenderer(tab.Stage);
             
             var stageLoader = tab.Stage.StageLoader;
 

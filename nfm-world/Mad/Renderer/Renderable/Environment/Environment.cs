@@ -16,8 +16,7 @@ public class Environment
 {
     public static GroundPolys MakePolys(
         BackendStage stage,
-        int sx, int ncx, int sz, int ncz, int stagePartCount, // newpolys
-        GraphicsDevice graphicsDevice
+        int sx, int ncx, int sz, int ncz, int stagePartCount // newpolys
     )
     {
         var transaction = SentrySdk.StartTransaction("MakePolys", "stageGeneration");
@@ -199,17 +198,13 @@ public class Environment
         #endregion
 
         transaction.Finish();
-        
-        // TODO(Milestone 5 Stage B follow-up): graphicsDevice above is still FNA's XNA-typed
-        // GraphicsDevice (unused now that GroundPolys takes IGraphicsDevice) - this method's
-        // callers (ClientStageRenderer/StageEditorPhase) are still on the old type and out of
-        // scope for this pass; not reached today since GameSparker.Load never runs.
+
         return new GroundPolys(GameSparker.NewGraphicsDevice, verts.ToArray());
     }
 
     public static GroundPolys MakeClouds(
-        int maxl, int maxr, int maxb, int maxt, // newclouds
-        GraphicsDevice graphicsDevice)
+        int maxl, int maxr, int maxb, int maxt // newclouds
+    )
     {
         var transaction = SentrySdk.StartTransaction("MakeClouds", "stageGeneration");
         
@@ -552,13 +547,11 @@ public class Environment
 
         transaction.Finish();
 
-        // TODO(Milestone 5 Stage B follow-up): see MakePolys's identical TODO above.
         return new GroundPolys(GameSparker.NewGraphicsDevice, polys.ToArray());
     }
-    
+
     public static Mountains MakeMountains(
-        int maxl, int maxr, int maxb, int maxt, // newmountains
-        GraphicsDevice graphicsDevice
+        int maxl, int maxr, int maxb, int maxt // newmountains
     )
     {
         var transaction = SentrySdk.StartTransaction("MakeMountains", "stageGeneration");
@@ -724,7 +717,6 @@ public class Environment
         
         transaction.Finish();
 
-        // TODO(Milestone 5 Stage B follow-up): see MakePolys's identical TODO above.
         return new Mountains(GameSparker.NewGraphicsDevice, polys.ToArray());
     }
 }

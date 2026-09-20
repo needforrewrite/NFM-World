@@ -11,18 +11,34 @@ using NFMWorldLibrary.Util;
 
 namespace NFMWorld;
 
+/// <summary>
+/// How a mesh should be drawn outside the normal opaque pass - an editor-only concept, set per
+/// mesh via <see cref="Mesh.OverlayMode"/>. The depth/blend state this used to be applied with
+/// (XNA's per-draw <c>BlendState</c>/<c>DepthStencilState</c> save-set-restore) is baked into
+/// pipelines in the new model, so the choice is now "which pipeline", not "which state".
+/// </summary>
+public enum PolyOverlayMode
+{
+    /// <summary>Normal opaque draw - the game's own pipeline.</summary>
+    None,
+
+    /// <summary>Translucent, depth-tested but not depth-written (highlight quads, wheel overlays).</summary>
+    DepthRead,
+
+    /// <summary>Translucent with depth testing and writing off (the reference-car ghost, drawn after a depth clear).</summary>
+    NoDepth,
+}
+
 public class Mesh : IDisposable
 {
     public LuaArray<Rad3dPoly> OriginalPolys;
     public Rad3dPoly[] Polys;
 
-    public readonly GraphicsDevice GraphicsDevice;
-
     protected Submesh?[] Submeshes;
     protected LineMesh?[]? LineMeshes;
-    
+
     public int GroundAt;
-    
+
     public string FileName;
     public Mesh? ClonedMesh;
 
@@ -35,16 +51,17 @@ public class Mesh : IDisposable
 
     public byte PolyFixState = 0;
 
-    public Mesh(GraphicsDevice graphicsDevice, Rad3d rad)
+    /// <summary>Editor-only overlay pipeline selection - see <see cref="PolyOverlayMode"/>. Ignored in the shadow pass.</summary>
+    public PolyOverlayMode OverlayMode { get; set; } = PolyOverlayMode.None;
+
+    public Mesh(Rad3d rad)
     {
         // make a copy of points for damageable meshes
         OriginalPolys = rad.Polys;
         Polys = rad.Polys.Select(static poly => poly.SafeClone()).ToArray();
         GroundAt = rad.Wheels.FirstOrDefault().Ground;
 
-        GraphicsDevice = graphicsDevice;
-
-        BuildMesh(graphicsDevice);
+        BuildMesh();
 
         FileName = rad.FileName;
         MaxRadius = rad.MaxRadius;
@@ -55,10 +72,9 @@ public class Mesh : IDisposable
     {
         // make a copy of points for damageable meshes
         Polys = Array.ConvertAll(baseMesh.Polys, static poly => poly.SafeClone());
-        GraphicsDevice = baseMesh.GraphicsDevice;
         GroundAt = baseMesh.GroundAt;
 
-        BuildMesh(GraphicsDevice);
+        BuildMesh();
 
         FileName = baseMesh.FileName;
         ClonedMesh = baseMesh;
@@ -67,7 +83,7 @@ public class Mesh : IDisposable
     }
 
     [MemberNotNull(nameof(Submeshes), nameof(LineMeshes))]
-    private void BuildMesh(GraphicsDevice graphicsDevice)
+    private void BuildMesh()
     {
         if (Submeshes != null)
         {
@@ -149,7 +165,6 @@ public class Mesh : IDisposable
             
             if (data.Count == 0 || indices.Count == 0) continue;
 
-            // GraphicsDevice property - see GameSparker.NewGraphicsDevice's doc comment.
             Submeshes[i] = new Submesh(type, this, GameSparker.NewGraphicsDevice, CollectionsMarshal.AsSpan(data), CollectionsMarshal.AsSpan(indices));
         }
 
@@ -158,8 +173,6 @@ public class Mesh : IDisposable
         {
             var lineDict = lines[i];
             if (lineDict.Count == 0) continue;
-            // LineMesh now takes NFMWorld.Graphics.IGraphicsDevice, not Mesh's own (still XNA-typed)
-            // GraphicsDevice property - see GameSparker.NewGraphicsDevice's doc comment.
             LineMeshes[i] = new LineMesh(this, GameSparker.NewGraphicsDevice, lineDict, (LineType)i);
         }
     }
@@ -224,7 +237,7 @@ public class Mesh : IDisposable
 
     public void RebuildMesh()
     {
-        BuildMesh(GraphicsDevice);
+        BuildMesh();
     }
 
     public void SubmitRenderables(RenderQueue queue, Lighting? lighting, bool finish, BoundingSphere boundingSphere, RenderBucket renderBucket, Matrix matrixWorld, long layer = 0, bool getsShadowed = false, float alphaOverride = 1.0f, bool isFullbright = false, bool glow = false)

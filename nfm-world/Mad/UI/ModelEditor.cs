@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Hexa.NET.ImGui;
 using Maxine.Extensions.Mathematics;
 using Microsoft.Xna.Framework.Graphics;
@@ -82,7 +82,7 @@ public class ModelEditorTab
 
 public class ModelEditorPhase : BasePhase
 {
-    private readonly GraphicsDevice _graphicsDevice;
+    private readonly NFMWorld.Graphics.IGraphicsDevice _graphicsDevice;
     private bool _isOpen = false;
     private string[] _userModelNames = [];
 
@@ -130,18 +130,12 @@ public class ModelEditorPhase : BasePhase
     private Scene scene;
     private Scene overlayScene;
 
-    public ModelEditorPhase(GraphicsDevice graphicsDevice)
+    public ModelEditorPhase(NFMWorld.Graphics.IGraphicsDevice graphicsDevice)
     {
         _graphicsDevice = graphicsDevice;
-        // TODO(Milestone 5 Stage B follow-up): Scene now takes NFMWorld.Graphics.IGraphicsDevice,
-        // not FNA's GraphicsDevice - the rest of ModelEditorPhase's extensive direct GraphicsDevice
-        // usage (BlendState/DepthStencilState swaps, Clear, etc.) isn't converted yet either, so
-        // this throws rather than silently being wrong. Nothing constructs a ModelEditorPhase today
-        // (GameSparker.Load isn't called - see WorldGame.cs's Stage A TODOs).
-        scene = null!;
-        overlayScene = null!;
-        throw new NotImplementedException(
-            $"{nameof(ModelEditorPhase)} needs IGraphicsDevice threaded through its whole render path (Milestone 5 Stage B).");
+        scene = new Scene(graphicsDevice, [], camera, []);
+        overlayScene = new Scene(graphicsDevice, [], camera, []);
+        RefreshUserModels();
     }
 
     private void RefreshUserModels()
@@ -185,9 +179,6 @@ public class ModelEditorPhase : BasePhase
 
         camera.Position = new Vector3(0, -800, -800);
         camera.LookAt = Vector3.Zero;
-
-        GameSparker.GraphicsDevice.BlendState = BlendState.Opaque;
-        GameSparker.GraphicsDevice.DepthStencilState = DepthStencilState.Default;
 
         RefreshUserModels();
     }
@@ -425,7 +416,7 @@ public class ModelEditorPhase : BasePhase
         // Try to parse the model, but keep the file loaded even if it fails
         try
         {
-            tab.Object = new EditorObject(_graphicsDevice, RadParser.ParseRad(radContent, "editing"));
+            tab.Object = new EditorObject(RadParser.ParseRad(radContent, "editing"));
             ResetTabView(tab);
         }
         catch (Exception parseEx)
@@ -760,11 +751,40 @@ public class ModelEditorPhase : BasePhase
 
     private readonly record struct RayPickResult(int PolygonIndex, int WheelIndex);
 
+    /// <summary>
+    /// Screen-space to world-space unprojection for editor picking: the maths of XNA's
+    /// <c>Viewport.Unproject</c> (FNA/src/Graphics/Viewport.cs), inlined because the graphics
+    /// abstraction has no Viewport type carrying that helper. The viewport is always the whole
+    /// window (origin 0,0, depth range 0..1), matching what the old
+    /// <c>GraphicsDevice.Viewport</c> was used as here.
+    /// </summary>
+    private static Vector3 UnprojectScreenPoint(Vector3 source, Matrix projection, Matrix view, float width, float height)
+    {
+        var inverse = Matrix.Invert(Matrix.Identity * view * projection);
+
+        source.X = ((source.X / width) * 2f) - 1f;
+        source.Y = -(((source.Y / height) * 2f) - 1f);
+        // source.Z is already the 0..1 depth the old viewport used (MinDepth 0, MaxDepth 1).
+
+        var result = Vector3.Transform(source, inverse);
+
+        var w = (source.X * inverse.M14) + (source.Y * inverse.M24) + (source.Z * inverse.M34) + inverse.M44;
+        if (!(MathF.Abs(w - 1.0f) <= 1.192092896e-07f))
+        {
+            result.X /= w;
+            result.Y /= w;
+            result.Z /= w;
+        }
+
+        return result;
+    }
+
     private RayPickResult PerformRayPicking(int screenX, int screenY, ModelEditorTab tab)
     {
         if (tab.Object == null) return new RayPickResult(-1, -1);
 
-        var viewport = GameSparker.GraphicsDevice.Viewport;
+        var viewportWidth = GameSparker.Game.Window.Width;
+        var viewportHeight = GameSparker.Game.Window.Height;
 
         // Set up the model's transform exactly as RenderModel does
         var originalPosition = tab.Object.Position;
@@ -806,19 +826,8 @@ public class ModelEditorPhase : BasePhase
         var projection = tempCamera.ProjectionMatrix;
 
         // Unproject screen coordinates to world space ray
-        var nearPoint = viewport.Unproject(
-            new Vector3(screenX, screenY, 0f),
-            projection,
-            view,
-            Matrix.Identity
-        );
-
-        var farPoint = viewport.Unproject(
-            new Vector3(screenX, screenY, 1f),
-            projection,
-            view,
-            Matrix.Identity
-        );
+        var nearPoint = UnprojectScreenPoint(new Vector3(screenX, screenY, 0f), projection, view, viewportWidth, viewportHeight);
+        var farPoint = UnprojectScreenPoint(new Vector3(screenX, screenY, 1f), projection, view, viewportWidth, viewportHeight);
 
         var rayOrigin = nearPoint;
         var rayDirection = Vector3.Normalize(farPoint - nearPoint);
@@ -947,7 +956,8 @@ public class ModelEditorPhase : BasePhase
     {
         if (tab.Object == null || tab.Object.Boxes.Count == 0) return -1;
 
-        var viewport = GameSparker.GraphicsDevice.Viewport;
+        var viewportWidth = GameSparker.Game.Window.Width;
+        var viewportHeight = GameSparker.Game.Window.Height;
 
         // Set up camera exactly as RenderModel does
         var tempCamera = new PerspectiveCamera
@@ -968,19 +978,8 @@ public class ModelEditorPhase : BasePhase
         var projection = tempCamera.ProjectionMatrix;
 
         // Unproject screen coordinates to world space ray
-        var nearPoint = viewport.Unproject(
-            new Vector3(screenX, screenY, 0f),
-            projection,
-            view,
-            Matrix.Identity
-        );
-
-        var farPoint = viewport.Unproject(
-            new Vector3(screenX, screenY, 1f),
-            projection,
-            view,
-            Matrix.Identity
-        );
+        var nearPoint = UnprojectScreenPoint(new Vector3(screenX, screenY, 0f), projection, view, viewportWidth, viewportHeight);
+        var farPoint = UnprojectScreenPoint(new Vector3(screenX, screenY, 1f), projection, view, viewportWidth, viewportHeight);
 
         var rayOrigin = nearPoint;
         var rayDirection = Vector3.Normalize(farPoint - nearPoint);
@@ -1656,7 +1655,10 @@ public class ModelEditorPhase : BasePhase
     {
         base.Render(cb, alpha);
 
-        _graphicsDevice.Clear(new Color(135, 206, 235).ToXna());
+        // Sky-blue editor background. Colour only, matching the old XNA Clear(Color) call - the
+        // model itself is drawn later by Render3DOverlays, which clears to its own colour, so this
+        // is the fill behind the ImGui panels.
+        cb.Clear(NFMWorld.Graphics.ClearOptions.Color, new NFMWorld.Graphics.ColorRgba(135 / 255f, 206 / 255f, 235 / 255f));
     }
 
     public override void RenderImgui()
@@ -1793,7 +1795,7 @@ public class ModelEditorPhase : BasePhase
                             File.WriteAllText(tab.ModelPath, tab.TextContent);
                             tab.TextEditorDirty = false;
                             // Reload model
-                            tab.Object = new EditorObject(_graphicsDevice, RadParser.ParseRad(tab.TextContent, "editing"));
+                            tab.Object = new EditorObject(RadParser.ParseRad(tab.TextContent, "editing"));
                         }
                     }
                     catch (Exception ex)
@@ -1816,7 +1818,7 @@ public class ModelEditorPhase : BasePhase
                             File.WriteAllText(tab.ModelPath, tab.TextContent);
                             tab.TextEditorDirty = false;
                             // Reload model
-                            tab.Object = new EditorObject(_graphicsDevice, RadParser.ParseRad(tab.TextContent, "editing"));
+                            tab.Object = new EditorObject(RadParser.ParseRad(tab.TextContent, "editing"));
                             tab.TextEditorExpanded = false;
                         }
                     }
@@ -2685,7 +2687,7 @@ public class ModelEditorPhase : BasePhase
         // Try to reload the model with the new code
         try
         {
-            tab.Object = new EditorObject(_graphicsDevice, RadParser.ParseRad(tab.TextContent, "editing"));
+            tab.Object = new EditorObject(RadParser.ParseRad(tab.TextContent, "editing"));
             tab.PolygonEditorDirty = false;
 
             if (removeElement)
@@ -2764,8 +2766,9 @@ public class ModelEditorPhase : BasePhase
         var tab = ActiveTab;
         if (!_isOpen || tab == null || tab.Object == null) return;
 
-        _graphicsDevice.BlendState = BlendState.Opaque;
-        _graphicsDevice.DepthStencilState = DepthStencilState.Default;
+        // (The old scene-wide BlendState.Opaque/DepthStencilState.Default pair is gone: the new
+        // model bakes blend/depth state into each pipeline, and PolyPipeline already is the
+        // opaque/default pair for exactly this geometry.)
 
         // Set up camera to orbit around and look at the model position
         camera.Position = tab.CameraPosition;
@@ -2789,19 +2792,17 @@ public class ModelEditorPhase : BasePhase
         scene.Objects.Add(tab.Object);
 
         // Render main model first
-        scene.Render(null!, 1, false); // TODO(Milestone 5 Stage B follow-up): stub Scene (see ctor); never reached today.
+        scene.Render(cb, 1, false);
 
         // Render reference car overlay with transparency (rendered separately after main model)
         if (tab.ShowReferenceOverlay && tab.ReferenceCarIndex >= 0 && tab.ReferenceCarIndex < BackendGameSparker.cars[Collection.NFMM].Count)
         {
             // TODO optimize by caching reference car object instead of recreating each frame
-            var referenceCar = new StaticMeshObject(_graphicsDevice, BackendGameSparker.cars[Collection.NFMM][tab.ReferenceCarIndex]);
+            var referenceCar = new StaticMeshObject(BackendGameSparker.cars[Collection.NFMM][tab.ReferenceCarIndex]);
 
             // Store original state
             var originalRefPosition = referenceCar.Position;
             var originalRefRotation = referenceCar.Rotation;
-            var previousBlendState = _graphicsDevice.BlendState;
-            var previousDepthState = _graphicsDevice.DepthStencilState;
 
             // Position reference car at same location as main model
             referenceCar.Position = tab.ModelPosition;
@@ -2811,27 +2812,19 @@ public class ModelEditorPhase : BasePhase
                 f64AngleSingle.FromDegrees(tab.ModelRotation.Z)
             );
 
-            // Enable alpha blending
-            _graphicsDevice.BlendState = BlendState.AlphaBlend;
-
-            // Clear depth buffer and disable depth testing so reference car always renders in front
-            _graphicsDevice.Clear(ClearOptions.DepthBuffer, Color.Transparent.ToXna(), 1.0f, 0);
-            var depthOff = new DepthStencilState
-            {
-                DepthBufferEnable = false,
-                DepthBufferWriteEnable = false
-            };
-            _graphicsDevice.DepthStencilState = depthOff;
+            // Alpha blending + no depth test/write, so the reference car always renders in front:
+            // the pipeline carries that state (see Effects.PolyNoDepthPipeline), and the depth
+            // buffer is cleared first so nothing else occludes it either.
+            referenceCar.Mesh.OverlayMode = PolyOverlayMode.NoDepth;
+            cb.Clear(NFMWorld.Graphics.ClearOptions.Depth, default, 1f, 0);
 
             referenceCar.AlphaOverride = tab.ReferenceOpacity;
 
             overlayScene.Objects.Clear();
             overlayScene.Objects.Add(referenceCar);
-            overlayScene.Render(null!, 1, false, false); // TODO(Milestone 5 Stage B follow-up): stub Scene (see ctor); never reached today.
+            overlayScene.Render(cb, 1, false, clearRenderBuffer: false);
 
-            // Restore states
-            _graphicsDevice.BlendState = previousBlendState;
-            _graphicsDevice.DepthStencilState = previousDepthState;
+            referenceCar.Mesh.OverlayMode = PolyOverlayMode.None;
             referenceCar.Position = originalRefPosition;
             referenceCar.Rotation = originalRefRotation;
         }
@@ -2842,11 +2835,11 @@ public class ModelEditorPhase : BasePhase
             if (tab.SelectedWheelIndex >= 0 && tab.SelectedWheelPolygonIndex >= 0 &&
                 tab.SelectedWheelIndex < tab.Object.WheelObjects.Count)
             {
-                RenderWheelSelectionOverlay(tab);
+                RenderWheelSelectionOverlay(cb, tab);
             }
             else if (tab.SelectedPolygonIndex >= 0 && tab.SelectedPolygonIndex < tab.Object.Mesh.Polys.Length)
             {
-                RenderSelectionOverlay(tab);
+                RenderSelectionOverlay(cb, tab);
             }
         }
 
@@ -2854,7 +2847,7 @@ public class ModelEditorPhase : BasePhase
         if (tab.EditMode == ModelEditorTab.EditModeEnum.Collision &&
             tab.SelectedCollisionIndex >= 0 && tab.SelectedCollisionIndex < tab.Object.Boxes.Count)
         {
-            RenderCollisionSelectionOverlay(camera, tab);
+            RenderCollisionSelectionOverlay(cb, camera, tab);
         }
 
         // Restore original transform
@@ -2862,7 +2855,7 @@ public class ModelEditorPhase : BasePhase
         tab.Object.Rotation = originalRotation;
     }
 
-    private void RenderSelectionOverlay(ModelEditorTab tab)
+    private void RenderSelectionOverlay(NFMWorld.Graphics.ICommandBuffer cb, ModelEditorTab tab)
     {
         if (tab.Object == null || tab.SelectedPolygonIndex < 0) return;
 
@@ -2879,7 +2872,6 @@ public class ModelEditorPhase : BasePhase
 
         // Create a temporary mesh for the overlay
         var overlayMesh = new EditorObject(
-            GameSparker.GraphicsDevice,
             new Rad3d(overlayPolys, false, "overlay")
         );
 
@@ -2887,31 +2879,18 @@ public class ModelEditorPhase : BasePhase
         overlayMesh.Position = tab.Object.Position;
         overlayMesh.Rotation = tab.Object.Rotation;
 
-        // Save current blend state
-        var oldBlendState = GameSparker.GraphicsDevice.BlendState;
-        var oldDepthStencilState = GameSparker.GraphicsDevice.DepthStencilState;
-
-        // Enable alpha blending and disable depth write (but keep depth test)
-        GameSparker.GraphicsDevice.BlendState = BlendState.AlphaBlend;
-        var depthRead = new DepthStencilState
-        {
-            DepthBufferEnable = true,
-            DepthBufferWriteEnable = false,  // Don't write to depth, just read
-            DepthBufferFunction = CompareFunction.LessEqual
-        };
-        GameSparker.GraphicsDevice.DepthStencilState = depthRead;
+        // Alpha blending with the depth test kept but depth writes off - carried by the pipeline
+        // (Effects.PolyDepthReadPipeline), so the highlight shows through but still occludes/fades
+        // against nearer geometry exactly as the old DepthStencilState.DepthRead pairing did.
+        overlayMesh.Mesh.OverlayMode = PolyOverlayMode.DepthRead;
 
         // Render the overlay
         overlayScene.Objects.Clear();
         overlayScene.Objects.Add(overlayMesh);
-        overlayScene.Render(null!, 1, false, false); // TODO(Milestone 5 Stage B follow-up): stub Scene (see ctor); never reached today.
-
-        // Restore previous states
-        GameSparker.GraphicsDevice.BlendState = oldBlendState;
-        GameSparker.GraphicsDevice.DepthStencilState = oldDepthStencilState;
+        overlayScene.Render(cb, 1, false, clearRenderBuffer: false);
     }
 
-    private void RenderWheelSelectionOverlay(ModelEditorTab tab)
+    private void RenderWheelSelectionOverlay(NFMWorld.Graphics.ICommandBuffer cb, ModelEditorTab tab)
     {
         if (tab.Object == null || tab.SelectedWheelIndex < 0 || tab.SelectedWheelPolygonIndex < 0) return;
         if (tab.SelectedWheelIndex >= tab.Object.WheelObjects.Count) return;
@@ -2931,38 +2910,23 @@ public class ModelEditorPhase : BasePhase
 
         // Create a temporary mesh for the overlay, parented to the wheel
         var overlayMesh = new MeshedGameObject(
-            new Mesh(GameSparker.GraphicsDevice, new Rad3d(overlayPolys, false, "wheelOverlay"))
+            new Mesh(new Rad3d(overlayPolys, false, "wheelOverlay"))
         )
         {
             Position = f64Vector3.Zero, // At wheel's local origin since parent is the wheel
             Parent = wheelObj
         };
 
-        // Save current blend state
-        var oldBlendState = GameSparker.GraphicsDevice.BlendState;
-        var oldDepthStencilState = GameSparker.GraphicsDevice.DepthStencilState;
-
-        // Enable alpha blending and disable depth write (but keep depth test)
-        GameSparker.GraphicsDevice.BlendState = BlendState.AlphaBlend;
-        var depthRead = new DepthStencilState
-        {
-            DepthBufferEnable = true,
-            DepthBufferWriteEnable = false,
-            DepthBufferFunction = CompareFunction.LessEqual
-        };
-        GameSparker.GraphicsDevice.DepthStencilState = depthRead;
+        // Alpha blending, depth test kept, depth writes off - see RenderSelectionOverlay.
+        overlayMesh.Mesh.OverlayMode = PolyOverlayMode.DepthRead;
 
         // Render the overlay
         overlayScene.Objects.Clear();
         overlayScene.Objects.Add(overlayMesh);
-        overlayScene.Render(null!, 1, false, false); // TODO(Milestone 5 Stage B follow-up): stub Scene (see ctor); never reached today.
-
-        // Restore previous states
-        GameSparker.GraphicsDevice.BlendState = oldBlendState;
-        GameSparker.GraphicsDevice.DepthStencilState = oldDepthStencilState;
+        overlayScene.Render(cb, 1, false, clearRenderBuffer: false);
     }
 
-    private void RenderCollisionSelectionOverlay(PerspectiveCamera camera, ModelEditorTab tab)
+    private void RenderCollisionSelectionOverlay(NFMWorld.Graphics.ICommandBuffer cb, PerspectiveCamera camera, ModelEditorTab tab)
     {
         if (tab.Object == null || tab.SelectedCollisionIndex < 0) return;
 
@@ -2975,14 +2939,20 @@ public class ModelEditorPhase : BasePhase
         var highlightBoxes = new[] { highlightedBox };
         using var highlightMesh = new CollisionDebugMesh(highlightBoxes);
 
-        // Match the main model's transform
-        highlightMesh.Position = tab.Object.Position;
-        highlightMesh.Rotation = tab.Object.Rotation;
+        // Match the main model's transform. Unlike the polygon/wheel overlays - which render through
+        // overlayScene and therefore have Scene.Render call OnBeforeRender for them - this one is
+        // drawn directly, so it has to be driven by hand: MatrixWorld is only computed in
+        // OnBeforeRender (see Transform.MatrixWorld), and without that it stays the default all-zero
+        // matrix and the box collapses to a point. The *WithoutInterpolation setters set the previous
+        // state too, so OnBeforeRender(alpha) lands on exactly this transform whatever it blends.
+        highlightMesh.PositionWithoutInterpolation = tab.Object.Position;
+        highlightMesh.RotationWithoutInterpolation = tab.Object.Rotation;
+        highlightMesh.OnBeforeRender(1f);
 
         // Render with highlighting
         var oldDevRenderTrackers = GameSparker.devRenderTrackers;
         GameSparker.devRenderTrackers = true;
-        highlightMesh.Render(null!, camera, null); // TODO(Milestone 5 Stage B follow-up): never reached today.
+        highlightMesh.Render(cb, camera, null);
         GameSparker.devRenderTrackers = oldDevRenderTrackers;
     }
 

@@ -1,5 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+using NFMWorld.Graphics;
 using NFMWorldLibrary.Rad;
 
 namespace NFMWorld;
@@ -9,7 +9,7 @@ namespace NFMWorld;
 /// </summary>
 public class ImmediateMesh : Mesh, IRenderable
 {
-    public ImmediateMesh(GraphicsDevice graphicsDevice, Rad3d rad) : base(graphicsDevice, rad)
+    public ImmediateMesh(Rad3d rad) : base(rad)
     {
     }
 
@@ -17,15 +17,18 @@ public class ImmediateMesh : Mesh, IRenderable
     {
     }
 
-    // TODO(Milestone 5 Stage B follow-up): RenderQueue.Flush now needs a live ICommandBuffer,
-    // which this method (an ad hoc, editor-only immediate-render path with no caller-supplied
-    // command buffer) has no way to acquire on its own - IGraphicsDevice only allows one command
-    // buffer live at a time (see IGraphicsDevice.AcquireCommandBuffer's doc comment), so acquiring
-    // one here would conflict with whatever the real per-frame render pass is doing. Stubbed
-    // (no-op) so the project compiles; not reached today since GameSparker.Load never runs (see
-    // WorldGame.cs's Stage A TODOs).
-    public void Render(Camera camera, Lighting? lighting)
+    /// <summary>
+    /// Ad hoc immediate-render path for editor code: builds a throwaway render queue and flushes it
+    /// straight into the caller's command buffer. The caller must own that buffer (this runs inside
+    /// an enclosing render pass - see <see cref="IGraphicsDevice.AcquireCommandBuffer"/>'s "one
+    /// buffer at a time" rule); it deliberately does not acquire one of its own.
+    /// </summary>
+    public void Render(ICommandBuffer cb, Camera camera, Lighting? lighting)
     {
+        var renderQueue = new RenderQueue(GameSparker.NewGraphicsDevice);
+        renderQueue.Begin(camera, lighting);
+        SubmitDraws(renderQueue, camera, lighting, RenderPass.Main());
+        renderQueue.Flush(cb);
     }
 
     public void SubmitDraws(RenderQueue queue, Camera camera, Lighting? lighting, RenderPass pass)

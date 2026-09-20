@@ -23,4 +23,18 @@ public interface IGraphicsDevice
     IRenderTarget CreateRenderTarget(RenderTargetDesc desc);
     ISampler CreateSampler(SamplerDesc desc);
     IPipelineState CreatePipeline(PipelineDesc desc);
+
+    /// <summary>
+    /// Synchronous CPU readback of a texture's pixels into <paramref name="destination"/>, which
+    /// must hold <c>width * height * bytesPerPixel</c> tightly packed rows (no padding), in the
+    /// same top-down order the texture was uploaded in.
+    /// </summary>
+    /// <remarks>
+    /// This blocks on a GPU stall by design - it exists for editor, export and debug paths, never
+    /// for per-frame gameplay work. The texture must not be currently bound as a render target:
+    /// callers reading an off-screen <see cref="IRenderTarget"/> must bind the swapchain (or
+    /// another target) first. Depth-stencil textures have no readable storage in the backends and
+    /// are rejected; read the target's <see cref="IRenderTarget.ColorTexture"/> instead.
+    /// </remarks>
+    void ReadTexture(ITexture texture, int x, int y, int width, int height, Span<byte> destination, int level = 0);
 }

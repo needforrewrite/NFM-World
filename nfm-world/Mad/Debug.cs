@@ -54,6 +54,92 @@ public static class Debug
         cb.Draw(0, vertices.Length / 2);
     }
 
+    /// <summary>
+    /// Draws axis-aligned wire boxes as thick lines, for the stage editor's selected-wall highlight.
+    /// The thickening is the same 5-offset trick <see cref="RenderGizmo"/> uses, but with the
+    /// offsets applied in <b>world units</b> along the camera's right/up axes (the constant 6f) -
+    /// not the gizmo's screen-space thickness - because that is what the pre-migration highlight
+    /// did, and it is what makes the segments read as one chunky outline from any distance.
+    /// Depth testing is off (<see cref="Effects.DebugLinePipeline"/>), matching the old
+    /// <c>DepthStencilState.None</c> override this replaced.
+    /// </summary>
+    public static void RenderWireBoxes(
+        ICommandBuffer cb,
+        IGraphicsDevice device,
+        ReadOnlySpan<(Vector3 Min, Vector3 Max)> boxes,
+        Color color,
+        Camera activeCamera)
+    {
+        if (boxes.Length == 0) return;
+
+        // 12 edges per box, 2 vertices each.
+        var vertices = new PositionColorVertex[boxes.Length * 24];
+        var cursor = 0;
+        foreach (var (min, max) in boxes)
+        {
+            AddWireBoxEdges(vertices.AsSpan(), ref cursor, min, max, color);
+        }
+
+        var camRight = new Vector3(activeCamera.ViewMatrix.M11, activeCamera.ViewMatrix.M21, activeCamera.ViewMatrix.M31);
+        var camUp = new Vector3(activeCamera.ViewMatrix.M12, activeCamera.ViewMatrix.M22, activeCamera.ViewMatrix.M32);
+        const float s = 6f;
+        Span<Vector3> offsets = [Vector3.Zero, camRight * s, camRight * -s, camUp * s, camUp * -s];
+
+        var baseVertices = vertices.AsSpan(0, cursor);
+        var offsetVertices = new PositionColorVertex[cursor];
+        foreach (var offset in offsets)
+        {
+            if (offset == Vector3.Zero)
+            {
+                DrawLines(cb, device, baseVertices, Matrix.Identity, activeCamera.ViewMatrix, activeCamera.ProjectionMatrix);
+                continue;
+            }
+
+            for (var i = 0; i < cursor; i++)
+            {
+                offsetVertices[i] = new PositionColorVertex(baseVertices[i].Position + offset, baseVertices[i].Color);
+            }
+
+            DrawLines(cb, device, offsetVertices, Matrix.Identity, activeCamera.ViewMatrix, activeCamera.ProjectionMatrix);
+        }
+    }
+
+    private static void AddWireBoxEdges(Span<PositionColorVertex> verts, ref int cursor, Vector3 min, Vector3 max, Color color)
+    {
+        var p000 = new Vector3(min.X, min.Y, min.Z);
+        var p001 = new Vector3(min.X, min.Y, max.Z);
+        var p010 = new Vector3(min.X, max.Y, min.Z);
+        var p011 = new Vector3(min.X, max.Y, max.Z);
+        var p100 = new Vector3(max.X, min.Y, min.Z);
+        var p101 = new Vector3(max.X, min.Y, max.Z);
+        var p110 = new Vector3(max.X, max.Y, min.Z);
+        var p111 = new Vector3(max.X, max.Y, max.Z);
+
+        // Bottom rectangle
+        Edge(verts, ref cursor, p000, p001, color);
+        Edge(verts, ref cursor, p001, p101, color);
+        Edge(verts, ref cursor, p101, p100, color);
+        Edge(verts, ref cursor, p100, p000, color);
+
+        // Top rectangle
+        Edge(verts, ref cursor, p010, p011, color);
+        Edge(verts, ref cursor, p011, p111, color);
+        Edge(verts, ref cursor, p111, p110, color);
+        Edge(verts, ref cursor, p110, p010, color);
+
+        // Vertical edges
+        Edge(verts, ref cursor, p000, p010, color);
+        Edge(verts, ref cursor, p001, p011, color);
+        Edge(verts, ref cursor, p100, p110, color);
+        Edge(verts, ref cursor, p101, p111, color);
+
+        static void Edge(Span<PositionColorVertex> verts, ref int cursor, Vector3 a, Vector3 b, Color color)
+        {
+            verts[cursor++] = new PositionColorVertex(a, color);
+            verts[cursor++] = new PositionColorVertex(b, color);
+        }
+    }
+
     public static void RenderHighlights(ICommandBuffer cb, IGraphicsDevice device, IEnumerable<StageObject> pieces, Camera activeCamera)
     {
         int neededVertices = 0;

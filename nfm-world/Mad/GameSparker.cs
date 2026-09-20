@@ -21,14 +21,12 @@ namespace NFMWorld;
 public static partial class GameSparker
 {
     public static WorldGame Game = null!;
-    public static GraphicsDevice GraphicsDevice = null!;
 
     /// <summary>
-    /// Milestone 5 Stage B: the new graphics abstraction's device, set alongside
-    /// <see cref="GraphicsDevice"/> once <see cref="Load"/> is converted (still unset - Load isn't
-    /// called yet, see WorldGame.cs's Stage A TODOs). Exists so render-element constructors that
-    /// only read a static device (e.g. <see cref="CollisionDebugMesh"/>) don't need a parameter
-    /// threaded through every one of their (currently unconverted) call sites.
+    /// The graphics abstraction's device, set by <see cref="WorldGame.LoadContent"/> before
+    /// <see cref="Load"/> runs. Render elements that are constructed without a device parameter
+    /// (e.g. <see cref="CollisionDebugMesh"/>, <see cref="Mesh"/>'s submeshes) read it directly so
+    /// the device doesn't have to be threaded through every one of their call sites.
     /// </summary>
     public static NFMWorld.Graphics.IGraphicsDevice NewGraphicsDevice = null!;
     public static readonly string version = GetVersionString();
@@ -232,19 +230,13 @@ public static partial class GameSparker
     public static void Load(WorldGame game)
     {
         Game = game;
-        // GraphicsDevice (the old XNA field) is left null - WorldGame no longer owns an XNA
-        // GraphicsDevice at all (window/device ownership moved to SdlWindow/FNA3DGraphicsDevice in
-        // Stage A). It's still threaded through to Mesh/Phase constructors below only because
-        // their own signatures haven't been changed - none of them actually dereference it live
-        // anymore (buffer/pipeline creation goes through NewGraphicsDevice instead), confirmed by
-        // audit in Milestone 5 Stage D.
 
         foreach (var stageParts in (Span<UnlimitedArray<Rad3d>>)[BackendGameSparker.stage_parts, BackendGameSparker.vendor_stage_parts, BackendGameSparker.user_stage_parts])
         foreach (var stagePart in stageParts)
         {
             try
             {
-                var mesh = new Mesh(GraphicsDevice, stagePart);
+                var mesh = new Mesh(stagePart);
                 stage_part_meshes[stagePart] = mesh;
             }
             catch (Exception ex)
@@ -253,19 +245,19 @@ public static partial class GameSparker
                 Logging.Debug($"Error creating mesh for stage part '{stagePart.FileName}': {ex.Message}\n{ex.StackTrace}");
             }
         }
-        
-        error_mesh = new Mesh(GraphicsDevice, BackendGameSparker.error_mesh);
+
+        error_mesh = new Mesh(BackendGameSparker.error_mesh);
 
         SfxLibrary.LoadSounds();
 
         // init menu
         SettingsMenu = new SettingsMenu(game);
         PhaseSharedState.SelectedStageName = "nfm2/16_4dv";
-        MainMenuPhase = new MainMenuPhase(GraphicsDevice, PhaseSharedState.SelectedStageName);
+        MainMenuPhase = new MainMenuPhase(PhaseSharedState.SelectedStageName);
 
         Phases.SetRoot(MainMenuPhase);
     }
-    
+
     public static Mesh GetStagePartMesh(Rad3d stagePart)
     {
         ref var mesh = ref CollectionsMarshal.GetValueRefOrAddDefault(stage_part_meshes, stagePart, out var exists);
@@ -274,14 +266,14 @@ public static partial class GameSparker
             return mesh!;
         }
 
-        return mesh = new Mesh(GraphicsDevice, stagePart);
+        return mesh = new Mesh(stagePart);
     }
 
     public static void StartModelViewer()
     {
-        PushPhase(new ModelEditorPhase(GraphicsDevice));
+        PushPhase(new ModelEditorPhase(NewGraphicsDevice));
     }
-    
+
     public static void ExitEditor()
     {
         PopPhase();
@@ -290,7 +282,7 @@ public static partial class GameSparker
 
     public static void StartStageEditor()
     {
-        PushPhase(new StageEditorPhase(GraphicsDevice));
+        PushPhase(new StageEditorPhase(NewGraphicsDevice));
     }
 
     public static void ReturnToMainMenu()

@@ -22,6 +22,10 @@ internal static class Effects
     public static IPipelineState LinePipeline { get => CheckNotNull(field); private set; }
     public static LineEffectParameters LineParameters { get => CheckNotNull(field); private set; }
 
+    /// <summary>Line.fx with the depth test kept but depth writes off - the editor's translucent line overlays (see <see cref="PolyDepthReadPipeline"/>).</summary>
+    public static IPipelineState LineDepthReadPipeline { get => CheckNotNull(field); private set; }
+    public static LineEffectParameters LineDepthReadParameters { get => CheckNotNull(field); private set; }
+
     public static GroundEffect Ground { get => CheckNotNull(field); private set; }
     public static IPipelineState GroundPipeline { get => CheckNotNull(field); private set; }
     public static GroundEffectParameters GroundParameters { get => CheckNotNull(field); private set; }
@@ -47,6 +51,27 @@ internal static class Effects
     public static PolyEffectParameters PolyParameters { get => CheckNotNull(field); private set; }
     public static IPipelineState PolyShadowPipeline { get => CheckNotNull(field); private set; }
     public static PolyEffectParameters PolyShadowParameters { get => CheckNotNull(field); private set; }
+
+    /// <summary>
+    /// Two more pipelines off the same <see cref="Poly"/> module for the model/stage editors'
+    /// translucent overlays (selected per-mesh via <see cref="Mesh.OverlayMode"/>), replacing the
+    /// old per-draw <c>BlendState.AlphaBlend</c> + <c>DepthStencilState</c> save/set/restore pairs:
+    /// <see cref="PolyDepthReadPipeline"/> keeps the depth test but stops writing depth (polygon
+    /// highlights and the wheel overlay - visible through, but still occluded by nearer geometry),
+    /// and <see cref="PolyNoDepthPipeline"/> drops depth entirely (the reference-car ghost, which the
+    /// editor clears the depth buffer for so it always draws in front).
+    /// </summary>
+    /// <remarks>
+    /// Blending is <see cref="BlendStateDesc.NonPremultiplied"/>, matching every other consumer of
+    /// this shader shape in the engine - Poly.fx writes <c>min(alphaOverride, Alpha)</c> straight
+    /// rather than premultiplied. The pre-migration editor paired these with XNA's premultiplied
+    /// <c>BlendState.AlphaBlend</c>, which would over-brighten a translucent overlay; that code path
+    /// had never been visually verified, so this is a deliberate correction rather than a regression.
+    /// </remarks>
+    public static IPipelineState PolyDepthReadPipeline { get => CheckNotNull(field); private set; }
+    public static PolyEffectParameters PolyDepthReadParameters { get => CheckNotNull(field); private set; }
+    public static IPipelineState PolyNoDepthPipeline { get => CheckNotNull(field); private set; }
+    public static PolyEffectParameters PolyNoDepthParameters { get => CheckNotNull(field); private set; }
 
     /// <summary>
     /// Replaces the four <c>BasicEffect(LightingEnabled = false, VertexColorEnabled = true)</c>
@@ -93,11 +118,12 @@ internal static class Effects
     }
 
     [MemberNotNull(
-        nameof(Line), nameof(LinePipeline),
+        nameof(Line), nameof(LinePipeline), nameof(LineDepthReadPipeline),
         nameof(Ground), nameof(GroundPipeline),
         nameof(Mountains), nameof(MountainsPipeline),
         nameof(Sky), nameof(SkyPipeline),
         nameof(Poly), nameof(PolyPipeline), nameof(PolyShadowPipeline),
+        nameof(PolyDepthReadPipeline), nameof(PolyNoDepthPipeline),
         nameof(Particle), nameof(ParticleOpaquePipeline), nameof(ParticleDepthReadPipeline), nameof(ParticleNoDepthPipeline),
         nameof(DebugLinePipeline), nameof(DebugGhostFillPipeline), nameof(ShadowMapSampler))]
     public static void Initialize(IGraphicsDevice graphicsDevice)
@@ -111,6 +137,14 @@ internal static class Effects
             DepthStencilState: DepthStencilStateDesc.Default,
             RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None }));
         LineParameters = Line.Bind(LinePipeline);
+        LineDepthReadPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
+            VertexShader: Line.Module,
+            PixelShader: Line.Module,
+            VertexLayouts: [LineMesh.LineMeshVertexAttribute.VertexLayout, InstanceData.VertexLayout],
+            BlendState: BlendStateDesc.NonPremultiplied,
+            DepthStencilState: DepthStencilStateDesc.Default with { DepthWriteEnabled = false },
+            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None }));
+        LineDepthReadParameters = Line.Bind(LineDepthReadPipeline);
 
         // Ground/Mountains/GroundPolys: the original FNA code set DepthStencilState.DepthRead
         // (test enabled, WRITE disabled) for the actual draw, not the ambient Default (write
@@ -184,6 +218,26 @@ internal static class Effects
             RasterizerState: polyRasterizerState,
             TechniqueName: "CreateShadowMap"));
         PolyShadowParameters = Poly.Bind(PolyShadowPipeline);
+
+        // Editor overlay variants of the Basic technique - see PolyDepthReadPipeline's doc comment.
+        PolyDepthReadPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
+            VertexShader: Poly.Module,
+            PixelShader: Poly.Module,
+            VertexLayouts: polyVertexLayouts,
+            BlendState: BlendStateDesc.NonPremultiplied,
+            DepthStencilState: DepthStencilStateDesc.Default with { DepthWriteEnabled = false },
+            RasterizerState: polyRasterizerState,
+            TechniqueName: "Basic"));
+        PolyDepthReadParameters = Poly.Bind(PolyDepthReadPipeline);
+        PolyNoDepthPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
+            VertexShader: Poly.Module,
+            PixelShader: Poly.Module,
+            VertexLayouts: polyVertexLayouts,
+            BlendState: BlendStateDesc.NonPremultiplied,
+            DepthStencilState: DepthStencilStateDesc.None,
+            RasterizerState: polyRasterizerState,
+            TechniqueName: "Basic"));
+        PolyNoDepthParameters = Poly.Bind(PolyNoDepthPipeline);
 
         Particle = new ParticleEffect(VFS.ReadAllBytes("./data/shaders/Particle.fxb"));
         ParticleOpaquePipeline = graphicsDevice.CreatePipeline(new PipelineDesc(

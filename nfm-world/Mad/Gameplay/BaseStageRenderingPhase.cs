@@ -13,8 +13,6 @@ public abstract class BaseStageRenderingPhase : BasePhase
     protected int? FovOverride = null;
     public static bool DebugDisplay = false;
 
-    public readonly GraphicsDevice GraphicsDevice;
-
     public PerspectiveCamera Camera = new();
     public Camera[] LightCameras = [
         new OrthoLightCamera { Width = 3000, Height = 3000 },
@@ -28,10 +26,9 @@ public abstract class BaseStageRenderingPhase : BasePhase
     private IRadicalMusic? _stageMusic;
     public string? StageName;
     
-    // please don't pass null except for stage select
-    protected BaseStageRenderingPhase(GraphicsDevice graphicsDevice, string? stageName = null)
+    // please don't pass null stage names except for stage select
+    protected BaseStageRenderingPhase(string? stageName = null)
     {
-        GraphicsDevice = graphicsDevice;
         StageName = stageName;
 
         // Stage loading happens once at construction time, not on every Enter().
@@ -81,7 +78,7 @@ public abstract class BaseStageRenderingPhase : BasePhase
     {
         StageName = stageName;
         CurrentStage?.Dispose();
-        CurrentStage = new ClientStage(GraphicsDevice, stageName, CarsInRace, Camera, LightCameras);
+        CurrentStage = new ClientStage(stageName, CarsInRace, Camera, LightCameras);
 
         if (loadMusic && !string.IsNullOrEmpty(CurrentStage.MusicPath))
             LoadStageMusic(reloadIfLoaded: reloadIfLoaded);

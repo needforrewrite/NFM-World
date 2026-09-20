@@ -150,6 +150,7 @@ var instanceBuffer = device.CreateBuffer(new BufferDesc(BufferKind.Vertex, Buffe
 
 var t = 0f;
 var verified = false;
+var readbackChecked = false;
 while (!window.ShouldQuit)
 {
     window.PumpEvents();
@@ -158,6 +159,16 @@ while (!window.ShouldQuit)
     var clearColor = new ColorRgba(0.5f + 0.5f * MathF.Sin(t), 0.2f, 0.4f);
     var cb = device.AcquireCommandBuffer();
     cb.Clear(ClearOptions.Color | ClearOptions.Depth, clearColor);
+
+    // Off-screen target readback + PNG encode (IGraphicsDevice.ReadTexture / FNA3DImageCodec).
+    // Runs inside the frame's command buffer because binding the target is a command-buffer
+    // operation; it restores the backbuffer before returning, so the rest of the frame is
+    // unaffected.
+    if (!readbackChecked)
+    {
+        readbackChecked = true;
+        VerifyReadbackAndPng(device, cb, width, height);
+    }
 
     cb.SetViewport(new Viewport(0, 0, width, height));
     cb.SetPipeline(pipeline);
@@ -225,6 +236,78 @@ while (!window.ShouldQuit)
 }
 
 return 0;
+
+static void VerifyReadbackAndPng(FNA3DGraphicsDevice device, ICommandBuffer cb, int windowWidth, int windowHeight)
+{
+    // ── 1. Texture round-trip: proves ReadTexture returns content AND row order ──
+    // Row 0 red, row 1 blue - asymmetric, so a flipped readback cannot pass.
+    const int texW = 4, texH = 2;
+    var source = new byte[texW * texH * 4];
+    for (var i = 0; i < texW; i++)
+    {
+        source[i * 4 + 0] = 255; // row 0: red
+        source[i * 4 + 3] = 255;
+        var b = (texW + i) * 4;
+        source[b + 2] = 255; // row 1: blue
+        source[b + 3] = 255;
+    }
+
+    using (var texture = device.CreateTexture(new TextureDesc(texW, texH, TextureFormat.Rgba8), source))
+    {
+        var readBack = new byte[source.Length];
+        device.ReadTexture(texture, 0, 0, texW, texH, readBack);
+        var identical = readBack.AsSpan().SequenceEqual(source);
+        Console.WriteLine(identical
+            ? "READBACK CHECK: texture round-trip byte-identical (row order preserved)."
+            : $"READBACK CHECK: texture round-trip MISMATCH - first row r={readBack[0]} b={readBack[2]}, " +
+              $"second row r={readBack[texW * 4]} b={readBack[texW * 4 + 2]}.");
+    }
+
+    // ── 2. Off-screen render-target readback: the stage editor's top-down export path ──
+    const int rtW = 16, rtH = 16;
+    var expected = new ColorRgba(10 / 255f, 200 / 255f, 30 / 255f, 1f);
+    using (var rt = device.CreateRenderTarget(new RenderTargetDesc(rtW, rtH, TextureFormat.Rgba8, HasDepthStencil: false)))
+    {
+        cb.SetRenderTarget(rt);
+        cb.SetViewport(new Viewport(0, 0, rtW, rtH));
+        cb.Clear(ClearOptions.Color, expected);
+        cb.SetRenderTarget(null);
+        cb.SetViewport(new Viewport(0, 0, windowWidth, windowHeight));
+
+        var pixels = new byte[rtW * rtH * 4];
+        device.ReadTexture(rt.ColorTexture, 0, 0, rtW, rtH, pixels);
+
+        var mismatches = 0;
+        var worst = 0;
+        for (var i = 0; i < rtW * rtH; i++)
+        {
+            var dr = Math.Abs(pixels[i * 4 + 0] - 10);
+            var dg = Math.Abs(pixels[i * 4 + 1] - 200);
+            var db = Math.Abs(pixels[i * 4 + 2] - 30);
+            worst = Math.Max(worst, Math.Max(dr, Math.Max(dg, db)));
+            if (worst > 2) mismatches++;
+        }
+        Console.WriteLine(mismatches == 0
+            ? $"RENDER TARGET CHECK: {rtW}x{rtH} clear read back as the expected colour (max channel error {worst})."
+            : $"RENDER TARGET CHECK: FAILED - {mismatches}/{rtW * rtH} pixels differ, max channel error {worst}.");
+    }
+
+    // ── 3. PNG encode of a known asymmetric buffer ──
+    var pngPath = Path.Combine(Path.GetTempPath(), "nfmw_smoke_readback.png");
+    var pngBytes = new byte[texW * texH * 4];
+    source.CopyTo(pngBytes, 0); // same red-over-blue image as check 1
+    using (var stream = File.Create(pngPath))
+    {
+        FNA3DImageCodec.WritePng(stream, texW, texH, texW, texH, pngBytes);
+    }
+
+    var written = File.ReadAllBytes(pngPath);
+    var isPng = written.Length > 8
+        && written[0] == 0x89 && written[1] == 0x50 && written[2] == 0x4E && written[3] == 0x47;
+    Console.WriteLine(isPng
+        ? $"PNG CHECK: wrote {written.Length} bytes to {pngPath} (valid PNG signature)."
+        : $"PNG CHECK: FAILED - {written.Length} bytes at {pngPath}, signature {string.Join(' ', written.Take(8))}.");
+}
 
 static void VerifyLineDrawn(FNA3DGraphicsDevice device, ColorRgba clearColor)
 {

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework.Graphics;
 using NFMWorldLibrary;
@@ -15,7 +15,6 @@ But does NOT hold any information relating to the actual game being played, unle
 */
 public class ClientStageRenderer : GameObject, IDisposable
 {
-    private GraphicsDevice _graphicsDevice;
     private bool _disposed;
 
     public Sky? sky;
@@ -58,9 +57,8 @@ public class ClientStageRenderer : GameObject, IDisposable
     /**
      * Loads stage currently set by checkpoints.stage onto stageContos
      */
-    public ClientStageRenderer(GraphicsDevice graphicsDevice, BackendStage backendStage)
+    public ClientStageRenderer(BackendStage backendStage)
     {
-        _graphicsDevice = graphicsDevice;
         this.backendStage = backendStage;
         Children = _mutableChildren;
         World.ResetValues();
@@ -73,7 +71,7 @@ public class ClientStageRenderer : GameObject, IDisposable
             if (stageLoader.DrawPolys)
             {
                 polys?.Dispose();
-                polys = Environment.MakePolys(backendStage, stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb, backendStage.StagePartCount, graphicsDevice);
+                polys = Environment.MakePolys(backendStage, stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb, backendStage.StagePartCount);
                 _polysKey = (stageLoader.DrawPolys, stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb, backendStage.StagePartCount);
             }
             else
@@ -84,7 +82,7 @@ public class ClientStageRenderer : GameObject, IDisposable
             if (stageLoader.DrawClouds)
             {
                 clouds?.Dispose();
-                clouds = Environment.MakeClouds(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt, graphicsDevice);
+                clouds = Environment.MakeClouds(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt);
                 _cloudsKey = (stageLoader.DrawClouds, stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt);
             }
             else
@@ -95,7 +93,7 @@ public class ClientStageRenderer : GameObject, IDisposable
             if (stageLoader.DrawMountains)
             {
                 mountains?.Dispose();
-                mountains = Environment.MakeMountains(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt, graphicsDevice);
+                mountains = Environment.MakeMountains(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt);
                 _mountainsKey = (stageLoader.DrawMountains, stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt);
             }
             else
@@ -152,10 +150,6 @@ public class ClientStageRenderer : GameObject, IDisposable
             Logging.Error($"Error in stage: {backendStage.Name}");
             Logging.Error(exception.ToString());
         }
-        // TODO(Milestone 5 Stage B follow-up): graphicsDevice here is still FNA's XNA-typed
-        // GraphicsDevice (this whole class is out of scope for this pass - see ClientStage.cs's
-        // TODO); Sky/Ground now take IGraphicsDevice, so use the new static device directly.
-        // Not reached today since GameSparker.Load never runs.
         sky = new Sky(GameSparker.NewGraphicsDevice);
         ground = new Ground(GameSparker.NewGraphicsDevice);
     }
@@ -199,19 +193,19 @@ public class ClientStageRenderer : GameObject, IDisposable
 
         if (_polysKey != polysKey)
         {
-            polys = Environment.MakePolys(backendStage, stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb, backendStage.StagePartCount, _graphicsDevice);
+            polys = Environment.MakePolys(backendStage, stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb, backendStage.StagePartCount);
             _polysKey = polysKey;
         }
 
         if (_cloudsKey != cloudsKey)
         {
-            clouds = Environment.MakeClouds(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt, _graphicsDevice);
+            clouds = Environment.MakeClouds(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt);
             _cloudsKey = cloudsKey;
         }
 
         if (_mountainsKey != mountainsKey)
         {
-            mountains = Environment.MakeMountains(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt, _graphicsDevice);
+            mountains = Environment.MakeMountains(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt);
             _mountainsKey = mountainsKey;
         }
 

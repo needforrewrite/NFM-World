@@ -81,9 +81,17 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         if (World.DistantOutlineBehavior == DistantOutlineBehavior.HideOutlines)
             return;
 
-        var p = Effects.LineParameters;
+        // The editor's translucent line overlays select the depth-read variant; line meshes are
+        // never submitted in the shadow pass (see Mesh.SubmitRenderables), so there's no shadow arm
+        // here. Each pipeline has its own parameter set - SetUniform writes into the *bound*
+        // pipeline's uniform storage, so the two must always be picked together.
+        var (pipeline, p) = _supermesh.OverlayMode switch
+        {
+            PolyOverlayMode.DepthRead => (Effects.LineDepthReadPipeline, Effects.LineDepthReadParameters),
+            _ => (Effects.LinePipeline, Effects.LineParameters),
+        };
 
-        cb.SetPipeline(Effects.LinePipeline);
+        cb.SetPipeline(pipeline);
         cb.SetVertexBuffer(0, _lineVertexBuffer, LineMeshVertexAttribute.Stride);
         cb.SetVertexBuffer(1, instanceBuffer, InstanceData.Stride);
         cb.SetIndexBuffer(_lineIndexBuffer);

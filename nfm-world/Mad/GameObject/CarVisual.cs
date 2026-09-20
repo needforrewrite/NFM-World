@@ -42,14 +42,14 @@ public class CarVisual : MeshedGameObject, IDisposable
     private byte _fixTimer;
     private int _fixTick = 0;
 
-    public CarVisual(GraphicsDevice graphicsDevice, BackendCar car)
-        : base(new CarMesh(graphicsDevice, car.Rad))
+    public CarVisual(BackendCar car)
+        : base(new CarMesh(car.Rad))
     {
         Bfase = new float[Mesh.Polys.Length];
 
         Car = car;
         _wheels = car.Wheels
-            .Select(wheel => new WheelMeshBuilder(wheel, car.Rad.Rims).BuildGameObject(graphicsDevice, this))
+            .Select(wheel => new WheelMeshBuilder(wheel, car.Rad.Rims).BuildGameObject(this))
             .ToArray();
 
         // Cars (body + wheels) render after stage pieces so FixFlare sits between them
@@ -57,9 +57,6 @@ public class CarVisual : MeshedGameObject, IDisposable
         foreach (var w in _wheels)
             w.RenderBucket = RenderBucket.Cars;
 
-        // Flames/Dust/Chips/Sparks/FixFlare now take NFMWorld.Graphics.IGraphicsDevice, not this
-        // ctor's own (still XNA-typed) graphicsDevice parameter - see GameSparker.NewGraphicsDevice's
-        // doc comment.
         Flames = new Flames(this, GameSparker.NewGraphicsDevice);
         Dust = new Dust(this, GameSparker.NewGraphicsDevice);
         Chips = new Chips(this, GameSparker.NewGraphicsDevice);

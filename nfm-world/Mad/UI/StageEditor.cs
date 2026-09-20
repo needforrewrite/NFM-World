@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using Hexa.NET.ImGui;
 using Maxine.Extensions;
 using Maxine.Extensions.Collections;
@@ -212,7 +212,7 @@ public class StageEditorTab
 
 public partial class StageEditorPhase : BasePhase
 {
-    private readonly GraphicsDevice _graphicsDevice;
+    private readonly NFMWorld.Graphics.IGraphicsDevice _graphicsDevice;
     private bool _isOpen = false;
 
     // Tab management
@@ -326,6 +326,10 @@ public partial class StageEditorPhase : BasePhase
 
     // Export top-down image
     private bool _showExportDialog = false;
+    // Export asked for from an ImGui callback, performed at the top of the next Render(cb, ...)
+    // - binding a render target needs the frame's command buffer, and ImGui handling runs inside it.
+    private bool _exportRequested;
+
     private int _exportWidth = 1024;
     private int _exportHeight = 1024;
     private int _exportPadding = 500;
@@ -342,7 +346,7 @@ public partial class StageEditorPhase : BasePhase
     private bool _isSwapMode = false;
 
     // Part preview thumbnails: FileName -> (RenderTarget, ImGui texture ref)
-    private readonly Dictionary<string, (RenderTarget2D RT, ImTextureRef Ref)> _partPreviews = new();
+    private readonly Dictionary<string, (NFMWorld.Graphics.IRenderTarget RT, ImTextureRef Ref)> _partPreviews = new();
     private readonly Queue<(string Name, Rad3d Rad)> _previewQueue = new();
     private const int PreviewSize = 64;
 
@@ -421,7 +425,7 @@ public partial class StageEditorPhase : BasePhase
 
     private List<ClipboardPiece> _clipboard = new();
 
-    public StageEditorPhase(GraphicsDevice graphicsDevice)
+    public StageEditorPhase(NFMWorld.Graphics.IGraphicsDevice graphicsDevice)
     {
         _graphicsDevice = graphicsDevice;
         RefreshAvailableParts();
@@ -487,10 +491,22 @@ public partial class StageEditorPhase : BasePhase
 
         _isOpen = true;
 
-        // TODO(Milestone 5 Stage B follow-up): this editor subsystem still uses the old XNA
-        // _graphicsDevice, which can't SetRenderTarget against the new IRenderTarget WorldGame.
-        // ShadowRenderTargets now holds - never reached today (StageEditorPhase is unreachable),
-        // same scope boundary every other unconverted piece of this file already has.
+        // Wipe the shadow cascades, as the pre-migration editor did on entry: the editor's own Scene
+        // renders with useShadowMapping: false (and no light cameras), so it never re-renders or
+        // clears them - without this the last gameplay frame's cascades linger for the shadow-map
+        // debug overlay and anything else that samples them.
+        var cascadeCb = _graphicsDevice.AcquireCommandBuffer();
+        foreach (var shadowTarget in WorldGame.ShadowRenderTargets)
+        {
+            if (shadowTarget is null) continue;
+            cascadeCb.SetRenderTarget(shadowTarget);
+            cascadeCb.SetViewport(new NFMWorld.Graphics.Viewport(0, 0, WorldGame.ShadowResolution, WorldGame.ShadowResolution));
+            cascadeCb.Clear(
+                NFMWorld.Graphics.ClearOptions.Color | NFMWorld.Graphics.ClearOptions.Depth,
+                new NFMWorld.Graphics.ColorRgba(1f, 1f, 1f, 1f));
+        }
+        cascadeCb.SetRenderTarget(null);
+        _graphicsDevice.Submit(cascadeCb);
 
         // Initialize camera
         perspectiveCamera.Fov = 60f;
@@ -579,6 +595,43 @@ public partial class StageEditorPhase : BasePhase
         _tabs.Clear();
         _activeTabIndex = -1;
         Logging.Debug("Stage Editor closed");
+    }
+
+    /// <summary>
+    /// Releases the per-tab GPU resources this editor owns. The pre-migration editor never disposed
+    /// any of this (it also never ran); now that it does, leaving it to the GC would both leak the
+    /// buffers each Scene's RenderQueue holds and flood the DEBUG log with TrackLeaks warnings,
+    /// burying real ones.
+    /// </summary>
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        if (!disposing) return;
+
+        foreach (var tab in _tabs)
+        {
+            foreach (var wall in tab.WallMeshes)
+            {
+                wall.Mesh.Dispose();
+            }
+
+            tab.WallMeshes.Clear();
+            tab.StageRenderer?.Dispose();
+            tab.StageRenderer = null;
+            tab.Scene?.Dispose();
+            tab.Scene = null;
+        }
+
+        _tabs.Clear();
+
+        foreach (var (_, preview) in _partPreviews)
+        {
+            WorldGame.ImguiRenderer?.UnbindTexture(preview.Ref);
+            preview.RT.Dispose();
+        }
+
+        _partPreviews.Clear();
     }
 
 }

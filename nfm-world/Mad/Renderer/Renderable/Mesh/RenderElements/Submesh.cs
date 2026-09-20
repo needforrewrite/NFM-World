@@ -47,12 +47,18 @@ public class Submesh : IInstancedRenderElement, IDisposable
 
     public void Render(ICommandBuffer cb, Camera camera, Lighting? lighting, IBuffer instanceBuffer, int instanceCount)
     {
-        // Picks between the two pipelines built from Poly.fx's "Basic"/"CreateShadowMap"
-        // techniques (see Effects.cs's remarks) - the same flag LineMesh/CollisionDebugMesh/
-        // Mesh.cs already branch on for the same reason.
+        // Picks between the pipelines built from Poly.fx (see Effects.cs's remarks): the
+        // "CreateShadowMap" technique for a cascade, the editor's translucent overlays when the
+        // mesh asks for one, and the game's own opaque "Basic" pipeline otherwise. The shadow pass
+        // wins over the overlay mode so an editor flag can never leak into a cascade.
         var isShadowPass = lighting?.IsCreateShadowMap == true;
-        var pipeline = isShadowPass ? Effects.PolyShadowPipeline : Effects.PolyPipeline;
-        var p = isShadowPass ? Effects.PolyShadowParameters : Effects.PolyParameters;
+        var (pipeline, p) = (isShadowPass, _supermesh.OverlayMode) switch
+        {
+            (true, _) => (Effects.PolyShadowPipeline, Effects.PolyShadowParameters),
+            (_, PolyOverlayMode.DepthRead) => (Effects.PolyDepthReadPipeline, Effects.PolyDepthReadParameters),
+            (_, PolyOverlayMode.NoDepth) => (Effects.PolyNoDepthPipeline, Effects.PolyNoDepthParameters),
+            _ => (Effects.PolyPipeline, Effects.PolyParameters),
+        };
 
         cb.SetPipeline(pipeline);
         cb.SetVertexBuffer(0, _vertexBuffer, Mesh.VertexPositionNormalColorCentroid.VertexLayout.StrideInBytes);

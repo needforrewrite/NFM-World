@@ -42,11 +42,10 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     public bool AllowPausing { get; protected set; }
 
     public RacePhase(
-        GraphicsDevice graphicsDevice,
         string stageName,
         BaseGamemodeFactory gamemode,
         IReadOnlyList<ClientSidePlayerInfo> players,
-        IRaceHost host) : base(graphicsDevice, stageName)
+        IRaceHost host) : base(stageName)
     {
         Gamemode = gamemode;
         Players = players;

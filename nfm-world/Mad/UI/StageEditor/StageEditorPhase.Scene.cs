@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using Hexa.NET.ImGui;
 using Maxine.Extensions;
 using Maxine.Extensions.Collections;
@@ -23,13 +23,15 @@ public partial class StageEditorPhase
     {
         if (ActiveTab?.Stage == null || ActiveTab?.StageRenderer == null) return;
         
-        // TODO(Milestone 5 Stage B follow-up): Scene now takes NFMWorld.Graphics.IGraphicsDevice,
-        // not FNA's GraphicsDevice - StageEditorPhase's own _graphicsDevice field (and its wider
-        // direct-GraphicsDevice usage) isn't converted yet, so this leaves ActiveTab.Scene null
-        // (its declared type is already nullable) rather than constructing a real Scene. Nothing
-        // exercises the stage editor today (GameSparker.Load isn't called - see WorldGame.cs's
-        // Stage A TODOs).
-        ActiveTab.Scene = null;
+        // Create scene with the stage renderer and all current wall meshes
+        var sceneObjects = new List<GameObject> { ActiveTab.StageRenderer };
+        sceneObjects.AddRange(ActiveTab.WallMeshes);
+        ActiveTab.Scene = new Scene(
+            _graphicsDevice,
+            sceneObjects,
+            activeCamera,
+            [] // No shadow cameras for now
+        );
     }
     
     /// <summary>
@@ -42,7 +44,7 @@ public partial class StageEditorPhase
         if (ActiveTab?.Stage == null) return;
 
         if (ActiveTab.StageRenderer == null)
-            ActiveTab.StageRenderer = new ClientStageRenderer(_graphicsDevice, ActiveTab.Stage);
+            ActiveTab.StageRenderer = new ClientStageRenderer(ActiveTab.Stage);
         else
             ActiveTab.StageRenderer.DetectChanges(true);
         
@@ -84,26 +86,23 @@ public partial class StageEditorPhase
     private void RecreateEnvironment()
     {
         if (ActiveTab?.StageRenderer == null) return;
-        // TODO(Milestone 5 Stage B follow-up): _graphicsDevice here is still FNA's XNA-typed
-        // GraphicsDevice (StageEditorPhase is out of scope for this pass); Sky/Ground now take
-        // IGraphicsDevice. Not reached today since GameSparker.Load never runs.
         ActiveTab.StageRenderer.sky = new Sky(GameSparker.NewGraphicsDevice);
         ActiveTab.StageRenderer.ground = new Ground(GameSparker.NewGraphicsDevice);
         if (ActiveTab.PolysEnabled && ActiveTab.Stage != null)
         {
             if (_autoGeneratePolys)
-                ActiveTab.StageRenderer.polys = Environment.MakePolys(ActiveTab.Stage, -10000, 20000, -10000, 20000, ActiveTab.ScenePieces.Count, _graphicsDevice);
+                ActiveTab.StageRenderer.polys = Environment.MakePolys(ActiveTab.Stage, -10000, 20000, -10000, 20000, ActiveTab.ScenePieces.Count);
             // else: preserve existing polys (don't touch) so manually-generated polys from the
             //        Properties dialog survive across piece placements when auto-generate is off.
         }
         else
             ActiveTab.StageRenderer.polys = null;
         if (ActiveTab.CloudsEnabled)
-            ActiveTab.StageRenderer.clouds = Environment.MakeClouds(-10000, 10000, -10000, 10000, _graphicsDevice);
+            ActiveTab.StageRenderer.clouds = Environment.MakeClouds(-10000, 10000, -10000, 10000);
         else
             ActiveTab.StageRenderer.clouds = null;
         if (ActiveTab.MountainsEnabled)
-            ActiveTab.StageRenderer.mountains = Environment.MakeMountains(-10000, 10000, -10000, 10000, _graphicsDevice);
+            ActiveTab.StageRenderer.mountains = Environment.MakeMountains(-10000, 10000, -10000, 10000);
         else
             ActiveTab.StageRenderer.mountains = null;
     }

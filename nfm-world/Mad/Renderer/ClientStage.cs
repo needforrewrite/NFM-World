@@ -15,7 +15,6 @@ namespace NFMWorld;
 /// </summary>
 public class ClientStage : IDisposable
 {
-    private readonly GraphicsDevice _graphicsDevice;
     private readonly Dictionary<BackendCar, CarVisual> _carVisuals = new();
     private readonly Dictionary<ClientSidePlayer, CarVisual> _playerVisuals = new();
     private ObservableUnlimitedArray<BackendCar> _cars;
@@ -35,19 +34,17 @@ public class ClientStage : IDisposable
     public double MusicTempoMul { get; }
 
     public ClientStage(
-        GraphicsDevice graphicsDevice,
         string stageName,
         ObservableUnlimitedArray<BackendCar> cars,
         Camera camera,
         IReadOnlyList<Camera> lightCameras)
     {
-        _graphicsDevice = graphicsDevice;
         _cars = cars;
         Camera = camera;
         LightCameras = lightCameras;
 
         Backend = new BackendStage(stageName);
-        Renderer = new ClientStageRenderer(graphicsDevice, Backend);
+        Renderer = new ClientStageRenderer(Backend);
         Renderer.ApplyValues();
 
         // Scene starts with just the stage renderer — car visuals are added lazily in GameTick().
@@ -104,7 +101,7 @@ public class ClientStage : IDisposable
     {
         if (!_carVisuals.TryGetValue(car, out var visual))
         {
-            visual = _carVisuals[car] = new CarVisual(_graphicsDevice, car);
+            visual = _carVisuals[car] = new CarVisual(car);
             _scene.Objects.Add(visual);
         }
         return visual;
@@ -223,7 +220,7 @@ public class ClientStage : IDisposable
                 {
                     if (!_carVisuals.ContainsKey(car))
                     {
-                        var visual = _carVisuals[car] = new CarVisual(_graphicsDevice, car);
+                        var visual = _carVisuals[car] = new CarVisual(car);
                         _scene.Objects.Add(visual);
                     }
                 }
@@ -252,7 +249,7 @@ public class ClientStage : IDisposable
                 {
                     if (!_carVisuals.ContainsKey(car))
                     {
-                        var visual = _carVisuals[car] = new CarVisual(_graphicsDevice, car);
+                        var visual = _carVisuals[car] = new CarVisual(car);
                         _scene.Objects.Add(visual);
                     }
                 }
@@ -278,7 +275,7 @@ public class ClientStage : IDisposable
                 {
                     if (!_carVisuals.ContainsKey(car))
                     {
-                        var visual = _carVisuals[car] = new CarVisual(_graphicsDevice, car);
+                        var visual = _carVisuals[car] = new CarVisual(car);
                         _scene.Objects.Add(visual);
                     }
                 }

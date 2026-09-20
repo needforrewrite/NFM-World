@@ -11,7 +11,7 @@ using NFMWorldLibrary.Rad;
 
 namespace NFMWorld.Gameplay;
 
-public class LobbyPhase(GraphicsDevice graphicsDevice, IMultiplayerClientTransport transport) : BasePhase
+public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 {
     private Player _player = new();
     
@@ -93,7 +93,6 @@ public class LobbyPhase(GraphicsDevice graphicsDevice, IMultiplayerClientTranspo
                         .ToArray();
 
                     var phase = new RacePhase(
-                        graphicsDevice,
                         session.StageName,
                         GetGameModeFactory(session),
                         players,

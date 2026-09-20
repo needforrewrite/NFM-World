@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Gameplay;
@@ -67,7 +67,7 @@ public static class DevConsoleCommands
             if (GameSparker.CurrentPhase is RacePhase inRacePhase)
             {
                 var factory = new LuaGamemodeFactory(args[0]);
-                var inRace = new RacePhase(GameSparker.GraphicsDevice, inRacePhase.StageName!, factory, inRacePhase.Players,
+                var inRace = new RacePhase(inRacePhase.StageName!, factory, inRacePhase.Players,
                     LocalRaceHost.Create(inRacePhase.StageName!, factory, new ClientGamemodeParameters { Players = inRacePhase.Players }));
                 inRace.Exited += (sender, args) =>
                 {
@@ -246,7 +246,7 @@ public static class DevConsoleCommands
         if (args.Length < 2 || !ushort.TryParse(args[1], out ushort port))
             port = 7000;
 
-        GameSparker.PushPhase(new LobbyPhase(GameSparker.GraphicsDevice,
+        GameSparker.PushPhase(new LobbyPhase(
             new WebSocketMultiplayerClientTransport(args[0], port)));
     }
 
@@ -448,7 +448,7 @@ public static class DevConsoleCommands
         if (GameSparker.CurrentPhase is RacePhase inRacePhase)
         {
             Logging.Info($"Switched to stage '{stageName}'");
-            var inRace = new RacePhase(GameSparker.GraphicsDevice, stageName, inRacePhase.Gamemode, inRacePhase.Players,
+            var inRace = new RacePhase(stageName, inRacePhase.Gamemode, inRacePhase.Players,
                 LocalRaceHost.Create(stageName, inRacePhase.Gamemode, new ClientGamemodeParameters { Players = inRacePhase.Players }));
             inRace.Exited += (sender, args) =>
             {
@@ -488,7 +488,6 @@ public static class DevConsoleCommands
                 }
                 : p).ToArray();
             var inRace = new RacePhase(
-                GameSparker.GraphicsDevice,
                 inRacePhase.StageName!,
                 inRacePhase.Gamemode,
                 newPlayers,

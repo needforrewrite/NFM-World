@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using Hexa.NET.ImGui;
 using Maxine.Extensions;
 using Maxine.Extensions.Collections;
@@ -23,42 +23,31 @@ public partial class StageEditorPhase
     {
         if (!_isOpen) return;
         if (ActiveTab == null) return;
+
+        // Pending top-down export (requested from the export dialog, see _exportRequested).
+        if (_exportRequested)
+        {
+            _exportRequested = false;
+            ExportTopDownImage(cb);
+        }
         
         // Clear with appropriate background color based on view mode
         if (ActiveTab.ViewMode == StageEditorTab.ViewModeEnum.TopDown)
         {
             // Gray background for top-down view
-            _graphicsDevice.Clear(new Color(128, 128, 128).ToXna());
+            cb.Clear(NFMWorld.Graphics.ClearOptions.Color, new NFMWorld.Graphics.ColorRgba(128 / 255f, 128 / 255f, 128 / 255f));
         }
         else
         {
             // Sky blue background for 3D scene view
-            _graphicsDevice.Clear(new Color(135, 206, 235).ToXna());
+            cb.Clear(NFMWorld.Graphics.ClearOptions.Color, new NFMWorld.Graphics.ColorRgba(135 / 255f, 206 / 255f, 235 / 255f));
         }
         
-        // Set up scissor rectangle to only render within the viewport area
-        var oldScissorRect = _graphicsDevice.ScissorRectangle;
-        var oldRasterizerState = _graphicsDevice.RasterizerState;
-        
-        // Only set scissor if we have valid viewport bounds
-        if (_viewportMax.X > _viewportMin.X && _viewportMax.Y > _viewportMin.Y)
-        {
-            var scissorRect = new Rectangle(
-                (int)_viewportMin.X,
-                (int)_viewportMin.Y,
-                (int)(_viewportMax.X - _viewportMin.X),
-                (int)(_viewportMax.Y - _viewportMin.Y)
-            );
-            
-            var rasterizerState = new RasterizerState
-            {
-                CullMode = CullMode.CullCounterClockwiseFace,
-                ScissorTestEnable = true
-            };
-            
-            _graphicsDevice.ScissorRectangle = scissorRect;
-            _graphicsDevice.RasterizerState = rasterizerState;
-        }
+        // TODO(clip): the 3D view is not yet clipped to the ImGui viewport rect. It used to be a
+        // hardware scissor (GraphicsDevice.ScissorRectangle + a ScissorTestEnable rasterizer state);
+        // in the new model the scissor test is baked per-pipeline, so this needs the pipeline set to
+        // opt in first - see the milestone plan's scissor stage. _viewportMin/_viewportMax are kept
+        // for that step and are still maintained by the panels that compute them.
         
         // Render the 3D scene
         if (ActiveTab?.Scene != null && ActiveTab?.Stage != null && ActiveTab?.StageRenderer != null)
@@ -86,7 +75,7 @@ public partial class StageEditorPhase
                 World.FadeFrom = Math.Max(oldFadeFrom, topDownFadeFrom);
                 
                 // Render with lighting preserved
-                ActiveTab?.Scene.Render(null!, alpha, false); // TODO(Milestone 5 Stage B follow-up): ActiveTab.Scene is currently always null; never reached today.
+                ActiveTab?.Scene.Render(cb, alpha, false); // TODO(Milestone 5 Stage B follow-up): ActiveTab.Scene is currently always null; never reached today.
                 
                 // Restore environment elements
                 ActiveTab?.StageRenderer.ground = oldGround;
@@ -99,7 +88,7 @@ public partial class StageEditorPhase
             else
             {
                 // Normal 3D view with lighting and ground
-                ActiveTab?.Scene.Render(null!, alpha, false); // TODO(Milestone 5 Stage B follow-up): ActiveTab.Scene is currently always null; never reached today.
+                ActiveTab?.Scene.Render(cb, alpha, false); // TODO(Milestone 5 Stage B follow-up): ActiveTab.Scene is currently always null; never reached today.
             }
         }
         
@@ -107,13 +96,9 @@ public partial class StageEditorPhase
         if (ActiveTab != null)
         // Wall meshes are now part of the Scene (added in RecreateScene), no separate render needed
         
-        // Restore old state
-        _graphicsDevice.ScissorRectangle = oldScissorRect;
-        _graphicsDevice.RasterizerState = oldRasterizerState;
-        
         // Render selection highlight for all selected pieces, gizmo on primary
         RenderSelectionHighlights(cb, ActiveTab);
-        RenderSelectedWallHighlight(ActiveTab);
+        RenderSelectedWallHighlight(cb, ActiveTab);
         if (ActiveTab.ActivePieceId >= 0)
         {
             var selectedPiece = ActiveTab.ScenePieces.GetValueOrDefault(ActiveTab.ActivePieceId);
@@ -123,7 +108,7 @@ public partial class StageEditorPhase
         
         // Process pending preview thumbnails
         while (_previewQueue.Count > 0) 
-            ProcessOnePreviewThumbnail();
+            ProcessOnePreviewThumbnail(cb);
         
         // Render placement ghost if in placement mode and mouse is over viewport
         if (_pendingPlacementPartIndex >= 0 && _hasValidPlacementPos)
@@ -132,7 +117,7 @@ public partial class StageEditorPhase
         // Clear the depth buffer so ImGui always renders on top of the 3D scene.
         // Without this, geometry close to the camera writes near-zero depth values and
         // ImGui pixels (rendered later with DepthRead) fail the depth test at those positions.
-        _graphicsDevice.Clear(ClearOptions.DepthBuffer, Color.Black.ToXna(), 1.0f, 0);
+        cb.Clear(NFMWorld.Graphics.ClearOptions.Depth, default, 1f, 0);
     }
     
 }
