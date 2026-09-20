@@ -326,6 +326,7 @@ public partial class StageEditorPhase
         {
             cb.SetRenderTarget(rt);
             cb.SetViewport(new NFMWorld.Graphics.Viewport(0, 0, _exportWidth, _exportHeight));
+            cb.SetScissorRect(new NFMWorld.Graphics.ScissorRect(0, 0, _exportWidth, _exportHeight));
             // Colour + depth: a freshly created target's depth is undefined, and the transparent
             // clear matches what the pre-migration export did before Scene.Render's own clear.
             cb.Clear(
@@ -392,6 +393,7 @@ public partial class StageEditorPhase
         {
             cb.SetRenderTarget(null);
             cb.SetViewport(new NFMWorld.Graphics.Viewport(0, 0, GameSparker.Game.Window.Width, GameSparker.Game.Window.Height));
+            GameSparker.Game.SetFullScreenScissor(cb);
         }
 
         // Remove background by sampling the dominant border color and flood-filling

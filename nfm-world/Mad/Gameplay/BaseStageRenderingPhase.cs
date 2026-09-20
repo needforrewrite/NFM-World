@@ -160,10 +160,18 @@ public abstract class BaseStageRenderingPhase : BasePhase
 
         CurrentStage.Render(cb, alpha, useShadowMapping: true);
 
-        // TODO(Milestone 5 Stage D follow-up): the shadow-map debug overlay (SpriteBatch blit of
-        // WorldGame.ShadowRenderTargets) needed a live XNA GraphicsDevice/SpriteBatch, neither of
-        // which exist anymore - dropped rather than converted since it can't show anything useful
-        // yet anyway (WorldGame.RebuildCascades is still a no-op, so ShadowRenderTargets are always
-        // null). Re-add once shadow-cascade rendering itself is converted.
+        // Shadow-cascade debug overlay (r_debugdisplay). Restored off the back of the migration onto
+        // ICommandBuffer + IGraphicsDevice.ReadTexture - see ShadowMapDebugView for why it is a
+        // throttled CPU readback rather than the old SpriteBatch blit.
+        if (DebugDisplay)
+            ShadowMapDebugView.Capture(cb);
+    }
+
+    public override void RenderImgui()
+    {
+        base.RenderImgui();
+
+        if (DebugDisplay)
+            ShadowMapDebugView.DrawImgui();
     }
 }

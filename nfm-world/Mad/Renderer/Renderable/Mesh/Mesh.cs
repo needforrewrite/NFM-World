@@ -204,20 +204,10 @@ public class Mesh : IDisposable
         Color Color,
         float DecalOffset)
     {
-        /// <inheritdoc cref="P:IVertexType.VertexDeclaration" />
-        public static readonly VertexDeclaration VertexDeclaration = new(
-	        new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
-	        new VertexElement(12, VertexElementFormat.Vector3, VertexElementUsage.Normal, 0),
-	        new VertexElement(24, VertexElementFormat.Vector3, VertexElementUsage.Position, 1),
-	        new VertexElement(36, VertexElementFormat.Color, VertexElementUsage.Color, 0),
-	        new VertexElement(40, VertexElementFormat.Single, VertexElementUsage.TextureCoordinate, 0)
-	    );
-
         /// <summary>
-        /// Same layout as <see cref="VertexDeclaration"/> (Position/Normal/Centroid float3s, Color
-        /// as a packed byte4 despite HLSL's "float3 Color : COLOR0", DecalOffset float1 - matches
-        /// Poly.fx's <c>VertexShaderInput</c>), expressed against the new graphics abstraction for
-        /// <see cref="Graphics.PipelineDesc.VertexLayouts"/>.
+        /// Position/Normal/Centroid float3s, Color as a packed byte4 despite HLSL's
+        /// "float3 Color : COLOR0", DecalOffset float1 - matches Poly.fx's <c>VertexShaderInput</c>,
+        /// expressed against the graphics abstraction for <see cref="Graphics.PipelineDesc.VertexLayouts"/>.
         /// </summary>
         public static readonly VertexLayoutDesc VertexLayout = new(
             Attributes:

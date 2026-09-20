@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Maxine.Extensions.Mathematics;
 using NFMWorld.Graphics;
 using NFMWorldLibrary;
@@ -66,12 +66,14 @@ public class Scene : IDisposable
 
                 cb.SetRenderTarget(shadowTarget);
                 cb.SetViewport(new Viewport(0, 0, WorldGame.ShadowResolution, WorldGame.ShadowResolution));
+                cb.SetScissorRect(new ScissorRect(0, 0, WorldGame.ShadowResolution, WorldGame.ShadowResolution));
                 cb.Clear(ClearOptions.Color | ClearOptions.Depth, new ColorRgba(1f, 1f, 1f, 1f));
                 RenderInternal(cb, RenderPass.Shadow(i, totalCascades));
             }
 
             cb.SetRenderTarget(null);
             cb.SetViewport(new Viewport(0, 0, _graphicsDevice.Swapchain.Width, _graphicsDevice.Swapchain.Height));
+            GameSparker.Game.SetFullScreenScissor(cb);
         }
 
         if (clearRenderBuffer)

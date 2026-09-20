@@ -1,4 +1,4 @@
-extern alias SDL3New;
+﻿extern alias SDL3New;
 
 using System.Diagnostics;
 using System.Reflection;
@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
+using NFMWorld.Gameplay;
 using NFMWorld.Graphics;
 using NFMWorld.Graphics.FNA3D;
 using NFMWorld.Platform.SDL3;
@@ -208,6 +209,7 @@ public class WorldGame : IDisposable
         GameSparker.Phases.Shutdown();
 
         _uiRenderer?.Dispose();
+        ShadowMapDebugView.Dispose();
         foreach (var shadowRenderTarget in ShadowRenderTargets)
         {
             shadowRenderTarget?.Dispose();
@@ -386,6 +388,19 @@ public class WorldGame : IDisposable
         _oldScrollValue = scrollValue;
     }
 
+    /// <summary>
+    /// Binds the scissor rect to the whole window. This is the invariant that goes with every
+    /// pipeline having scissor testing enabled (<see cref="Effects.ScissorRasterizer"/>): wherever a
+    /// render target or viewport is bound, a scissor rect is bound too. A full-target rect is a
+    /// no-op, but it has to be *set* rather than left alone, because the ImGui renderer binds one
+    /// rect per draw command and never restores it - without this the first 3D draws of the next
+    /// frame would be clipped to whatever rectangle ImGui's last widget occupied.
+    /// </summary>
+    public void SetFullScreenScissor(ICommandBuffer cb)
+    {
+        cb.SetScissorRect(new ScissorRect(0, 0, Window.Width, Window.Height));
+    }
+
     private void Draw(GameTime gameTime)
     {
         var transaction = SentrySdk.StartTransaction("GameDraw", "gameloop.draw");
@@ -398,6 +413,7 @@ public class WorldGame : IDisposable
         cb.Clear(ClearOptions.Color | ClearOptions.Depth | ClearOptions.Stencil,
             new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f));
         cb.SetViewport(new Graphics.Viewport(0, 0, Window.Width, Window.Height));
+        SetFullScreenScissor(cb);
 
         GameSparker.Render(cb, alpha);
         GameSparker.Render3DOverlays(cb);

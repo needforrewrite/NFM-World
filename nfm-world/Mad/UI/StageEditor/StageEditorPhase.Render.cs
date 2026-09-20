@@ -43,11 +43,24 @@ public partial class StageEditorPhase
             cb.Clear(NFMWorld.Graphics.ClearOptions.Color, new NFMWorld.Graphics.ColorRgba(135 / 255f, 206 / 255f, 235 / 255f));
         }
         
-        // TODO(clip): the 3D view is not yet clipped to the ImGui viewport rect. It used to be a
-        // hardware scissor (GraphicsDevice.ScissorRectangle + a ScissorTestEnable rasterizer state);
-        // in the new model the scissor test is baked per-pipeline, so this needs the pipeline set to
-        // opt in first - see the milestone plan's scissor stage. _viewportMin/_viewportMax are kept
-        // for that step and are still maintained by the panels that compute them.
+        // Clip the 3D view to the ImGui viewport rect the panels computed, so scene geometry doesn't
+        // bleed under/over the editor's panels. Every game pipeline has scissor testing enabled
+        // (Effects.ScissorRasterizer), so setting the rect is all this needs; CullMode needs no
+        // equivalent of the old RasterizerState override, since each pipeline already bakes its own.
+        // When no valid rect is known, bind the full-window one - the invariant every place that
+        // binds a target or viewport follows (see WorldGame.SetFullScreenScissor).
+        if (_viewportMax.X > _viewportMin.X && _viewportMax.Y > _viewportMin.Y)
+        {
+            cb.SetScissorRect(new NFMWorld.Graphics.ScissorRect(
+                (int)_viewportMin.X,
+                (int)_viewportMin.Y,
+                (int)(_viewportMax.X - _viewportMin.X),
+                (int)(_viewportMax.Y - _viewportMin.Y)));
+        }
+        else
+        {
+            GameSparker.Game.SetFullScreenScissor(cb);
+        }
         
         // Render the 3D scene
         if (ActiveTab?.Scene != null && ActiveTab?.Stage != null && ActiveTab?.StageRenderer != null)
@@ -75,7 +88,7 @@ public partial class StageEditorPhase
                 World.FadeFrom = Math.Max(oldFadeFrom, topDownFadeFrom);
                 
                 // Render with lighting preserved
-                ActiveTab?.Scene.Render(cb, alpha, false); // TODO(Milestone 5 Stage B follow-up): ActiveTab.Scene is currently always null; never reached today.
+                ActiveTab?.Scene.Render(cb, alpha, false);
                 
                 // Restore environment elements
                 ActiveTab?.StageRenderer.ground = oldGround;
@@ -88,7 +101,7 @@ public partial class StageEditorPhase
             else
             {
                 // Normal 3D view with lighting and ground
-                ActiveTab?.Scene.Render(cb, alpha, false); // TODO(Milestone 5 Stage B follow-up): ActiveTab.Scene is currently always null; never reached today.
+                ActiveTab?.Scene.Render(cb, alpha, false);
             }
         }
         
@@ -96,6 +109,10 @@ public partial class StageEditorPhase
         if (ActiveTab != null)
         // Wall meshes are now part of the Scene (added in RecreateScene), no separate render needed
         
+        // Highlights, gizmo and the placement ghost are drawn outside the viewport rect on purpose -
+        // matching the pre-migration order, which restored the scissor before them.
+        GameSparker.Game.SetFullScreenScissor(cb);
+
         // Render selection highlight for all selected pieces, gizmo on primary
         RenderSelectionHighlights(cb, ActiveTab);
         RenderSelectedWallHighlight(cb, ActiveTab);

@@ -271,6 +271,7 @@ public partial class StageEditorPhase
 
         cb.SetRenderTarget(rt);
         cb.SetViewport(new NFMWorld.Graphics.Viewport(0, 0, PreviewSize, PreviewSize));
+        cb.SetScissorRect(new NFMWorld.Graphics.ScissorRect(0, 0, PreviewSize, PreviewSize));
         cb.Clear(
             NFMWorld.Graphics.ClearOptions.Color | NFMWorld.Graphics.ClearOptions.Depth,
             new NFMWorld.Graphics.ColorRgba(45 / 255f, 45 / 255f, 48 / 255f, 1f));
@@ -295,6 +296,7 @@ public partial class StageEditorPhase
 
         cb.SetRenderTarget(null);
         cb.SetViewport(new NFMWorld.Graphics.Viewport(0, 0, GameSparker.Game.Window.Width, GameSparker.Game.Window.Height));
+        GameSparker.Game.SetFullScreenScissor(cb);
         World.Snap = oldSnap;
 
         // The thumbnail is shown by ImGui, so hand it the render target's colour texture directly -

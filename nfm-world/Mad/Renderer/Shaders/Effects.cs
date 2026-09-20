@@ -107,6 +107,23 @@ internal static class Effects
     /// <summary>Shared clamp/point sampler for the ShadowMap0/1/2 textures <see cref="Lighting.SetShadowMapParameters"/> binds.</summary>
     public static ISampler ShadowMapSampler { get => CheckNotNull(field); private set; }
 
+    /// <summary>
+    /// Rasterizer state shared by every pipeline in this file: no culling (NFM's geometry is
+    /// two-sided - see the per-pipeline comments in <see cref="Initialize"/>) and scissor testing
+    /// enabled, which is what lets the stage editor clip its 3D view to the ImGui viewport rect.
+    /// </summary>
+    /// <remarks>
+    /// Scissor testing is on for the *game's* pipelines too, because the abstraction has no
+    /// per-draw "set a global rasterizer state" call - a scene reaches whatever pipelines its
+    /// renderables were built with, so clipping a whole scene means the pipelines opt in. That is
+    /// safe as long as every place that binds a render target or sets a viewport also sets a scissor
+    /// rect (see <see cref="WorldGame.SetFullScreenScissor"/>): a scissor rect covering the whole
+    /// target is a no-op, and the rect has to be *set* rather than left alone because the ImGui
+    /// renderer leaves its last per-draw rect bound.
+    /// </remarks>
+    private static readonly RasterizerStateDesc ScissorRasterizer =
+        RasterizerStateDesc.Default with { CullMode = CullMode.None, ScissorTestEnabled = true };
+
     private static T CheckNotNull<T>(T? field)
     {
         return field ?? ThrowException();
@@ -135,7 +152,7 @@ internal static class Effects
             VertexLayouts: [LineMesh.LineMeshVertexAttribute.VertexLayout, InstanceData.VertexLayout],
             BlendState: BlendStateDesc.NonPremultiplied,
             DepthStencilState: DepthStencilStateDesc.Default,
-            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None }));
+            RasterizerState: ScissorRasterizer));
         LineParameters = Line.Bind(LinePipeline);
         LineDepthReadPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
             VertexShader: Line.Module,
@@ -143,7 +160,7 @@ internal static class Effects
             VertexLayouts: [LineMesh.LineMeshVertexAttribute.VertexLayout, InstanceData.VertexLayout],
             BlendState: BlendStateDesc.NonPremultiplied,
             DepthStencilState: DepthStencilStateDesc.Default with { DepthWriteEnabled = false },
-            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None }));
+            RasterizerState: ScissorRasterizer));
         LineDepthReadParameters = Line.Bind(LineDepthReadPipeline);
 
         // Ground/Mountains/GroundPolys: the original FNA code set DepthStencilState.DepthRead
@@ -158,7 +175,7 @@ internal static class Effects
         // state is baked per pipeline rather than leaked, it has to be asked for. NFM's terrain
         // geometry is two-sided, so culling it punches holes in whatever faces away from the
         // camera (e.g. the underside of the cloud polys) rather than rendering them.
-        var groundRasterizerState = RasterizerStateDesc.Default with { CullMode = CullMode.None };
+        var groundRasterizerState = ScissorRasterizer;
 
         Ground = new GroundEffect(VFS.ReadAllBytes("./data/shaders/Ground.fxb"));
         GroundPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
@@ -190,7 +207,7 @@ internal static class Effects
             VertexLayouts: [PositionColorVertex.VertexLayout],
             BlendState: BlendStateDesc.Opaque,
             DepthStencilState: DepthStencilStateDesc.None,
-            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None }));
+            RasterizerState: ScissorRasterizer));
         SkyParameters = Sky.Bind(SkyPipeline);
 
         // Poly (stage geometry - walls, ramps, everything Submesh draws): the original FNA code
@@ -199,7 +216,7 @@ internal static class Effects
         // isn't optional the way it might be for other meshes.
         Poly = new PolyEffect(VFS.ReadAllBytes("./data/shaders/Poly.fxb"));
         var polyVertexLayouts = new[] { Mesh.VertexPositionNormalColorCentroid.VertexLayout, InstanceData.VertexLayout };
-        var polyRasterizerState = RasterizerStateDesc.Default with { CullMode = CullMode.None };
+        var polyRasterizerState = ScissorRasterizer;
         PolyPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
             VertexShader: Poly.Module,
             PixelShader: Poly.Module,
@@ -246,21 +263,21 @@ internal static class Effects
             VertexLayouts: [PositionColorVertex.VertexLayout],
             BlendState: BlendStateDesc.Opaque,
             DepthStencilState: DepthStencilStateDesc.Default,
-            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None }));
+            RasterizerState: ScissorRasterizer));
         ParticleDepthReadPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
             VertexShader: Particle.Module,
             PixelShader: Particle.Module,
             VertexLayouts: [PositionColorVertex.VertexLayout],
             BlendState: BlendStateDesc.NonPremultiplied,
             DepthStencilState: DepthStencilStateDesc.Default with { DepthWriteEnabled = false },
-            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None }));
+            RasterizerState: ScissorRasterizer));
         ParticleNoDepthPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
             VertexShader: Particle.Module,
             PixelShader: Particle.Module,
             VertexLayouts: [PositionColorVertex.VertexLayout],
             BlendState: BlendStateDesc.NonPremultiplied,
             DepthStencilState: DepthStencilStateDesc.None,
-            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None }));
+            RasterizerState: ScissorRasterizer));
         ParticleParameters = Particle.Bind(ParticleOpaquePipeline);
 
         DebugLinePipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
@@ -270,7 +287,7 @@ internal static class Effects
             Topology: PrimitiveTopology.LineList,
             BlendState: BlendStateDesc.Opaque,
             DepthStencilState: DepthStencilStateDesc.None,
-            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None }));
+            RasterizerState: ScissorRasterizer));
         DebugGhostFillPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
             VertexShader: Particle.Module,
             PixelShader: Particle.Module,
@@ -278,7 +295,7 @@ internal static class Effects
             Topology: PrimitiveTopology.TriangleList,
             BlendState: BlendStateDesc.NonPremultiplied,
             DepthStencilState: DepthStencilStateDesc.Default,
-            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None }));
+            RasterizerState: ScissorRasterizer));
 
         // PointClamp, matching the old scene-wide default the pre-migration code force-set on all
         // 16 sampler slots (see Scene.cs's TODO on the equivalent removed call).
