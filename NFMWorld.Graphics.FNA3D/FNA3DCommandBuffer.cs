@@ -37,10 +37,26 @@ internal sealed class FNA3DCommandBuffer(IntPtr device) : ICommandBuffer
 
     public void SetPipeline(IPipelineState pipeline)
     {
+        if (ReferenceEquals(_pipeline, pipeline))
+        {
+            // Re-binding the same pipeline (common with NanoVG's multi-pass fill algorithm,
+            // which alternates between a small fixed set of pipelines many times per frame)
+            // would otherwise reallocate both arrays and resend identical GPU state every call.
+            return;
+        }
+
         var fna = (FNA3DPipelineState)pipeline;
+        if (_vertexBufferHandles.Length != fna.VertexDeclarations.Length)
+        {
+            _vertexBufferHandles = new IntPtr[fna.VertexDeclarations.Length];
+            _vertexOffsets = new int[fna.VertexDeclarations.Length];
+        }
+        else
+        {
+            Array.Clear(_vertexBufferHandles);
+            Array.Clear(_vertexOffsets);
+        }
         _pipeline = fna;
-        _vertexBufferHandles = new IntPtr[fna.VertexDeclarations.Length];
-        _vertexOffsets = new int[fna.VertexDeclarations.Length];
 
         var blend = fna.BlendState;
         var depth = fna.DepthStencilState;
@@ -106,8 +122,30 @@ internal sealed class FNA3DCommandBuffer(IntPtr device) : ICommandBuffer
             return;
         }
 
-        throw new NotImplementedException(
-            "Off-screen render target binding is implemented alongside shadow-cascade rendering in Milestone 5.");
+        var fna = (FNA3DRenderTarget)target;
+        var colorTexture = (FNA3DTexture)fna.ColorTexture;
+
+        // Binding shape mirrors FNA's own GraphicsDevice.PrepareRenderTargetBindings: type=0 is a
+        // plain 2D target (type=1 is TextureCube, not supported here), levelCount/multiSampleCount
+        // are always 1/0 since CreateRenderTarget never allocates mips or MSAA render targets.
+        var binding = new FNA3D_RenderTargetBinding
+        {
+            type = 0,
+            data1 = colorTexture.Width,
+            data2 = colorTexture.Height,
+            levelCount = 1,
+            multiSampleCount = 0,
+            texture = colorTexture.Handle,
+            colorBuffer = fna.ColorRenderbuffer,
+        };
+
+        var depthFormat = fna.DepthStencilTexture is { } depthTexture
+            ? depthTexture.Format.ToNativeDepthFormat()
+            : FNA3D_DepthFormat.None;
+
+        // preserveDepthStencilContents=0 (discard) matches the old pre-migration cascades'
+        // RenderTargetUsage.DiscardContents - each cascade is fully re-rendered every frame.
+        FNA3D_SetRenderTargets(device, &binding, 1, fna.DepthStencilRenderbuffer, depthFormat, 0);
     }
 
     public void SetViewport(Viewport viewport)
