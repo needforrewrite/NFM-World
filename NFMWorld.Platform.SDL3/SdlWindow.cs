@@ -39,11 +39,19 @@ public sealed class SdlWindow : IDisposable
     /// <summary>Raised on SDL_EVENT_MOUSE_WHEEL with (x, y) scroll amounts.</summary>
     public event Action<float, float>? MouseWheel;
 
+    // Cumulative scroll accumulator, mirroring XNA's MouseState.ScrollWheelValue (120 units per
+    // notch, i.e. WHEEL_DELTA) - static since there is only ever one live SdlWindow per process,
+    // matching GetKeyboardState/GetMouseState's existing static-polling pattern. Only the vertical
+    // axis accumulates here (XNA's legacy MouseState has no horizontal scroll value); consumers
+    // that want the raw per-event x/y delta (e.g. ImGui) should subscribe to MouseWheel directly.
+    private static int _scrollWheelValue;
+
     private SdlWindow(IntPtr window, int width, int height)
     {
         _window = window;
         Width = width;
         Height = height;
+        MouseWheel += (_, y) => _scrollWheelValue += (int)(y * 120);
     }
 
     /// <summary>
@@ -207,6 +215,9 @@ public sealed class SdlWindow : IDisposable
         var flags = SDL.SDL_GetMouseState(out var x, out var y);
         return (SdlKeyMap.FromButtonFlags(flags), (int)x, (int)y);
     }
+
+    /// <summary>Cumulative scroll value, replacing FNA's <c>MouseState.ScrollWheelValue</c>.</summary>
+    public static int GetScrollWheelValue() => _scrollWheelValue;
 
     public void Dispose()
     {
