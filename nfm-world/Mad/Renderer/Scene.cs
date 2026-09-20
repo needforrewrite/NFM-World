@@ -57,11 +57,22 @@ public class Scene : IDisposable
 
         var totalCascades = Math.Min(_lightCameras.Count, WorldGame.NumCascades);
 
-        // TODO(Milestone 5 Stage B follow-up): shadow-cascade rendering needs WorldGame.
-        // RebuildCascades converted off RenderTarget2D to IRenderTarget first (still stubbed from
-        // Milestone 5 Stage A - see WorldGame.cs), so shadow mapping is skipped entirely for now
-        // regardless of useShadowMapping.
-        _ = useShadowMapping;
+        if (useShadowMapping && totalCascades > 0)
+        {
+            for (var i = 0; i < totalCascades; i++)
+            {
+                var shadowTarget = i < WorldGame.ShadowRenderTargets.Count ? WorldGame.ShadowRenderTargets[i] : null;
+                if (shadowTarget is null) continue;
+
+                cb.SetRenderTarget(shadowTarget);
+                cb.SetViewport(new Viewport(0, 0, WorldGame.ShadowResolution, WorldGame.ShadowResolution));
+                cb.Clear(ClearOptions.Color | ClearOptions.Depth, new ColorRgba(1f, 1f, 1f, 1f));
+                RenderInternal(cb, RenderPass.Shadow(i, totalCascades));
+            }
+
+            cb.SetRenderTarget(null);
+            cb.SetViewport(new Viewport(0, 0, _graphicsDevice.Swapchain.Width, _graphicsDevice.Swapchain.Height));
+        }
 
         if (clearRenderBuffer)
             cb.Clear(ClearOptions.Color | ClearOptions.Depth, new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f));
