@@ -36,6 +36,16 @@ public enum TextureFormat
     Bgra8,
     Depth24Stencil8,
     R8,
+
+    /// <summary>Block-compressed, 4 bits/pixel, no alpha (or 1-bit punch-through alpha).</summary>
+    Dxt1,
+    /// <summary>Block-compressed, 8 bits/pixel, sharp (non-interpolated) alpha.</summary>
+    Dxt3,
+    /// <summary>Block-compressed, 8 bits/pixel, interpolated alpha.</summary>
+    Dxt5,
+
+    /// <summary>32-bit single-channel float - used for shadow-cascade depth render targets.</summary>
+    Single,
 }
 
 [Flags]

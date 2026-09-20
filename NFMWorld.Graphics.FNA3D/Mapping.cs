@@ -10,6 +10,10 @@ internal static class Mapping
         TextureFormat.Rgba8 => FNA3D_SurfaceFormat.Color,
         TextureFormat.Bgra8 => FNA3D_SurfaceFormat.ColorBgraEXT,
         TextureFormat.R8 => FNA3D_SurfaceFormat.Alpha8,
+        TextureFormat.Dxt1 => FNA3D_SurfaceFormat.Dxt1,
+        TextureFormat.Dxt3 => FNA3D_SurfaceFormat.Dxt3,
+        TextureFormat.Dxt5 => FNA3D_SurfaceFormat.Dxt5,
+        TextureFormat.Single => FNA3D_SurfaceFormat.Single,
         TextureFormat.Depth24Stencil8 => throw new ArgumentException("Depth24Stencil8 is a depth format, not a texture surface format; use ToNativeDepthFormat instead.", nameof(format)),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
     };
@@ -119,6 +123,29 @@ internal static class Mapping
         _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null),
     };
 
+    public static FNA3D_ColorWriteChannels ToNative(this ColorWriteMask mask)
+    {
+        FNA3D_ColorWriteChannels result = 0;
+        if (mask.HasFlag(ColorWriteMask.Red)) result |= FNA3D_ColorWriteChannels.Red;
+        if (mask.HasFlag(ColorWriteMask.Green)) result |= FNA3D_ColorWriteChannels.Green;
+        if (mask.HasFlag(ColorWriteMask.Blue)) result |= FNA3D_ColorWriteChannels.Blue;
+        if (mask.HasFlag(ColorWriteMask.Alpha)) result |= FNA3D_ColorWriteChannels.Alpha;
+        return result;
+    }
+
+    public static FNA3D_StencilOperation ToNative(this StencilOperation op) => op switch
+    {
+        StencilOperation.Keep => FNA3D_StencilOperation.Keep,
+        StencilOperation.Zero => FNA3D_StencilOperation.Zero,
+        StencilOperation.Replace => FNA3D_StencilOperation.Replace,
+        StencilOperation.Increment => FNA3D_StencilOperation.Increment,
+        StencilOperation.Decrement => FNA3D_StencilOperation.Decrement,
+        StencilOperation.IncrementSaturate => FNA3D_StencilOperation.IncrementSaturation,
+        StencilOperation.DecrementSaturate => FNA3D_StencilOperation.DecrementSaturation,
+        StencilOperation.Invert => FNA3D_StencilOperation.Invert,
+        _ => throw new ArgumentOutOfRangeException(nameof(op), op, null),
+    };
+
     public static FNA3D_BlendState ToNative(this BlendStateDesc desc) => new()
     {
         colorSourceBlend = desc.SourceColor.ToNative(),
@@ -127,10 +154,10 @@ internal static class Mapping
         alphaSourceBlend = desc.SourceAlpha.ToNative(),
         alphaDestinationBlend = desc.DestinationAlpha.ToNative(),
         alphaBlendFunction = desc.AlphaOperation.ToNative(),
-        colorWriteEnable = FNA3D_ColorWriteChannels.All,
-        colorWriteEnable1 = FNA3D_ColorWriteChannels.All,
-        colorWriteEnable2 = FNA3D_ColorWriteChannels.All,
-        colorWriteEnable3 = FNA3D_ColorWriteChannels.All,
+        colorWriteEnable = desc.ColorWriteMask.ToNative(),
+        colorWriteEnable1 = desc.ColorWriteMask.ToNative(),
+        colorWriteEnable2 = desc.ColorWriteMask.ToNative(),
+        colorWriteEnable3 = desc.ColorWriteMask.ToNative(),
         blendFactor = new FNA3D_Color(255, 255, 255, 255),
         multiSampleMask = -1,
     };
@@ -140,17 +167,19 @@ internal static class Mapping
         depthBufferEnable = (byte)(desc.DepthTestEnabled ? 1 : 0),
         depthBufferWriteEnable = (byte)(desc.DepthWriteEnabled ? 1 : 0),
         depthBufferFunction = desc.DepthCompare.ToNative(),
-        stencilFunction = FNA3D_CompareFunction.Always,
-        ccwStencilFunction = FNA3D_CompareFunction.Always,
-        stencilPass = FNA3D_StencilOperation.Keep,
-        stencilFail = FNA3D_StencilOperation.Keep,
-        stencilDepthBufferFail = FNA3D_StencilOperation.Keep,
-        ccwStencilPass = FNA3D_StencilOperation.Keep,
-        ccwStencilFail = FNA3D_StencilOperation.Keep,
-        ccwStencilDepthBufferFail = FNA3D_StencilOperation.Keep,
-        stencilMask = int.MaxValue,
-        stencilWriteMask = int.MaxValue,
-        referenceStencil = 0,
+        stencilEnable = (byte)(desc.StencilTestEnabled ? 1 : 0),
+        twoSidedStencilMode = (byte)(desc.TwoSidedStencil ? 1 : 0),
+        stencilFunction = desc.StencilFunction.ToNative(),
+        ccwStencilFunction = desc.CcwStencilFunction.ToNative(),
+        stencilPass = desc.StencilPass.ToNative(),
+        stencilFail = desc.StencilFail.ToNative(),
+        stencilDepthBufferFail = desc.StencilDepthFail.ToNative(),
+        ccwStencilPass = desc.CcwStencilPass.ToNative(),
+        ccwStencilFail = desc.CcwStencilFail.ToNative(),
+        ccwStencilDepthBufferFail = desc.CcwStencilDepthFail.ToNative(),
+        stencilMask = desc.StencilReadMask,
+        stencilWriteMask = desc.StencilWriteMask,
+        referenceStencil = desc.ReferenceStencil,
     };
 
     public static FNA3D_RasterizerState ToNative(this RasterizerStateDesc desc) => new()
