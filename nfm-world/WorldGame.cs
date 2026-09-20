@@ -105,7 +105,7 @@ public class WorldGame : IDisposable
         // the backend's native bits pass straight through without this file naming a SDL3 type.
         Window = SdlWindow.Create("NFM World", 1280, 720, FNA3DInterop.PrepareWindowAttributes());
         _device = FNA3DGraphicsDevice.Create(Window.Handle, Window.Width, Window.Height, vsync: true, debugMode: false);
-        Graphics = new GraphicsSettingsShim(Window);
+        Graphics = new GraphicsSettingsShim(Window, _device.Swapchain);
 
         Window.Resized += (w, h) =>
         {
@@ -399,19 +399,28 @@ public class WorldGame : IDisposable
     }
 
     /// <summary>
-    /// Keeps the device's drawable in step with the OS window. FNA's GraphicsDeviceManager did
-    /// this on every ApplyChanges; without it the device keeps rendering into the size it was
-    /// created at while <see cref="SdlWindow.Width"/>/<see cref="SdlWindow.Height"/> - and every
-    /// SDL mouse coordinate - follow the real window. Everything laid out from
+    /// Keeps the device's drawable in step with the OS window and the video settings. FNA's
+    /// GraphicsDeviceManager did the size half of this on every ApplyChanges; without it the device
+    /// keeps rendering into the size it was created at while <see cref="SdlWindow.Width"/>/<see cref="SdlWindow.Height"/>
+    /// - and every SDL mouse coordinate - follow the real window. Everything laid out from
     /// <c>Swapchain.Width/Height</c> (the NanoVG canvas and its ortho transform, <c>Scene.Render</c>'s
     /// viewport, the particle/line "Resolution" uniforms) then stays at the old size, so the 2D UI
     /// occupies that corner of the window and input only lands inside it.
+    /// <para>
+    /// This is also the only place the multisample count can change: it is a backbuffer property, so
+    /// it needs a drawable rebuild, and the settings screen requests it from an ImGui callback that
+    /// runs with the frame's command buffer already acquired - the one moment a rebuild must not
+    /// happen. Requested here, applied here, before anything is drawn.
+    /// </para>
     /// </summary>
     private void EnsureSwapchainMatchesWindow()
     {
-        if (Window.Width != _device.Swapchain.Width || Window.Height != _device.Swapchain.Height)
+        var swapchain = _device.Swapchain;
+        var multiSampleCount = Graphics.DesiredMultiSampleCount;
+        if (Window.Width != swapchain.Width || Window.Height != swapchain.Height
+            || multiSampleCount != swapchain.MultiSampleCount)
         {
-            _device.Swapchain.Resize(Window.Width, Window.Height);
+            swapchain.Resize(Window.Width, Window.Height, multiSampleCount);
         }
     }
 

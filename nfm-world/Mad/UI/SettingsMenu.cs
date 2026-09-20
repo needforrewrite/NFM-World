@@ -64,6 +64,18 @@ public class SettingsMenu(WorldGame game)
     private static int _selectedDisplayMode = 1;
     private static bool _vsync = true;
     public static readonly string[] AntialiasModes = ["Off", "MSAA 1x", "MSAA 2x", "MSAA 4x", "MSAA 8x"]; // must be powers of 2
+
+    /// <summary>
+    /// The dropdown entry for a multisample count, and its inverse. Index 0 is "Off" and index *n*
+    /// requests 2^(n-1) samples, so index 1 ("MSAA 1x") means off too - the list is an 8x ladder
+    /// with an explicit "Off" in front of it, which is what the "// must be powers of 2" above is
+    /// about.
+    /// </summary>
+    private static readonly int[] AntialiasSampleCounts = [0, 1, 2, 4, 8];
+    private static int AntialiasToSampleCount(int index) =>
+        index >= 0 && index < AntialiasSampleCounts.Length ? AntialiasSampleCounts[index] : 0;
+    private static int SampleCountToAntialias(int sampleCount) =>
+        Array.IndexOf(AntialiasSampleCounts, sampleCount) is var i and >= 0 ? i : 0;
     private static int _antialias = 4; // 8x
     private static int _shadowCascadeLevel = 3;
     public static readonly string[] ShadowCascadeLevelNames = ["Off", "Close", "Far", "Further"];
@@ -301,13 +313,18 @@ public class SettingsMenu(WorldGame game)
                 graphicsChanged = true;
             }
 
-            var msaaCount = (int) MathF.Round(MathF.Pow(2, _antialias - 1));
+            var msaaCount = AntialiasToSampleCount(_antialias);
 
             if (game.Graphics.GraphicsDevice.PresentationParameters.MultiSampleCount != msaaCount)
             {
                 game.Graphics.GraphicsDevice.PresentationParameters.MultiSampleCount = msaaCount;
                 graphicsChanged = true;
             }
+        }
+        else if (game.Graphics.PreferMultiSampling)
+        {
+            game.Graphics.PreferMultiSampling = false;
+            graphicsChanged = true;
         }
         else
         {
@@ -955,7 +972,11 @@ public class SettingsMenu(WorldGame game)
             SelectedDisplayMode = _selectedDisplayMode,
             Vsync = _vsync,
             FpsLimit = _fpsLimit,
-            Antialias = _antialias,
+            // Report what the drawable actually has, not the requested count: the hardware clamps
+            // (asking for 8x on a device that caps at 4x gets 4x), and MSAA lands on the next frame's
+            // swapchain sync rather than during ApplySettings - so a stored request could otherwise be
+            // shown as if it had taken effect when the backbuffer never changed.
+            Antialias = SampleCountToAntialias(GameSparker.Game?.Graphics.AppliedMultiSampleCount ?? 0),
             ShadowCascadeLevel = _shadowCascadeLevel,
             ShadowResolution = _shadowResolution,
             RenderDistance = _renderDistance,

@@ -178,6 +178,7 @@ while (!window.ShouldQuit)
         readbackChecked = true;
         var verifyCb = device.AcquireCommandBuffer();
         VerifyBackbufferResize(device, verifyCb, width, height);
+        VerifyMultiSampleCounts(device, verifyCb, width, height);
         VerifyReadbackAndPng(device, verifyCb, width, height);
         device.Submit(verifyCb);
 
@@ -297,6 +298,65 @@ static void VerifyBackbufferResize(FNA3DGraphicsDevice device, ICommandBuffer cb
     Console.WriteLine(grew && shrank && farCornerMatches && restoredMatches
         ? "RESIZE CHECK: pass"
         : "RESIZE CHECK: FAILED");
+}
+
+static void VerifyMultiSampleCounts(FNA3DGraphicsDevice device, ICommandBuffer cb, int windowWidth, int windowHeight)
+{
+    // ISwapchain.Resize's multiSampleCount is a backbuffer property, so it is only settable by
+    // rebuilding the drawable - this proves the driver honours the request and reports back what it
+    // actually allocated (drivers clamp to hardware limits rather than failing).
+    var swapchain = device.Swapchain;
+    Console.WriteLine($"MSAA CHECK: starting count {swapchain.MultiSampleCount}");
+
+    var requested = new[] { 2, 4, 8, 0 };
+    var allHonoured = true;
+    foreach (var want in requested)
+    {
+        swapchain.Resize(windowWidth, windowHeight, want == 0 ? 1 : want); // 1 is the API's "off"
+        var got = swapchain.MultiSampleCount;
+        // Either the driver allocated the request or clamped it down to a lower power of two; never
+        // up, and never something that isn't on the ladder.
+        var plausible = got == want || (got < want && got is 0 or 2 or 4);
+        allHonoured &= plausible;
+        Console.WriteLine($"  requested {(want == 0 ? "off" : want.ToString())} -> allocated {got} " +
+                          $"{(plausible ? "ok" : "<-- WRONG")}" +
+                          (got != want && plausible ? " (hardware clamp)" : ""));
+
+        // A rebuild at a new sample count must still leave a usable, correctly sized drawable.
+        var sized = swapchain.Width == windowWidth && swapchain.Height == windowHeight;
+        if (!sized) allHonoured = false;
+    }
+
+    // The requested count is remembered separately from the allocation, so repeating a request that
+    // the hardware clamped must not rebuild the drawable again (that would be a per-frame rebuild).
+    swapchain.Resize(windowWidth, windowHeight, 8);
+    var clampedOnce = swapchain.MultiSampleCount;
+    swapchain.Resize(windowWidth, windowHeight, 8);
+    var stable = swapchain.MultiSampleCount == clampedOnce;
+    Console.WriteLine(stable
+        ? $"  repeating a clamped request is a no-op (still {clampedOnce})"
+        : $"  <-- WRONG: repeating the same request changed the drawable to {swapchain.MultiSampleCount}");
+
+    // Reading a multisampled backbuffer needs a driver-side resolve before the copy, not just a
+    // blit - and the stage editor's export, the shadow debug view and VerifyLineDrawn all go
+    // through that path, so prove it works at a nonzero count rather than only at zero.
+    if (swapchain.MultiSampleCount > 1)
+    {
+        var expected = new ColorRgba(0.2f, 0.4f, 0.9f, 1f);
+        cb.SetViewport(new Viewport(0, 0, windowWidth, windowHeight));
+        cb.Clear(ClearOptions.Color | ClearOptions.Depth, expected);
+        var resolved = ReadBackbufferPixel(device, windowWidth / 2, windowHeight / 2);
+        var resolvedOk = Matches(resolved, expected);
+        allHonoured &= resolvedOk;
+        Console.WriteLine($"  readback at {swapchain.MultiSampleCount}x resolved: {Describe(resolved)} " +
+                          $"{(resolvedOk ? "ok" : "<-- WRONG, multisampled readback did not resolve")}");
+    }
+
+    // Leave the run at no MSAA, matching how the game starts before settings are loaded.
+    swapchain.Resize(windowWidth, windowHeight, 1);
+    Console.WriteLine($"  reset to {swapchain.MultiSampleCount}");
+
+    Console.WriteLine(allHonoured && stable ? "MSAA CHECK: pass" : "MSAA CHECK: FAILED");
 }
 
 static byte[] ReadBackbufferPixel(FNA3DGraphicsDevice device, int x, int y)
