@@ -5,6 +5,9 @@ namespace NFMWorld.Graphics;
 public enum BlendFactor { Zero, One, SourceAlpha, InverseSourceAlpha, DestinationAlpha, InverseDestinationAlpha }
 public enum BlendOperation { Add, Subtract, ReverseSubtract, Min, Max }
 
+[Flags]
+public enum ColorWriteMask { None = 0, Red = 1, Green = 2, Blue = 4, Alpha = 8, All = Red | Green | Blue | Alpha }
+
 public readonly record struct BlendStateDesc(
     bool Enabled,
     BlendFactor SourceColor = BlendFactor.One,
@@ -12,7 +15,8 @@ public readonly record struct BlendStateDesc(
     BlendOperation ColorOperation = BlendOperation.Add,
     BlendFactor SourceAlpha = BlendFactor.One,
     BlendFactor DestinationAlpha = BlendFactor.Zero,
-    BlendOperation AlphaOperation = BlendOperation.Add)
+    BlendOperation AlphaOperation = BlendOperation.Add,
+    ColorWriteMask ColorWriteMask = ColorWriteMask.All)
 {
     public static readonly BlendStateDesc Opaque = new(Enabled: false);
     public static readonly BlendStateDesc AlphaBlend = new(Enabled: true, SourceColor: BlendFactor.One, DestinationColor: BlendFactor.InverseSourceAlpha);
@@ -21,23 +25,34 @@ public readonly record struct BlendStateDesc(
     public static readonly BlendStateDesc NonPremultiplied = new(Enabled: true,
         SourceColor: BlendFactor.SourceAlpha, DestinationColor: BlendFactor.InverseSourceAlpha,
         SourceAlpha: BlendFactor.SourceAlpha, DestinationAlpha: BlendFactor.InverseSourceAlpha);
+
+    public static readonly BlendStateDesc ColorWriteNone = new(Enabled: false, ColorWriteMask: ColorWriteMask.None);
 }
 
 public enum CompareFunction { Always, Never, Less, LessEqual, Equal, NotEqual, GreaterEqual, Greater }
+public enum StencilOperation { Keep, Zero, Replace, Increment, Decrement, IncrementSaturate, DecrementSaturate, Invert }
 
 public readonly record struct DepthStencilStateDesc(
     bool DepthTestEnabled = true,
     bool DepthWriteEnabled = true,
-    CompareFunction DepthCompare = CompareFunction.LessEqual)
+    CompareFunction DepthCompare = CompareFunction.LessEqual,
+    bool StencilTestEnabled = false,
+    bool TwoSidedStencil = false,
+    int StencilReadMask = int.MaxValue,
+    int StencilWriteMask = int.MaxValue,
+    int ReferenceStencil = 0,
+    CompareFunction StencilFunction = CompareFunction.Always,
+    StencilOperation StencilFail = StencilOperation.Keep,
+    StencilOperation StencilDepthFail = StencilOperation.Keep,
+    StencilOperation StencilPass = StencilOperation.Keep,
+    CompareFunction CcwStencilFunction = CompareFunction.Always,
+    StencilOperation CcwStencilFail = StencilOperation.Keep,
+    StencilOperation CcwStencilDepthFail = StencilOperation.Keep,
+    StencilOperation CcwStencilPass = StencilOperation.Keep)
 {
-    // NOTE: every argument is spelled out rather than using `new()`. For a struct, `new()` binds to
-    // the implicit parameterless (zeroing) constructor, NOT to the primary constructor with its
-    // default arguments - so `Default = new()` silently yields (false, false, Always), i.e. depth
-    // testing *and* writing switched OFF on every pipeline that used it.
+    // new() here = the default struct, not the constructor
     public static readonly DepthStencilStateDesc Default = new(
-        DepthTestEnabled: true,
-        DepthWriteEnabled: true,
-        DepthCompare: CompareFunction.LessEqual);
+        DepthTestEnabled: true);
 
     public static readonly DepthStencilStateDesc None = new(DepthTestEnabled: false, DepthWriteEnabled: false);
 }
