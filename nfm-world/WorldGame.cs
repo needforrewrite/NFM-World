@@ -437,10 +437,15 @@ public class WorldGame : IDisposable
         cb.SetViewport(new Graphics.Viewport(0, 0, Window.Width, Window.Height));
         SetFullScreenScissor(cb);
 
+        // Started before the phases render, not after: phases draw their HUD text through
+        // TheGraphics (the same NvgContext), and rasterizing a glyph uploads its atlas rectangle
+        // through this renderer straight away. Deferred updates still work (the renderer queues
+        // them), but starting the frame here means the common case uploads immediately.
+        _nvg!.BeginFrame(cb);
+
         GameSparker.Render(cb, alpha);
         GameSparker.Render3DOverlays(cb);
 
-        _nvg!.BeginFrame(cb);
         _uiRenderer?.Render();
         if (_yogaDebugPage >= 0) YogaDebugger.Render(_yogaDebugPage);
         
