@@ -67,6 +67,21 @@ internal static class Effects
     public static IPipelineState ParticleNoDepthPipeline { get => CheckNotNull(field); private set; }
     public static ParticleEffectParameters ParticleParameters { get => CheckNotNull(field); private set; }
 
+    /// <summary>
+    /// <see cref="NFMWorld.Debug"/>'s collision/wireframe/gizmo overlays - two more pipelines off
+    /// the same <see cref="Particle"/> module (no new shader needed, just different topology/blend/
+    /// depth state): <see cref="DebugLinePipeline"/> (LineList, depth test disabled - "always on
+    /// top", matching the old <c>DepthStencilState.None</c> override every line draw used) and
+    /// <see cref="DebugGhostFillPipeline"/> (TriangleList, alpha blend, no culling, normal depth -
+    /// matching the old <c>BlendState.AlphaBlend</c> + <c>RasterizerState.CullNone</c> override the
+    /// ghost-preview fill pass used).
+    /// </summary>
+    public static IPipelineState DebugLinePipeline { get => CheckNotNull(field); private set; }
+    public static IPipelineState DebugGhostFillPipeline { get => CheckNotNull(field); private set; }
+
+    /// <summary>Shared clamp/point sampler for the ShadowMap0/1/2 textures <see cref="Lighting.SetShadowMapParameters"/> binds.</summary>
+    public static ISampler ShadowMapSampler { get => CheckNotNull(field); private set; }
+
     private static T CheckNotNull<T>(T? field)
     {
         return field ?? ThrowException();
@@ -83,7 +98,8 @@ internal static class Effects
         nameof(Mountains), nameof(MountainsPipeline),
         nameof(Sky), nameof(SkyPipeline),
         nameof(Poly), nameof(PolyPipeline), nameof(PolyShadowPipeline),
-        nameof(Particle), nameof(ParticleOpaquePipeline), nameof(ParticleDepthReadPipeline), nameof(ParticleNoDepthPipeline))]
+        nameof(Particle), nameof(ParticleOpaquePipeline), nameof(ParticleDepthReadPipeline), nameof(ParticleNoDepthPipeline),
+        nameof(DebugLinePipeline), nameof(DebugGhostFillPipeline), nameof(ShadowMapSampler))]
     public static void Initialize(IGraphicsDevice graphicsDevice)
     {
         Line = new LineEffect(VFS.ReadAllBytes("./data/shaders/Line.fxb"));
@@ -192,5 +208,27 @@ internal static class Effects
             DepthStencilState: DepthStencilStateDesc.None,
             RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None }));
         ParticleParameters = Particle.Bind(ParticleOpaquePipeline);
+
+        DebugLinePipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
+            VertexShader: Particle.Module,
+            PixelShader: Particle.Module,
+            VertexLayouts: [PositionColorVertex.VertexLayout],
+            Topology: PrimitiveTopology.LineList,
+            BlendState: BlendStateDesc.Opaque,
+            DepthStencilState: DepthStencilStateDesc.None,
+            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None }));
+        DebugGhostFillPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
+            VertexShader: Particle.Module,
+            PixelShader: Particle.Module,
+            VertexLayouts: [PositionColorVertex.VertexLayout],
+            Topology: PrimitiveTopology.TriangleList,
+            BlendState: BlendStateDesc.NonPremultiplied,
+            DepthStencilState: DepthStencilStateDesc.Default,
+            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None }));
+
+        // PointClamp, matching the old scene-wide default the pre-migration code force-set on all
+        // 16 sampler slots (see Scene.cs's TODO on the equivalent removed call).
+        ShadowMapSampler = graphicsDevice.CreateSampler(new SamplerDesc(
+            Filter: TextureFilter.Point, AddressU: TextureAddressMode.Clamp, AddressV: TextureAddressMode.Clamp));
     }
 }
