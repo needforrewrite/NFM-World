@@ -94,6 +94,8 @@ public sealed class SdlImGuiRenderer : IDisposable
             if (c == '\t') return;
             ImGui.GetIO().AddInputCharacter(c);
         };
+
+        window.MouseWheel += (x, y) => ImGui.GetIO().AddMouseWheelEvent(x, y);
     }
 
     public void RebuildFontAtlas()
@@ -144,9 +146,6 @@ public sealed class SdlImGuiRenderer : IDisposable
         io.AddMouseButtonEvent(2, buttons.HasFlag(MouseButtons.Middle));
         io.AddMouseButtonEvent(3, buttons.HasFlag(MouseButtons.XButton1));
         io.AddMouseButtonEvent(4, buttons.HasFlag(MouseButtons.XButton2));
-
-        // TODO(Milestone 6 follow-up): scroll wheel - SdlWindow doesn't expose a polling scroll
-        // accumulator yet, matching WorldGame.UpdateMouse's identical TODO.
 
         var keys = SdlWindow.GetKeyboardState();
         foreach (var key in AllKeys)
