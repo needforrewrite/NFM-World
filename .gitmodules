@@ -52,3 +52,6 @@
 [submodule "NFMWorld.Library/data/library/preact-luau/upstream"]
 	path = NFMWorld.Library/data/library/preact-luau/upstream
 	url = https://github.com/preactjs/preact
+[submodule "SharpSokol"]
+	path = SharpSokol
+	url = https://github.com/uwx/SharpSokol
