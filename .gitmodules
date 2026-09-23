@@ -55,3 +55,6 @@
 [submodule "SharpSokol"]
 	path = SharpSokol
 	url = https://github.com/uwx/SharpSokol
+[submodule "Maxine.Silk.EGL"]
+	path = Maxine.Silk.EGL
+	url = https://github.com/uwx/Maxine.Silk.EGL
