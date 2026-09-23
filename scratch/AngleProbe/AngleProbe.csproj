@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RootNamespace>AngleProbe</RootNamespace>
+        <!-- The ANGLE DLLs shipped in this repository (they arrive with CefGlue/CEF) are x86-64,
+             so the probe has to be too. -->
+        <PlatformTarget>x64</PlatformTarget>
+    </PropertyGroup>
+
+    <!-- A real ANGLE build. Two things this is NOT:
+         (a) The libEGL.dll/libGLESv2.dll that appear throughout this repository's output folders
+             are CEF stubs - 462 KB, zero exports, .text starting `xor eax,eax; ret`. They carry the
+             right names and load, so a probe against them fails only at the first P/Invoke.
+         (b) Avalonia's av_libglesv2.dll is real ANGLE but exports no public egl* entry points.
+         The Edge WebView copy is a full ANGLE with EGL in libEGL.dll and GLES in libGLESv2.dll.
+         d3dcompiler_47 is what ANGLE's D3D11 backend uses to turn translated HLSL into DXBC. -->
+    <ItemGroup>
+        <None Include="C:\Program Files\Common Files\Adobe\Microsoft\EdgeWebView\libEGL.dll" Link="libEGL.dll" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="C:\Program Files\Common Files\Adobe\Microsoft\EdgeWebView\libGLESv2.dll" Link="libGLESv2.dll" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="..\..\nfm-world\bin\Debug\net10.0\d3dcompiler_47.dll" Link="d3dcompiler_47.dll" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+</Project>

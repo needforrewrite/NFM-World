@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- The real abstraction the generated bundle has to satisfy. -->
+        <ProjectReference Include="..\..\..\NFMWorld.Shaders.Abstraction\NFMWorld.Shaders.Abstraction.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Exactly the files the shader compiler emitted, nothing hand-written.
+             This is build-all.sh's output directory: the copies one level up are a stale
+             hand-run leftover, and globbing there would check the wrong bundles. -->
+        <Compile Include="..\generated\*.g.cs" LinkBase="Generated" />
+    </ItemGroup>
+
+</Project>
