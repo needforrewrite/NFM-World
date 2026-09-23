@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <!-- The logger hook installed for validation checking is a function pointer, and the
+             descriptor-shaping helpers take pointers, so unsafe is required. -->
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RootNamespace>NFMWorld.Graphics.Sokol.Smoke</RootNamespace>
+        <!-- sokol's native library is a DLL built for x64 Windows; sokol_app also owns the
+             window and the main loop here, so this cannot be a headless test. -->
+        <PlatformTarget>x64</PlatformTarget>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
+        <ProjectReference Include="..\NFMWorld.Graphics.Sokol\NFMWorld.Graphics.Sokol.csproj" />
+        <ProjectReference Include="..\NFMWorld.Shaders.Abstraction\NFMWorld.Shaders.Abstraction.csproj" />
+        <ProjectReference Include="..\SharpSokol\src\SharpSokol\SharpSokol.csproj" />
+    </ItemGroup>
+
+    <!-- SharpSokol P/Invokes into a plain "sokol" library name, so the DLL has to sit next to the
+         executable rather than in a runtimes/ folder. It comes from the SharpSokol release matching
+         the vendored headers - the Sokol.NET copy is a different sokol revision and does not export
+         sapp_acquire_swapchain, which this binding calls. -->
+    <ItemGroup>
+        <None Include="..\NFMWorld.Graphics.Sokol\native\win-x64\sokol.dll" Link="sokol.dll" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+</Project>

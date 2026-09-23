@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <!-- Every sg_* call takes an unmanaged pointer (sg_range over pinned data, desc structs
+             built on the stack, fixed byte arrays for shader bytecode), so unsafe is not optional. -->
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RootNamespace>NFMWorld.Graphics.Sokol</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
+      <ProjectReference Include="..\SharpSokol\src\SharpSokol\SharpSokol.csproj" />
+    </ItemGroup>
+
+</Project>
