@@ -1,4 +1,4 @@
-// LLM maintained.
+﻿// LLM maintained.
 //
 // Translates NFMWorld.Graphics' abstraction enums into Silk.NET.OpenGLES' GL enums.
 //
@@ -39,6 +39,10 @@ internal static class GlMapping
         // The shadow-cascade format. A 32-bit float colour texture is what the shadow pass
         // renders depth into, and R32F is core ES 3.0.
         TextureFormat.Single => InternalFormat.R32f,
+        // Four 32-bit floats a texel - a lookup table read back as data rather than sampled as a
+        // picture. Rgba32f is core ES 3.0, so unlike the BCn formats below this one is always
+        // available. See Enums.Rgba32f.
+        TextureFormat.Rgba32f => InternalFormat.Rgba32f,
         TextureFormat.Depth24Stencil8 => InternalFormat.Depth24Stencil8,
         TextureFormat.Dxt1 or TextureFormat.Dxt3 or TextureFormat.Dxt5 =>
             throw new NotSupportedException(
@@ -59,6 +63,7 @@ internal static class GlMapping
         TextureFormat.Bgra8 => PixelFormat.Bgra,
         TextureFormat.R8 => PixelFormat.Red,
         TextureFormat.Single => PixelFormat.Red,
+        TextureFormat.Rgba32f => PixelFormat.Rgba,
         TextureFormat.Depth24Stencil8 => PixelFormat.DepthStencil,
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
     };
@@ -68,6 +73,7 @@ internal static class GlMapping
     {
         TextureFormat.Rgba8 or TextureFormat.Bgra8 or TextureFormat.R8 => PixelType.UnsignedByte,
         TextureFormat.Single => PixelType.Float,
+        TextureFormat.Rgba32f => PixelType.Float,
         TextureFormat.Depth24Stencil8 => PixelType.UnsignedInt248,
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
     };
@@ -84,6 +90,7 @@ internal static class GlMapping
         TextureFormat.Rgba8 or TextureFormat.Bgra8 => 4,
         TextureFormat.R8 => 1,
         TextureFormat.Single => 4,
+        TextureFormat.Rgba32f => 16,
         // Not an upload size - a depth-stencil target has no colour bytes to read back - but
         // ReadTexture rejects it before this is ever used for arithmetic.
         TextureFormat.Depth24Stencil8 => 4,
@@ -270,6 +277,9 @@ internal static class GlMapping
         VertexAttributeFormat.Float3 => (3, VertexAttribPointerType.Float, false),
         VertexAttributeFormat.Float4 => (4, VertexAttribPointerType.Float, false),
         VertexAttributeFormat.Byte4Normalized => (4, VertexAttribPointerType.UnsignedByte, true),
+        // NormalizedShort4 is signed, so Short rather than UnsignedShort, and normalized: the
+        // shader is written against the [-1, 1] the hardware scales to.
+        VertexAttributeFormat.Short4Normalized => (4, VertexAttribPointerType.Short, true),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
     };
 

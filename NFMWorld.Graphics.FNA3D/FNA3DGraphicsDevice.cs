@@ -18,6 +18,16 @@ public sealed class FNA3DGraphicsDevice : IGraphicsDevice, IDisposable
 
     public ISwapchain Swapchain { get; }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// False, and this one is worth stating rather than inferring: FNA3D's GL driver flips Y in the
+    /// *vertex shader* (<c>MojoShader</c>'s <c>vpFlip</c>, "Flip viewport when target is not bound"),
+    /// so its render targets come out stored top-down like D3D's - which is exactly why the shaders'
+    /// own <c>1 - y</c> is correct on this backend and was written for it. This property answers for
+    /// the framebuffer convention the *shaders* see, not for the API underneath.
+    /// </remarks>
+    public bool HasBottomLeftFramebufferOrigin => false;
+
     /// <summary>
     /// The raw <c>FNA3D_Device*</c>. Deliberately not public - it's backend-specific, so exposing
     /// it on the interface would defeat the point of the abstraction. Available to the smoke test

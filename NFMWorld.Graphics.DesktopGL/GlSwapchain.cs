@@ -30,35 +30,72 @@ internal sealed class GlSwapchain : ISwapchain
     public int Height { get; private set; }
 
     /// <summary>
-    /// Always zero.
+    /// The count the <em>window</em> was actually created with, as read back from SDL after the
+    /// context was made.
     ///
-    /// MSAA count is a property of the framebuffer configuration the context was created with, and
-    /// the host's SDL window is asked for whatever SDL_GL_SetAttribute specified - not something
-    /// this backend sets or can report. Reporting zero is the honest answer rather than a count the
-    /// window may not have. MSAA here is an off-screen concern: a multisampled renderbuffer plus a
-    /// resolve blit.
+    /// Zero unless the host asked SDL for multisampling before building the window. Both halves are
+    /// deliberate: the value is the allocation and not the request, because a driver may clamp or
+    /// refuse it and reporting the request would claim MSAA that is not there; and it is passed in
+    /// rather than queried here, because this class has no GL calls of its own and the count is a
+    /// property of the context the host owns.
     /// </summary>
-    public int MultiSampleCount => 0;
+    public int MultiSampleCount { get; }
 
-    internal GlSwapchain(int width, int height, Action? present = null)
+    /// <summary>
+    /// True: the count is baked into the context.
+    ///
+    /// A window's pixel format is fixed when its GL context is created, so nothing <see cref="Resize"/>
+    /// can do would change the sample count - the change needs a new window and context, which is a
+    /// restart. Reporting this rather than accepting the request is what stops the settings screen
+    /// from looking like it worked when it cannot have.
+    /// </summary>
+    public bool MultiSampleChangeRequiresRestart => true;
+
+    /// <summary>
+    /// The last count <em>requested</em>, which is deliberately not <see cref="MultiSampleCount"/>.
+    ///
+    /// When the hardware clamps a request, comparing future requests against the clamped allocation
+    /// would report a difference forever and rebuild the drawable every frame - the trap
+    /// <c>WorldGame.EnsureSwapchainMatchesWindow</c> and <c>FNA3DSwapchain</c> both document.
+    /// Requests are compared against requests; only the allocation is reported back to callers.
+    /// </summary>
+    private int _requestedMultiSampleCount;
+
+    internal GlSwapchain(int width, int height, Action? present = null, int multiSampleCount = 0)
     {
         _present = present;
         Width = width;
         Height = height;
+        MultiSampleCount = multiSampleCount;
+        _requestedMultiSampleCount = multiSampleCount;
     }
 
     /// <summary>
-    /// Records the new size.
+    /// Records the new size, and the new multisample request.
     ///
     /// This cannot resize the drawable - the window is the host's, and the host has already resized
     /// it - but the size is still tracked, because reporting a stale one would leave every viewport
     /// and render target sized for the old drawable. Zero or less is ignored, which matters because
     /// a minimized window reports 0x0.
+    ///
+    /// The sample count is recorded but not applied, for the reason
+    /// <see cref="MultiSampleChangeRequiresRestart"/> gives. Recording it is still necessary:
+    /// <c>WorldGame</c> compares against what was last requested, so without this the same request
+    /// would be re-issued every frame.
     /// </summary>
     public void Resize(int width, int height, int multiSampleCount = 0)
     {
         if (width <= 0 || height <= 0)
             return;
+
+        // See ISwapchain.Resize: 0 means "leave the count alone", and 1 is the UI's "MSAA 1x",
+        // which means off.
+        _requestedMultiSampleCount = multiSampleCount switch
+        {
+            0 => _requestedMultiSampleCount,
+            1 => 0,
+            _ => multiSampleCount,
+        };
 
         Width = width;
         Height = height;

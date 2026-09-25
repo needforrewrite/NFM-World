@@ -30,6 +30,15 @@ internal sealed class FNA3DSwapchain(IntPtr device, FNA3D_PresentationParameters
     /// </summary>
     private int _requestedMultiSampleCount = parameters.multiSampleCount;
 
+    /// <summary>
+    /// False: <c>FNA3D_ResetBackbuffer</c> rebuilds the drawable with the new count in place.
+    ///
+    /// The count is genuinely applied mid-session here, which is the whole difference from the two
+    /// GL backends - their sample count is a property of a window pixel format that only a new
+    /// context can change.
+    /// </summary>
+    public bool MultiSampleChangeRequiresRestart => false;
+
     public void Resize(int width, int height, int multiSampleCount = 0)
     {
         // A minimized window reports 0x0, and the drivers reject a zero-sized swapchain - keep

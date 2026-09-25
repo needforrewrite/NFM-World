@@ -15,6 +15,9 @@ public class OpenGLGraphicsDevice : IGraphicsDevice
 
     public ISwapchain Swapchain { get; }
 
+    /// <inheritdoc />
+    public bool HasBottomLeftFramebufferOrigin => true;
+
     // Create a GL context for the desired window and pass SDL_GL_GetProcAddress to Silk.NET to resolve GL entrypoints.
     public static OpenGLGraphicsDevice Create(Func<string, nint> getProcAddress, int backBufferWidth, int backBufferHeight)
     {

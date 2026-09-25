@@ -61,10 +61,13 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
 
     public ISwapchain Swapchain { get; }
 
-    private GlGraphicsDevice(GL gl, int width, int height, Action? present = null)
+    /// <inheritdoc />
+    public bool HasBottomLeftFramebufferOrigin => true;
+
+    private GlGraphicsDevice(GL gl, int width, int height, Action? present = null, int multiSampleCount = 0)
     {
         _gl = gl;
-        Swapchain = new GlSwapchain(width, height, present);
+        Swapchain = new GlSwapchain(width, height, present, multiSampleCount);
     }
 
     /// <summary>
@@ -98,11 +101,20 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     /// handle here to do it with. Null means nothing presents, which is correct only for a host that
     /// reads its own framebuffer.
     /// </param>
+    /// <param name="multiSampleCount">
+    /// The sample count the host's window was actually created with, read back from SDL by the
+    /// caller. Defaulted to 0 so a host that does not request multisampling - and every smoke test -
+    /// reads unchanged. This backend cannot query it itself: the count belongs to the host's pixel
+    /// format, and there is no GL call that reports the default framebuffer's samples that would not
+    /// also have to run on a context this backend does not own.
+    /// </param>
     public static GlGraphicsDevice Create(
-        Func<string, nint> getProcAddress, int backBufferWidth, int backBufferHeight, Action? present = null)
+        Func<string, nint> getProcAddress, int backBufferWidth, int backBufferHeight, Action? present = null,
+        int multiSampleCount = 0)
     {
         ArgumentNullException.ThrowIfNull(getProcAddress);
-        return new GlGraphicsDevice(GL.GetApi(getProcAddress), backBufferWidth, backBufferHeight, present);
+        return new GlGraphicsDevice(
+            GL.GetApi(getProcAddress), backBufferWidth, backBufferHeight, present, multiSampleCount);
     }
 
     public ICommandBuffer AcquireCommandBuffer()

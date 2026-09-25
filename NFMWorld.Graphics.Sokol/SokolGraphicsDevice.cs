@@ -78,6 +78,14 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
     public ISwapchain Swapchain =>
         _swapchain ?? throw new InvalidOperationException("The device has not been created yet.");
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// False for D3D11, which is what this backend's vendored sokol is built against. The GL and Metal
+    /// builds of sokol would answer differently, which is precisely why this is a per-device answer
+    /// and not a property of "sokol".
+    /// </remarks>
+    public bool HasBottomLeftFramebufferOrigin => false;
+
     /// <summary>
     /// The drawable for the frame about to be rendered. Re-read per pass by
     /// <see cref="SokolCommandBuffer"/> rather than cached, because a resize replaces the views.
@@ -717,7 +725,7 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
         // A render target's contents belong to the GPU, and a compressed format has no CPU mirror
         // to stream from, so both take the immutable path whatever their level count.
         var updatable = !desc.RenderTargetable && mipCount == 1
-            && desc.Format is TextureFormat.Rgba8 or TextureFormat.Bgra8 or TextureFormat.R8 or TextureFormat.Single;
+            && desc.Format is TextureFormat.Rgba8 or TextureFormat.Bgra8 or TextureFormat.R8 or TextureFormat.Single or TextureFormat.Rgba32f;
 
         // An immutable image must carry its data in the descriptor, and sokol wants a whole chain -
         // every level of a multi-level image, not just level 0. Only a format the CPU can average

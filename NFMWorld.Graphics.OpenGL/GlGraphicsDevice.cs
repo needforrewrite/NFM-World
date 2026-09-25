@@ -67,11 +67,15 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
 
     public ISwapchain Swapchain { get; }
 
-    private GlGraphicsDevice(GL gl, Egl.Context? context, int width, int height, Action? present = null)
+    /// <inheritdoc />
+    public bool HasBottomLeftFramebufferOrigin => true;
+
+    private GlGraphicsDevice(
+        GL gl, Egl.Context? context, int width, int height, Action? present = null, int multiSampleCount = 0)
     {
         _gl = gl;
         _context = context;
-        Swapchain = new GlSwapchain(context, width, height, present);
+        Swapchain = new GlSwapchain(context, width, height, present, multiSampleCount);
 
         // GL's own loader, not the host's: by this point the context is current, so resolving through
         // the bindings' context and through the host's callback would agree, and this way the device
@@ -96,9 +100,9 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     /// right ANGLE next to the executable for the current RID, so the loader finds it without being
     /// told where to look.
     /// </summary>
-    public static GlGraphicsDevice CreateHeadless(int width, int height)
+    public static GlGraphicsDevice CreateHeadless(int width, int height, AngleSelection selection = default)
     {
-        var context = Egl.Context.CreateHeadless(width, height);
+        var context = Egl.Context.CreateHeadless(width, height, selection);
         try
         {
             return new GlGraphicsDevice(GL.GetApi(context.GlContext), context, width, height);
@@ -127,11 +131,18 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     /// handle here to do it with. Null means nothing presents, which is correct only for a host that
     /// reads its own framebuffer.
     /// </param>
+    /// <param name="multiSampleCount">
+    /// The sample count the host's window was actually created with, read back from SDL by the
+    /// caller. Defaulted to 0 so a host that does not request multisampling - and every smoke test -
+    /// reads unchanged.
+    /// </param>
     public static GlGraphicsDevice Create(
-        Func<string, nint> getProcAddress, int backBufferWidth, int backBufferHeight, Action? present = null)
+        Func<string, nint> getProcAddress, int backBufferWidth, int backBufferHeight, Action? present = null,
+        int multiSampleCount = 0)
     {
         ArgumentNullException.ThrowIfNull(getProcAddress);
-        return new GlGraphicsDevice(GL.GetApi(getProcAddress), null, backBufferWidth, backBufferHeight, present);
+        return new GlGraphicsDevice(
+            GL.GetApi(getProcAddress), null, backBufferWidth, backBufferHeight, present, multiSampleCount);
     }
 
     public ICommandBuffer AcquireCommandBuffer()

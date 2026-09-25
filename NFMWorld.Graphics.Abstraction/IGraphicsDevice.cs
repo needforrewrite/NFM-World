@@ -18,6 +18,27 @@ public interface IGraphicsDevice : IDisposable
     ISwapchain Swapchain { get; }
 
     /// <summary>
+    /// Whether this backend's framebuffer space has its origin at the bottom left, as OpenGL's does,
+    /// rather than at the top left, as D3D's and Metal's do.
+    /// </summary>
+    /// <remarks>
+    /// This is a property of the API and not of a particular renderer, which is why it is derived
+    /// from the device's own type rather than from a list of backend names: a GL-family device is
+    /// exactly the one whose uniform blocks are laid out as std140 (<c>GlCommandBuffer</c>'s UBO)
+    /// rather than as D3D's merged <c>register(b0)</c> block, and that correspondence is what the
+    /// abstraction documents. It deliberately does NOT defer to the concrete backends, so no other
+    /// project has to take a dependency just to answer the question.
+    ///
+    /// The one place this matters today is shadow-map sampling, and it is worth stating why. The
+    /// shader that samples a cascade carries <c>shadowTexCoord.y = 1.0f - shadowTexCoord.y</c>,
+    /// which is correct for a top-left origin and mirrored for a bottom-left one. The cascade is
+    /// written with the same <c>View * Projection</c> product the lookup uses, so the two are
+    /// related by exactly that one flip and nothing else - which the OpenGL smoke test demonstrates
+    /// by replaying the shader's own lookup and finding the depth one row-mirror away from it.
+    /// </remarks>
+    bool HasBottomLeftFramebufferOrigin { get; }
+
+    /// <summary>
     /// Only one command buffer may be live at a time; implementations must guard against a
     /// second acquisition before the previous one is submitted.
     /// </summary>

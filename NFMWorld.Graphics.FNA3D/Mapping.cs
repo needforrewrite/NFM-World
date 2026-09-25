@@ -14,6 +14,9 @@ internal static class Mapping
         TextureFormat.Dxt3 => FNA3D_SurfaceFormat.Dxt3,
         TextureFormat.Dxt5 => FNA3D_SurfaceFormat.Dxt5,
         TextureFormat.Single => FNA3D_SurfaceFormat.Single,
+        // Vector4 is FNA3D's four-channel 32-bit float format - the same 16 bytes a texel of
+        // Rgba32f is, which is why it and not Color is the match here. See Enums.Rgba32f.
+        TextureFormat.Rgba32f => FNA3D_SurfaceFormat.Vector4,
         TextureFormat.Depth24Stencil8 => throw new ArgumentException("Depth24Stencil8 is a depth format, not a texture surface format; use ToNativeDepthFormat instead.", nameof(format)),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
     };
@@ -207,6 +210,7 @@ internal static class Mapping
         VertexAttributeFormat.Float3 => FNA3D_VertexElementFormat.Vector3,
         VertexAttributeFormat.Float4 => FNA3D_VertexElementFormat.Vector4,
         VertexAttributeFormat.Byte4Normalized => FNA3D_VertexElementFormat.Color,
+        VertexAttributeFormat.Short4Normalized => FNA3D_VertexElementFormat.NormalizedShort4,
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
     };
 

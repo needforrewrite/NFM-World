@@ -70,8 +70,10 @@ internal static class Program
         CheckBundlePrograms(device);
         CheckImGuiTexturedDraw(device);
         CheckMatrixUniformOrientation(device);
+        CheckPipelineSwitchAppliesState(device);
         CheckBaseVertexDraw(device);
         CheckLineInstancedDraw(device);
+        CheckShadowCascadePass(device);
 
         DrainGlErrors("end of run");
 
@@ -700,6 +702,237 @@ internal static class Program
     }
 
     /// <summary>
+    /// The shadow-cascade pass, reproduced end to end: the app's real cascade render target
+    /// (<see cref="TextureFormat.Single"/> colour + Depth24Stencil8), the app's real
+    /// <c>PolyCreateShadowMap</c> program, the app's real white clear, and the app's real
+    /// <c>ReadTexture</c> readback - which is the whole pipeline <c>r_debugdisplay</c> shows.
+    ///
+    /// This exists because a cascade that comes back uniformly white is the one failure the rest of
+    /// this file cannot see. Every check above asserts either "no GL error" or "the pixels I drew
+    /// landed where I put them"; none of them covers a pass whose colour attachment has *never been
+    /// written*, which is exactly what an all-white cascade means - white is the clear
+    /// (<c>Scene.Render</c> clears every cascade to (1,1,1,1)), so an unwritten cascade and a
+    /// correctly-lit one are the same image. What distinguishes them is a texel that geometry should
+    /// have covered coming back with depth in it instead of 1.0.
+    ///
+    /// It is here as well as in the ANGLE smoke because the bug it pins down is not backend-specific:
+    /// it lived in the shader source and in how spirv-cross numbers the output semantic, both of
+    /// which are shared. Each backend still gets its own copy of the check, for the same reason the
+    /// two smokes are separate files - what each one proves is that *this* driver, fed this GLSL,
+    /// puts the pass's output where the framebuffer reads it.
+    ///
+    /// The camera and the geometry are the app's real ones, and getting them wrong is the trap this
+    /// check was written twice to avoid. <c>BaseStageRenderingPhase</c> puts the light at the player
+    /// minus 5000 in Y, looking at the player plus <c>(1,0,0)</c>, with the inherited <c>Up</c> of
+    /// <c>-UnitY</c> - and because the look direction is 5000 units down against 1 unit sideways, the
+    /// resulting basis is a camera looking almost straight down, with world +Z as its up and world +Y
+    /// as its depth. Ground is therefore the face-on geometry. The first version of this check used a
+    /// *vertical* wall instead, which that camera sees nearly edge-on, and "reproduced" an empty shadow
+    /// map that was in fact correct - which is the whole reason the geometry here is stated in terms
+    /// of the resulting basis rather than of the light's point.
+    ///
+    /// Two texels are asserted, one inside the square and one past its edge. A written texel alone
+    /// would also be satisfied by a map that had been uniformly filled, and a clear texel alone by a
+    /// pass that wrote nothing at all; together they pin down "wrote depth exactly where the geometry
+    /// is", which is what the cascade should contain.
+    /// </summary>
+    private static void CheckShadowCascadePass(GlGraphicsDevice device)
+    {
+        const int resolution = 256;
+
+        var program = PolyCreateShadowMap.Create();
+        var module = GlGraphicsDevice.LoadProgram(program.Vertex, program.Pixel, program.Reflection);
+        using var pipeline = device.CreatePipeline(new PipelineDesc(
+            VertexShader: module,
+            PixelShader: module,
+            VertexLayouts: [PolyLayout, InstanceLayout],
+            BlendState: BlendStateDesc.Opaque,
+            DepthStencilState: DepthStencilStateDesc.Default,
+            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None, ScissorTestEnabled = true },
+            Topology: PrimitiveTopology.TriangleList));
+
+        // The app's own cascade target: R32F colour plus a depth-stencil attachment.
+        using var cascade = device.CreateRenderTarget(new RenderTargetDesc(
+            resolution, resolution, TextureFormat.Single,
+            HasDepthStencil: true, TextureFormat.Depth24Stencil8));
+
+        // The light camera, built as OrthoLightCamera does on top of the app's own values: a
+        // 3000x3000 orthographic box (Near 50, Far 1e6), then the view matrix snapped to shadow-map
+        // texels. The snap is a translation in view space of under one texel, so it cannot move the
+        // square off the region asserted below.
+        const float orthoExtent = 3000f;
+        var lightProjection = System.Numerics.Matrix4x4.CreateOrthographic(orthoExtent, orthoExtent, 50f, 1_000_000f);
+
+        // Position, LookAt and Up are the app's: BaseStageRenderingPhase puts the light at the player
+        // minus 5000 in Y, looking at the player + (1,0,0), and Camera's default Up is -UnitY.
+        // Taking the player as the origin gives the two points below. The resulting basis is
+        // right = -Z, up = +X, forward = -Y.
+        var lightView = System.Numerics.Matrix4x4.CreateLookAt(
+            new System.Numerics.Vector3(0f, -5000f, 0f),
+            new System.Numerics.Vector3(1f, 0f, 0f),
+            new System.Numerics.Vector3(0f, -1f, 0f));
+        var texelSize = orthoExtent / resolution;
+        var originInView = System.Numerics.Vector3.Transform(System.Numerics.Vector3.Zero, lightView);
+        lightView *= System.Numerics.Matrix4x4.CreateTranslation(
+            MathF.Floor(originInView.X / texelSize) * texelSize - originInView.X,
+            MathF.Floor(originInView.Y / texelSize) * texelSize - originInView.Y,
+            0f);
+
+        // An asymmetric patch: it reaches further along +X than -X, and further along +Z than -Z. The
+        // asymmetry is the point - see the sampling check at the end, which is the one that can tell a
+        // mirrored lookup from a correct one.
+        const float extentX = 600f;
+        const float extentZ = 400f;
+        const float minusX = -200f;
+        const float minusZ = -1000f;
+        byte[] geometry = PolyGround(minusX, extentX, minusZ, extentZ);
+        byte[] instance = InstanceDataBytes();
+
+        using var geometryBuffer = device.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, geometry.Length), geometry);
+        using var instanceBuffer = device.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, instance.Length), instance);
+        using var indexBuffer = device.CreateBuffer(
+            new BufferDesc(BufferKind.Index, BufferUsage.Immutable, 6 * sizeof(ushort), IndexFormat.UInt16),
+            MemoryMarshal.AsBytes((ReadOnlySpan<ushort>)[0, 1, 2, 0, 2, 3]));
+
+        var cb = device.AcquireCommandBuffer();
+        // Scene.cs's cascade setup, call for call.
+        cb.SetRenderTarget(cascade);
+        cb.SetViewport(new Viewport(0, 0, resolution, resolution));
+        cb.SetScissorRect(new ScissorRect(0, 0, resolution, resolution));
+        cb.Clear(ClearOptions.Color | ClearOptions.Depth, new ColorRgba(1f, 1f, 1f, 1f));
+        cb.SetPipeline(pipeline);
+
+        // Submesh.Render's shadow branch: only View and Projection are ever set on this program.
+        var p = program.Bind();
+        p.View.SetValue(cb, lightView);
+        p.Projection.SetValue(cb, lightProjection);
+
+        cb.SetVertexBuffer(0, geometryBuffer, PolyStride);
+        cb.SetVertexBuffer(1, instanceBuffer, InstanceStride);
+        cb.SetIndexBuffer(indexBuffer);
+        cb.DrawIndexedInstanced(baseVertex: 0, startIndex: 0, primitiveCount: 2, instanceCount: 1);
+
+        // Reading the target while it is bound is the one thing ReadTexture documents as forbidden.
+        cb.SetRenderTarget(null);
+        cb.SetViewport(new Viewport(0, 0, device.Swapchain.Width, device.Swapchain.Height));
+        device.Submit(cb);
+        DrainGlErrors("shadow cascade pass");
+
+        var bytes = new byte[resolution * resolution * sizeof(float)];
+        device.ReadTexture(cascade.ColorTexture!, 0, 0, resolution, resolution, bytes);
+        DrainGlErrors("shadow cascade readback");
+
+        var depths = MemoryMarshal.Cast<byte, float>(bytes);
+
+        // The whole bug, in one number: geometry was drawn into this pass, so a texel the patch covers
+        // must hold the depth the shadow-map program wrote (~0.005), not the 1.0 clear. A 1.0 here is
+        // the white shadow map - the pass rasterized nothing.
+        var centre = ShadowLookup(System.Numerics.Vector3.Zero, lightView * lightProjection, resolution);
+        var centreDepth = depths[centre.Y * resolution + centre.X];
+
+        Report("SHADOW", "the shadow-map lookup is on-axis for the world origin, so a disagreement below " +
+                         "is a flip rather than an offset",
+            Match(centre, (resolution / 2, resolution / 2), 1));
+
+        Report("SHADOW", "the texel the patch's centre covers holds geometry depth " +
+                         $"({centreDepth:0.####} at {centre.X},{centre.Y}, expected ~0.005, not the 1.0 clear)",
+            centreDepth > 0.001f && centreDepth < 0.5f);
+
+        // The check the rest of this file cannot make, and the one that pins the reported flip: the
+        // shader's own lookup is replayed against a probe whose mirror image is *not* also geometry, so
+        // a lookup reading the wrong row shows up as the clear rather than as a different depth. The
+        // patch is deliberately lopsided for exactly this - +X reaches 600 against -X's -200.
+        var probe = new System.Numerics.Vector3(extentX - 100f, 0f, 0f);
+        var (shaderX, shaderY) = ShadowLookup(probe, lightView * lightProjection, resolution);
+        var shaderDepth = depths[shaderY * resolution + shaderX];
+
+        // Both halves are asserted, because the correction in Lighting.Prepare and the flip in
+        // applyShadowingSingle only make sense as a pair. If someone removes the shader's `1 - y`, the
+        // C# correction silently becomes a bug; if someone removes the correction, every shadow in the
+        // world shifts by a mirror. Pinning the two against each other is the only way this test can
+        // catch either without the other.
+        Report("SHADOW", "the shader's lookup carries its own V flip, so on a bottom-left-origin " +
+                         $"framebuffer it reads the row-mirrored texel ({shaderDepth:0.####} at {shaderX},{shaderY} is the clear)",
+            shaderDepth >= 1f - 0.001f);
+
+        // The correction, exactly as Lighting.Prepare applies it: negate the second *column* of
+        // LightViewProj. Reading column 1 rather than row 1 is the convention the shaders fix
+        // (row-vector mul), and it moves nothing but sampling - the shadow *pass* transforms by View
+        // and Projection separately rather than by this product.
+        var corrected = lightView * lightProjection;
+        corrected.M12 = -corrected.M12;
+        corrected.M22 = -corrected.M22;
+        corrected.M32 = -corrected.M32;
+        corrected.M42 = -corrected.M42;
+
+        var (fixedX, fixedY) = ShadowLookup(probe, corrected, resolution);
+        var fixedDepth = depths[fixedY * resolution + fixedX];
+        Report("SHADOW", "negating LightViewProj's second column makes that same lookup land on the depth " +
+                         $"the map actually holds ({fixedDepth:0.####} at {fixedX},{fixedY}, expected ~0.005)",
+            fixedDepth > 0.001f && fixedDepth < 0.5f);
+    }
+
+    /// <summary>
+    /// The shadow-map texel a world point resolves to, computed the way <c>PS_IsShadowed</c> computes
+    /// it: row-vector multiply by the light's view-projection, perspective divide, NDC to <c>[0,1]</c>,
+    /// then the shader's own <c>y = 1 - y</c>.
+    ///
+    /// This is replayed here rather than restated because the whole point is to test the shader's
+    /// convention, not to assert a convention of this test's own that happens to agree with the
+    /// readback. <paramref name="flipY"/> exists to show, in the run's own output, which texel the
+    /// lookup would have addressed with the flip removed - the difference between the two is the
+    /// only direct evidence of which one the data supports.
+    /// </summary>
+    private static (int X, int Y) ShadowLookup(System.Numerics.Vector3 world, System.Numerics.Matrix4x4 lightViewProj, int resolution, bool flipY = true)
+    {
+        var clip = System.Numerics.Vector4.Transform(new System.Numerics.Vector4(world, 1f), lightViewProj);
+        var ndc = new System.Numerics.Vector2(clip.X / clip.W, clip.Y / clip.W);
+        var uv = new System.Numerics.Vector2(0.5f * ndc.X + 0.5f, 0.5f * ndc.Y + 0.5f);
+        if (flipY) uv.Y = 1f - uv.Y;
+
+        return (Math.Clamp((int)(uv.X * resolution), 0, resolution - 1),
+                Math.Clamp((int)(uv.Y * resolution), 0, resolution - 1));
+    }
+
+    private static bool Match((int X, int Y) got, (int X, int Y) expected, int tolerance) =>
+        Math.Abs(got.X - expected.X) <= tolerance && Math.Abs(got.Y - expected.Y) <= tolerance;
+
+    /// <summary>
+    /// Four vertices in the app's real Poly vertex shape (<c>Mesh.VertexPositionNormalColorCentroid</c>'s
+    /// stride 44: three float3s, packed byte4 colour, float), forming a horizontal rectangular patch
+    /// of ground in the XZ plane - the face-on geometry for a light camera that looks almost straight
+    /// down. The patch is given by its bounds rather than by a size, because a check that wants to
+    /// catch a flip in the sampling needs geometry that is <em>not</em> symmetric about the axes it is
+    /// mirrored in: a centred square reads back as geometry either way round.
+    /// </summary>
+    private static byte[] PolyGround(float minX, float maxX, float minZ, float maxZ)
+    {
+        Span<(float X, float Z)> corners = [(minX, minZ), (maxX, minZ), (maxX, maxZ), (minX, maxZ)];
+
+        var bytes = new byte[PolyStride * corners.Length];
+        for (var v = 0; v < corners.Length; v++)
+        {
+            var at = v * PolyStride;
+            Write3(bytes, at + 0, corners[v].X, 0f, corners[v].Z);   // Position
+            Write3(bytes, at + 12, 0f, 1f, 0f);                      // Normal, straight up at the sun
+            Write3(bytes, at + 24, 0f, 0f, 0f);                      // Centroid
+            bytes[at + 36] = 255; bytes[at + 37] = 255; bytes[at + 38] = 255; bytes[at + 39] = 255;
+            BitConverter.TryWriteBytes(bytes.AsSpan(at + 40), 0f);    // DecalOffset
+        }
+
+        return bytes;
+
+        static void Write3(byte[] destination, int offset, float x, float y, float z)
+        {
+            BitConverter.TryWriteBytes(destination.AsSpan(offset + 0), x);
+            BitConverter.TryWriteBytes(destination.AsSpan(offset + 4), y);
+            BitConverter.TryWriteBytes(destination.AsSpan(offset + 8), z);
+        }
+    }
+
+    /// <summary>
     /// A matrix uniform must arrive transposed, or the whole scene renders with exploded vertices.
     ///
     /// This is the check the rest of this file cannot make, and its absence is why the bug it detects
@@ -960,6 +1193,152 @@ internal static class Program
             Console.WriteLine("           both draws used indices [0,1,2] and the same count, so only the base vertex");
             Console.WriteLine("           can have moved the second triangle - a black right half is baseVertex being ignored");
         }
+    }
+
+    /// <summary>
+    /// Changing pipelines mid-frame has to install the new pipeline's state.
+    ///
+    /// This exists because a SetPipeline early-out was added to the GL backends (the two D3D11
+    /// backends had always had one) and its first version skipped the apply on a *change* as well as
+    /// on a rebind - so a frame that switched pipelines kept the previous one's blend and
+    /// depth-stencil state. In the game that read as a dead z-buffer with black quads around
+    /// everything, and this file could not catch it: every other draw check binds a pipeline and
+    /// draws, never switching, so all of them passed with the bug present.
+    ///
+    /// The sequence is deliberately the game's, not a minimal one - bind A, write its uniforms,
+    /// clear, then switch to B and draw. The clear is what makes it interesting: it forces the write
+    /// masks on, which is the one thing a pointer-compare early-out cannot see, and B is opaque while
+    /// A wrote no depth, so a B that was never applied still writes depth and still passes a depth
+    /// test it should have failed.
+    ///
+    /// Deliberately not asserted through the color-write masks, even though those are what the clear
+    /// forced: with GL_DEPTH_TEST disabled, late fragments still win, so a piece of geometry drawn
+    /// last is invisible on screen whether or not its color write was masked. The masks are restored
+    /// on the draw path instead - see ApplyAfterClear - and would not show up in pixels here.
+    /// </summary>
+    private static void CheckPipelineSwitchAppliesState(GlGraphicsDevice device)
+    {
+        const int size = 32;
+        var program = ImGuiFullbright.Create();
+        var module = GlGraphicsDevice.LoadProgram(program.Vertex, program.Pixel, program.Reflection);
+
+        // A: depth testing and depth writing off. B: both on, so it is the pipeline that has to
+        // bring the depth test *back* after A's draw turned it off.
+        using var pipelineWithoutDepth = device.CreatePipeline(new PipelineDesc(
+            VertexShader: module,
+            PixelShader: module,
+            VertexLayouts: [ImGuiLayout],
+            BlendState: BlendStateDesc.Opaque,
+            DepthStencilState: DepthStencilStateDesc.None,
+            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
+            Topology: PrimitiveTopology.TriangleList));
+
+        using var pipelineWithDepth = device.CreatePipeline(new PipelineDesc(
+            VertexShader: module,
+            PixelShader: module,
+            VertexLayouts: [ImGuiLayout],
+            BlendState: BlendStateDesc.Opaque,
+            DepthStencilState: new DepthStencilStateDesc(
+                DepthTestEnabled: true, DepthWriteEnabled: true, DepthCompare: CompareFunction.LessEqual),
+            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
+            Topology: PrimitiveTopology.TriangleList));
+
+        using var target = device.CreateRenderTarget(
+            new RenderTargetDesc(size, size, TextureFormat.Rgba8, HasDepthStencil: true));
+
+        // Two quads that overlap in the middle column. The left one stops at clip x = +0.5, the right
+        // one starts at -0.5, so x in [-0.5, +0.5] - the centre half of the target - is covered by
+        // both. Both use a magenta texture, so occupancy is what the pixels show, not colour.
+        byte[] leftQuad = ImGuiVertices(
+            -1f, -1f, 0f, 0f,
+             0.5f, -1f, 1f, 0f,
+             0.5f,  1f, 1f, 1f,
+            -1f,  1f, 0f, 1f);
+        byte[] rightQuad = ImGuiVertices(
+            -0.5f, -1f, 0f, 0f,
+             1f, -1f, 1f, 0f,
+             1f,  1f, 1f, 1f,
+            -0.5f,  1f, 0f, 1f);
+        Span<ushort> indices = [0, 1, 2, 0, 2, 3];
+
+        using var leftVertices = device.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, leftQuad.Length), leftQuad);
+        using var rightVertices = device.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, rightQuad.Length), rightQuad);
+        using var indexBuffer = device.CreateBuffer(
+            new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indices.Length * sizeof(ushort), IndexFormat.UInt16),
+            MemoryMarshal.AsBytes(indices));
+        using var texture = device.CreateTexture(new TextureDesc(2, 2, TextureFormat.Rgba8), [
+            255, 0, 255, 255,  255, 0, 255, 255,
+            255, 0, 255, 255,  255, 0, 255, 255,
+        ]);
+        using var sampler = device.CreateSampler(
+            new SamplerDesc(TextureFilter.Point, TextureAddressMode.Clamp, TextureAddressMode.Clamp));
+
+        var identity = System.Numerics.Matrix4x4.Identity;
+
+        // The game's sequence: bind, write uniforms, clear, bind the other, draw.
+        var cb = device.AcquireCommandBuffer();
+        cb.SetRenderTarget(target);
+        cb.SetViewport(new Viewport(0, 0, size, size));
+        cb.SetPipeline(pipelineWithoutDepth);
+        program.Bind().Projection.SetValue(cb, identity);
+        cb.SetShaderResource(0, texture, sampler);
+        cb.SetVertexBuffer(0, leftVertices, ImGuiStride);
+        cb.SetIndexBuffer(indexBuffer);
+        cb.Clear(ClearOptions.Color | ClearOptions.Depth, new ColorRgba(0f, 0f, 0f));
+        cb.SetPipeline(pipelineWithDepth);
+        program.Bind().Projection.SetValue(cb, identity);
+        cb.SetShaderResource(0, texture, sampler);
+        cb.DrawIndexed(baseVertex: 0, startIndex: 0, primitiveCount: 2);
+        cb.SetVertexBuffer(0, rightVertices, ImGuiStride);
+        cb.DrawIndexed(baseVertex: 0, startIndex: 0, primitiveCount: 2);
+        cb.SetRenderTarget(null);
+        device.Submit(cb);
+        DrainGlErrors("pipeline switch");
+
+        var pixels = new byte[size * size * 4];
+        device.ReadTexture(target.ColorTexture!, 0, 0, size, size, pixels);
+        var centre = PixelAt(pixels, size, size / 2, size / 2);
+
+        // With B applied, the left quad writes depth 0.5 and the right quad's equal depth fails
+        // GL_LESS_EQUAL... it passes (equal), so both draw and the centre is magenta either way.
+        // What separates the two is the *depth test being on at all*: sabotage B to not apply and the
+        // centre is still magenta, so this pixel alone cannot carry the assertion. The load-bearing
+        // check is the same draw against a pre-loaded depth buffer, below.
+        Report("DRAW", $"a pipeline switch still draws ({centre.R},{centre.G},{centre.B})",
+            centre.R > 200 && centre.B > 200);
+
+        // The decisive pass: the depth buffer is cleared to 0 (nearest) and nothing writes it, so
+        // with B's depth test in force every fragment of both quads must fail. Unapplied state means
+        // no depth test, so both quads paint over the clear.
+        var cb2 = device.AcquireCommandBuffer();
+        cb2.SetRenderTarget(target);
+        cb2.SetViewport(new Viewport(0, 0, size, size));
+        cb2.Clear(ClearOptions.Color | ClearOptions.Depth, new ColorRgba(0f, 0f, 0f), depth: 0f);
+        cb2.SetPipeline(pipelineWithoutDepth);
+        program.Bind().Projection.SetValue(cb2, identity);
+        cb2.SetPipeline(pipelineWithDepth);
+        program.Bind().Projection.SetValue(cb2, identity);
+        cb2.SetShaderResource(0, texture, sampler);
+        cb2.SetVertexBuffer(0, leftVertices, ImGuiStride);
+        cb2.SetIndexBuffer(indexBuffer);
+        cb2.DrawIndexed(baseVertex: 0, startIndex: 0, primitiveCount: 2);
+        cb2.SetRenderTarget(null);
+        device.Submit(cb2);
+        DrainGlErrors("pipeline switch depth");
+
+        var occluded = new byte[size * size * 4];
+        device.ReadTexture(target.ColorTexture!, 0, 0, size, size, occluded);
+        var covered = 0;
+        for (var x = 0; x < size; x++)
+        for (var y = 0; y < size; y++)
+            if (PixelAt(occluded, size, x, y).R > 200) covered++;
+
+        Report("DRAW", $"a switched-to pipeline's depth state is in force (0 of {size * size} pixels drawn, " +
+                       $"found {covered})", covered == 0);
+        Console.WriteLine("           a pipeline that is bound but never applied leaves no depth test, so");
+        Console.WriteLine("           the quad paints over the depth clear and this count is the whole target");
     }
 
     private static bool IsMagenta(Pixel p) => p.R > 200 && p.G < 60 && p.B > 200;

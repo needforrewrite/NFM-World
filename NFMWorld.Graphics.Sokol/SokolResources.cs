@@ -238,6 +238,7 @@ internal sealed class SokolTexture(sg_image handle, TextureDesc desc, int mipCou
         TextureFormat.Rgba8 or TextureFormat.Bgra8 => 4,
         TextureFormat.R8 => 1,
         TextureFormat.Single => 4,
+        TextureFormat.Rgba32f => 16,
         _ => 0,
     };
 

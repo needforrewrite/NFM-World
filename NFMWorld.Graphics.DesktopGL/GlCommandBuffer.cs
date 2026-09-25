@@ -85,20 +85,84 @@ internal sealed class GlCommandBuffer : ICommandBuffer
         _targetHeight = device.Swapchain.Height;
     }
 
+    /// <summary>
+    /// Bind a pipeline. Re-binding the one already bound is a no-op, apart from
+    /// <see cref="Clear"/>'s masks - see <see cref="_pipelineStateLostToClear"/>.
+    /// </summary>
     public void SetPipeline(IPipelineState pipeline)
     {
         var glPipeline = (GlPipelineState)pipeline;
-        _pipeline = glPipeline;
 
         // Sized from the reflection's offsets, not from the uniform count: the block is a byte
         // range, and two shaders can declare the same number of uniforms at different offsets.
         // Reallocating drops any previously written value, which is the point - a uniform the new
         // pipeline never writes must not inherit bytes from an unrelated shader.
+        //
+        // Sized on every call rather than only on a pipeline change, and that is what closes the hole
+        // the early-out below would otherwise open: a caller may write a uniform *after* re-binding
+        // the same pipeline, and that write has to land in the size that pipeline's block actually
+        // is. The comparison is a length check, so the steady-state cost is that and nothing else.
         var size = ComputeBlockSize(glPipeline);
         if (_uniforms.Length != size)
             _uniforms = new byte[size];
 
+        // Rebinding the pipeline that is already applied is a no-op - the early-out the two D3D11
+        // backends have had all along (FNA3DCommandBuffer and SokolCommandBuffer each open with a
+        // ReferenceEquals test). Without it every render element re-issues the whole fixed-function
+        // block - UseProgram, BindVertexArray, the blend, depth-stencil and rasterizer groups, ~20
+        // calls - for state that is already set.
+        //
+        // The flag is the one case where a matching pointer still has to reapply, because Clear
+        // forces the write masks on and only the pipeline can put its own back.
+        //
+        // Note what is *not* early-outed: a different pipeline. That apply is unconditional, and it
+        // has to be - the whole point of binding a pipeline is to install its state, and a bind that
+        // updated only the pointer would leave the previous program's depth, blend and cull state
+        // running under the new shader. Skipping it is not a missed optimisation here, it is a
+        // broken frame; it was skipped once, and the symptom was a dead z-buffer and black quads
+        // around everything the changed pipeline drew.
+        if (ReferenceEquals(_pipeline, glPipeline) && !_pipelineStateLostToClear)
+            return;
+
+        _pipeline = glPipeline;
+        _pipelineStateLostToClear = false;
         glPipeline.Apply(_gl);
+    }
+
+    /// <summary>
+    /// Whether the fixed-function state <see cref="GlPipelineState.Apply"/> establishes has been
+    /// changed out from under it since the last apply, so the bound pipeline's state has to be
+    /// re-applied even though the pipeline itself has not changed.
+    ///
+    /// Set by <see cref="Clear"/> and cleared by an apply, and <see cref="Clear"/> is the only
+    /// writer. That is not an assumption about today's callers - it is enforced by the type: every
+    /// other GL state mutation this backend makes lives in GlPipelineState.Apply, the command
+    /// buffer's other methods set no fixed-function state at all, and nothing outside these two
+    /// projects touches a GL context.
+    ///
+    /// It exists because Clear forces the colour, depth and stencil write masks on so its own clear
+    /// cannot be masked off, and the pipeline is then responsible for restoring its masks. A bind
+    /// that assumed "same pipeline, same state" would leave the next draw with Clear's masks instead
+    /// of the pipeline's - which is why the masks are the *reason* this flag exists rather than
+    /// something the flag could be replaced by.
+    /// </summary>
+    private bool _pipelineStateLostToClear;
+
+    /// <summary>
+    /// Re-applies the bound pipeline if a clear has moved its masks since the last apply.
+    ///
+    /// The lazy counterpart to the apply <see cref="SetPipeline"/> does on a real change, and
+    /// deliberately narrower than it: a caller may clear *after* binding, write uniforms, and then
+    /// draw without ever rebinding - NanoVG does exactly that - so the draw path has to be able to
+    /// put the masks back without redoing the block-size work the uniform writes depend on.
+    /// </summary>
+    private void ApplyAfterClear()
+    {
+        if (_pipeline is null || !_pipelineStateLostToClear)
+            return;
+
+        _pipelineStateLostToClear = false;
+        _pipeline.Apply(_gl);
     }
 
     /// <summary>
@@ -317,6 +381,10 @@ internal sealed class GlCommandBuffer : ICommandBuffer
         _gl.DepthMask(true);
         _gl.StencilMask(uint.MaxValue);
 
+        // Those three are the pipeline's state, so the bind that would otherwise restore them has to
+        // be told they moved. See _pipelineStateLostToClear.
+        _pipelineStateLostToClear = true;
+
         if (options.HasFlag(ClearOptions.Color))
             _gl.ClearColor(color.R, color.G, color.B, color.A);
         if (options.HasFlag(ClearOptions.Depth))
@@ -354,6 +422,10 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     private void DrawInternal(int baseVertex, int firstIndex, int primitiveCount, int instanceCount, bool indexed)
     {
         var pipeline = RequirePipeline();
+
+        // The bind may have returned early and left the masks as Clear set them. Draw is the last
+        // point at which that can be put right.
+        ApplyAfterClear();
 
         UploadUniforms(pipeline);
         BindVertexStreams(pipeline);
@@ -539,6 +611,14 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     internal void Reset()
     {
         _pipeline = null;
+
+        // Unlike the binding caches above, this one *is* dropped, because the pipeline it justified
+        // skipping no longer exists to be asked. Whatever else touched the context between frames -
+        // another renderer, a resize, the UI path - is reason enough for the next frame's first bind
+        // to apply in full rather than trust a decision the previous frame's command buffer made.
+        // It costs one apply per frame.
+        _pipelineStateLostToClear = true;
+
         _indexBuffer = null;
         _indexOffsetBytes = 0;
         Array.Clear(_vertexStreams);

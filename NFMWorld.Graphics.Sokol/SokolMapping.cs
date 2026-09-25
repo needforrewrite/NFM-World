@@ -35,6 +35,9 @@ internal static class SokolMapping
         // from the other side, and GL agrees - GlMapping maps Single to InternalFormat.R32f.
         TextureFormat.Single => sg_pixel_format.SG_PIXELFORMAT_R32F,
         TextureFormat.Depth24Stencil8 => sg_pixel_format.SG_PIXELFORMAT_DEPTH_STENCIL,
+        // Four 32-bit floats a texel, none of them depth, which is what a lookup table read back as
+        // data wants. See Enums.Rgba32f.
+        TextureFormat.Rgba32f => sg_pixel_format.SG_PIXELFORMAT_RGBA32F,
         // sokol's BCn names line up with DXTn (BC1=DXT1, BC2=DXT3, BC3=DXT5).
         TextureFormat.Dxt1 => sg_pixel_format.SG_PIXELFORMAT_BC1_RGBA,
         TextureFormat.Dxt3 => sg_pixel_format.SG_PIXELFORMAT_BC2_RGBA,
@@ -152,6 +155,8 @@ internal static class SokolMapping
         // XNA/FNA's Color format is a packed 4-byte BGRA value normalized to 0..1 on read -
         // that is exactly sokol's UBYTE4N, not BYTE4N (which is signed).
         VertexAttributeFormat.Byte4Normalized => sg_vertex_format.SG_VERTEXFORMAT_UBYTE4N,
+        // NormalizedShort4 is signed, so this is SHORT4N rather than USHORT4N.
+        VertexAttributeFormat.Short4Normalized => sg_vertex_format.SG_VERTEXFORMAT_SHORT4N,
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
     };
 

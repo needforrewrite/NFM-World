@@ -42,22 +42,42 @@ internal sealed class GlSwapchain : ISwapchain
     public int Height { get; private set; }
 
     /// <summary>
-    /// Always zero.
+    /// The count the window (or the headless pbuffer) was actually created with, as read back from
+    /// the windowing layer after the context was made.
     ///
-    /// ES 3.0 core cannot multisample the default framebuffer - <c>glRenderbufferStorageMultisample</c>
-    /// is core but <c>glTexImage2DMultisample</c> is ES 3.1, and there is no multisample pbuffer
-    /// config this POC requests. Reporting zero is the honest answer rather than a count the EGL
-    /// config would silently not honour. MSAA here is an off-screen concern: a multisampled
-    /// renderbuffer plus a resolve blit.
+    /// Zero unless multisampling was asked for before the window was built. On the headless path
+    /// this is always zero: the pbuffer's EGL config is chosen by <see cref="Egl.Context.CreateHeadless"/>
+    /// and requests no <c>EGL_SAMPLES</c>. As on the desktop path, the value is the allocation and
+    /// not the request, because a driver may clamp or refuse it.
     /// </summary>
-    public int MultiSampleCount => 0;
+    public int MultiSampleCount { get; }
 
-    internal GlSwapchain(Egl.Context? context, int width, int height, Action? present = null)
+    /// <summary>
+    /// True: the count is baked into the EGL config (or the context), and a surface rebuild does
+    /// not touch it.
+    ///
+    /// <see cref="Resize"/> re-creates the pbuffer from the *same* config deliberately - EGL
+    /// requires a surface to be created from the context's own config - so the sample count is one
+    /// of the things that cannot change without a new context. That is a restart.
+    /// </summary>
+    public bool MultiSampleChangeRequiresRestart => true;
+
+    /// <summary>
+    /// The last count <em>requested</em>, which is deliberately not <see cref="MultiSampleCount"/>.
+    ///
+    /// See the desktop backend's copy of this field: comparing a request against a clamped
+    /// allocation never converges, so requests are compared against requests.
+    /// </summary>
+    private int _requestedMultiSampleCount;
+
+    internal GlSwapchain(Egl.Context? context, int width, int height, Action? present = null, int multiSampleCount = 0)
     {
         _context = context;
         _present = present;
         Width = width;
         Height = height;
+        MultiSampleCount = multiSampleCount;
+        _requestedMultiSampleCount = multiSampleCount;
     }
 
     /// <summary>
@@ -67,11 +87,23 @@ internal sealed class GlSwapchain : ISwapchain
     /// of that size is not constructible. With no EGL context the size is still updated - the host
     /// has already resized its own window, and reporting a stale size would leave every viewport
     /// and render target sized for the old drawable.
+    ///
+    /// The sample count is recorded but not applied: it lives in the EGL config, which is reused
+    /// across a pbuffer rebuild on purpose. See <see cref="MultiSampleChangeRequiresRestart"/>.
     /// </summary>
     public void Resize(int width, int height, int multiSampleCount = 0)
     {
         if (width <= 0 || height <= 0)
             return;
+
+        // See ISwapchain.Resize: 0 means "leave the count alone", and 1 is the UI's "MSAA 1x",
+        // which means off. Resolved before the early-out so an unchanged request stays cheap.
+        _requestedMultiSampleCount = multiSampleCount switch
+        {
+            0 => _requestedMultiSampleCount,
+            1 => 0,
+            _ => multiSampleCount,
+        };
 
         if (width == Width && height == Height)
             return;

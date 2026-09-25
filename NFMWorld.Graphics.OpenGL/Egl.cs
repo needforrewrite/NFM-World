@@ -1,4 +1,4 @@
-// LLM maintained.
+﻿// LLM maintained.
 //
 // The EGL context: a thin wrapper over the Maxine.Silk.EGL bindings, which supply both the EGL
 // entry points and (through Maxine.Silk.OpenGLES.ANGLE.Native) the ANGLE libraries underneath them.
@@ -27,7 +27,6 @@
 // eglext_angle.h and appears nowhere in the Khronos EGL registry the bindings generate from, so no
 // amount of regeneration can produce these constants. They are declared below, with their values.
 using Maxine.EGL;
-using Maxine.EGL.Extensions.EXT;
 using Silk.NET.Core.Contexts;
 using Silk.NET.OpenGLES;
 
@@ -36,19 +35,45 @@ namespace NFMWorld.Graphics.OpenGL;
 internal static class Egl
 {
     /// <summary>
-    /// ANGLE's D3D11 platform, from <c>eglext_angle.h</c>.
+    /// ANGLE's platform-selection tokens, from <c>eglext_angle.h</c>.
     ///
     /// These are absent from the Khronos EGL registry the bindings are generated from - that
     /// registry carries only <c>EGL_ANGLE_query_surface_pointer</c>, <c>_sync_control_rate</c> and
     /// <c>_window_fixed_size</c>, plus the D3D device/shared-handle tokens. ANGLE's platform
     /// selection extension is documented in ANGLE's own repository instead, so its tokens have to be
     /// spelled out here. The values are fixed by the extension and are what ANGLE matches on.
+    ///
+    /// Internal rather than private because <see cref="AngleSelection"/> maps its enum members onto
+    /// these, so that there is exactly one copy of each number in the project. The names are
+    /// ANGLE's, spelled out in full, because a shorter scheme is how the bug these replaced stayed
+    /// invisible: the previous code passed <c>0x33AE</c> as the platform type, and <c>0x33AE</c> is
+    /// <see cref="EglPlatformAngleTypeNull"/> - ANGLE's null renderer.
     /// </summary>
-    private const int EGL_PLATFORM_ANGLE_ANGLE = 0x3202;
-    private const int EGL_PLATFORM_ANGLE_TYPE_ANGLE = 0x3203;
-    private const int EGL_PLATFORM_ANGLE_TYPE_D3D11_ANGLE = 0x3208;
-    private const int EGL_PLATFORM_ANGLE_DEVICE_TYPE_ANGLE = 0x3209;
-    private const int EGL_PLATFORM_ANGLE_DEVICE_TYPE_HARDWARE_ANGLE = 0x320A;
+    internal const int EglPlatformAngleAngle = 0x3202;
+    internal const int EglPlatformAngleTypeAngle = 0x3203;
+    internal const int EglPlatformAngleTypeDefault = 0x3206;
+    internal const int EglPlatformAngleTypeD3d11 = 0x3208;
+    internal const int EglPlatformAngleTypeOpenGl = 0x320D;
+    internal const int EglPlatformAngleTypeOpenGles = 0x320E;
+    internal const int EglPlatformAngleTypeVulkan = 0x3450;
+    internal const int EglPlatformAngleTypeMetal = 0x3489;
+    internal const int EglPlatformAngleTypeNull = 0x33AE;
+    internal const int EglPlatformAngleDeviceTypeAngle = 0x3209;
+    internal const int EglPlatformAngleDeviceTypeHardware = 0x320A;
+    internal const int EglPlatformAngleDeviceTypeD3dWarp = 0x320B;
+    internal const int EglPlatformAngleDeviceTypeD3dReference = 0x320C;
+    internal const int EglPlatformAngleDeviceTypeNull = 0x345E;
+    internal const int EglPlatformAngleDeviceTypeSwiftShader = 0x3487;
+
+    /// <summary>
+    /// <c>EGL_NONE</c>, the terminator for every EGL attribute list.
+    ///
+    /// Spelled out here rather than reached for as <c>(int)EGLEnum.None</c> because
+    /// <see cref="AngleSelection.PlatformAttributes"/> is public and <c>EGLEnum</c> is a Maxine
+    /// binding type - widening the surface just for a terminator would be worse than one more
+    /// constant in the block that already exists to hold numbers the bindings cannot supply.
+    /// </summary>
+    internal const int EglNone = 0x3038;
 
     /// <summary>
     /// A live EGL display, context and draw surface. Disposing unbinds the context and destroys all
@@ -120,21 +145,24 @@ internal static class Egl
         }
 
         /// <summary>
-        /// Brings up a headless ES 3.0 context on ANGLE's D3D11 backend, with a pbuffer surface
-        /// sized to <paramref name="width"/>x<paramref name="height"/>.
+        /// Brings up a headless ES 3.0 context on ANGLE's <paramref name="selection"/> backend, with
+        /// a pbuffer surface sized to <paramref name="width"/>x<paramref name="height"/>.
         ///
-        /// The platform display is requested explicitly - <c>EGL_PLATFORM_ANGLE_TYPE_D3D11_ANGLE</c>
-        /// with the hardware device type - rather than taking the default display. That is what makes
-        /// the backend deterministic: without it a machine whose default is D3D9 or a software
-        /// rasterizer would still come up, and every measurement or pixel the POC produces would
-        /// silently describe a different renderer.
+        /// The platform display is requested explicitly - see <see cref="GetAngleDisplay"/>, which
+        /// is what makes the backend deterministic.
         ///
-        /// This is also why the call goes through <c>eglGetPlatformDisplay</c> (EGL 1.5 core, which
-        /// the bindings declare) rather than <c>eglGetPlatformDisplayEXT</c>: the core entry point
-        /// takes the same platform enum and attributes, and ANGLE exports both.
+        /// The call goes through <c>eglGetPlatformDisplay</c> (EGL 1.5 core, which the bindings
+        /// declare) rather than <c>eglGetPlatformDisplayEXT</c>: the core entry point takes the same
+        /// platform enum and attributes, and ANGLE exports both.
         /// </summary>
-        internal static Context CreateHeadless(int width, int height)
+        /// <param name="selection">Which ANGLE backend and device to ask for. Defaults to D3D11 on hardware, which is the backend this path measured before the choice was selectable.</param>
+        internal static Context CreateHeadless(int width, int height, AngleSelection selection = default)
         {
+            // A default-constructed struct has both members at their zero values, which is D3d11 and
+            // Hardware - so the documented default holds without a second overload.
+            if (selection == default)
+                selection = AngleSelection.Default;
+
             var egl = EGL.GetApi();
 
             // libGLESv2 supplies the gl* symbols that libEGL does not export. Resolved by bare name
@@ -145,12 +173,19 @@ internal static class Egl
 
             try
             {
-                var display = GetAngleD3D11Display(egl);
+                var display = GetAngleDisplay(egl, selection);
                 if (display == 0)
-                    throw new InvalidOperationException($"eglGetPlatformDisplay returned no display (EGL error {ErrorText(egl)}).");
+                    throw new InvalidOperationException(
+                        $"eglGetPlatformDisplay returned no display for {selection.Describe()} " +
+                        $"(EGL error {ErrorText(egl)}).");
 
                 if (!egl.Initialize(display, out var major, out var minor))
-                    throw new InvalidOperationException($"eglInitialize failed (EGL error {ErrorText(egl)}).");
+                    throw new InvalidOperationException(
+                        $"eglInitialize failed for {selection.Describe()} (EGL error {ErrorText(egl)}). " +
+                        "This is what an unavailable backend looks like: ANGLE's Vulkan platform needs " +
+                        "its own ICD, and its OpenGL/GLES platform needs a display to attach to, so a " +
+                        "selection that does not exist on this machine fails here rather than falling " +
+                        "back to one that does.");
 
                 // The ES3 config. A pbuffer is requested because this context is headless: there is
                 // no window for a window surface to attach to.
@@ -204,27 +239,50 @@ internal static class Egl
         }
 
         /// <summary>
-        /// Asks for ANGLE on D3D11 specifically, through EGL 1.5's core <c>eglGetPlatformDisplay</c>.
+        /// Asks for ANGLE on <paramref name="selection"/>'s platform and device, through EGL 1.5's
+        /// core <c>eglGetPlatformDisplay</c>.
         ///
         /// The attribute list is the platform-selection extension's, which is why its tokens are
-        /// declared by hand - see the file header.
+        /// declared by hand - see the file header. The values come from
+        /// <see cref="AngleSelection.PlatformAttributes"/> rather than being built here, so that the
+        /// game's <c>--angle-backend=</c> flag and this headless path describe the same request.
         ///
         /// <c>native_display</c> is null because the ANGLE platform has no underlying native display
         /// to name: it creates the D3D device itself. The other overloads would pass a pointer to a
         /// local instead, which is not the same thing, so the null is spelled out.
         /// </summary>
-        private static unsafe nint GetAngleD3D11Display(EGL egl)
+        /// <remarks>
+        /// Requesting the platform explicitly is what makes the backend deterministic. Without it a
+        /// machine whose default is D3D9 or a software rasterizer would still come up, and every
+        /// measurement or pixel this path produces would silently describe a different renderer.
+        /// Note the parameter list does not default to D3D11 by accident: what this method used to
+        /// pass as the platform type was <c>0x33AE</c>, ANGLE's null backend, which is the concrete
+        /// form of exactly that failure.
+        /// <para>
+        /// The entry point is named rather than reached through Silk's extension mechanism, which is
+        /// a second, independent reason this path did not work: <c>EGL.TryGetExtension</c> and
+        /// <c>EGL.IsExtensionPresent</c> are hand-written stubs in Maxine.Silk.EGL that throw
+        /// <c>NotImplementedException</c> outright (src/Maxine.EGL/EGL.cs:23-32), so the previous
+        /// <c>TryGetExtension(out ExtPlatformBase)</c> threw before any EGL call was made. The
+        /// generated core binding is declared and works, so it is what is used.
+        /// </para>
+        /// </remarks>
+        internal static unsafe nint GetAngleDisplay(EGL egl, AngleSelection selection)
         {
-            var attribs = new int[]
+            var attribs = selection.PlatformAttributes();
+
+            // The core EGL 1.5 entry point, not eglGetPlatformDisplayEXT. That is a working-around
+            // rather than a preference: Silk's extension lookup - EGL.TryGetExtension and
+            // EGL.IsExtensionPresent - is a hand-written stub in Maxine.Silk.EGL that throws
+            // NotImplementedException outright (src/Maxine.EGL/EGL.cs:23-32), so the EXT route cannot
+            // be taken at all, and the extension type it would return has no other public way to be
+            // built. Reaching the same entry point by name needs neither: ANGLE exports
+            // eglGetPlatformDisplay and the bindings declare it, with an identical platform enum and
+            // attribute list.
+            fixed (nint* pinned = attribs)
             {
-                EGL_PLATFORM_ANGLE_TYPE_ANGLE, 0x33AE,
-                EGL_PLATFORM_ANGLE_DEVICE_TYPE_ANGLE, EGL_PLATFORM_ANGLE_DEVICE_TYPE_HARDWARE_ANGLE,
-                (int)EGLEnum.None,
-            };
-            
-            egl.TryGetExtension(out ExtPlatformBase eglPlatformBase);
-            
-            return eglPlatformBase.GetPlatformDisplay((EXT)EGL_PLATFORM_ANGLE_ANGLE, null, attribs);
+                return egl.GetPlatformDisplay((EGLEnum)EglPlatformAngleAngle, null, pinned);
+            }
         }
 
         /// <summary>

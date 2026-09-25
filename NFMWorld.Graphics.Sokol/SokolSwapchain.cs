@@ -42,6 +42,17 @@ internal sealed class SokolSwapchain(ISokolPlatform platform) : ISwapchain
     public int MultiSampleCount => 1;
 
     /// <summary>
+    /// False: this swapchain's count never changes, so nothing about it can need a restart.
+    ///
+    /// Reporting false rather than true is correct here even though the count is as immovable as
+    /// the GL backends' - what this property answers is whether a <em>user-visible setting change</em>
+    /// can take effect, and sokol's answer is that it always already has: a request for more than
+    /// one is refused at <see cref="Resize"/> and reported as 1 immediately, on the same frame. A
+    /// restart would change nothing.
+    /// </summary>
+    public bool MultiSampleChangeRequiresRestart => false;
+
+    /// <summary>
     /// Whether the platform's 3D API must be used from the thread that created it. Forwarded to
     /// <see cref="SokolGraphicsDevice.EnsureRenderingThread"/>, which is the only reader.
     /// </summary>

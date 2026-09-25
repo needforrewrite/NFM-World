@@ -1,4 +1,4 @@
-// LLM maintained.
+﻿// LLM maintained.
 //
 // Smoke test for NFMWorld.Graphics.OpenGL: brings up a real ANGLE ES 3.0 context, compiles the real
 // generated bundles' ES GLSL through the abstraction, draws with them, and reads the pixels back.
@@ -42,11 +42,19 @@ internal static class Program
 
     private static GL _gl = null!;
 
-    private static int Main()
+    private static int Main(string[] args)
     {
-        using var device = GlGraphicsDevice.CreateHeadless(Width, Height);
+        // The same --angle-backend=/--angle-device= flags the game takes, so the driver knob can be
+        // exercised here - headlessly, with no window and no UI - which is the only way to check
+        // that the attribute list reaches ANGLE at all. The check is the GL_RENDERER line below:
+        // run it once with the default and once with a different backend, and the strings must
+        // differ. Both runs reporting the same renderer is exactly the bug this replaces, where the
+        // platform type was ANGLE's null token and every selection collapsed onto one backend.
+        var selection = AngleSelection.Parse(args);
+
+        using var device = GlGraphicsDevice.CreateHeadless(Width, Height, selection);
         _gl = device.Gl;
-        ReportInterface(device);
+        ReportInterface(device, selection);
 
         CheckTextureRoundTrip(device);
         CheckMipmappedTexture(device);
@@ -59,6 +67,7 @@ internal static class Program
         CheckMatrixUniformOrientation(device);
         CheckBaseVertexDraw(device);
         CheckLineInstancedDraw(device);
+        CheckShadowCascadePass(device);
 
         DrainGlErrors("end of run");
 
@@ -79,8 +88,9 @@ internal static class Program
     /// The ANGLE path is reported for the same reason: the bindings' native package puts the right
     /// build next to the executable, and the path is how a reader confirms which one ran.
     /// </summary>
-    private static void ReportInterface(GlGraphicsDevice device)
+    private static void ReportInterface(GlGraphicsDevice device, AngleSelection selection)
     {
+        Console.WriteLine($"DEVICE: requested {selection.Describe()}");
         Console.WriteLine($"DEVICE: EGL {device.EglVersion}, vendor {device.EglVendor}");
         Console.WriteLine($"DEVICE: ANGLE loaded from {device.AngleDirectory}");
         Console.WriteLine($"DEVICE: GL_VENDOR   {glString(StringName.Vendor)}");
@@ -683,6 +693,237 @@ internal static class Program
         Report("DRAW", $"Line instanced draw reached the driver with {after - before} GL error(s) " +
                        $"({program.Reflection.Textures.Count} shadow maps bound, {program.Reflection.Uniforms.Count} uniforms set)",
             after == before);
+    }
+
+    /// <summary>
+    /// The shadow-cascade pass, reproduced end to end: the app's real cascade render target
+    /// (<see cref="TextureFormat.Single"/> colour + Depth24Stencil8), the app's real
+    /// <c>PolyCreateShadowMap</c> program, the app's real white clear, and the app's real
+    /// <c>ReadTexture</c> readback - which is the whole pipeline <c>r_debugdisplay</c> shows.
+    ///
+    /// This exists because a cascade that comes back uniformly white is the one failure the rest of
+    /// this file cannot see. Every check above asserts either "no GL error" or "the pixels I drew
+    /// landed where I put them"; none of them covers a pass whose colour attachment has *never been
+    /// written*, which is exactly what an all-white cascade means - white is the clear
+    /// (<c>Scene.Render</c> clears every cascade to (1,1,1,1)), so an unwritten cascade and a
+    /// correctly-lit one are the same image. What distinguishes them is a texel that geometry should
+    /// have covered coming back with depth in it instead of 1.0.
+    ///
+    /// The camera and the geometry are the app's real ones, and getting them wrong is the trap this
+    /// check was written twice to avoid. <c>BaseStageRenderingPhase</c> puts the light at the player
+    /// minus 5000 in Y, looking at the player plus <c>(1,0,0)</c>, with the inherited <c>Up</c> of
+    /// <c>-UnitY</c> - and because the look direction is 5000 units down against 1 unit sideways, the
+    /// resulting basis is a camera looking almost straight down, with world +Z as its up and world +Y
+    /// as its depth. Ground is therefore the face-on geometry. The first version of this check used a
+    /// *vertical* wall instead, which that camera sees nearly edge-on, and "reproduced" an empty shadow
+    /// map that was in fact correct - which is the whole reason the geometry here is stated in terms
+    /// of the resulting basis rather than of the light's point.
+    ///
+    /// Two texels are asserted, one inside the square and one past its edge. A written texel alone
+    /// would also be satisfied by a map that had been uniformly filled, and a clear texel alone by a
+    /// pass that wrote nothing at all; together they pin down "wrote depth exactly where the geometry
+    /// is", which is what the cascade should contain.
+    /// </summary>
+    private static void CheckShadowCascadePass(GlGraphicsDevice device)
+    {
+        const int resolution = 256;
+
+        var program = PolyCreateShadowMap.Create();
+        var module = GlGraphicsDevice.LoadProgram(program.Vertex, program.Pixel, program.Reflection);
+        using var pipeline = device.CreatePipeline(new PipelineDesc(
+            VertexShader: module,
+            PixelShader: module,
+            VertexLayouts: [PolyLayout, InstanceLayout],
+            BlendState: BlendStateDesc.Opaque,
+            DepthStencilState: DepthStencilStateDesc.Default,
+            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None, ScissorTestEnabled = true },
+            Topology: PrimitiveTopology.TriangleList));
+
+        // The app's own cascade target: R32F colour plus a depth-stencil attachment.
+        using var cascade = device.CreateRenderTarget(new RenderTargetDesc(
+            resolution, resolution, TextureFormat.Single,
+            HasDepthStencil: true, TextureFormat.Depth24Stencil8));
+
+        // The light camera, built as OrthoLightCamera does on top of the app's own values: a
+        // 3000x3000 orthographic box (Near 50, Far 1e6), then the view matrix snapped to shadow-map
+        // texels. The snap is a translation in view space of under one texel, so it cannot move the
+        // cell off the region asserted below.
+        const float orthoExtent = 3000f;
+        var lightProjection = System.Numerics.Matrix4x4.CreateOrthographic(orthoExtent, orthoExtent, 50f, 1_000_000f);
+
+        // Position, LookAt and Up are the app's: BaseStageRenderingPhase puts the light at the player
+        // minus 5000 in Y, looking at the player + (1,0,0), and Camera's default Up is -UnitY.
+        // Taking the player as the origin gives the two points below. The resulting basis is
+        // right = -Z, up = +X, forward = -Y.
+        var lightView = System.Numerics.Matrix4x4.CreateLookAt(
+            new System.Numerics.Vector3(0f, -5000f, 0f),
+            new System.Numerics.Vector3(1f, 0f, 0f),
+            new System.Numerics.Vector3(0f, -1f, 0f));
+        var texelSize = orthoExtent / resolution;
+        var originInView = System.Numerics.Vector3.Transform(System.Numerics.Vector3.Zero, lightView);
+        lightView *= System.Numerics.Matrix4x4.CreateTranslation(
+            MathF.Floor(originInView.X / texelSize) * texelSize - originInView.X,
+            MathF.Floor(originInView.Y / texelSize) * texelSize - originInView.Y,
+            0f);
+
+        // The view matrix's rows, in the orientation that matters here. They are what the assertions
+        // below map a world point through, so the derivation is checked against them rather than
+        // trusted - a transposed row would otherwise turn into an assertion about a texel nobody wrote.
+        var upAxis = new System.Numerics.Vector3(lightView.M21, lightView.M22, lightView.M23);
+        var rightAxis = new System.Numerics.Vector3(lightView.M11, lightView.M12, lightView.M13);
+
+        // An asymmetric patch: it reaches further along +X than -X, and further along +Z than -Z. The
+        // asymmetry is the point - see the sampling check at the end, which is the one that can tell a
+        // mirrored lookup from a correct one.
+        const float extentX = 600f;
+        const float extentZ = 400f;
+        const float minusX = -200f;
+        const float minusZ = -1000f;
+        byte[] geometry = PolyGround(minusX, extentX, minusZ, extentZ);
+        byte[] instance = InstanceDataBytes();
+
+        using var geometryBuffer = device.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, geometry.Length), geometry);
+        using var instanceBuffer = device.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, instance.Length), instance);
+        using var indexBuffer = device.CreateBuffer(
+            new BufferDesc(BufferKind.Index, BufferUsage.Immutable, 6 * sizeof(ushort), IndexFormat.UInt16),
+            MemoryMarshal.AsBytes((ReadOnlySpan<ushort>)[0, 1, 2, 0, 2, 3]));
+
+        var cb = device.AcquireCommandBuffer();
+        // Scene.cs's cascade setup, call for call.
+        cb.SetRenderTarget(cascade);
+        cb.SetViewport(new Viewport(0, 0, resolution, resolution));
+        cb.SetScissorRect(new ScissorRect(0, 0, resolution, resolution));
+        cb.Clear(ClearOptions.Color | ClearOptions.Depth, new ColorRgba(1f, 1f, 1f, 1f));
+        cb.SetPipeline(pipeline);
+
+        // Submesh.Render's shadow branch: only View and Projection are ever set on this program.
+        var p = program.Bind();
+        p.View.SetValue(cb, lightView);
+        p.Projection.SetValue(cb, lightProjection);
+
+        cb.SetVertexBuffer(0, geometryBuffer, PolyStride);
+        cb.SetVertexBuffer(1, instanceBuffer, InstanceStride);
+        cb.SetIndexBuffer(indexBuffer);
+        cb.DrawIndexedInstanced(baseVertex: 0, startIndex: 0, primitiveCount: 2, instanceCount: 1);
+
+        // Reading the target while it is bound is the one thing ReadTexture documents as forbidden.
+        cb.SetRenderTarget(null);
+        cb.SetViewport(new Viewport(0, 0, device.Swapchain.Width, device.Swapchain.Height));
+        device.Submit(cb);
+        DrainGlErrors("shadow cascade pass");
+
+        var bytes = new byte[resolution * resolution * sizeof(float)];
+        device.ReadTexture(cascade.ColorTexture!, 0, 0, resolution, resolution, bytes);
+        DrainGlErrors("shadow cascade readback");
+
+        var depths = MemoryMarshal.Cast<byte, float>(bytes);
+
+        // The whole bug, in one number: geometry was drawn into this pass, so a texel the patch covers
+        // must hold the depth the shadow-map program wrote (~0.005), not the 1.0 clear. A 1.0 here is
+        // the white shadow map - the pass rasterized nothing.
+        var centre = ShadowLookup(System.Numerics.Vector3.Zero, lightView * lightProjection, resolution);
+        var centreDepth = depths[centre.Y * resolution + centre.X];
+
+        Report("SHADOW", "the shadow-map lookup is on-axis for the world origin, so a disagreement below " +
+                         "is a flip rather than an offset",
+            Match(centre, (resolution / 2, resolution / 2), 1));
+
+        Report("SHADOW", "the texel the patch's centre covers holds geometry depth " +
+                         $"({centreDepth:0.####} at {centre.X},{centre.Y}, expected ~0.005, not the 1.0 clear)",
+            centreDepth > 0.001f && centreDepth < 0.5f);
+
+        // The check the rest of this file cannot make, and the one that pins the reported flip: the
+        // shader's own lookup is replayed against a probe whose mirror image is *not* also geometry, so
+        // a lookup reading the wrong row shows up as the clear rather than as a different depth. The
+        // patch is deliberately lopsided for exactly this - +X reaches 600 against -X's -200.
+        var probe = new System.Numerics.Vector3(extentX - 100f, 0f, 0f);
+        var (shaderX, shaderY) = ShadowLookup(probe, lightView * lightProjection, resolution);
+        var shaderDepth = depths[shaderY * resolution + shaderX];
+
+        // Both halves are asserted, because the correction in Lighting.Prepare and the flip in
+        // applyShadowingSingle only make sense as a pair. If someone removes the shader's `1 - y`, the
+        // C# correction silently becomes a bug; if someone removes the correction, every shadow in the
+        // world shifts by a mirror. Pinning the two against each other is the only way this test can
+        // catch either without the other.
+        Report("SHADOW", "the shader's lookup carries its own V flip, so on a bottom-left-origin " +
+                         $"framebuffer it reads the row-mirrored texel ({shaderDepth:0.####} at {shaderX},{shaderY} is the clear)",
+            shaderDepth >= 1f - 0.001f);
+
+        // The correction, exactly as Lighting.Prepare applies it: negate the second *column* of
+        // LightViewProj. Reading column 1 rather than row 1 is the convention the shaders fix
+        // (row-vector mul), and it moves nothing but sampling - the shadow *pass* transforms by View
+        // and Projection separately rather than by this product.
+        var corrected = lightView * lightProjection;
+        corrected.M12 = -corrected.M12;
+        corrected.M22 = -corrected.M22;
+        corrected.M32 = -corrected.M32;
+        corrected.M42 = -corrected.M42;
+
+        var (fixedX, fixedY) = ShadowLookup(probe, corrected, resolution);
+        var fixedDepth = depths[fixedY * resolution + fixedX];
+        Report("SHADOW", "negating LightViewProj's second column makes that same lookup land on the depth " +
+                         $"the map actually holds ({fixedDepth:0.####} at {fixedX},{fixedY}, expected ~0.005)",
+            fixedDepth > 0.001f && fixedDepth < 0.5f);
+    }
+
+    /// <summary>
+    /// The shadow-map texel a world point resolves to, computed the way <c>PS_IsShadowed</c> computes
+    /// it: row-vector multiply by the light's view-projection, perspective divide, NDC to <c>[0,1]</c>,
+    /// then the shader's own <c>y = 1 - y</c>.
+    ///
+    /// This is replayed here rather than restated because the whole point is to test the shader's
+    /// convention, not to assert a convention of this test's own that happens to agree with the
+    /// readback. <paramref name="flipY"/> exists to show, in the run's own output, which texel the
+    /// lookup would have addressed with the flip removed - the difference between the two is the
+    /// only direct evidence of which one the data supports.
+    /// </summary>
+    private static (int X, int Y) ShadowLookup(System.Numerics.Vector3 world, System.Numerics.Matrix4x4 lightViewProj, int resolution, bool flipY = true)
+    {
+        var clip = System.Numerics.Vector4.Transform(new System.Numerics.Vector4(world, 1f), lightViewProj);
+        var ndc = new System.Numerics.Vector2(clip.X / clip.W, clip.Y / clip.W);
+        var uv = new System.Numerics.Vector2(0.5f * ndc.X + 0.5f, 0.5f * ndc.Y + 0.5f);
+        if (flipY) uv.Y = 1f - uv.Y;
+
+        return (Math.Clamp((int)(uv.X * resolution), 0, resolution - 1),
+                Math.Clamp((int)(uv.Y * resolution), 0, resolution - 1));
+    }
+
+    private static bool Match((int X, int Y) got, (int X, int Y) expected, int tolerance) =>
+        Math.Abs(got.X - expected.X) <= tolerance && Math.Abs(got.Y - expected.Y) <= tolerance;
+
+    /// <summary>
+    /// Four vertices in the app's real Poly vertex shape (<c>Mesh.VertexPositionNormalColorCentroid</c>'s
+    /// stride 44: three float3s, packed byte4 colour, float), forming a horizontal rectangular patch
+    /// of ground in the XZ plane - the face-on geometry for a light camera that looks almost straight
+    /// down. The patch is given by its bounds rather than by a size, because a check that wants to
+    /// catch a flip in the sampling needs geometry that is <em>not</em> symmetric about the axes it is
+    /// mirrored in: a centred square reads back as geometry either way round.
+    /// </summary>
+    private static byte[] PolyGround(float minX, float maxX, float minZ, float maxZ)
+    {
+        Span<(float X, float Z)> corners = [(minX, minZ), (maxX, minZ), (maxX, maxZ), (minX, maxZ)];
+
+        var bytes = new byte[PolyStride * corners.Length];
+        for (var v = 0; v < corners.Length; v++)
+        {
+            var at = v * PolyStride;
+            Write3(bytes, at + 0, corners[v].X, 0f, corners[v].Z);   // Position
+            Write3(bytes, at + 12, 0f, 1f, 0f);                      // Normal, straight up at the sun
+            Write3(bytes, at + 24, 0f, 0f, 0f);                      // Centroid
+            bytes[at + 36] = 255; bytes[at + 37] = 255; bytes[at + 38] = 255; bytes[at + 39] = 255;
+            BitConverter.TryWriteBytes(bytes.AsSpan(at + 40), 0f);    // DecalOffset
+        }
+
+        return bytes;
+
+        static void Write3(byte[] destination, int offset, float x, float y, float z)
+        {
+            BitConverter.TryWriteBytes(destination.AsSpan(offset + 0), x);
+            BitConverter.TryWriteBytes(destination.AsSpan(offset + 4), y);
+            BitConverter.TryWriteBytes(destination.AsSpan(offset + 8), z);
+        }
     }
 
     /// <summary>
