@@ -52,3 +52,6 @@
 [submodule "Maxine.Silk.EGL"]
 	path = Maxine.Silk.EGL
 	url = https://github.com/uwx/Maxine.Silk.EGL
+[submodule "Apos.Shapes"]
+	path = Apos.Shapes
+	url = https://github.com/uwx/Apos.Shapes
