@@ -249,9 +249,9 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
 
         public void DrawStringStrokeAligned(ReadOnlySpan<char> text, int x, int y, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top, int effectAmount = 1)
         {
-            float xFloat = x;
-            float yFloat = y;
-            AlignText(text, areaWidth, areaHeight, hAlign, vAlign, ref xFloat, ref yFloat);
+            // float xFloat = x;
+            // float yFloat = y;
+            // AlignText(text, areaWidth, areaHeight, hAlign, vAlign, ref xFloat, ref yFloat);
         }
 
         private void AlignText(ReadOnlySpan<char> text, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign, TextVerticalAlignment vAlign, ref float x, ref float y)
@@ -344,7 +344,6 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
 
         public void LineCapButt()
         {
-            throw new NotImplementedException();
         }
 
         public void SaveState()
@@ -412,16 +411,45 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
             _sb.DrawLine(new Vector2(x1, y1), new Vector2(x2, y2), _strokeWidth, _color, _color);
         }
 
+        public void DrawRoundedRect(int x, int y, int width, int height, float radTopLeft, float radTopRight, float radBottomRight,
+            float radBottomLeft)
+        {
+            _sb.DrawRectangle(new Vector2(x, y), new Vector2(width, height), Color.Transparent, _color, _strokeWidth,
+                new CornerRadii(radTopLeft, radTopRight, radBottomRight, radBottomLeft));
+        }
+
         public void FillRoundedRect(int x, int y, int width, int height, float radTopLeft, float radTopRight, float radBottomRight,
             float radBottomLeft)
         {
-            _sb.DrawRectangle(new Vector2(x, y), new Vector2(width, height), _color, Color.Transparent, _strokeWidth,
+            _sb.DrawRectangle(new Vector2(x, y), new Vector2(width, height), _color, Color.Transparent, 0,
                 new CornerRadii(radTopLeft, radTopRight, radBottomRight, radBottomLeft));
         }
 
         public void FillRect(int x, int y, int width, int height)
         {
             _sb.DrawRectangle(new Vector2(x, y), new Vector2(width, height), _color, Color.Transparent, 0, new CornerRadii());
+        }
+
+        public void FillPolygon(ReadOnlySpan<int> x, ReadOnlySpan<int> y, int n)
+        {
+            Span<Vector2> points = stackalloc Vector2[n];
+            for (var i = 0; i < n; i++)
+            {
+                points[i] = new Vector2(x[i], y[i]);
+            }
+
+            _sb.DrawPath(points, 0, _color, Color.Transparent, 0);
+        }
+
+        public void DrawPolygon(ReadOnlySpan<int> x, ReadOnlySpan<int> y, int n)
+        {
+            Span<Vector2> points = stackalloc Vector2[n];
+            for (var i = 0; i < n; i++)
+            {
+                points[i] = new Vector2(x[i], y[i]);
+            }
+
+            _sb.DrawPath(points, 0, Color.Transparent, _color, _strokeWidth);
         }
     }
 
