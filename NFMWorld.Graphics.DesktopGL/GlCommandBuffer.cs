@@ -401,7 +401,7 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     }
 
     public void UpdateBuffer(IBuffer buffer, ReadOnlySpan<byte> data, int offsetBytes = 0) =>
-        ((GlBuffer)buffer).Update(_gl, data, offsetBytes);
+        ((GlBuffer)buffer).Update(data, offsetBytes);
 
     public void UpdateTexture(ITexture texture, int x, int y, int width, int height, ReadOnlySpan<byte> data) =>
         ((GlTexture)texture).Update(_gl, x, y, width, height, data);
@@ -622,5 +622,6 @@ internal sealed class GlCommandBuffer : ICommandBuffer
         _indexBuffer = null;
         _indexOffsetBytes = 0;
         Array.Clear(_vertexStreams);
+
     }
 }

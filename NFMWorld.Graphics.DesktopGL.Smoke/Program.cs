@@ -193,6 +193,29 @@ internal static class Program
         Report("TEXTURE", "a block-compressed format is refused rather than misread as raw pixels", refused);
     }
 
+    /// <summary>
+    /// Reads a buffer back through glGetBufferSubData.
+    ///
+    /// The counterpart to the ANGLE suite's ReadBufferBytes, which has to map instead: desktop GL has
+    /// this call and ES 3.0 does not. It stalls until pending work on the buffer has landed, which is
+    /// why the abstraction exposes no buffer readback at all - it is a debug affordance, and this
+    /// test is the debug.
+    /// </summary>
+    private static unsafe byte[] ReadBufferBytes(GlGraphicsDevice device, IBuffer buffer)
+    {
+        var gl = device.Gl;
+        var glBuffer = (GlBuffer)buffer;
+        var target = glBuffer.Kind.ToTarget();
+        var bytes = new byte[glBuffer.SizeInBytes];
+
+        gl.BindBuffer(target, glBuffer.Handle);
+        fixed (byte* destination = bytes)
+            gl.GetBufferSubData(target, 0, (nuint)bytes.Length, destination);
+        gl.BindBuffer(target, 0);
+
+        return bytes;
+    }
+
     private static void CheckBuffers(GlGraphicsDevice device)
     {
         Span<float> data = [1f, 2f, 3f, 4f];
@@ -207,6 +230,51 @@ internal static class Program
         device.Submit(cb);
         DrainGlErrors("buffer updates");
         Report("BUFFER", "dynamic buffer takes a full and a sub-range update in one frame", true);
+
+        // The calls above only prove they are accepted. What matters is the bytes, because the whole
+        // buffer now reaches the GPU as one BufferData - a discard - with the CPU mirror as the
+        // source, and it is the mirror that makes the narrow write non-destructive.
+        //
+        //   whole write   5f,6f,7f,8f  ->  00 00 A0 40 | 00 00 C0 40 | 00 00 E0 40 | 00 00 00 41
+        //   sub-range     4 bytes @4   ->  AA AA AA AA  (replaces the 6f in bytes 4..7)
+        //
+        // So the readback must be 5f, 0xAAAAAAAA, 7f, 8f. The pattern is deliberately not a
+        // number - 0xAAAAAAAA is no float - so it cannot be confused with a real value; its being at
+        // index 1 with 5f before and 7f/8f after is what proves the sub-range write landed where it
+        // was asked to *and* that the mirror preserved its surroundings.
+        var floats = MemoryMarshal.Cast<byte, float>((ReadOnlySpan<byte>)ReadBufferBytes(device, dynamic));
+        var pattern = BitConverter.Int32BitsToSingle(unchecked((int)0xAAAAAAAA));
+        Report("BUFFER", $"a whole write then a 4-byte sub-range write read back as " +
+                         $"{floats[0]}f, {floats[1]}f, {floats[2]}f, {floats[3]}f, " +
+                         $"expected 5f, {pattern}f, 7f, 8f",
+            floats.Length == 4 && floats[0] == 5f && floats[1] == pattern
+                                && floats[2] == 7f && floats[3] == 8f);
+
+        // The upload is deferred to the frame boundary, so a write that comes after the buffer is
+        // bound still has to reach the GPU - that order is what a flush at bind time would lose.
+        var cb3 = device.AcquireCommandBuffer();
+        cb3.UpdateBuffer(dynamic, MemoryMarshal.AsBytes((ReadOnlySpan<float>)[1f, 1f, 1f, 1f]));
+        cb3.SetVertexBuffer(0, dynamic, strideBytes: sizeof(float));
+        cb3.UpdateBuffer(dynamic, MemoryMarshal.AsBytes((ReadOnlySpan<float>)[9f]), offsetBytes: 0);
+        device.Submit(cb3);
+        var afterBind = MemoryMarshal.Cast<byte, float>((ReadOnlySpan<byte>)ReadBufferBytes(device, dynamic));
+        Report("BUFFER", $"sub-range writes before and after the bind both land " +
+                         $"(read back {afterBind[0]}f, {afterBind[3]}f, expected 9f, 1f)",
+            afterBind[0] == 9f && afterBind[3] == 1f);
+
+        // An update is sent even when nothing draws the buffer, which is the case a flush hooked to
+        // the draw would lose. No pipeline is bound here, so if the only upload path ran at draw time
+        // this buffer would still hold the zeros it was created with.
+        using var undrawn = device.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, 4 * sizeof(float)), new byte[16]);
+        var cb4 = device.AcquireCommandBuffer();
+        cb4.UpdateBuffer(undrawn, MemoryMarshal.AsBytes((ReadOnlySpan<float>)[2f, 3f, 4f, 5f]));
+        device.Submit(cb4);
+        var undrawnFloats = MemoryMarshal.Cast<byte, float>((ReadOnlySpan<byte>)ReadBufferBytes(device, undrawn));
+        Report("BUFFER", $"a write to a buffer the frame never draws is still uploaded " +
+                         $"(read back {undrawnFloats[0]}f, expected 2f)",
+            undrawnFloats[0] == 2f && undrawnFloats[3] == 5f);
+        DrainGlErrors("buffer readback");
 
         // GL has no immutability concept for buffers - BufferUsage only picks a usage hint - so this
         // refusal is the backend's own, and it is what keeps a stale-content bug from looking like a

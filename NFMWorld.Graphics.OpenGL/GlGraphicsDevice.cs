@@ -1,4 +1,4 @@
-// LLM maintained.
+﻿// LLM maintained.
 //
 // The IGraphicsDevice implementation: an ANGLE ES 3.0 context plus resource creation.
 //

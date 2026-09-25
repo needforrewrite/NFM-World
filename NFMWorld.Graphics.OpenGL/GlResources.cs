@@ -1,4 +1,4 @@
-// LLM maintained.
+﻿// LLM maintained.
 //
 // The resource types behind the GLES/ANGLE backend: buffers, textures, samplers, shader programs
 // and pipelines. These are thin wrappers over GL object names - the interesting work is in what
@@ -42,6 +42,23 @@ internal sealed class GlBuffer : IBuffer
     /// </summary>
     internal IndexFormat IndexFormat { get; }
 
+    /// <summary>
+    /// The buffer's CPU-side contents, kept only for a mutable buffer.
+    ///
+    /// Every write goes to the GPU as a whole-buffer <c>BufferData</c>, which is the discard
+    /// semantic - the driver can hand out fresh storage and forget what a draw still in flight may
+    /// be reading, rather than preserving it so a sub-range write can patch it. That is the trade
+    /// <c>GlCommandBuffer.UploadUniforms</c> measures, and it is why a sub-range
+    /// <see cref="ICommandBuffer.UpdateBuffer"/> cannot be a <c>BufferSubData</c>: GL offers no way
+    /// to preserve the bytes outside the range, so this copy of them is the only way to send a
+    /// sub-range at all under that rule.
+    ///
+    /// The sokol backend's <c>SokolBuffer.Mirror</c> is the same idea for the same reason -
+    /// <c>sg_update_buffer</c> also replaces a whole buffer and takes no offset - so the two backends
+    /// agree on what a sub-range update means.
+    /// </summary>
+    private readonly byte[]? _mirror;
+
     internal GlBuffer(GL gl, GlDeletionQueue deletions, BufferDesc desc, ReadOnlySpan<byte> initialData)
     {
         _gl = gl;
@@ -51,15 +68,39 @@ internal sealed class GlBuffer : IBuffer
         SizeInBytes = desc.SizeInBytes;
         IndexFormat = desc.IndexFormat;
 
+        // A mutable buffer keeps its contents here from creation, so an update can re-send the whole
+        // buffer with only its own range changed. An immutable one is never written again, so it
+        // needs no copy and its contents go straight into the allocation.
+        _mirror = desc.Usage == BufferUsage.Dynamic ? new byte[desc.SizeInBytes] : null;
+        if (_mirror is not null)
+            initialData[..Math.Min(initialData.Length, desc.SizeInBytes)].CopyTo(_mirror);
+
         Handle = _gl.GenBuffer();
         var target = desc.Kind.ToTarget();
         _gl.BindBuffer(target, Handle);
-        _gl.BufferData(target, (nuint)desc.SizeInBytes, initialData, desc.Usage.ToUsage());
+
+        // From the mirror where there is one, because it - not initialData - is the source of truth:
+        // a short initialData leaves the rest of the mirror zeroed, and zero is a defined value where
+        // the storage a fresh buffer object gets would not be.
+        _gl.BufferData(target, (nuint)desc.SizeInBytes, _mirror ?? initialData, desc.Usage.ToUsage());
     }
 
-    /// <summary>Uploads into an existing buffer, without reallocating it - this is what makes
-    /// <see cref="ICommandBuffer.UpdateBuffer"/> a sub-range write rather than a replacement.</summary>
-    internal void Update(GL gl, ReadOnlySpan<byte> data, int offsetBytes)
+    /// <summary>
+    /// Records <paramref name="data"/> at <paramref name="offsetBytes"/> and sends the whole buffer.
+    ///
+    /// Copying first is what makes a sub-range write non-destructive: the bytes outside the range
+    /// stay in the mirror, so re-sending all of it is equivalent to patching the range in place -
+    /// without the sub-range write into storage the GPU may still be reading, which is the cost this
+    /// whole arrangement exists to avoid.
+    ///
+    /// The upload is immediate rather than deferred to the draw. Deferring would coalesce a frame's
+    /// several writes to one buffer into a single upload, but it cannot be made correct without
+    /// tracking every buffer that might be read - and the two cases that break it pull in opposite
+    /// directions: a buffer created with its contents and drawn without ever being updated needs
+    /// flushing without an update, while one updated and never drawn needs uploading without a draw.
+    /// A per-frame whole-buffer write is the cost that buys not having to track either.
+    /// </summary>
+    internal void Update(ReadOnlySpan<byte> data, int offsetBytes)
     {
         if (Usage != BufferUsage.Dynamic)
         {
@@ -68,8 +109,17 @@ internal sealed class GlBuffer : IBuffer
                 $"{nameof(BufferUsage)}.{nameof(BufferUsage.Dynamic)} buffers can be updated after creation.");
         }
 
-        gl.BindBuffer(Kind.ToTarget(), Handle);
-        gl.BufferSubData(Kind.ToTarget(), offsetBytes, data);
+        if (offsetBytes < 0 || offsetBytes + data.Length > SizeInBytes)
+        {
+            throw new ArgumentOutOfRangeException(nameof(data),
+                $"{data.Length} bytes at offset {offsetBytes} overruns the {SizeInBytes}-byte buffer.");
+        }
+
+        data.CopyTo(_mirror.AsSpan(offsetBytes));
+
+        var target = Kind.ToTarget();
+        _gl.BindBuffer(target, Handle);
+        _gl.BufferData(target, (nuint)SizeInBytes, _mirror, Usage.ToUsage());
     }
 
     public void Dispose() => _deletions.Request(GlObjectKind.Buffer, Handle);

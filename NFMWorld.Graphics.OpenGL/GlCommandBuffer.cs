@@ -408,7 +408,7 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     }
 
     public void UpdateBuffer(IBuffer buffer, ReadOnlySpan<byte> data, int offsetBytes = 0) =>
-        ((GlBuffer)buffer).Update(_gl, data, offsetBytes);
+        ((GlBuffer)buffer).Update(data, offsetBytes);
 
     public void UpdateTexture(ITexture texture, int x, int y, int width, int height, ReadOnlySpan<byte> data) =>
         ((GlTexture)texture).Update(_gl, x, y, width, height, data);
@@ -426,6 +426,7 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     /// The one draw path. Everything a draw needs - the VAO's bindings, the uniform block, and the
     /// element count - is assembled here so the three public entry points cannot drift.
     /// </summary>
+
     private void DrawInternal(int baseVertex, int firstIndex, int primitiveCount, int instanceCount, bool indexed)
     {
         var pipeline = RequirePipeline();
@@ -654,5 +655,6 @@ internal sealed class GlCommandBuffer : ICommandBuffer
         _indexBuffer = null;
         _indexOffsetBytes = 0;
         Array.Clear(_vertexStreams);
+
     }
 }
