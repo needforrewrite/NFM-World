@@ -129,19 +129,51 @@ public class Lighting
             cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
         }
 
+        // LightViewProj is the *sampling* half of shadow mapping: the pixel shader uses it to find the
+        // texel a world point occupies in the cascade, while the cascade itself was written using the
+        // light camera's View and Projection *separately* (Submesh.Render's shadow branch). That split
+        // is what makes this the right place to correct the V convention, and the only place - the
+        // correction cannot disturb the pass that produced the map.
+        //
+        // The correction is one sign, and it is needed because the shaders are shared across backends
+        // whose framebuffer origins differ. applyShadowingSingle does
+        // `shadowTexCoord.y = 1.0f - shadowTexCoord.y`, which is right for a top-left origin (D3D,
+        // Metal, and FNA - whose MojoShader flipped Y in the vertex shader so that its GL targets came
+        // out top-down too) and mirrored for a bottom-left one (our GL backends, which have no
+        // equivalent flip in the emitted GLSL). Negating the second *column* negates
+        // lightingPosition.y, so the shader's own `1 - y` then lands where it should: the OpenGL smoke
+        // replays this exact lookup and asserts the depth it finds, so a regression here fails a test
+        // rather than quietly shifting every shadow in the world by a mirror.
+        var flipShadowSampleV = GameSparker.NewGraphicsDevice.HasBottomLeftFramebufferOrigin;
+
+        Matrix ShadowSampleMatrix(Matrix lightViewProjection)
+        {
+            if (!flipShadowSampleV)
+                return lightViewProjection;
+
+            // Column 1, not row 1: the shaders use row-vector math - mul(worldPos, lightViewProj) - so
+            // the y output is the second column. This is the same convention SetUniform's matrix
+            // transpose rests on, seen from the other side.
+            lightViewProjection.M12 = -lightViewProjection.M12;
+            lightViewProjection.M22 = -lightViewProjection.M22;
+            lightViewProjection.M32 = -lightViewProjection.M32;
+            lightViewProjection.M42 = -lightViewProjection.M42;
+            return lightViewProjection;
+        }
+
         if (LightCameras.Count > 0)
         {
-            SetMatrix("LightViewProj0", LightCameras[0].ViewProjectionMatrix);
+            SetMatrix("LightViewProj0", ShadowSampleMatrix(LightCameras[0].ViewProjectionMatrix));
         }
 
         if (LightCameras.Count > 1)
         {
-            SetMatrix("LightViewProj1", LightCameras[1].ViewProjectionMatrix);
+            SetMatrix("LightViewProj1", ShadowSampleMatrix(LightCameras[1].ViewProjectionMatrix));
         }
 
         if (LightCameras.Count > 2)
         {
-            SetMatrix("LightViewProj2", LightCameras[2].ViewProjectionMatrix);
+            SetMatrix("LightViewProj2", ShadowSampleMatrix(LightCameras[2].ViewProjectionMatrix));
         }
 
         // NumCascades gates shadow-map *sampling* in Mad.fxh's PS_IsShadowed. It must only be
