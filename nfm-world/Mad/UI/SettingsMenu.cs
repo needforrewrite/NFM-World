@@ -401,6 +401,22 @@ public class SettingsMenu(WorldGame game)
             requireRestart = true;
         }
 
+        // A second, independent reason to restart, and the one the multisample settings need on the
+        // two GL renderers. The check above cannot cover it: the renderer has not changed, but the
+        // sample count is baked into the window's pixel format, so nothing a resize could do would
+        // apply the new one - without this the setting would appear to take effect and silently keep
+        // rendering with the old count.
+        //
+        // Asked of the shim rather than recomputed, because the answer needs both halves: whether
+        // this backend can apply it live at all (sokol and FNA3D can, the GL renderers cannot), and
+        // whether there is actually a pending difference - a backend that clamped the request reports
+        // a permanent difference with nothing left to apply, and prompting for a restart over that
+        // would be advice the user could follow forever. See RequiresRestartForMultiSampling.
+        if (game.Graphics.RequiresRestartForMultiSampling)
+        {
+            requireRestart = true;
+        }
+
         if (graphicsChanged)
         {
             game.Graphics.ApplyChanges();
@@ -776,7 +792,38 @@ public class SettingsMenu(WorldGame game)
         };
     }
 
-    public static void LoadConfig()
+    /// <summary>
+    /// The multisample count the persisted settings ask for, normalized: 0 when the "Off" entry is
+    /// selected, 0 for "MSAA 1x" (which the list uses to mean off as well), and the ladder's count
+    /// otherwise.
+    ///
+    /// A property rather than a field on purpose - it is derived, and a field could disagree with
+    /// <see cref="_antialias"/>. Its sibling on the graphics side is
+    /// <c>GraphicsSettingsShim.DesiredMultiSampleCount</c>, which says the same thing for callers
+    /// that have a device; this one exists because <c>WorldGame</c> has to ask the window for the
+    /// sample count in the constructor, before any device and therefore before that shim exists.
+    ///
+    /// Composed from <see cref="AntialiasToSampleCount"/> rather than restating the ladder, so the
+    /// "// must be powers of 2" rule above stays written down once.
+    /// </summary>
+    public static int RequestedMultiSampleCount =>
+        _antialias > 0 ? AntialiasToSampleCount(_antialias) : 0;
+
+    /// <summary>
+    /// Parses <c>data/cfg/config.cfg</c> into the settings fields, touching no game instance and
+    /// applying nothing.
+    ///
+    /// Split out of <see cref="LoadConfig"/> so that <c>Main</c> can read the persisted settings
+    /// <em>before</em> it constructs <c>WorldGame</c>. That ordering is not cosmetic: the GL
+    /// renderers bake the multisample count into the window's pixel format, so the value has to be
+    /// known before the constructor creates the window and the context, and this used to run from
+    /// <c>LoadContent</c> - after all of that - which is why the MSAA setting could not reach the
+    /// context at all.
+    ///
+    /// Deliberately does not call <see cref="ApplySettings"/>, which needs a live
+    /// <c>GameSparker.Game</c> and so cannot run this early. See <see cref="ApplyLoadedSettings"/>.
+    /// </summary>
+    public static void LoadConfigValues()
     {
         _selectedRenderer = Renderers.IndexOf(GetFna3DRenderer());
 
@@ -934,9 +981,6 @@ public class SettingsMenu(WorldGame game)
                 }
             }
 
-            // Apply loaded settings immediately
-            ApplySettings(out _);
-
             Logging.Debug($"Config loaded from {configPath}");
         }
         catch (Exception ex)
@@ -944,6 +988,50 @@ public class SettingsMenu(WorldGame game)
             SentrySdk.CaptureException(ex);
             Logging.Error($"Error loading config: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Pushes the values <see cref="LoadConfigValues"/> parsed onto the live game.
+    ///
+    /// Separate from the parse because of <em>when</em> it can run: <see cref="ApplySettings"/>
+    /// dereferences <c>GameSparker.Game</c>, so this cannot be called until the game has been
+    /// constructed and installed - which is strictly later than
+    /// <see cref="LoadConfigValues"/> has to run. Splitting them is what lets the persisted MSAA
+    /// count be known before the window is created while leaving every other setting applied at the
+    /// original moment.
+    ///
+    /// The failure mode this preserves is subtle, so it is spelled out: <c>GraphicsSettingsShim</c>
+    /// holds <c>PreferMultiSampling</c>/<c>MultiSampleCount</c> as its own state, and
+    /// <see cref="ApplySettings"/> only assigns them when they differ from what it reads back. Before
+    /// the constructor consumed <see cref="RequestedMultiSampleCount"/>, that state started at the
+    /// default and the config's value reached it here; the constructor now seeds the window from the
+    /// config, and this call then finds the shim already holding those values. Both halves therefore
+    /// agree, and the "waiting to be applied" state the restart prompt depends on is not created for
+    /// a setting that was granted at startup.
+    /// </summary>
+    public static void ApplyLoadedSettings()
+    {
+        try
+        {
+            ApplySettings(out _);
+        }
+        catch (Exception ex)
+        {
+            SentrySdk.CaptureException(ex);
+            Logging.Error($"Error applying loaded config: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Reads the config and applies it, for callers that have a live game and want both.
+    ///
+    /// Kept because the split is an implementation detail of the startup ordering rather than a new
+    /// contract: this is still the whole operation, in the order it always ran in.
+    /// </summary>
+    public static void LoadConfig()
+    {
+        LoadConfigValues();
+        ApplyLoadedSettings();
     }
 
     // ── Static API for CEF SettingsHandler ──────────────────────────

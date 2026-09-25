@@ -11,11 +11,19 @@ namespace NFMWorld;
 /// </summary>
 /// <remarks>
 /// Backed by <see cref="SdlWindow"/> and <see cref="ISwapchain"/>. Size and multisample count are
-/// both backbuffer properties, so they are applied by rebuilding the drawable rather than by any
+/// both drawable properties, so they are applied by rebuilding the drawable rather than by any
 /// per-draw state call - and a rebuild is a device operation, so <see cref="WorldGame"/> owns the
-/// moment it happens (see <see cref="DesiredMultiSampleCount"/>). Vsync is still stored but not
-/// applied: FNA3D's present interval is fixed at device creation, and changing it means recreating
-/// the device, which nothing here does yet.
+/// moment it happens (see <see cref="DesiredMultiSampleCount"/>).
+/// <para>
+/// That is enough for the size on every backend and for the sample count on sokol and FNA3D, but
+/// not for the sample count on the two GL renderers: there it lives in the window's pixel format,
+/// which only a new context can change, so it is reported through
+/// <see cref="RequiresRestartForMultiSampling"/> instead of being silently accepted.
+/// </para>
+/// <para>
+/// Vsync is applied, but not here: it is an argument to the present call rather than a property of
+/// the drawable, so <c>WorldGame</c> pushes it onto whichever backend is in play on every frame.
+/// </para>
 /// </remarks>
 public sealed class GraphicsSettingsShim(SdlWindow window, ISwapchain swapchain)
 {
@@ -55,6 +63,23 @@ public sealed class GraphicsSettingsShim(SdlWindow window, ISwapchain swapchain)
 
     /// <summary>The multisample count the drawable actually has, after hardware clamping.</summary>
     public int AppliedMultiSampleCount => swapchain.MultiSampleCount;
+
+    /// <summary>
+    /// Whether the user's MSAA setting differs from what the drawable has <em>and</em> this backend
+    /// cannot close the gap without a new context.
+    ///
+    /// Both halves are needed. The difference alone is not enough, because a backend that clamps a
+    /// request will report a permanent difference that has nothing left to apply - sokol refuses
+    /// anything above one, and reporting a restart for that would be a lie the user could act on
+    /// forever. The backend's own answer alone is not enough either, because a restart is only worth
+    /// asking for when there is actually something pending.
+    ///
+    /// The GL renderers are the case this exists for: their sample count is baked into the window's
+    /// pixel format at context creation, so a mid-session change can only take effect on the next
+    /// launch, and without this the setting would appear to apply and silently not.
+    /// </summary>
+    public bool RequiresRestartForMultiSampling =>
+        swapchain.MultiSampleChangeRequiresRestart && DesiredMultiSampleCount != AppliedMultiSampleCount;
 
     public void ApplyChanges()
     {
