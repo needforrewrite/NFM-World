@@ -15,6 +15,7 @@
         <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
         <CETCompat>false</CETCompat>
         <DefineConstants>$(DefineConstants);ANGLE</DefineConstants>
+        <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
     </PropertyGroup>
     <ItemGroup>
         <!-- Exclude emitted source-generator files from implicit *.cs glob to prevent double compilation -->
@@ -73,6 +74,7 @@
         <PackageReference Include="System.Reactive" Version="7.0.0-rc.1" />
     </ItemGroup>
     <ItemGroup>
+        <ProjectReference Include="..\Apos.Shapes\Source\Apos.Shapes.NFMW.csproj" />
         <ProjectReference Include="..\FontStashSharp\src\FontStashSharp\FontStashSharp.PlatformAgnostic.csproj" />
         <ProjectReference Include="..\HoleyDiver\HoleyDiver.csproj" />
         <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj" />
