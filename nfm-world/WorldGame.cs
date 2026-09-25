@@ -134,7 +134,65 @@ public class WorldGame : IDisposable
     /// The default is <see cref="Renderer.Sokol"/>, matching <c>--sokol-backend=</c> defaulting to
     /// D3D11 - a process started with no arguments behaves as it did before either flag existed.
     /// </summary>
-    private static Renderer _renderer = Renderer.Sokol;
+    private static Renderer _renderer = Renderer.Angle;
+
+#if ANGLE
+    /// <summary>
+    /// Which ANGLE backend and device this process was launched with, from
+    /// <c>--angle-backend=</c>/<c>--angle-device=</c>.
+    ///
+    /// Static and settled before the constructor for the same reason as its two siblings: it
+    /// describes the platform display the GL context is created on, so it is consumed by the very
+    /// first step of the ANGLE arm and cannot be revisited afterwards - an EGL display's platform is
+    /// fixed when it is requested.
+    ///
+    /// Inside the define along with the EGL fields below, because the type it is typed with lives in
+    /// NFMWorld.Graphics.OpenGL and the exe only references that assembly when the define is on.
+    /// Every reader of it is inside an <c>#if ANGLE</c> block for the same reason.
+    /// </summary>
+    private static AngleSelection _angleSelection = AngleSelection.Default;
+
+    /// <summary>
+    /// The EGL platform-attribute array handed to SDL, allocated with <c>SDL_malloc</c> and never
+    /// freed by us.
+    ///
+    /// Static, and deliberately never disposed. SDL frees the pointer itself immediately after
+    /// <c>eglGetPlatformDisplay</c> returns, and the callback contract is that the array must come
+    /// from <c>SDL_malloc</c> so that this is safe - so the allocation is not leaked, it is
+    /// transferred. It has to be a field rather than a local because the delegate that returns it
+    /// outlives the call that installs it, and a captured local would be a dangling pointer into a
+    /// moved or collected object.
+    /// </summary>
+    private static IntPtr _eglPlatformAttribs;
+
+    /// <summary>
+    /// Keeps the platform-attribute callback delegate alive.
+    ///
+    /// SDL stores the raw function pointer, not a managed reference, so a lambda passed inline would
+    /// be collectable the moment the installing call returned - and the fault would be a native
+    /// access violation at context creation, arbitrarily far from the cause.
+    /// </summary>
+    private static SDL.SDL_EGLAttribArrayCallback? _eglPlatformAttribCallback;
+#endif
+
+    /// <summary>
+    /// Where <see cref="SyncBackendVSync"/> sends the setting on the two GL renderers, which have no
+    /// platform object: <c>SDL_GL_SetSwapInterval(0|1)</c>, or null on the sokol path.
+    ///
+    /// A callback rather than a stored context handle because the SDL calls here all take the window
+    /// or nothing at all, and because it is the same shape <c>SokolGlPlatform</c> already receives
+    /// for this exact call (see the glcore arm below).
+    /// </summary>
+    private Action<int>? _setSwapInterval;
+
+    /// <summary>
+    /// What the window's multisample request actually got, read back from SDL after the context was
+    /// created; 0 when MSAA is off or SDL refused the request.
+    ///
+    /// Static for the same reason as <see cref="_angleSelection"/>: it is consumed while the
+    /// constructor is still building the device, and the constructor is the only reader.
+    /// </summary>
+    private static int _glGrantedMultiSampleCount;
 
     /// <summary>
     /// The top-level rendering backend behind <c>--backend=</c>.
@@ -215,12 +273,168 @@ public class WorldGame : IDisposable
                 ".");
         }
 
-        return Renderer.Sokol;
+        return Renderer.Angle;
     }
 
 #if ANGLE
     /// <summary><c>SDL_GL_CONTEXT_PROFILE_ES</c>, from <c>SDL_video.h</c> - the EGL/ES profile, as opposed to Core or Compatibility. Only the GL path asks for a profile.</summary>
     private const int EsProfile = 0x0004;
+
+    /// <summary>
+    /// Hands SDL the platform-attribute list that selects <paramref name="selection"/>'s ANGLE
+    /// backend, and the <c>SDL_GL_EGL_PLATFORM</c> attribute that makes SDL ask for that platform at
+    /// all.
+    ///
+    /// Both halves are required, which is worth stating because neither is obvious and each is
+    /// useless alone. SDL's <c>eglGetPlatformDisplay</c> call is guarded by <c>if (platform)</c>
+    /// (<c>SDL_egl.c</c>, <c>SDL_EGL_LoadLibrary</c>), and <c>platform</c> is
+    /// <c>gl_config.egl_platform</c> - zero unless this attribute is set, in which case SDL skips
+    /// platform-display creation entirely and the attributes below are never consulted. Conversely
+    /// the attributes only exist if a callback is installed: SDL passes a literal <c>NULL</c> when
+    /// <c>egl_platformattrib_callback</c> is unset, which is the "default platform" request.
+    ///
+    /// There is no SDL3 hint or environment variable that does any of this - ANGLE_DEFAULT_PLATFORM
+    /// is not honoured, and SDL contains no ANGLE backend logic at all - which is why it is the
+    /// application's job.
+    /// </summary>
+    /// <remarks>
+    /// <b>Deliberately not called for the default selection.</b> Asking for D3D11 explicitly is not
+    /// a no-op here: it moves SDL from <c>eglGetDisplay</c> onto the platform-display path, and this
+    /// backend has already been bitten by the config that path produces - see the long note on
+    /// <see cref="CreateAngleDevice"/>, where the symptom was every <c>gl*</c> call returning
+    /// <c>GL_INVALID_OPERATION</c> with no GL error raised. ANGLE's default on Windows <em>is</em>
+    /// D3D11, so a default run loses nothing by staying on the display it has always used, and only
+    /// an explicit <c>--angle-backend=</c>/<c>--angle-device=</c> takes the new path. That also
+    /// keeps this change from silently altering the path every earlier measurement was taken on.
+    ///
+    /// The two managed fields holding the delegate and the buffer are static and never freed on
+    /// purpose; see each one's own remarks for why that is the correct lifetime rather than a leak.
+    /// </remarks>
+    private static unsafe void InstallAnglePlatformAttributes(AngleSelection selection)
+    {
+        // The order of these two does not matter to SDL (the attribute is read when the EGL library
+        // is loaded, the callback when the display is requested - both later than this), but both
+        // have to happen before the window exists, because SDL builds the window's surface out of
+        // the config it chooses for the display.
+        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_EGL_PLATFORM, AngleSelection.PlatformAttribute);
+
+        // Built from AngleSelection rather than spelled out, so this list and the one
+        // Egl.GetAngleDisplay hands to EGL directly cannot drift apart. That is the failure this
+        // whole change exists to repair: the two paths used to spell the tokens separately and one
+        // of them passed 0x33AE, ANGLE's null renderer, for the whole life of the ANGLE backend.
+        //
+        // Already EGLAttrib-width, so it is copied into the SDL allocation verbatim - SDL passes the
+        // pointer straight to eglGetPlatformDisplay, which reads 64-bit entries, so handing it a
+        // 32-bit array would make it read every token and value as one shifted word.
+        var attributes = selection.PlatformAttributes();
+
+        // SDL_malloc, not a managed allocation: SDL frees this with SDL_free as soon as
+        // eglGetPlatformDisplay returns, and freeing a pointer the GC also owns would corrupt the
+        // heap. The allocation is therefore transferred rather than leaked - see _eglPlatformAttribs.
+        _eglPlatformAttribs = SDL.SDL_malloc((UIntPtr)(attributes.Length * sizeof(nint)));
+        if (_eglPlatformAttribs == IntPtr.Zero)
+            throw new OutOfMemoryException("SDL_malloc failed for the EGL platform attribute list.");
+
+        var target = (nint*)_eglPlatformAttribs;
+        for (var i = 0; i < attributes.Length; i++)
+            target[i] = attributes[i];
+
+        // Static, and assigned rather than passed inline: SDL keeps the raw function pointer, so a
+        // temporary delegate would be collectable the moment this method returned and the fault
+        // would be a native crash at context creation with nothing pointing back here.
+        _eglPlatformAttribCallback = () => _eglPlatformAttribs;
+        SDL.SDL_EGL_SetAttributeCallbacks(_eglPlatformAttribCallback, null, null, IntPtr.Zero);
+    }
+
+    /// <summary>
+    /// What the window's multisample request actually got, read back from the live context - or 0
+    /// when multisampling was not asked for, SDL refused, or the query is not answerable yet.
+    ///
+    /// This is a GL query rather than a bookkeeping read: SDL answers
+    /// <c>SDL_GL_MULTISAMPLESAMPLES</c> with <c>glGetIntegerv(GL_SAMPLES)</c> on the current context
+    /// (<c>SDL_video.c</c>, <c>SDL_GL_GetAttribute</c>), so the number is the driver's allocation and
+    /// not the request echoed back. That is the whole reason to call it rather than trusting
+    /// <see cref="RequestedMultiSampleCount"/>: a driver may clamp or refuse, and reporting a request
+    /// as an allocation is precisely the class of bug this change is repairing elsewhere.
+    ///
+    /// Zero on failure rather than throwing. The two GL arms run this immediately after creating the
+    /// context, and a machine that cannot answer the query should render without multisampling, not
+    /// refuse to start - the count only feeds a settings display and a restart prompt.
+    /// </summary>
+    private static int ReadGrantedMultiSampleCount()
+    {
+        if (SDL.SDL_GL_GetAttribute(SDL.SDL_GLAttr.SDL_GL_MULTISAMPLESAMPLES, out var granted))
+            return granted;
+
+        Logging.Warning($"Could not read the granted multisample count back from SDL: {SDL.SDL_GetError()}");
+        return 0;
+    }
+
+    /// <summary>
+    /// The multisample count the persisted settings ask for, normalized the way the rest of the
+    /// application means it: 0 when multisampling is off, and 0 for a requested count of 1, which the
+    /// settings UI's "MSAA 1x" entry uses to mean off.
+    ///
+    /// Read from <c>SettingsMenu</c> directly rather than through
+    /// <see cref="GraphicsSettingsShim.DesiredMultiSampleCount"/>, because of ordering: this is
+    /// called from <see cref="CreateGlContext"/>, which runs in the constructor, and the shim does
+    /// not exist until the device it wraps does. The config values behind it are parsed before
+    /// construction (see <c>Main</c>), so the answer is already known.
+    ///
+    /// The normalization is duplicated from the shim rather than shared, which is a deliberate
+    /// narrow trade: the shim's copy is a property of a live graphics device and this one has to
+    /// exist before any device does. They are kept identical by <c>SettingsMenu</c> being the single
+    /// source of both the flag and the count.
+    /// </summary>
+    private static int RequestedMultiSampleCount() =>
+        SettingsMenu.RequestedMultiSampleCount;
+
+    /// <summary>
+    /// Logs which renderer the GL context actually came up on, and what it did with the multisample
+    /// request.
+    ///
+    /// This is the only honest confirmation that the platform attributes were honoured. ANGLE's
+    /// renderer string names its own backend (<c>… Direct3D11 vs_5_0 ps_5_0, D3D11</c>), so a request
+    /// for <c>vulkan</c> that reports D3D11 is visible here and nowhere else - as is the case where
+    /// SDL took its <c>eglGetPlatformDisplayEXT(platform, native, NULL)</c> fallback branch, which
+    /// drops the attributes entirely and looks identical from the outside.
+    ///
+    /// Queried through <c>glGetString</c> rather than the device: the device is not built yet at the
+    /// point the ANGLE arm calls this, and the strings are a property of the context anyway.
+    /// </summary>
+    private static unsafe void ReportGlRenderer(AngleSelection selection)
+    {
+        const int glVendor = 0x1F00;
+        const int glRenderer = 0x1F01;
+        const int glVersion = 0x1F02;
+
+        var getString = SDL.SDL_GL_GetProcAddress("glGetString");
+        if (getString == IntPtr.Zero)
+        {
+            // Modern core profiles make glGetString unusable for anything but a handful of names, so
+            // this is a real case rather than a defensive one. Nothing else here depends on the
+            // strings, so it is reported and skipped.
+            Logging.Warning("glGetString is unavailable, so the GL renderer could not be reported.");
+            return;
+        }
+
+        var function = (delegate* unmanaged[Cdecl]<int, byte*>)getString;
+
+        string Read(int name)
+        {
+            var value = function(name);
+            // GL's strings are only valid until the next GL call on the context, so they are
+            // marshalled here rather than handed out as pointers.
+            return value is null ? "(null)" : Marshal.PtrToStringUTF8((nint)value) ?? "(unreadable)";
+        }
+
+        Logging.Info(
+            $"GL renderer: requested {selection.Describe()}, got '{Read(glRenderer)}' " +
+            $"(vendor '{Read(glVendor)}', version '{Read(glVersion)}')");
+        Logging.Info(
+            $"GL multisampling: requested {RequestedMultiSampleCount()}x, granted " +
+            $"{_glGrantedMultiSampleCount}x");
+    }
 #endif
 
     /// <summary><c>SDL_GL_CONTEXT_PROFILE_CORE</c>, from <c>SDL_video.h</c>.</summary>
@@ -265,19 +479,34 @@ public class WorldGame : IDisposable
     public bool IsActive => Window.HasFocus;
 
     /// <summary>
-    /// Pushes <see cref="GraphicsSettingsShim.SynchronizeWithVerticalRetrace"/> onto the sokol
-    /// platform's present interval. A no-op on the ANGLE path, where <c>_sokolPlatform</c> is null
-    /// and the interval was fixed when the context was created -
-    /// <see cref="GraphicsSettingsShim"/>'s own remarks say so, and the settings menu still reports
-    /// the change as needing a restart there.
+    /// Pushes <see cref="GraphicsSettingsShim.SynchronizeWithVerticalRetrace"/> onto whichever
+    /// backend is in play: the sokol platform's present interval, or <c>SDL_GL_SetSwapInterval</c>
+    /// on the two GL renderers.
+    ///
+    /// The interval is an argument to the present call rather than a property of the drawable, which
+    /// is why it can be changed at any time and is read per frame here. Both sinks take the same
+    /// 0/1 value, and the GL one is literally the callback the glcore arm already hands to
+    /// <c>SokolGlPlatform</c> - so this is a sink that was missing, not a mechanism that was missing.
     ///
     /// Called every frame from the loop rather than from wherever the setting is written, because the
     /// setting is written from an ImGui callback that runs with a command buffer already live: the
     /// same reason <see cref="EnsureSwapchainMatchesWindow"/> defers its rebuild to here.
     /// </summary>
-    private void SyncSokolVSync()
+    /// <remarks>
+    /// Worth knowing before reading anything into a frame rate: on both GL renderers, on this
+    /// machine's driver, the swap interval has been measured to have no effect on the paced frame
+    /// rate at all - which is why VSync reads as "the setting does nothing" there even though the
+    /// call is now made. That is the driver ignoring the request, not a missing call, and no amount
+    /// of work in this class would change it.
+    /// </remarks>
+    private void SyncBackendVSync()
     {
-        if (_sokolPlatform is not null) _sokolPlatform.VSync = Graphics.SynchronizeWithVerticalRetrace;
+        var vsync = Graphics.SynchronizeWithVerticalRetrace;
+
+        if (_sokolPlatform is not null)
+            _sokolPlatform.VSync = vsync;
+        else
+            _setSwapInterval?.Invoke(vsync ? 1 : 0);
     }
 
     /// <summary>Replaces FNA's <c>Game.IsFixedTimeStep</c> - read by the manual loop in <see cref="Main"/>.</summary>
@@ -315,6 +544,15 @@ public class WorldGame : IDisposable
             {
                 // ANGLE only exists under its define, so this arm is compiled out with it. The
                 // switch's default arm below reports that rather than this failing to build.
+                //
+                // The platform display's attributes have to be installed before the window is
+                // created, because SDL asks EGL for that display while it builds the window's
+                // surface. See InstallAnglePlatformAttributes for why this is the only way to choose
+                // an ANGLE backend at all - and for why a default run deliberately does not, leaving
+                // it on the display and config every earlier measurement of this path was taken on.
+                if (!_angleSelection.IsDefault)
+                    InstallAnglePlatformAttributes(_angleSelection);
+
                 var (angleContext, angleWindow) = CreateGlContext(
                     profileMask: EsProfile, major: 3, minor: 0,
                     // Forces SDL down its EGL path rather than WGL, so the context is ANGLE's.
@@ -322,7 +560,19 @@ public class WorldGame : IDisposable
 
                 _glContext = angleContext;
                 Window = angleWindow;
+
+                // Read back what SDL actually gave us rather than assuming the request was honoured.
+                // Two things can go wrong silently here: the driver clamps the count, and - the case
+                // this whole mechanism exists to avoid - SDL never asked ANGLE for the platform at
+                // all, so our attributes were dropped on the floor.
+                _glGrantedMultiSampleCount = ReadGrantedMultiSampleCount();
+
+                // SDL owns this context, so the interval is SDL's call - and it can be changed at any
+                // time, which is what makes VSync work here at all.
+                _setSwapInterval = interval => SDL.SDL_GL_SetSwapInterval(interval);
+
                 _device = CreateAngleDevice(angleWindow);
+                ReportGlRenderer(_angleSelection);
                 break;
             }
 #else
@@ -341,9 +591,14 @@ public class WorldGame : IDisposable
 
                 _glContext = desktopContext;
                 Window = desktopWindow;
+
+                _glGrantedMultiSampleCount = ReadGrantedMultiSampleCount();
+                _setSwapInterval = interval => SDL.SDL_GL_SetSwapInterval(interval);
+
                 var desktopDevice = GlGraphicsDeviceDesktop.Create(
                     SDL.SDL_GL_GetProcAddress, desktopWindow.Width, desktopWindow.Height,
-                    () => SDL.SDL_GL_SwapWindow(desktopWindow.Handle));
+                    () => SDL.SDL_GL_SwapWindow(desktopWindow.Handle),
+                    _glGrantedMultiSampleCount);
                 _device = desktopDevice;
                 break;
             }
@@ -444,7 +699,7 @@ public class WorldGame : IDisposable
         // to IDXGISwapChain::Present), so unlike the GL path it can follow the setting - the frame
         // loop re-syncs it every frame, and this only seeds it so the very first frame is not
         // presented with the wrong interval.
-        SyncSokolVSync();
+        SyncBackendVSync();
 
 
         Window.Resized += (w, h) =>
@@ -510,6 +765,26 @@ public class WorldGame : IDisposable
         // onto a D24S8 depth-stencil surface, so this does not cost a separate buffer.
         SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_STENCIL_SIZE, 8);
 
+        // MSAA, and this is the whole of the mechanism on both GL renderers.
+        //
+        // It has to be requested here, before the window exists, because the sample count is a
+        // property of the window's pixel format - which is fixed when the context is created. There
+        // is no call that could change it afterwards, which is why a mid-session MSAA change on a GL
+        // renderer reports that it needs a restart rather than pretending to apply.
+        //
+        // SDL forwards these two attributes to EGL as EGL_SAMPLE_BUFFERS/EGL_SAMPLES when choosing a
+        // window config, and to the WGL pixel format on the desktop path, so one request covers both
+        // renderers. Both draw straight into the default framebuffer, so there is no resolve pass
+        // involved and nothing further to wire up.
+        //
+        // Only asked for when multisampling is actually wanted: a config with EGL_SAMPLE_BUFFERS=1
+        // and a count of 0 is not a way to say "off", and some drivers treat it as unsatisfiable.
+        if (RequestedMultiSampleCount() is var samples and > 1)
+        {
+            SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_MULTISAMPLEBUFFERS, 1);
+            SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_MULTISAMPLESAMPLES, samples);
+        }
+
         if (!SDL.SDL_GL_LoadLibrary(null))
             throw new InvalidOperationException($"SDL_GL_LoadLibrary failed: {SDL.SDL_GetError()}");
 
@@ -547,9 +822,27 @@ public class WorldGame : IDisposable
         // either. Two other unverified explanations were offered later and are both contradicted:
         // that SDL_HINT_VIDEO_FORCE_EGL is required (it is not set here and the tree works), and
         // that SDL's config is NULL (it was read back, and it has real attributes).
+        //
+        // The config-selection mechanism SDL uses is now readable, and it points at the same two
+        // attributes by a different route than "SDL picked a different config": in
+        // SDL_EGL_PrivateChooseConfig the requested EGL_SURFACE_TYPE is only ever emitted from
+        // egl_data->egl_surfacetype, which nothing in SDL ever assigns - so the request carries no
+        // surface-type constraint at all. eglChooseConfig is then free to return pbuffer configs
+        // alongside window ones, and SDL's scorers do not settle it: the bitdiff loop re-penalizes
+        // only RED/GREEN/BLUE/ALPHA/DEPTH/STENCIL sizes, and its own comment calls the result a
+        // "makeshift algorithm". NATIVE_RENDERABLE and SAMPLE_BUFFERS are therefore tie-breakers at
+        // best, which is consistent with the working and broken configs having differed exactly
+        // there. This is NOT verified as the cause and is not offered as one - it is recorded because
+        // it is the next thing to read if the failure returns.
+        //
+        // What protects against that returning is the caller, not this method: see
+        // InstallAnglePlatformAttributes, which installs the platform attributes only when the user
+        // asked for a non-default backend. A default run keeps the display and the config it has
+        // always had, so the settings this change adds cannot put an existing working path at risk.
         return GlGraphicsDevice.Create(
             SDL.SDL_GL_GetProcAddress, window.Width, window.Height,
-            () => SDL.SDL_GL_SwapWindow(window.Handle));
+            () => SDL.SDL_GL_SwapWindow(window.Handle),
+            _glGrantedMultiSampleCount);
     }
 #endif
 
@@ -676,7 +969,9 @@ public class WorldGame : IDisposable
 
         GameSparker.Load(this);
 
-        SettingsMenu.LoadConfig();
+        // Only the application half - the config was parsed in Main, before the window existed. See
+        // ApplyLoadedSettings, and Main for why the two halves have to happen where they do.
+        SettingsMenu.ApplyLoadedSettings();
     }
 
     public void RebuildCascades()
@@ -897,7 +1192,7 @@ public class WorldGame : IDisposable
         // Beside the swapchain check rather than inside it: that method is about the drawable, and
         // this is about the present call. Both are here, before the command buffer, so nothing
         // reaches the device while the frame is being recorded.
-        SyncSokolVSync();
+        SyncBackendVSync();
 
         var cb = _device.AcquireCommandBuffer();
         cb.Clear(ClearOptions.Color | ClearOptions.Depth | ClearOptions.Stencil,
@@ -1019,6 +1314,15 @@ public class WorldGame : IDisposable
         // play at all, which is what gates the resolver installation below.
         _renderer = ParseRenderer(args);
 
+#if ANGLE
+        // Only meaningful on the ANGLE arm, but parsed unconditionally for the same reason
+        // --sokol-backend is: a typo is reported on every path rather than only the one it was meant
+        // for, and the message naming the valid values is the whole point of the loud throw in
+        // AngleSelection.Parse. AngleSelection lives in NFMWorld.Graphics.OpenGL, which the exe only
+        // references under the define, so this has to be inside it as well.
+        _angleSelection = AngleSelection.Parse(args);
+#endif
+
         // NativeLibrary.SetDllImportResolver is scoped to the assembly that DECLARES the
         // [DllImport], not the assembly that calls it - so every project with its own P/Invoke
         // declarations against a "libs/<arch>/..." deployment layout needs its own registration.
@@ -1041,6 +1345,17 @@ public class WorldGame : IDisposable
             SokolBackendSelection.InstallResolver(_sokolBackend);
 
         SettingsMenu.LoadFnaRenderer();
+
+        // The persisted settings, parsed here rather than in LoadContent where they used to be - and
+        // the ordering is the entire point of the split. The two GL renderers bake the multisample
+        // count into the window's pixel format when the context is created, which the constructor
+        // below does, so the value has to be known before it runs or the MSAA setting can never reach
+        // the context. Application still happens in LoadContent (ApplyLoadedSettings), because
+        // ApplySettings needs the game that does not exist yet.
+        //
+        // Must follow LoadFnaRenderer: that is what writes the FNA3D_FORCE_DRIVER hint GetFna3DRenderer
+        // reads back for _selectedRenderer, and this parses the same keys.
+        SettingsMenu.LoadConfigValues();
 
         BackendGameSparker.Load(isHeadless: false);
         var program = new WorldGame();
