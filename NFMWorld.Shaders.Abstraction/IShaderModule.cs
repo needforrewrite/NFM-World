@@ -29,6 +29,16 @@ public enum VertexAttributeFormat
     Float3,
     Float4,
     Byte4Normalized,
+
+    /// <summary>
+    /// Four signed 16-bit integers, each scaled by the backend to [-1, 1] on the way to the shader.
+    /// This is XNA's <c>VertexElementFormat.NormalizedShort4</c>. It exists alongside
+    /// <see cref="Byte4Normalized"/> because a vertex that packs colors into 5-5-5-1 needs the same
+    /// four lanes as <c>Byte4Normalized</c> in half the bytes, and because 16 bits of mantissa per
+    /// lane is what a value that is read back out of a vertex by arithmetic - rather than sampled as
+    /// a color - needs to survive the trip.
+    /// </summary>
+    Short4Normalized,
 }
 
 /// <summary>
