@@ -402,6 +402,31 @@ public class WorldGame : IDisposable
     /// Queried through <c>glGetString</c> rather than the device: the device is not built yet at the
     /// point the ANGLE arm calls this, and the strings are a property of the context anyway.
     /// </summary>
+    /// <summary>
+    /// Warns, before the window is created, when the Vulkan loader ANGLE loads at run time is not
+    /// beside this executable.
+    ///
+    /// Called before <see cref="CreateGlContext"/> rather than after it throws, because the throw it
+    /// would otherwise produce is the reason this exists: ANGLE turns the missing loader into
+    /// <c>VK_ERROR_INITIALIZATION_FAILED</c> and the caller sees a driver-flavoured "Internal Vulkan
+    /// error (-3)" naming <c>vk_renderer.cpp</c>, which sends a reader off to check their Vulkan
+    /// driver installation for a file that was simply never copied. See
+    /// <see cref="AngleVulkanLoader"/> for the mechanism and for why this warns instead of refusing.
+    /// </summary>
+    private static void ReportMissingVulkanLoader()
+    {
+        if (!AngleVulkanLoader.MayBeMissing(_angleSelection) || AngleVulkanLoader.IsPresent)
+            return;
+
+        Logging.Warning(
+            $"Asked for the {_angleSelection.Describe()} ANGLE backend, but " +
+            $"{AngleVulkanLoader.ExpectedPath} does not exist. ANGLE loads its Vulkan loader from its " +
+            "own directory rather than from the system path, so the Vulkan backend will fail to " +
+            "initialize even when Vulkan itself works on this machine - and it reports that as " +
+            "'Internal Vulkan error (-3) ... vk_renderer.cpp', which names the driver rather than the " +
+            "missing file. If it does fail, this is why.");
+    }
+
     private static unsafe void ReportGlRenderer(AngleSelection selection)
     {
         const int glVendor = 0x1F00;
@@ -464,7 +489,7 @@ public class WorldGame : IDisposable
     // primary button + pointer movement since the press.
     private bool _mouseDragging;
     private Int2 _mouseDragStart;
-    private NanoVGRenderer? _nvg;
+    private AposRenderer? _nvg;
     private TimeStep _tickTimeStep = new((1000f / Physics.TargetTps) / 1000f);
     public static bool LowLatency = false;
     public static int NumCascades = 3;
@@ -552,6 +577,8 @@ public class WorldGame : IDisposable
                 // it on the display and config every earlier measurement of this path was taken on.
                 if (!_angleSelection.IsDefault)
                     InstallAnglePlatformAttributes(_angleSelection);
+
+                ReportMissingVulkanLoader();
 
                 var (angleContext, angleWindow) = CreateGlContext(
                     profileMask: EsProfile, major: 3, minor: 0,
@@ -900,7 +927,7 @@ public class WorldGame : IDisposable
     private void Initialize()
     {
         ImguiRenderer = new SdlImGuiRenderer(_device, Window);
-        _nvg = new NanoVGRenderer(_device);
+        _nvg = new AposRenderer(_device);
 
         // Must be constructed (and GameSparker.UiRenderer assigned) before GameSparker.Load()
         // (called from LoadContent(), which runs after Initialize()) pushes MainMenuPhase - phases
