@@ -11,8 +11,34 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <!-- Raw D3D11/DXGI bindings, for SokolD3D11Platform: sokol_gfx refuses to create a device or
+           a swapchain (see ISokolPlatform), so this backend does, against SDL's window. Pinned to
+           2.22.0 to match the Silk.NET.OpenGL the game already references. Silk.NET is used only
+           for its function-pointer tables here - no Silk window is ever created. -->
+      <PackageReference Include="Silk.NET.Direct3D11" Version="2.22.0" />
+      <PackageReference Include="Silk.NET.DXGI" Version="2.22.0" />
+    </ItemGroup>
+
+    <ItemGroup>
       <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
       <ProjectReference Include="..\SharpSokol\src\SharpSokol\SharpSokol.csproj" />
+    </ItemGroup>
+
+    <!--
+         The native library this backend P/Invokes, deployed from here rather than by every consumer.
+         SharpSokol P/Invokes a plain "sokol" library name, so it has to sit next to the executable
+         and not in a runtimes/ folder - which is what the Link rename is for.
+
+         It lives here because this is the assembly that has the dependency: a consumer referencing
+         this project wants sokol_gfx to work, and having each one remember to copy a DLL out of a
+         sibling project's native/ directory is the kind of thing that works until it doesn't.
+         (NFMWorld.Graphics.Sokol.Smoke still carries its own copy, from before this; it is the same
+         file to the same target path, so it is redundant rather than wrong.)
+
+         Only win-x64 is vendored - see native/. A second RID means a second item here.
+      -->
+    <ItemGroup>
+      <None Include="native\win-x64\sokol.dll" Link="sokol.dll" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
 </Project>

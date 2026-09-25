@@ -105,6 +105,12 @@ internal sealed class SokolTexture(sg_image handle, TextureDesc desc, int mipCou
     public int Height { get; } = desc.Height;
     public TextureFormat Format { get; } = desc.Format;
 
+    /// <summary>
+    /// This image's pixel format in sokol's vocabulary. Kept because a render target's format is
+    /// the key a pipeline variant is cached under - see <see cref="SokolPipelineState.HandleFor"/>.
+    /// </summary>
+    public sg_pixel_format NativeFormat { get; } = desc.Format.ToNative();
+
     /// <summary>The view bound for sampling - see <see cref="ICommandBuffer.SetShaderResource"/>.</summary>
     public sg_view View { get; set; }
 
@@ -329,6 +335,12 @@ internal sealed class SokolRenderTarget(
     public ITexture ColorTexture { get; } = colorTexture;
     public ITexture? DepthStencilTexture { get; } = depthStencilTexture;
 
+    /// <summary>
+    /// The colour attachment's pixel format, which is what a pipeline must declare to be applied
+    /// against a pass writing into this target - see <see cref="SokolPipelineState.HandleFor"/>.
+    /// </summary>
+    public sg_pixel_format ColorFormat => ((SokolTexture)colorTexture).NativeFormat;
+
     public void Dispose()
     {
         // The attachment views are owned here; the textures own their sampling views and images.
@@ -406,16 +418,62 @@ internal sealed class SokolShaderProgram(
 /// <see cref="SokolGraphicsDevice.CreatePipeline"/> creates it, the pipeline is its sole owner.
 /// </summary>
 internal sealed class SokolPipelineState(
-    sg_pipeline handle,
     sg_shader shader,
     PipelineDesc desc,
     ShaderReflection reflection,
     int uniformBlockSize,
     IReadOnlyList<int> uniformBlockSlots,
     int[][] viewSlotMap,
-    int[][] samplerSlotMap) : IPipelineState
+    int[][] samplerSlotMap,
+    int declaredViewSlots,
+    int declaredSamplerSlots,
+    Func<sg_pixel_format, sg_index_type, sg_pipeline> makeVariant,
+    sg_pixel_format defaultColorFormat) : IPipelineState
 {
-    public sg_pipeline Handle { get; private set; } = handle;
+    /// <summary>
+    /// How many sokol view slots this pipeline's shader desc declares, and likewise for samplers.
+    /// <see cref="ShaderBindings"/> assigns them sequentially from zero, so this is the range of
+    /// slots that must be filled before <c>sg_apply_bindings</c> - anything short of that fails
+    /// validation and skips the bind. See <see cref="SokolGraphicsDevice.PlaceholderView"/>.
+    /// </summary>
+    public int DeclaredViewSlots { get; } = declaredViewSlots;
+
+    /// <summary>The sampler half of <see cref="DeclaredViewSlots"/>.</summary>
+    public int DeclaredSamplerSlots { get; } = declaredSamplerSlots;
+
+    /// <summary>
+    /// One native pipeline per colour-attachment pixel format, created on demand.
+    ///
+    /// A pipeline has to <em>declare</em> the format of the target it will draw into
+    /// (<c>sg_pipeline_desc.colors[n].pixel_format</c>), and <c>sg_apply_pipeline</c> validates that
+    /// declaration against the open pass's attachment - a requirement sokol inherits from Vulkan's
+    /// render-pass compatibility, and one D3D11 has no use for: its <c>create_pipeline</c> reads
+    /// only <c>blend</c> and <c>write_mask</c> from <c>colors[i]</c> and never the format
+    /// (<c>sokol_gfx.h</c>'s <c>_sg_d3d11_create_pipeline</c>). Omitting it is not an option either:
+    /// <c>_sg_pipeline_desc_defaults</c> fills an unset format with the environment's default
+    /// (<c>:25940</c>), so a pipeline drawn into an offscreen target would silently claim the
+    /// swapchain's format and fail <c>VALIDATE_APIP_COLORATTACHMENTS_FORMAT</c> - which aborts the
+    /// whole <c>sg_apply_pipeline</c>, leaving no pipeline bound and cascading into every following
+    /// uniform and binding call.
+    ///
+    /// So the variant is chosen per pass rather than fixed at creation, and cached because a
+    /// pipeline is otherwise identical across formats. The abstraction's <see cref="PipelineDesc"/>
+    /// has no format field to key on and should not grow one: GL and FNA3D have no such concept, so
+    /// it would encode a sokol-only constraint in every caller.
+    ///
+    /// Created lazily rather than eagerly because the set of formats a pipeline will meet is not
+    /// knowable at creation - render targets are made later, and each carries its own. Creating one
+    /// here is safe even though it happens inside an open pass: <c>sg_make_pipeline</c> asserts
+    /// nothing about pass state (<c>:27086</c>), and the D3D11 backend's object creation does not
+    /// disturb the pass the context has open.
+    /// </summary>
+    private readonly Dictionary<(sg_pixel_format, sg_index_type), sg_pipeline> _variants = new()
+    {
+        // The default variant is made eagerly, so a shader or layout the driver rejects still fails
+        // at CreatePipeline rather than at the first draw into an offscreen target.
+        [(defaultColorFormat, sg_index_type.SG_INDEXTYPE_NONE)] = makeVariant(defaultColorFormat, sg_index_type.SG_INDEXTYPE_NONE),
+    };
+
     public sg_shader ShaderHandle { get; } = shader;
 
     public PipelineDesc Desc { get; } = desc;
@@ -446,11 +504,37 @@ internal sealed class SokolPipelineState(
     /// <summary>The same translation for samplers - see <see cref="ViewSlotMap"/>.</summary>
     public int[][] SamplerSlotMap { get; } = samplerSlotMap;
 
+    /// <summary>
+    /// The native pipeline to apply while drawing into a target of format
+    /// <paramref name="colorFormat"/> with an index buffer of type
+    /// <paramref name="indexType"/>, creating it on first use. See <see cref="_variants"/> for why
+    /// the variant is per-target rather than fixed.
+    ///
+    /// <paramref name="indexType"/> is part of the key because sokol bakes the index format into the
+    /// pipeline (<c>sg_pipeline_desc.index_type</c>) while the abstraction supplies it per buffer at
+    /// <c>SetIndexBuffer</c> time - so one pipeline can be asked to draw either kind. It is
+    /// <c>SG_INDEXTYPE_NONE</c> for a non-indexed draw, which is what makes <c>sg_draw</c> take the
+    /// non-indexed path.
+    /// </summary>
+    public sg_pipeline HandleFor(sg_pixel_format colorFormat, sg_index_type indexType)
+    {
+        if (_variants.TryGetValue((colorFormat, indexType), out var pipeline)) return pipeline;
+
+        pipeline = makeVariant(colorFormat, indexType);
+        if (pipeline.id == 0)
+            throw new InvalidOperationException(
+                $"sg_make_pipeline failed for a {colorFormat} colour attachment with index type " +
+                $"{indexType} - see the sokol log for the validation error.");
+
+        _variants[(colorFormat, indexType)] = pipeline;
+        return pipeline;
+    }
+
     public void Dispose()
     {
-        if (Handle.id == 0) return;
-        Gfx.destroy_pipeline(Handle);
-        Handle = default;
+        foreach (var pipeline in _variants.Values)
+            if (pipeline.id != 0) Gfx.destroy_pipeline(pipeline);
+        _variants.Clear();
         if (ShaderHandle.id != 0) Gfx.destroy_shader(ShaderHandle);
     }
 }

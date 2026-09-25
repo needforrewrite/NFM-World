@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using NFMWorld.Graphics;
 using NFMWorld.Shaders;
 using SharpSokol.Native;
 
@@ -24,6 +25,48 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
     private SokolSwapchain? _swapchain;
     private SokolCommandBuffer? _activeCommandBuffer;
     private bool _shutdown;
+    private int _renderingThreadId;
+
+    /// <summary>
+    /// Resources created with initial data whose mirror has not reached the GPU yet.
+    ///
+    /// They are registered here rather than on the command buffer because a resource is typically
+    /// created <em>during</em> recording - after <see cref="AcquireCommandBuffer"/> has already
+    /// returned, and holding no reference to the buffer it will be drawn through. The next
+    /// <c>FlushUploads</c> drains this into its own list, so a resource created and drawn in the
+    /// same frame still uploads before its first use.
+    ///
+    /// Without this, a dynamic buffer created with initial data is <em>never</em> uploaded: only
+    /// <see cref="SokolCommandBuffer.UpdateBuffer"/> calls <c>Track</c>, and a caller that created
+    /// the buffer with its contents has nothing left to write - so the GPU copy stays at the
+    /// driver's undefined contents. That is a subtle failure rather than an obvious one, because
+    /// any caller that <em>does</em> rewrite the buffer every frame uploads normally; only the
+    /// resources left alone after creation break. <c>RenderQueue</c> is exactly that shape: it
+    /// creates an instanced batch's buffer with its first frame's contents and then skips
+    /// <c>UpdateBuffer</c> for as long as the batch is unchanged, so per-frame geometry (the
+    /// player's car) drew correctly while static geometry (stage parts) did not.
+    /// </summary>
+    private readonly List<IPendingUpload> _createdUploads = [];
+
+    /// <summary>Records a just-created resource whose contents are still only in its mirror.</summary>
+    internal void TrackCreated(IPendingUpload resource)
+    {
+        if (!_createdUploads.Contains(resource)) _createdUploads.Add(resource);
+    }
+
+    /// <summary>
+    /// Moves the created-but-unuploaded resources into <paramref name="destination"/>, which
+    /// becomes responsible for flushing them.
+    /// </summary>
+    internal void DrainCreatedUploads(List<IPendingUpload> destination)
+    {
+        if (_createdUploads.Count == 0) return;
+
+        foreach (var resource in _createdUploads)
+            if (!destination.Contains(resource)) destination.Add(resource);
+
+        _createdUploads.Clear();
+    }
 
     /// <summary>
     /// The live device, set once <c>sg_setup</c> has succeeded. sokol_gfx is a global singleton
@@ -33,9 +76,131 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
     private static SokolGraphicsDevice? _current;
 
     public ISwapchain Swapchain =>
-        _swapchain ?? throw new InvalidOperationException("The swapchain is only available once the sokol_app frame loop has started.");
+        _swapchain ?? throw new InvalidOperationException("The device has not been created yet.");
+
+    /// <summary>
+    /// The drawable for the frame about to be rendered. Re-read per pass by
+    /// <see cref="SokolCommandBuffer"/> rather than cached, because a resize replaces the views.
+    /// </summary>
+    internal sg_swapchain AcquireSwapchain() => RequireSwapchain().Acquire();
+
+    private SokolSwapchain RequireSwapchain() =>
+        _swapchain ?? throw new InvalidOperationException("The device has not been created yet.");
+
+    /// <summary>
+    /// Refuses a <c>sg_*</c> call from a thread other than the one that created the device, when
+    /// the platform says its API requires that.
+    ///
+    /// This exists because <c>ISokolPlatform.SingleThreadedLifetime</c> records a real property of
+    /// the underlying API - D3D11's immediate context is not thread-safe unless the device asked for
+    /// internal locking - and sokol's own guard for it (<c>SOKOL_ASSERT</c> against a recorded
+    /// thread id) is compiled out of a release build. Without this, a second thread drawing through
+    /// the same context produces undefined ordering and a corrupted frame, with nothing to point at
+    /// the cause. The check is one integer comparison, and only until the first successful call.
+    /// </summary>
+    internal void EnsureRenderingThread()
+    {
+        if (_renderingThreadId == 0)
+        {
+            _renderingThreadId = Environment.CurrentManagedThreadId;
+            return;
+        }
+
+        if (_renderingThreadId == Environment.CurrentManagedThreadId) return;
+
+        if (_swapchain?.RequiresSingleThread is true)
+            throw new InvalidOperationException(
+                $"sokol_gfx is being used from thread {Environment.CurrentManagedThreadId}, but this " +
+                $"device was created on thread {_renderingThreadId} and its platform reports that the " +
+                "underlying 3D API must be used from one thread only (D3D11's immediate context is " +
+                "not thread-safe unless the device opted into internal locking). All rendering must " +
+                "happen on the creating thread.");
+    }
 
     private SokolGraphicsDevice() { }
+
+    /// <summary>
+    /// Creates a device against a caller-supplied <see cref="ISokolPlatform"/>, without sokol_app.
+    ///
+    /// This is the counterpart of <see cref="Run"/>, and the two differ in who owns the window.
+    /// <see cref="Run"/> hands the window and the main loop to sokol_app; this one takes a platform
+    /// that already has a window of its own (this application's is SDL3's, because input, ImGui and
+    /// NanoVG all run on top of it) and only borrows it to build a device. sokol_gfx is never told
+    /// about the window at all - its D3D11 environment is a device and a context and nothing else
+    /// (<c>sokol_gfx.h:5361-5364</c>).
+    ///
+    /// The caller drives the frame: render through <see cref="AcquireCommandBuffer"/> and
+    /// <see cref="Submit"/>, then call <c>platform.Present()</c>. That last call is what actually
+    /// puts the frame on screen, and it has to come after <c>sg_commit</c> - nothing in sokol_gfx
+    /// presents on its own (<c>_sg_d3d11_commit</c> is empty, <c>sokol_gfx.h:15217</c>).
+    ///
+    /// <paramref name="platform"/> is owned by the returned device and disposed with it, which is
+    /// why it is not also returned for the caller to keep.
+    /// </summary>
+    public static SokolGraphicsDevice Create(ISokolPlatform platform, int width, int height, ConfigureDesc? configure = null)
+        => Setup(platform.CreateEnvironment(width, height, SampleCount), platform, ownsSokol: true, configure);
+
+    /// <summary>
+    /// The one place <c>sg_setup</c> is called, shared by both entry points so the pools, the
+    /// logger and the singleton bookkeeping cannot drift apart between them.
+    /// </summary>
+    /// <param name="ownsSokol">
+    /// Whether the returned device is responsible for <c>sg_shutdown</c>. True for
+    /// <see cref="Create"/>, which called <c>sg_setup</c> itself and has no other teardown path.
+    /// False for <see cref="Run"/>, where sokol_app's cleanup callback shuts sokol down as the frame
+    /// loop ends - and where claiming ownership would mean <c>sg_shutdown</c> running twice, which
+    /// sokol answers with an assertion rather than an error (it checks <c>_sg.valid</c> first).
+    /// </param>
+    private static SokolGraphicsDevice Setup(
+        sg_environment environment, ISokolPlatform platform, bool ownsSokol, ConfigureDesc? configure)
+    {
+        if (_current is not null)
+            throw new InvalidOperationException(
+                "A sokol device already exists. sg_setup is process-global, so only one can be live at a time.");
+
+        var desc = new sg_desc
+        {
+            environment = environment,
+
+            // The pool defaults (sokol_gfx.h:6608-6613: 128 buffers, 128 images, 64 samplers,
+            // 32 shaders, 64 pipelines, 256 views) are sized for a small sample application. This
+            // app is neither small nor short-lived: several render targets with their own views and
+            // many textures accumulate for the whole session, and a pool that fills up fails at
+            // sg_make_* rather than growing. Exhaustion is the failure mode that would be hardest to
+            // attribute from a distance, so the headroom is bought up front.
+            //
+            // Each must stay under _SG_MAX_POOL_SIZE = 65536 (sokol_gfx.h:6605-6607), and a
+            // non-positive value means "use the default" rather than "unlimited".
+            buffer_pool_size = 4096,
+            image_pool_size = 2048,
+            sampler_pool_size = 256,
+            shader_pool_size = 512,
+            pipeline_pool_size = 1024,
+            view_pool_size = 4096,
+
+            // 4 MB is the default and is plenty: this backend has one merged uniform block of
+            // roughly a hundred floats per draw.
+            uniform_buffer_size = 4 * 1024 * 1024,
+
+            logger = new sg_logger
+            {
+                func = (delegate* unmanaged[Cdecl]<sbyte*, uint, uint, sbyte*, uint, sbyte*, void*, void>)
+                    &SokolLog.Func,
+            },
+        };
+
+        configure?.Invoke(ref desc);
+        Gfx.setup(&desc);
+
+        var device = new SokolGraphicsDevice
+        {
+            _swapchain = new SokolSwapchain(platform),
+            _ownsSokol = ownsSokol,
+        };
+
+        _current = device;
+        return device;
+    }
 
     /// <summary>
     /// Initializes sokol_gfx and runs <paramref name="frame"/> once per frame until the window
@@ -89,6 +254,67 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
     }
 
     /// <summary>
+    /// The <see cref="ISokolPlatform"/> behind sokol_app, for the <see cref="Run"/> path only.
+    ///
+    /// <c>Run</c> predates the platform seam and did not go through it: it read the environment and
+    /// swapchain straight out of <c>sglue_*</c>. Rather than either leaving that path holding a
+    /// different shape or inventing a platform that would have to be created before
+    /// <c>sapp_run</c> - impossible, because sokol_app creates the window and the 3D API inside the
+    /// call - the seam is adapted to it here. Every member is a one-line forward to
+    /// sokol_app, and the ones that cannot work under sokol_app say so.
+    /// </summary>
+    private sealed class SokolAppPlatform : ISokolPlatform
+    {
+        /// <summary>Rebuilt per frame by <see cref="Refresh"/>, because sokol_app recreates the
+        /// swapchain on resize with no way to ask for a size - see <see cref="Resize"/>.</summary>
+        private int _width;
+        private int _height;
+
+        public int Width => _width;
+
+        public int Height => _height;
+
+        /// <summary>
+        /// True: sokol_app's <c>_sapp_d3d11_create_device_and_swapchain</c> passes
+        /// <c>D3D11_CREATE_DEVICE_SINGLETHREADED</c> unconditionally (<c>sokol_app.h:8936</c>), so
+        /// the immediate context has no internal locking and must be used from one thread.
+        /// </summary>
+        public bool? SingleThreadedLifetime => true;
+
+        public void Refresh()
+        {
+            if (App.isvalid() == 0) return;
+            _width = App.width();
+            _height = App.height();
+        }
+
+        public sg_environment CreateEnvironment(int width, int height, int sampleCount)
+        {
+            _width = width;
+            _height = height;
+            return Glue.environment();
+        }
+
+        public sg_swapchain AcquireSwapchain() => Glue.swapchain();
+
+        public void Resize(int width, int height)
+        {
+            // Nothing to do, and nothing that could be done: sokol_app's drawable follows the OS
+            // window, and this sokol version has no sapp_set_window_size. SokolSwapchain.Resize
+            // documents why the request is advisory on this path.
+        }
+
+        public void Present()
+        {
+            // sokol_app presents after its frame callback returns; nothing here presents.
+        }
+
+        public void Dispose()
+        {
+        }
+    }
+
+    /// <summary>
     /// Copies <paramref name="value"/> into unmanaged memory as a NUL-terminated UTF-8 string.
     /// Used for the window title, which has to outlive the <c>sapp_desc</c> it is passed in: the
     /// allocation is intentionally never freed, because sokol_app reads it for the window's whole
@@ -131,15 +357,13 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
         {
             var state = From(userData);
 
-            // The generated D3D11 environment comes from sokol_app: sg_setup's D3D11 backend
-            // requires an injected ID3D11Device and will assert without one, so this must be
-            // called from inside the app's init callback rather than before the loop.
-            var desc = new sg_desc { environment = Glue.environment() };
-            state.Configure?.Invoke(ref desc);
-            Gfx.setup(&desc);
-
-            var device = new SokolGraphicsDevice { _swapchain = new SokolSwapchain() };
-            _current = device;
+            // The environment has to be built from inside this callback rather than before the
+            // loop: sg_setup's D3D11 backend requires an injected ID3D11Device, and until sokol_app
+            // has created the window and the 3D API there is none.
+            //
+            // ownsSokol: false, because CleanupThunk shuts sokol down itself - see Setup's parameter.
+            var platform = new SokolAppPlatform();
+            var device = Setup(platform.CreateEnvironment(0, 0, 0), platform, ownsSokol: false, state.Configure);
             state.Device = device;
 
             state.Init(device);
@@ -153,10 +377,13 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
             // sokol_app recreates the swapchain when the window resizes, so the cached size is
             // refreshed each frame rather than only on resize events - the cheap query avoids a
             // missed resize when the OS coalesces events.
-            state.Device!.SwapchainState.Refresh();
+            ((SokolAppPlatform)state.Device!.SwapchainState.Platform).Refresh();
 
             state.Frame(state.Device);
-            state.Device.FrameIndex++;
+
+            // The Run path's frame boundary is here, because sokol_app calls this back once per
+            // frame. The Create path has no callback and its caller calls EndFrame instead.
+            state.Device.EndFrame();
         }
 
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
@@ -189,15 +416,51 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
     internal SokolSwapchain SwapchainState => _swapchain!;
 
     /// <summary>
-    /// Counts frames since the device was created, incremented at the end of each frame callback.
+    /// Whether this instance is responsible for <c>sg_shutdown</c>. True when it called
+    /// <c>sg_setup</c> itself (<see cref="Create"/>); false under <see cref="Run"/>, where
+    /// sokol_app's cleanup callback owns both the shutdown and the frame loop's exit.
+    /// </summary>
+    private bool _ownsSokol;
+
+    /// <summary>
+    /// Counts frames since the device was created, advanced by <see cref="EndFrame"/>.
     ///
     /// This is a resource-upload budget rather than a time source: sokol allows at most one
     /// <c>sg_update_buffer</c>/<c>sg_update_image</c> per resource per frame (<c>VALIDATE_UPDATEBUF_
     /// ONCE</c>), so the command buffer needs to know which frame it is in to collapse several
-    /// updates the abstraction permits into the one sokol will accept. It is deliberately
-    /// independent of sokol_app's own frame counter, which this backend has no access to.
+    /// updates the abstraction permits into the one sokol will accept.
+    ///
+    /// Under <see cref="Run"/> sokol_app owns the frame boundary and increments this in its frame
+    /// callback; under <see cref="Create"/> there is no callback, so the caller's
+    /// <see cref="EndFrame"/> call is the boundary instead.
     /// </summary>
     internal long FrameIndex { get; private set; }
+
+    /// <summary>
+    /// Marks the end of a frame, advancing the <see cref="FrameIndex"/> upload budget.
+    ///
+    /// Must be called once per frame <em>after</em> <see cref="Submit"/> - every
+    /// <c>sg_update_buffer</c>/<c>sg_update_image</c> issued this frame is a use of the current
+    /// frame's allowance, so advancing early would let the same resource be updated twice in what
+    /// sokol considers one frame. The <see cref="Run"/> path does this itself, from sokol_app's
+    /// frame callback; the <see cref="Create"/> path needs it from its caller.
+    /// </summary>
+    public void EndFrame() => FrameIndex++;
+
+    /// <summary>
+    /// The sample count sokol is told the swapchain uses, and the sample count
+    /// <see cref="ISokolPlatform.CreateEnvironment"/> is asked for.
+    ///
+    /// One, always, and that is a limitation rather than a choice: a multisampled swapchain needs a
+    /// separate single-sample resolve target, and sokol neither creates one nor accepts a swapchain
+    /// whose <c>resolve_view</c> is absent while <c>sample_count</c> is greater than one
+    /// (<c>sokol_gfx.h:24803-24805</c>). An offscreen pass can still be multisampled - only the
+    /// final presentation target cannot. So <c>GraphicsSettingsShim.AppliedMultiSampleCount</c>
+    /// reports 1 on this backend whatever the settings ask for, which is the same "the request was
+    /// not honoured" answer it already gives the GL backend (<c>GlSwapchain.MultiSampleCount</c> is
+    /// a hardcoded 0).
+    /// </summary>
+    private const int SampleCount = 1;
 
     /// <summary>
     /// Wraps one program's compiled stages for use as pipeline shaders.
@@ -256,6 +519,15 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
     /// <c>layout(row_major)</c> is honoured so matrices are read the same way D3D reads them.
     /// Metal is only untried, not known-broken.
     /// </summary>
+    /// <inheritdoc cref="IGraphicsDevice.CreateShaderModule"/>
+    /// <remarks>
+    /// Instantiated rather than static because selecting the form to compile reads
+    /// <c>sg_query_backend()</c>, which is only meaningful once <c>sg_setup</c> has run - and this
+    /// overload deliberately goes through the same instance gate as any other device operation.
+    /// </remarks>
+    IShaderModule IGraphicsDevice.CreateShaderModule(ShaderStageSources vertex, ShaderStageSources pixel, ShaderReflection reflection) =>
+        LoadProgram(vertex, pixel, reflection);
+
     public static IShaderModule LoadProgram(
         ShaderStageSources vertex,
         ShaderStageSources pixel,
@@ -347,20 +619,28 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
 
                 var handle = Gfx.make_buffer(&buffer);
                 var result = new SokolBuffer(handle, desc);
-                if (desc.Usage != BufferUsage.Immutable) UploadBuffer(handle, initialData);
+
+                if (desc.Usage != BufferUsage.Immutable)
+                {
+                    // Seeded into the mirror rather than pushed with an immediate sg_update_buffer.
+                    // A buffer created mid-frame is routinely written again through UpdateBuffer
+                    // before that frame's draw (Sparks and Chips both create with a zeroed array
+                    // and then fill it), and sokol allows one sg_update_buffer per buffer per frame
+                    // (VALIDATE_UPDATEBUF_ONCE) - so an immediate upload here would spend the
+                    // frame's only allowance and make the real write the second one. That both
+                    // fails validation and, because validation aborts the call before the deferred
+                    // mirror flush can run, would leave the buffer holding its initial zeros. The
+                    // mirror path coalesces this write with any later one into the single upload
+                    // FlushUploads issues at draw time.
+                    result.Mirror = initialData.ToArray();
+                    result.MarkDirty();
+                    TrackCreated(result);
+                }
+
                 return result;
             }
 
             return new SokolBuffer(Gfx.make_buffer(&buffer), desc);
-        }
-    }
-
-    private static void UploadBuffer(sg_buffer buffer, ReadOnlySpan<byte> data)
-    {
-        fixed (byte* pointer = data)
-        {
-            var range = SokolNative.Range(pointer, data.Length);
-            Gfx.update_buffer(buffer, &range);
         }
     }
 
@@ -403,7 +683,7 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
             // _sg_image_desc_defaults turns 0 into 1, so "let sokol pick the chain" is not a
             // thing that exists here - the chain length has to be given explicitly.
             num_mipmaps = mipCount,
-            pixel_format = desc.Format.ToNative(desc.RenderTargetable),
+            pixel_format = desc.Format.ToNative(),
             usage = new sg_image_usage
             {
                 // Attachment capability is a usage flag in sokol, not a property of the format.
@@ -446,7 +726,12 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
                 texture.CpuShadow = initialData.IsEmpty
                     ? new byte[desc.Width * desc.Height * texture.BytesPerPixel]
                     : initialData.ToArray();
-                if (!initialData.IsEmpty) texture.MarkDirty();
+                if (!initialData.IsEmpty)
+                {
+                    texture.MarkDirty();
+                    TrackCreated(texture);
+                }
+
                 return texture;
             }
 
@@ -574,14 +859,31 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
         var layout = new ShaderBindings(reflection);
         var shader = CreateShader(vertex, pixel, layout, desc);
 
-        var pipelineDesc = BuildPipelineDesc(desc, shader, layout);
-        var handle = Gfx.make_pipeline(&pipelineDesc);
-        if (handle.id == 0)
-            throw new InvalidOperationException("sg_make_pipeline failed - see the sokol log for the validation error.");
-
+        // A pipeline must declare the pixel format of the attachment it will draw into, and the
+        // abstraction has no such field - so the state object holds one native pipeline per format
+        // and makes them on demand. See SokolPipelineState._variants.
         return new SokolPipelineState(
-            handle, shader, desc, reflection,
-            layout.UniformBlockSize, layout.UniformBlockSlots, layout.ViewSlotMap, layout.SamplerSlotMap);
+            shader, desc, reflection,
+            layout.UniformBlockSize, layout.UniformBlockSlots, layout.ViewSlotMap, layout.SamplerSlotMap,
+            layout.ViewCount, layout.SamplerCount,
+            (colorFormat, indexType) => MakePipelineVariant(desc, shader, layout, colorFormat, indexType),
+            DefaultColorFormat);
+    }
+
+    /// <summary>
+    /// The colour format an unqualified pipeline declares, i.e. what a pass drawing to the
+    /// swapchain uses. Read from sokol's resolved environment rather than hardcoded, because the
+    /// value is backend-dependent (<c>_sg_desc_defaults</c>, <c>sokol_gfx.h:26374</c>: BGRA8 on
+    /// D3D11 and Metal, RGBA8 elsewhere) and this app fills it in per platform.
+    /// </summary>
+    internal sg_pixel_format DefaultColorFormat => Gfx.query_desc().environment.defaults.color_format;
+
+    private static sg_pipeline MakePipelineVariant(
+        PipelineDesc desc, sg_shader shader, ShaderBindings layout,
+        sg_pixel_format colorFormat, sg_index_type indexType)
+    {
+        var pipelineDesc = BuildPipelineDesc(desc, shader, layout, colorFormat, indexType);
+        return Gfx.make_pipeline(&pipelineDesc);
     }
 
     private static SokolShaderProgram RequireProgram(IShaderModule module, string name) =>
@@ -715,25 +1017,28 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
         // handled by the caller's own pinning - see CreateShader.
     }
 
-    private static sg_pipeline_desc BuildPipelineDesc(PipelineDesc desc, sg_shader shader, ShaderBindings layout)
+    private static sg_pipeline_desc BuildPipelineDesc(
+        PipelineDesc desc, sg_shader shader, ShaderBindings layout,
+        sg_pixel_format colorFormat, sg_index_type indexType)
     {
         var pipelineDesc = new sg_pipeline_desc
         {
             shader = shader,
             primitive_type = desc.Topology.ToNative(),
-            // sokol bakes the index format into the pipeline, while the abstraction supplies it
-            // per buffer at draw time. The app's index buffers are UInt16 on the paths this
-            // backend is exercised on, so UInt16 is the assumption - a UInt32 index buffer drawn
-            // through a UInt16 pipeline would misread it.
-            index_type = sg_index_type.SG_INDEXTYPE_UINT16,
+            // sokol bakes the index format into the pipeline while the abstraction supplies it per
+            // buffer at draw time, so this is not a property of <paramref name="desc"/> at all -
+            // the caller derives it from the buffer actually bound. NONE for a non-indexed draw.
+            index_type = indexType,
             cull_mode = desc.RasterizerState.CullMode.ToNative(),
             // XNA/FNA's winding convention is clockwise, which matches sokol's default - stated
             // rather than assumed so a future default change cannot silently flip every triangle.
             face_winding = sg_face_winding.SG_FACEWINDING_CW,
-            // sokol requires the pipeline's sample count to match the pass it draws into. Most
-            // pipelines here draw straight to the swapchain, so they take its count; a pipeline
-            // aimed at a single-sampled off-screen target needs its own pipeline.
-            sample_count = App.isvalid() != 0 ? Math.Max(App.sample_count(), 1) : 1,
+            // sokol requires the pipeline's sample count to match the pass it draws into. It is always
+            // SampleCount here: under Run because sokol_app's frame loop was asked for that count
+            // (Run passes multiSampleCount to sapp_desc), and under Create because the platform was
+            // told the same. Reading App.sample_count() would be wrong on the Create path anyway -
+            // sokol_app was never initialized there, so it reports nothing.
+            sample_count = SampleCount,
         };
 
         // Vertex layout: one buffer per abstraction slot, with its attributes. sokol indexes
@@ -759,15 +1064,20 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
             }
         }
 
-        ApplyBlendState(&pipelineDesc, desc);
+        ApplyBlendState(&pipelineDesc, desc, colorFormat);
         ApplyDepthStencilState(&pipelineDesc, desc);
         _ = layout;
         return pipelineDesc;
     }
 
-    private static void ApplyBlendState(sg_pipeline_desc* pipelineDesc, PipelineDesc desc)
+    private static void ApplyBlendState(
+        sg_pipeline_desc* pipelineDesc, PipelineDesc desc, sg_pixel_format colorFormat)
     {
         pipelineDesc->color_count = 1;
+        // The colour attachment's format, which sg_apply_pipeline validates against the open pass.
+        // D3D11 ignores it when building the blend state, but sokol's validation layer does not -
+        // see SokolPipelineState._variants.
+        pipelineDesc->colors[0].pixel_format = colorFormat;
         pipelineDesc->colors[0].write_mask = desc.BlendState.ColorWriteMask.ToNative();
         pipelineDesc->colors[0].blend.enabled = SokolNative.Bool(desc.BlendState.Enabled);
         pipelineDesc->colors[0].blend.src_factor_rgb = desc.BlendState.SourceColor.ToNative();
@@ -798,10 +1108,30 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
         pipelineDesc->stencil.front.fail_op = depth.StencilFail.ToNative();
         pipelineDesc->stencil.front.depth_fail_op = depth.StencilDepthFail.ToNative();
         pipelineDesc->stencil.front.pass_op = depth.StencilPass.ToNative();
-        pipelineDesc->stencil.back.compare = depth.CcwStencilFunction.ToNative();
-        pipelineDesc->stencil.back.fail_op = depth.CcwStencilFail.ToNative();
-        pipelineDesc->stencil.back.depth_fail_op = depth.CcwStencilDepthFail.ToNative();
-        pipelineDesc->stencil.back.pass_op = depth.CcwStencilPass.ToNative();
+
+        // TwoSidedStencil:false means "the back face follows the front face", not "the back face
+        // takes the Ccw* fields" - and the Ccw* fields are usually left at their struct defaults
+        // (ALWAYS/KEEP), so getting this wrong silently disables the stencil on every back face.
+        // That matters because NanoVG's pipelines rasterize with CullMode.None, so back faces are
+        // real geometry here: its "fill2" pass tests stencil == 0 and its "fill3" pass tests
+        // stencil != 0 while zeroing it, and both leave CcwStencilFunction at ALWAYS. A back face
+        // under a defaulted ALWAYS/KEEP rule passes unconditionally and writes nothing, which is
+        // exactly the wrong answer for both - the fringe overwrites where it must not, and the
+        // cleanup quad never clears, so stencil state survives into the next frame's shapes.
+        //
+        // GL states the same rule from the other side: with no two-sided toggle of its own it
+        // explicitly copies the front configuration onto GL_BACK when the flag is false
+        // (GlPipelineState.ApplyDepthStencil). FNA3D passes the flag through as
+        // twoSidedStencilMode. sokol has no mirroring to lean on, so the copy is made here.
+        var backFunction = depth.TwoSidedStencil ? depth.CcwStencilFunction : depth.StencilFunction;
+        var backFail = depth.TwoSidedStencil ? depth.CcwStencilFail : depth.StencilFail;
+        var backDepthFail = depth.TwoSidedStencil ? depth.CcwStencilDepthFail : depth.StencilDepthFail;
+        var backPass = depth.TwoSidedStencil ? depth.CcwStencilPass : depth.StencilPass;
+
+        pipelineDesc->stencil.back.compare = backFunction.ToNative();
+        pipelineDesc->stencil.back.fail_op = backFail.ToNative();
+        pipelineDesc->stencil.back.depth_fail_op = backDepthFail.ToNative();
+        pipelineDesc->stencil.back.pass_op = backPass.ToNative();
     }
 
     /// <summary>
@@ -812,6 +1142,11 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
     /// CPU-side mirror the backend keeps for otherwise-unreadable textures. That makes it exact
     /// for textures this backend uploaded and updated itself, and impossible for one the GPU
     /// rendered into.
+    ///
+    /// <b>Genuine GPU readback is deliberately not implemented yet.</b> It is per-platform work
+    /// behind the same seam everything else on this backend uses, and the shape is known - see
+    /// <see cref="TryReadTexture"/>'s remarks for what each platform would have to do. Until then
+    /// this fails with that message rather than returning stale or zeroed pixels.
     /// </summary>
     public void ReadTexture(ITexture texture, int x, int y, int width, int height, Span<byte> destination, int level = 0)
     {
@@ -819,7 +1154,9 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
             throw new ArgumentException($"{nameof(ReadTexture)} needs a texture this backend created.", nameof(texture));
 
         if (level != 0)
-            throw new NotSupportedException("sokol_gfx exposes no readback and this backend only mirrors mip 0.");
+            throw new NotSupportedException(
+                "This backend's CPU mirror only tracks mip 0, and GPU readback (which would serve the " +
+                "other levels) is not implemented yet.");
 
         if (TryReadTexture(sokol, x, y, width, height, destination, out var error)) return;
         throw new NotSupportedException(error);
@@ -829,13 +1166,52 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
     /// Mirror-backed readback. Returns false (with a reason) rather than throwing, so callers can
     /// tell "this texture has no mirror" apart from a genuine failure.
     /// </summary>
+    /// <remarks>
+    /// To serve a texture the GPU wrote - a render target, a depth buffer - each platform would do
+    /// the same thing in its own API, and the three facts that make it non-obvious are worth writing
+    /// down before anyone rediscovers them:
+    ///
+    /// <list type="bullet">
+    ///   <item>
+    ///     The resource is reached through sokol, not around it: <c>sg_d3d11_query_image_info</c>
+    ///     returns the raw <c>ID3D11Resource</c>/<c>ID3D11Texture2D</c> (<c>Gfx.cs:3707</c>), and
+    ///     <c>sg_d3d11_view_info</c> returns the <c>srv</c>/<c>uav</c>/<c>rtv</c>/<c>dsv</c> of a view
+    ///     (<c>Gfx.cs:3117-3129</c>). Render targets need the <em>view</em> path, because sokol holds
+    ///     a target as an <c>sg_view</c> rather than an <c>sg_image</c>
+    ///     (<c>SokolResources.cs:320-330</c>).
+    ///   </item>
+    ///   <item>
+    ///     Copying is format-sensitive. <c>CopyResource</c> requires matching formats, and sokol
+    ///     creates every one of its own textures <em>typeless</em> (<c>sokol_gfx.h:13576</c> RGBA8 to
+    ///     <c>R8G8B8A8_TYPELESS</c>, <c>:13556</c> depth to <c>R32_TYPELESS</c>), so a staging
+    ///     texture has to mirror the typeless format rather than the logical one. This is the trap a
+    ///     naive implementation hits.
+    ///   </item>
+    ///   <item>
+    ///     The technique is a <c>USAGE_STAGING</c>/<c>CPU_ACCESS_READ</c> texture, <c>CopyResource</c>
+    ///     into it, then <c>Map</c> polled with <c>DO_NOT_WAIT</c> so a frame does not block on the
+    ///     GPU; and the row layout is only linear when <c>Mapped.RowPitch == width * bytesPerPixel</c>,
+    ///     so the copy has to walk rows otherwise. The async request/is-ready/wait/copy/destroy shape
+    ///     is the one worth adopting. <c>squk/sokol_utils</c>' <c>sokol_gfx_utils.h</c> is the
+    ///     reference for the technique, but its code cannot be reused: it is RGBA8-only, level-0-only,
+    ///     has no sub-rectangle, explicitly excludes render targets, and reads sokol's private
+    ///     internals (<c>_sg_lookup_image</c>, <c>_sg.d3d11</c>), which this binding does not expose.
+    ///   </item>
+    /// </list>
+    ///
+    /// The other platforms follow the same shape in their own vocabulary: Metal needs an
+    /// <c>MTLBuffer</c> and a blit encoder, Vulkan a staging buffer plus a barrier, and GL a pixel
+    /// buffer object with a fence sync.
+    /// </remarks>
     internal static bool TryReadTexture(SokolTexture texture, int x, int y, int width, int height, Span<byte> destination, out string error)
     {
         if (texture.CpuShadow is not { } shadow)
         {
             error =
                 "sokol_gfx has no texture readback, so this backend can only serve a texture it " +
-                "uploaded or updated itself. Render-target and depth textures have no CPU mirror.";
+                "uploaded or updated itself. A render target or depth texture has no CPU mirror, and " +
+                "GPU readback (D3D11 staging copy / Metal blit / Vulkan staging buffer / GL PBO) is " +
+                "not implemented yet.";
             return false;
         }
 
@@ -863,11 +1239,109 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
         return true;
     }
 
+    /// <summary>
+    /// Tears down sokol_gfx and the platform, in that order: <c>sg_shutdown</c> releases every
+    /// resource sokol owns, all of which refer to the platform's device, so the device must outlive
+    /// it. <see cref="Run"/> does the same thing from sokol_app's cleanup callback.
+    /// </summary>
+    /// <summary>
+    /// The view and sampler bound in place of any texture slot a pipeline declares but the caller
+    /// never filled - a 1x1 opaque white texture with nearest filtering.
+    ///
+    /// This exists because the abstraction permits a declared texture to go unbound, and GL agrees:
+    /// a sampler uniform left at its default reads texture unit 0, so an unbound slot samples
+    /// whatever happens to be there. sokol's validation does not permit it - every view and sampler
+    /// slot its shader desc declares must be filled or <c>sg_apply_bindings</c> fails
+    /// (<c>VALIDATE_ABND_EXPECTED_VIEW_BINDING</c>/<c>_SAMPLER_BINDING</c>) - and a failed
+    /// <c>sg_apply_bindings</c> <em>skips the bind entirely</em>, so the draw silently proceeds
+    /// against the previous draw's bindings rather than merely failing one slot.
+    ///
+    /// Leaving the slots unbound is not a rare accident, which is why a placeholder is the right
+    /// answer rather than an assertion. sokol declares a program's <em>whole</em> reflection, and
+    /// several of this app's programs legitimately never fill every slot in a given pass:
+    ///
+    ///   - <c>PolyShadowModule</c> is one program carrying both Poly.fx techniques, so its
+    ///     reflection lists Mad.fxh's ShadowMap0/1/2 (t0/t1/t2) for the Basic technique - while the
+    ///     CreateShadowMap technique it is actually drawn with samples none of them;
+    ///   - Nvg.fx's gradient pipelines sample <c>g_texture</c> only when the fill has an image, and
+    ///     its Simple technique never samples it at all.
+    ///
+    /// Nearest filtering and opaque white make the substitution as close to invisible as a
+    /// placeholder can be: a shader that multiplies by the sample is unaffected, and one that
+    /// replaces its colour with it reads white rather than the undefined contents GL would give.
+    /// Checked against the three cases above: <c>Simple</c> never samples, the gradient technique's
+    /// <c>lerp(innerCol, outerCol, d)</c> never samples, and the one technique that does sample is
+    /// only ever reached with a real texture - <c>AbstractionNvgRenderer</c> picks
+    /// <c>_pImageFillList</c> iff <c>UniformInfo.Image != null</c> (<c>:443</c>).
+    ///
+    /// It cannot tell "declared but unused" from "used but wrongly left unbound", because sokol's
+    /// reflection does not record which slots a technique reads - so the second case, if it ever
+    /// occurs, samples white instead of failing. That is the deliberate trade: the failure it
+    /// replaces is a <em>whole-frame</em> one (<c>sg_apply_bindings</c> skipping the bind leaves the
+    /// draw against the previous draw's textures), and white is at least attributable to a shader.
+    ///
+    /// Created on first use rather than in the constructor because it must not be made before
+    /// <c>sg_setup</c>, and disposed after every pipeline and pass has stopped referencing it.
+    /// </summary>
+    internal sg_view PlaceholderView
+    {
+        get
+        {
+            if (_placeholderView is not { } view) _placeholderView = view = MakePlaceholder().View;
+            return view;
+        }
+    }
+
+    /// <summary>The sampler half of <see cref="PlaceholderView"/>.</summary>
+    internal sg_sampler PlaceholderSampler => (_placeholderSampler ??= MakePlaceholderSampler()).Handle;
+
+    private SokolTexture? _placeholderTexture;
+    private sg_view? _placeholderView;
+    private SokolSampler? _placeholderSampler;
+
+    private SokolTexture MakePlaceholder()
+    {
+        // Rgba8 and render-targetable-free: an ordinary sampled texture, which is what every
+        // declared texture slot is (a depth image is never bound for sampling by this backend).
+        var texture = (SokolTexture)CreateTexture(
+            new TextureDesc(1, 1, TextureFormat.Rgba8), [255, 255, 255, 255]);
+        _placeholderTexture = texture;
+        return texture;
+    }
+
+    private SokolSampler MakePlaceholderSampler()
+    {
+        var sampler = (SokolSampler)CreateSampler(new SamplerDesc(
+            Filter: TextureFilter.Point, AddressU: TextureAddressMode.Clamp, AddressV: TextureAddressMode.Clamp));
+        _placeholderSampler = sampler;
+        return sampler;
+    }
+
     public void Dispose()
     {
         if (_shutdown) return;
         _shutdown = true;
+
+        // The placeholder is not referenced by any pipeline, so it is safe to release here - but it
+        // has to go before sg_shutdown, which frees the pools it lives in.
+        _placeholderSampler?.Dispose();
+        _placeholderSampler = null;
+        _placeholderView = null;
+        // _placeholderTexture's View is owned by the texture, so disposing it releases both.
+        _placeholderTexture?.Dispose();
+        _placeholderTexture = null;
+
+        // Guarded so that a device created by Run - which is shut down by sokol_app's own cleanup
+        // callback, along with the frame loop - is not also shut down here.
+        if (_ownsSokol)
+        {
+            Gfx.shutdown();
+            _ownsSokol = false;
+        }
+
+        _swapchain?.Dispose();
         _swapchain = null;
+        _current = null;
     }
 }
 

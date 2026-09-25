@@ -230,6 +230,14 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         /// byte4 despite HLSL's "float3 Color : COLOR0" - the input assembler unpacks bytes to
         /// normalized floats before the shader runs - then DecalOffset float1), expressed against
         /// the new graphics abstraction for <see cref="Graphics.PipelineDesc.VertexLayouts"/>.
+        ///
+        /// Written in Line.fx's <em>declaration</em> order rather than this struct's memory order,
+        /// for the same reason <see cref="Mesh.VertexPositionNormalColorCentroid.VertexLayout"/>
+        /// is: the GL backend numbers attribute locations by position in this list, so the entry
+        /// order has to match the shader's. Line.fx declares Color (:COLOR0) before Centroid
+        /// (:POSITION2) while the struct stores Centroid first, and listing them in memory order
+        /// puts each on the other's location. The byte offsets below are what the vertex data
+        /// actually is, so reordering them moves no data - only which location each binds to.
         /// </summary>
         public static readonly VertexLayoutDesc VertexLayout = new(
             Attributes:
@@ -238,8 +246,8 @@ public class LineMesh : IInstancedRenderElement, IDisposable
                 new VertexAttributeDesc("POSITION", 1, 12, VertexAttributeFormat.Float3),
                 new VertexAttributeDesc("TEXCOORD", 0, 24, VertexAttributeFormat.Float1),
                 new VertexAttributeDesc("NORMAL", 0, 28, VertexAttributeFormat.Float3),
-                new VertexAttributeDesc("POSITION", 2, 40, VertexAttributeFormat.Float3),
                 new VertexAttributeDesc("COLOR", 0, 52, VertexAttributeFormat.Byte4Normalized),
+                new VertexAttributeDesc("POSITION", 2, 40, VertexAttributeFormat.Float3),
                 new VertexAttributeDesc("TEXCOORD", 1, 56, VertexAttributeFormat.Float1),
             ],
             StrideInBytes: Stride);

@@ -1,3 +1,4 @@
+using NFMWorld.Graphics;
 using NFMWorld.Shaders;
 using SharpSokol.Native;
 
@@ -42,12 +43,27 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
     private readonly int[] _vertexBufferOffsets = new int[8];
     private sg_buffer _indexBuffer;
     private int _indexBufferOffset;
+
+    /// <summary>
+    /// The bound index buffer's format, or <c>NONE</c> when no index buffer is bound - which is the
+    /// non-indexed case, and the value the pipeline variant must declare to match.
+    /// </summary>
+    private sg_index_type _indexFormat = sg_index_type.SG_INDEXTYPE_NONE;
     private readonly sg_view[] _views = new sg_view[32];
     private readonly sg_sampler[] _samplers = new sg_sampler[12];
 
     private sg_pass_action _passAction;
     private bool _inPass;
     private bool _pipelineDirty;
+
+    /// <summary>
+    /// The index format of the pipeline variant currently applied, so <see cref="Flush"/> can tell
+    /// when a different one is needed. It is not implied by <see cref="_pipelineDirty"/>: one
+    /// pipeline stays set across draws that differ only in indexing, because the abstraction binds
+    /// an index buffer and then draws both indexed and not - so <see cref="_pipelineDirty"/> is
+    /// already false while the variant still has to change.
+    /// </summary>
+    private sg_index_type _appliedIndexType = sg_index_type.SG_INDEXTYPE_NONE;
 
     private Viewport? _viewport;
     private ScissorRect? _scissor;
@@ -75,6 +91,8 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
         var sokolPipeline = (SokolPipelineState)pipeline;
         if (ReferenceEquals(_pipeline, sokolPipeline)) return;
 
+        DrawProfiler.CountSetPipeline++;
+
         _pipeline = sokolPipeline;
         _pipelineDirty = true;
 
@@ -97,12 +115,15 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
         // not from the binding, and the two are validated against each other by sokol itself.
         _vertexBuffers[slot] = ((SokolBuffer)buffer).Handle;
         _vertexBufferOffsets[slot] = offsetBytes;
+        DrawProfiler.CountSetVertexBuffer++;
     }
 
     public void SetIndexBuffer(IBuffer buffer, int offsetBytes = 0)
     {
-        _indexBuffer = ((SokolBuffer)buffer).Handle;
+        var sokol = (SokolBuffer)buffer;
+        _indexBuffer = sokol.Handle;
         _indexBufferOffset = offsetBytes;
+        _indexFormat = sokol.IndexFormat.ToNative();
     }
 
     public void SetShaderResource(int slot, ITexture texture, ISampler sampler)
@@ -125,8 +146,7 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
 
     public void SetUniform(int slot, ReadOnlySpan<byte> value)
     {
-        if (_pipeline is null)
-            throw new InvalidOperationException($"{nameof(SetUniform)} requires a pipeline to be bound first.");
+        var pipeline = RequirePipeline();
 
         if (slot < 0)
             throw new ArgumentOutOfRangeException(nameof(slot), slot, "A negative slot means the shader compiler optimized the uniform out; callers must skip it.");
@@ -135,7 +155,79 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
             throw new ArgumentOutOfRangeException(nameof(value),
                 $"{value.Length} bytes at offset {slot} overruns the {_uniformBlockSize}-byte uniform block.");
 
+        // Matrix4x4 values are transposed on the way in, exactly as the GL and FNA3D backends do.
+        // This is the abstraction's contract rather than a quirk of any one backend: callers hold
+        // row-major XNA/System.Numerics matrices, and every shader the compiler emits reads its
+        // matrices the other way round - the HLSL it produces declares them `column_major` in the
+        // cbuffer and multiplies row-vector style, `mul(float4(p, 1), M)` (see PolyBasic's emitted
+        // `column_major float4x4 _360_View : packoffset(c14)` beside `mul(_656, _360_View)`).
+        // Handed a row-major matrix unconverted, HLSL reads the transpose instead.
+        //
+        // The symptom is not a subtle skew, which is why this is worth a comment: a translation
+        // lives in M41/M42/M43, which the shaders' row-vector convention needs in the GPU's fourth
+        // *column*, so written straight through it lands in the fourth *row* and the multiply reads
+        // it as the w component - a perspective divide instead of a translation. Geometry collapses
+        // to a sliver or explodes rather than moving, while identity matrices (every unrotated,
+        // untranslated screen-space quad) stay symmetric and so keep looking correct. That is
+        // precisely the shape of the bug this fixes (an almost-empty blue screen with a thin
+        // horizontal line across the middle, and occasional vertex explosions).
+        //
+        // The reflection decides rather than the byte count: a 64-byte write is only a matrix
+        // because the bundle says so, and transposing something the shader reads as four vec4s
+        // would corrupt it. Matching on the offset is what makes the lookup correct, because the
+        // caller's slot *is* a byte offset (SlotOf in the generated bundles returns
+        // `uniform.Offset`) while the uniform list is ordered by name - the two are not the same
+        // numbering, so indexing the list with the slot would read a different parameter's type.
+        if (IsMatrix4x4At(pipeline, slot))
+        {
+            Transpose4x4Into(value, _uniformBlock.AsSpan(slot));
+            DrawProfiler.CountSetUniform++;
+            return;
+        }
+
         value.CopyTo(_uniformBlock.AsSpan(slot));
+        DrawProfiler.CountSetUniform++;
+    }
+
+    /// <summary>
+    /// Whether the reflected uniform at this byte offset is a <c>float4x4</c> - see the transpose
+    /// discussion in <see cref="SetUniform"/> for why the offset is the key and not the slot index.
+    /// Mirrors the identical check in <c>GlCommandBuffer.IsMatrix4x4At</c>; two uniforms cannot share
+    /// an offset in a block whose size was computed from those same offsets, so the first match is
+    /// the only match.
+    /// </summary>
+    private static bool IsMatrix4x4At(SokolPipelineState pipeline, int offset)
+    {
+        foreach (var uniform in pipeline.Reflection.Uniforms)
+        {
+            if (uniform.Offset == offset)
+                return uniform.Type == UniformType.Matrix4x4;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Writes a row-major 4x4 as the column-major bytes the shaders' constant registers expect.
+    ///
+    /// Done as an in-place index permutation rather than through <c>Matrix4x4.Transpose</c> so that
+    /// the value's interpretation never depends on how the caller's <c>Span&lt;byte&gt;</c> happens
+    /// to be aligned - the same reasoning as <c>GlCommandBuffer.Transpose4x4Into</c>, whose body this
+    /// duplicates deliberately. The two backends transposing the same way for the same reason is the
+    /// point; sharing the helper instead would mean lifting a buffer-layout detail into the
+    /// abstraction, which is where the row-major contract is already stated and needs nothing more.
+    /// </summary>
+    private static void Transpose4x4Into(ReadOnlySpan<byte> source, Span<byte> destination)
+    {
+        for (var row = 0; row < 4; row++)
+        {
+            for (var column = 0; column < 4; column++)
+            {
+                var from = (row * 4 + column) * sizeof(float);
+                var to = (column * 4 + row) * sizeof(float);
+                source.Slice(from, sizeof(float)).CopyTo(destination[to..]);
+            }
+        }
     }
 
     public void SetRenderTarget(IRenderTarget? target)
@@ -252,6 +344,12 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
 
     private void FlushUploads()
     {
+        // Resources created with initial data register on the device, not here, because they are
+        // usually created while this buffer is already recording - see TrackCreated. Adopting them
+        // before the emptiness check means a buffer created and drawn in the same frame still
+        // uploads, and one created and never drawn costs only this check.
+        device.DrainCreatedUploads(_pendingUploads);
+
         if (_pendingUploads.Count == 0) return;
 
         var frame = device.FrameIndex;
@@ -263,22 +361,34 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
     public void Draw(int startVertex, int primitiveCount)
     {
         var pipeline = RequirePipeline();
-        Flush();
-        Gfx.draw(startVertex, ElementCount(pipeline.Desc.Topology, primitiveCount, indexed: false), 1);
+        DrawProfiler.CountDraw++;
+        DrawProfiler.TimeDraw(() =>
+        {
+            Flush(indexed: false);
+            Gfx.draw(startVertex, ElementCount(pipeline.Desc.Topology, primitiveCount, indexed: false), 1);
+        });
     }
 
     public void DrawIndexed(int baseVertex, int startIndex, int primitiveCount)
     {
         var pipeline = RequirePipeline();
-        Flush();
-        Gfx.draw_ex(startIndex, ElementCount(pipeline.Desc.Topology, primitiveCount, indexed: true), 1, baseVertex, 0);
+        DrawProfiler.CountDraw++;
+        DrawProfiler.TimeDraw(() =>
+        {
+            Flush(indexed: true);
+            Gfx.draw_ex(startIndex, ElementCount(pipeline.Desc.Topology, primitiveCount, indexed: true), 1, baseVertex, 0);
+        });
     }
 
     public void DrawIndexedInstanced(int baseVertex, int startIndex, int primitiveCount, int instanceCount)
     {
         var pipeline = RequirePipeline();
-        Flush();
-        Gfx.draw_ex(startIndex, ElementCount(pipeline.Desc.Topology, primitiveCount, indexed: true), instanceCount, baseVertex, 0);
+        DrawProfiler.CountDraw++;
+        DrawProfiler.TimeDraw(() =>
+        {
+            Flush(indexed: true);
+            Gfx.draw_ex(startIndex, ElementCount(pipeline.Desc.Topology, primitiveCount, indexed: true), instanceCount, baseVertex, 0);
+        });
     }
 
     private SokolPipelineState RequirePipeline() =>
@@ -307,7 +417,7 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
     /// (pass open, pipeline applied, uniforms sized to the block, all declared views bound) hold
     /// by construction rather than by the caller's call order.
     /// </summary>
-    private unsafe void Flush()
+    private unsafe void Flush(bool indexed)
     {
         var pipeline = RequirePipeline();
 
@@ -317,10 +427,24 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
         FlushUploads();
         BeginPass();
 
-        if (_pipelineDirty)
+        // sokol bakes the index format into the pipeline (sg_pipeline_desc.index_type) while the
+        // abstraction supplies it per buffer at SetIndexBuffer time, so the two are reconciled here
+        // by applying the variant that matches the draw about to be issued.
+        //
+        // Get this wrong and the draw is rejected rather than misdrawn: sg_apply_bindings
+        // cross-validates the bound index buffer against the applied pipeline's index_type
+        // (:25174-25179) and a mismatch clears _sg.next_draw_valid, which sg_draw then treats as
+        // "skip" (:27476). Both halves of the match are needed - the variant chosen here and the
+        // index buffer withheld in ApplyBindings - and neither is implied by the other.
+        var indexType = indexed ? _indexFormat : sg_index_type.SG_INDEXTYPE_NONE;
+
+        if (_pipelineDirty || indexType != _appliedIndexType)
         {
-            Gfx.apply_pipeline(pipeline.Handle);
+            // The variant matching this pass's colour attachment and this draw's indexing - a
+            // swapchain pass takes the environment default. See SokolPipelineState._variants.
+            Gfx.apply_pipeline(pipeline.HandleFor(_target?.ColorFormat ?? device.DefaultColorFormat, indexType));
             _pipelineDirty = false;
+            _appliedIndexType = indexType;
         }
 
         // Viewport and scissor default to the whole drawable, matching FNA3D's device defaults,
@@ -346,7 +470,60 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
             }
         }
 
-        ApplyBindings();
+        ApplyBindings(pipeline, indexed);
+    }
+
+    /// <summary>
+    /// Fills every view and sampler slot the applied pipeline declares, then binds the set.
+    ///
+    /// The caller is not obliged to fill them all, and GL does not mind when one goes unbound - a
+    /// sampler uniform left at its default reads texture unit 0, so the draw samples whatever
+    /// happens to be there. sokol validates instead: every slot the shader desc declares must be
+    /// bound or <c>sg_apply_bindings</c> fails <c>VALIDATE_ABND_EXPECTED_VIEW_BINDING</c>
+    /// (<c>sokol_gfx.h:25197-25199</c>, which walks the shader desc's slots, not the caller's) and
+    /// <em>skips the whole bind</em> - so the draw would proceed against the previous draw's
+    /// bindings rather than merely missing one slot.
+    ///
+    /// Leaving slots unfilled is not an accident here: sokol declares a program's whole reflection,
+    /// so a program carrying two techniques declares textures only one of them samples - see
+    /// <see cref="SokolGraphicsDevice.PlaceholderView"/> for the three cases in this app. The
+    /// declared-but-unfilled slots therefore get that placeholder, which restores GL's tolerant
+    /// behaviour with the least surprising content available.
+    /// </summary>
+    private unsafe void ApplyBindings(SokolPipelineState pipeline, bool indexed)
+    {
+        // ShaderBindings numbers view and sampler slots sequentially from zero (ViewCount /
+        // SamplerCount), so "declared" is the range [0, count) - not the slot maps, which only
+        // cover the abstraction's texture slots and would miss a declared-but-unmapped slot.
+        for (var i = 0; i < pipeline.DeclaredViewSlots; i++)
+        {
+            if (_views[i].id == 0) _views[i] = device.PlaceholderView;
+        }
+        for (var i = 0; i < pipeline.DeclaredSamplerSlots; i++)
+        {
+            if (_samplers[i].id == 0) _samplers[i] = device.PlaceholderSampler;
+        }
+
+        var bindings = new sg_bindings();
+        for (var i = 0; i < _vertexBuffers.Length; i++)
+        {
+            bindings.vertex_buffers[i] = _vertexBuffers[i];
+            bindings.vertex_buffer_offsets[i] = _vertexBufferOffsets[i];
+        }
+        // Withheld from a non-indexed draw, because sokol cross-validates the two: a non-indexed
+        // pipeline with an index buffer bound fails VALIDATE_ABND_EXPECTED_NO_IBUF
+        // (sokol_gfx.h:25174-25176), which sets _sg.next_draw_valid = false and makes sg_draw a
+        // silent no-op (:27476). Leaving it in would drop the draw rather than merely log.
+        //
+        // This is not a hypothetical leftover: NanoVG binds one index buffer for its fan and strip
+        // paths and then calls non-indexed Draw for the strip, so the stale binding is the normal
+        // case, not an oversight by the caller.
+        bindings.index_buffer = indexed ? _indexBuffer : default;
+        bindings.index_buffer_offset = indexed ? _indexBufferOffset : 0;
+        for (var i = 0; i < _views.Length; i++) bindings.views[i] = _views[i];
+        for (var i = 0; i < _samplers.Length; i++) bindings.samplers[i] = _samplers[i];
+
+        Gfx.apply_bindings(&bindings);
     }
 
     /// <summary>
@@ -358,13 +535,25 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
     {
         if (_inPass) return;
 
+        // Every draw passes through here, so this is the cheapest place to catch a render call
+        // arriving on a thread other than the one that created the device. The platform decides
+        // whether that matters (ISokolPlatform.SingleThreadedLifetime); the check is an integer
+        // comparison once the creating thread is known.
+        device.EnsureRenderingThread();
+
         var pass = new sg_pass { action = _passAction };
 
         if (_target is null)
         {
-            // A swapchain pass: sokol acquires the current backbuffer itself. The swapchain is only
-            // valid between frames, so it is re-read per pass rather than cached.
-            pass.swapchain = Glue.swapchain();
+            // A swapchain pass: sokol's D3D11 backend takes the backbuffer's render-target and
+            // depth-stencil views verbatim and calls OMSetRenderTargets with them, with no pooling
+            // and no AddRef (sokol_gfx.h:14840-14849), so these must be the platform's live views
+            // and must stay valid for as long as the pass is open.
+            //
+            // Re-read per pass rather than cached, because a resize between frames replaces them.
+            // Reading them at BeginPass rather than at AcquireCommandBuffer also means the views
+            // sokol gets are the ones from after any resize this frame.
+            pass.swapchain = device.AcquireSwapchain();
         }
         else
         {
@@ -375,8 +564,10 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
         Gfx.begin_pass(&pass);
         _inPass = true;
 
-        // A fresh pass resets the applied pipeline, so the next draw must re-issue it.
+        // A fresh pass resets the applied pipeline, so the next draw must re-issue it - including
+        // its index-format variant, which the reset forgets entirely.
         _pipelineDirty = true;
+        _appliedIndexType = sg_index_type.SG_INDEXTYPE_NONE;
     }
 
     private void EndPass()
@@ -384,22 +575,6 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
         if (!_inPass) return;
         Gfx.end_pass();
         _inPass = false;
-    }
-
-    private unsafe void ApplyBindings()
-    {
-        var bindings = new sg_bindings();
-        for (var i = 0; i < _vertexBuffers.Length; i++)
-        {
-            bindings.vertex_buffers[i] = _vertexBuffers[i];
-            bindings.vertex_buffer_offsets[i] = _vertexBufferOffsets[i];
-        }
-        bindings.index_buffer = _indexBuffer;
-        bindings.index_buffer_offset = _indexBufferOffset;
-        for (var i = 0; i < _views.Length; i++) bindings.views[i] = _views[i];
-        for (var i = 0; i < _samplers.Length; i++) bindings.samplers[i] = _samplers[i];
-
-        Gfx.apply_bindings(&bindings);
     }
 
     /// <summary>

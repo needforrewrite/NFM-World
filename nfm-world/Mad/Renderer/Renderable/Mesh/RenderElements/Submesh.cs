@@ -51,13 +51,18 @@ public class Submesh : IInstancedRenderElement, IDisposable
         // "CreateShadowMap" technique for a cascade, the editor's translucent overlays when the
         // mesh asks for one, and the game's own opaque "Basic" pipeline otherwise. The shadow pass
         // wins over the overlay mode so an editor flag can never leak into a cascade.
+        //
+        // The pipeline is selected on its own because IPipelineState is a common type across all
+        // four; the *parameters* are not, since CreateShadowMap is a separate program with its own
+        // reflection and therefore its own generated struct. So they are picked after the branch
+        // below, where the shadow pass has already returned.
         var isShadowPass = lighting?.IsCreateShadowMap == true;
-        var (pipeline, p) = (isShadowPass, _supermesh.OverlayMode) switch
+        var pipeline = (isShadowPass, _supermesh.OverlayMode) switch
         {
-            (true, _) => (Effects.PolyShadowPipeline, Effects.PolyShadowParameters),
-            (_, PolyOverlayMode.DepthRead) => (Effects.PolyDepthReadPipeline, Effects.PolyDepthReadParameters),
-            (_, PolyOverlayMode.NoDepth) => (Effects.PolyNoDepthPipeline, Effects.PolyNoDepthParameters),
-            _ => (Effects.PolyPipeline, Effects.PolyParameters),
+            (true, _) => Effects.PolyShadowPipeline,
+            (_, PolyOverlayMode.DepthRead) => Effects.PolyDepthReadPipeline,
+            (_, PolyOverlayMode.NoDepth) => Effects.PolyNoDepthPipeline,
+            _ => Effects.PolyPipeline,
         };
 
         cb.SetPipeline(pipeline);
@@ -65,22 +70,34 @@ public class Submesh : IInstancedRenderElement, IDisposable
         cb.SetVertexBuffer(1, instanceBuffer, InstanceData.Stride);
         cb.SetIndexBuffer(_indexBuffer);
 
-        // CreateShadowMapVS transforms by the cascade's *light* camera, not the view camera: the
-        // shadow map holds the depths the sun sees, and the main pass re-projects each pixel with
-        // that same LightViewProj to compare against them. (The pre-migration Submesh.Render
-        // swapped the camera here the same way.) Feeding it the view camera instead puts unrelated
-        // depths in the map, and that comparison then simply never triggers - i.e. no shadows.
-        var passCamera = isShadowPass ? lighting!.CascadeLightCamera! : camera;
-        p.View.SetValue(cb, passCamera.ViewMatrix);
-        p.Projection.SetValue(cb, passCamera.ProjectionMatrix);
-
         if (isShadowPass)
         {
-            // CreateShadowMapVS only reads View/Projection and the per-instance world matrix.
+            // CreateShadowMapVS transforms by the cascade's *light* camera, not the view camera: the
+            // shadow map holds the depths the sun sees, and the main pass re-projects each pixel with
+            // that same LightViewProj to compare against them. (The pre-migration Submesh.Render
+            // swapped the camera here the same way.) Feeding it the view camera instead puts unrelated
+            // depths in the map, and that comparison then simply never triggers - i.e. no shadows.
+            // It reads only View/Projection and the per-instance world matrix, none of the Basic
+            // technique's uniforms - hence the early return rather than a shared parameter tail.
+            var lightCamera = lighting!.CascadeLightCamera!;
+            var shadow = Effects.PolyShadowParameters;
+            shadow.View.SetValue(cb, lightCamera.ViewMatrix);
+            shadow.Projection.SetValue(cb, lightCamera.ProjectionMatrix);
             cb.DrawIndexedInstanced(baseVertex: 0, startIndex: 0, primitiveCount: _triangleCount, instanceCount: instanceCount);
             return;
         }
 
+        // All three of these are the Basic technique, so they share one program - and one
+        // parameter type, which is what lets them be selected by a single switch expression here.
+        var p = _supermesh.OverlayMode switch
+        {
+            PolyOverlayMode.DepthRead => Effects.PolyDepthReadParameters,
+            PolyOverlayMode.NoDepth => Effects.PolyNoDepthParameters,
+            _ => Effects.PolyParameters,
+        };
+
+        p.View.SetValue(cb, camera.ViewMatrix);
+        p.Projection.SetValue(cb, camera.ProjectionMatrix);
         p.ViewProj.SetValue(cb, camera.ViewMatrix * camera.ProjectionMatrix);
         p.SnapColor.SetValue(cb, World.Snap);
         p.IsFullbright.SetValue(cb, PolyType is PolyType.BrakeLight or PolyType.Light or PolyType.ReverseLight && World.LightsOn);

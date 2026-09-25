@@ -63,3 +63,26 @@ public interface IShaderModule
     ShaderStage Stage { get; }
     ReadOnlyMemory<byte> Bytecode { get; }
 }
+
+/// <summary>
+/// One shader stage in every form a backend might need, as produced by the shader compiler.
+///
+/// All of them are carried because sokol selects the shader at *creation* time - an
+/// <c>sg_shader_function</c> holds a single <c>source</c> field rather than one per backend, so
+/// the choice is made from <c>sg_query_backend()</c> at shader-creation time and the bundle
+/// cannot make it in advance. A backend ignores whichever forms it does not use: D3D11 compiles
+/// <see cref="Hlsl"/>, Metal compiles <see cref="Msl"/>, OpenGL compiles <see cref="Glsl"/>, and
+/// Vulkan consumes <see cref="Spirv"/> as bytecode.
+///
+/// <see cref="GlslEs"/> is the fourth GLSL flavour and the one a GLES3 context or ANGLE compiles.
+/// It is a separate field from <see cref="Glsl"/> rather than a shared "GL source" because the two
+/// are genuinely different dialects: ES wants <c>#version 300 es</c> with explicit precision
+/// qualifiers, and it links varyings by name, so the ES pass renames them and the desktop pass
+/// does not.
+/// </summary>
+public sealed record ShaderStageSources(
+    ReadOnlyMemory<byte> Spirv,
+    string Hlsl,
+    string Msl,
+    string Glsl,
+    string GlslEs);

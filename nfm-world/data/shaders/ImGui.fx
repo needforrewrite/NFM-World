@@ -14,6 +14,10 @@
 
 float4x4 Projection;
 
+#if SM6
+Texture2D Texture : register(t0);
+SamplerState TextureSampler : register(s0);
+#else
 texture Texture;
 sampler TextureSampler = sampler_state
 {
@@ -24,6 +28,7 @@ sampler TextureSampler = sampler_state
     AddressU = CLAMP;
     AddressV = CLAMP;
 };
+#endif
 
 struct VertexShaderInput
 {
@@ -50,7 +55,11 @@ VertexShaderOutput VertexShaderFunction(VertexShaderInput input)
 
 float4 PixelShaderFunction(VertexShaderOutput input) : SV_TARGET
 {
+    #if SM6
+    return input.Color * Texture.Sample(TextureSampler, input.TexCoord);
+    #else
     return input.Color * tex2D(TextureSampler, input.TexCoord);
+    #endif
 }
 
 // Technique definition for use in C#

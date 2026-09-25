@@ -15,23 +15,25 @@ namespace NFMWorld.Graphics.Sokol;
 internal static class SokolMapping
 {
     /// <summary>
-    /// Maps a texture format to sokol's pixel format, which encodes <em>both</em> the channel
-    /// layout and the intended use. <paramref name="renderTargetable"/> selects the depth form
-    /// for depth formats and is otherwise ignored - sokol infers attachment capability from the
-    /// image's <c>usage</c> flags at creation, not from the pixel format.
+    /// Maps a texture format to sokol's pixel format. Attachment capability is not encoded here:
+    /// sokol infers it from the image's <c>usage</c> flags at creation, not from the pixel format.
     /// </summary>
-    public static sg_pixel_format ToNative(this TextureFormat format, bool renderTargetable = false) => format switch
+    public static sg_pixel_format ToNative(this TextureFormat format) => format switch
     {
         TextureFormat.Rgba8 => sg_pixel_format.SG_PIXELFORMAT_RGBA8,
         TextureFormat.Bgra8 => sg_pixel_format.SG_PIXELFORMAT_BGRA8,
         TextureFormat.R8 => sg_pixel_format.SG_PIXELFORMAT_R8,
-        // Single is the shadow-cascade depth format. sokol's SG_PIXELFORMAT_DEPTH is the
-        // 32-bit float depth form, and SG_PIXELFORMAT_R32F is the plain float colour form -
-        // R32F was used before sokol_gfx gained a dedicated DEPTH format, so either works,
-        // but DEPTH is the one the backends know to attach as a depth-stencil view.
-        TextureFormat.Single => renderTargetable
-            ? sg_pixel_format.SG_PIXELFORMAT_DEPTH
-            : sg_pixel_format.SG_PIXELFORMAT_R32F,
+        // R32F, not SG_PIXELFORMAT_DEPTH - despite Single being the shadow-cascade format. A
+        // cascade is the *colour* attachment of its pass (the depth attachment is the separate
+        // Depth24Stencil8 in the same RenderTargetDesc), and sokol's two float formats are not
+        // interchangeable: _sg_pixelformat_srmd marks SG_PIXELFORMAT_DEPTH depth = true, and
+        // _sg_is_valid_attachment_color_format demands render && !depth, so a DEPTH image can
+        // never be a colour attachment - sg_make_view rejects it with
+        // VALIDATE_VIEWDESC_COLORATTACHMENT_PIXELFORMAT and every cascade pass then fails its
+        // begin_pass. R32F carries _sg_pixelformat_sbr (render, no depth), which is what a
+        // colour attachment needs. IsDepthFormat in SokolGraphicsDevice states the same thing
+        // from the other side, and GL agrees - GlMapping maps Single to InternalFormat.R32f.
+        TextureFormat.Single => sg_pixel_format.SG_PIXELFORMAT_R32F,
         TextureFormat.Depth24Stencil8 => sg_pixel_format.SG_PIXELFORMAT_DEPTH_STENCIL,
         // sokol's BCn names line up with DXTn (BC1=DXT1, BC2=DXT3, BC3=DXT5).
         TextureFormat.Dxt1 => sg_pixel_format.SG_PIXELFORMAT_BC1_RGBA,

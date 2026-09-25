@@ -19,14 +19,22 @@
         <ProjectReference Include="..\NFMWorld.Shaders.Abstraction\NFMWorld.Shaders.Abstraction.csproj" />
     </ItemGroup>
 
-    <!-- The real generated bundles, exactly as the shader compiler emitted them - the same pattern
-         NFMWorld.Graphics.Sokol.Smoke's BundleCheck uses, so the ES GLSL this backend compiles is
-         the one the compiler actually produced rather than a hand-written stand-in.
-         That matters most for the one thing no hand-written shader could test: whether the ES
-         combined samplers are named after the textures the reflection reports, which is the
-         NameCombinedSamplers fix in SpirvCrossReflector. -->
-    <ItemGroup>
-        <Compile Include="..\scratch\ShaderPoc\generated\*.g.cs" LinkBase="Generated" />
-    </ItemGroup>
+    <!-- The real generated bundles, produced here by the same build step the game uses, so the ES
+         GLSL this backend compiles is the one the compiler actually produced rather than a
+         hand-written stand-in. That matters most for the one thing no hand-written shader could
+         test: whether the ES combined samplers are named after the textures the reflection
+         reports, which is the NameCombinedSamplers fix in SpirvCrossReflector.
+
+         Run here rather than referencing nfm-world's copy of the output, for two reasons. The
+         bundles are `internal` and namespaced, so a file-level link from another project's obj/
+         would work only by accident of them being compiled into this assembly anyway; and running
+         the compiler makes this project a *second* independent consumer of the task, which is what
+         would catch a task that only works from the directory it was developed in. The sources are
+         nfm-world's - duplicating data/shaders here would let the two drift. -->
+    <PropertyGroup>
+        <NFMWorldShadersDirectory>$(MSBuildProjectDirectory)\..\nfm-world\data\shaders</NFMWorldShadersDirectory>
+    </PropertyGroup>
+
+    <Import Project="..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.targets" />
 
 </Project>

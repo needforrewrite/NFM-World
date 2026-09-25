@@ -87,7 +87,10 @@ public class SettingsMenu(WorldGame game)
     private static DistantOutlineBehavior _distantOutlineBehavior = DistantOutlineBehavior.DistanceFalloffWithCutoff;
     private static bool _lowLatency = false;
     public static readonly string[] RenderDistanceNames = ["Tiny", "Short", "Medium", "Far", "Very Far", "Unlimited"];
-    private static readonly float[] RenderDistances = [22500, 45000, 90000, 180000, 360000, int.MaxValue];
+    // Squared by ApplySettings before being stored, so the "Unlimited" entry has to be the
+    // float sentinel - int.MaxValue would square into a real ~46 341-unit cut-off. See
+    // CameraSettings.RenderDistanceSqr.
+    private static readonly float[] RenderDistances = [22500, 45000, 90000, 180000, 360000, float.MaxValue];
     private static int _renderDistance = 5; // default to max distance
 
     // Audio settings (static)

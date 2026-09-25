@@ -18,6 +18,12 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     private readonly GL _gl;
     private readonly GlGraphicsDevice _device;
 
+    /// <summary>
+    /// The context's base-vertex entry points, passed in rather than resolved here so that every
+    /// command buffer shares the device's one resolution. See GlBaseVertexDraw.
+    /// </summary>
+    private readonly GlBaseVertexDraw _baseVertexDraw;
+
     private GlPipelineState? _pipeline;
 
     /// <summary>
@@ -37,6 +43,34 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     private int _indexOffsetBytes;
 
     /// <summary>
+    /// What <see cref="BindVertexStreams"/> last pointed each VAO's attributes at.
+    ///
+    /// The backend re-points every attribute of the pipeline on every draw because ES 3.0's
+    /// <c>glVertexAttribPointer</c> takes the buffer currently bound rather than the buffer it should
+    /// use (ES 3.1's <c>glBindVertexBuffer</c> is the call that separates the two, and ANGLE's ES 3.0
+    /// context rejects it). But the state it recomputes is identical to the previous draw's whenever
+    /// the same pipeline is drawn from the same buffers again, which is the common case within a
+    /// render element's batch.
+    ///
+    /// Keyed by VAO because attribute pointers and divisors are VAO state: each pipeline owns its own
+    /// VAO, and a VAO other than the one bound when these were recorded has its own, unrelated,
+    /// bindings. One entry per pipeline, so the table is bounded by the pipeline count and costs
+    /// nothing to keep.
+    /// </summary>
+    private readonly Dictionary<uint, VertexBindingCache> _bindingCaches = [];
+
+    /// <summary>One VAO's last-recorded attribute bindings, in attribute order.</summary>
+    private sealed class VertexBindingCache
+    {
+        internal CachedBinding[] Bindings = [];
+        internal int Count;
+    }
+
+    /// <summary>What one attribute was last pointed at. Everything the pointer and divisor calls derive.</summary>
+    private readonly record struct CachedBinding(
+        GlBuffer? Buffer, int StrideBytes, int OffsetBytes, int InstanceStepRate);
+
+    /// <summary>
     /// The abstraction allows as many vertex streams as the pipeline declares. The app's instanced
     /// layouts use two (geometry + per-instance), so a small fixed array covers every real caller
     /// while keeping the state a plain stack value.
@@ -50,15 +84,17 @@ internal sealed class GlCommandBuffer : ICommandBuffer
         internal int OffsetBytes { get; init; }
     }
 
-    internal GlCommandBuffer(GL gl, GlGraphicsDevice device)
+    internal GlCommandBuffer(GL gl, GlGraphicsDevice device, GlBaseVertexDraw baseVertexDraw)
     {
         _gl = gl;
         _device = device;
+        _baseVertexDraw = baseVertexDraw;
         _targetHeight = device.Swapchain.Height;
     }
 
     public void SetPipeline(IPipelineState pipeline)
     {
+        DrawProfiler.CountSetPipeline++;
         var glPipeline = (GlPipelineState)pipeline;
         _pipeline = glPipeline;
 
@@ -97,9 +133,24 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     /// verified to agree with std140 for this shader set), and the upload is the whole block, so a
     /// partial write here is safe: the untouched bytes keep their previous values and the block is
     /// only ever uploaded as a unit.
+    ///
+    /// Matrix4x4 values are transposed on the way in, and that is not a detail of this backend - it
+    /// is what the abstraction's contract already required of its command buffers. Callers hold
+    /// System.Numerics/XNA matrices row-major; GL (like HLSL's constant registers, which is what the
+    /// generated reflection's offsets were laid out against) wants them column-major. FNA3D's
+    /// backend did this transpose inside its own SetUniform - the comment there is explicit that
+    /// callers hand it row-major matrices - and this backend was written without it.
+    ///
+    /// The consequence of omitting it is not a subtle skew: a translation lives in M41/M42/M43, which
+    /// under the shaders' row-vector convention (mul(float4(p, 1), M)) has to occupy the GPU's fourth
+    /// *column*. Written unconverted it lands in the fourth *row* instead, where the shader's
+    /// multiply reads it as the w component - so a translation becomes a perspective divide and the
+    /// geometry explodes rather than moving. Identity matrices are symmetric, so every unrotated,
+    /// untranslated object still looked right, which is why this survived until now.
     /// </summary>
     public void SetUniform(int slot, ReadOnlySpan<byte> value)
     {
+        DrawProfiler.CountSetUniform++;
         var pipeline = RequirePipeline();
         if (slot < 0 || slot + value.Length > _uniforms.Length)
         {
@@ -108,11 +159,63 @@ internal sealed class GlCommandBuffer : ICommandBuffer
                 $"{_uniforms.Length}-byte block '{pipeline.Desc.VertexShader.GetType().Name}' declares.");
         }
 
+        // The reflection decides, not the byte count: a 64-byte write is only a matrix because the
+        // bundle says so, and transposing something the shader reads as four vec4s would corrupt it.
+        // The type comes from the reflection at this slot's own offset rather than from the slot
+        // index, because the slot is a byte offset into the block and the uniform list is ordered by
+        // name - the two are not the same numbering.
+        if (IsMatrix4x4At(pipeline, slot))
+        {
+            Transpose4x4Into(value, _uniforms.AsSpan(slot));
+            return;
+        }
+
         value.CopyTo(_uniforms.AsSpan(slot));
+    }
+
+    /// <summary>
+    /// Whether the reflected uniform at this byte offset is a <c>float4x4</c>.
+    ///
+    /// Matched on the offset because that is what a caller's slot actually is. Two uniforms cannot
+    /// share an offset in a block this backend sized from the same offsets, so the first match is the
+    /// only match, and the loop is over a list of a few dozen entries on a path that already walks
+    /// one to compute the block size.
+    /// </summary>
+    private static bool IsMatrix4x4At(GlPipelineState pipeline, int offset)
+    {
+        foreach (var uniform in pipeline.Reflection.Uniforms)
+        {
+            if (uniform.Offset == offset)
+                return uniform.Type == Shaders.UniformType.Matrix4x4;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Writes a row-major 4x4 as the column-major bytes GL and HLSL constant registers expect.
+    ///
+    /// Done as an in-place index permutation rather than through <c>Matrix4x4.Transpose</c> so that
+    /// the value's interpretation never depends on how the caller's <c>Span&lt;byte&gt;</c> happens to
+    /// be aligned. The abstraction's contract is bytes, and reinterpreting them as a struct to
+    /// transpose would make alignment a correctness requirement that nothing states.
+    /// </summary>
+    private static void Transpose4x4Into(ReadOnlySpan<byte> source, Span<byte> destination)
+    {
+        for (var row = 0; row < 4; row++)
+        {
+            for (var column = 0; column < 4; column++)
+            {
+                var from = (row * 4 + column) * sizeof(float);
+                var to = (column * 4 + row) * sizeof(float);
+                source.Slice(from, sizeof(float)).CopyTo(destination[to..]);
+            }
+        }
     }
 
     public void SetVertexBuffer(int slot, IBuffer buffer, int strideBytes, int offsetBytes = 0)
     {
+        DrawProfiler.CountSetVertexBuffer++;
         if ((uint)slot >= MaxVertexStreams)
             throw new ArgumentOutOfRangeException(nameof(slot), $"Vertex stream slot {slot} exceeds the {MaxVertexStreams} this backend tracks.");
 
@@ -245,14 +348,23 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     public void UpdateTexture(ITexture texture, int x, int y, int width, int height, ReadOnlySpan<byte> data) =>
         ((GlTexture)texture).Update(_gl, x, y, width, height, data);
 
+    // TEMPORARY profiling - remove with DrawProfiler and the call site in WorldGame.Draw.
+    //
+    // These wrap the one draw path in DrawProfiler.TimeDraw so that glDrawCallWallTicks and sokol's
+    // equivalent measure the same span on both backends - without it, sceneUs - drawCallWallUs
+    // would compare a sokol number against a GL number that omits everything this method does,
+    // which is most of a GL draw's cost.
     public void Draw(int startVertex, int primitiveCount) =>
-        DrawInternal(baseVertex: 0, startVertex, primitiveCount, 1, indexed: false);
+        DrawProfiler.TimeDraw(() =>
+            DrawInternal(baseVertex: 0, startVertex, primitiveCount, 1, indexed: false));
 
     public void DrawIndexed(int baseVertex, int startIndex, int primitiveCount) =>
-        DrawInternal(baseVertex, startIndex, primitiveCount, 1, indexed: true);
+        DrawProfiler.TimeDraw(() =>
+            DrawInternal(baseVertex, startIndex, primitiveCount, 1, indexed: true));
 
     public void DrawIndexedInstanced(int baseVertex, int startIndex, int primitiveCount, int instanceCount) =>
-        DrawInternal(baseVertex, startIndex, primitiveCount, instanceCount, indexed: true);
+        DrawProfiler.TimeDraw(() =>
+            DrawInternal(baseVertex, startIndex, primitiveCount, instanceCount, indexed: true));
 
     /// <summary>
     /// The one draw path. Everything a draw needs - the VAO's bindings, the uniform block, and the
@@ -260,10 +372,18 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     /// </summary>
     private void DrawInternal(int baseVertex, int firstIndex, int primitiveCount, int instanceCount, bool indexed)
     {
+        DrawProfiler.CountDraw++;
         var pipeline = RequirePipeline();
 
+        // TEMPORARY profiling - remove with the call site in WorldGame.Draw.
+        var profStart = System.Diagnostics.Stopwatch.GetTimestamp();
         UploadUniforms(pipeline);
+        var profAfterUniforms = System.Diagnostics.Stopwatch.GetTimestamp();
         BindVertexStreams(pipeline);
+        var profAfterAttribs = System.Diagnostics.Stopwatch.GetTimestamp();
+
+        DrawProfiler.UniformTicks += profAfterUniforms - profStart;
+        DrawProfiler.AttribTicks += profAfterAttribs - profAfterUniforms;
 
         var mode = pipeline.Desc.Topology.ToPrimitiveType();
         var count = (uint)ElementCount(pipeline.Desc.Topology, primitiveCount);
@@ -274,6 +394,7 @@ internal sealed class GlCommandBuffer : ICommandBuffer
                 _gl.DrawArrays(mode, firstIndex, count);
             else
                 _gl.DrawArraysInstanced(mode, firstIndex, count, (uint)instanceCount);
+            DrawProfiler.DrawCallTicks += System.Diagnostics.Stopwatch.GetTimestamp() - profAfterAttribs;
             return;
         }
 
@@ -284,30 +405,48 @@ internal sealed class GlCommandBuffer : ICommandBuffer
         var indexType = indexBuffer.IndexFormat.ToIndexType();
         var byteOffset = _indexOffsetBytes + firstIndex * IndexSize(indexBuffer.IndexFormat);
 
-        // ES 3.0 core has no base-vertex draw (glDrawElementsBaseVertex is an extension on GLES; on
-        // ANGLE it is not exposed at all), so there is no way to add baseVertex to each index. The
-        // common case - a non-zero base vertex used to reach a sub-range of a shared vertex buffer -
-        // is not silently approximated here: the element pointer trick would only be equivalent for
-        // a zero base vertex, and silently ignoring it would draw geometry from the wrong part of
-        // the buffer, which reads as a scene bug rather than an API limitation.
-        if (baseVertex != 0)
-        {
-            throw new NotSupportedException(
-                $"OpenGL ES 3.0 has no base-vertex draw and ANGLE exposes no extension for one, so " +
-                $"baseVertex {baseVertex} cannot be honoured. Draw from a buffer whose indices are " +
-                "already relative to the intended base vertex.");
-        }
-
         // The element pointer is a byte offset into the bound index buffer, which is why it is
         // computed by hand rather than passed as an index - GL has no separate index operand.
         unsafe
         {
             var pointer = (void*)byteOffset;
+
+            // A zero base vertex is the common case and needs no extension at all, so it stays on the
+            // core entry points: a context without the extension still gets every draw whose indices
+            // are already relative to the intended base.
+            if (baseVertex == 0)
+            {
+                if (instanceCount == 1)
+                    _gl.DrawElements(mode, count, indexType, pointer);
+                else
+                    _gl.DrawElementsInstanced(mode, count, indexType, pointer, (uint)instanceCount);
+                DrawProfiler.DrawCallTicks += System.Diagnostics.Stopwatch.GetTimestamp() - profAfterAttribs;
+                return;
+            }
+
+            // A non-zero base vertex needs GL_EXT_draw_elements_base_vertex, which is present on
+            // ANGLE but is not part of ES 3.0 - so its absence is a legitimate configuration and the
+            // draw is refused rather than approximated. It is deliberately not approximated by
+            // folding the base into the element pointer: that trick only works when every index is
+            // off by the same *vertex*, and the offset here is in bytes into the index buffer, so
+            // applying it would draw geometry from the wrong part of the buffer and read as a scene
+            // bug rather than as an API limitation.
+            if (!_baseVertexDraw.IsSupported)
+            {
+                throw new NotSupportedException(
+                    $"baseVertex {baseVertex} was requested, but this context exposes neither " +
+                    "GL_EXT_draw_elements_base_vertex nor GL_OES_draw_elements_base_vertex, so the " +
+                    "offset cannot be honoured and ES 3.0 core has no base-vertex draw of its own. " +
+                    "Draw from a buffer whose indices are already relative to the intended base vertex.");
+            }
+
             if (instanceCount == 1)
-                _gl.DrawElements(mode, count, indexType, pointer);
+                _baseVertexDraw.DrawIndexed(mode, count, indexType, pointer, baseVertex);
             else
-                _gl.DrawElementsInstanced(mode, count, indexType, pointer, (uint)instanceCount);
+                _baseVertexDraw.DrawIndexedInstanced(mode, count, indexType, pointer, (uint)instanceCount, baseVertex);
         }
+
+        DrawProfiler.DrawCallTicks += System.Diagnostics.Stopwatch.GetTimestamp() - profAfterAttribs;
     }
 
     private static int IndexSize(IndexFormat format) => format switch
@@ -318,7 +457,7 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     };
 
     /// <summary>
-    /// Points the VAO's attributes at the buffers their streams named.
+    /// Points the VAO's attributes at the buffers their streams named, if they are not already.
     ///
     /// This is where the vertex binding actually happens, and it is per draw rather than per
     /// pipeline because ES 3.0's <c>glVertexAttribPointer</c> records the buffer that is bound at
@@ -326,38 +465,53 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     /// creation, buffers supplied per draw - is only expressible in ES 3.1's
     /// <c>glBindVertexBuffer</c>, which this context does not have; see GlPipelineState.
     ///
-    /// Re-pointing the same attributes at the same buffers every draw is wasted work in principle
-    /// and not worth avoiding in practice. The alternative is a cache keyed on the buffers, offsets
-    /// and strides, which has to be invalidated whenever another pipeline binds a different VAO or
-    /// a draw leaves the array-buffer binding somewhere else - state that GL keeps one copy of but
-    /// two abstractions (this one and the caller's) both touch.
+    /// Everything the calls below derive is a function of the buffer handles, the strides, the
+    /// offsets and the pipeline's attribute list, so the result is compared against the last state
+    /// this command buffer set up and reissued only when it differs. Across a frame's instanced
+    /// draws the common case is that it does not: one render element's draws repeat the same
+    /// pipeline and the same two buffers, so the whole loop is skipped and only the VAO bind is left.
     /// </summary>
     private void BindVertexStreams(GlPipelineState pipeline)
     {
         _gl.BindVertexArray(pipeline.VertexArray);
+
+        if (!_bindingCaches.TryGetValue(pipeline.VertexArray, out var cache))
+        {
+            cache = new VertexBindingCache();
+            _bindingCaches[pipeline.VertexArray] = cache;
+        }
+
+        if (cache.Bindings.Length < pipeline.Attributes.Count)
+            cache.Bindings = new CachedBinding[pipeline.Attributes.Count];
 
         // Grouped by stream so each buffer is bound once for all of its attributes rather than once
         // per attribute - the common single-stream case is then a single glBindBuffer.
         GlBuffer? boundBuffer = null;
         var boundSlot = -1;
 
-        foreach (var attribute in pipeline.Attributes)
+        for (var i = 0; i < pipeline.Attributes.Count; i++)
         {
+            var attribute = pipeline.Attributes[i];
+            var stream = _vertexStreams[attribute.VertexSlot];
+            var buffer = stream.Buffer
+                ?? throw new InvalidOperationException(
+                    $"The pipeline declares vertex layout slot {attribute.VertexSlot} but " +
+                    $"{nameof(SetVertexBuffer)} was never called for it.");
+
+            var current = new CachedBinding(buffer, stream.StrideBytes, stream.OffsetBytes, attribute.InstanceStepRate);
+            if (i < cache.Count && cache.Bindings[i] == current)
+                continue;
+
             if (attribute.VertexSlot != boundSlot)
             {
                 boundSlot = attribute.VertexSlot;
-                boundBuffer = _vertexStreams[boundSlot].Buffer
-                    ?? throw new InvalidOperationException(
-                        $"The pipeline declares vertex layout slot {boundSlot} but " +
-                        $"{nameof(SetVertexBuffer)} was never called for it.");
-
+                boundBuffer = buffer;
                 _gl.BindBuffer(BufferTargetARB.ArrayBuffer, boundBuffer.Handle);
             }
 
             // The divisor is per *attribute* in ES 3.0 rather than per stream, which is what the
             // abstraction's per-stream InstanceStepRate becomes once each attribute of a stream is
             // given it. Zero means "advance per vertex", one means "per instance".
-            var stream = _vertexStreams[boundSlot];
             _gl.VertexAttribDivisor(attribute.Location, (uint)attribute.InstanceStepRate);
 
             // The offset is a byte offset into the bound buffer - not an index - which is why the
@@ -369,6 +523,9 @@ internal sealed class GlCommandBuffer : ICommandBuffer
                 (uint)stream.StrideBytes,
                 (nint)(stream.OffsetBytes + attribute.OffsetInBytes));
             _gl.EnableVertexAttribArray(attribute.Location);
+
+            cache.Bindings[i] = current;
+            cache.Count = Math.Max(cache.Count, i + 1);
         }
     }
 
@@ -376,6 +533,20 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     /// Uploads the block as a whole UBO. The buffer is created on first use and resized
     /// (reallocated) when a pipeline with a different block size binds, which is rare enough that
     /// keeping a pool would be premature.
+    ///
+    /// The orphan-then-fill below looks like waste - <c>BufferData</c> with no data discards the
+    /// store and the driver allocates again - and a ring buffer of sub-ranges looks like the obvious
+    /// way to remove it. It is not, and the attempt is worth recording so it is not made twice:
+    /// writing into a sub-range of a buffer the GPU may still be reading makes ANGLE's D3D11 backend
+    /// rename and copy the *entire* buffer, which cost ~10 ms per frame here against the ~0.35 ms
+    /// this idiom spends on per-draw allocation. Orphaning wins precisely because the driver can hand
+    /// out fresh storage and forget the old one instead of preserving it. A ring would need explicit
+    /// sync (or a fence per range) to be safe, and even then only pays off when the per-draw
+    /// allocation itself shows up as the cost, which measurement said it is not.
+    ///
+    /// The trailing <c>UseProgram</c> stays for the same reason it was written: it is one call, and
+    /// "nothing rebinds between SetPipeline and the draw" is an invariant about *today's* callers
+    /// that a lower layer cannot enforce.
     /// </summary>
     private void UploadUniforms(GlPipelineState pipeline)
     {
@@ -387,14 +558,10 @@ internal sealed class GlCommandBuffer : ICommandBuffer
             _uniformBuffer = _gl.GenBuffer();
 
         _gl.BindBuffer(BufferTargetARB.UniformBuffer, _uniformBuffer);
-        // Orphan-then-fill: BufferData with no data discards the old storage, which avoids a stall
-        // waiting for the previous frame's reads to finish. This is the standard dynamic-UBO idiom
-        // and costs one allocation per draw.
         _gl.BufferData(BufferTargetARB.UniformBuffer, (nuint)_uniforms.Length, ReadOnlySpan<byte>.Empty, BufferUsageARB.DynamicDraw);
         _gl.BufferSubData(BufferTargetARB.UniformBuffer, 0, _uniforms);
         _gl.BindBufferBase(BufferTargetARB.UniformBuffer, block.Binding, _uniformBuffer);
 
-        // Rebind to the pipeline in case another pipeline bound a different program in between.
         _gl.UseProgram(pipeline.Program.Handle);
     }
 
@@ -416,7 +583,14 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     private GlPipelineState RequirePipeline() =>
         _pipeline ?? throw new InvalidOperationException($"{nameof(SetPipeline)} must be called before issuing draw work.");
 
-    /// <summary>Releases the per-frame UBO. Called by the device when the command buffer is submitted.</summary>
+    /// <summary>
+    /// Drops the per-frame state. Called by the device when the command buffer is submitted.
+    ///
+    /// The binding caches are deliberately *not* cleared. They describe GL state that outlives the
+    /// command buffer - the VAOs and their recorded attribute pointers persist in the context across
+    /// frames - so dropping them would only force the first draw of every frame to re-point
+    /// everything, which is work with no correctness value.
+    /// </summary>
     internal void Reset()
     {
         _pipeline = null;

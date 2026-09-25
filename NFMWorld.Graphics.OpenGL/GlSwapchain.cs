@@ -27,6 +27,17 @@ internal sealed class GlSwapchain : ISwapchain
     /// </summary>
     private readonly Egl.Context? _context;
 
+    /// <summary>
+    /// How to present when the host owns the GL context, or null when it does not need to be told.
+    ///
+    /// This exists because <c>eglSwapBuffers</c> is not the only way a frame reaches the screen. On
+    /// the SDL path the host owns both the window and its surface, so the swap is SDL's
+    /// (<c>SDL_GL_SwapWindow</c>) and this class has no handle to it. Without this the device would
+    /// render correctly into a surface that is never shown - the failure looks like a black window
+    /// and no error.
+    /// </summary>
+    private readonly Action? _present;
+
     public int Width { get; private set; }
     public int Height { get; private set; }
 
@@ -41,9 +52,10 @@ internal sealed class GlSwapchain : ISwapchain
     /// </summary>
     public int MultiSampleCount => 0;
 
-    internal GlSwapchain(Egl.Context? context, int width, int height)
+    internal GlSwapchain(Egl.Context? context, int width, int height, Action? present = null)
     {
         _context = context;
+        _present = present;
         Width = width;
         Height = height;
     }
@@ -70,8 +82,17 @@ internal sealed class GlSwapchain : ISwapchain
     }
 
     /// <summary>
-    /// Presents. With an EGL surface this is <c>eglSwapBuffers</c>; without one the host owns
-    /// presentation (SDL presents its own window), so there is nothing to do here.
+    /// Presents. With an EGL surface this is <c>eglSwapBuffers</c>; without one the host owns the
+    /// window and presents it, which is what the callback added at construction is for. Both are
+    /// null-checked rather than asserted: a host-owned context with no callback is a legitimate
+    /// configuration (an offscreen host that reads its own framebuffer), and it simply means there is
+    /// nothing to present.
     /// </summary>
-    public void Present() => _context?.SwapBuffers();
+    public void Present()
+    {
+        if (_context is not null)
+            _context.SwapBuffers();
+        else
+            _present?.Invoke();
+    }
 }

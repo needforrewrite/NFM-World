@@ -207,14 +207,28 @@ public class Mesh : IDisposable
         /// Position/Normal/Centroid float3s, Color as a packed byte4 despite HLSL's
         /// "float3 Color : COLOR0", DecalOffset float1 - matches Poly.fx's <c>VertexShaderInput</c>,
         /// expressed against the graphics abstraction for <see cref="Graphics.PipelineDesc.VertexLayouts"/>.
+        ///
+        /// The list is written in Poly.fx's <em>declaration</em> order, not this struct's memory
+        /// order, and those two differ: the struct holds Centroid before Color, the shader declares
+        /// Color before Centroid. That ordering is load-bearing rather than cosmetic, because the
+        /// GL backend numbers attribute locations by <em>position in this list</em> - so entry N here
+        /// is location N in the compiled shader. Written in memory order, Color and Centroid land on
+        /// each other's locations and every mesh renders with its vertex colours and its centroid
+        /// swapped, which reads as torn or missing geometry rather than as a colour fault.
+        ///
+        /// This only became a hazard with the abstraction: FNA3D matched a vertex element to the
+        /// shader by its (<c>usage</c>, <c>usageIndex</c>) pair, so the two fields could be listed in
+        /// either order and still find their homes. The explicit byte offsets below are unchanged by
+        /// the reordering, so nothing about the vertex data moves - only which location each is
+        /// bound to. See GlPipelineState.AssignLocations for the positional contract.
         /// </summary>
         public static readonly VertexLayoutDesc VertexLayout = new(
             Attributes:
             [
                 new VertexAttributeDesc("POSITION", 0, 0, VertexAttributeFormat.Float3),
                 new VertexAttributeDesc("NORMAL", 0, 12, VertexAttributeFormat.Float3),
-                new VertexAttributeDesc("POSITION", 1, 24, VertexAttributeFormat.Float3),
                 new VertexAttributeDesc("COLOR", 0, 36, VertexAttributeFormat.Byte4Normalized),
+                new VertexAttributeDesc("POSITION", 1, 24, VertexAttributeFormat.Float3),
                 new VertexAttributeDesc("TEXCOORD", 0, 40, VertexAttributeFormat.Float1),
             ],
             StrideInBytes: 44);

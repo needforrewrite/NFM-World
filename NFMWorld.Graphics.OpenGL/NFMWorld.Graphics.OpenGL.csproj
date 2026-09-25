@@ -17,15 +17,21 @@
     <ItemGroup>
         <PackageReference Include="Silk.NET.OpenGLES" Version="2.23.0" />
         <PackageReference Include="Silk.NET.OpenGLES.Extensions.ANGLE" Version="2.23.0" />
+        <PackageReference Include="Silk.NET.OpenGLES.Extensions.EXT" Version="2.23.0" />
+        <PackageReference Include="Silk.NET.OpenGLES.Extensions.OES" Version="2.23.0" />
     </ItemGroup>
 
     <ItemGroup>
-        <!-- EGL bindings, which Silk.NET 2.x does not ship. Built over the same Khronos registry with
-             the same tooling, so EGL.GetApi() returns a Silk.NET-style API object.
-             A project reference rather than a PackageReference because the packages are not
-             published: Maxine.Silk.EGL is checked out beside this repo and produces them on demand
-             (dotnet pack). This mirrors how NFMWorld.Graphics.Sokol consumes SharpSokol, and it
-             cannot go stale the way a local feed can. -->
+        <!-- The target platform has to travel with the reference rather than be read off the
+             referenced project's $(RuntimeIdentifier), because the SDK strips RuntimeIdentifier
+             from the properties it passes when it collects this project's copy-to-output items:
+             measured under -r linux-x64, the referenced project saw RuntimeIdentifier empty and
+             fell back to the host, which produced a linux-x64 output directory holding two Windows
+             DLLs. The value is the same expression the ANGLE project would otherwise have had to
+             invent - the RID, or the host when no RID was named - and setting it only here keeps
+             the mapping itself in one place. -->
+        <ProjectReference Include="..\Maxine.Silk.EGL\native\Maxine.Silk.OpenGLES.ANGLE.Native\Maxine.Silk.OpenGLES.ANGLE.Native.csproj"
+                          AdditionalProperties="AngleNativeRid=$(RuntimeIdentifier)" />
         <ProjectReference Include="..\Maxine.Silk.EGL\src\Maxine.EGL\Maxine.EGL.csproj" />
     </ItemGroup>
 
@@ -43,15 +49,5 @@
     <ItemGroup>
         <InternalsVisibleTo Include="NFMWorld.Graphics.OpenGL.Smoke" />
     </ItemGroup>
-
-    <!-- The ANGLE natives, for every platform the bindings build them for. This reuses the native
-         package's own targets rather than a PackageReference, because that project produces no
-         assembly: referencing it as a package would add its (empty) lib/ folder and nothing else,
-         since NuGet only imports a build/*.targets whose TFM is compatible with the consumer and
-         these live under build/net461. Importing the file directly applies the same RID mapping and
-         the same copy step, and it is the one place that mapping is written down.
-         A ProjectReference to it does not work either - with no output assembly there is nothing for
-         the reference to carry. -->
-    <Import Project="..\Maxine.Silk.EGL\native\Maxine.Silk.OpenGLES.ANGLE.Native\build\net461\Maxine.Silk.OpenGLES.ANGLE.Native.targets" />
 
 </Project>

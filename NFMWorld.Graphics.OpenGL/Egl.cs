@@ -49,11 +49,6 @@ internal static class Egl
     private const int EGL_PLATFORM_ANGLE_DEVICE_TYPE_ANGLE = 0x3209;
     private const int EGL_PLATFORM_ANGLE_DEVICE_TYPE_HARDWARE_ANGLE = 0x320A;
 
-    // From eglext.h, which the bindings do generate from - listed for symmetry with the above.
-    private const int EGL_NONE = 0x3038;
-    private const int EGL_CONTEXT_CLIENT_VERSION = 0x3098;
-    private const int EGL_OPENGL_ES3_BIT = 0x0040;
-
     /// <summary>
     /// A live EGL display, context and draw surface. Disposing unbinds the context and destroys all
     /// three, so a headless device can be torn down without leaking the D3D11 device ANGLE created
@@ -158,17 +153,17 @@ internal static class Egl
 
                 // The ES3 config. A pbuffer is requested because this context is headless: there is
                 // no window for a window surface to attach to.
-                var configAttribs = new[]
-                {
-                    EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,
-                    EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
-                    EGL_RED_SIZE, 8,
-                    EGL_GREEN_SIZE, 8,
-                    EGL_BLUE_SIZE, 8,
-                    EGL_ALPHA_SIZE, 8,
-                    EGL_DEPTH_SIZE, 24,
-                    EGL_NONE,
-                };
+                ReadOnlySpan<int> configAttribs =
+                [
+                    (int)EGLEnum.SurfaceType, (int)EGLEnum.PbufferBit,
+                    (int)EGLEnum.RenderableType, (int)EGLEnum.OpenglES3Bit,
+                    (int)EGLEnum.RedSize, 8,
+                    (int)EGLEnum.GreenSize, 8,
+                    (int)EGLEnum.BlueSize, 8,
+                    (int)EGLEnum.AlphaSize, 8,
+                    (int)EGLEnum.DepthSize, 24,
+                    (int)EGLEnum.None
+                ];
 
                 Span<nint> configs = stackalloc nint[1];
                 Span<int> configCount = stackalloc int[1];
@@ -176,13 +171,11 @@ internal static class Egl
                     throw new InvalidOperationException($"eglChooseConfig found no ES3 config (EGL error {ErrorText(egl)}).");
                 var config = configs[0];
 
-                var context = egl.CreateContext(display, config, 0,
-                    new[] { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE });
+                var context = egl.CreateContext(display, config, 0, [(int)EGLEnum.ContextClientVersion, 3, (int)EGLEnum.None]);
                 if (context == 0)
                     throw new InvalidOperationException($"eglCreateContext failed (EGL error {ErrorText(egl)}).");
 
-                var surface = egl.CreatePbufferSurface(display, config,
-                    new[] { EGL_WIDTH, width, EGL_HEIGHT, height, EGL_NONE });
+                var surface = egl.CreatePbufferSurface(display, config, [(int)EGLEnum.Width, width, (int)EGLEnum.Height, height, (int)EGLEnum.None]);
                 if (surface == 0)
                     throw new InvalidOperationException($"eglCreatePbufferSurface failed (EGL error {ErrorText(egl)}).");
 
@@ -192,7 +185,7 @@ internal static class Egl
                     Handle = context,
                     Config = config,
                     Surface = surface,
-                    Vendor = egl.QueryStringS(display, EGL_VENDOR),
+                    Vendor = egl.QueryStringS(display, (int)EGLEnum.Vendor),
                     Version = $"{major}.{minor}",
                 };
 
@@ -225,7 +218,7 @@ internal static class Egl
             {
                 EGL_PLATFORM_ANGLE_TYPE_ANGLE, EGL_PLATFORM_ANGLE_TYPE_D3D11_ANGLE,
                 EGL_PLATFORM_ANGLE_DEVICE_TYPE_ANGLE, EGL_PLATFORM_ANGLE_DEVICE_TYPE_HARDWARE_ANGLE,
-                EGL_NONE,
+                (int)EGLEnum.None,
             };
 
             return egl.GetPlatformDisplay((EGLEnum)EGL_PLATFORM_ANGLE_ANGLE, null, attribs);
@@ -250,7 +243,7 @@ internal static class Egl
                 _egl.DestroySurface(Display, Surface);
 
             var surface = _egl.CreatePbufferSurface(Display, Config,
-                new[] { EGL_WIDTH, width, EGL_HEIGHT, height, EGL_NONE });
+            [(int)EGLEnum.Width, width, (int)EGLEnum.Height, height, (int)EGLEnum.None]);
 
             if (surface == 0)
                 throw new InvalidOperationException(
@@ -286,20 +279,6 @@ internal static class Egl
             _glContext.Dispose();
         }
     }
-
-    // Surface and config attribute tokens, from eglext.h. Grouped here rather than inline so the
-    // attribute arrays above read as the EGL documentation writes them.
-    private const int EGL_SURFACE_TYPE = 0x3033;
-    private const int EGL_PBUFFER_BIT = 0x0001;
-    private const int EGL_RENDERABLE_TYPE = 0x3040;
-    private const int EGL_RED_SIZE = 0x3024;
-    private const int EGL_GREEN_SIZE = 0x3023;
-    private const int EGL_BLUE_SIZE = 0x3022;
-    private const int EGL_ALPHA_SIZE = 0x3021;
-    private const int EGL_DEPTH_SIZE = 0x3025;
-    private const int EGL_WIDTH = 0x3057;
-    private const int EGL_HEIGHT = 0x3056;
-    private const int EGL_VENDOR = 0x3053;
 
     /// <summary>EGL's own error code, formatted for a thrown message. 0x3000 is EGL_SUCCESS.</summary>
     private static string ErrorText(EGL egl) => $"0x{egl.GetError():X4}";

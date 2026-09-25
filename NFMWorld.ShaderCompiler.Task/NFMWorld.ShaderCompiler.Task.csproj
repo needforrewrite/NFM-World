@@ -1,0 +1,66 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <!-- net11.0, not the netstandard2.0 the repo's other build-time component uses: the
+             compiler calls NativeMemory.Alloc to hand include text to shaderc, and ArgumentNullException
+             .ThrowIfNull and char.IsAsciiDigit are post-netstandard too. So the shader build needs
+             `dotnet build`, and the targets file says so in as many words rather than letting this
+             assembly fail to load with an opaque message under .NET Framework MSBuild. -->
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>NFMWorld.ShaderCompiler.Task</RootNamespace>
+        <!-- MSBuild loads this assembly into its own process, where the framework's assemblies are
+             already present. Copying them next to the task would put a second, possibly different,
+             Microsoft.Build.* in the load path, which is what the SDK's copy check exists to catch;
+             this disables that check for exactly that reason. ExcludeAssets="runtime" below is the
+             other half - reference the API, do not ship it. -->
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <DisableMSBuildAssemblyCopyCheck>true</DisableMSBuildAssemblyCopyCheck>
+        <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    </PropertyGroup>
+
+    <!-- The version line tracks the MSBuild this task is loaded into, which is the one in the SDK
+         running the build (18.11.0 here, from dotnet 11.0.100; 18.10.1 is the newest published
+         package, and a task compiled against one of these loads into a host whose is at least as
+         new). 17.11.4, the version the Flatpak task next door uses, is the last line carrying
+         GHSA-w3q9-fxm7-j8fq.
+         ExcludeAssets="runtime" because MSBuild supplies these itself; shipping a second copy would
+         put two Microsoft.Build.* in the load path, which is what DisableMSBuildAssemblyCopyCheck
+         above is tolerating for the SDK's own check. -->
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.10.1" ExcludeAssets="runtime" />
+        <PackageReference Include="Microsoft.Build.Framework" Version="18.10.1" ExcludeAssets="runtime" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\NFMWorld.ShaderCompiler\NFMWorld.ShaderCompiler.csproj" />
+    </ItemGroup>
+
+    <!-- The natives the compiler P/Invokes, copied flat next to the task assembly.
+         Flat, not the runtimes/<rid>/native/ layout a normal app would get: that layout is searched
+         relative to AppContext.BaseDirectory, and under TaskHostFactory the base directory is the
+         SDK's own folder - C:\Program Files\dotnet\sdk\<version>\ - not this one. So the conventional
+         layout is not probed at all here, which is why the POC next door can work with it and this
+         still cannot. NativeLibraries loads these by absolute path from beside the task assembly
+         instead, so the flat copy is the one that is actually used. -->
+    <ItemGroup>
+        <PackageReference Include="Silk.NET.Shaderc.Native" Version="2.23.0" GeneratePathProperty="true" ExcludeAssets="all" PrivateAssets="all" />
+        <PackageReference Include="Silk.NET.SPIRV.Cross.Native" Version="2.23.0" GeneratePathProperty="true" ExcludeAssets="all" PrivateAssets="all" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- The property GeneratePathProperty creates is named after the package with the dots it
+             cannot hold in a property name replaced by underscores - PkgSilk_NET_Shaderc_Native,
+             not PkgSilk.NET.Shaderc.Native, which MSBuild reads as a property function call.
+
+             win-x64 is hardcoded because the task runs in MSBuild's process on the build machine and
+             this repository's build is Windows-only; a RuntimeIdentifier-driven path would name a RID
+             the task host does not necessarily agree with. -->
+        <None Include="$(PkgSilk_NET_Shaderc_Native)\runtimes\win-x64\native\shaderc_shared.dll"
+              Link="shaderc_shared.dll" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="$(PkgSilk_NET_SPIRV_Cross_Native)\runtimes\win-x64\native\spirv-cross.dll"
+              Link="spirv-cross.dll" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+</Project>

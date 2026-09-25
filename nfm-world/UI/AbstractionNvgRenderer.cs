@@ -64,13 +64,82 @@ public sealed class AbstractionNvgRenderer : INvgRenderer, IDisposable
     private static readonly RasterizerStateDesc Rasterizer = RasterizerStateDesc.Default with { CullMode = CullMode.None };
 
     private readonly IGraphicsDevice _device;
-    private readonly NvgEffect _effect;
     private readonly ISampler _sampler;
 
-    private readonly struct Pipeline(IPipelineState state, NvgEffectParameters parameters)
+    /// <summary>
+    /// Nvg.fx's uniform slots, resolved by name against whichever technique's program this is
+    /// built from.
+    /// </summary>
+    /// <remarks>
+    /// Hand-resolved rather than using one of the generated <c>Nvg*Parameters</c> types, because
+    /// Nvg.fx declares four techniques and the compiler emits a separate bundle - and therefore a
+    /// separate parameter type - for each one, while this renderer's nine pipelines each pick their
+    /// technique at build time. All four techniques declare the same uniforms in the same order (the
+    /// file's fragment entry points differ; the uniform block does not), so one resolution routine
+    /// serves them all. It still goes through the same <c>*EffectParameter</c> wrappers the
+    /// generated types use, so a slot the HLSL compiler optimized out is a negative offset that
+    /// no-ops rather than a write to the wrong place.
+    /// </remarks>
+    private readonly struct NvgUniforms
+    {
+        private static int Slot(ShaderReflection reflection, string name)
+        {
+            foreach (var uniform in reflection.Uniforms)
+            {
+                if (uniform.Name == name) return uniform.Offset;
+            }
+            return -1;
+        }
+
+        private static int TextureSlot(ShaderReflection reflection, string name)
+        {
+            foreach (var texture in reflection.Textures)
+            {
+                if (texture.Name == name) return texture.Slot;
+            }
+            return -1;
+        }
+
+        // Named exactly as the uniforms are declared in Nvg.fx, which is also how the generated
+        // Nvg*Parameters types name theirs. Keeping the source's own spelling means a call site
+        // reads the same against either kind of struct, and a uniform renamed in the shader is
+        // still findable by the same string on both sides of the Slot() lookup.
+        public readonly Float4x4EffectParameter transformMat;
+        public readonly Float4x4EffectParameter scissorMat;
+        public readonly Float4x4EffectParameter paintMat;
+        public readonly Float4EffectParameter innerCol;
+        public readonly Float4EffectParameter outerCol;
+        public readonly Float2EffectParameter scissorExt;
+        public readonly Float2EffectParameter scissorScale;
+        public readonly Float2EffectParameter extent;
+        public readonly FloatEffectParameter radius;
+        public readonly FloatEffectParameter feather;
+        public readonly FloatEffectParameter strokeMult;
+        public readonly FloatEffectParameter strokeThr;
+        public readonly TextureEffectParameter g_texture;
+
+        public NvgUniforms(ShaderReflection reflection)
+        {
+            transformMat = new Float4x4EffectParameter(Slot(reflection, "transformMat"));
+            scissorMat = new Float4x4EffectParameter(Slot(reflection, "scissorMat"));
+            paintMat = new Float4x4EffectParameter(Slot(reflection, "paintMat"));
+            innerCol = new Float4EffectParameter(Slot(reflection, "innerCol"));
+            outerCol = new Float4EffectParameter(Slot(reflection, "outerCol"));
+            scissorExt = new Float2EffectParameter(Slot(reflection, "scissorExt"));
+            scissorScale = new Float2EffectParameter(Slot(reflection, "scissorScale"));
+            extent = new Float2EffectParameter(Slot(reflection, "extent"));
+            radius = new FloatEffectParameter(Slot(reflection, "radius"));
+            feather = new FloatEffectParameter(Slot(reflection, "feather"));
+            strokeMult = new FloatEffectParameter(Slot(reflection, "strokeMult"));
+            strokeThr = new FloatEffectParameter(Slot(reflection, "strokeThr"));
+            g_texture = new TextureEffectParameter(TextureSlot(reflection, "g_texture"));
+        }
+    }
+
+    private readonly struct Pipeline(IPipelineState state, NvgUniforms parameters)
     {
         public readonly IPipelineState State = state;
-        public readonly NvgEffectParameters Parameters = parameters;
+        public readonly NvgUniforms Parameters = parameters;
     }
 
     // See the class doc comment - one pipeline per (technique, blend, stencil, topology) combo
@@ -104,7 +173,6 @@ public sealed class AbstractionNvgRenderer : INvgRenderer, IDisposable
     {
         _device = device;
 
-        _effect = new NvgEffect(VFS.ReadAllBytes("./data/shaders/Nvg.fxb"));
         _sampler = device.CreateSampler(new SamplerDesc(Filter: TextureFilter.Linear, AddressU: TextureAddressMode.Clamp, AddressV: TextureAddressMode.Clamp));
 
         _pSimpleStencilFill1 = BuildPipeline("Simple", BlendStateDesc.ColorWriteNone, StencilFill1, PrimitiveTopology.TriangleList);
@@ -118,18 +186,68 @@ public sealed class AbstractionNvgRenderer : INvgRenderer, IDisposable
         _pTrianglesList = BuildPipeline("Triangles", BlendStateDesc.AlphaBlend, DepthStencilStateDesc.None, PrimitiveTopology.TriangleList);
     }
 
+    /// <summary>
+    /// Creates the program for one of Nvg.fx's four techniques.
+    ///
+    /// The technique is chosen here, at build time, rather than baked into a pipeline as a
+    /// <c>TechniqueName</c>: the compiler emits one bundle per technique, so each is already a
+    /// separate program and the name selects which one to build. The four share a uniform layout,
+    /// which is why <see cref="NvgUniforms"/> can be resolved from any of them.
+    /// </summary>
+    private (IShaderModule Module, ShaderReflection Reflection) CreateProgram(string technique)
+    {
+        // A switch statement rather than a switch expression: each technique emits its own
+        // *Program record type, so the four arms have no common type for a switch expression to
+        // select on. Their members do share types, which is all this needs - each arm reads the
+        // shared shape out of its own record.
+        ShaderStageSources vertex, pixel;
+        ShaderReflection reflection;
+
+        switch (technique)
+        {
+            case "Simple":
+            {
+                var program = NvgSimple.Create();
+                (vertex, pixel, reflection) = (program.Vertex, program.Pixel, program.Reflection);
+                break;
+            }
+            case "FillGradient":
+            {
+                var program = NvgFillGradient.Create();
+                (vertex, pixel, reflection) = (program.Vertex, program.Pixel, program.Reflection);
+                break;
+            }
+            case "FillImage":
+            {
+                var program = NvgFillImage.Create();
+                (vertex, pixel, reflection) = (program.Vertex, program.Pixel, program.Reflection);
+                break;
+            }
+            case "Triangles":
+            {
+                var program = NvgTriangles.Create();
+                (vertex, pixel, reflection) = (program.Vertex, program.Pixel, program.Reflection);
+                break;
+            }
+            default:
+                throw new ArgumentOutOfRangeException(nameof(technique), technique, "Nvg.fx declares no such technique.");
+        }
+
+        return (_device.CreateShaderModule(vertex, pixel, reflection), reflection);
+    }
+
     private Pipeline BuildPipeline(string technique, BlendStateDesc blend, DepthStencilStateDesc depthStencil, PrimitiveTopology topology)
     {
+        var (module, reflection) = CreateProgram(technique);
         var pipeline = _device.CreatePipeline(new PipelineDesc(
-            VertexShader: _effect.Module,
-            PixelShader: _effect.Module,
+            VertexShader: module,
+            PixelShader: module,
             VertexLayouts: [VertexLayout],
             BlendState: blend,
             DepthStencilState: depthStencil,
             RasterizerState: Rasterizer,
-            Topology: topology,
-            TechniqueName: technique));
-        return new Pipeline(pipeline, _effect.Bind(pipeline));
+            Topology: topology));
+        return new Pipeline(pipeline, new NvgUniforms(reflection));
     }
 
     /// <summary>
@@ -274,7 +392,7 @@ public sealed class AbstractionNvgRenderer : INvgRenderer, IDisposable
         return m;
     }
 
-    private void SetUniform(ICommandBuffer cb, in NvgEffectParameters p, in UniformInfo uniform)
+    private void SetUniform(ICommandBuffer cb, in NvgUniforms p, in UniformInfo uniform)
     {
         p.transformMat.SetValue(cb, _transform);
         p.scissorMat.SetValue(cb, FixupMatrixForFloat3x3Truncation(uniform.scissorMat));

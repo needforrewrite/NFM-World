@@ -27,6 +27,7 @@
 using System.Runtime.InteropServices;
 using NFMWorld.Graphics;
 using NFMWorld.Shaders;
+using NFMWorld.Shaders.Generated;
 using Silk.NET.OpenGLES;
 using ClearOptions = NFMWorld.Graphics.ClearOptions;
 
@@ -55,6 +56,8 @@ internal static class Program
         CheckRenderTarget(device);
         CheckBundlePrograms(device);
         CheckImGuiTexturedDraw(device);
+        CheckMatrixUniformOrientation(device);
+        CheckBaseVertexDraw(device);
         CheckLineInstancedDraw(device);
 
         DrainGlErrors("end of run");
@@ -203,16 +206,12 @@ internal static class Program
         device.Submit(cb2);
         Report("BUFFER", "updating an immutable buffer fails loudly", refused);
 
-        // ES 3.0 has no base-vertex draw and ANGLE exposes no extension for one, so the backend
-        // refuses rather than drawing from the wrong part of the buffer.
-        using var index = device.CreateBuffer(
-            new BufferDesc(BufferKind.Index, BufferUsage.Immutable, 6, IndexFormat.UInt16), new byte[6]);
-        var baseVertexRefused = false;
-        var cb3 = device.AcquireCommandBuffer();
-        try { cb3.DrawIndexed(baseVertex: 1, startIndex: 0, primitiveCount: 1); }
-        catch (InvalidOperationException) { baseVertexRefused = true; }
-        device.Submit(cb3);
-        Report("BUFFER", "a non-zero baseVertex is refused (ES 3.0 has no base-vertex draw)", baseVertexRefused);
+        // There was a base-vertex assertion here that caught InvalidOperationException around a bare
+        // DrawIndexed and read as "a non-zero baseVertex is refused". It was passing for the wrong
+        // reason: with no pipeline bound, RequirePipeline throws that same exception type, so it
+        // would have gone on passing even if base-vertex handling were deleted outright. The real
+        // question - that a base vertex is honoured, or refused rather than silently misapplied - is
+        // checked in CheckBaseVertexDraw, where a pipeline is actually bound.
     }
 
     /// <summary>
@@ -446,37 +445,39 @@ internal static class Program
     /// shifts every attribute after it.
     ///
     /// Handing the layout to the shader compiler's own <c>HlslSemantics</c> would be a stronger
-    /// check still, but that type lives in the ShaderPoc project rather than in an abstraction this
-    /// test can reference. What is available here is the linked program, which is what actually
-    /// decides whether a draw works.
+    /// check still, but that type is a build-time one (NFMWorld.ShaderCompiler) rather than part of
+    /// an abstraction this runtime test references. What is available here is the linked program,
+    /// which is what actually decides whether a draw works.
     /// </summary>
     private static void CheckVertexLayout(string name, GlShaderProgram program, IReadOnlyList<VertexLayoutDesc> layouts)
     {
+        // Locations are numbered by position, so the layouts reach 0..declared-1 and "is this input
+        // supplied" is simply a range test. The span set rather than the name table, so a mat4 input
+        // counts as the four locations it occupies.
         var declared = layouts.Sum(l => l.Attributes.Count);
-
-        // Named by location rather than by semantic: the semantic a layout carries is only a label
-        // for the register the HLSL used, and the GLSL location is what binds. The span set rather
-        // than the name table, so a mat4 input counts as the four locations it occupies.
-        var missing = new List<int>();
-        for (var location = 0; location < declared; location++)
-        {
-            if (!program.AttributeLocationSpans.Contains(location))
-                missing.Add(location);
-        }
-
-        // A layout may declare *more* attributes than the shader uses - the filter in
-        // BindVertexStreams skips those - so the two counts are only required to agree in the other
-        // direction, where a location the shader reads has nothing feeding it.
         var spans = program.AttributeLocationSpans;
-        Report("BUNDLE", $"{name}: the layout's {declared} attribute(s) cover every input the vertex stage declares " +
+
+        var unsupplied = spans.Where(location => location >= declared).OrderBy(location => location).ToList();
+
+        Report("BUNDLE", $"{name}: the layouts' {declared} attribute(s) cover every input the vertex stage declares " +
                         $"({program.AttributeLocations.Count} input(s) over {spans.Count} location(s): " +
                         $"{string.Join(", ", program.AttributeLocations.OrderBy(a => a.Key).Select(a => a.Value))})",
-            missing.Count == 0 && spans.Count <= declared);
+            unsupplied.Count == 0);
 
-        if (missing.Count > 0)
-            Console.WriteLine($"           locations {string.Join(", ", missing)} are declared by the shader but supplied by no layout attribute");
-        if (spans.Count > declared)
-            Console.WriteLine($"           the stage declares {spans.Count} locations but the layouts supply only {declared}");
+        if (unsupplied.Count > 0)
+            Console.WriteLine($"           locations {string.Join(", ", unsupplied)} are read by the shader but supplied by no layout attribute");
+
+        // The other direction is legal and expected, so it is reported rather than failed on: a
+        // layout may declare more attributes than the entry point uses, and BindVertexStreams' filter
+        // skips the extras. That filter is not an optimisation - pointing a vertex array at a missing
+        // attribute raises GL_INVALID_VALUE - so the surplus is required to be tolerated. Poly's two
+        // techniques are the standing example: both are built with the app's one vertex layout, but
+        // CreateShadowMap's vertex stage reads only the position and the instance matrix, so six of
+        // the eleven attributes it is handed have no location to bind to. An earlier version of this
+        // check asserted the converse - that the layout have no surplus at all - which only held
+        // while every bundle was the one technique that uses all eleven.
+        else if (declared > spans.Count)
+            Console.WriteLine($"           {declared - spans.Count} layout attribute(s) are dropped by BindVertexStreams - this entry point does not read them");
     }
 
     /// <summary>
@@ -496,7 +497,7 @@ internal static class Program
     private static void CheckImGuiTexturedDraw(GlGraphicsDevice device)
     {
         const int size = 64;
-        var program = ImGui.Create();
+        var program = ImGuiFullbright.Create();
         // The module is not disposable: the pipeline it builds owns the linked GL program, and
         // disposes it from its own Dispose. That is the abstraction's model - see
         // GlGraphicsDevice.CreatePipeline.
@@ -554,7 +555,10 @@ internal static class Program
         cb.SetViewport(new Viewport(0, 0, size, size));
         cb.Clear(ClearOptions.Color, new ColorRgba(0f, 0f, 0f));
         cb.SetPipeline(pipeline);
-        cb.SetUniform(program.Bind().Projection, MemoryMarshal.AsBytes(identity));
+        // Through the generated parameter, which is the same path the app uses: it owns the byte
+        // offset and no-ops on a -1 (a uniform this entry point does not reference), so the test
+        // does not have to know which of those happened.
+        program.Bind().Projection.SetValue(cb, identity);
         cb.SetShaderResource(0, texture, sampler);
         cb.SetVertexBuffer(0, vertexBuffer, ImGuiStride);
         cb.SetIndexBuffer(indexBuffer);
@@ -601,7 +605,7 @@ internal static class Program
     /// </summary>
     private static void CheckLineInstancedDraw(GlGraphicsDevice device)
     {
-        var program = Line.Create();
+        var program = LineBasic.Create();
         // Not disposable for the same reason as the ImGui module above: the pipeline owns the program.
         var module = GlGraphicsDevice.LoadProgram(program.Vertex, program.Pixel, program.Reflection);
         using var pipeline = device.CreatePipeline(new PipelineDesc(
@@ -612,6 +616,16 @@ internal static class Program
             DepthStencilState: DepthStencilStateDesc.Default,
             RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
             Topology: PrimitiveTopology.TriangleList));
+
+        // The shader's transforms are row-major and it does its own projection, so the identity
+        // stands in for all three and leaves the geometry untransformed.
+        Span<float> identity =
+        [
+            1f, 0f, 0f, 0f,
+            0f, 1f, 0f, 0f,
+            0f, 0f, 1f, 0f,
+            0f, 0f, 0f, 1f,
+        ];
 
         // Three degenerate-ish vertices of the app's real LineMeshVertexAttribute shape. They sit at
         // the origin, so the outline expansion the shader applies moves them by a few pixels around
@@ -643,14 +657,14 @@ internal static class Program
         // so the shader's ~20 uniforms are all defined. NumCascades 0 makes the shadow branch a
         // no-op; Resolution is the half-viewport size the screen-space outline math expects.
         var p = program.Bind();
-        WriteMatrix(cb, p.ViewProj);
-        WriteMatrix(cb, p.Projection);
-        WriteMatrix(cb, p.View);
-        Write(cb, p.NumCascades, 0f);
-        Write(cb, p.HalfThickness, 4f);
-        Write(cb, p.Alpha, 1f);
-        Write(cb, p.Darken, 1f);
-        Write(cb, p.Resolution, device.Swapchain.Width / 2f, device.Swapchain.Height / 2f);
+        p.ViewProj.SetValue(cb, identity);
+        p.Projection.SetValue(cb, identity);
+        p.View.SetValue(cb, identity);
+        p.NumCascades.SetValue(cb, 0f);
+        p.HalfThickness.SetValue(cb, 4f);
+        p.Alpha.SetValue(cb, 1f);
+        p.Darken.SetValue(cb, 1f);
+        p.Resolution.SetValue(cb, device.Swapchain.Width / 2f, device.Swapchain.Height / 2f);
 
         // All three shadow maps must be bound: the shader samples them by name, and binding the full
         // reflected set is what makes the samplers above exercise real units.
@@ -671,15 +685,272 @@ internal static class Program
             after == before);
     }
 
-    /// <summary>Writes a float uniform by its reflected byte offset. A name the compiler dropped resolves to -1 and is skipped.</summary>
-    private static void Write(ICommandBuffer cb, int offset, params float[] values)
+    /// <summary>
+    /// A matrix uniform must arrive transposed, or the whole scene renders with exploded vertices.
+    ///
+    /// This is the check the rest of this file cannot make, and its absence is why the bug it detects
+    /// shipped. Every other matrix in this test is the identity, which is *symmetric* - it is the one
+    /// matrix a transpose leaves unchanged, so a backend that skipped the transpose entirely passed
+    /// every check here while the game rendered nothing correctly. The fix is to use a matrix that is
+    /// not its own transpose: a pure translation, which puts the offset in M41/M42/M43.
+    ///
+    /// The convention is fixed by the shaders, not chosen here. They use row-vector math -
+    /// <c>mul(float4(p, 1), Projection)</c> - so the translation column is M41/M42/M43 and GL needs
+    /// the matrix column-major on the GPU (the inverse of the row-major System.Numerics layout).
+    /// FNA3D's backend did that transpose in its own SetUniform, and its comment is explicit that
+    /// callers hand it row-major matrices. The GL backend was written without it.
+    ///
+    /// A translation in X is the sharpest probe: left as row-major it lands in the GPU's column 4,
+    /// which is a perspective divide rather than an offset, so the quad smears across the screen
+    /// instead of moving sideways. Conservative rasterization means a shifted quad still covers the
+    /// sample points, so the assertion is on the *whole image* rather than on two pixels: the drawn
+    /// quad must stop well short of the right edge either way.
+    /// </summary>
+    private static void CheckMatrixUniformOrientation(GlGraphicsDevice device)
     {
-        if (offset >= 0)
-            cb.SetUniform(offset, MemoryMarshal.AsBytes(values.AsSpan()));
+        const int size = 64;
+        var program = ImGuiFullbright.Create();
+        var module = GlGraphicsDevice.LoadProgram(program.Vertex, program.Pixel, program.Reflection);
+        using var pipeline = device.CreatePipeline(new PipelineDesc(
+            VertexShader: module,
+            PixelShader: module,
+            VertexLayouts: [ImGuiLayout],
+            BlendState: BlendStateDesc.Opaque,
+            DepthStencilState: DepthStencilStateDesc.None,
+            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
+            Topology: PrimitiveTopology.TriangleList));
+
+        using var target = device.CreateRenderTarget(
+            new RenderTargetDesc(size, size, TextureFormat.Rgba8, HasDepthStencil: false));
+
+        // Translate +0.5 in X and leave a clearly non-identity scale on the diagonal, so every
+        // element that could be mistaken for another differs. Row 4 is the translation row, which is
+        // where a row-vector convention keeps it.
+        var translate = System.Numerics.Matrix4x4.Identity;
+        translate.M41 = 0.5f;
+        translate.M11 = 1f;
+
+        // A quad covering only the left half of clip space, so a +0.5 shift lands it mid-screen and
+        // an unshifted one leaves it hanging off the left edge. Positions are already in clip space.
+        byte[] vertices = ImGuiVertices(
+            -1f, -1f, 0f, 0f,
+             0f, -1f, 1f, 0f,
+             0f,  1f, 1f, 1f,
+            -1f,  1f, 0f, 1f);
+        Span<ushort> indices = [0, 1, 2, 0, 2, 3];
+
+        using var vertexBuffer = device.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertices.Length), vertices);
+        using var indexBuffer = device.CreateBuffer(
+            new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indices.Length * sizeof(ushort), IndexFormat.UInt16),
+            MemoryMarshal.AsBytes(indices));
+        using var texture = device.CreateTexture(new TextureDesc(2, 2, TextureFormat.Rgba8), [
+            255, 0, 255, 255,  255, 0, 255, 255,
+            255, 0, 255, 255,  255, 0, 255, 255,
+        ]);
+        using var sampler = device.CreateSampler(
+            new SamplerDesc(TextureFilter.Point, TextureAddressMode.Clamp, TextureAddressMode.Clamp));
+
+        var cb = device.AcquireCommandBuffer();
+        cb.SetRenderTarget(target);
+        cb.SetViewport(new Viewport(0, 0, size, size));
+        cb.Clear(ClearOptions.Color, new ColorRgba(0f, 0f, 0f));
+        cb.SetPipeline(pipeline);
+        program.Bind().Projection.SetValue(cb, translate);
+        cb.SetShaderResource(0, texture, sampler);
+        cb.SetVertexBuffer(0, vertexBuffer, ImGuiStride);
+        cb.SetIndexBuffer(indexBuffer);
+        cb.DrawIndexed(baseVertex: 0, startIndex: 0, primitiveCount: 2);
+        cb.SetRenderTarget(null);
+        device.Submit(cb);
+        DrainGlErrors("matrix orientation draw");
+
+        var pixels = new byte[size * size * 4];
+        device.ReadTexture(target.ColorTexture!, 0, 0, size, size, pixels);
+
+        // The rightmost column containing any drawn pixel. The quad covers clip x in [-1, 0] and the
+        // matrix translates it by +0.5, so its right edge belongs at clip x = +0.5 - three quarters
+        // of the width. Unshifted it stops at the centre; with the translation read as w it smears
+        // past the right edge instead.
+        var lastDrawn = -1;
+        for (var x = 0; x < size; x++)
+        {
+            for (var y = 0; y < size; y++)
+            {
+                if (PixelAt(pixels, size, x, y).R > 100) { lastDrawn = x; break; }
+            }
+        }
+
+        // Bounded on both sides: too far left means the translation was dropped, too far right means
+        // it landed in the wash. Measured against this backend both ways before being written down -
+        // a row-major write gives 31 (dropped) and a transposed one 47 (correct), which is where the
+        // tolerance comes from rather than from the geometry alone.
+        Report("DRAW", $"a translated matrix shifts the quad to mid-screen (rightmost drawn column " +
+                       $"{lastDrawn}, expected about {3 * size / 4})",
+            lastDrawn >= 3 * size / 4 - 3 && lastDrawn <= 3 * size / 4 + 2);
+        Console.WriteLine("           an identity matrix cannot catch this: it is symmetric, so a missing");
+        Console.WriteLine("           transpose leaves it unchanged - which is how the bug reached the game");
     }
 
-    private static void WriteMatrix(ICommandBuffer cb, int offset) =>
-        Write(cb, offset, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f);
+    /// <summary>
+    /// A base-vertex draw must move the geometry, and the pixels must prove it did.
+    ///
+    /// This is the check that the ES entry points are the ones being called. ANGLE exports the
+    /// *desktop* spellings of these functions as stubs that raise GL_INVALID_OPERATION and draw
+    /// nothing, and Silk.NET's <c>GL.DrawElementsBaseVertex</c> binds those - so a backend that
+    /// reached for the obvious API would pass every error check in this file while drawing nothing,
+    /// and every base-vertex draw in the app would silently vanish. Only pixels separate "the
+    /// extension worked" from "the call was a no-op".
+    ///
+    /// The two entry points are checked in *separate* clear-and-draw passes, and that separation is
+    /// load-bearing rather than tidiness. A first version drew all three calls into one target; when
+    /// the non-instanced base vertex was deliberately sabotaged to 0 the check still passed, because
+    /// the instanced draw - a different entry point, which the sabotage had not touched - painted the
+    /// same right-half pixels over the top. Sharing a target let a working call mask a broken one.
+    ///
+    /// Within a pass the construction makes baseVertex the only variable. Six vertices form two
+    /// triangles: 0-2 cover the left half and sample the texture's magenta column, 3-5 cover the right
+    /// half and sample the yellow one. Both draws use the *same* three indices and the same count -
+    /// only the base vertex differs, 0 then 3 - so if baseVertex is honoured the two triangles land on
+    /// opposite halves and each sample point sees its own colour. If it is ignored, both draws paint
+    /// the left triangle and the right sample stays black, which is exactly the silent no-op above.
+    /// </summary>
+    private static void CheckBaseVertexDraw(GlGraphicsDevice device)
+    {
+        const int size = 64;
+        var program = ImGuiFullbright.Create();
+        var module = GlGraphicsDevice.LoadProgram(program.Vertex, program.Pixel, program.Reflection);
+        using var pipeline = device.CreatePipeline(new PipelineDesc(
+            VertexShader: module,
+            PixelShader: module,
+            VertexLayouts: [ImGuiLayout],
+            BlendState: BlendStateDesc.Opaque,
+            DepthStencilState: DepthStencilStateDesc.None,
+            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
+            Topology: PrimitiveTopology.TriangleList));
+
+        using var target = device.CreateRenderTarget(
+            new RenderTargetDesc(size, size, TextureFormat.Rgba8, HasDepthStencil: false));
+
+        float[] identity =
+        [
+            1f, 0f, 0f, 0f,
+            0f, 1f, 0f, 0f,
+            0f, 0f, 1f, 0f,
+            0f, 0f, 0f, 1f,
+        ];
+
+        // Left triangle first, right triangle second, because baseVertex 3 has to land on the second
+        // one. The U coordinates stay inside their half's texture column so the sampled colour is
+        // unambiguous - magenta is column 0, yellow is column 1.
+        byte[] vertices = ImGuiVertices(
+            -1f, -1f, 0.0f, 0.0f,
+             0f, -1f, 0.4f, 0.0f,
+             0f,  1f, 0.4f, 1.0f,
+             0f, -1f, 0.6f, 0.0f,
+             1f, -1f, 1.0f, 0.0f,
+             1f,  1f, 1.0f, 1.0f);
+        Span<ushort> indices = [0, 1, 2];
+
+        using var vertexBuffer = device.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertices.Length), vertices);
+        using var indexBuffer = device.CreateBuffer(
+            new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indices.Length * sizeof(ushort), IndexFormat.UInt16),
+            MemoryMarshal.AsBytes(indices));
+        using var texture = device.CreateTexture(new TextureDesc(2, 2, TextureFormat.Rgba8), [
+            255, 0, 255, 255,  255, 255, 0, 255,
+            255, 0, 255, 255,  255, 255, 0, 255,
+        ]);
+        using var sampler = device.CreateSampler(
+            new SamplerDesc(TextureFilter.Point, TextureAddressMode.Clamp, TextureAddressMode.Clamp));
+
+        Report("DRAW", "context reports base-vertex support (glDrawElementsBaseVertexEXT present)",
+            device.SupportsBaseVertex);
+
+        if (!device.SupportsBaseVertex)
+        {
+            // Without the extension the draw has to be refused, not silently misapplied. This is the
+            // branch that would have been a stub of the check above if the old BUFFER assertion had
+            // been left in place - it asserted a refusal while never binding a pipeline, so the throw
+            // it caught was RequirePipeline's, not base-vertex's.
+            var refused = false;
+            var cb = device.AcquireCommandBuffer();
+            cb.SetRenderTarget(target);
+            cb.SetPipeline(pipeline);
+            cb.SetVertexBuffer(0, vertexBuffer, ImGuiStride);
+            cb.SetIndexBuffer(indexBuffer);
+            try { cb.DrawIndexed(baseVertex: 1, startIndex: 0, primitiveCount: 1); }
+            catch (NotSupportedException) { refused = true; }
+            device.Submit(cb);
+            Report("DRAW", "a non-zero baseVertex is refused on a context without the extension", refused);
+            Console.WriteLine("           skipping the pixel assertions: this context cannot do the draw at all");
+            return;
+        }
+
+        // Each pass renders alone into its own cleared target, so a failure in one cannot be covered
+        // by another. Returns the pixels it produced.
+        byte[] Pass(string label, Action<ICommandBuffer> draw)
+        {
+            var cb = device.AcquireCommandBuffer();
+            cb.SetRenderTarget(target);
+            cb.SetViewport(new Viewport(0, 0, size, size));
+            cb.Clear(ClearOptions.Color, new ColorRgba(0f, 0f, 0f));
+            cb.SetPipeline(pipeline);
+            program.Bind().Projection.SetValue(cb, identity);
+            cb.SetShaderResource(0, texture, sampler);
+            cb.SetVertexBuffer(0, vertexBuffer, ImGuiStride);
+            cb.SetIndexBuffer(indexBuffer);
+
+            var before = DrainGlErrors($"before {label}");
+            draw(cb);
+            cb.SetRenderTarget(null);
+            device.Submit(cb);
+            var errors = DrainGlErrors(label) - before;
+            Report("DRAW", $"{label} reached the driver with {errors} GL error(s)", errors == 0);
+
+            var pixels = new byte[size * size * 4];
+            device.ReadTexture(target.ColorTexture!, 0, 0, size, size, pixels);
+            return pixels;
+        }
+
+        // The non-instanced entry point, in isolation: baseVertex 0 then baseVertex 3.
+        var indexed = Pass("non-instanced base-vertex draw", cb =>
+        {
+            cb.DrawIndexed(baseVertex: 0, startIndex: 0, primitiveCount: 1);
+            cb.DrawIndexed(baseVertex: 3, startIndex: 0, primitiveCount: 1);
+        });
+        ReportHalf("non-instanced", indexed);
+
+        // The instanced entry point, in isolation. instanceCount 2 is deliberate: the porting layer
+        // routes an instanceCount of 1 through the non-instanced entry point, so a count of 1 would
+        // not test this one at all. Both half-planes share baseVertex 3, so the right triangle is
+        // drawn twice and then the left one - which is still enough to tell a honoured base vertex
+        // from an ignored one.
+        var instanced = Pass("instanced base-vertex draw", cb =>
+            cb.DrawIndexedInstanced(baseVertex: 3, startIndex: 0, primitiveCount: 1, instanceCount: 2));
+        var instRight = PixelAt(instanced, size, 3 * size / 4, size / 2);
+        var instLeft = PixelAt(instanced, size, size / 4, size / 2);
+        Report("DRAW", $"instanced baseVertex 3 drew the right half ({instRight.R},{instRight.G},{instRight.B}), expected yellow (255,255,0)",
+            IsYellow(instRight));
+        Report("DRAW", $"instanced baseVertex 3 left the left half black ({instLeft.R},{instLeft.G},{instLeft.B})",
+            IsBlack(instLeft));
+
+        void ReportHalf(string what, byte[] pixels)
+        {
+            var left = PixelAt(pixels, size, size / 4, size / 2);
+            var right = PixelAt(pixels, size, 3 * size / 4, size / 2);
+            Report("DRAW", $"{what} baseVertex 0 drew the left half ({left.R},{left.G},{left.B}), expected magenta (255,0,255)",
+                IsMagenta(left));
+            Report("DRAW", $"{what} baseVertex 3 drew the right half ({right.R},{right.G},{right.B}), expected yellow (255,255,0)",
+                IsYellow(right));
+            Console.WriteLine("           both draws used indices [0,1,2] and the same count, so only the base vertex");
+            Console.WriteLine("           can have moved the second triangle - a black right half is baseVertex being ignored");
+        }
+    }
+
+    private static bool IsMagenta(Pixel p) => p.R > 200 && p.G < 60 && p.B > 200;
+    private static bool IsYellow(Pixel p) => p.R > 200 && p.G > 200 && p.B < 60;
+    private static bool IsBlack(Pixel p) => p.R < 40 && p.G < 40 && p.B < 40;
 
     private readonly record struct Pixel(byte R, byte G, byte B, byte A);
 
@@ -805,10 +1076,14 @@ internal static class Program
     /// borrowed layout is legal here only as far as it agrees with Particle's own input signature -
     /// which it does, both being two float4 inputs.
     ///
-    /// The bundles these come from were built by `scratch/ShaderPoc/build-all.sh`, one entry-point
-    /// pair each, and that choice is visible in the results: Nvg is compiled from `PSMainSimple`,
-    /// which samples no texture, so its reflection names `g_texture` while the linked program
-    /// declares no sampler at all.
+    /// The bundles these come from are compiled by this project's own shader build (the
+    /// NFMWorld.ShaderCompiler.targets import in the csproj), one entry-point pair each - the
+    /// compiler emits one bundle per technique, so a shader that declares several contributes
+    /// several. That last point is visible in the results: Nvg has four techniques and this list
+    /// takes only `Simple`, whose entry point samples no texture, so its reflection names
+    /// `g_texture` while the linked program declares no sampler at all. The other three techniques
+    /// are the ones that do sample, and they are covered by the game's own Nvg renderer rather
+    /// than here.
     ///
     /// Attribute locations are assigned by *position*: glslang numbers the HLSL front-end's inputs in
     /// declaration order, ignoring the D3D semantic indices, so what matters is the order of the GLSL
@@ -818,26 +1093,44 @@ internal static class Program
     {
         get
         {
-            var imgui = ImGui.Create();
-            yield return new Bundle("ImGui", imgui.Vertex, imgui.Pixel, imgui.Reflection, [ImGuiLayout]);
+            var imgui = ImGuiFullbright.Create();
+            yield return new Bundle("ImGuiFullbright", imgui.Vertex, imgui.Pixel, imgui.Reflection, [ImGuiLayout]);
 
-            var ground = Ground.Create();
-            yield return new Bundle("Ground", ground.Vertex, ground.Pixel, ground.Reflection, [PositionColorLayout]);
+            var ground = GroundFullbright.Create();
+            yield return new Bundle("GroundFullbright", ground.Vertex, ground.Pixel, ground.Reflection, [PositionColorLayout]);
 
-            var mountains = Mountains.Create();
-            yield return new Bundle("Mountains", mountains.Vertex, mountains.Pixel, mountains.Reflection, [PositionColorLayout]);
+            var mountains = MountainsFullbright.Create();
+            yield return new Bundle("MountainsFullbright", mountains.Vertex, mountains.Pixel, mountains.Reflection, [PositionColorLayout]);
 
-            var sky = Sky.Create();
-            yield return new Bundle("Sky", sky.Vertex, sky.Pixel, sky.Reflection, [PositionColorLayout]);
+            var sky = SkyFullbright.Create();
+            yield return new Bundle("SkyFullbright", sky.Vertex, sky.Pixel, sky.Reflection, [PositionColorLayout]);
 
-            var poly = Poly.Create();
-            yield return new Bundle("Poly", poly.Vertex, poly.Pixel, poly.Reflection, [PolyLayout, InstanceLayout]);
+            // Both Poly techniques, unlike the POC's single bundle. The shadow pass is a distinct
+            // entry-point pair with its own reflection, so it is a distinct program that has to
+            // link - and it is the one whose block layout nothing else here would cover.
+            var poly = PolyBasic.Create();
+            yield return new Bundle("PolyBasic", poly.Vertex, poly.Pixel, poly.Reflection, [PolyLayout, InstanceLayout]);
 
-            var nvg = Nvg.Create();
-            yield return new Bundle("Nvg", nvg.Vertex, nvg.Pixel, nvg.Reflection, [NvgLayout]);
+            var polyShadow = PolyCreateShadowMap.Create();
+            yield return new Bundle("PolyCreateShadowMap", polyShadow.Vertex, polyShadow.Pixel, polyShadow.Reflection, [PolyLayout, InstanceLayout]);
 
-            var particle = Particle.Create();
-            yield return new Bundle("Particle", particle.Vertex, particle.Pixel, particle.Reflection, [PositionColorLayout]);
+            // All four Nvg techniques: they share VSMain and differ only in the pixel entry point,
+            // which is exactly the axis a sampler-name bug lives on - Simple samples nothing while
+            // the other three sample g_texture.
+            var nvgSimple = NvgSimple.Create();
+            yield return new Bundle("NvgSimple", nvgSimple.Vertex, nvgSimple.Pixel, nvgSimple.Reflection, [NvgLayout]);
+
+            var nvgFillGradient = NvgFillGradient.Create();
+            yield return new Bundle("NvgFillGradient", nvgFillGradient.Vertex, nvgFillGradient.Pixel, nvgFillGradient.Reflection, [NvgLayout]);
+
+            var nvgFillImage = NvgFillImage.Create();
+            yield return new Bundle("NvgFillImage", nvgFillImage.Vertex, nvgFillImage.Pixel, nvgFillImage.Reflection, [NvgLayout]);
+
+            var nvgTriangles = NvgTriangles.Create();
+            yield return new Bundle("NvgTriangles", nvgTriangles.Vertex, nvgTriangles.Pixel, nvgTriangles.Reflection, [NvgLayout]);
+
+            var particle = ParticleFullbright.Create();
+            yield return new Bundle("ParticleFullbright", particle.Vertex, particle.Pixel, particle.Reflection, [PositionColorLayout]);
         }
     }
 

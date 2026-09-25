@@ -44,9 +44,9 @@ public sealed class SdlImGuiRenderer : IDisposable
     private readonly IGraphicsDevice _graphicsDevice;
     private readonly SdlWindow _window;
 
-    private readonly ImGuiEffect _effect;
+    private readonly IShaderModule _module;
     private readonly IPipelineState _pipeline;
-    private readonly ImGuiEffectParameters _parameters;
+    private readonly ImGuiFullbrightParameters _parameters;
     private readonly ISampler _sampler;
 
     private readonly Dictionary<ImTextureID, TextureInfo> _textures = new();
@@ -75,16 +75,17 @@ public sealed class SdlImGuiRenderer : IDisposable
         platformIO.RendererTextureMaxWidth = 4096;
         platformIO.RendererTextureMaxHeight = 4096;
 
-        _effect = new ImGuiEffect(VFS.ReadAllBytes("./data/shaders/ImGui.fxb"));
+        var program = ImGuiFullbright.Create();
+        _module = graphicsDevice.CreateShaderModule(program.Vertex, program.Pixel, program.Reflection);
         _pipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
-            VertexShader: _effect.Module,
-            PixelShader: _effect.Module,
+            VertexShader: _module,
+            PixelShader: _module,
             VertexLayouts: [VertexLayout],
             BlendState: BlendStateDesc.NonPremultiplied,
             // Depth test must stay off so ImGui always paints on top of 3D/Yoga UI content.
             DepthStencilState: DepthStencilStateDesc.None,
             RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None, ScissorTestEnabled = true }));
-        _parameters = _effect.Bind(_pipeline);
+        _parameters = program.Bind();
         _sampler = graphicsDevice.CreateSampler(new SamplerDesc(
             Filter: TextureFilter.Linear, AddressU: TextureAddressMode.Clamp, AddressV: TextureAddressMode.Clamp));
 

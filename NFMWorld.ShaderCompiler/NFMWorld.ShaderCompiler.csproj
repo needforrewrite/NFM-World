@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <!-- Exe only so that Program.cs - the hand-debugging host over the library - keeps working
+             with `dotnet run`. The build itself uses the library: the task project references this
+             one and gets NFMWorld.ShaderCompiler.dll out of it exactly as it would from a library,
+             since a ProjectReference carries the assembly and not the apphost. -->
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RootNamespace>NFMWorld.ShaderCompiler</RootNamespace>
+        <!-- The MSBuild task loads this assembly into MSBuild's own process, where a deps.json is
+             not consulted for a plugin style load: the task project therefore needs this library
+             and every Silk.NET assembly it pulls in sitting next to the task DLL, not merely
+             recorded as a dependency. Without it the task builds and then fails at load time with
+             a FileNotFoundException the moment it reaches shaderc. -->
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <!-- Silk.NET's bindings use trimming-unsafe reflection internally; the analyzer's advice
+             does not apply to a build-time tool that is never trimmed or published. Same setting,
+             same reason, as the POC project this was promoted from. -->
+        <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Silk.NET.Shaderc" Version="2.23.0" />
+        <PackageReference Include="Silk.NET.SPIRV.Cross" Version="2.23.0" />
+    </ItemGroup>
+
+</Project>

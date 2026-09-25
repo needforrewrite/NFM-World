@@ -155,6 +155,10 @@ void VS_ApplyFog(
 }
 
 float4x4 LightViewProj0;
+#if SM6
+Texture2D ShadowMap0 : register(t0);
+SamplerState ShadowMapSampler0 : register(s0);
+#else
 texture ShadowMap0;
 sampler ShadowMapSampler0 = sampler_state
 {
@@ -165,7 +169,12 @@ sampler ShadowMapSampler0 = sampler_state
     AddressU = Clamp;
     AddressV = Clamp;
 };
+#endif
 float4x4 LightViewProj1;
+#if SM6
+Texture2D ShadowMap1 : register(t1);
+SamplerState ShadowMapSampler1 : register(s1);
+#else
 texture ShadowMap1;
 sampler ShadowMapSampler1 = sampler_state
 {
@@ -176,7 +185,12 @@ sampler ShadowMapSampler1 = sampler_state
     AddressU = Clamp;
     AddressV = Clamp;
 };
+#endif
 float4x4 LightViewProj2;
+#if SM6
+Texture2D ShadowMap2 : register(t2);
+SamplerState ShadowMapSampler2 : register(s2);
+#else
 texture ShadowMap2;
 sampler ShadowMapSampler2 = sampler_state
 {
@@ -187,6 +201,7 @@ sampler ShadowMapSampler2 = sampler_state
     AddressU = Clamp;
     AddressV = Clamp;
 };
+#endif
 // Shadow-map depth bias, in normalized shadow-map depth (range [0..1]).
 //   Too small -> shadow acne (shimmering self-shadow on lit faces).
 //   Too large -> peter-panning (shadow detaches / slides off its caster).
@@ -199,6 +214,60 @@ float DepthBias = 0.0005f;
 float NumCascades = 3;
 float3 LightDirection;
 
+#if SM6
+void applyShadowingSingle(
+    in float4 worldPos,
+    in float4x4 lightViewProj,
+    in Texture2D shadowMapTexture,
+    in SamplerState shadowMapSampler,
+    out bool isInLight,
+    out bool isShadowed
+)
+{
+    isShadowed = false;
+
+    // Find the position of this pixel in light space
+    float4 lightingPosition = mul(worldPos, lightViewProj);
+
+    // Find the position in the shadow map for this pixel
+    float2 shadowTexCoord = 0.5 * lightingPosition.xy /
+                            lightingPosition.w + float2( 0.5, 0.5 );
+    shadowTexCoord.y = 1.0f - shadowTexCoord.y;
+
+    // Only apply shadows if we're inside the light's view frustum
+    if (shadowTexCoord.x >= 0.0 && shadowTexCoord.x <= 1.0 &&
+        shadowTexCoord.y >= 0.0 && shadowTexCoord.y <= 1.0 &&
+        lightingPosition.z > 0.0)
+    {
+        // Get the current depth stored in the shadow map
+        float shadowdepth = shadowMapTexture.Sample(shadowMapSampler, shadowTexCoord).r;
+
+        // Calculate the current pixel depth
+        // The bias is used to prevent floating point errors that occur when
+        // the pixel of the occluder is being drawn
+        float ourdepth = (lightingPosition.z / lightingPosition.w);
+
+        // Slope-scaled bias from light-space depth derivatives
+        float dzdx = ddx(ourdepth);
+        float dzdy = ddy(ourdepth);
+        float slopeFactor = sqrt(dzdx * dzdx + dzdy * dzdy);
+        float bias = DepthBias + clamp(slopeFactor * 1.0, 0.0, 0.01); // slope-scaled add-on (0 .. 0.01)
+
+        ourdepth -= bias;
+
+        // Check to see if this pixel is in front or behind the value in the shadow map
+        if (shadowdepth < ourdepth)
+        {
+            // This pixel is occluded from the light
+            isShadowed = true;
+        }
+
+        isInLight = true;
+    } else {
+        isInLight = false;
+    }
+}
+#else
 void applyShadowingSingle(
     in float4 worldPos,
     in float4x4 lightViewProj,
@@ -250,6 +319,7 @@ void applyShadowingSingle(
         isInLight = false;
     }
 }
+#endif
 
 bool PS_IsShadowed(
     in float4 worldPos,
@@ -270,21 +340,33 @@ bool PS_IsShadowed(
         {
             bool isInLight0 = false;
             bool isShadowed0 = false;
+            #if SM6
+            applyShadowingSingle(worldPos, LightViewProj0, ShadowMap0, ShadowMapSampler0, isInLight0, isShadowed0);
+            #else
             applyShadowingSingle(worldPos, LightViewProj0, ShadowMapSampler0, isInLight0, isShadowed0);
+            #endif
             if (isInLight0) return isShadowed0;
 
             if (NumCascades > 1)
             {
                 bool isInLight1 = false;
                 bool isShadowed1 = false;
+                #if SM6
+                applyShadowingSingle(worldPos, LightViewProj1, ShadowMap1, ShadowMapSampler1, isInLight1, isShadowed1);
+                #else
                 applyShadowingSingle(worldPos, LightViewProj1, ShadowMapSampler1, isInLight1, isShadowed1);
+                #endif
                 if (isInLight1) return isShadowed1;
 
                 if (NumCascades > 2)
                 {
                     bool isInLight2 = false;
                     bool isShadowed2 = false;
+                    #if SM6
+                    applyShadowingSingle(worldPos, LightViewProj2, ShadowMap2, ShadowMapSampler2, isInLight2, isShadowed2);
+                    #else
                     applyShadowingSingle(worldPos, LightViewProj2, ShadowMapSampler2, isInLight2, isShadowed2);
+                    #endif
                     if (isInLight2) return isShadowed2;
                 }
             }

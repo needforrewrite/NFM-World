@@ -37,17 +37,41 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     /// <summary>EGL state when this device owns it, or null when the host's context was attached.</summary>
     private readonly Egl.Context? _context;
 
+    /// <summary>
+    /// The context's base-vertex entry points, resolved once here rather than per draw.
+    ///
+    /// Owned by the device because it is a property of the context, not of a command buffer: every
+    /// command buffer this device hands out belongs to the same context and so resolves the same two
+    /// pointers. See <see cref="GlBaseVertexDraw"/> for why they are resolved by hand.
+    /// </summary>
+    private readonly GlBaseVertexDraw _baseVertexDraw;
+
     private GlCommandBuffer? _activeCommandBuffer;
     private bool _disposed;
 
     public ISwapchain Swapchain { get; }
 
-    private GlGraphicsDevice(GL gl, Egl.Context? context, int width, int height)
+    private GlGraphicsDevice(GL gl, Egl.Context? context, int width, int height, Action? present = null)
     {
         _gl = gl;
         _context = context;
-        Swapchain = new GlSwapchain(context, width, height);
+        Swapchain = new GlSwapchain(context, width, height, present);
+
+        // GL's own loader, not the host's: by this point the context is current, so resolving through
+        // the bindings' context and through the host's callback would agree, and this way the device
+        // does not need the host's callback carried all the way down here. The lambda is only because
+        // INativeContext.GetProcAddress takes an optional ordinal, which a method group cannot absorb.
+        _baseVertexDraw = GlBaseVertexDraw.Resolve(_gl);
     }
+
+    /// <summary>
+    /// Whether this context can honour a non-zero base vertex in an indexed draw.
+    ///
+    /// Exposed because it is a real capability question rather than an internal detail: a caller
+    /// that can restructure its index data to avoid a base vertex would rather know up front than
+    /// be refused at draw time.
+    /// </summary>
+    internal bool SupportsBaseVertex => _baseVertexDraw.IsSupported;
 
     /// <summary>
     /// Brings up a headless ES 3.0 context on ANGLE and renders into an off-screen pbuffer.
@@ -80,10 +104,18 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     /// Note this path does not and cannot reallocate the drawable on resize - the EGL surface
     /// belongs to the host - so <see cref="ISwapchain.Resize"/> only tracks the new size.
     /// </summary>
-    public static GlGraphicsDevice Create(Func<string, nint> getProcAddress, int backBufferWidth, int backBufferHeight)
+    /// <param name="present">
+    /// How the host shows a finished frame, for the case where it owns the drawable. This backend can
+    /// only swap a surface it created itself; on the SDL path the surface and the window both belong
+    /// to the host, so presentation is the host's too (<c>SDL_GL_SwapWindow</c>) and there is no
+    /// handle here to do it with. Null means nothing presents, which is correct only for a host that
+    /// reads its own framebuffer.
+    /// </param>
+    public static GlGraphicsDevice Create(
+        Func<string, nint> getProcAddress, int backBufferWidth, int backBufferHeight, Action? present = null)
     {
         ArgumentNullException.ThrowIfNull(getProcAddress);
-        return new GlGraphicsDevice(GL.GetApi(getProcAddress), null, backBufferWidth, backBufferHeight);
+        return new GlGraphicsDevice(GL.GetApi(getProcAddress), null, backBufferWidth, backBufferHeight, present);
     }
 
     public ICommandBuffer AcquireCommandBuffer()
@@ -95,7 +127,7 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
                 "was submitted - only one command buffer may be live at a time.");
         }
 
-        var commandBuffer = new GlCommandBuffer(_gl, this);
+        var commandBuffer = new GlCommandBuffer(_gl, this, _baseVertexDraw);
         _activeCommandBuffer = commandBuffer;
         return commandBuffer;
     }
@@ -228,6 +260,11 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     /// only works because the shader compiler names the ES combined sampler after the texture - see
     /// SpirvCrossReflector.NameCombinedSamplers and GlShaderProgram.TextureLocations.
     /// </summary>
+    /// <inheritdoc cref="IGraphicsDevice.CreateShaderModule"/>
+    IShaderModule IGraphicsDevice.CreateShaderModule(ShaderStageSources vertex, ShaderStageSources pixel, ShaderReflection reflection) =>
+        LoadProgram(vertex, pixel, reflection);
+
+    /// <inheritdoc cref="LoadProgram(ShaderStageSources,ShaderStageSources,ShaderReflection)"/>
     public static IShaderModule LoadProgram(ShaderStageSources vertex, ShaderStageSources pixel, ShaderReflection reflection)
     {
         ArgumentNullException.ThrowIfNull(vertex);

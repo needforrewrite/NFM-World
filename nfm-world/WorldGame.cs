@@ -9,7 +9,10 @@ using Microsoft.Extensions.Logging;
 using NFMWorld.DriverInterface;
 using NFMWorld.Gameplay;
 using NFMWorld.Graphics;
-using NFMWorld.Graphics.FNA3D;
+using NFMWorld.Graphics.Sokol;
+#if ANGLE
+using NFMWorld.Graphics.OpenGL;
+#endif
 using NFMWorld.Platform.SDL3;
 using NFMWorld.UI;
 using NFMWorld.Util;
@@ -18,6 +21,7 @@ using NFMWorldLibrary.Util;
 using Keys = NFMWorld.DriverInterface.Keys;
 using Logging = NFMWorldLibrary.Logging;
 using NFMWorld.Sentry;
+using SDL3New::SDL3;
 using WorldXaml.UI.Yoga;
 using ClearOptions = NFMWorld.Graphics.ClearOptions;
 
@@ -29,27 +33,76 @@ namespace NFMWorld;
 /// </summary>
 /// <remarks>
 /// Milestone 5 Stage A: window/input/device ownership moved off FNA's <c>Game</c>/
-/// <c>GraphicsDeviceManager</c> onto <see cref="SdlWindow"/> + <see cref="FNA3DGraphicsDevice"/>,
-/// following the pattern proven in <c>NFMWorld.Graphics.FNA3D.Smoke/Program.cs</c>. Everything that
-/// still needs an XNA <c>GraphicsDevice</c> (<see cref="GameSparker.Load"/>, <c>Effects.Initialize</c>,
-/// <see cref="RebuildCascades"/>, <see cref="ImGuiRenderer"/>, <see cref="UiRenderer"/>,
-/// <see cref="NanoVGRenderer"/>, and everything downstream of <see cref="GameSparker.CurrentPhase"/>,
-/// which throws until a phase is pushed) is deliberately NOT constructed/called yet - that's
-/// Milestone 5 Stage B (converting <c>Scene</c>/<c>RenderQueue</c> and the renderer files to the
-/// command-buffer model). This stage only proves window creation, input, resize, and device
-/// lifetime against the real game entry point; no gameplay/UI renders yet.
+/// <c>GraphicsDeviceManager</c> onto <see cref="SdlWindow"/> and a device from the graphics
+/// abstraction, following the pattern proven in <c>NFMWorld.Graphics.FNA3D.Smoke/Program.cs</c>.
+///
+/// <para>
+/// The device is sokol_gfx on D3D11. SDL still owns the window, and sokol_gfx is deliberately never
+/// told about it - its D3D11 backend wants an <c>ID3D11Device</c> and an <c>ID3D11DeviceContext</c>
+/// and nothing else (<c>sokol_gfx.h:5361-5364</c>), which
+/// <see cref="SokolD3D11Platform"/> builds over SDL's <c>HWND</c>. That is why input, ImGui's
+/// backend and NanoVG are all untouched by the change.
+/// </para>
+///
+/// <para>
+/// <c>ANGLE</c> selects the older GL/GLES path instead (see the define in NFMWorld.csproj): SDL
+/// creates the window with <c>SDL_WINDOW_OPENGL</c> and a context, and the device attaches to that
+/// context rather than bringing up its own. It is kept because it is the baseline the sokol numbers
+/// are compared against.
+/// </para>
 /// </remarks>
 public class WorldGame : IDisposable
 {
-    public static UnlimitedArray<Graphics.IRenderTarget?> ShadowRenderTargets = [];
+    public static readonly UnlimitedArray<IRenderTarget?> ShadowRenderTargets = [];
 
     /// <summary>Stage A compatibility shim for <c>Mad/UI/SettingsMenu.cs</c>'s existing settings-application logic. See <see cref="GraphicsSettingsShim"/>.</summary>
-    public GraphicsSettingsShim Graphics;
+    public readonly GraphicsSettingsShim Graphics;
 
-    /// <summary>The SDL3 window this game owns. Replaces FNA's <c>Game.Window</c>/<c>GraphicsDeviceManager</c>.</summary>
-    public SdlWindow Window;
+    /// <summary>The SDL3 window this game owns.</summary>
+    public readonly SdlWindow Window;
 
-    private readonly FNA3DGraphicsDevice _device;
+    /// <summary>
+    /// The device, whichever backend is running. Not <c>GlGraphicsDevice</c>: which one it is comes
+    /// from <see cref="SelectedBackend"/>, and nothing outside the constructor needs to know.
+    /// </summary>
+    private readonly IGraphicsDevice _device;
+
+    /// <summary>
+    /// The sokol device and the D3D11 platform behind it, both null when the device is the GL one.
+    ///
+    /// Held for the two things <see cref="IGraphicsDevice"/> deliberately does not expose: the sokol
+    /// frame boundary (<see cref="SokolGraphicsDevice.EndFrame"/>, which is the per-frame upload
+    /// budget rather than a device operation) and <c>VSync</c>, which is a property of the present
+    /// call rather than of the device and so lives on the platform.
+    /// </summary>
+    private readonly SokolGraphicsDevice? _sokolDevice;
+
+    private readonly SokolD3D11Platform? _sokolPlatform;
+
+    /// <summary>
+    /// The GL context SDL created for that window, owned and destroyed by this class - or zero on
+    /// every other backend, because SDL never made one.
+    ///
+    /// It is not owned by the device: on that path <c>GlGraphicsDevice.Create</c> attaches to a
+    /// context somebody else made current and never creates or destroys one, which is why the
+    /// destroy below is here rather than in the backend's own Dispose.
+    /// </summary>
+#pragma warning disable CS0649 // only assigned on the ANGLE path; see the constructor
+    private readonly IntPtr _glContext;
+#pragma warning restore CS0649
+
+#if ANGLE
+    /// <summary><c>SDL_GL_CONTEXT_PROFILE_ES</c>, from <c>SDL_video.h</c> - the EGL/ES profile, as opposed to Core or Compatibility. Only the GL path asks for a profile.</summary>
+    private const int EsProfile = 0x0004;
+#endif
+
+    /// <summary>
+    /// The multisample count most recently asked of the swapchain, so
+    /// <see cref="EnsureSwapchainMatchesWindow"/> can tell "the setting changed" from "the backend
+    /// allocated something else". See that method for why the allocated count is the wrong thing to
+    /// compare against.
+    /// </summary>
+    private int _appliedMultiSampleRequest;
 
     public static SdlImGuiRenderer? ImguiRenderer;
     private UiRenderer? _uiRenderer;
@@ -78,8 +131,26 @@ public class WorldGame : IDisposable
 
     private int _yogaDebugPage = -1;
 
+    /// <summary>TEMPORARY profiling frame counter - remove with the block in <see cref="Draw"/>.</summary>
+    private int _profileFrame;
+
     /// <summary>Whether the window currently has input focus. Replaces FNA's <c>Game.IsActive</c>.</summary>
     public bool IsActive => Window.HasFocus;
+
+    /// <summary>
+    /// Pushes <see cref="GraphicsSettingsShim.SynchronizeWithVerticalRetrace"/> onto the sokol
+    /// platform's present interval. A no-op on the GL path, where the interval was fixed when the
+    /// context was created - <see cref="GraphicsSettingsShim"/>'s own remarks say so, and the
+    /// settings menu still reports the change as needing a restart there.
+    ///
+    /// Called every frame from the loop rather than from wherever the setting is written, because the
+    /// setting is written from an ImGui callback that runs with a command buffer already live: the
+    /// same reason <see cref="EnsureSwapchainMatchesWindow"/> defers its rebuild to here.
+    /// </summary>
+    private void SyncSokolVSync()
+    {
+        if (_sokolPlatform is not null) _sokolPlatform.VSync = Graphics.SynchronizeWithVerticalRetrace;
+    }
 
     /// <summary>Replaces FNA's <c>Game.IsFixedTimeStep</c> - read by the manual loop in <see cref="Main"/>.</summary>
     public bool IsFixedTimeStep { get; set; } = false;
@@ -88,11 +159,6 @@ public class WorldGame : IDisposable
     public TimeSpan TargetElapsedTime { get; set; } = TimeSpan.FromMilliseconds(1000 / Physics.TargetTps);
 
     /// <summary>All real key codes in <see cref="Key"/> (excludes the <c>KeyCode</c>/<c>Modifiers</c>/<c>Shift</c>/<c>Control</c>/<c>Alt</c> bitmask sentinels), for <see cref="UpdateInput"/>'s per-frame diff. Replaces enumerating <c>Microsoft.Xna.Framework.Input.Keys</c>.</summary>
-    // Enum.GetValues<Key>() returns one entry per DECLARED member name, including aliases that
-    // share the same underlying value (e.g. Key.Oem3 == Key.Oemtilde == 0xC0) - iterating that
-    // directly double-fires KeyPressed/KeyReleased for any key with an alias (visible as e.g. the
-    // dev console toggling open then immediately closed again within the same frame, for keys
-    // with exactly two aliases). Distinct() collapses each physical key to a single entry.
     private static readonly Key[] AllKeys = Enum.GetValues<Key>().Where(k => (uint)k <= 0xFE).Distinct().ToArray();
 
     private bool _disposed;
@@ -101,11 +167,100 @@ public class WorldGame : IDisposable
     {
         GameThreadContext.Install();
 
-        // Uses the raw-bitmask overload rather than SDL3.Core's SDL.SDL_WindowFlags directly, so
-        // the backend's native bits pass straight through without this file naming a SDL3 type.
-        Window = SdlWindow.Create("NFM World", 1280, 720, FNA3DInterop.PrepareWindowAttributes());
-        _device = FNA3DGraphicsDevice.Create(Window.Handle, Window.Width, Window.Height, vsync: true, debugMode: false);
+        // The context belongs to SDL, so there is no GL library to load and no context to create
+        // here - this only has to bring up the one SDL makes current. The order around it is not
+        // free, though, and every step below is load-bearing.
+
+        // SDL_GL_LoadLibrary refuses to run before the video subsystem is up ("Video subsystem has
+        // not been initialized"), and SdlWindow.Create is what brings the subsystem up - so it has
+        // to run first, here, explicitly. Its result is checked rather than ignored: it was the
+        // ignored failure that made the original ordering look harmless.
+        if (!SDL.SDL_Init(SDL.SDL_InitFlags.SDL_INIT_VIDEO))
+            throw new InvalidOperationException($"SDL_Init failed: {SDL.SDL_GetError()}");
+
+#if ANGLE
+        // Forces SDL down its EGL path rather than WGL, so the context below is ANGLE's.
+        SDL.SDL_SetHint(SDL.SDL_HINT_OPENGL_ES_DRIVER, "1");
+
+        // ES 3.0. SDL_GL_EGL_PLATFORM is deliberately not set, so SDL takes ANGLE's default display.
+        // Setting it to EGL_PLATFORM_ANGLE_ANGLE (0x3202, as Egl.cs does for the headless path) is
+        // what the original version did, and is not needed here.
+        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_MINOR_VERSION, 0);
+        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_PROFILE_MASK, EsProfile);
+
+        // A stencil buffer is not optional here: every one of NanoVG's nine pipelines is a
+        // stencil pass (AbstractionNvgRenderer's StencilFill1/2/3 descriptions), and the UI is
+        // drawn straight into the default framebuffer - there is no separate depth-stencil
+        // attachment the way the sokol path allocated one for NVG. Without asking for one SDL
+        // picks a config with stencil=0 (measured on this machine: stencil=0 depth=16), and
+        // glStencilFunc/glStencilOp against a buffer that does not exist fail silently in ES -
+        // no GL error, no draw. The visible result is the UI's coverage/blend maths running
+        // against a stencil that reads as a constant, which shows up as fills that do not
+        // accumulate alpha over one another.
+        //
+        // 8 is the smallest depth every driver here offers; ANGLE's D3D11 backend maps the
+        // request onto a D24S8 depth-stencil surface, so this does not cost a separate buffer.
+        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_STENCIL_SIZE, 8);
+
+        if (!SDL.SDL_GL_LoadLibrary(null))
+            throw new InvalidOperationException($"SDL_GL_LoadLibrary failed: {SDL.SDL_GetError()}");
+
+        // The attributes above have to be set before the window, because SDL builds the window's EGL
+        // surface during window creation and reads the ES profile from them at that point.
+        Window = SdlWindow.Create("NFM World", 1280, 720, extraFlags: SDL.SDL_WindowFlags.SDL_WINDOW_OPENGL);
+
+        _glContext = SDL.SDL_GL_CreateContext(Window.Handle);
+        if (_glContext == IntPtr.Zero)
+        {
+            throw new InvalidOperationException($"SDL_GL_CreateContext failed: {SDL.SDL_GetError()}");
+        }
+
+        // Attaches to the context SDL just made current, rather than creating one: the device takes
+        // the getProcAddress callback and never owns a context on this path.
+        //
+        // This was the last thing to work, and what was wrong before it is not fully understood -
+        // recorded here so nobody re-derives the wrong answer from the shape of the fix. What is
+        // measured: with SDL's EGL config, a context reports current under eglGetCurrentContext yet
+        // every gl* call through it returns 0 with GL_INVALID_OPERATION, which GlShaderProgram turned
+        // into "shader failed to compile" with an empty info log. That config (put in place by an
+        // earlier SDL_GL_EGL_PLATFORM) differs from a working one only in DEPTH_SIZE (16 vs 24) and
+        // NATIVE_RENDERABLE (false vs true). A context built from a config we chose on SDL's own
+        // display works, so the discriminator is the config and not the display - and removing
+        // SDL_GL_EGL_PLATFORM was tried on its own and did not fix it, so that is not the mechanism
+        // either. Two other unverified explanations were offered later and are both contradicted:
+        // that SDL_HINT_VIDEO_FORCE_EGL is required (it is not set here and the tree works), and
+        // that SDL's config is NULL (it was read back, and it has real attributes).
+        _device = GlGraphicsDevice.Create(
+            SDL.SDL_GL_GetProcAddress, Window.Width, Window.Height,
+            () => SDL.SDL_GL_SwapWindow(Window.Handle));
+#else
+        // The sokol path. None of the GL setup above runs: no SDL_HINT_OPENGL_ES_DRIVER, no ES
+        // attributes, no SDL_GL_LoadLibrary, no SDL_WINDOW_OPENGL, and no context - sokol_gfx has no
+        // window concept at all. Its D3D11 backend is handed an ID3D11Device and an
+        // ID3D11DeviceContext and nothing else (sokol_gfx.h:5361-5364), so the swapchain is built
+        // here, over SDL's HWND, which is what makes hosting it on somebody else's window possible.
+        //
+        // The window is created with no extra flags, which is also what the GL path would look like
+        // if SDL did not need to know the surface type up front - there is nothing to ask for.
+        Window = SdlWindow.Create("NFM World", 1280, 720);
+
+        var platform = new SokolD3D11Platform(Window.NativeWindowHandle, Window.Width, Window.Height);
+
+        var sokol = SokolGraphicsDevice.Create(platform, Window.Width, Window.Height);
+        _sokolPlatform = platform;
+        _sokolDevice = sokol;
+        _device = sokol;
+#endif
+
         Graphics = new GraphicsSettingsShim(Window, _device.Swapchain);
+
+        // VSync is applied per present rather than at creation (the present interval is an argument
+        // to IDXGISwapChain::Present), so unlike the GL path it can follow the setting - the frame
+        // loop re-syncs it every frame, and this only seeds it so the very first frame is not
+        // presented with the wrong interval.
+        SyncSokolVSync();
+
 
         Window.Resized += (w, h) =>
         {
@@ -214,7 +369,19 @@ public class WorldGame : IDisposable
         ImguiRenderer?.Dispose();
         _nvg?.Dispose();
 
+        // Device before window, and context before either: the device holds GL objects created
+        // against the context, and the next two lines destroy the thing they live in. Currently
+        // GlGraphicsDevice.Dispose is a no-op on this path (it owns nothing without an EGL context of
+        // its own), but the ordering is the contract its own Dispose documents, so it is kept.
+        //
+        // Disposing the device also tears down the platform behind it (SokolSwapchain owns the
+        // platform, and SokolGraphicsDevice.Dispose disposes the swapchain) - which is why the
+        // D3D11 device and swapchain go before the window they were created against.
         _device.Dispose();
+
+        // Zero on every backend that did not create a GL context, which SDL_GL_DestroyContext treats
+        // as a no-op rather than an error.
+        SDL.SDL_GL_DestroyContext(_glContext);
         Window.Dispose();
 
         // FNA's own FAudio device is cleaned up via FAudioContext.Dispose() on app domain
@@ -417,10 +584,26 @@ public class WorldGame : IDisposable
     {
         var swapchain = _device.Swapchain;
         var multiSampleCount = Graphics.DesiredMultiSampleCount;
+
+        // The multisample half of this comparison is against AppliedMultiSampleCount rather than
+        // MultiSampleCount, and that is not a rename. ISwapchain documents MultiSampleCount as what
+        // the device *actually allocated* - the honest answer after clamping - which is exactly what
+        // the settings UI wants to display (and does, via AppliedMultiSampleCount). But comparing a
+        // *request* against an *allocation* never converges when they differ: the GL backend cannot
+        // multisample the default framebuffer at all, so it allocates 0 whatever it is asked for, and
+        // `desired != allocated` would rebuild the drawable on every frame forever. Resize is not
+        // free (it is a backbuffer rebuild), and on the GL path it would not even help.
+        //
+        // So the comparison is against the last count actually *requested*, which is what makes it
+        // converge: FNA3DSwapchain already tracks this internally and documents the same trap. Here
+        // the request is recoverable from the shim, because Resize only ever writes back what it was
+        // asked for - so a mismatch means the setting changed, or the window did, and one rebuild is
+        // enough. Note a request the backend cannot honour does not loop; it simply takes effect as 0.
         if (Window.Width != swapchain.Width || Window.Height != swapchain.Height
-            || multiSampleCount != swapchain.MultiSampleCount)
+            || multiSampleCount != _appliedMultiSampleRequest)
         {
             swapchain.Resize(Window.Width, Window.Height, multiSampleCount);
+            _appliedMultiSampleRequest = multiSampleCount;
         }
     }
 
@@ -440,6 +623,11 @@ public class WorldGame : IDisposable
         // into a drawable that no longer matches the window.
         EnsureSwapchainMatchesWindow();
 
+        // Beside the swapchain check rather than inside it: that method is about the drawable, and
+        // this is about the present call. Both are here, before the command buffer, so nothing
+        // reaches the device while the frame is being recorded.
+        SyncSokolVSync();
+
         var cb = _device.AcquireCommandBuffer();
         cb.Clear(ClearOptions.Color | ClearOptions.Depth | ClearOptions.Stencil,
             new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f));
@@ -452,15 +640,66 @@ public class WorldGame : IDisposable
         // them), but starting the frame here means the common case uploads immediately.
         _nvg!.BeginFrame(cb);
 
-        GameSparker.Render(cb, alpha);
-        GameSparker.Render3DOverlays(cb);
+        // TEMPORARY profiling - remove this block and the counters it reads. Attributes the frame's
+        // draw-call volume and per-phase CPU cost to each renderer, which is the only way to tell
+        // whether the port's 600-vs-1600fps menu regression is draw-call fixed cost (the GL backend
+        // re-applies pipeline state and re-uploads the UBO per draw, where FNA3D diffed and cached)
+        // or something in the per-frame path. Logged every 100 frames so the number does not itself
+        // dominate the frame it reports.
+        if (_profileFrame++ % 100 == 0)
+        {
+            DrawProfiler.Reset();
+            var swScene = new MicroStopwatch();
+            swScene.Start();
+            GameSparker.Render(cb, alpha);
+            var sceneUs = swScene.ElapsedMicroseconds;
 
-        _uiRenderer?.Render();
-        if (_yogaDebugPage >= 0) YogaDebugger.Render(_yogaDebugPage);
-        
-        FPSCounter.Render();
+            var sw3D = new MicroStopwatch();
+            sw3D.Start();
+            GameSparker.Render3DOverlays(cb);
+            var overlayUs = sw3D.ElapsedMicroseconds;
 
-        _nvg.Render();
+            var swUi = new MicroStopwatch();
+            swUi.Start();
+            _uiRenderer?.Render();
+            if (_yogaDebugPage >= 0) YogaDebugger.Render(_yogaDebugPage);
+            FPSCounter.Render();
+            var uiUs = swUi.ElapsedMicroseconds;
+
+            var swNvg = new MicroStopwatch();
+            swNvg.Start();
+            _nvg.Render();
+            var nvgUs = swNvg.ElapsedMicroseconds;
+
+            // Ticks -> microseconds: the counter's frequency, not Stopwatch.Frequency guesses.
+            var tickToUs = 1_000_000.0 / System.Diagnostics.Stopwatch.Frequency;
+            var drawCallWallUs = (long)(DrawProfiler.DrawCallWallTicks * tickToUs);
+            Logging.Info(
+                $"[DRAWPROF] sceneUs={sceneUs} overlayUs={overlayUs} uiUs={uiUs} nvgUs={nvgUs} " +
+                $"draws={DrawProfiler.CountDraw} " +
+                $"uniformUs={(long)(DrawProfiler.UniformTicks * tickToUs)} " +
+                $"attribUs={(long)(DrawProfiler.AttribTicks * tickToUs)} " +
+                $"drawCallUs={(long)(DrawProfiler.DrawCallTicks * tickToUs)} " +
+                // sceneUsMinusDrawUs is the number to compare across backends: sceneUs times the
+                // whole phase, so it absorbs whatever the backend defers to draw time, and the two
+                // backends defer very different amounts. nonDrawUs is the game's own scene work.
+                $"drawCallWallUs={drawCallWallUs} " +
+                $"sceneNoDrawUs={sceneUs - drawCallWallUs} " +
+                // Non-zero means draws were recorded that did nothing - see the counter's doc.
+                $"drawsWithNoPipeline={DrawProfiler.CountDrawWithNoPipeline}");
+        }
+        else
+        {
+            GameSparker.Render(cb, alpha);
+            GameSparker.Render3DOverlays(cb);
+
+            _uiRenderer?.Render();
+            if (_yogaDebugPage >= 0) YogaDebugger.Render(_yogaDebugPage);
+
+            FPSCounter.Render();
+
+            _nvg.Render();
+        }
 
         ImguiRenderer!.BeginLayout(gameTime);
         GameSparker.RenderImgui();
@@ -468,6 +707,13 @@ public class WorldGame : IDisposable
 
         _device.Submit(cb);
         _device.Swapchain.Present();
+
+        // sokol's frame boundary, and its placement is load-bearing rather than tidy: sokol allows at
+        // most one sg_update_buffer/sg_update_image per resource per frame, and the command buffer
+        // collapses a frame's writes into that one upload by consulting this counter. Advancing it
+        // before the frame's uploads have been flushed would let the same resource be written twice
+        // in what sokol still considers one frame. Nothing presents here - Present above does.
+        _sokolDevice?.EndFrame();
 
         LastFrameTime = t.ElapsedMilliseconds;
 
@@ -540,8 +786,7 @@ public class WorldGame : IDisposable
         // FaudioEngine's static ctor (a resolver can only be set once per assembly) - not
         // registered again here.
         NativeLibrary.SetDllImportResolver(typeof(WorldGame).Assembly, ImportResolver);
-        NativeLibrary.SetDllImportResolver(typeof(NFMWorld.FNA3D.FNA3D).Assembly, ImportResolver);
-        NativeLibrary.SetDllImportResolver(typeof(SDL3New::SDL3.SDL).Assembly, ImportResolver);
+        NativeLibrary.SetDllImportResolver(typeof(SDL).Assembly, ImportResolver);
 
         SettingsMenu.LoadFnaRenderer();
 

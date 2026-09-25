@@ -4,7 +4,6 @@ using Hexa.NET.ImGui;
 using Maxine.Extensions;
 using Maxine.Extensions.Collections;
 using NFMWorld.DriverInterface;
-using NFMWorld.Graphics.FNA3D;
 using NFMWorld.Gameplay;
 using NFMWorld.Util;
 using NFMWorldLibrary;
@@ -537,7 +536,7 @@ public partial class StageEditorPhase
         try
         {
             using var fs = new FileStream(filePath, FileMode.Create);
-            FNA3DImageCodec.WritePng(fs, _exportWidth, _exportHeight, _exportWidth, _exportHeight, MemoryMarshal.AsBytes(pixels.AsSpan()));
+            PngCodec.Encode(fs, MemoryMarshal.AsBytes(pixels.AsSpan()), _exportWidth, _exportHeight);
             _exportResultMessage = $"Saved: {filePath}";
             Logging.Info($"Exported top-down image: {filePath}");
         }

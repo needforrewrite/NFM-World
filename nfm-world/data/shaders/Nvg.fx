@@ -19,6 +19,10 @@ float feather;
 float strokeMult;
 float strokeThr;
 
+#if SM6
+Texture2D g_texture : register(t0);
+SamplerState g_textureSampler : register(s0);
+#else
 texture g_texture;
 sampler g_textureSampler = sampler_state
 {
@@ -29,6 +33,7 @@ sampler g_textureSampler = sampler_state
     AddressU = CLAMP;
     AddressV = CLAMP;
 };
+#endif
 
 struct VS_OUTPUT
 {
@@ -93,7 +98,11 @@ float4 PSMainFillImage(PS_INPUT input) : SV_TARGET
     if (strokeAlpha < strokeThr) discard;
 
     float2 pt = (mul((float3x3)paintMat, float3(input.fpos, 1.0))).xy / extent.xy;
+    #if SM6
+    float4 color = g_texture.Sample(g_textureSampler, pt);
+    #else
     float4 color = tex2D(g_textureSampler, pt);
+    #endif
     color = float4(color.xyz * color.w, color.w);
 
     color *= innerCol;
@@ -116,7 +125,11 @@ float4 PSMainTriangles(PS_INPUT input) : SV_TARGET
     float strokeAlpha = strokeMask(input.ftcoord);
     if (strokeAlpha < strokeThr) discard;
 
+    #if SM6
+    float4 color = g_texture.Sample(g_textureSampler, input.ftcoord);
+    #else
     float4 color = tex2D(g_textureSampler, input.ftcoord);
+    #endif
     color *= scissor;
     return color * innerCol;
 }

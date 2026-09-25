@@ -265,6 +265,24 @@ public sealed class SdlWindow : IDisposable
     /// <summary><c>SDL_GetHint</c> - null when the hint has never been set.</summary>
     public static string? GetHint(string name) => SDL.SDL_GetHint(name);
 
+    /// <summary>
+    /// The window's Win32 <c>HWND</c>, or <see cref="IntPtr.Zero"/> when it has none (a non-Windows
+    /// build, or a window SDL did not create through the Win32 video driver).
+    ///
+    /// This is <c>SDL_GetWindowProperties</c> + <c>SDL_GetPointerProperty</c> for
+    /// <c>SDL_PROP_WINDOW_WIN32_HWND_POINTER</c>, wrapped here for the same reason
+    /// <see cref="Create(string,int,int,ulong,bool,bool)"/> takes a raw bitmask: a graphics backend
+    /// that needs a native window handle should not have to alias this project's SDL3-CS references
+    /// to get it. The return is a raw <see cref="IntPtr"/>, so nothing SDL-shaped leaks out.
+    ///
+    /// A backend that creates its own device against the window needs this; the GL path does not,
+    /// because <c>SDL_GL_CreateContext</c> takes the <see cref="Handle"/> directly.
+    /// </summary>
+    public IntPtr NativeWindowHandle => SDL.SDL_GetPointerProperty(
+        SDL.SDL_GetWindowProperties(_window),
+        SDL.SDL_PROP_WINDOW_WIN32_HWND_POINTER,
+        IntPtr.Zero);
+
     public void Dispose()
     {
         if (_disposed) return;

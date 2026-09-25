@@ -1,3 +1,5 @@
+using NFMWorld.Shaders;
+
 namespace NFMWorld.Graphics;
 
 /// <summary>
@@ -5,7 +7,13 @@ namespace NFMWorld.Graphics;
 /// implementations: <c>NFMWorld.Graphics.FNA3D</c> (first backend, proves the abstraction) and,
 /// later, <c>NFMWorld.Graphics.Sokol</c>.
 /// </summary>
-public interface IGraphicsDevice
+/// <remarks>
+/// Disposable because every backend owns GPU resources - and, on two of the three, an API context
+/// that must be released in a specific order relative to the window it was created against. The
+/// host holds this type and has to call <see cref="IDisposable.Dispose"/> on it at shutdown, so the
+/// obligation belongs here rather than in a convention each backend happens to follow.
+/// </remarks>
+public interface IGraphicsDevice : IDisposable
 {
     ISwapchain Swapchain { get; }
 
@@ -23,6 +31,33 @@ public interface IGraphicsDevice
     IRenderTarget CreateRenderTarget(RenderTargetDesc desc);
     ISampler CreateSampler(SamplerDesc desc);
     IPipelineState CreatePipeline(PipelineDesc desc);
+
+    /// <summary>
+    /// Turns one generated program's per-backend sources into the shader module
+    /// <see cref="CreatePipeline"/> takes.
+    /// </summary>
+    /// <remarks>
+    /// This is the factory half of <see cref="IShaderModule"/>, and it belongs on the device for the
+    /// same reason <see cref="CreateTexture"/> does: compiling a program is a backend-specific act.
+    /// A bundle carries the same program as HLSL, MSL, desktop GLSL, ES GLSL and SPIR-V, and each
+    /// backend compiles a different one - sokol's D3D11 build takes the HLSL, its Metal build the
+    /// MSL, and so on - so the choice cannot be made by the caller, which does not know which backend
+    /// it is talking to.
+    ///
+    /// <paramref name="reflection"/> is part of the signature because sokol needs more than source:
+    /// it has to be told every binding the program declares, and the reflection is where that is
+    /// recorded.
+    ///
+    /// Implemented by the backends whose pipeline model is a source-based program (OpenGL, Sokol).
+    /// The default throws, because FNA3D's model is a whole precompiled Effect blob rather than a
+    /// vertex/pixel source pair - there is no honest implementation for it to provide, and a loud
+    /// failure is better than a silent one. Its callers use
+    /// <c>FNA3DGraphicsDevice.LoadEffectModule</c> instead.
+    /// </remarks>
+    IShaderModule CreateShaderModule(ShaderStageSources vertex, ShaderStageSources pixel, ShaderReflection reflection) =>
+        throw new NotSupportedException(
+            "This graphics backend does not create shader modules from source. Its pipeline model " +
+            "uses one precompiled program blob instead (see FNA3DGraphicsDevice.LoadEffectModule).");
 
     /// <summary>
     /// Synchronous CPU readback of a texture's pixels into <paramref name="destination"/>, which

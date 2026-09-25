@@ -9,6 +9,11 @@
 
     <ItemGroup>
         <ProjectReference Include="..\NFMWorld.Shaders.Abstraction\NFMWorld.Shaders.Abstraction.csproj" />
+        <!-- ShaderParameters.cs's wrapper structs take Half2/3/4 and Int2/3/4 alongside the
+             System.Numerics vectors. This is a leaf math library - it references nothing - so the
+             dependency is the one assembly and no more, and it keeps those overloads working for
+             the call sites that predate the move. -->
+        <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.Mathematics\Maxine.Extensions.Mathematics.csproj" />
     </ItemGroup>
 
 </Project>

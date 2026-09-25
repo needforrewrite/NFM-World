@@ -61,4 +61,9 @@ public class OpenGLGraphicsDevice : IGraphicsDevice
     {
         throw new NotImplementedException();
     }
+
+    public void Dispose()
+    {
+        throw new NotImplementedException();
+    }
 }

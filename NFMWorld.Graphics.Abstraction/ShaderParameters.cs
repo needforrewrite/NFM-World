@@ -1,9 +1,9 @@
+using System.Numerics;
 using System.Runtime.InteropServices;
 using Maxine.Extensions.Mathematics;
 using NFMWorld.Graphics;
-using NFMWorldLibrary;
-using Silk.NET.Maths;
 using Half = System.Half;
+using Matrix = System.Numerics.Matrix4x4;
 
 namespace NFMWorld;
 
@@ -14,6 +14,9 @@ file static class MatrixParameterGuard
         float.IsNaN(m.M21) || float.IsNaN(m.M22) || float.IsNaN(m.M23) || float.IsNaN(m.M24) ||
         float.IsNaN(m.M31) || float.IsNaN(m.M32) || float.IsNaN(m.M33) || float.IsNaN(m.M34) ||
         float.IsNaN(m.M41) || float.IsNaN(m.M42) || float.IsNaN(m.M43) || float.IsNaN(m.M44);
+
+    public static void ReportSkipped(string parameter, string method) =>
+        GraphicsDiagnostics.Warning?.Invoke($"{parameter}.{method}: matrix contains NaN, skipping.");
 }
 
 /// <summary>
@@ -28,6 +31,16 @@ file static class MatrixParameterGuard
 /// every <c>SetValue</c> call, rather than capturing a parameter reference at construction time.
 /// A negative slot (see <c>SlotOf</c> in the generated types) mirrors the old "parameter is null"
 /// case - the HLSL compiler optimized the uniform out - and every SetValue below no-ops on it.
+///
+/// They live in this project - the one that declares <see cref="ICommandBuffer"/>, which is
+/// everything they touch - rather than in the application, because the generated bundles name
+/// them directly: a bundle that compiles is a bundle whose parameter wrappers have to resolve, and
+/// the OpenGL smoke test compiles the real bundles without referencing the game. The namespace is
+/// <c>NFMWorld</c> rather than <c>NFMWorld.Graphics</c> so that every existing call site, which
+/// sits in the application's root namespace, keeps compiling untouched.
+///
+/// <see cref="GraphicsDiagnostics.Warning"/> carries the one diagnostic below (a NaN matrix); this
+/// layer cannot reach the application's logging stack, so the host injects the sink.
 /// </summary>
 public readonly struct FloatEffectParameter(int slot)
 {
@@ -91,7 +104,7 @@ public readonly struct Float3x3EffectParameter(int slot)
 
         if (MatrixParameterGuard.HasNaN(matrix))
         {
-            Logging.Warning("Float3x3EffectParameter.SetValue: matrix contains NaN, skipping.");
+            MatrixParameterGuard.ReportSkipped(nameof(Float3x3EffectParameter), nameof(SetValue));
             return;
         }
 
@@ -105,7 +118,7 @@ public readonly struct Float3x3EffectParameter(int slot)
 
         if (MatrixParameterGuard.HasNaN(matrix))
         {
-            Logging.Warning("Float3x3EffectParameter.SetValueTranspose: matrix contains NaN, skipping.");
+            MatrixParameterGuard.ReportSkipped(nameof(Float3x3EffectParameter), nameof(SetValueTranspose));
             return;
         }
 
@@ -143,7 +156,7 @@ public readonly struct Float4x4EffectParameter(int slot)
         // Position == LookAt causing CreateLookAt to normalise a zero vector).
         if (MatrixParameterGuard.HasNaN(matrix))
         {
-            Logging.Warning("Float4x4EffectParameter.SetValue: matrix contains NaN, skipping.");
+            MatrixParameterGuard.ReportSkipped(nameof(Float4x4EffectParameter), nameof(SetValue));
             return;
         }
 
@@ -163,7 +176,7 @@ public readonly struct Float4x4EffectParameter(int slot)
 
         if (MatrixParameterGuard.HasNaN(matrix))
         {
-            Logging.Warning("Float4x4EffectParameter.SetValueTranspose: matrix contains NaN, skipping.");
+            MatrixParameterGuard.ReportSkipped(nameof(Float4x4EffectParameter), nameof(SetValueTranspose));
             return;
         }
 
