@@ -173,8 +173,16 @@ CreateShadowMap_VSOut CreateShadowMapVS(
     return output;
 }
 
-// Saves the depth value out to the 32bit floating point texture
-float4 CreateShadowMapPS(CreateShadowMap_VSOut input) : COLOR
+// Saves the depth value out to the 32bit floating point texture.
+//
+// SV_TARGET, not the legacy "COLOR" this used to carry, and the difference is not cosmetic: the GL
+// backends take the emitted GLSL's output location from this semantic, and spirv-cross numbers
+// "COLOR" as location 1 while SV_TARGET is location 0. The cascade render target has only
+// COLOR_ATTACHMENT0, and the GL command buffer names it as the sole draw buffer
+// (GlCommandBuffer.SetRenderTarget), so this shader's output was written to a location nothing was
+// reading and the whole pass was silently discarded - leaving the cascade at its white clear, which
+// is what "the shadow map is just white" always was.
+float4 CreateShadowMapPS(CreateShadowMap_VSOut input) : SV_TARGET
 {
     return float4(input.Depth, input.Depth, input.Depth, 1.0);
 }
