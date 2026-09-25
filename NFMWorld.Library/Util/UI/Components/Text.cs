@@ -127,9 +127,9 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
         var font = new Font(TextStyles.FontFamily, TextStyles.FontStyle, TextStyles.FontSize);
         if (TextStyles.OverflowBehavior is not OverflowBehavior.Stretch and not OverflowBehavior.None && TextStyles.BreakType is not BreakType.None)
         {
-            flattened = ComplexTextMetrics.LayoutText(font, flattened, new Vector2(size.X, size.Y), TextStyles.BreakType, TextStyles.OverflowBehavior);
+            flattened = ComplexTextMetrics.LayoutText(font, flattened, new Vector2(size.X, size.Y), TextStyles.BreakType, TextStyles.OverflowBehavior, G.Scale);
         }
-        var measurements = ComplexTextMetrics.MeasureRichText(flattened, font);
+        var measurements = ComplexTextMetrics.MeasureRichText(flattened, font, G.Scale);
 
         width = measurements.Size.X;
         height = measurements.Size.Y;
@@ -147,6 +147,14 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
     protected override void RenderBackground(LuaVector2 position, LuaVector2 size)
     {
         base.RenderBackground(position, size);
+    }
+
+    protected override void OnScaleChanged()
+    {
+        base.OnScaleChanged();
+        
+        OnInvalidated();
+        RelayoutText(LayoutContentSize, out _, out _);
     }
 
     protected override bool OnPostLayout()
@@ -186,7 +194,7 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
 
         foreach (var element in LaidOutComplexText.Value.Elements)
         {
-            G.SetFont(element.Font with { Size = (element.FontSize ?? TextStyles.FontSize) * G.Scale });
+            G.SetFont(element.Font with { Size = (element.FontSize ?? TextStyles.FontSize) });
             if ((element.Background ?? Styles.BackgroundColor) is { } background)
             {
                 G.SetColor(background);
@@ -203,8 +211,8 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
                 yOff = G.GetFontMetrics().LineHeight;
             }
 
-            int x = (int)(basePosition.X + (element.Position.X * G.Scale));
-            int y = (int)(basePosition.Y + (element.Position.Y * G.Scale) + yOff);
+            int x = (int)(basePosition.X + (element.Position.X));
+            int y = (int)(basePosition.Y + (element.Position.Y) + yOff);
 
             if ((element.Stroke ?? TextStyles.StrokeColor) is { } stroke)
             {

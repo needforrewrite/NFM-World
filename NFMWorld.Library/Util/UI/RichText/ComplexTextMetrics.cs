@@ -91,7 +91,12 @@ public static class ComplexTextMetrics
         }
     }
     
-    public static IEnumerable<FlattenedRichText> LayoutText(Font defaultFont, IEnumerable<FlattenedRichText> elements, Vector2 bounds, BreakType breakType = BreakType.Word, OverflowBehavior overflowBehavior = OverflowBehavior.ContinueHorizontally)
+    public static IEnumerable<FlattenedRichText> LayoutText(
+        Font defaultFont,
+        IEnumerable<FlattenedRichText> elements,
+        Vector2 bounds, BreakType breakType = BreakType.Word,
+        OverflowBehavior overflowBehavior = OverflowBehavior.ContinueHorizontally,
+        float scaleMul = 1f)
     {
         if (breakType == BreakType.None)
         {
@@ -110,7 +115,7 @@ public static class ComplexTextMetrics
 
             foreach (var element in flattened)
             {
-                var ftm = G.GetFontMetrics(new Font(element.FontFamily ?? defaultFont.FontFamily, element.FontStyle ?? defaultFont.Style, element.FontSize ?? defaultFont.Size));
+                var ftm = G.GetFontMetrics(new Font(element.FontFamily ?? defaultFont.FontFamily, element.FontStyle ?? defaultFont.Style, (element.FontSize ?? defaultFont.Size) * scaleMul));
 
                 var spaceWidth = ftm.MeasureText(" ").X;
 
@@ -163,7 +168,8 @@ public static class ComplexTextMetrics
         }
     }
 
-    public static RichTextContainer MeasureRichText(IEnumerable<FlattenedRichText> elements, Font defaultFont)
+    public static RichTextContainer MeasureRichText(IEnumerable<FlattenedRichText> elements, Font defaultFont,
+        float scaleMul = 1f)
     {
         var cursor = Vector2.Zero;
         float currentLineHeight = 0;
@@ -172,7 +178,7 @@ public static class ComplexTextMetrics
         
         foreach (var element in elements)
         {
-            var font = new Font(element.FontFamily ?? defaultFont.FontFamily, element.FontStyle ?? defaultFont.Style, element.FontSize ?? defaultFont.Size);
+            var font = new Font(element.FontFamily ?? defaultFont.FontFamily, element.FontStyle ?? defaultFont.Style, (element.FontSize ?? defaultFont.Size) * scaleMul);
             var foreground = element.Foreground;
             var background = element.Background;
             var stroke = element.Stroke;
