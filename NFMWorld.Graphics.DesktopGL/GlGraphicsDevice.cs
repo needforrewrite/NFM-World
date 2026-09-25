@@ -1,6 +1,15 @@
-// LLM maintained.
+﻿// LLM maintained.
 //
-// The IGraphicsDevice implementation: an ANGLE ES 3.0 context plus resource creation.
+// The IGraphicsDevice implementation: a core-profile desktop GL 3.3 context plus resource creation.
+//
+// A standalone copy of the ANGLE backend rather than a shared base with it, per the choice made when
+// this backend was added. The two differ in the things that actually decide behaviour - the binding
+// (Silk.NET.OpenGL vs Silk.NET.OpenGLES), the shader form the bundles are compiled from (Glsl330 vs
+// GlslEs), whether a base-vertex draw needs an extension (it does not here), and who owns the
+// context (the host, always) - and those differences run through every file. Sharing a base would
+// mean parameterising each of them, which for a measurement harness is worse than the duplication:
+// the point of this backend is that it is a plain desktop GL implementation with nothing ANGLE-shaped
+// left in it.
 //
 // The device owns very little. GL has no device object, no allocator and no deferred context - every
 // resource is an integer name in the current context - so unlike the sokol backend there is no
@@ -9,26 +18,23 @@
 // the abstraction's one-live-buffer rule exists precisely so an immediate-mode backend can implement
 // it directly.
 using NFMWorld.Shaders;
-using Silk.NET.OpenGLES;
+using Silk.NET.OpenGL;
 
-namespace NFMWorld.Graphics.OpenGL;
+namespace NFMWorld.Graphics.DesktopGL;
 
 /// <summary>
-/// A GLES 3.0 rendering device backed by ANGLE.
+/// A desktop OpenGL 3.3 core rendering device.
 ///
-/// Two ways in, and the difference is only who owns the GL context:
+/// One way in: <see cref="Create"/> attaches to a context the host has already made current - the
+/// real integration path, where the host (SDL3, in this app) owns the window and context and hands
+/// over its <c>SDL_GL_GetProcAddress</c>. There is no headless path and no EGL, unlike the ANGLE
+/// backend: desktop GL has no ownerless surface this needs, and the smoke test goes through the same
+/// host-owned-context path with an off-screen framebuffer.
 ///
-/// - <see cref="CreateHeadless"/> brings up its own EGL display, context and pbuffer. This is what
-///   the smoke test uses, and it is the only path that can resize its drawable.
-/// - <see cref="Create"/> attaches to a context the host has already made current - the real
-///   integration path, where the host (SDL3, in this app) owns the window and hands over its
-///   <c>SDL_GL_GetProcAddress</c>. The swapchain then only reports the drawable's size.
-///
-/// The ANGLE being loaded matters more than it looks. Silk.NET.OpenGLES.ANGLE.Native - Silk.NET's
-/// own native package - ships 32-bit binaries in its win-x64 folder and cannot be used at all. This
-/// one takes them from Maxine.Silk.OpenGLES.ANGLE.Native, which builds ANGLE per platform, so the
-/// ANGLE under test is the same one on every machine rather than whatever the host happens to have
-/// installed. See Egl.cs for the import and the two things it replaces.
+/// Nothing here chooses a GL implementation, which is the substantive difference from the ANGLE
+/// backend: that one loads a specific ANGLE build so the implementation under test is the same on
+/// every machine, whereas this one deliberately takes whatever the driver provides - that is the
+/// whole question it exists to answer.
 /// </summary>
 public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
 {
@@ -37,92 +43,57 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     /// <summary>
     /// Where resources hand their GL names when they are disposed or finalized, and why.
     ///
-    /// On this backend a disposer <em>can</em> reach GL - eglGetProcAddress resolves on any thread,
-    /// unlike wglGetProcAddress - so the finalizer thread does not throw. It does something quieter
-    /// instead: the call runs against a context that is not current there, which on ANGLE executes
-    /// under a mangled context name rather than failing. See <see cref="GlDeletionQueue"/>; that file
-    /// is also the desktop GL backend's copy, where the same bug announces itself by killing the
-    /// process.
+    /// A disposer cannot delete its object itself: the finalizer thread can resolve no GL entry point
+    /// past 1.1, so <c>glDeleteBuffers</c> there throws - on the finalizer thread, which no catch can
+    /// intercept. See <see cref="GlDeletionQueue"/> for the measurement behind that.
     ///
-    /// Draining at frame end is safe for the same reason it is on the desktop GL copy: every GL
-    /// resource is constructed by this device and GL is only ever touched from the thread that owns
-    /// the context, so <see cref="Submit"/> is guaranteed to see anything queued.
+    /// This backend can queue the deletions at all only because of a property of the game rather than
+    /// of the abstraction: every GL resource is constructed by this device and GL is only ever touched
+    /// from the thread that owns the context (there is no second render thread and no shared-context
+    /// worker), so <see cref="Submit"/> on the main thread is guaranteed to drain anything queued.
+    /// That is also why the queue is drained rather than made thread-safe against a background
+    /// deleter - there is no background deleter to be safe against.
     /// </summary>
     private readonly GlDeletionQueue _deletions = new();
-
-    /// <summary>EGL state when this device owns it, or null when the host's context was attached.</summary>
-    private readonly Egl.Context? _context;
-
-    /// <summary>
-    /// The context's base-vertex entry points, resolved once here rather than per draw.
-    ///
-    /// Owned by the device because it is a property of the context, not of a command buffer: every
-    /// command buffer this device hands out belongs to the same context and so resolves the same two
-    /// pointers. See <see cref="GlBaseVertexDraw"/> for why they are resolved by hand.
-    /// </summary>
-    private readonly GlBaseVertexDraw _baseVertexDraw;
 
     private GlCommandBuffer? _activeCommandBuffer;
     private bool _disposed;
 
     public ISwapchain Swapchain { get; }
 
-    private GlGraphicsDevice(GL gl, Egl.Context? context, int width, int height, Action? present = null)
+    private GlGraphicsDevice(GL gl, int width, int height, Action? present = null)
     {
         _gl = gl;
-        _context = context;
-        Swapchain = new GlSwapchain(context, width, height, present);
-
-        // GL's own loader, not the host's: by this point the context is current, so resolving through
-        // the bindings' context and through the host's callback would agree, and this way the device
-        // does not need the host's callback carried all the way down here. The lambda is only because
-        // INativeContext.GetProcAddress takes an optional ordinal, which a method group cannot absorb.
-        _baseVertexDraw = GlBaseVertexDraw.Resolve(_gl);
+        Swapchain = new GlSwapchain(width, height, present);
     }
 
     /// <summary>
     /// Whether this context can honour a non-zero base vertex in an indexed draw.
     ///
-    /// Exposed because it is a real capability question rather than an internal detail: a caller
-    /// that can restructure its index data to avoid a base vertex would rather know up front than
-    /// be refused at draw time.
+    /// Always true here, and kept as a property so call sites written against the ANGLE backend -
+    /// where the answer genuinely depends on the extensions the driver exposes - compile unchanged.
+    /// The base-vertex draw is core desktop GL from 3.2, so a context that satisfied this backend's
+    /// 3.3 floor has it by construction.
     /// </summary>
-    internal bool SupportsBaseVertex => _baseVertexDraw.IsSupported;
-
-    /// <summary>
-    /// Brings up a headless ES 3.0 context on ANGLE and renders into an off-screen pbuffer.
-    ///
-    /// There is no ANGLE-installation parameter any more: the bindings' native package places the
-    /// right ANGLE next to the executable for the current RID, so the loader finds it without being
-    /// told where to look.
-    /// </summary>
-    public static GlGraphicsDevice CreateHeadless(int width, int height)
-    {
-        var context = Egl.Context.CreateHeadless(width, height);
-        try
-        {
-            return new GlGraphicsDevice(GL.GetApi(context.GlContext), context, width, height);
-        }
-        catch
-        {
-            context.Dispose();
-            throw;
-        }
-    }
+    internal bool SupportsBaseVertex => true;
 
     /// <summary>
     /// Attaches to a GL context the host has already created and made current.
     ///
     /// <paramref name="getProcAddress"/> is the host's loader - <c>SDL_GL_GetProcAddress</c> for an
-    /// SDL3 window. The POC does not call it: building a window and an EGL surface is the host's
-    /// job, and doing it here would duplicate a lifetime the host already manages.
+    /// SDL3 window. Building a window and a context is the host's job, and doing it here would
+    /// duplicate a lifetime the host already manages.
     ///
-    /// Note this path does not and cannot reallocate the drawable on resize - the EGL surface
-    /// belongs to the host - so <see cref="ISwapchain.Resize"/> only tracks the new size.
+    /// There is no headless overload and no EGL here, unlike the ANGLE backend: desktop GL has no
+    /// pbuffer path this backend needs, and a core 3.3 context is what the host's SDL window
+    /// provides. Removing it removes the whole Egl.cs dependency, which is the point of the copy -
+    /// nothing in this backend chooses a GL implementation.
+    ///
+    /// Note this path does not and cannot reallocate the drawable on resize - the window and its
+    /// context belong to the host - so <see cref="ISwapchain.Resize"/> only tracks the new size.
     /// </summary>
     /// <param name="present">
-    /// How the host shows a finished frame, for the case where it owns the drawable. This backend can
-    /// only swap a surface it created itself; on the SDL path the surface and the window both belong
+    /// How the host shows a finished frame. On the SDL path the drawable and the window both belong
     /// to the host, so presentation is the host's too (<c>SDL_GL_SwapWindow</c>) and there is no
     /// handle here to do it with. Null means nothing presents, which is correct only for a host that
     /// reads its own framebuffer.
@@ -131,7 +102,7 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         Func<string, nint> getProcAddress, int backBufferWidth, int backBufferHeight, Action? present = null)
     {
         ArgumentNullException.ThrowIfNull(getProcAddress);
-        return new GlGraphicsDevice(GL.GetApi(getProcAddress), null, backBufferWidth, backBufferHeight, present);
+        return new GlGraphicsDevice(GL.GetApi(getProcAddress), backBufferWidth, backBufferHeight, present);
     }
 
     public ICommandBuffer AcquireCommandBuffer()
@@ -143,10 +114,11 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
                 "was submitted - only one command buffer may be live at a time.");
         }
 
-        var commandBuffer = new GlCommandBuffer(_gl, this, _baseVertexDraw);
+        var commandBuffer = new GlCommandBuffer(_gl, this);
         _activeCommandBuffer = commandBuffer;
         return commandBuffer;
     }
+
 
     /// <summary>
     /// Ends the frame.
@@ -156,11 +128,16 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     /// buffer's per-frame state (the bound pipeline and vertex streams), which it would otherwise
     /// carry into the next frame, to present, and to run <see cref="_deletions"/>.
     ///
-    /// The drain is the reason this is not a pure no-op on this backend even though ANGLE would
-    /// tolerate the calls being made from anywhere: "tolerate" here means executes against a context
-    /// that is not current on this thread, which is undefined behaviour that happens to be quiet. The
-    /// one place that matters most is GlShaderProgram.Compile and Link, where deleting a mismatched
-    /// object on a mangled context is a silent way to corrupt an unrelated one.
+    /// That last part is the reason this method cannot be a pure no-op. It is the only point at which
+    /// the backend is certain to be on the context's thread with the frame's rendering behind it, so
+    /// it is where GL names queued by disposers and finalizers are finally deleted.
+    ///
+    /// A resource disposed <em>after</em> this frame's drain is deleted on the next frame's, which is
+    /// correct but not prompt - and deliberately not worked around here. Retrying on a timer was
+    /// tried and is worse than it sounds: it does not fix anything that draining at frame end does
+    /// not, it only shortens the window, and it would make the window something to reason about.
+    /// Meanwhile the one unbounded case has a different answer entirely - a program or pipeline
+    /// allocated per frame should be disposed per frame by its owner, not left to the finalizer.
     /// </summary>
     public void Submit(ICommandBuffer commandBuffer)
     {
@@ -205,7 +182,7 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         if (desc.Width <= 0 || desc.Height <= 0)
             throw new ArgumentOutOfRangeException(nameof(desc), $"A {desc.Width}x{desc.Height} texture cannot be allocated.");
 
-        // ToInternalFormat throws for the compressed formats ES 3.0 core lacks, before any GL call.
+        // ToInternalFormat throws for the compressed formats the core profile lacks, before any GL call.
         return new GlTexture(_gl, _deletions, desc, initialData);
     }
 
@@ -276,10 +253,10 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     }
 
     /// <summary>
-    /// Wraps a generated bundle's per-stage ES 3.0 GLSL for use as a pipeline shader.
+    /// Wraps a generated bundle's per-stage desktop GLSL for use as a pipeline shader.
     ///
     /// The ES source is the <em>only</em> form this backend compiles - no SPIR-V, no HLSL - because
-    /// ANGLE translates the GLSL it is given to HLSL for its D3D11 backend itself. What the bundle
+    /// The driver compiles the GLSL it is given for whatever hardware it targets. What the bundle
     /// carries alongside (HLSL, MSL, desktop GLSL) is what the other backends consume.
     ///
     /// The reflection travels with the module rather than being looked up later: glGetUniformLocation
@@ -298,11 +275,11 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         ArgumentNullException.ThrowIfNull(pixel);
         ArgumentNullException.ThrowIfNull(reflection);
 
-        if (string.IsNullOrWhiteSpace(vertex.GlslEs) || string.IsNullOrWhiteSpace(pixel.GlslEs))
+        if (string.IsNullOrWhiteSpace(vertex.Glsl330) || string.IsNullOrWhiteSpace(pixel.Glsl330))
         {
             throw new ArgumentException(
-                "The bundle carries no ES 3.0 GLSL for one or both stages. This backend compiles " +
-                "ShaderStageSources.GlslEs; a bundle generated before that field existed cannot be used.",
+                "The bundle carries no desktop GLSL for one or both stages. This backend compiles " +
+                "ShaderStageSources.Glsl330; a bundle generated before that field existed cannot be used.",
                 nameof(vertex));
         }
 
@@ -424,7 +401,7 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
             _gl.BindFramebuffer(FramebufferTarget.Framebuffer, previousFramebuffer);
             if (previousReadBuffer != 0)
                 _gl.ReadBuffer((ReadBufferMode)previousReadBuffer);
-            _deletions.Request(GlObjectKind.Framebuffer, framebuffer);
+            _gl.DeleteFramebuffer(framebuffer);
         }
 
         // Reading only packs the commands; without a flush the bytes could be stale, and the
@@ -447,21 +424,6 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     /// <summary>The GL context, for the smoke test to query strings the abstraction does not expose.</summary>
     internal GL Gl => _gl;
 
-    /// <summary>Where ANGLE was loaded from, or null when the host supplied the context.</summary>
-    internal string? AngleDirectory => _context?.LoadedFrom;
-
-    /// <summary>
-    /// The EGL implementation's vendor string, or null when the host supplied the context.
-    ///
-    /// Reported by the smoke test alongside the GL strings: "Google Inc." for ANGLE means the
-    /// explicit D3D11 platform request worked, while anything else means an EGL implementation this
-    /// backend did not intend to be running on.
-    /// </summary>
-    internal string? EglVendor => _context?.Vendor;
-
-    /// <summary>The EGL version string parsed at initialization, or null when the host supplied the context.</summary>
-    internal string? EglVersion => _context?.Version;
-
     public void Dispose()
     {
         if (_disposed)
@@ -470,14 +432,15 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         _disposed = true;
         _activeCommandBuffer = null;
 
-        // The context is destroyed last: every GL object created through this device belongs to it,
-        // and a Delete* call after eglTerminate has no context to act on.
-        _context?.Dispose();
+        // Nothing to tear down beyond this device's own state: the context, the window and the
+        // drawable all belong to the host, which is why there is no eglTerminate equivalent here.
+        // Every GL object this device created is released by its own Dispose, not by the context
+        // going away.
     }
 }
 
 /// <summary>
-/// A shader module holding a program's two ES 3.0 stages plus its reflection.
+/// A shader module holding a program's two desktop-GL stages plus its reflection.
 ///
 /// One module covers both stages, rather than one per stage, because GL links two separately compiled
 /// shader objects into a single program and the reflection describes the linked result. That makes

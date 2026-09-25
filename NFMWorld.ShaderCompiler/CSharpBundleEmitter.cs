@@ -117,6 +117,7 @@ public static class CSharpBundleEmitter
             EmitSource(sb, $"{member}Msl", "Metal Shading Language, compiled by sokol's Metal backend", sources.Msl);
             EmitSource(sb, $"{member}Glsl", "GLSL, compiled by sokol's GL backend", sources.Glsl);
             EmitSource(sb, $"{member}GlslEs", "OpenGL ES 3.0 GLSL, compiled by a GLES3 context or ANGLE", sources.GlslEs);
+            EmitSource(sb, $"{member}Glsl330", "Desktop GLSL 3.30, compiled by a core-profile desktop GL context", sources.Glsl330);
         }
     }
 
@@ -153,7 +154,8 @@ public static class CSharpBundleEmitter
                     sb.Line($"{member}Hlsl,");
                     sb.Line($"{member}Msl,");
                     sb.Line($"{member}Glsl,");
-                    sb.Line($"{member}GlslEs),");
+                    sb.Line($"{member}GlslEs,");
+                    sb.Line($"{member}Glsl330),");
                 }
             }
             EmitReflection(sb, program);

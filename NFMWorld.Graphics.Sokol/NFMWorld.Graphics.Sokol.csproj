@@ -25,20 +25,28 @@
     </ItemGroup>
 
     <!--
-         The native library this backend P/Invokes, deployed from here rather than by every consumer.
-         SharpSokol P/Invokes a plain "sokol" library name, so it has to sit next to the executable
-         and not in a runtimes/ folder - which is what the Link rename is for.
+         The native libraries this backend P/Invokes, deployed from here rather than by every
+         consumer. They live here because this is the assembly that has the dependency: a consumer
+         referencing this project wants sokol_gfx to work, and having each one remember to copy a DLL
+         out of a sibling project's native/ directory is the kind of thing that works until it
+         doesn't.
 
-         It lives here because this is the assembly that has the dependency: a consumer referencing
-         this project wants sokol_gfx to work, and having each one remember to copy a DLL out of a
-         sibling project's native/ directory is the kind of thing that works until it doesn't.
-         (NFMWorld.Graphics.Sokol.Smoke still carries its own copy, from before this; it is the same
-         file to the same target path, so it is redundant rather than wrong.)
+         **One subdirectory per backend, all containing a file called sokol.dll.** sokol selects its
+         backend with a compile-time symbol, one per translation unit, so each backend is a separate
+         build of the same library (see .github/workflows/build-native.yml) - but every SharpSokol
+         P/Invoke names the plain library "sokol", and that submodule is not ours to edit. So the
+         *directory* carries the distinction and SokolBackendSelection's resolver picks the one that
+         matches the sokol-backend launch argument. The file name inside is always sokol.dll, which
+         keeps the Link target (and therefore the DLL search path) uniform.
 
-         Only win-x64 is vendored - see native/. A second RID means a second item here.
+         The directory name here must match SokolBackendSelection.NativeDirectory.
+
+         Only win-x64 is vendored - see native/. A second RID means a second pair of items, and the
+         dylib/so variants would need the resolver's file-extension logic widened too.
       -->
     <ItemGroup>
-      <None Include="native\win-x64\sokol.dll" Link="sokol.dll" CopyToOutputDirectory="PreserveNewest" />
+      <None Include="native\win-x64\sokol.dll" Link="sokol\d3d11\sokol.dll" CopyToOutputDirectory="PreserveNewest" />
+      <None Include="native\win-x64\glcore\sokol_win64_glcore.dll" Link="sokol\glcore\sokol.dll" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
 </Project>

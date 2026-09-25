@@ -13,6 +13,10 @@ using NFMWorld.Graphics.Sokol;
 #if ANGLE
 using NFMWorld.Graphics.OpenGL;
 #endif
+// Aliased because both GL backends declare a `GlGraphicsDevice` in their own namespace, and this
+// class names one type from the DesktopGL one. The ANGLE type keeps its bare name so the code
+// already written against it does not move.
+using GlGraphicsDeviceDesktop = NFMWorld.Graphics.DesktopGL.GlGraphicsDevice;
 using NFMWorld.Platform.SDL3;
 using NFMWorld.UI;
 using NFMWorld.Util;
@@ -45,10 +49,17 @@ namespace NFMWorld;
 /// </para>
 ///
 /// <para>
-/// <c>ANGLE</c> selects the older GL/GLES path instead (see the define in NFMWorld.csproj): SDL
-/// creates the window with <c>SDL_WINDOW_OPENGL</c> and a context, and the device attaches to that
-/// context rather than bringing up its own. It is kept because it is the baseline the sokol numbers
-/// are compared against.
+/// Which device it is comes from <c>--backend=</c> (<see cref="Renderer"/>), and within sokol from
+/// <c>--sokol-backend=</c> as well. Both are runtime choices so the same binary can be run through
+/// each backend in turn, which is what the comparison this harness exists for needs: numbers from
+/// different builds would not be comparable. See the constructor for the switch.
+/// </para>
+///
+/// <para>
+/// The exception is the <c>ANGLE</c> renderer, which stays behind its define (see
+/// NFMWorld.csproj) because it is the one path that needs a native ANGLE package. It can be named
+/// on the command line only when the define is on; <see cref="ParseRenderer"/> says so by name
+/// rather than reporting it as a typo.
 /// </para>
 /// </remarks>
 public class WorldGame : IDisposable
@@ -62,22 +73,29 @@ public class WorldGame : IDisposable
     public readonly SdlWindow Window;
 
     /// <summary>
-    /// The device, whichever backend is running. Not <c>GlGraphicsDevice</c>: which one it is comes
-    /// from <see cref="SelectedBackend"/>, and nothing outside the constructor needs to know.
+    /// The device, whichever backend is running - a GL one under <c>--backend=desktopgl</c> or the
+    /// ANGLE renderer, a <see cref="SokolGraphicsDevice"/> otherwise. Nothing outside the
+    /// constructor needs to know which, which is the point of the abstraction; the choice is made
+    /// at launch by <see cref="ParseRenderer"/> and, within the sokol half, by
+    /// <c>--sokol-backend=</c> as well (see <see cref="Main"/>).
     /// </summary>
     private readonly IGraphicsDevice _device;
 
     /// <summary>
-    /// The sokol device and the D3D11 platform behind it, both null when the device is the GL one.
+    /// The sokol device and the platform behind it, both null when the device is the GL one.
     ///
     /// Held for the two things <see cref="IGraphicsDevice"/> deliberately does not expose: the sokol
     /// frame boundary (<see cref="SokolGraphicsDevice.EndFrame"/>, which is the per-frame upload
-    /// budget rather than a device operation) and <c>VSync</c>, which is a property of the present
-    /// call rather than of the device and so lives on the platform.
+    /// budget rather than a device operation) and <see cref="ISokolPlatform.VSync"/>, which is a
+    /// property of the present call rather than of the device and so lives on the platform.
+    ///
+    /// The platform is typed as the interface, not as <see cref="SokolD3D11Platform"/>: which one it
+    /// is follows from <c>--sokol-backend=</c>, and the only thing this class needs from it is
+    /// <c>VSync</c>.
     /// </summary>
     private readonly SokolGraphicsDevice? _sokolDevice;
 
-    private readonly SokolD3D11Platform? _sokolPlatform;
+    private readonly ISokolPlatform? _sokolPlatform;
 
     /// <summary>
     /// The GL context SDL created for that window, owned and destroyed by this class - or zero on
@@ -87,14 +105,126 @@ public class WorldGame : IDisposable
     /// context somebody else made current and never creates or destroys one, which is why the
     /// destroy below is here rather than in the backend's own Dispose.
     /// </summary>
-#pragma warning disable CS0649 // only assigned on the ANGLE path; see the constructor
+#pragma warning disable CS0649 // only assigned on the two GL renderers; see the constructor
     private readonly IntPtr _glContext;
 #pragma warning restore CS0649
+
+    /// <summary>
+    /// Which sokol backend this process was launched with, from <c>--sokol-backend=</c>.
+    ///
+    /// Static, and read by the constructor, because the choice has to be made before the constructor
+    /// runs: it decides which native <c>sokol.dll</c> the resolver loads (see
+    /// <see cref="Main"/>), and a wrong answer is a backend that cannot be swapped afterwards -
+    /// <c>sg_setup</c> is process-global and sokol's backend is fixed in the DLL itself.
+    ///
+    /// Defaults to <see cref="SokolBackend.D3d11"/> so that a process started without the flag (or
+    /// under a debugger, or from a test) behaves as it did before the flag existed.
+    /// </summary>
+    private static SokolBackend _sokolBackend = SokolBackend.D3d11;
+
+    /// <summary>
+    /// Which rendering backend this process was launched with, from <c>--backend=</c>.
+    ///
+    /// Sokol's own backend is chosen inside it by <c>--sokol-backend=</c> (see
+    /// <see cref="_sokolBackend"/>); this is the level above, picking between sokol and the two GL
+    /// devices. Static and read by the constructor for the same reason as
+    /// <see cref="_sokolBackend"/>: the answer decides what the constructor builds, and it has to be
+    /// settled before the first line of it runs.
+    ///
+    /// The default is <see cref="Renderer.Sokol"/>, matching <c>--sokol-backend=</c> defaulting to
+    /// D3D11 - a process started with no arguments behaves as it did before either flag existed.
+    /// </summary>
+    private static Renderer _renderer = Renderer.Sokol;
+
+    /// <summary>
+    /// The top-level rendering backend behind <c>--backend=</c>.
+    ///
+    /// A runtime choice rather than a define, unlike the older <c>ANGLE</c> one: the comparison this
+    /// harness exists for is between sokol and desktop GL on the same machine, and a build-time
+    /// switch would mean the two numbers came from different binaries. Only the ANGLE backend stays
+    /// behind a define, because it is the one that needs a native ANGLE package the other paths do
+    /// not.
+    /// </summary>
+    private enum Renderer
+    {
+        /// <summary>sokol_gfx, with its own backend from <c>--sokol-backend=</c>.</summary>
+        Sokol,
+
+        /// <summary>
+        /// Desktop OpenGL 3.3 core, through our own backend rather than sokol's.
+        ///
+        /// Independent of sokol entirely: it links its own program from the bundles' <c>Glsl330</c>
+        /// form and drives the host's context directly. This is the path that answers whether GL's
+        /// cost on this scene was ANGLE's translation layer or GL's own.
+        /// </summary>
+        DesktopGl,
+
+        /// <summary>
+        /// The ANGLE/GLES backend, only present under the <c>ANGLE</c> define.
+        ///
+        /// Kept selectable so the baseline number can be reproduced without rebuilding, but it can
+        /// only be named when the define is on - see <see cref="ParseRenderer"/>.
+        /// </summary>
+        Angle,
+    }
+
+    /// <summary>The <c>--backend=</c> argument. See <see cref="ParseRenderer"/>.</summary>
+    private const string RendererArgumentPrefix = "--backend=";
+
+    /// <summary>
+    /// Which renderer <paramref name="args"/> names, defaulting to <see cref="Renderer.Sokol"/>.
+    ///
+    /// An unknown value throws rather than falling back, for the same reason
+    /// <see cref="SokolBackendSelection.Parse"/> does: the default is a working backend, so a typo
+    /// would otherwise produce an entirely normal-looking run that measured the wrong thing.
+    /// </summary>
+    /// <exception cref="ArgumentException">On an unknown renderer name.</exception>
+    private static Renderer ParseRenderer(string[] args)
+    {
+        foreach (var arg in args)
+        {
+            if (!arg.StartsWith(RendererArgumentPrefix, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var value = arg[RendererArgumentPrefix.Length..];
+            if (value.Equals("sokol", StringComparison.OrdinalIgnoreCase))
+                return Renderer.Sokol;
+
+            // Named but not built in: the message has to say so, because the generic "unknown"
+            // below would send someone looking for a typo in a name that is spelled correctly.
+            if (value.Equals("angle", StringComparison.OrdinalIgnoreCase))
+            {
+#if ANGLE
+                return Renderer.Angle;
+#else
+                throw new ArgumentException(
+                    $"{RendererArgumentPrefix}angle needs this build to include the ANGLE backend, " +
+                    "which is behind the NfmWorldAngle property - rebuild with " +
+                    "-p:NfmWorldAngle=true to use it.");
+#endif
+            }
+
+            if (value.Equals("desktopgl", StringComparison.OrdinalIgnoreCase))
+                return Renderer.DesktopGl;
+
+            throw new ArgumentException(
+                $"Unknown {RendererArgumentPrefix}{value}. Valid renderers: sokol, desktopgl" +
+#if ANGLE
+                ", angle" +
+#endif
+                ".");
+        }
+
+        return Renderer.Sokol;
+    }
 
 #if ANGLE
     /// <summary><c>SDL_GL_CONTEXT_PROFILE_ES</c>, from <c>SDL_video.h</c> - the EGL/ES profile, as opposed to Core or Compatibility. Only the GL path asks for a profile.</summary>
     private const int EsProfile = 0x0004;
 #endif
+
+    /// <summary><c>SDL_GL_CONTEXT_PROFILE_CORE</c>, from <c>SDL_video.h</c>.</summary>
+    private const int CoreProfile = 0x0001;
 
     /// <summary>
     /// The multisample count most recently asked of the swapchain, so
@@ -131,17 +261,15 @@ public class WorldGame : IDisposable
 
     private int _yogaDebugPage = -1;
 
-    /// <summary>TEMPORARY profiling frame counter - remove with the block in <see cref="Draw"/>.</summary>
-    private int _profileFrame;
-
     /// <summary>Whether the window currently has input focus. Replaces FNA's <c>Game.IsActive</c>.</summary>
     public bool IsActive => Window.HasFocus;
 
     /// <summary>
     /// Pushes <see cref="GraphicsSettingsShim.SynchronizeWithVerticalRetrace"/> onto the sokol
-    /// platform's present interval. A no-op on the GL path, where the interval was fixed when the
-    /// context was created - <see cref="GraphicsSettingsShim"/>'s own remarks say so, and the
-    /// settings menu still reports the change as needing a restart there.
+    /// platform's present interval. A no-op on the ANGLE path, where <c>_sokolPlatform</c> is null
+    /// and the interval was fixed when the context was created -
+    /// <see cref="GraphicsSettingsShim"/>'s own remarks say so, and the settings menu still reports
+    /// the change as needing a restart there.
     ///
     /// Called every frame from the loop rather than from wherever the setting is written, because the
     /// setting is written from an ImGui callback that runs with a command buffer already live: the
@@ -178,80 +306,137 @@ public class WorldGame : IDisposable
         if (!SDL.SDL_Init(SDL.SDL_InitFlags.SDL_INIT_VIDEO))
             throw new InvalidOperationException($"SDL_Init failed: {SDL.SDL_GetError()}");
 
-#if ANGLE
-        // Forces SDL down its EGL path rather than WGL, so the context below is ANGLE's.
-        SDL.SDL_SetHint(SDL.SDL_HINT_OPENGL_ES_DRIVER, "1");
-
-        // ES 3.0. SDL_GL_EGL_PLATFORM is deliberately not set, so SDL takes ANGLE's default display.
-        // Setting it to EGL_PLATFORM_ANGLE_ANGLE (0x3202, as Egl.cs does for the headless path) is
-        // what the original version did, and is not needed here.
-        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_MINOR_VERSION, 0);
-        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_PROFILE_MASK, EsProfile);
-
-        // A stencil buffer is not optional here: every one of NanoVG's nine pipelines is a
-        // stencil pass (AbstractionNvgRenderer's StencilFill1/2/3 descriptions), and the UI is
-        // drawn straight into the default framebuffer - there is no separate depth-stencil
-        // attachment the way the sokol path allocated one for NVG. Without asking for one SDL
-        // picks a config with stencil=0 (measured on this machine: stencil=0 depth=16), and
-        // glStencilFunc/glStencilOp against a buffer that does not exist fail silently in ES -
-        // no GL error, no draw. The visible result is the UI's coverage/blend maths running
-        // against a stencil that reads as a constant, which shows up as fills that do not
-        // accumulate alpha over one another.
-        //
-        // 8 is the smallest depth every driver here offers; ANGLE's D3D11 backend maps the
-        // request onto a D24S8 depth-stencil surface, so this does not cost a separate buffer.
-        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_STENCIL_SIZE, 8);
-
-        if (!SDL.SDL_GL_LoadLibrary(null))
-            throw new InvalidOperationException($"SDL_GL_LoadLibrary failed: {SDL.SDL_GetError()}");
-
-        // The attributes above have to be set before the window, because SDL builds the window's EGL
-        // surface during window creation and reads the ES profile from them at that point.
-        Window = SdlWindow.Create("NFM World", 1280, 720, extraFlags: SDL.SDL_WindowFlags.SDL_WINDOW_OPENGL);
-
-        _glContext = SDL.SDL_GL_CreateContext(Window.Handle);
-        if (_glContext == IntPtr.Zero)
+        // Which device this process runs on. Three arms, and what they actually differ in is who
+        // creates the GL context - SDL for both GL paths, nobody for D3D11.
+        switch (_renderer)
         {
-            throw new InvalidOperationException($"SDL_GL_CreateContext failed: {SDL.SDL_GetError()}");
-        }
+            case Renderer.Angle:
+#if ANGLE
+            {
+                // ANGLE only exists under its define, so this arm is compiled out with it. The
+                // switch's default arm below reports that rather than this failing to build.
+                var (angleContext, angleWindow) = CreateGlContext(
+                    profileMask: EsProfile, major: 3, minor: 0,
+                    // Forces SDL down its EGL path rather than WGL, so the context is ANGLE's.
+                    hint: (SDL.SDL_HINT_OPENGL_ES_DRIVER, "1"));
 
-        // Attaches to the context SDL just made current, rather than creating one: the device takes
-        // the getProcAddress callback and never owns a context on this path.
-        //
-        // This was the last thing to work, and what was wrong before it is not fully understood -
-        // recorded here so nobody re-derives the wrong answer from the shape of the fix. What is
-        // measured: with SDL's EGL config, a context reports current under eglGetCurrentContext yet
-        // every gl* call through it returns 0 with GL_INVALID_OPERATION, which GlShaderProgram turned
-        // into "shader failed to compile" with an empty info log. That config (put in place by an
-        // earlier SDL_GL_EGL_PLATFORM) differs from a working one only in DEPTH_SIZE (16 vs 24) and
-        // NATIVE_RENDERABLE (false vs true). A context built from a config we chose on SDL's own
-        // display works, so the discriminator is the config and not the display - and removing
-        // SDL_GL_EGL_PLATFORM was tried on its own and did not fix it, so that is not the mechanism
-        // either. Two other unverified explanations were offered later and are both contradicted:
-        // that SDL_HINT_VIDEO_FORCE_EGL is required (it is not set here and the tree works), and
-        // that SDL's config is NULL (it was read back, and it has real attributes).
-        _device = GlGraphicsDevice.Create(
-            SDL.SDL_GL_GetProcAddress, Window.Width, Window.Height,
-            () => SDL.SDL_GL_SwapWindow(Window.Handle));
+                _glContext = angleContext;
+                Window = angleWindow;
+                _device = CreateAngleDevice(angleWindow);
+                break;
+            }
 #else
-        // The sokol path. None of the GL setup above runs: no SDL_HINT_OPENGL_ES_DRIVER, no ES
-        // attributes, no SDL_GL_LoadLibrary, no SDL_WINDOW_OPENGL, and no context - sokol_gfx has no
-        // window concept at all. Its D3D11 backend is handed an ID3D11Device and an
-        // ID3D11DeviceContext and nothing else (sokol_gfx.h:5361-5364), so the swapchain is built
-        // here, over SDL's HWND, which is what makes hosting it on somebody else's window possible.
-        //
-        // The window is created with no extra flags, which is also what the GL path would look like
-        // if SDL did not need to know the surface type up front - there is nothing to ask for.
-        Window = SdlWindow.Create("NFM World", 1280, 720);
-
-        var platform = new SokolD3D11Platform(Window.NativeWindowHandle, Window.Width, Window.Height);
-
-        var sokol = SokolGraphicsDevice.Create(platform, Window.Width, Window.Height);
-        _sokolPlatform = platform;
-        _sokolDevice = sokol;
-        _device = sokol;
+                throw new NotSupportedException(
+                    "The ANGLE renderer needs a build with the ANGLE backend enabled - rebuild with " +
+                    "-p:NfmWorldAngle=true. See ParseRenderer, which normally rejects it earlier.");
 #endif
+
+            case Renderer.DesktopGl:
+            {
+                // Desktop GL 3.3 core. Same shape as the ANGLE arm - SDL owns the context - but no
+                // ES hint, a core profile, and a device that compiles the bundles' Glsl330 form
+                // rather than their GlslEs one.
+                var (desktopContext, desktopWindow) = CreateGlContext(
+                    profileMask: CoreProfile, major: 3, minor: 3, hint: null);
+
+                _glContext = desktopContext;
+                Window = desktopWindow;
+                var desktopDevice = GlGraphicsDeviceDesktop.Create(
+                    SDL.SDL_GL_GetProcAddress, desktopWindow.Width, desktopWindow.Height,
+                    () => SDL.SDL_GL_SwapWindow(desktopWindow.Handle));
+                _device = desktopDevice;
+                break;
+            }
+
+            default:
+            {
+                // The sokol path. Which backend it is comes from --sokol-backend= (see Main), and
+                // the two differ in who brings up the 3D API - which is the whole of what this
+                // switch decides.
+                SokolGraphicsDevice sokol;
+
+            switch (_sokolBackend)
+            {
+                case SokolBackend.D3d11:
+                {
+                    // Nothing to ask SDL for: sokol_gfx has no window concept at all, and its D3D11
+                    // backend is handed an ID3D11Device and an ID3D11DeviceContext and nothing else
+                    // (sokol_gfx.h:5361-5364). The swapchain is built here, over SDL's HWND, which is
+                    // what makes hosting it on somebody else's window possible.
+                    Window = SdlWindow.Create("NFM World", 1280, 720);
+
+                    var platform = new SokolD3D11Platform(Window.NativeWindowHandle, Window.Width, Window.Height);
+                    _sokolPlatform = platform;
+                    sokol = SokolGraphicsDevice.Create(platform, Window.Width, Window.Height);
+                    break;
+                }
+
+                case SokolBackend.Glcore:
+                {
+                    // Desktop GL is the one sokol backend that is the *other* way round: sokol does not
+                    // bring up the 3D API and is told nothing about it, because on this path SDL owns
+                    // the context. Two consequences follow, and both are ordered deliberately.
+                    //
+                    // First, the attributes and the context have to exist before sg_setup: sokol's GL
+                    // backend reads GL_MAJOR_VERSION/GL_MINOR_VERSION during setup to build its
+                    // capability table (sokol_gfx.h:10494-10520) and takes no environment struct to
+                    // defer them through. Hence the same ordering the ANGLE path above uses.
+                    //
+                    // Second, SDL has to know the surface type up front, so unlike the D3D11 arm above
+                    // the window is created with SDL_WINDOW_OPENGL.
+                    //
+                    // A *core* profile, not the ANGLE path's ES profile: sokol's GLCORE backend emits
+                    // and accepts desktop GLSL and uses desktop-only entry points. The profile enum is
+                    // SDL_GL_CONTEXT_PROFILE_CORE = 0x0001 from SDL_video.h; the binding has the attr
+                    // but not the value, hand-declared for the same reason EsProfile above is.
+                    const int coreProfile = 0x0001;
+
+                    SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+                    SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_MINOR_VERSION, 3);
+                    SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_PROFILE_MASK, coreProfile);
+
+                    // Not optional here either, and for a reason specific to this backend: a GLCORE
+                    // swapchain pass binds only the default framebuffer (sokol_gfx.h:12158) and has no
+                    // attachment list, so the depth-stencil buffers are whatever the window's pixel
+                    // format has. Without asking, SDL picks a config with stencil=0 (measured on this
+                    // machine: stencil=0 depth=16) and the NanoVG stencil passes - every one of that
+                    // renderer's nine pipelines - silently operate on a buffer that does not exist.
+                    SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_STENCIL_SIZE, 8);
+
+                    Window = SdlWindow.Create(
+                        "NFM World", 1280, 720, extraFlags: SDL.SDL_WindowFlags.SDL_WINDOW_OPENGL);
+
+                    _glContext = SDL.SDL_GL_CreateContext(Window.Handle);
+                    if (_glContext == IntPtr.Zero)
+                        throw new InvalidOperationException($"SDL_GL_CreateContext failed: {SDL.SDL_GetError()}");
+
+                    // SDL owns the context and the drawable behind it, so this platform owns neither:
+                    // it names the default framebuffer for sokol to bind and presents through SDL. Both
+                    // callbacks are the caller's because this assembly holds no SDL reference - the same
+                    // shape GlGraphicsDevice.Create already takes.
+                    var glPlatform = new SokolGlPlatform(
+                        Window.Width, Window.Height,
+                        present: () => SDL.SDL_GL_SwapWindow(Window.Handle),
+                        setSwapInterval: interval => SDL.SDL_GL_SetSwapInterval(interval));
+
+                    _sokolPlatform = glPlatform;
+                    sokol = SokolGraphicsDevice.Create(glPlatform, Window.Width, Window.Height);
+                    break;
+                }
+
+                    default:
+                        // Unreachable while SokolBackend has only these two members; the throw is here so
+                        // that adding one without a platform is a named failure rather than a null device.
+                        throw new NotSupportedException(
+                            $"No platform is implemented for the {_sokolBackend} sokol backend, please update " +
+                            $"{nameof(WorldGame)}'s constructor.");
+                }
+
+            _sokolDevice = sokol;
+            _device = sokol;
+            break;
+            }
+        }
 
         Graphics = new GraphicsSettingsShim(Window, _device.Swapchain);
 
@@ -281,6 +466,92 @@ public class WorldGame : IDisposable
             GameSparker.CurrentPhase.KeyTyped(character, imguiWantsKeyboard);
         };
     }
+
+    /// <summary>
+    /// Creates the SDL window and the GL context the two GL renderers run on, and returns both.
+    ///
+    /// Shared by the ANGLE and DesktopGL arms because the sequence is identical and the ordering is
+    /// load-bearing in a way that is easy to lose by duplicating it: SDL_GL_LoadLibrary refuses to
+    /// run before the video subsystem is up, the attributes have to be set before the window because
+    /// SDL builds the window's surface during creation and reads the profile from them at that point,
+    /// and the context has to exist before the device attaches to it.
+    ///
+    /// The two callers differ only in what they ask for, which is why that is the parameter list:
+    /// ANGLE wants an ES 3.0 profile and SDL's EGL hint, desktop GL wants a 3.3 core profile and no
+    /// hint at all.
+    /// </summary>
+    /// <param name="profileMask">
+    /// <c>SDL_GL_CONTEXT_PROFILE_MASK</c>: <see cref="EsProfile"/> or <see cref="CoreProfile"/>.
+    /// </param>
+    /// <param name="hint">
+    /// A hint to set before anything else, or null for none. Tuple rather than two parameters so the
+    /// null case cannot be half-specified.
+    /// </param>
+    private static (IntPtr Context, SdlWindow Window) CreateGlContext(
+        int profileMask, int major, int minor, (string Name, string Value)? hint)
+    {
+        if (hint is { } h)
+            SDL.SDL_SetHint(h.Name, h.Value);
+
+        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, major);
+        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_MINOR_VERSION, minor);
+        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_PROFILE_MASK, profileMask);
+
+        // A stencil buffer is not optional: every one of NanoVG's nine pipelines is a stencil pass
+        // (AbstractionNvgRenderer's StencilFill1/2/3 descriptions), and the UI is drawn straight into
+        // the default framebuffer - there is no separate depth-stencil attachment the way the sokol
+        // path allocated one for NVG. Without asking for one SDL picks a config with stencil=0
+        // (measured on this machine: stencil=0 depth=16), and glStencilFunc/glStencilOp against a
+        // buffer that does not exist fail silently - no GL error, no draw. The visible result is the
+        // UI's coverage/blend maths running against a stencil that reads as a constant, which shows
+        // up as fills that do not accumulate alpha over one another.
+        //
+        // 8 is the smallest depth every driver here offers; ANGLE's D3D11 backend maps the request
+        // onto a D24S8 depth-stencil surface, so this does not cost a separate buffer.
+        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_STENCIL_SIZE, 8);
+
+        if (!SDL.SDL_GL_LoadLibrary(null))
+            throw new InvalidOperationException($"SDL_GL_LoadLibrary failed: {SDL.SDL_GetError()}");
+
+        var window = SdlWindow.Create(
+            "NFM World", 1280, 720, extraFlags: SDL.SDL_WindowFlags.SDL_WINDOW_OPENGL);
+
+        var context = SDL.SDL_GL_CreateContext(window.Handle);
+        if (context == IntPtr.Zero)
+            throw new InvalidOperationException($"SDL_GL_CreateContext failed: {SDL.SDL_GetError()}");
+
+        return (context, window);
+    }
+
+#if ANGLE
+    /// <summary>
+    /// Builds the ANGLE device over a context <see cref="CreateGlContext"/> made.
+    ///
+    /// Kept separate from the switch arm because of the long note below, which is about this path
+    /// specifically and not about the arm that selects it.
+    /// </summary>
+    private static IGraphicsDevice CreateAngleDevice(SdlWindow window)
+    {
+        // Attaches to the context SDL just made current, rather than creating one: the device takes
+        // the getProcAddress callback and never owns a context on this path.
+        //
+        // This was the last thing to work, and what was wrong before it is not fully understood -
+        // recorded here so nobody re-derives the wrong answer from the shape of the fix. What is
+        // measured: with SDL's EGL config, a context reports current under eglGetCurrentContext yet
+        // every gl* call through it returns 0 with GL_INVALID_OPERATION, which GlShaderProgram turned
+        // into "shader failed to compile" with an empty info log. That config (put in place by an
+        // earlier SDL_GL_EGL_PLATFORM) differs from a working one only in DEPTH_SIZE (16 vs 24) and
+        // NATIVE_RENDERABLE (false vs true). A context built from a config we chose on SDL's own
+        // display works, so the discriminator is the config and not the display - and removing
+        // SDL_GL_EGL_PLATFORM was tried on its own and did not fix it, so that is not the mechanism
+        // either. Two other unverified explanations were offered later and are both contradicted:
+        // that SDL_HINT_VIDEO_FORCE_EGL is required (it is not set here and the tree works), and
+        // that SDL's config is NULL (it was read back, and it has real attributes).
+        return GlGraphicsDevice.Create(
+            SDL.SDL_GL_GetProcAddress, window.Width, window.Height,
+            () => SDL.SDL_GL_SwapWindow(window.Handle));
+    }
+#endif
 
     private void Update(GameTime gameTime)
     {
@@ -640,66 +911,19 @@ public class WorldGame : IDisposable
         // them), but starting the frame here means the common case uploads immediately.
         _nvg!.BeginFrame(cb);
 
-        // TEMPORARY profiling - remove this block and the counters it reads. Attributes the frame's
-        // draw-call volume and per-phase CPU cost to each renderer, which is the only way to tell
-        // whether the port's 600-vs-1600fps menu regression is draw-call fixed cost (the GL backend
-        // re-applies pipeline state and re-uploads the UBO per draw, where FNA3D diffed and cached)
-        // or something in the per-frame path. Logged every 100 frames so the number does not itself
-        // dominate the frame it reports.
-        if (_profileFrame++ % 100 == 0)
-        {
-            DrawProfiler.Reset();
-            var swScene = new MicroStopwatch();
-            swScene.Start();
-            GameSparker.Render(cb, alpha);
-            var sceneUs = swScene.ElapsedMicroseconds;
+        // The frame's render phases, in order: the 3D scene, its overlays, the UI, then NanoVG's
+        // flush. Deferred NVG updates still work (the renderer queues them), but BeginFrame above
+        // means the common case - a phase drawing HUD text through TheGraphics, which uploads a
+        // glyph atlas rectangle straight away - happens immediately.
+        GameSparker.Render(cb, alpha);
+        GameSparker.Render3DOverlays(cb);
 
-            var sw3D = new MicroStopwatch();
-            sw3D.Start();
-            GameSparker.Render3DOverlays(cb);
-            var overlayUs = sw3D.ElapsedMicroseconds;
+        _uiRenderer?.Render();
+        if (_yogaDebugPage >= 0) YogaDebugger.Render(_yogaDebugPage);
 
-            var swUi = new MicroStopwatch();
-            swUi.Start();
-            _uiRenderer?.Render();
-            if (_yogaDebugPage >= 0) YogaDebugger.Render(_yogaDebugPage);
-            FPSCounter.Render();
-            var uiUs = swUi.ElapsedMicroseconds;
+        FPSCounter.Render();
 
-            var swNvg = new MicroStopwatch();
-            swNvg.Start();
-            _nvg.Render();
-            var nvgUs = swNvg.ElapsedMicroseconds;
-
-            // Ticks -> microseconds: the counter's frequency, not Stopwatch.Frequency guesses.
-            var tickToUs = 1_000_000.0 / System.Diagnostics.Stopwatch.Frequency;
-            var drawCallWallUs = (long)(DrawProfiler.DrawCallWallTicks * tickToUs);
-            Logging.Info(
-                $"[DRAWPROF] sceneUs={sceneUs} overlayUs={overlayUs} uiUs={uiUs} nvgUs={nvgUs} " +
-                $"draws={DrawProfiler.CountDraw} " +
-                $"uniformUs={(long)(DrawProfiler.UniformTicks * tickToUs)} " +
-                $"attribUs={(long)(DrawProfiler.AttribTicks * tickToUs)} " +
-                $"drawCallUs={(long)(DrawProfiler.DrawCallTicks * tickToUs)} " +
-                // sceneUsMinusDrawUs is the number to compare across backends: sceneUs times the
-                // whole phase, so it absorbs whatever the backend defers to draw time, and the two
-                // backends defer very different amounts. nonDrawUs is the game's own scene work.
-                $"drawCallWallUs={drawCallWallUs} " +
-                $"sceneNoDrawUs={sceneUs - drawCallWallUs} " +
-                // Non-zero means draws were recorded that did nothing - see the counter's doc.
-                $"drawsWithNoPipeline={DrawProfiler.CountDrawWithNoPipeline}");
-        }
-        else
-        {
-            GameSparker.Render(cb, alpha);
-            GameSparker.Render3DOverlays(cb);
-
-            _uiRenderer?.Render();
-            if (_yogaDebugPage >= 0) YogaDebugger.Render(_yogaDebugPage);
-
-            FPSCounter.Render();
-
-            _nvg.Render();
-        }
+        _nvg.Render();
 
         ImguiRenderer!.BeginLayout(gameTime);
         GameSparker.RenderImgui();
@@ -779,6 +1003,22 @@ public class WorldGame : IDisposable
             Process.GetCurrentProcess().Kill(false);
         };
 
+        // Which native sokol_gfx to load, decided before anything can touch it. Both halves have to
+        // happen here and in this order: the backend decides which DLL the resolver returns, and the
+        // resolver has to be installed before the first sg_* call (SettingsMenu.LoadFnaRenderer
+        // below already reaches into the graphics layer).
+        //
+        // Only the sokol path reads this; under either GL renderer the sokol device is never
+        // constructed. It is parsed unconditionally anyway so a typo is reported on every path
+        // rather than only the one it was meant for.
+        _sokolBackend = SokolBackendSelection.Parse(args);
+        if (!SokolBackendSelection.IsSupportedOnThisPlatform(_sokolBackend, out var unsupportedReason))
+            throw new PlatformNotSupportedException(unsupportedReason);
+
+        // The level above it, and parsed first for the same reason: it decides whether sokol is in
+        // play at all, which is what gates the resolver installation below.
+        _renderer = ParseRenderer(args);
+
         // NativeLibrary.SetDllImportResolver is scoped to the assembly that DECLARES the
         // [DllImport], not the assembly that calls it - so every project with its own P/Invoke
         // declarations against a "libs/<arch>/..." deployment layout needs its own registration.
@@ -788,10 +1028,21 @@ public class WorldGame : IDisposable
         NativeLibrary.SetDllImportResolver(typeof(WorldGame).Assembly, ImportResolver);
         NativeLibrary.SetDllImportResolver(typeof(SDL).Assembly, ImportResolver);
 
+        // A third registration, and the reason it is needed is the same rule: all 453 of SharpSokol's
+        // [DllImport("sokol")] declarations live in *its* assembly, so a "sokol" arm in the resolver
+        // above would never be consulted. Without this, sokol.dll resolves only because it happens to
+        // sit next to the executable, which is a layout that cannot carry a per-backend choice.
+        //
+        // Installed only when sokol is the renderer: the two GL paths never touch a sg_* entry point,
+        // and loading a sokol.dll they will not use is at best wasted and at worst a startup failure
+        // on a machine that has no build of it. Nothing about the GL paths depends on this being
+        // registered.
+        if (_renderer == Renderer.Sokol)
+            SokolBackendSelection.InstallResolver(_sokolBackend);
+
         SettingsMenu.LoadFnaRenderer();
 
         BackendGameSparker.Load(isHeadless: false);
-
         var program = new WorldGame();
         GameSparker.Game = program;
         program.Initialize();

@@ -1,4 +1,4 @@
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using SharpSokol.Native;
 
@@ -27,6 +27,7 @@ internal static unsafe class SokolLog
     private const uint LevelPanic = 0;
     private const uint LevelError = 1;
     private const uint LevelWarning = 2;
+    private const uint LevelInfo = 3;
 
     /// <summary>
     /// <c>_SG_LOGITEM_VALIDATE_APIP_PIPELINE_VALID</c> - "sg_apply_pipeline: the pipeline object is
@@ -55,20 +56,21 @@ internal static unsafe class SokolLog
         sbyte* filename,
         void* userData)
     {
-        // Level 3 is sokol's "info", which the library emits for nothing on this path. Dropping it
-        // rather than filtering at the call site keeps the hot path free of string building.
-        if (logLevel >= 3) return;
-
-        // Counted before the message is built, and left uncounted in release builds only because
-        // sokol's own validation is what raises it - see ItemApplyPipelinePipelineValid.
-        if (logItem == ItemApplyPipelinePipelineValid && logLevel == LevelError)
-            DrawProfiler.CountDrawWithNoPipeline++;
+        // Level 3 is sokol's "info", and it is not droppable: _SG_LOGMSG logs there
+        // (sokol_gfx.h:7778), and _SG_LOGMSG's whole purpose is to carry a *message* that no other
+        // log item contains - the GL driver's shader compile log, its program link log, and the
+        // offending name for GL_UNIFORMBLOCK_NAME_NOT_FOUND_IN_SHADER and its sampler twin. Dropping
+        // the level leaves the bare _SG_ERROR/_SG_WARN line behind, so a failed compile reads as
+        // "shader compilation failed" with no reason and a missing uniform as a warning with no
+        // name. (This was the behaviour until it was noticed here; do not restore the early return.)
+        if (logLevel > 3) return;
 
         var level = logLevel switch
         {
             LevelPanic => "panic",
             LevelError => "error",
-            _ => "warning",
+            LevelWarning => "warning",
+            _ => "info",
         };
 
         // The item's identifier is deliberately not resolved through sg_log_item: SharpSokol emits

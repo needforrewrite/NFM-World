@@ -14,6 +14,7 @@
         <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
         <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
         <CETCompat>false</CETCompat>
+        <DefineConstants>$(DefineConstants);ANGLE</DefineConstants>
     </PropertyGroup>
     <ItemGroup>
         <!-- Exclude emitted source-generator files from implicit *.cs glob to prevent double compilation -->
@@ -27,23 +28,6 @@
     <PropertyGroup>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <ApplicationIcon>Icon.ico</ApplicationIcon>
-    </PropertyGroup>
-    <!--
-         The ANGLE/GLES backend, left buildable rather than deleted.
-
-         It is worth keeping: it is what the sokol backend is being measured against (~1030-1843 us
-         sceneUs for this frame against FNA3D's ~625 us), and reproducing that number later would mean
-         rebuilding the GL context setup from scratch. Dropping it into this define keeps the choice
-         one Edit rather than a revert.
-
-         Sokol's D3D11 path is the default. Verified against the vendored native library: sokol.dll
-         exports sg_d3d11_* and no sg_vulkan_*, so D3D11 is the only sokol backend it can select -
-         a command-line flag naming Vulkan would have nothing behind it. If that changes, the flag
-         belongs here rather than in WorldGame, which should not grow a backend switch it cannot
-         honour.
-    -->
-    <PropertyGroup Condition="'$(NfmWorldAngle)' == 'true'">
-        <DefineConstants>$(DefineConstants);ANGLE</DefineConstants>
     </PropertyGroup>
     <ItemGroup>
         <EmbeddedResource Include="Icon.ico">
@@ -103,35 +87,15 @@
         <ProjectReference Include="..\NAudio.Flac\NAudio.Flac\NAudio.Flac.csproj" />
         <ProjectReference Include="..\NFMWorld.Api\NFMWorld.Api.csproj" />
         <ProjectReference Include="..\NFMWorld.Audio.FAudio\NFMWorld.Audio.FAudio.csproj" />
+        <ProjectReference Include="..\NFMWorld.Graphics.OpenGL\NFMWorld.Graphics.OpenGL.csproj" />
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
         <ProjectReference Include="..\NFMWorld.Multiplayer.Base\NFMWorld.Multiplayer.Base.csproj" />
         <ProjectReference Include="..\NFMWorld.NativeLibs\NFMWorld.NativeLibs.csproj" />
-        <!--
-            Milestone 6 (NanoVG): NvgSharp/NvgSharp.Text now build under their PLATFORM_AGNOSTIC
-            define (netstandard2.0, zero FNA/XNA reference) instead of the *.FNA.Core variants -
-            the FNA-backed NanoVG renderer/text bridge are no longer part of nfm-world's build
-            graph. See AbstractionNvgRenderer.cs (this project's own INvgRenderer implementation,
-            against NFMWorld.Graphics.Abstraction) for the replacement.
-        -->
-
-        <!--
-            Milestone 5 Stage A: window/device ownership via SDL3 + FNA3D instead of FNA's
-            Game/GraphicsDeviceManager.
-
-            Note this is FNA's *vendored SDL3 bindings*, not FNA itself. The alias was originally
-            collision-avoidance: while MonoGame.ImGuiNet was still referenced, FNA.Core's own
-            private, separately-compiled copy of the SDL3.SDL type would collide (CS0433) with this
-            one, and SDK-style transitive project references don't carry NFMWorld.Platform.SDL3's
-            own <Aliases> through to this project - so it was aliased again, explicitly, here.
-            FNA.Core left the graph in Milestone 7, but the alias stays: WorldGame.Main still needs
-            to name the SDL3 assembly for its own DllImport resolver, and SDL3New::SDL3.SDL is how
-            it does that without depending on NFMWorld.Platform.SDL3 exposing its alias.
-        -->
         <ProjectReference Include="..\FNA\lib\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
         <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
         <!-- Sokol's D3D11 path is the game's backend; see the ANGLE define above for the GL one. -->
         <ProjectReference Include="..\NFMWorld.Graphics.Sokol\NFMWorld.Graphics.Sokol.csproj" />
-        <ProjectReference Include="..\NFMWorld.Graphics.OpenGL\NFMWorld.Graphics.OpenGL.csproj" Condition="'$(NfmWorldAngle)' == 'true'" />
+        <ProjectReference Include="..\NFMWorld.Graphics.DesktopGL\NFMWorld.Graphics.DesktopGL.csproj" />
         <ProjectReference Include="..\NFMWorld.Platform.SDL3\NFMWorld.Platform.SDL3.csproj" />
 
         <!-- Commented out along with the rest of the fxc path: this analyzer generated the

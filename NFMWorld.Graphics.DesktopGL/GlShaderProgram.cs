@@ -1,6 +1,6 @@
 // LLM maintained.
 //
-// Compiles a vertex/pixel pair out of the generated bundles' ES 3.0 GLSL and resolves the
+// Compiles a vertex/pixel pair out of the generated bundles' desktop GLSL and resolves the
 // reflection's names to GL uniform/block locations.
 //
 // This is where the abstraction's byte-offset uniform model meets GL. The abstraction's
@@ -11,9 +11,9 @@
 // GlUniformBlock.
 using System.Runtime.InteropServices;
 using NFMWorld.Shaders;
-using Silk.NET.OpenGLES;
+using Silk.NET.OpenGL;
 
-namespace NFMWorld.Graphics.OpenGL;
+namespace NFMWorld.Graphics.DesktopGL;
 
 /// <summary>
 /// The GL uniform-block binding a shader program's <c>_Global</c> block was given, plus the
@@ -43,7 +43,7 @@ internal sealed class GlUniformBlock
 }
 
 /// <summary>
-/// A linked GL program built from one vertex and one pixel ES 3.0 source, with the reflection's
+/// A linked GL program built from one vertex and one pixel desktop-GL source, with the reflection's
 /// names resolved to GL locations.
 /// </summary>
 internal sealed class GlShaderProgram : IDisposable
@@ -117,8 +117,8 @@ internal sealed class GlShaderProgram : IDisposable
         _deletions = deletions;
         Reflection = reflection;
 
-        var vertexShader = Compile(ShaderType.VertexShader, vertex.GlslEs, "vertex");
-        var pixelShader = Compile(ShaderType.FragmentShader, pixel.GlslEs, "pixel");
+        var vertexShader = Compile(ShaderType.VertexShader, vertex.Glsl330, "vertex");
+        var pixelShader = Compile(ShaderType.FragmentShader, pixel.Glsl330, "pixel");
         try
         {
             Handle = Link(vertexShader, pixelShader);
@@ -147,7 +147,7 @@ internal sealed class GlShaderProgram : IDisposable
         var status = _gl.GetShader(shader, GLEnum.CompileStatus);
         if (status == 0)
         {
-            // The full info log, not just a status: an ES 3.0 compile failure is usually a
+            // The full info log, not just a status: a GLSL compile failure is usually a
             // precision or qualifier problem, and the log names the line.
             var log = _gl.GetShaderInfoLog(shader);
             _gl.DeleteShader(shader);
@@ -278,8 +278,8 @@ internal sealed class GlShaderProgram : IDisposable
         {
             _gl.GetActiveUniform(Handle, i, out _, out var type);
 
-            if (type >= Silk.NET.OpenGLES.UniformType.Sampler1D &&
-                type <= Silk.NET.OpenGLES.UniformType.SamplerCubeShadow)
+            if (type >= Silk.NET.OpenGL.UniformType.Sampler1D &&
+                type <= Silk.NET.OpenGL.UniformType.SamplerCubeShadow)
             {
                 count++;
             }
@@ -339,7 +339,7 @@ internal sealed class GlShaderProgram : IDisposable
     /// <summary>
     /// Strips the block qualifier the driver prefixes onto a uniform-block member's name.
     ///
-    /// A member of a named block is reported as <c>&lt;block&gt;.&lt;member&gt;</c> - ANGLE returns
+    /// A member of a named block is reported as <c>&lt;block&gt;.&lt;member&gt;</c> - a driver returns
     /// <c>_Global.Projection</c> for a member the reflection and the GLSL both call plain
     /// <c>Projection</c>. The reflection's names are bare, so the prefix has to go or every lookup
     /// misses, which is exactly what happened before this existed: the block size matched, every

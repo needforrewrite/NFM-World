@@ -24,6 +24,69 @@ internal interface IPendingUpload
 }
 
 /// <summary>
+/// Whether a destroy call is safe <em>here and now</em>: sokol still set up, and on the thread that
+/// owns the graphics context.
+///
+/// <para>
+/// This exists for finalizers. Types that own a GPU resource tend to have one - <c>Submesh</c> and
+/// the effect meshes all do - and the GC's finalizer thread is under no obligation to reach them
+/// before the process exits, so whatever is left is run from <c>GC.RunFinalizers()</c> during
+/// shutdown. Two things are wrong with destroying a resource from there, and each on its own is
+/// enough to crash:
+/// </para>
+///
+/// <para>
+/// <b>The context thread.</b> A GL context is current on one thread at a time - the render thread -
+/// and every <c>gl*</c> entry point outside it is undefined behaviour, not an error. sokol's GL
+/// destroy path calls <c>glDeleteBuffers</c> and friends directly, so a finalizer-thread destroy
+/// jumps into a driver function with no context behind it. D3D11 is free-threaded and never cared,
+/// which is why this went unnoticed until the GL backend ran; it is also why the trace is a bare
+/// access violation inside the native library rather than a managed exception.
+/// </para>
+///
+/// <para>
+/// <b>The pools.</b> <see cref="SokolGraphicsDevice.Dispose"/> calls <c>sg_shutdown</c>, which frees
+/// the resource pools; a destroy afterwards walks freed memory. Gating on the thread alone would not
+/// cover the normal exit, and gating on the shutdown alone would not cover an abort - which is the
+/// case that was actually observed, where the app died on a shader failure and the finalizers ran
+/// with sokol never having been shut down at all.
+/// </para>
+///
+/// <para>
+/// So both are checked, and the consequence of a failed check is a leaked native resource at a moment
+/// when the process is ending anyway. That is the intended trade: leaking is strictly better than
+/// dereferencing a freed pool or calling into a driver with no current context.
+/// </para>
+/// </summary>
+internal static class SokolLifetime
+{
+    private static int _alive = 1;
+    private static int _contextThreadId;
+
+    /// <summary>
+    /// Records the thread that created the graphics context, which is the only thread from which a
+    /// destroy call is legal. Called from <c>sg_setup</c>'s call site, on the thread that owns it.
+    /// </summary>
+    public static void OwnedByCurrentThread() =>
+        Volatile.Write(ref _contextThreadId, Environment.CurrentManagedThreadId);
+
+    /// <summary>Called immediately before <c>sg_shutdown</c>, never after.</summary>
+    public static void ShutDown() => Volatile.Write(ref _alive, 0);
+
+    /// <summary>
+    /// Re-enables destroys for a bounded window inside <see cref="SokolGraphicsDevice.Dispose"/>,
+    /// where the pools are still live but the flag has to be down by the time the shutdown lands.
+    /// Not intended to be called from anywhere else.
+    /// </summary>
+    public static void Resume() => Volatile.Write(ref _alive, 1);
+
+    /// <summary>True when a destroy call can be issued from the calling thread right now.</summary>
+    public static bool CanDestroy =>
+        Volatile.Read(ref _alive) == 1 &&
+        Volatile.Read(ref _contextThreadId) == Environment.CurrentManagedThreadId;
+}
+
+/// <summary>
 /// sokol_gfx handles are small value structs (a 32-bit id and nothing else), so unlike the FNA3D
 /// backend there is no pointer to null out on dispose - "already disposed" is tracked explicitly.
 /// Disposal is deferred by sokol rather than immediate: a destroyed resource stays alive until the
@@ -76,7 +139,9 @@ internal sealed class SokolBuffer(sg_buffer handle, BufferDesc desc) : IBuffer, 
     public void Dispose()
     {
         if (!IsValid) return;
-        Gfx.destroy_buffer(Handle);
+        // A finalizer reaches here after sg_shutdown - see SokolLifetime. Clearing the handle
+        // makes the call idempotent, so a later Dispose of the same buffer is a no-op.
+        if (SokolLifetime.CanDestroy) Gfx.destroy_buffer(Handle);
         Handle = default;
         Mirror = null;
         UploadPending = false;
@@ -285,9 +350,14 @@ internal sealed class SokolTexture(sg_image handle, TextureDesc desc, int mipCou
     public void Dispose()
     {
         if (!IsValid) return;
-        // The sampling view references the image, so it has to go first.
-        if (View.id != 0) { Gfx.destroy_view(View); View = default; }
-        Gfx.destroy_image(Handle);
+        // A finalizer can reach here after sg_shutdown - see SokolLifetime.
+        if (SokolLifetime.CanDestroy)
+        {
+            // The sampling view references the image, so it has to go first.
+            if (View.id != 0) { Gfx.destroy_view(View); }
+            Gfx.destroy_image(Handle);
+        }
+        View = default;
         Handle = default;
         CpuShadow = null;
         UploadPending = false;
@@ -310,7 +380,8 @@ internal sealed class SokolSampler(sg_sampler handle, SamplerDesc desc) : ISampl
     public void Dispose()
     {
         if (!IsValid) return;
-        Gfx.destroy_sampler(Handle);
+        // A finalizer can reach here after sg_shutdown - see SokolLifetime.
+        if (SokolLifetime.CanDestroy) Gfx.destroy_sampler(Handle);
         Handle = default;
     }
 }
@@ -344,8 +415,15 @@ internal sealed class SokolRenderTarget(
     public void Dispose()
     {
         // The attachment views are owned here; the textures own their sampling views and images.
-        if (DepthStencilAttachmentView.id != 0) { Gfx.destroy_view(DepthStencilAttachmentView); DepthStencilAttachmentView = default; }
-        if (ColorAttachmentView.id != 0) { Gfx.destroy_view(ColorAttachmentView); ColorAttachmentView = default; }
+        // A finalizer can reach here after sg_shutdown, so the destroys are gated - and the handle
+        // clearing happens either way, which keeps this idempotent.
+        if (SokolLifetime.CanDestroy)
+        {
+            if (DepthStencilAttachmentView.id != 0) { Gfx.destroy_view(DepthStencilAttachmentView); }
+            if (ColorAttachmentView.id != 0) { Gfx.destroy_view(ColorAttachmentView); }
+        }
+        DepthStencilAttachmentView = default;
+        ColorAttachmentView = default;
         ColorTexture.Dispose();
         DepthStencilTexture?.Dispose();
     }
@@ -422,7 +500,7 @@ internal sealed class SokolPipelineState(
     PipelineDesc desc,
     ShaderReflection reflection,
     int uniformBlockSize,
-    IReadOnlyList<int> uniformBlockSlots,
+    IReadOnlyList<ShaderBindings.UniformBlock> uniformBlocks,
     int[][] viewSlotMap,
     int[][] samplerSlotMap,
     int declaredViewSlots,
@@ -474,7 +552,7 @@ internal sealed class SokolPipelineState(
         [(defaultColorFormat, sg_index_type.SG_INDEXTYPE_NONE)] = makeVariant(defaultColorFormat, sg_index_type.SG_INDEXTYPE_NONE),
     };
 
-    public sg_shader ShaderHandle { get; } = shader;
+    public sg_shader ShaderHandle { get; private set; } = shader;
 
     public PipelineDesc Desc { get; } = desc;
     public ShaderReflection Reflection { get; } = reflection;
@@ -488,11 +566,18 @@ internal sealed class SokolPipelineState(
     public int UniformBlockSize { get; } = uniformBlockSize;
 
     /// <summary>
-    /// The sokol uniform-block slots this pipeline's shader declares. A program keeps one
-    /// <c>_Global</c> cbuffer at <c>register(b0)</c> read by both stages, so the same bytes are
-    /// applied once per stage slot.
+    /// The sokol uniform-block slots this pipeline declares, each with where its bytes start in the
+    /// program's flat uniform buffer.
+    ///
+    /// <para>
+    /// Usually one entry per stage, both reading the whole buffer at offset zero. On GL it is several
+    /// per stage instead, because the merged block has more members than sokol can describe and was
+    /// split - see <see cref="SokolGlslUniformBlocks"/> - and then each entry covers one slice, which
+    /// is what <see cref="NFMWorld.Graphics.Sokol.SokolCommandBuffer"/> passes to
+    /// <c>sg_apply_uniforms</c>.
+    /// </para>
     /// </summary>
-    public IReadOnlyList<int> UniformBlockSlots { get; } = uniformBlockSlots;
+    public IReadOnlyList<ShaderBindings.UniformBlock> UniformBlocks { get; } = uniformBlocks;
 
     /// <summary>
     /// For each of the abstraction's texture slots, the sokol view slots it feeds. One abstraction
@@ -532,9 +617,15 @@ internal sealed class SokolPipelineState(
 
     public void Dispose()
     {
-        foreach (var pipeline in _variants.Values)
-            if (pipeline.id != 0) Gfx.destroy_pipeline(pipeline);
+        // A finalizer can reach here after sg_shutdown - see SokolLifetime. Clear() runs either way,
+        // so a second Dispose finds nothing left to destroy.
+        if (SokolLifetime.CanDestroy)
+        {
+            foreach (var pipeline in _variants.Values)
+                if (pipeline.id != 0) Gfx.destroy_pipeline(pipeline);
+            if (ShaderHandle.id != 0) Gfx.destroy_shader(ShaderHandle);
+        }
         _variants.Clear();
-        if (ShaderHandle.id != 0) Gfx.destroy_shader(ShaderHandle);
+        ShaderHandle = default;
     }
 }

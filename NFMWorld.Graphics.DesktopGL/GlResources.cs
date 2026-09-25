@@ -1,14 +1,14 @@
 // LLM maintained.
 //
-// The resource types behind the GLES/ANGLE backend: buffers, textures, samplers, shader programs
+// The resource types behind the DesktopGL backend: buffers, textures, samplers, shader programs
 // and pipelines. These are thin wrappers over GL object names - the interesting work is in what
 // the device does at creation time and in GlShaderProgram's binding tables, which is where this
 // backend's one real piece of indirection lives.
 using System.Runtime.InteropServices;
 using NFMWorld.Shaders;
-using Silk.NET.OpenGLES;
+using Silk.NET.OpenGL;
 
-namespace NFMWorld.Graphics.OpenGL;
+namespace NFMWorld.Graphics.DesktopGL;
 
 /// <summary>
 /// A GL buffer object. Both vertex and index buffers are the same thing in GL - only the target
@@ -22,9 +22,8 @@ internal sealed class GlBuffer : IBuffer
     /// Where this buffer's name goes on <see cref="Dispose"/> instead of straight to GL.
     ///
     /// Every resource in this file holds one for the same reason: <see cref="Dispose"/> is reachable
-    /// from a finalizer, where an eglGetProcAddress-resolved entry point runs against a context that
-    /// is not current on this thread. Here that does not throw - it does something worse, and
-    /// silently. See <see cref="GlDeletionQueue"/>.
+    /// from a finalizer, and no GL entry point past 1.1 resolves on the finalizer's thread. See
+    /// <see cref="GlDeletionQueue"/>.
     /// </summary>
     private readonly GlDeletionQueue _deletions;
 

@@ -27,6 +27,7 @@
 // eglext_angle.h and appears nowhere in the Khronos EGL registry the bindings generate from, so no
 // amount of regeneration can produce these constants. They are declared below, with their values.
 using Maxine.EGL;
+using Maxine.EGL.Extensions.EXT;
 using Silk.NET.Core.Contexts;
 using Silk.NET.OpenGLES;
 
@@ -214,14 +215,16 @@ internal static class Egl
         /// </summary>
         private static unsafe nint GetAngleD3D11Display(EGL egl)
         {
-            var attribs = new nint[]
+            var attribs = new int[]
             {
-                EGL_PLATFORM_ANGLE_TYPE_ANGLE, EGL_PLATFORM_ANGLE_TYPE_D3D11_ANGLE,
+                EGL_PLATFORM_ANGLE_TYPE_ANGLE, 0x33AE,
                 EGL_PLATFORM_ANGLE_DEVICE_TYPE_ANGLE, EGL_PLATFORM_ANGLE_DEVICE_TYPE_HARDWARE_ANGLE,
                 (int)EGLEnum.None,
             };
-
-            return egl.GetPlatformDisplay((EGLEnum)EGL_PLATFORM_ANGLE_ANGLE, null, attribs);
+            
+            egl.TryGetExtension(out ExtPlatformBase eglPlatformBase);
+            
+            return eglPlatformBase.GetPlatformDisplay((EXT)EGL_PLATFORM_ANGLE_ANGLE, null, attribs);
         }
 
         /// <summary>

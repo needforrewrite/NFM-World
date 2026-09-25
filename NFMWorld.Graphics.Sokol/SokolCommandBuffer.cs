@@ -1,4 +1,4 @@
-using NFMWorld.Graphics;
+﻿using NFMWorld.Graphics;
 using NFMWorld.Shaders;
 using SharpSokol.Native;
 
@@ -57,6 +57,18 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
     private bool _pipelineDirty;
 
     /// <summary>
+    /// Whether anything that needs the pass's attachments as already loaded has been recorded since
+    /// the pass opened. False means the pass can be closed and reopened freely, because nothing has
+    /// been drawn that discarding would lose.
+    ///
+    /// Only true once a draw has actually reached the GPU, deliberately: a bind that never drew
+    /// leaves no output behind, so <see cref="Clear"/> can still restart the pass around it and skip
+    /// a full re-issue. That is the common case in this app - <c>SetRenderTarget</c>, <c>Clear</c>,
+    /// <c>SetPipeline</c> then draws - where the clear lands between the binds and the draws.
+    /// </summary>
+    private bool _drawnSinceBeginPass;
+
+    /// <summary>
     /// The index format of the pipeline variant currently applied, so <see cref="Flush"/> can tell
     /// when a different one is needed. It is not implied by <see cref="_pipelineDirty"/>: one
     /// pipeline stays set across draws that differ only in indexing, because the abstraction binds
@@ -91,7 +103,6 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
         var sokolPipeline = (SokolPipelineState)pipeline;
         if (ReferenceEquals(_pipeline, sokolPipeline)) return;
 
-        DrawProfiler.CountSetPipeline++;
 
         _pipeline = sokolPipeline;
         _pipelineDirty = true;
@@ -115,7 +126,6 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
         // not from the binding, and the two are validated against each other by sokol itself.
         _vertexBuffers[slot] = ((SokolBuffer)buffer).Handle;
         _vertexBufferOffsets[slot] = offsetBytes;
-        DrawProfiler.CountSetVertexBuffer++;
     }
 
     public void SetIndexBuffer(IBuffer buffer, int offsetBytes = 0)
@@ -181,12 +191,10 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
         if (IsMatrix4x4At(pipeline, slot))
         {
             Transpose4x4Into(value, _uniformBlock.AsSpan(slot));
-            DrawProfiler.CountSetUniform++;
-            return;
+                return;
         }
 
         value.CopyTo(_uniformBlock.AsSpan(slot));
-        DrawProfiler.CountSetUniform++;
     }
 
     /// <summary>
@@ -244,6 +252,10 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
         {
             depth = new sg_depth_attachment_action { clear_value = 1f },
         };
+
+        // A new target's pass has not drawn either, so a clear arriving before its first draw can
+        // still restart it rather than being rejected.
+        _drawnSinceBeginPass = false;
     }
 
     public void SetViewport(Viewport viewport) => _viewport = viewport;
@@ -272,10 +284,34 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
             _passAction.stencil.clear_value = (byte)stencil;
         }
 
-        // If draws have already opened the pass, the action has been read; reopening it is the
-        // only way to apply the new clear. That discards those draws, which is what "clear the
-        // target" means - the abstraction's Clear is expected before the draws it precedes.
-        if (_inPass) { EndPass(); BeginPass(); }
+        // A clear only takes effect if it is recorded before the pass it applies to begins, so a
+        // Clear arriving after the pass has opened has to restart it. Where the action's load
+        // actions can be turned into loads instead, that restart is *lossless*, which matters
+        // because closing a swapchain pass and reopening it in the same commit is not merely
+        // wasteful on every backend that acquires its drawable per pass - it is rejected outright
+        // on Vulkan, whose single present-complete semaphore cannot be re-acquired inside one
+        // commit (sokol_gfx.h:23015, and _sg_vk_end_pass leaves it set: only _sg_vk_commit clears
+        // it, :23109).
+        //
+        // A draw cannot be reconstructed by any load action, so a pass that has already drawn is
+        // the one case where this claims to clear and would not. Say so rather than replacing the
+        // depth buffer with a no-op - Callers should clear before they draw.
+        if (_inPass && !_drawnSinceBeginPass)
+        {
+            if (options.HasFlag(ClearOptions.Color))
+                _passAction.colors[0].load_action = sg_load_action.SG_LOADACTION_LOAD;
+            if (options.HasFlag(ClearOptions.Depth))
+                _passAction.depth.load_action = sg_load_action.SG_LOADACTION_LOAD;
+            if (options.HasFlag(ClearOptions.Stencil))
+                _passAction.stencil.load_action = sg_load_action.SG_LOADACTION_LOAD;
+
+            EndPass();
+            BeginPass();
+        }
+        else if (_inPass)
+        {
+            ThrowIfClearWouldDiscardDraws();
+        }
     }
 
     public void UpdateBuffer(IBuffer buffer, ReadOnlySpan<byte> data, int offsetBytes = 0)
@@ -361,34 +397,25 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
     public void Draw(int startVertex, int primitiveCount)
     {
         var pipeline = RequirePipeline();
-        DrawProfiler.CountDraw++;
-        DrawProfiler.TimeDraw(() =>
-        {
-            Flush(indexed: false);
-            Gfx.draw(startVertex, ElementCount(pipeline.Desc.Topology, primitiveCount, indexed: false), 1);
-        });
+        Flush(indexed: false);
+        Gfx.draw(startVertex, ElementCount(pipeline.Desc.Topology, primitiveCount, indexed: false), 1);
+        _drawnSinceBeginPass = true;
     }
 
     public void DrawIndexed(int baseVertex, int startIndex, int primitiveCount)
     {
         var pipeline = RequirePipeline();
-        DrawProfiler.CountDraw++;
-        DrawProfiler.TimeDraw(() =>
-        {
-            Flush(indexed: true);
-            Gfx.draw_ex(startIndex, ElementCount(pipeline.Desc.Topology, primitiveCount, indexed: true), 1, baseVertex, 0);
-        });
+        Flush(indexed: true);
+        Gfx.draw_ex(startIndex, ElementCount(pipeline.Desc.Topology, primitiveCount, indexed: true), 1, baseVertex, 0);
+        _drawnSinceBeginPass = true;
     }
 
     public void DrawIndexedInstanced(int baseVertex, int startIndex, int primitiveCount, int instanceCount)
     {
         var pipeline = RequirePipeline();
-        DrawProfiler.CountDraw++;
-        DrawProfiler.TimeDraw(() =>
-        {
-            Flush(indexed: true);
-            Gfx.draw_ex(startIndex, ElementCount(pipeline.Desc.Topology, primitiveCount, indexed: true), instanceCount, baseVertex, 0);
-        });
+        Flush(indexed: true);
+        Gfx.draw_ex(startIndex, ElementCount(pipeline.Desc.Topology, primitiveCount, indexed: true), instanceCount, baseVertex, 0);
+        _drawnSinceBeginPass = true;
     }
 
     private SokolPipelineState RequirePipeline() =>
@@ -456,17 +483,21 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
             Gfx.apply_scissor_rect(scissor.X, scissor.Y, scissor.Width, scissor.Height, SokolNative.Bool(true));
 
         // Uniforms first: sg_apply_uniforms asserts the data matches the applied pipeline's block.
-        // A program keeps its merged _Global cbuffer at register(b0) in BOTH stages, so the same
-        // accumulated bytes go to each stage's block slot.
-        if (_uniformBlockSize > 0)
+        // A program keeps its uniforms in one flat buffer, and each block the pipeline declares
+        // covers a slice of it - the whole thing on D3D11, where both stages read one merged
+        // register(b0) cbuffer, and a 16-member piece of it on GL, where sokol's descriptor cannot
+        // describe more. Either way the slice is uploaded verbatim: the GL split was arranged so
+        // that sokol's own member offsets within a block equal the reflection's offsets minus the
+        // block's start, so no per-block translation is needed here.
+        foreach (var block in pipeline.UniformBlocks)
         {
-            foreach (var slot in pipeline.UniformBlockSlots)
+            fixed (byte* pointer = _uniformBlock)
             {
-                fixed (byte* pointer = _uniformBlock)
-                {
-                    var range = SokolNative.Range(pointer, _uniformBlockSize);
-                    Gfx.apply_uniforms(slot, &range);
-                }
+                var range = SokolNative.Range(pointer + block.Offset, block.Size);
+                // The slot, not the register: see UniformBlock.Slot - on D3D11 the two stages sit
+                // in different slots while both binding b0, so passing the register here would
+                // apply one block twice and leave the other's slot unfilled.
+                Gfx.apply_uniforms(block.Slot, &range);
             }
         }
 
@@ -564,6 +595,10 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
         Gfx.begin_pass(&pass);
         _inPass = true;
 
+        // Nothing has been drawn into this pass yet, so it can still be restarted losslessly - see
+        // _drawnSinceBeginPass.
+        _drawnSinceBeginPass = false;
+
         // A fresh pass resets the applied pipeline, so the next draw must re-issue it - including
         // its index-format variant, which the reset forgets entirely.
         _pipelineDirty = true;
@@ -576,6 +611,25 @@ internal sealed class SokolCommandBuffer(SokolGraphicsDevice device) : ICommandB
         Gfx.end_pass();
         _inPass = false;
     }
+
+    /// <summary>
+    /// Rejects a clear that arrives after this pass has drawn, because honoring it would mean
+    /// discarding the draws it followed.
+    ///
+    /// The abstraction documents <c>Clear</c> as preceding the draws it precedes
+    /// (<see cref="ICommandBuffer.Clear"/>), and on every backend that services a swapchain pass by
+    /// acquiring its drawable, reopening the pass to apply a late clear is not possible at all - so
+    /// the alternative to throwing is a call that silently does nothing while reporting success.
+    /// The message names the call sites' obligation rather than this implementation's limitation.
+    ///
+    /// Reached from a mid-frame clear on a target that already has geometry recorded, so it is a
+    /// caller error rather than a state this class can recover from.
+    /// </summary>
+    private void ThrowIfClearWouldDiscardDraws() =>
+        throw new InvalidOperationException(
+            $"{nameof(Clear)} cannot be applied after draws have been recorded into this pass: on the " +
+            "swapchain pass, reopening it to make the clear take effect is impossible on the backends " +
+            "that acquire their drawable per pass. Issue clears before the draws they precede.");
 
     /// <summary>
     /// Closes the frame: ends any open pass and commits. Called by

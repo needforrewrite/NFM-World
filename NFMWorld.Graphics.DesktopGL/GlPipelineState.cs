@@ -9,9 +9,9 @@
 // attribute format, not the buffer) and is the one piece of GL state that has to be rebuilt
 // whenever the layout changes.
 using NFMWorld.Shaders;
-using Silk.NET.OpenGLES;
+using Silk.NET.OpenGL;
 
-namespace NFMWorld.Graphics.OpenGL;
+namespace NFMWorld.Graphics.DesktopGL;
 
 /// <summary>
 /// Per-pipeline GL state.
@@ -251,10 +251,9 @@ internal sealed class GlPipelineState : IPipelineState
 
     public void Dispose()
     {
-        // Queued rather than deleted, because a pipeline is owned by a static Effects field and so
-        // is disposed whenever the process tears the renderer down - which can be from a finalizer,
-        // where an eglGetProcAddress entry point runs against a context that is not current on this
-        // thread. See GlDeletionQueue for why that is worse than it sounds here.
+        // Queued rather than deleted, because this pipeline is owned by a static Effects field (see
+        // GlPipelineState's remarks) and so is disposed whenever the process tears the renderer down
+        // - which can be from a finalizer, where no GL delete resolves. See GlDeletionQueue.
         //
         // The program goes with it and in this order: the VAO is a container for the program's
         // attribute state, so it is the outer object of the two.

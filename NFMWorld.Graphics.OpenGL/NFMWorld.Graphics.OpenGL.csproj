@@ -32,6 +32,7 @@
              the mapping itself in one place. -->
         <ProjectReference Include="..\Maxine.Silk.EGL\native\Maxine.Silk.OpenGLES.ANGLE.Native\Maxine.Silk.OpenGLES.ANGLE.Native.csproj"
                           AdditionalProperties="AngleNativeRid=$(RuntimeIdentifier)" />
+        <ProjectReference Include="..\Maxine.Silk.EGL\src\Extensions\Maxine.EGL.Extensions.EXT\Maxine.EGL.Extensions.EXT.csproj" />
         <ProjectReference Include="..\Maxine.Silk.EGL\src\Maxine.EGL\Maxine.EGL.csproj" />
     </ItemGroup>
 

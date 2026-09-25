@@ -9,20 +9,14 @@
 // buffer has to keep the block's bytes on the CPU, let SetUniform poke at them, and upload the
 // whole block before a draw. That is the same model sokol's backend uses, and for the same reason.
 using System.Runtime.InteropServices;
-using Silk.NET.OpenGLES;
+using Silk.NET.OpenGL;
 
-namespace NFMWorld.Graphics.OpenGL;
+namespace NFMWorld.Graphics.DesktopGL;
 
 internal sealed class GlCommandBuffer : ICommandBuffer
 {
     private readonly GL _gl;
     private readonly GlGraphicsDevice _device;
-
-    /// <summary>
-    /// The context's base-vertex entry points, passed in rather than resolved here so that every
-    /// command buffer shares the device's one resolution. See GlBaseVertexDraw.
-    /// </summary>
-    private readonly GlBaseVertexDraw _baseVertexDraw;
 
     private GlPipelineState? _pipeline;
 
@@ -84,11 +78,10 @@ internal sealed class GlCommandBuffer : ICommandBuffer
         internal int OffsetBytes { get; init; }
     }
 
-    internal GlCommandBuffer(GL gl, GlGraphicsDevice device, GlBaseVertexDraw baseVertexDraw)
+    internal GlCommandBuffer(GL gl, GlGraphicsDevice device)
     {
         _gl = gl;
         _device = device;
-        _baseVertexDraw = baseVertexDraw;
         _targetHeight = device.Swapchain.Height;
     }
 
@@ -390,40 +383,16 @@ internal sealed class GlCommandBuffer : ICommandBuffer
         {
             var pointer = (void*)byteOffset;
 
-            // A zero base vertex is the common case and needs no extension at all, so it stays on the
-            // core entry points: a context without the extension still gets every draw whose indices
-            // are already relative to the intended base.
-            if (baseVertex == 0)
-            {
-                if (instanceCount == 1)
-                    _gl.DrawElements(mode, count, indexType, pointer);
-                else
-                    _gl.DrawElementsInstanced(mode, count, indexType, pointer, (uint)instanceCount);
-                    return;
-            }
-
-            // A non-zero base vertex needs GL_EXT_draw_elements_base_vertex, which is present on
-            // ANGLE but is not part of ES 3.0 - so its absence is a legitimate configuration and the
-            // draw is refused rather than approximated. It is deliberately not approximated by
-            // folding the base into the element pointer: that trick only works when every index is
-            // off by the same *vertex*, and the offset here is in bytes into the index buffer, so
-            // applying it would draw geometry from the wrong part of the buffer and read as a scene
-            // bug rather than as an API limitation.
-            if (!_baseVertexDraw.IsSupported)
-            {
-                throw new NotSupportedException(
-                    $"baseVertex {baseVertex} was requested, but this context exposes neither " +
-                    "GL_EXT_draw_elements_base_vertex nor GL_OES_draw_elements_base_vertex, so the " +
-                    "offset cannot be honoured and ES 3.0 core has no base-vertex draw of its own. " +
-                    "Draw from a buffer whose indices are already relative to the intended base vertex.");
-            }
-
+            // The base-vertex draw is core desktop GL from 3.2, which is below this backend's 3.3
+            // floor, so unlike the ANGLE backend there is no extension to resolve and no
+            // configuration in which the offset cannot be honoured. That is the whole reason this
+            // backend needs no GlBaseVertexDraw equivalent: the call the ANGLE path had to look up
+            // through GL_EXT_draw_elements_base_vertex is plain core API here.
             if (instanceCount == 1)
-                _baseVertexDraw.DrawIndexed(mode, count, indexType, pointer, baseVertex);
+                _gl.DrawElementsBaseVertex(mode, count, indexType, pointer, baseVertex);
             else
-                _baseVertexDraw.DrawIndexedInstanced(mode, count, indexType, pointer, (uint)instanceCount, baseVertex);
+                _gl.DrawElementsInstancedBaseVertex(mode, count, indexType, pointer, (uint)instanceCount, baseVertex);
         }
-
     }
 
     private static int IndexSize(IndexFormat format) => format switch
@@ -538,7 +507,6 @@ internal sealed class GlCommandBuffer : ICommandBuffer
         _gl.BufferData(BufferTargetARB.UniformBuffer, (nuint)_uniforms.Length, ReadOnlySpan<byte>.Empty, BufferUsageARB.DynamicDraw);
         _gl.BufferSubData(BufferTargetARB.UniformBuffer, 0, _uniforms);
         _gl.BindBufferBase(BufferTargetARB.UniformBuffer, block.Binding, _uniformBuffer);
-
         _gl.UseProgram(pipeline.Program.Handle);
     }
 

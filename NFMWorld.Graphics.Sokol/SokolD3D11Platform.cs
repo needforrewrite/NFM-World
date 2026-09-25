@@ -88,18 +88,23 @@ public sealed unsafe class SokolD3D11Platform : ISokolPlatform
     private int _height;
     private bool _disposed;
 
+    /// <summary>The <c>HWND</c> this was constructed with, kept only to answer
+    /// <see cref="NativeHandle"/> - nothing here uses it after the swapchain exists.</summary>
+    private readonly IntPtr _windowHandle;
+
     public int Width => _width;
 
     public int Height => _height;
 
+    public IntPtr NativeHandle => _windowHandle;
+
     /// <summary>
     /// Whether <see cref="Present"/> blocks on vblank.
     ///
-    /// Settable because <c>GraphicsSettingsShim.SynchronizeWithVerticalRetrace</c> exists and the
-    /// settings menu writes it; unlike the FNA3D backend, whose present interval is fixed at device
-    /// creation, a DXGI swapchain's interval is a per-present argument and so can genuinely follow
-    /// the setting.
+    /// Unlike the FNA3D backend, whose present interval is fixed at device creation, a DXGI
+    /// swapchain's interval is a per-present argument and so can genuinely follow the setting.
     /// </summary>
+    /// <inheritdoc cref="ISokolPlatform.VSync"/>
     public bool VSync { get; set; } = true;
 
     /// <summary>
@@ -126,6 +131,7 @@ public sealed unsafe class SokolD3D11Platform : ISokolPlatform
             throw new InvalidOperationException(
                 $"SokolD3D11Platform needs a positive drawable size, got {width}x{height}.");
 
+        _windowHandle = windowHandle;
         _width = width;
         _height = height;
 

@@ -192,6 +192,10 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
         configure?.Invoke(ref desc);
         Gfx.setup(&desc);
 
+        // This is the thread the context lives on - for GLCORE it is the one SDL made the context
+        // current on - and every sg_destroy_* has to come from here. See SokolLifetime.
+        SokolLifetime.OwnedByCurrentThread();
+
         var device = new SokolGraphicsDevice
         {
             _swapchain = new SokolSwapchain(platform),
@@ -275,6 +279,14 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
         public int Height => _height;
 
         /// <summary>
+        /// Always zero: sokol_app created the window and owns it, and it is never handed out -
+        /// there is no <c>sapp_</c> call for it and nothing that hosts sokol_app's window externally.
+        /// Callers that need a real handle use <see cref="SokolD3D11Platform"/> or
+        /// <see cref="SokolGlPlatform"/>, both of which were given one.
+        /// </summary>
+        public IntPtr NativeHandle => IntPtr.Zero;
+
+        /// <summary>
         /// True: sokol_app's <c>_sapp_d3d11_create_device_and_swapchain</c> passes
         /// <c>D3D11_CREATE_DEVICE_SINGLETHREADED</c> unconditionally (<c>sokol_app.h:8936</c>), so
         /// the immediate context has no internal locking and must be used from one thread.
@@ -303,6 +315,12 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
             // window, and this sokol version has no sapp_set_window_size. SokolSwapchain.Resize
             // documents why the request is advisory on this path.
         }
+
+        /// <summary>
+        /// Presenting is sokol_app's, so there is no interval for this platform to set: the swapchain
+        /// belongs to sokol_app and it presents after its frame callback returns.
+        /// </summary>
+        public bool VSync { get; set; } = true;
 
         public void Present()
         {
@@ -393,8 +411,12 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
             if (state.Device is { } device)
             {
                 state.Shutdown?.Invoke(device);
+                // The device does not own this shutdown - see Dispose - so it is issued here, and
+                // SokolLifetime has to be told too or the exit finalizers below will destroy into
+                // freed pools. See SokolLifetime.
                 device.Dispose();
             }
+            SokolLifetime.ShutDown();
             Gfx.shutdown();
             _current = null;
             if (state._self.IsAllocated) state._self.Free();
@@ -495,29 +517,58 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
     /// generated code emits <c>{prog}_shader_desc(sg_backend backend)</c> and callers pass
     /// <c>sg_query_backend()</c>.
     ///
-    /// D3D11 (this repository's vendored build, and by far the common case on Windows) compiles
-    /// the HLSL with <c>d3d11_target</c>; Metal compiles the MSL; GLCORE compiles the desktop
-    /// GLSL; GLES3 compiles the ES 3.0 GLSL; Vulkan takes the SPIR-V. The two GL branches are
-    /// separate cases rather than one because the sources are different dialects, not two spellings
-    /// of the same thing - see <see cref="ShaderStageSources.GlslEs"/>.
+    /// D3D11 (the default, and by far the common case on Windows) compiles the HLSL with
+    /// <c>d3d11_target</c>; Metal compiles the MSL; GLCORE compiles the desktop GLSL; GLES3
+    /// compiles the ES 3.0 GLSL; Vulkan takes the SPIR-V. The two GL branches are separate cases
+    /// rather than one because the sources are different dialects, not two spellings of the same
+    /// thing - see <see cref="ShaderStageSources.GlslEs"/>.
     ///
-    /// Only the D3D11 path is exercised end to end so far, for reasons that are per-backend rather
-    /// than about the sources:
+    /// <para>
+    /// <b>Source selection is not the whole of what a backend needs</b>, and this is the part that
+    /// has bitten: which struct fields have to be filled in below differs per backend, and sokol
+    /// only reports a missing one by logging. The per-backend gaps are:
+    /// </para>
     ///
-    /// Vulkan additionally needs <c>spirv_set0_binding_n</c>/<c>spirv_set1_binding_n</c>, and GL
-    /// needs <c>glsl_name</c> on every uniform block, texture view and texture-sampler pair, since
-    /// sokol resolves those by <c>glGetUniformLocation</c> rather than by binding
-    /// (<c>sokol_gfx.h:11697</c>, <c>:11736</c>). spirv-cross names a combined GL sampler after the
-    /// SPIR-V id, so the GLSL declares <c>_857</c> where the reflection says <c>ShadowMap0</c>;
-    /// filling those fields in needs the name mapping the cross-compiler does not currently
-    /// surface.
+    /// <list type="bullet">
+    /// <item><b>Vulkan</b> needs <c>spirv_set0_binding_n</c> on the uniform block and
+    /// <c>spirv_set1_binding_n</c> on views and samplers, and the shader's
+    /// <c>entry</c> must be the real SPIR-V entry point rather than <c>"main"</c> - see
+    /// <see cref="SokolResources.EntryPoint"/>.</item>
     ///
-    /// The same <c>glsl_name</c> gap applies to the ES source, so the GLES3 branch is wired to the
-    /// right source but is not yet known to bind its uniforms. What *is* verified for ES is
-    /// everything up to that point: all eight generated programs compile and link under a real
-    /// ANGLE ES 3.0 context, their std140 block sizes match the emitted reflection exactly, and
-    /// <c>layout(row_major)</c> is honoured so matrices are read the same way D3D reads them.
-    /// Metal is only untried, not known-broken.
+    /// <item><b>GLCORE</b> needs <c>glsl_name</c> on the uniform block's <em>members</em> and on
+    /// texture-sampler <em>pairs</em>, since it resolves both by <c>glGetUniformLocation</c> rather
+    /// than by binding (<c>sokol_gfx.h:11684</c>, <c>:11736</c>). Note which structs: an earlier
+    /// version of this comment claimed texture views and samplers carry a <c>glsl_name</c> too, and
+    /// they do not - neither struct has the field, and the GL arm of their validation loop is an
+    /// explicit no-op (<c>:24398-24399</c>). A member name must also be instance-qualified
+    /// (<c>_Global.LightViewProj0</c>), because spirv-cross emits the block as
+    /// <c>uniform _Global _32;</c> and GLSL resolves members only by the qualified path.
+    ///
+    /// <para>
+    /// There is a hard limit underneath this one that filling in names cannot fix:
+    /// <c>SG_MAX_UNIFORMBLOCK_MEMBERS</c> is 16 (<c>:2179</c>), and this app's merged <c>_Global</c>
+    /// block is larger than that - 22 members for <c>PolyBasic</c>, 34 for <c>LineBasic</c>. sokol
+    /// rejects such a shader outright (<c>VALIDATE_SHADERDESC_UNIFORMBLOCK_SIZE_MISMATCH</c>,
+    /// <c>:24375</c>), so GLCORE additionally requires the block to be split before any of this is
+    /// reachable. Vulkan has no such cap - its arm reads only the scalar
+    /// <c>spirv_set0_binding_n</c> (<c>:24341-24343</c>) and never touches the member array.
+    /// </para></item>
+    ///
+    /// <item><b>Metal</b> needs <c>msl_buffer_n</c>/<c>msl_texture_n</c>/<c>msl_sampler_n</c>, none
+    /// of which are set or defaulted (<c>:25876-25903</c> defaults only <c>layout</c>,
+    /// <c>array_count</c>, <c>image_type</c>, <c>sample_type</c> and <c>sampler_type</c>), so every
+    /// view lands on MSL texture 0 and a multi-texture program collides
+    /// (<c>VALIDATE_SHADERDESC_VIEW_TEXTURE_METAL_TEXTURE_SLOT_COLLISION</c>, <c>:4968</c>). This one
+    /// is inferred from the validation code rather than measured - no Metal run has been attempted.
+    /// </item>
+    /// </list>
+    ///
+    /// GLES3 is the case with nothing to do: <c>CompilerBuildCombinedImageSamplers</c> and the
+    /// combined-sampler renaming named above are already applied to the ES source, so its
+    /// <c>glsl_name</c> gap is closed at the compiler end. What is verified for ES beyond that: all
+    /// eight generated programs compile and link under a real ANGLE ES 3.0 context, their std140
+    /// block sizes match the emitted reflection exactly, and <c>layout(row_major)</c> is honoured so
+    /// matrices are read the same way D3D reads them.
     /// </summary>
     /// <inheritdoc cref="IGraphicsDevice.CreateShaderModule"/>
     /// <remarks>
@@ -549,6 +600,10 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
             // because the dialects differ in ways a driver rejects rather than tolerates: an ES
             // shader needs explicit precision qualifiers, and it links varyings by name where
             // desktop GLSL links them by layout(location).
+            // The GLSL here is the *original*, unsplit source. ShaderBindings rewrites the uniform
+            // block to fit sokol's 16-member cap and the pipeline then compiles the rewritten text
+            // instead - see SokolPipelineState/ShaderBindings.VertexSource. The split is per-pipeline
+            // because it is driven by the descriptor, which is per-pipeline.
             sg_backend.SG_BACKEND_GLCORE =>
                 new SokolShaderProgram(ReadOnlyMemory<byte>.Empty, ReadOnlyMemory<byte>.Empty, reflection, vertex.Glsl, pixel.Glsl),
 
@@ -856,7 +911,9 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
 
         // The binding tables are needed twice: once in the shader desc (what the shader declares)
         // and once here (how the abstraction's flat slots map onto it).
-        var layout = new ShaderBindings(reflection);
+        // On GLCORE the program's source *is* the GLSL, so this is what the split rewrites; on
+        // every other backend it is HLSL or MSL and the pair is ignored.
+        var layout = new ShaderBindings(reflection, vertex.VertexSource, pixel.PixelSource);
         var shader = CreateShader(vertex, pixel, layout, desc);
 
         // A pipeline must declare the pixel format of the attachment it will draw into, and the
@@ -864,7 +921,7 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
         // and makes them on demand. See SokolPipelineState._variants.
         return new SokolPipelineState(
             shader, desc, reflection,
-            layout.UniformBlockSize, layout.UniformBlockSlots, layout.ViewSlotMap, layout.SamplerSlotMap,
+            layout.UniformBlockSize, layout.UniformBlocks, layout.ViewSlotMap, layout.SamplerSlotMap,
             layout.ViewCount, layout.SamplerCount,
             (colorFormat, indexType) => MakePipelineVariant(desc, shader, layout, colorFormat, indexType),
             DefaultColorFormat);
@@ -897,8 +954,10 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
         {
             var shaderDesc = new sg_shader_desc();
 
-            SetShaderFunction(&shaderDesc.vertex_func, vertex.VertexSource, vertex.VertexBytecode, vertex.EntryPoint, strings, "vs_5_0", "VertexShader");
-            SetShaderFunction(&shaderDesc.fragment_func, pixel.PixelSource, pixel.PixelBytecode, pixel.EntryPoint, strings, "ps_5_0", "PixelShader");
+            // The layout's source, not the program's: on GL the block was split, and the descriptor
+            // below names its members from the split - so the two have to be the same text.
+            SetShaderFunction(&shaderDesc.vertex_func, layout.VertexSource ?? vertex.VertexSource, vertex.VertexBytecode, vertex.EntryPoint, strings, "vs_5_0", "VertexShader");
+            SetShaderFunction(&shaderDesc.fragment_func, layout.PixelSource ?? pixel.PixelSource, pixel.PixelBytecode, pixel.EntryPoint, strings, "ps_5_0", "PixelShader");
 
             // Attributes are matched to shader inputs *by index* (sokol_gfx.h:14444 builds the
             // D3D11 input layout from layout.attrs[i]'s format/slot/offset, but takes the semantic
@@ -919,13 +978,37 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
                 }
             }
 
-            for (var i = 0; i < layout.UniformBlockSlots.Count; i++)
+            for (var i = 0; i < layout.UniformBlocks.Count; i++)
             {
-                shaderDesc.uniform_blocks[i].stage = layout.UniformBlockStages[i];
-                shaderDesc.uniform_blocks[i].size = (uint)layout.UniformBlockSize;
-                // The merged _Global cbuffer is register(b0) in both stages. The register is a
-                // per-stage namespace, so VS and FS each declaring b0 is not a collision.
-                shaderDesc.uniform_blocks[i].hlsl_register_b_n = 0;
+                var block = layout.UniformBlocks[i];
+                shaderDesc.uniform_blocks[i].stage = block.Stage;
+                shaderDesc.uniform_blocks[i].size = (uint)block.Size;
+                shaderDesc.uniform_blocks[i].hlsl_register_b_n = block.Register;
+
+                // The member table is what the GL backend resolves each uniform by name through,
+                // and it is the only backend that reads it - so a block that carries no members is
+                // one being described for D3D11, Metal or Vulkan, which bind the whole block by
+                // register and never look here (sokol_gfx.h:24341-24343, :11684).
+                //
+                // GL must declare its layout as std140, and must be told so explicitly: the field
+                // defaults to SG_UNIFORMLAYOUT_NATIVE (vanilla `_sg_def` leaves it at enum 0,
+                // _SG_UNIFORMLAYOUT_DEFAULT, which resolves to NATIVE), under which sokol's alignment
+                // rule is 1 byte for every member - so it would compute tightly packed offsets where
+                // our GLSL actually uses std140's. The names are instance-qualified because GLSL
+                // resolves a struct member only by that path: the bare member name gives
+                // glGetUniformLocation a -1, which sokol turns into a warning and then skips
+                // (:11699-11702) - so the failure would be misplaced uniforms, not an error.
+                if (block.Members is { } members)
+                {
+                    shaderDesc.uniform_blocks[i].layout = sg_uniform_layout.SG_UNIFORMLAYOUT_STD140;
+
+                    for (var m = 0; m < members.Count; m++)
+                    {
+                        shaderDesc.uniform_blocks[i].glsl_uniforms[m].type = members[m].Type;
+                        shaderDesc.uniform_blocks[i].glsl_uniforms[m].array_count = 1;
+                        shaderDesc.uniform_blocks[i].glsl_uniforms[m].glsl_name = strings.Pin(members[m].QualifiedName);
+                    }
+                }
             }
 
             for (var i = 0; i < layout.ViewCount; i++)
@@ -951,6 +1034,9 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
                 shaderDesc.texture_sampler_pairs[i].stage = layout.PairStages[i];
                 shaderDesc.texture_sampler_pairs[i].view_slot = (byte)layout.PairViewSlots[i];
                 shaderDesc.texture_sampler_pairs[i].sampler_slot = (byte)layout.PairSamplerSlots[i];
+                // Required on GL, where the pair is resolved by name, and ignored elsewhere - see
+                // ShaderBindings, and NameCombinedSamplers for how the GLSL came to use this name.
+                shaderDesc.texture_sampler_pairs[i].glsl_name = strings.Pin(layout.PairGlslNames[i]);
             }
 
             // sg_shader_desc holds the bytecode by pointer, so a program built from bytecode
@@ -1322,21 +1408,42 @@ public sealed unsafe class SokolGraphicsDevice : IGraphicsDevice
         if (_shutdown) return;
         _shutdown = true;
 
-        // The placeholder is not referenced by any pipeline, so it is safe to release here - but it
-        // has to go before sg_shutdown, which frees the pools it lives in.
-        _placeholderSampler?.Dispose();
+        // sg_shutdown frees the resource pools, so anything destroyed afterwards walks freed memory.
+        // The flag goes down first, whatever else happens below: a destroy that lands between this
+        // point and the actual shutdown would be reading a pool that is about to disappear.
+        SokolLifetime.ShutDown();
+
+        // The placeholder is not referenced by any pipeline, so it is safe to release here - and it
+        // has to go before sg_shutdown. Its Dispose is now gated on the lifetime flag rather than
+        // called around it, so the ordering here is for clarity, not correctness.
+        var sampler = _placeholderSampler;
+        var texture = _placeholderTexture;
         _placeholderSampler = null;
         _placeholderView = null;
-        // _placeholderTexture's View is owned by the texture, so disposing it releases both.
-        _placeholderTexture?.Dispose();
         _placeholderTexture = null;
 
-        // Guarded so that a device created by Run - which is shut down by sokol_app's own cleanup
-        // callback, along with the frame loop - is not also shut down here.
         if (_ownsSokol)
         {
+            // Directly-created device: this call owns the shutdown. The placeholders are released
+            // just before it, as sg_make_* resources its pools still hold.
+            SokolLifetime.Resume();
+            sampler?.Dispose();
+            // _placeholderTexture's View is owned by the texture, so disposing it releases both.
+            texture?.Dispose();
+            // And down again before the pools go.
+            SokolLifetime.ShutDown();
             Gfx.shutdown();
             _ownsSokol = false;
+        }
+        else
+        {
+            // A device created by Run: sokol_app's cleanup callback issues the shutdown, after this
+            // returns, so the placeholders can be released here - they belong to a pool that is
+            // still live. Gating them on the lifetime flag would leak them.
+            SokolLifetime.Resume();
+            sampler?.Dispose();
+            texture?.Dispose();
+            SokolLifetime.ShutDown();
         }
 
         _swapchain?.Dispose();

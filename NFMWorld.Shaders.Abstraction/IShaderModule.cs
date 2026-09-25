@@ -85,4 +85,5 @@ public sealed record ShaderStageSources(
     string Hlsl,
     string Msl,
     string Glsl,
-    string GlslEs);
+    string GlslEs,
+    string Glsl330);

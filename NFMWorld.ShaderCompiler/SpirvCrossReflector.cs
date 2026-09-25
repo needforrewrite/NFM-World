@@ -54,6 +54,28 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
         /// </summary>
         public required string GlslEs { get; init; }
 
+        /// <summary>
+        /// Desktop GLSL at <c>#version 330</c>, for a core-profile desktop context.
+        ///
+        /// A separate target from <see cref="GlslGl"/> rather than the same source with the version
+        /// line rewritten, because the version is not cosmetic here. At 410 and above spirv-cross
+        /// emits <c>layout(location=N)</c> on the vertex stage's <em>outputs</em> and lets the two
+        /// stages link by location; that qualifier is only core from GLSL 4.10
+        /// (<c>ARB_separate_shader_objects</c>), and at 330 the generated code is rejected outright
+        /// (measured: every stage fails at 330 and 400, every stage passes at 410). At 330
+        /// spirv-cross emits plain <c>out</c> instead, so the varyings have to be made to link by
+        /// name - which is what <see cref="HarmonizeVaryingNames"/> is for, and it is a rename by
+        /// location decoration, so it is version-independent.
+        ///
+        /// Uniform blocks stay real std140 UBOs (<c>GlslEmitUniformBufferAsPlainUniforms</c> is
+        /// deliberately <em>not</em> set, unlike <see cref="GlslGl"/>). The consumer of this form
+        /// binds a uniform buffer object and looks the block up with <c>glGetUniformBlockIndex</c>,
+        /// so it never resolves a member name - loose uniforms would only degrade the layout, and
+        /// would also reintroduce sokol's unsigned-uniform problem, since a std140 block has no
+        /// per-member upload call to get the type wrong.
+        /// </summary>
+        public required string Glsl330 { get; init; }
+
         public required string Msl { get; init; }
         public required string Hlsl { get; init; }
     }
@@ -124,6 +146,10 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
             // compilation. This is the step that makes the Vulkan-flavoured pass above unusable
             // as the shipped GLSL and this one usable.
             Check(_cross.CompilerBuildCombinedImageSamplers(glslGlCompiler), context, "build combined samplers");
+            // Folding the pairs into combined samplers leaves each one named after the SPIR-V id,
+            // so a GL driver resolving it by the name the reflection reports would find nothing.
+            // See the method - the desktop pass needs this for the same reason the ES pass does.
+            NameCombinedSamplers(glslGlCompiler, context);
             var glslGl = Compile(glslGlCompiler, context, "GLSL(GL)");
 
             // A third GLSL pass for OpenGL ES / ANGLE, and the only one of the four targets that is
@@ -155,6 +181,41 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
             NameCombinedSamplers(glslEsCompiler, context);
             var glslEs = Compile(glslEsCompiler, context, "GLSL(ES)");
 
+            // A fourth GLSL pass, for a core-profile desktop GL context at the lowest version that
+            // can express this shader set: 330. See StageResult.Glsl330 for why it cannot be
+            // GlslGl with a different version line.
+            //
+            // The two fixups below are the desktop GL ones, not the ES ones: combined samplers
+            // because GL has one sampler object where Vulkan has two, and harmonized varyings
+            // because 330 links them by name. GlslEmitUniformBufferAsPlainUniforms stays off - the
+            // consumer binds a real UBO and resolves the block by index, never by member name, so
+            // loose uniforms would only cost layout quality (and the uint uniform problem with it).
+            var glsl330Compiler = MakeCompiler(context, ir, model, entryPoint, Backend.Glsl, options =>
+            {
+                // Off, though spirv-cross defaults it on. The option governs both the
+                // `#ifdef GL_ARB_shading_language_420pack` prologue and the `binding = N` qualifier
+                // it guards, and that qualifier is the one construct in this whole form that 3.3
+                // does not have: `layout(binding=)` on a uniform block is core only from GLSL 4.2
+                // (`ARB_shading_language_420pack`). Measured at `#version 330 core`, as it comes out
+                // otherwise: 24/24 stages pass *with* the guard and 0/24 pass with the guard removed
+                // (`'binding' : not supported for this version or the enabled extensions`), so the
+                // form is 3.3-clean only by leaning on an extension a conformant 3.3 driver is free
+                // not to expose.
+                //
+                // Dropping it costs nothing: the consumer assigns block bindings itself with
+                // glUniformBlockBinding after resolving the block through glGetUniformBlockIndex,
+                // so it never reads the qualifier. That is also why the form can be strictly 3.3
+                // despite spirv-cross's default - the default assumes the binding must travel in
+                // the source.
+                _cross.CompilerOptionsSetBool(options, CompilerOption.GlslEnable420PackExtension, 0);
+                _cross.CompilerOptionsSetBool(options, CompilerOption.RelaxNanChecks, 1);
+                _cross.CompilerOptionsSetUint(options, CompilerOption.GlslVersion, 330);
+            });
+            Check(_cross.CompilerBuildCombinedImageSamplers(glsl330Compiler), context, "build combined samplers (330)");
+            HarmonizeVaryingNames(glsl330Compiler, model);
+            NameCombinedSamplers(glsl330Compiler, context);
+            var glsl330 = Compile(glsl330Compiler, context, "GLSL(330)");
+
             Resources* resources = null;
             StageReflection reflection;
             Check(_cross.CompilerCreateShaderResources(glslCompiler, &resources), context, "shader resources");
@@ -181,6 +242,7 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
                 Glsl = glsl,
                 GlslGl = glslGl,
                 GlslEs = glslEs,
+                Glsl330 = glsl330,
                 Msl = msl,
                 Hlsl = hlsl,
             };
@@ -403,15 +465,17 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
     /// nothing: the location lookup returns -1, the sampler uniform keeps its default texture unit
     /// 0, and the draw reads whatever texture happens to be bound there rather than failing.
     ///
-    /// This matters for the ES target specifically. The desktop-GL pass has the same naming and the
-    /// same lookup, but sokol's GL backend sidesteps it by declaring its own
-    /// <c>glsl_uniforms</c> names in <c>sg_shader_desc</c> - a table this POC has no equivalent of,
-    /// because nothing sits between the reflection and the driver. Renaming here makes the GLSL
-    /// name and the reflected name agree, so the driver resolves the binding the same way the
-    /// reflection describes it.
-    ///
-    /// Only the ES compiler is touched; the rename is not a property of the other targets.
+    /// Both GL passes need this, and for the same reason: sokol's GL backend declares the name it
+    /// will look up as the pair's <c>glsl_name</c> in <c>sg_shader_desc</c>, and
+    /// <c>ShaderBindings</c> fills that field with the <em>reflection's</em> texture name - so the
+    /// name in the descriptor and the name in the compiled program have to be the same one, or the
+    /// lookup returns -1 and the sampler silently reads texture unit 0 instead. Renaming the pair
+    /// after the texture it wraps is what makes them agree.
     /// </summary>
+    /// <remarks>
+    /// Not a property of the other targets: the HLSL and MSL passes bind by register, and Vulkan
+    /// reads only the set/binding number, so none of them resolves a sampler by name.
+    /// </remarks>
     private unsafe void NameCombinedSamplers(Compiler* compiler, Context* context)
     {
         // The combined-sampler list is derived state, not decoration: it exists only after

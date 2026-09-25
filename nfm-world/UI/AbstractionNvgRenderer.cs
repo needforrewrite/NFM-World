@@ -414,10 +414,26 @@ public sealed class AbstractionNvgRenderer : INvgRenderer, IDisposable
         if (vertexCount == 0) return;
         EnsureFanIndexBuffer(cb, vertexCount);
         cb.SetPipeline(pipeline.State);
-        cb.SetVertexBuffer(0, _vertexBuffer!, VertexStride);
+
+        // The fan is drawn from a binding that *starts* at its first vertex rather than from a base
+        // vertex. Upstream nanovg draws a fan with GL_TRIANGLE_FAN, which this cannot: D3D11 has no
+        // fan topology, which is why the pattern below exists at all. That pattern - (0,1,2),
+        // (0,2,3), ... - is relative to the fan's own first vertex, so reaching a fan at byte
+        // 16*vertexOffset used to mean passing vertexOffset as a base vertex, and base vertex is an
+        // extension: GL/OES_draw_elements_base_vertex on GLES, ARB on desktop GL, with no core
+        // equivalent in ES 3.0. A context without it cannot draw a fan at all (the GL backend
+        // refuses the draw), and where the entry point exists but the context rejects it the failure
+        // is a GL error rather than a blank screen - which is what the glcore run hit.
+        //
+        // Binding at the offset instead makes index 0 land on the fan's first vertex, so the pattern
+        // is addressed exactly as it was written and no base vertex is involved. Every backend
+        // applies offsetBytes when the buffer is bound (FNA3D's vertexOffset, sokol's
+        // vertex_buffer_offsets, GL's glVertexAttribPointer), so this is the one form that works on
+        // all of them - including contexts with no base-vertex extension.
+        cb.SetVertexBuffer(0, _vertexBuffer!, VertexStride, vertexOffset * VertexStride);
         cb.SetIndexBuffer(_fanIndexBuffer!);
         SetUniform(cb, pipeline.Parameters, uniform);
-        cb.DrawIndexed(vertexOffset, 0, vertexCount - 2);
+        cb.DrawIndexed(0, 0, vertexCount - 2);
     }
 
     private void DrawStrip(ICommandBuffer cb, in Pipeline pipeline, in UniformInfo uniform, int vertexOffset, int vertexCount)

@@ -68,4 +68,4 @@ public sealed record ProgramReflection(
 /// not a dialect a driver compiles. <see cref="GlslEs"/> is the OpenGL ES 3.0 form, which ANGLE
 /// and a GLES3 context compile.
 /// </summary>
-public sealed record StageSources(byte[] Spirv, string Hlsl, string Msl, string Glsl, string GlslEs);
+public sealed record StageSources(byte[] Spirv, string Hlsl, string Msl, string Glsl, string GlslEs, string Glsl330);

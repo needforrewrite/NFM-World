@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RootNamespace>NFMWorld.Graphics.DesktopGL.Smoke</RootNamespace>
+        <!-- The game's own x64 pinning, kept so the two GL smoke tests and the game cannot diverge
+             in bitness. Desktop GL itself has no native library to match. -->
+        <PlatformTarget>x64</PlatformTarget>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
+        <ProjectReference Include="..\NFMWorld.Graphics.DesktopGL\NFMWorld.Graphics.DesktopGL.csproj" />
+        <ProjectReference Include="..\NFMWorld.Shaders.Abstraction\NFMWorld.Shaders.Abstraction.csproj" />
+        <!-- For the SDL context. This test is the game's context path rather than its own, which is
+             the point: the driver it measures has to be the one the game runs on.
+
+             The alias is repeated from NFMWorld.csproj for the reason documented there: SDK-style
+             transitive project references do not carry NFMWorld.Platform.SDL3's own Aliases through,
+             so a project that reads SDL directly has to alias it again or the two copies of the
+             SDL3.SDL type collide. -->
+        <ProjectReference Include="..\FNA\lib\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
+        <ProjectReference Include="..\NFMWorld.Platform.SDL3\NFMWorld.Platform.SDL3.csproj" />
+    </ItemGroup>
+
+    <!-- SDL3 at the output root, matching NFMWorld.Graphics.FNA3D.Smoke's shape. The game finds it
+         through its DllImport resolver (WorldGame.ImportResolver's "libs/<arch>" layout); this test
+         has no such resolver, so the DLL sits next to the executable where default probing finds it.
+         opengl32.dll needs no entry here - it is a system library. -->
+    <ItemGroup>
+        <None Include="..\NFMWorld.NativeLibs\libs\x64\SDL3.dll" Link="SDL3.dll" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+    <!-- The real generated bundles, produced here by the same build step the game uses, so the GLSL
+         this backend compiles is the one the compiler actually produced rather than a hand-written
+         stand-in. That matters most for the one thing no hand-written shader could test: whether the
+         Glsl330 form's varyings pair across the two stages by name - the property
+         HarmonizeVaryingNames exists for, and the one that fails at *link* rather than at compile. -->
+    <PropertyGroup>
+        <NFMWorldShadersDirectory>$(MSBuildProjectDirectory)\..\nfm-world\data\shaders</NFMWorldShadersDirectory>
+    </PropertyGroup>
+
+    <Import Project="..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.targets" />
+
+</Project>

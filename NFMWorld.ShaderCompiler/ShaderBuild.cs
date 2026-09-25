@@ -116,7 +116,7 @@ public static class ShaderBuild
                         $"{path} [technique {technique.Name}]: {stage} stage HLSL->SPIR-V failed.\n{error}");
 
                 var result = collector.ReflectAndCross(spirv, stage, entry, declaredInputs);
-                sourcesByStage[stage] = new StageSources(spirv, result.Hlsl, result.Msl, result.GlslGl, result.GlslEs);
+                sourcesByStage[stage] = new StageSources(spirv, result.Hlsl, result.Msl, result.GlslGl, result.GlslEs, result.Glsl330);
                 stages.Add(HlslBoolUniforms.Mark(result.Reflection, boolUniforms));
 
                 log?.Invoke($"    {technique.Name,-16} {stage,-8} SPIR-V {spirv.Length,7} B   " +

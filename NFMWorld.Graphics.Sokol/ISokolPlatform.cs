@@ -29,10 +29,10 @@ namespace NFMWorld.Graphics.Sokol;
 /// <c>sg_environment</c> with the comment "Cannot use sapp_* functions as Sokol App is not
 /// initialized".
 ///
-/// <see cref="SokolD3D11Platform"/> is the only implementation today. Metal (SharpMetal), Vulkan and
-/// GL are the intended follow-ons, and the split below is drawn so that adding one does not reshape
-/// anything: a platform supplies its own 3D-API objects in <see cref="CreateEnvironment"/>, its own
-/// per-frame drawable in <see cref="AcquireSwapchain"/>, and its own present in
+/// <see cref="SokolD3D11Platform"/> and <see cref="SokolGlPlatform"/> implement this today. Vulkan
+/// and Metal are the intended follow-ons, and the split below is drawn so that adding one does not
+/// reshape anything: a platform supplies its own 3D-API objects in <see cref="CreateEnvironment"/>,
+/// its own per-frame drawable in <see cref="AcquireSwapchain"/>, and its own present in
 /// <see cref="Present"/>. What it does *not* do is anything about sokol's own resource model, which
 /// is why this interface mentions no <c>sg_image</c>/<c>sg_pipeline</c>/<c>sg_buffer</c>.
 ///
@@ -79,6 +79,40 @@ public interface ISokolPlatform : IDisposable
     /// multi-threaded recording, can return <c>null</c> and accept calls from anywhere.
     /// </summary>
     bool? SingleThreadedLifetime { get; }
+
+    /// <summary>
+    /// Whether <see cref="Present"/> waits for the display to refresh before returning.
+    ///
+    /// Settable because the setting is user-facing - <c>GraphicsSettingsShim
+    /// .SynchronizeWithVerticalRetrace</c> exists and the settings menu writes it - and because every
+    /// backend here can honour a change to it, each in its own way: D3D11 passes an interval to
+    /// <c>IDXGISwapChain::Present</c>, GL calls <c>SDL_GL_SetSwapInterval</c>, Vulkan picks a present
+    /// mode. That is also why this is a platform property rather than a device one: the interval is a
+    /// property of presenting, and presenting is the platform's job. (The older GL <em>device</em>
+    /// path is the exception that makes the distinction visible - there the interval is fixed when
+    /// the context is created and cannot follow the setting at all, which
+    /// <c>GraphicsSettingsShim</c>'s own remarks say.)
+    ///
+    /// Read per present rather than cached at creation, so it can follow the setting without
+    /// recreating anything.
+    /// </summary>
+    bool VSync { get; set; }
+
+    /// <summary>
+    /// The window-system handle this platform was built against, as it was handed in.
+    ///
+    /// An <see cref="IntPtr"/> rather than a typed handle so a platform that needs to pass the
+    /// window back to the windowing library can do so without this interface - or the backend that
+    /// supplies it - depending on that library's types. On Win32 it is the <c>HWND</c>,
+    /// which is what <c>SdlWindow.NativeWindowHandle</c> returns and what D3D11 needs at
+    /// construction; the GL platform needs the equivalent because SDL - not sokol - owns its
+    /// context, so swapping the buffers is an SDL call against this same window.
+    ///
+    /// <see cref="SokolAppPlatform"/> (the <see cref="SokolGraphicsDevice.Run"/> path) has no window
+    /// to report: sokol_app owns that one, and the platform can only return
+    /// <see cref="IntPtr.Zero"/> for it.
+    /// </summary>
+    IntPtr NativeHandle { get; }
 
     /// <summary>
     /// The 3D-API objects and default formats <c>sg_setup</c> needs, built against the surface the
