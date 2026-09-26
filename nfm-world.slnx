@@ -8,42 +8,6 @@
   <Folder Name="/bench/luau-benchmark/">
     <Project Path="bench/luau-benchmark/LuauBenchmark.csproj" />
   </Folder>
-  <Folder Name="/CefGlue/">
-    <Project Path="CefGlue/CefGlue.BrowserProcess/CefGlue.BrowserProcess.csproj">
-      <Platform Solution="*|Any CPU" Project="x64" />
-      <Platform Solution="*|x86" Project="x64" />
-    </Project>
-    <Project Path="CefGlue/CefGlue.Common.Shared/CefGlue.Common.Shared.csproj">
-      <Platform Solution="*|Any CPU" Project="x64" />
-      <Platform Solution="*|x86" Project="x64" />
-    </Project>
-    <Project Path="CefGlue/CefGlue.Common/CefGlue.Common.csproj">
-      <Platform Solution="*|Any CPU" Project="x64" />
-      <Platform Solution="*|x86" Project="x64" />
-    </Project>
-    <Project Path="CefGlue/CefGlue/CefGlue.csproj">
-      <Platform Solution="*|Any CPU" Project="x64" />
-      <Platform Solution="*|x86" Project="x64" />
-    </Project>
-  </Folder>
-  <Folder Name="/ClaySharp/">
-    <Project Path="ClaySharp/ClaySharp.csproj" />
-  </Folder>
-  <Folder Name="/ClaySharp/examples/">
-    <Project Path="ClaySharp/examples/FNASimpleDemo/ClaySharp.FNASimpleDemo.csproj" />
-    <Project Path="ClaySharp/examples/NvgSharpSimpleDemo/ClaySharp.NvgSharpSimpleDemo.csproj" />
-    <Project Path="ClaySharp/examples/SDL3SimpleDemo/ClaySharp.SDL3SimpleDemo.csproj" />
-  </Folder>
-  <Folder Name="/ClaySharp/plugins/">
-    <Project Path="ClaySharp/plugins/ClaySharp.Plugin.TextInput.FNA/ClaySharp.Plugin.TextInput.FNA.csproj" />
-    <Project Path="ClaySharp/plugins/ClaySharp.Plugin.TextInput.SDL3/ClaySharp.Plugin.TextInput.SDL3.csproj" />
-    <Project Path="ClaySharp/plugins/ClaySharp.Plugin.TextInput/ClaySharp.Plugin.TextInput.csproj" />
-  </Folder>
-  <Folder Name="/ClaySharp/renderer/">
-    <Project Path="ClaySharp/renderer/nvg/ClaySharp.Renderer.NvgSharp.csproj" />
-    <Project Path="ClaySharp/renderer/fna/ClaySharp.Renderer.FNA.csproj" />
-    <Project Path="ClaySharp/renderer/sdl3/ClaySharp.Renderer.SDL3.csproj" />
-  </Folder>
   <Folder Name="/Facepunch.Steamworks/">
     <Project Path="Facepunch.Steamworks/Facepunch.Steamworks/Facepunch.Steamworks.Posix.csproj" />
     <Project Path="Facepunch.Steamworks/Facepunch.Steamworks/Facepunch.Steamworks.Win64.csproj" />
@@ -110,11 +74,16 @@
     <Project Path="NvgSharp/src/NvgSharp/NvgSharp.csproj" />
     <Project Path="NvgSharp/src/XNA/NvgSharp.FNA.Core.csproj" />
   </Folder>
-  <Project Path="Apos.Shapes/Example/Platforms/FNA/FNA.csproj" />
-  <Project Path="Apos.Shapes/Source/Apos.Shapes.FNA.csproj" />
+  <Project Path="Apos.Shapes/Source/Apos.Shapes.NFMW.csproj" />
+  <!-- The runnable example for the NFMW port, beside the FNA platform that was already here. -->
+  <Project Path="Apos.Shapes/Example/Platforms/NFMW/NFMW.csproj" />
   <Project Path="c:/Users/Maxine/AppData/Local/Temp/structdefault/structdefault.csproj" />
   <Project Path="FNA/lib/SDL3-CS/SDL3/SDL3.Core.csproj" />
   <Project Path="LibTessDotNet/LibTessDotNet/LibTessDotNet.csproj" />
+  <Project Path="Maxine.Silk.EGL/native/Maxine.Silk.OpenGLES.ANGLE.Native/Maxine.Silk.OpenGLES.ANGLE.Native.csproj" />
+  <Project Path="Maxine.Silk.EGL/src/Extensions/Maxine.EGL.Extensions.ANGLE/Maxine.EGL.Extensions.ANGLE.csproj" />
+  <Project Path="Maxine.Silk.EGL/src/Extensions/Maxine.EGL.Extensions.EXT/Maxine.EGL.Extensions.EXT.csproj" />
+  <Project Path="Maxine.Silk.EGL/src/Maxine.EGL/Maxine.EGL.csproj" />
   <Project Path="Microsoft.UI.Reactor.Yoga/Microsoft.UI.Reactor.Yoga.csproj" />
   <Project Path="NanoSvgSharp.Test/NanoSvgSharp.Test.csproj" />
   <Project Path="NanoSvgSharp/NanoSvgSharp.csproj" />
@@ -129,8 +98,15 @@
   <Project Path="NFMWorld.FNA3D/NFMWorld.FNA3D.csproj" />
   <Project Path="NFMWorld.GenerateHmacKey/NFMWorld.GenerateHmacKey.csproj" />
   <Project Path="NFMWorld.Graphics.Abstraction/NFMWorld.Graphics.Abstraction.csproj" />
+  <Project Path="NFMWorld.Graphics.D3D11/NFMWorld.Graphics.D3D11.csproj" />
+  <Project Path="NFMWorld.Graphics.D3D11.Smoke/NFMWorld.Graphics.D3D11.Smoke.csproj" />
   <Project Path="NFMWorld.Graphics.FNA3D/NFMWorld.Graphics.FNA3D.csproj" />
   <Project Path="NFMWorld.Graphics.FNA3D.Smoke/NFMWorld.Graphics.FNA3D.Smoke.csproj" />
+  <Project Path="NFMWorld.Graphics.OpenGL.Smoke/NFMWorld.Graphics.OpenGL.Smoke.csproj" />
+  <Project Path="NFMWorld.Graphics.OpenGL/NFMWorld.Graphics.OpenGL.csproj" />
+  <Project Path="NFMWorld.Graphics.DesktopGL.Smoke/NFMWorld.Graphics.DesktopGL.Smoke.csproj" />
+  <Project Path="NFMWorld.Graphics.DesktopGL/NFMWorld.Graphics.DesktopGL.csproj" />
+  <Project Path="NFMWorld.Graphics.Sokol/NFMWorld.Graphics.Sokol.csproj" />
   <Project Path="NFMWorld.Library.Test/NFMWorld.Library.Test.csproj" />
   <Project Path="NFMWorld.Library/NFMWorld.Library.csproj" />
   <Project Path="NFMWorld.Lua/NFMWorld.Lua.csproj" />
@@ -151,6 +127,9 @@
   <Project Path="NFMWorld.Sentry/NFMWorld.Sentry.csproj" />
   <Project Path="NFMWorld.Server.SharedMemory/NFMWorld.Server.SharedMemory.csproj" />
   <Project Path="NFMWorld.ShaderSourceGen/NFMWorld.ShaderSourceGen.csproj" />
+  <Project Path="NFMWorld.ShaderCompiler/NFMWorld.ShaderCompiler.csproj" />
+  <Project Path="NFMWorld.ShaderCompiler.Task/NFMWorld.ShaderCompiler.Task.csproj" />
   <Project Path="NFMWorld.Shaders.Abstraction/NFMWorld.Shaders.Abstraction.csproj" />
+  <Project Path="SharpSokol/src/SharpSokol/SharpSokol.csproj" />
   <Project Path="SoundTouch.Net.NAudioSupport/SoundTouch.Net.NAudioSupport.csproj" />
 </Solution>
