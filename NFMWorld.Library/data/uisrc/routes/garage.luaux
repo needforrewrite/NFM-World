@@ -91,13 +91,10 @@ local NoResults = styled(Sx.Text) {
 	padding = 24,
 }
 
--- Module-level constant style for the collection wrapper View (stable identity).
-local collectionViewStyle: Sx.Styles = { flexDirection = "column", flexShrink = 0 }
-
 -- Stable card styles: selection change swaps the reference, so unchanged cards skip
 -- setProperty (the renderer's reactive-prop effect compares references).
-local cardStyleSelected: Sx.Styles = { marginBottom = 8, opacity = 1 }
-local cardStyleUnselected: Sx.Styles = { marginBottom = 8, opacity = 0.7 }
+local cardStyleSelected: Sx.Styles = { marginBottom = 16, opacity = 1, flexDirection = 'column', flexShrink = 0 }
+local cardStyleUnselected: Sx.Styles = { marginBottom = 16, opacity = 0.7, flexDirection = 'column', flexShrink = 0 }
 
 -- Card component. `selected` is an accessor; only cards whose selection changes update.
 local function CarCard(props: { name: Sx.Signalish<string>, collectionName: Sx.Signalish<string>, fileName: Sx.Signalish<string>, selected: Sx.Signalish<boolean>, onSelect: (string, string) -> () })
@@ -319,7 +316,7 @@ local function Garage()
 					{function(item: () -> (CarCollectionData | { id: string, cars: {CarStatsData} }), index: number)
 						return <Sx.View
 							name={"view " .. item().id}
-							style={collectionViewStyle}>
+							style={{ flexDirection = "column", flexShrink = 0 }}>
 							<CollectionSection
 								name={item().id}
 								active={currentCollection() ~= nil and (currentCollection() :: CarCollectionData).id == item().id}
