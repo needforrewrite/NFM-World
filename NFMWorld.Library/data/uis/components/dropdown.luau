@@ -45,7 +45,7 @@ local function toRows(options: { string } | { DropdownOption }): { DropdownOptio
 end
 
 local function Dropdown(props: DropdownProps)
-	local rows = toRows(props.options)
+	local rows = toRows(Sx.read(props.options))
 	local width = props.width or 160
 	local disabled = props.disabled == true
 	local placeholder = props.placeholder or "Select..."
