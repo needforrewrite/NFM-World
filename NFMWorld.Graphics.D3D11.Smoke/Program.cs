@@ -52,7 +52,11 @@ internal static unsafe class Program
             WindowHandle: window.Handle,
             Width: Width,
             Height: Height,
-            MultiSampleCount: 0));
+            MultiSampleCount: 0,
+            // Deliberately off. The cache exists to skip D3DCompile, and this test's job is to run it:
+            // a hit would make the bundle checks below read a previous run's blob and report on the
+            // compiler's output from some other day or source revision.
+            EnableShaderCache: false));
 
         ReportInterface(device);
         CheckTextureRoundTrip(device);

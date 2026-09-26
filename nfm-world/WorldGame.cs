@@ -1279,6 +1279,12 @@ public class WorldGame : IDisposable
             Process.GetCurrentProcess().Kill(false);
         };
 
+        // The graphics layer below this app references no logging stack of its own - see
+        // GraphicsDiagnostics - so this is where its diagnostics reach the log rather than being
+        // dropped. Wired before anything creates a device, because the first message the D3D11 backend
+        // raises is the shader cache's location, from the device's own constructor.
+        GraphicsDiagnostics.Warning = message => Logging.Debug(message);
+
         // The level above it, parsed before the sokol backend is validated because that validation
         // only applies to the arm that will use it. The check used to run unconditionally, which made
         // it a gate on the whole process rather than on sokol: on Linux it reported that

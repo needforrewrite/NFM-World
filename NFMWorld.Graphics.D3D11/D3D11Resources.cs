@@ -527,8 +527,8 @@ internal sealed unsafe class D3D11ShaderModule : IShaderModule, IDisposable
     {
         Reflection = reflection;
 
-        VertexBytecode = D3D11ShaderCompiler.Compile(vertex.Hlsl, "vs_5_0", "vertex");
-        var pixelBytecode = D3D11ShaderCompiler.Compile(pixel.Hlsl, "ps_5_0", "pixel");
+        VertexBytecode = D3D11ShaderCompiler.Compile(device.ShaderCache, vertex.Hlsl, "vs_5_0", "vertex");
+        var pixelBytecode = D3D11ShaderCompiler.Compile(device.ShaderCache, pixel.Hlsl, "ps_5_0", "pixel");
 
         ID3D11VertexShader* vertexShader = null;
         fixed (byte* code = VertexBytecode)
@@ -573,8 +573,25 @@ internal static unsafe class D3D11ShaderCompiler
     /// </summary>
     private const uint CompileFlags = 0x00000003;
 
-    internal static byte[] Compile(string hlsl, string profile, string what)
+    /// <summary>
+    /// The compiler the flags above were chosen against, recorded into the cache key.
+    ///
+    /// There is no version query on <c>d3dcompiler_47.dll</c> that would answer this at runtime without
+    /// loading the module's version resource, and doing that on every launch to guard a cache that is
+    /// only there to save time would be its own small waste. So the identity of the compiler is taken
+    /// to be the API surface this backend binds - the same reasoning FNA3D's driver uses when it
+    /// stamps a fixed string rather than probing. A future move to <c>DxcCreateInstance</c> changes
+    /// this string, and every cached blob misses once.
+    /// </summary>
+    internal const string CompilerVersion = "d3dcompiler_47/D3DCompile";
+
+    internal static byte[] Compile(D3D11ShaderCache? cache, string hlsl, string profile, string what)
     {
+        var cached = cache?.TryRead(hlsl, profile);
+        if (cached is not null)
+            return cached;
+
+
         // The pinned names have to be released, and they are pinned UTF-8-free ASCII because every
         // identifier in this HLSL is ASCII - the source itself carries no non-ASCII bytes either, so
         // the byte count is the character count.
@@ -617,6 +634,8 @@ internal static unsafe class D3D11ShaderCompiler
             var result = new byte[length];
             new ReadOnlySpan<byte>(blob->GetBufferPointer(), length).CopyTo(result);
             D3D11Interop.Release(ref blob);
+
+            cache?.Store(hlsl, profile, result);
 
             return result;
         }

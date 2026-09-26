@@ -41,13 +41,20 @@ namespace NFMWorld.Graphics.D3D11;
 /// which would turn a diagnostic into an inability to launch.
 /// </param>
 /// <param name="DepthStencilFormat">The depth-stencil format the swapchain's own automatic depth buffer is not used for; see <see cref="D3D11Swapchain"/>.</param>
+/// <param name="EnableShaderCache">
+/// Whether compiled shaders may be read from and written to the on-disk cache described by
+/// <see cref="D3D11ShaderCache"/>. On by default because that is the point of it - the shader tree
+/// costs about 7.7 seconds to compile from scratch on every launch - and off for a run that should
+/// exercise the compiler rather than read a previous run's output, which is what the smoke test wants.
+/// </param>
 public readonly record struct D3D11DeviceDescription(
     nint WindowHandle,
     int Width,
     int Height,
     int MultiSampleCount = 0,
     bool EnableDebugLayer = false,
-    TextureFormat DepthStencilFormat = TextureFormat.Depth24Stencil8);
+    TextureFormat DepthStencilFormat = TextureFormat.Depth24Stencil8,
+    bool EnableShaderCache = true);
 
 /// <summary>
 /// A Direct3D 11 rendering device over a single <c>HWND</c>-owned swapchain.
@@ -66,6 +73,13 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
     private readonly D3D11Swapchain _swapchain;
     private D3D11CommandBuffer? _activeCommandBuffer;
     private bool _disposed;
+
+    /// <summary>
+    /// The on-disk cache compiled shaders are read from and written to, or null when this device was
+    /// asked not to use one. Read by <see cref="LoadShaderModule"/>, which is the only thing that
+    /// compiles anything.
+    /// </summary>
+    internal D3D11ShaderCache? ShaderCache { get; }
 
     public ISwapchain Swapchain => _swapchain;
 
@@ -94,11 +108,21 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
 
     private D3D11GraphicsDevice(
         ID3D11Device* device, ID3D11DeviceContext* context, D3D_FEATURE_LEVEL featureLevel,
-        nint windowHandle, int width, int height, int multiSampleCount, TextureFormat depthStencilFormat)
+        nint windowHandle, int width, int height, int multiSampleCount, TextureFormat depthStencilFormat,
+        bool enableShaderCache)
     {
         Device = device;
         Context = context;
         FeatureLevel = featureLevel;
+        ShaderCache = D3D11ShaderCache.Create(enableShaderCache);
+
+        // Reported rather than left implicit, because "why is the boot still slow" and "where did this
+        // file come from" are both answered by this one line and neither is obvious from the outside.
+        // A null here is not an error - it is what a cache-disabled device and a non-Windows host both
+        // produce - so no warning is raised for it.
+        if (ShaderCache is not null)
+            GraphicsDiagnostics.Warning?.Invoke($"shader cache: {ShaderCache.Location}");
+
         _swapchain = new D3D11Swapchain(this, windowHandle, width, height, multiSampleCount, depthStencilFormat);
     }
 
@@ -189,7 +213,8 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         {
             var result = new D3D11GraphicsDevice(
                 device, context, level, description.WindowHandle,
-                description.Width, description.Height, description.MultiSampleCount, description.DepthStencilFormat);
+                description.Width, description.Height, description.MultiSampleCount, description.DepthStencilFormat,
+                description.EnableShaderCache);
             return result;
         }
         catch
