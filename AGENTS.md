@@ -4,6 +4,11 @@ Keep guidance short and actionable. Reference files and patterns below when maki
 
 DO NOT write PowerShell or shell scripts for code-editing tasks. ALWAYS use the code-editing tools available to you.
 
+Comments written by AI should be short and succint and not overused. Do not overdescribe things or explain why the code
+does what it does unless it could be confusing to a future maintainer, and keep it concise. Don't add comments for
+bugfixes unless they're so confusing there's a likelihood of them being reverted.
+Don't reference Claude Code/Copilot projects in comments as it's likely other maintainers won't have context for them.
+
 When writing Luau, ALWAYS write type-safe code with type annotations (like if you were writing TypeScript!). Don't just stuff `any` everywhere. Check your Luau code with `luau-analyze` in strict mode and fix any errors unless fixing them is impossible within the type system or would strongly reduce readability.
 
 Don't run all Lua-CSharp tests unless you've touched Lua-CSharp code, as they have a bunch of regression tests that take minutes to execute.
