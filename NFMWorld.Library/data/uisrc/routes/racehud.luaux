@@ -20,7 +20,7 @@ local Root = styled(Sx.View) {
 }
 
 local CornerLabel = styled(Sx.View) {
-	marginBottom = 4,
+	marginBottom = 4
 }
 
 local CornerLabelText = styled(Sx.Text) {
@@ -276,7 +276,7 @@ local function RaceHud()
 				display = "flex",
 				alignItems = "flex-end",
 			}}>
-			<GlassCard color="#69f0ae" style={{}}>
+			<GlassCard color="#69f0ae">
 				<Sx.View style={{ flexDirection = "column", alignItems = "center", justifyContent = "center" }}> 
 					<Sx.Text style={{ fontSize = 36, fontStyle = "bold", strokeColor = "black" }}>
 						{position()}/{totalRacers()}

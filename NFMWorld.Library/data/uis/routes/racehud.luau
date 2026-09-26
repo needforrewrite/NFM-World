@@ -20,7 +20,7 @@ local Root = styled(Sx.View) {
 }
 
 local CornerLabel = styled(Sx.View) {
-	marginBottom = 4,
+	marginBottom = 4
 }
 
 local CornerLabelText = styled(Sx.Text) {
@@ -276,7 +276,7 @@ local function RaceHud()
 				display = "flex",
 				alignItems = "flex-end",
 			},
-			x(GlassCard)({ color = "#69f0ae", style = {},
+			x(GlassCard)({ color = "#69f0ae",
 				x(Sx.View)({ style = { flexDirection = "column", alignItems = "center", justifyContent = "center" },
 					x(Sx.Text)({ style = { fontSize = 36, fontStyle = "bold", strokeColor = "black" },
 						function() return `{__luaux_read(position())}/{__luaux_read(totalRacers())}` end,
