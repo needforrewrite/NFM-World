@@ -136,6 +136,9 @@ public abstract partial class Component : Node, IAnimationCallback
         NodeInternal.MaxWidth = Styles.MaxWidth.Scale(G.Scale);
         NodeInternal.MaxHeight = Styles.MaxHeight.Scale(G.Scale);
         NodeInternal.AspectRatio = Styles.AspectRatio?.Value ?? float.NaN;
+
+        // Applied at the current scale, so record it - Rescale compares against this.
+        _lastScale = G.Scale;
     }
 
     public Action? AnimationFrameBegan { get; set; }
@@ -201,45 +204,58 @@ public abstract partial class Component : Node, IAnimationCallback
     // https://www.w3schools.com/css/css_boxmodel.asp
     private protected LuaVector2 Root;
 
-    /// <summary>
-    /// In the CSS box model, gets the top-left position of the margin box.
-    /// </summary>
-    [LuaName] public LuaVector2 LayoutMarginPosition => Root + new LuaVector2(LayoutX, LayoutY);
+    // Yoga's LayoutX/LayoutY are the border-box corner, relative to the parent's border box:
+    // a child's leading margin is already included in that offset, but its trailing margins are
+    // not. LayoutWidth/LayoutHeight are the border-box size and exclude margins entirely. Every
+    // box below is therefore derived by stepping back out (or in) one edge at a time - adding a
+    // leading margin to reach the margin box, adding a border to reach the padding box - because
+    // subtracting a margin from LayoutWidth (as this file used to do) shrinks the box instead of
+    // moving it, which is what made a marginBottom cut the bottom off a card rather than space it.
 
     /// <summary>
-    /// In the CSS box model, gets the size of the margin box, from the top-left to the bottom-right.
+    /// The top-left of this node's margin box, in the coordinate space of the layout root.
     /// </summary>
-    [LuaName] public LuaVector2 LayoutMarginSize => new(LayoutWidth, LayoutHeight);
+    [LuaName] public LuaVector2 LayoutMarginPosition => Root + new LuaVector2(LayoutX - LayoutMarginLeft, LayoutY - LayoutMarginTop);
 
     /// <summary>
-    /// In the CSS box model, gets the top-left position of the border box.
+    /// The size of this node's margin box, from the top-left to the bottom-right.
     /// </summary>
-    [LuaName] public LuaVector2 LayoutBorderPosition => Root + new LuaVector2(LayoutX + LayoutMarginLeft, LayoutY + LayoutMarginTop);
+    /// <remarks>Yoga reports the border-box size, so the margins are added on.</remarks>
+    [LuaName] public LuaVector2 LayoutMarginSize => new(LayoutWidth + LayoutMarginLeft + LayoutMarginRight, LayoutHeight + LayoutMarginTop + LayoutMarginBottom);
 
     /// <summary>
-    /// In the CSS box model, gets the size of the border box, from the top-left to the bottom-right.
+    /// The top-left of this node's border box, in the coordinate space of the layout root.
     /// </summary>
-    [LuaName] public LuaVector2 LayoutBorderSize => new(LayoutWidth - (LayoutMarginLeft + LayoutMarginRight), LayoutHeight - (LayoutMarginTop + LayoutMarginBottom));
+    [LuaName] public LuaVector2 LayoutBorderPosition => Root + new LuaVector2(LayoutX, LayoutY);
 
     /// <summary>
-    /// In the CSS box model, gets the top-left position of the padding box.
+    /// The size of this node's border box, from the top-left to the bottom-right.
     /// </summary>
-    [LuaName] public LuaVector2 LayoutPaddingPosition => Root + new LuaVector2(LayoutX + LayoutMarginLeft + LayoutBorderLeft, LayoutY + LayoutMarginTop + LayoutBorderTop);
+    /// <remarks>
+    /// This is exactly what Yoga reports: <c>LayoutWidth</c>/<c>LayoutHeight</c> are border-box
+    /// dimensions.
+    /// </remarks>
+    [LuaName] public LuaVector2 LayoutBorderSize => new(LayoutWidth, LayoutHeight);
 
     /// <summary>
-    /// In the CSS box model, gets the size of the padding box, from the top-left to the bottom-right.
+    /// The top-left of this node's padding box, in the coordinate space of the layout root.
     /// </summary>
-    [LuaName] public LuaVector2 LayoutPaddingSize => new(LayoutWidth - (LayoutMarginLeft + LayoutMarginRight + LayoutBorderLeft + LayoutBorderRight), LayoutHeight - (LayoutMarginTop + LayoutMarginBottom + LayoutBorderTop + LayoutBorderBottom));
+    [LuaName] public LuaVector2 LayoutPaddingPosition => LayoutBorderPosition + new LuaVector2(LayoutBorderLeft, LayoutBorderTop);
 
     /// <summary>
-    /// In the CSS box model, gets the top-left position of the content box.
+    /// The size of this node's padding box, from the top-left to the bottom-right.
     /// </summary>
-    [LuaName] public LuaVector2 LayoutContentPosition => Root + new LuaVector2(LayoutX + LayoutMarginLeft + LayoutBorderLeft + LayoutPaddingLeft, LayoutY + LayoutMarginTop + LayoutBorderTop + LayoutPaddingTop);
+    [LuaName] public LuaVector2 LayoutPaddingSize => new(LayoutWidth - (LayoutBorderLeft + LayoutBorderRight), LayoutHeight - (LayoutBorderTop + LayoutBorderBottom));
 
     /// <summary>
-    /// In the CSS box model, gets the size of the content box, from the top-left to the bottom-right.
+    /// The top-left of this node's content box, in the coordinate space of the layout root.
     /// </summary>
-    [LuaName] public LuaVector2 LayoutContentSize => new(LayoutWidth - (LayoutMarginLeft + LayoutMarginRight + LayoutBorderLeft + LayoutBorderRight + LayoutPaddingLeft + LayoutPaddingRight), LayoutHeight - (LayoutMarginTop + LayoutMarginBottom + LayoutBorderTop + LayoutBorderBottom + LayoutPaddingTop + LayoutPaddingBottom));
+    [LuaName] public LuaVector2 LayoutContentPosition => LayoutPaddingPosition + new LuaVector2(LayoutPaddingLeft, LayoutPaddingTop);
+
+    /// <summary>
+    /// The size of this node's content box, from the top-left to the bottom-right.
+    /// </summary>
+    [LuaName] public LuaVector2 LayoutContentSize => new(LayoutWidth - (LayoutBorderLeft + LayoutBorderRight + LayoutPaddingLeft + LayoutPaddingRight), LayoutHeight - (LayoutBorderTop + LayoutBorderBottom + LayoutPaddingTop + LayoutPaddingBottom));
 
     /// <summary>
     /// Gets the margin width and height of the node as a <see cref="LuaVector2"/>.
@@ -654,7 +670,10 @@ public abstract partial class Component : Node, IAnimationCallback
     [LuaName]
     public bool IsDisplayed => Styles.Display != Display.None && Styles.Opacity > 0 && Styles.Visibility != Visibility.Hidden;
 
-    private float _lastScale = 1f;
+    // NaN means "no scale applied yet", so the first Rescale always runs. A node whose Styles
+    // are never assigned (a text label styled with only font/color props) would otherwise keep
+    // a 1f default, believe it is already up to date, and never rescale with the window.
+    private float _lastScale = float.NaN;
 
     /// <summary>
     /// Do not use directly.
@@ -662,7 +681,7 @@ public abstract partial class Component : Node, IAnimationCallback
     /// <returns>true if scale changed</returns>
     internal bool Rescale()
     {
-        if (Math.Abs(_lastScale - G.Scale) > 0.001f)
+        if (float.IsNaN(_lastScale) || Math.Abs(_lastScale - G.Scale) > 0.001f)
         {
             // Re-trigger all size-related onChanged handlers so they re-scale with new G.Scale
 #pragma warning disable CA2245
