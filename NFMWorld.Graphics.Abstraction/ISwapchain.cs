@@ -45,5 +45,25 @@ public interface ISwapchain
     /// </summary>
     void Resize(int width, int height, int multiSampleCount = 0);
 
+    /// <summary>
+    /// Whether <see cref="Present"/> should wait for vertical blank.
+    ///
+    /// Settable at any time, because on the backends that use it the interval is an argument to the
+    /// present call rather than a property of the drawable - so this is state the device stores and
+    /// re-reads each present, not something that has to be applied by rebuilding anything.
+    ///
+    /// The default implementation is deliberately a no-op rather than a throw. Two of the four
+    /// backends cannot honour it from here at all: the GL backends' interval belongs to the SDL-owned
+    /// context and is set through <c>SDL_GL_SetSwapInterval</c>, and FNA3D's present interval is set
+    /// on its own device. For those, a backend that silently ignores this is correct - the app's
+    /// setting reaches them through their own channel, and the alternative would be a property that
+    /// throws on the majority of backends that exist.
+    /// </summary>
+    bool VSync
+    {
+        get => true;
+        set { }
+    }
+
     void Present();
 }
