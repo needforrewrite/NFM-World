@@ -95,6 +95,17 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
     /// <summary>The texture the current render target view covers: the multisampled one, or the back buffer.</summary>
     internal ID3D11Texture2D* ColorTarget => _multisampledTexture is null ? _backBuffer : _multisampledTexture;
 
+    /// <summary>
+    /// The swapchain's own back buffer, which is what a present hands to the compositor.
+    ///
+    /// Distinct from <see cref="ColorTarget"/> whenever multisampling is on: the resolve into this
+    /// texture is the last step of <see cref="Present"/>, so this is the surface to read to see what
+    /// actually reaches the screen. Exposed for the smoke test's present check, which reads the clear
+    /// colour back off it - a raw pointer rather than a wrapped <c>D3D11Texture</c>, because that type
+    /// creates the resource it wraps and this one belongs to DXGI.
+    /// </summary>
+    internal ID3D11Texture2D* BackBuffer => _backBuffer;
+
     internal ID3D11RenderTargetView* ColorView => _multisampledView is null ? _backBufferView : _multisampledView;
 
     internal ID3D11DepthStencilView* DepthView => _depthView;

@@ -662,14 +662,41 @@ internal static unsafe class Program
     /// its view, and the cached pair has to be rebuilt or the next frame draws into a released
     /// resource. That failure is a validation error at best and a crash at worst, so the check is
     /// simply that a draw-present-resize-draw-present cycle completes.
+    ///
+    /// The first check is not "does Present throw" but "did the clear land", and that is the stronger
+    /// question on purpose. Nothing here calls <see cref="ICommandBuffer.SetRenderTarget"/> - which is
+    /// the point, since the abstraction documents a null target as the back buffer and a caller that
+    /// never asks for one draws there. D3D11's output-merger stage starts with no view bound, and
+    /// clearing or drawing against that empty slot writes nothing *and reports nothing*, so a
+    /// throw-only check passes on a frame that reaches the screen as the swapchain's untouched buffer.
+    /// Reading the clear colour back off the back buffer is what distinguishes the two.
+    ///
+    /// The read is taken <em>before</em> the present, and that ordering is forced rather than chosen.
+    /// A flip-model present does not copy anything: it hands the buffer to the compositor and DXGI
+    /// moves on to the next one, so with <c>FLIP_DISCARD</c> the buffer readable afterwards is the one
+    /// that was two presents ago - discarded, and held at the same black this test would report. The
+    /// readback therefore only means anything while the frame is still the current back buffer, which
+    /// is the moment between the submit and the present. The present is then checked for throwing,
+    /// which is all it can be checked for from here.
     /// </summary>
     private static void CheckPresent(D3D11GraphicsDevice device)
     {
         var swapchain = device.D3d11Swapchain;
 
         var commandBuffer = device.AcquireCommandBuffer();
-        commandBuffer.Clear(ClearOptions.Color | ClearOptions.Depth, new ColorRgba(0f, 0f, 0f));
+        commandBuffer.Clear(ClearOptions.Color | ClearOptions.Depth, new ColorRgba(1f, 0f, 1f, 1f));
         device.Submit(commandBuffer);
+
+        // Read through the swapchain's own DXGI buffer rather than the multisampled texture, because
+        // the resolve into that buffer is part of what a present does here - and the texel is BGRA,
+        // since the back buffer format is B8G8R8A8.
+        var pixel = ReadBackBufferPixel(device, swapchain.BackBuffer);
+        if (pixel is not null)
+        {
+            Report("PRESENT", $"a cleared frame reaches the swapchain (got " +
+                              $"{pixel[0]},{pixel[1]},{pixel[2]},{pixel[3]}, want 255,0,255,255)",
+                pixel[0] == 255 && pixel[1] == 0 && pixel[2] == 255 && pixel[3] == 255);
+        }
 
         var presented = true;
         try
@@ -708,6 +735,73 @@ internal static unsafe class Program
     }
 
     // ── helpers ─────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Copies the top-left texel of a swapchain back buffer into a staging resource and maps it out.
+    ///
+    /// Staging plus <c>Map</c> is the only readback D3D11 has, and the rows are padded to the mapped
+    /// pitch, so the single row here is copied byte-wise rather than as a block. Returns null and
+    /// reports the reason if any step fails, so a readback that cannot happen is a named line rather
+    /// than an exception out of the middle of the present checks.
+    /// </summary>
+    private static byte[]? ReadBackBufferPixel(D3D11GraphicsDevice device, ID3D11Texture2D* source)
+    {
+        if (source is null)
+        {
+            Console.WriteLine("           the swapchain has no back buffer to read");
+            return null;
+        }
+
+        var stagingDesc = new D3D11_TEXTURE2D_DESC
+        {
+            Width = 1,
+            Height = 1,
+            MipLevels = 1,
+            ArraySize = 1,
+            Format = DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM,
+            SampleDesc = new DXGI_SAMPLE_DESC { Count = 1, Quality = 0 },
+            Usage = D3D11_USAGE.D3D11_USAGE_STAGING,
+            BindFlags = 0,
+            CPUAccessFlags = D3D11Flags.CpuAccessRead,
+            MiscFlags = 0,
+        };
+
+        ID3D11Texture2D* staging = null;
+        try
+        {
+            D3D11Interop.Check(
+                device.Device->CreateTexture2D(&stagingDesc, null, &staging), "CreateTexture2D (back buffer staging)");
+
+            var box = new D3D11_BOX { left = 0, top = 0, front = 0, right = 1, bottom = 1, back = 1 };
+            device.Context->CopySubresourceRegion(
+                (ID3D11Resource*)staging, 0, 0, 0, 0, (ID3D11Resource*)source, 0, &box);
+
+            D3D11_MAPPED_SUBRESOURCE mapped;
+            D3D11Interop.Check(
+                device.Context->Map((ID3D11Resource*)staging, 0, D3D11_MAP.D3D11_MAP_READ, 0, &mapped),
+                "Map (back buffer readback)");
+
+            try
+            {
+                var pixel = new byte[4];
+                new ReadOnlySpan<byte>((byte*)mapped.pData, 4).CopyTo(pixel);
+                return pixel;
+            }
+            finally
+            {
+                device.Context->Unmap((ID3D11Resource*)staging, 0);
+            }
+        }
+        catch (InvalidOperationException e)
+        {
+            Console.WriteLine($"           {e.Message}");
+            return null;
+        }
+        finally
+        {
+            D3D11Interop.Release(ref staging);
+        }
+    }
 
     /// <summary>
     /// The byte offset the reflection assigns a uniform, which is what <c>SetUniform</c>'s slot is.
