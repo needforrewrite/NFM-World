@@ -97,6 +97,11 @@
         <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
         <!-- Sokol's D3D11 path is the game's backend; see the ANGLE define above for the GL one. -->
         <ProjectReference Include="..\NFMWorld.Graphics.Sokol\NFMWorld.Graphics.Sokol.csproj" />
+        <!-- Our own D3D11 backend, selected with the d3d11 renderer name. Referenced unconditionally
+             rather than behind a define, unlike the ANGLE arm: the only thing it needs that sokol's
+             D3D11 path does not is the TerraFX.Interop.Windows package, which is managed and resolves
+             on every platform. It refuses to run anywhere but Windows at device creation. -->
+        <ProjectReference Include="..\NFMWorld.Graphics.D3D11\NFMWorld.Graphics.D3D11.csproj" />
         <ProjectReference Include="..\NFMWorld.Graphics.DesktopGL\NFMWorld.Graphics.DesktopGL.csproj" />
         <ProjectReference Include="..\NFMWorld.Platform.SDL3\NFMWorld.Platform.SDL3.csproj" />
 

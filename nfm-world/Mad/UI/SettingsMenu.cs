@@ -4,6 +4,7 @@ using Hexa.NET.ImGui;
 using Lua;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
+using NFMWorld.Graphics.OpenGL;
 using NFMWorld.Platform.SDL3;
 using NFMWorld.UI.Cef;
 using NFMWorldLibrary;
@@ -49,14 +50,16 @@ public class SettingsMenu(WorldGame game)
     private string? _capturingAction = null;
     private int _selectedBindingIndex = -1;
 
-    // Video settings (static — shared between ImGui and CEF bridge)
+    // Video settings
     public static readonly string[] Renderers = false switch
     {
-        _ when RuntimeInformation.IsOSPlatform(OSPlatform.OSX) => ["Auto", "Metal", "OpenGL 2.1", "OpenGL 4.6", "OpenGL ES 3.0"],
-        _ when RuntimeInformation.IsOSPlatform(OSPlatform.Windows) => ["Auto", "D3D11", "D3D12", "Vulkan", "OpenGL 2.1", "OpenGL 4.6", "Metal", "OpenGL ES 3.0"],
-        _ => ["Auto", "Vulkan", "OpenGL 2.1", "OpenGL 4.6", "OpenGL ES 3.0"]
+        // windows doesn't do metal or gles, linux doesn't do metal
+        _ when RuntimeInformation.IsOSPlatform(OSPlatform.OSX) => ["Auto", "Metal via ANGLE", "OpenGL", "Vulkan via ANGLE", "OpenGL via ANGLE", "OpenGL ES via ANGLE"],
+        _ when RuntimeInformation.IsOSPlatform(OSPlatform.Windows) => ["Auto", "DirectX 11", "OpenGL", "Vulkan via ANGLE", "DirectX 11 via ANGLE", "OpenGL via ANGLE"],
+        _ => ["Auto", "OpenGL", "Vulkan via ANGLE", "OpenGL via ANGLE", "OpenGL ES via ANGLE"]
     };
     private static int _selectedRenderer = 0;
+    private static int _originalRenderer = _selectedRenderer;
     private static string[] _resolutions = GetSupportedResolutions();
     public static string[] Resolutions => _resolutions;
     private static int _selectedResolution = Array.FindIndex(_resolutions, e => e == "1280 x 720");
@@ -396,7 +399,7 @@ public class SettingsMenu(WorldGame game)
             game.RebuildCascades();
         }
 
-        if (Renderers[_selectedRenderer] != GetFna3DRenderer())
+        if (_selectedRenderer != _originalRenderer)
         {
             requireRestart = true;
         }
@@ -476,7 +479,7 @@ public class SettingsMenu(WorldGame game)
         sw.WriteLine("// NFM-World Configuration File");
         sw.WriteLine();
         sw.WriteLine("// Video Settings");
-        sw.WriteLine($"video_renderer2 {Renderers[_selectedRenderer]}");
+        sw.WriteLine($"video_renderer3 {Renderers[_selectedRenderer]}");
         sw.WriteLine($"video_resolution3 {Resolutions[_selectedResolution]}");
         sw.WriteLine($"video_displaymode {_selectedDisplayMode}");
         sw.WriteLine($"video_vsync {(_vsync ? 1 : 0)}");
@@ -554,12 +557,13 @@ public class SettingsMenu(WorldGame game)
         {
             switch (key)
             {
-                // Video
-                case "video_renderer2":
-                    _selectedRenderer = Array.IndexOf(_resolutions, value) is var r and > -1 ? r : _selectedRenderer;
+                // Video settings
+                case "video_renderer3":
+                    _selectedRenderer = Renderers.IndexOf(value) is var rend and > -1 ? rend : _selectedRenderer;
+                    _originalRenderer = _selectedRenderer;
                     break;
                 case "video_resolution3":
-                    _selectedResolution = Array.IndexOf(_resolutions, value) is var resIdx and > -1 ? resIdx : _selectedResolution;
+                    _selectedResolution = Resolutions.IndexOf(value) is var res and > -1 ? res : _selectedResolution;
                     break;
                 case "video_displaymode":
                     _selectedDisplayMode = int.Parse(value, CultureInfo.InvariantCulture);
@@ -591,7 +595,8 @@ public class SettingsMenu(WorldGame game)
                 case "video_render_distance":
                     _renderDistance = int.Parse(value, CultureInfo.InvariantCulture);
                     break;
-                // Audio
+
+                // Audio settings
                 case "audio_mute":
                     _muteAll = int.Parse(value) != 0;
                     break;
@@ -607,7 +612,8 @@ public class SettingsMenu(WorldGame game)
                 case "audio_remaster":
                     _remasteredMusic = int.Parse(value) != 0;
                     break;
-                // Camera
+
+                // Camera settings
                 case "camera_fov":
                     _fov = float.Parse(value, CultureInfo.InvariantCulture);
                     break;
@@ -620,6 +626,7 @@ public class SettingsMenu(WorldGame game)
                 case "camera_smooth_fov":
                     _smoothFov = int.Parse(value) != 0;
                     break;
+
                 // Key bindings
                 case "key_accelerate":
                     Bindings.Accelerate = (Key)int.Parse(value, CultureInfo.InvariantCulture);
@@ -660,21 +667,21 @@ public class SettingsMenu(WorldGame game)
                 case "key_togglearrace":
                     Bindings.ToggleArrace = (Key)int.Parse(value, CultureInfo.InvariantCulture);
                     break;
+                case "key_console":
+                    Bindings.ToggleDevConsole = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
                 case "key_toggleradar":
                     Bindings.ToggleRadar = (Key)int.Parse(value, CultureInfo.InvariantCulture);
                     break;
                 case "key_cycleview":
                     Bindings.CycleView = (Key)int.Parse(value, CultureInfo.InvariantCulture);
                     break;
-                case "key_console":
-                    Bindings.ToggleDevConsole = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                    break;
             }
         }
         catch { /* skip malformed lines */ }
     }
 
-    public static void LoadFnaRenderer()
+    public static bool TrySelectRenderer(ref WorldGame.Renderer renderer, ref AngleSelection angleSelection)
     {
         var configPath = Path.Combine("data", "cfg", "config.cfg");
 
@@ -699,7 +706,7 @@ public class SettingsMenu(WorldGame game)
                     switch (key)
                     {
                         // Video settings
-                        case "video_renderer2":
+                        case "video_renderer3":
                             selectedRenderer = value;
                             break;
                     }
@@ -715,40 +722,41 @@ public class SettingsMenu(WorldGame game)
         {
             switch (selectedRenderer)
             {
-                case "D3D11" or "D3D12" or "Vulkan":
-                    Logging.Info($"Overriding FNA3D renderer to {selectedRenderer}");
-                    SdlWindow.SetHint("FNA3D_FORCE_DRIVER", selectedRenderer);
-                    break;
-                case "OpenGL 2.1":
-                    Logging.Info($"Overriding FNA3D renderer to {selectedRenderer}");
-                    SdlWindow.SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
-                    break;
-                case "OpenGL 4.6":
-                    Logging.Info($"Overriding FNA3D renderer to {selectedRenderer} (Core Profile)");
-                    SdlWindow.SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
-                    SdlWindow.SetHint("FNA3D_OPENGL_FORCE_CORE_PROFILE", "1");
-                    break;
-                case "OpenGL ES 3.0":
-                    Logging.Info($"Overriding FNA3D renderer to {selectedRenderer} (ES3)");
-                    SdlWindow.SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
-                    SdlWindow.SetHint("FNA3D_OPENGL_FORCE_ES3", "1");
-                    break;
+                case "Auto":
+                    return true;
+                case "Metal via ANGLE":
+                    renderer = WorldGame.Renderer.Angle;
+                    angleSelection = new AngleSelection(AnglePlatformType.Metal, AngleDeviceType.Hardware);
+                    return true;
+                case "OpenGL":
+                    renderer = WorldGame.Renderer.DesktopGl;
+                    return true;
+                // Deliberately NOT the entry above it. "DirectX 11 via ANGLE" goes through ANGLE's
+                // D3D11 backend and is spelled the same way to the user, which is why both exist -
+                // this one is our own backend over TerraFX, with no translation layer in between.
+                case "DirectX 11":
+                    renderer = WorldGame.Renderer.D3d11;
+                    return true;
+                case "Vulkan via ANGLE":
+                    renderer = WorldGame.Renderer.Angle;
+                    angleSelection = new AngleSelection(AnglePlatformType.Vulkan, AngleDeviceType.Hardware);
+                    return true;
+                case "DirectX 11 via ANGLE":
+                    renderer = WorldGame.Renderer.Angle;
+                    angleSelection = new AngleSelection(AnglePlatformType.D3d11, AngleDeviceType.Hardware);
+                    return true;
+                case "OpenGL via ANGLE":
+                    renderer = WorldGame.Renderer.Angle;
+                    angleSelection = new AngleSelection(AnglePlatformType.Gl, AngleDeviceType.Hardware);
+                    return true;
+                case "OpenGL ES via ANGLE":
+                    renderer = WorldGame.Renderer.Angle;
+                    angleSelection = new AngleSelection(AnglePlatformType.Gles, AngleDeviceType.Hardware);
+                    return true;
             }
         }
-    }
 
-    private static string GetFna3DRenderer()
-    {
-        var driver = SdlWindow.GetHint("FNA3D_FORCE_DRIVER");
-
-        return driver switch
-        {
-            "D3D11" or "D3D12" or "Vulkan" => driver,
-            "OpenGL" when SdlWindow.GetHint("FNA3D_OPENGL_FORCE_CORE_PROFILE") == "1" => "OpenGL 4.6",
-            "OpenGL" when SdlWindow.GetHint("FNA3D_OPENGL_FORCE_ES3") == "1" => "OpenGL ES 3.0",
-            "OpenGL" => "OpenGL 2.1",
-            _ => "Auto"
-        };
+        return false;
     }
 
     private static string GetDistantOutlineBehaviorConfigValue()
@@ -825,8 +833,6 @@ public class SettingsMenu(WorldGame game)
     /// </summary>
     public static void LoadConfigValues()
     {
-        _selectedRenderer = Renderers.IndexOf(GetFna3DRenderer());
-
         try
         {
             var configPath = Path.Combine("data", "cfg", "config.cfg");
@@ -849,136 +855,8 @@ public class SettingsMenu(WorldGame game)
 
                 var key = parts[0];
                 var value = parts[1];
+                ParseConfigLine(key, value);
 
-                try
-                {
-                    switch (key)
-                    {
-                        // Video settings
-                        case "video_renderer2":
-                            _selectedRenderer = Renderers.IndexOf(value) is var rend and > -1 ? rend : _selectedRenderer;
-                            break;
-                        case "video_resolution3":
-                            _selectedResolution = Resolutions.IndexOf(value) is var res and > -1 ? res : _selectedResolution;
-                            break;
-                        case "video_displaymode":
-                            _selectedDisplayMode = int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "video_vsync":
-                            _vsync = int.Parse(value) != 0;
-                            break;
-                        case "video_antialias":
-                            _antialias = int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "video_fps":
-                            _fpsLimit = int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "video_linewidth2":
-                            _lineWidth = float.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "video_distant_outline_behavior":
-                            _distantOutlineBehavior = ParseDistantOutlineBehavior(value, _distantOutlineBehavior);
-                            break;
-                        case "video_shadow_cascade":
-                            _shadowCascadeLevel = int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "video_shadow_res":
-                            _shadowResolution = int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "video_low_latency":
-                            _lowLatency = int.Parse(value) != 0;
-                            break;
-                        case "video_render_distance":
-                            _renderDistance = int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-
-                        // Audio settings
-                        case "audio_mute":
-                            _muteAll = int.Parse(value) != 0;
-                            break;
-                        case "audio_master":
-                            _masterVolume = float.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "audio_music":
-                            _musicVolume = float.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "audio_effects":
-                            _effectsVolume = float.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "audio_remaster":
-                            _remasteredMusic = int.Parse(value) != 0;
-                            break;
-
-                        // Camera settings
-                        case "camera_fov":
-                            _fov = float.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "camera_follow_y":
-                            _followY = int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "camera_follow_z":
-                            _followZ = int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "camera_smooth_fov":
-                            _smoothFov = int.Parse(value) != 0;
-                            break;
-
-                        // Key bindings
-                        case "key_accelerate":
-                            Bindings.Accelerate = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_ab":
-                            Bindings.AerialBounce = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_smoothturn":
-                            Bindings.AerialStrafe = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_brake":
-                            Bindings.Brake = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_turnleft":
-                            Bindings.TurnLeft = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_turnright":
-                            Bindings.TurnRight = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_handbrake":
-                            Bindings.Handbrake = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_lookback":
-                            Bindings.LookBack = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_lookleft":
-                            Bindings.LookLeft = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_lookright":
-                            Bindings.LookRight = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_togglemusic":
-                            Bindings.ToggleMusic = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_togglesfx":
-                            Bindings.ToggleSFX = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_togglearrace":
-                            Bindings.ToggleArrace = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_console":
-                            Bindings.ToggleDevConsole = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_toggleradar":
-                            Bindings.ToggleRadar = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_cycleview":
-                            Bindings.CycleView = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    SentrySdk.CaptureException(ex);
-                    Logging.Error($"Error parsing config line '{line}': {ex.Message}");
-                }
             }
 
             Logging.Debug($"Config loaded from {configPath}");

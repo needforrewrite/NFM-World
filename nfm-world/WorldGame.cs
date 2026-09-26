@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using NFMWorld.DriverInterface;
 using NFMWorld.Gameplay;
 using NFMWorld.Graphics;
+using NFMWorld.Graphics.D3D11;
 using NFMWorld.Graphics.Sokol;
 #if ANGLE
 using NFMWorld.Graphics.OpenGL;
@@ -96,6 +97,19 @@ public class WorldGame : IDisposable
     private readonly SokolGraphicsDevice? _sokolDevice;
 
     private readonly ISokolPlatform? _sokolPlatform;
+
+    /// <summary>
+    /// Our own D3D11 backend's device, under <c>--backend=d3d11</c> - null on every other renderer.
+    ///
+    /// Typed concretely rather than as <see cref="IGraphicsDevice"/>, which <c>_device</c> already is,
+    /// for the same reason <c>_sokolDevice</c> is: the class needs one thing from it that the
+    /// interface does not carry. There it was <c>EndFrame</c>; here it is
+    /// <see cref="ISwapchain.VSync"/>, which only this backend and sokol's platform honour from
+    /// managed code.
+    /// </summary>
+#pragma warning disable CS0649 // only assigned on the d3d11 renderer; see the constructor
+    private readonly D3D11GraphicsDevice? _d3d11Device;
+#pragma warning restore CS0649
 
     /// <summary>
     /// The GL context SDL created for that window, owned and destroyed by this class - or zero on
@@ -203,10 +217,25 @@ public class WorldGame : IDisposable
     /// behind a define, because it is the one that needs a native ANGLE package the other paths do
     /// not.
     /// </summary>
-    private enum Renderer
+    public enum Renderer
     {
         /// <summary>sokol_gfx, with its own backend from <c>--sokol-backend=</c>.</summary>
         Sokol,
+
+        /// <summary>
+        /// Our own Direct3D 11 backend, over TerraFX's raw COM bindings.
+        ///
+        /// Distinct from <c>--backend=sokol --sokol-backend=d3d11</c>, which reaches the same API
+        /// through sokol_gfx's driver rather than through <see cref="WorldGame"/>'s. The two exist
+        /// side by side so the comparison the other arms were built for can be extended to this one:
+        /// same API, two implementations of the abstraction over it.
+        ///
+        /// No define gates it. Unlike ANGLE it needs no native package of its own - it P/Invokes
+        /// d3d11.dll, dxgi.dll and d3dcompiler_47.dll, all of which ship with Windows - so the only
+        /// cost of referencing it everywhere is a managed assembly. It throws at device creation on
+        /// any other platform; see <see cref="ParseRenderer"/>'s note on that.
+        /// </summary>
+        D3d11,
 
         /// <summary>
         /// Desktop OpenGL 3.3 core, through our own backend rather than sokol's.
@@ -248,6 +277,21 @@ public class WorldGame : IDisposable
             if (value.Equals("sokol", StringComparison.OrdinalIgnoreCase))
                 return Renderer.Sokol;
 
+            if (value.Equals("d3d11", StringComparison.OrdinalIgnoreCase))
+            {
+                // Named on every platform but only usable on one, and the message says which rather
+                // than letting device creation produce a PlatformNotSupportedException several
+                // hundred lines later, after SDL has already brought a window up.
+                if (!OperatingSystem.IsWindows())
+                {
+                    throw new ArgumentException(
+                        $"{RendererArgumentPrefix}d3d11 needs Windows: the backend binds Direct3D 11 " +
+                        "and DXGI through TerraFX.Interop.Windows, which P/Invokes those DLLs directly.");
+                }
+
+                return Renderer.D3d11;
+            }
+
             // Named but not built in: the message has to say so, because the generic "unknown"
             // below would send someone looking for a typo in a name that is spelled correctly.
             if (value.Equals("angle", StringComparison.OrdinalIgnoreCase))
@@ -266,7 +310,7 @@ public class WorldGame : IDisposable
                 return Renderer.DesktopGl;
 
             throw new ArgumentException(
-                $"Unknown {RendererArgumentPrefix}{value}. Valid renderers: sokol, desktopgl" +
+                $"Unknown {RendererArgumentPrefix}{value}. Valid renderers: sokol, desktopgl, d3d11" +
 #if ANGLE
                 ", angle" +
 #endif
@@ -505,8 +549,8 @@ public class WorldGame : IDisposable
 
     /// <summary>
     /// Pushes <see cref="GraphicsSettingsShim.SynchronizeWithVerticalRetrace"/> onto whichever
-    /// backend is in play: the sokol platform's present interval, or <c>SDL_GL_SetSwapInterval</c>
-    /// on the two GL renderers.
+    /// backend is in play: the sokol platform's present interval, the D3D11 swapchain's own present
+    /// interval, or <c>SDL_GL_SetSwapInterval</c> on the two GL renderers.
     ///
     /// The interval is an argument to the present call rather than a property of the drawable, which
     /// is why it can be changed at any time and is read per frame here. Both sinks take the same
@@ -530,6 +574,10 @@ public class WorldGame : IDisposable
 
         if (_sokolPlatform is not null)
             _sokolPlatform.VSync = vsync;
+        else if (_d3d11Device is not null)
+            // Same shape as the sokol platform's property: the setting is stored on the swapchain and
+            // read by Present, so it can follow the setting without a rebuild.
+            _d3d11Device.Swapchain.VSync = vsync;
         else
             _setSwapInterval?.Invoke(vsync ? 1 : 0);
     }
@@ -607,6 +655,32 @@ public class WorldGame : IDisposable
                     "The ANGLE renderer needs a build with the ANGLE backend enabled - rebuild with " +
                     "-p:NfmWorldAngle=true. See ParseRenderer, which normally rejects it earlier.");
 #endif
+
+            case Renderer.D3d11:
+            {
+                // Our own backend. The window creation is the sokol D3D11 arm's, verbatim, and for
+                // the same reason: nothing here asks SDL for a 3D API. DXGI is handed the HWND and
+                // builds its swapchain on it, and SDL's only remaining job is to own the window and
+                // feed this app its input.
+                //
+                // SDL_INIT_VIDEO is up already (the top of this constructor) and has to stay up for
+                // the window's lifetime - the HWND is SDL's, so tearing SDL down would take the
+                // drawable with it. That is why SdlWindow is disposed at the end of Dispose rather
+                // than anywhere near the device.
+                Window = SdlWindow.Create("NFM World", 1280, 720);
+
+                var d3d11Device = D3D11GraphicsDevice.Create(new D3D11DeviceDescription(
+                    WindowHandle: Window.NativeWindowHandle,
+                    Width: Window.Width,
+                    Height: Window.Height,
+                    // From the settings menu, not from the shim: Graphics is only assigned after this
+                    // whole switch, so it is null here. This is the same source the GL arms reach
+                    // through the window's pixel format, which is why the property exists.
+                    MultiSampleCount: SettingsMenu.RequestedMultiSampleCount));
+                _d3d11Device = d3d11Device;
+                _device = d3d11Device;
+                break;
+            }
 
             case Renderer.DesktopGl:
             {
@@ -927,6 +1001,14 @@ public class WorldGame : IDisposable
     private void Initialize()
     {
         ImguiRenderer = new SdlImGuiRenderer(_device, Window);
+
+        // A cold launch spends minutes here, because constructing the Apos renderer links the shape
+        // shader and ANGLE takes that long to translate it. Nothing has been presented at this point
+        // - the game loop that would do so has not started - so without this the window is blank for
+        // the whole wait. The frame is drawn first so the message is on screen before the compile
+        // begins; a cached launch costs a frame nobody notices.
+        DrawBootMessage(ShaderCompileMessage);
+
         _nvg = new AposRenderer(_device);
 
         // Must be constructed (and GameSparker.UiRenderer assigned) before GameSparker.Load()
@@ -1266,6 +1348,74 @@ public class WorldGame : IDisposable
         transaction.Finish();
     }
 
+    /// <summary>
+    /// What the boot frame says while the shape shader is being linked.
+    /// </summary>
+    private const string ShaderCompileMessage =
+        "Compiling shaders...";
+
+    /// <summary>
+    /// Presents a frame carrying <paramref name="message"/>, for the waits that happen before the
+    /// game loop starts.
+    ///
+    /// This is the frame prologue out of <see cref="Draw"/> and nothing else - no phases, no NVG, no
+    /// game state - because it exists to run before any of that is alive. It is kept separate rather
+    /// than extracted from Draw because the two genuinely differ: this one draws its own text through
+    /// ImGui and has no <c>_nvg</c>, no <c>_uiRenderer</c> and no phases to call.
+    ///
+    /// Presented repeatedly rather than once, up to a small cap, because the first frame ImGui
+    /// produces can carry no geometry at all - the font atlas it needs is built as a texture the
+    /// backend creates on that same frame - and a single frame would then present the clear colour
+    /// and nothing else. The loop stops as soon as there is something to draw, so the normal case
+    /// costs one frame.
+    /// </summary>
+    private void DrawBootMessage(string message)
+    {
+        var vertices = 0;
+        for (var attempt = 0; attempt < BootMessageFrameLimit; attempt++)
+        {
+            vertices = DrawBootFrame(message);
+            if (vertices > 0)
+                return;
+        }
+
+        // The two numbers that separate the ways this can come out blank: no vertices means ImGui had
+        // nothing to draw, a zero display size means it drew geometry that the projection then scaled
+        // to nothing. Reported together because the symptom on screen is identical either way.
+        Logging.Warning(
+            $"The boot message drew no geometry in {BootMessageFrameLimit} frames " +
+            $"({vertices} vertices, display size {ImGui.GetIO().DisplaySize}).");
+    }
+
+    private const int BootMessageFrameLimit = 5;
+
+    /// <summary>Presents one frame of <paramref name="message"/>; returns its vertex count.</summary>
+    private int DrawBootFrame(string message)
+    {
+        EnsureSwapchainMatchesWindow();
+
+        var cb = _device.AcquireCommandBuffer();
+        cb.Clear(ClearOptions.Color | ClearOptions.Depth | ClearOptions.Stencil,
+            new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f));
+        cb.SetViewport(new Viewport(0, 0, Window.Width, Window.Height));
+        SetFullScreenScissor(cb);
+
+        ImguiRenderer!.BeginLayout(new GameTime(TimeSpan.Zero, TimeSpan.Zero));
+        if (ImGui.Begin("##boot", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize |
+                                 ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings |
+                                 ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.AlwaysAutoResize))
+        {
+            ImGui.TextUnformatted(message);
+        }
+        ImGui.End();
+        ImguiRenderer.EndLayout(cb);
+
+        _device.Submit(cb);
+        _device.Swapchain.Present();
+
+        return ImGui.GetDrawData().TotalVtxCount;
+    }
+
     // Ported from FNA/src/Game.cs's Tick()/AdvanceElapsedTime()/UpdateEstimatedSleepPrecision() -
     // the manual loop below previously reset its elapsed-time tracking to `now` every iteration
     // instead of carrying the accumulator's remainder into the next frame, and assumed a fixed
@@ -1330,16 +1480,25 @@ public class WorldGame : IDisposable
         // resolver has to be installed before the first sg_* call (SettingsMenu.LoadFnaRenderer
         // below already reaches into the graphics layer).
         //
-        // Only the sokol path reads this; under either GL renderer the sokol device is never
-        // constructed. It is parsed unconditionally anyway so a typo is reported on every path
-        // rather than only the one it was meant for.
+        // Only the sokol path reads this; under a GL renderer or our own D3D11 one the sokol device
+        // is never constructed. It is parsed unconditionally anyway so a typo is reported on every
+        // path rather than only the one it was meant for.
         _sokolBackend = SokolBackendSelection.Parse(args);
-        if (!SokolBackendSelection.IsSupportedOnThisPlatform(_sokolBackend, out var unsupportedReason))
-            throw new PlatformNotSupportedException(unsupportedReason);
 
-        // The level above it, and parsed first for the same reason: it decides whether sokol is in
-        // play at all, which is what gates the resolver installation below.
+        // The level above it, parsed before the sokol backend is validated because that validation
+        // only applies to the arm that will use it. The check used to run unconditionally, which made
+        // it a gate on the whole process rather than on sokol: on Linux it reported that
+        // "D3d11 is only vendored for Windows (see native/ in NFMWorld.Graphics.Sokol)" while
+        // --backend=desktopgl was starting, naming a subsystem that renderer never touches. Nothing
+        // about the check's message is wrong for the case it was written for - it was simply being
+        // asked about a backend that is not in play.
         _renderer = ParseRenderer(args);
+
+        if (_renderer == Renderer.Sokol
+            && !SokolBackendSelection.IsSupportedOnThisPlatform(_sokolBackend, out var unsupportedReason))
+        {
+            throw new PlatformNotSupportedException(unsupportedReason);
+        }
 
 #if ANGLE
         // Only meaningful on the ANGLE arm, but parsed unconditionally for the same reason
@@ -1359,6 +1518,12 @@ public class WorldGame : IDisposable
         NativeLibrary.SetDllImportResolver(typeof(WorldGame).Assembly, ImportResolver);
         NativeLibrary.SetDllImportResolver(typeof(SDL).Assembly, ImportResolver);
 
+        // todo
+        if (SettingsMenu.TrySelectRenderer(ref _renderer, ref _angleSelection))
+        {
+            Logging.Info($"Overriden renderer: {_renderer} (ANGLE: {_angleSelection})");
+        }
+
         // A third registration, and the reason it is needed is the same rule: all 453 of SharpSokol's
         // [DllImport("sokol")] declarations live in *its* assembly, so a "sokol" arm in the resolver
         // above would never be consulted. Without this, sokol.dll resolves only because it happens to
@@ -1370,8 +1535,6 @@ public class WorldGame : IDisposable
         // registered.
         if (_renderer == Renderer.Sokol)
             SokolBackendSelection.InstallResolver(_sokolBackend);
-
-        SettingsMenu.LoadFnaRenderer();
 
         // The persisted settings, parsed here rather than in LoadContent where they used to be - and
         // the ordering is the entire point of the split. The two GL renderers bake the multisample

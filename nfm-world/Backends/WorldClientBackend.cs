@@ -2,7 +2,6 @@
 using System.Text;
 using Apos.Shapes;
 using CommunityToolkit.HighPerformance;
-using FontStashSharp;
 using NFMWorld.Audio;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
@@ -141,10 +140,10 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
                 }
                 if (Path.GetExtension(file) == ".dds")
                 {
-                    return new NanoVGImage(DdsReader.LoadFromStream(_graphicsDevice, stream));
+                    return new TextureImage(DdsReader.LoadFromStream(_graphicsDevice, stream));
                 }
 
-                return new NanoVGImage(TextureLoader.LoadFromStream(_graphicsDevice, stream));
+                return new TextureImage(TextureLoader.LoadFromStream(_graphicsDevice, stream));
             }
         }
 
@@ -152,10 +151,10 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
         {
             if (file.Span is [(byte)'D', (byte)'D', (byte)'S', (byte)' ', ..])
             {
-                return new NanoVGImage(DdsReader.LoadFromStream(_graphicsDevice, file.AsStream()));
+                return new TextureImage(DdsReader.LoadFromStream(_graphicsDevice, file.AsStream()));
             }
 
-            return new NanoVGImage(TextureLoader.LoadFromStream(_graphicsDevice, file.AsStream()));
+            return new TextureImage(TextureLoader.LoadFromStream(_graphicsDevice, file.AsStream()));
         }
 
         public void SetLinearGradient(int x, int y, int width, int height, Color[] colors, float[]? colorPos)
@@ -202,7 +201,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
 
         public void DrawImage(IImage image, int x, int y)
         {
-            if (image is NanoVGImage img)
+            if (image is TextureImage img)
             {
                 _sb.Draw(img.Texture, new RectangleF(x, y, img.Width, img.Height));
             }
@@ -245,13 +244,28 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
 
         public void DrawStringStroke(ReadOnlySpan<char> text, int x, int y, int effectAmount = 1)
         {
+            // dogshit string stroke
+            var f = _fonts[_font.FontFamily];
+            var pos = new Vector2(x, y - (f.LineHeight * _font.Size));
+            foreach (var (ax, ay) in (ReadOnlySpan<(int, int)>)[(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, 1), (-1, 1), (1, -1)])
+            {
+                _sb.DrawString(f, text, pos + new Vector2(ax, ay), _font.Size, _color);
+            }
         }
 
         public void DrawStringStrokeAligned(ReadOnlySpan<char> text, int x, int y, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top, int effectAmount = 1)
         {
-            // float xFloat = x;
-            // float yFloat = y;
-            // AlignText(text, areaWidth, areaHeight, hAlign, vAlign, ref xFloat, ref yFloat);
+            float xFloat = x;
+            float yFloat = y;
+            AlignText(text, areaWidth, areaHeight, hAlign, vAlign, ref xFloat, ref yFloat);
+            
+            // dogshit string stroke
+            var f = _fonts[_font.FontFamily];
+            var pos = new Vector2(xFloat, yFloat - (f.LineHeight * _font.Size));
+            foreach (var (ax, ay) in (ReadOnlySpan<(int, int)>)[(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, 1), (-1, 1), (1, -1)])
+            {
+                _sb.DrawString(f, text, pos + new Vector2(ax, ay), _font.Size, _color);
+            }
         }
 
         private void AlignText(ReadOnlySpan<char> text, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign, TextVerticalAlignment vAlign, ref float x, ref float y)
@@ -287,7 +301,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
 
         public void DrawImage(IImage image, int x, int y, int width, int height)
         {
-            if (image is NanoVGImage img)
+            if (image is TextureImage img)
             {
                 _sb.Draw(img.Texture, new RectangleF(x, y, width, height));
             }
@@ -488,16 +502,6 @@ internal class AposShapeSvg(Stream stream) : AposShape
     public override int Width => (int)_shape.Width;
 }
 
-internal readonly struct NanoVGFontMetrics(DynamicSpriteFont font) : IFontMetrics
-{
-    public Vector2 MeasureText(ReadOnlySpan<char> text)
-    {
-        return font.MeasureString(text);
-    }
-    
-    public float LineHeight => font.LineHeight;
-}
-
 internal readonly struct AposFontMetrics(ShapeFont font, float size) : IFontMetrics
 {
     public Vector2 MeasureText(ReadOnlySpan<char> text)
@@ -508,7 +512,7 @@ internal readonly struct AposFontMetrics(ShapeFont font, float size) : IFontMetr
     public float LineHeight => font.LineHeight * size;
 }
 
-internal class NanoVGImage(ITexture texture) : IImage
+internal class TextureImage(ITexture texture) : IImage
 {
     public ITexture Texture { get; } = texture;
     public int Height => Texture.Height;
