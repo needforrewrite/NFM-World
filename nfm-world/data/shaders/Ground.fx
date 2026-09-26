@@ -22,7 +22,7 @@ struct VertexShaderOutput
     float4 Position : SV_POSITION; // Vertex position in screen space
     float4 Color : COLOR0; // Vertex color
     float4 WorldPos : TEXCOORD2;
-    float ViewLength : TEXCOORD4;
+    float4 ViewPos : TEXCOORD4;
 };
 
 VertexShaderOutput VertexShaderFunction(
@@ -32,8 +32,8 @@ VertexShaderOutput VertexShaderFunction(
     output.Position = mul(Position, WorldViewProj); // Transform vertex position
 
     float3 color = Color;
-	float3 viewPos = mul(Position, WorldView).xyz;
-    output.ViewLength = length(viewPos);
+    float3 viewPos = mul(Position, WorldView).xyz;
+    output.ViewPos = float4(viewPos, 1.0);
     // VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogLogDensity);
     VS_ColorCorrect(color);
 
@@ -49,7 +49,8 @@ float4 PixelShaderFunction(VertexShaderOutput input) : SV_TARGET
 {
     float3 diffuse = input.Color.xyz;
 
-    VS_ApplyFog(diffuse, input.ViewLength, FogColor, FogDistance, FogLogDensity);
+    float viewLength = length(input.ViewPos.xyz);
+    VS_ApplyFog(diffuse, viewLength, FogColor, FogDistance, FogLogDensity);
 
     PS_ApplyShadowing(diffuse, float4(input.WorldPos.xyz, 1), float3(0, 1, 0));
 
