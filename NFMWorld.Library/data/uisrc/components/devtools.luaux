@@ -243,9 +243,11 @@ local function findHost(node: any): any?
 	return nil
 end
 
-local function TreeNode(props: { node: any, depth: number, onHover: ((any?) -> ())?, expandAll: () -> boolean, expandVersion: () -> number })
+local function TreeNode(props: { node: Sx.Signalish<any>, depth: number, onHover: ((any?) -> ())?, expandAll: () -> boolean, expandVersion: () -> number })
 	local expanded, setExpanded = Sx.createSignal<<boolean>>(props.depth < 2)
-	local hasChildren = #props.node.children > 0
+	local hasChildren = Sx.createMemo(function()
+		return #Sx.read(props.node).children > 0
+	end)
 
 	-- React to the "Expand all" / "Collapse all" toolbar buttons. The version counter
 	-- makes a repeated click (e.g. after a manual toggle) re-apply the forced state.
@@ -270,13 +272,13 @@ local function TreeNode(props: { node: any, depth: number, onHover: ((any?) -> (
 					paddingBottom = 1,
 				}}
 				onmousedown={function()
-					if hasChildren then
+					if hasChildren() then
 						setExpanded(not expanded())
 					end
 				end}
 				onmouseenter={function()
 					if props.onHover then
-						props.onHover(props.node)
+						props.onHover(Sx.read(props.node))
 					end
 				end}
 				onmouseleave={function()
@@ -285,17 +287,17 @@ local function TreeNode(props: { node: any, depth: number, onHover: ((any?) -> (
 					end
 				end}
 			>
-				<Sx.Text style={{ fontSize = 11, fontStyle = "bold", color = colorFor(props.node) }}>{function()
+				<Sx.Text style={{ fontSize = 11, fontStyle = "bold", color = colorFor(Sx.read(props.node)) }}>{function()
 					local marker = "  "
-					if hasChildren then
+					if hasChildren() then
 						marker = expanded() and "▾ " or "▸ "
 					end
-					return marker .. nodeLabel(props.node)
+					return marker .. nodeLabel(Sx.read(props.node))
 				end}</Sx.Text>
 			</Sx.View>
-			<Sx.Show when={function() return expanded() and hasChildren end}>
+			<Sx.Show when={function() return expanded() and hasChildren() end}>
 				<Sx.For
-					each={function() return props.node.children end}
+					each={function() return Sx.read(props.node).children end}
 				>
 					{function(item, index)
 						return <TreeNode node={item()} depth={props.depth + 1} onHover={props.onHover} expandAll={props.expandAll} expandVersion={props.expandVersion} />

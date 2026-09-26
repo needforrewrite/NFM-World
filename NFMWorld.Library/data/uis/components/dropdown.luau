@@ -14,7 +14,7 @@
 -- focus/blur), so it re-opens reliably after a selection. There is no click-outside
 -- close (no full-screen scoped backdrop).
 
-local Sx = require("../../library/sx/index")
+local function __luaux_read(v) return if type(v) == "function" then (v :: () -> any)() else v end; local Sx = require("../../library/sx/index")
 local x = Sx.x
 local theme = require("../../library/ui/theme")
 
@@ -90,8 +90,8 @@ local function Dropdown(props: DropdownProps)
 	-- Per-option row: its own hover signal so only the hovered option re-renders.
 	local function DropdownOptionRow(props: { opt: DropdownOption, value: Sx.Signalish<number?>, onSelect: (number) -> () })
 		local hovered, setHovered = Sx.createSignal(false)
-		return x(Sx.View) {
-			style = Sx.createMemo(function(): Sx.Styles
+		return x(Sx.View)({
+			style = function(): Sx.Styles
 				local v = Sx.read(props.value)
 				local selected = v ~= nil and v == props.opt.value
 				return {
@@ -103,7 +103,7 @@ local function Dropdown(props: DropdownProps)
 						or (hovered() and "rgba(255,255,255,0.08)" or "transparent"),
 					flexShrink = 0,
 				}
-			end),
+			end,
 			onmousedown = function()
 				if disabled then return end
 				props.onSelect(props.opt.value)
@@ -115,26 +115,25 @@ local function Dropdown(props: DropdownProps)
 			onmouseleave = function()
 				setHovered(false)
 			end,
-			x(Sx.Text) {
-				style = Sx.createMemo(function(): Sx.TextStyles
+			x(Sx.Text)({
+				style = function(): Sx.TextStyles
 					local v = Sx.read(props.value)
 					local selected = v ~= nil and v == props.opt.value
 					return {
 						fontSize = 13,
 						color = selected and theme.accent or (hovered() and "#fff" or "rgba(255,255,255,0.8)"),
 					}
-				end),
+				end,
 				props.opt.label,
-			},
-		}
+			}),
+		})
 	end
 
-	return x(Sx.View) {
-		style = { position = "relative", width = width },
-		x(Sx.View) {
+	return x(Sx.View)({ style = { position = "relative", width = width },
+		x(Sx.View)({
 			ref = triggerRef,
 			tabindex = 0,
-			style = Sx.createMemo(function(): Sx.Styles
+			style = function(): Sx.Styles
 				local isOpen = open()
 				local hov = hovered() and not disabled
 				return {
@@ -152,7 +151,7 @@ local function Dropdown(props: DropdownProps)
 					borderColor = isOpen and "rgba(79,195,247,0.6)" or (hov and "rgba(255,255,255,0.4)" or "rgba(255,255,255,0.15)"),
 					borderRadius = 6,
 				}
-			end),
+			end,
 			onmousedown = function()
 				if disabled then return end
 				setOpenUp(computeOpenUp())
@@ -168,19 +167,18 @@ local function Dropdown(props: DropdownProps)
 			onmouseleave = function()
 				setHovered(false)
 			end,
-			x(Sx.Text) {
-				style = Sx.createMemo(function(): Sx.TextStyles
+			x(Sx.Text)({
+				style = function(): Sx.TextStyles
 					local isOpen = open()
 					return { fontSize = 13, color = isOpen and "#fff" or "rgba(255,255,255,0.8)" }
-				end),
+				end,
 				function() return selectedLabel() end,
-			},
-			x(Sx.Text) { style = { fontSize = 12, color = "rgba(255,255,255,0.5)", flexShrink = 0 }, "▾" },
-		},
-		x(Sx.Show) {
-			when = function() return open() end,
-			x(Sx.View) {
-				style = Sx.createMemo(function(): Sx.Styles
+			}),
+			x(Sx.Text)({ style = { fontSize = 12, color = "rgba(255,255,255,0.5)", flexShrink = 0 }, "▾" }),
+		}),
+		x(Sx.Show)({ when = function() return open() end,
+			x(Sx.View)({
+				style = function(): Sx.Styles
 					local up = openUp()
 					local popupStyle: Sx.Styles = {
 						position = "absolute",
@@ -202,20 +200,20 @@ local function Dropdown(props: DropdownProps)
 						popupStyle.top = "100%"
 					end
 					return popupStyle
-				end),
-				x(Sx.For<<DropdownOption>>) {
-					each = function() return rows end,
-					function(item: () -> DropdownOption, _index: number)
-						return x(DropdownOptionRow) {
-							opt = item(),
+				end,
+				x(Sx.For<<DropdownOption>>)({ function() return `each={__luaux_read(rows)}{__luaux_read(function(item: () -> DropdownOption, _index: number)
+						return x(DropdownOptionRow)({
+							opt = function() return item() end,
 							value = props.value,
 							onSelect = props.onSelect,
-						}
-					end,
-				},
-			},
-		},
-	}
+						})
+					end)}` end,
+
+
+				}),
+			}),
+		}),
+	})
 end
 
 return Dropdown

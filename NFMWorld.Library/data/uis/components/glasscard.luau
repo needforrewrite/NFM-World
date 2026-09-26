@@ -46,12 +46,13 @@ local function GlassCard(props: { color: Sx.Signalish<string>?, children: { any 
 		borderTopRightRadius = 12,
 	}
 
-	-- Reactive merged style. createMemo is reference-stable: it caches the computed value
-	-- and only recomputes when a signal it reads changes, so a card whose input style
-	-- didn't change keeps returning the same table and dom's reactive style prop skips its
-	-- setProperty (dom compares references). No manual cache needed — and a nil caller
-	-- style still produces the base style.
-	local barStyle2 = Sx.createMemo(function(): Sx.Styles
+	-- Reactive merged style. A plain function is already fine-grained: dom gives every
+	-- function-valued prop its own effect, so this body re-runs only when `color` changes.
+	-- Note it builds a fresh table each run, so dom's reference-compare never skips the
+	-- setProperty — only a body that returns an unchanged table (see CarCard's constant
+	-- style tables) gets that. A createMemo here would add a node without changing either:
+	-- it would recompute exactly as often, and still hand back a new table.
+	local barStyle2 = function(): Sx.Styles
 		local s: Sx.Styles | {[string]: string} = {}
 		for k, v in pairs(barStyle :: any) do
 			s[k] = v
@@ -59,13 +60,11 @@ local function GlassCard(props: { color: Sx.Signalish<string>?, children: { any 
 		local c = Sx.read(props.color) or "#4fc3f7"
 		s.backgroundColor = c
 		return s :: Sx.Styles
-	end)
+	end
 
 	local args: any = { style = wrapperStyle }
 
-	args[1] = x(Sx.View) {
-		style = barStyle2,
-	}
+	args[1] = x(Sx.View)({ style = barStyle2 })
 
 	for _, c in ipairs(props.children or {}) do
 		args[#args + 1] = c
@@ -83,27 +82,24 @@ local function StatBar(props: { label: string, value: Sx.Signalish<number>?, col
 	local height = props.height or 8
 	local label = props.label or ""
 
-	return x(Sx.View) {
-		style = { marginBottom = 8 },
-		x(Sx.View) {
+	return x(Sx.View)({ style = { marginBottom = 8 },
+		x(Sx.View)({
 			style = {
 				display = "flex",
 				justifyContent = "space-between",
 				marginBottom = 4,
 			},
-			x(Sx.Text) {
-				style = { fontSize = 12, color = "rgba(255,255,255,0.7)", strokeColor = "rgba(100,100,100,0.4)", flexShrink = 0 },
+			x(Sx.Text)({ style = { fontSize = 12, color = "rgba(255,255,255,0.7)", strokeColor = "rgba(100,100,100,0.4)", flexShrink = 0 },
 				label,
-			},
-			x(Sx.Text) {
-				style = { fontSize = 12, color = "rgba(255,255,255,0.7)", strokeColor = "rgba(100,100,100,0.4)", flexShrink = 0 },
+			}),
+			x(Sx.Text)({ style = { fontSize = 12, color = "rgba(255,255,255,0.7)", strokeColor = "rgba(100,100,100,0.4)", flexShrink = 0 },
 				function()
 					local v = clamp01(Sx.read(props.value) or 0)
 					return ("%d%%"):format(math.floor(v * 100 + 0.5))
 				end,
-			},
-		},
-		x(Sx.View) {
+			}),
+		}),
+		x(Sx.View)({
 			style = {
 				width = "100%",
 				height = height,
@@ -111,8 +107,8 @@ local function StatBar(props: { label: string, value: Sx.Signalish<number>?, col
 				borderRadius = height / 2,
 				overflow = "hidden",
 			},
-			x(Sx.View) {
-				style = Sx.createMemo(function(): Sx.Styles
+			x(Sx.View)({
+				style = function(): Sx.Styles
 					local v = clamp01(Sx.read(props.value) or 0)
 					return {
 						width = ("%d%%"):format(math.floor(v * 100 + 0.5)),
@@ -120,10 +116,10 @@ local function StatBar(props: { label: string, value: Sx.Signalish<number>?, col
 						backgroundColor = color,
 						borderRadius = height / 2,
 					}
-				end),
-			},
-		},
-	}
+				end,
+			}),
+		}),
+	})
 end
 
 -- ── CenterText ───────────────────────────────────────────────────
@@ -149,7 +145,7 @@ local function CenterText(props: { text: Sx.Signalish<string>?, size: number?, c
 	local size = props.size or 64
 	local color = props.color or "rgba(255,255,255,0.9)"
 
-	return x(Sx.View) {
+	return x(Sx.View)({
 		style = {
 			position = "absolute",
 			top = 0,
@@ -161,18 +157,15 @@ local function CenterText(props: { text: Sx.Signalish<string>?, size: number?, c
 			alignItems = "center",
 			justifyContent = "center",
 		},
-		x(Sx.For<<string>>) {
-			each = function()
-				return splitLines(Sx.read(props.text) or "")
-			end,
+		x(Sx.For<<string>>)({
+			each = function() return splitLines(Sx.read(props.text) or "") end,
 			function(item, index)
-				return x(Sx.Text) {
-					style = { fontSize = size, color = color, fontStyle = "bold", textAlign = "center" },
-					item(),
-				}
+				return x(Sx.Text)({ style = { fontSize = size, color = color, fontStyle = "bold", textAlign = "center" },
+					function() return item() end,
+				})
 			end,
-		},
-	}
+		}),
+	})
 end
 
 return {

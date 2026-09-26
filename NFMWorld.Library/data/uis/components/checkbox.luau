@@ -3,7 +3,8 @@
 --
 -- Controlled component: `checked` may be a plain boolean or an accessor (signal);
 -- `onToggle` is called when the box is pressed. Optional reactive `label`.
--- Reactive styles go through `createMemo` so a change only re-sets this control.
+-- Reactive styles are plain accessor functions: dom gives each one its own effect, so a
+-- change only re-sets this control.
 
 local Sx = require("../../library/sx/index")
 local x = Sx.x
@@ -22,7 +23,7 @@ local function Checkbox(props: CheckboxProps)
 	local disabled = props.disabled == true
 	local hovered, setHovered = Sx.createSignal(false)
 
-	return x(Sx.View) {
+	return x(Sx.View)({
 		style = {
 			display = "flex",
 			flexDirection = "row",
@@ -39,8 +40,8 @@ local function Checkbox(props: CheckboxProps)
 		onmouseleave = function()
 			setHovered(false)
 		end,
-		x(Sx.View) {
-			style = Sx.createMemo(function(): Sx.Styles
+		x(Sx.View)({
+			style = function(): Sx.Styles
 				local checked = Sx.read(props.checked)
 				local hov = hovered() and not disabled
 				return {
@@ -52,10 +53,10 @@ local function Checkbox(props: CheckboxProps)
 					borderColor = checked and theme.accent or (hov and "rgba(255,255,255,0.5)" or "rgba(255,255,255,0.25)"),
 					borderRadius = 3,
 				}
-			end),
-		},
-		x(Sx.Text) {
-			style = Sx.createMemo(function(): Sx.TextStyles
+			end,
+		}),
+		x(Sx.Text)({
+			style = function(): Sx.TextStyles
 				local checked = Sx.read(props.checked)
 				return {
 					fontSize = 13,
@@ -63,14 +64,14 @@ local function Checkbox(props: CheckboxProps)
 						and "rgba(255,255,255,0.3)"
 						or (checked and "#fff" or "rgba(255,255,255,0.7)"),
 				}
-			end),
+			end,
 			function()
 				local label = props.label
 				if label == nil then return "" end
 				return Sx.read(label)
 			end,
-		},
-	}
+		}),
+	})
 end
 
 return Checkbox

@@ -101,12 +101,16 @@ local cardStyleUnselected: Sx.Styles = { marginBottom = 8, opacity = 0.7 }
 
 -- Card component. `selected` is an accessor; only cards whose selection changes update.
 local function CarCard(props: { name: Sx.Signalish<string>, collectionName: Sx.Signalish<string>, fileName: Sx.Signalish<string>, selected: Sx.Signalish<boolean>, onSelect: (string, string) -> () })
-	local style = Sx.createMemo(function(): Sx.Styles
+	-- Returns one of two module-level constant tables, so the reference is stable while
+	-- selection doesn't change and dom's reactive style prop skips its setProperty. The
+	-- stability comes from returning the shared tables, not from any memoization — this
+	-- has a single consumer, so a plain function re-runs exactly as often as a memo would.
+	local style = function(): Sx.Styles
 		if Sx.read(props.selected) then
 			return cardStyleSelected
 		end
 		return cardStyleUnselected
-	end)
+	end
 
 	return x(GlassCard)({
 		name = function() return "glasscard " .. Sx.read(props.name) end,
@@ -123,7 +127,7 @@ end
 local function CollectionSection(props: { name: Sx.Signalish<string>, active: Sx.Signalish<boolean>, onSelect: (string) -> () })
 	return x(Sx.View)({
 		name = function() return "inner view " .. Sx.read(props.name) end,
-		style = function() return Sx.createMemo(function(): Sx.Styles
+		style = function(): Sx.Styles
 			local active = Sx.read(props.active)
 			return {
 				marginBottom = 6,
@@ -138,13 +142,13 @@ local function CollectionSection(props: { name: Sx.Signalish<string>, active: Sx
 				flexGrow = 1,
 				flexShrink = 0,
 			}
-		end) end,
+		end,
 		onmousedown = function() props.onSelect(Sx.read(props.name)) end,
 			x(Sx.Text)({
-				style = function() return Sx.createMemo(function(): Sx.TextStyles
+				style = function(): Sx.TextStyles
 					local active = Sx.read(props.active)
 					return { fontSize = 12, color = active and "#4fc3f7" or "rgba(255,255,255,0.4)" }
-				end) end,
+				end,
 				props.name,
 			}),
 	})
@@ -188,7 +192,7 @@ local function Garage()
 	end
 
 	local function handleGlobalKey(event)
-		--print(tostring(event.keyCode))
+		print(tostring(event.keyCode))
 		if event.keyCode == Key.left then
 			UiLib.call("cycleCar", { direction = "left" })
 		elseif event.keyCode == Key.right then
@@ -237,17 +241,17 @@ local function Garage()
 	end)
 
 	Sx.onMount(function()
-		--print('focusing!!!')
+		print('focusing!!!')
 		if rootRef.current ~= nil then
-			--print('focusing inner!!!')
+			print('focusing inner!!!')
 			rootRef.current:focus()
 		end
 	end)
 
 	return x(Root)({ ref = function(it)
-			--print('setting root ref!!!')
+			print('setting root ref!!!')
 			rootRef.current = it
-			--print('root ref set!!!')
+			print('root ref set!!!')
 		end, tabindex = 0, onkeydown = handleGlobalKey,
 		x(Sidebar)({
 			x(Header)({ "Garage" }),

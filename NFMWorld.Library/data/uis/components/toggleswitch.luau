@@ -24,7 +24,7 @@ local function ToggleSwitch(props: ToggleSwitchProps)
 	local disabled = props.disabled == true
 	local hovered, setHovered = Sx.createSignal(false)
 
-	return x(Sx.View) {
+	return x(Sx.View)({
 		style = {
 			display = "flex",
 			flexDirection = "row",
@@ -41,8 +41,8 @@ local function ToggleSwitch(props: ToggleSwitchProps)
 		onmouseleave = function()
 			setHovered(false)
 		end,
-		x(Sx.View) {
-			style = Sx.createMemo(function(): Sx.Styles
+		x(Sx.View)({
+			style = function(): Sx.Styles
 				local checked = Sx.read(props.checked)
 				local hov = hovered() and not disabled
 				return {
@@ -52,39 +52,36 @@ local function ToggleSwitch(props: ToggleSwitchProps)
 					backgroundColor = checked and theme.accent or (hov and "rgba(255,255,255,0.28)" or "rgba(255,255,255,0.2)"),
 					borderRadius = size / 2,
 				}
-			end),
-			x(Sx.View) {
-				style = Sx.createMemo(function(): Sx.Styles
-					local checked = Sx.read(props.checked)
-					return {
-						position = "absolute",
-						top = pad,
-						left = checked and (width - knob - pad) or pad,
-						width = knob,
-						height = knob,
-						backgroundColor = "#ffffff",
-						borderRadius = knob / 2,
-					}
-				end),
-			},
-		},
-		x(Sx.Text) {
-			style = Sx.createMemo(function(): Sx.TextStyles
+			end,
+			x(Sx.View)({ style = function(): Sx.Styles
 				local checked = Sx.read(props.checked)
 				return {
-					fontSize = 13,
-					color = disabled
-						and "rgba(255,255,255,0.3)"
-						or (checked and "#fff" or "rgba(255,255,255,0.7)"),
+					position = "absolute",
+					top = pad,
+					left = checked and (width - knob - pad) or pad,
+					width = knob,
+					height = knob,
+					backgroundColor = "#ffffff",
+					borderRadius = knob / 2,
 				}
-			end),
+			end }),
+		}),
+		x(Sx.Text)({ style = function(): Sx.TextStyles
+			local checked = Sx.read(props.checked)
+			return {
+				fontSize = 13,
+				color = disabled
+					and "rgba(255,255,255,0.3)"
+					or (checked and "#fff" or "rgba(255,255,255,0.7)"),
+			}
+		end,
 			function()
 				local label = props.label
 				if label == nil then return "" end
 				return Sx.read(label)
 			end,
-		},
-	}
+		}),
+	})
 end
 
 return ToggleSwitch

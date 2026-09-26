@@ -4,7 +4,7 @@
 -- signal; a per-frame `race:hudState` push updates only the affected leaf text/bar via
 -- commitTextUpdate/setProperty.
 
-local Sx = require("../../library/sx/index")
+local function __luaux_read(v) return if type(v) == "function" then (v :: () -> any)() else v end; local Sx = require("../../library/sx/index")
 local styled = Sx.styled
 local x = Sx.x
 local glasscard = require("../components/glasscard")
@@ -43,7 +43,7 @@ local function PowerDamageBars()
 		Sx.onCleanup(unsub)
 	end)
 
-	return x(Sx.View) {
+	return x(Sx.View)({
 		style = {
 			position = "absolute",
 			top = 16,
@@ -53,37 +53,29 @@ local function PowerDamageBars()
 			flexDirection = "column",
 			gap = 8,
 		},
-		x(GlassCard) {
-			color = "#ff5252",
-			x(Sx.View) {
-				style = { flexDirection = "column" },
-				x(CornerLabel) { x(CornerLabelText) { "Power" } },
-				x(StatBar) {
+		x(GlassCard)({ color = "#ff5252",
+			x(Sx.View)({ style = { flexDirection = "column" },
+				x(CornerLabel)({ x(CornerLabelText)({ "Power" }) }),
+				x(StatBar)({
 					label = "",
-					value = function()
-						return power() / 0.98
-					end,
+					value = function() return power() / 0.98 end,
 					color = "#ff5252",
 					height = 10,
-				},
-			},
-		},
-		x(GlassCard) {
-			color = "#4fc3f7",
-			x(Sx.View) {
-				style = { flexDirection = "column" },
-				x(CornerLabel) { x(CornerLabelText) { "Damage" } },
-				x(StatBar) {
+				}),
+			}),
+		}),
+		x(GlassCard)({ color = "#4fc3f7",
+			x(Sx.View)({ style = { flexDirection = "column" },
+				x(CornerLabel)({ x(CornerLabelText)({ "Damage" }) }),
+				x(StatBar)({
 					label = "",
-					value = function()
-						return damage()
-					end,
+					value = function() return damage() end,
 					color = "#4fc3f7",
 					height = 10,
-				},
-			},
-		},
-	}
+				}),
+			}),
+		}),
+	})
 end
 
 function formatTime(ms: number): string
@@ -122,85 +114,59 @@ local function Splits()
 		Sx.onCleanup(unsub)
 	end)
 
-	return x(Sx.View) {
+	return x(Sx.View)({
 		style = {
 			position = "absolute",
 			top = 16,
 			left = 16,
 			width = 180,
 		},
-		x(GlassCard) {
-			color = "#69f0ae",
-			x(Sx.View) {
-				style = { flexDirection = "column" },
-
-				x(Sx.View) {
+		x(GlassCard)({ color = "#69f0ae",
+			x(Sx.View)({ style = { flexDirection = "column" },
+				x(Sx.View)({
 					style = {
 						marginBottom = 4,
 						letterSpacing = 1,
 					},
-					x(Sx.Text) {
-						style = { fontSize = 11, color = "rgba(255,255,255,0.5)" },
-						function()
-							return "Lap " .. lap() .. "/" .. totalLaps()
-						end,
-					},
-				},
-				x(Sx.View) {
-					x(Sx.Text) {
+					x(Sx.Text)({ style = { fontSize = 11, color = "rgba(255,255,255,0.5)" }, function() return `Lap {__luaux_read(lap())}/{__luaux_read(totalLaps())}` end,
+
+					}),
+				}),
+				x(Sx.View)({
+					x(Sx.Text)({
 						style = {
 							fontSize = 28,
 							fontStyle = "bold",
 							strokeColor = "black",
 						},
-						function()
-							return formatTime(lapTime())
-						end,
-					},
-				},
-				x(Sx.Show) {
-					when = function()
-						return chkDiffMs() and lastChkDiffMs()
-					end,
-					x(Sx.Text) {
+						function() return formatTime(lapTime()) end,
+					}),
+				}),
+				x(Sx.Show)({ when = function() return chkDiffMs() and lastChkDiffMs() end,
+					x(Sx.Text)({
 						style = {
 							fontSize = 11,
 							color = "rgba(255,255,255,0.4)",
 							marginTop = 4,
 							strokeColor = "rgba(100,100,100,0.4)",
-						},
-						function()
-							return "CHK Diff: "
-								.. formatTime(chkDiffMs())
-								.. " (Last: "
-								.. formatTime(lastChkDiffMs())
-								.. ")"
-						end,
-					},
-				},
-				x(Sx.Show) {
-					when = function()
-						return lapDiffMs() and lastLapDiffMs()
-					end,
-					x(Sx.Text) {
+						}, function() return `CHK Diff: {__luaux_read(formatTime(chkDiffMs()))} (Last: {__luaux_read(formatTime(lastChkDiffMs()))})` end,
+
+					}),
+				}),
+				x(Sx.Show)({ when = function() return lapDiffMs() and lastLapDiffMs() end,
+					x(Sx.Text)({
 						style = {
 							fontSize = 11,
 							color = "rgba(255,255,255,0.4)",
 							marginTop = 4,
 							strokeColor = "rgba(100,100,100,0.4)",
-						},
-						function()
-							return "Lap Diff: "
-								.. formatTime(lapDiffMs())
-								.. " (Last: "
-								.. formatTime(lastLapDiffMs())
-								.. ")"
-						end,
-					},
-				},
-			},
-		},
-	}
+						}, function() return `Lap Diff: {__luaux_read(formatTime(lapDiffMs()))} (Last: {__luaux_read(formatTime(lastLapDiffMs()))})` end,
+
+					}),
+				}),
+			}),
+		}),
+	})
 end
 
 local function Speed()
@@ -219,7 +185,7 @@ local function Speed()
 		return math.floor(speed() * 1.4 * 21.0 * 60.0 * 60.0 / 100000.0 + 0.5)
 	end)
 
-	return x(Sx.View) {
+	return x(Sx.View)({
 		style = {
 			position = "absolute",
 			bottom = 24,
@@ -229,25 +195,18 @@ local function Speed()
 			flexDirection = "column",
 			alignItems = "center",
 		},
-		x(GlassCard) {
-			color = "#c3f74f",
-			x(Sx.View) {
+		x(GlassCard)({ color = "#c3f74f",
+			x(Sx.View)({
 				style = {
 					flexDirection = "column",
 				},
-				x(Sx.Text) {
-					style = { fontSize = 56, fontStyle = "bold", strokeColor = "black" },
-					function()
-						return ("%d"):format(speedKmh())
-					end,
-				},
-				x(Sx.Text) {
-					style = { fontSize = 14, color = "rgba(255,255,255,0.5)", strokeColor = "rgba(100,100,100,0.4)" },
-					"KM/H",
-				},
-			},
-		},
-	}
+				x(Sx.Text)({ style = { fontSize = 56, fontStyle = "bold", strokeColor = "black" },
+					function() return ("%d"):format(speedKmh()) end,
+				}),
+				x(Sx.Text)({ style = { fontSize = 14, color = "rgba(255,255,255,0.5)", strokeColor = "rgba(100,100,100,0.4)" }, "KM/H" }),
+			}),
+		}),
+	})
 end
 
 local function RaceHud()
@@ -291,54 +250,48 @@ local function RaceHud()
 		return stText or ""
 	end)
 
-	return x(Root) {
-		x(Sx.Show) {
-			when = function()
-				return actualStateText() ~= ""
-			end,
-			x(CenterText) {
+	return x(Root)({
+		x(Sx.Show)({ when = function()
+			return actualStateText() ~= ""
+		end,
+			x(CenterText)({
 				text = function()
 					return actualStateText()
 				end,
 				size = 24,
-			},
-		},
+			}),
+		}),
 
-		x(PowerDamageBars) {},
+		x(PowerDamageBars)({}),
 
-		x(Splits) {},
+		x(Splits)({}),
 
-		x(Speed) {},
+		x(Speed)({}),
 
-		x(Sx.View) {
+		x(Sx.View)({
 			style = {
 				position = "absolute",
 				bottom = 24,
 				right = 24,
 				display = "flex",
-				flexDirection = "column",
 				alignItems = "flex-end",
 			},
-			x(GlassCard) {
-				color = "#69f0ae",
-				x(Sx.Text) {
-					style = { fontSize = 36, fontStyle = "bold", strokeColor = "black" },
-					function()
-						return ("%d/%d"):format(position(), totalRacers())
-					end,
-				},
-				x(Sx.Text) {
-					style = { fontSize = 12, color = "rgba(255,255,255,0.5)", strokeColor = "rgba(100,100,100,0.4)" },
-					"POSITION",
-				},
-			},
-		},
+			x(GlassCard)({ color = "#69f0ae", style = {},
+				x(Sx.View)({ style = { flexDirection = "column", alignItems = "center", justifyContent = "center" },
+					x(Sx.Text)({ style = { fontSize = 36, fontStyle = "bold", strokeColor = "black" },
+						function() return `{__luaux_read(position())}/{__luaux_read(totalRacers())}` end,
+					}),
+					x(Sx.Text)({ style = { fontSize = 12, color = "rgba(255,255,255,0.5)", strokeColor = "rgba(100,100,100,0.4)" }, "POSITION",
 
-		x(Sx.Show) {
-			when = isPaused,
-			x(PauseMenu) {},
-		},
-	}
+					}),
+				}),
+			}),
+		}),
+
+		x(Sx.Show)({ when = isPaused,
+			x(PauseMenu)({}),
+		}),
+	})
 end
 
 return RaceHud

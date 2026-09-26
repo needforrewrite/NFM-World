@@ -274,16 +274,17 @@ local function RaceHud()
 				bottom = 24,
 				right = 24,
 				display = "flex",
-				flexDirection = "column",
 				alignItems = "flex-end",
 			}}>
-			<GlassCard color="#69f0ae">
-				<Sx.Text style={{ fontSize = 36, fontStyle = "bold", strokeColor = "black" }}>
-					{position()}/{totalRacers()}
-				</Sx.Text>
-				<Sx.Text style={{ fontSize = 12, color = "rgba(255,255,255,0.5)", strokeColor = "rgba(100,100,100,0.4)" }}>
-					POSITION
-				</Sx.Text>
+			<GlassCard color="#69f0ae" style={{}}>
+				<Sx.View style={{ flexDirection = "column", alignItems = "center", justifyContent = "center" }}> 
+					<Sx.Text style={{ fontSize = 36, fontStyle = "bold", strokeColor = "black" }}>
+						{position()}/{totalRacers()}
+					</Sx.Text>
+					<Sx.Text style={{ fontSize = 12, color = "rgba(255,255,255,0.5)", strokeColor = "rgba(100,100,100,0.4)" }}>
+						POSITION
+					</Sx.Text>
+				</Sx.View>
 			</GlassCard>
 		</Sx.View>
 

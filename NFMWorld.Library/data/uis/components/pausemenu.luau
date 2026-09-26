@@ -119,7 +119,7 @@ local ConfirmBtns = styled(Sx.View) {
 -- MenuBtn / ConfirmBtn are thin adapters over the shared `Button` (hover FX + palette).
 
 local function MenuBtn(props: { variant: 'primary' | 'danger' | nil, label: Sx.Signalish<string>, onPress: () -> () })
-	return x(Button) {
+	return x(Button)({
 		variant = props.variant,
 		label = props.label,
 		onPress = props.onPress,
@@ -127,16 +127,16 @@ local function MenuBtn(props: { variant: 'primary' | 'danger' | nil, label: Sx.S
 		fullWidth = true,
 		style = { borderRadius = 8 },
 		textStyle = { fontSize = 15 },
-	}
+	})
 end
 
 local function ConfirmBtn(props: { variant: 'primary' | 'danger' | nil, label: Sx.Signalish<string>, onPress: () -> () })
-	return x(Button) {
+	return x(Button)({
 		variant = props.variant,
 		label = props.label,
 		onPress = props.onPress,
 		style = { paddingTop = 10, paddingBottom = 10, paddingLeft = 28, paddingRight = 28 },
-	}
+	})
 end
 
 -- ── Component ────────────────────────────────────────────────────
@@ -161,100 +161,94 @@ local function PauseMenu()
 	end)
 
 	return (
-		x(Sx.Switch) {
-			-- Settings
-			x(Sx.Match) {
-				when = function() return view() == "settings" end,
-				x(Sx.View) {
-					style = { position = "absolute", top = 0, left = 0, right = 0, bottom = 0 },
-					x(Settings) { onClose = function() setView("menu") end },
-				},
-			},
-			-- Confirm quit
-			x(Sx.Match) {
-				when = function() return view() == "confirmQuit" end,
-				x(Overlay) {
-					x(Sx.View) {
+		x(Sx.Switch)({
+			--[[ Settings ]]
+			x(Sx.Match)({ when = function() return view() == "settings" end,
+				x(Sx.View)({ style = { position = "absolute", top = 0, left = 0, right = 0, bottom = 0 },
+					x(Settings)({ onClose = function() setView("menu") end }),
+				}),
+			}),
+			--[[ Confirm quit ]]
+			x(Sx.Match)({ when = function() return view() == "confirmQuit" end,
+				x(Overlay)({
+					x(Sx.View)({
 						style = {
 							position = "absolute", top = 0, left = 0, right = 0, bottom = 0,
 							display = "flex", alignItems = "center", justifyContent = "center",
 							backgroundColor = "rgba(0,0,0,0.7)",
 						},
 						onmousedown = function() setView("menu") end,
-						x(ConfirmBox) {
-							onmousedown = function() end,
-							x(ConfirmTitle) { "Quit to Main Menu?" },
-							x(ConfirmMsg) { "All race progress will be lost." },
-							x(ConfirmBtns) {
-								x(ConfirmBtn) { label = "Cancel", onPress = function() setView("menu") end },
-								x(ConfirmBtn) { variant = "danger", label = "Quit", onPress = function() UiLib.call("quit", {}) end },
-							},
-						},
-					},
-				},
-			},
-			-- Confirm restart
-			x(Sx.Match) {
-				when = function() return view() == "confirmRestart" end,
-				x(Overlay) {
-					x(Sx.View) {
+
+						x(ConfirmBox)({ onmousedown = function() end,
+							x(ConfirmTitle)({ "Quit to Main Menu?" }),
+							x(ConfirmMsg)({ "All race progress will be lost." }),
+							x(ConfirmBtns)({
+								x(ConfirmBtn)({ label = "Cancel", onPress = function() setView("menu") end }),
+								x(ConfirmBtn)({ variant = "danger", label = "Quit", onPress = function() UiLib.call("quit", {}) end }),
+							}),
+						}),
+					}),
+				}),
+			}),
+			--[[ Confirm restart ]]
+			x(Sx.Match)({ when = function() return view() == "confirmRestart" end,
+				x(Overlay)({
+					x(Sx.View)({
 						style = {
 							position = "absolute", top = 0, left = 0, right = 0, bottom = 0,
 							display = "flex", alignItems = "center", justifyContent = "center",
 							backgroundColor = "rgba(0,0,0,0.7)",
 						},
 						onmousedown = function() setView("menu") end,
-						x(ConfirmBox) {
-							onmousedown = function() end,
-							x(ConfirmTitle) { "Restart Race?" },
-							x(ConfirmMsg) { "Your current lap time and position will be reset." },
-							x(ConfirmBtns) {
-								x(ConfirmBtn) { label = "Cancel", onPress = function() setView("menu") end },
-								x(ConfirmBtn) { variant = "danger", label = "Restart", onPress = function() UiLib.call("restart", {}) end },
-							},
-						},
-					},
-				},
-			},
-			-- Main menu
-			x(Sx.Match) {
-				when = function() return true end,
-				x(Overlay) {
-					x(MenuCard) {
-						x(Title) { "Paused" },
-						x(Subtitle) { function()
+
+						x(ConfirmBox)({ onmousedown = function() end,
+							x(ConfirmTitle)({ "Restart Race?" }),
+							x(ConfirmMsg)({ "Your current lap time and position will be reset." }),
+							x(ConfirmBtns)({
+								x(ConfirmBtn)({ label = "Cancel", onPress = function() setView("menu") end }),
+								x(ConfirmBtn)({ variant = "danger", label = "Restart", onPress = function() UiLib.call("restart", {}) end }),
+							}),
+						}),
+					}),
+				}),
+			}),
+			--[[ Main menu ]]
+			x(Sx.Match)({ when = true,
+				x(Overlay)({
+					x(MenuCard)({
+						x(Title)({ "Paused" }),
+						x(Subtitle)({ function()
 							local ps = pauseState()
 							return ps ~= nil and ps.stageName or "Race"
-						end },
+						end }),
 
-						x(Sx.Show) {
-							when = function() return pauseState() ~= nil end,
-							x(RaceInfo) {
-								x(InfoItem) {
-									x(InfoLabel) { "Lap" },
-									x(InfoValue) { function()
+						x(Sx.Show)({ when = function() return pauseState() ~= nil end,
+							x(RaceInfo)({
+								x(InfoItem)({
+									x(InfoLabel)({ "Lap" }),
+									x(InfoValue)({ function()
 										local ps = pauseState() :: PauseState
 										return ("%d/%d"):format(ps.lap, ps.totalLaps)
-									end },
-								},
-								x(InfoItem) {
-									x(InfoLabel) { "Position" },
-									x(InfoValue) { function()
+									end }),
+								}),
+								x(InfoItem)({
+									x(InfoLabel)({ "Position" }),
+									x(InfoValue)({ function()
 										local ps = pauseState() :: PauseState
 										return ("%d/%d"):format(ps.position, ps.totalRacers)
-									end },
-								},
-							},
-						},
+									end }),
+								}),
+							}),
+						}),
 
-						x(MenuBtn) { variant = "primary", label = "Resume", onPress = function() UiLib.call("resume", {}) end },
-						x(MenuBtn) { label = "Restart", onPress = function() setView("confirmRestart") end },
-						x(MenuBtn) { label = "Settings", onPress = function() setView("settings") end },
-						x(MenuBtn) { variant = "danger", label = "Quit to Main Menu", onPress = function() setView("confirmQuit") end },
-					},
-				},
-			},
-		}
+						x(MenuBtn)({ variant = "primary", label = "Resume", onPress = function() UiLib.call("resume", {}) end }),
+						x(MenuBtn)({ label = "Restart", onPress = function() setView("confirmRestart") end }),
+						x(MenuBtn)({ label = "Settings", onPress = function() setView("settings") end }),
+						x(MenuBtn)({ variant = "danger", label = "Quit to Main Menu", onPress = function() setView("confirmQuit") end }),
+					}),
+				}),
+			}),
+		})
 	)
 end
 
