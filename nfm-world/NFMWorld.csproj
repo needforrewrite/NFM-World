@@ -96,7 +96,6 @@
         <ProjectReference Include="..\FNA\lib\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
         <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
         <!-- Sokol's D3D11 path is the game's backend; see the ANGLE define above for the GL one. -->
-        <ProjectReference Include="..\NFMWorld.Graphics.Sokol\NFMWorld.Graphics.Sokol.csproj" />
         <!-- Our own D3D11 backend, selected with the d3d11 renderer name. Referenced unconditionally
              rather than behind a define, unlike the ANGLE arm: the only thing it needs that sokol's
              D3D11 path does not is the TerraFX.Interop.Windows package, which is managed and resolves
