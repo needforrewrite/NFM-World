@@ -222,7 +222,7 @@ local function KeyBindingBtn(props: { capturing: Sx.Signalish<boolean?>, label: 
 			local capturing = Sx.read(props.capturing)
 			return { fontSize = 13, fontStyle = "bold", color = capturing and theme.warning or theme.textPrimary }
 		end}>
-			{function() return Sx.read(props.label) end}
+			{Sx.read(props.label)}
 		</Sx.Text>
 	</Sx.View>
 end
@@ -268,7 +268,7 @@ local function VideoTab(props: { config: Sx.Accessor<SettingsSnapshot>, options:
 			<Row>
 				<Label>FPS Limit</Label>
 				<Slider
-					min={0} max={240} step={1}
+					min={63} max={240} step={1}
 					value={config().fpsLimit}
 					onValue={function(v) set("fpsLimit", v) end}
 				/>
