@@ -36,35 +36,33 @@ local function GlassCard(props: { color: Sx.Signalish<string>?, children: { any 
 		overflow = "hidden",
 	}
 
-	local barStyle: Sx.Styles = {
-		position = "absolute",
-		top = 0,
-		left = 0,
-		width = "100%",
-		height = 3,
-		borderTopLeftRadius = 12,
-		borderTopRightRadius = 12,
-	}
-
-	-- Reactive merged style. A plain function is already fine-grained: dom gives every
-	-- function-valued prop its own effect, so this body re-runs only when `color` changes.
-	-- Note it builds a fresh table each run, so dom's reference-compare never skips the
-	-- setProperty — only a body that returns an unchanged table (see CarCard's constant
-	-- style tables) gets that. A createMemo here would add a node without changing either:
-	-- it would recompute exactly as often, and still hand back a new table.
-	local barStyle2 = function(): Sx.Styles
+	local computedStyle = function(): Sx.Styles
 		local s: Sx.Styles | {[string]: string} = {}
-		for k, v in pairs(barStyle :: any) do
+		for k, v in pairs(wrapperStyle :: any) do
 			s[k] = v
 		end
+		if props.style then
+			local st = Sx.read(props.style)
+			if st then
+				for k, v in pairs(st :: any) do
+					s[k] = v
+				end
+			end
+		end
 		local c = Sx.read(props.color) or "#4fc3f7"
-		s.backgroundColor = c
+		s.borderColor = c
 		return s :: Sx.Styles
 	end
 
-	local args: any = { style = wrapperStyle }
-
-	args[1] = x(Sx.View)({ style = barStyle2 })
+	-- Forward every unconsumed prop (name, onmousedown, tabindex, ...) to the wrapper
+	-- View; only color/style/children are handled here.
+	local args: any = {}
+	for k, v in pairs(props :: any) do
+		if k ~= "color" and k ~= "style" and k ~= "children" and k ~= "key" then
+			args[k] = v
+		end
+	end
+	args.style = computedStyle
 
 	for _, c in ipairs(props.children or {}) do
 		args[#args + 1] = c
@@ -82,7 +80,7 @@ local function StatBar(props: { label: string, value: Sx.Signalish<number>?, col
 	local height = props.height or 8
 	local label = props.label or ""
 
-	return x(Sx.View)({ style = { marginBottom = 8 },
+	return x(Sx.View)({ style = { marginBottom = 8, flexDirection = "column" },
 		x(Sx.View)({
 			style = {
 				display = "flex",
