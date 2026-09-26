@@ -93,6 +93,7 @@ local ConfirmBox = styled(Sx.View) {
 	paddingRight = 28,
 	minWidth = 320,
 	alignItems = "center",
+	flexDirection = "column",
 }
 
 local ConfirmTitle = styled(Sx.Text) {
