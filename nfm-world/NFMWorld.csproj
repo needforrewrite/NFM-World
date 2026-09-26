@@ -46,9 +46,6 @@
         <None Include="data\**\*" CopyToOutputDirectory="Always" />
         <None Remove="data\html\node_modules\**" CopyToOutputDirectory="Never" />
         <None Remove="data\html\dist\**" CopyToOutputDirectory="Never" />
-        <None Include="src\**\*" CopyToOutputDirectory="Always" />
-        <None Remove="src\data\.git\**" CopyToOutputDirectory="Never" />
-        <None Remove="src\data\.git" CopyToOutputDirectory="Never" />
         <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1" />
         <PackageReference Include="NAudio" Version="3.0.0-preview.18" />
         <PackageReference Include="NAudio.SoundFile" Version="3.0.0-preview.18" />
