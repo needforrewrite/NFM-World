@@ -1,6 +1,7 @@
 ﻿extern alias SDL3New;
 
 using System.Diagnostics;
+using System.Drawing;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
@@ -28,6 +29,9 @@ using NFMWorld.Sentry;
 using SDL3New::SDL3;
 using WorldXaml.UI.Yoga;
 using ClearOptions = NFMWorld.Graphics.ClearOptions;
+using Font = NFMWorld.DriverInterface.DriverInterface.Font;
+using FontFamily = NFMWorld.DriverInterface.DriverInterface.FontFamily;
+using FontStyle = NFMWorld.DriverInterface.DriverInterface.FontStyle;
 
 namespace NFMWorld;
 
@@ -1136,7 +1140,24 @@ public class WorldGame : IDisposable
         _uiRenderer?.Render();
         if (_yogaDebugPage >= 0) YogaDebugger.Render(_yogaDebugPage);
 
-        FPSCounter.Render();
+        if (BaseStageRenderingPhase.DebugDisplay)
+        {
+            FPSCounter.Render();
+            
+            if (FrameTrace.IsEnabled)
+            {
+                const int x = 250;
+
+                G.SetColor(new Color(0, 0, 0));
+                var messageString = FrameTrace.GetMessageString();
+                
+                G.SetFont(new Font(FontFamily.DroidSans, FontStyle.Plain, 16));
+                G.SetColor(Color.Black);
+                G.DrawStringStroke(messageString, 10, x);
+                G.SetColor(Color.White);
+                G.DrawString(messageString, 10, x);
+            }
+        }
 
         _nvg.Render();
 

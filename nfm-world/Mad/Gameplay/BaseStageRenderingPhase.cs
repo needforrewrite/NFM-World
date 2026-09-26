@@ -9,7 +9,14 @@ namespace NFMWorld.Gameplay;
 public abstract class BaseStageRenderingPhase : BasePhase
 {
     protected int? FovOverride = null;
-    public static bool DebugDisplay = false;
+
+    public static bool DebugDisplay =
+#if DEBUG
+            true
+#else
+            false
+#endif
+        ;
 
     public PerspectiveCamera Camera = new();
     public Camera[] LightCameras = [

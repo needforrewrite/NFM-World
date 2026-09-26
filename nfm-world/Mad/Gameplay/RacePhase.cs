@@ -336,16 +336,6 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     {
         base.Render(cb, alpha);
 
-        if (DebugDisplay)
-        {
-            RenderMessages();
-            G.SetColor(new Color(0, 0, 0));
-            G.DrawString($"Render: {WorldGame.LastFrameTime}ms", 100, 100);
-            G.DrawString($"Tick: {WorldGame.LastTickTime}μs", 100, 120);
-            G.DrawString($"Power: {ClientCar?.CarPhysics?.Power:0.00}", 100, 140);
-            G.DrawString($"Ticks executed last frame: {WorldGame.LastTickCount}", 100, 160);
-        }
-
         if (RaceState == RaceState.WaitingToStart)
         {
             G.SetFont(new Font(FontFamily.DroidSans, FontStyle.Plain, 26));
@@ -357,17 +347,6 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         }
 
         GamemodeInstance?.Render();
-    }
-
-    private static void RenderMessages()
-    {
-        if (!FrameTrace.IsEnabled) return;
-
-        const float x = 250;
-        const float increment = 20;
-
-        G.SetColor(new Color(0, 0, 0));
-        G.DrawString(FrameTrace.GetMessageString(), (int)x, 0);
     }
 
     private void ApplyPlayerState(int carIndex, PlayerState state)

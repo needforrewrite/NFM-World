@@ -88,17 +88,17 @@ internal static class ShadowMapDebugView
     {
         if (!_bound) return;
 
-        var windowSize = new System.Numerics.Vector2(PreviewSize + 24, PreviewSize + 64);
+        var windowSize = new Vector2(PreviewSize + 24, PreviewSize + 64);
         ImGui.SetNextWindowSize(windowSize, ImGuiCond.Once);
-        if (!ImGui.Begin("Shadow cascades"))
-            return;
-
-        ImGui.TextDisabled($"cascade {_shownCascade} of {WorldGame.ShadowRenderTargets.Count}, " +
-                           $"{WorldGame.ShadowResolution}x{WorldGame.ShadowResolution} {TextureFormat.Single}");
-        // Flip V: cascade render targets are stored bottom-up, same as the stage editor's part
-        // thumbnails (see StageEditorPhase.Panels.cs).
-        ImGui.Image(_previewRef, new System.Numerics.Vector2(PreviewSize, PreviewSize),
-            new System.Numerics.Vector2(0, 1), new System.Numerics.Vector2(1, 0));
+        if (ImGui.Begin("Shadow cascades"))
+        {
+            ImGui.TextDisabled($"cascade {_shownCascade} of {WorldGame.ShadowRenderTargets.Count}, " +
+                               $"{WorldGame.ShadowResolution}x{WorldGame.ShadowResolution} {TextureFormat.Single}");
+            // Flip V: cascade render targets are stored bottom-up, same as the stage editor's part
+            // thumbnails (see StageEditorPhase.Panels.cs).
+            ImGui.Image(_previewRef, new Vector2(PreviewSize, PreviewSize),
+                new Vector2(0, 1), new Vector2(1, 0));
+        }
         ImGui.End();
     }
 
