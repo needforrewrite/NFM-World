@@ -8,7 +8,10 @@
 // byte offset into the merged block (D3D packoffset numbering), while GL has a std140 UBO, so the
 // buffer has to keep the block's bytes on the CPU, let SetUniform poke at them, and upload the
 // whole block before a draw. That is the same model sokol's backend uses, and for the same reason.
+
+using System.Numerics;
 using System.Runtime.InteropServices;
+using Maxine.Extensions.Mathematics;
 using Silk.NET.OpenGLES;
 
 namespace NFMWorld.Graphics.OpenGL;
@@ -264,15 +267,9 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     /// </summary>
     private static void Transpose4x4Into(ReadOnlySpan<byte> source, Span<byte> destination)
     {
-        for (var row = 0; row < 4; row++)
-        {
-            for (var column = 0; column < 4; column++)
-            {
-                var from = (row * 4 + column) * sizeof(float);
-                var to = (column * 4 + row) * sizeof(float);
-                source.Slice(from, sizeof(float)).CopyTo(destination[to..]);
-            }
-        }
+        var mat = MemoryMarshal.Read<Matrix4x4>(source);
+        mat.Transpose();
+        MemoryMarshal.Write(destination, in mat);
     }
 
     public void SetVertexBuffer(int slot, IBuffer buffer, int strideBytes, int offsetBytes = 0)

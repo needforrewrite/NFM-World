@@ -62,6 +62,13 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     /// </summary>
     private readonly GlBaseVertexDraw _baseVertexDraw;
 
+    /// <summary>
+    /// The program-binary cache, resolved once here for the same reason as the base-vertex entry
+    /// points: it is a property of the context rather than of any one program. See
+    /// <see cref="GlProgramCache"/> for why it exists and when it disables itself.
+    /// </summary>
+    private readonly GlProgramCache _programCache;
+
     private GlCommandBuffer? _activeCommandBuffer;
     private bool _disposed;
 
@@ -82,6 +89,11 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         // does not need the host's callback carried all the way down here. The lambda is only because
         // INativeContext.GetProcAddress takes an optional ordinal, which a method group cannot absorb.
         _baseVertexDraw = GlBaseVertexDraw.Resolve(_gl);
+
+        // Beside the game's other per-user state, and under the same relative path the settings use -
+        // so it follows the working directory the game was launched from rather than inventing a
+        // second convention.
+        _programCache = GlProgramCache.Resolve(_gl, Path.Combine("data", "cfg", "shadercache"));
     }
 
     /// <summary>
@@ -260,7 +272,8 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
                 "built separately cannot be paired here.", nameof(desc));
         }
 
-        var program = new GlShaderProgram(_gl, _deletions, vertex.Vertex, vertex.Pixel, vertex.Reflection);
+        var program = new GlShaderProgram(
+            _gl, _deletions, vertex.Vertex, vertex.Pixel, vertex.Reflection, _programCache);
 
         try
         {

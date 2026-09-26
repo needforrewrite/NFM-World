@@ -17,6 +17,9 @@
         <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
         <ProjectReference Include="..\NFMWorld.Graphics.OpenGL\NFMWorld.Graphics.OpenGL.csproj" />
         <ProjectReference Include="..\NFMWorld.Shaders.Abstraction\NFMWorld.Shaders.Abstraction.csproj" />
+        <!-- The one shader whose compile dominates startup, measured on the same path the game
+             takes rather than on a hand-written stand-in. -->
+        <ProjectReference Include="..\Apos.Shapes\Source\Apos.Shapes.NFMW.csproj" />
     </ItemGroup>
 
     <!-- The real generated bundles, produced here by the same build step the game uses, so the ES

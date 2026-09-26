@@ -62,6 +62,8 @@ internal static class Program
         CheckBuffers(device);
         CheckCommandBufferLifetime(device);
         CheckRenderTarget(device);
+        CheckProgramBinary(device);
+        MeasureAposCompile(device);
         CheckBundlePrograms(device);
         CheckImGuiTexturedDraw(device);
         CheckMatrixUniformOrientation(device);
@@ -189,6 +191,33 @@ internal static class Program
         Report("TEXTURE", "a block-compressed format is refused rather than misread as raw pixels", refused);
     }
 
+    /// <summary>
+    /// Reads a buffer back through glMapBufferRange.
+    ///
+    /// Mapping stalls until anything pending on the buffer has landed, so this is a synchronisation
+    /// point rather than a cheap read - fine for a check that runs once, and the reason the
+    /// abstraction does not expose buffer readback at all. glGetBufferSubData is the desktop-GL
+    /// spelling and does not exist in ES 3.0.
+    /// </summary>
+    private static unsafe byte[] ReadBufferBytes(GlGraphicsDevice device, IBuffer buffer)
+    {
+        var gl = device.Gl;
+        var glBuffer = (GlBuffer)buffer;
+        var target = glBuffer.Kind.ToTarget();
+        var bytes = new byte[glBuffer.SizeInBytes];
+
+        gl.BindBuffer(target, glBuffer.Handle);
+        var mapped = (byte*)gl.MapBufferRange(target, 0, (nuint)bytes.Length, MapBufferAccessMask.ReadBit);
+        if (mapped is not null)
+        {
+            new ReadOnlySpan<byte>(mapped, bytes.Length).CopyTo(bytes);
+            gl.UnmapBuffer(target);
+        }
+        gl.BindBuffer(target, 0);
+
+        return bytes;
+    }
+
     private static void CheckBuffers(GlGraphicsDevice device)
     {
         Span<float> data = [1f, 2f, 3f, 4f];
@@ -203,6 +232,57 @@ internal static class Program
         device.Submit(cb);
         DrainGlErrors("buffer updates");
         Report("BUFFER", "dynamic buffer takes a full and a sub-range update in one frame", true);
+
+        // The calls above only prove they are accepted. What matters is the bytes, because the whole
+        // buffer now reaches the GPU as one BufferData - a discard - with the CPU mirror as the
+        // source, and it is the mirror that makes the narrow write non-destructive.
+        //
+        //   whole write   5f,6f,7f,8f  ->  00 00 A0 40 | 00 00 C0 40 | 00 00 E0 40 | 00 00 00 41
+        //   sub-range     4 bytes @4   ->  AA AA AA AA  (replaces the 6f in bytes 4..7)
+        //
+        // So the readback must be 5f, 0xAAAAAAAA, 7f, 8f. The pattern is not a number anyone would
+        // choose - it is the point: 0xAAAAAAAA is no float, so it cannot be confused with a real
+        // value, and its being at index 1 with 5f before and 7f/8f after is what proves the sub-range
+        // write landed where it was asked to *and* that the mirror preserved its surroundings. A
+        // regression to a whole-buffer overwrite would lose the 5f and the 8f; a wrong offset would
+        // put the pattern somewhere else.
+        var floats = MemoryMarshal.Cast<byte, float>((ReadOnlySpan<byte>)ReadBufferBytes(device, dynamic));
+        var pattern = BitConverter.Int32BitsToSingle(unchecked((int)0xAAAAAAAA));
+        Report("BUFFER", $"a whole write then a 4-byte sub-range write read back as " +
+                         $"{floats[0]}f, {floats[1]}f, {floats[2]}f, {floats[3]}f, " +
+                         $"expected 5f, {pattern}f, 7f, 8f",
+            floats.Length == 4 && floats[0] == 5f && floats[1] == pattern
+                                && float.IsNaN(floats[1]) == false
+                                && floats[2] == 7f && floats[3] == 8f);
+
+        // Each update reaches the GPU on its own - nothing is held back for a later draw - so the two
+        // orders a caller can write them in agree. Worth pinning down because a deferred scheme gets
+        // exactly one of these wrong: flushing only at the bind loses the second write, and flushing
+        // only at the draw loses both until something draws.
+        var cb3 = device.AcquireCommandBuffer();
+        cb3.UpdateBuffer(dynamic, MemoryMarshal.AsBytes((ReadOnlySpan<float>)[1f, 1f, 1f, 1f]));
+        cb3.SetVertexBuffer(0, dynamic, strideBytes: sizeof(float));
+        cb3.UpdateBuffer(dynamic, MemoryMarshal.AsBytes((ReadOnlySpan<float>)[9f]), offsetBytes: 0);
+        device.Submit(cb3);
+        var afterBind = MemoryMarshal.Cast<byte, float>((ReadOnlySpan<byte>)ReadBufferBytes(device, dynamic));
+        Report("BUFFER", $"sub-range writes before and after the bind both land " +
+                         $"(read back {afterBind[0]}f, {afterBind[3]}f, expected 9f, 1f)",
+            afterBind[0] == 9f && afterBind[3] == 1f);
+        DrainGlErrors("buffer readback");
+
+        // An update is sent even when nothing draws the buffer, which is the case a flush hooked to
+        // the draw would lose. No pipeline is bound here, so if the only upload path ran at draw time
+        // this buffer would still hold the zeros it was created with.
+        using var undrawn = device.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, 4 * sizeof(float)), new byte[16]);
+        var cb4 = device.AcquireCommandBuffer();
+        cb4.UpdateBuffer(undrawn, MemoryMarshal.AsBytes((ReadOnlySpan<float>)[2f, 3f, 4f, 5f]));
+        device.Submit(cb4);
+        var undrawnFloats = MemoryMarshal.Cast<byte, float>((ReadOnlySpan<byte>)ReadBufferBytes(device, undrawn));
+        Report("BUFFER", $"a write to a buffer the frame never draws is still uploaded " +
+                         $"(read back {undrawnFloats[0]}f, expected 2f)",
+            undrawnFloats[0] == 2f && undrawnFloats[3] == 5f);
+        DrainGlErrors("undrawn buffer readback");
 
         // GL has no immutability concept for buffers - BufferUsage only picks a usage hint - so this
         // refusal is the backend's own, and it is what keeps a stale-content bug from looking like a
@@ -313,6 +393,167 @@ internal static class Program
     /// layout(location) on them, so a mismatch between the two stages fails at link and never at
     /// compile - see the shader compiler's HarmonizeVaryingNames.
     /// </summary>
+    /// <summary>
+    /// Probes whether this context can round-trip a program binary, which is what a shader cache
+    /// would be built on.
+    ///
+    /// Reported rather than asserted: the point is to find out what the driver actually does, and a
+    /// hard assert here would only encode a guess. The round trip is the real check - a format that
+    /// is advertised but cannot be loaded back would be worse than none.
+    /// </summary>
+    private static unsafe void CheckProgramBinary(GlGraphicsDevice device)
+    {
+        var gl = device.Gl;
+
+        var extensionPointer = gl.GetString(StringName.Extensions);
+        var extensions = extensionPointer is null ? "(null)" : Marshal.PtrToStringUTF8((nint)extensionPointer) ?? "(unreadable)";
+        Console.WriteLine($"BINARY: OES_get_program_binary = {extensions.Contains("GL_OES_get_program_binary")}");
+        Console.WriteLine($"BINARY: ANGLE_program_binary  = {extensions.Contains("GL_ANGLE_program_binary")}");
+
+        if (!gl.TryGetExtension(out Silk.NET.OpenGLES.Extensions.OES.OesGetProgramBinary ext))
+        {
+            Console.WriteLine("BINARY: OES_get_program_binary entry points NOT resolvable on this context");
+            return;
+        }
+
+        Console.WriteLine("BINARY: OES_get_program_binary entry points resolved");
+
+        var formats = stackalloc int[8];
+        gl.GetInteger((GLEnum)Silk.NET.OpenGLES.Extensions.OES.OES.NumProgramBinaryFormatsOes, formats);
+        var count = formats[0];
+        Console.WriteLine($"BINARY: NUM_PROGRAM_BINARY_FORMATS = {count}");
+        for (var i = 0; i < 8; i++) formats[i] = 0;
+        gl.GetInteger((GLEnum)Silk.NET.OpenGLES.Extensions.OES.OES.ProgramBinaryFormatsOes, formats);
+        Console.WriteLine($"BINARY: PROGRAM_BINARY_FORMATS[0] = 0x{formats[0]:X4}");
+
+        if (count <= 0)
+        {
+            Console.WriteLine("BINARY: no binary formats advertised, cache cannot be enabled here");
+            Report("BINARY", "a program binary format is advertised", false);
+            return;
+        }
+        var advertisedFormat = (Silk.NET.OpenGLES.Extensions.OES.OES)formats[0];
+
+        // A real program from a real generated bundle, so the round trip is measured on the same
+        // kind of input the cache would see.
+        var bundle = Bundles.First();
+        using var pipeline = device.CreatePipeline(new PipelineDesc(
+            VertexShader: bundle.Module,
+            PixelShader: bundle.Module,
+            VertexLayouts: bundle.Layouts,
+            BlendState: BlendStateDesc.Opaque,
+            DepthStencilState: DepthStencilStateDesc.Default,
+            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
+            Topology: PrimitiveTopology.TriangleList));
+
+        var program = ((GlPipelineState)pipeline).Program;
+        var before = DrainGlErrors("program binary: before get");
+
+        var length = 0;
+        gl.GetProgram(program.Handle, (GLEnum)Silk.NET.OpenGLES.Extensions.OES.OES.ProgramBinaryLengthOes, &length);
+        Console.WriteLine($"BINARY: {bundle.Name} PROGRAM_BINARY_LENGTH = {length}");
+
+        if (length <= 0)
+        {
+            Console.WriteLine($"BINARY: no binary available (length {length}), errors before = {before}");
+            Report("BINARY", $"{bundle.Name}: glGetProgramBinaryOES produced a usable blob", false);
+            return;
+        }
+
+        var blob = new byte[length];
+        uint written = 0;
+        var format = advertisedFormat;
+        fixed (byte* p = blob)
+        {
+            ext.GetProgramBinary(program.Handle, (uint)length, &written, &format, p);
+        }
+        var getErrors = DrainGlErrors("program binary: get");
+        Console.WriteLine($"BINARY: got {written} byte(s), format 0x{(int)format:X4}, errors = {getErrors}");
+
+        // Load it into a fresh program object and confirm it links from the blob alone.
+        var restored = gl.CreateProgram();
+        fixed (byte* p = blob)
+        {
+            ext.ProgramBinary(restored, format, p, (int)written);
+        }
+
+        var linkStatus = 0;
+        gl.GetProgram(restored, GLEnum.LinkStatus, &linkStatus);
+        var loadErrors = DrainGlErrors("program binary: load");
+        Console.WriteLine($"BINARY: restored LINK_STATUS = {(linkStatus != 0 ? "TRUE" : "FALSE")}, errors = {loadErrors}");
+
+        Report("BINARY", $"{bundle.Name}: binary round-trips into a linking program",
+            written > 0 && linkStatus != 0);
+
+        gl.DeleteProgram(restored);
+    }
+
+    /// <summary>
+    /// Where the apos-shapes shader's compile time actually lands.
+    ///
+    /// Reported rather than asserted, and split into three numbers on purpose, because ANGLE
+    /// defers: glCompileShader/glLinkProgram return in a fraction of a millisecond and the real
+    /// translation happens when the program is first made current for a draw. Timing the
+    /// constructor alone would therefore measure nothing and read as though this shader were
+    /// cheap. The draw is the number that matters - it is what a shader cache has to remove.
+    /// </summary>
+    /// <summary>
+    /// How long Apos.Shapes' shader takes to compile on this driver. Reported, never asserted.
+    ///
+    /// The number is not a property of this backend, which is why it must not gate the run: on ANGLE
+    /// over D3D11 it is 130 seconds *per* stage translation - ANGLE's HLSL translator is quadratic
+    /// enough on this shader's unrolled loops that it dominates the whole test, and a run that took
+    /// ~1 s before is minutes with it. Treating that as a failure would make this suite unpassable on
+    /// a correct driver, so the check is the timer line and nothing else.
+    ///
+    /// It is also why the GL error drain below ignores what it finds. The budget, not the shader, is
+    /// what fails here, so a drained error says the compile was cut short and not that the backend
+    /// misissued a call - and asserting on it would report the timeout as a backend bug.
+    /// </summary>
+    /// <summary>
+    /// The cache's two-run story, through the real <see cref="GlProgramCache"/> rather than a
+    /// reimplementation of it: the first <c>ShapeBatch</c> on a cold cache pays the full link and
+    /// writes a binary, the second one - a fresh batch, a fresh program - loads it instead.
+    ///
+    /// Reported rather than asserted because both runs are legitimate: a cold run has to be slow, a
+    /// warm one fast, and the test is what makes the difference visible. The numbers this produced
+    /// are the reason the cache exists - roughly 140 s cold against 1 ms restored - and the warmup
+    /// figure in the middle is what rules out ANGLE simply deferring the work to the first draw.
+    /// </summary>
+    private static void MeasureAposCompile(GlGraphicsDevice device)
+    {
+        var cold = TimeBatch(device, "cold");
+        var warm = TimeBatch(device, "warm");
+
+        Console.WriteLine($"APOS: cold {cold} ms, warm {warm} ms (cache {(warm < cold / 2 ? "helps" : "does NOT help")})");
+
+        // Drained through GetError directly rather than through DrainGlErrors, which counts what it
+        // finds as a failure. A link that runs this long leaves GL_INVALID_OPERATION behind under
+        // ANGLE, and that is the driver answering its own timeout rather than the backend
+        // misissuing a call. Leaving it undrained is not an option - the next check would read it as
+        // its own and fail for the wrong reason - so it is cleared, named, and not counted.
+        var drained = 0;
+        while (_gl.GetError() != GLEnum.NoError && ++drained < 32) { }
+        if (drained > 0)
+            Console.WriteLine($"APOS: cleared {drained} GL error(s), not counted as failures");
+    }
+
+    private static long TimeBatch(GlGraphicsDevice device, string label)
+    {
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+
+        using var batch = new Apos.Shapes.ShapeBatch(device, warmup: false);
+        var constructed = watch.ElapsedMilliseconds;
+
+        // Warmup is the first draw, and so the driver's first chance to translate the program - it is
+        // what separates "the constructor linked it" from "ANGLE deferred it to here".
+        batch.Warmup();
+        var warmed = watch.ElapsedMilliseconds;
+
+        Console.WriteLine($"APOS {label}: create+link {constructed} ms, first draw {warmed - constructed} ms");
+        return warmed;
+    }
+
     private static void CheckBundlePrograms(GlGraphicsDevice device)
     {
         foreach (var bundle in Bundles)

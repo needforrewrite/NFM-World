@@ -111,25 +111,38 @@ internal sealed class GlShaderProgram : IDisposable
     /// <summary>The uniform block's member offsets as the reflection declares them, for the smoke test to compare against the driver's.</summary>
     internal ShaderReflection Reflection { get; }
 
-    internal GlShaderProgram(GL gl, GlDeletionQueue deletions, ShaderStageSources vertex, ShaderStageSources pixel, ShaderReflection reflection)
+    internal GlShaderProgram(GL gl, GlDeletionQueue deletions, ShaderStageSources vertex, ShaderStageSources pixel, ShaderReflection reflection, GlProgramCache? cache = null)
     {
         _gl = gl;
         _deletions = deletions;
         Reflection = reflection;
 
-        var vertexShader = Compile(ShaderType.VertexShader, vertex.GlslEs, "vertex");
-        var pixelShader = Compile(ShaderType.FragmentShader, pixel.GlslEs, "pixel");
-        try
+        // The cache is consulted before anything is compiled, because a hit makes the compile and the
+        // link both unnecessary - which is the entire point, given that one program in this tree costs
+        // minutes to link. A miss falls through to the normal path and the result is saved after.
+        var restored = cache?.TryLoad(vertex, pixel);
+        if (restored is { } program)
         {
-            Handle = Link(vertexShader, pixelShader);
+            Handle = program;
         }
-        finally
+        else
         {
-            // The program keeps the compiled result; the shader objects are only needed until the
-            // link. Deleting them here still leaves the program usable - the linked program is a
-            // separate object in GL.
-            _gl.DeleteShader(vertexShader);
-            _gl.DeleteShader(pixelShader);
+            var vertexShader = Compile(ShaderType.VertexShader, vertex.GlslEs, "vertex");
+            var pixelShader = Compile(ShaderType.FragmentShader, pixel.GlslEs, "pixel");
+            try
+            {
+                Handle = Link(vertexShader, pixelShader);
+            }
+            finally
+            {
+                // The program keeps the compiled result; the shader objects are only needed until the
+                // link. Deleting them here still leaves the program usable - the linked program is a
+                // separate object in GL.
+                _gl.DeleteShader(vertexShader);
+                _gl.DeleteShader(pixelShader);
+            }
+
+            cache?.TrySave(Handle, vertex, pixel);
         }
 
         UniformBlock = ResolveUniformBlock(reflection);

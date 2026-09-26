@@ -43,6 +43,9 @@ public enum AnglePlatformType
 
     /// <summary>Whatever ANGLE would pick on its own (<c>EGL_PLATFORM_ANGLE_TYPE_DEFAULT_ANGLE</c>).</summary>
     Default,
+    
+    /// <summary>Metal (<c>EGL_PLATFORM_ANGLE_TYPE_METAL_ANGLE</c>).</summary>
+    Metal
 }
 
 /// <summary>ANGLE's "device type": which adapter to use within the platform type. <c>EGL_PLATFORM_ANGLE_DEVICE_TYPE_*_ANGLE</c>.</summary>
@@ -135,6 +138,7 @@ public readonly record struct AngleSelection(AnglePlatformType Platform, AngleDe
         AnglePlatformType.Gles => Egl.EglPlatformAngleTypeOpenGles,
         AnglePlatformType.Null => Egl.EglPlatformAngleTypeNull,
         AnglePlatformType.Default => Egl.EglPlatformAngleTypeDefault,
+        AnglePlatformType.Metal => Egl.EglPlatformAngleTypeMetal,
         _ => throw new ArgumentOutOfRangeException(nameof(Platform), Platform,
             $"No EGL_PLATFORM_ANGLE_TYPE token is defined for this platform type, please update {nameof(AngleSelection)}"),
     };
