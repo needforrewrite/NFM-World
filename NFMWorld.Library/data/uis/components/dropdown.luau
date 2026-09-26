@@ -14,13 +14,13 @@
 -- focus/blur), so it re-opens reliably after a selection. There is no click-outside
 -- close (no full-screen scoped backdrop).
 
-local function __luaux_read(v) return if type(v) == "function" then (v :: () -> any)() else v end; local Sx = require("../../library/sx/index")
+local Sx = require("../../library/sx/index")
 local x = Sx.x
 local theme = require("../../library/ui/theme")
 
 export type DropdownOption = { label: string, value: number }
 export type DropdownProps = {
-	options: { string } | { DropdownOption },
+	options: Sx.Signalish<{ string } | { DropdownOption }>,
 	value: Sx.Signalish<number?>,
 	onSelect: (number) -> (),
 	placeholder: string?,
@@ -45,7 +45,9 @@ local function toRows(options: { string } | { DropdownOption }): { DropdownOptio
 end
 
 local function Dropdown(props: DropdownProps)
-	local rows = toRows(Sx.read(props.options))
+	local rows = Sx.createMemo(function()
+		return toRows(Sx.read(props.options))
+	end)
 	local width = props.width or 160
 	local disabled = props.disabled == true
 	local placeholder = props.placeholder or "Select..."
@@ -73,7 +75,7 @@ local function Dropdown(props: DropdownProps)
 		local scissor = el.scissorRect
 		if pos == nil or size == nil or scissor == nil then return false end
 		local triggerBottom = pos.y + size.y
-		local popupHeight = math.min(#rows * ROW_H, MAX_H)
+		local popupHeight = math.min(#rows() * ROW_H, MAX_H)
 		local spaceBelow = (scissor.y + scissor.height) - triggerBottom
 		return popupHeight > spaceBelow
 	end
@@ -81,19 +83,20 @@ local function Dropdown(props: DropdownProps)
 	local function selectedLabel()
 		local v = Sx.read(props.value)
 		if v == nil then return placeholder end
-		for _, row in ipairs(rows) do
+		for _, row in ipairs(rows()) do
 			if row.value == v then return row.label end
 		end
 		return placeholder
 	end
 
 	-- Per-option row: its own hover signal so only the hovered option re-renders.
-	local function DropdownOptionRow(props: { opt: DropdownOption, value: Sx.Signalish<number?>, onSelect: (number) -> () })
+	local function DropdownOptionRow(props: { opt: Sx.Signalish<DropdownOption>, value: Sx.Signalish<number?>, onSelect: (number) -> () })
 		local hovered, setHovered = Sx.createSignal(false)
+		local opt = Sx.read(props.opt)
 		return x(Sx.View)({
 			style = function(): Sx.Styles
 				local v = Sx.read(props.value)
-				local selected = v ~= nil and v == props.opt.value
+				local selected = v ~= nil and v == opt.value
 				return {
 					paddingTop = 7,
 					paddingBottom = 7,
@@ -106,7 +109,7 @@ local function Dropdown(props: DropdownProps)
 			end,
 			onmousedown = function()
 				if disabled then return end
-				props.onSelect(props.opt.value)
+				props.onSelect(opt.value)
 				setOpen(false)
 			end,
 			onmouseenter = function()
@@ -118,13 +121,13 @@ local function Dropdown(props: DropdownProps)
 			x(Sx.Text)({
 				style = function(): Sx.TextStyles
 					local v = Sx.read(props.value)
-					local selected = v ~= nil and v == props.opt.value
+					local selected = v ~= nil and v == opt.value
 					return {
 						fontSize = 13,
 						color = selected and theme.accent or (hovered() and "#fff" or "rgba(255,255,255,0.8)"),
 					}
 				end,
-				props.opt.label,
+				opt.label,
 			}),
 		})
 	end
@@ -201,15 +204,14 @@ local function Dropdown(props: DropdownProps)
 					end
 					return popupStyle
 				end,
-				x(Sx.For<<DropdownOption>>)({ function() return `each={__luaux_read(rows)}{__luaux_read(function(item: () -> DropdownOption, _index: number)
+				x(Sx.For<<DropdownOption>>)({ each = function() return rows() end,
+					function(item: () -> DropdownOption, _index: number)
 						return x(DropdownOptionRow)({
 							opt = function() return item() end,
 							value = props.value,
 							onSelect = props.onSelect,
 						})
-					end)}` end,
-
-
+					end,
 				}),
 			}),
 		}),
