@@ -271,8 +271,14 @@ public partial class TextInput : Component
     /// <summary>
     /// Returns the x-offset (in screen pixels) for the given character index.
     /// Uses the internal <see cref="_text"/> laid-out text for accurate measurement.
-    /// Laid-out positions are in logical pixels and are scaled by <see cref="G.Scale"/>.
     /// </summary>
+    /// <remarks>
+    /// Laid-out positions are already in screen pixels: text is measured with a font whose
+    /// size has <see cref="G.Scale"/> baked in (<see cref="Text.RelayoutText"/> passes it as
+    /// the measure scale), which is also why <see cref="Text.RenderContent"/> draws them
+    /// without scaling. Scaling them again here would push the cursor out by a factor of
+    /// <see cref="G.Scale"/>.
+    /// </remarks>
     private float GetCursorXForCharIndex(int charIndex)
     {
         var laidOut = _text.LaidOutComplexText;
@@ -294,11 +300,11 @@ public partial class TextInput : Component
             // Cursor is within this element
             var charsBefore = targetIdx - accumIdx;
             if (charsBefore <= 0)
-                return elem.Position.X * G.Scale;
+                return elem.Position.X;
 
             var fontMetrics = G.GetFontMetrics(elem.Font);
             var measured = fontMetrics.MeasureText(elem.Text.AsSpan(..charsBefore));
-            return (elem.Position.X + measured.X) * G.Scale;
+            return elem.Position.X + measured.X;
         }
 
         // Cursor is at the very end — after the last element
@@ -307,7 +313,7 @@ public partial class TextInput : Component
             var last = container.Elements[^1];
             var fontMetrics = G.GetFontMetrics(last.Font);
             var measured = fontMetrics.MeasureText(last.Text);
-            return (last.Position.X + measured.X) * G.Scale;
+            return last.Position.X + measured.X;
         }
 
         return 0;
@@ -315,14 +321,9 @@ public partial class TextInput : Component
 
     /// <summary>
     /// Returns the character index closest to a given x-offset (in screen pixels).
-    /// Input is divided by <see cref="G.Scale"/> to convert to logical pixels
-    /// for comparison with laid-out text positions.
     /// </summary>
     private int GetCharIndexForCursorX(float cursorX)
     {
-        // Convert screen-pixel input to logical pixels for comparison with laid-out positions
-        var logicalX = cursorX / G.Scale;
-
         var laidOut = _text.LaidOutComplexText;
         if (laidOut is not { } container || container.Elements.Count == 0)
             return 0;
@@ -335,13 +336,13 @@ public partial class TextInput : Component
             var fontMetrics = G.GetFontMetrics(elem.Font);
             var elemWidth = fontMetrics.MeasureText(elem.Text).X;
 
-            if (logicalX < elemStartX)
+            if (cursorX < elemStartX)
                 return accumIdx;
 
-            if (logicalX >= elemStartX && logicalX <= elemStartX + elemWidth)
+            if (cursorX >= elemStartX && cursorX <= elemStartX + elemWidth)
             {
                 // Clicked within this element — find closest character
-                var relX = logicalX - elemStartX;
+                var relX = cursorX - elemStartX;
                 var bestIdx = 0;
                 var bestDist = float.MaxValue;
                 for (var i = 0; i <= elem.Text.Length; i++)
@@ -373,23 +374,14 @@ public partial class TextInput : Component
         // Backspace
         if (c == '\b')
         {
-            if (DeleteSelection())
-                return;
-
-            if (_cursorIndex > 0)
-            {
-                var t = CurrentText;
-                var ci = Math.Min(_cursorIndex, t.Length);
-                SetTextFromUserInput(t[..(ci - 1)] + t[ci..]);
-                _cursorIndex = ci - 1;
-            }
+            HandleBackspace();
             return;
         }
 
         // Enter / Return — submit
         if (c is '\r' or '\n')
         {
-            Submitted?.Invoke(Text ?? "");
+            HandleSubmit();
             return;
         }
 
@@ -405,6 +397,10 @@ public partial class TextInput : Component
         _cursorIndex = idx + 1;
     }
 
+    /// <remarks>
+    /// SDL only reports Backspace as a key press, never as text input, so this is the path
+    /// that actually runs; the '\b' branch above covers platforms that do synthesize it.
+    /// </remarks>
     public override void OnKeyPressed(KeyboardEvent @event)
     {
         var shift = @event.Keys.ShiftKey;
@@ -425,10 +421,35 @@ public partial class TextInput : Component
             case Key.End:
                 HandleEnd(shift);
                 break;
+            case Key.Back:
+                HandleBackspace();
+                break;
             case Key.Delete:
                 HandleDelete();
                 break;
+            case Key.Enter:
+                HandleSubmit();
+                break;
         }
+    }
+
+    private void HandleBackspace()
+    {
+        if (DeleteSelection())
+            return;
+
+        if (_cursorIndex > 0)
+        {
+            var t = CurrentText;
+            var ci = Math.Min(_cursorIndex, t.Length);
+            SetTextFromUserInput(t[..(ci - 1)] + t[ci..]);
+            _cursorIndex = ci - 1;
+        }
+    }
+
+    private void HandleSubmit()
+    {
+        Submitted?.Invoke(Text ?? "");
     }
 
     private void HandleArrow(int direction, bool shift, bool ctrl)
