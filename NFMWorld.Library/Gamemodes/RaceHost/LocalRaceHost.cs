@@ -111,6 +111,10 @@ public sealed class LocalRaceHost : IRaceHost
     public void Dispose()
     {
         _serverGamemode?.End();
+
+        // The instance's type comes from the gamemode plugin's load context, so this
+        // host must not hold it past the race or the assembly can never be collected.
+        _serverGamemode = null;
     }
 
     private void BroadcastToClient(ReadOnlyMemory<byte> payload)

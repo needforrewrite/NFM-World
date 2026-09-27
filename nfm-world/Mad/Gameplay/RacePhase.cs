@@ -225,9 +225,16 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     {
         if (disposing)
         {
+            _host.Dispose();
+
+            CurrentStage?.SetPlayers(null); // tears down visuals holding the gamemode's cars
+
             GamemodeInstance?.End();
             GamemodeInstance = null;
-            _host.Dispose();
+
+            // Last, and only after every reference this phase held into the gamemode is
+            // gone: this is what lets the plugin's assembly actually be collected.
+            Gamemode.End();
         }
 
         base.Dispose(disposing);

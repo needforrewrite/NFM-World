@@ -76,8 +76,9 @@ public class ClientStage : IDisposable
     /// Replaces the set of players this stage tracks (race path). The stage
     /// creates a <see cref="CarVisual"/> for each player's <see cref="ClientSidePlayer.Car"/>
     /// and keeps it in sync as cars are assigned or players join/leave.
+    /// Pass null when the race is over to detach and tear the visuals down.
     /// </summary>
-    public void SetPlayers(ObservableUnlimitedArray<ClientSidePlayer> players)
+    public void SetPlayers(ObservableUnlimitedArray<ClientSidePlayer>? players)
     {
         if (_players is { } oldPlayers)
         {
@@ -87,6 +88,10 @@ public class ClientStage : IDisposable
         }
 
         _players = players;
+
+        if (players is null)
+            return;
+
         players.CollectionChanged += PlayersOnCollectionChanged;
         foreach (var player in players)
             AttachPlayer(player);

@@ -62,8 +62,8 @@ public class GamemodePluginTests
         Assert.IsNotNull(pvp);
         Assert.IsNotNull(timeTrial);
 
-        var pvpAssembly = pvp.GetClientGamemodeType().Assembly;
-        var timeTrialAssembly = timeTrial.GetClientGamemodeType().Assembly;
+        var pvpAssembly = pvp.Assembly;
+        var timeTrialAssembly = timeTrial.Assembly;
 
         Assert.AreNotEqual(pvpAssembly, timeTrialAssembly);
         Assert.AreNotEqual(pvpAssembly.GetName().Name, timeTrialAssembly.GetName().Name);

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Loader;
 using Lua;
 using NFMWorldLibrary.Backend;
@@ -27,51 +28,51 @@ public abstract class BaseGamemodeFactory
     /// Used by server-side gamemode lookup.
     /// </summary>
     public abstract string GamemodeId { get; }
-    
+
     public abstract bool HasServerGamemode { get; }
+
+    /// <summary>
+    /// Called when the factory's race session is over. Releases anything the factory
+    /// loaded for the run; a no-op for factories that hold nothing.
+    /// </summary>
+    public virtual void End()
+    {
+    }
 }
 
 public static class GamemodeFactory
 {
-    private static readonly ConcurrentDictionary<string, GamemodePlugin?> PluginCache = new();
-
     /// <summary>
     /// Creates the factory for a gamemode id, preferring a compiled plugin
-    /// (<c>data/gamemodes/{id}/gamemode.dll</c>) over the Luau scripts of the same
-    /// id. Plugins may only be loaded on the primary context - see
-    /// <see cref="GamemodePlugin"/> - so on a secondary context this falls back to
-    /// Lua rather than failing.
+    /// (<c>data/gamemodes/{id}/gamemode.dll</c>) over the Luau scripts of the same id.
     /// </summary>
+    /// <remarks>
+    /// The plugin is loaded fresh, not cached, so that it is only resident while a
+    /// race using it is. The cost is re-reading and reflecting the assembly once per
+    /// race, which is small next to the load it avoids. Callers must call
+    /// <see cref="BaseGamemodeFactory.End"/> when the race is over.
+    /// </remarks>
+    [RequiresUnreferencedCode("Plugin loading requires loading code at runtime.")]
     public static BaseGamemodeFactory Create(string gamemodeId, IReadOnlyDictionary<string, object> config)
     {
-        var plugin = GetPlugin(gamemodeId);
+        var plugin = LoadPlugin(gamemodeId);
         return plugin is not null
             ? new NativeGamemodeFactory(plugin, new Dictionary<string, object>(config))
             : new LuaGamemodeFactory(gamemodeId, config);
     }
 
+    [RequiresUnreferencedCode("Plugin loading requires loading code at runtime.")]
     public static BaseGamemodeFactory Create(string gamemodeId)
     {
-        var plugin = GetPlugin(gamemodeId);
+        var plugin = LoadPlugin(gamemodeId);
         return plugin is not null
             ? new NativeGamemodeFactory(plugin)
             : new LuaGamemodeFactory(gamemodeId);
     }
 
-    private static GamemodePlugin? GetPlugin(string gamemodeId)
-    {
-        if (PluginCache.TryGetValue(gamemodeId, out var cached))
-            return cached;
-
-        GamemodePlugin? plugin = null;
-        if (AssemblyLoadContext.GetLoadContext(typeof(GamemodeFactory).Assembly) is { IsCollectible: false })
-        {
-            plugin = GamemodePlugin.Load(gamemodeId, $"data/gamemodes/{gamemodeId}/gamemode.dll");
-        }
-
-        PluginCache[gamemodeId] = plugin;
-        return plugin;
-    }
+    [RequiresUnreferencedCode("Plugin loading requires loading code at runtime.")]
+    private static GamemodePlugin? LoadPlugin(string gamemodeId)
+        => GamemodePlugin.Load(gamemodeId, $"data/gamemodes/{gamemodeId}/gamemode.dll");
 }
 
 /// <summary>

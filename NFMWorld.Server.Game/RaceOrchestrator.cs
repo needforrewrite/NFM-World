@@ -104,6 +104,14 @@ public class RaceOrchestrator : IDisposable
                 _transport.BroadcastPacket(
                     new S2C_GameFinished { Results = results },
                     reliable: true);
+
+                // The race is over, so the gamemode and the plugin assembly behind it are
+                // done: release both now rather than holding them until shutdown. Sessions
+                // are not removed here, so player state keeps relaying as before - the
+                // gamemode is simply no longer on the receiving end of it.
+                session.ServerGamemode = null;
+                session.Factory?.End();
+                session.Factory = null;
             }
         }
     }
@@ -235,6 +243,7 @@ public class RaceOrchestrator : IDisposable
         }, context);
         
         session.ServerGamemode = gm;
+        session.Factory = factory;
         
         gm.Begin();
 
@@ -272,10 +281,13 @@ public class RaceOrchestrator : IDisposable
     {
         StopServerTick();
 
-        // Call End() on all server gamemodes before tearing down
+        // End() on all server gamemodes before tearing down. Sessions whose race
+        // already finished have had both released already, so both are null-guarded
+        // here (and End() itself is idempotent).
         foreach (var (_, session) in _sessions)
         {
             session.ServerGamemode?.End();
+            session.Factory?.End();
         }
 
         _transport.PacketReceived -= TransportOnPacketReceived;
@@ -296,6 +308,9 @@ public class RaceOrchestrator : IDisposable
         public int LoadedCount { get; set; }
         public ConcurrentDictionary<uint, Guid> Clients { get; set; } = [];
         public IServerGamemode? ServerGamemode { get; set; }
+
+        /// <summary>Owns the gamemode's plugin load context; released alongside it.</summary>
+        public BaseGamemodeFactory? Factory { get; set; }
         public ConcurrentDictionary<Guid, f64Vector3> PlayerPositions { get; set; } = [];
         public IDictionary<byte, ServerSidePlayerInfo> PlayerInfos { get; set; } = new Dictionary<byte, ServerSidePlayerInfo>();
         public bool ResultsBroadcasted { get; set; }

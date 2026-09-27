@@ -160,7 +160,7 @@ public class PvpServerGamemode(
     }
 
     private ServerGamemodeState _state;
-    private Dictionary<Guid, PerPlayerGamemodeInfo> _perPlayer = [];
+    private readonly Dictionary<Guid, PerPlayerGamemodeInfo> _perPlayer = [];
     private int _inner;
     private int _countdown;
 
@@ -171,6 +171,16 @@ public class PvpServerGamemode(
         _inner = GamemodeUtils.CountdownInterval;
         _countdown = 3;
         _state = ServerGamemodeState.WaitingToStart;
+        
+        foreach (var player in Players)
+        {
+            _perPlayer[player.Id] = new PerPlayerGamemodeInfo
+            {
+                Lap = 0,
+                Checkpoint = 0,
+                Position = 0
+            };
+        }
     }
 
     public override void StartRace()
@@ -204,12 +214,14 @@ public class PvpServerGamemode(
 
     public void CompleteRace()
     {
-        FinishRace(TimeSpan.Zero, Players.Select(p => new RaceStanding
-        {
-            PlayerId = p.Id,
-            FinishPosition = _perPlayer[p.Id].Position,
-            FinishTime = TimeSpan.Zero
-        }).ToArray());
+        FinishRace(TimeSpan.Zero, [
+            ..Players.Select(p => new RaceStanding
+            {
+                PlayerId = p.Id,
+                FinishPosition = _perPlayer[p.Id].Position,
+                FinishTime = TimeSpan.Zero
+            })
+        ]);
     }
 
     public override void OnClientEvent(Guid clientId, ReadOnlySpan<byte> payload)
@@ -245,4 +257,4 @@ public partial record CheckpointEvent(ushort Index, byte Lap, int Placement, int
 public abstract partial record ServerToClientEvent;
 
 [MemoryPackable]
-public partial record CountdownGoEvent() : ServerToClientEvent;
+public partial record CountdownGoEvent : ServerToClientEvent;
