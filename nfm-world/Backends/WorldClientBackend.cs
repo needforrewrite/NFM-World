@@ -112,6 +112,9 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
         private Gradient _color;
         private Font _font;
         private float _strokeWidth = 0.5f;
+        // Canvas tracks whether a point is current for you; this interface doesn't hand one back,
+        // so the path builder keeps its own for the Arc overload to join to.
+        private bool _hasCurrentPoint;
         private RectangleF? _clipRect;
         private readonly Stack<RectangleF?> _savedClipRects = [];
 
@@ -342,47 +345,87 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
 
         public void BeginPath()
         {
-            throw new NotImplementedException();
+            _sb.BeginShapePath();
+            _hasCurrentPoint = false;
         }
 
         public void MoveTo(float x, float y)
         {
-            throw new NotImplementedException();
+            _sb.ShapeMoveTo(new Vector2(x, y));
+            _hasCurrentPoint = true;
         }
 
         public void LineTo(float x, float y)
         {
-            throw new NotImplementedException();
+            _sb.ShapeLineTo(new Vector2(x, y));
+            _hasCurrentPoint = true;
         }
 
         public void BezierTo(float c1x, float c1y, float c2x, float c2y, float x, float y)
         {
-            throw new NotImplementedException();
+            _sb.ShapeCubicTo(new Vector2(c1x, c1y), new Vector2(c2x, c2y), new Vector2(x, y));
+            _hasCurrentPoint = true;
         }
 
         public void ClosePath()
         {
-            throw new NotImplementedException();
+            _sb.ShapeClose();
         }
 
         public void MarkHole()
         {
-            throw new NotImplementedException();
+            _sb.ShapeMarkHole();
         }
 
         public void Stroke()
         {
-            throw new NotImplementedException();
+            // The width is already a radius here, and the batch takes a radius too, so this does
+            // not go through the halving the shape painter's width overload does.
+            _sb.StrokeShapeRadius(_sb.EndShapePath(), _color, _strokeWidth);
+            _hasCurrentPoint = false;
         }
 
         public void Fill()
         {
-            throw new NotImplementedException();
+            _sb.FillShape(_sb.EndShapePath(), _color);
+            _hasCurrentPoint = false;
         }
 
+        // Canvas semantics: an arc joins the current point if there is one, otherwise it starts
+        // there. IGraphics keeps no current point of its own, so this tracks one, the same way
+        // callers of the Ellipse overload that takes a `ref` are expected to.
         public void Arc(float cx, float cy, float arcRadius, float startAngleDeg, float endAngleDeg, bool clockWise)
         {
-            throw new NotImplementedException();
+            if (!_sb.HasOpenShapePath) BeginPath();
+            float a0 = startAngleDeg * (MathF.PI / 180f);
+            float a1 = endAngleDeg * (MathF.PI / 180f);
+            var start = new Vector2(cx + arcRadius * MathF.Cos(a0), cy + arcRadius * MathF.Sin(a0));
+
+            // Angles run the way the interface's own corner arcs run them: clockwise is increasing
+            // angle, which is the sense a y-down space gives it. Going the other way means going
+            // round by the long way.
+            float da = a1 - a0;
+            if (clockWise) {
+                while (da < 0f) da += 2f * MathF.PI;
+            } else {
+                while (da > 0f) da -= 2f * MathF.PI;
+            }
+
+            if (_hasCurrentPoint) LineTo(start.X, start.Y);
+            else MoveTo(start.X, start.Y);
+
+            // Sweep matches the flag directly: positive angles are clockwise in a y-down space,
+            // which is SVG's positive sweep. A full turn cannot be told from a zero one by its
+            // endpoints alone, so it is split into two half turns, which the endpoint
+            // parameterization can express. Each piece gets its own flags, or the half-turn halves
+            // would each be handed back the full turn's answer.
+            int pieces = MathF.Abs(da) > MathF.Tau - 1e-4f ? 2 : 1;
+            float step = da / pieces;
+            for (int i = 1; i <= pieces; i++) {
+                float a = a0 + step * i;
+                _sb.ShapeArcTo(new Vector2(cx + arcRadius * MathF.Cos(a), cy + arcRadius * MathF.Sin(a)),
+                               arcRadius, arcRadius, 0f, MathF.Abs(step) > MathF.PI, clockWise);
+            }
         }
 
         public void LineCapButt()
