@@ -23,7 +23,7 @@
     </ItemGroup>
     <!--
          <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
-         <PublishAot>true</PublishAot>
+            <PublishAot>true</PublishAot>
          </PropertyGroup>
     -->
     <PropertyGroup>
@@ -102,24 +102,6 @@
     <ItemGroup>
         <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="SourceItemGroup" />
     </ItemGroup>
-
-    <!-- output memorypack TypeScript code to directory -->
-    <ItemGroup>
-        <CompilerVisibleProperty Include="MemoryPackGenerator_TypeScriptOutputDirectory" />
-        <CompilerVisibleProperty Include="MemoryPackGenerator_TypeScriptImportExtension" />
-        <CompilerVisibleProperty Include="MemoryPackGenerator_TypeScriptConvertPropertyName" />
-        <CompilerVisibleProperty Include="MemoryPackGenerator_TypeScriptEnableNullableTypes" />
-    </ItemGroup>
-    <PropertyGroup>
-        <MemoryPackGenerator_TypeScriptOutputDirectory>$(MSBuildProjectDirectory)\data\html\src\shared\memorypack</MemoryPackGenerator_TypeScriptOutputDirectory>
-        <MemoryPackGenerator_TypeScriptEnableNullableTypes>true</MemoryPackGenerator_TypeScriptEnableNullableTypes>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <Folder Include="data\html\src\shared\memorypack\" />
-        <Folder Include="Mad\Renderer\Renderable\" />
-    </ItemGroup>
-
 
     <!-- Part of the fxc path: it copies the .fxb blobs into the publish output, and there are no
          longer any to copy - the shader compiler's bundles are C# compiled into the assembly. -->
