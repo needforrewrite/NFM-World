@@ -171,7 +171,7 @@ public static partial class GameSparker
     public static Dictionary<Key, bool> DebugKeyStates = new();
     public static MainMenuPhase MainMenuPhase;
 
-    public static void KeyPressed(Key key)
+    public static void KeyPressed(Key key, Keys keys, bool imguiWantsKeyboard)
     {
         DebugKeyStates[key] = true;
 
@@ -181,12 +181,25 @@ public static partial class GameSparker
         {
             devConsole.Toggle();
         }
+        
+        if (!imguiWantsKeyboard)
+        {
+            UiRenderer?.HandleKeyPressed(key, keys);
+        }
+
+        CurrentPhase.KeyPressed(key, imguiWantsKeyboard, keys);
     }
 
-    public static void KeyReleased(Key key)
+    public static void KeyReleased(Key key, Keys keys, bool imguiWantsKeyboard)
     {
         DebugKeyStates[key] = false;
-        
+
+        if (!imguiWantsKeyboard)
+        {
+            UiRenderer?.HandleKeyReleased(key, keys);
+        }
+
+        CurrentPhase.KeyReleased(key, imguiWantsKeyboard, keys);
     }
 
     public static List<string> GetAvailableStages()
@@ -311,12 +324,12 @@ public static partial class GameSparker
         FrameTrace.ClearMessages();
     }
 
-    public static void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
+    public static void Render(ICommandBuffer cb, float alpha)
     {
         CurrentPhase.Render(cb, alpha);
     }
 
-    public static void Render3DOverlays(NFMWorld.Graphics.ICommandBuffer cb)
+    public static void Render3DOverlays(ICommandBuffer cb)
     {
         CurrentPhase.Render3DOverlays(cb);
     }
@@ -335,4 +348,49 @@ public static partial class GameSparker
 
     [System.Text.RegularExpressions.GeneratedRegex(@"(\d+)")]
     private static partial System.Text.RegularExpressions.Regex DigitSplit { get; }
+
+    public static void MousePressed(int mouseX, int mouseY, bool wantCaptureMouse, MouseButton nfmButton, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    {
+        if (!wantCaptureMouse)
+        {
+            UiRenderer?.HandleMousePressed(mouseX, mouseY, nfmButton, buttons, ctrlKey, shiftKey, altKey);
+        }
+
+        CurrentPhase.MousePressed(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
+    }
+
+    public static void MouseReleased(int mouseX, int mouseY, bool wantCaptureMouse, MouseButton nfmButton, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    {
+        if (!wantCaptureMouse)
+        {
+            UiRenderer?.HandleMouseReleased(mouseX, mouseY, nfmButton, buttons, ctrlKey, shiftKey, altKey);
+        }
+
+        CurrentPhase.MouseReleased(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
+    }
+
+    public static void MouseMoved(int mouseX, int mouseY, bool wantCaptureMouse, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    {
+        if (!wantCaptureMouse)
+        {
+            UiRenderer?.HandleMouseMoved(mouseX, mouseY, buttons, ctrlKey, shiftKey, altKey);
+        }
+
+        CurrentPhase.MouseMoved(mouseX, mouseY, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);
+    }
+
+    public static void MouseDragged(int mouseX, int mouseY, int mouseDragStartX, int mouseDragStartY, MouseButton button, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    {
+        UiRenderer?.HandleMouseDragged(mouseX, mouseY, mouseDragStartX, mouseDragStartY, button, buttons, ctrlKey, shiftKey, altKey);
+    }
+
+    public static void MouseScrolled(int mouseX, int mouseY, int delta, bool wantCaptureMouse, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    {
+        if (!wantCaptureMouse)
+        {
+            UiRenderer?.HandleMouseScrolled(mouseX, mouseY, delta, buttons, ctrlKey, shiftKey, altKey);
+        }
+
+        CurrentPhase.MouseScrolled(mouseX, mouseY, delta, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);
+    }
 }

@@ -851,36 +851,22 @@ public class WorldGame : IDisposable, IGameHost
     {
         var keys = SdlWindow.GetKeyboardState();
 
-        foreach (var nfmKey in AllKeys)
+        foreach (var key in AllKeys)
         {
             var imguiWantsKeyboard = ImguiRenderer is not null && ImGui.GetIO().WantCaptureKeyboard;
-            if (keys[nfmKey] && !_oldKeyState[nfmKey])
+            if (keys[key] && !_oldKeyState[key])
             {
-                GameSparker.KeyPressed(nfmKey);
+                GameSparker.KeyPressed(key, keys, imguiWantsKeyboard);
 
-                if (!imguiWantsKeyboard)
-                {
-                    GameSparker.UiRenderer?.HandleKeyPressed(nfmKey, keys);
-                }
-
-                GameSparker.CurrentPhase.KeyPressed(nfmKey, imguiWantsKeyboard, keys);
-
-                if (nfmKey == Key.F9)
+                if (key == Key.F9)
                 {
                     _yogaDebugPage++;
                     if (_yogaDebugPage > YogaDebugger.MaxPages) _yogaDebugPage = -1;
                 }
             }
-            else if (!keys[nfmKey] && _oldKeyState[nfmKey])
+            else if (!keys[key] && _oldKeyState[key])
             {
-                GameSparker.KeyReleased(nfmKey);
-
-                if (!imguiWantsKeyboard)
-                {
-                    GameSparker.UiRenderer?.HandleKeyReleased(nfmKey, keys);
-                }
-
-                GameSparker.CurrentPhase.KeyReleased(nfmKey, imguiWantsKeyboard, keys);
+                GameSparker.KeyReleased(key, keys, imguiWantsKeyboard);
             }
         }
 
@@ -915,59 +901,38 @@ public class WorldGame : IDisposable, IGameHost
 
             if (buttons.HasFlag(button) && !_oldMouseState.HasFlag(button))
             {
-                if (!wantCaptureMouse)
+                GameSparker.MousePressed(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
+                if (!wantCaptureMouse && nfmButton == MouseButton.Primary)
                 {
-                    GameSparker.UiRenderer?.HandleMousePressed(mouseX, mouseY, nfmButton, buttons, ctrlKey, shiftKey, altKey);
-                    if (nfmButton == MouseButton.Primary)
-                    {
-                        _mouseDragging = true;
-                        _mouseDragStart = mousePosition;
-                    }
+                    _mouseDragging = true;
+                    _mouseDragStart = mousePosition;
                 }
-
-                GameSparker.CurrentPhase.MousePressed(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
             }
             else if (!buttons.HasFlag(button) && _oldMouseState.HasFlag(button))
             {
-                if (!wantCaptureMouse)
-                {
-                    GameSparker.UiRenderer?.HandleMouseReleased(mouseX, mouseY, nfmButton, buttons, ctrlKey, shiftKey, altKey);
-                }
+                GameSparker.MouseReleased(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
 
                 if (nfmButton == MouseButton.Primary)
                 {
                     _mouseDragging = false;
                 }
-
-                GameSparker.CurrentPhase.MouseReleased(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
             }
         }
 
         if (mousePosition.X != _oldMousePosition.X || mousePosition.Y != _oldMousePosition.Y)
         {
-            if (!wantCaptureMouse)
+            GameSparker.MouseMoved(mouseX, mouseY, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);
+            if (!wantCaptureMouse && _mouseDragging)
             {
-                GameSparker.UiRenderer?.HandleMouseMoved(mouseX, mouseY, buttons, ctrlKey, shiftKey, altKey);
-                if (_mouseDragging)
-                {
-                    GameSparker.UiRenderer?.HandleMouseDragged(mouseX, mouseY, _mouseDragStart.X, _mouseDragStart.Y, MouseButton.Primary, buttons, ctrlKey, shiftKey, altKey);
-                }
+                GameSparker.MouseDragged(mouseX, mouseY, _mouseDragStart.X, _mouseDragStart.Y, MouseButton.Primary, buttons, ctrlKey, shiftKey, altKey);
             }
-
-            GameSparker.CurrentPhase.MouseMoved(mouseX, mouseY, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);
             YogaDebugger.MouseMove(mousePosition.X, mousePosition.Y);
         }
 
         if (scrollValue != _oldScrollValue)
         {
             var delta = scrollValue - _oldScrollValue;
-
-            if (!wantCaptureMouse)
-            {
-                GameSparker.UiRenderer?.HandleMouseScrolled(mouseX, mouseY, delta, buttons, ctrlKey, shiftKey, altKey);
-            }
-
-            GameSparker.CurrentPhase.MouseScrolled(mouseX, mouseY, delta, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);
+            GameSparker.MouseScrolled(mouseX, mouseY, delta, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);
         }
 
         _oldMouseState = buttons;
@@ -1227,12 +1192,6 @@ public class WorldGame : IDisposable, IGameHost
 
     public static void Main(string[] args)
     {
-        // TODO figure out why SDL ProcessExit doesn't work properly
-        AppDomain.CurrentDomain.ProcessExit += static (sender, args) =>
-        {
-            Process.GetCurrentProcess().Kill(false);
-        };
-
         // The graphics layer below this app references no logging stack of its own - see
         // GraphicsDiagnostics - so this is where its diagnostics reach the log rather than being
         // dropped. Wired before anything creates a device, because the first message the D3D11 backend
