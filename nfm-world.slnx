@@ -106,7 +106,6 @@
   <Project Path="NFMWorld.Graphics.OpenGL/NFMWorld.Graphics.OpenGL.csproj" />
   <Project Path="NFMWorld.Graphics.DesktopGL.Smoke/NFMWorld.Graphics.DesktopGL.Smoke.csproj" />
   <Project Path="NFMWorld.Graphics.DesktopGL/NFMWorld.Graphics.DesktopGL.csproj" />
-  <Project Path="NFMWorld.Graphics.Sokol/NFMWorld.Graphics.Sokol.csproj" />
   <Project Path="NFMWorld.Library.Test/NFMWorld.Library.Test.csproj" />
   <Project Path="NFMWorld.Library/NFMWorld.Library.csproj" />
   <Project Path="NFMWorld.Lua/NFMWorld.Lua.csproj" />
