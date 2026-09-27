@@ -191,8 +191,15 @@ replacement path for Lua — currently a proof of concept.
   when a plugin is present and a `LuaGamemodeFactory` otherwise. Call sites use
   this, not the raw factories.
 - **Loader** — `NFMWorld.Library/Gamemodes/DotNet/GamemodePlugin.cs` reads the
-  assembly into memory and `Assembly.Load`s it, then reflects the gamemode types
-  and constructors once.
+  assembly into memory and loads it into its own **collectible**
+  `AssemblyLoadContext` (`PluginLoadContext`), then reflects the gamemode types and
+  constructors once.
+- **Unloading** — a plugin is only resident for its race. `GamemodeFactory.Create`
+  loads fresh (no cache), and `BaseGamemodeFactory.End()` (overridden by
+  `NativeGamemodeFactory` to call `GamemodePlugin.Unload`) releases the context.
+  Call `End()` when the race is over: `RacePhase.Dispose` does it for the client,
+  `LocalRaceHost.Dispose` for the singleplayer server side, and `RaceOrchestrator`
+  does it when a server-side race finishes.
 
 ### Gotchas
 
@@ -201,8 +208,11 @@ replacement path for Lua — currently a proof of concept.
 | Assembly identity | Ship the file as `gamemode.dll` by **renaming at copy time** (`Gamemode.Plugin.props`), never via `TargetName`/`AssemblyName` — those rename the assembly *identity* too, and the runtime refuses to load two assemblies under one identity, so the second gamemode of a session would fail |
 | Plugin dependencies | Reference shared assemblies (`NFMWorld.Library`, `Lua`, `MemoryPack`, …) with `Private="false" ExcludeAssets="runtime"` so the plugin resolves against the host's copies rather than shadowing them |
 | `DisableTransitiveProjectReferences` | every plugin csproj sets it, so a type used from a transitive dependency (e.g. `Nibble<T>` from `Maxine.Extensions`) needs its own explicit reference |
-| Eager load context | plugins may only be `Assembly.Load`ed on the default (non-collectible) context; `GamemodeFactory` refuses and falls back to Lua elsewhere |
 | Target resolution timing | read `$(TargetDir)` inside the target, not at evaluation time — the SDK sets it after the project body |
+| Unload is silent | `AssemblyLoadContext.Unload()` on a context something still references does nothing and reports nothing. Any surviving reference — a gamemode instance, a `CarVisual`, a reflected `ConstructorInfo` — keeps the whole assembly loaded, so teardown has to drop them *in order* (see below) |
+| MemoryPack pins the context | a plugin's generated formatters register into MemoryPack's **static** table from the plugin's module initializer, i.e. on load, and hold its types for the process lifetime. `MemoryPackFormatterRegistry` removes them in `Unload` by reflection (MemoryPack has no unregister API); without it the plugin never unloads, with no error to show for it |
+| Teardown ordering | release the objects that reference the plugin *before* `End()`: `RacePhase.Dispose` nulls `GamemodeInstance` and clears the stage's players first, `LocalRaceHost.Dispose` nulls its server gamemode. Anything held past that keeps the assembly alive |
+| Verifying an unload | assert it through a `WeakReference` to the plugin's **assembly** after `GC.Collect` (`GamemodePluginUnloadTests`), not by calling `Unload` and trusting the return — there isn't one. Do it **after** the teardown has returned, never inside `Unload`/`End()`: the frames up the stack to there are still live roots, so a collection forced from within always finds the assembly alive and the check reports the caller's own reference |
 
 ---
 

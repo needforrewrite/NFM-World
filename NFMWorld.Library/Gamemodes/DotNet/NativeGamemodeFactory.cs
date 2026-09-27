@@ -16,11 +16,23 @@ namespace NFMWorldLibrary.Gamemodes.DotNet;
 public class NativeGamemodeFactory(GamemodePlugin plugin, Dictionary<string, object>? config = null)
     : BaseGamemodeFactory
 {
-    public GamemodePlugin Plugin { get; private set; } = plugin;
+    // Read up front, because End() drops the plugin and every one of these is a read of
+    // it, and the plugin holds the load context that keeps the assembly resident.
+    private readonly string _gamemodeId = plugin.Id;
+    private readonly bool _hasServerGamemode = plugin.HasServerGamemode;
 
-    public override string GamemodeId => Plugin.Id;
+    private GamemodePlugin? _plugin = plugin;
 
-    public override bool HasServerGamemode => Plugin.HasServerGamemode;
+    /// <summary>
+    /// The plugin driving this run. Throws once <see cref="End"/> has released it, since
+    /// holding on to it is exactly what would keep the assembly resident.
+    /// </summary>
+    public GamemodePlugin Plugin => _plugin
+        ?? throw new InvalidOperationException($"Gamemode plugin '{_gamemodeId}' has already been released.");
+
+    public override string GamemodeId => _gamemodeId;
+
+    public override bool HasServerGamemode => _hasServerGamemode;
 
     public override IGamemode CreateGameMode(
         ClientGamemodeParameters parameters,
@@ -36,23 +48,20 @@ public class NativeGamemodeFactory(GamemodePlugin plugin, Dictionary<string, obj
     /// Releases the plugin assembly. Safe to call more than once - both the client
     /// phase and the local race host tear their side down, and either may be first.
     /// </summary>
+    /// <remarks>
+    /// Releases, and nothing else. Verifying here that the assembly really did collect is
+    /// tempting, since the failure is otherwise silent - but a collection forced from
+    /// inside this call always finds the assembly alive: the frames up the stack to here
+    /// are still live roots, so the check would be reporting the caller's own reference.
+    /// Whether the assembly was released is only answerable after the teardown has
+    /// returned, which is where <c>GamemodePluginUnloadTests</c> checks it.
+    /// </remarks>
     public override void End()
     {
-        Plugin.Unload();
-        Plugin = null!;
+        if (_plugin is null)
+            return;
 
-#if DEBUG
-        for (var i = 0; i < 10; i++)
-        {
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-        }
-
-        if (Plugin.IsAlive)
-        {
-            throw new InvalidOperationException(
-                $"the plugin's assembly should be collectible once the race is over and the factory ended: {Plugin.Assembly}");
-        }
-#endif
+        _plugin.Unload();
+        _plugin = null;
     }
 }

@@ -1,4 +1,5 @@
-﻿using MemoryPack;
+﻿using JetBrains.Annotations;
+using MemoryPack;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
@@ -38,6 +39,7 @@ internal enum ServerGamemodeState
     Finished
 }
 
+[UsedImplicitly]
 public class PvpGamemode : PluginGamemode
 {
     private GamemodeState _state;
@@ -145,6 +147,7 @@ public class PvpGamemode : PluginGamemode
     }
 }
 
+[UsedImplicitly]
 public class PvpServerGamemode(
     ServerGamemodeParameters parameters,
     IServerGamemodeContext context,

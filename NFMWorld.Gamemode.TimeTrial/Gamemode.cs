@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using JetBrains.Annotations;
 using MemoryPack;
 using NFMWorld.DriverInterface;
 using NFMWorldLibrary.Backend;
@@ -27,6 +28,7 @@ internal enum TimeTrialState
 /// Client-side time trial. Drives the player car, replays the saved best run as a
 /// translucent ghost, and records the run so it can be saved if it sets a new best.
 /// </summary>
+[UsedImplicitly]
 public class TimeTrialGamemode : PluginGamemode
 {
     private const int PlayerCarIndex = 0;
@@ -271,6 +273,7 @@ public class TimeTrialGamemode : PluginGamemode
 /// Server-side time trial. The client reports the finished race and the server
 /// ends it, crediting the sender with the single standing.
 /// </summary>
+[UsedImplicitly]
 public class TimeTrialServerGamemode(
     ServerGamemodeParameters parameters,
     IServerGamemodeContext context,
