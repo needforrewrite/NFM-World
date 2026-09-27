@@ -59,13 +59,6 @@
         <PackageReference Include="org.sndfile.runtime.osx-x64" Version="1.2.2" />
         <PackageReference Include="org.sndfile.runtime.win-arm64" Version="1.2.2" />
         <PackageReference Include="org.sndfile.runtime.win-x64" Version="1.2.2" />
-        <!--
-             Silk.NET.OpenGL is gone: nothing in this project's sources names a Silk type. The GL
-             backend was the last consumer, and it reaches Silk through NFMWorld.Graphics.OpenGL's
-             own Silk.NET.OpenGLES reference - a transitive ProjectReference carries it, so this
-             direct reference was never what brought it in. The D3D11 and DXGI bindings the sokol
-             platform uses are declared by NFMWorld.Graphics.Sokol, for the same reason.
-        -->
         <PackageReference Include="SoundTouch.Net" Version="2.3.2" />
         <PackageReference Include="StbImageSharp" Version="2.30.16" />
         <PackageReference Include="System.Reactive" Version="7.0.0-rc.1" />
@@ -76,12 +69,6 @@
         <ProjectReference Include="..\HoleyDiver\HoleyDiver.csproj" />
         <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj" />
         <ProjectReference Include="..\Maxine.Extensions\RayTech.RayLog.MEL\RayTech.RayLog.MEL.csproj" />
-        <!--
-            Milestone 7: the MonoGame.ImGuiNet reference is gone - SdlImGuiRenderer (this project's
-            own renderer, against NFMWorld.Graphics.Abstraction) replaced it in the Milestone 6 ImGui
-            pass, and nothing here has referenced its types since. It was the last path that pulled
-            FNA's real FNA.Core/FNA.Math assemblies into the exe's build graph.
-        -->
         <ProjectReference Include="..\NanoSvgSharp\NanoSvgSharp.csproj" />
         <ProjectReference Include="..\NAudio.Flac\NAudio.Flac\NAudio.Flac.csproj" />
         <ProjectReference Include="..\NFMWorld.Api\NFMWorld.Api.csproj" />
@@ -92,20 +79,9 @@
         <ProjectReference Include="..\NFMWorld.NativeLibs\NFMWorld.NativeLibs.csproj" />
         <ProjectReference Include="..\FNA\lib\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
         <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
-        <!-- Sokol's D3D11 path is the game's backend; see the ANGLE define above for the GL one. -->
-        <!-- Our own D3D11 backend, selected with the d3d11 renderer name. Referenced unconditionally
-             rather than behind a define, unlike the ANGLE arm: the only thing it needs that sokol's
-             D3D11 path does not is the TerraFX.Interop.Windows package, which is managed and resolves
-             on every platform. It refuses to run anywhere but Windows at device creation. -->
         <ProjectReference Include="..\NFMWorld.Graphics.D3D11\NFMWorld.Graphics.D3D11.csproj" />
         <ProjectReference Include="..\NFMWorld.Graphics.DesktopGL\NFMWorld.Graphics.DesktopGL.csproj" />
         <ProjectReference Include="..\NFMWorld.Platform.SDL3\NFMWorld.Platform.SDL3.csproj" />
-
-        <!-- Commented out along with the rest of the fxc path: this analyzer generated the
-             *Effect/*EffectParameters types from the .fxb blobs the fxc targets produced, and those
-             are now generated as C# bundles by NFMWorld.ShaderCompiler instead (see the
-             NFMWorld.ShaderCompiler.targets import below). -->
-        <!-- <ProjectReference Include="..\NFMWorld.ShaderSourceGen\NFMWorld.ShaderSourceGen.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" /> -->
         <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.UnionGen\Maxine.Extensions.UnionGen.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
         <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.UnionGen.Base\Maxine.Extensions.UnionGen.Base.csproj" />
 
@@ -119,119 +95,13 @@
         <ProjectReference Include="..\NFMWorld.LuaSourceGenerator\NFMWorld.LuaSourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
     </ItemGroup>
 
-    <!-- Was <Import Project="../NFMWorld.ShaderSourceGen/NFMWorld.ShaderSourceGen.props" />, which
-         fed the analyzer that read the .fxb blobs. Both are replaced by the shader compiler below. -->
-
     <!-- Shader compilation, replacing the fxc path. The target it defines runs before CoreCompile,
          generates one C# bundle per technique under obj/, and adds them to the compile. -->
     <Import Project="..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.targets" />
     
-    <!-- Shaders to compile
-         Replaced by the NFMWorld.ShaderCompiler.targets import below: the compiler takes the .fx
-         sources directly and emits C# bundles, so neither the FNA effect items nor the .fxb blobs
-         the fxc targets produced are needed. -->
-    <!-- <ItemGroup>
-        <FnaEffect Include="data\shaders\*.fx" />
-    </ItemGroup> -->
-
     <ItemGroup>
         <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="SourceItemGroup" />
     </ItemGroup>
-
-    <!-- ══════════════════════════════════════════════════════════════════════════════════════
-         The fxc path, left inert rather than deleted. It compiled data/shaders/*.fx to .fxb
-         effect blobs with fxc.exe and had NFMWorld.ShaderSourceGen generate the *Effect and
-         *EffectParameters types from them.
-
-         Replaced by NFMWorld.ShaderCompiler, imported above (and by the analyzer reference it
-         commented out earlier in this file): the compiler reads the same .fx sources, compiles
-         them with glslang, and emits C# bundles of the same shape under obj/. Nothing below
-         should be uncommented without also reverting that import.
-
-         Kept because the dialect notes and the fxc.exe discovery chain are worth having on hand
-         if the .fx sources ever need to build for D3D9 again.
-
-         Note this is one comment and cannot contain nested comment pairs: XML comments do not
-         nest, and an inner one would close this early.
-    ══════════════════════════════════════════════════════════════════════════════════════════
-
-    <ItemGroup>
-        <AvailableItemName Include="CompileShader" />
-    </ItemGroup>
-
-    <PropertyGroup>
-        WINDOWS:
-
-        1) Use a provided tools\fxc.exe (Requires DirectX (June 2010) or the SDK)
-        <FxcCommandLine Condition="'$(FxcCommandLine)' == '' AND '$(OS)' == 'Windows_NT' AND Exists('$(MSBuildThisFileDirectory)tools\fxc.exe')">"$(MSBuildThisFileDirectory)tools\fxc.exe"</FxcCommandLine>
-
-        2) Use the SDK version (Requires DirectX SDK (June 2010))
-        <FxcCommandLine Condition="'$(FxcCommandLine)' == '' AND '$(OS)' == 'Windows_NT' AND Exists('$(DXSDK_DIR)\Utilities\bin\x86\fxc.exe')">"$(DXSDK_DIR)\Utilities\bin\x86\fxc.exe"</FxcCommandLine>
-
-
-        NON-WINDOWS (eg: OSX) (Requires wine is in PATH)
-
-        1) Use a provided tools/fxc.exe (Requires "winetricks d3dcompiler_43" or "winetricks dxsdk_jun2010")
-        <FxcCommandLine Condition="'$(FxcCommandLine)' == '' AND '$(OS)' != 'Windows_NT' AND Exists('$(MSBuildThisFileDirectory)tools\fxc.exe')">wine "$(MSBuildThisFileDirectory)tools/fxc.exe"</FxcCommandLine>
-
-        2) Use the SDK version (Requires "winetricks dxsdk_jun2010")
-        <FxcCommandLine Condition="'$(FxcCommandLine)' == '' AND '$(OS)' != 'Windows_NT' AND '$(WINEPREFIX)' != '' AND Exists('$(WINEPREFIX)/drive_c/Program Files/Microsoft DirectX SDK (June 2010)/Utilities/bin/x86/fxc.exe')">wine "$(WINEPREFIX)/drive_c/Program Files/Microsoft DirectX SDK (June 2010)/Utilities/bin/x86/fxc.exe"</FxcCommandLine>
-        <FxcCommandLine Condition="'$(FxcCommandLine)' == '' AND '$(OS)' != 'Windows_NT' AND '$(WINEPREFIX)' != '' AND Exists('$(WINEPREFIX)/drive_c/Program Files (x86)/Microsoft DirectX SDK (June 2010)/Utilities/bin/x86/fxc.exe')">wine "$(WINEPREFIX)/drive_c/Program Files (x86)/Microsoft DirectX SDK (June 2010)/Utilities/bin/x86/fxc.exe"</FxcCommandLine>
-        <FxcCommandLine Condition="'$(FxcCommandLine)' == '' AND '$(OS)' != 'Windows_NT' AND Exists('$(HOME)/.wine/drive_c/Program Files/Microsoft DirectX SDK (June 2010)/Utilities/bin/x86/fxc.exe')">wine "$(HOME)/.wine/drive_c/Program Files/Microsoft DirectX SDK (June 2010)/Utilities/bin/x86/fxc.exe"</FxcCommandLine>
-        <FxcCommandLine Condition="'$(FxcCommandLine)' == '' AND '$(OS)' != 'Windows_NT' AND Exists('$(HOME)/.wine/drive_c/Program Files (x86)/Microsoft DirectX SDK (June 2010)/Utilities/bin/x86/fxc.exe')">wine "$(HOME)/.wine/drive_c/Program Files (x86)/Microsoft DirectX SDK (June 2010)/Utilities/bin/x86/fxc.exe"</FxcCommandLine>
-
-    </PropertyGroup>
-
-    Reference:
-         https://stackoverflow.com/questions/3433200/msbuild-how-do-i-create-and-use-a-task-to-convert-content-items-at-build-time
-
-         Handy reload solution: https://stackoverflow.com/a/24837585/165500
-
-    <Target Name="BuildShaders" BeforeTargets="Compile" Inputs="@(CompileShader)" Outputs="@(CompileShader -> '$(OutputPath)%(RelativeDir)%(Filename).fxb' )">
-
-        <Error Text="Unable to find fxc.exe. Install DirectX SDK (June 2010). See the documentation for more details." Condition="'$(FxcCommandLine)' == '' AND '$(OS)' == 'Windows_NT'" />
-        <Error Text="Unable to find fxc.exe. Install DirectX SDK (June 2010) using 'winetricks dxsdk_jun2010'. See the documentation for more details." Condition="'$(FxcCommandLine)' == '' AND '$(OS)' != 'Windows_NT'" />
-
-        fxc doesn't know how to create directories:
-        <MakeDir Directories="$(OutputPath)%(CompileShader.RelativeDir)" />
-
-        <Exec Command="$(FxcCommandLine) /nologo /Vd /T fx_2_0 /Fo &quot;$(OutputPath)%(CompileShader.RelativeDir)%(CompileShader.Filename).fxb&quot; &quot;%(CompileShader.Identity)&quot;" />
-
-        <Message Text="@(CompileShader -> '$(OutputPath)%(RelativeDir)%(Filename).fxb' )" Importance="High" />
-
-        Add to the cleaning list, so we know how to do rebuilds:
-        (NOTE: FileWrites gets written out to obj directory at some point, possbily after CoreCompile)
-
-        <ItemGroup>
-            <FileWrites Include="@(CompileShader -> '$(OutputPath)%(RelativeDir)%(Filename).fxb' )" />
-        </ItemGroup>
-    </Target>
-
-
-    Ensure that dependent projects are aware of generated shaders:
-
-         Reference: https://stackoverflow.com/questions/14322391/msbuild-to-copy-dynamically-generated-files-as-part-of-project-dependency
-         Also: https://stackoverflow.com/questions/44752139/how-to-make-msbuild-correctly-track-files-generated-with-an-external-tool-across
-
-    <Target Name="IncludeShaders" BeforeTargets="GetCopyToOutputDirectoryItems">
-        <ItemGroup>
-            <CompiledShaders Include="@(CompileShader -> '$(OutputPath)%(RelativeDir)%(Filename).fxb' )">
-                <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-                <TargetPath>%(RelativeDir)%(FileName).fxb</TargetPath>
-            </CompiledShaders>
-            <AllItemsFullPathWithTargetPath Include="@(CompiledShaders->'%(FullPath)')" />
-        </ItemGroup>
-    </Target>
-
-    <ItemGroup>
-        <CompileShader Include="data/shaders/*.fx" />
-    </ItemGroup>
-    -->
-
-    <!-- ── Web UI (Vite + Preact) Build ────────────────────────────── -->
-    <!-- On Release builds, run pnpm install + pnpm run build to produce -->
-    <!-- the production bundles. On Debug, use the Vite dev server instead -->
-    <!-- (run `pnpm run dev` in data/html/ alongside `dotnet run`).       -->
 
     <!-- output memorypack TypeScript code to directory -->
     <ItemGroup>
