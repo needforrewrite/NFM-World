@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <OutputType>Exe</OutputType>
+        <OutputType>Library</OutputType>
         <TargetFramework>net11.0</TargetFramework>
         <RootNamespace>NFMWorld</RootNamespace>
         <ImplicitUsings>enable</ImplicitUsings>

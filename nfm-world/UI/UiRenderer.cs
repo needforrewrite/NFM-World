@@ -5,7 +5,6 @@ using NFMWorld;
 using NFMWorld.ClayDom.Events;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
-using NFMWorld.LuaSourceGenerator.Generator.NFMWorld;
 using NFMWorld.Reactor;
 using NFMWorldLibrary.Util;
 
@@ -22,7 +21,7 @@ public class UiRenderer : IDisposable
 
     public View? ActiveRoot { get; private set; }
 
-    public UiRenderer(WorldGame worldGame)
+    public UiRenderer()
     {
         Reload();
     }
@@ -122,7 +121,7 @@ public class UiRenderer : IDisposable
         _maxEvent = 0;
 
         _state = LuaHelpers.OpenState();
-        LuaVisibleTypeRegistry.RegisterAll(_state);
+        NFMWorld.LuaSourceGenerator.Generator.NFMWorld.Game.LuaVisibleTypeRegistry.RegisterAll(_state);
         LuaUiLibrary.Register(_state, SetActiveRoot, Call, OnEvent);
         _state.DoFile("data/uis/router.luau");
         Navigate(_currentPhaseId);

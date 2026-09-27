@@ -55,18 +55,18 @@ public class Scene : IDisposable
         // default, let each draw override it" call on ICommandBuffer - each render element's own
         // pipeline is now the single source of truth for its blend/depth state.
 
-        var totalCascades = Math.Min(_lightCameras.Count, WorldGame.NumCascades);
+        var totalCascades = Math.Min(_lightCameras.Count, GameSparker.NumCascades);
 
         if (useShadowMapping && totalCascades > 0)
         {
             for (var i = 0; i < totalCascades; i++)
             {
-                var shadowTarget = i < WorldGame.ShadowRenderTargets.Count ? WorldGame.ShadowRenderTargets[i] : null;
+                var shadowTarget = i < GameSparker.ShadowRenderTargets.Count ? GameSparker.ShadowRenderTargets[i] : null;
                 if (shadowTarget is null) continue;
 
                 cb.SetRenderTarget(shadowTarget);
-                cb.SetViewport(new Viewport(0, 0, WorldGame.ShadowResolution, WorldGame.ShadowResolution));
-                cb.SetScissorRect(new ScissorRect(0, 0, WorldGame.ShadowResolution, WorldGame.ShadowResolution));
+                cb.SetViewport(new Viewport(0, 0, GameSparker.ShadowResolution, GameSparker.ShadowResolution));
+                cb.SetScissorRect(new ScissorRect(0, 0, GameSparker.ShadowResolution, GameSparker.ShadowResolution));
                 cb.Clear(ClearOptions.Color | ClearOptions.Depth, new ColorRgba(1f, 1f, 1f, 1f));
                 RenderInternal(cb, RenderPass.Shadow(i, totalCascades));
             }
@@ -90,7 +90,7 @@ public class Scene : IDisposable
 
     private void RenderInternal(ICommandBuffer cb, RenderPass pass)
     {
-        var lighting = new Lighting(_lightCameras, WorldGame.ShadowRenderTargets, pass);
+        var lighting = new Lighting(_lightCameras, GameSparker.ShadowRenderTargets, pass);
 
         _renderQueue.Clear();
 

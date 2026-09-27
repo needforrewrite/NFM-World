@@ -494,11 +494,11 @@ public partial class StageEditorPhase : BasePhase
         // clears them - without this the last gameplay frame's cascades linger for the shadow-map
         // debug overlay and anything else that samples them.
         var cascadeCb = _graphicsDevice.AcquireCommandBuffer();
-        foreach (var shadowTarget in WorldGame.ShadowRenderTargets)
+        foreach (var shadowTarget in GameSparker.ShadowRenderTargets)
         {
             if (shadowTarget is null) continue;
             cascadeCb.SetRenderTarget(shadowTarget);
-            cascadeCb.SetViewport(new NFMWorld.Graphics.Viewport(0, 0, WorldGame.ShadowResolution, WorldGame.ShadowResolution));
+            cascadeCb.SetViewport(new NFMWorld.Graphics.Viewport(0, 0, GameSparker.ShadowResolution, GameSparker.ShadowResolution));
             cascadeCb.Clear(
                 NFMWorld.Graphics.ClearOptions.Color | NFMWorld.Graphics.ClearOptions.Depth,
                 new NFMWorld.Graphics.ColorRgba(1f, 1f, 1f, 1f));
@@ -625,7 +625,7 @@ public partial class StageEditorPhase : BasePhase
 
         foreach (var (_, preview) in _partPreviews)
         {
-            WorldGame.ImguiRenderer?.UnbindTexture(preview.Ref);
+            GameSparker.Game.ImguiRenderer?.UnbindTexture(preview.Ref);
             preview.RT.Dispose();
         }
 

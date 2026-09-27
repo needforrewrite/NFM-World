@@ -16,7 +16,7 @@ namespace NFMWorld.UI;
 /// Settings menu with tabs, similar to Half-Life 1 style.
 /// Also serves as the static settings backend used by SettingsHandler for CEF-based settings.
 /// </summary>
-public class SettingsMenu(WorldGame game)
+public class SettingsMenu()
 {
     private bool _isOpen;
     private int _selectedTab = 0;
@@ -301,7 +301,7 @@ public class SettingsMenu(WorldGame game)
         FollowCamera.FollowZOffset = _followZ;
         CameraSettings.RenderDistanceSqr = RenderDistances[_renderDistance] * RenderDistances[_renderDistance];
 
-        WorldGame.LowLatency = _lowLatency;
+        GameSparker.LowLatency = _lowLatency;
 
         var graphicsChanged = false;
         requireRestart = false;
@@ -392,11 +392,11 @@ public class SettingsMenu(WorldGame game)
             graphicsChanged = true;
         }
 
-        if (WorldGame.NumCascades != _shadowCascadeLevel || WorldGame.ShadowResolution != (int)MathF.Round(MathF.Pow(2, _shadowResolution + 9)))
+        if (GameSparker.NumCascades != _shadowCascadeLevel || GameSparker.ShadowResolution != (int)MathF.Round(MathF.Pow(2, _shadowResolution + 9)))
         {
-            WorldGame.NumCascades = _shadowCascadeLevel;
-            WorldGame.ShadowResolution = (int)MathF.Round(MathF.Pow(2, _shadowResolution + 9));
-            game.RebuildCascades();
+            GameSparker.NumCascades = _shadowCascadeLevel;
+            GameSparker.ShadowResolution = (int)MathF.Round(MathF.Pow(2, _shadowResolution + 9));
+            GameSparker.RebuildCascades();
         }
 
         if (_selectedRenderer != _originalRenderer)
@@ -681,7 +681,7 @@ public class SettingsMenu(WorldGame game)
         catch { /* skip malformed lines */ }
     }
 
-    public static bool TrySelectRenderer(ref WorldGame.Renderer renderer, ref AngleSelection angleSelection)
+    public static bool TrySelectRenderer(ref Renderer renderer, ref AngleSelection angleSelection)
     {
         var configPath = Path.Combine("data", "cfg", "config.cfg");
 
@@ -725,32 +725,32 @@ public class SettingsMenu(WorldGame game)
                 case "Auto":
                     return true;
                 case "Metal via ANGLE":
-                    renderer = WorldGame.Renderer.Angle;
+                    renderer = Renderer.Angle;
                     angleSelection = new AngleSelection(AnglePlatformType.Metal, AngleDeviceType.Hardware);
                     return true;
                 case "OpenGL":
-                    renderer = WorldGame.Renderer.DesktopGl;
+                    renderer = Renderer.DesktopGl;
                     return true;
                 // Deliberately NOT the entry above it. "DirectX 11 via ANGLE" goes through ANGLE's
                 // D3D11 backend and is spelled the same way to the user, which is why both exist -
                 // this one is our own backend over TerraFX, with no translation layer in between.
                 case "DirectX 11":
-                    renderer = WorldGame.Renderer.D3d11;
+                    renderer = Renderer.D3d11;
                     return true;
                 case "Vulkan via ANGLE":
-                    renderer = WorldGame.Renderer.Angle;
+                    renderer = Renderer.Angle;
                     angleSelection = new AngleSelection(AnglePlatformType.Vulkan, AngleDeviceType.Hardware);
                     return true;
                 case "DirectX 11 via ANGLE":
-                    renderer = WorldGame.Renderer.Angle;
+                    renderer = Renderer.Angle;
                     angleSelection = new AngleSelection(AnglePlatformType.D3d11, AngleDeviceType.Hardware);
                     return true;
                 case "OpenGL via ANGLE":
-                    renderer = WorldGame.Renderer.Angle;
+                    renderer = Renderer.Angle;
                     angleSelection = new AngleSelection(AnglePlatformType.Gl, AngleDeviceType.Hardware);
                     return true;
                 case "OpenGL ES via ANGLE":
-                    renderer = WorldGame.Renderer.Angle;
+                    renderer = Renderer.Angle;
                     angleSelection = new AngleSelection(AnglePlatformType.Gles, AngleDeviceType.Hardware);
                     return true;
             }
@@ -945,7 +945,7 @@ public class SettingsMenu(WorldGame game)
             // (asking for 8x on a device that caps at 4x gets 4x), and MSAA lands on the next frame's
             // swapchain sync rather than during ApplySettings - so a stored request could otherwise be
             // shown as if it had taken effect when the backbuffer never changed.
-            Antialias = SampleCountToAntialias(GameSparker.Game?.Graphics.AppliedMultiSampleCount ?? 0),
+            Antialias = SampleCountToAntialias(GameSparker.Game.Graphics.AppliedMultiSampleCount),
             ShadowCascadeLevel = _shadowCascadeLevel,
             ShadowResolution = _shadowResolution,
             RenderDistance = _renderDistance,

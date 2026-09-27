@@ -135,17 +135,17 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
         }
 
         var vertexBytes = MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(data));
-        lineVertexBuffer = GameSparker.NewGraphicsDevice.CreateBuffer(
+        lineVertexBuffer = GameSparker.GraphicsDevice.CreateBuffer(
             new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length), vertexBytes);
 
         var indexBytes = MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(indices));
-        lineIndexBuffer = GameSparker.NewGraphicsDevice.CreateBuffer(
+        lineIndexBuffer = GameSparker.GraphicsDevice.CreateBuffer(
             new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indexBytes.Length, IndexFormat.UInt32), indexBytes);
 
         lineTriangleCount = indices.Count / 3;
         lineVertexCount = data.Count;
 
-        lineInstanceBuffer = GameSparker.NewGraphicsDevice.CreateBuffer(
+        lineInstanceBuffer = GameSparker.GraphicsDevice.CreateBuffer(
             new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, InstanceData.Stride),
             MemoryMarshal.AsBytes((ReadOnlySpan<InstanceData>)[new InstanceData(MatrixWorld)]));
 

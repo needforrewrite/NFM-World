@@ -25,7 +25,7 @@ public class ImmediateMesh : Mesh, IRenderable
     /// </summary>
     public void Render(ICommandBuffer cb, Camera camera, Lighting? lighting)
     {
-        var renderQueue = new RenderQueue(GameSparker.NewGraphicsDevice);
+        var renderQueue = new RenderQueue(GameSparker.GraphicsDevice);
         renderQueue.Begin(camera, lighting);
         SubmitDraws(renderQueue, camera, lighting, RenderPass.Main());
         renderQueue.Flush(cb);

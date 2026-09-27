@@ -164,7 +164,7 @@ public class Mesh : IDisposable
             
             if (data.Count == 0 || indices.Count == 0) continue;
 
-            Submeshes[i] = new Submesh(type, this, GameSparker.NewGraphicsDevice, CollectionsMarshal.AsSpan(data), CollectionsMarshal.AsSpan(indices));
+            Submeshes[i] = new Submesh(type, this, GameSparker.GraphicsDevice, CollectionsMarshal.AsSpan(data), CollectionsMarshal.AsSpan(indices));
         }
 
         LineMeshes = new LineMesh[lines.Length];
@@ -172,7 +172,7 @@ public class Mesh : IDisposable
         {
             var lineDict = lines[i];
             if (lineDict.Count == 0) continue;
-            LineMeshes[i] = new LineMesh(this, GameSparker.NewGraphicsDevice, lineDict, (LineType)i);
+            LineMeshes[i] = new LineMesh(this, GameSparker.GraphicsDevice, lineDict, (LineType)i);
         }
     }
 

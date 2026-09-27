@@ -48,7 +48,7 @@ public class ClientStage : IDisposable
 
         // Scene starts with just the stage renderer — car visuals are added lazily in GameTick().
         // ClientStageRenderer is itself a GameObject.
-        _scene = new Scene(GameSparker.NewGraphicsDevice, [Renderer], camera, lightCameras);
+        _scene = new Scene(GameSparker.GraphicsDevice, [Renderer], camera, lightCameras);
 
         // ── Music metadata ──
         MusicPath = Backend.StageLoader.musicPath;

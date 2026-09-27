@@ -216,7 +216,7 @@ public partial class StageEditorPhase
         if (neededVertices == 0)
             return;
 
-        Debug.RenderHighlights(cb, GameSparker.NewGraphicsDevice, tab.SelectedPieceIds
+        Debug.RenderHighlights(cb, GameSparker.GraphicsDevice, tab.SelectedPieceIds
             .Select(id => tab.ScenePieces.GetValueOrDefault(id)?.Obj!)
             .Where(obj => obj != null!),
             activeCamera);
@@ -240,7 +240,7 @@ public partial class StageEditorPhase
         var fillColor = new Color(0.3f, 0.8f, 1.0f, 0.35f);
         var wireColor = new Color(0.1f, 0.9f, 1.0f, 1.0f);
         
-        Debug.RenderGhost(cb, GameSparker.NewGraphicsDevice, part, worldMatrix, fillColor, wireColor, activeCamera);
+        Debug.RenderGhost(cb, GameSparker.GraphicsDevice, part, worldMatrix, fillColor, wireColor, activeCamera);
     }
     
     private Vector3 ComputeSelectionCentroid()
@@ -264,7 +264,7 @@ public partial class StageEditorPhase
         // Find bounding sphere to set up camera
         float maxR = rad.MaxRadius > 0 ? rad.MaxRadius : 300;
 
-        var rt = GameSparker.NewGraphicsDevice.CreateRenderTarget(
+        var rt = GameSparker.GraphicsDevice.CreateRenderTarget(
             new NFMWorld.Graphics.RenderTargetDesc(PreviewSize, PreviewSize, NFMWorld.Graphics.TextureFormat.Rgba8));
 
         cb.SetRenderTarget(rt);
@@ -300,7 +300,7 @@ public partial class StageEditorPhase
         // The thumbnail is shown by ImGui, so hand it the render target's colour texture directly -
         // this is what SdlImGuiRenderer.BindTexture(ITexture) exists for (Panels.cs flips V when it
         // images it, which is unrelated to the texture's own orientation).
-        _partPreviews[name] = (rt, WorldGame.ImguiRenderer!.BindTexture(rt.ColorTexture));
+        _partPreviews[name] = (rt, GameSparker.Game.ImguiRenderer!.BindTexture(rt.ColorTexture));
     }
 
     private void QueuePartPreview(string name, Rad3d rad)
@@ -535,7 +535,7 @@ public partial class StageEditorPhase
 
         // Was a raw BasicEffect + DrawUserPrimitives with DepthStencilState.None; Debug draws the
         // same wire boxes as thick lines through the shared debug line pipeline (depth off).
-        Debug.RenderWireBoxes(cb, GameSparker.NewGraphicsDevice, CollectionsMarshal.AsSpan(boxes), color, activeCamera);
+        Debug.RenderWireBoxes(cb, GameSparker.GraphicsDevice, CollectionsMarshal.AsSpan(boxes), color, activeCamera);
     }
 
     private bool RayIntersectsTriangle(

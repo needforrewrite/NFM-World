@@ -29,7 +29,7 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
         // Mesh.GraphicsDevice is still FNA's XNA-typed GraphicsDevice (Mesh itself isn't fully
         // converted) - use the new static device directly, matching GameSparker.NewGraphicsDevice's
         // doc comment.
-        _graphicsDevice = GameSparker.NewGraphicsDevice;
+        _graphicsDevice = GameSparker.GraphicsDevice;
 
         var maxVertexBytes = _vertices.Length * PositionColorVertex.Stride;
         var maxIndexBytes = _indices.Length * sizeof(ushort);

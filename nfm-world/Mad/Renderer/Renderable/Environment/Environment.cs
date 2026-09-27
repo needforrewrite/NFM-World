@@ -198,7 +198,7 @@ public class Environment
 
         transaction.Finish();
 
-        return new GroundPolys(GameSparker.NewGraphicsDevice, verts.ToArray());
+        return new GroundPolys(GameSparker.GraphicsDevice, verts.ToArray());
     }
 
     public static GroundPolys MakeClouds(
@@ -546,7 +546,7 @@ public class Environment
 
         transaction.Finish();
 
-        return new GroundPolys(GameSparker.NewGraphicsDevice, polys.ToArray());
+        return new GroundPolys(GameSparker.GraphicsDevice, polys.ToArray());
     }
 
     public static Mountains MakeMountains(
@@ -716,6 +716,6 @@ public class Environment
         
         transaction.Finish();
 
-        return new Mountains(GameSparker.NewGraphicsDevice, polys.ToArray());
+        return new Mountains(GameSparker.GraphicsDevice, polys.ToArray());
     }
 }

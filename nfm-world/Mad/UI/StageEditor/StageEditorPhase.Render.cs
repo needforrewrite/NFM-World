@@ -118,7 +118,7 @@ public partial class StageEditorPhase
         {
             var selectedPiece = ActiveTab.ScenePieces.GetValueOrDefault(ActiveTab.ActivePieceId);
             if (selectedPiece?.Obj != null)
-                Debug.RenderGizmo(cb, GameSparker.NewGraphicsDevice, ComputeSelectionCentroid(), activeCamera, ref _gizmoHovered, ref _gizmoDragging, new Vector2(_mouseX, _mouseY));
+                Debug.RenderGizmo(cb, GameSparker.GraphicsDevice, ComputeSelectionCentroid(), activeCamera, ref _gizmoHovered, ref _gizmoDragging, new Vector2(_mouseX, _mouseY));
         }
         
         // Process pending preview thumbnails

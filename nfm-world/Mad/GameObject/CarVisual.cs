@@ -56,11 +56,11 @@ public class CarVisual : MeshedGameObject, IDisposable
         foreach (var w in _wheels)
             w.RenderBucket = RenderBucket.Cars;
 
-        Flames = new Flames(this, GameSparker.NewGraphicsDevice);
-        Dust = new Dust(this, GameSparker.NewGraphicsDevice);
-        Chips = new Chips(this, GameSparker.NewGraphicsDevice);
-        Sparks = new Sparks(car, this, GameSparker.NewGraphicsDevice);
-        FixFlare = new FixFlare(car, this, GameSparker.NewGraphicsDevice);
+        Flames = new Flames(this, GameSparker.GraphicsDevice);
+        Dust = new Dust(this, GameSparker.GraphicsDevice);
+        Chips = new Chips(this, GameSparker.GraphicsDevice);
+        Sparks = new Sparks(car, this, GameSparker.GraphicsDevice);
+        FixFlare = new FixFlare(car, this, GameSparker.GraphicsDevice);
 
         Visuals.ApplyDefaultsFrom(this);
 

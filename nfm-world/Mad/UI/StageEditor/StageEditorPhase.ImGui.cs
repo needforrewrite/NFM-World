@@ -362,7 +362,7 @@ public partial class StageEditorPhase
             {
                 // Live preview
                 World.Sky = _editSkyColor;
-                if (ActiveTab?.StageRenderer != null) ActiveTab.StageRenderer.sky = new Sky(GameSparker.NewGraphicsDevice);
+                if (ActiveTab?.StageRenderer != null) ActiveTab.StageRenderer.sky = new Sky(GameSparker.GraphicsDevice);
             }
             
             ImGui.Text("Fog Color:");
@@ -377,7 +377,7 @@ public partial class StageEditorPhase
             {
                 // Live preview
                 World.GroundColor = _editGroundColor;
-                ActiveTab?.StageRenderer?.ground = new Ground(GameSparker.NewGraphicsDevice);
+                ActiveTab?.StageRenderer?.ground = new Ground(GameSparker.GraphicsDevice);
             }
             
             ImGui.Separator();

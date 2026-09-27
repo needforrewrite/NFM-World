@@ -26,12 +26,12 @@ using NFMWorldLibrary.Util;
 using Keys = NFMWorld.DriverInterface.Keys;
 using Logging = NFMWorldLibrary.Logging;
 using NFMWorld.Sentry;
-using SDL3New::SDL3;
 using WorldXaml.UI.Yoga;
 using ClearOptions = NFMWorld.Graphics.ClearOptions;
 using Font = NFMWorld.DriverInterface.DriverInterface.Font;
 using FontFamily = NFMWorld.DriverInterface.DriverInterface.FontFamily;
 using FontStyle = NFMWorld.DriverInterface.DriverInterface.FontStyle;
+using SDL = SDL3New::SDL3.SDL;
 
 namespace NFMWorld;
 
@@ -66,16 +66,14 @@ namespace NFMWorld;
 /// rather than reporting it as a typo.
 /// </para>
 /// </remarks>
-public class WorldGame : IDisposable
+public class WorldGame : IDisposable, IGameHost
 {
-    public static readonly UnlimitedArray<IRenderTarget?> ShadowRenderTargets = [];
-
-    /// <summary>Stage A compatibility shim for <c>Mad/UI/SettingsMenu.cs</c>'s existing settings-application logic. See <see cref="GraphicsSettingsShim"/>.</summary>
-    public readonly GraphicsSettingsShim Graphics;
+    /// <summary>Compatibility shim for <c>Mad/UI/SettingsMenu.cs</c>'s existing settings-application logic. See <see cref="GraphicsSettingsShim"/>.</summary>
+    public GraphicsSettingsShim Graphics { get; }
 
     /// <summary>The SDL3 window this game owns.</summary>
-    public readonly SdlWindow Window;
-
+    public SdlWindow Window { get; }
+    
     /// <summary>
     /// The device, whichever backend is running - a GL one under <c>--backend=desktopgl</c> or the
     /// ANGLE renderer, a <see cref="SokolGraphicsDevice"/> otherwise. Nothing outside the
@@ -159,52 +157,6 @@ public class WorldGame : IDisposable
     /// constructor is still building the device, and the constructor is the only reader.
     /// </summary>
     private static int _glGrantedMultiSampleCount;
-
-    /// <summary>
-    /// The top-level rendering backend behind <c>--backend=</c>.
-    ///
-    /// A runtime choice rather than a define, unlike the older <c>ANGLE</c> one: the comparison this
-    /// harness exists for is between sokol and desktop GL on the same machine, and a build-time
-    /// switch would mean the two numbers came from different binaries. Only the ANGLE backend stays
-    /// behind a define, because it is the one that needs a native ANGLE package the other paths do
-    /// not.
-    /// </summary>
-    public enum Renderer
-    {
-        Auto,
-
-        /// <summary>
-        /// Our own Direct3D 11 backend, over TerraFX's raw COM bindings.
-        ///
-        /// Distinct from <c>--backend=sokol --sokol-backend=d3d11</c>, which reaches the same API
-        /// through sokol_gfx's driver rather than through <see cref="WorldGame"/>'s. The two exist
-        /// side by side so the comparison the other arms were built for can be extended to this one:
-        /// same API, two implementations of the abstraction over it.
-        ///
-        /// No define gates it. Unlike ANGLE it needs no native package of its own - it P/Invokes
-        /// d3d11.dll, dxgi.dll and d3dcompiler_47.dll, all of which ship with Windows - so the only
-        /// cost of referencing it everywhere is a managed assembly. It throws at device creation on
-        /// any other platform; see <see cref="ParseRenderer"/>'s note on that.
-        /// </summary>
-        D3d11,
-
-        /// <summary>
-        /// Desktop OpenGL 3.3 core, through our own backend rather than sokol's.
-        ///
-        /// Independent of sokol entirely: it links its own program from the bundles' <c>Glsl330</c>
-        /// form and drives the host's context directly. This is the path that answers whether GL's
-        /// cost on this scene was ANGLE's translation layer or GL's own.
-        /// </summary>
-        DesktopGl,
-
-        /// <summary>
-        /// The ANGLE/GLES backend, only present under the <c>ANGLE</c> define.
-        ///
-        /// Kept selectable so the baseline number can be reproduced without rebuilding, but it can
-        /// only be named when the define is on - see <see cref="ParseRenderer"/>.
-        /// </summary>
-        Angle,
-    }
 
     /// <summary>The <c>--backend=</c> argument. See <see cref="ParseRenderer"/>.</summary>
     private const string RendererArgumentPrefix = "--backend=";
@@ -465,7 +417,7 @@ public class WorldGame : IDisposable
     /// </summary>
     private int _appliedMultiSampleRequest;
 
-    public static SdlImGuiRenderer? ImguiRenderer;
+    public SdlImGuiRenderer? ImguiRenderer { get; private set; }
     private UiRenderer? _uiRenderer;
 
     internal static long LastFrameTime;
@@ -483,9 +435,6 @@ public class WorldGame : IDisposable
     private Int2 _mouseDragStart;
     private AposRenderer? _nvg;
     private TimeStep _tickTimeStep = new((1000f / Physics.TargetTps) / 1000f);
-    public static bool LowLatency = false;
-    public static int NumCascades = 3;
-    public static int ShadowResolution = 2048;
 
     private static bool _loaded;
     private const int FrameDelay = (int) (1000 / 21.3f);
@@ -830,7 +779,7 @@ public class WorldGame : IDisposable
         // (called from LoadContent(), which runs after Initialize()) pushes MainMenuPhase - phases
         // register their PhaseBridge with GameSparker.UiRenderer from BasePhase.Enter(), which
         // no-ops silently if it's still null at that point.
-        _uiRenderer = new UiRenderer(this);
+        _uiRenderer = new UiRenderer();
         GameSparker.UiRenderer = _uiRenderer;
 
         _oldKeyState = SdlWindow.GetKeyboardState();
@@ -850,7 +799,7 @@ public class WorldGame : IDisposable
 
         _uiRenderer?.Dispose();
         ShadowMapDebugView.Dispose();
-        foreach (var shadowRenderTarget in ShadowRenderTargets)
+        foreach (var shadowRenderTarget in GameSparker.ShadowRenderTargets)
         {
             shadowRenderTarget?.Dispose();
         }
@@ -887,31 +836,15 @@ public class WorldGame : IDisposable
         // GameSparker.NewGraphicsDevice must be set before Effects.Initialize/GameSparker.Load,
         // since both transitively construct render elements (Ground/Sky/meshes/...) that read it
         // directly (see that field's doc comment).
-        GameSparker.NewGraphicsDevice = _device;
+        GameSparker.GraphicsDevice = _device;
         Effects.Initialize(_device);
-        RebuildCascades();
+        GameSparker.RebuildCascades();
 
         GameSparker.Load(this);
 
         // Only the application half - the config was parsed in Main, before the window existed. See
         // ApplyLoadedSettings, and Main for why the two halves have to happen where they do.
         SettingsMenu.ApplyLoadedSettings();
-    }
-
-    public void RebuildCascades()
-    {
-        foreach (var target in ShadowRenderTargets)
-        {
-            target?.Dispose();
-        }
-        ShadowRenderTargets.Clear();
-
-        for (var i = 0; i < NumCascades; i++)
-        {
-            ShadowRenderTargets.Add(_device.CreateRenderTarget(new global::NFMWorld.Graphics.RenderTargetDesc(
-                ShadowResolution, ShadowResolution, global::NFMWorld.Graphics.TextureFormat.Single,
-                HasDepthStencil: true, global::NFMWorld.Graphics.TextureFormat.Depth24Stencil8)));
-        }
     }
 
     private void UpdateInput()
@@ -1101,7 +1034,7 @@ public class WorldGame : IDisposable
     {
         var transaction = SentrySdk.StartTransaction("GameDraw", "gameloop.draw");
 
-        var alpha = LowLatency ? 1f : (float)((double)gameTime.ElapsedGameTime.Ticks / TargetElapsedTime.Ticks);
+        var alpha = GameSparker.LowLatency ? 1f : (float)((double)gameTime.ElapsedGameTime.Ticks / TargetElapsedTime.Ticks);
 
         var t = Stopwatch.StartNew();
 

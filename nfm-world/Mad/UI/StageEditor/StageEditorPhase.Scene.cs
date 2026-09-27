@@ -84,8 +84,8 @@ public partial class StageEditorPhase
     private void RecreateEnvironment()
     {
         if (ActiveTab?.StageRenderer == null) return;
-        ActiveTab.StageRenderer.sky = new Sky(GameSparker.NewGraphicsDevice);
-        ActiveTab.StageRenderer.ground = new Ground(GameSparker.NewGraphicsDevice);
+        ActiveTab.StageRenderer.sky = new Sky(GameSparker.GraphicsDevice);
+        ActiveTab.StageRenderer.ground = new Ground(GameSparker.GraphicsDevice);
         if (ActiveTab.PolysEnabled && ActiveTab.Stage != null)
         {
             if (_autoGeneratePolys)

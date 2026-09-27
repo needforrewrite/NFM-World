@@ -144,7 +144,7 @@ public class Lighting
         // lightingPosition.y, so the shader's own `1 - y` then lands where it should: the OpenGL smoke
         // replays this exact lookup and asserts the depth it finds, so a regression here fails a test
         // rather than quietly shifting every shadow in the world by a mirror.
-        var flipShadowSampleV = GameSparker.NewGraphicsDevice.HasBottomLeftFramebufferOrigin;
+        var flipShadowSampleV = GameSparker.GraphicsDevice.HasBottomLeftFramebufferOrigin;
 
         Matrix ShadowSampleMatrix(Matrix lightViewProjection)
         {

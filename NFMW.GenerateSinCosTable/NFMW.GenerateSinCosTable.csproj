@@ -12,7 +12,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\nfm-world\NFMWorld.csproj" />
+      <ProjectReference Include="..\nfm-world\NFMWorld.Game.csproj" />
     </ItemGroup>
 
 </Project>

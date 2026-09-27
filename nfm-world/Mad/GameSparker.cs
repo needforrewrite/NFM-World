@@ -4,6 +4,7 @@ using NFMWorld.Accounts;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Gameplay;
+using NFMWorld.Graphics;
 using NFMWorld.Sfx;
 using NFMWorld.UI;
 using NFMWorld.UI.Cef;
@@ -19,15 +20,14 @@ namespace NFMWorld;
 
 public static partial class GameSparker
 {
-    public static WorldGame Game = null!;
+    public static readonly UnlimitedArray<IRenderTarget?> ShadowRenderTargets = [];
+    public static bool LowLatency = false;
+    public static int NumCascades = 3;
+    public static int ShadowResolution = 2048;
 
-    /// <summary>
-    /// The graphics abstraction's device, set by <see cref="WorldGame.LoadContent"/> before
-    /// <see cref="Load"/> runs. Render elements that are constructed without a device parameter
-    /// (e.g. <see cref="CollisionDebugMesh"/>, <see cref="Mesh"/>'s submeshes) read it directly so
-    /// the device doesn't have to be threaded through every one of their call sites.
-    /// </summary>
-    public static NFMWorld.Graphics.IGraphicsDevice NewGraphicsDevice = null!;
+    public static IGameHost Game = null!;
+
+    public static IGraphicsDevice GraphicsDevice = null!;
     public static readonly string version = GetVersionString();
     public static AccountManager AccountManager = new AccountManager();
 
@@ -36,6 +36,22 @@ public static partial class GameSparker
     /// this to register/unregister their <see cref="PhaseBridge"/> instances.
     /// </summary>
     public static UiRenderer? UiRenderer { get; set; }
+
+    public static void RebuildCascades()
+    {
+        foreach (var target in ShadowRenderTargets)
+        {
+            target?.Dispose();
+        }
+        ShadowRenderTargets.Clear();
+
+        for (var i = 0; i < NumCascades; i++)
+        {
+            ShadowRenderTargets.Add(GraphicsDevice.CreateRenderTarget(new RenderTargetDesc(
+                ShadowResolution, ShadowResolution, TextureFormat.Single,
+                HasDepthStencil: true, TextureFormat.Depth24Stencil8)));
+        }
+    }
 
     private static string GetVersionString()
     {
@@ -226,7 +242,7 @@ public static partial class GameSparker
         
         return stages;
     }
-    public static void Load(WorldGame game)
+    public static void Load(IGameHost game)
     {
         Game = game;
 
@@ -250,7 +266,7 @@ public static partial class GameSparker
         SfxLibrary.LoadSounds();
 
         // init menu
-        SettingsMenu = new SettingsMenu(game);
+        SettingsMenu = new SettingsMenu();
         PhaseSharedState.SelectedStageName = "nfm2/16_4dv";
         MainMenuPhase = new MainMenuPhase(PhaseSharedState.SelectedStageName);
 
@@ -270,7 +286,7 @@ public static partial class GameSparker
 
     public static void StartModelViewer()
     {
-        PushPhase(new ModelEditorPhase(NewGraphicsDevice));
+        PushPhase(new ModelEditorPhase(GraphicsDevice));
     }
 
     public static void ExitEditor()
@@ -281,7 +297,7 @@ public static partial class GameSparker
 
     public static void StartStageEditor()
     {
-        PushPhase(new StageEditorPhase(NewGraphicsDevice));
+        PushPhase(new StageEditorPhase(GraphicsDevice));
     }
 
     public static void ReturnToMainMenu()

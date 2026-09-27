@@ -15,8 +15,8 @@ public class OrthoLightCamera : OrthoCamera
         // Snap the light camera to shadow map texel boundaries to prevent
         // shadow "swimming" / shimmer when the main camera moves.
         // For an orthographic projection, each texel covers a fixed world-space size.
-        float texelSizeX = (float)Width / WorldGame.ShadowResolution;
-        float texelSizeY = (float)Height / WorldGame.ShadowResolution;
+        float texelSizeX = (float)Width / GameSparker.ShadowResolution;
+        float texelSizeY = (float)Height / GameSparker.ShadowResolution;
 
         // Transform the origin into light view space to find the current sub-texel offset
         Vector3 originInView = Vector3.Transform(Vector3.Zero, ViewMatrix);

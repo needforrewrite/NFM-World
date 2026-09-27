@@ -40,7 +40,7 @@ internal static class ShadowMapDebugView
     /// </summary>
     public static void Capture(ICommandBuffer cb)
     {
-        var targets = WorldGame.ShadowRenderTargets;
+        var targets = GameSparker.ShadowRenderTargets;
         if (targets.Count == 0) return;
 
         if (_framesSinceCapture++ < CaptureIntervalFrames) return;
@@ -50,12 +50,12 @@ internal static class ShadowMapDebugView
         _nextCascade++;
         if (targets[cascade] is not { } target) return;
 
-        var resolution = WorldGame.ShadowResolution;
+        var resolution = GameSparker.ShadowResolution;
         var byteCount = resolution * resolution * sizeof(float);
         if (_readbackScratch is null || _readbackScratch.Length < byteCount)
             _readbackScratch = new byte[byteCount];
 
-        GameSparker.NewGraphicsDevice.ReadTexture(
+        GameSparker.GraphicsDevice.ReadTexture(
             target.ColorTexture, 0, 0, resolution, resolution,
             _readbackScratch.AsSpan(0, byteCount));
 
@@ -92,8 +92,8 @@ internal static class ShadowMapDebugView
         ImGui.SetNextWindowSize(windowSize, ImGuiCond.Once);
         if (ImGui.Begin("Shadow cascades"))
         {
-            ImGui.TextDisabled($"cascade {_shownCascade} of {WorldGame.ShadowRenderTargets.Count}, " +
-                               $"{WorldGame.ShadowResolution}x{WorldGame.ShadowResolution} {TextureFormat.Single}");
+            ImGui.TextDisabled($"cascade {_shownCascade} of {GameSparker.ShadowRenderTargets.Count}, " +
+                               $"{GameSparker.ShadowResolution}x{GameSparker.ShadowResolution} {TextureFormat.Single}");
             // Flip V: cascade render targets are stored bottom-up, same as the stage editor's part
             // thumbnails (see StageEditorPhase.Panels.cs).
             ImGui.Image(_previewRef, new Vector2(PreviewSize, PreviewSize),
@@ -106,9 +106,9 @@ internal static class ShadowMapDebugView
     {
         if (_previewTexture is not null) return;
 
-        _previewTexture = GameSparker.NewGraphicsDevice.CreateTexture(
+        _previewTexture = GameSparker.GraphicsDevice.CreateTexture(
             new TextureDesc(PreviewSize, PreviewSize, TextureFormat.Rgba8), PreviewPixels);
-        if (WorldGame.ImguiRenderer is { } imgui)
+        if (GameSparker.Game.ImguiRenderer is { } imgui)
         {
             _previewRef = imgui.BindTexture(_previewTexture);
             _bound = true;
@@ -120,7 +120,7 @@ internal static class ShadowMapDebugView
     {
         if (_previewTexture is null) return;
 
-        if (_bound && WorldGame.ImguiRenderer is { } imgui)
+        if (_bound && GameSparker.Game.ImguiRenderer is { } imgui)
             imgui.UnbindTexture(_previewRef);
 
         _previewTexture.Dispose();

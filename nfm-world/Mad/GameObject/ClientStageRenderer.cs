@@ -149,8 +149,8 @@ public class ClientStageRenderer : GameObject, IDisposable
             Logging.Error($"Error in stage: {backendStage.Name}");
             Logging.Error(exception.ToString());
         }
-        sky = new Sky(GameSparker.NewGraphicsDevice);
-        ground = new Ground(GameSparker.NewGraphicsDevice);
+        sky = new Sky(GameSparker.GraphicsDevice);
+        ground = new Ground(GameSparker.GraphicsDevice);
     }
 
     public void DetectChanges(bool updateEnvironment = false)
