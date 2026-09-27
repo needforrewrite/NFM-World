@@ -13,7 +13,17 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj"/>
+        <ProjectReference Include="..\NFMWorld.Library.Base\NFMWorld.Library.Base.csproj" />
         <ProjectReference Include="..\NFMWorld.LuaSourceGenerator\NFMWorld.LuaSourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
     </ItemGroup>
 
+    <!-- LuaCATS definition file output -->
+    <ItemGroup>
+        <CompilerVisibleProperty Include="LuaSourceGenerator_LuaCATSOutputDirectory" />
+        <CompilerVisibleProperty Include="LuaVisibleGenerator_StubsOutputDirectory" />
+    </ItemGroup>
+    <PropertyGroup>
+        <LuaSourceGenerator_LuaCATSOutputDirectory>$(MSBuildProjectDirectory)\..\NFMWorld.Library\data\library\declarations</LuaSourceGenerator_LuaCATSOutputDirectory>
+        <LuaVisibleGenerator_StubsOutputDirectory>$(MSBuildProjectDirectory)\..\NFMWorld.Library\data\library\declarations</LuaVisibleGenerator_StubsOutputDirectory>
+    </PropertyGroup>
 </Project>

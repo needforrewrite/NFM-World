@@ -1,4 +1,5 @@
-﻿using NFMWorld.DriverInterface.DriverInterface;
+﻿using Maxine.Extensions.Mathematics;
+using NFMWorld.DriverInterface.DriverInterface;
 
 namespace NFMWorld.Reactor;
 

@@ -1,4 +1,5 @@
-﻿using NFMWorld.ClayDom.Events;
+﻿using Maxine.Extensions.Mathematics;
+using NFMWorld.ClayDom.Events;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Lua;
@@ -613,7 +614,7 @@ public partial class TextInput : Component
 
     protected override void GameTick()
     {
-        _cursorBlinkTimer += 1000f / Physics.TargetTps; // approximate per-frame delta
+        _cursorBlinkTimer += 1000f / 63f; // approximate per-frame delta
         if (_cursorBlinkTimer >= CursorBlinkPeriodMs)
         {
             _cursorBlinkTimer -= CursorBlinkPeriodMs;

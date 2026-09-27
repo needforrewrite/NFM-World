@@ -572,6 +572,26 @@ TextureInstruction = {}
 Color3 = {}
 
 
+---@class Stopwatch
+---@field isRunning boolean
+---@field elapsed number
+---@field elapsedMilliseconds integer
+---@field elapsedMicroseconds integer
+---@field stop fun(self: Stopwatch)
+---@field start fun(self: Stopwatch)
+---@field restart fun(self: Stopwatch)
+---@field reset fun(self: Stopwatch)
+
+Stopwatch = {}
+
+
+---Creates a new Stopwatch
+---@return Stopwatch
+function Stopwatch.new() end
+
+---@return Stopwatch
+function Stopwatch.startNew() end
+
 ---@class WallDirection : System.Enum, System.IComparable, System.IConvertible, System.ISpanFormattable, System.IFormattable
 
 WallDirection = {}

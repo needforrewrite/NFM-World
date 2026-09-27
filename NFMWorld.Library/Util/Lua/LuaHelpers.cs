@@ -1,15 +1,59 @@
 ﻿using System.Runtime.CompilerServices;
 using Lua;
+using Lua.Standard;
+using NFMWorld.LuaSourceGenerator.Generator;
+using NFMWorld.LuaSourceGenerator.Generator.NFMWorld.Library;
 using NFMWorldLibrary.FixedMath;
 
-namespace NFMWorld.Lua;
+namespace NFMWorldLibrary.Util;
 
-internal class LuaHelpers
+public static class LuaHelpers
 {
+    public static LuaState OpenState()
+    {
+        var state = LuaState.Create(LuaNfmwPlatform.Instance);
+        state.OpenStandardLibraries();
+        LuaVisibleTypeRegistry.RegisterAll(state);
+
+        state.ModuleLoader = new VfsModuleLoader();
+
+        state.Environment["unpack"] = new LuaFunction("unpack", TableLibrary.Unpack);
+
+        return state;
+    }
+
+    public sealed class VfsModuleLoader : ILuaModuleLoader
+    {
+        private static string ToLibraryPath(string moduleName)
+        {
+            moduleName = moduleName.TrimStart('.').Replace("..", ".").Replace(".", "/");
+
+            return $"./data/lua/library/{moduleName}.lua";
+        }
+        
+        public bool Exists(string moduleName)
+        {
+            if (moduleName.Contains('/') || moduleName.Contains('\\'))
+                return false;
+
+            return VFS.FileExists(ToLibraryPath(moduleName));
+        }
+
+        public ValueTask<LuaModule> LoadAsync(string moduleName, CancellationToken cancellationToken = default)
+        {
+            if (VFS.FileExists(ToLibraryPath(moduleName)))
+            {
+                return ValueTask.FromResult(new LuaModule(moduleName, VFS.ReadAllText(ToLibraryPath(moduleName))));
+            }
+            
+            throw new LuaModuleNotFoundException(moduleName);
+        }
+    }
+
     public static LuaValue ToLuaValue<T>(T value)
     {
         if (value is null) return LuaValue.Nil;
-
+        
         if (value is bool @bool)
             return new LuaValue(@bool);
         if (value is float @float)
@@ -42,7 +86,7 @@ internal class LuaHelpers
             return new LuaValue(table);
         if (value is LuaState state)
             return new LuaValue(state);
-
+        
         if (value is fix64 fixed64)
             return new LuaValue(fixed64);
         if (value is f64Vector3 f64Vector3)
@@ -51,7 +95,7 @@ internal class LuaHelpers
             return new LuaValue(f64AngleSingle);
         if (value is f64Euler f64Euler)
             return new LuaValue(f64Euler);
-
+        
         if (value is ILuaUserData userData)
             return LuaValue.FromUserData(userData);
 
@@ -86,4 +130,5 @@ internal class LuaHelpers
 
         return default!;
     }
+
 }
