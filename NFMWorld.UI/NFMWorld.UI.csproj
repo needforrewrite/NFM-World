@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Microsoft.UI.Reactor.Yoga\Microsoft.UI.Reactor.Yoga.csproj" />
+      <ProjectReference Include="..\NFMWorld.DriverInterface\NFMWorld.DriverInterface.csproj" />
+      <ProjectReference Include="..\NFMWorld.Library.Base\NFMWorld.Library.Base.csproj" />
+      <ProjectReference Include="..\NFMWorld.Lua\NFMWorld.Lua.csproj" />
+      <ProjectReference Include="..\NFMWorld.Reactor.ObservableCollections\NFMWorld.Reactor.ObservableCollections.csproj" />
+        <ProjectReference Include="..\NFMWorld.LuaSourceGenerator\NFMWorld.LuaSourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+    </ItemGroup>
+
+</Project>

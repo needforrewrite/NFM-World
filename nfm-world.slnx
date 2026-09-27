@@ -95,6 +95,7 @@
   <Project Path="NFMWorld.CrashReporter/NFMWorld.CrashReporter.csproj" />
   <Project Path="NFMWorld.Audio.FAudio/NFMWorld.Audio.FAudio.csproj" />
   <Project Path="NFMWorld.Audio.FAudio.Smoke/NFMWorld.Audio.FAudio.Smoke.csproj" />
+  <Project Path="NFMWorld.DriverInterface/NFMWorld.DriverInterface.csproj" />
   <Project Path="NFMWorld.FNA3D/NFMWorld.FNA3D.csproj" />
   <Project Path="NFMWorld.GenerateHmacKey/NFMWorld.GenerateHmacKey.csproj" />
   <Project Path="NFMWorld.Graphics.Abstraction/NFMWorld.Graphics.Abstraction.csproj" />
@@ -106,6 +107,7 @@
   <Project Path="NFMWorld.Graphics.OpenGL/NFMWorld.Graphics.OpenGL.csproj" />
   <Project Path="NFMWorld.Graphics.DesktopGL.Smoke/NFMWorld.Graphics.DesktopGL.Smoke.csproj" />
   <Project Path="NFMWorld.Graphics.DesktopGL/NFMWorld.Graphics.DesktopGL.csproj" />
+  <Project Path="NFMWorld.Library.Base/NFMWorld.Library.Base.csproj" />
   <Project Path="NFMWorld.Library.Test/NFMWorld.Library.Test.csproj" />
   <Project Path="NFMWorld.Library/NFMWorld.Library.csproj" />
   <Project Path="NFMWorld.Lua/NFMWorld.Lua.csproj" />
@@ -129,6 +131,7 @@
   <Project Path="NFMWorld.ShaderCompiler/NFMWorld.ShaderCompiler.csproj" />
   <Project Path="NFMWorld.ShaderCompiler.Task/NFMWorld.ShaderCompiler.Task.csproj" />
   <Project Path="NFMWorld.Shaders.Abstraction/NFMWorld.Shaders.Abstraction.csproj" />
+  <Project Path="NFMWorld.UI/NFMWorld.UI.csproj" />
   <Project Path="SharpSokol/src/SharpSokol/SharpSokol.csproj" />
   <Project Path="SoundTouch.Net.NAudioSupport/SoundTouch.Net.NAudioSupport.csproj" />
 </Solution>

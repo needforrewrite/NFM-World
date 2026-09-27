@@ -28,7 +28,6 @@
         <PackageReference Include="MessagePack.Experimental" Version="3.1.8" />
         <PackageReference Include="Microsoft.Extensions.Logging" Version="11.0.0-preview.5.26302.115" />
         <None Include="data\**\*" CopyToOutputDirectory="Always" />
-        <PackageReference Include="ZLogger" Version="2.5.10" />
         <ProjectReference Include="..\ClaySharp\ClaySharp.csproj" />
         <ProjectReference Include="..\ClaySharp\plugins\ClaySharp.Plugin.TextInput\ClaySharp.Plugin.TextInput.csproj" />
         <ProjectReference Include="..\HoleyDiver\HoleyDiver.csproj" />
@@ -36,6 +35,8 @@
         <ProjectReference Include="..\MemoryPack\src\MemoryPack.Generator\MemoryPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
         <ProjectReference Include="..\Microsoft.UI.Reactor.Yoga\Microsoft.UI.Reactor.Yoga.csproj" />
         <ProjectReference Include="..\NFMWorld.CrashReporter\NFMWorld.CrashReporter.csproj" />
+        <ProjectReference Include="..\NFMWorld.DriverInterface\NFMWorld.DriverInterface.csproj" />
+        <ProjectReference Include="..\NFMWorld.Library.Base\NFMWorld.Library.Base.csproj" />
         <ProjectReference Include="..\NFMWorld.LuaSourceGenerator\NFMWorld.LuaSourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
         <ProjectReference Include="..\NFMWorld.Lua\NFMWorld.Lua.csproj" />
         <ProjectReference Include="..\NFMWorld.Math\NFMWorld.Math.csproj" />
@@ -46,13 +47,13 @@
         <ProjectReference Include="..\NFMWorld.Sentry\NFMWorld.Sentry.csproj" />
         <ProjectReference Include="..\Lua-CSharp\src\Lua.SourceGenerator\Lua.SourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
         <ProjectReference Include="..\Lua-CSharp\src\Lua\Lua.csproj" />
+        <ProjectReference Include="..\NFMWorld.UI\NFMWorld.UI.csproj" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\FixedMathSharp\src\FixedMathSharp\FixedMathSharp.csproj" />
       <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.MessagePack\Maxine.Extensions.MessagePack.csproj" />
       <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj" />
-      <ProjectReference Include="..\Maxine.Extensions\RayTech.RayLog.MEL\RayTech.RayLog.MEL.csproj" />
       <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.Mathematics\Maxine.Extensions.Mathematics.csproj" />
       <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.UnionGen\Maxine.Extensions.UnionGen.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
       <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.UnionGen.Base\Maxine.Extensions.UnionGen.Base.csproj" />
@@ -61,6 +62,7 @@
     <ItemGroup>
       <Folder Include="data\gamemodes\nfmm\" />
       <Folder Include="Mad\Multiplayer\Packets\Lobby\" />
+      <Folder Include="Util\UI\" />
     </ItemGroup>
 
     <ItemGroup>

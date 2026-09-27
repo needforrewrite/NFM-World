@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Maxine.Extensions\RayTech.RayLog.MEL\RayTech.RayLog.MEL.csproj" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="11.0.0-preview.5.26302.115" />
+        <PackageReference Include="ZLogger" Version="2.5.10" />
+        <ProjectReference Include="..\NFMWorld.Sentry\NFMWorld.Sentry.csproj" />
+    </ItemGroup>
+</Project>

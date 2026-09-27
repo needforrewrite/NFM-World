@@ -22,6 +22,7 @@
     <ItemGroup>
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
         <ProjectReference Include="..\NFMWorld.ClientOnlyAnalyzer\NFMWorld.ClientOnlyAnalyzer.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+        <ProjectReference Include="..\NFMWorld.UI\NFMWorld.UI.csproj" />
     </ItemGroup>
 
 </Project>
