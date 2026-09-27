@@ -98,6 +98,10 @@
     <!-- Shader compilation, replacing the fxc path. The target it defines runs before CoreCompile,
          generates one C# bundle per technique under obj/, and adds them to the compile. -->
     <Import Project="..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.targets" />
+
+    <!-- Builds the .NET gamemodes and drops each gamemode.dll into the matching
+         data/gamemodes/<id>/ folder in this project's output. -->
+    <Import Project="..\Gamemode.Plugins.targets" />
     
     <ItemGroup>
         <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="SourceItemGroup" />

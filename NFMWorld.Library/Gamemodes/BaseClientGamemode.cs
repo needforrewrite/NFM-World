@@ -1,3 +1,4 @@
+using MemoryPack;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Sfx;
@@ -12,8 +13,8 @@ public abstract class BaseClientGamemode : IGamemode
     /// <summary>Gamemode identifier (e.g., "nfmm/pvp").</summary>
     public abstract string GamemodeId { get; }
 
-    protected internal ClientGamemodeParameters ClientGamemodeParameters { get; }
-    protected internal IGamemodeContext GamemodeContext { get; }
+    public ClientGamemodeParameters Parameters { get; }
+    internal IGamemodeContext GamemodeContext { get; }
 
     public ObservableUnlimitedArray<ClientSidePlayer> Players { get; }
     public BackendStage CurrentStage => GamemodeContext.CurrentStage;
@@ -31,7 +32,7 @@ public abstract class BaseClientGamemode : IGamemode
 
     protected BaseClientGamemode(ClientGamemodeParameters clientGamemodeParameters, IGamemodeContext gamemodeContext)
     {
-        ClientGamemodeParameters = clientGamemodeParameters;
+        Parameters = clientGamemodeParameters;
         GamemodeContext = gamemodeContext;
         Players = new ObservableUnlimitedArray<ClientSidePlayer>();
         foreach (var (parameters, idx) in clientGamemodeParameters.Players.Select((p, idx) => (p, idx)))
@@ -64,6 +65,15 @@ public abstract class BaseClientGamemode : IGamemode
     protected internal void SendServerEvent(ReadOnlySpan<byte> payload)
     {
         GamemodeContext.SendServerEvent(payload);
+    }
+
+    /// <summary>
+    /// Sends a gamemode-specific event to the server using the sender injected
+    /// by the host, falling back to <see cref="IGamemodeContext.SendServerEvent"/>.
+    /// </summary>
+    protected internal void SendServerEvent<T>(T payload) where T : IMemoryPackable<T>
+    {
+        SendServerEvent(MemoryPackSerializer.Serialize(payload));
     }
 
     /// <summary>
@@ -181,6 +191,12 @@ public abstract class BaseClientGamemode : IGamemode
     {
     }
 
+    /// <summary>
+    /// Rendering callbacks for client cars, such as ghost opacity and
+    /// checkpoint glow.
+    /// </summary>
+    protected IClientCallbacks ClientCallbacks => GamemodeContext.ClientCallbacks;
+
     private int _lastClientCheckpoint = 0;
     private int _lastCountdownTime = 0;
     private fix64 _lcarx;
@@ -189,7 +205,7 @@ public abstract class BaseClientGamemode : IGamemode
     /// <summary>
     /// Convenience function to reset HUD state, visual FX and sounds.
     /// </summary>
-    protected internal virtual void ClientReset()
+    protected internal void ClientReset()
     {
         GamemodeContext.ClientCallbacks.ResetCheckpointGlow();
 
@@ -201,7 +217,7 @@ public abstract class BaseClientGamemode : IGamemode
     /// Convenience function to update HUD state and play sounds based on the given car's state.
     /// </summary>
     /// <param name="car">The client car</param>
-    protected internal virtual void UpdateHudAndSounds(BackendCar car)
+    protected internal void UpdateHudAndSounds(BackendCar car)
     {
         var diffx = (float)(car.Position.X - _lcarx);
         var diffz  = (float)(car.Position.Z - _lcarz);
@@ -228,7 +244,7 @@ public abstract class BaseClientGamemode : IGamemode
     /// Updates the countdown timer and plays the corresponding sound.
     /// </summary>
     /// <param name="countdownTime">The current countdown time.</param>
-    protected virtual void UpdateCountdown(int countdownTime)
+    protected void UpdateCountdown(int countdownTime)
     {
         if (countdownTime != _lastCountdownTime)
         {

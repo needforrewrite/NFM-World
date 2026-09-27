@@ -98,6 +98,8 @@
   <Project Path="NFMWorld.Audio.FAudio.Smoke/NFMWorld.Audio.FAudio.Smoke.csproj" />
   <Project Path="NFMWorld.DriverInterface/NFMWorld.DriverInterface.csproj" />
   <Project Path="NFMWorld.FNA3D/NFMWorld.FNA3D.csproj" />
+  <Project Path="NFMWorld.Gamemode.Pvp/NFMWorld.Gamemode.Pvp.csproj" />
+  <Project Path="NFMWorld.Gamemode.TimeTrial/NFMWorld.Gamemode.TimeTrial.csproj" />
   <Project Path="NFMWorld.GenerateHmacKey/NFMWorld.GenerateHmacKey.csproj" />
   <Project Path="NFMWorld.Graphics.Abstraction/NFMWorld.Graphics.Abstraction.csproj" />
   <Project Path="NFMWorld.Graphics.D3D11/NFMWorld.Graphics.D3D11.csproj" />

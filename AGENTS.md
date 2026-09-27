@@ -170,6 +170,42 @@ Gamemodes are written in **Luau** and share one code path for singleplayer and m
 
 ---
 
+## .NET Gamemode Plugins (`NFMWorld.Gamemode.*`)
+
+A gamemode can also be a compiled plugin instead of Luau scripts. This is the
+replacement path for Lua — currently a proof of concept.
+
+- **Layout** — `data/gamemodes/{id}/gamemode.dll`, beside that gamemode's
+  `.luau` scripts. The file name is identical in every gamemode; the folder
+  disambiguates them.
+- **Authoring** — derive from `PluginGamemode` (client) and `PluginServerGamemode`
+  (server), and mark the assembly with `[assembly: Gamemode(Name = ..., Description = ...)]`
+  plus `[assembly: GamemodeConfigProperty(...)]` / `GamemodeConfigPropertyOption`.
+  Projects: `NFMWorld.Gamemode.Pvp`, `NFMWorld.Gamemode.TimeTrial`.
+- **Build** — `Gamemode.Plugin.props` is imported by each plugin project;
+  `Gamemode.Plugins.targets` is imported by each *host* (game, server, test) and
+  builds the plugins, passing its own output dir down so each plugin copies only
+  its own output into `data/gamemodes/{id}/`.
+- **Resolution** — `GamemodeFactory.Create(id, config)` in
+  `NFMWorld.Library/Mad/Multiplayer/GameModes.cs` returns a `NativeGamemodeFactory`
+  when a plugin is present and a `LuaGamemodeFactory` otherwise. Call sites use
+  this, not the raw factories.
+- **Loader** — `NFMWorld.Library/Gamemodes/DotNet/GamemodePlugin.cs` reads the
+  assembly into memory and `Assembly.Load`s it, then reflects the gamemode types
+  and constructors once.
+
+### Gotchas
+
+| Gotcha | Rule |
+|---|---|
+| Assembly identity | Ship the file as `gamemode.dll` by **renaming at copy time** (`Gamemode.Plugin.props`), never via `TargetName`/`AssemblyName` — those rename the assembly *identity* too, and the runtime refuses to load two assemblies under one identity, so the second gamemode of a session would fail |
+| Plugin dependencies | Reference shared assemblies (`NFMWorld.Library`, `Lua`, `MemoryPack`, …) with `Private="false" ExcludeAssets="runtime"` so the plugin resolves against the host's copies rather than shadowing them |
+| `DisableTransitiveProjectReferences` | every plugin csproj sets it, so a type used from a transitive dependency (e.g. `Nibble<T>` from `Maxine.Extensions`) needs its own explicit reference |
+| Eager load context | plugins may only be `Assembly.Load`ed on the default (non-collectible) context; `GamemodeFactory` refuses and falls back to Lua elsewhere |
+| Target resolution timing | read `$(TargetDir)` inside the target, not at evaluation time — the SDK sets it after the project body |
+
+---
+
 ## Lua Table Storage (`Lua-CSharp`)
 
 `LuaTable` splits its storage three ways: a dense array part (integer keys near the array

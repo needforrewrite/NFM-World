@@ -25,11 +25,14 @@
 // location comes back -1, the sampler keeps unit 0, and a draw reads whatever happens to be bound
 // there. CheckBundlePrograms is the assertion that this does not happen, per bundle, by name.
 using System.Runtime.InteropServices;
+using System.Numerics;
 using NFMWorld.Graphics;
 using NFMWorld.Shaders;
 using NFMWorld.Shaders.Generated;
 using Silk.NET.OpenGLES;
 using ClearOptions = NFMWorld.Graphics.ClearOptions;
+// Apos.Shapes reads its colours as Maxine's, which is what a Color converts into.
+using AposColor = Maxine.Extensions.Mathematics.Color;
 
 namespace NFMWorld.Graphics.OpenGL.Smoke;
 
@@ -64,6 +67,7 @@ internal static class Program
         CheckRenderTarget(device);
         CheckProgramBinary(device);
         MeasureAposCompile(device);
+        CheckOutlinedText(device);
         CheckBundlePrograms(device);
         CheckImGuiTexturedDraw(device);
         CheckMatrixUniformOrientation(device);
@@ -536,6 +540,110 @@ internal static class Program
         while (_gl.GetError() != GLEnum.NoError && ++drained < 32) { }
         if (drained > 0)
             Console.WriteLine($"APOS: cleared {drained} GL error(s), not counted as failures");
+    }
+
+    /// <summary>
+    /// Outlined text, drawn through the real batch and read back.
+    ///
+    /// The outline is CPU geometry stroked through the path renderer rather than anything the
+    /// glyph shader does, so the thing worth proving is not that the shader compiled - it is that
+    /// the stroke lands where the glyph is. Two draws of the same string, one filled and one
+    /// outlined, make that readable: the outline is drawn in pure red under a white fill, so any
+    /// red pixel at all is the stroke, and red appearing where the plain fill had nothing is the
+    /// stroke reaching past the glyph's own edge.
+    ///
+    /// Red over the fill's area proves nothing by itself, which is why the count is taken beyond
+    /// the fill's own bounding box: a stroke that came out in the right place but the wrong size
+    /// would still put red inside the glyph.
+    /// </summary>
+    private static void CheckOutlinedText(GlGraphicsDevice device)
+    {
+        const int size = 256;
+        string fontPath = Path.Combine(AppContext.BaseDirectory, "source-code-pro-medium.ttf");
+        if (!File.Exists(fontPath))
+        {
+            Report("TEXT", $"font present at {fontPath}", false);
+            return;
+        }
+
+        using var font = new Apos.Shapes.ShapeFont(File.ReadAllBytes(fontPath));
+        using var batch = new Apos.Shapes.ShapeBatch(device, warmup: false);
+        using var target = device.CreateRenderTarget(
+            new RenderTargetDesc(size, size, TextureFormat.Rgba8, HasDepthStencil: false));
+
+        var text = "o";
+        float fontSize = 150f;
+        // Top left with room for the ascender and the stroke, which reaches half its width past
+        // the glyph. The headless swapchain is this same size, so the batch's own default
+        // projection would do; passing it explicitly keeps the check honest about the viewport it
+        // is reading back.
+        var at = new Vector2(40, 30);
+
+        // The string sits at the origin, so the glyph's own box is what the batch laid out. A
+        // projection that puts world unit zero at the top left corner with y down, matching what
+        // the batch assumes when the caller gives it none, but over this render target's size.
+        var projection = Matrix4x4.CreateOrthographicOffCenter(0, size, size, 0, 0, 1);
+
+        byte[] Render(bool outlined, float width)
+        {
+            var cb = device.AcquireCommandBuffer();
+            cb.SetRenderTarget(target);
+            cb.SetViewport(new Viewport(0, 0, size, size));
+            cb.Clear(ClearOptions.Color, new ColorRgba(0f, 0f, 0f));
+            batch.Begin(cb, null, projection);
+            var white = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(255, 255, 255), Vector2.One, new AposColor(255, 255, 255));
+            if (outlined)
+            {
+                var red = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(255, 0, 0), Vector2.One, new AposColor(255, 0, 0));
+                batch.DrawString(font, text, at, fontSize, white, red, width);
+            }
+            else
+            {
+                batch.DrawString(font, text, at, fontSize, white);
+            }
+            batch.End();
+            cb.SetRenderTarget(null);
+            device.Submit(cb);
+
+            var pixels = new byte[size * size * 4];
+            device.ReadTexture(target.ColorTexture!, 0, 0, size, size, pixels);
+            return pixels;
+        }
+
+        var plain = Render(outlined: false, 0f);
+        var outlined = Render(outlined: true, 26f);
+
+        // Lit rather than transparent: the clear is black, so anything drawn at all is a pixel
+        // that stopped being black. Counting alpha instead would count the clear.
+        int plainRed = 0, outlineRed = 0;
+        int plainLit = 0, outlineLit = 0;
+        for (int i = 0; i < plain.Length; i += 4)
+        {
+            bool plainOn = plain[i] > 30 || plain[i + 1] > 30 || plain[i + 2] > 30;
+            bool outOn = outlined[i] > 30 || outlined[i + 1] > 30 || outlined[i + 2] > 30;
+            if (plainOn) plainLit++;
+            if (outOn) outlineLit++;
+            if (plainOn && plain[i] > 150 && plain[i + 1] < 90 && plain[i + 2] < 90) plainRed++;
+            if (outOn && outlined[i] > 150 && outlined[i + 1] < 90 && outlined[i + 2] < 90) outlineRed++;
+        }
+
+        Report("TEXT", $"a filled glyph drew something ({plainLit} lit pixels)", plainLit > 500);
+        Report("TEXT", $"no red anywhere in the filled glyph ({plainRed} red pixels)", plainRed == 0);
+        Report("TEXT", $"the outlined glyph drew red ({outlineRed} red pixels)", outlineRed > 500);
+        // The stroke reaches half its width past the outline, so the outlined letter is fatter.
+        Report("TEXT", $"the outline grew the glyph ({plainLit} -> {outlineLit} lit pixels)",
+            outlineLit > plainLit);
+
+        // The stroke straddles the outline, so the centre of a stem stays the fill's white and the
+        // red is a band around it. Without that, the stroke would be sitting on top of the glyph.
+        int whiteInOutlined = 0;
+        for (int i = 0; i < outlined.Length; i += 4)
+        {
+            if (outlined[i] > 200 && outlined[i + 1] > 200 && outlined[i + 2] > 200) whiteInOutlined++;
+        }
+        Report("TEXT", $"the fill still shows through the outline ({whiteInOutlined} white pixels)", whiteInOutlined > 500);
+
+        DrainGlErrors("outlined text");
     }
 
     private static long TimeBatch(GlGraphicsDevice device, string label)

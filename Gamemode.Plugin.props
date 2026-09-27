@@ -1,0 +1,63 @@
+<Project>
+
+    <!--
+        Imported by each .NET gamemode project (NFMWorld.Gamemode.*).
+
+        A gamemode ships as gamemode.dll in a folder named for the gamemode
+        (data/gamemodes/<id>/), next to that gamemode's own .luau scripts. The file
+        name is identical in every gamemode and the folder is what disambiguates
+        them.
+
+        The plugin's references all use Private="false" ExcludeAssets="runtime",
+        so its output holds only its own files - the shared assemblies
+        (NFMWorld.Library, Lua, MemoryPack, ...) resolve against the host's base
+        directory at load time instead of being shadowed by a second copy.
+    -->
+
+    <!--
+        Copies this gamemode's build output into the host that is building it.
+
+        The host passes GamemodeOutputRoot (its own output directory's
+        data/gamemodes) when it builds the plugins; a standalone build of this
+        project leaves it empty and copies nothing.
+
+        Nothing here is registered as build output. The host cleans its own output
+        directory, and registering these paths in *this* project's file list would
+        make its incremental clean delete them: the list is per-project, not
+        per-destination, so a second host building the same plugin into a different
+        folder would orphan - and then delete - the first host's copy.
+    -->
+    <Target Name="CopyGamemodeToHost" AfterTargets="Build" Condition="'$(GamemodeOutputRoot)' != ''">
+        <PropertyGroup>
+            <GamemodeDestination>$(GamemodeOutputRoot)/$(GamemodeId)</GamemodeDestination>
+        </PropertyGroup>
+
+        <ItemGroup>
+            <!-- Anything else the plugin produced. The assembly and its symbols are
+                 excluded here because they are copied under a different name below,
+                 and the .deps/.runtimeconfig files because they only describe
+                 running the assembly standalone - which never happens, the host
+                 loads it in-process - and they name the identity renamed away. -->
+            <GamemodePluginExtra Include="$(TargetDir)*"
+                                 Exclude="$(TargetPath);$(TargetDir)$(TargetName).pdb;$(TargetDir)*.deps.json;$(TargetDir)*.runtimeconfig.json" />
+        </ItemGroup>
+
+        <Copy SourceFiles="@(GamemodePluginExtra)"
+              DestinationFolder="$(GamemodeDestination)"
+              SkipUnchangedFiles="true" />
+
+        <!-- Renamed rather than named gamemode at compile time: the assembly identity
+             has to stay unique, because the runtime refuses to load a second assembly
+             under an identity it already has, and a session that plays one gamemode
+             and then another loads both. Setting the output file name instead would
+             rename the assembly with it. -->
+        <Copy SourceFiles="$(TargetPath)"
+              DestinationFiles="$(GamemodeDestination)/gamemode$(TargetExt)"
+              SkipUnchangedFiles="true" />
+        <Copy SourceFiles="$(TargetDir)$(TargetName).pdb"
+              DestinationFiles="$(GamemodeDestination)/gamemode.pdb"
+              SkipUnchangedFiles="true"
+              Condition="Exists('$(TargetDir)$(TargetName).pdb')" />
+    </Target>
+
+</Project>

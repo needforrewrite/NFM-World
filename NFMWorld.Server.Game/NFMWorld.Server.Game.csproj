@@ -13,4 +13,7 @@
       <ProjectReference Include="..\NFMWorld.Server.SharedMemory\NFMWorld.Server.SharedMemory.csproj" />
     </ItemGroup>
 
+    <!-- Runs the gamemodes server-side too, so it needs them in its own output. -->
+    <Import Project="..\Gamemode.Plugins.targets" />
+
 </Project>

@@ -276,13 +276,10 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
 
         public void DrawStringStroke(ReadOnlySpan<char> text, int x, int y, int effectAmount = 1)
         {
-            // dogshit string stroke
             var f = _fonts[_font.FontFamily];
-            var pos = new Vector2(x, y - (f.LineHeight * _font.Size));
-            foreach (var (ax, ay) in (ReadOnlySpan<(int, int)>)[(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, 1), (-1, 1), (1, -1)])
-            {
-                _sb.DrawString(f, text, pos + new Vector2(ax, ay), _font.Size, _color);
-            }
+            // The stroke straddles the glyph's edge, and the caller draws the fill over its inner
+            // half, so the pen is twice the band that ends up visible.
+            _sb.DrawString(f, text, new Vector2(x, y - (f.LineHeight * _font.Size)), _font.Size, _color, _color, effectAmount * 2f);
         }
 
         public void DrawStringStrokeAligned(ReadOnlySpan<char> text, int x, int y, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top, int effectAmount = 1)
@@ -290,14 +287,9 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
             float xFloat = x;
             float yFloat = y;
             AlignText(text, areaWidth, areaHeight, hAlign, vAlign, ref xFloat, ref yFloat);
-            
-            // dogshit string stroke
+
             var f = _fonts[_font.FontFamily];
-            var pos = new Vector2(xFloat, yFloat - (f.LineHeight * _font.Size));
-            foreach (var (ax, ay) in (ReadOnlySpan<(int, int)>)[(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, 1), (-1, 1), (1, -1)])
-            {
-                _sb.DrawString(f, text, pos + new Vector2(ax, ay), _font.Size, _color);
-            }
+            _sb.DrawString(f, text, new Vector2(xFloat, yFloat - (f.LineHeight * _font.Size)), _font.Size, _color, _color, effectAmount * 2f);
         }
 
         private void AlignText(ReadOnlySpan<char> text, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign, TextVerticalAlignment vAlign, ref float x, ref float y)

@@ -460,7 +460,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
     private static BaseGamemodeFactory GetGameModeFactory(MatchGameplayInfo matchGameplayInfo)
     {
-        return new LuaGamemodeFactory(matchGameplayInfo.Gamemode, matchGameplayInfo.Parameters);
+        return GamemodeFactory.Create(matchGameplayInfo.Gamemode, matchGameplayInfo.Parameters);
     }
 }
 

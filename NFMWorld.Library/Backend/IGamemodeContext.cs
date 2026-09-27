@@ -22,5 +22,6 @@ public partial interface IGamemodeContext
     /// <param name="payload"></param>
     void SendServerEvent(ReadOnlySpan<byte> payload);
 
+    // TODO this maybe should be removed
     void UpdatePlayers(IReadOnlyList<ClientSidePlayer> players);
 }

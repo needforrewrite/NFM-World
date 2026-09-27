@@ -222,7 +222,7 @@ public class RaceOrchestrator : IDisposable
             _joinTokens.TryAdd(token, (session, playerIndex, playerInfo.Id));
         }
 
-        var factory = new LuaGamemodeFactory(raceParams.MatchGameplayInfo.Gamemode, raceParams.MatchGameplayInfo.Parameters);
+        var factory = GamemodeFactory.Create(raceParams.MatchGameplayInfo.Gamemode, raceParams.MatchGameplayInfo.Parameters);
         var context = new OrchestratorServerContext(
             session,
             raceParams.MatchGameplayInfo.StageName,
@@ -302,13 +302,13 @@ public class RaceOrchestrator : IDisposable
     }
 
     /// <summary>
-    /// Adapter that provides <see cref="IServerGamemodeData"/> from
+    /// Adapter that provides <see cref="IServerGamemodeContext"/> from
     /// the RaceSession data available in the orchestrator.
     /// </summary>
     private class OrchestratorServerContext(
         RaceSession session,
         string stageName,
-        Action<ReadOnlyMemory<byte>> broadcast) : IServerGamemodeData
+        Action<ReadOnlyMemory<byte>> broadcast) : IServerGamemodeContext
     {
         public BackendStage CurrentStage { get; } = new(stageName);
 

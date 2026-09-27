@@ -9,17 +9,12 @@ namespace NFMWorld;
 /// Reads position/rotation from the backend car each tick — does NOT store its own game state.
 /// Owns rendering effects (flames, dust, chips, sparks), wheel meshes, and SFX.
 /// </summary>
-public class CarVisual : MeshedGameObject, IDisposable
+public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
 {
     /// <summary>
     /// The backend car this visual is bound to.
     /// </summary>
     public BackendCar Car { get; }
-
-    /// <summary>
-    /// Visual properties that gamemodes can modify via <see cref="IClientCarCallbacks"/>.
-    /// </summary>
-    public CarVisualProperties Visuals { get; } = new();
 
     // Stores "brokenness" phase for damageable meshes
     public readonly float[] Bfase;
@@ -61,8 +56,6 @@ public class CarVisual : MeshedGameObject, IDisposable
         Chips = new Chips(this, GameSparker.GraphicsDevice);
         Sparks = new Sparks(car, this, GameSparker.GraphicsDevice);
         FixFlare = new FixFlare(car, this, GameSparker.GraphicsDevice);
-
-        Visuals.ApplyDefaultsFrom(this);
 
         PositionWithoutInterpolation = car.Position;
         RotationWithoutInterpolation = car.Rotation;
@@ -137,13 +130,6 @@ public class CarVisual : MeshedGameObject, IDisposable
         // Sync position/rotation from backend car
         Position = Car.Position;
         Rotation = Car.Rotation;
-
-        // Per-tick visual overrides from gamemode (moved from GetRenderData)
-        CastsShadow = Visuals.CastsShadow;
-        GetsShadowed = Visuals.GetsShadowed ?? GetsShadowed;
-        AlphaOverride = Visuals.AlphaOverride ?? AlphaOverride;
-        Glow = Visuals.Glow ?? Glow;
-        Finish = Visuals.Finish ?? Finish;
 
         for (var i = 0; i < _wheels.Length; i++)
         {

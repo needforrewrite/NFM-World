@@ -673,6 +673,22 @@ end
 declare StageLoader: {
 }
 
+declare extern type Stopwatch with
+    isRunning: boolean
+    elapsed: number
+    elapsedMilliseconds: integer
+    elapsedMicroseconds: integer
+    stop: ((self: Stopwatch) -> nil)
+    start: ((self: Stopwatch) -> nil)
+    restart: ((self: Stopwatch) -> nil)
+    reset: ((self: Stopwatch) -> nil)
+end
+
+declare Stopwatch: {
+    new: (() -> Stopwatch),
+    startNew: (() -> Stopwatch),
+}
+
 declare extern type Color3 with
     r: integer
     g: integer
@@ -691,21 +707,5 @@ end
 
 declare FrameTrace: {
     addMessage: ((message: string) -> nil),
-}
-
-declare extern type Stopwatch with
-    isRunning: boolean
-    elapsed: number
-    elapsedMilliseconds: integer
-    elapsedMicroseconds: integer
-    stop: ((self: Stopwatch) -> nil)
-    start: ((self: Stopwatch) -> nil)
-    restart: ((self: Stopwatch) -> nil)
-    reset: ((self: Stopwatch) -> nil)
-end
-
-declare Stopwatch: {
-    new: (() -> Stopwatch),
-    startNew: (() -> Stopwatch),
 }
 

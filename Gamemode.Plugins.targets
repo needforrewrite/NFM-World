@@ -1,0 +1,56 @@
+<Project>
+
+    <!--
+        Builds the .NET gamemode projects and copies each into data/gamemodes/<id>/,
+        next to that gamemode's .luau scripts. Import from the host whose output
+        should carry them (the game host, the server).
+
+        A .targets rather than inline XML for the same reason as the shader
+        compile: the set of gamemodes is data, and adding one should not mean
+        editing the host project. The plugin projects themselves do not import
+        this - they are the things being built.
+
+        The destination is passed down rather than copied here so that each plugin
+        copies only its own output. Collecting every plugin's assembly here and
+        copying them in one batch would apply the first item's metadata to all of
+        them (MSBuild does not batch a task on a child item's metadata), silently
+        giving every gamemode the same destination folder.
+    -->
+
+    <ItemGroup>
+        <GamemodePlugin Include="Pvp">
+            <Project>$(MSBuildThisFileDirectory)NFMWorld.Gamemode.Pvp\NFMWorld.Gamemode.Pvp.csproj</Project>
+            <GamemodeId>nfmm/pvp</GamemodeId>
+        </GamemodePlugin>
+        <GamemodePlugin Include="TimeTrial">
+            <Project>$(MSBuildThisFileDirectory)NFMWorld.Gamemode.TimeTrial\NFMWorld.Gamemode.TimeTrial.csproj</Project>
+            <GamemodeId>nfmm/timetrial</GamemodeId>
+        </GamemodePlugin>
+    </ItemGroup>
+
+    <!--
+        Before AssignTargetPaths because that is where the SDK's content items are
+        given a TargetPath to copy to, and it runs inside PrepareResources - early
+        in the build, before the plugins would otherwise have been built at all.
+        The copy therefore has to already have happened by then.
+
+        Unconditional, and the plugins are free to build on their own: MSBuild
+        de-duplicates nested build requests, so importing this from two projects
+        builds each plugin once.
+    -->
+    <Target Name="BuildGamemodePlugins"
+            BeforeTargets="AssignTargetPaths"
+            Condition="'$(MSBuildRuntimeType)' == 'Core'">
+        <!-- Read here, not at evaluation time. TargetDir is defined by the SDK's
+             .targets, which are imported after the project body, so a PropertyGroup
+             up there sees it empty and the copy destination silently degrades to a
+             path relative to the *plugin's* directory. -->
+        <PropertyGroup>
+            <GamemodeOutputRoot>$(TargetDir)data/gamemodes</GamemodeOutputRoot>
+        </PropertyGroup>
+        <MSBuild Projects="%(GamemodePlugin.Project)"
+                 Targets="Build"
+                 Properties="Configuration=$(Configuration);GamemodeOutputRoot=$(GamemodeOutputRoot);GamemodeId=%(GamemodePlugin.GamemodeId)" />
+    </Target>
+
+</Project>

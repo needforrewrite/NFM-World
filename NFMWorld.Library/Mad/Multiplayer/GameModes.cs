@@ -1,8 +1,11 @@
-﻿using Lua;
+﻿using System.Collections.Concurrent;
+using System.Runtime.Loader;
+using Lua;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Files;
 using NFMWorldLibrary.Gamemodes;
+using NFMWorldLibrary.Gamemodes.DotNet;
 using NFMWorldLibrary.Gamemodes.Lua;
 using NFMWorldLibrary.Radpack;
 
@@ -16,7 +19,7 @@ public abstract class BaseGamemodeFactory
     /// Creates a server-side gamemode for this factory's gamemode type.
     /// Returns null if this gamemode has no server-side logic (e.g., singleplayer-only).
     /// </summary>
-    public virtual IServerGamemode? CreateServerGamemode(ServerGamemodeParameters parameters, IServerGamemodeData data)
+    public virtual IServerGamemode? CreateServerGamemode(ServerGamemodeParameters parameters, IServerGamemodeContext context)
         => null;
 
     /// <summary>
@@ -26,6 +29,49 @@ public abstract class BaseGamemodeFactory
     public abstract string GamemodeId { get; }
     
     public abstract bool HasServerGamemode { get; }
+}
+
+public static class GamemodeFactory
+{
+    private static readonly ConcurrentDictionary<string, GamemodePlugin?> PluginCache = new();
+
+    /// <summary>
+    /// Creates the factory for a gamemode id, preferring a compiled plugin
+    /// (<c>data/gamemodes/{id}/gamemode.dll</c>) over the Luau scripts of the same
+    /// id. Plugins may only be loaded on the primary context - see
+    /// <see cref="GamemodePlugin"/> - so on a secondary context this falls back to
+    /// Lua rather than failing.
+    /// </summary>
+    public static BaseGamemodeFactory Create(string gamemodeId, IReadOnlyDictionary<string, object> config)
+    {
+        var plugin = GetPlugin(gamemodeId);
+        return plugin is not null
+            ? new NativeGamemodeFactory(plugin, new Dictionary<string, object>(config))
+            : new LuaGamemodeFactory(gamemodeId, config);
+    }
+
+    public static BaseGamemodeFactory Create(string gamemodeId)
+    {
+        var plugin = GetPlugin(gamemodeId);
+        return plugin is not null
+            ? new NativeGamemodeFactory(plugin)
+            : new LuaGamemodeFactory(gamemodeId);
+    }
+
+    private static GamemodePlugin? GetPlugin(string gamemodeId)
+    {
+        if (PluginCache.TryGetValue(gamemodeId, out var cached))
+            return cached;
+
+        GamemodePlugin? plugin = null;
+        if (AssemblyLoadContext.GetLoadContext(typeof(GamemodeFactory).Assembly) is { IsCollectible: false })
+        {
+            plugin = GamemodePlugin.Load(gamemodeId, $"data/gamemodes/{gamemodeId}/gamemode.dll");
+        }
+
+        PluginCache[gamemodeId] = plugin;
+        return plugin;
+    }
 }
 
 /// <summary>
@@ -96,10 +142,10 @@ public class LuaGamemodeFactory(string gamemodeId, LuaTable? config = null) : Ba
             : new LuaGamemode(parameters, gamemodeContext, gamemodeId, config);
     }
 
-    public override LuaServerGamemode CreateServerGamemode(ServerGamemodeParameters parameters, IServerGamemodeData data)
+    public override LuaServerGamemode CreateServerGamemode(ServerGamemodeParameters parameters, IServerGamemodeContext context)
     {
         return _radpack != null
-            ? new LuaServerGamemode(parameters, data, gamemodeId, _radpack, config)
-            : new LuaServerGamemode(parameters, data, gamemodeId, config: config);
+            ? new LuaServerGamemode(parameters, context, gamemodeId, _radpack, config)
+            : new LuaServerGamemode(parameters, context, gamemodeId, config: config);
     }
 }

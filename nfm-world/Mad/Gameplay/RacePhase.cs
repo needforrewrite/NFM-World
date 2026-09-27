@@ -399,7 +399,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
     IClientCarCallbacks IClientCallbacks.GetClientCarCallbacks(BackendCar car)
     {
-        return GetCarVisual(car).Visuals;
+        return GetCarVisual(car);
     }
 
     void IGamemodeContext.SendServerEvent(ReadOnlySpan<byte> payload)

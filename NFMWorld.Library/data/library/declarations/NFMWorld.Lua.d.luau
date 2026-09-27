@@ -8,6 +8,17 @@ declare DeterministicRandom: {
     new: ((value: fixed64) -> DeterministicRandom),
 }
 
+declare extern type LuaRect with
+    x: number
+    y: number
+    width: number
+    height: number
+    __eq: ((left: LuaRect, right: LuaRect) -> boolean)
+end
+
+declare LuaRect: {
+}
+
 declare extern type LuaVector2 with
     x: number
     y: number
@@ -31,16 +42,5 @@ declare extern type LuaVector3 with
 end
 
 declare LuaVector3: {
-}
-
-declare extern type LuaRect with
-    x: number
-    y: number
-    width: number
-    height: number
-    __eq: ((left: LuaRect, right: LuaRect) -> boolean)
-end
-
-declare LuaRect: {
 }
 

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>SlugSmoke</RootNamespace>
+        <!-- The name Apos.Shapes grants InternalsVisibleTo, which is what lets this reach the
+             baked contour and the glyph font. -->
+        <AssemblyName>SlugSmoke</AssemblyName>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Apos.Shapes\Source\Apos.Shapes.NFMW.csproj" />
+    </ItemGroup>
+
+</Project>

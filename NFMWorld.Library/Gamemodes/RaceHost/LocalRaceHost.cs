@@ -118,10 +118,10 @@ public sealed class LocalRaceHost : IRaceHost
 
     /// <summary>
     /// Server-side data context for the local race. Backs
-    /// <see cref="IServerGamemodeData"/> without any networking.
+    /// <see cref="IServerGamemodeContext"/> without any networking.
     /// </summary>
     private sealed class LocalServerContext(string stageName, Action<ReadOnlyMemory<byte>> broadcast)
-        : IServerGamemodeData
+        : IServerGamemodeContext
     {
         private readonly Dictionary<Guid, f64Vector3> _positions = new();
 

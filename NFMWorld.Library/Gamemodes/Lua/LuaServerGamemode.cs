@@ -14,11 +14,11 @@ using NFMWorldLibrary.Radpack;
 namespace NFMWorldLibrary.Gamemodes.Lua;
 
 [LuaVisible, LuaName("ServerGamemodeContext")]
-public partial class LuaServerGamemodeContext(LuaServerGamemode gamemode, IServerGamemodeData data)
+public partial class LuaServerGamemodeContext(LuaServerGamemode gamemode, IServerGamemodeContext context)
 {
     /// <summary>The stage being raced on (checkpoints, lap count, geometry).</summary>
     [LuaName]
-    public BackendStage CurrentStage => data.CurrentStage;
+    public BackendStage CurrentStage => context.CurrentStage;
 
     /// <summary>
     /// Ordered list of players participating in the race.
@@ -36,13 +36,13 @@ public partial class LuaServerGamemodeContext(LuaServerGamemode gamemode, IServe
     [LuaName]
     public f64Vector3? GetPlayerPosition(string playerId)
     {
-        return data.GetPlayerPosition(Guid.Parse(playerId));
+        return context.GetPlayerPosition(Guid.Parse(playerId));
     }
 
     [LuaName]
     public void BroadcastEvent(string type, LuaTable payload)
     {
-        data.BroadcastEvent(MemoryPackSerializer.Serialize(new LuaEventEnvelope
+        context.BroadcastEvent(MemoryPackSerializer.Serialize(new LuaEventEnvelope
         {
             Type = type,
             Payload = payload
@@ -109,7 +109,7 @@ public partial class LuaServerGamemodeContext(LuaServerGamemode gamemode, IServe
 public sealed class LuaServerGamemode : BaseServerGamemode
 {
     private LuaState _state;
-    private IServerGamemodeData? _data;
+    private IServerGamemodeContext? _context;
     internal GameStateSnapshot? _snapshot;
     private readonly LuaTable? _moduleTable;
     public LuaTable? Config { get; }
@@ -118,17 +118,17 @@ public sealed class LuaServerGamemode : BaseServerGamemode
 
     public IReadOnlyList<ServerSidePlayerInfo> Players { get; set; }
 
-    public LuaServerGamemode(ServerGamemodeParameters parameters, IServerGamemodeData data, string gamemodeId,
+    public LuaServerGamemode(ServerGamemodeParameters parameters, IServerGamemodeContext context, string gamemodeId,
         LuaTable? config = null)
     {
-        _data = data;
+        _context = context;
         GamemodeId = gamemodeId;
         Config = config;
         Players = parameters.Players;
         
         _state = LuaHelpers.OpenState();
 
-        _state.Environment["SGM"] = new LuaServerGamemodeContext(this, data);
+        _state.Environment["SGM"] = new LuaServerGamemodeContext(this, context);
 
         var results = _state.DoFile($"data/gamemodes/{gamemodeId}/server.luau");
         if (results is [var value] && value.TryRead<LuaTable>(out var resultTable))
@@ -137,17 +137,17 @@ public sealed class LuaServerGamemode : BaseServerGamemode
         }
     }
 
-    public LuaServerGamemode(ServerGamemodeParameters parameters, IServerGamemodeData data, string gamemodeId,
+    public LuaServerGamemode(ServerGamemodeParameters parameters, IServerGamemodeContext context, string gamemodeId,
         RadpackLua radpack, LuaTable? config = null)
     {
-        _data = data;
+        _context = context;
         GamemodeId = gamemodeId;
         Config = config;
         Players = parameters.Players;
         
         _state = LuaHelpers.OpenState();
 
-        _state.Environment["SGM"] = new LuaServerGamemodeContext(this, data);
+        _state.Environment["SGM"] = new LuaServerGamemodeContext(this, context);
 
         _state.ModuleLoader = CompositeModuleLoader.Create(new RadpackModuleLoader(radpack.Files), _state.ModuleLoader!);
         var results = _state.DoString(radpack.Files["server"]);

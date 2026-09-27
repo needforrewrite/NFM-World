@@ -40,4 +40,11 @@
 
     <Import Project="..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.targets" />
 
+    <!-- A real font, so CheckOutlinedText draws a real glyph through the real glyph path. The
+         batch it drives is Apos.Shapes' own, and the file is that project's test font. -->
+    <ItemGroup>
+        <None Include="..\Apos.Shapes\Example\Content\source-code-pro-medium.ttf"
+              CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    </ItemGroup>
+
 </Project>
