@@ -4,9 +4,8 @@
 local state = "waitingToStart" -- waitingToStart, countdown, inProgress, finished
 local countdown = 3
 local inner = SGM.countdownInterval
-local perPlayer = {}          -- playerId -> { lap, checkpoint, finished, position }
+local perPlayer: { [string] : { lap: number, checkpoint: number, finished: boolean, position: number } } = {} -- playerId -> { lap, checkpoint, finished, position }
 local finishCounter = 0
-local done = false
 
 local function OnBegin()
     perPlayer = {}
@@ -41,21 +40,7 @@ local function OnGameTick()
     end
 end
 
-local function broadcast_standings()
-    local standings = {}
-    for i = 1, #SGM.players do
-        local id = SGM.players[i].id
-        local s = perPlayer[id]
-        standings[tostring(i)] = {
-            position = s.finished and s.position or 0,
-            finished = s.finished,
-            lap = s.lap
-        }
-    end
-    SGM:broadcastEvent("standings", standings)
-end
-
-local function complete_race()
+local function completeRace()
     local results = {}
     for i = 1, #SGM.players do
         local id = SGM.players[i].id
@@ -67,7 +52,6 @@ local function complete_race()
         })
     end
 
-    -- C# global: builds the authoritative GameStateSnapshot.
     SGM:finishRace(results)
     done = true
 end
@@ -111,13 +95,9 @@ local function OnClientEvent(playerId, type, payload)
 
             if finishCounter == 1 then
                 state = "finished"
-                complete_race()
+                completeRace()
             end
         end
-    end
-
-    if state == "inProgress" then
-        broadcast_standings()
     end
 end
 

@@ -53,26 +53,30 @@ local function PowerDamageBars()
 			flexDirection = "column",
 			gap = 8,
 		}}>
-		<GlassCard color="#ff5252">
-			<Sx.View style={{ flexDirection = "column" }}>
-				<CornerLabel><CornerLabelText>{"Power"}</CornerLabelText></CornerLabel>
-				<StatBar
-					label=""
-					value={power() / 0.98}
-					color="#ff5252"
-					height={10}
-				/>
+		<GlassCard>
+			<Sx.View style={{ flexDirection = "row" }}>
+				<CornerLabel><CornerLabelText>Power</CornerLabelText></CornerLabel>
+				<Sx.View style={{flexShrink = 0}}>
+					<StatBar
+						label=""
+						value={power() / 0.98}
+						color="#ff5252"
+						height={10}
+					/>
+				</Sx.View>
 			</Sx.View>
 		</GlassCard>
-		<GlassCard color="#4fc3f7">
-			<Sx.View style={{ flexDirection = "column" }}>
-				<CornerLabel><CornerLabelText>{"Damage"}</CornerLabelText></CornerLabel>
-				<StatBar
-					label=""
-					value={damage()}
-					color="#4fc3f7"
-					height={10}
-				/>
+		<GlassCard>
+			<Sx.View style={{ flexDirection = "row" }}>
+				<CornerLabel><CornerLabelText>Damage</CornerLabelText></CornerLabel>
+				<Sx.View style={{flexShrink = 0}}>
+					<StatBar
+						label=""
+						value={damage()}
+						color="#4fc3f7"
+						height={10}
+					/>
+				</Sx.View>
 			</Sx.View>
 		</GlassCard>
 	</Sx.View>
@@ -91,24 +95,16 @@ function formatTime(ms: number): string
 end
 
 local function Splits()
-	local lapDiffMs, setLapDiffMs = Sx.createSignal(0)
-	local lastLapDiffMs, setLastLapDiffMs = Sx.createSignal(0)
 	local lap, setLap = Sx.createSignal(1)
 	local totalLaps, setTotalLaps = Sx.createSignal(3)
-	local chkDiffMs, setChkDiffMs = Sx.createSignal(0)
-	local lastChkDiffMs, setLastChkDiffMs = Sx.createSignal(0)
 	local lapTime, setLapTime = Sx.createSignal(0)
 
 	Sx.createEffect(function()
 		local unsub = UiLib.onEvent("race:hudState", function(data)
 			if data ~= nil then
-				setLapDiffMs(data.lapDiffMs or 0)
-				setLastLapDiffMs(data.lastLapDiffMs or 0)
 				setLap(data.lap)
 				setLapTime(data.lapTime or 0)
 				setTotalLaps(data.totalLaps)
-				setChkDiffMs(data.chkDiffMs or 0)
-				setLastChkDiffMs(data.lastChkDiffMs or 0)
 			end
 		end)
 		Sx.onCleanup(unsub)
@@ -142,28 +138,6 @@ local function Splits()
 						{formatTime(lapTime())}
 					</Sx.Text>
 				</Sx.View>
-				<Sx.Show when={chkDiffMs() and lastChkDiffMs()}>
-					<Sx.Text
-						style={{
-							fontSize = 11,
-							color = "rgba(255,255,255,0.4)",
-							marginTop = 4,
-							strokeColor = "rgba(100,100,100,0.4)",
-						}}>
-						CHK Diff: {formatTime(chkDiffMs())} (Last: {formatTime(lastChkDiffMs())})
-					</Sx.Text>
-				</Sx.Show>
-				<Sx.Show when={lapDiffMs() and lastLapDiffMs()}>
-					<Sx.Text
-						style={{
-							fontSize = 11,
-							color = "rgba(255,255,255,0.4)",
-							marginTop = 4,
-							strokeColor = "rgba(100,100,100,0.4)",
-						}}>
-						Lap Diff: {formatTime(lapDiffMs())} (Last: {formatTime(lastLapDiffMs())})
-					</Sx.Text>
-				</Sx.Show>
 			</Sx.View>
 		</GlassCard>
 	</Sx.View>
@@ -195,7 +169,7 @@ local function Speed()
 			flexDirection = "column",
 			alignItems = "center",
 		}}>
-		<GlassCard color="#c3f74f">
+		<GlassCard>
 			<Sx.View
 				style={{
 					flexDirection = "column",
@@ -276,7 +250,7 @@ local function RaceHud()
 				display = "flex",
 				alignItems = "flex-end",
 			}}>
-			<GlassCard color="#69f0ae">
+			<GlassCard>
 				<Sx.View style={{ flexDirection = "column", alignItems = "center", justifyContent = "center" }}> 
 					<Sx.Text style={{ fontSize = 36, fontStyle = "bold", strokeColor = "black" }}>
 						{position()}/{totalRacers()}

@@ -177,7 +177,7 @@ public partial class TextInput : Component
         TextStyles = TextStyles with
         {
             ForegroundColor = new Color(255, 255, 255),
-            FontFamily = FontFamily.DroidSans,
+            FontFamily = FontFamily.NotoSans,
             FontSize = 12f,
             FontStyle = FontStyle.Plain,
             HorizontalAlignment = TextHorizontalAlignment.Left,

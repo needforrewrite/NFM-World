@@ -102,6 +102,10 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
 
         private readonly ShapeBatch _sb;
         private Dictionary<FontFamily, ShapeFont> _fonts = new();
+        // Fonts that hold only symbols, stood behind every text font so an arrow or a triangle
+        // draws instead of the missing glyph box. Loaded once and shared by all of them, so
+        // they are deliberately left out of _fonts and out of the disposal pass.
+        private readonly List<ShapeFont> _symbols = new();
         private ConcurrentDictionary<string, IImage> _imageCache = new();
 
         private Gradient _colorOrig;
@@ -116,15 +120,40 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
             _graphicsDevice = graphicsDevice;
             _sb = sb;
             
+            LoadSymbolFonts();
+
             _fonts[FontFamily.DroidSans] = LoadFont("./data/fonts/DroidSans.ttf");
             _fonts[FontFamily.AdventureHollow] = LoadFont("./data/fonts/AdventureHollow.otf");
             _fonts[FontFamily.Adventure] = LoadFont("./data/fonts/Adventure.otf");
             _fonts[FontFamily.RobotoMono] = LoadFont("./data/fonts/RobotoMono-Regular.ttf");
+            _fonts[FontFamily.NotoSans] = LoadFont("./data/fonts/NotoSans-Regular.ttf");
         }
 
         private ShapeFont LoadFont(string fontFile)
         {
-            return new ShapeFont(VFS.ReadAllBytes(fontFile));
+            ShapeFont font = new ShapeFont(VFS.ReadAllBytes(fontFile));
+            // Order matters: this first, so it covers the arrows, then the second for the
+            // geometric shapes and dingbats it has nothing for.
+            foreach (ShapeFont symbols in _symbols)
+            {
+                font.AddFallback(symbols);
+            }
+            return font;
+        }
+
+        // Tolerated if absent: text falls back to the missing glyph box, which is where it
+        // started, rather than the whole UI failing to load over a decorative character.
+        private void LoadSymbolFonts()
+        {
+            foreach (string file in (ReadOnlySpan<string>)[
+                         "./data/fonts/NotoSansSymbols-Regular.ttf",
+                         "./data/fonts/NotoSansSymbols2-Regular.ttf"])
+            {
+                if (VFS.FileExists(file))
+                {
+                    _symbols.Add(new ShapeFont(VFS.ReadAllBytes(file)));
+                }
+            }
         }
 
         public IImage LoadImage(string file)

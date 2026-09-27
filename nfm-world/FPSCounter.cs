@@ -69,7 +69,7 @@ public class FPSCounter
 
     public static void Render()
     {
-        G.SetFont(new Font(FontFamily.DroidSans, FontStyle.Plain, 16));
+        G.SetFont(new Font(FontFamily.NotoSans, FontStyle.Plain, 16));
         G.SetColor(Color.Black);
         G.DrawStringStroke(msg, 10, 25);
         G.SetColor(Color.White);

@@ -17,7 +17,7 @@ public struct TextStyles() : IEquatable<TextStyles>
     /// <summary>
     /// Gets or sets the font family.
     /// </summary>
-    public FontFamily FontFamily = FontFamily.DroidSans;
+    public FontFamily FontFamily = FontFamily.NotoSans;
     
     /// <summary>
     /// Gets or sets the font size.

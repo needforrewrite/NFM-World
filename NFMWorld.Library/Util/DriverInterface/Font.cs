@@ -58,6 +58,7 @@ public enum FontStyle : byte
 public enum FontFamily : byte
 {
     DroidSans,
+    NotoSans,
     Adventure,
     AdventureHollow,
     RobotoMono

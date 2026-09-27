@@ -489,6 +489,7 @@ public static class LuaUiLibrary
                         "Adventure" => FontFamily.Adventure,
                         "AventureHollow" => FontFamily.AdventureHollow,
                         "Droid Sans" or "DroidSans" => FontFamily.DroidSans,
+                        "Noto Sans" or "NotoSans" => FontFamily.NotoSans,
                         "Roboto Mono" or "RobotoMono" or "Roboto" => FontFamily.RobotoMono,
                         _ => styles.FontFamily,
                     }

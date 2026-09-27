@@ -20,10 +20,6 @@ public partial class HudStateData
     [LuaName("totalRacers")] public int TotalRacers { get; set; }
     [LuaName("stateText")] public string? StateText { get; set; }
     public DateTime? StateTextEndsAt { get; set; }
-    [LuaName("lapDiffMs")] public int? LapDiffMs { get; set; }
-    [LuaName("lastLapDiffMs")] public int? LastLapDiffMs { get; set; }
-    [LuaName("chkDiffMs")] public int? ChkDiffMs { get; set; }
-    [LuaName("lastChkDiffMs")] public int? LastChkDiffMs { get; set; }
     [LuaName("countdownTimer")] public int CountdownTimer { get; set; }
 
     [LuaName("stateTextEndsAt")]

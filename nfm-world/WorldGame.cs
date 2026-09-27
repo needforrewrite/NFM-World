@@ -1151,7 +1151,7 @@ public class WorldGame : IDisposable
                 G.SetColor(new Color(0, 0, 0));
                 var messageString = FrameTrace.GetMessageString();
                 
-                G.SetFont(new Font(FontFamily.DroidSans, FontStyle.Plain, 16));
+                G.SetFont(new Font(FontFamily.NotoSans, FontStyle.Plain, 16));
                 G.SetColor(Color.Black);
                 G.DrawStringStroke(messageString, 10, x);
                 G.SetColor(Color.White);

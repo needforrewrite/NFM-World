@@ -53,25 +53,29 @@ local function PowerDamageBars()
 			flexDirection = "column",
 			gap = 8,
 		},
-		x(GlassCard)({ color = "#ff5252",
-			x(Sx.View)({ style = { flexDirection = "column" },
+		x(GlassCard)({
+			x(Sx.View)({ style = { flexDirection = "row" },
 				x(CornerLabel)({ x(CornerLabelText)({ "Power" }) }),
-				x(StatBar)({
-					label = "",
-					value = function() return power() / 0.98 end,
-					color = "#ff5252",
-					height = 10,
+				x(Sx.View)({ style = {flexShrink = 0},
+					x(StatBar)({
+						label = "",
+						value = function() return power() / 0.98 end,
+						color = "#ff5252",
+						height = 10,
+					}),
 				}),
 			}),
 		}),
-		x(GlassCard)({ color = "#4fc3f7",
-			x(Sx.View)({ style = { flexDirection = "column" },
+		x(GlassCard)({
+			x(Sx.View)({ style = { flexDirection = "row" },
 				x(CornerLabel)({ x(CornerLabelText)({ "Damage" }) }),
-				x(StatBar)({
-					label = "",
-					value = function() return damage() end,
-					color = "#4fc3f7",
-					height = 10,
+				x(Sx.View)({ style = {flexShrink = 0},
+					x(StatBar)({
+						label = "",
+						value = function() return damage() end,
+						color = "#4fc3f7",
+						height = 10,
+					}),
 				}),
 			}),
 		}),
@@ -91,24 +95,16 @@ function formatTime(ms: number): string
 end
 
 local function Splits()
-	local lapDiffMs, setLapDiffMs = Sx.createSignal(0)
-	local lastLapDiffMs, setLastLapDiffMs = Sx.createSignal(0)
 	local lap, setLap = Sx.createSignal(1)
 	local totalLaps, setTotalLaps = Sx.createSignal(3)
-	local chkDiffMs, setChkDiffMs = Sx.createSignal(0)
-	local lastChkDiffMs, setLastChkDiffMs = Sx.createSignal(0)
 	local lapTime, setLapTime = Sx.createSignal(0)
 
 	Sx.createEffect(function()
 		local unsub = UiLib.onEvent("race:hudState", function(data)
 			if data ~= nil then
-				setLapDiffMs(data.lapDiffMs or 0)
-				setLastLapDiffMs(data.lastLapDiffMs or 0)
 				setLap(data.lap)
 				setLapTime(data.lapTime or 0)
 				setTotalLaps(data.totalLaps)
-				setChkDiffMs(data.chkDiffMs or 0)
-				setLastChkDiffMs(data.lastChkDiffMs or 0)
 			end
 		end)
 		Sx.onCleanup(unsub)
@@ -142,28 +138,6 @@ local function Splits()
 						function() return formatTime(lapTime()) end,
 					}),
 				}),
-				x(Sx.Show)({ when = function() return chkDiffMs() and lastChkDiffMs() end,
-					x(Sx.Text)({
-						style = {
-							fontSize = 11,
-							color = "rgba(255,255,255,0.4)",
-							marginTop = 4,
-							strokeColor = "rgba(100,100,100,0.4)",
-						}, function() return `CHK Diff: {__luaux_read(formatTime(chkDiffMs()))} (Last: {__luaux_read(formatTime(lastChkDiffMs()))})` end,
-
-					}),
-				}),
-				x(Sx.Show)({ when = function() return lapDiffMs() and lastLapDiffMs() end,
-					x(Sx.Text)({
-						style = {
-							fontSize = 11,
-							color = "rgba(255,255,255,0.4)",
-							marginTop = 4,
-							strokeColor = "rgba(100,100,100,0.4)",
-						}, function() return `Lap Diff: {__luaux_read(formatTime(lapDiffMs()))} (Last: {__luaux_read(formatTime(lastLapDiffMs()))})` end,
-
-					}),
-				}),
 			}),
 		}),
 	})
@@ -195,7 +169,7 @@ local function Speed()
 			flexDirection = "column",
 			alignItems = "center",
 		},
-		x(GlassCard)({ color = "#c3f74f",
+		x(GlassCard)({
 			x(Sx.View)({
 				style = {
 					flexDirection = "column",
@@ -276,7 +250,7 @@ local function RaceHud()
 				display = "flex",
 				alignItems = "flex-end",
 			},
-			x(GlassCard)({ color = "#69f0ae",
+			x(GlassCard)({
 				x(Sx.View)({ style = { flexDirection = "column", alignItems = "center", justifyContent = "center" },
 					x(Sx.Text)({ style = { fontSize = 36, fontStyle = "bold", strokeColor = "black" },
 						function() return `{__luaux_read(position())}/{__luaux_read(totalRacers())}` end,
