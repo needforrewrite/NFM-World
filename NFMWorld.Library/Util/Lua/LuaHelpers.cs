@@ -1,8 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using Lua;
 using Lua.Standard;
-using NFMWorld.LuaSourceGenerator.Generator;
-using NFMWorld.LuaSourceGenerator.Generator.NFMWorld.Library;
 using NFMWorldLibrary.FixedMath;
 
 namespace NFMWorldLibrary.Util;
@@ -13,7 +11,10 @@ public static class LuaHelpers
     {
         var state = LuaState.Create(LuaNfmwPlatform.Instance);
         state.OpenStandardLibraries();
-        LuaVisibleTypeRegistry.RegisterAll(state);
+        NFMWorld.LuaSourceGenerator.Generator.NFMWorld.Library.LuaVisibleTypeRegistry.RegisterAll(state);
+        NFMWorld.LuaSourceGenerator.Generator.NFMWorld.Lua.LuaVisibleTypeRegistry.RegisterAll(state);
+        NFMWorld.LuaSourceGenerator.Generator.NFMWorld.DriverInterface.LuaVisibleTypeRegistry.RegisterAll(state);
+        NFMWorld.LuaSourceGenerator.Generator.NFMWorld.UI.LuaVisibleTypeRegistry.RegisterAll(state);
 
         state.ModuleLoader = new VfsModuleLoader();
 
