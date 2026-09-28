@@ -209,6 +209,31 @@ internal static class Program
         }
 
         Console.WriteLine();
+        Console.WriteLine("== a glyph's AA band is always centred, never the batch's outward style ==");
+        {
+            // Text used to be solved as coverage, which straddles the edge by construction. MSDF
+            // hands the tail a signed distance instead, and the shape default puts the whole fade
+            // OUTSIDE the edge - on a 16px stem that is most of the stem's own width on each side,
+            // so the fill covers about twice the ink and every straight side grows a halo. The
+            // width therefore has to reach the shader negated (the sign IS the style, Meta1.y -
+            // see SpritePixelShader) whatever the batch is set to.
+            //
+            // Checked here rather than on drawn pixels because the headless ANGLE context these
+            // suites run on hands ddx/ddy back as zero, which collapses the band to a hard step
+            // for glyphs and shapes alike. A rendered check cannot see this at all on that context.
+            Check(Apos.Shapes.ShapeBatch.GlyphAa(1.5f) == -1.5f,
+                  $"a positive width comes back negated ({Apos.Shapes.ShapeBatch.GlyphAa(1.5f)})");
+            Check(Apos.Shapes.ShapeBatch.GlyphAa(-1.5f) == -1.5f,
+                  $"a negative width stays negative ({Apos.Shapes.ShapeBatch.GlyphAa(-1.5f)})");
+            Check(Apos.Shapes.ShapeBatch.GlyphAa(0f) == 0f,
+                  $"a zero width stays zero ({Apos.Shapes.ShapeBatch.GlyphAa(0f)})");
+            // The magnitude is the caller's and only the sign is overridden, so the band is as
+            // wide as the draw asked for rather than pinned to some default.
+            Check(Apos.Shapes.ShapeBatch.GlyphAa(6f) == -6f,
+                  $"the width itself is untouched ({Apos.Shapes.ShapeBatch.GlyphAa(6f)})");
+        }
+
+        Console.WriteLine();
         Console.WriteLine("== the shelf packer uses a shelf's whole width, not just its first row ==");
         {
             // A font is a run of similar-but-not-equal heights, and a rectangle belongs on the

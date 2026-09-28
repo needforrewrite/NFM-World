@@ -651,6 +651,22 @@ internal static class Program
             if (outOn && outlined[i] > 150 && outlined[i + 1] < 90 && outlined[i + 2] < 90) outlineRed++;
         }
 
+        // A glyph's fade straddles its own edge whatever the batch's AA style is.
+        // `AAStyle.Outside` puts the whole band outside the edge and is the default for shapes,
+        // which is right for them - it keeps the color at the size asked for - but a glyph's edge
+        // IS the letter, so the same band lands half outside it and the text comes out at around
+        // twice the ink with a halo down every straight side. The two styles must draw the same.
+        //
+        // Drawing it cannot show that here. This context is headless ANGLE, and it hands the
+        // fragment shader's ddx/ddy back as zero - which collapses the AA band to a hard step for
+        // every shape, not just text. A circle drawn through the same SDF tail comes out with no
+        // partial-coverage pixel at all, and forcing the shader's footprint to a constant brings
+        // the fade back on both. So a rendered glyph is byte-identical at an AA width of 1.5, 6 or
+        // -1.5 here, and a check on these pixels would pass whatever the batch did.
+        //
+        // The decision itself is asserted in SlugSmoke, which is a CPU suite and sees the value
+        // the batch really packs (ShapeBatch.GlyphAa). There is deliberately no check here.
+
         Report("TEXT", $"a filled glyph drew something ({plainLit} lit pixels)", plainLit > 500);
         Report("TEXT", $"no red anywhere in the filled glyph ({plainRed} red pixels)", plainRed == 0);
         Report("TEXT", $"the outlined glyph drew red ({outlineRed} red pixels)", outlineRed > 500);
