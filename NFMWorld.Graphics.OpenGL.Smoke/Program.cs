@@ -780,6 +780,28 @@ internal static class Program
         int shade = Lit(RenderText("░▒▓", 8f, 40f));
         Report("TEXT", $"the shade blocks keep their ink ({shade} lit pixels)", shade > 600);
 
+        // Orientation. Every count above is a mirror image of itself, so a vertically flipped
+        // glyph passes all of them - and a flipped letter still reads as a letter. An 'L' is a
+        // stem plus a foot, so which half is heavy says which way up it is; 'p' and 'b' would
+        // read the same mirrored, which is exactly why they are not the ones drawn.
+        {
+            byte[] px = RenderText("L", 8f, 120f);
+            int topLit = 0, bottomLit = 0;
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    int i = (y * size + x) * 4;
+                    if (px[i] > 60 || px[i + 1] > 60 || px[i + 2] > 60)
+                    {
+                        if (y < size / 2) topLit++; else bottomLit++;
+                    }
+                }
+            }
+            Report("TEXT", $"the foot of an 'L' is at the bottom ({topLit} lit above the middle, {bottomLit} below)",
+                bottomLit > topLit * 2);
+        }
+
         // A glow is the one thing a glyph could not do before: a glyph's distance was hardcoded
         // to zero, so the blur arm read a number that never varied and the glow came out blank.
         // The blur's own band is the outline width, and the arm paints the fill across whatever

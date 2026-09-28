@@ -175,6 +175,40 @@ internal static class Program
         }
 
         Console.WriteLine();
+        Console.WriteLine("== the quad's texel rect maps onto its em box one texel to one texel ==");
+        {
+            // The two silent geometry faults the drawn checks cannot see. A glyph baked upright
+            // but drawn with the rect's rows paired the other way is a vertically mirrored letter
+            // that still reads as a letter, and a quad whose em box is bigger than its texel rect
+            // is the same glyph stretched. Neither throws and neither changes what is lit, so
+            // both are pinned here against the field's own numbers.
+            MsdfGlyph o = font.Font.Field(font.Font.Lookup('o').Glyph);
+            float halfTexel = 0.5f / o.EmPx;
+            float emWidth = (o.PaddedMax.X - o.PaddedMin.X) - 2f * halfTexel;
+            float emHeight = (o.PaddedMax.Y - o.PaddedMin.Y) - 2f * halfTexel;
+            // An 'L' is a stem plus a foot, so the rows near its bottom carry the full bar and the
+            // ones near its top carry only the stem. Row 0 is the bottom, so that is the heavy
+            // end; read the other way round the foot would land at the top. Both rows are taken
+            // in from the padding, which sits outside the glyph and carries no ink either way.
+            MsdfGlyph L = font.Font.Field(font.Font.Lookup('L').Glyph);
+            int inFromEdge = (int)MathF.Ceiling(0.5f * L.RangeTexels + 1f) + 2;
+            float nearRow0 = Ink(L, inFromEdge);
+            float nearLast = Ink(L, L.Height - 1 - inFromEdge);
+            Check(nearRow0 > nearLast,
+                  $"row 0 is the glyph's bottom, so the foot is the heavy end ({nearRow0:F0} ink at row 0's end, {nearLast:F0} at the other)");
+
+            // One texel of the field has to be one texel of the quad: the em box the quad covers,
+            // over the bake resolution, is the rect's own texel count. A quad padded beyond the
+            // field stretches the glyph by the ratio of the two.
+            float texelsAcross = emWidth * o.EmPx;
+            float texelsDown = emHeight * o.EmPx;
+            Check(MathF.Abs(texelsAcross - (o.Width - 1)) < 0.05f,
+                  $"the em box spans the rect's texels across ({texelsAcross:F2} vs {o.Width - 1})");
+            Check(MathF.Abs(texelsDown - (o.Height - 1)) < 0.05f,
+                  $"the em box spans the rect's texels down ({texelsDown:F2} vs {o.Height - 1})");
+        }
+
+        Console.WriteLine();
         Console.WriteLine("== the shelf packer uses a shelf's whole width, not just its first row ==");
         {
             // A font is a run of similar-but-not-equal heights, and a rectangle belongs on the
@@ -222,6 +256,21 @@ internal static class Program
     private static float Median(float a, float b, float c)
     {
         return MathF.Max(MathF.Min(a, b), MathF.Min(MathF.Max(a, b), c));
+    }
+
+    // How much of one row of a field is ink: how far each texel sits inside the glyph, summed, so
+    // a row across the middle of a stem reads heavier than one that only grazes an edge. msdfgen
+    // encodes the field inside-positive, so ink is where the median runs above its 0.5 midpoint.
+    private static float Ink(MsdfGlyph g, int row)
+    {
+        float sum = 0;
+        for (int tx = 0; tx < g.Width; tx++)
+        {
+            int at = (row * g.Width + tx) * 4;
+            float median = Median(g.Rgba[at] / 255f, g.Rgba[at + 1] / 255f, g.Rgba[at + 2] / 255f);
+            sum += MathF.Max(0f, median - 0.5f);
+        }
+        return sum * g.RangeTexels;
     }
 
     // The true distance from a point to a baked glyph's outline, and which side of it the point
