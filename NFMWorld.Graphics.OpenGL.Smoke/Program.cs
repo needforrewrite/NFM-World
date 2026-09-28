@@ -68,6 +68,8 @@ internal static class Program
         CheckProgramBinary(device);
         MeasureAposCompile(device);
         CheckOutlinedText(device);
+        CheckSamplerUnits(device);
+        MeasureTextStrokeCost(device);
         CheckBundlePrograms(device);
         CheckImGuiTexturedDraw(device);
         CheckMatrixUniformOrientation(device);
@@ -610,6 +612,28 @@ internal static class Program
             return pixels;
         }
 
+        // The same draw turned about the middle of its own box. Separate from Render so the
+        // rotation is the only thing that differs.
+        byte[] RenderRotated()
+        {
+            var cb = device.AcquireCommandBuffer();
+            cb.SetRenderTarget(target);
+            cb.SetViewport(new Viewport(0, 0, size, size));
+            cb.Clear(ClearOptions.Color, new ColorRgba(0f, 0f, 0f));
+            batch.Begin(cb, null, projection);
+            var white = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(255, 255, 255), Vector2.One, new AposColor(255, 255, 255));
+            var red = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(255, 0, 0), Vector2.One, new AposColor(255, 0, 0));
+            Vector2 half = font.MeasureString(text, fontSize) * 0.5f;
+            batch.DrawString(font, text, at, fontSize, white, red, 26f, 0.6f, half);
+            batch.End();
+            cb.SetRenderTarget(null);
+            device.Submit(cb);
+
+            var pixels = new byte[size * size * 4];
+            device.ReadTexture(target.ColorTexture!, 0, 0, size, size, pixels);
+            return pixels;
+        }
+
         var plain = Render(outlined: false, 0f);
         var outlined = Render(outlined: true, 26f);
 
@@ -643,7 +667,426 @@ internal static class Program
         }
         Report("TEXT", $"the fill still shows through the outline ({whiteInOutlined} white pixels)", whiteInOutlined > 500);
 
+        // A cache is only correct if a warm draw equals a cold one. The arms below are drawn in an
+        // order that makes the first one cold for every glyph it touches and the second warm, and
+        // the two images have to match exactly - a replay that turned the geometry wrongly, or
+        // that handed back an entry built for another size, would show up here as a diff.
+        var cold = Render(outlined: true, 26f);
+        var warm = Render(outlined: true, 26f);
+        int diff = 0, worst = 0;
+        for (int i = 0; i < cold.Length; i++)
+        {
+            int d = Math.Abs(cold[i] - warm[i]);
+            if (d != 0) diff++;
+            if (d > worst) worst = d;
+        }
+        Report("TEXT", $"a warm outlined draw is pixel-identical to a cold one ({diff} channels differ, worst {worst})", diff == 0);
+
+        // The replay turns a cached stroke about the pen rather than rebuilding it there, so a
+        // rotated draw is where a frame that was stored wrongly would land off the letter. Drawn
+        // after a straight one so it is a hit rather than a build.
+        var turned = RenderRotated();
+        int turnedRed = 0, turnedWhite = 0;
+        for (int i = 0; i < turned.Length; i += 4)
+        {
+            if (turned[i] > 150 && turned[i + 1] < 90 && turned[i + 2] < 90) turnedRed++;
+            if (turned[i] > 200 && turned[i + 1] > 200 && turned[i + 2] > 200) turnedWhite++;
+        }
+        Report("TEXT", $"a turned draw replays the stroke onto the glyph ({turnedRed} red, {turnedWhite} white pixels)",
+            turnedRed > 500 && turnedWhite > 500);
+
+        // Keying the size is what keeps a cached stroke from being handed to text drawn at another
+        // one. A miss here would be invisible as a stale hit only if the sizes happened to agree,
+        // so the same string is drawn small enough to be a different stroke and the red is counted
+        // where it lands - a hit on the big entry would put the stroke in the wrong place.
+        byte[] RenderSized(float at_, float fontSize_)
+        {
+            var cb = device.AcquireCommandBuffer();
+            cb.SetRenderTarget(target);
+            cb.SetViewport(new Viewport(0, 0, size, size));
+            cb.Clear(ClearOptions.Color, new ColorRgba(0f, 0f, 0f));
+            batch.Begin(cb, null, projection);
+            var white = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(255, 255, 255), Vector2.One, new AposColor(255, 255, 255));
+            var red = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(255, 0, 0), Vector2.One, new AposColor(255, 0, 0));
+            batch.DrawString(font, text, new Vector2(at_, at_), fontSize_, white, red, fontSize_ * 26f / 150f);
+            batch.End();
+            cb.SetRenderTarget(null);
+            device.Submit(cb);
+            var pixels = new byte[size * size * 4];
+            device.ReadTexture(target.ColorTexture!, 0, 0, size, size, pixels);
+            return pixels;
+        }
+
+        static (int Red, int RedTop, int RedBottom) RedSpread(byte[] px, int size)
+        {
+            int red = 0, top = 0, bottom = 0;
+            for (int i = 0; i < px.Length; i += 4)
+            {
+                if (px[i] > 150 && px[i + 1] < 90 && px[i + 2] < 90)
+                {
+                    red++;
+                    int y = i / 4 / size;
+                    if (y < size / 2) top++; else bottom++;
+                }
+            }
+            return (red, top, bottom);
+        }
+
+        var big = RedSpread(RenderSized(30f, 150f), size);
+        var small = RedSpread(RenderSized(100f, 30f), size);
+        // The small draw is a fifth the size, so its stroke has to sit where the small glyph is:
+        // well inside the box the big one filled. Counted as a spread rather than an exact rect,
+        // because what a stale hit would do is put a large stroke where a small letter should be.
+        Report("TEXT", $"a stroke is sized by the draw, not reused across sizes ({big.Red} red big, {small.Red} red small)",
+            big.Red > 500 && small.Red > 100 && small.Red < big.Red);
+
+        // MSDF's two known artifacts, drawn at the size the game uses them. A stem thinner than
+        // the field's range is the classic dropout - the median of three channels can round a hair
+        // line away where all three disagree - and a corner is where they agree least. Both are
+        // silent when they go wrong: the text simply loses ink no check would notice from a single
+        // lit-pixel count, so ink is measured where the shapes are thinnest.
+        byte[] RenderText(string s, float at_, float size_)
+        {
+            var cb = device.AcquireCommandBuffer();
+            cb.SetRenderTarget(target);
+            cb.SetViewport(new Viewport(0, 0, size, size));
+            cb.Clear(ClearOptions.Color, new ColorRgba(0f, 0f, 0f));
+            batch.Begin(cb, null, projection);
+            var w = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(255, 255, 255), Vector2.One, new AposColor(255, 255, 255));
+            batch.DrawString(font, s, new Vector2(at_), size_, w);
+            batch.End();
+            cb.SetRenderTarget(null);
+            device.Submit(cb);
+            var outPx = new byte[size * size * 4];
+            device.ReadTexture(target.ColorTexture!, 0, 0, size, size, outPx);
+            return outPx;
+        }
+
+        static int Lit(byte[] px)
+        {
+            int n = 0;
+            for (int i = 0; i < px.Length; i += 4)
+                if (px[i] > 60 || px[i + 1] > 60 || px[i + 2] > 60) n++;
+            return n;
+        }
+
+        // Thin stems: every one of these is a near-hairline or a corner at 18 px, which is the
+        // size the game draws at. If the field dropped them they would simply not be there.
+        int thin = Lit(RenderText("1 7 11 l I | i j", 8f, 18f));
+        Report("TEXT", $"thin stems and corners keep their ink at 18px ({thin} lit pixels)", thin > 150);
+
+        // The shade blocks, which are a solid fill with a counter cut out of it - the densest ink
+        // a glyph can have, and the case an outline has the most to erode.
+        int shade = Lit(RenderText("░▒▓", 8f, 40f));
+        Report("TEXT", $"the shade blocks keep their ink ({shade} lit pixels)", shade > 600);
+
+        // A glow is the one thing a glyph could not do before: a glyph's distance was hardcoded
+        // to zero, so the blur arm read a number that never varied and the glow came out blank.
+        // The blur's own band is the outline width, and the arm paints the fill across whatever
+        // band it is given - so a glow is asked for with no outline, leaving the whole gaussian
+        // to reach outward. A glow that lights pixels the plain draw leaves dark, and a glow of
+        // zero that matches the plain draw exactly, together say the blur is reading the field
+        // rather than a constant.
+        byte[] RenderGlow(float sigma)
+        {
+            var cb = device.AcquireCommandBuffer();
+            cb.SetRenderTarget(target);
+            cb.SetViewport(new Viewport(0, 0, size, size));
+            cb.Clear(ClearOptions.Color, new ColorRgba(0f, 0f, 0f));
+            batch.Begin(cb, null, projection);
+            var body = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(255, 255, 255), Vector2.One, new AposColor(255, 255, 255));
+            batch.DrawString(font, text, at, fontSize, body, body, 0f, glow: sigma);
+            batch.End();
+            cb.SetRenderTarget(null);
+            device.Submit(cb);
+            var outPx = new byte[size * size * 4];
+            device.ReadTexture(target.ColorTexture!, 0, 0, size, size, outPx);
+            return outPx;
+        }
+
+        byte[] noGlow = RenderGlow(0f);
+        byte[] withGlow = RenderGlow(14f);
+        int noGlowDiff = 0;
+        for (int i = 0; i < plain.Length; i++)
+        {
+            if (Math.Abs(plain[i] - noGlow[i]) > 8) noGlowDiff++;
+        }
+        Report("TEXT", $"a glow of zero is the plain anti-aliased draw ({noGlowDiff} channels differ)",
+            noGlowDiff < plain.Length / 200);
+
+        int glowPlainLit = Lit(noGlow), glowLit = Lit(withGlow);
+        Report("TEXT", $"a glow lights pixels beyond the glyph ({glowPlainLit} -> {glowLit} lit)",
+            glowLit > glowPlainLit * 3 / 2);
+
         DrainGlErrors("outlined text");
+    }
+
+    /// <summary>
+    /// Every texture the batcher binds, drawn in one batch and read back.
+    ///
+    /// The batch binds seven samplers and GL hands the units out in first-sample order, so which
+    /// unit a texture lands on is decided by the order the shader happens to sample things in.
+    /// Nothing reports a mistake: a sampler left on the wrong unit reads whatever is bound there
+    /// and draws a picture that is wrong rather than empty. A glyph drawn on its own therefore
+    /// proves only that the glyph's own sampler was right.
+    ///
+    /// This is the case that catches it. Text is the newest arm and the one whose sampler was
+    /// added last, so it is drawn alongside every other arm at once - an SVG fill and a
+    /// non-zero path fill (the band and curve tables), an even-odd path (the same tables, the
+    /// other rule), an arc (its own LUT) and a ramped rectangle (the ramp texture) - and each has
+    /// to have put down ink, which none of them does if their units collided.
+    /// </summary>
+    private static void CheckSamplerUnits(GlGraphicsDevice device)
+    {
+        const int size = 256;
+        string fontPath = Path.Combine(AppContext.BaseDirectory, "source-code-pro-medium.ttf");
+        if (!File.Exists(fontPath))
+        {
+            Report("SAMPLERS", $"font present at {fontPath}", false);
+            return;
+        }
+
+        using var font = new Apos.Shapes.ShapeFont(File.ReadAllBytes(fontPath));
+        using var batch = new Apos.Shapes.ShapeBatch(device, warmup: false);
+        using var target = device.CreateRenderTarget(
+            new RenderTargetDesc(size, size, TextureFormat.Rgba8, HasDepthStencil: false));
+        var projection = Matrix4x4.CreateOrthographicOffCenter(0, size, size, 0, 0, 1);
+
+        // A two-element document with a square in it: enough to make the batch walk its
+        // elements, which is what seats the band and curve tables for the Slug arms.
+        var svg = new Apos.Shapes.ShapeSvg(
+            "<svg viewBox=\"0 0 64 64\"><path d=\"M4 4 L60 4 L60 60 L4 60 Z\"/></svg>");
+
+        static Apos.Shapes.Gradient Flat(byte r, byte g, byte b)
+            => new(Vector2.Zero, new AposColor(r, g, b), Vector2.One, new AposColor(r, g, b));
+
+        var white = Flat(255, 255, 255);
+        var red = Flat(255, 0, 0);
+        var green = Flat(0, 255, 0);
+        var blue = Flat(0, 0, 255);
+        var yellow = Flat(255, 255, 0);
+        // A gradient whose alpha rides a ramp, so the ramp texture has to be bound and read.
+        var ramped = new Apos.Shapes.Gradient(
+            new Vector2(10, 190), new AposColor(255, 255, 0), new Vector2(110, 240), new AposColor(255, 255, 0),
+            new Apos.Shapes.Ramp((0f, 1f), (1f, 0f)));
+
+        var cb = device.AcquireCommandBuffer();
+        cb.SetRenderTarget(target);
+        cb.SetViewport(new Viewport(0, 0, size, size));
+        cb.Clear(ClearOptions.Color, new ColorRgba(0f, 0f, 0f));
+        batch.Begin(cb, null, projection);
+
+        // One batch for all five, which is the point: it is the batch that decides the units, and
+        // five separate batches would each bind the same textures to the same units by luck.
+        batch.DrawSvg(svg, new Vector2(8, 8), 60f, white);
+        batch.DrawArc(new Vector2(190, 50), 0f, MathF.PI * 1.5f, 40f, 8f, red, red);
+        batch.DrawString(font, "Ag", new Vector2(8, 90), 56f, green);
+        batch.BeginShapePath(Apos.Shapes.FillRule.EvenOdd);
+        batch.ShapeMoveTo(new Vector2(140, 120));
+        batch.ShapeLineTo(new Vector2(210, 120));
+        batch.ShapeLineTo(new Vector2(210, 190));
+        batch.ShapeLineTo(new Vector2(140, 190));
+        batch.ShapeClose();
+        batch.ShapeMoveTo(new Vector2(170, 150));
+        batch.ShapeLineTo(new Vector2(230, 150));
+        batch.ShapeLineTo(new Vector2(230, 210));
+        batch.ShapeLineTo(new Vector2(170, 210));
+        batch.ShapeClose();
+        Apos.Shapes.ShapePath path = batch.EndShapePath();
+        batch.FillShape(path, blue);
+        batch.DrawRectangle(new Vector2(10, 190), new Vector2(100, 50), ramped, ramped, 0f, default);
+
+        batch.End();
+        cb.SetRenderTarget(null);
+        device.Submit(cb);
+        var px = new byte[size * size * 4];
+        device.ReadTexture(target.ColorTexture!, 0, 0, size, size, px);
+
+        // Counted by colour over the whole frame rather than in a box per draw. The five draws
+        // are handed five colours no two of them share, so a region that reads its neighbour's
+        // texture shows up as a colour with no ink of its own - and counting by colour means the
+        // check is about which texture was read, not about where a quad landed.
+        int litWhite = 0, litRed = 0, litGreen = 0, litBlue = 0, litYellow = 0;
+        for (int i = 0; i < px.Length; i += 4)
+        {
+            int r = px[i], g = px[i + 1], b = px[i + 2];
+            if (r > 200 && g > 200 && b > 200) litWhite++;
+            else if (r > 150 && g < 90 && b < 90) litRed++;
+            else if (g > 150 && r < 90 && b < 90) litGreen++;
+            else if (b > 150 && r < 90 && g < 90) litBlue++;
+            else if (r > 150 && g > 150 && b < 90) litYellow++;
+        }
+
+        Report("SAMPLERS", $"the SVG fill drew beside everything else ({litWhite} white pixels)", litWhite > 500);
+        Report("SAMPLERS", $"the arc drew beside everything else ({litRed} red pixels)", litRed > 500);
+        Report("SAMPLERS", $"the even-odd path fill drew beside everything else ({litBlue} blue pixels)", litBlue > 500);
+        // The one that matters: text is the newest arm and the sampler added last, so a unit it
+        // collided with another arm's would leave it reading that arm's texture in its colour.
+        Report("SAMPLERS", $"MSDF text drew beside everything else ({litGreen} green pixels)", litGreen > 200);
+        Report("SAMPLERS", $"the ramped rectangle drew beside everything else ({litYellow} yellow pixels)", litYellow > 200);
+
+        DrainGlErrors("sampler units");
+    }
+
+    /// <summary>
+    /// What an outline costs, split three ways: the CPU building the stroke's geometry, the batch
+    /// handing that geometry to the driver, and the GPU drawing it.
+    ///
+    /// The split is the whole point. A fill is one quad the shader solves, while an outline is real
+    /// geometry - every contour flattened and stroked into quads - so the two are slow for entirely
+    /// different reasons and a fix for one does nothing for the other. Timing the DrawString loop
+    /// alone gives the build, batch.End gives the upload, and a glFinish gives what the driver spent.
+    ///
+    /// The line count and size match the debug overlay that runs every frame in the game, which is
+    /// the outlined text a player is actually paying for.
+    /// </summary>
+    private static void MeasureTextStrokeCost(GlGraphicsDevice device)
+    {
+        const int size = 256;
+        const int lines = 9;
+        const int frames = 30;
+        string fontPath = Path.Combine(AppContext.BaseDirectory, "source-code-pro-medium.ttf");
+        if (!File.Exists(fontPath))
+        {
+            Report("COST", $"font present at {fontPath}", false);
+            return;
+        }
+
+        using var font = new Apos.Shapes.ShapeFont(File.ReadAllBytes(fontPath));
+        using var batch = new Apos.Shapes.ShapeBatch(device, warmup: false);
+        using var target = device.CreateRenderTarget(
+            new RenderTargetDesc(size, size, TextureFormat.Rgba8, HasDepthStencil: false));
+        var projection = Matrix4x4.CreateOrthographicOffCenter(0, size, size, 0, 0, 1);
+        var white = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(255, 255, 255), Vector2.One, new AposColor(255, 255, 255));
+        var black = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(0, 0, 0), Vector2.One, new AposColor(0, 0, 0));
+        const string line = "Fps: 240.00  Frame (CPU): 4.17ms";
+
+        (double Build, double End, double Gpu) Run(bool outlined, float width)
+        {
+            double build = 0, end = 0, gpu = 0;
+            for (int f = 0; f < frames; f++)
+            {
+                var cb = device.AcquireCommandBuffer();
+                cb.SetRenderTarget(target);
+                cb.SetViewport(new Viewport(0, 0, size, size));
+                cb.Clear(ClearOptions.Color, new ColorRgba(0f, 0f, 0f));
+
+                var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                batch.Begin(cb, null, projection);
+                for (int i = 0; i < lines; i++)
+                {
+                    var at = new Vector2(4, 4 + i * 13);
+                    if (outlined) batch.DrawString(font, line, at, 12f, white, black, width);
+                    else batch.DrawString(font, line, at, 12f, white);
+                }
+                var t1 = System.Diagnostics.Stopwatch.GetTimestamp();
+                batch.End();
+                var t2 = System.Diagnostics.Stopwatch.GetTimestamp();
+                cb.SetRenderTarget(null);
+                device.Submit(cb);
+                // Drains the queue, which is the only thing that makes the driver's share visible:
+                // every GL call above is asynchronous, so without this the loop times submission.
+                _gl.Finish();
+                var t3 = System.Diagnostics.Stopwatch.GetTimestamp();
+
+                build += t1 - t0;
+                end += t2 - t1;
+                gpu += t3 - t2;
+            }
+            // Held in ticks rather than milliseconds so the three add up to the frame they came from.
+            double toMs = 1000.0 / System.Diagnostics.Stopwatch.Frequency / frames;
+            return (build * toMs, end * toMs, gpu * toMs);
+        }
+
+        // The implementation this replaced: the same string drawn eight times at one pixel offsets.
+        // Eight fills rather than one outline, so it is the honest baseline for "did outlining this
+        // text get slower than it used to be" - a question the filled arm alone cannot answer,
+        // since the old code never drew a bare fill in the first place.
+        (double Build, double End, double Gpu) RunHack()
+        {
+            ReadOnlySpan<(int, int)> offsets = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, 1), (-1, 1), (1, -1)];
+            double build = 0, end = 0, gpu = 0;
+            for (int f = 0; f < frames; f++)
+            {
+                var cb = device.AcquireCommandBuffer();
+                cb.SetRenderTarget(target);
+                cb.SetViewport(new Viewport(0, 0, size, size));
+                cb.Clear(ClearOptions.Color, new ColorRgba(0f, 0f, 0f));
+
+                var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                batch.Begin(cb, null, projection);
+                for (int i = 0; i < lines; i++)
+                {
+                    var at = new Vector2(4, 4 + i * 13);
+                    foreach (var (ax, ay) in offsets)
+                        batch.DrawString(font, line, at + new Vector2(ax, ay), 12f, black);
+                    batch.DrawString(font, line, at, 12f, white);
+                }
+                var t1 = System.Diagnostics.Stopwatch.GetTimestamp();
+                batch.End();
+                var t2 = System.Diagnostics.Stopwatch.GetTimestamp();
+                cb.SetRenderTarget(null);
+                device.Submit(cb);
+                _gl.Finish();
+                var t3 = System.Diagnostics.Stopwatch.GetTimestamp();
+
+                build += t1 - t0;
+                end += t2 - t1;
+                gpu += t3 - t2;
+            }
+            double toMs = 1000.0 / System.Diagnostics.Stopwatch.Frequency / frames;
+            return (build * toMs, end * toMs, gpu * toMs);
+        }
+
+        // Falls out of nothing: the first arm bakes every glyph and grows the vertex array to hold
+        // a stroke's worth of quads, both one-time costs that would otherwise land in its total.
+        Run(false, 0f);
+
+        // Interleaved rather than run once each: a single pass over the arms lets drift land on
+        // whichever ran last, and the whole question here is how the arms compare. The build and
+        // end columns are reproducible to a few percent; the gpu column is not - a driver-side
+        // timing through a headless ANGLE context swings by an order of magnitude run to run, so
+        // it is reported for shape and not read as a figure.
+        var filled = (Build: 0.0, End: 0.0, Gpu: 0.0);
+        var hack = (Build: 0.0, End: 0.0, Gpu: 0.0);
+        var outlined = (Build: 0.0, End: 0.0, Gpu: 0.0);
+        var heavy = (Build: 0.0, End: 0.0, Gpu: 0.0);
+        const int rounds = 5;
+        for (int r = 0; r < rounds; r++)
+        {
+            var f = Run(false, 0f);
+            var k = RunHack();
+            var o = Run(true, 3f);
+            var h = Run(true, 12f);
+            filled = (filled.Build + f.Build, filled.End + f.End, filled.Gpu + f.Gpu);
+            hack = (hack.Build + k.Build, hack.End + k.End, hack.Gpu + k.Gpu);
+            outlined = (outlined.Build + o.Build, outlined.End + o.End, outlined.Gpu + o.Gpu);
+            heavy = (heavy.Build + h.Build, heavy.End + h.End, heavy.Gpu + h.Gpu);
+        }
+        double avg = 1.0 / rounds;
+        filled = (filled.Build * avg, filled.End * avg, filled.Gpu * avg);
+        hack = (hack.Build * avg, hack.End * avg, hack.Gpu * avg);
+        outlined = (outlined.Build * avg, outlined.End * avg, outlined.Gpu * avg);
+        heavy = (heavy.Build * avg, heavy.End * avg, heavy.Gpu * avg);
+
+        static string Row(string label, (double Build, double End, double Gpu) a) =>
+            $"{label,-16} build {a.Build,7:0.000} ms  end {a.End,6:0.000} ms  gpu {a.Gpu,6:0.000} ms  cpu {a.Build + a.End,6:0.000} ms";
+
+        Console.WriteLine($"COST: {lines} lines of {line.Length} chars, {frames} frames per sample, {rounds} rounds");
+        Console.WriteLine($"COST: {Row("filled", filled)}");
+        Console.WriteLine($"COST: {Row("8-draw hack", hack)}");
+        Console.WriteLine($"COST: {Row("outline 3px", outlined)}");
+        Console.WriteLine($"COST: {Row("outline 12px", heavy)}");
+        Console.WriteLine($"COST: outline vs fill  build x{outlined.Build / Math.Max(filled.Build, 1e-6):0.0}  cpu x{(outlined.Build + outlined.End) / Math.Max(filled.Build + filled.End, 1e-6):0.0}");
+        Console.WriteLine($"COST: outline vs hack  build x{outlined.Build / Math.Max(hack.Build, 1e-6):0.0}  cpu x{(outlined.Build + outlined.End) / Math.Max(hack.Build + hack.End, 1e-6):0.0}");
+        // The absolute numbers are this machine's and mean nothing elsewhere; the ratio to a fill
+        // is the machine-independent one, and it is what changed. The stroked-geometry outline this
+        // replaced measured 2.54 ms against a 0.068 ms fill where it was developed - about x37 -
+        // because a stroke was real geometry, one quad per flattened segment. An outline that is
+        // arithmetic on a distance cannot be more than a few percent over the fill it rings.
+        Console.WriteLine($"COST: (the reverted stroke measured outline/fill x37; a stroke that needs real geometry again would show up as this ratio climbing)");
+
+        DrainGlErrors("text stroke cost");
     }
 
     private static long TimeBatch(GlGraphicsDevice device, string label)

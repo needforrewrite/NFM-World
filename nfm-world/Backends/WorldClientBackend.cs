@@ -101,6 +101,12 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
         }
 
         private readonly ShapeBatch _sb;
+        // Everything the per-frame counters and the debug overlay draw: digits, the punctuation
+        // between them, and the labels' own letters. Baked at font load so no frame pays for a
+        // cold glyph the first time a counter ticks over to it.
+        private const string PerFrameChars =
+            "0123456789.-+%,:()/ " +
+            "FpsElapsedTimTickGTCFrme(CPU)UsUpdatLua callsTabstr-inshoicnrswzdm";
         private Dictionary<FontFamily, ShapeFont> _fonts = new();
         // Fonts that hold only symbols, stood behind every text font so an arrow or a triangle
         // draws instead of the missing glyph box. Loaded once and shared by all of them, so
@@ -141,6 +147,10 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
             {
                 font.AddFallback(symbols);
             }
+            // A glyph's distance field is baked the first time it is drawn, which for a cold
+            // glyph is most of a millisecond. Anything redrawn every frame would pay that in
+            // the frame it first appears, so the counters' own character set is paid for here.
+            font.Prewarm(PerFrameChars);
             return font;
         }
 
@@ -277,9 +287,9 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
         public void DrawStringStroke(ReadOnlySpan<char> text, int x, int y, int effectAmount = 1)
         {
             var f = _fonts[_font.FontFamily];
-            // The stroke straddles the glyph's edge, and the caller draws the fill over its inner
-            // half, so the pen is twice the band that ends up visible.
-            _sb.DrawString(f, text, new Vector2(x, y - (f.LineHeight * _font.Size)), _font.Size, _color, _color, effectAmount * 2f);
+            // The outline is a band outward from the glyph, so the width the caller names is the
+            // width that shows: the fill is not drawn over any of it.
+            _sb.DrawString(f, text, new Vector2(x, y - (f.LineHeight * _font.Size)), _font.Size, _color, _color, effectAmount);
         }
 
         public void DrawStringStrokeAligned(ReadOnlySpan<char> text, int x, int y, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top, int effectAmount = 1)
@@ -289,7 +299,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
             AlignText(text, areaWidth, areaHeight, hAlign, vAlign, ref xFloat, ref yFloat);
 
             var f = _fonts[_font.FontFamily];
-            _sb.DrawString(f, text, new Vector2(xFloat, yFloat - (f.LineHeight * _font.Size)), _font.Size, _color, _color, effectAmount * 2f);
+            _sb.DrawString(f, text, new Vector2(xFloat, yFloat - (f.LineHeight * _font.Size)), _font.Size, _color, _color, effectAmount);
         }
 
         private void AlignText(ReadOnlySpan<char> text, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign, TextVerticalAlignment vAlign, ref float x, ref float y)
