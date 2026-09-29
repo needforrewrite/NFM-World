@@ -70,10 +70,8 @@ public class FPSCounter
     public static void Render()
     {
         G.SetFont(new Font(FontFamily.NotoSans, FontStyle.Plain, 16));
-        G.SetColor(Color.Black);
-        G.DrawStringStroke(msg, 10, 25);
         G.SetColor(Color.White);
-        G.DrawString(msg, 10, 25);
+        G.DrawStringOutlined(msg, 10, 25, Color.Black, 1f);
         frames++;
     }
 }

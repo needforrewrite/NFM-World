@@ -214,14 +214,15 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
             int x = (int)(basePosition.X + (element.Position.X));
             int y = (int)(basePosition.Y + (element.Position.Y) + yOff);
 
+            G.SetColor(element.Foreground ?? TextStyles.ForegroundColor);
             if ((element.Stroke ?? TextStyles.StrokeColor) is { } stroke)
             {
-                G.SetColor(stroke);
-                G.DrawStringStroke(element.Text, x, y);
+                G.DrawStringOutlined(element.Text, x, y, stroke, 1f);
             }
-            
-            G.SetColor(element.Foreground ?? TextStyles.ForegroundColor);
-            G.DrawString(element.Text, x, y);
+            else
+            {
+                G.DrawString(element.Text, x, y);
+            }
         }
     }
 

@@ -284,22 +284,20 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
             _sb.DrawString(f, text, new Vector2(xFloat, yFloat - (f.LineHeight * _font.Size)), _font.Size, _color);
         }
 
-        public void DrawStringStroke(ReadOnlySpan<char> text, int x, int y, int effectAmount = 1)
+        public void DrawStringOutlined(ReadOnlySpan<char> text, int x, int y, Color outline, float outlineWidth)
         {
             var f = _fonts[_font.FontFamily];
-            // The outline is a band outward from the glyph, so the width the caller names is the
-            // width that shows: the fill is not drawn over any of it.
-            _sb.DrawString(f, text, new Vector2(x, y - (f.LineHeight * _font.Size)), _font.Size, _color, _color, effectAmount);
+            _sb.DrawString(f, text, new Vector2(x, y - (f.LineHeight * _font.Size)), _font.Size, _color, outline * _alpha, outlineWidth);
         }
 
-        public void DrawStringStrokeAligned(ReadOnlySpan<char> text, int x, int y, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top, int effectAmount = 1)
+        public void DrawStringOutlinedAligned(ReadOnlySpan<char> text, int x, int y, int areaWidth, int areaHeight, Color outline, float outlineWidth, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top)
         {
             float xFloat = x;
             float yFloat = y;
             AlignText(text, areaWidth, areaHeight, hAlign, vAlign, ref xFloat, ref yFloat);
 
             var f = _fonts[_font.FontFamily];
-            _sb.DrawString(f, text, new Vector2(xFloat, yFloat - (f.LineHeight * _font.Size)), _font.Size, _color, _color, effectAmount);
+            _sb.DrawString(f, text, new Vector2(xFloat, yFloat - (f.LineHeight * _font.Size)), _font.Size, _color, outline * _alpha, outlineWidth);
         }
 
         private void AlignText(ReadOnlySpan<char> text, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign, TextVerticalAlignment vAlign, ref float x, ref float y)

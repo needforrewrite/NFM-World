@@ -22,6 +22,7 @@ using NFMWorld.Platform.SDL3;
 using NFMWorld.UI;
 using NFMWorld.Util;
 using NFMWorldLibrary;
+using NFMWorldLibrary.Gamemodes.DotNet;
 using NFMWorldLibrary.Util;
 using Keys = NFMWorld.DriverInterface.Keys;
 using Logging = NFMWorldLibrary.Logging;
@@ -760,6 +761,11 @@ public class WorldGame : IDisposable, IGameHost
         // Dispose any phases that were popped/replaced this frame.
         // Must happen after all game logic to avoid disposal during event handlers.
         GameSparker.Phases.FlushDisposals();
+
+        // A disposed race phase may have released a gamemode plugin. Checked here rather
+        // than where the release happens: that frame's stack is gone by now, so a forced
+        // collection can actually see whether the assembly was let go.
+        PluginUnloadVerifier.Verify();
     }
 
     private void Initialize()
@@ -1046,14 +1052,11 @@ public class WorldGame : IDisposable, IGameHost
             {
                 const int x = 250;
 
-                G.SetColor(new Color(0, 0, 0));
                 var messageString = FrameTrace.GetMessageString();
-                
+
                 G.SetFont(new Font(FontFamily.NotoSans, FontStyle.Plain, 16));
-                G.SetColor(Color.Black);
-                G.DrawStringStroke(messageString, 10, x);
                 G.SetColor(Color.White);
-                G.DrawString(messageString, 10, x);
+                G.DrawStringOutlined(messageString, 10, x, Color.Black, 1f);
             }
         }
 

@@ -32,10 +32,8 @@ public static class YogaDebugger
         // draw mouse position text
         G.SetFont(new Font(FontFamily.RobotoMono, FontStyle.Plain, 16));
         var mousePosText = $"Mouse: ({(int)_mousePosition.X}, {(int)_mousePosition.Y})";
-        G.SetColor(Color.White);
-        G.DrawStringStroke(mousePosText, (int)_mousePosition.X + 12, (int)_mousePosition.Y + 12);
         G.SetColor(Color.Magenta);
-        G.DrawString(mousePosText, (int)_mousePosition.X + 12, (int)_mousePosition.Y + 12);
+        G.DrawStringOutlined(mousePosText, (int)_mousePosition.X + 12, (int)_mousePosition.Y + 12, Color.White, 1f);
     }
 
     private static void RenderPage3()
@@ -87,10 +85,8 @@ public static class YogaDebugger
                                   """;
                 G.SetFont(new Font(FontFamily.RobotoMono, FontStyle.Plain, 24));
                 var indent = new string(' ', depth * 2);
-                G.SetColor(Color.White);
-                G.DrawStringStroke(indent + layoutInfo, 12, y);
                 G.SetColor(color);
-                G.DrawString(indent + layoutInfo, 12, y);
+                G.DrawStringOutlined(indent + layoutInfo, 12, y, Color.White, 1f);
                 y += 24;
             }
 
@@ -155,10 +151,8 @@ public static class YogaDebugger
                     // draw text + outline with element name
                     G.SetFont(new Font(FontFamily.RobotoMono, FontStyle.Plain, 24));
                     var info = $"{node.Name ?? ""}[{node.GetType().Name}]";
-                    G.SetColor(Color.White);
-                    G.DrawStringStroke(info, (int)node.LayoutBorderPosition.X, (int)node.LayoutBorderPosition.Y - 12);
                     G.SetColor(color);
-                    G.DrawString(info, (int)node.LayoutBorderPosition.X, (int)node.LayoutBorderPosition.Y - 12);
+                    G.DrawStringOutlined(info, (int)node.LayoutBorderPosition.X, (int)node.LayoutBorderPosition.Y - 12, Color.White, 1f);
                 }
 
                 foreach (var child in visual.VisualChildren)
@@ -193,10 +187,8 @@ public static class YogaDebugger
                 var info = $"Component: {node.Name ?? ""}[{node.GetType().Name}] from {(debugInfo.CtorCallerFilePath != "" ? Path.GetRelativePath(slnDir, debugInfo.CtorCallerFilePath) : "")}:{debugInfo.CtorCallerMemberName}:{debugInfo.CtorCallerLineNumber}";
                 var prefix = new string(' ', i * 2);
                 
-                G.SetColor(Color.White);
-                G.DrawStringStroke(prefix + info, 12, 24 + (i * 24));
                 G.SetColor(color);
-                G.DrawString(prefix + info, 12, 24 + (i * 24));
+                G.DrawStringOutlined(prefix + info, 12, 24 + (i * 24), Color.White, 1f);
             }
             
             var lastEntry = mouseOverNodeTree[^1];
@@ -208,10 +200,8 @@ public static class YogaDebugger
                               Padding: {lastEntry.LayoutPaddingSize.X}px x {lastEntry.LayoutPaddingSize.Y}px at ({lastEntry.LayoutPaddingPosition.X}, {lastEntry.LayoutPaddingPosition.Y})
                               Content: {lastEntry.LayoutContentSize.X}px x {lastEntry.LayoutContentSize.Y}px at ({lastEntry.LayoutContentPosition.X}, {lastEntry.LayoutContentPosition.Y})
                               """;
-            G.SetColor(Color.White);
-            G.DrawStringStroke(layoutInfo, 12, 24 + (mouseOverNodeTree.Length * 24));
             G.SetColor(Color.Cyan);
-            G.DrawString(layoutInfo, 12, 24 + (mouseOverNodeTree.Length * 24));
+            G.DrawStringOutlined(layoutInfo, 12, 24 + (mouseOverNodeTree.Length * 24), Color.White, 1f);
             
             // draw margin, padding, border, content
             G.SetColor(Color.Gray with { A = 128 });
@@ -327,30 +317,20 @@ public static class YogaDebugger
             G.FillRect((int)content.X, (int)content.Y, (int)content.Width, (int)content.Height);
             
             G.SetFont(new Font(FontFamily.RobotoMono, FontStyle.Plain, 16));
-            G.SetColor(Color.Black);
-            G.DrawStringStroke("content", (int)content.X, (int)content.Y + 16);
             G.SetColor(Color.White);
-            G.DrawString("content", (int)content.X, (int)content.Y + 16);
+            G.DrawStringOutlined("content", (int)content.X, (int)content.Y + 16, Color.Black, 1f);
 
             G.SetFont(new Font(FontFamily.RobotoMono, FontStyle.Plain, 16));
             var contentSizeText = $"{(int)lastEntry.LayoutContentSize.X}px x {(int)lastEntry.LayoutContentSize.Y}px";
-            G.SetColor(Color.Black);
-            G.DrawStringStrokeAligned(
-                contentSizeText,
-                (int)content.X,
-                (int)content.Y,
-                (int)content.Width,
-                (int)content.Height,
-                TextHorizontalAlignment.Center,
-                TextVerticalAlignment.Center
-            );
             G.SetColor(Color.White);
-            G.DrawStringAligned(
+            G.DrawStringOutlinedAligned(
                 contentSizeText,
                 (int)content.X,
                 (int)content.Y,
                 (int)content.Width,
                 (int)content.Height,
+                Color.Black,
+                1f,
                 TextHorizontalAlignment.Center,
                 TextVerticalAlignment.Center
             );
@@ -370,34 +350,20 @@ public static class YogaDebugger
         }
         
         G.SetFont(new Font(FontFamily.RobotoMono, FontStyle.Plain, 16));
-        G.SetColor(Color.Black);
-        G.DrawStringStroke(label, (int)area.X, (int)area.Y + 16);
         G.SetColor(Color.White);
-        G.DrawString(label, (int)area.X, (int)area.Y + 16);
+        G.DrawStringOutlined(label, (int)area.X, (int)area.Y + 16, Color.Black, 1f);
 
         // Top
-        G.SetColor(Color.Black);
-        G.DrawStringStrokeAligned($"{top:0.00}px", (int)area.X, (int)area.Y, (int)area.Width, (int)area.Height, TextHorizontalAlignment.Center);
-        G.SetColor(Color.White);
-        G.DrawStringAligned($"{top:0.00}px", (int)area.X, (int)area.Y, (int)area.Width, (int)area.Height, TextHorizontalAlignment.Center);
+        G.DrawStringOutlinedAligned($"{top:0.00}px", (int)area.X, (int)area.Y, (int)area.Width, (int)area.Height, Color.Black, 1f, TextHorizontalAlignment.Center);
 
         // Right
-        G.SetColor(Color.Black);
-        G.DrawStringStrokeAligned($"{right:0.00}px", (int)area.X, (int)area.Y, (int)area.Width, (int)area.Height, TextHorizontalAlignment.Right, TextVerticalAlignment.Center);
-        G.SetColor(Color.White);
-        G.DrawStringAligned($"{right:0.00}px", (int)area.X, (int)area.Y, (int)area.Width, (int)area.Height, TextHorizontalAlignment.Right, TextVerticalAlignment.Center);
+        G.DrawStringOutlinedAligned($"{right:0.00}px", (int)area.X, (int)area.Y, (int)area.Width, (int)area.Height, Color.Black, 1f, TextHorizontalAlignment.Right, TextVerticalAlignment.Center);
 
         // Bottom
-        G.SetColor(Color.Black);
-        G.DrawStringStrokeAligned($"{bottom:0.00}px", (int)area.X, (int)area.Y, (int)area.Width, (int)area.Height, TextHorizontalAlignment.Center, TextVerticalAlignment.Bottom);
-        G.SetColor(Color.White);
-        G.DrawStringAligned($"{bottom:0.00}px", (int)area.X, (int)area.Y, (int)area.Width, (int)area.Height, TextHorizontalAlignment.Center, TextVerticalAlignment.Bottom);
+        G.DrawStringOutlinedAligned($"{bottom:0.00}px", (int)area.X, (int)area.Y, (int)area.Width, (int)area.Height, Color.Black, 1f, TextHorizontalAlignment.Center, TextVerticalAlignment.Bottom);
 
         // Left
-        G.SetColor(Color.Black);
-        G.DrawStringStrokeAligned($"{left:0.00}px", (int)area.X, (int)area.Y, (int)area.Width, (int)area.Height, TextHorizontalAlignment.Left, TextVerticalAlignment.Center);
-        G.SetColor(Color.White);
-        G.DrawStringAligned($"{left:0.00}px", (int)area.X, (int)area.Y, (int)area.Width, (int)area.Height, TextHorizontalAlignment.Left, TextVerticalAlignment.Center);
+        G.DrawStringOutlinedAligned($"{left:0.00}px", (int)area.X, (int)area.Y, (int)area.Width, (int)area.Height, Color.Black, 1f, TextHorizontalAlignment.Left, TextVerticalAlignment.Center);
     }
 
     private static void FillRectExceptForRect(RectangleF outer, RectangleF inner)

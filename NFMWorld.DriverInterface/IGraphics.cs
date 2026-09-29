@@ -114,17 +114,22 @@ public interface IGraphics
     IFontMetrics GetFontMetrics(Font font);
     void DrawString(ReadOnlySpan<char> text, int x, int y);
     void DrawStringAligned(ReadOnlySpan<char> text, int x, int y, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top);
-    void DrawStringStrokeAligned(ReadOnlySpan<char> text, int x, int y, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top, int effectAmount = 1);
-    
-    void DrawStringAligned(ReadOnlySpan<char> text, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top) 
+    void DrawStringOutlinedAligned(ReadOnlySpan<char> text, int x, int y, int areaWidth, int areaHeight, Color outline, float outlineWidth, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top);
+
+    void DrawStringAligned(ReadOnlySpan<char> text, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top)
         => DrawStringAligned(text, 0, 0, areaWidth, areaHeight, hAlign, vAlign);
 
-    void DrawStringStrokeAligned(ReadOnlySpan<char> text, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top, int effectAmount = 1)
-        => DrawStringStrokeAligned(text, 0, 0, areaWidth, areaHeight, hAlign, vAlign, effectAmount);
+    void DrawStringOutlinedAligned(ReadOnlySpan<char> text, int areaWidth, int areaHeight, Color outline, float outlineWidth, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top)
+        => DrawStringOutlinedAligned(text, 0, 0, areaWidth, areaHeight, outline, outlineWidth, hAlign, vAlign);
 
-    void DrawStringStroke(ReadOnlySpan<char> text, int x, int y, int effectAmount = 1)
-    {
-    }
+    /// <summary>
+    /// Draws text in the current colour with a band of <paramref name="outline"/> painted around it.
+    /// Both come out of one draw: drawing a stroke behind a fill leaves the fill's own antialiased
+    /// edge sitting on the band, which at a narrow outline averages the two colours together and
+    /// shows as a gap between a letter and its outline.
+    /// </summary>
+    /// <param name="outlineWidth">Width of the band, in pixels, outward from each glyph's edge.</param>
+    void DrawStringOutlined(ReadOnlySpan<char> text, int x, int y, Color outline, float outlineWidth);
 
     void FillOval(int x, int y, int width, int height)
     {

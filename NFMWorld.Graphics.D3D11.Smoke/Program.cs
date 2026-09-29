@@ -49,6 +49,7 @@ internal static unsafe class Program
             return 0;
         }
 
+
         using var window = SmokeWindow.Create(Width, Height);
         using var device = D3D11GraphicsDevice.Create(new D3D11DeviceDescription(
             WindowHandle: window.Handle,
@@ -1055,6 +1056,8 @@ internal static unsafe class Program
         const float fontSize = 16f;
         string text = "Fps: 240.11\nFrames: 13\nUpdates: 13\nFrame (CPU): 4ms\nresize: 0";
 
+        string traced = text;
+
         // The batch's default projection is built from the swapchain, not this off-screen target, so
         // the target's own size is passed: world units to pixels at one to one, origin top left.
         var projection = Matrix4x4.CreateOrthographicOffCenter(0, size, size, 0, 0, 1);
@@ -1062,9 +1065,10 @@ internal static unsafe class Program
         // Mid grey so the background is a value of its own, and the outline a third one.
         var background = new ColorRgba(0.5f, 0.5f, 0.5f, 1f);
 
-        byte[] Render(bool outlined, float emSize)
+        byte[] Render(bool outlined, float emSize, bool fill = true, float penX = 10, float aaSize = 1.5f,
+            float outlineWidth = 1f)
         {
-            var pen = new Vector2(10, 12);
+            var pen = new Vector2(penX, 12);
             var cb = device.AcquireCommandBuffer();
             cb.SetRenderTarget(target);
             cb.SetViewport(new Viewport(0, 0, size, size));
@@ -1072,11 +1076,16 @@ internal static unsafe class Program
             batch.Begin(cb, null, projection);
             var white = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(255, 255, 255), Vector2.One, new AposColor(255, 255, 255));
             var black = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(0, 0, 0), Vector2.One, new AposColor(0, 0, 0));
+            // One draw carrying the fill and the band together, which is what DrawStringOutlined
+            // does. The fill-only arm is the plain DrawString the ink bound is checked against.
             if (outlined)
             {
-                batch.DrawString(font, text, pen, emSize, black, black, 1f);
+                batch.DrawString(font, traced, pen, emSize, white, black, outlineWidth, aaSize: aaSize);
             }
-            batch.DrawString(font, text, pen, emSize, white);
+            else if (fill)
+            {
+                batch.DrawString(font, traced, pen, emSize, white, aaSize: aaSize);
+            }
             batch.End();
             cb.SetRenderTarget(null);
             device.Submit(cb);
@@ -1109,7 +1118,79 @@ internal static unsafe class Program
             Console.WriteLine("MSDF: '#' fill, 'o' outline, '.' partial, ' ' background:");
             Console.Write(Ascii(Render(true, fontSize), size));
         }
+
+        CheckOutlineCoverage(Render, fontSize, size);
     }
+
+    /// <summary>
+    /// The counter's outline must reach the letter it belongs to, with no seam between them.
+    ///
+    /// Outlined text is one draw carrying the fill and the band. Drawn as a stroke behind a fill,
+    /// the fill's own antialiased edge lands on the band and averages the two colours over the
+    /// fade width. At the counter's 1px outline that width is the whole band, so the seam pixel is a
+    /// half-and-half mix of the two, and black over white at half each is the mid grey of the
+    /// background behind both - a letter apparently standing clear of its own outline.
+    ///
+    /// What is tested is that pattern rather than the value, because the background is that same mid
+    /// grey: only the fault has a dark pixel on one side and a bright one on the other, since
+    /// background on its own has background around it.
+    ///
+    /// The pen is swept across a pixel because the fault only bites at some subpixel phases; a
+    /// whole-pixel pen hides it entirely.
+    /// </summary>
+    private static void CheckOutlineCoverage(Func<bool, float, bool, float, float, float, byte[]> render,
+        float fontSize, int size)
+    {
+        int gaps = 0;
+        for (int phase = 0; phase < 4; phase++)
+        {
+            var pixels = render(true, fontSize, false, 10f + phase / 4f, 1.5f, 1f);
+            var found = Gaps(pixels, size);
+            gaps += found.Count;
+            if (phase == 0 && gaps > 0)
+            {
+                foreach (var (x, y) in found.Take(4))
+                    Console.WriteLine($"           outline seam at ({x},{y}): " +
+                                      $"{Value(pixels, size, x - 1, y)} {Value(pixels, size, x, y)} {Value(pixels, size, x + 1, y)}");
+            }
+        }
+
+        Report("MSDF", $"the counter's outline meets its fill with no seam between them " +
+                       $"({gaps} seam pixels over four subpixel pens)", gaps == 0);
+    }
+
+    /// <summary>
+    /// The outline, a mid-grey pixel, then the fill along a row - the gap the counter shows. The
+    /// background is the same mid grey as the fault's pixel, so the pattern is what is tested rather
+    /// than the value: background on its own has background on both sides, and only the fault has ink.
+    /// </summary>
+    private static List<(int X, int Y)> Gaps(byte[] pixels, int size)
+    {
+        var found = new List<(int, int)>();
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 1; x < size - 1; x++)
+            {
+                int gap = Value(pixels, size, x, y);
+                if (gap < 110 || gap > 146) continue;
+
+                // Dark outline on one side, the fill on the other: the black pixel the counter shows
+                // standing clear of the letter it belongs to. The outline's own outer edge cannot
+                // match, since the side away from it there is background rather than the fill.
+                foreach (int step in new[] { -1, 1 })
+                {
+                    if (Value(pixels, size, x - step, y) > 60) continue;
+                    if (Value(pixels, size, x + step, y) < 200) continue;
+                    found.Add((x, y));
+                    break;
+                }
+            }
+        }
+        return found;
+    }
+
+    private static int Value(byte[] pixels, int size, int x, int y) =>
+        pixels[(y * size + x) * 4];
 
     // The counter's five lines at 16px come to ~1180 lit pixels with a centred band and ~2890 with an
     // outward one. The bound sits between the two, well clear of either.

@@ -347,10 +347,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         {
             G.SetFont(new Font(FontFamily.NotoSans, FontStyle.Plain, 26));
             G.SetColor(new Color(255, 255, 255));
-            G.DrawStringAligned("Waiting for other players to load...", 0, 150, (int)G.Viewport.X, (int)G.Viewport.Y, TextHorizontalAlignment.Center);
-
-            G.SetColor(new Color(0, 0, 0));
-            G.DrawStringStrokeAligned("Waiting for other players to load...", 0, 150, (int)G.Viewport.X, (int)G.Viewport.Y, TextHorizontalAlignment.Center);
+            G.DrawStringOutlinedAligned("Waiting for other players to load...", 0, 150, (int)G.Viewport.X, (int)G.Viewport.Y, new Color(0, 0, 0), 1f, TextHorizontalAlignment.Center);
         }
 
         GamemodeInstance?.Render();
