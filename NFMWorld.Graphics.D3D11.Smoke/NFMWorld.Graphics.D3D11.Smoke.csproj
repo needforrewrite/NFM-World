@@ -14,6 +14,15 @@
         <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
         <ProjectReference Include="..\NFMWorld.Graphics.D3D11\NFMWorld.Graphics.D3D11.csproj" />
         <ProjectReference Include="..\NFMWorld.Shaders.Abstraction\NFMWorld.Shaders.Abstraction.csproj" />
+        <!-- The game's own text renderer. This is the only smoke context with working screen space
+             derivatives - the GL one runs headless ANGLE, where ddx/ddy come back 0 and every shape
+             draws hard edged - so it is the only place a glyph's AA band renders at all. -->
+        <ProjectReference Include="..\Apos.Shapes\Source\Apos.Shapes.NFMW.csproj" />
+    </ItemGroup>
+
+    <!-- The game's own font, at the size the debug counter draws it. -->
+    <ItemGroup>
+        <None Include="..\nfm-world\data\fonts\NotoSans-Regular.ttf" CopyToOutputDirectory="PreserveNewest" Visible="false" />
     </ItemGroup>
 
     <!-- The real generated bundles, produced here by the same build step the game uses. That matters

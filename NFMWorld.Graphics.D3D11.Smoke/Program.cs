@@ -22,6 +22,7 @@
 // has to be off-screen because a smoke test that puts a window on the user's desktop is a smoke test
 // that interrupts them. Nothing about the code below depends on the window being visible - flip-model
 // presents work into an unshown window, they just have nowhere to be seen.
+using System.Numerics;
 using System.Runtime.InteropServices;
 using NFMWorld.Graphics;
 using NFMWorld.Shaders;
@@ -29,6 +30,7 @@ using NFMWorld.Shaders.Generated;
 using TerraFX.Interop.DirectX;
 using TerraFX.Interop.Windows;
 using ClearOptions = NFMWorld.Graphics.ClearOptions;
+using AposColor = Maxine.Extensions.Mathematics.Color;
 
 namespace NFMWorld.Graphics.D3D11.Smoke;
 
@@ -69,6 +71,7 @@ internal static unsafe class Program
         CheckTranslationUniform(device);
         CheckDepthClearUnderWriteDisabledPipeline(device);
         CheckPresent(device);
+        CheckMsdfText(device);
 
         Console.WriteLine();
         Console.WriteLine(_failures == 0 ? "SMOKE: pass" : $"SMOKE: FAILED ({_failures} failure(s))");
@@ -1024,6 +1027,148 @@ internal static unsafe class Program
         ],
         StrideInBytes: InstanceStride,
         InstanceStepRate: 1);
+
+    /// <summary>
+    /// The game's debug counter, drawn exactly as <c>FPSCounter.Render</c> draws it: a black outlined
+    /// pass first, then the same text in white over the top. Rendered with the real text renderer and
+    /// the real shader, then read back.
+    ///
+    /// This is the only place the glyph path can be rendered at all. The GL smoke drives the same
+    /// batch but runs headless ANGLE, which hands <c>ddx</c>/<c>ddy</c> back as zero; that collapses
+    /// the AA band to a hard step, and a glyph's band is the whole subject here.
+    /// </summary>
+    private static void CheckMsdfText(D3D11GraphicsDevice device)
+    {
+        const int size = 320;
+        string fontPath = Path.Combine(AppContext.BaseDirectory, "NotoSans-Regular.ttf");
+        if (!File.Exists(fontPath))
+        {
+            Report("MSDF", $"font present at {fontPath}", false);
+            return;
+        }
+
+        var font = new Apos.Shapes.ShapeFont(File.ReadAllBytes(fontPath));
+        var batch = new Apos.Shapes.ShapeBatch(device, warmup: false);
+        using var target = device.CreateRenderTarget(new RenderTargetDesc(size, size, TextureFormat.Rgba8));
+
+        // The counter's own font and size, and the same lines it draws.
+        const float fontSize = 16f;
+        string text = "Fps: 240.11\nFrames: 13\nUpdates: 13\nFrame (CPU): 4ms\nresize: 0";
+
+        // The batch's default projection is built from the swapchain, not this off-screen target, so
+        // the target's own size is passed: world units to pixels at one to one, origin top left.
+        var projection = Matrix4x4.CreateOrthographicOffCenter(0, size, size, 0, 0, 1);
+
+        // Mid grey so the background is a value of its own, and the outline a third one.
+        var background = new ColorRgba(0.5f, 0.5f, 0.5f, 1f);
+
+        byte[] Render(bool outlined, float emSize)
+        {
+            var pen = new Vector2(10, 12);
+            var cb = device.AcquireCommandBuffer();
+            cb.SetRenderTarget(target);
+            cb.SetViewport(new Viewport(0, 0, size, size));
+            cb.Clear(ClearOptions.Color, background);
+            batch.Begin(cb, null, projection);
+            var white = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(255, 255, 255), Vector2.One, new AposColor(255, 255, 255));
+            var black = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(0, 0, 0), Vector2.One, new AposColor(0, 0, 0));
+            if (outlined)
+            {
+                batch.DrawString(font, text, pen, emSize, black, black, 1f);
+            }
+            batch.DrawString(font, text, pen, emSize, white);
+            batch.End();
+            cb.SetRenderTarget(null);
+            device.Submit(cb);
+
+            var pixels = new byte[size * size * 4];
+            device.ReadTexture(target.ColorTexture!, 0, 0, size, size, pixels);
+            return pixels;
+        }
+
+        // A glyph's AA band is centred on the edge whatever the batch's style, so the letters come
+        // out at the weight the font drew them. Asking for the band outward instead - which is what
+        // every other shape wants, and what the batch's default style says - puts the whole fade
+        // outside the glyph: the letter fills out to about 2.4x the ink at every size, and under the
+        // counter's black pass it goes nearly solid black. Pixels are the only place that shows, so
+        // the check is a bound on how much ink the counter's own text may lay down.
+        //
+        // The same decision is asserted at the vertex in SlugSmoke (a CPU suite, and the only place
+        // it can be read directly). This is the rendered counterpart, and it lives here rather than
+        // in the GL smoke because that one runs headless ANGLE, where ddx/ddy come back zero and
+        // every fade collapses to a hard step - a glyph is byte-identical there whatever the band.
+        int plainInk = Ink(Render(false, fontSize));
+        Report("MSDF", $"the counter's text drew something ({plainInk} lit pixels)", plainInk > 800);
+        Report("MSDF", $"the counter's own text keeps its weight ({plainInk} lit pixels, under {InkBound})",
+            plainInk < InkBound);
+
+        if (plainInk >= InkBound)
+        {
+            foreach (float sz in new[] { fontSize, 12.5f, 24.25f })
+                Console.WriteLine($"MSDF: at size {sz:0.###} the counter's text lights {Ink(Render(false, sz))} pixels");
+            Console.WriteLine("MSDF: '#' fill, 'o' outline, '.' partial, ' ' background:");
+            Console.Write(Ascii(Render(true, fontSize), size));
+        }
+    }
+
+    // The counter's five lines at 16px come to ~1180 lit pixels with a centred band and ~2890 with an
+    // outward one. The bound sits between the two, well clear of either.
+    private const int InkBound = 1600;
+
+    /// <summary>How many pixels carry ink.</summary>
+    private static int Ink(byte[] pixels)
+    {
+        int lit = 0;
+        for (int i = 0; i < pixels.Length; i += 4)
+            if (Math.Max(pixels[i], Math.Max(pixels[i + 1], pixels[i + 2])) > 200) lit++;
+        return lit;
+    }
+
+    /// <summary>
+    /// The frame as characters, cropping to the rows and columns that hold any shape at all.
+    /// </summary>
+    private static string Ascii(byte[] pixels, int size, List<(int X, int Y)>? marked = null)
+    {
+        var markSet = marked == null ? new HashSet<(int, int)>() : new HashSet<(int, int)>(marked);
+        int minX = size, minY = size, maxX = -1, maxY = -1;
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                int i = (y * size + x) * 4;
+                bool shape = markSet.Contains((x, y))
+                    || Math.Abs(pixels[i] - 128) > 24 || Math.Abs(pixels[i + 1] - 128) > 24 || Math.Abs(pixels[i + 2] - 128) > 24;
+                if (!shape) continue;
+                if (x < minX) minX = x;
+                if (y < minY) minY = y;
+                if (x > maxX) maxX = x;
+                if (y > maxY) maxY = y;
+            }
+        }
+        if (maxX < 0) return "(blank frame)\n";
+
+        const int pad = 4;
+        minX = Math.Max(0, minX - pad); minY = Math.Max(0, minY - pad);
+        maxX = Math.Min(size - 1, maxX + pad); maxY = Math.Min(size - 1, maxY + pad);
+
+        var sb = new System.Text.StringBuilder();
+        for (int y = minY; y <= maxY; y++)
+        {
+            sb.Append($"{y,5} ");
+            for (int x = minX; x <= maxX; x++)
+            {
+                int i = (y * size + x) * 4;
+                if (markSet.Contains((x, y))) { sb.Append('X'); continue; }
+                int lum = Math.Max(pixels[i], Math.Max(pixels[i + 1], pixels[i + 2]));
+                if (lum > 200) sb.Append('#');
+                else if (lum < 60) sb.Append('o');
+                else if (lum > 100 && lum < 160) sb.Append(' ');
+                else sb.Append('.');
+            }
+            sb.Append('\n');
+        }
+        return sb.ToString();
+    }
 }
 
 /// <summary>
