@@ -175,6 +175,42 @@ internal static class Program
         }
 
         Console.WriteLine();
+        Console.WriteLine("== an outline read off alpha stays where the letter is ==");
+        {
+            // The outline is the letter grown by its width, so it is drawn off alpha, the true
+            // distance. The median is only exact near the edge: further out it follows each edge's
+            // line past the end of the edge, and reads near a letter that is not there - at every
+            // corner, and elsewhere. Neither shows in plain text, which only reads the zero crossing.
+            //
+            // The counter's 1px outline at 16px inks everything the field puts within the band plus
+            // its fade of the edge. The bound below is a generous 1.75px, which is 5.25 texels at 48
+            // texels per em; a texel at least a texel further out than that must read outside it.
+            const float reach = 1.75f * 48f / 16f;
+            int badMedian = 0, badAlpha = 0, measured = 0;
+            foreach (char ch in "Fps:ElaedtimTckGCrm(PU)Lub,-zw0123456789.")
+            {
+                BakedGlyph bg = font.Font.Lookup(ch);
+                if (!bg.HasOutline) continue;
+                MsdfGlyph f = font.Font.Field(bg.Glyph);
+                for (int ty = 0; ty < f.Height; ty++)
+                {
+                    for (int tx = 0; tx < f.Width; tx++)
+                    {
+                        var p = new Vector2(f.PaddedMin.X + (tx + 0.5f) / f.EmPx, f.PaddedMin.Y + (ty + 0.5f) / f.EmPx);
+                        float truth = TrueDistance(bg, p, out bool inside) * f.EmPx;
+                        if (inside || truth < reach + 1f) continue;
+                        measured++;
+                        int at = (ty * f.Width + tx) * 4;
+                        if ((0.5f - Median(f.Rgba[at] / 255f, f.Rgba[at + 1] / 255f, f.Rgba[at + 2] / 255f)) * f.RangeTexels < reach) badMedian++;
+                        if ((0.5f - f.Rgba[at + 3] / 255f) * f.RangeTexels < reach) badAlpha++;
+                    }
+                }
+            }
+            Check(measured > 0 && badAlpha == 0,
+                  $"alpha reads no texel beyond the outline as inside it ({badAlpha} of {measured}; the median reads {badMedian})");
+        }
+
+        Console.WriteLine();
         Console.WriteLine("== the quad's texel rect maps onto its em box one texel to one texel ==");
         {
             // The two silent geometry faults the drawn checks cannot see. A glyph baked upright

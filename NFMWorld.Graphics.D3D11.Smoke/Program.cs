@@ -1051,10 +1051,16 @@ internal static unsafe class Program
         var font = new Apos.Shapes.ShapeFont(File.ReadAllBytes(fontPath));
         var batch = new Apos.Shapes.ShapeBatch(device, warmup: false);
         using var target = device.CreateRenderTarget(new RenderTargetDesc(size, size, TextureFormat.Rgba8));
+        // The game draws with 8x MSAA by default, and a multisampled target shades a pixel whose
+        // centre is outside a quad but some of whose samples are inside it - at the centre, with
+        // the quad's varyings extrapolated past its edge. That is resolved into the plain target to
+        // be read back.
+        using var multisampled = new D3D11RenderTarget(device, new RenderTargetDesc(size, size, TextureFormat.Rgba8), 8);
 
         // The counter's own font and size, and the same lines it draws.
         const float fontSize = 16f;
-        string text = "Fps: 240.11\nFrames: 13\nUpdates: 13\nFrame (CPU): 4ms\nresize: 0";
+        string text = "Fps: 240.11\nElapsed time: 0.05\nTick: 1200us\nGTC: 0.30us\nFrame (CPU): 4ms\n" +
+                      "Updates: 13\nFrames: 13\nLua calls: 0 (0.00ms)\nTables: 0, str-ins: 0 (0.00ms), resize: 0";
 
         string traced = text;
 
@@ -1066,13 +1072,13 @@ internal static unsafe class Program
         var background = new ColorRgba(0.5f, 0.5f, 0.5f, 1f);
 
         byte[] Render(bool outlined, float emSize, bool fill = true, float penX = 10, float aaSize = 1.5f,
-            float outlineWidth = 1f)
+            float outlineWidth = 1f, bool msaa = false, ColorRgba? back = null)
         {
-            var pen = new Vector2(penX, 12);
+            var pen = new Vector2(penX, 3.208f);
             var cb = device.AcquireCommandBuffer();
-            cb.SetRenderTarget(target);
+            cb.SetRenderTarget(msaa ? multisampled : target);
             cb.SetViewport(new Viewport(0, 0, size, size));
-            cb.Clear(ClearOptions.Color, background);
+            cb.Clear(ClearOptions.Color, back ?? background);
             batch.Begin(cb, null, projection);
             var white = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(255, 255, 255), Vector2.One, new AposColor(255, 255, 255));
             var black = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(0, 0, 0), Vector2.One, new AposColor(0, 0, 0));
@@ -1089,6 +1095,17 @@ internal static unsafe class Program
             batch.End();
             cb.SetRenderTarget(null);
             device.Submit(cb);
+
+            if (msaa)
+            {
+                unsafe
+                {
+                    device.Context->ResolveSubresource(
+                        (ID3D11Resource*)((D3D11Texture)target.ColorTexture!).Texture, 0,
+                        (ID3D11Resource*)multisampled.ColorTexture.Texture, 0,
+                        DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM);
+                }
+            }
 
             var pixels = new byte[size * size * 4];
             device.ReadTexture(target.ColorTexture!, 0, 0, size, size, pixels);
@@ -1115,86 +1132,297 @@ internal static unsafe class Program
         {
             foreach (float sz in new[] { fontSize, 12.5f, 24.25f })
                 Console.WriteLine($"MSDF: at size {sz:0.###} the counter's text lights {Ink(Render(false, sz))} pixels");
-            Console.WriteLine("MSDF: '#' fill, 'o' outline, '.' partial, ' ' background:");
-            Console.Write(Ascii(Render(true, fontSize), size));
         }
 
-        CheckOutlineCoverage(Render, fontSize, size);
+        Func<bool, float, bool, float, float, float, byte[]> draw =
+            (outlined, em, fill, penX, aa, width) => Render(outlined, em, fill, penX, aa, width);
+        // At 48px, where a stem is wide enough to have a body at all. At the counter's own 16 the
+        // letter is barely wider than the band, so every pixel of it is inside one fade or other.
+        CheckLetterKeepsItsWeight(draw, 48f, size);
+        CheckBandIsBounded(draw, fontSize, size);
+
+        var fillOnly = Render(false, fontSize, true, 10f, 1.5f, 0f);
+        // A glyph's edge fades over one pixel under the fill's own sqrt profile, which is what the
+        // old text used. Averaged over a whole edge the mean partial-coverage pixel is 2/3 of white;
+        // a smoothstep over a band instead is antisymmetric about its centre pixel, so its mean is
+        // exactly 1/2 - the same letter drawn lighter and fading away slower on both sides.
+        CheckFillEdgeProfile(Render(false, 48f, back: new ColorRgba(0f, 0f, 0f, 1f)), size);
+        var outlined = Render(true, fontSize, true, 10f, 1.5f, 1f);
+        // The outline must not leave ink standing away from the glyph. A 1px band with its fade
+        // reaches at most two pixels past the letter's own ink, so a dark pixel with no ink of the
+        // fill pass within two pixels of it is a stray - the specks the median's false near-edge
+        // readings paint outside the letter.
+        foreach (bool msaa in new[] { false, true })
+        {
+            var inkOnly = msaa ? Render(false, fontSize, true, 10f, 1.5f, 0f, msaa: true) : fillOnly;
+            var ringed = msaa ? Render(true, fontSize, true, 10f, 1.5f, 1f, msaa: true) : outlined;
+            int strays = 0;
+            var strayAt = new List<(int X, int Y)>();
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    if (Value(ringed, size, x, y) >= 110) continue;
+                    bool nearInk = false;
+                    for (int dy = -2; dy <= 2 && !nearInk; dy++)
+                        for (int dx = -2; dx <= 2 && !nearInk; dx++)
+                        {
+                            int nx = x + dx, ny = y + dy;
+                            if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
+                            if (Value(inkOnly, size, nx, ny) > 140) nearInk = true;
+                        }
+                    if (!nearInk) { strays++; if (strayAt.Count < 8) strayAt.Add((x, y)); }
+                }
+            }
+            Report("MSDF", $"the outline leaves no ink standing away from the glyph{(msaa ? " under 8x MSAA" : "")} " +
+                           $"({strays} stray pixels{(strays > 0 ? " at " + string.Join(" ", strayAt) : "")})", strays == 0);
+        }
+
+        var blue = new ColorRgba(0f, 0f, 1f, 1f);
+        CheckOutlineCoverage(penX => Render(true, fontSize, true, penX, 1.5f, 1f, back: blue), size);
+
+        // The letter's edge keeps its antialiasing over the band. Where the fill alone half covers
+        // a pixel, the outlined pass is the letter over black there, so the same coverage of white:
+        // a step between the band and the letter turns those pixels solid black or solid white
+        // instead, which is an aliased inner edge on every letter.
+        int edges = 0, stepped = 0;
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                int alone = Value(fillOnly, size, x, y);
+                if (alone < 159 || alone > 223) continue;
+                edges++;
+                float coverage = (alone - 127) / 128f;
+                if (Math.Abs(Value(outlined, size, x, y) - coverage * 255f) > 30f) stepped++;
+            }
+        }
+        Report("MSDF", $"the letter's edge stays antialiased against its outline " +
+                       $"({stepped} of {edges} half-covered edge pixels off the letter-over-band value)",
+            edges > 0 && stepped * 10 <= edges);
+
+        // The outline is a stroke of the width the caller named, and the game's is one pixel. It
+        // must lay that pixel down as ink: faded by the letter's own coverage, which is already
+        // spent where the band starts, the stroke comes out as a translucent smear the background
+        // reads through. The fill is white and the band is black, so the darkest pixel the frame
+        // holds is the band's, and it only reaches black if the band is drawn at full weight.
+        int darkest = 255;
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+                darkest = Math.Min(darkest, Value(outlined, size, x, y));
+        Report("MSDF", $"the counter's outline is drawn opaquely, not as a translucent smear " +
+                       $"(darkest pixel {darkest})", darkest < 40);
     }
 
     /// <summary>
-    /// The counter's outline must reach the letter it belongs to, with no seam between them.
+    /// The counter's outline must reach the letter it belongs to, with no seam between them: the
+    /// background must not show through between the band and the letter's edge, which reads as a
+    /// letter standing clear of its own outline.
     ///
-    /// Outlined text is one draw carrying the fill and the band. Drawn as a stroke behind a fill,
-    /// the fill's own antialiased edge lands on the band and averages the two colours over the
-    /// fade width. At the counter's 1px outline that width is the whole band, so the seam pixel is a
-    /// half-and-half mix of the two, and black over white at half each is the mid grey of the
-    /// background behind both - a letter apparently standing clear of its own outline.
-    ///
-    /// What is tested is that pattern rather than the value, because the background is that same mid
-    /// grey: only the fault has a dark pixel on one side and a bright one on the other, since
-    /// background on its own has background around it.
+    /// Drawn over a blue background, because on a grey one the fault cannot be told from correct
+    /// output: the letter's antialiased edge over a black band is a mix of black and white, which is
+    /// the same grey. Any mix of black and white keeps its red and blue equal, so blue in excess of
+    /// red is background and nothing else.
     ///
     /// The pen is swept across a pixel because the fault only bites at some subpixel phases; a
     /// whole-pixel pen hides it entirely.
     /// </summary>
-    private static void CheckOutlineCoverage(Func<bool, float, bool, float, float, float, byte[]> render,
-        float fontSize, int size)
-    {
-        int gaps = 0;
-        for (int phase = 0; phase < 4; phase++)
-        {
-            var pixels = render(true, fontSize, false, 10f + phase / 4f, 1.5f, 1f);
-            var found = Gaps(pixels, size);
-            gaps += found.Count;
-            if (phase == 0 && gaps > 0)
-            {
-                foreach (var (x, y) in found.Take(4))
-                    Console.WriteLine($"           outline seam at ({x},{y}): " +
-                                      $"{Value(pixels, size, x - 1, y)} {Value(pixels, size, x, y)} {Value(pixels, size, x + 1, y)}");
-            }
-        }
-
-        Report("MSDF", $"the counter's outline meets its fill with no seam between them " +
-                       $"({gaps} seam pixels over four subpixel pens)", gaps == 0);
-    }
-
     /// <summary>
-    /// The outline, a mid-grey pixel, then the fill along a row - the gap the counter shows. The
-    /// background is the same mid grey as the fault's pixel, so the pattern is what is tested rather
-    /// than the value: background on its own has background on both sides, and only the fault has ink.
+    /// The fill's edge fades the way the font's own coverage did, and not as a smoothstep. Slug solved
+    /// a crossing count, which is a one-pixel ramp, then took its square root: at the edge that is
+    /// sqrt(0.5) = 0.707, and the ramp's own mean over the pixels it touches is 2/3. A smoothstep over
+    /// a band is 0.5 at its centre and antisymmetric about it, so the mean of the pixels it fades is
+    /// exactly 1/2. Averaging every partial pixel of a stem's straight edges separates the two.
+    ///
+    /// Drawn at 48px, where a stem is wide enough that its edge pixels and its body are distinct.
     /// </summary>
-    private static List<(int X, int Y)> Gaps(byte[] pixels, int size)
+    private static void CheckFillEdgeProfile(byte[] pixels, int size)
     {
-        var found = new List<(int, int)>();
-        for (int y = 0; y < size; y++)
+        int partial = 0;
+        long sum = 0;
+        for (int y = 1; y < size - 1; y++)
         {
             for (int x = 1; x < size - 1; x++)
             {
-                int gap = Value(pixels, size, x, y);
-                if (gap < 110 || gap > 146) continue;
+                int v = Value(pixels, size, x, y);
+                if (v <= 8 || v >= 247) continue;
+                // Only pixels with an edge on both sides, which is a fade pixel and not a corner's
+                // two-dimensional smear: the neighbours across it are solid fill and background.
+                int l = Value(pixels, size, x - 1, y), r = Value(pixels, size, x + 1, y);
+                int u = Value(pixels, size, x, y - 1), d = Value(pixels, size, x, y + 1);
+                bool acrossY = (l >= 247 && r <= 8) || (l <= 8 && r >= 247);
+                bool acrossX = (u >= 247 && d <= 8) || (u <= 8 && d >= 247);
+                if (!acrossY && !acrossX) continue;
+                partial++;
+                sum += v;
+            }
+        }
 
-                // Dark outline on one side, the fill on the other: the black pixel the counter shows
-                // standing clear of the letter it belongs to. The outline's own outer edge cannot
-                // match, since the side away from it there is background rather than the fill.
-                foreach (int step in new[] { -1, 1 })
-                {
-                    if (Value(pixels, size, x - step, y) > 60) continue;
-                    if (Value(pixels, size, x + step, y) < 200) continue;
+        double mean = partial > 0 ? (double)sum / partial : 0;
+        // A letter's body is not merely near-white: the fill is solid inside it, and anything less
+        // reads as a translucent letter however sharp its edge is.
+        int solid = 0, deepest = 0;
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                int v = Value(pixels, size, x, y);
+                if (v >= 250) solid++;
+                deepest = Math.Max(deepest, v);
+            }
+
+        Console.WriteLine($"           {partial} edge pixels average {mean:0.0} of 255, {solid} solid, peak {deepest}");
+        Report("MSDF", $"a glyph's edge fades under the fill's own profile, not a smoothstep " +
+                       $"({partial} edge pixels average {mean:0.0}, not 128) " +
+                       $"and its body is solid ({solid} pixels, peak {deepest})",
+            partial > 40 && Math.Abs(mean - 128) > 12 && solid > 1000 && deepest == 255);
+    }
+
+    private static void CheckOutlineCoverage(Func<float, byte[]> renderOnBlue, int size)
+    {
+        int gaps = 0;
+        var first = new List<(int X, int Y)>();
+        for (int phase = 0; phase < 4; phase++)
+        {
+            var found = Gaps(renderOnBlue(10f + phase / 4f), size);
+            gaps += found.Count;
+            first.AddRange(found.Take(4 - Math.Min(4, first.Count)));
+        }
+
+        Report("MSDF", $"the counter's outline meets its fill with no seam between them " +
+                       $"({gaps} seam pixels over four subpixel pens{(gaps > 0 ? ", at " + string.Join(" ", first) : "")})",
+            gaps == 0);
+    }
+
+    /// <summary>
+    /// Background showing through with the band on one side and the letter on the other, along a
+    /// row or a column. The band's own outer edge cannot match, since the side away from the letter
+    /// there is background rather than the fill.
+    /// </summary>
+    private static List<(int X, int Y)> Gaps(byte[] pixels, int size)
+    {
+        int Red(int x, int y) => pixels[(y * size + x) * 4];
+        int Background(int x, int y) => pixels[(y * size + x) * 4 + 2] - pixels[(y * size + x) * 4];
+        bool Band(int x, int y) => Red(x, y) <= 60 && Background(x, y) < 40;
+        bool Letter(int x, int y) => Red(x, y) >= 200;
+
+        var found = new List<(int, int)>();
+        for (int y = 1; y < size - 1; y++)
+        {
+            for (int x = 1; x < size - 1; x++)
+            {
+                if (Background(x, y) < 77) continue;
+                if ((Band(x - 1, y) && Letter(x + 1, y)) || (Letter(x - 1, y) && Band(x + 1, y)) ||
+                    (Band(x, y - 1) && Letter(x, y + 1)) || (Letter(x, y - 1) && Band(x, y + 1)))
                     found.Add((x, y));
-                    break;
-                }
             }
         }
         return found;
     }
 
+    /// <summary>
+    /// The band must have an outside. A text outline is a band around the letter, so past its width
+    /// there is background again; a composite that never bounds it covers the whole quad, which on
+    /// the counter's black outline is the letter's box going solid black.
+    ///
+    /// The quad is padded to hold the band and its fade, so the far corner is always outside the
+    /// band however narrow it is drawn.
+    /// </summary>
+    private static void CheckBandIsBounded(Func<bool, float, bool, float, float, float, byte[]> render,
+        float fontSize, int size)
+    {
+        var pixels = render(true, fontSize, true, 9f, 1.5f, 1f);
+
+        // The outermost ink the frame holds, and the box the band could reach at most.
+        int minX = size, minY = size, maxX = -1, maxY = -1;
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                if (Math.Abs(Value(pixels, size, x, y) - 128) <= 24) continue;
+                minX = Math.Min(minX, x); maxX = Math.Max(maxX, x);
+                minY = Math.Min(minY, y); maxY = Math.Max(maxY, y);
+            }
+        }
+
+        // The pen is at (9,12) and the first line is 16px tall, so nothing the band draws can reach
+        // the left column or the bottom of the frame.
+        bool leftClear = true, bottomClear = true;
+        for (int y = 0; y < size; y++)
+            if (Value(pixels, size, 0, y) < 100) leftClear = false;
+        for (int x = 0; x < size; x++)
+            if (Value(pixels, size, x, size - 1) < 100) bottomClear = false;
+
+        Report("MSDF", "the outline band stops at its own width rather than covering the whole quad " +
+                       $"(left column and bottom row stay background)", leftClear && bottomClear);
+        Console.WriteLine($"           ink spans x {minX}..{maxX}, y {minY}..{maxY} of {size}");
+    }
+
+    /// <summary>
+    /// An outline may not thin the letter it rings. A text outline is a band OUTSIDE the glyph, so
+    /// the letter's own body must keep exactly the coverage the fill alone drew it at; a band cut
+    /// from the glyph's edge inward takes the whole of its inner side out of the letter instead.
+    ///
+    /// Only the body is compared, since nearer the edge the ring is meant to stand in for what was
+    /// the letter's own fade. Where the letter is wide enough to have a body at all is the same
+    /// question the ink bound already asks, so this is run at a size it holds at: at the counter's
+    /// 16px a stem is about one pixel, and every pixel of it is inside one fade or the other.
+    ///
+    /// The comparison is per phase against the SAME pen, because a half-pixel shift moves a stem's
+    /// own coverage far more than the band does and would read as the band thinning every letter.
+    /// </summary>
+    private static void CheckLetterKeepsItsWeight(Func<bool, float, bool, float, float, float, byte[]> render,
+        float fontSize, int size)
+    {
+        int worst = 0, worstAt = -1, over = 0, body = 0;
+        for (int phase = 0; phase < 4; phase++)
+        {
+            var mine = render(false, fontSize, true, 9f + phase / 4f, 1.5f, 0f);
+            var drawn = render(true, fontSize, true, 9f + phase / 4f, 1.5f, 1f);
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    int alone = Value(mine, size, x, y);
+                    if (alone < 245 || NearFade(mine, size, x, y)) continue;
+                    body++;
+                    int drop = alone - Value(drawn, size, x, y);
+                    if (drop > 20) over++;
+                    if (drop > worst) { worst = drop; worstAt = y * size + x; }
+                }
+            }
+        }
+
+        Console.WriteLine($"           {over} of {body} body pixels drop past 20, worst {worst} " +
+                          $"at ({worstAt % size},{worstAt / size}) over four subpixel pens");
+        Report("MSDF", $"an outline leaves the letter's body as the fill drew it " +
+                       $"({over} of {body} move by more than 20)", over == 0 && body > 0);
+    }
+
+    /// <summary>
+    /// A pixel with a fade within one of it. The pen sweeps a quarter pixel between phases, and a
+    /// fade is a pixel and a half wide, so a pixel with nothing but solid fill in its own 3x3 keeps
+    /// its value through the whole sweep whichever way the edge there moves. A letter drawn with a
+    /// band of any width still has a core this wide - that is what "solid" means - so the guard is
+    /// silent only when the band has eaten into the letter past its own edge.
+    /// </summary>
+    private static bool NearFade(byte[] pixels, int size, int x, int y)
+    {
+        for (int dy = -1; dy <= 1; dy++)
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                int nx = x + dx, ny = y + dy;
+                if (nx < 0 || ny < 0 || nx >= size || ny >= size) return true;
+                if (Value(pixels, size, nx, ny) < 245) return true;
+            }
+        return false;
+    }
+
     private static int Value(byte[] pixels, int size, int x, int y) =>
         pixels[(y * size + x) * 4];
 
-    // The counter's five lines at 16px come to ~1180 lit pixels with a centred band and ~2890 with an
+    // The counter's nine lines at 16px come to 4504 lit pixels with a centred band and 7251 with an
     // outward one. The bound sits between the two, well clear of either.
-    private const int InkBound = 1600;
+    private const int InkBound = 5800;
 
     /// <summary>How many pixels carry ink.</summary>
     private static int Ink(byte[] pixels)
@@ -1203,52 +1431,6 @@ internal static unsafe class Program
         for (int i = 0; i < pixels.Length; i += 4)
             if (Math.Max(pixels[i], Math.Max(pixels[i + 1], pixels[i + 2])) > 200) lit++;
         return lit;
-    }
-
-    /// <summary>
-    /// The frame as characters, cropping to the rows and columns that hold any shape at all.
-    /// </summary>
-    private static string Ascii(byte[] pixels, int size, List<(int X, int Y)>? marked = null)
-    {
-        var markSet = marked == null ? new HashSet<(int, int)>() : new HashSet<(int, int)>(marked);
-        int minX = size, minY = size, maxX = -1, maxY = -1;
-        for (int y = 0; y < size; y++)
-        {
-            for (int x = 0; x < size; x++)
-            {
-                int i = (y * size + x) * 4;
-                bool shape = markSet.Contains((x, y))
-                    || Math.Abs(pixels[i] - 128) > 24 || Math.Abs(pixels[i + 1] - 128) > 24 || Math.Abs(pixels[i + 2] - 128) > 24;
-                if (!shape) continue;
-                if (x < minX) minX = x;
-                if (y < minY) minY = y;
-                if (x > maxX) maxX = x;
-                if (y > maxY) maxY = y;
-            }
-        }
-        if (maxX < 0) return "(blank frame)\n";
-
-        const int pad = 4;
-        minX = Math.Max(0, minX - pad); minY = Math.Max(0, minY - pad);
-        maxX = Math.Min(size - 1, maxX + pad); maxY = Math.Min(size - 1, maxY + pad);
-
-        var sb = new System.Text.StringBuilder();
-        for (int y = minY; y <= maxY; y++)
-        {
-            sb.Append($"{y,5} ");
-            for (int x = minX; x <= maxX; x++)
-            {
-                int i = (y * size + x) * 4;
-                if (markSet.Contains((x, y))) { sb.Append('X'); continue; }
-                int lum = Math.Max(pixels[i], Math.Max(pixels[i + 1], pixels[i + 2]));
-                if (lum > 200) sb.Append('#');
-                else if (lum < 60) sb.Append('o');
-                else if (lum > 100 && lum < 160) sb.Append(' ');
-                else sb.Append('.');
-            }
-            sb.Append('\n');
-        }
-        return sb.ToString();
     }
 }
 
