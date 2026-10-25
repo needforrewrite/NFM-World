@@ -1,13 +1,13 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
 using Lua;
-using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
+using NFMWorld.Graphics.OpenGL;
+using NFMWorld.Platform.SDL3;
 using NFMWorld.UI.Cef;
 using NFMWorldLibrary;
-using SDL3;
 using NFMWorld.Sentry;
 
 namespace NFMWorld.UI;
@@ -16,7 +16,7 @@ namespace NFMWorld.UI;
 /// Settings menu with tabs, similar to Half-Life 1 style.
 /// Also serves as the static settings backend used by SettingsHandler for CEF-based settings.
 /// </summary>
-public class SettingsMenu(WorldGame game)
+public class SettingsMenu()
 {
     private bool _isOpen;
     private int _selectedTab = 0;
@@ -50,14 +50,16 @@ public class SettingsMenu(WorldGame game)
     private string? _capturingAction = null;
     private int _selectedBindingIndex = -1;
 
-    // Video settings (static — shared between ImGui and CEF bridge)
+    // Video settings
     public static readonly string[] Renderers = false switch
     {
-        _ when RuntimeInformation.IsOSPlatform(OSPlatform.OSX) => ["Auto", "Metal", "OpenGL 2.1", "OpenGL 4.6", "OpenGL ES 3.0"],
-        _ when RuntimeInformation.IsOSPlatform(OSPlatform.Windows) => ["Auto", "D3D11", "D3D12", "Vulkan", "OpenGL 2.1", "OpenGL 4.6", "Metal", "OpenGL ES 3.0"],
-        _ => ["Auto", "Vulkan", "OpenGL 2.1", "OpenGL 4.6", "OpenGL ES 3.0"]
+        // windows doesn't do metal or gles, linux doesn't do metal
+        _ when RuntimeInformation.IsOSPlatform(OSPlatform.OSX) => ["Auto", "Metal via ANGLE", "OpenGL", "Vulkan via ANGLE", "OpenGL via ANGLE", "OpenGL ES via ANGLE"],
+        _ when RuntimeInformation.IsOSPlatform(OSPlatform.Windows) => ["Auto", "DirectX 11", "OpenGL", "Vulkan via ANGLE", "DirectX 11 via ANGLE", "OpenGL via ANGLE"],
+        _ => ["Auto", "OpenGL", "Vulkan via ANGLE", "OpenGL via ANGLE", "OpenGL ES via ANGLE"]
     };
     private static int _selectedRenderer = 0;
+    private static int _originalRenderer = _selectedRenderer;
     private static string[] _resolutions = GetSupportedResolutions();
     public static string[] Resolutions => _resolutions;
     private static int _selectedResolution = Array.FindIndex(_resolutions, e => e == "1280 x 720");
@@ -65,6 +67,18 @@ public class SettingsMenu(WorldGame game)
     private static int _selectedDisplayMode = 1;
     private static bool _vsync = true;
     public static readonly string[] AntialiasModes = ["Off", "MSAA 1x", "MSAA 2x", "MSAA 4x", "MSAA 8x"]; // must be powers of 2
+
+    /// <summary>
+    /// The dropdown entry for a multisample count, and its inverse. Index 0 is "Off" and index *n*
+    /// requests 2^(n-1) samples, so index 1 ("MSAA 1x") means off too - the list is an 8x ladder
+    /// with an explicit "Off" in front of it, which is what the "// must be powers of 2" above is
+    /// about.
+    /// </summary>
+    private static readonly int[] AntialiasSampleCounts = [0, 1, 2, 4, 8];
+    private static int AntialiasToSampleCount(int index) =>
+        index >= 0 && index < AntialiasSampleCounts.Length ? AntialiasSampleCounts[index] : 0;
+    private static int SampleCountToAntialias(int sampleCount) =>
+        Array.IndexOf(AntialiasSampleCounts, sampleCount) is var i and >= 0 ? i : 0;
     private static int _antialias = 4; // 8x
     private static int _shadowCascadeLevel = 3;
     public static readonly string[] ShadowCascadeLevelNames = ["Off", "Close", "Far", "Further"];
@@ -76,7 +90,10 @@ public class SettingsMenu(WorldGame game)
     private static DistantOutlineBehavior _distantOutlineBehavior = DistantOutlineBehavior.DistanceFalloffWithCutoff;
     private static bool _lowLatency = false;
     public static readonly string[] RenderDistanceNames = ["Tiny", "Short", "Medium", "Far", "Very Far", "Unlimited"];
-    private static readonly float[] RenderDistances = [22500, 45000, 90000, 180000, 360000, int.MaxValue];
+    // Squared by ApplySettings before being stored, so the "Unlimited" entry has to be the
+    // float sentinel - int.MaxValue would square into a real ~46 341-unit cut-off. See
+    // CameraSettings.RenderDistanceSqr.
+    private static readonly float[] RenderDistances = [22500, 45000, 90000, 180000, 360000, float.MaxValue];
     private static int _renderDistance = 5; // default to max distance
 
     // Audio settings (static)
@@ -114,9 +131,9 @@ public class SettingsMenu(WorldGame game)
             "640 x 480", "800 x 600", "1024 x 768", "1280 x 720", "1280 x 1024", "1920 x 1080", "2560 x 1440",
             "3840 x 2160"
         };
-        foreach (var displayMode in GraphicsAdapter.DefaultAdapter.SupportedDisplayModes)
+        foreach (var (width, height) in SdlWindow.GetFullscreenDisplayModes())
         {
-            resolutions.Add($"{displayMode.Width} x {displayMode.Height}");
+            resolutions.Add($"{width} x {height}");
         }
         return resolutions.ToArray();
     }
@@ -284,7 +301,7 @@ public class SettingsMenu(WorldGame game)
         FollowCamera.FollowZOffset = _followZ;
         CameraSettings.RenderDistanceSqr = RenderDistances[_renderDistance] * RenderDistances[_renderDistance];
 
-        WorldGame.LowLatency = _lowLatency;
+        GameSparker.LowLatency = _lowLatency;
 
         var graphicsChanged = false;
         requireRestart = false;
@@ -302,13 +319,18 @@ public class SettingsMenu(WorldGame game)
                 graphicsChanged = true;
             }
 
-            var msaaCount = (int) MathF.Round(MathF.Pow(2, _antialias - 1));
+            var msaaCount = AntialiasToSampleCount(_antialias);
 
             if (game.Graphics.GraphicsDevice.PresentationParameters.MultiSampleCount != msaaCount)
             {
                 game.Graphics.GraphicsDevice.PresentationParameters.MultiSampleCount = msaaCount;
                 graphicsChanged = true;
             }
+        }
+        else if (game.Graphics.PreferMultiSampling)
+        {
+            game.Graphics.PreferMultiSampling = false;
+            graphicsChanged = true;
         }
         else
         {
@@ -370,14 +392,30 @@ public class SettingsMenu(WorldGame game)
             graphicsChanged = true;
         }
 
-        if (WorldGame.NumCascades != _shadowCascadeLevel || WorldGame.ShadowResolution != (int)MathF.Round(MathF.Pow(2, _shadowResolution + 9)))
+        if (GameSparker.NumCascades != _shadowCascadeLevel || GameSparker.ShadowResolution != (int)MathF.Round(MathF.Pow(2, _shadowResolution + 9)))
         {
-            WorldGame.NumCascades = _shadowCascadeLevel;
-            WorldGame.ShadowResolution = (int)MathF.Round(MathF.Pow(2, _shadowResolution + 9));
-            game.RebuildCascades();
+            GameSparker.NumCascades = _shadowCascadeLevel;
+            GameSparker.ShadowResolution = (int)MathF.Round(MathF.Pow(2, _shadowResolution + 9));
+            GameSparker.RebuildCascades();
         }
 
-        if (Renderers[_selectedRenderer] != GetFna3DRenderer())
+        if (_selectedRenderer != _originalRenderer)
+        {
+            requireRestart = true;
+        }
+
+        // A second, independent reason to restart, and the one the multisample settings need on the
+        // two GL renderers. The check above cannot cover it: the renderer has not changed, but the
+        // sample count is baked into the window's pixel format, so nothing a resize could do would
+        // apply the new one - without this the setting would appear to take effect and silently keep
+        // rendering with the old count.
+        //
+        // Asked of the shim rather than recomputed, because the answer needs both halves: whether
+        // this backend can apply it live at all (sokol and FNA3D can, the GL renderers cannot), and
+        // whether there is actually a pending difference - a backend that clamped the request reports
+        // a permanent difference with nothing left to apply, and prompting for a restart over that
+        // would be advice the user could follow forever. See RequiresRestartForMultiSampling.
+        if (game.Graphics.RequiresRestartForMultiSampling)
         {
             requireRestart = true;
         }
@@ -441,7 +479,7 @@ public class SettingsMenu(WorldGame game)
         sw.WriteLine("// NFM-World Configuration File");
         sw.WriteLine();
         sw.WriteLine("// Video Settings");
-        sw.WriteLine($"video_renderer2 {Renderers[_selectedRenderer]}");
+        sw.WriteLine($"video_renderer3 {Renderers[_selectedRenderer]}");
         sw.WriteLine($"video_resolution3 {Resolutions[_selectedResolution]}");
         sw.WriteLine($"video_displaymode {_selectedDisplayMode}");
         sw.WriteLine($"video_vsync {(_vsync ? 1 : 0)}");
@@ -519,12 +557,13 @@ public class SettingsMenu(WorldGame game)
         {
             switch (key)
             {
-                // Video
-                case "video_renderer2":
-                    _selectedRenderer = Array.IndexOf(_resolutions, value) is var r and > -1 ? r : _selectedRenderer;
+                // Video settings
+                case "video_renderer3":
+                    _selectedRenderer = Renderers.IndexOf(value) is var rend and > -1 ? rend : _selectedRenderer;
+                    _originalRenderer = _selectedRenderer;
                     break;
                 case "video_resolution3":
-                    _selectedResolution = Array.IndexOf(_resolutions, value) is var resIdx and > -1 ? resIdx : _selectedResolution;
+                    _selectedResolution = Resolutions.IndexOf(value) is var res and > -1 ? res : _selectedResolution;
                     break;
                 case "video_displaymode":
                     _selectedDisplayMode = int.Parse(value, CultureInfo.InvariantCulture);
@@ -556,7 +595,8 @@ public class SettingsMenu(WorldGame game)
                 case "video_render_distance":
                     _renderDistance = int.Parse(value, CultureInfo.InvariantCulture);
                     break;
-                // Audio
+
+                // Audio settings
                 case "audio_mute":
                     _muteAll = int.Parse(value) != 0;
                     break;
@@ -572,7 +612,8 @@ public class SettingsMenu(WorldGame game)
                 case "audio_remaster":
                     _remasteredMusic = int.Parse(value) != 0;
                     break;
-                // Camera
+
+                // Camera settings
                 case "camera_fov":
                     _fov = float.Parse(value, CultureInfo.InvariantCulture);
                     break;
@@ -585,6 +626,7 @@ public class SettingsMenu(WorldGame game)
                 case "camera_smooth_fov":
                     _smoothFov = int.Parse(value) != 0;
                     break;
+
                 // Key bindings
                 case "key_accelerate":
                     Bindings.Accelerate = (Key)int.Parse(value, CultureInfo.InvariantCulture);
@@ -625,21 +667,21 @@ public class SettingsMenu(WorldGame game)
                 case "key_togglearrace":
                     Bindings.ToggleArrace = (Key)int.Parse(value, CultureInfo.InvariantCulture);
                     break;
+                case "key_console":
+                    Bindings.ToggleDevConsole = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
                 case "key_toggleradar":
                     Bindings.ToggleRadar = (Key)int.Parse(value, CultureInfo.InvariantCulture);
                     break;
                 case "key_cycleview":
                     Bindings.CycleView = (Key)int.Parse(value, CultureInfo.InvariantCulture);
                     break;
-                case "key_console":
-                    Bindings.ToggleDevConsole = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                    break;
             }
         }
         catch { /* skip malformed lines */ }
     }
 
-    public static void LoadFnaRenderer()
+    public static bool TrySelectRenderer(ref Renderer renderer, ref AngleSelection angleSelection)
     {
         var configPath = Path.Combine("data", "cfg", "config.cfg");
 
@@ -664,7 +706,7 @@ public class SettingsMenu(WorldGame game)
                     switch (key)
                     {
                         // Video settings
-                        case "video_renderer2":
+                        case "video_renderer3":
                             selectedRenderer = value;
                             break;
                     }
@@ -680,40 +722,41 @@ public class SettingsMenu(WorldGame game)
         {
             switch (selectedRenderer)
             {
-                case "D3D11" or "D3D12" or "Vulkan":
-                    Logging.Info($"Overriding FNA3D renderer to {selectedRenderer}");
-                    SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", selectedRenderer);
-                    break;
-                case "OpenGL 2.1":
-                    Logging.Info($"Overriding FNA3D renderer to {selectedRenderer}");
-                    SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
-                    break;
-                case "OpenGL 4.6":
-                    Logging.Info($"Overriding FNA3D renderer to {selectedRenderer} (Core Profile)");
-                    SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
-                    SDL.SDL_SetHint("FNA3D_OPENGL_FORCE_CORE_PROFILE", "1");
-                    break;
-                case "OpenGL ES 3.0":
-                    Logging.Info($"Overriding FNA3D renderer to {selectedRenderer} (ES3)");
-                    SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
-                    SDL.SDL_SetHint("FNA3D_OPENGL_FORCE_ES3", "1");
-                    break;
+                case "Auto":
+                    return true;
+                case "Metal via ANGLE":
+                    renderer = Renderer.Angle;
+                    angleSelection = new AngleSelection(AnglePlatformType.Metal, AngleDeviceType.Hardware);
+                    return true;
+                case "OpenGL":
+                    renderer = Renderer.DesktopGl;
+                    return true;
+                // Deliberately NOT the entry above it. "DirectX 11 via ANGLE" goes through ANGLE's
+                // D3D11 backend and is spelled the same way to the user, which is why both exist -
+                // this one is our own backend over TerraFX, with no translation layer in between.
+                case "DirectX 11":
+                    renderer = Renderer.D3d11;
+                    return true;
+                case "Vulkan via ANGLE":
+                    renderer = Renderer.Angle;
+                    angleSelection = new AngleSelection(AnglePlatformType.Vulkan, AngleDeviceType.Hardware);
+                    return true;
+                case "DirectX 11 via ANGLE":
+                    renderer = Renderer.Angle;
+                    angleSelection = new AngleSelection(AnglePlatformType.D3d11, AngleDeviceType.Hardware);
+                    return true;
+                case "OpenGL via ANGLE":
+                    renderer = Renderer.Angle;
+                    angleSelection = new AngleSelection(AnglePlatformType.Gl, AngleDeviceType.Hardware);
+                    return true;
+                case "OpenGL ES via ANGLE":
+                    renderer = Renderer.Angle;
+                    angleSelection = new AngleSelection(AnglePlatformType.Gles, AngleDeviceType.Hardware);
+                    return true;
             }
         }
-    }
 
-    private static string GetFna3DRenderer()
-    {
-        var driver = SDL.SDL_GetHint("FNA3D_FORCE_DRIVER");
-
-        return driver switch
-        {
-            "D3D11" or "D3D12" or "Vulkan" => driver,
-            "OpenGL" when SDL.SDL_GetHint("FNA3D_OPENGL_FORCE_CORE_PROFILE") == "1" => "OpenGL 4.6",
-            "OpenGL" when SDL.SDL_GetHint("FNA3D_OPENGL_FORCE_ES3") == "1" => "OpenGL ES 3.0",
-            "OpenGL" => "OpenGL 2.1",
-            _ => "Auto"
-        };
+        return false;
     }
 
     private static string GetDistantOutlineBehaviorConfigValue()
@@ -757,10 +800,39 @@ public class SettingsMenu(WorldGame game)
         };
     }
 
-    public static void LoadConfig()
-    {
-        _selectedRenderer = Renderers.IndexOf(GetFna3DRenderer());
+    /// <summary>
+    /// The multisample count the persisted settings ask for, normalized: 0 when the "Off" entry is
+    /// selected, 0 for "MSAA 1x" (which the list uses to mean off as well), and the ladder's count
+    /// otherwise.
+    ///
+    /// A property rather than a field on purpose - it is derived, and a field could disagree with
+    /// <see cref="_antialias"/>. Its sibling on the graphics side is
+    /// <c>GraphicsSettingsShim.DesiredMultiSampleCount</c>, which says the same thing for callers
+    /// that have a device; this one exists because <c>WorldGame</c> has to ask the window for the
+    /// sample count in the constructor, before any device and therefore before that shim exists.
+    ///
+    /// Composed from <see cref="AntialiasToSampleCount"/> rather than restating the ladder, so the
+    /// "// must be powers of 2" rule above stays written down once.
+    /// </summary>
+    public static int RequestedMultiSampleCount =>
+        _antialias > 0 ? AntialiasToSampleCount(_antialias) : 0;
 
+    /// <summary>
+    /// Parses <c>data/cfg/config.cfg</c> into the settings fields, touching no game instance and
+    /// applying nothing.
+    ///
+    /// Split out of <see cref="LoadConfig"/> so that <c>Main</c> can read the persisted settings
+    /// <em>before</em> it constructs <c>WorldGame</c>. That ordering is not cosmetic: the GL
+    /// renderers bake the multisample count into the window's pixel format, so the value has to be
+    /// known before the constructor creates the window and the context, and this used to run from
+    /// <c>LoadContent</c> - after all of that - which is why the MSAA setting could not reach the
+    /// context at all.
+    ///
+    /// Deliberately does not call <see cref="ApplySettings"/>, which needs a live
+    /// <c>GameSparker.Game</c> and so cannot run this early. See <see cref="ApplyLoadedSettings"/>.
+    /// </summary>
+    public static void LoadConfigValues()
+    {
         try
         {
             var configPath = Path.Combine("data", "cfg", "config.cfg");
@@ -783,140 +855,9 @@ public class SettingsMenu(WorldGame game)
 
                 var key = parts[0];
                 var value = parts[1];
+                ParseConfigLine(key, value);
 
-                try
-                {
-                    switch (key)
-                    {
-                        // Video settings
-                        case "video_renderer2":
-                            _selectedRenderer = Renderers.IndexOf(value) is var rend and > -1 ? rend : _selectedRenderer;
-                            break;
-                        case "video_resolution3":
-                            _selectedResolution = Resolutions.IndexOf(value) is var res and > -1 ? res : _selectedResolution;
-                            break;
-                        case "video_displaymode":
-                            _selectedDisplayMode = int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "video_vsync":
-                            _vsync = int.Parse(value) != 0;
-                            break;
-                        case "video_antialias":
-                            _antialias = int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "video_fps":
-                            _fpsLimit = int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "video_linewidth2":
-                            _lineWidth = float.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "video_distant_outline_behavior":
-                            _distantOutlineBehavior = ParseDistantOutlineBehavior(value, _distantOutlineBehavior);
-                            break;
-                        case "video_shadow_cascade":
-                            _shadowCascadeLevel = int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "video_shadow_res":
-                            _shadowResolution = int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "video_low_latency":
-                            _lowLatency = int.Parse(value) != 0;
-                            break;
-                        case "video_render_distance":
-                            _renderDistance = int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-
-                        // Audio settings
-                        case "audio_mute":
-                            _muteAll = int.Parse(value) != 0;
-                            break;
-                        case "audio_master":
-                            _masterVolume = float.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "audio_music":
-                            _musicVolume = float.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "audio_effects":
-                            _effectsVolume = float.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "audio_remaster":
-                            _remasteredMusic = int.Parse(value) != 0;
-                            break;
-
-                        // Camera settings
-                        case "camera_fov":
-                            _fov = float.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "camera_follow_y":
-                            _followY = int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "camera_follow_z":
-                            _followZ = int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "camera_smooth_fov":
-                            _smoothFov = int.Parse(value) != 0;
-                            break;
-
-                        // Key bindings
-                        case "key_accelerate":
-                            Bindings.Accelerate = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_ab":
-                            Bindings.AerialBounce = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_smoothturn":
-                            Bindings.AerialStrafe = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_brake":
-                            Bindings.Brake = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_turnleft":
-                            Bindings.TurnLeft = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_turnright":
-                            Bindings.TurnRight = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_handbrake":
-                            Bindings.Handbrake = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_lookback":
-                            Bindings.LookBack = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_lookleft":
-                            Bindings.LookLeft = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_lookright":
-                            Bindings.LookRight = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_togglemusic":
-                            Bindings.ToggleMusic = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_togglesfx":
-                            Bindings.ToggleSFX = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_togglearrace":
-                            Bindings.ToggleArrace = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_console":
-                            Bindings.ToggleDevConsole = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_toggleradar":
-                            Bindings.ToggleRadar = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "key_cycleview":
-                            Bindings.CycleView = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    SentrySdk.CaptureException(ex);
-                    Logging.Error($"Error parsing config line '{line}': {ex.Message}");
-                }
             }
-
-            // Apply loaded settings immediately
-            ApplySettings(out _);
 
             Logging.Debug($"Config loaded from {configPath}");
         }
@@ -925,6 +866,50 @@ public class SettingsMenu(WorldGame game)
             SentrySdk.CaptureException(ex);
             Logging.Error($"Error loading config: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Pushes the values <see cref="LoadConfigValues"/> parsed onto the live game.
+    ///
+    /// Separate from the parse because of <em>when</em> it can run: <see cref="ApplySettings"/>
+    /// dereferences <c>GameSparker.Game</c>, so this cannot be called until the game has been
+    /// constructed and installed - which is strictly later than
+    /// <see cref="LoadConfigValues"/> has to run. Splitting them is what lets the persisted MSAA
+    /// count be known before the window is created while leaving every other setting applied at the
+    /// original moment.
+    ///
+    /// The failure mode this preserves is subtle, so it is spelled out: <c>GraphicsSettingsShim</c>
+    /// holds <c>PreferMultiSampling</c>/<c>MultiSampleCount</c> as its own state, and
+    /// <see cref="ApplySettings"/> only assigns them when they differ from what it reads back. Before
+    /// the constructor consumed <see cref="RequestedMultiSampleCount"/>, that state started at the
+    /// default and the config's value reached it here; the constructor now seeds the window from the
+    /// config, and this call then finds the shim already holding those values. Both halves therefore
+    /// agree, and the "waiting to be applied" state the restart prompt depends on is not created for
+    /// a setting that was granted at startup.
+    /// </summary>
+    public static void ApplyLoadedSettings()
+    {
+        try
+        {
+            ApplySettings(out _);
+        }
+        catch (Exception ex)
+        {
+            SentrySdk.CaptureException(ex);
+            Logging.Error($"Error applying loaded config: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Reads the config and applies it, for callers that have a live game and want both.
+    ///
+    /// Kept because the split is an implementation detail of the startup ordering rather than a new
+    /// contract: this is still the whole operation, in the order it always ran in.
+    /// </summary>
+    public static void LoadConfig()
+    {
+        LoadConfigValues();
+        ApplyLoadedSettings();
     }
 
     // ── Static API for CEF SettingsHandler ──────────────────────────
@@ -956,7 +941,11 @@ public class SettingsMenu(WorldGame game)
             SelectedDisplayMode = _selectedDisplayMode,
             Vsync = _vsync,
             FpsLimit = _fpsLimit,
-            Antialias = _antialias,
+            // Report what the drawable actually has, not the requested count: the hardware clamps
+            // (asking for 8x on a device that caps at 4x gets 4x), and MSAA lands on the next frame's
+            // swapchain sync rather than during ApplySettings - so a stored request could otherwise be
+            // shown as if it had taken effect when the backbuffer never changed.
+            Antialias = SampleCountToAntialias(GameSparker.Game.Graphics.AppliedMultiSampleCount),
             ShadowCascadeLevel = _shadowCascadeLevel,
             ShadowResolution = _shadowResolution,
             RenderDistance = _renderDistance,

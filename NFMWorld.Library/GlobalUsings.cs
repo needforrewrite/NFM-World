@@ -6,7 +6,7 @@ global using Matrix = System.Numerics.Matrix4x4;
 global using AngleSingle = Maxine.Extensions.Mathematics.AngleSingle;
 global using Vector2 = System.Numerics.Vector2;
 global using URandom = NFMWorldLibrary.Util.Random;
-global using Color = Microsoft.Xna.Framework.Color;
+global using Color = Maxine.Extensions.Mathematics.Color;
 global using RectangleF = Maxine.Extensions.Mathematics.RectangleF;
 global using static NFMWorldLibrary.TheVFS;
 global using fix64 = FixedMathSharp.Fixed64;

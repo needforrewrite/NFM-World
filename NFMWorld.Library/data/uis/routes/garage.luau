@@ -5,7 +5,7 @@
 -- click updates only the cards whose selection actually changed (stable style tables +
 -- reference-compare in the renderer skip redundant setProperty).
 
-local Sx = require("../../library/sx/index")
+local function __luaux_read(v) return if type(v) == "function" then (v :: () -> any)() else v end; local Sx = require("../../library/sx/index")
 local styled = Sx.styled
 local x = Sx.x
 local Button = require("../../library/ui/button")
@@ -91,41 +91,40 @@ local NoResults = styled(Sx.Text) {
 	padding = 24,
 }
 
--- Module-level constant style for the collection wrapper View (stable identity).
-local collectionViewStyle: Sx.Styles = { flexDirection = "column", flexShrink = 0 }
-
 -- Stable card styles: selection change swaps the reference, so unchanged cards skip
 -- setProperty (the renderer's reactive-prop effect compares references).
-local cardStyleSelected: Sx.Styles = { marginBottom = 8, opacity = 1 }
-local cardStyleUnselected: Sx.Styles = { marginBottom = 8, opacity = 0.7 }
+local cardStyleSelected: Sx.Styles = { marginBottom = 16, opacity = 1, flexDirection = 'column', flexShrink = 0 }
+local cardStyleUnselected: Sx.Styles = { marginBottom = 16, opacity = 0.7, flexDirection = 'column', flexShrink = 0 }
 
 -- Card component. `selected` is an accessor; only cards whose selection changes update.
 local function CarCard(props: { name: Sx.Signalish<string>, collectionName: Sx.Signalish<string>, fileName: Sx.Signalish<string>, selected: Sx.Signalish<boolean>, onSelect: (string, string) -> () })
-	local style = Sx.createMemo(function(): Sx.Styles
+	-- Returns one of two module-level constant tables, so the reference is stable while
+	-- selection doesn't change and dom's reactive style prop skips its setProperty. The
+	-- stability comes from returning the shared tables, not from any memoization — this
+	-- has a single consumer, so a plain function re-runs exactly as often as a memo would.
+	local style = function(): Sx.Styles
 		if Sx.read(props.selected) then
 			return cardStyleSelected
 		end
 		return cardStyleUnselected
-	end)
+	end
 
-	return x(GlassCard) {
+	return x(GlassCard)({
 		name = function() return "glasscard " .. Sx.read(props.name) end,
-		color = function()
-			return Sx.read(props.selected) and "#4fc3f7" or "rgba(255,255,255,0.15)"
-		end,
+		color = function() return Sx.read(props.selected) and "#4fc3f7" or "rgba(255,255,255,0.15)" end,
 		style = style,
 		onmousedown = function()
 			props.onSelect(Sx.read(props.collectionName), Sx.read(props.fileName))
 		end,
-		x(CarCardName) { name = function() return "carcardname " .. Sx.read(props.name) end, props.name },
-		x(CarCardCollection) { name = function() return "carcardcollection " .. Sx.read(props.collectionName) end, props.collectionName },
-	}
+		x(CarCardName)({ name = function() return Sx.read(props.name) end, props.name }),
+		x(CarCardCollection)({ name = function() return Sx.read(props.collectionName) end, props.collectionName }),
+	})
 end
 
 local function CollectionSection(props: { name: Sx.Signalish<string>, active: Sx.Signalish<boolean>, onSelect: (string) -> () })
-	return x(Sx.View) {
+	return x(Sx.View)({
 		name = function() return "inner view " .. Sx.read(props.name) end,
-		style = Sx.createMemo(function(): Sx.Styles
+		style = function(): Sx.Styles
 			local active = Sx.read(props.active)
 			return {
 				marginBottom = 6,
@@ -140,18 +139,16 @@ local function CollectionSection(props: { name: Sx.Signalish<string>, active: Sx
 				flexGrow = 1,
 				flexShrink = 0,
 			}
-		end),
-		onmousedown = function()
-			props.onSelect(Sx.read(props.name))
 		end,
-		x(Sx.Text) {
-			style = Sx.createMemo(function(): Sx.TextStyles
-				local active = Sx.read(props.active)
-				return { fontSize = 12, color = active and "#4fc3f7" or "rgba(255,255,255,0.4)" }
-			end),
-			props.name,
-		},
-	}
+		onmousedown = function() props.onSelect(Sx.read(props.name)) end,
+			x(Sx.Text)({
+				style = function(): Sx.TextStyles
+					local active = Sx.read(props.active)
+					return { fontSize = 12, color = active and "#4fc3f7" or "rgba(255,255,255,0.4)" }
+				end,
+				props.name,
+			}),
+	})
 end
 
 local function Garage()
@@ -159,7 +156,7 @@ local function Garage()
 	local collections, setCollections = Sx.createSignal<<CarCollectionsData | nil>>(nil)
 	local currentCollection, setCurrentCollection = Sx.createSignal<<CarCollectionData | nil>>(nil)
 	local searchQuery, setSearchQuery = Sx.createSignal<<string>>("")
-	local rootRef: { current: Component? } = {}
+	local rootRef: { current: Component? } = { current = nil }
 
 	Sx.createEffect(function()
 		local u1 = UiLib.onEvent("garage:currentCar", function(data)
@@ -183,12 +180,6 @@ local function Garage()
 		end)
 	end)
 
-	Sx.createEffect(function()
-		if rootRef.current ~= nil then
-			rootRef.current:focus()
-		end
-	end)
-
 	local function handleSelectCar(collection, fileName)
 		UiLib.call("selectCar", { collection = collection, fileName = fileName })
 	end
@@ -198,6 +189,7 @@ local function Garage()
 	end
 
 	local function handleGlobalKey(event)
+		print(tostring(event.keyCode))
 		if event.keyCode == Key.left then
 			UiLib.call("cycleCar", { direction = "left" })
 		elseif event.keyCode == Key.right then
@@ -245,34 +237,40 @@ local function Garage()
 		return result
 	end)
 
-	return x(Root) {
-		ref = rootRef,
-		tabindex = 0,
-		onkeydown = handleGlobalKey,
+	Sx.onMount(function()
+		print('focusing!!!')
+		if rootRef.current ~= nil then
+			print('focusing inner!!!')
+			rootRef.current:focus()
+		end
+	end)
 
-		x(Sidebar) {
-			x(Header) { "Garage" },
+	return x(Root)({ ref = function(it)
+			print('setting root ref!!!')
+			rootRef.current = it
+			print('root ref set!!!')
+		end, tabindex = 0, onkeydown = handleGlobalKey,
+		x(Sidebar)({
+			x(Header)({ "Garage" }),
 
-			x(StatsPanel) {
-				x(Sx.Show) {
-					when = function() return currentCar() ~= nil end,
-					fallback = x(Placeholder) { "Select a car to view stats" },
-					x(StatsCard) {
-						x(CarName) { function() return (currentCar() :: CarStatsData).name end },
-						x(StatBar) { label = "Top Speed", value = function() return (currentCar() :: CarStatsData).topSpeed end, color = "#ff6e40" },
-						x(StatBar) { label = "Acceleration", value = function() return (currentCar() :: CarStatsData).acceleration end, color = "#ffd740" },
-						x(StatBar) { label = "Handling", value = function() return (currentCar() :: CarStatsData).handling end, color = "#69f0ae" },
-						x(StatBar) { label = "Power Save", value = function() return (currentCar() :: CarStatsData).powerSave end, color = "#40c4ff" },
-						x(StatBar) { label = "Strength", value = function() return (currentCar() :: CarStatsData).strength end, color = "#ff4081" },
-						x(StatBar) { label = "Max Health", value = function() return (currentCar() :: CarStatsData).maxHealth end, color = "#e040fb" },
-						x(StatBar) { label = "Stunting", value = function() return (currentCar() :: CarStatsData).stunting end, color = "#ff6e40" },
-						x(StatBar) { label = "Hypergliding", value = function() return (currentCar() :: CarStatsData).hypergliding end, color = "#7c4dff" },
-						x(StatBar) { label = "AB'ing", value = function() return (currentCar() :: CarStatsData).abing end, color = "#448aff" },
-					},
-				},
-			},
+			x(StatsPanel)({
+				x(Sx.Show)({ when = function() return currentCar() ~= nil end, fallback = function() return x(Placeholder)({ "Select a car to view stats" }) end,
+					x(StatsCard)({
+						x(CarName)({ function() return (currentCar() :: CarStatsData).name end }),
+						x(StatBar)({ label = "Top Speed", value = function() return (currentCar() :: CarStatsData).topSpeed end, color = "#ff6e40" }),
+						x(StatBar)({ label = "Acceleration", value = function() return (currentCar() :: CarStatsData).acceleration end, color = "#ffd740" }),
+						x(StatBar)({ label = "Handling", value = function() return (currentCar() :: CarStatsData).handling end, color = "#69f0ae" }),
+						x(StatBar)({ label = "Power Save", value = function() return (currentCar() :: CarStatsData).powerSave end, color = "#40c4ff" }),
+						x(StatBar)({ label = "Strength", value = function() return (currentCar() :: CarStatsData).strength end, color = "#ff4081" }),
+						x(StatBar)({ label = "Max Health", value = function() return (currentCar() :: CarStatsData).maxHealth end, color = "#e040fb" }),
+						x(StatBar)({ label = "Stunting", value = function() return (currentCar() :: CarStatsData).stunting end, color = "#ff6e40" }),
+						x(StatBar)({ label = "Hypergliding", value = function() return (currentCar() :: CarStatsData).hypergliding end, color = "#7c4dff" }),
+						x(StatBar)({ label = "AB'ing", value = function() return (currentCar() :: CarStatsData).abing end, color = "#448aff" }),
+					}),
+				}),
+			}),
 
-			x(Sx.TextInput) {
+			x(Sx.TextInput)({
 				style = {
 					width = "100%",
 					paddingTop = 10,
@@ -311,62 +309,49 @@ local function Garage()
 						end
 					end
 				end,
-			},
+			}),
 
-			x(CollectionList) {
-				x(Sx.For<<CarCollectionData | { id: string, cars: {CarStatsData} }>>) {
-					each = filteredCollections,
+			x(CollectionList)({
+				x(Sx.For<<CarCollectionData | { id: string, cars: {CarStatsData} }>>)({ each = filteredCollections,
 					function(item: () -> (CarCollectionData | { id: string, cars: {CarStatsData} }), index: number)
-						return x(Sx.View) {
+						return x(Sx.View)({
 							name = function() return "view " .. item().id end,
-							style = collectionViewStyle,
-							x(CollectionSection) {
+							style = { flexDirection = "column", flexShrink = 0 },
+							x(CollectionSection)({
 								name = function() return item().id end,
-								active = function()
-									local cc = currentCollection()
-									return cc ~= nil and cc.id == item().id
-								end,
+								active = function() return currentCollection() ~= nil and (currentCollection() :: CarCollectionData).id == item().id end,
 								onSelect = handleSelectCollection,
-							},
-							x(Sx.For<<CarStatsData>>) {
-								each = function() return item().cars end,
+							}),
+							x(Sx.For<<CarStatsData>>)({ each = function() return item().cars end,
 								function(car: () -> CarStatsData, index2: number)
-									return x(CarCard) {
+									return x(CarCard)({
 										name = function() return car().name end,
-										collectionName = item().id,
+										collectionName = function() return item().id end,
 										fileName = function() return car().fileName end,
-										selected = function()
-											local cc = currentCar()
-											return cc ~= nil and cc.fileName == car().fileName
-										end,
+										selected = function() return currentCar() ~= nil and (currentCar() :: CarStatsData).fileName == car().fileName end,
 										onSelect = handleSelectCar,
-									}
+									})
 								end,
-							},
-						}
+							}),
+						})
 					end,
-				},
+				}),
 
-				x(Sx.Show) {
-					when = function()
-						return query() ~= "" and #filteredCollections() == 0
-					end,
-					x(NoResults) {
-						function()
-							return ('No cars match "%s"'):format(searchQuery())
-						end,
-					},
-				},
-			},
+				x(Sx.Show)({ when = function() return query() ~= "" and #filteredCollections() == 0 end,
+					x(NoResults)({ function() return `No cars match match "{__luaux_read(searchQuery())}"` end,
 
-			x(Button) {
+					}),
+				}),
+			}),
+
+			x(Button)({
 				label = "← Back to Menu",
 				onPress = function()
 					UiLib.call("back", {})
 				end,
-			},
-		},
-	}
+			}),
+		}),
+	})
 end
 
 return Garage

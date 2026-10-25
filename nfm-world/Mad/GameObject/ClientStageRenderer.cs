@@ -1,6 +1,5 @@
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
-using Microsoft.Xna.Framework.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Util;
@@ -15,7 +14,6 @@ But does NOT hold any information relating to the actual game being played, unle
 */
 public class ClientStageRenderer : GameObject, IDisposable
 {
-    private GraphicsDevice _graphicsDevice;
     private bool _disposed;
 
     public Sky? sky;
@@ -32,6 +30,8 @@ public class ClientStageRenderer : GameObject, IDisposable
     private (bool drawPolys, int sx, int ncx, int sz, int ncz, int stagePartCount) _polysKey;
     private (bool drawClouds, int maxl, int maxr, int maxb, int maxt) _cloudsKey;
     private (bool drawMountains, int maxl, int maxr, int maxb, int maxt) _mountainsKey;
+
+    private int _lastIndex;
 
     // we use the object instance hashcode instead of the value hashcode for performance
     private class StageObjectVisualComparer : IEqualityComparer<StageObject>
@@ -56,9 +56,8 @@ public class ClientStageRenderer : GameObject, IDisposable
     /**
      * Loads stage currently set by checkpoints.stage onto stageContos
      */
-    public ClientStageRenderer(GraphicsDevice graphicsDevice, BackendStage backendStage)
+    public ClientStageRenderer(BackendStage backendStage)
     {
-        _graphicsDevice = graphicsDevice;
         this.backendStage = backendStage;
         Children = _mutableChildren;
         World.ResetValues();
@@ -71,7 +70,7 @@ public class ClientStageRenderer : GameObject, IDisposable
             if (stageLoader.DrawPolys)
             {
                 polys?.Dispose();
-                polys = Environment.MakePolys(backendStage, stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb, backendStage.StagePartCount, graphicsDevice);
+                polys = Environment.MakePolys(backendStage, stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb, backendStage.StagePartCount);
                 _polysKey = (stageLoader.DrawPolys, stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb, backendStage.StagePartCount);
             }
             else
@@ -82,7 +81,7 @@ public class ClientStageRenderer : GameObject, IDisposable
             if (stageLoader.DrawClouds)
             {
                 clouds?.Dispose();
-                clouds = Environment.MakeClouds(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt, graphicsDevice);
+                clouds = Environment.MakeClouds(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt);
                 _cloudsKey = (stageLoader.DrawClouds, stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt);
             }
             else
@@ -93,7 +92,7 @@ public class ClientStageRenderer : GameObject, IDisposable
             if (stageLoader.DrawMountains)
             {
                 mountains?.Dispose();
-                mountains = Environment.MakeMountains(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt, graphicsDevice);
+                mountains = Environment.MakeMountains(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt);
                 _mountainsKey = (stageLoader.DrawMountains, stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt);
             }
             else
@@ -112,7 +111,8 @@ public class ClientStageRenderer : GameObject, IDisposable
                     {
                         var clientObj = new StageObjectGameObject(mesh, obj)
                         {
-                            Parent = this
+                            Parent = this,
+                            Layer = _lastIndex++
                         };
                         _mutableChildren.Add(clientObj);
                         
@@ -122,7 +122,8 @@ public class ClientStageRenderer : GameObject, IDisposable
                     {
                         var clientObj = new FixHoop(mesh, obj)
                         {
-                            Parent = this
+                            Parent = this,
+                            Layer = _lastIndex++
                         };
                         _mutableChildren.Add(clientObj);
                         
@@ -132,7 +133,8 @@ public class ClientStageRenderer : GameObject, IDisposable
                     {
                         var clientObj = new StageObjectGameObject(mesh, obj)
                         {
-                            Parent = this
+                            Parent = this,
+                            Layer = _lastIndex++
                         };
                         _mutableChildren.Add(clientObj);
                         
@@ -147,8 +149,8 @@ public class ClientStageRenderer : GameObject, IDisposable
             Logging.Error($"Error in stage: {backendStage.Name}");
             Logging.Error(exception.ToString());
         }
-        sky = new Sky(graphicsDevice);
-        ground = new Ground(graphicsDevice);
+        sky = new Sky(GameSparker.GraphicsDevice);
+        ground = new Ground(GameSparker.GraphicsDevice);
     }
 
     public void DetectChanges(bool updateEnvironment = false)
@@ -190,19 +192,19 @@ public class ClientStageRenderer : GameObject, IDisposable
 
         if (_polysKey != polysKey)
         {
-            polys = Environment.MakePolys(backendStage, stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb, backendStage.StagePartCount, _graphicsDevice);
+            polys = Environment.MakePolys(backendStage, stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb, backendStage.StagePartCount);
             _polysKey = polysKey;
         }
 
         if (_cloudsKey != cloudsKey)
         {
-            clouds = Environment.MakeClouds(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt, _graphicsDevice);
+            clouds = Environment.MakeClouds(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt);
             _cloudsKey = cloudsKey;
         }
 
         if (_mountainsKey != mountainsKey)
         {
-            mountains = Environment.MakeMountains(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt, _graphicsDevice);
+            mountains = Environment.MakeMountains(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt);
             _mountainsKey = mountainsKey;
         }
 
@@ -218,7 +220,8 @@ public class ClientStageRenderer : GameObject, IDisposable
                 {
                     var clientObj = new StageObjectGameObject(mesh, obj)
                     {
-                        Parent = this
+                        Parent = this,
+                        Layer = _lastIndex++,
                     };
                     _mutableChildren.Add(clientObj);
 
@@ -228,7 +231,8 @@ public class ClientStageRenderer : GameObject, IDisposable
                 {
                     var clientObj = new FixHoop(mesh, obj)
                     {
-                        Parent = this
+                        Parent = this,
+                        Layer = _lastIndex++,
                     };
                     _mutableChildren.Add(clientObj);
 
@@ -238,7 +242,8 @@ public class ClientStageRenderer : GameObject, IDisposable
                 {
                     var clientObj = new StageObjectGameObject(mesh, obj)
                     {
-                        Parent = this
+                        Parent = this,
+                        Layer = _lastIndex++,
                     };
                     _mutableChildren.Add(clientObj);
                     

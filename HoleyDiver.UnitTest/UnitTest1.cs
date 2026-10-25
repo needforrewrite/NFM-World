@@ -1,6 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-
-namespace HoleyDiver.UnitTest;
+﻿namespace HoleyDiver.UnitTest;
 
 public class Tests
 {

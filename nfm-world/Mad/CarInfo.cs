@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework.Graphics;
-using NFMWorldLibrary;
+﻿using NFMWorldLibrary;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 
@@ -11,7 +10,7 @@ public class CarMesh : Mesh
     public LuaArray<Rad3dWheelDef> Wheels;
     public Rad3dRimsDef? Rims;
 
-    public CarMesh(GraphicsDevice graphicsDevice, Rad3d rad) : base(graphicsDevice, rad)
+    public CarMesh(Rad3d rad) : base(rad)
     {
         Stats = CarStats.ValidateStats(rad.Stats, rad.FileName);
 

@@ -22,7 +22,12 @@ public partial class ClientSidePlayer(ClientSidePlayerInfo info, int index, bool
     /// <summary>
     /// The zero-based index of the player.
     /// </summary>
-    [LuaName] public int Index { get; } = index;
+    public int Index { get; } = index;
+
+    /// <summary>
+    /// The one-based index of the player.
+    /// </summary>
+    [LuaName("index")] public int LuaIndex => Index + 1;
 
     /// <summary>
     /// Raised when <see cref="Car"/> is assigned a different car.

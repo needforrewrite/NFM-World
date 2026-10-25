@@ -326,6 +326,17 @@ x(Sx.Text) { function() return ("%d"):format(speedKmh()) end }
 - Use memos to factor out repeated calculations or derived state so you don't recompute the
   same thing in five places.
 
+**Don't wrap a single-consumer prop in a memo.** `style={Sx.createMemo(function() ... end)}`
+buys nothing over `style={function() ... end}`. A function-valued prop already gets its own
+effect in the renderer (section 9), and that effect is itself a computation that re-runs only
+when a signal it read changes — so both forms run the body exactly as often. The memo just
+adds a second node between the signal and the effect. It pays off when *several* consumers
+read the same derived value, or when an expensive computation is read from more than one
+place. And it does not make the renderer's reference-compare skip a `setProperty`: a body
+that returns a fresh `{ ... }` produces a new table on every recompute, memo or not. Only a
+body that can hand back an *unchanged* table (e.g. picking between constant style tables)
+gets that skip.
+
 ---
 
 ## 12. Typing reactive values: `Signalish`, `Accessor`, and `Sx.read`
@@ -389,10 +400,12 @@ which would read it once and bake it in (the "component runs once" trap from sec
 function-ness, not the value, so a getter that returns `false`/`nil` still resolves
 correctly.
 
-**Cache the resolved reference when it's expensive.** `GlassCard` shows the pattern: it
-resolves its `Signalish` style inside a memo and keeps the *last* resolved table, rebuilding
-only when the resolved reference actually changes — so a card whose style didn't change
-reuses the same table and the reactive style prop skips its `setProperty`.
+**Return a stable reference when you can.** The renderer's per-prop effect compares the new
+value to the last one and skips the host call when they're identical, so the win comes from
+handing back the *same table*, not from memoizing. `CarCard` in `routes/garage.luaux` shows
+the pattern: its style accessor picks between two module-level constant tables, so a card
+whose selection didn't change returns the identical table and the style prop skips its
+`setProperty`. An accessor that builds a fresh `{ ... }` each run can't get that skip.
 
 ---
 

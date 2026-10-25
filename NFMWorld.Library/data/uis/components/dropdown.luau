@@ -20,7 +20,7 @@ local theme = require("../../library/ui/theme")
 
 export type DropdownOption = { label: string, value: number }
 export type DropdownProps = {
-	options: { string } | { DropdownOption },
+	options: Sx.Signalish<{ string } | { DropdownOption }>,
 	value: Sx.Signalish<number?>,
 	onSelect: (number) -> (),
 	placeholder: string?,
@@ -45,7 +45,9 @@ local function toRows(options: { string } | { DropdownOption }): { DropdownOptio
 end
 
 local function Dropdown(props: DropdownProps)
-	local rows = toRows(props.options)
+	local rows = Sx.createMemo(function()
+		return toRows(Sx.read(props.options))
+	end)
 	local width = props.width or 160
 	local disabled = props.disabled == true
 	local placeholder = props.placeholder or "Select..."
@@ -73,7 +75,7 @@ local function Dropdown(props: DropdownProps)
 		local scissor = el.scissorRect
 		if pos == nil or size == nil or scissor == nil then return false end
 		local triggerBottom = pos.y + size.y
-		local popupHeight = math.min(#rows * ROW_H, MAX_H)
+		local popupHeight = math.min(#rows() * ROW_H, MAX_H)
 		local spaceBelow = (scissor.y + scissor.height) - triggerBottom
 		return popupHeight > spaceBelow
 	end
@@ -81,19 +83,20 @@ local function Dropdown(props: DropdownProps)
 	local function selectedLabel()
 		local v = Sx.read(props.value)
 		if v == nil then return placeholder end
-		for _, row in ipairs(rows) do
+		for _, row in ipairs(rows()) do
 			if row.value == v then return row.label end
 		end
 		return placeholder
 	end
 
 	-- Per-option row: its own hover signal so only the hovered option re-renders.
-	local function DropdownOptionRow(props: { opt: DropdownOption, value: Sx.Signalish<number?>, onSelect: (number) -> () })
+	local function DropdownOptionRow(props: { opt: Sx.Signalish<DropdownOption>, value: Sx.Signalish<number?>, onSelect: (number) -> () })
 		local hovered, setHovered = Sx.createSignal(false)
-		return x(Sx.View) {
-			style = Sx.createMemo(function(): Sx.Styles
+		local opt = Sx.read(props.opt)
+		return x(Sx.View)({
+			style = function(): Sx.Styles
 				local v = Sx.read(props.value)
-				local selected = v ~= nil and v == props.opt.value
+				local selected = v ~= nil and v == opt.value
 				return {
 					paddingTop = 7,
 					paddingBottom = 7,
@@ -103,10 +106,10 @@ local function Dropdown(props: DropdownProps)
 						or (hovered() and "rgba(255,255,255,0.08)" or "transparent"),
 					flexShrink = 0,
 				}
-			end),
+			end,
 			onmousedown = function()
 				if disabled then return end
-				props.onSelect(props.opt.value)
+				props.onSelect(opt.value)
 				setOpen(false)
 			end,
 			onmouseenter = function()
@@ -115,26 +118,25 @@ local function Dropdown(props: DropdownProps)
 			onmouseleave = function()
 				setHovered(false)
 			end,
-			x(Sx.Text) {
-				style = Sx.createMemo(function(): Sx.TextStyles
+			x(Sx.Text)({
+				style = function(): Sx.TextStyles
 					local v = Sx.read(props.value)
-					local selected = v ~= nil and v == props.opt.value
+					local selected = v ~= nil and v == opt.value
 					return {
 						fontSize = 13,
 						color = selected and theme.accent or (hovered() and "#fff" or "rgba(255,255,255,0.8)"),
 					}
-				end),
-				props.opt.label,
-			},
-		}
+				end,
+				opt.label,
+			}),
+		})
 	end
 
-	return x(Sx.View) {
-		style = { position = "relative", width = width },
-		x(Sx.View) {
+	return x(Sx.View)({ style = { position = "relative", width = width },
+		x(Sx.View)({
 			ref = triggerRef,
 			tabindex = 0,
-			style = Sx.createMemo(function(): Sx.Styles
+			style = function(): Sx.Styles
 				local isOpen = open()
 				local hov = hovered() and not disabled
 				return {
@@ -152,7 +154,7 @@ local function Dropdown(props: DropdownProps)
 					borderColor = isOpen and "rgba(79,195,247,0.6)" or (hov and "rgba(255,255,255,0.4)" or "rgba(255,255,255,0.15)"),
 					borderRadius = 6,
 				}
-			end),
+			end,
 			onmousedown = function()
 				if disabled then return end
 				setOpenUp(computeOpenUp())
@@ -168,19 +170,18 @@ local function Dropdown(props: DropdownProps)
 			onmouseleave = function()
 				setHovered(false)
 			end,
-			x(Sx.Text) {
-				style = Sx.createMemo(function(): Sx.TextStyles
+			x(Sx.Text)({
+				style = function(): Sx.TextStyles
 					local isOpen = open()
 					return { fontSize = 13, color = isOpen and "#fff" or "rgba(255,255,255,0.8)" }
-				end),
+				end,
 				function() return selectedLabel() end,
-			},
-			x(Sx.Text) { style = { fontSize = 12, color = "rgba(255,255,255,0.5)", flexShrink = 0 }, "▾" },
-		},
-		x(Sx.Show) {
-			when = function() return open() end,
-			x(Sx.View) {
-				style = Sx.createMemo(function(): Sx.Styles
+			}),
+			x(Sx.Text)({ style = { fontSize = 12, color = "rgba(255,255,255,0.5)", flexShrink = 0 }, "▾" }),
+		}),
+		x(Sx.Show)({ when = function() return open() end,
+			x(Sx.View)({
+				style = function(): Sx.Styles
 					local up = openUp()
 					local popupStyle: Sx.Styles = {
 						position = "absolute",
@@ -202,20 +203,19 @@ local function Dropdown(props: DropdownProps)
 						popupStyle.top = "100%"
 					end
 					return popupStyle
-				end),
-				x(Sx.For<<DropdownOption>>) {
-					each = function() return rows end,
+				end,
+				x(Sx.For<<DropdownOption>>)({ each = function() return rows() end,
 					function(item: () -> DropdownOption, _index: number)
-						return x(DropdownOptionRow) {
-							opt = item(),
+						return x(DropdownOptionRow)({
+							opt = function() return item() end,
 							value = props.value,
 							onSelect = props.onSelect,
-						}
+						})
 					end,
-				},
-			},
-		},
-	}
+				}),
+			}),
+		}),
+	})
 end
 
 return Dropdown

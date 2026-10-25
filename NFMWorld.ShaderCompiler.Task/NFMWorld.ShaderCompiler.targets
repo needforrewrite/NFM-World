@@ -1,0 +1,170 @@
+﻿<Project>
+
+    <!-- The shader build, as a target any project can import.
+         A .targets rather than inline XML in nfm-world/NFMWorld.csproj because the pieces are
+         separable - the task assembly, its packaging, and the target that drives it - and because
+         this is the same shape the repo's other build-time component uses (NFMWorld.ShaderSourceGen's
+         .props). The consumer sets the two properties below and imports this. -->
+
+    <PropertyGroup>
+        <!-- dotnet build only: the task targets net11.0 (it needs NativeMemory.Alloc to hand
+             include text to shaderc), so .NET Framework msbuild.exe cannot load it. Without this
+             guard the failure is a UsingTask load error that reads like a missing file.
+
+             Overridable, together with NFMWorldShaderBuildTask below, so a caller that already has
+             the task assembly built - a CI job that builds it once for several projects, or anyone
+             pointing at a side-by-side build - is not forced to have this file rebuild it. -->
+        <NFMWorldShaderTaskAssembly Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(NFMWorldShaderTaskAssembly)' == ''">$(MSBuildThisFileDirectory)..\NFMWorld.ShaderCompiler.Task\bin\$(Configuration)\net11.0\NFMWorld.ShaderCompiler.Task.dll</NFMWorldShaderTaskAssembly>
+        <NFMWorldShaderBuildTask Condition="'$(NFMWorldShaderBuildTask)' == ''">true</NFMWorldShaderBuildTask>
+    </PropertyGroup>
+
+    <!-- Loaded out-of-process, which is what makes rebuilding it possible at all.
+         MSBuild loads an in-process task by mapping its assembly, and Windows will not let any process
+         overwrite a mapped file - so the moment ShaderCompileTask runs once, its own project can no
+         longer be rebuilt, and the build fails with MSB3027 "locked by .NET Host, MSBuild.dll" naming
+         processes that are in fact just build nodes. Editing the task or the compiler would then
+         require killing MSBuild by hand, which is not a thing anyone should have to know.
+         TaskHostFactory puts the task in a separate task-host process instead, so the parent never
+         maps the file and the nested build is free to replace it. It is the facility MSBuild provides
+         for precisely this shape - a task assembly built by the build that uses it. -->
+    <UsingTask TaskName="NFMWorld.ShaderCompiler.Task.ShaderCompileTask"
+               AssemblyFile="$(NFMWorldShaderTaskAssembly)"
+               TaskFactory="TaskHostFactory"
+               Runtime="NET" />
+
+    <!--
+      Builds the task assembly before anything tries to load it.
+
+      A ProjectReference from the consumer would not do: it would add this assembly to the consumer's
+      C# references, which is not wanted (MSBuild loads it as a task), and it still would not
+      guarantee the DLL exists at the moment UsingTask resolves its path - UsingTask is evaluated
+      before the build graph is, so the file has to be on disk by then. Building it from here, as the
+      first thing CompileShaders does, is what makes a clean checkout work.
+
+      Unconditional, rather than Inputs/Outputs against the task DLL. The check would have to be on
+      the copy in bin/, and bin/ is only ever a copy of obj/ - a bin DLL that is newer than the
+      sources does not mean its contents are current, so the check can decide "up to date" while
+      holding a stale assembly, and the symptom (MSB4064 naming a parameter the source plainly
+      declares) points at the wrong file. Nothing is lost by not making it conditional: the nested
+      build is fully incremental on its own, so an up-to-date tree returns in milliseconds without
+      rewriting the DLL, and MSBuild de-duplicates identical nested requests, so two projects
+      importing this file do not race to build it.
+
+      TargetFramework is pinned rather than inherited: this projects net11.0 while the consumer may
+      not, and the path in NFMWorldShaderTaskAssembly names net11.0 explicitly.
+    -->
+    <Target Name="BuildShaderCompilerTask"
+            Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(NFMWorldShaderBuildTask)' == 'true'">
+        <MSBuild Projects="$(MSBuildThisFileDirectory)..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.Task.csproj"
+                 Targets="Build"
+                 Properties="Configuration=$(Configuration);TargetFramework=net11.0" />
+    </Target>
+
+    <!-- Property defaults, so a consumer only has to name its shader directory. -->
+    <PropertyGroup>
+        <NFMWorldShadersDirectory Condition="'$(NFMWorldShadersDirectory)' == ''">$(MSBuildProjectDirectory)\data\shaders</NFMWorldShadersDirectory>
+    </PropertyGroup>
+
+    <!--
+      Where the bundles go. Under obj/ rather than a generated/ folder in the source tree: they are
+      build output, one per technique, and are not committed. obj/ is also already excluded from the
+      SDK's default **/*.cs glob, so nothing picks them up implicitly - see IncludeShaders below for
+      why they are added to Compile by hand.
+
+      Resolved in a target, and against MSBuildProjectDirectory, for a reason that is not obvious.
+      IntermediateOutputPath does not exist yet when this file is imported: it is set by the SDK's
+      .targets, which are imported after the project body, so a PropertyGroup at this point in the
+      file sees it empty and quietly yields "ShaderCompiler\" beside the csproj. Resolving it in a
+      target defers the read until every property is final. The absolute form matters for the second
+      half of the same problem: IntermediateOutputPath is relative (obj\Debug\net11.0\), and this
+      value is handed to a task, which resolves relative paths against the *process* working
+      directory - which under TaskHostFactory is not the project directory either. The trailing
+      separator is load-bearing; it is concatenated with a bare file name below.
+    -->
+    <Target Name="ResolveShaderPaths" Condition="'$(MSBuildRuntimeType)' == 'Core'">
+        <PropertyGroup>
+            <NFMWorldShadersOutputDirectory Condition="'$(NFMWorldShadersOutputDirectory)' == ''">$(MSBuildProjectDirectory)\$(IntermediateOutputPath)ShaderCompiler\</NFMWorldShadersOutputDirectory>
+        </PropertyGroup>
+    </Target>
+
+    <!-- The shader sources, as an item. The .fxh headers are part of Inputs but not of Shaders:
+         they are included by the .fx files rather than compiled on their own, so they invalidate the
+         build but produce no bundle. Mad.fxh in particular is included by four shaders, and editing
+         it has to re-run all four. -->
+    <ItemGroup>
+        <NFMWorldShaderSource Include="$(NFMWorldShadersDirectory)\*.fx" />
+        <NFMWorldShaderHeader Include="$(NFMWorldShadersDirectory)\*.fxh" />
+    </ItemGroup>
+
+    <!--
+      Compiles every shader, unless nothing it depends on has changed.
+
+      Before CoreCompile because the generated types are what the app's renderer code is written
+      against - compiling the C# first would report every effect wrapper as a missing type.
+
+      The Outputs is a single stamp rather than the bundles themselves, because the mapping from
+      source to bundle is one-to-many: Nvg.fx yields four (one per technique), Poly.fx two. MSBuild
+      compares Inputs against Outputs by timestamp, so a `%(Filename).g.cs` expression would name
+      files that do not exist and the target would recompile the shaders on every build. The stamp
+      is written by the task once the whole batch has succeeded, which is also the only correct
+      moment - a partial run must not look up to date.
+    -->
+    <Target Name="CompileShaders"
+            BeforeTargets="CoreCompile"
+            DependsOnTargets="ResolveShaderPaths;BuildShaderCompilerTask"
+            Condition="'$(MSBuildRuntimeType)' == 'Core'"
+            Inputs="@(NFMWorldShaderSource);@(NFMWorldShaderHeader);$(NFMWorldShaderTaskAssembly)"
+            Outputs="$(NFMWorldShadersOutputDirectory)shaders.stamp">
+
+        <!-- No <Output> here on purpose. The bundles are picked up by IncludeShaders' glob, which
+             runs every build and is the single place the item is populated - emitting them here as
+             well would append the same twelve paths to the same item on every build in which this
+             target runs, and that shows up as CSC warning CS2002 "specified multiple times" for
+             each one. (It is only visible on the first build: afterwards this target is skipped as
+             up to date, which is exactly the kind of bug that survives a naive re-run.) -->
+        <ShaderCompileTask Shaders="@(NFMWorldShaderSource)"
+                           OutputDirectory="$(NFMWorldShadersOutputDirectory)"
+                           StampFile="$(NFMWorldShadersOutputDirectory)shaders.stamp" />
+
+        <!-- The stamp is registered here and only here - it is written by this target alone, so this
+             is the only place that knows it exists. The bundles are *not* registered here: they are
+             registered in IncludeShaders, which runs every build, because a registration that only
+             happens when this target runs is what makes IncrementalClean delete them on the next
+             build. See the comment there. -->
+        <ItemGroup>
+            <FileWrites Include="$(NFMWorldShadersOutputDirectory)shaders.stamp" />
+        </ItemGroup>
+    </Target>
+
+    <!--
+      Adds the bundles to the C# compile, and registers them as build output.
+
+      A separate target that always runs, rather than an ItemGroup inside CompileShaders, because
+      that target is skipped when the shaders are up to date - and a skipped target contributes no
+      items, so the generated types would vanish from every incremental build. Globbing the output
+      directory here is what makes that work: the bundles persist between builds, so this finds them
+      whether or not the compiler ran this time. It is deliberately the only place they are added to
+      Compile, which is what keeps them from being included twice.
+
+      The FileWrites registration has to live here rather than only in CompileShaders for a reason
+      worth spelling out, because getting it wrong deletes the bundles. IncrementalClean runs at the
+      end of every build and deletes whatever is in the previous build's FileWrites record but not in
+      the current one - so a target that registers its outputs only when it actually runs will have
+      its outputs deleted by the *next* build, the one where it was skipped as up to date. That is
+      exactly what happened here: build 1 wrote twelve bundles and recorded them, build 2 skipped
+      CompileShaders (so registered nothing) and IncrementalClean deleted all twelve as orphans, and
+      the next build that needed CoreCompile failed with a missing type per bundle. Registering the
+      globbed set here, in the target that always runs, is what keeps the record continuous.
+    -->
+    <Target Name="IncludeShaders"
+            BeforeTargets="CoreCompile"
+            DependsOnTargets="CompileShaders"
+            Condition="'$(MSBuildRuntimeType)' == 'Core'">
+        <ItemGroup>
+            <NFMWorldShaderBundle Include="$(NFMWorldShadersOutputDirectory)*.g.cs" />
+            <Compile Include="@(NFMWorldShaderBundle)" />
+            <FileWrites Include="@(NFMWorldShaderBundle)" />
+        </ItemGroup>
+    </Target>
+
+</Project>

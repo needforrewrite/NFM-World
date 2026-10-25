@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- The real abstraction the generated bundle has to satisfy. -->
+        <ProjectReference Include="..\..\..\NFMWorld.Shaders.Abstraction\NFMWorld.Shaders.Abstraction.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Exactly the files the shader compiler emitted, nothing hand-written. -->
+        <Compile Include="..\*.g.cs" LinkBase="Generated" />
+    </ItemGroup>
+
+</Project>

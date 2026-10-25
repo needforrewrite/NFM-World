@@ -1,9 +1,7 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using Hexa.NET.ImGui;
 using Maxine.Extensions;
 using Maxine.Extensions.Collections;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.Gameplay;
 using NFMWorld.Util;
@@ -19,45 +17,47 @@ namespace NFMWorld.UI;
 
 public partial class StageEditorPhase
 {
-    public override void Render(float alpha)
+    public override void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
     {
         if (!_isOpen) return;
         if (ActiveTab == null) return;
+
+        // Pending top-down export (requested from the export dialog, see _exportRequested).
+        if (_exportRequested)
+        {
+            _exportRequested = false;
+            ExportTopDownImage(cb);
+        }
         
         // Clear with appropriate background color based on view mode
         if (ActiveTab.ViewMode == StageEditorTab.ViewModeEnum.TopDown)
         {
             // Gray background for top-down view
-            _graphicsDevice.Clear(new Color(128, 128, 128));
+            cb.Clear(NFMWorld.Graphics.ClearOptions.Color, new NFMWorld.Graphics.ColorRgba(128 / 255f, 128 / 255f, 128 / 255f));
         }
         else
         {
             // Sky blue background for 3D scene view
-            _graphicsDevice.Clear(new Color(135, 206, 235));
+            cb.Clear(NFMWorld.Graphics.ClearOptions.Color, new NFMWorld.Graphics.ColorRgba(135 / 255f, 206 / 255f, 235 / 255f));
         }
         
-        // Set up scissor rectangle to only render within the viewport area
-        var oldScissorRect = _graphicsDevice.ScissorRectangle;
-        var oldRasterizerState = _graphicsDevice.RasterizerState;
-        
-        // Only set scissor if we have valid viewport bounds
+        // Clip the 3D view to the ImGui viewport rect the panels computed, so scene geometry doesn't
+        // bleed under/over the editor's panels. Every game pipeline has scissor testing enabled
+        // (Effects.ScissorRasterizer), so setting the rect is all this needs; CullMode needs no
+        // equivalent of the old RasterizerState override, since each pipeline already bakes its own.
+        // When no valid rect is known, bind the full-window one - the invariant every place that
+        // binds a target or viewport follows (see WorldGame.SetFullScreenScissor).
         if (_viewportMax.X > _viewportMin.X && _viewportMax.Y > _viewportMin.Y)
         {
-            var scissorRect = new Rectangle(
+            cb.SetScissorRect(new NFMWorld.Graphics.ScissorRect(
                 (int)_viewportMin.X,
                 (int)_viewportMin.Y,
                 (int)(_viewportMax.X - _viewportMin.X),
-                (int)(_viewportMax.Y - _viewportMin.Y)
-            );
-            
-            var rasterizerState = new RasterizerState
-            {
-                CullMode = CullMode.CullCounterClockwiseFace,
-                ScissorTestEnable = true
-            };
-            
-            _graphicsDevice.ScissorRectangle = scissorRect;
-            _graphicsDevice.RasterizerState = rasterizerState;
+                (int)(_viewportMax.Y - _viewportMin.Y)));
+        }
+        else
+        {
+            GameSparker.Game.SetFullScreenScissor(cb);
         }
         
         // Render the 3D scene
@@ -86,7 +86,7 @@ public partial class StageEditorPhase
                 World.FadeFrom = Math.Max(oldFadeFrom, topDownFadeFrom);
                 
                 // Render with lighting preserved
-                ActiveTab?.Scene.Render(alpha, false);
+                ActiveTab?.Scene.Render(cb, alpha, false);
                 
                 // Restore environment elements
                 ActiveTab?.StageRenderer.ground = oldGround;
@@ -99,7 +99,7 @@ public partial class StageEditorPhase
             else
             {
                 // Normal 3D view with lighting and ground
-                ActiveTab?.Scene.Render(alpha, false);
+                ActiveTab?.Scene.Render(cb, alpha, false);
             }
         }
         
@@ -107,32 +107,32 @@ public partial class StageEditorPhase
         if (ActiveTab != null)
         // Wall meshes are now part of the Scene (added in RecreateScene), no separate render needed
         
-        // Restore old state
-        _graphicsDevice.ScissorRectangle = oldScissorRect;
-        _graphicsDevice.RasterizerState = oldRasterizerState;
-        
+        // Highlights, gizmo and the placement ghost are drawn outside the viewport rect on purpose -
+        // matching the pre-migration order, which restored the scissor before them.
+        GameSparker.Game.SetFullScreenScissor(cb);
+
         // Render selection highlight for all selected pieces, gizmo on primary
-        RenderSelectionHighlights(ActiveTab);
-        RenderSelectedWallHighlight(ActiveTab);
+        RenderSelectionHighlights(cb, ActiveTab);
+        RenderSelectedWallHighlight(cb, ActiveTab);
         if (ActiveTab.ActivePieceId >= 0)
         {
             var selectedPiece = ActiveTab.ScenePieces.GetValueOrDefault(ActiveTab.ActivePieceId);
             if (selectedPiece?.Obj != null)
-                Debug.RenderGizmo(ComputeSelectionCentroid(), activeCamera, ref _gizmoHovered, ref _gizmoDragging, new Vector2(_mouseX, _mouseY));
+                Debug.RenderGizmo(cb, GameSparker.GraphicsDevice, ComputeSelectionCentroid(), activeCamera, ref _gizmoHovered, ref _gizmoDragging, new Vector2(_mouseX, _mouseY));
         }
         
         // Process pending preview thumbnails
         while (_previewQueue.Count > 0) 
-            ProcessOnePreviewThumbnail();
+            ProcessOnePreviewThumbnail(cb);
         
         // Render placement ghost if in placement mode and mouse is over viewport
         if (_pendingPlacementPartIndex >= 0 && _hasValidPlacementPos)
-            RenderPlacementPreview();
+            RenderPlacementPreview(cb);
         
         // Clear the depth buffer so ImGui always renders on top of the 3D scene.
         // Without this, geometry close to the camera writes near-zero depth values and
         // ImGui pixels (rendered later with DepthRead) fail the depth test at those positions.
-        _graphicsDevice.Clear(ClearOptions.DepthBuffer, Color.Black, 1.0f, 0);
+        cb.Clear(NFMWorld.Graphics.ClearOptions.Depth, default, 1f, 0);
     }
     
 }

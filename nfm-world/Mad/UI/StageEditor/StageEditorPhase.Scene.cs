@@ -1,9 +1,7 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using Hexa.NET.ImGui;
 using Maxine.Extensions;
 using Maxine.Extensions.Collections;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.Gameplay;
 using NFMWorld.Util;
@@ -44,7 +42,7 @@ public partial class StageEditorPhase
         if (ActiveTab?.Stage == null) return;
 
         if (ActiveTab.StageRenderer == null)
-            ActiveTab.StageRenderer = new ClientStageRenderer(_graphicsDevice, ActiveTab.Stage);
+            ActiveTab.StageRenderer = new ClientStageRenderer(ActiveTab.Stage);
         else
             ActiveTab.StageRenderer.DetectChanges(true);
         
@@ -86,23 +84,23 @@ public partial class StageEditorPhase
     private void RecreateEnvironment()
     {
         if (ActiveTab?.StageRenderer == null) return;
-        ActiveTab.StageRenderer.sky = new Sky(_graphicsDevice);
-        ActiveTab.StageRenderer.ground = new Ground(_graphicsDevice);
+        ActiveTab.StageRenderer.sky = new Sky(GameSparker.GraphicsDevice);
+        ActiveTab.StageRenderer.ground = new Ground(GameSparker.GraphicsDevice);
         if (ActiveTab.PolysEnabled && ActiveTab.Stage != null)
         {
             if (_autoGeneratePolys)
-                ActiveTab.StageRenderer.polys = Environment.MakePolys(ActiveTab.Stage, -10000, 20000, -10000, 20000, ActiveTab.ScenePieces.Count, _graphicsDevice);
+                ActiveTab.StageRenderer.polys = Environment.MakePolys(ActiveTab.Stage, -10000, 20000, -10000, 20000, ActiveTab.ScenePieces.Count);
             // else: preserve existing polys (don't touch) so manually-generated polys from the
             //        Properties dialog survive across piece placements when auto-generate is off.
         }
         else
             ActiveTab.StageRenderer.polys = null;
         if (ActiveTab.CloudsEnabled)
-            ActiveTab.StageRenderer.clouds = Environment.MakeClouds(-10000, 10000, -10000, 10000, _graphicsDevice);
+            ActiveTab.StageRenderer.clouds = Environment.MakeClouds(-10000, 10000, -10000, 10000);
         else
             ActiveTab.StageRenderer.clouds = null;
         if (ActiveTab.MountainsEnabled)
-            ActiveTab.StageRenderer.mountains = Environment.MakeMountains(-10000, 10000, -10000, 10000, _graphicsDevice);
+            ActiveTab.StageRenderer.mountains = Environment.MakeMountains(-10000, 10000, -10000, 10000);
         else
             ActiveTab.StageRenderer.mountains = null;
     }

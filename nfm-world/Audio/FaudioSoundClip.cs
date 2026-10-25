@@ -1,4 +1,6 @@
-using Microsoft.Xna.Framework.Audio;
+using System.Runtime.InteropServices;
+using Maxine.Extensions.Collections;
+using NFMWorld.Audio.FAudioBindings;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorldLibrary;
@@ -6,9 +8,9 @@ using NFMWorldLibrary;
 namespace NFMWorld.Audio;
 
 /// <summary>
-/// Implements <see cref="ISoundClip"/> using FNA's SoundEffect/SoundEffectInstance
-/// for short sound effect playback.
-/// Replaces the ManagedBass-based SoundClip.
+/// Implements <see cref="ISoundClip"/> by driving an FAudio source voice directly, for short
+/// sound effect playback. Replaces the FNA <c>SoundEffect</c>/<c>SoundEffectInstance</c>-based
+/// implementation.
 /// </summary>
 public sealed class FaudioSoundClip : ISoundClip
 {
@@ -18,8 +20,19 @@ public sealed class FaudioSoundClip : ISoundClip
     /// </summary>
     private static readonly List<FaudioSoundClip> Pool = [];
 
-    private readonly SoundEffect _effect;
-    private SoundEffectInstance? _instance;
+    /// <summary>
+    /// Decoded PCM for this clip, kept alive for the clip's lifetime: FAudio reads from it
+    /// whenever a voice has it queued. A plain owned copy rather than the decoder's pooled
+    /// segment, because <see cref="ISoundClip"/> has no Dispose - there is nowhere to
+    /// return a pooled buffer to.
+    /// </summary>
+    private readonly byte[] _pcm;
+
+    private readonly int _sampleRate;
+    private readonly int _channels;
+
+    private IntPtr _voice;
+    private GCHandle _pcmHandle;
 
     /// <summary>
     /// Loads a sound effect from a filesystem path.
@@ -36,36 +49,79 @@ public sealed class FaudioSoundClip : ISoundClip
         // Decode to PCM (stream formats only; SFX are not tracker formats)
         using var result = AudioDecoder.Decode(stream, extension);
 
-        // Create SoundEffect (non-looped by default — loop flag set per-play)
-        _effect = new SoundEffect(result.PcmData, result.SampleRate, result.Channels);
+        // Copy out of the decoder's pooled buffer: disposing `result` returns it to the pool, and
+        // this clip outlives that scope. The old SoundEffect-based implementation copied too.
+        _pcm = result.PcmData.AsSpan(0, result.PcmData.Count).ToArray();
+        _sampleRate = result.SampleRate;
+        _channels = (int)result.Channels;
 
         Pool.Add(this);
     }
 
-    public void Play()
+    public void Play() => StartVoice(loop: false);
+
+    public void Loop() => StartVoice(loop: true);
+
+    private void StartVoice(bool loop)
     {
-        // Create a fresh instance each time (Stop destroys the FAudio voice)
-        _instance?.Dispose();
-        _instance = _effect.CreateInstance();
-        _instance.IsLooped = false;
-        _instance.Volume = IRadicalMusic.CurrentVolume;
-        _instance.Play();
+        // Voices are single-use once their buffer has played out, so every start builds a fresh
+        // one - matching the old per-Play SoundEffectInstance.
+        StopVoice();
+
+        var engine = FaudioEngine.Instance;
+        if (engine is null)
+            return; // no audio device - play silently rather than failing
+
+        _voice = engine.CreateSourceVoice(_sampleRate, _channels);
+        if (_voice == IntPtr.Zero || !TrySubmitBuffer(loop))
+        {
+            StopVoice();
+            return;
+        }
+
+        FAudio.FAudioVoice_SetVolume(_voice, IRadicalMusic.CurrentVolume, 0);
+        FAudio.FAudioSourceVoice_Start(_voice, 0, 0);
     }
 
-    public void Loop()
+    /// <summary>Pins this clip's PCM and queues it on the current voice, optionally looping forever.</summary>
+    private bool TrySubmitBuffer(bool loop)
     {
-        // Create a fresh instance for looping
-        _instance?.Dispose();
-        _instance = _effect.CreateInstance();
-        _instance.IsLooped = true;
-        _instance.Volume = IRadicalMusic.CurrentVolume;
-        _instance.Play();
+        if (_pcm.Length == 0)
+            return false;
+
+        _pcmHandle = GCHandle.Alloc(_pcm, GCHandleType.Pinned);
+
+        var buffer = new FAudio.FAudioBuffer
+        {
+            Flags = 0,
+            AudioBytes = (uint)_pcm.Length,
+            pAudioData = _pcmHandle.AddrOfPinnedObject(),
+            PlayBegin = 0,
+            PlayLength = 0, // 0 = to the end of the buffer
+            LoopBegin = 0,
+            LoopLength = 0, // 0 = to the end of the buffer
+            LoopCount = loop ? FAudio.FAUDIO_LOOP_INFINITE : 0,
+            pContext = IntPtr.Zero,
+        };
+
+        return FAudio.FAudioSourceVoice_SubmitSourceBuffer(_voice, ref buffer, IntPtr.Zero) == 0;
     }
 
-    public void Stop()
+    public void Stop() => StopVoice();
+
+    private void StopVoice()
     {
-        _instance?.Stop();
-        _instance = null;
+        if (_voice == IntPtr.Zero)
+            return;
+
+        FAudio.FAudioSourceVoice_Stop(_voice, 0, 0);
+        // Destroying the voice is what makes FAudio stop reading pAudioData, so the pin can only
+        // be released after this call.
+        FaudioEngine.Instance?.DestroyVoice(_voice);
+        _voice = IntPtr.Zero;
+
+        if (_pcmHandle.IsAllocated)
+            _pcmHandle.Free();
     }
 
     /// <summary>
@@ -87,7 +143,8 @@ public sealed class FaudioSoundClip : ISoundClip
     {
         foreach (var clip in Pool)
         {
-            clip._instance?.Volume = vol;
+            if (clip._voice != IntPtr.Zero)
+                FAudio.FAudioVoice_SetVolume(clip._voice, vol, 0);
         }
     }
 }

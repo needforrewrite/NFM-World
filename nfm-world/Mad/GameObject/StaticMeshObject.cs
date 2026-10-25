@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
@@ -14,14 +13,14 @@ public class StaticMeshObject : MeshedGameObject
 {
     public Rad3d Rad { get; }
 
-    public StaticMeshObject(GraphicsDevice graphicsDevice, Rad3d rad)
-        : base(new CarMesh(graphicsDevice, rad))
+    public StaticMeshObject(Rad3d rad)
+        : base(new CarMesh(rad))
     {
         Rad = rad;
     }
 
-    public StaticMeshObject(GraphicsDevice graphicsDevice, Rad3d rad, f64Vector3 position, f64Euler rotation)
-        : base(new CarMesh(graphicsDevice, rad), position, rotation)
+    public StaticMeshObject(Rad3d rad, f64Vector3 position, f64Euler rotation)
+        : base(new CarMesh(rad), position, rotation)
     {
         Rad = rad;
     }

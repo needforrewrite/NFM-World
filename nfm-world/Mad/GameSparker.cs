@@ -1,10 +1,10 @@
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.InteropServices;
-using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.Accounts;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Gameplay;
+using NFMWorld.Graphics;
 using NFMWorld.Sfx;
 using NFMWorld.UI;
 using NFMWorld.UI.Cef;
@@ -20,8 +20,14 @@ namespace NFMWorld;
 
 public static partial class GameSparker
 {
-    public static WorldGame Game = null!;
-    public static GraphicsDevice GraphicsDevice = null!;
+    public static readonly UnlimitedArray<IRenderTarget?> ShadowRenderTargets = [];
+    public static bool LowLatency = false;
+    public static int NumCascades = 3;
+    public static int ShadowResolution = 2048;
+
+    public static IGameHost Game = null!;
+
+    public static IGraphicsDevice GraphicsDevice = null!;
     public static readonly string version = GetVersionString();
     public static AccountManager AccountManager = new AccountManager();
 
@@ -30,6 +36,22 @@ public static partial class GameSparker
     /// this to register/unregister their <see cref="PhaseBridge"/> instances.
     /// </summary>
     public static UiRenderer? UiRenderer { get; set; }
+
+    public static void RebuildCascades()
+    {
+        foreach (var target in ShadowRenderTargets)
+        {
+            target?.Dispose();
+        }
+        ShadowRenderTargets.Clear();
+
+        for (var i = 0; i < NumCascades; i++)
+        {
+            ShadowRenderTargets.Add(GraphicsDevice.CreateRenderTarget(new RenderTargetDesc(
+                ShadowResolution, ShadowResolution, TextureFormat.Single,
+                HasDepthStencil: true, TextureFormat.Depth24Stencil8)));
+        }
+    }
 
     private static string GetVersionString()
     {
@@ -154,7 +176,7 @@ public static partial class GameSparker
         DebugKeyStates[key] = true;
 
         var bindings = SettingsMenu.Bindings;
-        
+
         if (key == bindings.ToggleDevConsole)
         {
             devConsole.Toggle();
@@ -220,17 +242,16 @@ public static partial class GameSparker
         
         return stages;
     }
-    public static void Load(WorldGame game)
+    public static void Load(IGameHost game)
     {
         Game = game;
-        GraphicsDevice = game.GraphicsDevice;
 
         foreach (var stageParts in (Span<UnlimitedArray<Rad3d>>)[BackendGameSparker.stage_parts, BackendGameSparker.vendor_stage_parts, BackendGameSparker.user_stage_parts])
         foreach (var stagePart in stageParts)
         {
             try
             {
-                var mesh = new Mesh(GraphicsDevice, stagePart);
+                var mesh = new Mesh(stagePart);
                 stage_part_meshes[stagePart] = mesh;
             }
             catch (Exception ex)
@@ -239,19 +260,19 @@ public static partial class GameSparker
                 Logging.Debug($"Error creating mesh for stage part '{stagePart.FileName}': {ex.Message}\n{ex.StackTrace}");
             }
         }
-        
-        error_mesh = new Mesh(GraphicsDevice, BackendGameSparker.error_mesh);
+
+        error_mesh = new Mesh(BackendGameSparker.error_mesh);
 
         SfxLibrary.LoadSounds();
 
         // init menu
-        SettingsMenu = new SettingsMenu(game);
+        SettingsMenu = new SettingsMenu();
         PhaseSharedState.SelectedStageName = "nfm2/16_4dv";
-        MainMenuPhase = new MainMenuPhase(GraphicsDevice, PhaseSharedState.SelectedStageName);
+        MainMenuPhase = new MainMenuPhase(PhaseSharedState.SelectedStageName);
 
         Phases.SetRoot(MainMenuPhase);
     }
-    
+
     public static Mesh GetStagePartMesh(Rad3d stagePart)
     {
         ref var mesh = ref CollectionsMarshal.GetValueRefOrAddDefault(stage_part_meshes, stagePart, out var exists);
@@ -260,14 +281,14 @@ public static partial class GameSparker
             return mesh!;
         }
 
-        return mesh = new Mesh(GraphicsDevice, stagePart);
+        return mesh = new Mesh(stagePart);
     }
 
     public static void StartModelViewer()
     {
         PushPhase(new ModelEditorPhase(GraphicsDevice));
     }
-    
+
     public static void ExitEditor()
     {
         PopPhase();
@@ -290,13 +311,14 @@ public static partial class GameSparker
         FrameTrace.ClearMessages();
     }
 
-    public static void Render()
+    public static void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
     {
+        CurrentPhase.Render(cb, alpha);
     }
 
-    public static void Render3DOverlays()
+    public static void Render3DOverlays(NFMWorld.Graphics.ICommandBuffer cb)
     {
-        CurrentPhase.Render3DOverlays();
+        CurrentPhase.Render3DOverlays(cb);
     }
 
     public static void RenderImgui()

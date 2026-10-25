@@ -1,5 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
-using NFMWorld.DriverInterface;
+﻿using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.UI.Cef;
 using NFMWorld.Util;
@@ -32,12 +31,12 @@ public class GaragePhase : BaseStageRenderingPhase
 
     private readonly GarageBridge _bridge = new();
 
-    public GaragePhase(GraphicsDevice graphicsDevice, string? stageName = null) : base(graphicsDevice, stageName ?? GameSparker.GetAvailableStages().Shuffle().First())
+    public GaragePhase(string? stageName = null) : base(stageName ?? GameSparker.GetAvailableStages().Shuffle().First())
     {
         InitBridge();
     }
 
-    public GaragePhase(GraphicsDevice graphicsDevice, Rad3d currentCar, string? stageName = null) : this(graphicsDevice, stageName)
+    public GaragePhase(Rad3d currentCar, string? stageName = null) : this(stageName)
     {
         _selectedCarIdx = _cars.FindIndex(c =>
         {

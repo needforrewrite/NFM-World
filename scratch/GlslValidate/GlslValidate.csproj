@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+      A one-off harness, not part of any build the game depends on.
+
+      It exists because sokol reports a GLSL compile/link failure only by *logging* it, and this
+      app's sink is a native callback, so the failure is invisible to a test. Running the real
+      generated bundle through the real sokol.dll is the only way to get the driver's own diagnostic
+      message - see README.md.
+    -->
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <PlatformTarget>x64</PlatformTarget>
+        <RootNamespace>GlslValidate</RootNamespace>
+        <!-- The generated bundles are plain C# with no project of their own, so they are compiled
+             into this exe by a compile item rather than referenced. -->
+        <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\NFMWorld.Graphics.Sokol\NFMWorld.Graphics.Sokol.csproj" />
+        <ProjectReference Include="..\..\NFMWorld.Shaders.Abstraction\NFMWorld.Shaders.Abstraction.csproj" />
+        <ProjectReference Include="..\..\SharpSokol\src\SharpSokol\SharpSokol.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="..\..\nfm-world\obj\Release\net11.0\ShaderCompiler\*.g.cs" />
+    </ItemGroup>
+
+</Project>

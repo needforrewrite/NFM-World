@@ -1,21 +1,147 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+using System.Runtime.InteropServices;
+using NFMWorld.Graphics;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Rad;
 
 namespace NFMWorld;
 
+/// <summary>
+/// Collision/wireframe/gizmo debug overlays for the (currently unreachable - see
+/// <c>StageEditorPhase</c>'s own scope note) stage editor. Converted off XNA's <c>BasicEffect</c>/
+/// <c>GraphicsDevice.DrawUserPrimitives</c> onto the same hand-authored <c>Particle.fx</c> module
+/// the particle-effect renderers already use (see <see cref="Effects.DebugLinePipeline"/>/
+/// <see cref="Effects.DebugGhostFillPipeline"/>'s doc comment) - it's the same World/View/Projection
+/// + vertex-color shape these methods need, just with LineList topology and depth-disabled state
+/// instead of TriangleList. Vertex/index data is rebuilt fresh every call (matching the old code's
+/// own per-call array rebuilds) into growable dynamic <see cref="IBuffer"/>s, following
+/// <c>AbstractionNvgRenderer.EnsureVertexBuffer</c>'s grow-by-1.5x pattern.
+/// </summary>
 public static class Debug
 {
-    private static readonly BasicEffect VertexEffect = new(GameSparker.GraphicsDevice) { VertexColorEnabled = true };
-    private static VertexPositionColor[] _selectionOutlineVertices = [];
+    private static PositionColorVertex[] _selectionOutlineVertices = [];
     private static readonly Dictionary<Rad3d, Vector3[]> SelectionOutlineLocalEdges = new(ReferenceEqualityComparer.Instance);
 
-    public static void RenderHighlights(IEnumerable<StageObject> pieces, Camera activeCamera)
-    {
-        VertexEffect.View = activeCamera.ViewMatrix;
-        VertexEffect.Projection = activeCamera.ProjectionMatrix;
-        VertexEffect.World = Matrix.Identity;
+    private static IBuffer? _lineVertexBuffer;
+    private static int _lineVertexCapacity;
+    private static IBuffer? _fillVertexBuffer;
+    private static int _fillVertexCapacity;
+    private static IBuffer? _fillIndexBuffer;
+    private static int _fillIndexCapacity;
 
+    private static IBuffer EnsureLineBuffer(IGraphicsDevice device, int vertexCount)
+    {
+        if (vertexCount > _lineVertexCapacity)
+        {
+            _lineVertexBuffer?.Dispose();
+            _lineVertexCapacity = (int)(vertexCount * 1.5f) + 16;
+            _lineVertexBuffer = device.CreateBuffer(new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, _lineVertexCapacity * PositionColorVertex.Stride));
+        }
+        return _lineVertexBuffer!;
+    }
+
+    private static void DrawLines(ICommandBuffer cb, IGraphicsDevice device, ReadOnlySpan<PositionColorVertex> vertices, Matrix world, Matrix view, Matrix projection)
+    {
+        if (vertices.Length == 0) return;
+
+        var buffer = EnsureLineBuffer(device, vertices.Length);
+        cb.UpdateBuffer(buffer, MemoryMarshal.AsBytes(vertices));
+
+        cb.SetPipeline(Effects.DebugLinePipeline);
+        cb.SetVertexBuffer(0, buffer, PositionColorVertex.Stride);
+        Effects.ParticleParameters.World.SetValue(cb, world);
+        Effects.ParticleParameters.View.SetValue(cb, view);
+        Effects.ParticleParameters.Projection.SetValue(cb, projection);
+        cb.Draw(0, vertices.Length / 2);
+    }
+
+    /// <summary>
+    /// Draws axis-aligned wire boxes as thick lines, for the stage editor's selected-wall highlight.
+    /// The thickening is the same 5-offset trick <see cref="RenderGizmo"/> uses, but with the
+    /// offsets applied in <b>world units</b> along the camera's right/up axes (the constant 6f) -
+    /// not the gizmo's screen-space thickness - because that is what the pre-migration highlight
+    /// did, and it is what makes the segments read as one chunky outline from any distance.
+    /// Depth testing is off (<see cref="Effects.DebugLinePipeline"/>), matching the old
+    /// <c>DepthStencilState.None</c> override this replaced.
+    /// </summary>
+    public static void RenderWireBoxes(
+        ICommandBuffer cb,
+        IGraphicsDevice device,
+        ReadOnlySpan<(Vector3 Min, Vector3 Max)> boxes,
+        Color color,
+        Camera activeCamera)
+    {
+        if (boxes.Length == 0) return;
+
+        // 12 edges per box, 2 vertices each.
+        var vertices = new PositionColorVertex[boxes.Length * 24];
+        var cursor = 0;
+        foreach (var (min, max) in boxes)
+        {
+            AddWireBoxEdges(vertices.AsSpan(), ref cursor, min, max, color);
+        }
+
+        var camRight = new Vector3(activeCamera.ViewMatrix.M11, activeCamera.ViewMatrix.M21, activeCamera.ViewMatrix.M31);
+        var camUp = new Vector3(activeCamera.ViewMatrix.M12, activeCamera.ViewMatrix.M22, activeCamera.ViewMatrix.M32);
+        const float s = 6f;
+        Span<Vector3> offsets = [Vector3.Zero, camRight * s, camRight * -s, camUp * s, camUp * -s];
+
+        var baseVertices = vertices.AsSpan(0, cursor);
+        var offsetVertices = new PositionColorVertex[cursor];
+        foreach (var offset in offsets)
+        {
+            if (offset == Vector3.Zero)
+            {
+                DrawLines(cb, device, baseVertices, Matrix.Identity, activeCamera.ViewMatrix, activeCamera.ProjectionMatrix);
+                continue;
+            }
+
+            for (var i = 0; i < cursor; i++)
+            {
+                offsetVertices[i] = new PositionColorVertex(baseVertices[i].Position + offset, baseVertices[i].Color);
+            }
+
+            DrawLines(cb, device, offsetVertices, Matrix.Identity, activeCamera.ViewMatrix, activeCamera.ProjectionMatrix);
+        }
+    }
+
+    private static void AddWireBoxEdges(Span<PositionColorVertex> verts, ref int cursor, Vector3 min, Vector3 max, Color color)
+    {
+        var p000 = new Vector3(min.X, min.Y, min.Z);
+        var p001 = new Vector3(min.X, min.Y, max.Z);
+        var p010 = new Vector3(min.X, max.Y, min.Z);
+        var p011 = new Vector3(min.X, max.Y, max.Z);
+        var p100 = new Vector3(max.X, min.Y, min.Z);
+        var p101 = new Vector3(max.X, min.Y, max.Z);
+        var p110 = new Vector3(max.X, max.Y, min.Z);
+        var p111 = new Vector3(max.X, max.Y, max.Z);
+
+        // Bottom rectangle
+        Edge(verts, ref cursor, p000, p001, color);
+        Edge(verts, ref cursor, p001, p101, color);
+        Edge(verts, ref cursor, p101, p100, color);
+        Edge(verts, ref cursor, p100, p000, color);
+
+        // Top rectangle
+        Edge(verts, ref cursor, p010, p011, color);
+        Edge(verts, ref cursor, p011, p111, color);
+        Edge(verts, ref cursor, p111, p110, color);
+        Edge(verts, ref cursor, p110, p010, color);
+
+        // Vertical edges
+        Edge(verts, ref cursor, p000, p010, color);
+        Edge(verts, ref cursor, p001, p011, color);
+        Edge(verts, ref cursor, p100, p110, color);
+        Edge(verts, ref cursor, p101, p111, color);
+
+        static void Edge(Span<PositionColorVertex> verts, ref int cursor, Vector3 a, Vector3 b, Color color)
+        {
+            verts[cursor++] = new PositionColorVertex(a, color);
+            verts[cursor++] = new PositionColorVertex(b, color);
+        }
+    }
+
+    public static void RenderHighlights(ICommandBuffer cb, IGraphicsDevice device, IEnumerable<StageObject> pieces, Camera activeCamera)
+    {
         int neededVertices = 0;
         foreach (var piece in pieces)
         {
@@ -26,7 +152,7 @@ public static class Debug
             return;
 
         if (_selectionOutlineVertices.Length < neededVertices)
-            _selectionOutlineVertices = new VertexPositionColor[neededVertices];
+            _selectionOutlineVertices = new PositionColorVertex[neededVertices];
 
         var color = new Color(1.0f, 1.0f, 0.0f, 1.0f);
         int cursor = 0;
@@ -50,29 +176,17 @@ public static class Debug
             for (int i = 0; i < localOutline.Length; i++)
             {
                 var world = Vector3.Transform(localOutline[i], rotationMatrix) + position;
-                _selectionOutlineVertices[cursor++] = new VertexPositionColor(world, color);
+                _selectionOutlineVertices[cursor++] = new PositionColorVertex(world, color);
             }
         }
 
         if (cursor == 0)
             return;
 
-        var oldDepthStencilState = GameSparker.GraphicsDevice.DepthStencilState;
-        GameSparker.GraphicsDevice.DepthStencilState = DepthStencilState.None;
-
-        foreach (var pass in VertexEffect.CurrentTechnique.Passes)
-        {
-            pass.Apply();
-            GameSparker.GraphicsDevice.DrawUserPrimitives(
-                PrimitiveType.LineList,
-                _selectionOutlineVertices,
-                0,
-                cursor / 2);
-        }
-
-        GameSparker.GraphicsDevice.DepthStencilState = oldDepthStencilState;
+        DrawLines(cb, device, _selectionOutlineVertices.AsSpan(0, cursor),
+            Matrix.Identity, activeCamera.ViewMatrix, activeCamera.ProjectionMatrix);
     }
-    
+
     private static Vector3[] GetOrCreateOutlineEdges(Rad3d rad)
     {
         if (SelectionOutlineLocalEdges.TryGetValue(rad, out var cached))
@@ -131,7 +245,7 @@ public static class Debug
         return lines;
     }
 
-    public static void RenderGizmo(Vector3 gizmoPos, Camera activeCamera, ref GizmoAxis gizmoHovered, ref GizmoAxis gizmoDragging, Vector2 mousePos)
+    public static void RenderGizmo(ICommandBuffer cb, IGraphicsDevice device, Vector3 gizmoPos, Camera activeCamera, ref GizmoAxis gizmoHovered, ref GizmoAxis gizmoDragging, Vector2 mousePos)
     {
         var piecePos = gizmoPos;
         var gizmoMetrics = ComputeGizmoMetrics(piecePos, activeCamera);
@@ -139,14 +253,7 @@ public static class Debug
         // Y arrow points up in world space (negative Y in FNA because Y is flipped)
         var yEnd = piecePos + new Vector3(0, -gizmoMetrics.ArrowLength, 0);
         var zEnd = piecePos + new Vector3(0, 0, gizmoMetrics.ArrowLength);
-        
-        var oldDepth = GameSparker.GraphicsDevice.DepthStencilState;
-        GameSparker.GraphicsDevice.DepthStencilState = DepthStencilState.None;
-        
-        VertexEffect.View = activeCamera.ViewMatrix;
-        VertexEffect.Projection = activeCamera.ProjectionMatrix;
-        VertexEffect.World = Matrix.Identity;
-        
+
         // Colors: red=X, yellow=Y(up), blue=Z, green=RotY ring
         var colX = gizmoHovered == GizmoAxis.X || gizmoDragging == GizmoAxis.X
             ? new Color(1f, 0.6f, 0.6f, 1f)
@@ -160,7 +267,7 @@ public static class Debug
         var colRot = gizmoHovered == GizmoAxis.RotY || gizmoDragging == GizmoAxis.RotY
             ? new Color(0.6f, 1f, 0.6f, 1f)
             : new Color(0.1f, 0.9f, 0.1f, 1f);
-        
+
         // Arrowhead side fins and tip offsets for each axis
         var xSide     = new Vector3(0, gizmoMetrics.ArrowThickness * 2, 0);
         var ySide     = new Vector3(gizmoMetrics.ArrowThickness * 2, 0, 0);
@@ -168,8 +275,8 @@ public static class Debug
         var xTipOffset = new Vector3(gizmoMetrics.ArrowLength * 0.15f, 0, 0);
         var yTipOffset = new Vector3(0, -gizmoMetrics.ArrowLength * 0.15f, 0); // negative = upward
         var zTipOffset = new Vector3(0, 0, gizmoMetrics.ArrowLength * 0.15f);
-        
-        List<VertexPositionColor> verts =
+
+        List<PositionColorVertex> verts =
         [
             new(piecePos, colX),
             new(xEnd, colX),
@@ -202,18 +309,18 @@ public static class Debug
         {
             float a0 = i / (float)ringSegs * (2f * MathF.PI);
             float a1 = (i + 1) / (float)ringSegs * (2f * MathF.PI);
-            verts.Add(new VertexPositionColor(piecePos + new Vector3(MathF.Cos(a0) * gizmoMetrics.RotRadius, 0, MathF.Sin(a0) * gizmoMetrics.RotRadius), colRot));
-            verts.Add(new VertexPositionColor(piecePos + new Vector3(MathF.Cos(a1) * gizmoMetrics.RotRadius, 0, MathF.Sin(a1) * gizmoMetrics.RotRadius), colRot));
+            verts.Add(new PositionColorVertex(piecePos + new Vector3(MathF.Cos(a0) * gizmoMetrics.RotRadius, 0, MathF.Sin(a0) * gizmoMetrics.RotRadius), colRot));
+            verts.Add(new PositionColorVertex(piecePos + new Vector3(MathF.Cos(a1) * gizmoMetrics.RotRadius, 0, MathF.Sin(a1) * gizmoMetrics.RotRadius), colRot));
         }
-        
+
         var arr = verts.ToArray();
-        
+
         // Compute camera-relative perpendicular offsets so lines appear ~5px wide at any distance.
         // Camera right/up come from the columns of the view matrix (orthonormal rotation part).
         float dist = Vector3.Distance(activeCamera.Position, piecePos);
         float halfFovRad = activeCamera is PerspectiveCamera perspectiveCamera ? perspectiveCamera.Fov * MathF.PI / 180f * 0.5f : 60f;
         // World units that map to 1 screen pixel at this distance
-        float pixelSize = dist * MathF.Tan(halfFovRad) * 2f / GameSparker.GraphicsDevice.Viewport.Height;
+        float pixelSize = dist * MathF.Tan(halfFovRad) * 2f / GameSparker.Game.Window.Height;
         float s = pixelSize * 2f; // 2 px each side = ~5px total visual width
         var camRight = new Vector3(activeCamera.ViewMatrix.M11, activeCamera.ViewMatrix.M21, activeCamera.ViewMatrix.M31);
         var camUp    = new Vector3(activeCamera.ViewMatrix.M12, activeCamera.ViewMatrix.M22, activeCamera.ViewMatrix.M32);
@@ -223,32 +330,26 @@ public static class Debug
             camRight *  s, camRight * -s,
             camUp    *  s, camUp    * -s,
         };
-        
+
         foreach (var offset in thickOffsets)
         {
             var offsetArr = offset == Vector3.Zero
                 ? arr
-                : arr.Select(v => new VertexPositionColor(v.Position + offset, v.Color)).ToArray();
-            foreach (var pass in VertexEffect.CurrentTechnique.Passes)
-            {
-                pass.Apply();
-                GameSparker.GraphicsDevice.DrawUserPrimitives(PrimitiveType.LineList, offsetArr, 0, offsetArr.Length / 2);
-            }
+                : arr.Select(v => new PositionColorVertex(v.Position + offset, v.Color)).ToArray();
+            DrawLines(cb, device, offsetArr, Matrix.Identity, activeCamera.ViewMatrix, activeCamera.ProjectionMatrix);
         }
-        
-        GameSparker.GraphicsDevice.DepthStencilState = oldDepth;
-        
+
         // Update hover state based on screen-space distances
         UpdateGizmoHover(piecePos, gizmoMetrics, ref gizmoDragging, ref gizmoHovered, activeCamera, mousePos);
     }
-    
+
     public static void UpdateGizmoHover(Vector3 piecePos, GizmoMetrics gizmoMetrics, ref GizmoAxis gizmoDragging, ref GizmoAxis gizmoHovered, Camera activeCamera, Vector2 mousePos)
     {
         if (gizmoDragging != GizmoAxis.None) return;
 
         float closestDist = 20f; // hover threshold in pixels
         gizmoHovered = GizmoAxis.None;
-        
+
         // Check X arrow
         if (WorldToScreen(piecePos, out var ss0, activeCamera) &&
             WorldToScreen(piecePos + new Vector3(gizmoMetrics.ArrowLength, 0, 0), out var ss1, activeCamera))
@@ -285,7 +386,7 @@ public static class Debug
             }
         }
     }
-    
+
     public static float DistanceToSegment(Vector2 p, Vector2 a, Vector2 b)
     {
         var ab = b - a;
@@ -298,17 +399,18 @@ public static class Debug
     // Project a world-space point to screen coordinates (returns false if behind camera)
     public static bool WorldToScreen(Vector3 worldPos, out Vector2 screenPos, Camera activeCamera)
     {
-        var viewport = GameSparker.GraphicsDevice.Viewport;
+        var width = GameSparker.Game.Window.Width;
+        var height = GameSparker.Game.Window.Height;
         var clip = Vector4.Transform(new Vector4(worldPos, 1f), activeCamera.ViewMatrix * activeCamera.ProjectionMatrix);
         screenPos = default;
         if (clip.W <= 0f) return false;
-        var ndc = new Vector3(clip.X / clip.W, clip.Y / clip.W, clip.Z / clip.W); // XNA Vector3
+        var ndc = new Vector3(clip.X / clip.W, clip.Y / clip.W, clip.Z / clip.W);
         screenPos = new Vector2(
-            (ndc.X + 1f) * 0.5f * viewport.Width,
-            (1f - ndc.Y) * 0.5f * viewport.Height);
+            (ndc.X + 1f) * 0.5f * width,
+            (1f - ndc.Y) * 0.5f * height);
         return true;
     }
-    
+
     private const float GIZMO_ARROW_LENGTH = 600f;
     private const float GIZMO_ARROW_THICKNESS = 12f;
     private const float GIZMO_ROT_RADIUS = 400f;
@@ -347,24 +449,15 @@ public static class Debug
         return projectedAxisLength > 0f;
     }
 
-    public static void RenderGhost(Rad3d rad, Matrix world, Color fillColor, Color wireColor, Camera activeCamera)
+    public static void RenderGhost(ICommandBuffer cb, IGraphicsDevice device, Rad3d rad, Matrix world, Color fillColor, Color wireColor, Camera activeCamera)
     {
-        var oldDepth = GameSparker.GraphicsDevice.DepthStencilState;
-        var oldBlend = GameSparker.GraphicsDevice.BlendState;
-        var oldRasterizer = GameSparker.GraphicsDevice.RasterizerState;
-        
-        VertexEffect.View = activeCamera.ViewMatrix;
-        VertexEffect.Projection = activeCamera.ProjectionMatrix;
-        VertexEffect.World = world;
-        
+        var view = activeCamera.ViewMatrix;
+        var projection = activeCamera.ProjectionMatrix;
+
         // Semi-transparent fill (both faces so it looks solid from any angle)
-        GameSparker.GraphicsDevice.DepthStencilState = DepthStencilState.Default;
-        GameSparker.GraphicsDevice.BlendState = BlendState.AlphaBlend;
-        GameSparker.GraphicsDevice.RasterizerState = new RasterizerState { CullMode = CullMode.None };
-        
-        var fillVerts = new List<VertexPositionColor>();
-        var fillInds = new List<int>();
-        
+        var fillVerts = new List<PositionColorVertex>();
+        var fillInds = new List<uint>();
+
         foreach (var poly in rad.Polys)
         {
             if (poly.Points.Length < 3) continue;
@@ -372,59 +465,63 @@ public static class Debug
             var startIndex = (uint)fillVerts.Count;
             for (int i = 0; i < poly.Points.Length; i++)
             {
-                fillVerts.Add(new(poly.Points[i], fillColor));
+                fillVerts.Add(new PositionColorVertex(poly.Points[i], fillColor));
             }
-            
+
             foreach (var idx in poly.Triangles)
             {
-                fillInds.Add((int)(startIndex + idx));
+                fillInds.Add(startIndex + idx);
             }
         }
-        
+
         if (fillVerts.Count > 0)
         {
-            foreach (var pass in VertexEffect.CurrentTechnique.Passes)
+            var vertexArr = fillVerts.ToArray();
+            var indexArr = fillInds.ToArray();
+
+            if (vertexArr.Length > _fillVertexCapacity)
             {
-                pass.Apply();
-                GameSparker.GraphicsDevice.DrawUserIndexedPrimitives(
-                    PrimitiveType.TriangleList,
-                    fillVerts.ToArray(),
-                    0,
-                    fillVerts.Count,
-                    fillInds.ToArray(),
-                    0,
-                    fillInds.Count / 3);
+                _fillVertexBuffer?.Dispose();
+                _fillVertexCapacity = (int)(vertexArr.Length * 1.5f) + 16;
+                _fillVertexBuffer = device.CreateBuffer(new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, _fillVertexCapacity * PositionColorVertex.Stride));
             }
+            cb.UpdateBuffer(_fillVertexBuffer!, MemoryMarshal.AsBytes(vertexArr.AsSpan()));
+
+            if (indexArr.Length > _fillIndexCapacity)
+            {
+                _fillIndexBuffer?.Dispose();
+                _fillIndexCapacity = (int)(indexArr.Length * 1.5f) + 16;
+                _fillIndexBuffer = device.CreateBuffer(new BufferDesc(BufferKind.Index, BufferUsage.Dynamic, _fillIndexCapacity * sizeof(uint), IndexFormat.UInt32));
+            }
+            cb.UpdateBuffer(_fillIndexBuffer!, MemoryMarshal.AsBytes(indexArr.AsSpan()));
+
+            cb.SetPipeline(Effects.DebugGhostFillPipeline);
+            cb.SetVertexBuffer(0, _fillVertexBuffer!, PositionColorVertex.Stride);
+            cb.SetIndexBuffer(_fillIndexBuffer!);
+            Effects.ParticleParameters.World.SetValue(cb, world);
+            Effects.ParticleParameters.View.SetValue(cb, view);
+            Effects.ParticleParameters.Projection.SetValue(cb, projection);
+            cb.DrawIndexed(0, 0, indexArr.Length / 3);
         }
-        
+
         // Bright wireframe on top (depth-ignore so it's always visible)
-        GameSparker.GraphicsDevice.DepthStencilState = DepthStencilState.None;
-        GameSparker.GraphicsDevice.BlendState = BlendState.Opaque;
-        var wireVerts = new List<VertexPositionColor>();
-        
+        var wireVerts = new List<PositionColorVertex>();
+
         foreach (var poly in rad.Polys)
         {
             if (poly.Points.Length < 2) continue;
             for (int i = 0; i < poly.Points.Length; i++)
             {
                 int next = (i + 1) % poly.Points.Length;
-                wireVerts.Add(new(poly.Points[i], wireColor));
-                wireVerts.Add(new(poly.Points[next], wireColor));
+                wireVerts.Add(new PositionColorVertex(poly.Points[i], wireColor));
+                wireVerts.Add(new PositionColorVertex(poly.Points[next], wireColor));
             }
         }
-        
+
         if (wireVerts.Count > 0)
         {
-            foreach (var pass in VertexEffect.CurrentTechnique.Passes)
-            {
-                pass.Apply();
-                GameSparker.GraphicsDevice.DrawUserPrimitives(PrimitiveType.LineList, wireVerts.ToArray(), 0, wireVerts.Count / 2);
-            }
+            DrawLines(cb, device, wireVerts.ToArray(), world, view, projection);
         }
-        
-        GameSparker.GraphicsDevice.DepthStencilState = oldDepth;
-        GameSparker.GraphicsDevice.BlendState = oldBlend;
-        GameSparker.GraphicsDevice.RasterizerState = oldRasterizer;
     }
 }
 

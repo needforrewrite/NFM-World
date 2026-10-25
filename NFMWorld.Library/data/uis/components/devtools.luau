@@ -243,9 +243,11 @@ local function findHost(node: any): any?
 	return nil
 end
 
-local function TreeNode(props: { node: any, depth: number, onHover: ((any?) -> ())?, expandAll: () -> boolean, expandVersion: () -> number })
+local function TreeNode(props: { node: Sx.Signalish<any>, depth: number, onHover: ((any?) -> ())?, expandAll: () -> boolean, expandVersion: () -> number })
 	local expanded, setExpanded = Sx.createSignal<<boolean>>(props.depth < 2)
-	local hasChildren = #props.node.children > 0
+	local hasChildren = Sx.createMemo(function()
+		return #Sx.read(props.node).children > 0
+	end)
 
 	-- React to the "Expand all" / "Collapse all" toolbar buttons. The version counter
 	-- makes a repeated click (e.g. after a manual toggle) re-apply the forced state.
@@ -255,74 +257,75 @@ local function TreeNode(props: { node: any, depth: number, onHover: ((any?) -> (
 		end
 	end)
 
-	return x(Sx.View) {
-		style = { display = "flex", flexDirection = "column", alignItems = "stretch", flexShrink = 0, width = "100%" },
-		x(Sx.View) {
-			style = {
-				display = "flex",
-				flexDirection = "row",
-				alignItems = "center",
-				alignSelf = "stretch",
-				width = "100%",
-				flexShrink = 0,
-				paddingLeft = props.depth * 10,
-				paddingTop = 1,
-				paddingBottom = 1,
-			},
-			onmousedown = function()
-				if hasChildren then
-					setExpanded(not expanded())
-				end
-			end,
-			onmouseenter = function()
-				if props.onHover then
-					props.onHover(props.node)
-				end
-			end,
-			onmouseleave = function()
-				if props.onHover then
-					props.onHover(nil)
-				end
-			end,
-			x(Sx.Text) {
-				style = { fontSize = 11, fontStyle = "bold", color = colorFor(props.node) },
-				function()
+	return (
+		x(Sx.View)({ style = { display = "flex", flexDirection = "column", alignItems = "stretch", flexShrink = 0, width = "100%" },
+			x(Sx.View)({
+				style = {
+					display = "flex",
+					flexDirection = "row",
+					alignItems = "center",
+					alignSelf = "stretch",
+					width = "100%",
+					flexShrink = 0,
+					paddingLeft = props.depth * 10,
+					paddingTop = 1,
+					paddingBottom = 1,
+				},
+				onmousedown = function()
+					if hasChildren() then
+						setExpanded(not expanded())
+					end
+				end,
+				onmouseenter = function()
+					if props.onHover then
+						props.onHover(Sx.read(props.node))
+					end
+				end,
+				onmouseleave = function()
+					if props.onHover then
+						props.onHover(nil)
+					end
+				end,
+
+				x(Sx.Text)({ style = { fontSize = 11, fontStyle = "bold", color = colorFor(Sx.read(props.node)) }, function()
 					local marker = "  "
-					if hasChildren then
+					if hasChildren() then
 						marker = expanded() and "▾ " or "▸ "
 					end
-					return marker .. nodeLabel(props.node)
-				end,
-			},
-		},
-		x(Sx.Show) {
-			when = function() return expanded() and hasChildren end,
-			x(Sx.For) {
-				each = function() return props.node.children end,
-				function(item, index)
-					return x(TreeNode) { node = item(), depth = props.depth + 1, onHover = props.onHover, expandAll = props.expandAll, expandVersion = props.expandVersion }
-				end,
-			},
-		},
-	}
+					return marker .. nodeLabel(Sx.read(props.node))
+				end }),
+			}),
+			x(Sx.Show)({ when = function() return expanded() and hasChildren() end,
+				x(Sx.For)({
+					each = function() return Sx.read(props.node).children end,
+
+					function(item, index)
+						return x(TreeNode)({ node = function() return item() end, depth = props.depth + 1, onHover = props.onHover, expandAll = props.expandAll, expandVersion = props.expandVersion })
+					end,
+				}),
+			}),
+		})
+	)
 end
 
 local function TreeView(props: { snapshot: () -> any, onHover: ((any?) -> ())?, expandAll: () -> boolean, expandVersion: () -> number })
-	return x(Sx.View) {
-		style = { display = "flex", flexDirection = "column", alignItems = "stretch", flexShrink = 0, width = "100%", gap = 2 },
-		x(Sx.For<<any>>) {
-			each = function(): {any}
-				local root = props.snapshot()
-				if root == nil then
-					return {}
-				end
-				return { root }
-			end,
-			function(item, index)
-				return x(TreeNode) { node = item(), depth = 0, onHover = props.onHover, expandAll = props.expandAll, expandVersion = props.expandVersion }
-			end,
-		},
-	}
+	return (
+		x(Sx.View)({ style = { display = "flex", flexDirection = "column", alignItems = "stretch", flexShrink = 0, width = "100%", gap = 2 },
+			x(Sx.For<<any>>)({
+				each = function(): {any}
+					local root = props.snapshot()
+					if root == nil then
+						return {}
+					end
+					return { root }
+				end,
+
+				function(item, index)
+					return x(TreeNode)({ node = function() return item() end, depth = 0, onHover = props.onHover, expandAll = props.expandAll, expandVersion = props.expandVersion })
+				end,
+			}),
+		})
+	)
 end
 
 -- ── Props pane ───────────────────────────────────────────────────
@@ -332,27 +335,26 @@ end
 -- host nodes — which would otherwise trigger FocusManager.ResetHover and fight the hover
 -- highlight. Nested record tables are broken out onto their own indented lines.
 local function PropsList(props: { node: () -> any? })
-	return x(Sx.Text) {
-		style = { fontSize = 10, color = "rgba(255,255,255,0.85)", width = "100%" },
-		function()
+	return (
+		x(Sx.Text)({ style = { fontSize = 10, color = "rgba(255,255,255,0.85)", width = "100%" }, function()
 			local node = props.node()
 			if node == nil or node.props == nil then
 				return "(no props)"
 			end
 			return formatPropsTree(node.props)
-		end,
-	}
+		end })
+	)
 end
 
 local function PropsPane(props: { node: () -> any?, visible: () -> boolean })
 	-- Permanently mounted child of the panel; visibility is toggled purely via the
 	-- `display` style so showing/hiding it never appends/removes a host node (which would
 	-- trigger FocusManager.ResetHover and fight the hover highlight).
-	return x(Sx.View) {
-		style = function(): Sx.Styles
+	return (
+		x(Sx.View)({ style = function(): Sx.Styles
 			local show = props.visible()
 			return {
-				display = show and "flex" or "none",
+				display = if show then "flex" else "none",
 				flexDirection = "column",
 				alignItems = "stretch",
 				flexShrink = 0,
@@ -366,56 +368,44 @@ local function PropsPane(props: { node: () -> any?, visible: () -> boolean })
 				overflow = "scroll",
 			}
 		end,
-		x(Sx.View) {
-			style = { display = "flex", flexDirection = "row", alignItems = "center", gap = 6, flexShrink = 0 },
-			x(Sx.Text) {
-				style = { fontSize = 10, color = "#d2a8ff", fontStyle = "bold", flexShrink = 0 },
-				"Props",
-			},
-			x(Sx.Text) {
-				style = { fontSize = 10, color = "rgba(255,255,255,0.5)", flexShrink = 0 },
-				function()
+			x(Sx.View)({ style = { display = "flex", flexDirection = "row", alignItems = "center", gap = 6, flexShrink = 0 },
+				x(Sx.Text)({ style = { fontSize = 10, color = "#d2a8ff", fontStyle = "bold", flexShrink = 0 }, "Props" }),
+				x(Sx.Text)({ style = { fontSize = 10, color = "rgba(255,255,255,0.5)", flexShrink = 0 }, function()
 					local node = props.node()
 					if node == nil then
 						return ""
 					end
 					return nodeLabel(node)
-				end,
-			},
-		},
-		x(PropsList) { node = props.node },
-	}
+				end }),
+			}),
+			x(PropsList)({ node = props.node }),
+		})
+	)
 end
 
 -- ── Signals view ─────────────────────────────────────────────────
 
 local function SignalsView(props: { items: () -> { any } })
-	return x(Sx.View) {
-		style = { display = "flex", flexDirection = "column", alignItems = "stretch", flexShrink = 0, width = "100%", gap = 1 },
-		x(Sx.For) {
-			each = function() return props.items() end,
-			function(item, index)
-				local s = item()
-				local tag = s.kind == "signal" and "sig" or (s.isEffect and "eff" or "mem")
-				local tagColor = s.kind == "signal" and "#79b8ff" or (s.isEffect and "#ffab70" or "#f97583")
-				return x(Sx.View) {
-					style = { display = "flex", flexDirection = "row", alignItems = "center", width = "100%", flexShrink = 0, gap = 6 },
-					x(Sx.Text) {
-						style = { fontSize = 10, color = tagColor, fontStyle = "bold", width = 28 },
-						tag,
-					},
-					x(Sx.Text) {
-						style = { fontSize = 10, color = "rgba(126,231,135,0.8)", fontStyle = "bold", flexGrow = 1 },
-						s.owner and s.owner or "-",
-					},
-					x(Sx.Text) {
-						style = { fontSize = 11, color = "rgba(255,255,255,0.85)", width = 80 },
-						fmtValue(s.value),
-					},
-				}
-			end,
-		},
-	}
+	return (
+		x(Sx.View)({ style = { display = "flex", flexDirection = "column", alignItems = "stretch", flexShrink = 0, width = "100%", gap = 1 },
+			x(Sx.For)({
+				each = function() return props.items() end,
+
+				function(item, index)
+					local s = item()
+					local tag = s.kind == "signal" and "sig" or (s.isEffect and "eff" or "mem")
+					local tagColor = s.kind == "signal" and "#79b8ff" or (s.isEffect and "#ffab70" or "#f97583")
+					return (
+						x(Sx.View)({ style = { display = "flex", flexDirection = "row", alignItems = "center", width = "100%", flexShrink = 0, gap = 6 },
+							x(Sx.Text)({ style = { fontSize = 10, color = tagColor, fontStyle = "bold", width = 28 }, tag }),
+							x(Sx.Text)({ style = { fontSize = 10, color = "rgba(126,231,135,0.8)", fontStyle = "bold", flexGrow = 1 }, s.owner and s.owner or "-" }),
+							x(Sx.Text)({ style = { fontSize = 11, color = "rgba(255,255,255,0.85)", width = 80 }, function() return fmtValue(s.value) end }),
+						})
+					)
+				end,
+			}),
+		})
+	)
 end
 
 -- ── DevTools ─────────────────────────────────────────────────────
@@ -578,104 +568,74 @@ local function DevTools()
 		Sx.debug.setOnChange(nil)
 	end)
 
-	return x(Sx.Fragment) {
-		x(Sx.Show) {
-			when = function() return not open() end,
-			x(Launcher) {
-				onmousedown = function() setOpen(true) end,
-				x(Sx.Text) { style = { fontSize = 12, fontStyle = "bold", color = "#4fc3f7" }, "Sx" },
-			},
-		},
-		x(Sx.Show) {
-			when = open,
-			x(Panel) {
-			x(Header) {
-				x(Title) { "Sx DevTools" },
-				x(CloseBtn) {
-					onmousedown = function() setOpen(false) end,
-					"✕",
-				},
-			},
-			x(Tabs) {
-				x(Sx.View) {
-					style = function(): Sx.Styles
-						return {
-							paddingTop = 3, paddingBottom = 3, paddingLeft = 8, paddingRight = 8,
-							borderRadius = 5,
-							backgroundColor = tab() == "tree" and "rgba(79,195,247,0.35)" or "rgba(255,255,255,0.05)",
-						}
-					end,
-					onmousedown = function() setTab("tree") end,
-					x(TabLabel) {
-						style = function(): Sx.TextStyles
-							return { color = tab() == "tree" and "#fff" or "rgba(255,255,255,0.6)" }
-						end,
-						"Tree",
-					},
-				},
-				x(Sx.View) {
-					style = function(): Sx.Styles
-						return {
-							paddingTop = 3, paddingBottom = 3, paddingLeft = 8, paddingRight = 8,
-							borderRadius = 5,
-							backgroundColor = tab() == "signals" and "rgba(79,195,247,0.35)" or "rgba(255,255,255,0.05)",
-						}
-					end,
-					onmousedown = function() setTab("signals") end,
-					x(TabLabel) {
-						style = function(): Sx.TextStyles
-							return { color = tab() == "signals" and "#fff" or "rgba(255,255,255,0.6)" }
-						end,
-						"Signals",
-					},
-				},
-			},
-			x(Toolbar) {
-				x(ToolBtn) {
-					onmousedown = refresh,
-					x(Sx.Text) { style = { fontSize = 10, color = "rgba(255,255,255,0.7)" }, "Refresh" },
-				},
-				x(ToolBtn) {
-					onmousedown = function() setAuto(not auto()) end,
-					x(Sx.Text) {
-						style = function(): Sx.TextStyles
-							return { fontSize = 10, color = auto() and "#4fc3f7" or "rgba(255,255,255,0.5)" }
-						end,
-						function()
-							return auto() and "Auto: on" or "Auto: off"
-						end,
-					},
-				},
-				x(Sx.Show) {
-					when = function() return tab() == "tree" end,
-					x(ToolBtn) {
-						onmousedown = expandAllNodes,
-						x(Sx.Text) { style = { fontSize = 10, color = "rgba(255,255,255,0.7)" }, "Expand" },
-					},
-					x(ToolBtn) {
-						onmousedown = collapseAllNodes,
-						x(Sx.Text) { style = { fontSize = 10, color = "rgba(255,255,255,0.7)" }, "Collapse" },
-					},
-				},
-			},
-			x(Body) {
-				x(Sx.Show) {
-					when = function() return tab() == "tree" end,
-					x(TreeView) { snapshot = snapshot, onHover = handleHover, expandAll = expandAll, expandVersion = expandVersion },
-				},
-				x(Sx.Show) {
-					when = function() return tab() == "signals" end,
-					x(SignalsView) { items = sigList },
-				},
-			},
-			x(PropsPane) {
-				node = hoverNode,
-				visible = function() return tab() == "tree" end,
-			},
-		},
-		},
-		x(Sx.View) {
-			style = function(): Sx.Styles
+	return (
+		x(Sx.Fragment)({
+			x(Sx.Show)({ when = function() return not open() end,
+				x(Launcher)({ onmousedown = function() setOpen(true) end,
+					x(Sx.Text)({ style = { fontSize = 12, fontStyle = "bold", color = "#4fc3f7" }, "Sx" }),
+				}),
+			}),
+			x(Sx.Show)({ when = function() return open() end,
+				x(Panel)({
+					x(Header)({
+						x(Title)({ "Sx DevTools" }),
+						x(CloseBtn)({ onmousedown = function() setOpen(false) end, "✕" }),
+					}),
+					x(Tabs)({
+						x(Sx.View)({
+							style = {
+								paddingTop = 3, paddingBottom = 3, paddingLeft = 8, paddingRight = 8,
+								borderRadius = 5,
+								backgroundColor = tab() == "tree" and "rgba(79,195,247,0.35)" or "rgba(255,255,255,0.05)",
+							},
+							onmousedown = function() setTab("tree") end,
+
+							x(TabLabel)({ style = { color = tab() == "tree" and "#fff" or "rgba(255,255,255,0.6)" }, "Tree" }),
+						}),
+						x(Sx.View)({
+							style = {
+								paddingTop = 3, paddingBottom = 3, paddingLeft = 8, paddingRight = 8,
+								borderRadius = 5,
+								backgroundColor = tab() == "signals" and "rgba(79,195,247,0.35)" or "rgba(255,255,255,0.05)",
+							},
+							onmousedown = function() setTab("signals") end,
+
+							x(TabLabel)({ style = { color = tab() == "signals" and "#fff" or "rgba(255,255,255,0.6)" }, "Signals",
+
+							}),
+						}),
+					}),
+					x(Toolbar)({
+						x(ToolBtn)({ onmousedown = refresh,
+							x(Sx.Text)({ style = { fontSize = 10, color = "rgba(255,255,255,0.7)" }, "Refresh" }),
+						}),
+						x(ToolBtn)({ onmousedown = function() setAuto(not auto()) end,
+							x(Sx.Text)({ style = { fontSize = 10, color = auto() and "#4fc3f7" or "rgba(255,255,255,0.5)" }, function() return auto() and "Auto: on" or "Auto: off" end }),
+						}),
+						x(Sx.Show)({ when = function() return tab() == "tree" end,
+							x(ToolBtn)({ onmousedown = expandAllNodes,
+								x(Sx.Text)({ style = { fontSize = 10, color = "rgba(255,255,255,0.7)" }, "Expand" }),
+							}),
+							x(ToolBtn)({ onmousedown = collapseAllNodes,
+								x(Sx.Text)({ style = { fontSize = 10, color = "rgba(255,255,255,0.7)" }, "Collapse" }),
+							}),
+						}),
+					}),
+					x(Body)({
+						x(Sx.Show)({ when = function() return tab() == "tree" end,
+							x(TreeView)({ snapshot = snapshot, onHover = handleHover, expandAll = expandAll, expandVersion = expandVersion }),
+						}),
+						x(Sx.Show)({ when = function() return tab() == "signals" end,
+							x(SignalsView)({ items = sigList }),
+						}),
+					}),
+					x(PropsPane)({
+						node = hoverNode,
+						visible = function() return tab() == "tree" end,
+					}),
+				}),
+			}),
+			x(Sx.View)({ style = function(): Sx.Styles
 				local r = hoverRect()
 				if r == nil then
 					return { position = "absolute", display = "none", pointerEvents = "none" }
@@ -692,9 +652,9 @@ local function DevTools()
 					borderColor = "rgba(79,195,247,1)",
 					pointerEvents = "none",
 				}
-			end,
-		},
-	}
+			end }),
+		})
+	)
 end
 
 return DevTools

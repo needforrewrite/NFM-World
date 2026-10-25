@@ -23,7 +23,7 @@ local function Radio(props: RadioProps)
 	local dot = math.max(4, math.floor(size * 0.5 + 0.5))
 	local hovered, setHovered = Sx.createSignal(false)
 
-	return x(Sx.View) {
+	return x(Sx.View)({
 		style = {
 			display = "flex",
 			flexDirection = "row",
@@ -40,8 +40,8 @@ local function Radio(props: RadioProps)
 		onmouseleave = function()
 			setHovered(false)
 		end,
-		x(Sx.View) {
-			style = Sx.createMemo(function(): Sx.Styles
+		x(Sx.View)({
+			style = function(): Sx.Styles
 				local checked = Sx.read(props.checked)
 				local hov = hovered() and not disabled
 				return {
@@ -57,36 +57,33 @@ local function Radio(props: RadioProps)
 					borderColor = checked and theme.accent or (hov and "rgba(255,255,255,0.55)" or "rgba(255,255,255,0.3)"),
 					borderRadius = size / 2,
 				}
-			end),
-			x(Sx.View) {
-				style = Sx.createMemo(function(): Sx.Styles
-					local checked = Sx.read(props.checked)
-					return {
-						width = dot,
-						height = dot,
-						backgroundColor = checked and theme.accent or "transparent",
-						borderRadius = dot / 2,
-					}
-				end),
-			},
-		},
-		x(Sx.Text) {
-			style = Sx.createMemo(function(): Sx.TextStyles
+			end,
+			x(Sx.View)({ style = function(): Sx.Styles
 				local checked = Sx.read(props.checked)
 				return {
-					fontSize = 13,
-					color = disabled
-						and "rgba(255,255,255,0.3)"
-						or (checked and "#fff" or "rgba(255,255,255,0.7)"),
+					width = dot,
+					height = dot,
+					backgroundColor = checked and theme.accent or "transparent",
+					borderRadius = dot / 2,
 				}
-			end),
+			end }),
+		}),
+		x(Sx.Text)({ style = function(): Sx.TextStyles
+			local checked = Sx.read(props.checked)
+			return {
+				fontSize = 13,
+				color = disabled
+					and "rgba(255,255,255,0.3)"
+					or (checked and "#fff" or "rgba(255,255,255,0.7)"),
+			}
+		end,
 			function()
 				local label = props.label
 				if label == nil then return "" end
 				return Sx.read(label)
 			end,
-		},
-	}
+		}),
+	})
 end
 
 export type RadioGroupProps<T> = {
@@ -101,14 +98,14 @@ local function RadioGroup<T>(props: RadioGroupProps<T>)
 	local direction = props.direction or "column"
 	local disabled = props.disabled == true
 
-	return x(Sx.View) {
+	return x(Sx.View)({
 		style = {
 			display = "flex",
 			flexDirection = direction,
 			gap = 10,
 		},
-		x(Sx.For<<{ label: string, value: T }>>) {
-			each = function() return props.options end,
+		x(Sx.For<<{ label: string, value: T }>>)({
+			each = props.options,
 			function(item: () -> { label: string, value: T }, _index: number)
 				local opt = item()
 				return x(Radio) {
@@ -118,8 +115,8 @@ local function RadioGroup<T>(props: RadioGroupProps<T>)
 					disabled = disabled,
 				}
 			end,
-		},
-	}
+		}),
+	})
 end
 
 return {

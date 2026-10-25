@@ -14,14 +14,15 @@ float4x4 WorldViewProj;
 
 float3 FogColor;
 float FogDistance;
-float FogDensity;
+// log2 of the normalized fog density (see VS_ApplyFog)
+float FogLogDensity;
 
 struct VertexShaderOutput
 {
     float4 Position : SV_POSITION; // Vertex position in screen space
     float4 Color : COLOR0; // Vertex color
     float4 WorldPos : TEXCOORD2;
-    float4 PositionNonInterp : TEXCOORD3;
+    float4 ViewPos : TEXCOORD4;
 };
 
 VertexShaderOutput VertexShaderFunction(
@@ -29,12 +30,11 @@ VertexShaderOutput VertexShaderFunction(
 {
     VertexShaderOutput output;
     output.Position = mul(Position, WorldViewProj); // Transform vertex position
-    output.PositionNonInterp = mul(Position, WorldViewProj);
 
     float3 color = Color;
-	float3 viewPos = mul(Position, WorldView).xyz;
-    // VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogDensity);
-
+    float3 viewPos = mul(Position, WorldView).xyz;
+    output.ViewPos = float4(viewPos, 1.0);
+    // VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogLogDensity);
     VS_ColorCorrect(color);
 
     output.Color = float4(color, 1.0);
@@ -49,7 +49,8 @@ float4 PixelShaderFunction(VertexShaderOutput input) : SV_TARGET
 {
     float3 diffuse = input.Color.xyz;
 
-    VS_ApplyFog(diffuse, input.PositionNonInterp.z, FogColor, FogDistance, FogDensity);
+    float viewLength = length(input.ViewPos.xyz);
+    VS_ApplyFog(diffuse, viewLength, FogColor, FogDistance, FogLogDensity);
 
     PS_ApplyShadowing(diffuse, float4(input.WorldPos.xyz, 1), float3(0, 1, 0));
 

@@ -25,7 +25,7 @@ local function TextField(props: TextFieldProps)
 	local hovered, setHovered = Sx.createSignal(false)
 	local disabled = props.disabled == true
 
-	return x(Sx.View) {
+	return x(Sx.View)({
 		style = {
 			display = "flex",
 			flexDirection = "column",
@@ -33,19 +33,17 @@ local function TextField(props: TextFieldProps)
 			gap = 6,
 			width = props.width or "100%",
 		},
-		x(Sx.Show) {
-			when = function() return props.label ~= nil end,
-			x(Sx.Text) {
-				style = { fontSize = 12, color = "rgba(255,255,255,0.6)" },
+		x(Sx.Show)({ when = function() return props.label ~= nil end,
+			x(Sx.Text)({ style = { fontSize = 12, color = "rgba(255,255,255,0.6)" },
 				function()
 					local label = props.label
 					if label == nil then return "" end
 					return Sx.read(label)
 				end,
-			},
-		},
-		x(Sx.TextInput) {
-			style = Sx.createMemo(function(): Sx.TextInputStyles
+			}),
+		}),
+		x(Sx.TextInput)({
+			style = function(): Sx.TextInputStyles
 				local isFocused = focus()
 				return {
 					paddingTop = 10,
@@ -59,7 +57,7 @@ local function TextField(props: TextFieldProps)
 					placeholderColor = "rgba(255,255,255,0.35)",
 					cursorColor = theme.accent,
 				}
-			end),
+			end,
 			value = props.value,
 			placeholder = props.placeholder,
 			onchange = props.onChange,
@@ -76,8 +74,8 @@ local function TextField(props: TextFieldProps)
 			onmouseleave = function()
 				setHovered(false)
 			end,
-		},
-	}
+		}),
+	})
 end
 
 return TextField

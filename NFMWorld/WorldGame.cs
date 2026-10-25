@@ -1,0 +1,1472 @@
+﻿extern alias SDL3New;
+
+using System.Diagnostics;
+using System.Drawing;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using Hexa.NET.ImGui;
+using Maxine.Extensions.Mathematics;
+using Microsoft.Extensions.Logging;
+using NFMWorld.DriverInterface;
+using NFMWorld.Gameplay;
+using NFMWorld.Graphics;
+using NFMWorld.Graphics.D3D11;
+#if ANGLE
+using NFMWorld.Graphics.OpenGL;
+#endif
+// Aliased because both GL backends declare a `GlGraphicsDevice` in their own namespace, and this
+// class names one type from the DesktopGL one. The ANGLE type keeps its bare name so the code
+// already written against it does not move.
+using GlGraphicsDeviceDesktop = NFMWorld.Graphics.DesktopGL.GlGraphicsDevice;
+using NFMWorld.Platform.SDL3;
+using NFMWorld.UI;
+using NFMWorld.Util;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Util;
+using Keys = NFMWorld.DriverInterface.Keys;
+using Logging = NFMWorldLibrary.Logging;
+using NFMWorld.Sentry;
+using WorldXaml.UI.Yoga;
+using ClearOptions = NFMWorld.Graphics.ClearOptions;
+using Font = NFMWorld.DriverInterface.DriverInterface.Font;
+using FontFamily = NFMWorld.DriverInterface.DriverInterface.FontFamily;
+using FontStyle = NFMWorld.DriverInterface.DriverInterface.FontStyle;
+using SDL = SDL3New::SDL3.SDL;
+
+namespace NFMWorld;
+
+/// <summary>
+/// This sample demonstrates how to load a Direct2D1 bitmap from a file.
+/// This method will be part of a future version of SharpDX API.
+/// </summary>
+/// <remarks>
+/// Milestone 5 Stage A: window/input/device ownership moved off FNA's <c>Game</c>/
+/// <c>GraphicsDeviceManager</c> onto <see cref="SdlWindow"/> and a device from the graphics
+/// abstraction, following the pattern proven in <c>NFMWorld.Graphics.FNA3D.Smoke/Program.cs</c>.
+///
+/// <para>
+/// The device is sokol_gfx on D3D11. SDL still owns the window, and sokol_gfx is deliberately never
+/// told about it - its D3D11 backend wants an <c>ID3D11Device</c> and an <c>ID3D11DeviceContext</c>
+/// and nothing else (<c>sokol_gfx.h:5361-5364</c>), which
+/// <see cref="SokolD3D11Platform"/> builds over SDL's <c>HWND</c>. That is why input, ImGui's
+/// backend and NanoVG are all untouched by the change.
+/// </para>
+///
+/// <para>
+/// Which device it is comes from <c>--backend=</c> (<see cref="Renderer"/>), and within sokol from
+/// <c>--sokol-backend=</c> as well. Both are runtime choices so the same binary can be run through
+/// each backend in turn, which is what the comparison this harness exists for needs: numbers from
+/// different builds would not be comparable. See the constructor for the switch.
+/// </para>
+///
+/// <para>
+/// The exception is the <c>ANGLE</c> renderer, which stays behind its define (see
+/// NFMWorld.csproj) because it is the one path that needs a native ANGLE package. It can be named
+/// on the command line only when the define is on; <see cref="ParseRenderer"/> says so by name
+/// rather than reporting it as a typo.
+/// </para>
+/// </remarks>
+public class WorldGame : IDisposable, IGameHost
+{
+    /// <summary>Compatibility shim for <c>Mad/UI/SettingsMenu.cs</c>'s existing settings-application logic. See <see cref="GraphicsSettingsShim"/>.</summary>
+    public GraphicsSettingsShim Graphics { get; }
+
+    /// <summary>The SDL3 window this game owns.</summary>
+    public SdlWindow Window { get; }
+    
+    /// <summary>
+    /// The device, whichever backend is running - a GL one under <c>--backend=desktopgl</c> or the
+    /// ANGLE renderer, a <see cref="SokolGraphicsDevice"/> otherwise. Nothing outside the
+    /// constructor needs to know which, which is the point of the abstraction; the choice is made
+    /// at launch by <see cref="ParseRenderer"/> and, within the sokol half, by
+    /// <c>--sokol-backend=</c> as well (see <see cref="Main"/>).
+    /// </summary>
+    private readonly IGraphicsDevice _device;
+
+    /// <summary>
+    /// The GL context SDL created for that window, owned and destroyed by this class - or zero on
+    /// every other backend, because SDL never made one.
+    ///
+    /// It is not owned by the device: on that path <c>GlGraphicsDevice.Create</c> attaches to a
+    /// context somebody else made current and never creates or destroys one, which is why the
+    /// destroy below is here rather than in the backend's own Dispose.
+    /// </summary>
+#pragma warning disable CS0649 // only assigned on the two GL renderers; see the constructor
+    private readonly IntPtr _glContext;
+#pragma warning restore CS0649
+
+    /// <summary>
+    /// Which rendering backend this process was launched with, from <c>--backend=</c>.
+    /// </summary>
+    private static Renderer _renderer = Renderer.Angle;
+
+#if ANGLE
+    /// <summary>
+    /// Which ANGLE backend and device this process was launched with, from
+    /// <c>--angle-backend=</c>/<c>--angle-device=</c>.
+    ///
+    /// Static and settled before the constructor for the same reason as its two siblings: it
+    /// describes the platform display the GL context is created on, so it is consumed by the very
+    /// first step of the ANGLE arm and cannot be revisited afterwards - an EGL display's platform is
+    /// fixed when it is requested.
+    ///
+    /// Inside the define along with the EGL fields below, because the type it is typed with lives in
+    /// NFMWorld.Graphics.OpenGL and the exe only references that assembly when the define is on.
+    /// Every reader of it is inside an <c>#if ANGLE</c> block for the same reason.
+    /// </summary>
+    private static AngleSelection _angleSelection = AngleSelection.Default;
+
+    /// <summary>
+    /// The EGL platform-attribute array handed to SDL, allocated with <c>SDL_malloc</c> and never
+    /// freed by us.
+    ///
+    /// Static, and deliberately never disposed. SDL frees the pointer itself immediately after
+    /// <c>eglGetPlatformDisplay</c> returns, and the callback contract is that the array must come
+    /// from <c>SDL_malloc</c> so that this is safe - so the allocation is not leaked, it is
+    /// transferred. It has to be a field rather than a local because the delegate that returns it
+    /// outlives the call that installs it, and a captured local would be a dangling pointer into a
+    /// moved or collected object.
+    /// </summary>
+    private static IntPtr _eglPlatformAttribs;
+
+    /// <summary>
+    /// Keeps the platform-attribute callback delegate alive.
+    ///
+    /// SDL stores the raw function pointer, not a managed reference, so a lambda passed inline would
+    /// be collectable the moment the installing call returned - and the fault would be a native
+    /// access violation at context creation, arbitrarily far from the cause.
+    /// </summary>
+    private static SDL.SDL_EGLAttribArrayCallback? _eglPlatformAttribCallback;
+#endif
+
+    /// <summary>
+    /// Where <see cref="SyncBackendVSync"/> sends the setting on the two GL renderers, which have no
+    /// platform object: <c>SDL_GL_SetSwapInterval(0|1)</c>, or null on the sokol path.
+    ///
+    /// A callback rather than a stored context handle because the SDL calls here all take the window
+    /// or nothing at all, and because it is the same shape <c>SokolGlPlatform</c> already receives
+    /// for this exact call (see the glcore arm below).
+    /// </summary>
+    private Action<int>? _setSwapInterval;
+
+    /// <summary>
+    /// What the window's multisample request actually got, read back from SDL after the context was
+    /// created; 0 when MSAA is off or SDL refused the request.
+    ///
+    /// Static for the same reason as <see cref="_angleSelection"/>: it is consumed while the
+    /// constructor is still building the device, and the constructor is the only reader.
+    /// </summary>
+    private static int _glGrantedMultiSampleCount;
+
+    /// <summary>The <c>--backend=</c> argument. See <see cref="ParseRenderer"/>.</summary>
+    private const string RendererArgumentPrefix = "--backend=";
+
+    /// <summary>
+    /// Which renderer <paramref name="args"/> names, defaulting to <see cref="Renderer.Sokol"/>.
+    ///
+    /// An unknown value throws rather than falling back, for the same reason
+    /// <see cref="SokolBackendSelection.Parse"/> does: the default is a working backend, so a typo
+    /// would otherwise produce an entirely normal-looking run that measured the wrong thing.
+    /// </summary>
+    /// <exception cref="ArgumentException">On an unknown renderer name.</exception>
+    private static Renderer ParseRenderer(string[] args)
+    {
+        foreach (var arg in args)
+        {
+            if (!arg.StartsWith(RendererArgumentPrefix, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var value = arg[RendererArgumentPrefix.Length..];
+            if (value.Equals("d3d11", StringComparison.OrdinalIgnoreCase))
+            {
+                // Named on every platform but only usable on one, and the message says which rather
+                // than letting device creation produce a PlatformNotSupportedException several
+                // hundred lines later, after SDL has already brought a window up.
+                if (!OperatingSystem.IsWindows())
+                {
+                    throw new ArgumentException(
+                        $"{RendererArgumentPrefix}d3d11 needs Windows: the backend binds Direct3D 11 " +
+                        "and DXGI through TerraFX.Interop.Windows, which P/Invokes those DLLs directly.");
+                }
+
+                return Renderer.D3d11;
+            }
+
+            // Named but not built in: the message has to say so, because the generic "unknown"
+            // below would send someone looking for a typo in a name that is spelled correctly.
+            if (value.Equals("angle", StringComparison.OrdinalIgnoreCase))
+            {
+#if ANGLE
+                return Renderer.Angle;
+#else
+                throw new ArgumentException(
+                    $"{RendererArgumentPrefix}angle needs this build to include the ANGLE backend, " +
+                    "which is behind the NfmWorldAngle property - rebuild with " +
+                    "-p:NfmWorldAngle=true to use it.");
+#endif
+            }
+
+            if (value.Equals("desktopgl", StringComparison.OrdinalIgnoreCase))
+                return Renderer.DesktopGl;
+
+            throw new ArgumentException(
+                $"Unknown {RendererArgumentPrefix}{value}. Valid renderers: sokol, desktopgl, d3d11" +
+#if ANGLE
+                ", angle" +
+#endif
+                ".");
+        }
+
+        return Renderer.Auto;
+    }
+
+#if ANGLE
+    /// <summary><c>SDL_GL_CONTEXT_PROFILE_ES</c>, from <c>SDL_video.h</c> - the EGL/ES profile, as opposed to Core or Compatibility. Only the GL path asks for a profile.</summary>
+    private const int EsProfile = 0x0004;
+
+    /// <summary>
+    /// Hands SDL the platform-attribute list that selects <paramref name="selection"/>'s ANGLE
+    /// backend, and the <c>SDL_GL_EGL_PLATFORM</c> attribute that makes SDL ask for that platform at
+    /// all.
+    ///
+    /// Both halves are required, which is worth stating because neither is obvious and each is
+    /// useless alone. SDL's <c>eglGetPlatformDisplay</c> call is guarded by <c>if (platform)</c>
+    /// (<c>SDL_egl.c</c>, <c>SDL_EGL_LoadLibrary</c>), and <c>platform</c> is
+    /// <c>gl_config.egl_platform</c> - zero unless this attribute is set, in which case SDL skips
+    /// platform-display creation entirely and the attributes below are never consulted. Conversely
+    /// the attributes only exist if a callback is installed: SDL passes a literal <c>NULL</c> when
+    /// <c>egl_platformattrib_callback</c> is unset, which is the "default platform" request.
+    ///
+    /// There is no SDL3 hint or environment variable that does any of this - ANGLE_DEFAULT_PLATFORM
+    /// is not honoured, and SDL contains no ANGLE backend logic at all - which is why it is the
+    /// application's job.
+    /// </summary>
+    /// <remarks>
+    /// <b>Deliberately not called for the default selection.</b> Asking for D3D11 explicitly is not
+    /// a no-op here: it moves SDL from <c>eglGetDisplay</c> onto the platform-display path, and this
+    /// backend has already been bitten by the config that path produces - see the long note on
+    /// <see cref="CreateAngleDevice"/>, where the symptom was every <c>gl*</c> call returning
+    /// <c>GL_INVALID_OPERATION</c> with no GL error raised. ANGLE's default on Windows <em>is</em>
+    /// D3D11, so a default run loses nothing by staying on the display it has always used, and only
+    /// an explicit <c>--angle-backend=</c>/<c>--angle-device=</c> takes the new path. That also
+    /// keeps this change from silently altering the path every earlier measurement was taken on.
+    ///
+    /// The two managed fields holding the delegate and the buffer are static and never freed on
+    /// purpose; see each one's own remarks for why that is the correct lifetime rather than a leak.
+    /// </remarks>
+    private static unsafe void InstallAnglePlatformAttributes(AngleSelection selection)
+    {
+        // The order of these two does not matter to SDL (the attribute is read when the EGL library
+        // is loaded, the callback when the display is requested - both later than this), but both
+        // have to happen before the window exists, because SDL builds the window's surface out of
+        // the config it chooses for the display.
+        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_EGL_PLATFORM, AngleSelection.PlatformAttribute);
+
+        // Built from AngleSelection rather than spelled out, so this list and the one
+        // Egl.GetAngleDisplay hands to EGL directly cannot drift apart. That is the failure this
+        // whole change exists to repair: the two paths used to spell the tokens separately and one
+        // of them passed 0x33AE, ANGLE's null renderer, for the whole life of the ANGLE backend.
+        //
+        // Already EGLAttrib-width, so it is copied into the SDL allocation verbatim - SDL passes the
+        // pointer straight to eglGetPlatformDisplay, which reads 64-bit entries, so handing it a
+        // 32-bit array would make it read every token and value as one shifted word.
+        var attributes = selection.PlatformAttributes();
+
+        // SDL_malloc, not a managed allocation: SDL frees this with SDL_free as soon as
+        // eglGetPlatformDisplay returns, and freeing a pointer the GC also owns would corrupt the
+        // heap. The allocation is therefore transferred rather than leaked - see _eglPlatformAttribs.
+        _eglPlatformAttribs = SDL.SDL_malloc((UIntPtr)(attributes.Length * sizeof(nint)));
+        if (_eglPlatformAttribs == IntPtr.Zero)
+            throw new OutOfMemoryException("SDL_malloc failed for the EGL platform attribute list.");
+
+        var target = (nint*)_eglPlatformAttribs;
+        for (var i = 0; i < attributes.Length; i++)
+            target[i] = attributes[i];
+
+        // Static, and assigned rather than passed inline: SDL keeps the raw function pointer, so a
+        // temporary delegate would be collectable the moment this method returned and the fault
+        // would be a native crash at context creation with nothing pointing back here.
+        _eglPlatformAttribCallback = () => _eglPlatformAttribs;
+        SDL.SDL_EGL_SetAttributeCallbacks(_eglPlatformAttribCallback, null, null, IntPtr.Zero);
+    }
+
+    /// <summary>
+    /// What the window's multisample request actually got, read back from the live context - or 0
+    /// when multisampling was not asked for, SDL refused, or the query is not answerable yet.
+    ///
+    /// This is a GL query rather than a bookkeeping read: SDL answers
+    /// <c>SDL_GL_MULTISAMPLESAMPLES</c> with <c>glGetIntegerv(GL_SAMPLES)</c> on the current context
+    /// (<c>SDL_video.c</c>, <c>SDL_GL_GetAttribute</c>), so the number is the driver's allocation and
+    /// not the request echoed back. That is the whole reason to call it rather than trusting
+    /// <see cref="RequestedMultiSampleCount"/>: a driver may clamp or refuse, and reporting a request
+    /// as an allocation is precisely the class of bug this change is repairing elsewhere.
+    ///
+    /// Zero on failure rather than throwing. The two GL arms run this immediately after creating the
+    /// context, and a machine that cannot answer the query should render without multisampling, not
+    /// refuse to start - the count only feeds a settings display and a restart prompt.
+    /// </summary>
+    private static int ReadGrantedMultiSampleCount()
+    {
+        if (SDL.SDL_GL_GetAttribute(SDL.SDL_GLAttr.SDL_GL_MULTISAMPLESAMPLES, out var granted))
+            return granted;
+
+        Logging.Warning($"Could not read the granted multisample count back from SDL: {SDL.SDL_GetError()}");
+        return 0;
+    }
+
+    /// <summary>
+    /// The multisample count the persisted settings ask for, normalized the way the rest of the
+    /// application means it: 0 when multisampling is off, and 0 for a requested count of 1, which the
+    /// settings UI's "MSAA 1x" entry uses to mean off.
+    ///
+    /// Read from <c>SettingsMenu</c> directly rather than through
+    /// <see cref="GraphicsSettingsShim.DesiredMultiSampleCount"/>, because of ordering: this is
+    /// called from <see cref="CreateGlContext"/>, which runs in the constructor, and the shim does
+    /// not exist until the device it wraps does. The config values behind it are parsed before
+    /// construction (see <c>Main</c>), so the answer is already known.
+    ///
+    /// The normalization is duplicated from the shim rather than shared, which is a deliberate
+    /// narrow trade: the shim's copy is a property of a live graphics device and this one has to
+    /// exist before any device does. They are kept identical by <c>SettingsMenu</c> being the single
+    /// source of both the flag and the count.
+    /// </summary>
+    private static int RequestedMultiSampleCount() =>
+        SettingsMenu.RequestedMultiSampleCount;
+
+    /// <summary>
+    /// Logs which renderer the GL context actually came up on, and what it did with the multisample
+    /// request.
+    ///
+    /// This is the only honest confirmation that the platform attributes were honoured. ANGLE's
+    /// renderer string names its own backend (<c>… Direct3D11 vs_5_0 ps_5_0, D3D11</c>), so a request
+    /// for <c>vulkan</c> that reports D3D11 is visible here and nowhere else - as is the case where
+    /// SDL took its <c>eglGetPlatformDisplayEXT(platform, native, NULL)</c> fallback branch, which
+    /// drops the attributes entirely and looks identical from the outside.
+    ///
+    /// Queried through <c>glGetString</c> rather than the device: the device is not built yet at the
+    /// point the ANGLE arm calls this, and the strings are a property of the context anyway.
+    /// </summary>
+    /// <summary>
+    /// Warns, before the window is created, when the Vulkan loader ANGLE loads at run time is not
+    /// beside this executable.
+    ///
+    /// Called before <see cref="CreateGlContext"/> rather than after it throws, because the throw it
+    /// would otherwise produce is the reason this exists: ANGLE turns the missing loader into
+    /// <c>VK_ERROR_INITIALIZATION_FAILED</c> and the caller sees a driver-flavoured "Internal Vulkan
+    /// error (-3)" naming <c>vk_renderer.cpp</c>, which sends a reader off to check their Vulkan
+    /// driver installation for a file that was simply never copied. See
+    /// <see cref="AngleVulkanLoader"/> for the mechanism and for why this warns instead of refusing.
+    /// </summary>
+    private static void ReportMissingVulkanLoader()
+    {
+        if (!AngleVulkanLoader.MayBeMissing(_angleSelection) || AngleVulkanLoader.IsPresent)
+            return;
+
+        Logging.Warning(
+            $"Asked for the {_angleSelection.Describe()} ANGLE backend, but " +
+            $"{AngleVulkanLoader.ExpectedPath} does not exist. ANGLE loads its Vulkan loader from its " +
+            "own directory rather than from the system path, so the Vulkan backend will fail to " +
+            "initialize even when Vulkan itself works on this machine - and it reports that as " +
+            "'Internal Vulkan error (-3) ... vk_renderer.cpp', which names the driver rather than the " +
+            "missing file. If it does fail, this is why.");
+    }
+
+    private static unsafe void ReportGlRenderer(AngleSelection selection)
+    {
+        const int glVendor = 0x1F00;
+        const int glRenderer = 0x1F01;
+        const int glVersion = 0x1F02;
+
+        var getString = SDL.SDL_GL_GetProcAddress("glGetString");
+        if (getString == IntPtr.Zero)
+        {
+            // Modern core profiles make glGetString unusable for anything but a handful of names, so
+            // this is a real case rather than a defensive one. Nothing else here depends on the
+            // strings, so it is reported and skipped.
+            Logging.Warning("glGetString is unavailable, so the GL renderer could not be reported.");
+            return;
+        }
+
+        var function = (delegate* unmanaged[Cdecl]<int, byte*>)getString;
+
+        string Read(int name)
+        {
+            var value = function(name);
+            // GL's strings are only valid until the next GL call on the context, so they are
+            // marshalled here rather than handed out as pointers.
+            return value is null ? "(null)" : Marshal.PtrToStringUTF8((nint)value) ?? "(unreadable)";
+        }
+
+        Logging.Info(
+            $"GL renderer: requested {selection.Describe()}, got '{Read(glRenderer)}' " +
+            $"(vendor '{Read(glVendor)}', version '{Read(glVersion)}')");
+        Logging.Info(
+            $"GL multisampling: requested {RequestedMultiSampleCount()}x, granted " +
+            $"{_glGrantedMultiSampleCount}x");
+    }
+#endif
+
+    /// <summary><c>SDL_GL_CONTEXT_PROFILE_CORE</c>, from <c>SDL_video.h</c>.</summary>
+    private const int CoreProfile = 0x0001;
+
+    /// <summary>
+    /// The multisample count most recently asked of the swapchain, so
+    /// <see cref="EnsureSwapchainMatchesWindow"/> can tell "the setting changed" from "the backend
+    /// allocated something else". See that method for why the allocated count is the wrong thing to
+    /// compare against.
+    /// </summary>
+    private int _appliedMultiSampleRequest;
+
+    public SdlImGuiRenderer? ImguiRenderer { get; private set; }
+    private UiRenderer? _uiRenderer;
+
+    internal static long LastFrameTime;
+    internal static long LastTickTime;
+    internal static double LastAsyncTime;
+    internal static int LastTickCount;
+    private Keys _oldKeyState;
+    private MouseButtons _oldMouseState;
+    private Int2 _oldMousePosition;
+    private int _oldScrollValue;
+    // UI drag state: the renderer only receives pressed/moved/released today, so
+    // mouse-drag events (needed by the Sx Slider) are synthesized here from a held
+    // primary button + pointer movement since the press.
+    private bool _mouseDragging;
+    private Int2 _mouseDragStart;
+    private AposRenderer? _nvg;
+    private TimeStep _tickTimeStep = new((1000f / Physics.TargetTps) / 1000f);
+
+    private static bool _loaded;
+    private const int FrameDelay = (int) (1000 / 21.3f);
+
+    private int _yogaDebugPage = -1;
+
+    /// <summary>Whether the window currently has input focus. Replaces FNA's <c>Game.IsActive</c>.</summary>
+    public bool IsActive => Window.HasFocus;
+
+    /// <summary>
+    /// Pushes <see cref="GraphicsSettingsShim.SynchronizeWithVerticalRetrace"/> onto whichever
+    /// backend is in play: the sokol platform's present interval, the D3D11 swapchain's own present
+    /// interval, or <c>SDL_GL_SetSwapInterval</c> on the two GL renderers.
+    ///
+    /// The interval is an argument to the present call rather than a property of the drawable, which
+    /// is why it can be changed at any time and is read per frame here. Both sinks take the same
+    /// 0/1 value, and the GL one is literally the callback the glcore arm already hands to
+    /// <c>SokolGlPlatform</c> - so this is a sink that was missing, not a mechanism that was missing.
+    ///
+    /// Called every frame from the loop rather than from wherever the setting is written, because the
+    /// setting is written from an ImGui callback that runs with a command buffer already live: the
+    /// same reason <see cref="EnsureSwapchainMatchesWindow"/> defers its rebuild to here.
+    /// </summary>
+    /// <remarks>
+    /// Worth knowing before reading anything into a frame rate: on both GL renderers, on this
+    /// machine's driver, the swap interval has been measured to have no effect on the paced frame
+    /// rate at all - which is why VSync reads as "the setting does nothing" there even though the
+    /// call is now made. That is the driver ignoring the request, not a missing call, and no amount
+    /// of work in this class would change it.
+    /// </remarks>
+    private void SyncBackendVSync()
+    {
+        var vsync = Graphics.SynchronizeWithVerticalRetrace;
+
+        _device.Swapchain.VSync = vsync;
+        _setSwapInterval?.Invoke(vsync ? 1 : 0);
+    }
+
+    /// <summary>Replaces FNA's <c>Game.IsFixedTimeStep</c> - read by the manual loop in <see cref="Main"/>.</summary>
+    public bool IsFixedTimeStep { get; set; } = false;
+
+    /// <summary>Replaces FNA's <c>Game.TargetElapsedTime</c> - read by the manual loop in <see cref="Main"/> and by <see cref="Draw"/>'s alpha calculation.</summary>
+    public TimeSpan TargetElapsedTime { get; set; } = TimeSpan.FromMilliseconds(1000 / Physics.TargetTps);
+
+    /// <summary>All real key codes in <see cref="Key"/> (excludes the <c>KeyCode</c>/<c>Modifiers</c>/<c>Shift</c>/<c>Control</c>/<c>Alt</c> bitmask sentinels), for <see cref="UpdateInput"/>'s per-frame diff. Replaces enumerating <c>Microsoft.Xna.Framework.Input.Keys</c>.</summary>
+    private static readonly Key[] AllKeys = Enum.GetValues<Key>().Where(k => (uint)k <= 0xFE).Distinct().ToArray();
+
+    private bool _disposed;
+
+    private WorldGame()
+    {
+        GameThreadContext.Install();
+
+        // The context belongs to SDL, so there is no GL library to load and no context to create
+        // here - this only has to bring up the one SDL makes current. The order around it is not
+        // free, though, and every step below is load-bearing.
+
+        // SDL_GL_LoadLibrary refuses to run before the video subsystem is up ("Video subsystem has
+        // not been initialized"), and SdlWindow.Create is what brings the subsystem up - so it has
+        // to run first, here, explicitly. Its result is checked rather than ignored: it was the
+        // ignored failure that made the original ordering look harmless.
+        if (!SDL.SDL_Init(SDL.SDL_InitFlags.SDL_INIT_VIDEO))
+            throw new InvalidOperationException($"SDL_Init failed: {SDL.SDL_GetError()}");
+
+        // Which device this process runs on. Three arms, and what they actually differ in is who
+        // creates the GL context - SDL for both GL paths, nobody for D3D11.
+        switch (_renderer)
+        {
+            case Renderer.Angle:
+#if ANGLE
+            {
+                // ANGLE only exists under its define, so this arm is compiled out with it. The
+                // switch's default arm below reports that rather than this failing to build.
+                //
+                // The platform display's attributes have to be installed before the window is
+                // created, because SDL asks EGL for that display while it builds the window's
+                // surface. See InstallAnglePlatformAttributes for why this is the only way to choose
+                // an ANGLE backend at all - and for why a default run deliberately does not, leaving
+                // it on the display and config every earlier measurement of this path was taken on.
+                if (!_angleSelection.IsDefault)
+                    InstallAnglePlatformAttributes(_angleSelection);
+
+                ReportMissingVulkanLoader();
+
+                var (angleContext, angleWindow) = CreateGlContext(
+                    profileMask: EsProfile, major: 3, minor: 0,
+                    // Forces SDL down its EGL path rather than WGL, so the context is ANGLE's.
+                    hint: (SDL.SDL_HINT_OPENGL_ES_DRIVER, "1"));
+
+                _glContext = angleContext;
+                Window = angleWindow;
+
+                // Read back what SDL actually gave us rather than assuming the request was honoured.
+                // Two things can go wrong silently here: the driver clamps the count, and - the case
+                // this whole mechanism exists to avoid - SDL never asked ANGLE for the platform at
+                // all, so our attributes were dropped on the floor.
+                _glGrantedMultiSampleCount = ReadGrantedMultiSampleCount();
+
+                // SDL owns this context, so the interval is SDL's call - and it can be changed at any
+                // time, which is what makes VSync work here at all.
+                _setSwapInterval = interval => SDL.SDL_GL_SetSwapInterval(interval);
+
+                _device = GlGraphicsDevice.Create(
+                    SDL.SDL_GL_GetProcAddress, angleWindow.Width, angleWindow.Height,
+                    () => SDL.SDL_GL_SwapWindow(angleWindow.Handle),
+                    _glGrantedMultiSampleCount);
+                ReportGlRenderer(_angleSelection);
+                break;
+            }
+#else
+                throw new NotSupportedException(
+                    "The ANGLE renderer needs a build with the ANGLE backend enabled - rebuild with " +
+                    "-p:DefineConstants=ANGLE.");
+#endif
+
+            case Renderer.D3d11:
+            {
+                // Our own backend. The window creation is the sokol D3D11 arm's, verbatim, and for
+                // the same reason: nothing here asks SDL for a 3D API. DXGI is handed the HWND and
+                // builds its swapchain on it, and SDL's only remaining job is to own the window and
+                // feed this app its input.
+                //
+                // SDL_INIT_VIDEO is up already (the top of this constructor) and has to stay up for
+                // the window's lifetime - the HWND is SDL's, so tearing SDL down would take the
+                // drawable with it. That is why SdlWindow is disposed at the end of Dispose rather
+                // than anywhere near the device.
+                Window = SdlWindow.Create("NFM World", 1280, 720);
+
+                var d3d11Device = D3D11GraphicsDevice.Create(new D3D11DeviceDescription(
+                    WindowHandle: Window.NativeWindowHandle,
+                    Width: Window.Width,
+                    Height: Window.Height,
+                    // From the settings menu, not from the shim: Graphics is only assigned after this
+                    // whole switch, so it is null here. This is the same source the GL arms reach
+                    // through the window's pixel format, which is why the property exists.
+                    MultiSampleCount: SettingsMenu.RequestedMultiSampleCount));
+                _device = d3d11Device;
+                break;
+            }
+
+            case Renderer.DesktopGl:
+            {
+                // Desktop GL 3.3 core. Same shape as the ANGLE arm - SDL owns the context - but no
+                // ES hint, a core profile, and a device that compiles the bundles' Glsl330 form
+                // rather than their GlslEs one.
+                var (desktopContext, desktopWindow) = CreateGlContext(
+                    profileMask: CoreProfile, major: 3, minor: 3, hint: null);
+
+                _glContext = desktopContext;
+                Window = desktopWindow;
+
+                _glGrantedMultiSampleCount = ReadGrantedMultiSampleCount();
+                _setSwapInterval = interval => SDL.SDL_GL_SetSwapInterval(interval);
+
+                var desktopDevice = GlGraphicsDeviceDesktop.Create(
+                    SDL.SDL_GL_GetProcAddress, desktopWindow.Width, desktopWindow.Height,
+                    () => SDL.SDL_GL_SwapWindow(desktopWindow.Handle),
+                    _glGrantedMultiSampleCount);
+                _device = desktopDevice;
+                break;
+            }
+
+            default:
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    goto case Renderer.D3d11;
+                else
+                    goto case Renderer.Angle;
+            }
+        }
+
+        Graphics = new GraphicsSettingsShim(Window, _device.Swapchain);
+
+        // VSync is applied per present rather than at creation (the present interval is an argument
+        // to IDXGISwapChain::Present), so unlike the GL path it can follow the setting - the frame
+        // loop re-syncs it every frame, and this only seeds it so the very first frame is not
+        // presented with the wrong interval.
+        SyncBackendVSync();
+
+
+        Window.Resized += (w, h) =>
+        {
+            EnsureSwapchainMatchesWindow();
+            GameSparker.WindowSizeChanged(w, h);
+            GameSparker.CurrentPhase.WindowSizeChanged(w, h);
+            G.Scale = h / 720f;
+        };
+
+        Window.TextInput += character =>
+        {
+            var imguiWantsKeyboard = ImguiRenderer is not null && ImGui.GetIO().WantCaptureKeyboard;
+            if (!imguiWantsKeyboard)
+            {
+                GameSparker.UiRenderer?.HandleKeyTyped(character);
+            }
+
+            GameSparker.CurrentPhase.KeyTyped(character, imguiWantsKeyboard);
+        };
+    }
+
+    /// <summary>
+    /// Creates the SDL window and the GL context the two GL renderers run on, and returns both.
+    ///
+    /// Shared by the ANGLE and DesktopGL arms because the sequence is identical and the ordering is
+    /// load-bearing in a way that is easy to lose by duplicating it: SDL_GL_LoadLibrary refuses to
+    /// run before the video subsystem is up, the attributes have to be set before the window because
+    /// SDL builds the window's surface during creation and reads the profile from them at that point,
+    /// and the context has to exist before the device attaches to it.
+    ///
+    /// The two callers differ only in what they ask for, which is why that is the parameter list:
+    /// ANGLE wants an ES 3.0 profile and SDL's EGL hint, desktop GL wants a 3.3 core profile and no
+    /// hint at all.
+    /// </summary>
+    /// <param name="profileMask">
+    /// <c>SDL_GL_CONTEXT_PROFILE_MASK</c>: <see cref="EsProfile"/> or <see cref="CoreProfile"/>.
+    /// </param>
+    /// <param name="hint">
+    /// A hint to set before anything else, or null for none. Tuple rather than two parameters so the
+    /// null case cannot be half-specified.
+    /// </param>
+    private static (IntPtr Context, SdlWindow Window) CreateGlContext(
+        int profileMask, int major, int minor, (string Name, string Value)? hint)
+    {
+        if (hint is { } h)
+            SDL.SDL_SetHint(h.Name, h.Value);
+
+        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, major);
+        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_MINOR_VERSION, minor);
+        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_PROFILE_MASK, profileMask);
+
+        // A stencil buffer is not optional: every one of NanoVG's nine pipelines is a stencil pass
+        // (AbstractionNvgRenderer's StencilFill1/2/3 descriptions), and the UI is drawn straight into
+        // the default framebuffer - there is no separate depth-stencil attachment the way the sokol
+        // path allocated one for NVG. Without asking for one SDL picks a config with stencil=0
+        // (measured on this machine: stencil=0 depth=16), and glStencilFunc/glStencilOp against a
+        // buffer that does not exist fail silently - no GL error, no draw. The visible result is the
+        // UI's coverage/blend maths running against a stencil that reads as a constant, which shows
+        // up as fills that do not accumulate alpha over one another.
+        //
+        // 8 is the smallest depth every driver here offers; ANGLE's D3D11 backend maps the request
+        // onto a D24S8 depth-stencil surface, so this does not cost a separate buffer.
+        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_STENCIL_SIZE, 8);
+
+        // MSAA, and this is the whole of the mechanism on both GL renderers.
+        //
+        // It has to be requested here, before the window exists, because the sample count is a
+        // property of the window's pixel format - which is fixed when the context is created. There
+        // is no call that could change it afterwards, which is why a mid-session MSAA change on a GL
+        // renderer reports that it needs a restart rather than pretending to apply.
+        //
+        // SDL forwards these two attributes to EGL as EGL_SAMPLE_BUFFERS/EGL_SAMPLES when choosing a
+        // window config, and to the WGL pixel format on the desktop path, so one request covers both
+        // renderers. Both draw straight into the default framebuffer, so there is no resolve pass
+        // involved and nothing further to wire up.
+        //
+        // Only asked for when multisampling is actually wanted: a config with EGL_SAMPLE_BUFFERS=1
+        // and a count of 0 is not a way to say "off", and some drivers treat it as unsatisfiable.
+        if (RequestedMultiSampleCount() is var samples and > 1)
+        {
+            SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_MULTISAMPLEBUFFERS, 1);
+            SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_MULTISAMPLESAMPLES, samples);
+        }
+
+        if (!SDL.SDL_GL_LoadLibrary(null))
+            throw new InvalidOperationException($"SDL_GL_LoadLibrary failed: {SDL.SDL_GetError()}");
+
+        var window = SdlWindow.Create(
+            "NFM World", 1280, 720, extraFlags: SDL.SDL_WindowFlags.SDL_WINDOW_OPENGL);
+
+        var context = SDL.SDL_GL_CreateContext(window.Handle);
+        if (context == IntPtr.Zero)
+            throw new InvalidOperationException($"SDL_GL_CreateContext failed: {SDL.SDL_GetError()}");
+
+        return (context, window);
+    }
+
+    private void Update(GameTime gameTime)
+    {
+        FPSCounter.Update(gameTime, LastTickTime, LastFrameTime, LastAsyncTime);
+
+        UpdateInput();
+        UpdateMouse();
+
+        _uiRenderer?.Update(gameTime);
+
+        if (!_loaded)
+        {
+            _loaded = true;
+        }
+
+        var timesToTick = _tickTimeStep.Update(gameTime);
+        if (timesToTick > 0)
+        {
+            LastTickTime = 0;
+
+            for (var i = 0; i < timesToTick; i++)
+            {
+                var tick = new MicroStopwatch();
+                tick.Start();
+
+                var transaction = SentrySdk.StartTransaction("GameTick", "gameloop.tick");
+                GameSparker.CurrentPhase.BeginGameTick();
+                GameSparker.GameTick();
+                GameSparker.CurrentPhase.GameTick();
+                GameSparker.CurrentPhase.EndGameTick();
+                transaction.Finish();
+
+                LastTickTime += tick.ElapsedMicroseconds;
+            }
+
+            LastTickCount = timesToTick;
+        }
+
+        {
+            var transaction = SentrySdk.StartTransaction("GameThreadContext", "gameloop.gamethread");
+            var t = new MicroStopwatch();
+            t.Start();
+            if (GameThreadContext.Current.ExecutePendingTasks())
+                LastAsyncTime = t.ElapsedTicks * (1000000D / Stopwatch.Frequency);
+            transaction.Finish();
+        }
+
+        // Dispose any phases that were popped/replaced this frame.
+        // Must happen after all game logic to avoid disposal during event handlers.
+        GameSparker.Phases.FlushDisposals();
+    }
+
+    private void Initialize()
+    {
+        ImguiRenderer = new SdlImGuiRenderer(_device, Window);
+
+        // A cold launch spends minutes here, because constructing the Apos renderer links the shape
+        // shader and ANGLE takes that long to translate it. Nothing has been presented at this point
+        // - the game loop that would do so has not started - so without this the window is blank for
+        // the whole wait. The frame is drawn first so the message is on screen before the compile
+        // begins; a cached launch costs a frame nobody notices.
+        DrawBootMessage(ShaderCompileMessage);
+
+        _nvg = new AposRenderer(_device);
+
+        // Must be constructed (and GameSparker.UiRenderer assigned) before GameSparker.Load()
+        // (called from LoadContent(), which runs after Initialize()) pushes MainMenuPhase - phases
+        // register their PhaseBridge with GameSparker.UiRenderer from BasePhase.Enter(), which
+        // no-ops silently if it's still null at that point.
+        _uiRenderer = new UiRenderer();
+        GameSparker.UiRenderer = _uiRenderer;
+
+        _oldKeyState = SdlWindow.GetKeyboardState();
+        var (mouseButtons, mouseX, mouseY) = SdlWindow.GetMouseState();
+        _oldMouseState = mouseButtons;
+        _oldMousePosition = new Int2(mouseX, mouseY);
+        _oldScrollValue = 0;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        // Dispose all phases before tearing down CEF and graphics.
+        GameSparker.Phases.Shutdown();
+
+        _uiRenderer?.Dispose();
+        ShadowMapDebugView.Dispose();
+        foreach (var shadowRenderTarget in GameSparker.ShadowRenderTargets)
+        {
+            shadowRenderTarget?.Dispose();
+        }
+        ImguiRenderer?.Dispose();
+        _nvg?.Dispose();
+
+        // Device before window, and context before either: the device holds GL objects created
+        // against the context, and the next two lines destroy the thing they live in. Currently
+        // GlGraphicsDevice.Dispose is a no-op on this path (it owns nothing without an EGL context of
+        // its own), but the ordering is the contract its own Dispose documents, so it is kept.
+        //
+        // Disposing the device also tears down the platform behind it (SokolSwapchain owns the
+        // platform, and SokolGraphicsDevice.Dispose disposes the swapchain) - which is why the
+        // D3D11 device and swapchain go before the window they were created against.
+        _device.Dispose();
+
+        // Zero on every backend that did not create a GL context, which SDL_GL_DestroyContext treats
+        // as a no-op rather than an error.
+        SDL.SDL_GL_DestroyContext(_glContext);
+        Window.Dispose();
+
+        // FNA's own FAudio device is cleaned up via FAudioContext.Dispose() on app domain
+        // exit, and the direct-FAudio engine (FaudioEngine) lives for the process lifetime.
+    }
+
+    private void LoadContent()
+    {
+        ImguiRenderer!.RebuildFontAtlas();
+        ImGuiTheme.Apply();
+
+        // NanoVGRenderer (constructed in Initialize(), before this runs) already set
+        // IBackend.Backend to the real WorldClientBackend - no DummyBackend stand-in needed anymore.
+
+        // GameSparker.NewGraphicsDevice must be set before Effects.Initialize/GameSparker.Load,
+        // since both transitively construct render elements (Ground/Sky/meshes/...) that read it
+        // directly (see that field's doc comment).
+        GameSparker.GraphicsDevice = _device;
+        Effects.Initialize(_device);
+        GameSparker.RebuildCascades();
+
+        GameSparker.Load(this);
+
+        // Only the application half - the config was parsed in Main, before the window existed. See
+        // ApplyLoadedSettings, and Main for why the two halves have to happen where they do.
+        SettingsMenu.ApplyLoadedSettings();
+    }
+
+    private void UpdateInput()
+    {
+        var keys = SdlWindow.GetKeyboardState();
+
+        foreach (var nfmKey in AllKeys)
+        {
+            var imguiWantsKeyboard = ImguiRenderer is not null && ImGui.GetIO().WantCaptureKeyboard;
+            if (keys[nfmKey] && !_oldKeyState[nfmKey])
+            {
+                GameSparker.KeyPressed(nfmKey);
+
+                if (!imguiWantsKeyboard)
+                {
+                    GameSparker.UiRenderer?.HandleKeyPressed(nfmKey, keys);
+                }
+
+                GameSparker.CurrentPhase.KeyPressed(nfmKey, imguiWantsKeyboard, keys);
+
+                if (nfmKey == Key.F9)
+                {
+                    _yogaDebugPage++;
+                    if (_yogaDebugPage > YogaDebugger.MaxPages) _yogaDebugPage = -1;
+                }
+            }
+            else if (!keys[nfmKey] && _oldKeyState[nfmKey])
+            {
+                GameSparker.KeyReleased(nfmKey);
+
+                if (!imguiWantsKeyboard)
+                {
+                    GameSparker.UiRenderer?.HandleKeyReleased(nfmKey, keys);
+                }
+
+                GameSparker.CurrentPhase.KeyReleased(nfmKey, imguiWantsKeyboard, keys);
+            }
+        }
+
+        // Update saved state.
+        _oldKeyState = keys;
+    }
+
+    private static readonly MouseButtons[] MouseButtonsArray = Enum.GetValues<MouseButtons>();
+    private void UpdateMouse()
+    {
+        var (buttons, mouseX, mouseY) = SdlWindow.GetMouseState();
+        var mousePosition = new Int2(mouseX, mouseY);
+        var scrollValue = SdlWindow.GetScrollWheelValue();
+
+        var ctrlKey = _oldKeyState[Key.LControlKey] || _oldKeyState[Key.RControlKey];
+        var shiftKey = _oldKeyState[Key.LShiftKey] || _oldKeyState[Key.RShiftKey];
+        var altKey = _oldKeyState[Key.Alt];
+        var wantCaptureMouse = ImguiRenderer is not null && ImGui.GetIO().WantCaptureMouse;
+
+        foreach (var button in MouseButtonsArray)
+        {
+            var nfmButton = button switch
+            {
+                MouseButtons.None => MouseButton.Primary,
+                MouseButtons.Primary => MouseButton.Primary,
+                MouseButtons.Secondary => MouseButton.Secondary,
+                MouseButtons.Middle => MouseButton.Middle,
+                MouseButtons.XButton1 => MouseButton.XButton1,
+                MouseButtons.XButton2 => MouseButton.XButton2,
+                _ => throw new ArgumentOutOfRangeException()
+            };
+
+            if (buttons.HasFlag(button) && !_oldMouseState.HasFlag(button))
+            {
+                if (!wantCaptureMouse)
+                {
+                    GameSparker.UiRenderer?.HandleMousePressed(mouseX, mouseY, nfmButton, buttons, ctrlKey, shiftKey, altKey);
+                    if (nfmButton == MouseButton.Primary)
+                    {
+                        _mouseDragging = true;
+                        _mouseDragStart = mousePosition;
+                    }
+                }
+
+                GameSparker.CurrentPhase.MousePressed(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
+            }
+            else if (!buttons.HasFlag(button) && _oldMouseState.HasFlag(button))
+            {
+                if (!wantCaptureMouse)
+                {
+                    GameSparker.UiRenderer?.HandleMouseReleased(mouseX, mouseY, nfmButton, buttons, ctrlKey, shiftKey, altKey);
+                }
+
+                if (nfmButton == MouseButton.Primary)
+                {
+                    _mouseDragging = false;
+                }
+
+                GameSparker.CurrentPhase.MouseReleased(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
+            }
+        }
+
+        if (mousePosition.X != _oldMousePosition.X || mousePosition.Y != _oldMousePosition.Y)
+        {
+            if (!wantCaptureMouse)
+            {
+                GameSparker.UiRenderer?.HandleMouseMoved(mouseX, mouseY, buttons, ctrlKey, shiftKey, altKey);
+                if (_mouseDragging)
+                {
+                    GameSparker.UiRenderer?.HandleMouseDragged(mouseX, mouseY, _mouseDragStart.X, _mouseDragStart.Y, MouseButton.Primary, buttons, ctrlKey, shiftKey, altKey);
+                }
+            }
+
+            GameSparker.CurrentPhase.MouseMoved(mouseX, mouseY, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);
+            YogaDebugger.MouseMove(mousePosition.X, mousePosition.Y);
+        }
+
+        if (scrollValue != _oldScrollValue)
+        {
+            var delta = scrollValue - _oldScrollValue;
+
+            if (!wantCaptureMouse)
+            {
+                GameSparker.UiRenderer?.HandleMouseScrolled(mouseX, mouseY, delta, buttons, ctrlKey, shiftKey, altKey);
+            }
+
+            GameSparker.CurrentPhase.MouseScrolled(mouseX, mouseY, delta, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);
+        }
+
+        _oldMouseState = buttons;
+        _oldMousePosition = mousePosition;
+        _oldScrollValue = scrollValue;
+    }
+
+    /// <summary>
+    /// Binds the scissor rect to the whole window. This is the invariant that goes with every
+    /// pipeline having scissor testing enabled (<see cref="Effects.ScissorRasterizer"/>): wherever a
+    /// render target or viewport is bound, a scissor rect is bound too. A full-target rect is a
+    /// no-op, but it has to be *set* rather than left alone, because the ImGui renderer binds one
+    /// rect per draw command and never restores it - without this the first 3D draws of the next
+    /// frame would be clipped to whatever rectangle ImGui's last widget occupied.
+    /// </summary>
+    public void SetFullScreenScissor(ICommandBuffer cb)
+    {
+        cb.SetScissorRect(new ScissorRect(0, 0, Window.Width, Window.Height));
+    }
+
+    /// <summary>
+    /// Keeps the device's drawable in step with the OS window and the video settings. FNA's
+    /// GraphicsDeviceManager did the size half of this on every ApplyChanges; without it the device
+    /// keeps rendering into the size it was created at while <see cref="SdlWindow.Width"/>/<see cref="SdlWindow.Height"/>
+    /// - and every SDL mouse coordinate - follow the real window. Everything laid out from
+    /// <c>Swapchain.Width/Height</c> (the NanoVG canvas and its ortho transform, <c>Scene.Render</c>'s
+    /// viewport, the particle/line "Resolution" uniforms) then stays at the old size, so the 2D UI
+    /// occupies that corner of the window and input only lands inside it.
+    /// <para>
+    /// This is also the only place the multisample count can change: it is a backbuffer property, so
+    /// it needs a drawable rebuild, and the settings screen requests it from an ImGui callback that
+    /// runs with the frame's command buffer already acquired - the one moment a rebuild must not
+    /// happen. Requested here, applied here, before anything is drawn.
+    /// </para>
+    /// </summary>
+    private void EnsureSwapchainMatchesWindow()
+    {
+        var swapchain = _device.Swapchain;
+        var multiSampleCount = Graphics.DesiredMultiSampleCount;
+
+        // The multisample half of this comparison is against AppliedMultiSampleCount rather than
+        // MultiSampleCount, and that is not a rename. ISwapchain documents MultiSampleCount as what
+        // the device *actually allocated* - the honest answer after clamping - which is exactly what
+        // the settings UI wants to display (and does, via AppliedMultiSampleCount). But comparing a
+        // *request* against an *allocation* never converges when they differ: the GL backend cannot
+        // multisample the default framebuffer at all, so it allocates 0 whatever it is asked for, and
+        // `desired != allocated` would rebuild the drawable on every frame forever. Resize is not
+        // free (it is a backbuffer rebuild), and on the GL path it would not even help.
+        //
+        // So the comparison is against the last count actually *requested*, which is what makes it
+        // converge: FNA3DSwapchain already tracks this internally and documents the same trap. Here
+        // the request is recoverable from the shim, because Resize only ever writes back what it was
+        // asked for - so a mismatch means the setting changed, or the window did, and one rebuild is
+        // enough. Note a request the backend cannot honour does not loop; it simply takes effect as 0.
+        if (Window.Width != swapchain.Width || Window.Height != swapchain.Height
+            || multiSampleCount != _appliedMultiSampleRequest)
+        {
+            swapchain.Resize(Window.Width, Window.Height, multiSampleCount);
+            _appliedMultiSampleRequest = multiSampleCount;
+        }
+    }
+
+    private void Draw(GameTime gameTime)
+    {
+        var transaction = SentrySdk.StartTransaction("GameDraw", "gameloop.draw");
+
+        var alpha = GameSparker.LowLatency ? 1f : (float)((double)gameTime.ElapsedGameTime.Ticks / TargetElapsedTime.Ticks);
+
+        var t = Stopwatch.StartNew();
+
+        // Before the command buffer, never between AcquireCommandBuffer and Submit: resetting the
+        // backbuffer rebuilds the driver's swapchain, which can't happen with a recording (even an
+        // immediate-mode one) live. This is the second call site on purpose - the Resized handler
+        // covers the common case, this covers anything that changes the window size without one
+        // (a fullscreen/borderless toggle that emits no resize event, say) so no frame can render
+        // into a drawable that no longer matches the window.
+        EnsureSwapchainMatchesWindow();
+
+        // Beside the swapchain check rather than inside it: that method is about the drawable, and
+        // this is about the present call. Both are here, before the command buffer, so nothing
+        // reaches the device while the frame is being recorded.
+        SyncBackendVSync();
+
+        var cb = _device.AcquireCommandBuffer();
+        cb.Clear(ClearOptions.Color | ClearOptions.Depth | ClearOptions.Stencil,
+            new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f));
+        cb.SetViewport(new Graphics.Viewport(0, 0, Window.Width, Window.Height));
+        SetFullScreenScissor(cb);
+
+        // Started before the phases render, not after: phases draw their HUD text through
+        // TheGraphics (the same NvgContext), and rasterizing a glyph uploads its atlas rectangle
+        // through this renderer straight away. Deferred updates still work (the renderer queues
+        // them), but starting the frame here means the common case uploads immediately.
+        _nvg!.BeginFrame(cb);
+
+        // The frame's render phases, in order: the 3D scene, its overlays, the UI, then NanoVG's
+        // flush. Deferred NVG updates still work (the renderer queues them), but BeginFrame above
+        // means the common case - a phase drawing HUD text through TheGraphics, which uploads a
+        // glyph atlas rectangle straight away - happens immediately.
+        GameSparker.Render(cb, alpha);
+        GameSparker.Render3DOverlays(cb);
+
+        _uiRenderer?.Render();
+        if (_yogaDebugPage >= 0) YogaDebugger.Render(_yogaDebugPage);
+
+        if (BaseStageRenderingPhase.DebugDisplay)
+        {
+            FPSCounter.Render();
+            
+            if (FrameTrace.IsEnabled)
+            {
+                const int x = 250;
+
+                G.SetColor(new Color(0, 0, 0));
+                var messageString = FrameTrace.GetMessageString();
+                
+                G.SetFont(new Font(FontFamily.NotoSans, FontStyle.Plain, 16));
+                G.SetColor(Color.Black);
+                G.DrawStringStroke(messageString, 10, x);
+                G.SetColor(Color.White);
+                G.DrawString(messageString, 10, x);
+            }
+        }
+
+        _nvg.Render();
+
+        ImguiRenderer!.BeginLayout(gameTime);
+        GameSparker.RenderImgui();
+        ImguiRenderer.EndLayout(cb);
+
+        _device.Submit(cb);
+        _device.Swapchain.Present();
+
+        LastFrameTime = t.ElapsedMilliseconds;
+
+        transaction.Finish();
+    }
+
+    /// <summary>
+    /// What the boot frame says while the shape shader is being linked.
+    /// </summary>
+    private const string ShaderCompileMessage =
+        "Compiling shaders...";
+
+    /// <summary>
+    /// Presents a frame carrying <paramref name="message"/>, for the waits that happen before the
+    /// game loop starts.
+    ///
+    /// This is the frame prologue out of <see cref="Draw"/> and nothing else - no phases, no NVG, no
+    /// game state - because it exists to run before any of that is alive. It is kept separate rather
+    /// than extracted from Draw because the two genuinely differ: this one draws its own text through
+    /// ImGui and has no <c>_nvg</c>, no <c>_uiRenderer</c> and no phases to call.
+    ///
+    /// Presented repeatedly rather than once, up to a small cap, because the first frame ImGui
+    /// produces can carry no geometry at all - the font atlas it needs is built as a texture the
+    /// backend creates on that same frame - and a single frame would then present the clear colour
+    /// and nothing else. The loop stops as soon as there is something to draw, so the normal case
+    /// costs one frame.
+    /// </summary>
+    private void DrawBootMessage(string message)
+    {
+        var vertices = 0;
+        for (var attempt = 0; attempt < BootMessageFrameLimit; attempt++)
+        {
+            vertices = DrawBootFrame(message);
+            if (vertices > 0)
+                return;
+        }
+
+        // The two numbers that separate the ways this can come out blank: no vertices means ImGui had
+        // nothing to draw, a zero display size means it drew geometry that the projection then scaled
+        // to nothing. Reported together because the symptom on screen is identical either way.
+        Logging.Warning(
+            $"The boot message drew no geometry in {BootMessageFrameLimit} frames " +
+            $"({vertices} vertices, display size {ImGui.GetIO().DisplaySize}).");
+    }
+
+    private const int BootMessageFrameLimit = 5;
+
+    /// <summary>Presents one frame of <paramref name="message"/>; returns its vertex count.</summary>
+    private int DrawBootFrame(string message)
+    {
+        EnsureSwapchainMatchesWindow();
+
+        var cb = _device.AcquireCommandBuffer();
+        cb.Clear(ClearOptions.Color | ClearOptions.Depth | ClearOptions.Stencil,
+            new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f));
+        cb.SetViewport(new Viewport(0, 0, Window.Width, Window.Height));
+        SetFullScreenScissor(cb);
+
+        ImguiRenderer!.BeginLayout(new GameTime(TimeSpan.Zero, TimeSpan.Zero));
+        if (ImGui.Begin("##boot", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize |
+                                 ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings |
+                                 ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.AlwaysAutoResize))
+        {
+            ImGui.TextUnformatted(message);
+        }
+        ImGui.End();
+        ImguiRenderer.EndLayout(cb);
+
+        _device.Submit(cb);
+        _device.Swapchain.Present();
+
+        return ImGui.GetDrawData().TotalVtxCount;
+    }
+
+    // Ported from FNA/src/Game.cs's Tick()/AdvanceElapsedTime()/UpdateEstimatedSleepPrecision() -
+    // the manual loop below previously reset its elapsed-time tracking to `now` every iteration
+    // instead of carrying the accumulator's remainder into the next frame, and assumed a fixed
+    // 1ms Thread.Sleep precision instead of measuring it - both cause a fixed-timestep cap (e.g.
+    // 63fps) to systematically undershoot (61-62fps) since every frame's sleep/spin overshoot past
+    // TargetElapsedTime was silently discarded rather than subtracted back out of the next frame's
+    // budget. This is independent of vsync (matches the report that toggling vsync didn't help).
+    private const int PreviousSleepTimeCount = 128; // must be a power of 2 for the bitmask below
+    private const int SleepTimeMask = PreviousSleepTimeCount - 1;
+    private static readonly TimeSpan[] previousSleepTimes =
+        Enumerable.Repeat(TimeSpan.FromMilliseconds(1), PreviousSleepTimeCount).ToArray();
+    private static int sleepTimeIndex;
+    private static TimeSpan worstCaseSleepPrecision = TimeSpan.FromMilliseconds(1);
+    private static TimeSpan accumulatedElapsedTime;
+    private static long previousTicks;
+
+    private static TimeSpan AdvanceElapsedTime(Stopwatch stopwatch)
+    {
+        var currentTicks = stopwatch.Elapsed.Ticks;
+        var timeAdvanced = TimeSpan.FromTicks(currentTicks - previousTicks);
+        accumulatedElapsedTime += timeAdvanced;
+        previousTicks = currentTicks;
+        return timeAdvanced;
+    }
+
+    private static void UpdateEstimatedSleepPrecision(TimeSpan timeSpentSleeping)
+    {
+        var upperTimeBound = TimeSpan.FromMilliseconds(4);
+        if (timeSpentSleeping > upperTimeBound)
+        {
+            timeSpentSleeping = upperTimeBound;
+        }
+
+        if (timeSpentSleeping >= worstCaseSleepPrecision)
+        {
+            worstCaseSleepPrecision = timeSpentSleeping;
+        }
+        else if (previousSleepTimes[sleepTimeIndex] == worstCaseSleepPrecision)
+        {
+            var maxSleepTime = TimeSpan.MinValue;
+            foreach (var t in previousSleepTimes)
+            {
+                if (t > maxSleepTime) maxSleepTime = t;
+            }
+            worstCaseSleepPrecision = maxSleepTime;
+        }
+
+        previousSleepTimes[sleepTimeIndex] = timeSpentSleeping;
+        sleepTimeIndex = (sleepTimeIndex + 1) & SleepTimeMask;
+    }
+
+    public static void Main(string[] args)
+    {
+        // TODO figure out why SDL ProcessExit doesn't work properly
+        AppDomain.CurrentDomain.ProcessExit += static (sender, args) =>
+        {
+            Process.GetCurrentProcess().Kill(false);
+        };
+
+        // The graphics layer below this app references no logging stack of its own - see
+        // GraphicsDiagnostics - so this is where its diagnostics reach the log rather than being
+        // dropped. Wired before anything creates a device, because the first message the D3D11 backend
+        // raises is the shader cache's location, from the device's own constructor.
+        GraphicsDiagnostics.Warning = message => Logging.Debug(message);
+
+        // The level above it, parsed before the sokol backend is validated because that validation
+        // only applies to the arm that will use it. The check used to run unconditionally, which made
+        // it a gate on the whole process rather than on sokol: on Linux it reported that
+        // "D3d11 is only vendored for Windows (see native/ in NFMWorld.Graphics.Sokol)" while
+        // --backend=desktopgl was starting, naming a subsystem that renderer never touches. Nothing
+        // about the check's message is wrong for the case it was written for - it was simply being
+        // asked about a backend that is not in play.
+        _renderer = ParseRenderer(args);
+
+#if ANGLE
+        // Only meaningful on the ANGLE arm, but parsed unconditionally for the same reason
+        // --sokol-backend is: a typo is reported on every path rather than only the one it was meant
+        // for, and the message naming the valid values is the whole point of the loud throw in
+        // AngleSelection.Parse. AngleSelection lives in NFMWorld.Graphics.OpenGL, which the exe only
+        // references under the define, so this has to be inside it as well.
+        _angleSelection = AngleSelection.Parse(args);
+#endif
+
+        // NativeLibrary.SetDllImportResolver is scoped to the assembly that DECLARES the
+        // [DllImport], not the assembly that calls it - so every project with its own P/Invoke
+        // declarations against a "libs/<arch>/..." deployment layout needs its own registration.
+        // NFMWorld.Audio.FAudioBindings.FAudio's assembly registers its own resolver in
+        // FaudioEngine's static ctor (a resolver can only be set once per assembly) - not
+        // registered again here.
+        NativeLibrary.SetDllImportResolver(typeof(WorldGame).Assembly, ImportResolver);
+        NativeLibrary.SetDllImportResolver(typeof(SDL).Assembly, ImportResolver);
+
+        // todo
+        if (SettingsMenu.TrySelectRenderer(ref _renderer, ref _angleSelection))
+        {
+            Logging.Info($"Overriden renderer: {_renderer} (ANGLE: {_angleSelection})");
+        }
+
+        // The persisted settings, parsed here rather than in LoadContent where they used to be - and
+        // the ordering is the entire point of the split. The two GL renderers bake the multisample
+        // count into the window's pixel format when the context is created, which the constructor
+        // below does, so the value has to be known before it runs or the MSAA setting can never reach
+        // the context. Application still happens in LoadContent (ApplyLoadedSettings), because
+        // ApplySettings needs the game that does not exist yet.
+        //
+        // Must follow LoadFnaRenderer: that is what writes the FNA3D_FORCE_DRIVER hint GetFna3DRenderer
+        // reads back for _selectedRenderer, and this parses the same keys.
+        SettingsMenu.LoadConfigValues();
+
+        BackendGameSparker.Load(isHeadless: false);
+        var program = new WorldGame();
+        GameSparker.Game = program;
+        program.Initialize();
+        program.LoadContent();
+
+        // Manual game loop replacing XNA's Game.Run() - timing algorithm ported from FNA's own
+        // Game.Tick() (see AdvanceElapsedTime/UpdateEstimatedSleepPrecision above) so a fixed-cap
+        // target (e.g. 63fps) holds precisely instead of drifting.
+        var stopwatch = Stopwatch.StartNew();
+        while (!program.Window.ShouldQuit)
+        {
+            program.Window.PumpEvents();
+
+            AdvanceElapsedTime(stopwatch);
+
+            if (program.IsFixedTimeStep)
+            {
+                // Coarse-sleep down to the estimated OS sleep precision, then spin-wait the rest -
+                // avoids oversleeping past the target on platforms where Sleep(1) isn't accurate.
+                while (accumulatedElapsedTime + worstCaseSleepPrecision < program.TargetElapsedTime)
+                {
+                    Thread.Sleep(1);
+                    UpdateEstimatedSleepPrecision(AdvanceElapsedTime(stopwatch));
+                }
+
+                while (accumulatedElapsedTime < program.TargetElapsedTime)
+                {
+                    Thread.SpinWait(1);
+                    AdvanceElapsedTime(stopwatch);
+                }
+            }
+
+            TimeSpan frameElapsed;
+            if (program.IsFixedTimeStep)
+            {
+                // Single fixed step per loop iteration (matches this loop's existing one-Update-
+                // per-tick architecture) - subtract, don't zero, so any overshoot past
+                // TargetElapsedTime carries into the next frame's budget instead of being lost.
+                frameElapsed = program.TargetElapsedTime;
+                accumulatedElapsedTime -= program.TargetElapsedTime;
+            }
+            else
+            {
+                frameElapsed = accumulatedElapsedTime;
+                accumulatedElapsedTime = TimeSpan.Zero;
+            }
+
+            var gameTime = new GameTime(stopwatch.Elapsed, frameElapsed);
+            program.Update(gameTime);
+            program.Draw(gameTime);
+        }
+
+        program.Dispose();
+    }
+
+    private static IntPtr ImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+    {
+        static string GetPlatformName()
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return "windows";
+            }
+
+            if (OperatingSystem.IsMacOS())
+            {
+                return  "osx";
+            }
+
+            if (OperatingSystem.IsLinux())
+            {
+                return "linux";
+            }
+
+            if (OperatingSystem.IsFreeBSD())
+            {
+                return "freebsd";
+            }
+
+            if (OperatingSystem.IsAndroid())
+            {
+                return "android";
+            }
+
+            // What is this platform??
+            return "unknown";
+        }
+
+        if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsBrowser())
+        {
+            return NativeLibrary.GetMainProgramHandle(); // statically linked
+        }
+
+        string os = GetPlatformName();
+        string cpu = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+        string wordsize = (IntPtr.Size * 8).ToString();
+
+        var newLibraryName = libraryName switch
+        {
+            "SDL3" => os switch
+            {
+                "windows" => "SDL3.dll",
+                "osx" => "libSDL3.0.dylib",
+                "linux" or "freebsd" or "netbsd" => "libSDL3.so.0",
+                _ => throw new PlatformNotSupportedException($"Unsupported platform: {os}, please update {nameof(ImportResolver)}")
+            },
+            "FNA3D" => os switch
+            {
+                "windows" => "FNA3D.dll",
+                "osx" => "libFNA3D.0.dylib",
+                "linux" or "freebsd" or "netbsd" => "libFNA3D.so.0",
+                _ => throw new PlatformNotSupportedException($"Unsupported platform: {os}, please update {nameof(ImportResolver)}")
+            },
+            "FAudio" => os switch
+            {
+                "windows" => "FAudio.dll",
+                "osx" => "libFAudio.0.dylib",
+                "linux" or "freebsd" or "netbsd" => "libFAudio.so.0",
+                _ => throw new PlatformNotSupportedException($"Unsupported platform: {os}, please update {nameof(ImportResolver)}")
+            },
+            "dav1dfile" => os switch
+            {
+                "windows" => "dav1dfile.dll",
+                "osx" => "dav1dfile.1.dylib",
+                "linux" or "freebsd" or "netbsd" => "dav1dfile.so.0",
+                _ => throw new PlatformNotSupportedException($"Unsupported platform: {os}, please update {nameof(ImportResolver)}")
+            },
+            "SDL2" => os switch
+            {
+                "windows" => "SDL2.dll",
+                "osx" => "libSDL2-2.0.0.dylib",
+                "linux" or "freebsd" or "netbsd" => "libSDL2-2.0.so.0",
+                _ => throw new PlatformNotSupportedException($"Unsupported platform: {os}, please update {nameof(ImportResolver)}")
+            },
+            "steam_api" or "steam_api64" => os switch
+            {
+                "windows" => wordsize is "64" ? "steam_api64.dll" : "steam_api.dll",
+                "osx" => "libsteam_api.dylib",
+                "linux" or "freebsd" or "netbsd" => "libsteam_api.so",
+                _ => throw new PlatformNotSupportedException($"Unsupported platform: {os}, please update {nameof(ImportResolver)}")
+            },
+            _ => os switch
+            {
+                "windows" => $"{libraryName}.dll",
+                "osx" => $"lib{libraryName}.dylib",
+                "linux" or "freebsd" or "netbsd" => $"lib{libraryName}.so",
+                _ => throw new PlatformNotSupportedException($"Unsupported platform: {os}, please update {nameof(ImportResolver)}")
+            }
+        };
+
+        var dir = os switch
+        {
+            "windows" => cpu switch
+            {
+                "arm64" or "armv8" or "armv8-a" or "aarch64" or "arm64-v8a" => "arm64",
+                "x64" or "x86_64" or "amd64" => "x64",
+                "x86" or "x86_32" or "i386" => "x86",
+                _ => throw new PlatformNotSupportedException($"Unsupported CPU architecture: {cpu}, please update {nameof(ImportResolver)}")
+            },
+            "osx" => "osx",
+            "linux" or "freebsd" or "netbsd" => cpu switch
+            {
+                "arm32" or "armv7" or "aarch32" or "armeabi-v7a" => "libarmhf",
+                "arm64" or "armv8" or "armv8-a" or "aarch64" or "arm64-v8a" => "libaarch64",
+                "x64" or "x86_64" or "amd64" => "lib64",
+                "x86" or "x86_32" or "i386" => "lib32",
+                _ => throw new PlatformNotSupportedException($"Unsupported CPU architecture: {cpu}, please update {nameof(ImportResolver)}")
+            },
+            "android" => cpu switch
+            {
+                "arm32" or "armv7" or "aarch32" or "armeabi-v7a" => "android-armeabi-v7a",
+                "arm64" or "armv8" or "armv8-a" or "aarch64" or "arm64-v8a" => "android-arm64-v8a",
+                "x64" or "x86_64" or "amd64" => "android-x86_64",
+                "x86" or "x86_32" or "i386" => "android-x86",
+                _ => throw new PlatformNotSupportedException($"Unsupported CPU architecture: {cpu}, please update {nameof(ImportResolver)}")
+            },
+            _ => throw new PlatformNotSupportedException($"Unsupported platform: {os}, please update {nameof(ImportResolver)}")
+        };
+
+        // Anchor to the app base directory rather than the process working directory:
+        // dlopen treats a slash-containing name as a path relative to the CWD (ignoring
+        // LD_LIBRARY_PATH), so a relative "libs/..." only resolves when launched from the
+        // output folder. AppContext.BaseDirectory is always the output folder.
+        return NativeLibrary.Load(Path.Combine(AppContext.BaseDirectory, "libs", dir, newLibraryName));
+    }
+}

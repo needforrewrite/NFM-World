@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Throwaway harness (not in the solution): decodes a stage's music through the real
+       TrackerDecoder and runs the real TempoStretcher, printing durations/ratios so a wrong
+       tempo multiplier shows up as numbers rather than "sounds slow". -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net11.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PlatformTarget>x64</PlatformTarget>
+    <RootNamespace>AudioCheck</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\nfm-world\NFMWorld.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Specialized;
-using Microsoft.Xna.Framework.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Gamemodes;
@@ -15,7 +14,6 @@ namespace NFMWorld;
 /// </summary>
 public class ClientStage : IDisposable
 {
-    private readonly GraphicsDevice _graphicsDevice;
     private readonly Dictionary<BackendCar, CarVisual> _carVisuals = new();
     private readonly Dictionary<ClientSidePlayer, CarVisual> _playerVisuals = new();
     private ObservableUnlimitedArray<BackendCar> _cars;
@@ -35,23 +33,22 @@ public class ClientStage : IDisposable
     public double MusicTempoMul { get; }
 
     public ClientStage(
-        GraphicsDevice graphicsDevice,
         string stageName,
         ObservableUnlimitedArray<BackendCar> cars,
         Camera camera,
         IReadOnlyList<Camera> lightCameras)
     {
-        _graphicsDevice = graphicsDevice;
         _cars = cars;
         Camera = camera;
         LightCameras = lightCameras;
 
         Backend = new BackendStage(stageName);
-        Renderer = new ClientStageRenderer(graphicsDevice, Backend);
+        Renderer = new ClientStageRenderer(Backend);
         Renderer.ApplyValues();
 
-        // Scene starts with just the stage renderer — car visuals are added lazily in GameTick()
-        _scene = new Scene(graphicsDevice, [Renderer], camera, lightCameras);
+        // Scene starts with just the stage renderer — car visuals are added lazily in GameTick().
+        // ClientStageRenderer is itself a GameObject.
+        _scene = new Scene(GameSparker.GraphicsDevice, [Renderer], camera, lightCameras);
 
         // ── Music metadata ──
         MusicPath = Backend.StageLoader.musicPath;
@@ -103,7 +100,7 @@ public class ClientStage : IDisposable
     {
         if (!_carVisuals.TryGetValue(car, out var visual))
         {
-            visual = _carVisuals[car] = new CarVisual(_graphicsDevice, car);
+            visual = _carVisuals[car] = new CarVisual(car);
             _scene.Objects.Add(visual);
         }
         return visual;
@@ -222,7 +219,7 @@ public class ClientStage : IDisposable
                 {
                     if (!_carVisuals.ContainsKey(car))
                     {
-                        var visual = _carVisuals[car] = new CarVisual(_graphicsDevice, car);
+                        var visual = _carVisuals[car] = new CarVisual(car);
                         _scene.Objects.Add(visual);
                     }
                 }
@@ -251,7 +248,7 @@ public class ClientStage : IDisposable
                 {
                     if (!_carVisuals.ContainsKey(car))
                     {
-                        var visual = _carVisuals[car] = new CarVisual(_graphicsDevice, car);
+                        var visual = _carVisuals[car] = new CarVisual(car);
                         _scene.Objects.Add(visual);
                     }
                 }
@@ -277,7 +274,7 @@ public class ClientStage : IDisposable
                 {
                     if (!_carVisuals.ContainsKey(car))
                     {
-                        var visual = _carVisuals[car] = new CarVisual(_graphicsDevice, car);
+                        var visual = _carVisuals[car] = new CarVisual(car);
                         _scene.Objects.Add(visual);
                     }
                 }
@@ -297,11 +294,11 @@ public class ClientStage : IDisposable
             obj.GameTick(Backend);
     }
 
-    public void Render(float alpha, bool useShadowMapping = true, bool clearRenderBuffer = true)
+    public void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha, bool useShadowMapping = true, bool clearRenderBuffer = true)
     {
         Renderer.ApplyValues();
         _scene.ActiveCamera = Camera;
-        _scene.Render(alpha, useShadowMapping, clearRenderBuffer);
+        _scene.Render(cb, alpha, useShadowMapping, clearRenderBuffer);
     }
 
     #region IDisposable

@@ -1,26 +1,43 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using HoleyDiver;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+using Maxine.Extensions.Mathematics;
+using NFMWorld.Graphics;
+using NFMWorld.Shaders;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorld;
 
+/// <summary>
+/// How a mesh should be drawn outside the normal opaque pass - an editor-only concept, set per
+/// mesh via <see cref="Mesh.OverlayMode"/>. The depth/blend state this used to be applied with
+/// (XNA's per-draw <c>BlendState</c>/<c>DepthStencilState</c> save-set-restore) is baked into
+/// pipelines in the new model, so the choice is now "which pipeline", not "which state".
+/// </summary>
+public enum PolyOverlayMode
+{
+    /// <summary>Normal opaque draw - the game's own pipeline.</summary>
+    None,
+
+    /// <summary>Translucent, depth-tested but not depth-written (highlight quads, wheel overlays).</summary>
+    DepthRead,
+
+    /// <summary>Translucent with depth testing and writing off (the reference-car ghost, drawn after a depth clear).</summary>
+    NoDepth,
+}
+
 public class Mesh : IDisposable
 {
     public LuaArray<Rad3dPoly> OriginalPolys;
     public Rad3dPoly[] Polys;
 
-    public readonly GraphicsDevice GraphicsDevice;
-
     protected Submesh?[] Submeshes;
     protected LineMesh?[]? LineMeshes;
-    
+
     public int GroundAt;
-    
+
     public string FileName;
     public Mesh? ClonedMesh;
 
@@ -33,16 +50,17 @@ public class Mesh : IDisposable
 
     public byte PolyFixState = 0;
 
-    public Mesh(GraphicsDevice graphicsDevice, Rad3d rad)
+    /// <summary>Editor-only overlay pipeline selection - see <see cref="PolyOverlayMode"/>. Ignored in the shadow pass.</summary>
+    public PolyOverlayMode OverlayMode { get; set; } = PolyOverlayMode.None;
+
+    public Mesh(Rad3d rad)
     {
         // make a copy of points for damageable meshes
         OriginalPolys = rad.Polys;
         Polys = rad.Polys.Select(static poly => poly.SafeClone()).ToArray();
         GroundAt = rad.Wheels.FirstOrDefault().Ground;
 
-        GraphicsDevice = graphicsDevice;
-
-        BuildMesh(graphicsDevice);
+        BuildMesh();
 
         FileName = rad.FileName;
         MaxRadius = rad.MaxRadius;
@@ -53,10 +71,9 @@ public class Mesh : IDisposable
     {
         // make a copy of points for damageable meshes
         Polys = Array.ConvertAll(baseMesh.Polys, static poly => poly.SafeClone());
-        GraphicsDevice = baseMesh.GraphicsDevice;
         GroundAt = baseMesh.GroundAt;
 
-        BuildMesh(GraphicsDevice);
+        BuildMesh();
 
         FileName = baseMesh.FileName;
         ClonedMesh = baseMesh;
@@ -65,7 +82,7 @@ public class Mesh : IDisposable
     }
 
     [MemberNotNull(nameof(Submeshes), nameof(LineMeshes))]
-    private void BuildMesh(GraphicsDevice graphicsDevice)
+    private void BuildMesh()
     {
         if (Submeshes != null)
         {
@@ -147,7 +164,7 @@ public class Mesh : IDisposable
             
             if (data.Count == 0 || indices.Count == 0) continue;
 
-            Submeshes[i] = new Submesh(type, this, GraphicsDevice, CollectionsMarshal.AsSpan(data), CollectionsMarshal.AsSpan(indices));
+            Submeshes[i] = new Submesh(type, this, GameSparker.GraphicsDevice, CollectionsMarshal.AsSpan(data), CollectionsMarshal.AsSpan(indices));
         }
 
         LineMeshes = new LineMesh[lines.Length];
@@ -155,7 +172,7 @@ public class Mesh : IDisposable
         {
             var lineDict = lines[i];
             if (lineDict.Count == 0) continue;
-            LineMeshes[i] = new LineMesh(this, GraphicsDevice, lineDict, (LineType)i);
+            LineMeshes[i] = new LineMesh(this, GameSparker.GraphicsDevice, lineDict, (LineType)i);
         }
     }
 
@@ -186,28 +203,45 @@ public class Mesh : IDisposable
         Color Color,
         float DecalOffset)
     {
-        /// <inheritdoc cref="P:IVertexType.VertexDeclaration" />
-        public static readonly VertexDeclaration VertexDeclaration = new(
-	        new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
-	        new VertexElement(12, VertexElementFormat.Vector3, VertexElementUsage.Normal, 0),
-	        new VertexElement(24, VertexElementFormat.Vector3, VertexElementUsage.Position, 1),
-	        new VertexElement(36, VertexElementFormat.Color, VertexElementUsage.Color, 0),
-	        new VertexElement(40, VertexElementFormat.Single, VertexElementUsage.TextureCoordinate, 0)
-	    );
-    }
-
-    public virtual void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer)
-    {
+        /// <summary>
+        /// Position/Normal/Centroid float3s, Color as a packed byte4 despite HLSL's
+        /// "float3 Color : COLOR0", DecalOffset float1 - matches Poly.fx's <c>VertexShaderInput</c>,
+        /// expressed against the graphics abstraction for <see cref="Graphics.PipelineDesc.VertexLayouts"/>.
+        ///
+        /// The list is written in Poly.fx's <em>declaration</em> order, not this struct's memory
+        /// order, and those two differ: the struct holds Centroid before Color, the shader declares
+        /// Color before Centroid. That ordering is load-bearing rather than cosmetic, because the
+        /// GL backend numbers attribute locations by <em>position in this list</em> - so entry N here
+        /// is location N in the compiled shader. Written in memory order, Color and Centroid land on
+        /// each other's locations and every mesh renders with its vertex colours and its centroid
+        /// swapped, which reads as torn or missing geometry rather than as a colour fault.
+        ///
+        /// This only became a hazard with the abstraction: FNA3D matched a vertex element to the
+        /// shader by its (<c>usage</c>, <c>usageIndex</c>) pair, so the two fields could be listed in
+        /// either order and still find their homes. The explicit byte offsets below are unchanged by
+        /// the reordering, so nothing about the vertex data moves - only which location each is
+        /// bound to. See GlPipelineState.AssignLocations for the positional contract.
+        /// </summary>
+        public static readonly VertexLayoutDesc VertexLayout = new(
+            Attributes:
+            [
+                new VertexAttributeDesc("POSITION", 0, 0, VertexAttributeFormat.Float3),
+                new VertexAttributeDesc("NORMAL", 0, 12, VertexAttributeFormat.Float3),
+                new VertexAttributeDesc("COLOR", 0, 36, VertexAttributeFormat.Byte4Normalized),
+                new VertexAttributeDesc("POSITION", 1, 24, VertexAttributeFormat.Float3),
+                new VertexAttributeDesc("TEXCOORD", 0, 40, VertexAttributeFormat.Float1),
+            ],
+            StrideInBytes: 44);
     }
 
     public void RebuildMesh()
     {
-        BuildMesh(GraphicsDevice);
+        BuildMesh();
     }
 
-    public void SubmitRenderables(RenderQueue queue, Lighting? lighting, bool finish, BoundingSphere boundingSphere, RenderBucket renderBucket, Matrix matrixWorld, bool getsShadowed = false, float alphaOverride = 1.0f, bool isFullbright = false, bool glow = false)
+    public void SubmitRenderables(RenderQueue queue, Lighting? lighting, bool finish, BoundingSphere boundingSphere, RenderBucket renderBucket, Matrix matrixWorld, long layer = 0, bool getsShadowed = false, float alphaOverride = 1.0f, bool isFullbright = false, bool glow = false)
     {
-        var instanceData = new InstanceData(matrixWorld, getsShadowed, alphaOverride, isFullbright, glow);
+        var instanceData = new InstanceData(matrixWorld, layer, getsShadowed, alphaOverride, isFullbright, glow);
 
         foreach (var submesh in Submeshes)
         {

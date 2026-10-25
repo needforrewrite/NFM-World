@@ -24,10 +24,10 @@ end
 
 local function GlassCard(props: { color: Sx.Signalish<string>?, children: { any }? } & Sx.ViewProps)
 	local wrapperStyle: Sx.Styles = {
-		backgroundColor = "rgba(255,255,255,0.05)",
-		borderRadius = 12,
+		backgroundColor = "rgba(0,0,0,0.2)",
+		borderRadius = 0,
 		borderWidth = 1,
-		borderColor = "rgba(255,255,255,0.1)",
+		borderColor = "transparent",
 		paddingTop = 16,
 		paddingBottom = 16,
 		paddingLeft = 20,
@@ -35,37 +35,34 @@ local function GlassCard(props: { color: Sx.Signalish<string>?, children: { any 
 		position = "relative",
 		overflow = "hidden",
 	}
-
-	local barStyle: Sx.Styles = {
-		position = "absolute",
-		top = 0,
-		left = 0,
-		width = "100%",
-		height = 3,
-		borderTopLeftRadius = 12,
-		borderTopRightRadius = 12,
-	}
-
-	-- Reactive merged style. createMemo is reference-stable: it caches the computed value
-	-- and only recomputes when a signal it reads changes, so a card whose input style
-	-- didn't change keeps returning the same table and dom's reactive style prop skips its
-	-- setProperty (dom compares references). No manual cache needed — and a nil caller
-	-- style still produces the base style.
-	local barStyle2 = Sx.createMemo(function(): Sx.Styles
+	
+	local computedStyle = function(): Sx.Styles
 		local s: Sx.Styles | {[string]: string} = {}
-		for k, v in pairs(barStyle :: any) do
+		for k, v in pairs(wrapperStyle :: any) do
 			s[k] = v
 		end
-		local c = Sx.read(props.color) or "#4fc3f7"
-		s.backgroundColor = c
+		if props.style then
+			local st = Sx.read(props.style)
+			if st then
+				for k, v in pairs(st :: any) do
+					s[k] = v
+				end
+			end
+		end
+		local c = Sx.read(props.color) or "transparent"
+		s.borderColor = c
 		return s :: Sx.Styles
-	end)
+	end
 
-	local args: any = { style = wrapperStyle }
-
-	args[1] = x(Sx.View) {
-		style = barStyle2,
-	}
+	-- Forward every unconsumed prop (name, onmousedown, tabindex, ...) to the wrapper
+	-- View; only color/style/children are handled here.
+	local args: any = {}
+	for k, v in pairs(props :: any) do
+		if k ~= "color" and k ~= "style" and k ~= "children" and k ~= "key" then
+			args[k] = v
+		end
+	end
+	args.style = computedStyle
 
 	for _, c in ipairs(props.children or {}) do
 		args[#args + 1] = c
@@ -83,27 +80,24 @@ local function StatBar(props: { label: string, value: Sx.Signalish<number>?, col
 	local height = props.height or 8
 	local label = props.label or ""
 
-	return x(Sx.View) {
-		style = { marginBottom = 8 },
-		x(Sx.View) {
+	return x(Sx.View)({ style = { marginBottom = 8, flexDirection = "column", width = "100%" },
+		x(Sx.View)({
 			style = {
 				display = "flex",
 				justifyContent = "space-between",
 				marginBottom = 4,
 			},
-			x(Sx.Text) {
-				style = { fontSize = 12, color = "rgba(255,255,255,0.7)", strokeColor = "rgba(100,100,100,0.4)", flexShrink = 0 },
+			x(Sx.Text)({ style = { fontSize = 12, color = "rgba(255,255,255,0.7)", strokeColor = "rgba(100,100,100,0.4)", flexShrink = 0 },
 				label,
-			},
-			x(Sx.Text) {
-				style = { fontSize = 12, color = "rgba(255,255,255,0.7)", strokeColor = "rgba(100,100,100,0.4)", flexShrink = 0 },
+			}),
+			x(Sx.Text)({ style = { fontSize = 12, color = "rgba(255,255,255,0.7)", strokeColor = "rgba(100,100,100,0.4)", flexShrink = 0 },
 				function()
 					local v = clamp01(Sx.read(props.value) or 0)
 					return ("%d%%"):format(math.floor(v * 100 + 0.5))
 				end,
-			},
-		},
-		x(Sx.View) {
+			}),
+		}),
+		x(Sx.View)({
 			style = {
 				width = "100%",
 				height = height,
@@ -111,8 +105,8 @@ local function StatBar(props: { label: string, value: Sx.Signalish<number>?, col
 				borderRadius = height / 2,
 				overflow = "hidden",
 			},
-			x(Sx.View) {
-				style = Sx.createMemo(function(): Sx.Styles
+			x(Sx.View)({
+				style = function(): Sx.Styles
 					local v = clamp01(Sx.read(props.value) or 0)
 					return {
 						width = ("%d%%"):format(math.floor(v * 100 + 0.5)),
@@ -120,10 +114,10 @@ local function StatBar(props: { label: string, value: Sx.Signalish<number>?, col
 						backgroundColor = color,
 						borderRadius = height / 2,
 					}
-				end),
-			},
-		},
-	}
+				end,
+			}),
+		}),
+	})
 end
 
 -- ── CenterText ───────────────────────────────────────────────────
@@ -149,7 +143,7 @@ local function CenterText(props: { text: Sx.Signalish<string>?, size: number?, c
 	local size = props.size or 64
 	local color = props.color or "rgba(255,255,255,0.9)"
 
-	return x(Sx.View) {
+	return x(Sx.View)({
 		style = {
 			position = "absolute",
 			top = 0,
@@ -161,18 +155,15 @@ local function CenterText(props: { text: Sx.Signalish<string>?, size: number?, c
 			alignItems = "center",
 			justifyContent = "center",
 		},
-		x(Sx.For<<string>>) {
-			each = function()
-				return splitLines(Sx.read(props.text) or "")
-			end,
+		x(Sx.For<<string>>)({
+			each = function() return splitLines(Sx.read(props.text) or "") end,
 			function(item, index)
-				return x(Sx.Text) {
-					style = { fontSize = size, color = color, fontStyle = "bold", textAlign = "center" },
-					item(),
-				}
+				return x(Sx.Text)({ style = { fontSize = size, color = color, fontStyle = "bold", textAlign = "center" },
+					function() return item() end,
+				})
 			end,
-		},
-	}
+		}),
+	})
 end
 
 return {

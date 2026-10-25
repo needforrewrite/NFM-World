@@ -41,7 +41,14 @@ local function run(frames)
     local position, setPosition = createSignal(1)
     local total, setTotal = createSignal(1)
 
-    UiLib.onEvent("race:hudState", function(data)
+    -- Captured and unsubscribed at the end of run() -- the benchmark harness (BenchmarkHost
+    -- .RunScriptDetached) calls run() repeatedly on the same LuaState for its best-of-N loop,
+    -- and UiLib.onEvent listeners are never cleaned up on their own the way GUIDE.md's
+    -- "unsubscribe on unmount" guidance describes. Without this, every extra run() call left
+    -- a stale listener from the PREVIOUS run still live, so __bench_push kept invoking all of
+    -- them -- each correctly doing its own 2 setProp + 2 commitText per frame, but the
+    -- aggregate count (and wall time) grew by one listener's worth on every repeated call.
+    local unsubHudState = UiLib.onEvent("race:hudState", function(data)
         if data ~= nil then
             setSpeed(data.speed or 0)
             setPower(data.power or 1)
@@ -124,6 +131,7 @@ local function run(frames)
         __bench_flush()
     end
     local t1 = os.clock()
+    unsubHudState()
     return t1 - t0
 end
 

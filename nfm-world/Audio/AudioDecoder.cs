@@ -1,8 +1,7 @@
-using System.Buffers;
+﻿using System.Buffers;
 using System.IO.Compression;
 using Collections.Pooled;
 using Maxine.Extensions.Collections;
-using Microsoft.Xna.Framework.Audio;
 using NAudio.Flac;
 using NAudio.SoundFile;
 using NAudio.Vorbis;
@@ -21,7 +20,7 @@ public static class AudioDecoder
 {
     /// <summary>
     /// Decode audio data from a byte array, dispatching by file extension.
-    /// Returns raw 16-bit signed PCM suitable for SoundEffect construction.
+    /// Returns raw 16-bit signed PCM suitable for submitting to an FAudio source voice.
     /// </summary>
     public static DecodeResult Decode(Stream stream, string extension)
     {

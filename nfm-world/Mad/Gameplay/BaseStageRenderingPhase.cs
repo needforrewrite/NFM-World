@@ -1,6 +1,4 @@
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using NFMWorld.DriverInterface;
+﻿using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
@@ -11,11 +9,14 @@ namespace NFMWorld.Gameplay;
 public abstract class BaseStageRenderingPhase : BasePhase
 {
     protected int? FovOverride = null;
-    public static bool DebugDisplay = false;
 
-    private readonly SpriteBatch _spriteBatch;
-
-    public readonly GraphicsDevice GraphicsDevice;
+    public static bool DebugDisplay =
+#if DEBUG
+            true
+#else
+            false
+#endif
+        ;
 
     public PerspectiveCamera Camera = new();
     public Camera[] LightCameras = [
@@ -30,11 +31,9 @@ public abstract class BaseStageRenderingPhase : BasePhase
     private IRadicalMusic? _stageMusic;
     public string? StageName;
     
-    // please don't pass null except for stage select
-    protected BaseStageRenderingPhase(GraphicsDevice graphicsDevice, string? stageName = null)
+    // please don't pass null stage names except for stage select
+    protected BaseStageRenderingPhase(string? stageName = null)
     {
-        _spriteBatch = new SpriteBatch(graphicsDevice);
-        GraphicsDevice = graphicsDevice;
         StageName = stageName;
 
         // Stage loading happens once at construction time, not on every Enter().
@@ -48,8 +47,8 @@ public abstract class BaseStageRenderingPhase : BasePhase
     {
         base.Enter();
 
-        Camera.Width = GameSparker.Game.GraphicsDevice.Viewport.Width;
-        Camera.Height = GameSparker.Game.GraphicsDevice.Viewport.Height;
+        Camera.Width = GameSparker.Game.Window.Width;
+        Camera.Height = GameSparker.Game.Window.Height;
 
         // Resume stage music that was paused by Exit().
         if (_stageMusic != null)
@@ -84,7 +83,7 @@ public abstract class BaseStageRenderingPhase : BasePhase
     {
         StageName = stageName;
         CurrentStage?.Dispose();
-        CurrentStage = new ClientStage(GraphicsDevice, stageName, CarsInRace, Camera, LightCameras);
+        CurrentStage = new ClientStage(stageName, CarsInRace, Camera, LightCameras);
 
         if (loadMusic && !string.IsNullOrEmpty(CurrentStage.MusicPath))
             LoadStageMusic(reloadIfLoaded: reloadIfLoaded);
@@ -149,9 +148,9 @@ public abstract class BaseStageRenderingPhase : BasePhase
         CurrentStage?.GameTick();
     }
 
-    public override void Render(float alpha)
+    public override void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
     {
-        base.Render(alpha);
+        base.Render(cb, alpha);
 
         if (CurrentStage == null)
             return;
@@ -164,18 +163,20 @@ public abstract class BaseStageRenderingPhase : BasePhase
 
         Camera.Fov = FovOverride ?? Camera.Fov;
 
-        CurrentStage.Render(alpha, useShadowMapping: true);
+        CurrentStage.Render(cb, alpha, useShadowMapping: true);
+
+        // Shadow-cascade debug overlay (r_debugdisplay). Restored off the back of the migration onto
+        // ICommandBuffer + IGraphicsDevice.ReadTexture - see ShadowMapDebugView for why it is a
+        // throttled CPU readback rather than the old SpriteBatch blit.
+        if (DebugDisplay)
+            ShadowMapDebugView.Capture(cb);
+    }
+
+    public override void RenderImgui()
+    {
+        base.RenderImgui();
 
         if (DebugDisplay)
-        {
-            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Opaque, SamplerState.PointClamp, DepthStencilState.Default, RasterizerState.CullCounterClockwise);
-            if (WorldGame.ShadowRenderTargets[0] != null) _spriteBatch.Draw(WorldGame.ShadowRenderTargets[0], new Rectangle(0, 0, 128, 128), Color.White);
-            if (WorldGame.ShadowRenderTargets[1] != null) _spriteBatch.Draw(WorldGame.ShadowRenderTargets[1], new Rectangle(0, 128, 128, 128), Color.White);
-            if (WorldGame.ShadowRenderTargets[2] != null) _spriteBatch.Draw(WorldGame.ShadowRenderTargets[2], new Rectangle(0, 256, 128, 128), Color.White);
-            _spriteBatch.End();
-        }
-
-        GraphicsDevice.Textures[0] = null;
-        GraphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
+            ShadowMapDebugView.DrawImgui();
     }
 }

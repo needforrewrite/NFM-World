@@ -1,5 +1,5 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using NFMWorld.Graphics;
+using BoundingSphere = Maxine.Extensions.Mathematics.BoundingSphere;
 using NFMWorldLibrary.Rad;
 
 namespace NFMWorld;
@@ -9,7 +9,7 @@ namespace NFMWorld;
 /// </summary>
 public class ImmediateMesh : Mesh, IRenderable
 {
-    public ImmediateMesh(GraphicsDevice graphicsDevice, Rad3d rad) : base(graphicsDevice, rad)
+    public ImmediateMesh(Rad3d rad) : base(rad)
     {
     }
 
@@ -17,17 +17,23 @@ public class ImmediateMesh : Mesh, IRenderable
     {
     }
 
-    public void Render(Camera camera, Lighting? lighting)
+    /// <summary>
+    /// Ad hoc immediate-render path for editor code: builds a throwaway render queue and flushes it
+    /// straight into the caller's command buffer. The caller must own that buffer (this runs inside
+    /// an enclosing render pass - see <see cref="IGraphicsDevice.AcquireCommandBuffer"/>'s "one
+    /// buffer at a time" rule); it deliberately does not acquire one of its own.
+    /// </summary>
+    public void Render(ICommandBuffer cb, Camera camera, Lighting? lighting)
     {
-        var renderQueue = new RenderQueue(GraphicsDevice);
+        var renderQueue = new RenderQueue(GameSparker.GraphicsDevice);
         renderQueue.Begin(camera, lighting);
         SubmitDraws(renderQueue, camera, lighting, RenderPass.Main());
-        renderQueue.Flush();
+        renderQueue.Flush(cb);
     }
 
     public void SubmitDraws(RenderQueue queue, Camera camera, Lighting? lighting, RenderPass pass)
     {
         var boundingSphere = new BoundingSphere(new Vector3(0, 0, 0), MaxRadius);
-        SubmitRenderables(queue, lighting, false, boundingSphere, RenderBucket.StagePieces, Matrix.Identity, true, 1.0f, false, false);
+        SubmitRenderables(queue, lighting, false, boundingSphere, RenderBucket.StagePieces, Matrix.Identity, 0, true, 1.0f, false, false);
     }
 }

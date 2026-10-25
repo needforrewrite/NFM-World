@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RootNamespace>NFMWorld.Graphics.D3D11.Smoke</RootNamespace>
+        <PlatformTarget>x64</PlatformTarget>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
+        <ProjectReference Include="..\NFMWorld.Graphics.D3D11\NFMWorld.Graphics.D3D11.csproj" />
+        <ProjectReference Include="..\NFMWorld.Shaders.Abstraction\NFMWorld.Shaders.Abstraction.csproj" />
+    </ItemGroup>
+
+    <!-- The real generated bundles, produced here by the same build step the game uses. That matters
+         more here than it does in the GL smoke test: D3D11's input layout is validated by
+         CreateInputLayout against the compiled shader's own signature, so the HLSL has to be the
+         compiler's actual output rather than a hand-written stand-in. It is also the second
+         independent consumer of the task, which is what would catch a task that only works from the
+         directory it was developed in. -->
+    <PropertyGroup>
+        <NFMWorldShadersDirectory>$(MSBuildProjectDirectory)\..\nfm-world\data\shaders</NFMWorldShadersDirectory>
+    </PropertyGroup>
+
+    <Import Project="..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.targets" />
+
+</Project>

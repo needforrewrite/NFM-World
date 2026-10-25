@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>NFMWorld.Audio.FAudio.Smoke</RootNamespace>
+        <PlatformTarget>x64</PlatformTarget>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\NFMWorld.Audio.FAudio\NFMWorld.Audio.FAudio.csproj" />
+    </ItemGroup>
+
+    <!--
+        Deliberately copied into the same libs\x64\ layout the game deploys its natives into
+        (NFMWorld.NativeLibs), and NOT next to the executable: default native probing would never
+        find it there, so a passing run proves the resolver's deployment-layout branch works.
+
+        SDL3.dll is required alongside it - FAudio.dll links against SDL3 on Windows, and a
+        missing dependency shows up as a bare "The specified module could not be found", which
+        FaudioEngine can only report as "no audio device".
+    -->
+    <ItemGroup>
+        <None Include="..\NFMWorld.NativeLibs\libs\x64\FAudio.dll" Link="libs\x64\FAudio.dll" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="..\NFMWorld.NativeLibs\libs\x64\SDL3.dll" Link="libs\x64\SDL3.dll" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+</Project>

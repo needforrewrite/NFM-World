@@ -1,0 +1,36 @@
+
+#version 330 core
+
+layout(binding = 0, std140) uniform _Global
+{
+    layout(row_major) mat4 transformMat;
+    layout(row_major) mat4 scissorMat;
+    layout(row_major) mat4 paintMat;
+    vec4 innerCol;
+    vec4 outerCol;
+    vec2 scissorExt;
+    vec2 scissorScale;
+    vec2 extent;
+    float radius;
+    float feather;
+    float strokeMult;
+    float strokeThr;
+} _39;
+
+uniform sampler2D g_texture;
+
+in vec2 varying_0;
+in vec2 varying_1;
+layout(location = 0) out vec4 _entryPointOutput;
+
+mat4 spvWorkaroundRowMajor(mat4 wrap) { return wrap; }
+
+void main()
+{
+    vec2 _222 = (-(abs((vec3(varying_1, 1.0) * mat3(spvWorkaroundRowMajor(_39.scissorMat)[0].xyz, spvWorkaroundRowMajor(_39.scissorMat)[1].xyz, spvWorkaroundRowMajor(_39.scissorMat)[2].xyz)).xy) - _39.scissorExt)) * _39.scissorScale + vec2(0.5);
+    if ((min(1.0, (1.0 - abs(varying_0.x * 2.0 + (-1.0))) * _39.strokeMult) * min(1.0, varying_0.y)) < _39.strokeThr)
+    {
+        discard;
+    }
+    _entryPointOutput = (texture(g_texture, varying_0) * (clamp(_222.x, 0.0, 1.0) * clamp(_222.y, 0.0, 1.0))) * _39.innerCol;
+}

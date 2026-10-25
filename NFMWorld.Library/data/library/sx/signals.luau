@@ -115,13 +115,18 @@ local function trackRead(n: ReactiveNode<any>)
     table.insert(n.observers, comp)
 end
 
--- Remove `comp` from `n.observers`.
+-- Remove `comp` from `n.observers`. Order doesn't matter (it's a membership set), so this
+-- swaps the found entry with the last one and pops instead of shifting the whole tail --
+-- O(1) instead of O(n), which matters since a subtree teardown does this once per
+-- (source, observer) edge.
 local function untrackSource(n: SignalNode<any> | Computation, comp: Computation)
     if n.observers then
         local obs = n.observers
-        for i = #obs, 1, -1 do
+        local last = #obs
+        for i = last, 1, -1 do
             if obs[i] == comp then
-                table.remove(obs, i)
+                obs[i] = obs[last]
+                obs[last] = nil
                 break
             end
         end
@@ -165,9 +170,11 @@ disposeComputation = function(node: Computation)
     cleanNode(node)
     if node.owner and node.owner.owned then
         local owned = node.owner.owned
-        for i = 1, #owned do
+        local last = #owned
+        for i = 1, last do
             if owned[i] == node then
-                table.remove(owned, i)
+                owned[i] = owned[last]
+                owned[last] = nil
                 break
             end
         end
@@ -422,10 +429,21 @@ local function onCleanup(fn: () -> ()): ()
     end
 end
 
+-- Run `fn` once, AFTER the current mount pass. createEffect runs its body eagerly, so
+-- calling it here would run `fn` while the component body is still executing — before the
+-- descriptor it returns has been turned into host nodes, so refs are still empty and
+-- nothing is in the tree yet. Instead the computation is queued (never tracked: it is
+-- created STALE, run once by the flush, and then stays CLEAN since it subscribes to
+-- nothing under untrack). The queue is drained by the flush that follows the mount —
+-- render()'s flushSync for the initial tree, or the in-progress flushEffects pass for a
+-- subtree mounted later by Show/For/Switch, whose while-loop picks up newly queued nodes.
 local function onMount(fn: () -> ()): ()
-    createEffect(function()
+    local node = createComputation(function()
         untrack(fn)
-    end)
+    end, true)
+    node.state = STALE
+    queueEffect(node)
+    scheduleFlush()
 end
 
 local function getOwner(): any?

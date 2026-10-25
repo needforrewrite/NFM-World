@@ -1,9 +1,7 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using Hexa.NET.ImGui;
 using Maxine.Extensions;
 using Maxine.Extensions.Collections;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.Gameplay;
 using NFMWorld.Util;
@@ -28,8 +26,8 @@ public partial class StageEditorPhase
     
     private void RenderImGuiUI()
     {
-        var screenWidth = GameSparker.Game.GraphicsDevice.Viewport.Width;
-        var screenHeight = GameSparker.Game.GraphicsDevice.Viewport.Height;
+        var screenWidth = GameSparker.Game.Window.Width;
+        var screenHeight = GameSparker.Game.Window.Height;
         
         // Menu bar at the top
         if (ImGui.BeginMainMenuBar())
@@ -364,7 +362,7 @@ public partial class StageEditorPhase
             {
                 // Live preview
                 World.Sky = _editSkyColor;
-                if (ActiveTab?.StageRenderer != null) ActiveTab.StageRenderer.sky = new Sky(_graphicsDevice);
+                if (ActiveTab?.StageRenderer != null) ActiveTab.StageRenderer.sky = new Sky(GameSparker.GraphicsDevice);
             }
             
             ImGui.Text("Fog Color:");
@@ -379,7 +377,7 @@ public partial class StageEditorPhase
             {
                 // Live preview
                 World.GroundColor = _editGroundColor;
-                ActiveTab?.StageRenderer?.ground = new Ground(_graphicsDevice);
+                ActiveTab?.StageRenderer?.ground = new Ground(GameSparker.GraphicsDevice);
             }
             
             ImGui.Separator();
@@ -392,7 +390,7 @@ public partial class StageEditorPhase
                 if (_editPolysEnabled && ActiveTab?.StageRenderer != null && ActiveTab?.Stage != null)
                 {
                     World.GroundPolysColor = _editPolysColor;
-                    ActiveTab.StageRenderer.polys = Environment.MakePolys(ActiveTab.Stage, -10000, 20000, -10000, 20000, ActiveTab.ScenePieces.Count, _graphicsDevice);
+                    ActiveTab.StageRenderer.polys = Environment.MakePolys(ActiveTab.Stage, -10000, 20000, -10000, 20000, ActiveTab.ScenePieces.Count);
                 }
                 else if (!_editPolysEnabled && ActiveTab?.StageRenderer != null)
                 {
@@ -406,7 +404,7 @@ public partial class StageEditorPhase
                 {
                     // Live preview
                     World.GroundPolysColor = _editPolysColor;
-                    ActiveTab?.StageRenderer?.polys = Environment.MakePolys(ActiveTab.Stage, -10000, 20000, -10000, 20000, ActiveTab.ScenePieces.Count, _graphicsDevice);
+                    ActiveTab?.StageRenderer?.polys = Environment.MakePolys(ActiveTab.Stage, -10000, 20000, -10000, 20000, ActiveTab.ScenePieces.Count);
                 }
             }
             
@@ -428,7 +426,7 @@ public partial class StageEditorPhase
                         _editCloudsHeight
                     ];
                     World.CloudCoverage = _editCloudCoverage;
-                    ActiveTab.StageRenderer.clouds = Environment.MakeClouds(-10000, 10000, -10000, 10000, _graphicsDevice);
+                    ActiveTab.StageRenderer.clouds = Environment.MakeClouds(-10000, 10000, -10000, 10000);
                 }
                 else if (!_editCloudsEnabled && ActiveTab?.StageRenderer != null)
                 {
@@ -444,7 +442,7 @@ public partial class StageEditorPhase
                     World.Clouds[0] = _editCloudsColor.R;
                     World.Clouds[1] = _editCloudsColor.G;
                     World.Clouds[2] = _editCloudsColor.B;
-                    ActiveTab?.StageRenderer?.clouds = Environment.MakeClouds(-10000, 10000, -10000, 10000, _graphicsDevice);
+                    ActiveTab?.StageRenderer?.clouds = Environment.MakeClouds(-10000, 10000, -10000, 10000);
                 }
                 
                 ImGui.Text("Clouds Height:");
@@ -453,7 +451,7 @@ public partial class StageEditorPhase
                 {
                     // Live preview
                     World.Clouds[4] = _editCloudsHeight;
-                    ActiveTab?.StageRenderer?.clouds = Environment.MakeClouds(-10000, 10000, -10000, 10000, _graphicsDevice);
+                    ActiveTab?.StageRenderer?.clouds = Environment.MakeClouds(-10000, 10000, -10000, 10000);
                 }
                 
                 ImGui.Text("Clouds Parameter 4:");
@@ -462,7 +460,7 @@ public partial class StageEditorPhase
                 {
                     // Live preview
                     World.Clouds[3] = _editCloudsParam4;
-                    ActiveTab?.StageRenderer?.clouds = Environment.MakeClouds(-10000, 10000, -10000, 10000, _graphicsDevice);
+                    ActiveTab?.StageRenderer?.clouds = Environment.MakeClouds(-10000, 10000, -10000, 10000);
                 }
                 
                 ImGui.Text("Cloud Coverage:");
@@ -471,7 +469,7 @@ public partial class StageEditorPhase
                 {
                     // Live preview
                     World.CloudCoverage = _editCloudCoverage;
-                    ActiveTab?.StageRenderer?.clouds = Environment.MakeClouds(-10000, 10000, -10000, 10000, _graphicsDevice);
+                    ActiveTab?.StageRenderer?.clouds = Environment.MakeClouds(-10000, 10000, -10000, 10000);
                 }
             }
             
@@ -482,7 +480,7 @@ public partial class StageEditorPhase
                 if (_editMountainsEnabled && ActiveTab?.StageRenderer != null)
                 {
                     World.MountainSeed = _editMountainsSeed;
-                    ActiveTab.StageRenderer.mountains = Environment.MakeMountains(-10000, 10000, -10000, 10000, _graphicsDevice);
+                    ActiveTab.StageRenderer.mountains = Environment.MakeMountains(-10000, 10000, -10000, 10000);
                 }
                 else if (!_editMountainsEnabled && ActiveTab?.StageRenderer != null)
                 {
@@ -499,7 +497,7 @@ public partial class StageEditorPhase
                     World.MountainSeed = _editMountainsSeed;
                     if (ActiveTab?.StageRenderer != null)
                     {
-                        ActiveTab.StageRenderer.mountains = Environment.MakeMountains(-10000, 10000, -10000, 10000, _graphicsDevice);
+                        ActiveTab.StageRenderer.mountains = Environment.MakeMountains(-10000, 10000, -10000, 10000);
                     }
                 }
             }
@@ -624,8 +622,10 @@ public partial class StageEditorPhase
 
             if (ImGui.Button("Export", new Vector2(120, 0)))
             {
-                ExportTopDownImage();
-                // Keep dialog open to show result message
+                // Deferred: the export binds a render target, which needs the frame's command
+                // buffer - it runs at the top of the next Render(cb, ...). Keep dialog open to
+                // show result message.
+                _exportRequested = true;
             }
             ImGui.SameLine();
             if (ImGui.Button("Close", new Vector2(120, 0)))

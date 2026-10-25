@@ -1,6 +1,8 @@
-﻿namespace NFMWorld;
+using NFMWorld.Graphics;
+
+namespace NFMWorld;
 
 public interface IImmediateRenderElement
 {
-    void Render(Camera camera, Lighting? lighting);
+    void Render(ICommandBuffer cb, Camera camera, Lighting? lighting);
 }

@@ -1,5 +1,4 @@
-using Hexa.NET.ImGui;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Hexa.NET.ImGui;
 using NFMWorld.Gameplay.RaceHost;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend.Gamemodes;
@@ -11,7 +10,7 @@ using NFMWorldLibrary.Rad;
 
 namespace NFMWorld.Gameplay;
 
-public class LobbyPhase(GraphicsDevice graphicsDevice, IMultiplayerClientTransport transport) : BasePhase
+public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 {
     private Player _player = new();
     
@@ -93,7 +92,6 @@ public class LobbyPhase(GraphicsDevice graphicsDevice, IMultiplayerClientTranspo
                         .ToArray();
 
                     var phase = new RacePhase(
-                        graphicsDevice,
                         session.StageName,
                         GetGameModeFactory(session),
                         players,

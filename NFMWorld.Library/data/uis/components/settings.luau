@@ -189,26 +189,17 @@ local KeyBindingLabel = styled(Sx.Text) {
 -- adapters; KeyBindingBtn is a specialized capture button using the same palette.
 
 local function TabBtn(props: { active: Sx.Signalish<boolean?>, label: Sx.Signalish<string>, onPress: () -> () })
-	return x(Button) {
-		variant = "ghost",
-		active = props.active,
-		label = props.label,
-		onPress = props.onPress,
-	}
+	return x(Button)({ variant = "ghost", active = props.active, label = props.label, onPress = props.onPress })
 end
 
 local function Btn(props: { variant: "primary" | nil, label: Sx.Signalish<string>, onPress: () -> () })
-	return x(Button) {
-		variant = props.variant,
-		label = props.label,
-		onPress = props.onPress,
-	}
+	return x(Button)({ variant = props.variant, label = props.label, onPress = props.onPress })
 end
 
 local function KeyBindingBtn(props: { capturing: Sx.Signalish<boolean?>, label: Sx.Signalish<string>, onPress: () -> () })
 	local hovered, setHovered = Sx.createSignal(false)
-	return x(Sx.View) {
-		style = Sx.createMemo(function(): Sx.Styles
+	return x(Sx.View)({
+		style = function(): Sx.Styles
 			local capturing = Sx.read(props.capturing)
 			local hov = hovered()
 			return {
@@ -223,18 +214,17 @@ local function KeyBindingBtn(props: { capturing: Sx.Signalish<boolean?>, label: 
 				borderColor = capturing and theme.warningBorder or theme.surfaceBorder,
 				borderRadius = 5,
 			}
-		end),
+		end,
 		onmousedown = function() props.onPress() end,
 		onmouseenter = function() setHovered(true) end,
 		onmouseleave = function() setHovered(false) end,
-		x(Sx.Text) {
-			style = Sx.createMemo(function(): Sx.TextStyles
-				local capturing = Sx.read(props.capturing)
-				return { fontSize = 13, fontStyle = "bold", color = capturing and theme.warning or theme.textPrimary }
-			end),
+		x(Sx.Text)({ style = function(): Sx.TextStyles
+			local capturing = Sx.read(props.capturing)
+			return { fontSize = 13, fontStyle = "bold", color = capturing and theme.warning or theme.textPrimary }
+		end,
 			function() return Sx.read(props.label) end,
-		},
-	}
+		}),
+	})
 end
 
 -- ── Tabs ─────────────────────────────────────────────────────────
@@ -244,248 +234,248 @@ local function VideoTab(props: { config: Sx.Accessor<SettingsSnapshot>, options:
 	local options = props.options
 	local set = props.set
 
-	return x(Sx.Fragment) {
-		x(SectionLabel) { "Display" },
-		x(Row) {
-			x(Label) { "Renderer" },
-			x(Dropdown) {
-				options = options().renderers or {},
-				value = function() return config().selectedRenderer end,
-				onSelect = function(v) set("selectedRenderer", v) end,
-			},
-		},
-		x(Row) {
-			x(Label) { "Resolution" },
-			x(Dropdown) {
-				options = options().resolutions or {},
-				value = function() return config().selectedResolution end,
-				onSelect = function(v) set("selectedResolution", v) end,
-			},
-		},
-		x(Row) {
-			x(Label) { "Display Mode" },
-			x(Dropdown) {
-				options = options().displayModes or {},
-				value = function() return config().selectedDisplayMode end,
-				onSelect = function(v) set("selectedDisplayMode", v) end,
-			},
-		},
-		x(Row) {
-			x(Label) { "VSync" },
-			x(Checkbox) { checked = function() return config().vsync end, onToggle = function() set("vsync", not config().vsync) end },
-		},
-		x(Row) {
-			x(Label) { "FPS Limit" },
-			x(Slider) {
-				min = 0, max = 240, step = 1,
-				value = function() return config().fpsLimit end,
-				onValue = function(v) set("fpsLimit", v) end,
-			},
-			x(SliderValue) {
-				function()
-					local v = config().fpsLimit
-					return v == 0 and "Unlimited" or ("%d FPS"):format(v)
-				end,
-			},
-		},
+	return (
+		x(Sx.Fragment)({
+			x(SectionLabel)({ "Display" }),
+			x(Row)({
+				x(Label)({ "Renderer" }),
+				x(Dropdown)({
+					options = function() return options().renderers or {} end,
+					value = function() return config().selectedRenderer end,
+					onSelect = function(v) set("selectedRenderer", v) end,
+				}),
+			}),
+			x(Row)({
+				x(Label)({ "Resolution" }),
+				x(Dropdown)({
+					options = function() return options().resolutions or {} end,
+					value = function() return config().selectedResolution end,
+					onSelect = function(v) set("selectedResolution", v) end,
+				}),
+			}),
+			x(Row)({
+				x(Label)({ "Display Mode" }),
+				x(Dropdown)({
+					options = function() return options().displayModes or {} end,
+					value = function() return config().selectedDisplayMode end,
+					onSelect = function(v) set("selectedDisplayMode", v) end,
+				}),
+			}),
+			x(Row)({
+				x(Label)({ "VSync" }),
+				x(Checkbox)({ checked = function() return config().vsync end, onToggle = function() set("vsync", not config().vsync) end }),
+			}),
+			x(Row)({
+				x(Label)({ "FPS Limit" }),
+				x(Slider)({
+					min = 63, max = 240, step = 1,
+					value = function() return config().fpsLimit end,
+					onValue = function(v) set("fpsLimit", v) end,
+				}),
+				x(SliderValue)({
+					function()
+						local v = config().fpsLimit
+						return v == 0 and "Unlimited" or ("%d FPS"):format(v)
+					end,
+				}),
+			}),
 
-		x(Divider) {},
-		x(SectionLabel) { "Quality" },
-		x(Row) {
-			x(Label) { "Antialiasing" },
-			x(Dropdown) {
-				options = options().antialiasModes or {},
-				value = function() return config().antialias end,
-				onSelect = function(v) set("antialias", v) end,
-			},
-		},
-		x(Row) {
-			x(Label) { "Shadow Distance" },
-			x(Dropdown) {
-				options = options().shadowCascadeLevels or {},
-				value = function() return config().shadowCascadeLevel end,
-				onSelect = function(v) set("shadowCascadeLevel", v) end,
-			},
-		},
-		x(Row) {
-			x(Label) { "Shadow Resolution" },
-			x(Dropdown) {
-				options = options().shadowResolutions or {},
-				value = function() return config().shadowResolution end,
-				onSelect = function(v) set("shadowResolution", v) end,
-			},
-		},
-		x(Row) {
-			x(Label) { "Render Distance" },
-			x(Dropdown) {
-				options = options().renderDistanceNames or {},
-				value = function() return config().renderDistance end,
-				onSelect = function(v) set("renderDistance", v) end,
-			},
-		},
+			x(Divider)({}),
+			x(SectionLabel)({ "Quality" }),
+			x(Row)({
+				x(Label)({ "Antialiasing" }),
+				x(Dropdown)({
+					options = function() return options().antialiasModes or {} end,
+					value = function() return config().antialias end,
+					onSelect = function(v) set("antialias", v) end,
+				}),
+			}),
+			x(Row)({
+				x(Label)({ "Shadow Distance" }),
+				x(Dropdown)({
+					options = function() return options().shadowCascadeLevels or {} end,
+					value = function() return config().shadowCascadeLevel end,
+					onSelect = function(v) set("shadowCascadeLevel", v) end,
+				}),
+			}),
+			x(Row)({
+				x(Label)({ "Shadow Resolution" }),
+				x(Dropdown)({
+					options = function() return options().shadowResolutions or {} end,
+					value = function() return config().shadowResolution end,
+					onSelect = function(v) set("shadowResolution", v) end,
+				}),
+			}),
+			x(Row)({
+				x(Label)({ "Render Distance" }),
+				x(Dropdown)({
+					options = function() return options().renderDistanceNames or {} end,
+					value = function() return config().renderDistance end,
+					onSelect = function(v) set("renderDistance", v) end,
+				}),
+			}),
 
-		x(Divider) {},
-		x(SectionLabel) { "Advanced" },
-		x(Row) {
-			x(Label) { "Low Latency" },
-			x(Checkbox) { checked = function() return config().lowLatency end, onToggle = function() set("lowLatency", not config().lowLatency) end },
-		},
-		x(Row) {
-			x(Label) { "Outline Width" },
-			x(Slider) {
-				min = 0.5, max = 4, step = 0.1,
-				value = function() return config().lineWidth end,
-				onValue = function(v) set("lineWidth", v) end,
-			},
-			x(SliderValue) { function() return ("%.1f"):format(config().lineWidth) end },
-		},
-		x(Row) {
-			x(Label) { "Distant Outlines" },
-			x(Dropdown) {
-				options = DISTANT_OUTLINE_BEHAVIORS,
-				value = function() return config().distantOutlineBehavior end,
-				onSelect = function(v) set("distantOutlineBehavior", v) end,
-			},
-		},
-	}
+			x(Divider)({}),
+			x(SectionLabel)({ "Advanced" }),
+			x(Row)({
+				x(Label)({ "Low Latency" }),
+				x(Checkbox)({ checked = function() return config().lowLatency end, onToggle = function() set("lowLatency", not config().lowLatency) end }),
+			}),
+			x(Row)({
+				x(Label)({ "Outline Width" }),
+				x(Slider)({
+					min = 0.5, max = 4, step = 0.1,
+					value = function() return config().lineWidth end,
+					onValue = function(v) set("lineWidth", v) end,
+				}),
+				x(SliderValue)({ function() return ("%.1f"):format(config().lineWidth) end }),
+			}),
+			x(Row)({
+				x(Label)({ "Distant Outlines" }),
+				x(Dropdown)({
+					options = DISTANT_OUTLINE_BEHAVIORS,
+					value = function() return config().distantOutlineBehavior end,
+					onSelect = function(v) set("distantOutlineBehavior", v) end,
+				}),
+			}),
+		})
+	)
 end
 
 local function AudioTab(props: { config: Sx.Accessor<SettingsSnapshot>, set: ((key: string, value: any) -> ()) })
 	local config = props.config
 	local set = props.set
 
-	return x(Sx.Fragment) {
-		x(SectionLabel) { "Volume" },
-		x(Row) {
-			x(Label) { "Mute All" },
-			x(Checkbox) { checked = function() return config().muteAll end, onToggle = function() set("muteAll", not config().muteAll) end },
-		},
-		x(Row) {
-			x(Label) { "Master Volume" },
-			x(Slider) {
-				min = 0, max = 1, step = 0.01,
-				value = function() return config().masterVolume end,
-				onValue = function(v) set("masterVolume", v) end,
-			},
-			x(SliderValue) { function() return ("%d%%"):format(math.floor(config().masterVolume * 100 + 0.5)) end },
-		},
-		x(Row) {
-			x(Label) { "Music Volume" },
-			x(Slider) {
-				min = 0, max = 1, step = 0.01,
-				value = function() return config().musicVolume end,
-				onValue = function(v) set("musicVolume", v) end,
-			},
-			x(SliderValue) { function() return ("%d%%"):format(math.floor(config().musicVolume * 100 + 0.5)) end },
-		},
-		x(Row) {
-			x(Label) { "Effects Volume" },
-			x(Slider) {
-				min = 0, max = 1, step = 0.01,
-				value = function() return config().effectsVolume end,
-				onValue = function(v) set("effectsVolume", v) end,
-			},
-			x(SliderValue) { function() return ("%d%%"):format(math.floor(config().effectsVolume * 100 + 0.5)) end },
-		},
+	return (
+		x(Sx.Fragment)({
+			x(SectionLabel)({ "Volume" }),
+			x(Row)({
+				x(Label)({ "Mute All" }),
+				x(Checkbox)({ checked = function() return config().muteAll end, onToggle = function() set("muteAll", not config().muteAll) end }),
+			}),
+			x(Row)({
+				x(Label)({ "Master Volume" }),
+				x(Slider)({
+					min = 0, max = 1, step = 0.01,
+					value = function() return config().masterVolume end,
+					onValue = function(v) set("masterVolume", v) end,
+				}),
+				x(SliderValue)({ function() return ("%d%%"):format(math.floor(config().masterVolume * 100 + 0.5)) end }),
+			}),
+			x(Row)({
+				x(Label)({ "Music Volume" }),
+				x(Slider)({
+					min = 0, max = 1, step = 0.01,
+					value = function() return config().musicVolume end,
+					onValue = function(v) set("musicVolume", v) end,
+				}),
+				x(SliderValue)({ function() return ("%d%%"):format(math.floor(config().musicVolume * 100 + 0.5)) end }),
+			}),
+			x(Row)({
+				x(Label)({ "Effects Volume" }),
+				x(Slider)({
+					min = 0, max = 1, step = 0.01,
+					value = function() return config().effectsVolume end,
+					onValue = function(v) set("effectsVolume", v) end,
+				}),
+				x(SliderValue)({ function() return ("%d%%"):format(math.floor(config().effectsVolume * 100 + 0.5)) end }),
+			}),
 
-		x(Divider) {},
-		x(Row) {
-			x(Label) { "Remastered Music" },
-			x(Checkbox) { checked = function() return config().remasteredMusic end, onToggle = function() set("remasteredMusic", not config().remasteredMusic) end },
-		},
-	}
+			x(Divider)({}),
+			x(Row)({
+				x(Label)({ "Remastered Music" }),
+				x(Checkbox)({ checked = function() return config().remasteredMusic end, onToggle = function() set("remasteredMusic", not config().remasteredMusic) end }),
+			}),
+		})
+	)
 end
 
 local function GameTab(props: { config: Sx.Accessor<SettingsSnapshot>, set: ((key: string, value: any) -> ()), onReset: () -> () })
 	local config = props.config
 	local set = props.set
 
-	return x(Sx.Fragment) {
-		x(SectionLabel) { "Camera" },
-		x(Row) {
-			x(Label) { "Field of View" },
-			x(Slider) {
-				min = 58.7, max = 120, step = 0.5,
-				value = function() return config().fov end,
-				onValue = function(v) set("fov", v) end,
-			},
-			x(SliderValue) { function() return ("%.1f°"):format(config().fov) end },
-		},
-		x(Row) {
-			x(Label) { "Smooth FOV" },
-			x(Checkbox) { checked = function() return config().smoothFov end, onToggle = function() set("smoothFov", not config().smoothFov) end },
-		},
-		x(Row) {
-			x(Label) { "Follow Y Offset" },
-			x(Slider) {
-				min = -160, max = 500, step = 1,
-				value = function() return config().followY end,
-				onValue = function(v) set("followY", v) end,
-			},
-			x(SliderValue) { function() return ("%d"):format(config().followY) end },
-		},
-		x(Row) {
-			x(Label) { "Follow Z Offset" },
-			x(Slider) {
-				min = -500, max = 500, step = 1,
-				value = function() return config().followZ end,
-				onValue = function(v) set("followZ", v) end,
-			},
-			x(SliderValue) { function() return ("%d"):format(config().followZ) end },
-		},
+	return (
+		x(Sx.Fragment)({
+			x(SectionLabel)({ "Camera" }),
+			x(Row)({
+				x(Label)({ "Field of View" }),
+				x(Slider)({
+					min = 58.7, max = 120, step = 0.5,
+					value = function() return config().fov end,
+					onValue = function(v) set("fov", v) end,
+				}),
+				x(SliderValue)({ function() return ("%.1f°"):format(config().fov) end }),
+			}),
+			x(Row)({
+				x(Label)({ "Smooth FOV" }),
+				x(Checkbox)({ checked = function() return config().smoothFov end, onToggle = function() set("smoothFov", not config().smoothFov) end }),
+			}),
+			x(Row)({
+				x(Label)({ "Follow Y Offset" }),
+				x(Slider)({
+					min = -160, max = 500, step = 1,
+					value = function() return config().followY end,
+					onValue = function(v) set("followY", v) end,
+				}),
+				x(SliderValue)({ function() return ("%d"):format(config().followY) end }),
+			}),
+			x(Row)({
+				x(Label)({ "Follow Z Offset" }),
+				x(Slider)({
+					min = -500, max = 500, step = 1,
+					value = function() return config().followZ end,
+					onValue = function(v) set("followZ", v) end,
+				}),
+				x(SliderValue)({ function() return ("%d"):format(config().followZ) end }),
+			}),
 
-		x(Divider) {},
-		x(ResetLink) {
-			onmousedown = function() props.onReset() end,
-			"Reset Camera Defaults",
-		},
-	}
+			x(Divider)({}),
+			x(ResetLink)({ onmousedown = function() props.onReset() end, "Reset Camera Defaults" }),
+		})
+	)
 end
 
 local function KeyboardTab(props: { config: Sx.Accessor<SettingsSnapshot>, onReset: () -> (), capturingAction: Sx.Accessor<string?>, startCapture: ((action: string) -> ()) })
 	local config = props.config
 
-	return x(Sx.Fragment) {
-		x(SectionLabel) { "Key Bindings" },
+	return (
+		x(Sx.Fragment)({
+			x(SectionLabel)({ "Key Bindings" }),
 
-		x(ResetLink) {
-			onmousedown = function() props.onReset() end,
-			"Reset All to Defaults",
-		},
+			x(ResetLink)({ onmousedown = function() props.onReset() end, "Reset All to Defaults" }),
 
-		x(Divider) {},
+			x(Divider)({}),
 
-		x(Sx.For<<KeyBindingData>>) {
-			each = function(): {KeyBindingData}
-				local c = config()
-				return c ~= nil and c.keyBindings or {}
-			end,
-			function(item: () -> KeyBindingData, index: number)
-				local b = item()
-				return x(KeyBindingRow) {
-					x(KeyBindingLabel) { b.displayName ~= "" and b.displayName or b.action },
-					x(KeyBindingBtn) {
-						capturing = function() return props.capturingAction() == b.action end,
-						label = function()
-							local cap = props.capturingAction() == b.action
-							return cap and "Press any key..." or keyCodeToName(b.keyCode)
-						end,
-						onPress = function()
-							props.startCapture(b.action)
-						end,
-					},
-				}
-			end,
-		},
+			function() return x(Sx.For<<KeyBindingData>>) {
+				each = function(): {KeyBindingData}
+					local c = config()
+					return c ~= nil and c.keyBindings or {}
+				end,
+				function(item: () -> KeyBindingData, index: number)
+					local b = item()
+					return x(KeyBindingRow)({
+						x(KeyBindingLabel)({ b.displayName ~= "" and b.displayName or b.action }),
+						x(KeyBindingBtn)({
+							capturing = function() return props.capturingAction() == b.action end,
+							label = function()
+								local cap = props.capturingAction() == b.action
+								return cap and "Press any key..." or keyCodeToName(b.keyCode)
+							end,
+							onPress = function()
+								props.startCapture(b.action)
+							end,
+						}),
+					})
+				end,
+			} end,
 
-		x(Sx.Show) {
-			when = function() return props.capturingAction() ~= nil end,
-			x(Sx.Text) {
-				style = { fontSize = 12, color = "rgba(255,152,0,0.6)", marginTop = 10, textAlign = "center" },
-				"Press any key to bind, or ESC to cancel...",
-			},
-		},
-	}
+			x(Sx.Show)({ when = function() return props.capturingAction() ~= nil end,
+				x(Sx.Text)({ style = { fontSize = 12, color = "rgba(255,152,0,0.6)", marginTop = 10, textAlign = "center" }, "Press any key to bind, or ESC to cancel...",
+
+				}),
+			}),
+		})
+	)
 end
 
 -- ── Settings component ───────────────────────────────────────────
@@ -667,142 +657,126 @@ local function Settings(props)
 		UiLib.call("startCapture", { action = action })
 	end
 
-	return x(Root) {
-		ref = rootRef,
-		tabindex = 0,
-		onkeydown = handleRootKey,
+	return (
+		x(Root)({ ref = rootRef, tabindex = 0, onkeydown = handleRootKey,
+			x(Sx.Switch)({
+				x(Sx.Match)({ when = function() return config() == nil or options() == nil end,
+					x(Header)({ "Settings" }),
+					x(Content)({
+						x(Sx.Text)({ style = { textAlign = "center", color = "rgba(255,255,255,0.3)", marginTop = 80 },
+							"Loading settings...",
+						}),
+					}),
+				}),
+				x(Sx.Match)({ when = function() return true end,
+					x(Header)({ "Settings" }),
+					x(TabBar)({
+						x(TabBtn)({ label = "Keyboard", active = function() return tab() == "keyboard" end, onPress = function() setTab("keyboard") end }),
+						x(TabBtn)({ label = "Video", active = function() return tab() == "video" end, onPress = function() setTab("video") end }),
+						x(TabBtn)({ label = "Audio", active = function() return tab() == "audio" end, onPress = function() setTab("audio") end }),
+						x(TabBtn)({ label = "Game", active = function() return tab() == "game" end, onPress = function() setTab("game") end }),
+					}),
+					x(Content)({
+						x(Sx.Show)({ when = function() return tab() == "video" end,
+							x(VideoTab)({ config = config :: Sx.Accessor<SettingsSnapshot>, options = options :: Sx.Accessor<AvailableOptions>, set = set }),
+						}),
+						x(Sx.Show)({ when = function() return tab() == "audio" end,
+							x(AudioTab)({ config = config :: Sx.Accessor<SettingsSnapshot>, set = set }),
+						}),
+						x(Sx.Show)({ when = function() return tab() == "game" end,
+							x(GameTab)({
+								config = config :: Sx.Accessor<SettingsSnapshot>,
+								set = set,
+								onReset = function()
+									handleResetDefaults("camera", "Reset Camera", "Are you sure you want to reset camera settings to default?")
+								end,
+							}),
+						}),
+						x(Sx.Show)({ when = function() return tab() == "keyboard" end,
+							x(KeyboardTab)({
+								config = config :: Sx.Accessor<SettingsSnapshot>,
+								capturingAction = capturingAction,
+								startCapture = startCapture,
+								onReset = function()
+									handleResetDefaults("keyboard", "Reset Key Binds", "Are you sure you want to reset key binds to default?")
+								end,
+							}),
+						}),
+					}),
+					x(BottomBar)({
+						x(Btn)({ variant = "primary", label = "OK", onPress = handleOk }),
+						x(Btn)({ label = "Cancel", onPress = handleClose }),
+						x(Btn)({ label = "Apply", onPress = handleSave }),
+					}),
 
-		x(Sx.Switch) {
-			x(Sx.Match) {
-				when = function() return config() == nil or options() == nil end,
-				x(Header) { "Settings" },
-				x(Content) {
-					x(Sx.Text) {
-						style = { textAlign = "center", color = "rgba(255,255,255,0.3)", marginTop = 80 },
-						"Loading settings...",
-					},
-				},
-			},
-			x(Sx.Match) {
-				when = function() return true end,
-				x(Header) { "Settings" },
-				x(TabBar) {
-					x(TabBtn) { label = "Keyboard", active = function() return tab() == "keyboard" end, onPress = function() setTab("keyboard") end },
-					x(TabBtn) { label = "Video", active = function() return tab() == "video" end, onPress = function() setTab("video") end },
-					x(TabBtn) { label = "Audio", active = function() return tab() == "audio" end, onPress = function() setTab("audio") end },
-					x(TabBtn) { label = "Game", active = function() return tab() == "game" end, onPress = function() setTab("game") end },
-				},
-				x(Content) {
-					x(Sx.Show) {
-						when = function() return tab() == "video" end,
-						x(VideoTab) { config = config :: Sx.Accessor<SettingsSnapshot>, options = options :: Sx.Accessor<AvailableOptions>, set = set },
-					},
-					x(Sx.Show) {
-						when = function() return tab() == "audio" end,
-						x(AudioTab) { config = config :: Sx.Accessor<SettingsSnapshot>, set = set },
-					},
-					x(Sx.Show) {
-						when = function() return tab() == "game" end,
-						x(GameTab) {
-							config = config :: Sx.Accessor<SettingsSnapshot>,
-							set = set,
-							onReset = function()
-								handleResetDefaults("camera", "Reset Camera", "Are you sure you want to reset camera settings to default?")
-							end,
-						},
-					},
-					x(Sx.Show) {
-						when = function() return tab() == "keyboard" end,
-						x(KeyboardTab) {
-							config = config :: Sx.Accessor<SettingsSnapshot>,
-							capturingAction = capturingAction,
-							startCapture = startCapture,
-							onReset = function()
-								handleResetDefaults("keyboard", "Reset Key Binds", "Are you sure you want to reset key binds to default?")
-							end,
-						},
-					},
-				},
-				x(BottomBar) {
-					x(Btn) { variant = "primary", label = "OK", onPress = handleOk },
-					x(Btn) { label = "Cancel", onPress = handleClose },
-					x(Btn) { label = "Apply", onPress = handleSave },
-				},
-
-				x(Sx.Show) {
-					when = function() return confirmModal() ~= nil and not restartModal() end,
-					x(Sx.View) {
-						style = {
-							position = "absolute", top = 0, left = 0, right = 0, bottom = 0,
-							display = "flex", alignItems = "center", justifyContent = "center",
-							backgroundColor = "rgba(0,0,0,0.5)",
-						},
-						onmousedown = function() setConfirmModal(nil) end,
-						x(Sx.View) {
+					x(Sx.Show)({ when = function() return confirmModal() ~= nil and not restartModal() end,
+						x(Sx.View)({
 							style = {
-								backgroundColor = "#1a1a2e",
-								borderWidth = 1, borderColor = "rgba(255,255,255,0.12)",
-								borderRadius = 10,
-								paddingTop = 24, paddingBottom = 24, paddingLeft = 28, paddingRight = 28,
-								minWidth = 320,
-								alignItems = "center",
-								flexDirection = "column",
+								position = "absolute", top = 0, left = 0, right = 0, bottom = 0,
+								display = "flex", alignItems = "center", justifyContent = "center",
+								backgroundColor = "rgba(0,0,0,0.5)",
 							},
-							onmousedown = function() end,
-							x(Sx.Text) { style = { fontSize = 16, fontStyle = "bold", marginBottom = 8 }, function() return (confirmModal() :: ConfirmModal).title end },
-							x(Sx.Text) { style = { fontSize = 13, color = "rgba(255,255,255,0.5)", marginBottom = 20 }, function() return (confirmModal() :: ConfirmModal).message end },
-							x(Sx.View) {
-								style = { display = "flex", flexDirection = "row", justifyContent = "center", gap = 10 },
-								x(Btn) { variant = "primary", label = "Yes", onPress = function() return (confirmModal() :: ConfirmModal).onConfirm() end },
-								x(Btn) { label = "No", onPress = function() setConfirmModal(nil) end },
-							},
-						},
-					},
-				},
-
-				x(Sx.Show) {
-					when = function() return restartModal() end,
-					x(Sx.View) {
-						style = {
-							position = "absolute", top = 0, left = 0, right = 0, bottom = 0,
-							display = "flex", alignItems = "center", justifyContent = "center",
-							backgroundColor = "rgba(0,0,0,0.5)",
-						},
-						x(Sx.View) {
-							style = {
-								backgroundColor = "#1a1a2e",
-								borderWidth = 1, borderColor = "rgba(255,255,255,0.12)",
-								borderRadius = 10,
-								paddingTop = 24, paddingBottom = 24, paddingLeft = 28, paddingRight = 28,
-								minWidth = 320,
-								alignItems = "center",
-								flexDirection = "column",
-							},
-							x(Sx.Text) { style = { fontSize = 16, fontStyle = "bold", marginBottom = 8 }, "Restart Required" },
-							x(Sx.Text) {
-								style = { fontSize = 13, color = "rgba(255,255,255,0.5)", marginBottom = 20, textAlign = "center" },
-								"The renderer has been changed. A restart is required for this change to take effect.",
-							},
-							x(Sx.View) {
-								style = { display = "flex", flexDirection = "row", justifyContent = "center", gap = 10 },
-								x(Btn) { variant = "primary", label = "Restart Now", onPress = function() UiLib.call("restartNow", {}) end },
-								x(Btn) {
-									label = "Later",
-									onPress = function()
-										setRestartModal(false)
-										if pendingClose.current then
-											pendingClose.current = false
-											if onClose ~= nil then onClose() end
-										end
-									end,
+							onmousedown = function() setConfirmModal(nil) end,
+							x(Sx.View)({
+								style = {
+									backgroundColor = "#1a1a2e",
+									borderWidth = 1, borderColor = "rgba(255,255,255,0.12)",
+									borderRadius = 10,
+									paddingTop = 24, paddingBottom = 24, paddingLeft = 28, paddingRight = 28,
+									minWidth = 320,
+									alignItems = "center",
+									flexDirection = "column",
 								},
-							},
+								onmousedown = function() end,
+								x(Sx.Text)({ style = { fontSize = 16, fontStyle = "bold", marginBottom = 8 }, function() return (confirmModal() :: ConfirmModal).title end }),
+								x(Sx.Text)({ style = { fontSize = 13, color = "rgba(255,255,255,0.5)", marginBottom = 20 }, function() return (confirmModal() :: ConfirmModal).message end }),
+								x(Sx.View)({ style = { display = "flex", flexDirection = "row", justifyContent = "center", gap = 10 },
+									x(Btn)({ variant = "primary", label = "Yes", onPress = function() return (confirmModal() :: ConfirmModal).onConfirm() end }),
+									x(Btn)({ label = "No", onPress = function() setConfirmModal(nil) end }),
+								}),
+							}),
+						}),
+					}),
+
+					x(Sx.Show)({ when = function() return restartModal() end,
+						x(Sx.View)({ style = {
+							position = "absolute", top = 0, left = 0, right = 0, bottom = 0,
+							display = "flex", alignItems = "center", justifyContent = "center",
+							backgroundColor = "rgba(0,0,0,0.5)",
 						},
-					},
-				},
-			},
-		},
-	}
+							x(Sx.View)({ style = {
+								backgroundColor = "#1a1a2e",
+								borderWidth = 1, borderColor = "rgba(255,255,255,0.12)",
+								borderRadius = 10,
+								paddingTop = 24, paddingBottom = 24, paddingLeft = 28, paddingRight = 28,
+								minWidth = 320,
+								alignItems = "center",
+								flexDirection = "column",
+							},
+								x(Sx.Text)({ style = { fontSize = 16, fontStyle = "bold", marginBottom = 8 }, "Restart Required" }),
+								x(Sx.Text)({ style = { fontSize = 13, color = "rgba(255,255,255,0.5)", marginBottom = 20, textAlign = "center" },
+									"The renderer has been changed. A restart is required for this change to take effect.",
+								}),
+								x(Sx.View)({ style = { display = "flex", flexDirection = "row", justifyContent = "center", gap = 10 },
+									x(Btn)({ variant = "primary", label = "Restart Now", onPress = function() UiLib.call("restartNow", {}) end }),
+									x(Btn)({
+										label = "Later",
+										onPress = function()
+											setRestartModal(false)
+											if pendingClose.current then
+												pendingClose.current = false
+												if onClose ~= nil then onClose() end
+											end
+										end,
+									}),
+								}),
+							}),
+						}),
+					}),
+				}),
+			}),
+		})
+	)
 end
 
 return Settings

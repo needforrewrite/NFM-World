@@ -1,0 +1,142 @@
+#if ANGLE
+        // Forces SDL down its EGL path rather than WGL, so the context below is ANGLE's.
+        SDL.SDL_SetHint(SDL.SDL_HINT_OPENGL_ES_DRIVER, "1");
+
+        // ES 3.0. SDL_GL_EGL_PLATFORM is deliberately not set, so SDL takes ANGLE's default display.
+        // Setting it to EGL_PLATFORM_ANGLE_ANGLE (0x3202, as Egl.cs does for the headless path) is
+        // what the original version did, and is not needed here.
+        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_MINOR_VERSION, 0);
+        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_PROFILE_MASK, EsProfile);
+
+        // A stencil buffer is not optional here: every one of NanoVG's nine pipelines is a
+        // stencil pass (AbstractionNvgRenderer's StencilFill1/2/3 descriptions), and the UI is
+        // drawn straight into the default framebuffer - there is no separate depth-stencil
+        // attachment the way the sokol path allocated one for NVG. Without asking for one SDL
+        // picks a config with stencil=0 (measured on this machine: stencil=0 depth=16), and
+        // glStencilFunc/glStencilOp against a buffer that does not exist fail silently in ES -
+        // no GL error, no draw. The visible result is the UI's coverage/blend maths running
+        // against a stencil that reads as a constant, which shows up as fills that do not
+        // accumulate alpha over one another.
+        //
+        // 8 is the smallest depth every driver here offers; ANGLE's D3D11 backend maps the
+        // request onto a D24S8 depth-stencil surface, so this does not cost a separate buffer.
+        SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_STENCIL_SIZE, 8);
+
+        if (!SDL.SDL_GL_LoadLibrary(null))
+            throw new InvalidOperationException($"SDL_GL_LoadLibrary failed: {SDL.SDL_GetError()}");
+
+        // The attributes above have to be set before the window, because SDL builds the window's EGL
+        // surface during window creation and reads the ES profile from them at that point.
+        Window = SdlWindow.Create("NFM World", 1280, 720, extraFlags: SDL.SDL_WindowFlags.SDL_WINDOW_OPENGL);
+
+        _glContext = SDL.SDL_GL_CreateContext(Window.Handle);
+        if (_glContext == IntPtr.Zero)
+        {
+            throw new InvalidOperationException($"SDL_GL_CreateContext failed: {SDL.SDL_GetError()}");
+        }
+
+        // Attaches to the context SDL just made current, rather than creating one: the device takes
+        // the getProcAddress callback and never owns a context on this path.
+        //
+        // This was the last thing to work, and what was wrong before it is not fully understood -
+        // recorded here so nobody re-derives the wrong answer from the shape of the fix. What is
+        // measured: with SDL's EGL config, a context reports current under eglGetCurrentContext yet
+        // every gl* call through it returns 0 with GL_INVALID_OPERATION, which GlShaderProgram turned
+        // into "shader failed to compile" with an empty info log. That config (put in place by an
+        // earlier SDL_GL_EGL_PLATFORM) differs from a working one only in DEPTH_SIZE (16 vs 24) and
+        // NATIVE_RENDERABLE (false vs true). A context built from a config we chose on SDL's own
+        // display works, so the discriminator is the config and not the display - and removing
+        // SDL_GL_EGL_PLATFORM was tried on its own and did not fix it, so that is not the mechanism
+        // either. Two other unverified explanations were offered later and are both contradicted:
+        // that SDL_HINT_VIDEO_FORCE_EGL is required (it is not set here and the tree works), and
+        // that SDL's config is NULL (it was read back, and it has real attributes).
+        _device = GlGraphicsDevice.Create(
+            SDL.SDL_GL_GetProcAddress, Window.Width, Window.Height,
+            () => SDL.SDL_GL_SwapWindow(Window.Handle));
+#else
+        // The sokol path. Which backend it is comes from --sokol-backend= (see Main), and the two
+        // differ in who brings up the 3D API - which is the whole of what this switch decides.
+        SokolGraphicsDevice sokol;
+
+        switch (_sokolBackend)
+        {
+            case SokolBackend.D3d11:
+            {
+                // Nothing to ask SDL for: sokol_gfx has no window concept at all, and its D3D11
+                // backend is handed an ID3D11Device and an ID3D11DeviceContext and nothing else
+                // (sokol_gfx.h:5361-5364). The swapchain is built here, over SDL's HWND, which is
+                // what makes hosting it on somebody else's window possible.
+                Window = SdlWindow.Create("NFM World", 1280, 720);
+
+                var platform = new SokolD3D11Platform(Window.NativeWindowHandle, Window.Width, Window.Height);
+                _sokolPlatform = platform;
+                sokol = SokolGraphicsDevice.Create(platform, Window.Width, Window.Height);
+                break;
+            }
+
+            case SokolBackend.Glcore:
+            {
+                // Desktop GL is the one sokol backend that is the *other* way round: sokol does not
+                // bring up the 3D API and is told nothing about it, because on this path SDL owns
+                // the context. Two consequences follow, and both are ordered deliberately.
+                //
+                // First, the attributes and the context have to exist before sg_setup: sokol's GL
+                // backend reads GL_MAJOR_VERSION/GL_MINOR_VERSION during setup to build its
+                // capability table (sokol_gfx.h:10494-10520) and takes no environment struct to
+                // defer them through. Hence the same ordering the ANGLE path above uses.
+                //
+                // Second, SDL has to know the surface type up front, so unlike the D3D11 arm above
+                // the window is created with SDL_WINDOW_OPENGL.
+                //
+                // A *core* profile, not the ANGLE path's ES profile: sokol's GLCORE backend emits
+                // and accepts desktop GLSL and uses desktop-only entry points. The profile enum is
+                // SDL_GL_CONTEXT_PROFILE_CORE = 0x0001 from SDL_video.h; the binding has the attr
+                // but not the value, hand-declared for the same reason EsProfile above is.
+                const int coreProfile = 0x0001;
+
+                SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+                SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_MINOR_VERSION, 3);
+                SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_PROFILE_MASK, coreProfile);
+
+                // Not optional here either, and for a reason specific to this backend: a GLCORE
+                // swapchain pass binds only the default framebuffer (sokol_gfx.h:12158) and has no
+                // attachment list, so the depth-stencil buffers are whatever the window's pixel
+                // format has. Without asking, SDL picks a config with stencil=0 (measured on this
+                // machine: stencil=0 depth=16) and the NanoVG stencil passes - every one of that
+                // renderer's nine pipelines - silently operate on a buffer that does not exist.
+                SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_STENCIL_SIZE, 8);
+
+                Window = SdlWindow.Create(
+                    "NFM World", 1280, 720, extraFlags: SDL.SDL_WindowFlags.SDL_WINDOW_OPENGL);
+
+                _glContext = SDL.SDL_GL_CreateContext(Window.Handle);
+                if (_glContext == IntPtr.Zero)
+                    throw new InvalidOperationException($"SDL_GL_CreateContext failed: {SDL.SDL_GetError()}");
+
+                // SDL owns the context and the drawable behind it, so this platform owns neither:
+                // it names the default framebuffer for sokol to bind and presents through SDL. Both
+                // callbacks are the caller's because this assembly holds no SDL reference - the same
+                // shape GlGraphicsDevice.Create already takes.
+                var glPlatform = new SokolGlPlatform(
+                    Window.Width, Window.Height,
+                    present: () => SDL.SDL_GL_SwapWindow(Window.Handle),
+                    setSwapInterval: interval => SDL.SDL_GL_SetSwapInterval(interval));
+
+                _sokolPlatform = glPlatform;
+                sokol = SokolGraphicsDevice.Create(glPlatform, Window.Width, Window.Height);
+                break;
+            }
+
+            default:
+                // Unreachable while SokolBackend has only these two members; the throw is here so
+                // that adding one without a platform is a named failure rather than a null device.
+                throw new NotSupportedException(
+                    $"No platform is implemented for the {_sokolBackend} sokol backend, please update " +
+                    $"{nameof(WorldGame)}'s constructor.");
+        }
+
+        _sokolDevice = sokol;
+        _device = sokol;
+#endif
+

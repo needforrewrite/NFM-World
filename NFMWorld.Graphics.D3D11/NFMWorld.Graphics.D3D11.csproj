@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>NFMWorld.Graphics.D3D11</RootNamespace>
+        <!-- Every D3D11/DXGI entry point here takes an unmanaged pointer, every COM object is a raw
+             interface pointer, and the whole point of this backend is to draw through them without
+             a wrapper layer. Unsafe is the interface, not an implementation detail. -->
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <!-- D3D11 is an x64-only proposition on this tree's toolchain: FNA3D.dll, SDL3.dll and the
+             vendored ANGLE are all x64, so the process is already pinned and an x86 host would be
+             a graphics backend nothing else in the process could talk to. -->
+        <PlatformTarget>x64</PlatformTarget>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Raw COM bindings. TerraFX rather than Silk.NET deliberately: Silk's Direct3D11 package
+             is a function-pointer table plus structs, while this one is the SDK's vtables as C#
+             interfaces, so a call here is written the way the C driver writes it - which is what
+             makes FNA3D's driver a usable reference rather than a translation exercise. -->
+        <PackageReference Include="TerraFX.Interop.Windows" Version="10.0.26100.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
+    </ItemGroup>
+
+    <!-- The smoke test is the only way to check the two things that make this backend possible at
+         all: that D3DReflect's input signature agrees element-for-element with the caller's
+         VertexLayoutDesc, and that the compiled cbuffer's variable offsets agree with the
+         reflection's byte offsets. Both are properties of internal types (D3D11PipelineState,
+         D3D11CommandBuffer.UniformBlockSize) and both are worth checking against the real generated
+         bundles rather than a stand-in. -->
+    <ItemGroup>
+        <InternalsVisibleTo Include="NFMWorld.Graphics.D3D11.Smoke" />
+    </ItemGroup>
+
+</Project>

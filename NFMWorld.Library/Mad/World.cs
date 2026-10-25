@@ -19,6 +19,25 @@ public static partial class World
     public static bool HasClouds;
     public static bool HasTexture;
     public static float FogDensity = 6;
+
+    /// <summary>
+    /// <see cref="FogDensity"/> in the form the shaders consume: the log2 of the normalized
+    /// density. Shaders evaluate <c>exp2(depthTerm * FogLogDensity)</c> instead of
+    /// <c>pow(density, depthTerm)</c>, so the log2 is paid once per frame on the CPU instead of
+    /// once per pixel (or per vertex) in the shader.
+    /// Clamped away from zero because log2(0) is -infinity, which the shader would then multiply
+    /// by a depth term of 0 and turn into NaN.
+    /// </summary>
+    public static float FogLogDensity
+    {
+        get
+        {
+            var density = FogDensity / (FogDensity + 1f);
+            return float.IsFinite(density) && density > 0f
+                ? MathF.Log2(MathF.Max(density, 1e-6f))
+                : MathF.Log2(1e-6f);
+        }
+    }
     public static LuaVector3 LightDirection = new LuaVector3(0, 1, 0);
     public static int FadeFrom;
     public static float BlackPoint = 0.37f;

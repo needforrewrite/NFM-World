@@ -28,7 +28,7 @@ local function OnBegin()
     setupCars()
     state = "countdown"
     countdown = 3
-    inner = SGM.countdownInterval
+    inner = GM.countdownInterval
     clientTick = 0
     lastCheckpoint = -1
     lastLap = 0
@@ -46,9 +46,6 @@ local function OnGameTick()
         if inner <= 0 then
             inner = GM.countdownInterval
             countdown = countdown - 1
-            if countdown <= 0 then
-                state = "inProgress"
-            end
         end
         return
     end
@@ -89,6 +86,11 @@ local function OnGameTick()
 
         if myCar ~= nil then
             GM:updateHudAndSounds(myCar)
+
+            GM.hudState.lap = myCar.currentLap + 1
+            GM.hudState.totalLaps = GM.stage.nlaps
+            GM.hudState.position = myCar.placement + 1
+            GM.hudState.totalRacers = #GM.players
         end
         return
     end
@@ -99,14 +101,6 @@ local function OnGameTick()
 end
 
 local function OnServerEvent(type: string, payload: { [string] : any })
-    if type == "standings" and payload ~= nil then
-        local me = payload[tostring(GM.clientPlayer.index)]
-        if me ~= nil and me.position ~= nil then
-            GM.hudState.position = me.position
-            GM.hudState.totalRacers = #GM.players
-        end
-    end
-
     if type == "countdown_go" then
         GM.hudState.countdownTimer = 0
         state = "inProgress"

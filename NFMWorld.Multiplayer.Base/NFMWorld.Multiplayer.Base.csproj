@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFramework>net11.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <RootNamespace>NFMWorld.Server.Base</RootNamespace>
@@ -13,6 +13,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\NFMWorld.Library.Base\NFMWorld.Library.Base.csproj" />
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj"/>
         <ProjectReference Include="..\NFMWorld.ClientOnlyAnalyzer\NFMWorld.ClientOnlyAnalyzer.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
     </ItemGroup>

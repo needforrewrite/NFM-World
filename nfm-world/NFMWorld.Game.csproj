@@ -1,0 +1,126 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <TargetFramework>net11.0</TargetFramework>
+        <RootNamespace>NFMWorld</RootNamespace>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <Version>0.0.0-dev</Version>
+        <InformationalVersion>NFM-World dev</InformationalVersion>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <TieredCompilation>false</TieredCompilation>
+        <OptimizationPreference>Speed</OptimizationPreference>
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+        <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+        <CETCompat>false</CETCompat>
+        <DefineConstants>$(DefineConstants);ANGLE</DefineConstants>
+        <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
+    </PropertyGroup>
+    <ItemGroup>
+        <!-- Exclude emitted source-generator files from implicit *.cs glob to prevent double compilation -->
+        <Compile Remove="Generated/**" />
+    </ItemGroup>
+    <!--
+         <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+            <PublishAot>true</PublishAot>
+         </PropertyGroup>
+    -->
+    <PropertyGroup>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <ApplicationIcon>Icon.ico</ApplicationIcon>
+    </PropertyGroup>
+    <ItemGroup>
+        <EmbeddedResource Include="Icon.ico">
+            <LogicalName>Icon.ico</LogicalName>
+        </EmbeddedResource>
+        <EmbeddedResource Include="Icon.bmp">
+            <LogicalName>Icon.bmp</LogicalName>
+        </EmbeddedResource>
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Collections.Pooled" Version="2.0.0-preview.27" />
+        <PackageReference Include="Hexa.NET.ImGui" Version="2.2.9" />
+        <PackageReference Include="JetBrains.Profiler.Api" Version="1.4.13" />
+        <PackageReference Include="LibOpenMPT.NET" Version="0.8.6" />
+        <None Include="data\**\*" CopyToOutputDirectory="Always" />
+        <None Remove="data\html\node_modules\**" CopyToOutputDirectory="Never" />
+        <None Remove="data\html\dist\**" CopyToOutputDirectory="Never" />
+        <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1" />
+        <PackageReference Include="NAudio" Version="3.0.0-preview.18" />
+        <PackageReference Include="NAudio.SoundFile" Version="3.0.0-preview.18" />
+        <PackageReference Include="NAudio.Vorbis" Version="1.5.0" />
+        <PackageReference Include="NLayer" Version="2.0.1" />
+        <PackageReference Include="NLayer.NAudioSupport" Version="2.0.1" />
+        <PackageReference Include="NVorbis" Version="1.0.0-rc.2" />
+        <PackageReference Include="org.sndfile.runtime.linux-arm64" Version="1.2.2.1" />
+        <PackageReference Include="org.sndfile.runtime.linux-x64" Version="1.2.2.1" />
+        <PackageReference Include="org.sndfile.runtime.osx-arm64" Version="1.2.2" />
+        <PackageReference Include="org.sndfile.runtime.osx-x64" Version="1.2.2" />
+        <PackageReference Include="org.sndfile.runtime.win-arm64" Version="1.2.2" />
+        <PackageReference Include="org.sndfile.runtime.win-x64" Version="1.2.2" />
+        <PackageReference Include="SoundTouch.Net" Version="2.3.2" />
+        <PackageReference Include="StbImageSharp" Version="2.30.16" />
+        <PackageReference Include="System.Reactive" Version="7.0.0-rc.1" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Apos.Shapes\Source\Apos.Shapes.NFMW.csproj" />
+        <ProjectReference Include="..\FontStashSharp\src\FontStashSharp\FontStashSharp.PlatformAgnostic.csproj" />
+        <ProjectReference Include="..\HoleyDiver\HoleyDiver.csproj" />
+        <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj" />
+        <ProjectReference Include="..\Maxine.Extensions\RayTech.RayLog.MEL\RayTech.RayLog.MEL.csproj" />
+        <ProjectReference Include="..\NanoSvgSharp\NanoSvgSharp.csproj" />
+        <ProjectReference Include="..\NAudio.Flac\NAudio.Flac\NAudio.Flac.csproj" />
+        <ProjectReference Include="..\NFMWorld.Api\NFMWorld.Api.csproj" />
+        <ProjectReference Include="..\NFMWorld.Audio.FAudio\NFMWorld.Audio.FAudio.csproj" />
+        <ProjectReference Include="..\NFMWorld.Graphics.OpenGL\NFMWorld.Graphics.OpenGL.csproj" />
+        <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
+        <ProjectReference Include="..\NFMWorld.Multiplayer.Base\NFMWorld.Multiplayer.Base.csproj" />
+        <ProjectReference Include="..\NFMWorld.NativeLibs\NFMWorld.NativeLibs.csproj" />
+        <ProjectReference Include="..\FNA\lib\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
+        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
+        <ProjectReference Include="..\NFMWorld.Graphics.D3D11\NFMWorld.Graphics.D3D11.csproj" />
+        <ProjectReference Include="..\NFMWorld.Graphics.DesktopGL\NFMWorld.Graphics.DesktopGL.csproj" />
+        <ProjectReference Include="..\NFMWorld.Platform.SDL3\NFMWorld.Platform.SDL3.csproj" />
+        <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.UnionGen\Maxine.Extensions.UnionGen.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+        <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.UnionGen.Base\Maxine.Extensions.UnionGen.Base.csproj" />
+
+        <ProjectReference Include="..\MemoryPack\src\MemoryPack.Generator\MemoryPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+
+        <ProjectReference Include="..\NvgSharp\src\NvgSharp.Text\NvgSharp.Text.csproj" />
+
+        <ProjectReference Include="..\NvgSharp\src\NvgSharp\NvgSharp.csproj" />
+        <ProjectReference Include="..\SoundTouch.Net.NAudioSupport\SoundTouch.Net.NAudioSupport.csproj" />
+
+        <ProjectReference Include="..\NFMWorld.LuaSourceGenerator\NFMWorld.LuaSourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+    </ItemGroup>
+
+    <!-- Shader compilation, replacing the fxc path. The target it defines runs before CoreCompile,
+         generates one C# bundle per technique under obj/, and adds them to the compile. -->
+    <Import Project="..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.targets" />
+    
+    <ItemGroup>
+        <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="SourceItemGroup" />
+    </ItemGroup>
+
+    <!-- Part of the fxc path: it copies the .fxb blobs into the publish output, and there are no
+         longer any to copy - the shader compiler's bundles are C# compiled into the assembly. -->
+    <!--
+    <Target Name="CopyShadersOnPublish" AfterTargets="Publish">
+        <ItemGroup>
+            <ShaderFiles Include="$(OutputPath)/data/shaders/*.fxb" />
+        </ItemGroup>
+        <Copy SourceFiles="@(ShaderFiles)" DestinationFolder="$(PublishDir)/data/shaders" />
+    </Target>
+    -->
+
+    <!-- LuaCATS definition file output -->
+    <ItemGroup>
+        <CompilerVisibleProperty Include="LuaSourceGenerator_LuaCATSOutputDirectory" />
+        <CompilerVisibleProperty Include="LuaVisibleGenerator_StubsOutputDirectory" />
+    </ItemGroup>
+    <PropertyGroup>
+        <LuaSourceGenerator_LuaCATSOutputDirectory>$(MSBuildProjectDirectory)\..\NFMWorld.Library\data\library\declarations</LuaSourceGenerator_LuaCATSOutputDirectory>
+        <LuaVisibleGenerator_StubsOutputDirectory>$(MSBuildProjectDirectory)\..\NFMWorld.Library\data\library\declarations</LuaVisibleGenerator_StubsOutputDirectory>
+    </PropertyGroup>
+</Project>

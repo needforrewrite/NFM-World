@@ -51,7 +51,7 @@ local function Slider(props: SliderProps)
 		props.onValue(stepped)
 	end
 
-	return x(Sx.View) {
+	return x(Sx.View)({
 		style = {
 			width = trackW,
 			height = OUTER_H,
@@ -71,7 +71,7 @@ local function Slider(props: SliderProps)
 		onmouseleave = function()
 			setHovered(false)
 		end,
-		x(Sx.View) {
+		x(Sx.View)({
 			style = {
 				position = "absolute",
 				left = 0,
@@ -82,37 +82,33 @@ local function Slider(props: SliderProps)
 				borderRadius = TRACK_H / 2,
 				overflow = "hidden",
 			},
-			x(Sx.View) {
-				style = Sx.createMemo(function(): Sx.Styles
-					local value = Sx.read(props.value) or 0
-					local frac = clamp01((value - min) / (max - min))
-					return {
-						width = ("%d%%"):format(math.floor(frac * 100 + 0.5)),
-						height = "100%",
-						backgroundColor = disabled and "rgba(79,195,247,0.4)" or (hovered() and theme.accentHover or theme.accent),
-					}
-				end),
-			},
-		},
-		x(Sx.View) {
-			style = Sx.createMemo(function(): Sx.Styles
+			x(Sx.View)({ style = function(): Sx.Styles
 				local value = Sx.read(props.value) or 0
 				local frac = clamp01((value - min) / (max - min))
-				local hov = hovered() and not disabled
 				return {
-					position = "absolute",
-					top = KNOB_TOP,
-					left = frac * trackW - KNOB / 2,
-					width = KNOB,
-					height = KNOB,
-					backgroundColor = "#ffffff",
-					borderWidth = 2,
-					borderColor = hov and "#4fc3f7" or "rgba(79,195,247,0.7)",
-					borderRadius = KNOB / 2,
+					width = ("%d%%"):format(math.floor(frac * 100 + 0.5)),
+					height = "100%",
+					backgroundColor = disabled and "rgba(79,195,247,0.4)" or (hovered() and theme.accentHover or theme.accent),
 				}
-			end),
-		},
-	}
+			end }),
+		}),
+		x(Sx.View)({ style = function(): Sx.Styles
+			local value = Sx.read(props.value) or 0
+			local frac = clamp01((value - min) / (max - min))
+			local hov = hovered() and not disabled
+			return {
+				position = "absolute",
+				top = KNOB_TOP,
+				left = frac * trackW - KNOB / 2,
+				width = KNOB,
+				height = KNOB,
+				backgroundColor = "#ffffff",
+				borderWidth = 2,
+				borderColor = hov and "#4fc3f7" or "rgba(79,195,247,0.7)",
+				borderRadius = KNOB / 2,
+			}
+		end }),
+	})
 end
 
 return Slider

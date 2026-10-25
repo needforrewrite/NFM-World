@@ -209,10 +209,9 @@ public abstract class BaseClientGamemode : IGamemode
         _lcarz = car.Position.Z;
 
         HudState.Speed = MathF.Sqrt(diffx * diffx + diffz * diffz);
-        HudState.Lap = car.CurrentLap + 1;
         HudState.Damage = (float)car.CarPhysics.DamagePoints / ClientPlayer.Car?.Stats.Maxmag ?? 100;
         HudState.Power = (float)car.CarPhysics.Power / 100f;
-
+        
         if (car.CurrentCheckpoint != _lastClientCheckpoint)
         {
             _lastClientCheckpoint = car.CurrentCheckpoint;

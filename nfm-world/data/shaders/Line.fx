@@ -18,7 +18,9 @@ bool UseBaseColor;
 float3 BaseColor;
 float3 FogColor;
 float FogDistance;
-float FogDensity;
+// log2 of the normalized fog density (see VS_ApplyFog). The log2 is folded on the CPU so the
+// pixel shader pays one exp2 per pixel instead of a log2 + exp2 pair.
+float FogLogDensity;
 float2 EnvironmentLight;
 float3 CameraPosition;
 float Alpha;
@@ -66,7 +68,7 @@ struct VertexShaderOutput
     float4 WorldPos : TEXCOORD2;
     float GetsShadowed : TEXCOORD3;
     float3 NormalWorld : TEXCOORD4;   // world-space face normal
-    float3 CentroidWorld : TEXCOORD5; // world-space centroid
+    float ViewLength : TEXCOORD5;     // length of the view-space position for fog calculations
     float Lit : TEXCOORD6;            // 1 = apply diffuse/snap, 0 = fullbright/glow
     float Diffuse : TEXCOORD7;        // pre-computed in VS, consumed in PS
 };
@@ -109,7 +111,8 @@ VertexShaderOutput MainVS(
     in VertexShaderInput input,
     // instance parameters
     in float4x4 world : TEXCOORD3,
-    in float4 parameters : TEXCOORD7
+    in float4 parameters : TEXCOORD7,
+    in float4 parameters2 : TEXCOORD8
 )
 {
     bool getsShadowed;
@@ -117,6 +120,9 @@ VertexShaderOutput MainVS(
     bool isFullbright;
     bool glow;
     VS_UnpackParameters(parameters, getsShadowed, alphaOverride, isFullbright, glow);
+    
+    float layer;
+    VS_UnpackParameters2(parameters2, layer);
 
 	VertexShaderOutput output = (VertexShaderOutput)0;
 
@@ -144,6 +150,10 @@ VertexShaderOutput MainVS(
     output.GetsShadowed = getsShadowed;
 
     float4 viewPos = mul(output.WorldPos, View);
+    // Fog is measured from the view-space position. Interpolating it from the vertex shader is
+    // equivalent to re-deriving it from the interpolated WorldPos in the pixel shader (View is
+    // affine), but costs one varying instead of a 4x4 multiply per pixel.
+    output.ViewLength = length(viewPos);
 
     // Transform both endpoints to clip space for screen-space line direction
     float4 clipA = mul(mul(float4(input.PositionA, 1), world), ViewProj);
@@ -166,15 +176,13 @@ VertexShaderOutput MainVS(
 	float3 color = input.Color;
 
     // Apply base color
-    if (UseBaseColor == true)
-    {
-        color = BaseColor;
-    }
+    color = lerp(color, BaseColor, UseBaseColor ? 1.0 : 0.0);
 
     output.Position = clipPos + float4(offset * clipPos.w, 0, 0);
 
-    // Nudge outlines toward the camera so they render on top of the geometry they outline
-    output.Position.z -= 0.1;
+    // Apply layer nudge to prevent Z-fighting
+    // AWAY from the camera because it's less noticeable (won't clip against the car etc)
+    output.Position.z += 0.01 * layer;
 
     // Collapse hidden line quads outside clip space without a pixel-shader discard.
     output.Position = lerp(output.Position, float4(2.0, 2.0, 0.0, 1.0), hideLine);
@@ -195,9 +203,8 @@ VertexShaderOutput MainVS(
     // and fog are applied per-pixel (see MainPS) so the geometric diffuse and
     // the shadow map fold into one darkening pass.
     output.NormalWorld = normalize(mul(float4(input.Normal, 0), world).xyz);
-    output.CentroidWorld = worldCentroid;
     output.Lit = (IsFullbright == false && isFullbright == false && glow == false) ? 1.0f : 0.0f;
-    output.Diffuse = ComputePolygonDiffuse(output.CentroidWorld, output.NormalWorld, LightDirection, CameraPosition);
+    output.Diffuse = ComputePolygonDiffuse(worldCentroid, output.NormalWorld, LightDirection, CameraPosition);
 
     // Ship the UNLIT color; diffuse application + snap + fog happen in PS.
     output.Color = float4(color, min(alphaOverride, Alpha));
@@ -235,9 +242,9 @@ float4 MainPS(VertexShaderOutput input) : SV_TARGET
         color.b = 1.0;
     }
 
-    // Fog was applied last in the original vertex shader (always).
-    float3 viewPos = mul(input.WorldPos, View).xyz;
-    VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogDensity);
+    // Fog was applied last in the original vertex shader (always). The view-space position is
+    // interpolated from the vertex shader, so there is no View multiply to do per pixel.
+    VS_ApplyFog(color, input.ViewLength, FogColor, FogDistance, FogLogDensity);
     VS_ColorCorrect(color);
 
 	return float4(color, alpha);

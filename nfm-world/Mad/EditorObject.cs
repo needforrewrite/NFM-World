@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework.Graphics;
-using NFMWorldLibrary.FixedMath;
+﻿using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 
@@ -18,7 +17,7 @@ public class EditorObject : StaticMeshObject, IDisposable
 
     public LuaArray<Rad3dWheelDef> Wheels { get; }
 
-    public EditorObject(GraphicsDevice graphicsDevice, Rad3d rad) : base(graphicsDevice, rad)
+    public EditorObject(Rad3d rad) : base(rad)
     {
         Boxes = rad.Boxes;
         Wheels = rad.Wheels;
@@ -32,11 +31,11 @@ public class EditorObject : StaticMeshObject, IDisposable
 
         Wheels = rad.Wheels;
         _wheels = rad.Wheels
-            .Select(wheel => new WheelMeshBuilder(wheel, rad.Rims).BuildGameObject(graphicsDevice, this))
+            .Select(wheel => new WheelMeshBuilder(wheel, rad.Rims).BuildGameObject(this))
             .ToArray();
     }
 
-    public EditorObject(GraphicsDevice graphicsDevice, Rad3d rad, f64Vector3 position, f64Euler rotation) : this(graphicsDevice, rad)
+    public EditorObject(Rad3d rad, f64Vector3 position, f64Euler rotation) : this(rad)
     {
         Position = position;
         Rotation = rotation;

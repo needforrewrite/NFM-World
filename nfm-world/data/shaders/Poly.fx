@@ -18,7 +18,9 @@ bool UseBaseColor;
 float3 BaseColor;
 float3 FogColor;
 float FogDistance;
-float FogDensity;
+// log2 of the normalized fog density (see VS_ApplyFog). The log2 is folded on the CPU so the
+// pixel shader pays one exp2 per pixel instead of a log2 + exp2 pair.
+float FogLogDensity;
 float2 EnvironmentLight;
 float3 CameraPosition;
 float Alpha;
@@ -45,7 +47,7 @@ struct VertexShaderOutput
     float4 WorldPos : TEXCOORD2;
     float GetsShadowed : TEXCOORD3;
     float3 NormalWorld : TEXCOORD4;   // world-space face normal
-    float3 CentroidWorld : TEXCOORD5; // world-space centroid
+    float ViewLength : TEXCOORD5;     // length of the view-space position for fog calculations
     float Lit : TEXCOORD6;            // 1 = apply diffuse/snap, 0 = fullbright
     float Diffuse : TEXCOORD7;        // pre-computed in VS, consumed in PS
 };
@@ -54,7 +56,8 @@ VertexShaderOutput MainVS(
     in VertexShaderInput input,
     // instance parameters
     in float4x4 world : TEXCOORD3,
-    in float4 parameters : TEXCOORD7
+    in float4 parameters : TEXCOORD7,
+    in float4 parameters2 : TEXCOORD8
 )
 {
     bool getsShadowed;
@@ -62,6 +65,9 @@ VertexShaderOutput MainVS(
     bool isFullbright;
     bool glow;
     VS_UnpackParameters(parameters, getsShadowed, alphaOverride, isFullbright, glow);
+
+    float layer;
+    VS_UnpackParameters2(parameters2, layer);
 
 	VertexShaderOutput output = (VertexShaderOutput)0;
 
@@ -79,16 +85,25 @@ VertexShaderOutput MainVS(
     output.GetsShadowed = getsShadowed;
 
     float4 viewPos = mul(output.WorldPos, View);
+    // Fog is measured from the view-space position. Interpolating it from the vertex shader is
+    // equivalent to re-deriving it from the interpolated WorldPos in the pixel shader (View is
+    // affine), but costs one varying instead of a 4x4 multiply per pixel.
+    output.ViewLength = length(viewPos);
 
 	float3 color = input.Color;
 
     // Apply base color
-    if (UseBaseColor == true)
-    {
-        color = BaseColor;
-    }
+    color = lerp(color, BaseColor, UseBaseColor ? 1.0 : 0.0);
 
     output.Position = mul(viewPos, Projection);
+    
+    // Nudge polys away from the camera so outlines render on top of the geometry they outline
+    // We used to nudge the outline towards instead, but that was introducing ever so slight Z-fighting with unrelated geometry so let's try the other way around
+    output.Position.z += 0.1;
+    
+    // Apply layer nudge to prevent Z-fighting
+    // AWAY from the camera because it's less noticeable (won't clip against the car etc)
+    output.Position.z += 0.01 * layer;
 
     if (Darken < 1.0f)
     {
@@ -99,9 +114,9 @@ VertexShaderOutput MainVS(
     // shadow-map darkening are applied per-pixel (see MainPS) so the geometric
     // diffuse and the shadow map fold into a single darkening pass.
     output.NormalWorld = normalize(mul(float4(input.Normal, 0), world).xyz);
-    output.CentroidWorld = mul(float4(input.Centroid, 1), world).xyz;
+    float3 centroidWorld = mul(float4(input.Centroid, 1), world).xyz;
     output.Lit = (IsFullbright == false && isFullbright == false) ? 1.0f : 0.0f;
-    output.Diffuse = ComputePolygonDiffuse(output.CentroidWorld, output.NormalWorld, LightDirection, CameraPosition);
+    output.Diffuse = ComputePolygonDiffuse(centroidWorld, output.NormalWorld, LightDirection, CameraPosition);
 
     // Ship the UNLIT color; diffuse application + snap + fog happen in PS.
     output.Color = float4(color, min(alphaOverride, Alpha));
@@ -131,9 +146,9 @@ float4 MainPS(VertexShaderOutput input) : SV_TARGET
         VS_Snap(color, SnapColor);
     }
 
-    // Fog was applied last in the original vertex shader (always).
-    float3 viewPos = mul(input.WorldPos, View).xyz;
-    VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogDensity);
+    // Fog was applied last in the original vertex shader (always). The view-space position is
+    // interpolated from the vertex shader, so there is no View multiply to do per pixel.
+    VS_ApplyFog(color, input.ViewLength, FogColor, FogDistance, FogLogDensity);
     VS_ColorCorrect(color);
 
 	return float4(color, alpha);
@@ -158,8 +173,16 @@ CreateShadowMap_VSOut CreateShadowMapVS(
     return output;
 }
 
-// Saves the depth value out to the 32bit floating point texture
-float4 CreateShadowMapPS(CreateShadowMap_VSOut input) : COLOR
+// Saves the depth value out to the 32bit floating point texture.
+//
+// SV_TARGET, not the legacy "COLOR" this used to carry, and the difference is not cosmetic: the GL
+// backends take the emitted GLSL's output location from this semantic, and spirv-cross numbers
+// "COLOR" as location 1 while SV_TARGET is location 0. The cascade render target has only
+// COLOR_ATTACHMENT0, and the GL command buffer names it as the sole draw buffer
+// (GlCommandBuffer.SetRenderTarget), so this shader's output was written to a location nothing was
+// reading and the whole pass was silently discarded - leaving the cascade at its white clear, which
+// is what "the shadow map is just white" always was.
+float4 CreateShadowMapPS(CreateShadowMap_VSOut input) : SV_TARGET
 {
     return float4(input.Depth, input.Depth, input.Depth, 1.0);
 }

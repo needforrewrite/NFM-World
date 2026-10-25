@@ -361,28 +361,17 @@ jobs:
               -- /maxcpucount:1
           done
 
-      - name: Create universal binary
-        run: |
-          # Create output directory for universal binary
-          mkdir -p ./publish/osx-universal
-          
-          # Copy all files from x64 build (includes all data files, libraries, etc.)
-          cp -r ./publish/osx-x64/* ./publish/osx-universal/
-          
-          # Create universal binary using lipo for the main executable
-          # This overwrites the x64-only NFMWorld executable with a universal one
-          lipo -create -output ./publish/osx-universal/NFMWorld \
-            ./publish/osx-x64/NFMWorld \
-            ./publish/osx-arm64/NFMWorld
-          
-          # Verify the universal binaries were created correctly
-          lipo -info ./publish/osx-universal/NFMWorld
-
-      - name: Upload artifact
+      - name: Upload macOS x64 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: nfm-world-osx-universal
-          path: ./publish/osx-universal/
+          name: nfm-world-osx-x64
+          path: ./publish/osx-x64/
+
+      - name: Upload macOS arm64 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nfm-world-osx-arm64
+          path: ./publish/osx-arm64/
 
   release:
     needs: [prepare, build-windows, build-linux, build-macos]

@@ -352,8 +352,15 @@ local function mountHostElement(descriptor: types.NodeDescriptor, parent: any, m
     local devNode = devPush("host", tostring(descriptor.type), descriptor.props)
     local staticProps: { [string]: any } = {}
     local reactiveProps: { [string]: any } = {}
+    local refProp: any = nil
     for key, val in pairs(descriptor.props) do
-        if type(val) == "function" then
+        if key == "ref" then
+            -- `ref` is never a reactive accessor. A function ref is a callback the host
+            -- invokes with the node; a table ref gets its `current` field assigned. It is
+            -- held back here and applied after insertion, so a callback ref sees a node
+            -- that is already in the tree (focus/measure on a detached node does nothing).
+            refProp = val
+        elseif type(val) == "function" then
             if isEventKey(key) then
                 -- `on*` props are event handlers: wired ONCE at createInstance (the host
                 -- replaces, never +=). Not reactive accessors.
@@ -368,6 +375,9 @@ local function mountHostElement(descriptor: types.NodeDescriptor, parent: any, m
 
     local el = createInstance(descriptor.type, staticProps)
     insertInto(parent, el, marker)
+    if refProp ~= nil then
+        setProperty(el, "ref", refProp)
+    end
     if devNode ~= nil then
         -- devtools: keep a live ref to the host node so the devtools can
         -- draw a highlight border over it when hovering its tree node.

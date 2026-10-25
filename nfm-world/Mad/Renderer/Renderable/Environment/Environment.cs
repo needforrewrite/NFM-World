@@ -1,5 +1,4 @@
 ﻿using System.Runtime.InteropServices;
-using Microsoft.Xna.Framework.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Collision;
 using NFMWorldLibrary.FixedMath;
@@ -16,8 +15,7 @@ public class Environment
 {
     public static GroundPolys MakePolys(
         BackendStage stage,
-        int sx, int ncx, int sz, int ncz, int stagePartCount, // newpolys
-        GraphicsDevice graphicsDevice
+        int sx, int ncx, int sz, int ncz, int stagePartCount // newpolys
     )
     {
         var transaction = SentrySdk.StartTransaction("MakePolys", "stageGeneration");
@@ -199,13 +197,13 @@ public class Environment
         #endregion
 
         transaction.Finish();
-        
-        return new GroundPolys(graphicsDevice, verts.ToArray());
+
+        return new GroundPolys(GameSparker.GraphicsDevice, verts.ToArray());
     }
 
     public static GroundPolys MakeClouds(
-        int maxl, int maxr, int maxb, int maxt, // newclouds
-        GraphicsDevice graphicsDevice)
+        int maxl, int maxr, int maxb, int maxt // newclouds
+    )
     {
         var transaction = SentrySdk.StartTransaction("MakeClouds", "stageGeneration");
         
@@ -548,12 +546,11 @@ public class Environment
 
         transaction.Finish();
 
-        return new GroundPolys(graphicsDevice, polys.ToArray());
+        return new GroundPolys(GameSparker.GraphicsDevice, polys.ToArray());
     }
-    
+
     public static Mountains MakeMountains(
-        int maxl, int maxr, int maxb, int maxt, // newmountains
-        GraphicsDevice graphicsDevice
+        int maxl, int maxr, int maxb, int maxt // newmountains
     )
     {
         var transaction = SentrySdk.StartTransaction("MakeMountains", "stageGeneration");
@@ -719,6 +716,6 @@ public class Environment
         
         transaction.Finish();
 
-        return new Mountains(graphicsDevice, polys.ToArray());
+        return new Mountains(GameSparker.GraphicsDevice, polys.ToArray());
     }
 }

@@ -1,8 +1,8 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+using NFMWorld.Graphics;
 
 namespace NFMWorld;
 
 public interface IInstancedRenderElement
 {
-    void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer, int instanceCount);
+    void Render(ICommandBuffer cb, Camera camera, Lighting? lighting, IBuffer instanceBuffer, int instanceCount);
 }

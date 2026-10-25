@@ -87,19 +87,19 @@ local function TestPage()
 	local demoText, setDemoText = Sx.createSignal("")
 	local demoToggle, setDemoToggle = Sx.createSignal(false)
 
-	return x(Root) {
-		x(Label) { "CEF + Preact Test" },
-		x(Counter) { function() return ("%d"):format(counter()) end },
-		x(Button) {
+	return x(Root)({
+		x(Label)({ "CEF + Preact Test" }),
+		x(Counter)({ function() return ("%d"):format(counter()) end }),
+		x(Button)({
 			variant = "primary",
 			label = "Increment (JS → C#)",
 			onPress = function() UiLib.call("increment", {}) end,
-		},
-		x(Button) {
+		}),
+		x(Button)({
 			label = "← Back to Menu",
 			onPress = function() UiLib.call("back", {}) end,
-		},
-		x(Sx.View) {
+		}),
+		x(Sx.View)({
 			style = {
 				display = "flex",
 				flexDirection = "column",
@@ -115,19 +115,19 @@ local function TestPage()
 				borderColor = "rgba(255,255,255,0.1)",
 				borderRadius = 10,
 			},
-			x(SectionTitle) { "Component Demos" },
-			x(DemoRow) {
-				x(DemoLabel) { "Checkbox" },
-				x(Checkbox) {
+			x(SectionTitle)({ "Component Demos" }),
+			x(DemoRow)({
+				x(DemoLabel)({ "Checkbox" }),
+				x(Checkbox)({
 					checked = demoChecked,
 					onToggle = function() setDemoChecked(not demoChecked()) end,
 					label = "Enable cheats",
-				},
-			},
-			x(DemoRow) {
-				x(DemoLabel) { "Radio" },
-				x(Radio.RadioGroup<<number>>) {
-					value = demoRadio,
+				}),
+			}),
+			x(DemoRow)({
+				x(DemoLabel)({ "Radio" }),
+				x(Radio.RadioGroup<<number>>)({
+					value = function() return demoRadio() end,
 					onChange = setDemoRadio,
 					direction = "row",
 					options = {
@@ -135,56 +135,57 @@ local function TestPage()
 						{ label = "Medium", value = 1 },
 						{ label = "High", value = 2 },
 					},
-				},
-				x(DemoValue) { function() return ("%d"):format(demoRadio()) end },
-			},
-			x(DemoRow) {
-				x(DemoLabel) { "Slider" },
-				x(Slider) {
+
+					x(DemoValue)({ function() return ("%d"):format(demoRadio()) end }),
+				}),
+			}),
+			x(DemoRow)({
+				x(DemoLabel)({ "Slider" }),
+				x(Slider)({
 					min = 0,
 					max = 100,
 					step = 5,
 					value = demoSlider,
 					onValue = setDemoSlider,
 					width = 220,
-				},
-				x(DemoValue) { function() return ("%d"):format(demoSlider()) end },
-			},
-			x(DemoRow) {
-				x(DemoLabel) { "Dropdown" },
-				x(Dropdown) {
+				}),
+				x(DemoValue)({ function() return ("%d"):format(demoSlider()) end }),
+			}),
+			x(DemoRow)({
+				x(DemoLabel)({ "Dropdown" }),
+				x(Dropdown)({
 					options = { "Option A", "Option B", "Option C" },
 					value = demoDropdown,
 					onSelect = setDemoDropdown,
 					width = 180,
-				},
-			},
-			x(DemoRow) {
-				x(DemoLabel) { "Text" },
-				x(TextField) {
+				}),
+			}),
+			x(DemoRow)({
+				x(DemoLabel)({ "Text" }),
+				x(TextField)({
 					value = demoText,
 					onChange = setDemoText,
 					placeholder = "Type something...",
 					width = 200,
-				},
-				x(DemoValue) {
+				}),
+				x(DemoValue)({
 					function()
 						local t = demoText()
 						if t == nil or t == "" then return "(empty)" end
 						return t
 					end,
-				},
-			},
-			x(DemoRow) {
-				x(DemoLabel) { "Toggle" },
-				x(ToggleSwitch) {
+				}),
+			}),
+			x(DemoRow)({
+				x(DemoLabel)({ "Toggle" }),
+				x(ToggleSwitch)({
 					checked = demoToggle,
 					onToggle = function() setDemoToggle(not demoToggle()) end,
 					label = "Fullscreen",
-				},
-			},
-		},
-	}
+				}),
+			}),
+		}),
+	})
 end
 
 return TestPage

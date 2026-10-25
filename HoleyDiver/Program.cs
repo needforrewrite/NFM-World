@@ -1,5 +1,4 @@
 ﻿using LibTessDotNet;
-using Microsoft.Xna.Framework;
 using Poly2Tri;
 
 namespace HoleyDiver;
@@ -458,7 +457,7 @@ public class PolygonTriangulator
     {
         if (pts.Count < 3) return true;
         Vector3 n = Vector3.Cross(pts[1] - pts[0], pts[2] - pts[0]);
-        n.Normalize();
+        n = Vector3.Normalize(n);
 
         for (int i = 3; i < pts.Count; i++)
             if (MathF.Abs(Vector3.Dot(pts[i] - pts[0], n)) > eps) return false;
@@ -469,13 +468,13 @@ public class PolygonTriangulator
     {
         if (!IsPlanar(pts)) return false;
         Vector3 n = Vector3.Cross(pts[1] - pts[0], pts[2] - pts[0]);
-        n.Normalize();
+        n = Vector3.Normalize(n);
 
         // orthonormal basis for projection
         Vector3 u = (pts[1] - pts[0]);
-        u.Normalize();
+        u = Vector3.Normalize(u);
         Vector3 v = Vector3.Cross(n, u);
-        v.Normalize();
+        v = Vector3.Normalize(v);
 
         var proj = pts.Select(p => new Vector2(Vector3.Dot(p, u), Vector3.Dot(p, v))).ToList();
 
@@ -1385,7 +1384,7 @@ public class PolygonTriangulator
         polygon.AddRange(newPolygon);
     }
 
-    public static Vector3 ComputeCentroid(IReadOnlyList<Vector3> vertices)
+    public static Vector3 ComputeCentroid<T>(T vertices) where T : IReadOnlyList<Vector3>
     {
         Vector3 sum = Vector3.Zero;
         foreach (var v in vertices)
