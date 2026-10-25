@@ -29,18 +29,19 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
     /// <summary>
     /// How many texture and sampler slots this backend binds per draw.
     ///
-    /// Six, and the number is dictated rather than chosen: a slot <em>is</em> a shader's bind point
+    /// Seven, and the number is dictated rather than chosen: a slot <em>is</em> a shader's bind point
     /// (`SlotOf` in the generated bundles returns the reflection's slot, which for D3D11 is the
     /// <c>register(tN)</c> the source declared), so the array has to reach the highest register any
-    /// shader in the tree uses. That is <c>apos-shapes.fx</c>: four glyph-atlas textures at t0..t3, a
-    /// blue-noise tile at t4 and a ramp at t5. The app's widest engine shader is far narrower - the
-    /// three shadow cascades at t0..t2 - which is why three looked like enough, and why a fixed
-    /// bound derived from that would have been wrong the first time a shape was drawn.
+    /// shader in the tree uses. That is <c>apos-shapes.fx</c>: a mask texture at t0, the two Slug
+    /// glyph-atlas textures at t1..t2, a distance-field atlas at t3, an arc table at t4, a blue-noise
+    /// tile at t5 and a ramp at t6. The app's widest engine shader is far narrower - the three shadow
+    /// cascades at t0..t2 - which is why three looked like enough, and why a fixed bound derived from
+    /// that would have been wrong the first time a shape was drawn.
     ///
     /// The check in <see cref="SetShaderResource"/> is what makes an under-sized bound a named
     /// failure at the bind rather than a silently dropped texture, which is how this was found.
     /// </summary>
-    private const int ResourceSlots = 6;
+    private const int ResourceSlots = 7;
 
     private readonly D3D11GraphicsDevice _device;
 
