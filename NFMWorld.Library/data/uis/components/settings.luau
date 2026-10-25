@@ -268,9 +268,9 @@ local function VideoTab(props: { config: Sx.Accessor<SettingsSnapshot>, options:
 			x(Row)({
 				x(Label)({ "FPS Limit" }),
 				x(Slider)({
-					min = 63, max = 240, step = 1,
+					min = 62, max = 240, step = 1,
 					value = function() return config().fpsLimit end,
-					onValue = function(v) set("fpsLimit", v) end,
+					onValue = function(v) set("fpsLimit", if v == 62 then 0 else v) end,
 				}),
 				x(SliderValue)({
 					function()
