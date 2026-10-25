@@ -200,6 +200,18 @@ replacement path for Lua — currently a proof of concept.
   Call `End()` when the race is over: `RacePhase.Dispose` does it for the client,
   `LocalRaceHost.Dispose` for the singleplayer server side, and `RaceOrchestrator`
   does it when a server-side race finishes.
+- **Unload verification** — `PluginUnloadVerifier` (DEBUG only) asserts the release
+  actually took, since an unload that silently fails looks identical to one that
+  worked. `End()` arms it with a `WeakReference` to the assembly; the host loop
+  calls `Verify()` after that frame's teardown — `WorldGame.Update` (client) and
+  `RaceOrchestrator.TickServerGamemodes` (server) — and it reports a leak by
+  throwing, once per plugin.
+- **One factory per run** — a factory owns what it loaded and releases it in `End()`,
+  so it must never outlive its run or be shared with a second one. Anything starting
+  another run builds its own from `BaseGamemodeFactory.Config`; the `map` and `car`
+  dev commands are the cases that matter, because they replace a `RacePhase` while the
+  old one's disposal is still pending — the deferred `Dispose` runs *after* the new
+  race is live, so a shared factory would unload the plugin out from under it.
 
 ### Gotchas
 
@@ -212,7 +224,8 @@ replacement path for Lua — currently a proof of concept.
 | Unload is silent | `AssemblyLoadContext.Unload()` on a context something still references does nothing and reports nothing. Any surviving reference — a gamemode instance, a `CarVisual`, a reflected `ConstructorInfo` — keeps the whole assembly loaded, so teardown has to drop them *in order* (see below) |
 | MemoryPack pins the context | a plugin's generated formatters register into MemoryPack's **static** table from the plugin's module initializer, i.e. on load, and hold its types for the process lifetime. `MemoryPackFormatterRegistry` removes them in `Unload` by reflection (MemoryPack has no unregister API); without it the plugin never unloads, with no error to show for it |
 | Teardown ordering | release the objects that reference the plugin *before* `End()`: `RacePhase.Dispose` nulls `GamemodeInstance` and clears the stage's players first, `LocalRaceHost.Dispose` nulls its server gamemode. Anything held past that keeps the assembly alive |
-| Verifying an unload | assert it through a `WeakReference` to the plugin's **assembly** after `GC.Collect` (`GamemodePluginUnloadTests`), not by calling `Unload` and trusting the return — there isn't one. Do it **after** the teardown has returned, never inside `Unload`/`End()`: the frames up the stack to there are still live roots, so a collection forced from within always finds the assembly alive and the check reports the caller's own reference |
+| Factory lifetime | one factory per run — never share one between two `RacePhase`s. The replaced phase's `Dispose` is deferred to end-of-frame, so it runs after the replacement is already live and its `End()` releases the plugin the replacement is using. Build a fresh factory from `Config` instead (`map`/`car`) |
+| Verifying an unload | never inside `Unload`/`End()`: the frames up the stack to there are still live roots, so a collection forced from within always finds the assembly alive and reports the caller's own reference. `PluginUnloadVerifier` (DEBUG) does it from the host loop instead — `End()` arms it, the game calls `Verify()` per frame and the server per tick, both *after* that frame's teardown, and it only judges a plugin armed on an earlier frame. Tests assert it the same way, through a `WeakReference` to the plugin's **assembly** after `GC.Collect` (`GamemodePluginUnloadTests`), never by trusting `Unload`'s return — there isn't one |
 
 ---
 

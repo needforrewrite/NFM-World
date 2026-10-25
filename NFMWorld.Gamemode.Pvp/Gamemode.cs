@@ -111,7 +111,7 @@ public class PvpGamemode : PluginGamemode
                         FixHoopHelper.HandleFixHoops(CurrentStage, player.Car);
                         if (CheckPointHelper.HandleCheckPoint(CurrentStage, player.Car) && player == ClientPlayer)
                         {
-                            SendServerEvent(new CheckpointEvent(player.Car.CurrentCheckpoint, player.Car.CurrentLap, player.Car.Placement, _clientTick));
+                            SendServerEvent<ClientToServerEvent>(new CheckpointEvent(player.Car.CurrentCheckpoint, player.Car.CurrentLap, player.Car.Placement, _clientTick));
                         }
                     }
                 }
@@ -208,7 +208,7 @@ public class PvpServerGamemode(
                     if (_countdown <= 0)
                     {
                         _state = ServerGamemodeState.InProgress;
-                        BroadcastEvent(new CountdownGoEvent());
+                        BroadcastEvent<ServerToClientEvent>(new CountdownGoEvent());
                     }
                 }
                 break;

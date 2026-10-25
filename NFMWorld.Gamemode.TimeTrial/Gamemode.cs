@@ -160,7 +160,7 @@ public class TimeTrialGamemode : PluginGamemode
             {
                 _state = TimeTrialState.Finished;
                 car.CarPhysics.Halted = true;
-                SendServerEvent(new FinishedEvent());
+                SendServerEvent<ClientToServerEvent>(new FinishedEvent());
                 _timer.Stop();
             }
         }

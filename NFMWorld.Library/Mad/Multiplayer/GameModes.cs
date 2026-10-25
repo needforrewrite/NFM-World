@@ -32,6 +32,17 @@ public abstract class BaseGamemodeFactory
     public abstract bool HasServerGamemode { get; }
 
     /// <summary>
+    /// The config this factory was created with, or null if it was created without one.
+    /// </summary>
+    /// <remarks>
+    /// A factory belongs to a single run: it owns whatever it loaded and releases it in
+    /// <see cref="End"/>. Anything starting a second run - the <c>map</c> dev command
+    /// changing stage mid-race, say - therefore has to build its own, and this is what it
+    /// needs to build an equivalent one.
+    /// </remarks>
+    public virtual IReadOnlyDictionary<string, object>? Config => null;
+
+    /// <summary>
     /// Called when the factory's race session is over. Releases anything the factory
     /// loaded for the run; a no-op for factories that hold nothing.
     /// </summary>
@@ -84,8 +95,15 @@ public class LuaGamemodeFactory(string gamemodeId, LuaTable? config = null) : Ba
 {
     private readonly RadpackLua? _radpack;
 
+    private IReadOnlyDictionary<string, object>? _config;
+
+    /// <inheritdoc />
+    public override IReadOnlyDictionary<string, object>? Config => _config;
+
     public LuaGamemodeFactory(string gamemodeId, IReadOnlyDictionary<string, object> config) : this(gamemodeId, ToLuaTable(config))
     {
+        _config = config;
+
         var radpackPath = $"data/gamemodes/{gamemodeId}.radpack";
         if (VFS.FileExists(radpackPath))
         {

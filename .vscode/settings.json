@@ -1,5 +1,4 @@
 {
-    "dotnet.defaultSolution": "nfm-world.sln",
     "python-envs.defaultEnvManager": "ms-python.python:system",
     "cmake.sourceDirectory": "W:/projects/NFM-World/FNA/lib/FNA3D",
     "luau-lsp.sourcemap.autogenerate": false,
@@ -26,4 +25,5 @@
     "luau-lsp.inlayHints.hideHintsForErrorTypes": true,
     "luau-lsp.inlayHints.parameterNames": "literals",
     "luau-lsp.inlayHints.parameterTypes": true,
+    "luau-lsp.inlayHints.makeInsertable": true,
 }

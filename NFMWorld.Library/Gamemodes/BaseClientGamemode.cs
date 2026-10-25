@@ -71,9 +71,9 @@ public abstract class BaseClientGamemode : IGamemode
     /// Sends a gamemode-specific event to the server using the sender injected
     /// by the host, falling back to <see cref="IGamemodeContext.SendServerEvent"/>.
     /// </summary>
-    protected internal void SendServerEvent<T>(T payload) where T : IMemoryPackable<T>
+    protected internal void SendServerEvent<T>(T payload)
     {
-        SendServerEvent(MemoryPackSerializer.Serialize(payload));
+        SendServerEvent((ReadOnlySpan<byte>)MemoryPackSerializer.Serialize(payload));
     }
 
     /// <summary>

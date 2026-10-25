@@ -20,8 +20,12 @@ public class NativeGamemodeFactory(GamemodePlugin plugin, Dictionary<string, obj
     // it, and the plugin holds the load context that keeps the assembly resident.
     private readonly string _gamemodeId = plugin.Id;
     private readonly bool _hasServerGamemode = plugin.HasServerGamemode;
+    private readonly WeakReference _assembly = new(plugin.Assembly);
 
     private GamemodePlugin? _plugin = plugin;
+
+    /// <inheritdoc />
+    public override IReadOnlyDictionary<string, object>? Config => config;
 
     /// <summary>
     /// The plugin driving this run. Throws once <see cref="End"/> has released it, since
@@ -49,12 +53,10 @@ public class NativeGamemodeFactory(GamemodePlugin plugin, Dictionary<string, obj
     /// phase and the local race host tear their side down, and either may be first.
     /// </summary>
     /// <remarks>
-    /// Releases, and nothing else. Verifying here that the assembly really did collect is
-    /// tempting, since the failure is otherwise silent - but a collection forced from
-    /// inside this call always finds the assembly alive: the frames up the stack to here
-    /// are still live roots, so the check would be reporting the caller's own reference.
-    /// Whether the assembly was released is only answerable after the teardown has
-    /// returned, which is where <c>GamemodePluginUnloadTests</c> checks it.
+    /// Verifying the unload here would be useless, however tempting: the frames up the
+    /// stack to this call are still live roots, so a collection forced from inside always
+    /// finds the assembly alive and reports the caller's own reference. The check is armed
+    /// here and run a frame later by the host loop - see <see cref="PluginUnloadVerifier"/>.
     /// </remarks>
     public override void End()
     {
@@ -63,5 +65,9 @@ public class NativeGamemodeFactory(GamemodePlugin plugin, Dictionary<string, obj
 
         _plugin.Unload();
         _plugin = null;
+
+#if DEBUG
+        PluginUnloadVerifier.Arm(_gamemodeId, _assembly);
+#endif
     }
 }

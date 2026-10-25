@@ -48,7 +48,7 @@ public class PluginServerGamemode(
     /// Broadcast a payload to all clients.
     /// </summary>
     /// <param name="payload">The payload.</param>
-    public void BroadcastEvent<T>(T payload) where T : IMemoryPackable<T> => context.BroadcastEvent(MemoryPackSerializer.Serialize(payload));
+    public void BroadcastEvent<T>(T payload) => BroadcastEvent((ReadOnlyMemory<byte>)MemoryPackSerializer.Serialize(payload));
 
     public override GameStateSnapshot? GetStateSnapshot() => _snapshot;
 

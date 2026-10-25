@@ -4,6 +4,7 @@ using System.Numerics;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
+using NFMWorldLibrary.Gamemodes.DotNet;
 using NFMWorldLibrary.Multiplayer.HttpMessages;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
 using NFMWorldLibrary.Multiplayer.Packets.S2C;
@@ -114,6 +115,10 @@ public class RaceOrchestrator : IDisposable
                 session.Factory = null;
             }
         }
+
+        // Finished sessions released their plugin in a frame of this tick loop, which is
+        // still on the stack; the check only sees the truth on a later tick.
+        PluginUnloadVerifier.Verify();
     }
 
     // ── Transport events ─────────────────────────────────────────────

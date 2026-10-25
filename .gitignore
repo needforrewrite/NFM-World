@@ -41,3 +41,8 @@ replay_pid*
 Generated
 /nfm-world/imgui.ini
 /imgui.ini
+
+shadercache
+gamemode.dll
+gamemode.pdb
+gamemode.deps.json

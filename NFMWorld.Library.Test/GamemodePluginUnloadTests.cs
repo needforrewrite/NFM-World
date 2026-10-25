@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Util;
@@ -119,4 +120,110 @@ public class GamemodePluginUnloadTests
 
         Assert.AreEqual("nfmm/pvp", factory.GamemodeId);
     }
+
+    /// <summary>
+    /// The runtime check hosts call each frame: it must not fire on the frame that released
+    /// the plugin, whose stack still roots it, and it must stay quiet on a clean teardown.
+    /// </summary>
+    [TestMethod]
+    public void Verify_StaysQuietOnACleanRelease()
+    {
+        PluginUnloadVerifier.Reset();
+        RunRaceAndTearItDown();
+
+        // Same frame as the release: the stack still roots the plugin, so the verifier
+        // has to withhold judgement rather than report a leak it cannot actually see.
+        PluginUnloadVerifier.Verify();
+
+        // A later frame, where the teardown's frames are gone: this is the real check.
+        VerifyOnAFreshFrame();
+    }
+
+    /// <summary>
+    /// ...and it must actually catch a leak, or it would be a check that can never fail.
+    /// A plugin pinned by a type of its own resolves against the plugin's context, so the
+    /// assembly cannot be collected no matter what the teardown drops.
+    /// </summary>
+    [TestMethod]
+    public void Verify_ReportsALeak()
+    {
+        PluginUnloadVerifier.Reset();
+        MountOutput();
+
+        var plugin = GamemodePlugin.Load("nfmm/pvp", "data/gamemodes/nfmm/pvp/gamemode.dll")!;
+
+        var leaked = plugin.Assembly.GetExportedTypes().First(t => t.Name == "CountdownGoEvent");
+        PluginUnloadVerifier.Arm("nfmm/pvp", new WeakReference(plugin.Assembly));
+        plugin.Unload();
+
+        PluginUnloadVerifier.Verify(); // same frame: withholds, the stack still roots it
+
+        Assert.ThrowsExactly<InvalidOperationException>(VerifyOnAFreshFrame);
+
+        GC.KeepAlive(leaked);
+    }
+
+    /// <summary>
+    /// The <c>map</c> dev command starts a second race on another stage while the first is
+    /// still live, and the replaced phase's disposal - at end-of-frame, once the new race is
+    /// already running - is what releases the outgoing run's factory. That is only safe
+    /// because each run brings its own: a factory releases the plugin it owns in
+    /// <see cref="BaseGamemodeFactory.End"/>, so two runs sharing one would have the outgoing
+    /// race unload the plugin out from under the incoming one. That is the crash the verifier
+    /// reported from the game, and this asserts the arrangement that replaces it.
+    ///
+    /// Teardown happens in <see cref="StartAndReplace()`"/> so that this method's own frame -
+    /// which would otherwise still root the outgoing assembly - is not the one being checked.
+    /// </summary>
+    [TestMethod]
+    public void AReplacementRun_LeavesTheOutgoingRunsPluginAlone()
+    {
+        PluginUnloadVerifier.Reset();
+
+        var (outgoingAssembly, incoming, incomingHost) = StartAndReplace();
+
+        PluginUnloadVerifier.Verify(); // same frame: withholds, the stack still roots it
+        VerifyOnAFreshFrame();         // clean release, so no leak is reported
+
+        ForceCollect();
+
+        Assert.IsFalse(outgoingAssembly.IsAlive,
+            "the replaced race's plugin should still unload even though a second race of the same gamemode is running");
+
+        // Still usable, because it was never the one released.
+        Assert.IsTrue(((NativeGamemodeFactory)incoming).Plugin.IsAlive);
+        incomingHost.Update();
+
+        incomingHost.Dispose();
+        incoming.End();
+    }
+
+    private static (WeakReference OutgoingAssembly, BaseGamemodeFactory Incoming, LocalRaceHost IncomingHost)
+        StartAndReplace()
+    {
+        MountOutput();
+
+        var parameters = new ClientGamemodeParameters
+        {
+            Players = [new ClientSidePlayerInfo("test", "nfmm/radicalone", new Color3(255, 0, 0),
+                isBot: false, isClientPlayer: true)]
+        };
+
+        var outgoing = GamemodeFactory.Create("nfmm/pvp", new Dictionary<string, object> { ["constraint"] = "both" });
+        var outgoingHost = LocalRaceHost.Create("empty", outgoing, parameters);
+        var outgoingAssembly = new WeakReference(((NativeGamemodeFactory)outgoing).Plugin.Assembly);
+
+        // What `map` builds now: an equivalent factory of its own, config carried over.
+        var incoming = GamemodeFactory.Create("nfmm/pvp", outgoing.Config!);
+        var incomingHost = LocalRaceHost.Create("empty", incoming, parameters);
+
+        // The replaced race's disposal, which the phase manager defers to end-of-frame.
+        outgoingHost.Dispose();
+        outgoing.End();
+
+        return (outgoingAssembly, incoming, incomingHost);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void VerifyOnAFreshFrame() => PluginUnloadVerifier.Verify();
 }

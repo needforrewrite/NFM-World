@@ -448,8 +448,20 @@ public static class DevConsoleCommands
         if (GameSparker.CurrentPhase is RacePhase inRacePhase)
         {
             Logging.Info($"Switched to stage '{stageName}'");
-            var inRace = new RacePhase(stageName, inRacePhase.Gamemode, inRacePhase.Players,
-                LocalRaceHost.Create(stageName, inRacePhase.Gamemode, new ClientGamemodeParameters { Players = inRacePhase.Players }));
+
+            // A factory belongs to one run and releases what it loaded in End(), which the
+            // phase being replaced calls on its way out - this frame, after the new phase is
+            // already live. Sharing it would unload the gamemode's plugin out from under the
+            // race that just started, so the new run gets its own. The config carries over,
+            // including its absence: a Lua gamemode validates that every property it declares
+            // was supplied, so an invented empty config is not the same as none.
+            var config = inRacePhase.Gamemode.Config;
+            var factory = config is null
+                ? GamemodeFactory.Create(inRacePhase.Gamemode.GamemodeId)
+                : GamemodeFactory.Create(inRacePhase.Gamemode.GamemodeId, config);
+
+            var inRace = new RacePhase(stageName, factory, inRacePhase.Players,
+                LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = inRacePhase.Players }));
             inRace.Exited += (sender, args) =>
             {
                 GameSparker.PopGroup(PhaseManager.Groups.Event);
@@ -487,11 +499,18 @@ public static class DevConsoleCommands
                     IsClientPlayer = true
                 }
                 : p).ToArray();
+            // Its own factory, for the same reason as `map`: the phase being replaced
+            // releases the shared one on its way out.
+            var config = inRacePhase.Gamemode.Config;
+            var factory = config is null
+                ? GamemodeFactory.Create(inRacePhase.Gamemode.GamemodeId)
+                : GamemodeFactory.Create(inRacePhase.Gamemode.GamemodeId, config);
+
             var inRace = new RacePhase(
                 inRacePhase.StageName!,
-                inRacePhase.Gamemode,
+                factory,
                 newPlayers,
-                LocalRaceHost.Create(inRacePhase.StageName!, inRacePhase.Gamemode, new ClientGamemodeParameters { Players = newPlayers }));
+                LocalRaceHost.Create(inRacePhase.StageName!, factory, new ClientGamemodeParameters { Players = newPlayers }));
             inRace.Exited += (sender, args) =>
             {
                 GameSparker.PopGroup(PhaseManager.Groups.Event);
