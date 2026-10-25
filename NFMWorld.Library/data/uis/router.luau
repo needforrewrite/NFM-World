@@ -1,7 +1,6 @@
 --!strict
 -- Sx hash-based router. Subscribes to C# navigation (nfmw:navigate) via a signal and
--- renders the matching page through Sx.Switch. Only the main-menu route is ported to Sx
--- yet; the other routes are commented out.
+-- renders the matching page through Sx.Switch.
 
 local Sx = require("../library/sx/index")
 local x = Sx.x
@@ -37,6 +36,9 @@ local function Router()
 				flexDirection = "column",
 			},
 			x(Switch)({
+				x(Match)({ when = function(): boolean return route() == "empty" end,
+					x(Sx.Fragment)({}),
+				}),
 				x(Match)({ when = function() return route() == "main-menu" end,
 					x(MainMenu)({}),
 				}),
