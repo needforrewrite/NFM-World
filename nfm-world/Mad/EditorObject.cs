@@ -45,6 +45,7 @@ public class EditorObject : StaticMeshObject, IDisposable
     public override void OnBeforeRender(float alpha)
     {
         base.OnBeforeRender(alpha);
+        _collisionDebugMesh?.OnBeforeRender(alpha);
         for (var i = 0; i < _wheels.Length; i++)
         {
             _wheels[i].Parent = this;

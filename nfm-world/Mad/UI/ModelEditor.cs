@@ -2972,6 +2972,7 @@ public class ModelEditorPhase : BasePhase
         // Match the main model's transform
         highlightMesh.Position = tab.Object.Position;
         highlightMesh.Rotation = tab.Object.Rotation;
+        highlightMesh.OnBeforeRender(1);
 
         // Render with highlighting
         var oldDevRenderTrackers = GameSparker.devRenderTrackers;
