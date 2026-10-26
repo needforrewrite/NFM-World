@@ -85,9 +85,6 @@ jobs:
           dotnet-version: '11.0.x'
           dotnet-quality: 'preview'
 
-      - name: Install MGFXC
-        run: dotnet tool install -g dotnet-mgfxc
-
       - name: Generate version string
         id: version
         shell: bash
@@ -153,54 +150,11 @@ jobs:
         with:
           version: 10
 
-      - name: Install wine and dependencies
-        run: |
-          sudo dpkg --add-architecture i386
-          wget -qO - https://dl.winehq.org/wine-builds/winehq.key | sudo apt-key add -
-          sudo add-apt-repository ppa:cybermax-dexter/sdl2-backport
-          sudo apt-add-repository "deb https://dl.winehq.org/wine-builds/ubuntu $(lsb_release -cs) main"
-          sudo apt install --install-recommends winehq-stable winetricks xvfb
-
-      - name: Setup Wine prefix for MGFXC
-        run: |
-          # Start Xvfb for headless Wine operation
-          Xvfb :99 -screen 0 1024x768x16 &
-          XVFB_PID=$!
-          export DISPLAY=:99
-
-          # Wait for Xvfb to be ready
-          sleep 2
-
-          # Ensure Xvfb is cleaned up on exit
-          trap "kill $XVFB_PID 2>/dev/null || true" EXIT
-
-          # Create 64-bit wine prefix
-          export WINEPREFIX=$HOME/.wine64
-          export WINEARCH=win64
-          export WINEDLLOVERRIDES="mscoree,mshtml="
-
-          # Initialize wine prefix
-          wineboot -u
-
-          # Wait for wine server to start (with timeout)
-          for i in {1..30}; do
-            if wineserver -w 2>/dev/null; then
-              break
-            fi
-            sleep 1
-          done
-
-          # Install d3dcompiler_47 using winetricks
-          WINEPREFIX=$HOME/.wine64 DISPLAY=:99 winetricks -q d3dcompiler_47
-
-          # Set environment variable for MGFXC
-          echo "MGFXC_WINE_PATH=$HOME/.wine64" >> $GITHUB_ENV
-          echo "WINEPREFIX=$HOME/.wine64" >> $GITHUB_ENV
-
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '11.0.x'
+          dotnet-quality: 'preview'
 
       - name: Generate version string
         id: version
@@ -277,46 +231,11 @@ jobs:
           # Verify clang is available
           clang --version
 
-      - name: Install Wine for shader compilation
-        run: |
-          set -e
-          # Install Wine using Homebrew (wine-stable is a formula)
-          brew install wine-stable
-          
-          # Verify Wine installation
-          wine --version
-
-      - name: Setup Wine prefix for MGFXC
-        run: |
-          set -e
-          # Create 64-bit wine prefix
-          export WINEPREFIX=$HOME/.wine64
-          export WINEARCH=win64
-          export WINEDLLOVERRIDES="mscoree,mshtml="
-          
-          # Initialize wine prefix (this will wait for server to be ready)
-          wineboot -u
-          
-          # Give wine a moment to stabilize
-          sleep 3
-          
-          # Install winetricks if not already installed
-          brew install winetricks
-          
-          # Wait a moment for winetricks to be ready
-          sleep 2
-          
-          # Install d3dcompiler_47 using winetricks
-          WINEPREFIX=$HOME/.wine64 winetricks -q d3dcompiler_47
-          
-          # Set environment variable for MGFXC
-          echo "MGFXC_WINE_PATH=$HOME/.wine64" >> $GITHUB_ENV
-          echo "WINEPREFIX=$HOME/.wine64" >> $GITHUB_ENV
-
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '11.0.x'
+          dotnet-quality: 'preview'
 
       - name: Generate version string
         id: version
