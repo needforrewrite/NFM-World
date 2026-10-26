@@ -105,7 +105,7 @@ jobs:
           # Use /maxcpucount:1 to prevent a parallel-build race condition where MSBuild worker nodes
           # simultaneously write NFMWorld.CrashReporter.runtimeconfig.json (diamond dependency via
           # NFMWorld.Multiplayer.Base -> NFMWorld.Library -> NFMWorld.CrashReporter).
-          dotnet publish nfm-world/NFMWorld.csproj `
+          dotnet publish NFMWorld/NFMWorld.csproj `
             -c Release `
             -r ${{ matrix.rid }} `
             -p:Version="${{ steps.version.outputs.semantic_version }}" `
@@ -223,7 +223,7 @@ jobs:
           # Use /maxcpucount:1 to prevent a parallel-build race condition where MSBuild worker nodes
           # simultaneously write NFMWorld.CrashReporter.runtimeconfig.json (diamond dependency via
           # NFMWorld.Multiplayer.Base -> NFMWorld.Library -> NFMWorld.CrashReporter).
-          dotnet publish nfm-world/NFMWorld.csproj \
+          dotnet publish NFMWorld/NFMWorld.csproj \
             -c Release \
             -r ${{ matrix.rid }} \
             -p:Version="${{ steps.version.outputs.semantic_version }}" \
@@ -341,7 +341,7 @@ jobs:
           # simultaneously write NFMWorld.CrashReporter.runtimeconfig.json (diamond dependency via
           # NFMWorld.Multiplayer.Base -> NFMWorld.Library -> NFMWorld.CrashReporter).
           for RID in osx-x64 osx-arm64; do
-            dotnet publish nfm-world/NFMWorld.csproj \
+            dotnet publish NFMWorld/NFMWorld.csproj \
               -c Release \
               -r $RID \
               -p:Version="${{ steps.version.outputs.semantic_version }}" \
