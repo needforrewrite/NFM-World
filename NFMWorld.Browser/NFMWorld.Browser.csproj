@@ -27,19 +27,18 @@
              the C++ throws, with no message. -->
         <WasmEnableExceptionHandling>false</WasmEnableExceptionHandling>
 
-        <!-- AOT is the goal - compile what can be compiled ahead of time, jiterpret the rest, the
-             web equivalent of ReadyToRun - but mono-aot-cross currently crashes on this assembly
-             set, so it is off until that is resolved. Two independent failures, both in the
-             compiler rather than in this project: a sgen heap assertion while precompiling
-             SDL3.Core.dll and aot-instances.dll (exit -1073740791; "Assertion at
-             sgen-alloc.c:409, condition `*p == NULL' not met", reproduced with WasmEnableSIMD
-             off too), and invalid-IL reports for several Lua-CSharp methods. Flip this back on
-             once the toolchain is fixed; nothing in the port depends on the answer either way.
+        <!-- AOT is on for everything except SDL3.Core, which mono-aot-cross cannot compile. It
+             aborts in the LLVM backend with "Assertion at sgen-alloc.c:409, condition `*p == NULL'
+             not met" (exit -1073740791) under every option set - with and without no-opt, static,
+             direct-icalls, interp, determinism and dwarf debug - while the interpreter-only path
+             for the same file succeeds. It is the only assembly of the 109 that fails; skipping it
+             leaves it interpreted, so the SDL binding runs slower but nothing else pays for it.
+             The module it produces is 53 MB (9.6 MB brotli), against 5.9 MB interpreted.
 
              The jiterpreter stays on regardless: it is the runtime tier that makes an interpreted
              build usable, and Sokol.NET's examples disable it, which is the opposite of what a
              physics-heavy game wants. -->
-        <RunAOTCompilation>false</RunAOTCompilation>
+        <RunAOTCompilation>true</RunAOTCompilation>
         <WasmEnableJiterpreter>true</WasmEnableJiterpreter>
 
         <!-- writable, and on the same drive as the SDK: the workload's own cache is under
@@ -156,6 +155,25 @@
              publishable app and no _framework directory at all. -->
         <PackageReference Include="Microsoft.NET.Sdk.WebAssembly.Pack" Version="11.0.0-rc.3.26522.148" PrivateAssets="all" />
     </ItemGroup>
+
+    <!-- The one assembly mono-aot-cross cannot compile (see RunAOTCompilation above). The SDK has
+         an `_AOT_InternalForceInterpretAssemblies` skip list, but its Condition tests whether the
+         list is non-empty rather than whether this assembly is in it, so populating it turns AOT
+         off for everything; and the AOT task ignores the metadata anyway. This instead lifts the
+         assembly out of the input list for the length of the AOT target and puts it back after, so
+         it is bundled as IL and run by the interpreter. -->
+    <Target Name="_SkipAotForSdl3" BeforeTargets="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
+        <ItemGroup>
+            <_AotSkippedAssembly Include="@(_WasmAssembliesInternal)" Condition="'%(Filename)' == 'SDL3.Core'" />
+            <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" Condition="'%(Filename)' == 'SDL3.Core'" />
+        </ItemGroup>
+    </Target>
+
+    <Target Name="_RestoreSkippedAotAssembly" AfterTargets="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
+        <ItemGroup>
+            <_WasmAssembliesInternal Include="@(_AotSkippedAssembly)" />
+        </ItemGroup>
+    </Target>
 
     <!-- The two native archives are built by the platform projects, but they have to be declared
          here: NativeFileReference is read by whichever project does the link, and items from a

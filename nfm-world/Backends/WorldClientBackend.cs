@@ -66,7 +66,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
             : new FaudioSoundClip(filePath);
 
     public IGraphics Graphics { get; } = new AposGraphics(sb, graphicsDevice);
-    
+
     public sealed class AposGraphics : IGraphics
     {
         private readonly IGraphicsDevice _graphicsDevice;

@@ -81,11 +81,12 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     public bool SupportsBaseVertexDraw => _baseVertexDraw.IsSupported;
 
     private GlGraphicsDevice(
-        GL gl, Egl.Context? context, int width, int height, Action? present = null, int multiSampleCount = 0)
+        GL gl, Egl.Context? context, int width, int height, Action? present = null, int multiSampleCount = 0,
+        Action<int, int>? resizeDrawable = null)
     {
         _gl = gl;
         _context = context;
-        Swapchain = new GlSwapchain(context, width, height, present, multiSampleCount);
+        Swapchain = new GlSwapchain(context, width, height, present, multiSampleCount, resizeDrawable);
 
         // GL's own loader, not the host's: by this point the context is current, so resolving through
         // the bindings' context and through the host's callback would agree, and this way the device
@@ -168,14 +169,19 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     /// cannot produce callable addresses, so the entry points have to be a set of managed
     /// trampolines that the context hands out by name. <c>GL.GetApi</c> already accepts that shape,
     /// so this is the same construction as above with the loader swapped.
+    ///
+    /// <paramref name="resizeDrawable"/> is null unless the host's drawable has a size of its own
+    /// that it has to be told about - the browser's canvas does, an SDL window does not. See
+    /// <see cref="GlSwapchain"/>.
     /// </summary>
     public static GlGraphicsDevice Create(
         INativeContext nativeContext, int backBufferWidth, int backBufferHeight, Action? present = null,
-        int multiSampleCount = 0)
+        int multiSampleCount = 0, Action<int, int>? resizeDrawable = null)
     {
         ArgumentNullException.ThrowIfNull(nativeContext);
         return new GlGraphicsDevice(
-            GL.GetApi(nativeContext), null, backBufferWidth, backBufferHeight, present, multiSampleCount);
+            GL.GetApi(nativeContext), null, backBufferWidth, backBufferHeight, present, multiSampleCount,
+            resizeDrawable);
     }
 
     public ICommandBuffer AcquireCommandBuffer()
@@ -265,11 +271,14 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     {
         // A sampler's min filter has to know whether the texture it will read has mipmaps, and the
         // abstraction's SamplerDesc does not carry that - the two are paired at bind time, not at
-        // creation. GLES resolves it at draw time from the bound texture's completeness, so the
-        // mipmapped variants are safe to request unconditionally: a texture with only level 0
-        // makes a mipmapping min filter read as incomplete, which is why GlTexture allocates its
-        // whole chain when MipMapped is set.
-        return new GlSampler(_gl, _deletions, desc, mipMapped: true);
+        // creation. So the sampler must not ask for a mipmapped min filter: sampling a texture that
+        // has only level 0 with LINEAR_MIPMAP_LINEAR makes the texture mipmap-INCOMPLETE, and ES
+        // answers a fetch from an incomplete texture with opaque black rather than falling back to
+        // level 0. The MSDF glyph atlas is exactly that case - it is grown row by row, so it is
+        // created without mips - and a point-sampled-flat field draws hard-edged text with no
+        // antialiasing at all. Level 0 filtering is what every caller here wants anyway: nothing in
+        // this tree samples a mip chain through a batch sampler.
+        return new GlSampler(_gl, _deletions, desc, mipMapped: false);
     }
 
     public IPipelineState CreatePipeline(PipelineDesc desc)

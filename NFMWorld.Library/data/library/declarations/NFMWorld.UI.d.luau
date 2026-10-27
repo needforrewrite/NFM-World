@@ -176,15 +176,6 @@ end
 declare View: {
 }
 
-declare extern type Direction with
-end
-
-declare Direction: {
-    inherit: Direction,
-    ltr: Direction,
-    rtl: Direction,
-}
-
 declare extern type BaseMouseDragEvent with
     dragStart: LuaVector2
     position: LuaVector2
@@ -310,6 +301,15 @@ declare extern type MouseWheelEvent with
 end
 
 declare MouseWheelEvent: {
+}
+
+declare extern type Direction with
+end
+
+declare Direction: {
+    inherit: Direction,
+    ltr: Direction,
+    rtl: Direction,
 }
 
 declare extern type TextNode extends Node with

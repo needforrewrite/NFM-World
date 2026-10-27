@@ -60,3 +60,5 @@ gamemode.deps.json
 # - the cimgui sources the browser head needs are the submodule at
 # NFMWorld.Platform.WebGL/ext/cimgui - so it must not be committed by accident.
 /Sokol.NET/
+
+/scratch

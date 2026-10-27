@@ -56,6 +56,20 @@ try {
 
 boot.remove();
 
+// The canvas is laid out by CSS but its backing store is not, so the game has to be told the page
+// size. SDL's emscripten backend does the actual resizing from here - it sets the canvas to the
+// window size scaled by the device pixel ratio - so this only forwards the size. Nothing else
+// reports it: a canvas that CSS has laid out does not resize its backing store by itself.
+//
+// The call at boot is not optional. The game creates its context at the canvas's declared size,
+// so without it the first frame draws 1280x720 into a full-window canvas and stays that way until
+// something else resizes the page.
+function syncSize() {
+    exports.NFMWorld.Browser.Program.Resize(innerWidth, innerHeight);
+}
+addEventListener('resize', syncSize);
+syncSize();
+
 let last = 0;
 function frame(now) {
     requestAnimationFrame(frame);

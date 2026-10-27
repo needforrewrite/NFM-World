@@ -88,19 +88,17 @@ public static partial class Program
                 throw new InvalidOperationException($"SDL_Init failed: {SDL_GetError()}");
 
             var context = WebGlContext.Create();
-            Console.WriteLine("[nfmw] WebGL2 context up");
 
             // The desktop head parses the persisted settings in Main, before the game is built;
             // this path skips that, and the assets are already mounted by the time this runs, so
             // the values come from the boot archive (or stay at their defaults without one).
             NFMWorld.UI.SettingsMenu.LoadConfigValues();
 
-            Console.WriteLine("[nfmw] creating game");
             _game = WorldGame.CreateForBrowser(
                 context, width: 1280, height: 720,
                 present: WebGlContext.Present,
-                setSwapInterval: WebGlContext.SetSwapInterval);
-            Console.WriteLine("[nfmw] game created");
+                setSwapInterval: WebGlContext.SetSwapInterval,
+                resizeDrawable: WebGlContext.Resize);
 
             GameSparker.Game = _game;
 
@@ -109,13 +107,10 @@ public static partial class Program
             // backend. Nothing else does it on this path, so the models would all be null.
             BackendGameSparker.Load(isHeadless: false);
 
-            Console.WriteLine("[nfmw] Initialize");
             _game.Initialize();
-            Console.WriteLine("[nfmw] LoadContent");
             _game.LoadContent();
 
             _clock = Stopwatch.StartNew();
-            Console.WriteLine("[nfmw] booted");
         }
         catch (Exception ex)
         {
@@ -130,5 +125,22 @@ public static partial class Program
     public static void Tick()
     {
         _game?.Tick(_clock!);
+    }
+
+    /// <summary>
+    /// Tells the game the page is now this size in CSS pixels.
+    ///
+    /// Everything that follows from this is SDL's: its emscripten backend resizes the canvas to the
+    /// window size scaled by the device pixel ratio, and sends the window-resized event that
+    /// propagates the new size to the swapchain, the viewport and pointer mapping. The page has to
+    /// forward the size because a canvas that CSS has laid out does not resize its backing store on
+    /// its own, so without this the drawable and the pointer mapping stay at the boot size while the
+    /// CSS stretches the canvas to the window.
+    /// </summary>
+    [JSExport]
+    public static void Resize(int width, int height)
+    {
+        if (width <= 0 || height <= 0) return;
+        _game?.Window.SetSize(width, height);
     }
 }

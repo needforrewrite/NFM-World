@@ -494,7 +494,8 @@ public class WorldGame : IDisposable, IGameHost
 
     private WorldGame(
         INativeContext? browserContext = null, int browserWidth = 0, int browserHeight = 0,
-        Action? browserPresent = null, Action<int>? browserSetSwapInterval = null)
+        Action? browserPresent = null, Action<int>? browserSetSwapInterval = null,
+        Action<int, int>? browserResizeDrawable = null)
     {
         _browserContext = browserContext;
         GameThreadContext.Install();
@@ -522,8 +523,12 @@ public class WorldGame : IDisposable, IGameHost
                 Window = SdlWindow.Create("NFM World", browserWidth, browserHeight);
 
                 _setSwapInterval = browserSetSwapInterval;
+                // The canvas's backing store only follows its CSS size if something writes it, and
+                // the game's resize path has no idea the canvas exists - so a resize would leave
+                // WebGL rasterising at the old size into a stretched canvas. See GlSwapchain.
                 _device = GlGraphicsDevice.Create(
-                    _browserContext, browserWidth, browserHeight, browserPresent);
+                    _browserContext, browserWidth, browserHeight, browserPresent,
+                    resizeDrawable: browserResizeDrawable);
                 break;
             }
 
@@ -1240,10 +1245,11 @@ public class WorldGame : IDisposable, IGameHost
     /// </summary>
     /// <param name="getProcAddress">The browser GL entry-point source, from <c>WebGlContext.Create</c>.</param>
     public static WorldGame CreateForBrowser(
-        INativeContext getProcAddress, int width, int height, Action present, Action<int> setSwapInterval)
+        INativeContext getProcAddress, int width, int height, Action present, Action<int> setSwapInterval,
+        Action<int, int>? resizeDrawable = null)
     {
         ArgumentNullException.ThrowIfNull(getProcAddress);
-        return new WorldGame(getProcAddress, width, height, present, setSwapInterval);
+        return new WorldGame(getProcAddress, width, height, present, setSwapInterval, resizeDrawable);
     }
 
     /// <summary>

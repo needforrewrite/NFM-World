@@ -85,8 +85,9 @@ jobs:
       - name: Publish
         shell: bash
         # NfmwBrowser gates the Lua compiler features the Mono wasm runtime needs, and the project
-        # fails the build without it. AOT stays off: mono-aot-cross crashes on this assembly set
-        # in the .NET 11 RC (see the comment in NFMWorld.Browser.csproj).
+        # fails the build without it. AOT is on: one assembly (SDL3.Core) is skipped inside the
+        # project because mono-aot-cross cannot compile it (see the comment in
+        # NFMWorld.Browser.csproj); the other 122 are compiled ahead of time.
         run: |
           dotnet publish NFMWorld.Browser/NFMWorld.Browser.csproj \
             -c Release \

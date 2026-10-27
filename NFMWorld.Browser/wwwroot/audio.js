@@ -62,13 +62,19 @@ export function startBufferAt(buffer, volume, rate, loop, offset) {
     const node = c.createBufferSource();
     node.buffer = b;
     node.loop = !!loop;
+    // Music loops and sound effects do not, which is how stopAll tells them apart.
+    node.looping = !!loop;
     if (loop) {
         // A looping track that should already be partway through starts at that point instead of
         // from the beginning, which is what makes a late-started track feel continuous.
         offset = offset % b.duration;
     }
     node.playbackRate.value = rate > 0 ? rate : 1;
+    // The gain goes up with the source rather than on the first setSourceVolume: a track would
+    // otherwise play its first moment at full volume whatever it was started with.
+    node.userVolume = Math.max(0, volume);
     node.connect(c.destination);
+    gainOf(node).gain.value = node.userVolume;
 
     const id = nextId++;
     node.onended = () => sources.delete(id);
@@ -84,10 +90,9 @@ export function stopSource(id) {
     try { node.stop(); } catch { /* already ended */ }
 }
 
-export function setSourceVolume(id, volume) {
-    const node = sources.get(id);
-    if (!node) return;
-    // AudioBufferSourceNode has no gain of its own, so a per-source node is inserted on demand.
+// AudioBufferSourceNode has no gain of its own, so a per-source node is inserted on demand. Every
+// volume change goes through it, and pausing rides the same node as a mute - see setSourcePaused.
+function gainOf(node) {
     if (!node.gain) {
         const g = node.context.createGain();
         node.disconnect();
@@ -95,7 +100,16 @@ export function setSourceVolume(id, volume) {
         g.connect(node.context.destination);
         node.gain = g;
     }
-    node.gain.gain.value = Math.max(0, volume);
+    return node.gain;
+}
+
+export function setSourceVolume(id, volume) {
+    const node = sources.get(id);
+    if (!node) return;
+    node.userVolume = Math.max(0, volume);
+    // A paused source stays silent whatever its volume is set to; the value is remembered for
+    // when it resumes.
+    gainOf(node).gain.value = node.paused ? 0 : node.userVolume;
 }
 
 export function setSourceRate(id, rate) {
@@ -103,19 +117,26 @@ export function setSourceRate(id, rate) {
     if (node) node.playbackRate.value = rate > 0 ? rate : 1;
 }
 
-// A source node cannot be paused, only stopped and re-created, so pausing suspends the whole
-// context while this is the only thing playing - which is what the desktop backend's
-// Pause/Resume does for a music track anyway.
+// Pausing mutes this one source, not the context. Suspending the context was the obvious reading of
+// "pause the music" and is wrong: it silences every sound effect with it, and every source started
+// during the gap - the next stage's music included - queues up and then all plays at once on resume.
+// Muting keeps the track's position, which is all a paused music track needs.
 export function setSourcePaused(id, paused) {
-    const c = context();
-    if (!c) return;
-    if (paused) c.suspend(); else c.resume();
+    const node = sources.get(id);
+    if (!node) return;
+    node.paused = !!paused;
+    gainOf(node).gain.value = node.paused ? 0 : (node.userVolume ?? 1);
 }
 
 export function releaseBuffer(id) {
     buffers.delete(id);
 }
 
+// Sound effects only. The desktop backend's equivalent walks its clip list and leaves the music
+// playing, so stopping every source here would make the browser build the odd one out.
 export function stopAll() {
-    for (const id of [...sources.keys()]) stopSource(id);
+    for (const id of [...sources.keys()]) {
+        const node = sources.get(id);
+        if (node && !node.looping) stopSource(id);
+    }
 }

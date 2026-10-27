@@ -212,11 +212,14 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     {
         // A sampler's min filter has to know whether the texture it will read has mipmaps, and the
         // abstraction's SamplerDesc does not carry that - the two are paired at bind time, not at
-        // creation. GLES resolves it at draw time from the bound texture's completeness, so the
-        // mipmapped variants are safe to request unconditionally: a texture with only level 0
-        // makes a mipmapping min filter read as incomplete, which is why GlTexture allocates its
-        // whole chain when MipMapped is set.
-        return new GlSampler(_gl, _deletions, desc, mipMapped: true);
+        // creation. So the sampler must not ask for a mipmapped min filter: sampling a texture that
+        // has only level 0 with LINEAR_MIPMAP_LINEAR makes the texture mipmap-INCOMPLETE, and ES
+        // answers a fetch from an incomplete texture with opaque black rather than falling back to
+        // level 0. The MSDF glyph atlas is exactly that case - it is grown row by row, so it is
+        // created without mips - and a point-sampled-flat field draws hard-edged text with no
+        // antialiasing at all. Desktop GL tolerates the incompleteness, which is why this only ever
+        // showed in the browser, but asking for a level no texture here provides is wrong either way.
+        return new GlSampler(_gl, _deletions, desc, mipMapped: false);
     }
 
     public IPipelineState CreatePipeline(PipelineDesc desc)

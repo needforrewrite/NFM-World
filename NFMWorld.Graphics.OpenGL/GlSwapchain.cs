@@ -38,6 +38,18 @@ internal sealed class GlSwapchain : ISwapchain
     /// </summary>
     private readonly Action? _present;
 
+    /// <summary>
+    /// How to resize the drawable when the host owns the GL context but has an explicitly sized
+    /// backing store, or null when the host's own window resize is enough.
+    ///
+    /// The browser needs this and the SDL path does not: the canvas element has a fixed pixel width
+    /// and height separate from its CSS size, and only the former sets what WebGL rasterises into.
+    /// Nothing in the game knows to write it, so a resize without this leaves the drawable at its
+    /// creation size while the canvas is stretched to fit - the picture pins to a corner of the
+    /// screen and pointer input, which is mapped through the old size, only lands in that corner.
+    /// </summary>
+    private readonly Action<int, int>? _resizeDrawable;
+
     public int Width { get; private set; }
     public int Height { get; private set; }
 
@@ -70,10 +82,12 @@ internal sealed class GlSwapchain : ISwapchain
     /// </summary>
     private int _requestedMultiSampleCount;
 
-    internal GlSwapchain(Egl.Context? context, int width, int height, Action? present = null, int multiSampleCount = 0)
+    internal GlSwapchain(Egl.Context? context, int width, int height, Action? present = null, int multiSampleCount = 0,
+                         Action<int, int>? resizeDrawable = null)
     {
         _context = context;
         _present = present;
+        _resizeDrawable = resizeDrawable;
         Width = width;
         Height = height;
         MultiSampleCount = multiSampleCount;
@@ -109,6 +123,7 @@ internal sealed class GlSwapchain : ISwapchain
             return;
 
         _context?.ResizeSurface(width, height);
+        _resizeDrawable?.Invoke(width, height);
         Width = width;
         Height = height;
     }

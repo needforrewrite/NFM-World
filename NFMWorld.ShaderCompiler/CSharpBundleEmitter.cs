@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Text;
 
 namespace NFMWorld.ShaderCompiler;
@@ -86,9 +87,15 @@ public static class CSharpBundleEmitter
     }
 
     /// <summary>
-    /// Emits every backend's form of every stage. The spirv-cross output is embedded verbatim:
-    /// the stage entry points are all named <c>main</c> by the time it is produced, so nothing
-    /// here has to know the source's original entry-point names.
+    /// Emits the forms of every stage that a backend in this tree actually consumes.
+    ///
+    /// Only three are read: D3D11 compiles <c>Hlsl</c>, desktop GL takes <c>Glsl330</c>, and GLES
+    /// (including the browser) takes <c>GlslEs</c>. SPIR-V, MSL and desktop <c>Glsl</c> are what
+    /// the other sokol backends would use, and none of them is built here - yet SPIR-V alone is
+    /// about 90% of a bundle's text, since it is emitted as hex bytes. With one program per file
+    /// that was merely wasteful; with one per shader variant it is what pushes an assembly past
+    /// the C# string-literal limit (CS8103), so the dead formats are no longer emitted at all.
+    /// A backend for one of them has to restore its line here (and in <see cref="EmitCreate"/>).
     /// </summary>
     private static void EmitSources(
         IndentedStringBuilder sb,
@@ -101,38 +108,49 @@ public static class CSharpBundleEmitter
                 continue;
 
             var member = MemberName(stage.Stage);
-            sb.Line($"/// <summary>SPIR-V for the {stage.Stage} stage (entry point <c>{stage.EntryPoint}</c>).</summary>");
-            sb.Line($"private static ReadOnlyMemory<byte> {member}Spirv => new byte[]");
-            sb.Line("{");
-            using (sb.Indent())
-            {
-                var bytes = sources.Spirv;
-                for (var i = 0; i < bytes.Length; i += 16)
-                    sb.Line(string.Join(", ", bytes.Skip(i).Take(16).Select(b => "0x" + b.ToString("x2"))) + ",");
-            }
-            sb.Line("};");
-            sb.Line();
-
-            EmitSource(sb, $"{member}Hlsl", "HLSL, compiled by sokol's D3D11 backend", sources.Hlsl);
-            EmitSource(sb, $"{member}Msl", "Metal Shading Language, compiled by sokol's Metal backend", sources.Msl);
-            EmitSource(sb, $"{member}Glsl", "GLSL, compiled by sokol's GL backend", sources.Glsl);
+            EmitSource(sb, $"{member}Hlsl", "HLSL, compiled by the D3D11 backend", sources.Hlsl);
             EmitSource(sb, $"{member}GlslEs", "OpenGL ES 3.0 GLSL, compiled by a GLES3 context or ANGLE", sources.GlslEs);
             EmitSource(sb, $"{member}Glsl330", "Desktop GLSL 3.30, compiled by a core-profile desktop GL context", sources.Glsl330);
         }
     }
 
+    /// <summary>
+    /// Emits one shader source, deflate-compressed, as a lazily inflated static.
+    ///
+    /// It used to be a raw string literal, which is far more readable - but a file of shader
+    /// *variants* is many copies of the same program, and string literals are counted against a
+    /// per-assembly limit (CS8103, about 16 MB). Sixteen apos-shapes variants exceed it with the
+    /// dead formats already dropped. A byte array is not counted against that limit, and text
+    /// this repetitive deflates to about a fifth, which keeps the assembly - and therefore the
+    /// browser download - small.
+    ///
+    /// Lazy rather than eager so a variant nothing draws is never inflated, and the one-time cost
+    /// lands on the frame that first needs it rather than on startup.
+    /// </summary>
     private static void EmitSource(IndentedStringBuilder sb, string member, string what, string text)
     {
+        var compressed = Deflate(Encoding.UTF8.GetBytes(text.TrimEnd('\n')));
+
         sb.Line($"/// <summary>{what}.</summary>");
-        sb.Line($"private const string {member} =");
-        // A raw string literal so the source's own quotes and backslashes need no escaping. The
-        // delimiters have to sit at column 0 with the content, because a multi-line raw string
-        // closes on its own line and every content line must be indented at least as far as the
-        // closing delimiter - and the compiler's output is written at column 0 to begin with.
-        sb.LineRaw("\"\"\"");
-        sb.LineRaw(text.TrimEnd('\n'));
-        sb.LineRaw("\"\"\";");
+        sb.Line($"private static string {member} => NfmwShaderText.Get({member}Lazy);");
+        sb.Line($"private static readonly Lazy<string> {member}Lazy = new(() => NfmwShaderText.Inflate({member}Bytes));");
+        sb.Line($"private static byte[] {member}Bytes => new byte[]");
+        sb.Line("{");
+        using (sb.Indent())
+        {
+            for (var i = 0; i < compressed.Length; i += 16)
+                sb.Line(string.Join(", ", compressed.Skip(i).Take(16).Select(b => "0x" + b.ToString("x2"))) + ",");
+        }
+        sb.Line("};");
         sb.Line();
+    }
+
+    private static byte[] Deflate(byte[] bytes)
+    {
+        using var output = new MemoryStream();
+        using (var deflate = new DeflateStream(output, CompressionLevel.Optimal, leaveOpen: true))
+            deflate.Write(bytes);
+        return output.ToArray();
     }
 
     private static void EmitCreate(IndentedStringBuilder sb, string name, ProgramReflection program)
@@ -150,10 +168,12 @@ public static class CSharpBundleEmitter
                 sb.Line($"new ShaderStageSources(");
                 using (sb.Indent())
                 {
-                    sb.Line($"{member}Spirv,");
+                    // SPIR-V, MSL and desktop GLSL are blank: see EmitSources for why they are
+                    // not embedded. A backend that needs one has to restore it in both places.
+                    sb.Line("ReadOnlyMemory<byte>.Empty,");
                     sb.Line($"{member}Hlsl,");
-                    sb.Line($"{member}Msl,");
-                    sb.Line($"{member}Glsl,");
+                    sb.Line("\"\",");
+                    sb.Line("\"\",");
                     sb.Line($"{member}GlslEs,");
                     sb.Line($"{member}Glsl330),");
                 }
