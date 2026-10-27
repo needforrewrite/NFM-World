@@ -45,11 +45,25 @@ public class AposRenderer : IDisposable
 
 internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphicsDevice) : IBackend
 {
-    public IRadicalMusic LoadMusic(string file, double tempomul) => new FaudioMusic(file, tempomul);
+    // FAudio has no wasm build, so the browser plays the same decoded PCM through Web Audio.
+    // Music is the exception the interface cannot express: it lives in a separate archive and has
+    // to be fetched, so the browser's music loading is driven by the phase (see
+    // BaseStageRenderingPhase.LoadStageMusic) and this only answers for the desktop path.
+    public IRadicalMusic LoadMusic(string file, double tempomul) =>
+        new FaudioMusic(file, tempomul);
 
-    public void StopAllSounds() => FaudioSoundClip.StopAll();
+    public void StopAllSounds()
+    {
+        if (OperatingSystem.IsBrowser())
+            WebAudioBackend.StopAllSounds();
+        else
+            FaudioSoundClip.StopAll();
+    }
 
-    public ISoundClip GetSound(string filePath) => new FaudioSoundClip(filePath);
+    public ISoundClip GetSound(string filePath) =>
+        OperatingSystem.IsBrowser()
+            ? new WebAudioSoundClip(filePath, IRadicalMusic.CurrentVolume)
+            : new FaudioSoundClip(filePath);
 
     public IGraphics Graphics { get; } = new AposGraphics(sb, graphicsDevice);
     
@@ -539,7 +553,13 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
         }
     }
 
-    public void SetAllVolumes(float vol) => FaudioSoundClip.SetAllVolumes(vol);
+    public void SetAllVolumes(float vol)
+    {
+        if (OperatingSystem.IsBrowser())
+            WebAudioBackend.SetAllVolumes(vol);
+        else
+            FaudioSoundClip.SetAllVolumes(vol);
+    }
 
     /// <summary>
     /// Layout-independent ("physical") key for the same press - used by the UI's

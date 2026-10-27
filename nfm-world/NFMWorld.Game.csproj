@@ -15,6 +15,9 @@
         <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
         <CETCompat>false</CETCompat>
         <DefineConstants>$(DefineConstants);ANGLE</DefineConstants>
+        <!-- Set by the browser head, which passes it through its project references. The Web Audio
+             calls need the browser compilation; on the desktop build the same file is stubbed. -->
+        <DefineConstants Condition="'$(NfmwBrowser)' == 'true'">$(DefineConstants);WEB_AUDIO</DefineConstants>
         <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
     </PropertyGroup>
     <ItemGroup>
@@ -40,7 +43,11 @@
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="Collections.Pooled" Version="2.0.0-preview.27" />
-        <PackageReference Include="Hexa.NET.ImGui" Version="2.2.9" />
+        <!-- The browser head builds against a HexaGen DllImport-flavour build of the same API
+             instead: the package resolves every entry point through a function pointer, and wasm
+             cannot produce one. Same assembly name, so no source here changes. -->
+        <PackageReference Include="Hexa.NET.ImGui" Version="2.2.9" Condition="'$(NfmwBrowser)' != 'true'" />
+        <ProjectReference Include="..\NFMWorld.ImGui.Browser\NFMWorld.ImGui.Browser.csproj" Condition="'$(NfmwBrowser)' == 'true'" />
         <PackageReference Include="JetBrains.Profiler.Api" Version="1.4.13" />
         <PackageReference Include="LibOpenMPT.NET" Version="0.8.6" />
         <None Include="data\**\*" CopyToOutputDirectory="Always" />

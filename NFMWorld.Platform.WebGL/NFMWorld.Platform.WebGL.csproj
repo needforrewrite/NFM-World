@@ -1,0 +1,81 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- The browser's GL platform layer: a WebGL2 context over a canvas, plus the
+         INativeContext that lets the existing NFMWorld.Graphics.OpenGL backend drive it.
+
+         Desktop gets all of this from SDL3 (window, GL context, proc addresses). None of those
+         exist in a browser, so this project supplies the same three things from emscripten, and
+         the OpenGL backend then needs no knowledge of which one it is talking to.
+
+         Only referenced by the browser head, but it builds for any RID - the P/Invokes simply
+         fail to resolve off-wasm, which is the same shape SDL3-CS has. -->
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RootNamespace>NFMWorld.Platform.WebGL</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Silk.NET.OpenGLES" Version="2.23.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\NFMWorld.Graphics.OpenGL\NFMWorld.Graphics.OpenGL.csproj" />
+    </ItemGroup>
+
+    <!--
+      The shim has to be LLVM bitcode, not a plain wasm object: the .NET native build compiles
+      with -emit-llvm and links with LTO, which silently drops the symbols of any plain object
+      nothing in the bitcode references. It also has to be archived under the exact name the
+      [DllImport] strings use ("webgl_shim"), because the generated P/Invoke table is keyed by
+      the native file's base name.
+
+      Built with the workload's own emscripten, never whatever is on PATH: the .a has to come
+      from the same toolchain that will link it. The target only runs for wasm builds, since
+      the native file it produces is meaningless anywhere else.
+    -->
+    <!-- BaseIntermediateOutputPath, not IntermediateOutputPath: the latter is empty at
+         evaluation time, which silently put the object in the project directory. -->
+    <PropertyGroup>
+        <WebGlShimSource>$(MSBuildThisFileDirectory)native\webgl_shim.c</WebGlShimSource>
+        <WebGlShimDir>$(BaseIntermediateOutputPath)webgl-shim\</WebGlShimDir>
+        <WebGlShimObject>$(WebGlShimDir)webgl_shim.o</WebGlShimObject>
+        <WebGlShimArchive>$(WebGlShimDir)webgl_shim.a</WebGlShimArchive>
+    </PropertyGroup>
+
+    <!-- Deliberately no Inputs/Outputs. With them, MSBuild compares the outputs to the source and
+         skips the whole target when it thinks they are current - including the Delete/compile
+         steps that would have refreshed them, so a source change could be ignored indefinitely.
+         The steps are idempotent and take about a second, so it just always runs. -->
+    <Target Name="BuildWebGlShim"
+            Condition="'$(RuntimeIdentifier)' == 'browser-wasm'"
+            BeforeTargets="PrepareForBuild;_WasmWriteRspForCompilingNativeSourceFiles">
+        <!-- Both come from the wasm SDK's own EmSdkRepo.Defaults.props, which derives them from
+             the workload pack - so this is the same emscripten that will link the result. -->
+        <Error Condition="'$(EmscriptenUpstreamEmscriptenPath)' == '' Or !Exists('$(EmscriptenUpstreamEmscriptenPath)emcc.bat')"
+               Text="Could not find the workload's emscripten (EmscriptenUpstreamEmscriptenPath='$(EmscriptenUpstreamEmscriptenPath)'). The WebGL shim must be built with the same toolchain that links it." />
+
+        <MakeDir Directories="$(WebGlShimDir)" />
+        <Delete Files="$(WebGlShimObject)" />
+
+        <!-- The workload's emscripten reads its toolchain locations from these three variables
+             (see the emscripten/.emscripten file it ships); without them it fails with an empty
+             LLVM_ROOT. They are normally set by the wasm SDK's own Exec calls, which this target
+             has to reproduce. -->
+        <Exec Command="&quot;$(EmscriptenUpstreamEmscriptenPath)emcc.bat&quot; -c -O2 -emit-llvm -sFULL_ES3 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 &quot;$(WebGlShimSource)&quot; -o &quot;$(WebGlShimObject)&quot;"
+              EnvironmentVariables="EM_CACHE=$(WasmCachePath);DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin;DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath);DOTNET_EMSCRIPTEN_NODE_JS=$(EmscriptenNodeToolsPath)node.exe;EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe;PYTHONHOME=;PYTHONPATH=$(EmscriptenSdkToolsPath)python;EMSDK=$(EmscriptenSdkToolsPath)"
+              StandardOutputImportance="low" />
+
+        <!-- Delete before archiving: `llvm-ar crs` on an existing archive updates the member in
+             place, and a member whose function list shrank (a signature change) is left with the
+             old prototype in the index - the linker then builds the wrong wrapper arity, which
+             surfaces at runtime as "function signature mismatch". -->
+        <Delete Files="$(WebGlShimArchive)" />
+        <Exec Command="&quot;$(EmscriptenUpstreamBinPath)llvm-ar.exe&quot; crs &quot;$(WebGlShimArchive)&quot; &quot;$(WebGlShimObject)&quot;"
+              StandardOutputImportance="low" />
+    </Target>
+
+
+</Project>

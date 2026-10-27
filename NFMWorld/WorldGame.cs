@@ -13,6 +13,7 @@ using NFMWorld.Graphics;
 using NFMWorld.Graphics.D3D11;
 #if ANGLE
 using NFMWorld.Graphics.OpenGL;
+using Silk.NET.Core.Contexts;
 #endif
 // Aliased because both GL backends declare a `GlGraphicsDevice` in their own namespace, and this
 // class names one type from the DesktopGL one. The ANGLE type keeps its bare name so the code
@@ -485,8 +486,17 @@ public class WorldGame : IDisposable, IGameHost
 
     private bool _disposed;
 
-    private WorldGame()
+    /// <summary>
+    /// The browser's context, for the arm below. Null on every desktop path, which is what keeps
+    /// the SDL arms untouched - see <see cref="CreateForBrowser"/>.
+    /// </summary>
+    private readonly INativeContext? _browserContext;
+
+    private WorldGame(
+        INativeContext? browserContext = null, int browserWidth = 0, int browserHeight = 0,
+        Action? browserPresent = null, Action<int>? browserSetSwapInterval = null)
     {
+        _browserContext = browserContext;
         GameThreadContext.Install();
 
         // The context belongs to SDL, so there is no GL library to load and no context to create
@@ -504,6 +514,19 @@ public class WorldGame : IDisposable, IGameHost
         // creates the GL context - SDL for both GL paths, nobody for D3D11.
         switch (_renderer)
         {
+            case Renderer.Angle when _browserContext is not null:
+            {
+                // The browser: SDL still owns the window and the events (its emscripten backend
+                // works unchanged), but the GL context is WebGL2 on the page's canvas and the
+                // entry points come from NFMWorld.Platform.WebGL rather than SDL's loader.
+                Window = SdlWindow.Create("NFM World", browserWidth, browserHeight);
+
+                _setSwapInterval = browserSetSwapInterval;
+                _device = GlGraphicsDevice.Create(
+                    _browserContext, browserWidth, browserHeight, browserPresent);
+                break;
+            }
+
             case Renderer.Angle:
 #if ANGLE
             {
@@ -768,7 +791,9 @@ public class WorldGame : IDisposable, IGameHost
         PluginUnloadVerifier.Verify();
     }
 
-    private void Initialize()
+    /// <summary>Brings the renderer, UI and input state up. Public so the browser head can boot the
+    /// game itself - see <see cref="CreateForBrowser"/>.</summary>
+    public void Initialize()
     {
         ImguiRenderer = new SdlImGuiRenderer(_device, Window);
 
@@ -831,10 +856,14 @@ public class WorldGame : IDisposable, IGameHost
         // exit, and the direct-FAudio engine (FaudioEngine) lives for the process lifetime.
     }
 
-    private void LoadContent()
+    /// <summary>Loads effects and content and hands control to GameSparker. Public for the same
+    /// reason as <see cref="Initialize"/>.</summary>
+    public void LoadContent()
     {
-        ImguiRenderer!.RebuildFontAtlas();
-        ImGuiTheme.Apply();
+        ImguiRenderer?.RebuildFontAtlas();
+        // Theme lives in the ImGui context the renderer above owns, so it goes where that does.
+        if (ImguiRenderer is not null)
+            ImGuiTheme.Apply();
 
         // NanoVGRenderer (constructed in Initialize(), before this runs) already set
         // IBackend.Backend to the real WorldClientBackend - no DummyBackend stand-in needed anymore.
@@ -1062,9 +1091,12 @@ public class WorldGame : IDisposable, IGameHost
 
         _nvg.Render();
 
-        ImguiRenderer!.BeginLayout(gameTime);
-        GameSparker.RenderImgui();
-        ImguiRenderer.EndLayout(cb);
+        ImguiRenderer?.BeginLayout(gameTime);
+        if (ImguiRenderer is not null)
+        {
+            GameSparker.RenderImgui();
+            ImguiRenderer.EndLayout(cb);
+        }
 
         _device.Submit(cb);
         _device.Swapchain.Present();
@@ -1097,6 +1129,10 @@ public class WorldGame : IDisposable, IGameHost
     /// </summary>
     private void DrawBootMessage(string message)
     {
+        // Nothing to draw the message with when there is no ImGui.
+        if (ImguiRenderer is null)
+            return;
+
         var vertices = 0;
         for (var attempt = 0; attempt < BootMessageFrameLimit; attempt++)
         {
@@ -1193,6 +1229,62 @@ public class WorldGame : IDisposable, IGameHost
         sleepTimeIndex = (sleepTimeIndex + 1) & SleepTimeMask;
     }
 
+    /// <summary>
+    /// Builds the game with the browser's GL context, for the head in NFMWorld.Browser.
+    ///
+    /// The constructor is private because <see cref="Main"/> is the only desktop entry point, and
+    /// this is the second one: on browser the host is a page rather than a process, so the context,
+    /// the present callback and the swap interval all come from <c>NFMWorld.Platform.WebGL</c> and
+    /// the frame loop is requestAnimationFrame's. Everything after the device exists is the same
+    /// code either way, which is why this delegates to the constructor rather than reimplementing it.
+    /// </summary>
+    /// <param name="getProcAddress">The browser GL entry-point source, from <c>WebGlContext.Create</c>.</param>
+    public static WorldGame CreateForBrowser(
+        INativeContext getProcAddress, int width, int height, Action present, Action<int> setSwapInterval)
+    {
+        ArgumentNullException.ThrowIfNull(getProcAddress);
+        return new WorldGame(getProcAddress, width, height, present, setSwapInterval);
+    }
+
+    /// <summary>
+    /// One frame: pump input, advance the clock, then update and draw.
+    ///
+    /// Split out of <see cref="Main"/>'s loop because a browser cannot run that loop - sleeping and
+    /// spinning on the main thread would block the page. The browser head calls this once per
+    /// requestAnimationFrame instead, with the same stopwatch, so the timing state
+    /// (<see cref="AdvanceElapsedTime"/>'s accumulator) is shared rather than duplicated.
+    /// </summary>
+    /// <param name="stopwatch">
+    /// The loop's clock, started before the first frame. Passed in rather than owned here so both
+    /// callers measure from the same origin and a frame's delta is the time since the last call.
+    /// </param>
+    public void Tick(Stopwatch stopwatch)
+    {
+        Window.PumpEvents();
+
+        AdvanceElapsedTime(stopwatch);
+
+        TimeSpan frameElapsed;
+        if (IsFixedTimeStep)
+        {
+            // Single fixed step per loop iteration (matches this loop's existing one-Update-
+            // per-tick architecture) - subtract, don't zero, so any overshoot past
+            // TargetElapsedTime carries into the next frame's budget instead of being lost.
+            frameElapsed = TargetElapsedTime;
+            accumulatedElapsedTime -= TargetElapsedTime;
+        }
+        else
+        {
+            frameElapsed = accumulatedElapsedTime;
+            accumulatedElapsedTime = TimeSpan.Zero;
+        }
+
+        var gameTime = new GameTime(stopwatch.Elapsed, frameElapsed);
+        Update(gameTime);
+        Draw(gameTime);
+    }
+
+    /// <summary>The desktop entry point. The browser head has its own in NFMWorld.Browser.</summary>
     public static void Main(string[] args)
     {
         // The graphics layer below this app references no logging stack of its own - see
@@ -1257,10 +1349,8 @@ public class WorldGame : IDisposable, IGameHost
         var stopwatch = Stopwatch.StartNew();
         while (!program.Window.ShouldQuit)
         {
-            program.Window.PumpEvents();
-
-            AdvanceElapsedTime(stopwatch);
-
+            // Pacing only: the browser head has no sleep or spin available on the main thread,
+            // and requestAnimationFrame already paces it, so it drives Tick directly instead.
             if (program.IsFixedTimeStep)
             {
                 // Coarse-sleep down to the estimated OS sleep precision, then spin-wait the rest -
@@ -1278,24 +1368,7 @@ public class WorldGame : IDisposable, IGameHost
                 }
             }
 
-            TimeSpan frameElapsed;
-            if (program.IsFixedTimeStep)
-            {
-                // Single fixed step per loop iteration (matches this loop's existing one-Update-
-                // per-tick architecture) - subtract, don't zero, so any overshoot past
-                // TargetElapsedTime carries into the next frame's budget instead of being lost.
-                frameElapsed = program.TargetElapsedTime;
-                accumulatedElapsedTime -= program.TargetElapsedTime;
-            }
-            else
-            {
-                frameElapsed = accumulatedElapsedTime;
-                accumulatedElapsedTime = TimeSpan.Zero;
-            }
-
-            var gameTime = new GameTime(stopwatch.Elapsed, frameElapsed);
-            program.Update(gameTime);
-            program.Draw(gameTime);
+            program.Tick(stopwatch);
         }
 
         program.Dispose();

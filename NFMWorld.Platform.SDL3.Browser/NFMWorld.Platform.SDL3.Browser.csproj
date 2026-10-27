@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- SDL3, compiled to LLVM bitcode for the browser head.
+
+         SDL3 has a first-class emscripten configuration - it is what `-sUSE_SDL=3` builds - so
+         the game can keep its window, input mapping and SdlWindow unchanged in a browser instead
+         of growing a second, browser-only window layer.
+
+         It cannot simply take the emscripten port's libSDL3.a, for two reasons that both fail
+         at link or first call rather than at build:
+
+           - the port ships plain wasm objects, and the .NET native build links with LTO, which
+             silently drops every symbol of a plain object nothing in the bitcode references.
+           - the generated P/Invoke table is keyed by the native file's base name and must match
+             the [DllImport("SDL3")] strings, so the archive has to be SDL3.a.
+
+         build_sdl3.py does that build, following the port's own recipe (same sources, and the
+         port's SDL_build_config.h, which is what disables the backends that cannot exist here).
+         It is invoked with the workload's emscripten, never whatever is on PATH. -->
+
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>NFMWorld.Platform.SDL3.Browser</RootNamespace>
+
+        <!-- No C# worth compiling: this project exists to build and carry the native archive. -->
+        <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+
+        <SDL3SourceBuild>$(MSBuildThisFileDirectory)build_sdl3.py</SDL3SourceBuild>
+        <SDL3ArchiveDir>$(BaseIntermediateOutputPath)sdl3\</SDL3ArchiveDir>
+        <SDL3Archive>$(SDL3ArchiveDir)SDL3.a</SDL3Archive>
+    </PropertyGroup>
+
+    <Target Name="BuildSDL3"
+            Condition="'$(RuntimeIdentifier)' == 'browser-wasm'"
+            BeforeTargets="PrepareForBuild">
+
+        <Error Condition="'$(EmscriptenPythonToolsPath)' == ''"
+               Text="No emscripten python in this build (EmscriptenPythonToolsPath is empty). SDL3 has to be compiled with the workload's own toolchain - see NFMWorld.Platform.SDL3.Browser.csproj." />
+
+        <MakeDir Directories="$(SDL3ArchiveDir)" />
+        <MakeDir Directories="$(SDL3ArchiveDir)work" />
+
+        <!-- Incremental at the object level inside the script: a rebuild with nothing changed
+             re-archives rather than recompiling 181 translation units. -->
+        <Exec Command="&quot;$(EmscriptenPythonToolsPath)python.exe&quot; &quot;$(SDL3SourceBuild)&quot; &quot;$(SDL3Archive)&quot; &quot;$(SDL3ArchiveDir)work&quot;"
+              EnvironmentVariables="EMSDK=$(EmscriptenSdkToolsPath);EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe;PYTHONHOME=;PYTHONPATH=$(EmscriptenSdkToolsPath)python;DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin;DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath);DOTNET_EMSCRIPTEN_NODE_JS=$(EmscriptenNodeToolsPath)node.exe;EM_CACHE=$(WasmCachePath)" />
+    </Target>
+
+
+</Project>

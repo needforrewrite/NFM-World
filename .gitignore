@@ -46,3 +46,17 @@ shadercache
 gamemode.dll
 gamemode.pdb
 gamemode.deps.json
+
+# Browser build's data archives: produced by pack_data.py on every build, and the music one is
+# 148 MB of the game's own asset tree.
+/NFMWorld.Browser/wwwroot/data.boot.zip
+/NFMWorld.Browser/wwwroot/data.music.zip
+
+# libopenmpt for wasm: built by web.yml's Linux job (or build-libopenmpt.sh locally), never
+# checked in - it is a 15 MB archive that only changes when the library is upgraded.
+/NFMWorld.Platform.WebGL/native/libopenmpt.a
+
+# 3.7 GB of upstream sokol examples and binaries. Nothing in this tree builds against it any more
+# - the cimgui sources the browser head needs are the submodule at
+# NFMWorld.Platform.WebGL/ext/cimgui - so it must not be committed by accident.
+/Sokol.NET/

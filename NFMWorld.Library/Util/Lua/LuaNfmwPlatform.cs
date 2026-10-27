@@ -19,7 +19,10 @@ public class LuaNfmwPlatform
 
     public sealed class SystemOsEnvironment : ILuaOsEnvironment
     {
-        private static readonly Process CurrentProcesss = Process.GetCurrentProcess();
+        // No process object exists in a browser (Process.GetCurrentProcess throws there), and the
+        // only consumer is os.clock(); zero is a valid reading for a clock the page cannot measure.
+        private static readonly Process? CurrentProcesss =
+            OperatingSystem.IsBrowser() ? null : Process.GetCurrentProcess();
 
         public string? GetEnvironmentVariable(string name)
         {
@@ -33,7 +36,7 @@ public class LuaNfmwPlatform
 
         public double GetTotalProcessorTime()
         {
-            return CurrentProcesss.TotalProcessorTime.TotalSeconds;
+            return CurrentProcesss?.TotalProcessorTime.TotalSeconds ?? 0;
         }
     }
 

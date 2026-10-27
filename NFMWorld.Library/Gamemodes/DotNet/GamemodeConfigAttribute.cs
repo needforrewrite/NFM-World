@@ -1,6 +1,13 @@
-﻿namespace NFMWorldLibrary.Gamemodes.DotNet;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace NFMWorldLibrary.Gamemodes.DotNet;
+
+// These three are only ever reached through reflection, from an assembly loaded at run time, so a
+// trimmed build has no static evidence that anything uses them. Without the annotation the trimmer
+// removes their constructors and properties and the plugin fails with "Method not found".
 
 [AttributeUsage(AttributeTargets.Assembly)]
+[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
 public class GamemodeAttribute : Attribute
 {
     public required string Name { get; set; }
@@ -8,6 +15,7 @@ public class GamemodeAttribute : Attribute
 }
 
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
 public class GamemodeConfigPropertyAttribute : Attribute
 {
     public required string Name { get; set; }
@@ -17,6 +25,7 @@ public class GamemodeConfigPropertyAttribute : Attribute
 }
 
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
 public class GamemodeConfigPropertyOptionAttribute(string property) : Attribute
 {
     public string Property { get; } = property;

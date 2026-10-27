@@ -86,10 +86,10 @@ public partial class SavedTimeTrial
     {
         try
         {
-            if (File.Exists(fileName))
+            if (VFS.FileExists(fileName))
             {
                 using var decompressor = new BrotliDecompressor();
-                using var stream = File.OpenRead(fileName);
+                using var stream = VFS.OpenRead(fileName);
                 using var sequence = stream.AsPooledReadOnlySequence();
                 var data = decompressor.Decompress(sequence.Sequence);
                 return MemoryPackSerializer.Deserialize<SavedTimeTrial>(data, MemoryPackHelpers.Options);
@@ -116,13 +116,10 @@ public partial class SavedTimeTrial
 
     public void Save()
     {
-        if (!Directory.Exists(GetDirName(CarName, StageName)))
-        {
-            Directory.CreateDirectory(GetDirName(CarName, StageName));
-        }
-
-        // compress file using DeflateStream
-        using var fileStream = File.Create(GetPathName(CarName, StageName));
+        // Through the VFS: the browser has no writable install directory, so the write root is the
+        // in-memory filesystem there. The directory is implied by the path, so it needs no mount
+        // of its own.
+        using var fileStream = VFS.OpenWrite(GetPathName(CarName, StageName));
         using var compressor = new BrotliCompressor(CompressionLevel.Fastest);
         MemoryPackSerializer.Serialize(compressor, this, MemoryPackHelpers.Options);
         compressor.CopyTo(fileStream.AsBufferWriter<byte>());

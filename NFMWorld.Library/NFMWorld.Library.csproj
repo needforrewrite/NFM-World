@@ -9,8 +9,10 @@
         <OptimizationPreference>Speed</OptimizationPreference>
         <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
         <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
-        <PublishAot>true</PublishAot>
-        <NativeLib>Shared</NativeLib>
+        <!-- AOT-compiled shared library for the native hosts. The browser head consumes this as an
+             ordinary assembly and has no native AOT, so it must not be requested there. -->
+        <PublishAot Condition="'$(RuntimeIdentifier)' != 'browser-wasm'">true</PublishAot>
+        <NativeLib Condition="'$(RuntimeIdentifier)' != 'browser-wasm'">Shared</NativeLib>
     </PropertyGroup>
 
     <ItemGroup>

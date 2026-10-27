@@ -455,9 +455,12 @@ public class SettingsMenu()
         var content = SaveConfigToString();
         try
         {
-            var configPath = Path.Combine("data", "cfg", "config.cfg");
-            Directory.CreateDirectory(Path.GetDirectoryName(configPath)!);
-            File.WriteAllText(configPath, content);
+            // Through the VFS: the browser has no writable install directory, so the write root is
+            // the in-memory filesystem there.
+            const string configPath = "data/cfg/config.cfg";
+            using (var stream = TheVFS.VFS.OpenWrite(configPath))
+            using (var writer = new StreamWriter(stream))
+                writer.Write(content);
             Logging.Debug($"Config saved to {configPath}");
         }
         catch (Exception ex)
@@ -683,12 +686,12 @@ public class SettingsMenu()
 
     public static bool TrySelectRenderer(ref Renderer renderer, ref AngleSelection angleSelection)
     {
-        var configPath = Path.Combine("data", "cfg", "config.cfg");
+        const string configPath = "data/cfg/config.cfg";
 
         string? selectedRenderer = null;
-        if (File.Exists(configPath))
+        if (TheVFS.VFS.FileExists(configPath))
         {
-            foreach (var line in File.ReadLines(configPath))
+            foreach (var line in TheVFS.VFS.ReadAllLines(configPath))
             {
                 var trimmed = line.Trim();
                 if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("//"))
@@ -835,15 +838,15 @@ public class SettingsMenu()
     {
         try
         {
-            var configPath = Path.Combine("data", "cfg", "config.cfg");
+            const string configPath = "data/cfg/config.cfg";
 
-            if (!File.Exists(configPath))
+            if (!TheVFS.VFS.FileExists(configPath))
             {
                 Logging.Warning("No config file found, using defaults.");
                 return;
             }
 
-            foreach (var line in File.ReadLines(configPath))
+            foreach (var line in TheVFS.VFS.ReadAllLines(configPath))
             {
                 var trimmed = line.Trim();
                 if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("//"))

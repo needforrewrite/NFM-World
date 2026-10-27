@@ -1,0 +1,15 @@
+<!-- Types a gamemode plugin reaches by reflection.
+
+     A plugin assembly is loaded from bytes at run time, so the trimmer sees no reference at all to
+     the attributes it is annotated with, to the base classes its gamemode derives from, or to the
+     MemoryPack interfaces its packets implement - and a removed member surfaces as a runtime
+     "Method not found" rather than anything about trimming. These are the three contract surfaces
+     the shipped plugins use; nothing else in NFMWorld.Library or MemoryPack is rooted. -->
+<linker>
+  <assembly fullname="NFMWorld.Library">
+    <namespace fullname="NFMWorldLibrary.Gamemodes.DotNet" />
+  </assembly>
+  <assembly fullname="MemoryPack.Core">
+    <namespace fullname="MemoryPack" />
+  </assembly>
+</linker>

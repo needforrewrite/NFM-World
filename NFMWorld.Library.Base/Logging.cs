@@ -22,17 +22,37 @@ public static class Logging
         ?.InformationalVersion ?? "NFM-World dev";
 
     public static readonly ILoggerFactory LoggerFactory =
-        Microsoft.Extensions.Logging.LoggerFactory.Create(builder => builder
-            .AddConsole(options =>
-            {
-                options.FormatterName = RayLogConsoleFormatter.FormatterName;
-            })
-            .AddConsoleFormatter<RayLogConsoleFormatter, ConsoleFormatterOptions>()
-            .AddZLoggerRollingFile((dt, index) => $"{dt:yyyy-MM-dd}_{index}.log", 1024 * 1024)
+        Microsoft.Extensions.Logging.LoggerFactory.Create(builder => Configure(builder));
+
+    private static void Configure(ILoggingBuilder builder)
+    {
+        // AddConsole's provider owns a background queue thread, so it cannot be constructed in a
+        // browser at all; a page logs straight to the console instead.
+        if (!OperatingSystem.IsBrowser())
+        {
+            builder
+                .AddConsole(options =>
+                {
+                    options.FormatterName = RayLogConsoleFormatter.FormatterName;
+                })
+                .AddConsoleFormatter<RayLogConsoleFormatter, ConsoleFormatterOptions>();
+        }
+
+        builder
             .AddProvider(new NfmwLoggerProvider())
             .AddProvider(new NfmwSentryBreadcrumbLogger())
-            .SetMinimumLevel(MinimumLevelFromEnvironment())
-        );
+            .SetMinimumLevel(MinimumLevelFromEnvironment());
+
+        if (OperatingSystem.IsBrowser())
+            builder.AddProvider(new BrowserConsoleLoggerProvider());
+
+        // The rolling file writer runs on its own thread, which a browser does not have - and a page
+        // has nowhere durable to put a log a user could find anyway.
+        if (!OperatingSystem.IsBrowser())
+        {
+            builder.AddZLoggerRollingFile((dt, index) => $"{dt:yyyy-MM-dd}_{index}.log", 1024 * 1024);
+        }
+    }
 
     /// <summary>
     /// Minimum log level. Overridable at runtime via the NFMW_LOG_MIN_LEVEL environment
@@ -437,6 +457,38 @@ public class NfmwLoggerProvider : ILoggerProvider
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull
         {
             return null;
+        }
+    }
+}
+
+/// <summary>
+/// The browser's console sink. <see cref="NfmwLoggerProvider"/> keeps a queue for the in-game
+/// console; this mirrors it to <see cref="Console"/>, which a page sends to devtools - and does so
+/// synchronously, because the framework's console provider needs a background thread.
+/// </summary>
+public class BrowserConsoleLoggerProvider : ILoggerProvider
+{
+    public void Dispose()
+    {
+    }
+
+    public ILogger CreateLogger(string categoryName) => new BrowserConsoleLogger(categoryName);
+
+    private sealed class BrowserConsoleLogger(string categoryName) : ILogger
+    {
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel.Information;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            if (!IsEnabled(logLevel))
+                return;
+
+            Console.WriteLine($"[{logLevel}] {categoryName}: {formatter(state, exception)}");
+            if (exception is not null)
+                Console.WriteLine(exception.ToString());
         }
     }
 }

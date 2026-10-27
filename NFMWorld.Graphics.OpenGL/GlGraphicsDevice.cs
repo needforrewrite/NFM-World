@@ -9,6 +9,7 @@
 // the abstraction's one-live-buffer rule exists precisely so an immediate-mode backend can implement
 // it directly.
 using NFMWorld.Shaders;
+using Silk.NET.Core.Contexts;
 using Silk.NET.OpenGLES;
 
 namespace NFMWorld.Graphics.OpenGL;
@@ -76,6 +77,8 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
 
     /// <inheritdoc />
     public bool HasBottomLeftFramebufferOrigin => true;
+
+    public bool SupportsBaseVertexDraw => _baseVertexDraw.IsSupported;
 
     private GlGraphicsDevice(
         GL gl, Egl.Context? context, int width, int height, Action? present = null, int multiSampleCount = 0)
@@ -155,6 +158,24 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         ArgumentNullException.ThrowIfNull(getProcAddress);
         return new GlGraphicsDevice(
             GL.GetApi(getProcAddress), null, backBufferWidth, backBufferHeight, present, multiSampleCount);
+    }
+
+    /// <summary>
+    /// Attaches to a context whose entry points come from an <see cref="INativeContext"/> rather
+    /// than a bare loader callback.
+    ///
+    /// Only the browser needs this, and it needs it because of how wasm resolves code: its loader
+    /// cannot produce callable addresses, so the entry points have to be a set of managed
+    /// trampolines that the context hands out by name. <c>GL.GetApi</c> already accepts that shape,
+    /// so this is the same construction as above with the loader swapped.
+    /// </summary>
+    public static GlGraphicsDevice Create(
+        INativeContext nativeContext, int backBufferWidth, int backBufferHeight, Action? present = null,
+        int multiSampleCount = 0)
+    {
+        ArgumentNullException.ThrowIfNull(nativeContext);
+        return new GlGraphicsDevice(
+            GL.GetApi(nativeContext), null, backBufferWidth, backBufferHeight, present, multiSampleCount);
     }
 
     public ICommandBuffer AcquireCommandBuffer()

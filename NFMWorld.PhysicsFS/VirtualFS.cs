@@ -70,6 +70,36 @@ public class VirtualFS
         }
     }
 
+    /// <summary>Immediate subdirectories of <paramref name="path"/>, as paths relative to the
+    /// mount root, matching <see cref="EnumerateFiles"/>'s convention.</summary>
+    public IEnumerable<string> EnumerateDirectories(string path)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var mount in _readMounts)
+        {
+            foreach (var dir in mount.EnumerateDirectories(path))
+            {
+                if (seen.Add(dir))
+                    yield return dir;
+            }
+        }
+
+        if (_writeRoot is not null)
+        {
+            var fullPath = Path.Combine(_writeRoot, path);
+            if (Directory.Exists(fullPath))
+            {
+                foreach (var dir in Directory.EnumerateDirectories(fullPath))
+                {
+                    var relative = Path.GetRelativePath(_writeRoot, dir).Replace("\\", "/");
+                    if (seen.Add(relative))
+                        yield return relative;
+                }
+            }
+        }
+    }
+
     public bool FileExists(string path)
     {
         foreach (var mount in _readMounts)
@@ -128,6 +158,31 @@ public class VirtualFS
 
         throw new FileNotFoundException(
             $"File not found in any mounted filesystem: {path}");
+    }
+
+    /// <summary>
+    /// Asynchronous counterpart of <see cref="OpenRead"/>, for the mount that fetches its bytes over
+    /// the network. Mounts that already hold their data answer from the synchronous read; a mount
+    /// that cannot serve one throws instead of blocking, so the caller must use this path for the
+    /// files that live in it.
+    /// </summary>
+    public async System.Threading.Tasks.Task<Stream> OpenReadAsync(string path)
+    {
+        foreach (var mount in _readMounts)
+        {
+            var stream = await mount.OpenReadAsync(path).ConfigureAwait(false);
+            if (stream is not null)
+                return stream;
+        }
+
+        if (_writeRoot is not null)
+        {
+            var fullPath = Path.Combine(_writeRoot, path);
+            if (File.Exists(fullPath))
+                return File.OpenRead(fullPath);
+        }
+
+        throw new FileNotFoundException($"File not found in any mounted filesystem: {path}");
     }
 
     public Stream OpenWrite(string path)

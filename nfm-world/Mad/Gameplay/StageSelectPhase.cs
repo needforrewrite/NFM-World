@@ -3,6 +3,7 @@ using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Util;
 using NFMWorldLibrary;
+using NFMWorld.PhysicsFS;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Util;
 
@@ -28,14 +29,13 @@ public class StageSelectPhase : BaseStageRenderingPhase
 
     public StageSelectPhase() : base()
     {
-        var directories = Directory.GetDirectories("data/stages");
-        foreach (var dir in directories)
+        // The VFS, not Directory: the browser's assets live in a zip with no real directories
+        // behind them, and these two listings are how the stage list is discovered.
+        foreach (var dir in TheVFS.VFS.EnumerateDirectories("data/stages"))
         {
-            var entries = Directory.GetFiles(dir);
-            if (entries.Length == 0) continue;
+            if (!TheVFS.VFS.EnumerateFiles(dir).Any()) continue;
 
-            var stageName = Path.GetFileName(dir);
-            _stageCollections.Add(stageName);
+            _stageCollections.Add(Path.GetFileName(dir));
         }
         // randomly select collection
         _selectedCollection = _stageCollections[new System.Random().Next(0, _stageCollections.Count)];
@@ -55,14 +55,15 @@ public class StageSelectPhase : BaseStageRenderingPhase
     {
         _stagesInCollection.Clear();
 
-        var dirPath = Path.Combine("data/stages", collection);
-        var entries = Directory.GetFiles(dirPath, "*.txt");
+        // VFS paths always use '/', whatever the platform's separator happens to be.
+        var dirPath = Path.Combine("data/stages", collection).Replace('\\', '/');
+        var entries = TheVFS.VFS.EnumerateFiles(dirPath, "*.txt").ToArray();
         // first sort alphabetically
         Array.Sort(entries, NaturalCompare.CompareNatural);
 
         foreach (var entry in entries)
         {
-            var stageFilename = new FileInfo(entry).Name.Replace(".txt", "");
+            var stageFilename = Path.GetFileName(entry).Replace(".txt", "");
             _stagesInCollection.Add(stageFilename);
         }
     }

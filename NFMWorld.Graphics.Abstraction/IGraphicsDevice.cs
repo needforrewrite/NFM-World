@@ -39,6 +39,13 @@ public interface IGraphicsDevice : IDisposable
     bool HasBottomLeftFramebufferOrigin { get; }
 
     /// <summary>
+    /// Whether <see cref="ICommandBuffer.DrawIndexed"/> can honour a non-zero base vertex. False on a
+    /// backend with no such draw (WebGL2, whose ES 3.0 core has none and which exposes none of the
+    /// extensions either), where a caller that needs the offset has to apply it to its indices.
+    /// </summary>
+    bool SupportsBaseVertexDraw { get; }
+
+    /// <summary>
     /// Only one command buffer may be live at a time; implementations must guard against a
     /// second acquisition before the previous one is submitted.
     /// </summary>

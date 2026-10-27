@@ -64,6 +64,8 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     /// <inheritdoc />
     public bool HasBottomLeftFramebufferOrigin => true;
 
+    public bool SupportsBaseVertexDraw => true;
+
     private GlGraphicsDevice(GL gl, int width, int height, Action? present = null, int multiSampleCount = 0)
     {
         _gl = gl;

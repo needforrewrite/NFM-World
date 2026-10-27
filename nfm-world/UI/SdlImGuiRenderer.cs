@@ -317,6 +317,25 @@ public sealed class SdlImGuiRenderer : IDisposable
                 Buffer.MemoryCopy((void*)cmdList.VtxBuffer.Data, vtxDst, _vertexData.Length - vtxOffset * VertexStride, cmdList.VtxBuffer.Size * VertexStride);
                 Buffer.MemoryCopy((void*)cmdList.IdxBuffer.Data, idxDst, _indexData.Length - idxOffset * sizeof(ushort), cmdList.IdxBuffer.Size * sizeof(ushort));
             }
+
+            // A backend with no base-vertex draw (WebGL2) gets the offsets folded into the indices
+            // instead. Both the list's position in the concatenated buffer and each draw command's
+            // own VtxOffset are part of what the draw would have added.
+            if (!_graphicsDevice.SupportsBaseVertexDraw)
+            {
+                for (var cmdi = 0; cmdi < cmdList.CmdBuffer.Size; cmdi++)
+                {
+                    var drawCmd = cmdList.CmdBuffer[cmdi];
+                    if (drawCmd.ElemCount == 0) continue;
+
+                    var start = idxOffset + (int)drawCmd.IdxOffset;
+                    var indices = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, ushort>(
+                        _indexData.AsSpan(start * sizeof(ushort), (int)(drawCmd.ElemCount * sizeof(ushort))));
+                    var add = (ushort)(vtxOffset + (int)drawCmd.VtxOffset);
+                    for (var i = 0; i < indices.Length; i++)
+                        indices[i] += add;
+                }
+            }
             vtxOffset += cmdList.VtxBuffer.Size;
             idxOffset += cmdList.IdxBuffer.Size;
         }
@@ -358,7 +377,8 @@ public sealed class SdlImGuiRenderer : IDisposable
                 _parameters.Texture.SetValue(cb, info.Texture, _sampler);
 
                 cb.DrawIndexed(
-                    baseVertex: (int)drawCmd.VtxOffset + vtxOffset,
+                    // Folded into the indices above on a backend with no base-vertex draw.
+                    baseVertex: _graphicsDevice.SupportsBaseVertexDraw ? (int)drawCmd.VtxOffset + vtxOffset : 0,
                     startIndex: (int)drawCmd.IdxOffset + idxOffset,
                     primitiveCount: (int)drawCmd.ElemCount / 3);
             }

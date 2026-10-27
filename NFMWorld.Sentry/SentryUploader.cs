@@ -13,7 +13,7 @@ public sealed class SentryUploader : IDisposable
     private readonly SentryOptions _options;
     private readonly SentryHttpTransport _transport;
     private readonly Channel<SentryEnvelopeItem> _channel;
-    private readonly Thread _uploadThread;
+    private readonly Thread? _uploadThread;
     private readonly CancellationTokenSource _cts;
     private readonly IReadOnlyList<SentryEnvelopeItem> _emptyBatch = [];
 
@@ -34,12 +34,18 @@ public sealed class SentryUploader : IDisposable
             });
         _cts = new CancellationTokenSource();
 
-        _uploadThread = new Thread(UploadLoop)
+        // The browser cannot start threads at all (Thread.Start throws), and there would be nothing
+        // to upload from a page to this endpoint anyway - so the loop is simply never started there
+        // and Enqueue's writes go into the channel unread.
+        if (!OperatingSystem.IsBrowser())
         {
-            Name = "SentryUploader",
-            IsBackground = true
-        };
-        _uploadThread.Start();
+            _uploadThread = new Thread(UploadLoop)
+            {
+                Name = "SentryUploader",
+                IsBackground = true
+            };
+            _uploadThread.Start();
+        }
     }
 
     /// <summary>
@@ -93,7 +99,7 @@ public sealed class SentryUploader : IDisposable
         // Signal completion and wait for the upload thread to finish
         _channel.Writer.TryComplete();
 
-        if (!_uploadThread.Join(timeout))
+        if (_uploadThread is not null && !_uploadThread.Join(timeout))
         {
             if (_options.Debug)
                 Debug.WriteLine("[Sentry] Flush timed out");

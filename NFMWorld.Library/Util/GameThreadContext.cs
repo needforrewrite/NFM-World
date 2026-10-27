@@ -131,7 +131,10 @@ public class GameThreadContext : SynchronizationContext
 
         var stopwatch = Stopwatch.StartNew();
         var hasTasks = _tasks.Count > 0;
-        if (hasTasks)
+        // The profiler's platform detection does not know wasm and throws on the first touch, which
+        // is every task batch, so it is desktop-only.
+        var profile = hasTasks && !OperatingSystem.IsBrowser();
+        if (profile)
         {
             MeasureProfiler.StartCollectingData();
         }
@@ -143,9 +146,11 @@ public class GameThreadContext : SynchronizationContext
 
         if (hasTasks)
         {
-            MeasureProfiler.StopCollectingData();
-
-            MeasureProfiler.SaveData("ExecutePendingTasks");
+            if (profile)
+            {
+                MeasureProfiler.StopCollectingData();
+                MeasureProfiler.SaveData("ExecutePendingTasks");
+            }
 
             Logging.Debug($"Pending tasks: {stopwatch.Elapsed}");
             GameThreadContextDiagnostics.Record(stopwatch.ElapsedTicks);

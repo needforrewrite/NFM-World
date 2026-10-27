@@ -1,4 +1,4 @@
-using System.IO.Compression;
+﻿using System.IO.Compression;
 using System.Runtime.InteropServices;
 using Maxine.Extensions.Collections;
 using NFMWorld.Audio.FAudioBindings;
@@ -72,31 +72,10 @@ public sealed class FaudioMusic : IRadicalMusic
 
         try
         {
-            var extension = Path.GetExtension(file).ToLowerInvariant();
-
-            // Read file through VFS
+            // Read file through VFS; the container/tracker/stream decision lives in the decoder so
+            // the browser's music path makes the same one.
             using var stream = VFS.OpenRead(file);
-            // Handle ZIP-based containers
-            if (extension is ".zip" or ".zipo" or ".radq")
-            {
-                archive = new ZipArchive(stream, ZipArchiveMode.Read);
-                var entry = archive.Entries.FirstOrDefault()
-                            ?? throw new InvalidDataException($"ZIP container is empty: {file}");
-                extension = Path.GetExtension(entry.Name).ToLowerInvariant();
-                entryStream = entry.Open();
-            }
-
-            // Decode to PCM
-            DecodeResult result;
-
-            if (TrackerDecoder.IsTrackerFormat(extension))
-            {
-                result = TrackerDecoder.Decode(entryStream ?? stream);
-            }
-            else
-            {
-                result = AudioDecoder.Decode(entryStream ?? stream, extension);
-            }
+            var result = AudioDecoder.DecodeTrack(stream, Path.GetExtension(file));
 
             _decoded = result;
 

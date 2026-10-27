@@ -124,10 +124,39 @@ namespace NFMWorld.PhysicsFS
             }
         }
 
+        public IEnumerable<string> EnumerateDirectories(string path)
+        {
+            var prefix = Normalize(path).TrimEnd('/');
+            if (prefix.Length > 0) prefix += "/";
+
+            // The index holds every ancestor, so only the entries one level below the prefix are
+            // this directory's own children.
+            foreach (var dir in _directories)
+            {
+                if (!dir.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var relative = dir[prefix.Length..];
+                if (relative.Length == 0 || relative.Contains('/'))
+                    continue;
+
+                yield return dir;
+            }
+        }
+
         // ── Helpers ───────────────────────────────────────────────
 
-        private static string Normalize(string path) =>
-            path.Replace('\\', '/').TrimStart('/');
+        private static string Normalize(string path)
+        {
+            var normalized = path.Replace('\\', '/').TrimStart('/');
+
+            // Callers pass paths the way a filesystem would take them ("./data/fonts/x.ttf"), and
+            // an archive has no entry spelled with a leading dot segment.
+            while (normalized.StartsWith("./", StringComparison.Ordinal))
+                normalized = normalized[2..];
+
+            return normalized;
+        }
 
         private static Regex WildcardToRegex(string pattern)
         {

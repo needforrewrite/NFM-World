@@ -235,6 +235,15 @@ public static class DevConsoleCommands
 
     private static void Connect(DevConsole console, string[] args)
     {
+        // Multiplayer is out of scope for the browser build: ENet is a native library with no wasm
+        // build, so initialising it there fails. The lobby is unreachable from the UI anyway; this
+        // only keeps the dev command from killing the page.
+        if (OperatingSystem.IsBrowser())
+        {
+            Logging.Info("Multiplayer is not available in the browser build.");
+            return;
+        }
+
         ENetMultiplayer.Init();
             
         if (args.Length < 1)

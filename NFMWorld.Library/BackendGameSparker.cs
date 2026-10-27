@@ -74,13 +74,19 @@ public static class BackendGameSparker
             }
     #endif
         
-        VFS.MountDirectory(AppDomain.CurrentDomain.BaseDirectory);
-        VFS.MountDirectory(Directory.GetCurrentDirectory());
-        VFS.MountWriteDestination(Directory.GetCurrentDirectory());
-        
-        var modsFolder = Path.Combine(Directory.GetCurrentDirectory(), "mods");
-        if (Directory.Exists(modsFolder))
-            VFS.MountDirectory(modsFolder);
+        // The browser has no install directory and no writable one: the head mounts the asset
+        // archive and a MEMFS write root before calling this, and every path below resolves
+        // through those. See NFMWorld.Platform.BrowserBoot in the game project.
+        if (!OperatingSystem.IsBrowser())
+        {
+            VFS.MountDirectory(AppDomain.CurrentDomain.BaseDirectory);
+            VFS.MountDirectory(Directory.GetCurrentDirectory());
+            VFS.MountWriteDestination(Directory.GetCurrentDirectory());
+
+            var modsFolder = Path.Combine(Directory.GetCurrentDirectory(), "mods");
+            if (Directory.Exists(modsFolder))
+                VFS.MountDirectory(modsFolder);
+        }
 
         cars.Add(Collection.NFMM, []);
         FileUtil.LoadFiles(

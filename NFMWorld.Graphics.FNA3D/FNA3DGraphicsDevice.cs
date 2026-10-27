@@ -1,4 +1,4 @@
-using NFMWorld.Shaders;
+﻿using NFMWorld.Shaders;
 
 namespace NFMWorld.Graphics.FNA3D;
 
@@ -27,6 +27,8 @@ public sealed class FNA3DGraphicsDevice : IGraphicsDevice, IDisposable
     /// the framebuffer convention the *shaders* see, not for the API underneath.
     /// </remarks>
     public bool HasBottomLeftFramebufferOrigin => false;
+
+    public bool SupportsBaseVertexDraw => true;
 
     /// <summary>
     /// The raw <c>FNA3D_Device*</c>. Deliberately not public - it's backend-specific, so exposing

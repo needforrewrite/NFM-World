@@ -1,0 +1,267 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+
+    <!-- The browser head. Mirrors NFMWorld/NFMWorld.csproj (the desktop exe), with the
+         wasm runtime and the browser equivalents of the SDL platform layer.
+
+         The SDK has to be Microsoft.NET.Sdk.WebAssembly rather than Microsoft.NET.Sdk: the
+         plain one leaves SelfContained/UseMonoRuntime unset for browser-wasm, so no runtime pack
+         resolves at all, and it does not generate the _framework bundle. -->
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net11.0</TargetFramework>
+        <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RootNamespace>NFMWorld.Browser</RootNamespace>
+        <DefineConstants>ANGLE;$(DefineConstants)</DefineConstants>
+
+        <WasmBuildNative>true</WasmBuildNative>
+        <InvariantGlobalization>true</InvariantGlobalization>
+
+        <!-- Native wasm exception handling is off because libopenmpt cannot be built with it:
+             Emscripten 6.0.2 emits a module the browser refuses to instantiate (an `rtt` type,
+             gated behind the garbage-collection proposal). The head therefore links with
+             -fexceptions, the legacy JS model, and libopenmpt's archive must use the same one.
+             Mixing the two is not a link error: the module loads and then aborts the first time
+             the C++ throws, with no message. -->
+        <WasmEnableExceptionHandling>false</WasmEnableExceptionHandling>
+
+        <!-- AOT is the goal - compile what can be compiled ahead of time, jiterpret the rest, the
+             web equivalent of ReadyToRun - but mono-aot-cross currently crashes on this assembly
+             set, so it is off until that is resolved. Two independent failures, both in the
+             compiler rather than in this project: a sgen heap assertion while precompiling
+             SDL3.Core.dll and aot-instances.dll (exit -1073740791; "Assertion at
+             sgen-alloc.c:409, condition `*p == NULL' not met", reproduced with WasmEnableSIMD
+             off too), and invalid-IL reports for several Lua-CSharp methods. Flip this back on
+             once the toolchain is fixed; nothing in the port depends on the answer either way.
+
+             The jiterpreter stays on regardless: it is the runtime tier that makes an interpreted
+             build usable, and Sokol.NET's examples disable it, which is the opposite of what a
+             physics-heavy game wants. -->
+        <RunAOTCompilation>false</RunAOTCompilation>
+        <WasmEnableJiterpreter>true</WasmEnableJiterpreter>
+
+        <!-- writable, and on the same drive as the SDK: the workload's own cache is under
+             Program Files, and emscripten refuses a cache on another drive. -->
+        <WasmCachePath>$(LOCALAPPDATA)\nfmw-emscripten-cache\</WasmCachePath>
+
+        <!-- AOT is only supported on a trimmed build, so this is a precondition rather than a
+             size decision. It is also the usual source of "worked in Debug" reflection failures,
+             which is why the first playable milestone is checked with trimming on rather than
+             deferred to the end. -->
+        <PublishTrimmed>true</PublishTrimmed>
+
+        <!-- HoleyDiver and NFMWorld.CrashReporter are OutputType=Exe (they double as tools), and a
+             self-contained app may not reference a non-self-contained exe (NETSDK1150). The SDK's
+             own escape hatch: it lets such references through because the head is the app and the
+             referenced project is only a library to it. Both are consumed purely as assemblies
+             here - neither's Main is ever called. -->
+        <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+
+        <!-- WorldGame.cs carries the desktop Main as well as the game class; the browser head
+             supplies its own entry point, so the desktop one is compiled out here. -->
+        <StartupObject>NFMWorld.Browser.Program</StartupObject>
+    </PropertyGroup>
+
+    <!-- Marks the build as a browser one for projects that cannot see RuntimeIdentifier: the SDK
+         strips it from every library reference, so a project three hops down (Lua, which picks its
+         compiler features from it) never learns the target. This is passed on the command line
+         because a property set here does not reach referenced projects either. -->
+    <Target Name="_RequireBrowserMarker" BeforeTargets="PrepareForBuild">
+        <Error Condition="'$(NfmwBrowser)' != 'true'"
+               Text="Publish with -p:NfmwBrowser=true. Without it Lua is compiled with runtime-async, which Mono's wasm runtime rejects at the first await." />
+    </Target>
+
+    <PropertyGroup>
+        <EmccFlags>
+            -sFULL_ES3
+            -sMIN_WEBGL_VERSION=2
+            -sMAX_WEBGL_VERSION=2
+            -sALLOW_MEMORY_GROWTH=1
+            -sINITIAL_MEMORY=134217728
+            -sMAXIMUM_MEMORY=2147483648
+            -sGL_ENABLE_GET_PROC_ADDRESS=1
+        </EmccFlags>
+    </PropertyGroup>
+
+    <!-- What the game P/Invokes and this head must therefore export from the module. The
+         browser P/Invoke table resolves against the module itself (the game's ImportResolver
+         answers every browser import with GetMainProgramHandle), so these have to be real
+         exports - and they are raw linker flags rather than EmccExportedFunction items because
+         emscripten filters exports its own JS libraries also define (SDL_Init is one). -->
+    <PropertyGroup>
+        <!-- The .NET runtime is C, so the SDK's link does not pull in libc++. libopenmpt is C++
+             and throws on bad input; without the C++ runtime the SDK's allow-undefined flag turns
+             __cxa_throw into an empty stub, so the throw reaches std::terminate and the whole
+             module exits with no message. The runtime and the exception personality are only
+             linked when C++ is detected, which an archive does not trigger, so name them here. -->
+        <EmccExtraLDFlags>
+            -lc++ -lc++abi
+            -Wl,--export=SDL_CreateWindow -Wl,--export=SDL_DestroyWindow -Wl,--export=SDL_EGL_SetAttributeCallbacks
+            -Wl,--export=SDL_GL_CreateContext -Wl,--export=SDL_GL_DestroyContext -Wl,--export=SDL_GL_GetAttribute
+            -Wl,--export=SDL_GL_GetProcAddress -Wl,--export=SDL_GL_LoadLibrary -Wl,--export=SDL_GL_SetAttribute
+            -Wl,--export=SDL_GL_SetSwapInterval -Wl,--export=SDL_GL_SwapWindow -Wl,--export=SDL_GetError
+            -Wl,--export=SDL_GetFullscreenDisplayModes -Wl,--export=SDL_GetKeyboardState -Wl,--export=SDL_GetMouseState
+            -Wl,--export=SDL_GetPointerProperty -Wl,--export=SDL_GetPrimaryDisplay -Wl,--export=SDL_GetWindowFlags
+            -Wl,--export=SDL_GetWindowProperties -Wl,--export=SDL_Init -Wl,--export=SDL_PollEvent
+            -Wl,--export=SDL_Quit -Wl,--export=SDL_SetHint -Wl,--export=SDL_SetWindowBordered
+            -Wl,--export=SDL_SetWindowFullscreen -Wl,--export=SDL_SetWindowSize -Wl,--export=SDL_StartTextInput
+            -Wl,--export=SDL_free -Wl,--export=SDL_malloc
+            <!-- The WebGL shim's entry points, resolved through the same table as SDL.
+                 Generated from obj/**/pinvoke-table.h; regenerate when an entry point is added,
+                 or the link fails naming a symbol the code calls. -->
+            -Wl,--export=nfmw_context_create -Wl,--export=nfmw_context_resize -Wl,--export=nfmw_context_swap
+            -Wl,--export=nfmw_glActiveTexture -Wl,--export=nfmw_glAttachShader -Wl,--export=nfmw_glBindBuffer
+            -Wl,--export=nfmw_glBindBufferBase -Wl,--export=nfmw_glBindFramebuffer -Wl,--export=nfmw_glBindSampler
+            -Wl,--export=nfmw_glBindTexture -Wl,--export=nfmw_glBindVertexArray -Wl,--export=nfmw_glBlendEquationSeparate
+            -Wl,--export=nfmw_glBlendFunc -Wl,--export=nfmw_glBlendFuncSeparate -Wl,--export=nfmw_glBufferData
+            -Wl,--export=nfmw_glBufferSubData -Wl,--export=nfmw_glCheckFramebufferStatus -Wl,--export=nfmw_glClear
+            -Wl,--export=nfmw_glClearColor -Wl,--export=nfmw_glClearDepthf -Wl,--export=nfmw_glClearStencil
+            -Wl,--export=nfmw_glColorMask -Wl,--export=nfmw_glCompileShader -Wl,--export=nfmw_glCreateProgram
+            -Wl,--export=nfmw_glCreateShader -Wl,--export=nfmw_glCullFace -Wl,--export=nfmw_glDeleteBuffers
+            -Wl,--export=nfmw_glDeleteFramebuffers -Wl,--export=nfmw_glDeleteProgram -Wl,--export=nfmw_glDeleteSamplers
+            -Wl,--export=nfmw_glDeleteShader -Wl,--export=nfmw_glDeleteTextures -Wl,--export=nfmw_glDeleteVertexArrays
+            -Wl,--export=nfmw_glDepthFunc -Wl,--export=nfmw_glDepthMask -Wl,--export=nfmw_glDepthRangef
+            -Wl,--export=nfmw_glDisable -Wl,--export=nfmw_glDisableVertexAttribArray -Wl,--export=nfmw_glDrawArrays
+            -Wl,--export=nfmw_glDrawArraysInstanced -Wl,--export=nfmw_glDrawBuffers -Wl,--export=nfmw_glDrawElements
+            -Wl,--export=nfmw_glDrawElementsInstanced -Wl,--export=nfmw_glEnable -Wl,--export=nfmw_glEnableVertexAttribArray
+            -Wl,--export=nfmw_glFinish -Wl,--export=nfmw_glFlush -Wl,--export=nfmw_glFramebufferTexture2D
+            -Wl,--export=nfmw_glFrontFace -Wl,--export=nfmw_glGenBuffers -Wl,--export=nfmw_glGenFramebuffers
+            -Wl,--export=nfmw_glGenSamplers -Wl,--export=nfmw_glGenTextures -Wl,--export=nfmw_glGenVertexArrays
+            -Wl,--export=nfmw_glGenerateMipmap -Wl,--export=nfmw_glGetActiveAttrib -Wl,--export=nfmw_glGetActiveUniform
+            -Wl,--export=nfmw_glGetActiveUniformBlockiv -Wl,--export=nfmw_glGetActiveUniformsiv -Wl,--export=nfmw_glGetAttribLocation
+            -Wl,--export=nfmw_glGetError -Wl,--export=nfmw_glGetIntegerv -Wl,--export=nfmw_glGetProgramInfoLog
+            -Wl,--export=nfmw_glGetProgramiv -Wl,--export=nfmw_glGetShaderInfoLog -Wl,--export=nfmw_glGetShaderiv
+            -Wl,--export=nfmw_glGetString -Wl,--export=nfmw_glGetStringi -Wl,--export=nfmw_glGetUniformBlockIndex -Wl,--export=nfmw_glGetUniformLocation
+            -Wl,--export=nfmw_glLinkProgram -Wl,--export=nfmw_glPixelStorei -Wl,--export=nfmw_glPolygonOffset
+            -Wl,--export=nfmw_glReadBuffer -Wl,--export=nfmw_glReadPixels -Wl,--export=nfmw_glSamplerParameterf
+            -Wl,--export=nfmw_glSamplerParameteri -Wl,--export=nfmw_glScissor -Wl,--export=nfmw_glShaderSource
+            -Wl,--export=nfmw_glStencilFunc -Wl,--export=nfmw_glStencilFuncSeparate -Wl,--export=nfmw_glStencilMask
+            -Wl,--export=nfmw_glStencilOp -Wl,--export=nfmw_glStencilOpSeparate -Wl,--export=nfmw_glTexImage2D
+            -Wl,--export=nfmw_glTexParameterf -Wl,--export=nfmw_glTexParameteri -Wl,--export=nfmw_glTexSubImage2D
+            -Wl,--export=nfmw_glUniform1 -Wl,--export=nfmw_glUniform1f -Wl,--export=nfmw_glUniform1fv
+            -Wl,--export=nfmw_glUniform1i -Wl,--export=nfmw_glUniform1iv -Wl,--export=nfmw_glUniform1ui
+            -Wl,--export=nfmw_glUniform1uiv -Wl,--export=nfmw_glUniformBlockBinding -Wl,--export=nfmw_glUseProgram
+            -Wl,--export=nfmw_glVertexAttribDivisor -Wl,--export=nfmw_glVertexAttribIPointer -Wl,--export=nfmw_glVertexAttribPointer
+            -Wl,--export=nfmw_glViewport 
+        </EmccExtraLDFlags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Supplies _WebAssemblyPropsFile/_WebAssemblyTargetsFile, which is how the
+             _framework bundle and the boot manifest get generated. This SDK's
+             `dotnet workload install wasm-tools` installs the Mono/Emscripten packs but not this
+             one; until the workload is repaired the package is the difference between a
+             publishable app and no _framework directory at all. -->
+        <PackageReference Include="Microsoft.NET.Sdk.WebAssembly.Pack" Version="11.0.0-rc.3.26522.148" PrivateAssets="all" />
+    </ItemGroup>
+
+    <!-- The two native archives are built by the platform projects, but they have to be declared
+         here: NativeFileReference is read by whichever project does the link, and items from a
+         ProjectReference do not arrive in this project's item list. Paths are the ones those
+         targets produce (see each project's build target). -->
+    <ItemGroup>
+        <NativeFileReference Include="$(MSBuildThisFileDirectory)..\NFMWorld.Platform.SDL3.Browser\obj\sdl3\SDL3.a" />
+        <NativeFileReference Include="$(MSBuildThisFileDirectory)..\NFMWorld.Platform.WebGL\obj\webgl-shim\webgl_shim.a" />
+        <NativeFileReference Include="$(MSBuildThisFileDirectory)..\NFMWorld.Browser\obj\cimgui\cimgui.a" />
+        <!-- libopenmpt, built for wasm with the workload's emscripten. Not checked in: the build
+             needs make and a POSIX toolchain, so web.yml builds it in a Linux job and hands the
+             archive to the Windows one. Locally, run
+             NFMWorld.Platform.WebGL/native/build-libopenmpt.sh into this directory. -->
+        <NativeFileReference Include="$(MSBuildThisFileDirectory)..\NFMWorld.Platform.WebGL\native\libopenmpt.a"
+                             Condition="Exists('$(MSBuildThisFileDirectory)..\NFMWorld.Platform.WebGL\native\libopenmpt.a')" />
+    </ItemGroup>
+
+    <!-- The archive is a build input that is no longer checked in, so a missing one would
+         otherwise surface only as a link failure naming a symbol, or worse as a P/Invoke that
+         resolves to nothing at run time. -->
+    <Target Name="_RequireLibOpenmpt" BeforeTargets="PrepareForBuild" Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+        <Error Condition="!Exists('$(MSBuildThisFileDirectory)..\NFMWorld.Platform.WebGL\native\libopenmpt.a')"
+               Text="libopenmpt.a is missing. Run NFMWorld.Platform.WebGL/native/build-libopenmpt.sh NFMWorld.Platform.WebGL/native (or use the web.yml workflow, which builds it)." />
+    </Target>
+
+    <!-- cimgui, built the same way as the WebGL shim: the workload's own emscripten, -emit-llvm,
+         archived under the name the [DllImport("cimgui")] strings use. Runs before the native
+         build, which is what links the archive. No Inputs/Outputs, for the same reason as the
+         shim's target - MSBuild would skip the refresh steps along with the compile. -->
+    <Target Name="BuildCImgui"
+            Condition="'$(RuntimeIdentifier)' == 'browser-wasm'"
+            BeforeTargets="PrepareForBuild;_WasmWriteRspForCompilingNativeSourceFiles">
+        <PropertyGroup>
+            <CImguiDir>$(BaseIntermediateOutputPath)cimgui</CImguiDir>
+        </PropertyGroup>
+        <Exec Command="&quot;$(EmscriptenPythonToolsPath)python.exe&quot; &quot;$(MSBuildThisFileDirectory)..\NFMWorld.Platform.WebGL\build_cimgui.py&quot; &quot;$(CImguiDir)\cimgui.a&quot; &quot;$(CImguiDir)&quot; &quot;$(MSBuildThisFileDirectory)..\NFMWorld.Platform.WebGL\ext\cimgui&quot;"
+              EnvironmentVariables="EMSDK=$(EmscriptenSdkToolsPath);EM_CACHE=$(WasmCachePath);DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin;DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath);DOTNET_EMSCRIPTEN_NODE_JS=$(EmscriptenNodeToolsPath)node.exe;EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe;PYTHONHOME=;PYTHONPATH=$(EmscriptenSdkToolsPath)python"
+              StandardOutputImportance="normal" />
+    </Target>
+
+    <!-- The two data archives, built from the game's tree rather than checked in: the boot set the
+         page fetches up front, and the music it fetches per track. Runs on every build because the
+         tree is the input and there is no cheaper way to tell whether it changed; 148 MB of stored
+         entries takes a few seconds. -->
+    <Target Name="PackData" Condition="'$(RuntimeIdentifier)' == 'browser-wasm'" BeforeTargets="PrepareForBuild">
+        <Exec Command="&quot;$(EmscriptenPythonToolsPath)python.exe&quot; &quot;$(MSBuildThisFileDirectory)pack_data.py&quot; &quot;$(MSBuildThisFileDirectory)wwwroot&quot; &quot;$(MSBuildThisFileDirectory)..\nfm-world\data&quot; &quot;$(MSBuildThisFileDirectory)..\NFMWorld.Library\data&quot;"
+              StandardOutputImportance="normal" />
+    </Target>
+
+    <!-- Gamemode plugins are ordinary desktop-targeted assemblies loaded at run time, and they
+         reference the System.Runtime facade the way any ref-assembly-linked build does. Nothing in
+         this app's own code needs that facade, so trimming drops it and every plugin load then fails
+         with "Could not load file or assembly 'System.Runtime'". Rooting it keeps it in the bundle. -->
+    <ItemGroup>
+        <TrimmerRootAssembly Include="System.Runtime" />
+        <TrimmerRootAssembly Include="System.Private.CoreLib" />
+        <!-- The facades are pure type-forwarders, and the trimmer drops a forward nothing in this
+             app reaches through it - so a plugin compiled against the ref pack cannot resolve, say,
+             Dictionary`2 out of System.Collections even though the type itself is in CoreLib. These
+             are exactly the facades the two shipped plugins reference. -->
+        <TrimmerRootAssembly Include="System.Collections" />
+        <TrimmerRootAssembly Include="System.Memory" />
+        <TrimmerRootAssembly Include="System.Linq" />
+        <TrimmerRootAssembly Include="System.Reflection" />
+        <TrimmerRootAssembly Include="System.Buffers" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <TrimmerRootDescriptor Include="PluginTypes.linker.xml" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- NFMWorld.Game swaps its Hexa.NET.ImGui package for NFMWorld.ImGui.Browser when
+             NfmwBrowser is set, so nothing has to be listed here. -->
+        <ProjectReference Include="..\nfm-world\NFMWorld.Game.csproj"
+                          AdditionalProperties="NfmwBrowser=$(NfmwBrowser)" />
+        <ProjectReference Include="..\NFMWorld.Interop.Browser\NFMWorld.Interop.Browser.csproj" />
+        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
+        <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
+        <!-- Both build a native archive and hand it over as a NativeFileReference, and both key
+             that on RuntimeIdentifier. A csproj-set RuntimeIdentifier is not a global property, so
+             a referenced project does not inherit it - without these, the archives are declared
+             empty and the link fails on every SDL symbol, reported as an export that does not exist. -->
+        <ProjectReference Include="..\NFMWorld.Platform.SDL3.Browser\NFMWorld.Platform.SDL3.Browser.csproj"
+                          AdditionalProperties="RuntimeIdentifier=browser-wasm" />
+        <ProjectReference Include="..\NFMWorld.Platform.WebGL\NFMWorld.Platform.WebGL.csproj"
+                          AdditionalProperties="RuntimeIdentifier=browser-wasm" />
+        <ProjectReference Include="..\FNA\lib\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
+    </ItemGroup>
+
+    <!-- WorldGame lives in the desktop exe project, not in NFMWorld.Game, so the two heads share
+         the source rather than a binary: the game object, its renderer switch and its frame body
+         are the same file on both. Compiling it here is what keeps a browser fix from being
+         invisible to the desktop build and vice versa. -->
+    <ItemGroup>
+        <Compile Include="..\NFMWorld\WorldGame.cs" Link="Shared\WorldGame.cs" />
+        <Compile Include="..\NFMWorld\GlobalUsings.cs" Link="Shared\GlobalUsings.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <WasmExtraFilesToDeploy Include="wwwroot\index.html" />
+        <WasmExtraFilesToDeploy Include="wwwroot\main.js" />
+        <WasmExtraFilesToDeploy Include="wwwroot\audio.js" />
+        <WasmExtraFilesToDeploy Include="wwwroot\http.js" />
+        <WasmExtraFilesToDeploy Include="wwwroot\data.boot.zip" />
+        <WasmExtraFilesToDeploy Include="wwwroot\data.music.zip" />
+    </ItemGroup>
+
+</Project>

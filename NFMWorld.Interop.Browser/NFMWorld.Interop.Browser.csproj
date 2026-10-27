@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- Browser-only JS interop that cannot live in a shared project.
+         [JSImport] and [JSExport] need the browser compilation; the game project also builds for
+         the desktop head, so anything using them has to be in a project only the browser head
+         references. -->
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RootNamespace>NFMWorld.Interop.Browser</RootNamespace>
+    </PropertyGroup>
+
+</Project>

@@ -55,3 +55,6 @@
 [submodule "Apos.Shapes"]
 	path = Apos.Shapes
 	url = https://github.com/uwx/Apos.Shapes
+[submodule "NFMWorld.Platform.WebGL/ext/cimgui"]
+	path = NFMWorld.Platform.WebGL/ext/cimgui
+	url = https://github.com/elix22/cimgui.git

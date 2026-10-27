@@ -40,6 +40,32 @@ public static class AudioDecoder
     }
 
     /// <summary>
+    /// Decodes a music file of any supported kind: a zip-style container (*.zip, *.zipo, *.radq)
+    /// holding one track, a tracker module, or a stream format. Returns the PCM and the format it
+    /// came from, so the caller can decide whether tempo stretching is meaningful.
+    /// </summary>
+    public static DecodeResult DecodeTrack(Stream stream, string extension)
+    {
+        extension = extension.ToLowerInvariant();
+
+        if (extension is ".zip" or ".zipo" or ".radq")
+        {
+            using var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true);
+            var entry = archive.Entries.FirstOrDefault()
+                        ?? throw new InvalidDataException("ZIP container is empty.");
+            using var entryStream = entry.Open();
+            using var copy = new MemoryStream();
+            entryStream.CopyTo(copy);
+            copy.Position = 0;
+            return DecodeTrack(copy, Path.GetExtension(entry.Name));
+        }
+
+        return TrackerDecoder.IsTrackerFormat(extension)
+            ? TrackerDecoder.Decode(stream)
+            : Decode(stream, extension);
+    }
+
+    /// <summary>
     /// Decode audio from a VFS path. Handles ZIP containers (*.zip, *.zipo, *.radq)
     /// by extracting the first entry.
     /// </summary>
@@ -65,9 +91,11 @@ public static class AudioDecoder
         return Decode(stream, extension);
     }
 
+    // Managed, so it works in the browser: libsndfile has no wasm build linked here, and every
+    // shipped WAV is plain PCM.
     private static DecodeResult DecodeWav(Stream stream)
     {
-        using var reader = new SoundFileReader(stream);
+        var reader = new PcmWavReader(stream);
         return ReadToPcm16(reader);
     }
 
@@ -79,6 +107,9 @@ public static class AudioDecoder
 
     private static DecodeResult DecodeOgg(Stream stream)
     {
+        if (OperatingSystem.IsBrowser())
+            throw new NotSupportedException("Ogg decoding needs libsndfile, which is not part of the browser build.");
+
         using var reader = new SoundFileReader(stream);
         return ReadToPcm16(reader);
     }
@@ -91,12 +122,18 @@ public static class AudioDecoder
 
     private static DecodeResult DecodeOpus(Stream stream)
     {
+        if (OperatingSystem.IsBrowser())
+            throw new NotSupportedException("Opus decoding needs libsndfile, which is not part of the browser build.");
+
         using var reader = new SoundFileReader(stream);
         return ReadToPcm16(reader);
     }
 
     private static DecodeResult DecodeAiff(Stream stream)
     {
+        if (OperatingSystem.IsBrowser())
+            throw new NotSupportedException("AIFF decoding needs libsndfile, which is not part of the browser build.");
+
         using var reader = new AiffFileReader(stream);
         return ReadToPcm16(reader);
     }

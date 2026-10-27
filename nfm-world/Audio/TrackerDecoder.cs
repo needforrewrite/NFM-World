@@ -1,6 +1,4 @@
 ﻿using System.Buffers;
-using System.Runtime.InteropServices;
-using System.Text;
 using LibOpenMPT.NET;
 using Maxine.Extensions.Collections;
 using Microsoft.IO;
@@ -51,32 +49,20 @@ public static unsafe class TrackerDecoder
         {
             fixed (byte* pData = fileData)
             {
-                var error = 0;
-
-                mod = NativeMethods.module_create_from_memory2(
+                // The v2 entry point takes two extra out-parameters and, in the browser build, the
+                // link's C++ exception support makes it abort instead of returning an error. v1
+                // loads the same files through the same parser and works there, so it is used
+                // everywhere rather than branching on the platform.
+                mod = NativeMethods.module_create_from_memory(
                     pData,
                     (nuint)fileData.Length,
                     null, null,  // no log callback
-                    null, null,   // no error callback
-                    &error, // error code
-                    null, // no error message
                     null // no ctls
                 );
 
                 if (mod == null)
                 {
-                    var errorMessage = NativeMethods.error_string(error);
-                    string errorMessageStr;
-                    try
-                    {
-                        errorMessageStr = Encoding.UTF8.GetString((byte*)errorMessage).TrimEnd('\0');
-                    }
-                    finally
-                    {
-                        NativeMethods.free_string(errorMessage);
-                    }
-
-                    throw new InvalidOperationException($"Failed to load tracker module: {errorMessageStr}");
+                    throw new InvalidOperationException("Failed to load tracker module.");
                 }
             }
 

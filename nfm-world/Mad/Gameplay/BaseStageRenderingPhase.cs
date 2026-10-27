@@ -1,4 +1,5 @@
-﻿using NFMWorld.DriverInterface;
+﻿using NFMWorld.Audio;
+using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
@@ -29,6 +30,7 @@ public abstract class BaseStageRenderingPhase : BasePhase
     public ObservableUnlimitedArray<BackendCar> CarsInRace { get; protected set; } = [];
 
     private IRadicalMusic? _stageMusic;
+
     public string? StageName;
     
     // please don't pass null stage names except for stage select
@@ -100,8 +102,32 @@ public abstract class BaseStageRenderingPhase : BasePhase
             double tempoMul = !useRemastered ? CurrentStage.MusicTempoMul : 1d;
             double freqMul = !useRemastered ? CurrentStage.MusicFreqMul : 1d;
 
-            _stageMusic = IBackend.Backend.LoadMusic($"./data/music/{path}", tempoMul);
+            // The browser's music mount fetches synchronously (see http.js) - there is no thread to
+            // await on and the parse has to return immediately - so both paths load inline. The
+            // fetch is a few hundred kilobytes for one track rather than the whole archive.
+            var musicPath = $"./data/music/{path}";
+            _stageMusic = OperatingSystem.IsBrowser()
+                ? LoadBrowserMusic(musicPath, tempoMul)
+                : IBackend.Backend.LoadMusic(musicPath, tempoMul);
             _stageMusic.SetFreqMultiplier(freqMul);
+        }
+    }
+
+    /// <summary>
+    /// Loads a track from the browser's music archive. Synchronous because the range fetch is: the
+    /// archive is parsed by ZipArchive, which cannot wait on an asynchronous read.
+    /// </summary>
+    private IRadicalMusic LoadBrowserMusic(string musicPath, double tempoMul)
+    {
+        try
+        {
+            using var stream = TheVFS.VFS.OpenRead(musicPath);
+            return new WebAudioMusic(stream, Path.GetExtension(musicPath), tempoMul);
+        }
+        catch (Exception e)
+        {
+            Logging.Error($"Failed to load stage music '{musicPath}': {e.Message}");
+            return new WebAudioMusic();
         }
     }
 

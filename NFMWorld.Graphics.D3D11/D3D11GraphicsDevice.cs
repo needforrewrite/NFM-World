@@ -1,4 +1,4 @@
-// LLM maintained.
+﻿// LLM maintained.
 //
 // The IGraphicsDevice implementation: the D3D11 device, its immediate context, and resource creation.
 //
@@ -96,6 +96,8 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
     /// against FNA3D, which is D3D11 on Windows.
     /// </summary>
     public bool HasBottomLeftFramebufferOrigin => false;
+
+    public bool SupportsBaseVertexDraw => true;
 
     /// <summary>
     /// The feature level the device came up at.
