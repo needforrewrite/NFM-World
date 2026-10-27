@@ -105,7 +105,7 @@ jobs:
           # Use /maxcpucount:1 to prevent a parallel-build race condition where MSBuild worker nodes
           # simultaneously write NFMWorld.CrashReporter.runtimeconfig.json (diamond dependency via
           # NFMWorld.Multiplayer.Base -> NFMWorld.Library -> NFMWorld.CrashReporter).
-          dotnet publish nfm-world/NFMWorld.csproj `
+          dotnet publish NFMWorld/NFMWorld.csproj `
             -c Release `
             -r ${{ matrix.rid }} `
             -p:Version="${{ steps.version.outputs.semantic_version }}" `
@@ -155,11 +155,6 @@ jobs:
 
       - name: Install wine and dependencies
         run: |
-          # Remove ppa:ondrej/php since it breaks i386 packages -- https://github.com/oerdnj/deb.sury.org/issues/1745
-          sudo add-apt-repository ppa:ondrej/php
-          sudo apt-get install --yes ppa-purge
-          sudo ppa-purge -y ppa:ondrej/php
-
           sudo dpkg --add-architecture i386
           wget -qO - https://dl.winehq.org/wine-builds/winehq.key | sudo apt-key add -
           sudo add-apt-repository ppa:cybermax-dexter/sdl2-backport
@@ -223,7 +218,7 @@ jobs:
           # Use /maxcpucount:1 to prevent a parallel-build race condition where MSBuild worker nodes
           # simultaneously write NFMWorld.CrashReporter.runtimeconfig.json (diamond dependency via
           # NFMWorld.Multiplayer.Base -> NFMWorld.Library -> NFMWorld.CrashReporter).
-          dotnet publish nfm-world/NFMWorld.csproj \
+          dotnet publish NFMWorld/NFMWorld.csproj \
             -c Release \
             -r ${{ matrix.rid }} \
             -p:Version="${{ steps.version.outputs.semantic_version }}" \
@@ -341,7 +336,7 @@ jobs:
           # simultaneously write NFMWorld.CrashReporter.runtimeconfig.json (diamond dependency via
           # NFMWorld.Multiplayer.Base -> NFMWorld.Library -> NFMWorld.CrashReporter).
           for RID in osx-x64 osx-arm64; do
-            dotnet publish nfm-world/NFMWorld.csproj \
+            dotnet publish NFMWorld/NFMWorld.csproj \
               -c Release \
               -r $RID \
               -p:Version="${{ steps.version.outputs.semantic_version }}" \
