@@ -8,8 +8,15 @@ const boot = document.getElementById('boot');
 
 boot.textContent = 'loading runtime…';
 
+// The jiterpreter compiles its jit-call wrappers with wasm-EH try_table blocks whenever the
+// browser supports exception handling, but this module is linked with Emscripten's legacy
+// catching (-fexceptions), so it has no wasm tag to point them at and every wrapper fails to
+// compile. Two failures disable the jiterpreter for the rest of the session, so it has to be
+// off. The browser feature check in dotnet.runtime.js only asks the engine, not the module.
+//
 // dotnet.instance only exists once the runtime is created, so the canvas is handed over after.
-const { getAssemblyExports, getConfig } = await dotnet.create();
+const { getAssemblyExports, getConfig } =
+    await dotnet.withRuntimeOptions(['--no-jiterpreter-wasm-eh-enabled']).create();
 
 // SDL's emscripten backend and Silk.NET's extension query both look for the canvas by this name.
 dotnet.instance.Module['canvas'] = canvas;
@@ -48,6 +55,12 @@ exports.NFMWorld.Browser.Program.MountAssets(new Uint8Array(await assets.arrayBu
 boot.textContent = 'starting…';
 
 try {
+    // The size is handed over before boot rather than applied afterwards: the first phase sizes its
+    // camera from the window when it is entered, so a window created at the default 1280x720 and
+    // resized a moment later leaves the camera with a 1280x720 aspect until something resizes the
+    // page again. Main itself stays parameterless - it is the assembly entry point, and the runtime
+    // calls it with no arguments.
+    exports.NFMWorld.Browser.Program.SetBootSize(innerWidth, innerHeight);
     exports.NFMWorld.Browser.Program.Main();
 } catch (e) {
     boot.textContent = `boot failed: ${e}`;

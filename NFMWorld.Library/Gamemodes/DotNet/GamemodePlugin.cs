@@ -19,6 +19,13 @@ public sealed class GamemodePlugin
     private const BindingFlags PublicInstance =
         BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
+    /// <summary>
+    /// Loaded plugins on a runtime with no collectible contexts, keyed by gamemode id.
+    /// There the assembly can never be released, so it is loaded once and reused rather
+    /// than re-read per race.
+    /// </summary>
+    private static readonly Dictionary<string, (PluginLoadContext Context, Assembly Assembly)> Resident = [];
+
     private static readonly Type[] ClientConstructorParameters =
         [typeof(ClientGamemodeParameters), typeof(IGamemodeContext), typeof(string), typeof(Dictionary<string, object>)];
 
@@ -78,15 +85,17 @@ public sealed class GamemodePlugin
     public bool IsAlive => _assemblyRef.IsAlive;
 
     /// <summary>
-    /// Loads the plugin at <paramref name="path"/> into its own collectible context,
-    /// or returns null if there is no assembly there or it is not marked
-    /// <c>[assembly: Gamemode]</c>.
+    /// Loads the plugin at <paramref name="path"/> into its own load context, or returns
+    /// null if there is no assembly there or it is not marked <c>[assembly: Gamemode]</c>.
     /// </summary>
     /// <remarks>
     /// Read into memory and loaded from bytes rather than <c>Assembly.LoadFrom</c>:
     /// a load-from context resolves the assembly's dependencies relative to the file
     /// it was loaded from, which is the gamemode folder - the one place the shared
     /// assemblies deliberately are not.
+    ///
+    /// A non-collectible context cannot be given a second assembly of one identity, and
+    /// cannot release the first, so there the load happens once per id and is reused.
     /// </remarks>
     [RequiresUnreferencedCode("Loads an assembly into a collectible context.")]
     public static GamemodePlugin? Load(string id, string path)
@@ -94,17 +103,26 @@ public sealed class GamemodePlugin
         if (!VFS.FileExists(path))
             return null;
 
-        using var stream = VFS.OpenRead(path);
-        using var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
-        buffer.Position = 0;
+        var cacheable = !PluginLoadContext.IsCollectibleSupported;
 
-        var loadContext = new PluginLoadContext($"Gamemode:{id}");
-        var assembly = loadContext.LoadFromStream(buffer);
+        if (!cacheable || !Resident.TryGetValue(id, out var loaded))
+        {
+            var loadContext = new PluginLoadContext($"Gamemode:{id}");
+            using var stream = VFS.OpenRead(path);
+            using var buffer = new MemoryStream();
+            stream.CopyTo(buffer);
+            buffer.Position = 0;
+            loaded = (loadContext, loadContext.LoadFromStream(buffer));
+
+            if (cacheable) Resident[id] = loaded;
+        }
+
+        var (context, assembly) = loaded;
 
         if (assembly.GetCustomAttribute<GamemodeAttribute>() is not { } attribute)
         {
-            loadContext.Unload();
+            Resident.Remove(id);
+            if (PluginLoadContext.IsCollectibleSupported) context.Unload();
             return null;
         }
 
@@ -113,7 +131,7 @@ public sealed class GamemodePlugin
             attribute.Name,
             attribute.Description,
             assembly,
-            loadContext);
+            context);
     }
 
     /// <summary>
@@ -141,7 +159,8 @@ public sealed class GamemodePlugin
 
     /// <summary>
     /// Detaches this plugin and asks its load context to unload. Returns immediately;
-    /// the assembly is only collected once nothing references it any more.
+    /// the assembly is only collected once nothing references it any more. Does nothing
+    /// where contexts cannot be collected.
     /// </summary>
     /// <remarks>
     /// Plugins declare their own MemoryPack event types, and the generated formatters
@@ -159,6 +178,11 @@ public sealed class GamemodePlugin
             return;
 
         _unloaded = true;
+
+        // Without a collectible context nothing is released, and the cached assembly is what
+        // the next race loads again - so its formatters and type handles have to stay too.
+        if (!PluginLoadContext.IsCollectibleSupported)
+            return;
 
         var dropped = MemoryPackFormatterRegistry.DropFormatters(ClientConstructor.DeclaringType!.Assembly);
 

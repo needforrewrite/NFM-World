@@ -45,6 +45,11 @@
              Program Files, and emscripten refuses a cache on another drive. -->
         <WasmCachePath>$(LOCALAPPDATA)\nfmw-emscripten-cache\</WasmCachePath>
 
+        <!-- Native debug symbols: the emscripten stack in a trap log is otherwise a list of
+             indices. Note WasmEmitSymbolMap does NOT regenerate the .symbols file for a Mono build
+             - it stays whatever a previous build left there - so don't decode a trap against it. -->
+        <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+
         <!-- AOT is only supported on a trimmed build, so this is a precondition rather than a
              size decision. It is also the usual source of "worked in Debug" reflection failures,
              which is why the first playable milestone is checked with trimming on rather than
@@ -218,8 +223,20 @@
          page fetches up front, and the music it fetches per track. Runs on every build because the
          tree is the input and there is no cheaper way to tell whether it changed; 148 MB of stored
          entries takes a few seconds. -->
-    <Target Name="PackData" Condition="'$(RuntimeIdentifier)' == 'browser-wasm'" BeforeTargets="PrepareForBuild">
-        <Exec Command="&quot;$(EmscriptenPythonToolsPath)python.exe&quot; &quot;$(MSBuildThisFileDirectory)pack_data.py&quot; &quot;$(MSBuildThisFileDirectory)wwwroot&quot; &quot;$(MSBuildThisFileDirectory)..\nfm-world\data&quot; &quot;$(MSBuildThisFileDirectory)..\NFMWorld.Library\data&quot;"
+    <!-- Two roots are the source trees, which is where every data file lives. The third is the game
+         project's own build output, and it is there for the gamemode plugins: Gamemode.Plugins.targets
+         copies each gamemode.dll into data/gamemodes/<id>/ of the *host's* output, never into the
+         source tree, so a packaging pass over the sources alone ships the .luau scripts and silently
+         omits every compiled plugin - which is why every gamemode fell back to Lua in the browser.
+         That directory is earlier in the list, so its copy of the .luau files wins and the archive
+         has one entry per path rather than two. -->
+    <!-- After the referenced projects have built, not at PrepareForBuild: the gamemode plugins are
+         produced by the game project's own build, which has not run yet when the browser head
+         prepares its inputs, so the archive would be packed from a directory that is still empty.
+         PrepareResources is past ResolveProjectReferences and still ahead of anything that consumes
+         the archive. -->
+    <Target Name="PackData" Condition="'$(RuntimeIdentifier)' == 'browser-wasm'" BeforeTargets="PrepareResources">
+        <Exec Command="&quot;$(EmscriptenPythonToolsPath)python.exe&quot; &quot;$(MSBuildThisFileDirectory)pack_data.py&quot; &quot;$(MSBuildThisFileDirectory)wwwroot&quot; &quot;$(MSBuildThisFileDirectory)..\nfm-world\bin\$(Configuration)\net11.0\data&quot; &quot;$(MSBuildThisFileDirectory)..\nfm-world\data&quot; &quot;$(MSBuildThisFileDirectory)..\NFMWorld.Library\data&quot;"
               StandardOutputImportance="normal" />
     </Target>
 

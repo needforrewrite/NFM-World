@@ -78,8 +78,16 @@ public sealed class GraphicsSettingsShim(SdlWindow window, ISwapchain swapchain)
     /// pixel format at context creation, so a mid-session change can only take effect on the next
     /// launch, and without this the setting would appear to apply and silently not.
     /// </summary>
+    /// <remarks>
+    /// Never on the browser: the canvas's antialias is a context attribute fixed when WebGL2 is
+    /// created, so no restart could apply the setting either - the request would be advice the
+    /// user can follow forever. The count the context actually got is not reported by the
+    /// swapchain, which is built with zero there.
+    /// </remarks>
     public bool RequiresRestartForMultiSampling =>
-        swapchain.MultiSampleChangeRequiresRestart && DesiredMultiSampleCount != AppliedMultiSampleCount;
+        !OperatingSystem.IsBrowser()
+        && swapchain.MultiSampleChangeRequiresRestart
+        && DesiredMultiSampleCount != AppliedMultiSampleCount;
 
     public void ApplyChanges()
     {

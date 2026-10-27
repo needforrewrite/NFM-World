@@ -12,4 +12,31 @@
   <assembly fullname="MemoryPack.Core">
     <namespace fullname="MemoryPack" />
   </assembly>
+
+  <!-- MemoryPack finds a type's formatter by reflection: it looks for a static RegisterFormatter on
+       the type itself. The trimmer cannot see that call, so for a [MemoryPackable] generic the
+       closed instantiation's generated formatter is removed - and serialising it then fails with
+       "is not registered in this provider". These are the instantiations the shipped gamemode
+       scripts actually reach: Rad3d and StageLoader are what a time trial saves, and the LuaArray
+       variants are the collections inside them. -->
+  <assembly fullname="NFMWorld.Lua">
+    <type fullname="NFMWorldLibrary.Util.LuaArray`1" />
+  </assembly>
+  <assembly fullname="NFMWorld.Library">
+    <type fullname="NFMWorldLibrary.Util.LuaUnlimitedArray`1" />
+  </assembly>
+
+  <!-- MemoryPack's generated formatter for a type with a custom per-member formatter resolves that
+       formatter through reflection on the MEMBER - GetProperty("Payload") / GetField("Payload") -
+       and reads the attribute off it. The trimmer sees no such reference and removes the member
+       (an init-only property on a struct is the first thing to go), after which the lookup returns
+       null and the formatter chain is built from the wrong thing. The symptom is not an obvious
+       reflection error: the reader parses a count from a byte that is not a count, which shows up
+       as "property count is 2 but binary's header maked as 90". These are the three members
+       involved, all on the Lua/cross-peer event packets. -->
+  <assembly fullname="NFMWorld.Library">
+    <type fullname="NFMWorldLibrary.Gamemodes.Lua.LuaEventEnvelope" preserve="all" />
+    <type fullname="NFMWorldLibrary.Multiplayer.Packets.C2S.C2S_ClientEvent" preserve="all" />
+    <type fullname="NFMWorldLibrary.Multiplayer.Packets.S2C.S2C_ServerEvent" preserve="all" />
+  </assembly>
 </linker>

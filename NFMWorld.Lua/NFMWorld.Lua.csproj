@@ -15,6 +15,11 @@
         <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj"/>
         <ProjectReference Include="..\NFMWorld.Library.Base\NFMWorld.Library.Base.csproj" />
         <ProjectReference Include="..\NFMWorld.LuaSourceGenerator\NFMWorld.LuaSourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
+        <!-- LuaArray/LuaList/LuaDictionary are [MemoryPackable] and declared here, so the generator
+             has to run here: it emits the partial that registers their formatters, and an analyzer
+             on a referencing project cannot generate into this one. Without it every serialization
+             of a LuaArray throws "is not registered in this provider". -->
+        <ProjectReference Include="..\MemoryPack\src\MemoryPack.Generator\MemoryPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
     </ItemGroup>
 
     <!-- LuaCATS definition file output -->

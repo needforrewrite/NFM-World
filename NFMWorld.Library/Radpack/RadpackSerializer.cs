@@ -18,9 +18,8 @@ public static class RadpackSerializer
         head[3] = (byte)asset.Metadata.Type;
         writer.Advance(4);
         
-        using var compressor = new BrotliCompressor(CompressionLevel.Fastest);
-        MemoryPackSerializer.Serialize(compressor, asset, MemoryPackHelpers.Options);
-        compressor.CopyTo(writer);
+        var body = MemoryPackSerializer.Serialize(asset, MemoryPackHelpers.Options);
+        Deflate.Compress(body, writer);
     }
     
     public static RadpackAsset Deserialize(ReadOnlySpan<byte> data)
@@ -41,8 +40,7 @@ public static class RadpackSerializer
             throw new InvalidDataException("Not a Radpack asset");
         }
         
-        using var decompressor = new BrotliDecompressor();
-        var decompData = decompressor.Decompress(data[4..]);
+        var decompData = Deflate.Decompress(data[4..]);
         var result = MemoryPackSerializer.Deserialize<RadpackAsset>(decompData);
         if (result == null)
         {
@@ -73,8 +71,7 @@ public static class RadpackSerializer
             throw new InvalidDataException("Not a Radpack asset");
         }
 
-        using var decompressor = new BrotliDecompressor();
-        var decompData = decompressor.Decompress(data.Slice(4));
+        var decompData = Deflate.Decompress(data.Slice(4));
         var result = MemoryPackSerializer.Deserialize<RadpackAsset>(decompData);
         if (result == null)
         {
@@ -120,7 +117,9 @@ public partial class RadpackRad3d : RadpackAsset
 [MemoryPackable(GenerateType.VersionTolerant)]
 public partial class RadpackTexture : RadpackAsset
 {
-    [BrotliFormatter(CompressionLevel.Optimal)]
+    // Was [BrotliFormatter], which is a native call and throws on the browser. Plain bytes instead:
+    // an image is already compressed, so the outer deflate stream carries it at almost its own size
+    // and the per-field layer was buying little over the format's own compression.
     [MemoryPackOrder(1)]
     public required byte[] RawData;
 

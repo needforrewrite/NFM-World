@@ -53,6 +53,10 @@ public class SettingsMenu()
     // Video settings
     public static readonly string[] Renderers = false switch
     {
+        // The browser has exactly one renderer: WebGL2 is ES 3.0 and nothing else can be created
+        // there. Listing the desktop entries would offer a choice that cannot be honoured, and
+        // picking one could only fail to start.
+        _ when OperatingSystem.IsBrowser() => ["OpenGL ES"],
         // windows doesn't do metal or gles, linux doesn't do metal
         _ when RuntimeInformation.IsOSPlatform(OSPlatform.OSX) => ["Auto", "Metal via ANGLE", "OpenGL", "Vulkan via ANGLE", "OpenGL via ANGLE", "OpenGL ES via ANGLE"],
         _ when RuntimeInformation.IsOSPlatform(OSPlatform.Windows) => ["Auto", "DirectX 11", "OpenGL", "Vulkan via ANGLE", "DirectX 11 via ANGLE", "OpenGL via ANGLE"],
@@ -383,13 +387,20 @@ public class SettingsMenu()
             }
         }
 
-        var widthHeight = Resolutions[_selectedResolution].Split('x', StringSplitOptions.TrimEntries);
-        var (width, height) = (int.Parse(widthHeight[0]), int.Parse(widthHeight[1]));
-        if (game.Graphics.PreferredBackBufferWidth != width || game.Graphics.PreferredBackBufferHeight != height)
+        // The page owns the drawing size on the browser: the canvas is laid out by CSS and the
+        // window is created at the page's own size, so applying a stored resolution here would
+        // resize the window away from the page and leave the first camera built for that aspect
+        // until something resized the page. The stored value stays as the last desktop size.
+        if (!OperatingSystem.IsBrowser())
         {
-            game.Graphics.PreferredBackBufferWidth = width;
-            game.Graphics.PreferredBackBufferHeight = height;
-            graphicsChanged = true;
+            var widthHeight = Resolutions[_selectedResolution].Split('x', StringSplitOptions.TrimEntries);
+            var (width, height) = (int.Parse(widthHeight[0]), int.Parse(widthHeight[1]));
+            if (game.Graphics.PreferredBackBufferWidth != width || game.Graphics.PreferredBackBufferHeight != height)
+            {
+                game.Graphics.PreferredBackBufferWidth = width;
+                game.Graphics.PreferredBackBufferHeight = height;
+                graphicsChanged = true;
+            }
         }
 
         if (GameSparker.NumCascades != _shadowCascadeLevel || GameSparker.ShadowResolution != (int)MathF.Round(MathF.Pow(2, _shadowResolution + 9)))
@@ -399,7 +410,11 @@ public class SettingsMenu()
             GameSparker.RebuildCascades();
         }
 
-        if (_selectedRenderer != _originalRenderer)
+        // Never on the browser: there is one renderer there, so a difference can only be a stale
+        // config value naming a desktop entry, and offering a restart over it would be advice that
+        // cannot change anything. Silent rather than merely unprompted - the stored value is
+        // rewritten from the list the page actually has.
+        if (!OperatingSystem.IsBrowser() && _selectedRenderer != _originalRenderer)
         {
             requireRestart = true;
         }
@@ -1002,7 +1017,10 @@ public class SettingsMenu()
         {
             // Video
             case "selectedRenderer":
-                if (args.TryGetValue("value", out var v) && v.TryRead<int>(out var iv))
+                // Bounded by the list: the UI sends an index, and an out-of-range one would leave
+                // SaveConfig indexing past the end when it writes the name back.
+                if (args.TryGetValue("value", out var v) && v.TryRead<int>(out var iv)
+                    && iv >= 0 && iv < Renderers.Length)
                     _selectedRenderer = iv;
                 break;
             case "selectedResolution":

@@ -67,7 +67,10 @@ public class NativeGamemodeFactory(GamemodePlugin plugin, Dictionary<string, obj
         _plugin = null;
 
 #if DEBUG
-        PluginUnloadVerifier.Arm(_gamemodeId, _assembly);
+        // Only checkable where an unload is possible: with no collectible contexts the
+        // assembly is cached for the next race by design and stays resident.
+        if (PluginLoadContext.IsCollectibleSupported)
+            PluginUnloadVerifier.Arm(_gamemodeId, _assembly);
 #endif
     }
 }

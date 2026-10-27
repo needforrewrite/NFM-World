@@ -68,7 +68,30 @@ public static partial class Program
         });
     }
 
-    /// <summary>Brings the game up, then returns so the page can drive frames.</summary>
+    /// <summary>
+    /// The page's size in CSS pixels, handed over before the game is built.
+    ///
+    /// A field rather than a parameter: the wasm runtime calls the assembly's entry point with no
+    /// arguments, so <see cref="Main"/> has to stay parameterless - a stub <c>Main</c> beside a
+    /// parameterised export is not callable and the runtime's indirect call to it lands on null.
+    /// The page writes this immediately before calling <see cref="Main"/>.
+    /// </summary>
+    private static (int Width, int Height) _bootSize = (1280, 720);
+
+    /// <summary>
+    /// TEMP: names the boot step that is about to run. A trap in native code kills the module
+    /// before any managed catch can report it, so the last line of the log is the only record of
+    /// how far the boot got.
+    /// </summary>
+    private static void Step(string what) => Console.WriteLine($"[nfmw] > {what}");
+
+    /// <summary>
+    /// Brings the game up, then returns so the page can drive frames.
+    ///
+    /// Both the assembly's entry point and a JS export: the runtime calls it with no arguments, and
+    /// the page calls it too (after <see cref="SetBootSize"/>) because the work has to happen on
+    /// the game thread rather than during module instantiation.
+    /// </summary>
     [JSExport]
     public static void Main()
     {
@@ -84,18 +107,22 @@ public static partial class Program
         {
             // SDL still owns the window and the events: its emscripten video backend creates the
             // canvas's surface and feeds the input plumbing the game already speaks.
+            Step("SDL_Init");
             if (!SDL_Init(SDL_InitFlags.SDL_INIT_VIDEO))
                 throw new InvalidOperationException($"SDL_Init failed: {SDL_GetError()}");
 
+            Step("WebGlContext.Create");
             var context = WebGlContext.Create();
 
             // The desktop head parses the persisted settings in Main, before the game is built;
             // this path skips that, and the assets are already mounted by the time this runs, so
             // the values come from the boot archive (or stay at their defaults without one).
+            Step("LoadConfigValues");
             NFMWorld.UI.SettingsMenu.LoadConfigValues();
 
+            Step("CreateForBrowser");
             _game = WorldGame.CreateForBrowser(
-                context, width: 1280, height: 720,
+                context, width: Math.Max(1, _bootSize.Width), height: Math.Max(1, _bootSize.Height),
                 present: WebGlContext.Present,
                 setSwapInterval: WebGlContext.SetSwapInterval,
                 resizeDrawable: WebGlContext.Resize);
@@ -105,18 +132,35 @@ public static partial class Program
             // The desktop head does this in Main, before the game exists: it fills in the model
             // tables GameSparker.Load reads (error_mesh and the stage/car parts) and picks the
             // backend. Nothing else does it on this path, so the models would all be null.
+            Step("BackendGameSparker.Load");
             BackendGameSparker.Load(isHeadless: false);
 
+            Step("Initialize");
             _game.Initialize();
+            Step("LoadContent");
             _game.LoadContent();
 
+            Step("booted");
             _clock = Stopwatch.StartNew();
         }
         catch (Exception ex)
         {
             // A managed exception at boot is otherwise invisible: the runtime reports it to
             // dotnet's own handler, which a page without error handling drops.
-            Console.WriteLine($"[nfmw] boot failed: {ex}");
+            //
+            // Not `{ex}`: ToString formats the message, and a message with a number or a date in it
+            // goes through ICU. This build runs with InvariantGlobalization, which leaves ICU's
+            // function pointers unset, so formatting an exception that way traps inside the trap
+            // and the original failure never prints. The type and message are read directly and
+            // the stack is walked by hand, none of which formats anything.
+            Console.WriteLine($"[nfmw] boot failed: {ex.GetType().FullName}: {ex.Message}");
+            for (var frame = ex.StackTrace; frame != null;)
+            {
+                var nl = frame.IndexOf('\n');
+                Console.WriteLine("[nfmw]   " + (nl < 0 ? frame : frame[..nl]).TrimEnd('\r'));
+                if (nl < 0) break;
+                frame = frame[(nl + 1)..];
+            }
         }
     }
 
@@ -142,5 +186,17 @@ public static partial class Program
     {
         if (width <= 0 || height <= 0) return;
         _game?.Window.SetSize(width, height);
+    }
+
+    /// <summary>
+    /// Records the page's size for the boot that follows. Called immediately before
+    /// <see cref="Main"/>, because the window has to be created at the real size: the first phase
+    /// reads it when it is entered to set its camera's aspect, so a window created at 1280x720 and
+    /// resized afterwards keeps the wrong field of view until something else resizes the page.
+    /// </summary>
+    [JSExport]
+    public static void SetBootSize(int width, int height)
+    {
+        if (width > 0 && height > 0) _bootSize = (width, height);
     }
 }

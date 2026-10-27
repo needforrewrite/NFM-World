@@ -14,7 +14,7 @@ namespace NFMWorldLibrary.Files;
 [MemoryPackable(GenerateType.CircularReference)]
 public partial class SavedTimeTrial
 {
-    public const int CURRENT_VERSION = 4;
+    public const int CURRENT_VERSION = 5;
     
     [MemoryPackOrder(0)] public string CarName;
     [MemoryPackOrder(1)] public string StageName;
@@ -88,10 +88,9 @@ public partial class SavedTimeTrial
         {
             if (VFS.FileExists(fileName))
             {
-                using var decompressor = new BrotliDecompressor();
                 using var stream = VFS.OpenRead(fileName);
                 using var sequence = stream.AsPooledReadOnlySequence();
-                var data = decompressor.Decompress(sequence.Sequence);
+                var data = Deflate.Decompress(sequence.Sequence);
                 return MemoryPackSerializer.Deserialize<SavedTimeTrial>(data, MemoryPackHelpers.Options);
             }
             else
@@ -109,8 +108,7 @@ public partial class SavedTimeTrial
 
     public static SavedTimeTrial? Load(ReadOnlyMemory<byte> data)
     {
-        using var decompressor = new BrotliDecompressor();
-        var decompData = decompressor.Decompress(data.Span);
+        var decompData = Deflate.Decompress(data.Span);
         return MemoryPackSerializer.Deserialize<SavedTimeTrial>(decompData, MemoryPackHelpers.Options);
     }
 
@@ -120,9 +118,8 @@ public partial class SavedTimeTrial
         // in-memory filesystem there. The directory is implied by the path, so it needs no mount
         // of its own.
         using var fileStream = VFS.OpenWrite(GetPathName(CarName, StageName));
-        using var compressor = new BrotliCompressor(CompressionLevel.Fastest);
-        MemoryPackSerializer.Serialize(compressor, this, MemoryPackHelpers.Options);
-        compressor.CopyTo(fileStream.AsBufferWriter<byte>());
+        var body = MemoryPackSerializer.Serialize(this, MemoryPackHelpers.Options);
+        Deflate.Compress(body, fileStream.AsBufferWriter<byte>());
     }
 
     public void RecordTick(BackendCar car)
