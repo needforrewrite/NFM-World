@@ -175,6 +175,56 @@ internal static class Program
         }
 
         Console.WriteLine();
+        Console.WriteLine("== a prebaked cache round-trips, and only onto its own font ==");
+        {
+            // A fresh font has to produce the same fields the cache was written from, and applying
+            // the cache has to leave the drawing data untouched - a cache that decoded into
+            // plausible bytes in the wrong order would draw garbage, not throw.
+            byte[] fontBytes = File.ReadAllBytes(FindFont());
+            byte[] cache = font.SavePrewarmed();
+            Check(cache.Length > 0, "a cache is written");
+            int baked = font.PrewarmedFieldCount;
+
+            using var fresh = new ShapeFont(fontBytes);
+            fresh.LoadPrewarmed(cache);
+            // A cache has to be readable by a font that has baked nothing, which is the case the
+            // game is in. Loading it must not silently fall back to baking, or the only symptom of
+            // a corrupt format is a slow launch.
+            Check(fresh.PrewarmedFieldCount == baked, $"the whole cache loads ({fresh.PrewarmedFieldCount} of {baked})");
+            MsdfGlyph loadedO = fresh.Font.Field(fresh.Font.Lookup('o').Glyph);
+            MsdfGlyph bakedO = font.Font.Field(font.Font.Lookup('o').Glyph);
+            Check(loadedO.Width == bakedO.Width && loadedO.Height == bakedO.Height,
+                  $"a loaded field keeps its size ({loadedO.Width}x{loadedO.Height})");
+            Check(loadedO.PaddedMin == bakedO.PaddedMin && loadedO.PaddedMax == bakedO.PaddedMax,
+                  "a loaded field keeps its placement");
+            Check(loadedO.Rgba.AsSpan().SequenceEqual(bakedO.Rgba), "a loaded field keeps its bytes");
+
+            // A cache that was baked from other font bytes has to be ignored whole. One flipped
+            // byte in the recorded hash stands in for a font that changed: the check is on the
+            // hash alone, so this exercises exactly the decision a real mismatch makes.
+            byte[] wrongFont = (byte[])cache.Clone();
+            wrongFont[8] ^= 0xFF;
+            using var stranger = new ShapeFont(fontBytes);
+            stranger.LoadPrewarmed(wrongFont);
+            Check(stranger.PrewarmedFieldCount == 0, "a cache for other font bytes is ignored");
+
+            // A damaged file misses rather than throwing: it is an accelerator, so a corrupt one
+            // has to leave the lazy bake - and the missing-glyph box - to cover everything.
+            byte[] broken = (byte[])cache.Clone();
+            broken[broken.Length / 2] ^= 0xFF;
+            using var tolerant = new ShapeFont(fontBytes);
+            tolerant.LoadPrewarmed(broken);
+            Check(tolerant.PrewarmedFieldCount == 0, "a damaged cache is ignored, not thrown on");
+
+            // Nothing at all is not a cache either; the caller passes whatever it found.
+            using var empty = new ShapeFont(fontBytes);
+            empty.LoadPrewarmed(Array.Empty<byte>());
+            Check(empty.PrewarmedFieldCount == 0, "an empty cache is ignored");
+
+            Console.WriteLine($"  ({baked} fields, {cache.Length / 1024} KiB)");
+        }
+
+        Console.WriteLine();
         Console.WriteLine("== an outline read off alpha stays where the letter is ==");
         {
             // The outline is the letter grown by its width, so it is drawn off alpha, the true

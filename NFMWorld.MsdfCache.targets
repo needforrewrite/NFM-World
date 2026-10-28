@@ -1,0 +1,68 @@
+﻿<Project>
+
+    <!-- Bakes the fonts' MSDF atlases ahead of time, as a target any project can import.
+         The game warms ~220 glyphs a font at startup and each bake costs milliseconds, which on the
+         browser is most of the launch. The fields are a pure function of the font file and the bake
+         constants, so they are baked here once per build and loaded instead.
+
+         Same shape as NFMWorld.ShaderCompiler.targets, and for the same reasons: the tool is built
+         from here rather than referenced, so the game never depends on the baker, and it is loaded
+         out-of-process so its own build can replace it on the next run. -->
+
+    <PropertyGroup>
+        <NFMWorldMsdfFontsDirectory Condition="'$(NFMWorldMsdfFontsDirectory)' == ''">$(MSBuildThisFileDirectory)nfm-world\data\fonts</NFMWorldMsdfFontsDirectory>
+        <NFMWorldMsdfToolAssembly Condition="'$(NFMWorldMsdfToolAssembly)' == ''">$(MSBuildThisFileDirectory)NFMWorld.MsdfCache.Tool\bin\$(Configuration)\net11.0\NFMWorld.MsdfCache.Tool.dll</NFMWorldMsdfToolAssembly>
+        <!-- The stamp records the fonts and the baker, so either changing rebakes. Kept beside the
+             baking tool's own output rather than in this project's obj/: several projects import
+             this file (the game, the browser head through it), and they would otherwise each keep
+             their own stamp and each rebake.
+
+             Absolute, because MSBuild resolves some of the tasks below against the process working
+             directory, which under TaskHostFactory is not the project directory. -->
+        <NFMWorldMsdfStamp Condition="'$(NFMWorldMsdfStamp)' == ''">$(MSBuildThisFileDirectory)NFMWorld.MsdfCache.Tool\obj\$(Configuration)\msdf.stamp</NFMWorldMsdfStamp>
+    </PropertyGroup>
+
+    <!-- Builds the tool before anything tries to run it. Unconditional for the same reason the
+         shader compiler's is: the check would be against a bin/ copy, which can be newer than the
+         sources without being current. The nested build is incremental on its own. -->
+    <Target Name="BuildMsdfCacheTool" Condition="'$(MSBuildRuntimeType)' == 'Core'">
+        <MSBuild Projects="$(MSBuildThisFileDirectory)NFMWorld.MsdfCache.Tool\NFMWorld.MsdfCache.Tool.csproj"
+                 Targets="Build"
+                 Properties="Configuration=$(Configuration);TargetFramework=net11.0" />
+    </Target>
+
+    <!-- Bakes into the fonts directory itself, beside each font, so the output flows through the
+         project's existing data/** copy rule rather than needing a copy of its own. The caches are
+         therefore checked in: baking is slow, and generating them into obj/ instead would make every
+         clean checkout pay the full bake before it could build at all.
+
+         Inputs/Outputs is the fonts plus every source of the baker, because a change to the bake
+         algorithm has to invalidate as much as a font edit does - and the tool's own DLL is not a
+         safe stand-in for that, since a rebuild that only touched the linker would leave it looking
+         unchanged. The stamp is written after the tool succeeds, so a failed bake cannot look up to
+         date. -->
+    <ItemGroup>
+        <NFMWorldMsdfFont Include="$(NFMWorldMsdfFontsDirectory)\*.ttf" />
+        <NFMWorldMsdfFont Include="$(NFMWorldMsdfFontsDirectory)\*.otf" />
+        <NFMWorldMsdfSource Include="$(MSBuildThisFileDirectory)Apos.Shapes\Source\MsdfBake.cs" />
+        <NFMWorldMsdfSource Include="$(MSBuildThisFileDirectory)Apos.Shapes\Source\MsdfCache.cs" />
+        <NFMWorldMsdfSource Include="$(MSBuildThisFileDirectory)Apos.Shapes\Source\GlyphFont.cs" />
+        <NFMWorldMsdfSource Include="$(MSBuildThisFileDirectory)Apos.Shapes\Source\GlyphBake.cs" />
+    </ItemGroup>
+
+    <Target Name="BakeMsdfCaches"
+            BeforeTargets="PrepareForBuild"
+            DependsOnTargets="BuildMsdfCacheTool"
+            Condition="'$(MSBuildRuntimeType)' == 'Core'"
+            Inputs="@(NFMWorldMsdfFont);@(NFMWorldMsdfSource)"
+            Outputs="$(NFMWorldMsdfStamp)">
+
+        <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(NFMWorldMsdfStamp)'))" />
+
+        <Exec Command="dotnet &quot;$(NFMWorldMsdfToolAssembly)&quot; &quot;$(NFMWorldMsdfFontsDirectory)&quot;"
+              StandardOutputImportance="normal" />
+
+        <Touch Files="$(NFMWorldMsdfStamp)" AlwaysCreate="true" />
+    </Target>
+
+</Project>

@@ -644,13 +644,7 @@ public class WorldGame : IDisposable, IGameHost
         SyncBackendVSync();
 
 
-        Window.Resized += (w, h) =>
-        {
-            EnsureSwapchainMatchesWindow();
-            GameSparker.WindowSizeChanged(w, h);
-            GameSparker.CurrentPhase.WindowSizeChanged(w, h);
-            G.Scale = h / 720f;
-        };
+        Window.Resized += OnWindowResized;
 
         Window.TextInput += character =>
         {
@@ -885,6 +879,11 @@ public class WorldGame : IDisposable, IGameHost
         // Only the application half - the config was parsed in Main, before the window existed. See
         // ApplyLoadedSettings, and Main for why the two halves have to happen where they do.
         SettingsMenu.ApplyLoadedSettings();
+
+        // The size the window already has, applied once. The Resized event only fires on a change,
+        // and the browser creates its window at the page's size and never resizes it, so without
+        // this the UI scale would stay at its initial value there. See OnWindowResized.
+        OnWindowResized(Window.Width, Window.Height);
     }
 
     private void UpdateInput()
@@ -1008,6 +1007,28 @@ public class WorldGame : IDisposable, IGameHost
     /// happen. Requested here, applied here, before anything is drawn.
     /// </para>
     /// </summary>
+    /// <summary>
+    /// Everything that follows from the window being a new size.
+    /// </summary>
+    /// <remarks>
+    /// Named and shared rather than left inline in the event subscription because it also has to run
+    /// once at startup. It was a closure on <see cref="SdlWindow.Resized"/> alone, which is fine on a
+    /// desktop where the window is created small and then resized by the settings - but the browser
+    /// creates its window at the page's size and then asks for that same size, so SDL sees no change,
+    /// sends no event, and the UI scale stayed at its initial 1. That made every screen at any height
+    /// lay out as though it were 720 tall: the same pixel-sized menu on a 720p and a 900p page.
+    ///
+    /// <para>Being idempotent is why calling it unconditionally at startup is safe - every step is a
+    /// compare-then-set, and the two calls into the game are cheap.</para>
+    /// </remarks>
+    private void OnWindowResized(int w, int h)
+    {
+        EnsureSwapchainMatchesWindow();
+        GameSparker.WindowSizeChanged(w, h);
+        GameSparker.CurrentPhase.WindowSizeChanged(w, h);
+        G.Scale = h / 720f;
+    }
+
     private void EnsureSwapchainMatchesWindow()
     {
         var swapchain = _device.Swapchain;

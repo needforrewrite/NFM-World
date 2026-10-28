@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- Bakes the fonts' distance fields ahead of time and writes them beside the game's data.
+         Run as an exe by NFMWorld.MsdfCache.targets, not referenced by the game: the game only
+         reads what this produces, and it must not gain a dependency on the baker. -->
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>NFMWorld.MsdfCacheBuild</RootNamespace>
+        <!-- Named for the targets file that drives it, not for an assembly identity anything can
+             reference. -->
+        <AssemblyName>NFMWorld.MsdfCache.Tool</AssemblyName>
+        <InvariantGlobalization>true</InvariantGlobalization>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- The same baker the game uses, so a prebaked field is the field the runtime would have
+             made. It deliberately does not reference the game: that would pull in the whole
+             renderer for one method. -->
+        <ProjectReference Include="..\Apos.Shapes\Source\Apos.Shapes.NFMW.csproj" />
+    </ItemGroup>
+
+</Project>

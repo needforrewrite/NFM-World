@@ -109,6 +109,11 @@
     <!-- Builds the .NET gamemodes and drops each gamemode.dll into the matching
          data/gamemodes/<id>/ folder in this project's output. -->
     <Import Project="..\Gamemode.Plugins.targets" />
+
+    <!-- Bakes the fonts' distance field atlases beside them, so a launch loads them instead of
+         spending seconds baking. The caches land in data/fonts and ship by the existing data/**
+         copy rule. -->
+    <Import Project="..\NFMWorld.MsdfCache.targets" />
     
     <ItemGroup>
         <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="SourceItemGroup" />

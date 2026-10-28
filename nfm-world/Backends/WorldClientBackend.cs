@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.IO;
 using System.Text;
 using Apos.Shapes;
 using CommunityToolkit.HighPerformance;
@@ -161,9 +162,19 @@ internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphics
             {
                 font.AddFallback(symbols);
             }
-            // A glyph's distance field is baked the first time it is drawn, which for a cold
-            // glyph is most of a millisecond. Anything redrawn every frame would pay that in
-            // the frame it first appears, so the counters' own character set is paid for here.
+            // The build bakes ASCII and Latin-1 into <font>.msdf; loading that is what keeps this
+            // from spending seconds here, which on the browser was most of the launch. Taken before
+            // any Prewarm call, since the file is only consulted for glyphs not baked yet.
+            //
+            // Absent or stale is not an error: a font whose bytes changed misses, and everything it
+            // did not cover still bakes on first draw. That is a slow launch, not a broken one.
+            string cacheFile = Path.ChangeExtension(fontFile, ".msdf");
+            if (VFS.FileExists(cacheFile))
+            {
+                font.LoadPrewarmed(VFS.ReadAllBytes(cacheFile));
+            }
+            // Whatever the cache left out is baked here: anything outside ASCII/Latin-1 that the
+            // counters and debug overlay draw, so no frame pays for a cold glyph on first tick.
             font.Prewarm(PerFrameChars);
             return font;
         }
