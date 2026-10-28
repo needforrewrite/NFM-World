@@ -56,7 +56,7 @@
     <Target Name="BuildShaderCompilerTask"
             Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(NFMWorldShaderBuildTask)' == 'true'">
         <MSBuild Projects="$(MSBuildThisFileDirectory)..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.Task.csproj"
-                 Targets="Build"
+                 Targets="Restore;Build"
                  Properties="Configuration=$(Configuration);TargetFramework=net11.0" />
     </Target>
 
