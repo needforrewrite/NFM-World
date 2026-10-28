@@ -50,17 +50,12 @@
     </ItemGroup>
 
     <ItemGroup>
-        <!-- The property GeneratePathProperty creates is named after the package with the dots it
-             cannot hold in a property name replaced by underscores - PkgSilk_NET_Shaderc_Native,
-             not PkgSilk.NET.Shaderc.Native, which MSBuild reads as a property function call.
-
-             win-x64 is hardcoded because the task runs in MSBuild's process on the build machine and
-             this repository's build is Windows-only; a RuntimeIdentifier-driven path would name a RID
-             the task host does not necessarily agree with. -->
-        <None Include="$(PkgSilk_NET_Shaderc_Native)\runtimes\win-x64\native\shaderc_shared.dll"
-              Link="shaderc_shared.dll" CopyToOutputDirectory="PreserveNewest" />
-        <None Include="$(PkgSilk_NET_SPIRV_Cross_Native)\runtimes\win-x64\native\spirv-cross.dll"
-              Link="spirv-cross.dll" CopyToOutputDirectory="PreserveNewest" />
+        <!-- Use the SDK host RID, not RuntimeIdentifier: this task executes in the build host
+             process, which may differ from the RID being published. -->
+        <None Include="$(PkgSilk_NET_Shaderc_Native)\runtimes\$(NETCoreSdkRuntimeIdentifier)\native\*"
+              Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="$(PkgSilk_NET_SPIRV_Cross_Native)\runtimes\$(NETCoreSdkRuntimeIdentifier)\native\*"
+              Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
 </Project>
