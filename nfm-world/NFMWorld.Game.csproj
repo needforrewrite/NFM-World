@@ -84,7 +84,7 @@
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
         <ProjectReference Include="..\NFMWorld.Multiplayer.Base\NFMWorld.Multiplayer.Base.csproj" />
         <ProjectReference Include="..\NFMWorld.NativeLibs\NFMWorld.NativeLibs.csproj" />
-        <ProjectReference Include="..\FNA\lib\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
+        <ProjectReference Include="..\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
         <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
         <ProjectReference Include="..\NFMWorld.Graphics.D3D11\NFMWorld.Graphics.D3D11.csproj" />
         <ProjectReference Include="..\NFMWorld.Graphics.DesktopGL\NFMWorld.Graphics.DesktopGL.csproj" />

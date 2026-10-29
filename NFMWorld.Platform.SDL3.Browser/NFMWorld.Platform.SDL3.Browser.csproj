@@ -34,7 +34,8 @@
 
     <Target Name="BuildSDL3"
             Condition="'$(RuntimeIdentifier)' == 'browser-wasm'"
-            BeforeTargets="PrepareForBuild">
+            BeforeTargets="PrepareForBuild"
+            DependsOnTargets="_SetupEmscripten">
 
         <Error Condition="'$(EmscriptenPythonToolsPath)' == ''"
                Text="No emscripten python in this build (EmscriptenPythonToolsPath is empty). SDL3 has to be compiled with the workload's own toolchain - see NFMWorld.Platform.SDL3.Browser.csproj." />
@@ -42,10 +43,21 @@
         <MakeDir Directories="$(SDL3ArchiveDir)" />
         <MakeDir Directories="$(SDL3ArchiveDir)work" />
 
+        <!-- Frozen only when EM_CACHE is the SDK's own (read-only) cache dir. The SDK's .emscripten
+             defaults FROZEN_CACHE to True, so a fresh cache elsewhere fails every compile with
+             "FROZEN_CACHE is set, but cache file is missing". -->
+        <PropertyGroup>
+            <_Sdl3FrozenCache Condition="'$(WasmCachePath)' == '$(EmscriptenCacheSdkCacheDir)'">1</_Sdl3FrozenCache>
+            <_Sdl3FrozenCache Condition="'$(WasmCachePath)' != '$(EmscriptenCacheSdkCacheDir)'">0</_Sdl3FrozenCache>
+        </PropertyGroup>
+
         <!-- Incremental at the object level inside the script: a rebuild with nothing changed
              re-archives rather than recompiling 181 translation units. -->
+        <!-- The workload's emscripten reads its toolchain locations from these variables (see the
+             emscripten/.emscripten file it ships); without them it fails with an empty LLVM_ROOT.
+             The node path needs its bin/ segment, which a hand-written list tends to omit. -->
         <Exec Command="&quot;$(EmscriptenPythonToolsPath)python.exe&quot; &quot;$(SDL3SourceBuild)&quot; &quot;$(SDL3Archive)&quot; &quot;$(SDL3ArchiveDir)work&quot;"
-              EnvironmentVariables="EMSDK=$(EmscriptenSdkToolsPath);EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe;PYTHONHOME=;PYTHONPATH=$(EmscriptenSdkToolsPath)python;DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin;DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath);DOTNET_EMSCRIPTEN_NODE_JS=$(EmscriptenNodeToolsPath)node.exe;EM_CACHE=$(WasmCachePath)" />
+              EnvironmentVariables="EMSDK=$(EmscriptenSdkToolsPath);EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe;PYTHONHOME=;PYTHONPATH=$(EmscriptenSdkToolsPath)python;DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin;DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath);DOTNET_EMSCRIPTEN_NODE_JS=$(EmscriptenNodeToolsPath)bin/node.exe;EM_CACHE=$(WasmCachePath);EM_FROZEN_CACHE=$(_Sdl3FrozenCache)" />
     </Target>
 
 
