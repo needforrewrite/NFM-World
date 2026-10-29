@@ -54,20 +54,60 @@ else
     fi
     packs_dir="$dotnet_root/packs"
     echo "==> dotnet root: $dotnet_root"
+    # The SDK, Node and Cache packs have to come from one Emscripten version: an SDK's sysroot and
+    # its prebuilt libraries are only valid for the compiler that produced them, and each kind
+    # sorts independently. So the Sdk pack's version is chosen first and the other two are asked
+    # for that exact version. <pack>/<version>/tools.
+    emscripten_version="$(ls -d "$packs_dir"/Microsoft.NET.Runtime.Emscripten.*.Sdk.* 2>/dev/null \
+        | sort -V | tail -1 | sed 's|.*/Microsoft\.NET\.Runtime\.Emscripten\.\([^/]*\)\.Sdk\..*|\1|')"
+    [ -n "$emscripten_version" ] || { echo "no Emscripten Sdk pack under $packs_dir" >&2; exit 1; }
+    echo "==> emscripten version: $emscripten_version"
+
+    # Capitalised: the packs are ...Emscripten.<version>.<Kind>.<rid>, and a glob is case-sensitive
+    # on Linux, where this runs in CI. Lowercase matched only because it was tested on Windows'
+    # case-insensitive filesystem.
     find_emscripten_pack() {
         local kind="$1" dir
-        dir="$(ls -d "$packs_dir"/Microsoft.NET.Runtime.Emscripten.*."$kind".* 2>/dev/null | sort -V | tail -1)"
-        [ -n "$dir" ] || { echo "no Emscripten $kind pack under $packs_dir" >&2; return 1; }
-        # <pack>/<version>/tools
+        dir="$(ls -d "$packs_dir"/Microsoft.NET.Runtime.Emscripten."$emscripten_version"."$kind".* 2>/dev/null | head -1)"
+        [ -n "$dir" ] || { echo "no Emscripten $kind pack for $emscripten_version" >&2; return 1; }
         echo "$dir"/*/tools
     }
 
-    # Capitalised: the packs are ...Emscripten.<version>.Sdk.<rid> and .Node.<rid>, and a glob is
-    # case-sensitive on Linux, where this runs in CI. Lowercase matched here only because it was
-    # tested on Windows' case-insensitive filesystem.
     sdk_tools="$(find_emscripten_pack Sdk)"
     node_pack="$(find_emscripten_pack Node)"
     echo "==> emscripten: $sdk_tools"
+
+    # Emscripten needs a cache it can write to. The SDK pack ships none of its own and its
+    # .emscripten sets FROZEN_CACHE, so emcc refuses to build the missing entries and every compile
+    # dies with "FROZEN_CACHE is set, but cache file is missing: sysroot_install.stamp".
+    #
+    # The prebuilt sysroot lives in the separate Cache pack, under the read-only dotnet root - so
+    # pointing EM_CACHE straight at it fixes the missing-file error and then fails the first time
+    # anything wants to write. What the SDK itself does (BrowserWasmApp.targets) is freeze only when
+    # the cache dir *is* the pack's, and otherwise let emcc populate a writable one; this does the
+    # same, and seeds the writable cache from the pack once so the sysroot need not be rebuilt.
+    cache_pack="$(find_emscripten_pack Cache)"
+    export EM_CACHE="${TMPDIR:-/tmp}/nfmw-emscripten-cache"
+    if [ ! -d "$EM_CACHE/sysroot" ]; then
+        echo "==> seeding emscripten cache from $cache_pack"
+        mkdir -p "$EM_CACHE"
+        cp -R "$cache_pack"/emscripten/cache/. "$EM_CACHE"/
+        chmod -R u+w "$EM_CACHE"
+
+        # The pack's sanity line records the path the toolchain was built at, which is not this
+        # one: left as-is, emcc decides the config changed and calls cache.erase(), deleting the
+        # sysroot that was just copied. The line is `<version>|<llvm root>`, so rewriting it for
+        # this location is what makes the seeded cache count as current.
+        #
+        # The version comes from emscripten-version.txt with its surrounding quotes stripped, which
+        # is how emcc itself reads it (tools/utils.py). Leaving them in writes `"6.0.3"` where the
+        # compiler expects `6.0.3`, which compares unequal for the same reason a wrong path does.
+        emscripten_version_text="$(tr -d '"' < "$sdk_tools/emscripten/emscripten-version.txt" | tr -d '\r\n')"
+        printf '%s|%s\n' "$emscripten_version_text" "$DOTNET_EMSCRIPTEN_LLVM_ROOT" > "$EM_CACHE/sanity.txt"
+    fi
+    # Not the pack's own directory, so nothing here may be frozen.
+    export EM_FROZEN_CACHE=0
+    echo "==> emscripten cache: $EM_CACHE"
 
     # The SDK pack's own emsdk_env.sh points PATH and the .emscripten config at this toolchain; it
     # reads these four variables and refuses to run without them.
