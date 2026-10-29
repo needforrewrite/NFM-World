@@ -48,6 +48,10 @@
         <PropertyGroup>
             <GamemodeOutputRoot>$(TargetDir)data/gamemodes</GamemodeOutputRoot>
         </PropertyGroup>
+        <!-- Build must re-evaluate the project after restore generates its NuGet imports. -->
+        <MSBuild Projects="%(GamemodePlugin.Project)"
+                 Targets="Restore"
+                 Properties="Configuration=$(Configuration);GamemodeOutputRoot=$(GamemodeOutputRoot);GamemodeId=%(GamemodePlugin.GamemodeId);ExcludeRestorePackageImports=true" />
         <MSBuild Projects="%(GamemodePlugin.Project)"
                  Targets="Build"
                  Properties="Configuration=$(Configuration);GamemodeOutputRoot=$(GamemodeOutputRoot);GamemodeId=%(GamemodePlugin.GamemodeId)" />
