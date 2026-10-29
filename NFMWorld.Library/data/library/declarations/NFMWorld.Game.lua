@@ -1,45 +1,80 @@
----@class NFMWorld.UI.Cef.AccountData
+---@class AccountData : System.IEquatable_AccountData
+---@field name string
+---@field isLoggedIn boolean
+---@field avatarUrl string
 
-NFMWorld.UI.Cef.AccountData = {}
-
-
----@class NFMWorld.UI.Cef.AvailableOptions
-
-NFMWorld.UI.Cef.AvailableOptions = {}
+AccountData = {}
 
 
----@class NFMWorld.UI.Cef.CapturedKey
+---@class AvailableOptions
+---@field renderers { string }
+---@field resolutions { string }
+---@field displayModes { string }
+---@field antialiasModes { string }
+---@field shadowCascadeLevels { string }
+---@field shadowResolutions { string }
+---@field renderDistanceNames { string }
 
-NFMWorld.UI.Cef.CapturedKey = {}
-
-
----@class NFMWorld.UI.Cef.CarCollectionData
-
-NFMWorld.UI.Cef.CarCollectionData = {}
-
-
----@class NFMWorld.UI.Cef.CarCollectionsData
-
-NFMWorld.UI.Cef.CarCollectionsData = {}
+AvailableOptions = {}
 
 
----@class NFMWorld.UI.Cef.CarStatsData
+---@class CapturedKey
+---@field action string
+---@field keyCode integer
+---@field cancelled boolean
 
-NFMWorld.UI.Cef.CarStatsData = {}
-
-
----@class NFMWorld.UI.Cef.CounterData
-
-NFMWorld.UI.Cef.CounterData = {}
+CapturedKey = {}
 
 
----@class NFMWorld.UI.Cef.CurrentCollectionData
+---@class CarCollectionData
+---@field id string
+---@field cars { CarStatsData }
 
-NFMWorld.UI.Cef.CurrentCollectionData = {}
+CarCollectionData = {}
 
 
----@class NFMWorld.UI.Cef.PauseState
+---@class CarCollectionsData
+---@field collections { CarCollectionData }
 
-NFMWorld.UI.Cef.PauseState = {}
+CarCollectionsData = {}
+
+
+---@class CarStatsData
+---@field fileName string
+---@field name string
+---@field collection string
+---@field topSpeed number
+---@field acceleration number
+---@field handling number
+---@field powerSave number
+---@field strength number
+---@field maxHealth number
+---@field stunting number
+---@field hypergliding number
+---@field abing number
+
+CarStatsData = {}
+
+
+---@class CounterData
+---@field value integer
+
+CounterData = {}
+
+
+---@class CurrentCollectionData
+---@field id string
+
+CurrentCollectionData = {}
+
+
+---@class PauseState
+---@field lap integer
+---@field totalLaps integer
+---@field position integer
+---@field totalRacers integer
+---@field stageName string
+
+PauseState = {}
 
 

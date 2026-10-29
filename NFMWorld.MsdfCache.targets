@@ -31,17 +31,19 @@
              reaches it: without this a clean checkout fails with NETSDK1004 "assets file not
              found", which is what the desktop release builds hit on every platform. Same shape as
              NFMWorld.ShaderCompiler.targets' BuildShaderCompilerTask. -->
+        <!-- RuntimeIdentifier and PublishReadyToRun both cleared: the release workflows publish
+             with a global -r, which travels into this nested build, and an Exe project's output then
+             moves to bin/<cfg>/<tfm>/<rid>/. NFMWorldMsdfToolAssembly above names the rid-less path,
+             so the bake would run a file that is not there ("Could not execute because the specified
+             command or file was not found"). Clearing the RID then makes the inherited
+             PublishReadyToRun unsatisfiable (NETSDK1191), so that goes too. The tool runs on the
+             build host, not on the target RID, and is never published, so neither applies. -->
         <MSBuild Projects="$(MSBuildThisFileDirectory)NFMWorld.MsdfCache.Tool\NFMWorld.MsdfCache.Tool.csproj"
                  Targets="Restore"
-                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=;ExcludeRestorePackageImports=true" />
-        <!-- RuntimeIdentifier cleared: the release workflows publish with a global -r, which travels
-             into this nested build, and an Exe project's output then moves to bin/<cfg>/<tfm>/<rid>/.
-             NFMWorldMsdfToolAssembly above names the rid-less path, so the bake would run a file that
-             is not there ("Could not execute because the specified command or file was not found").
-             The tool runs on the build host, not on the target RID, so it needs no RID either way. -->
+                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=;PublishReadyToRun=false;ExcludeRestorePackageImports=true" />
         <MSBuild Projects="$(MSBuildThisFileDirectory)NFMWorld.MsdfCache.Tool\NFMWorld.MsdfCache.Tool.csproj"
                  Targets="Build"
-                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=" />
+                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=;PublishReadyToRun=false" />
     </Target>
 
     <!-- Bakes into the fonts directory itself, beside each font, so the output flows through the

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Builds cimgui (Dear ImGui's C API) to LLVM bitcode for the browser head.
 
-The five translation units the cimgui build needs - cimgui.cpp plus the core imgui sources -
-minus the demo, which nothing calls and would only make the module bigger. The sources live in
-the `ext/cimgui` submodule (elix22/cimgui at the commit Hexa.NET.ImGui is generated from).
+The translation units the cimgui build needs: cimgui.cpp plus the imgui sources. The demo is
+included even though the game never calls it - the generated binding declares every function in
+cimgui.h, and the LTO pass keeps the references, so leaving the demo out fails the final link
+with "undefined symbol: ImGui::ShowDemoWindow(bool*)" and friends. The sources live in the
+`ext/cimgui` submodule (elix22/cimgui at the commit Hexa.NET.ImGui is generated from).
 
 Two things are required by .NET rather than by ImGui:
 
@@ -29,10 +31,15 @@ import sys
 SOURCES = [
     "cimgui.cpp",
     "imgui/imgui.cpp",
+    "imgui/imgui_demo.cpp",
     "imgui/imgui_draw.cpp",
     "imgui/imgui_tables.cpp",
     "imgui/imgui_widgets.cpp",
 ]
+
+# Not in the submodule, and named by absolute path: fills the three freetype symbols the generated
+# binding references but nothing calls, which have no wasm build.
+STUB_NAME = "cimgui_freetype_stub.cpp"
 
 
 def main() -> int:
@@ -70,10 +77,11 @@ def main() -> int:
                 os.remove(os.path.join(objects, f))
         open(stamp, "w").write(stamp_text)
 
+    stub = os.path.join(os.path.dirname(os.path.abspath(__file__)), STUB_NAME)
     built = []
-    for rel in SOURCES:
-        source = os.path.join(source_root, rel)
-        obj = os.path.join(objects, rel.replace("/", "_").replace(os.sep, "_") + ".o")
+    for rel in SOURCES + [stub]:
+        source = os.path.join(source_root, rel) if not os.path.isabs(rel) else rel
+        obj = os.path.join(objects, os.path.basename(rel) + ".o")
         if stale_flags or not (os.path.isfile(obj) and os.path.getmtime(obj) >= os.path.getmtime(source)):
             result = subprocess.run([emxx] + flags + [source, "-o", obj],
                                     capture_output=True, text=True)
