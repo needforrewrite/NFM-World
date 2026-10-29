@@ -55,8 +55,12 @@
     -->
     <Target Name="BuildShaderCompilerTask"
             Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(NFMWorldShaderBuildTask)' == 'true'">
+        <!-- Restore in a separate project instance so Build imports the generated package paths. -->
         <MSBuild Projects="$(MSBuildThisFileDirectory)..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.Task.csproj"
-                 Targets="Restore;Build"
+                 Targets="Restore"
+                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;ExcludeRestorePackageImports=true" />
+        <MSBuild Projects="$(MSBuildThisFileDirectory)..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.Task.csproj"
+                 Targets="Build"
                  Properties="Configuration=$(Configuration);TargetFramework=net11.0" />
     </Target>
 
