@@ -11,11 +11,6 @@
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RootNamespace>NFMWorld.ShaderCompiler</RootNamespace>
-        <!-- The release workflows publish with a global -r, which travels down to every project
-             the build touches, including this one. Without a matching entry restore produces no
-             assets for that RID and the nested build fails NETSDK1047. Nothing here is
-             RID-specific - it runs on the build host - so every platform is listed. -->
-        <RuntimeIdentifiers>win-x64;linux-x64;osx-x64;osx-arm64</RuntimeIdentifiers>
         <!-- The MSBuild task loads this assembly into MSBuild's own process, where a deps.json is
              not consulted for a plugin style load: the task project therefore needs this library
              and every Silk.NET assembly it pulls in sitting next to the task DLL, not merely
