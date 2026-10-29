@@ -51,7 +51,8 @@
          The steps are idempotent and take about a second, so it just always runs. -->
     <Target Name="BuildWebGlShim"
             Condition="'$(RuntimeIdentifier)' == 'browser-wasm'"
-            BeforeTargets="PrepareForBuild;_WasmWriteRspForCompilingNativeSourceFiles">
+            BeforeTargets="PrepareForBuild;_WasmWriteRspForCompilingNativeSourceFiles"
+            DependsOnTargets="_SetupEmscripten">
         <!-- Both come from the wasm SDK's own EmSdkRepo.Defaults.props, which derives them from
              the workload pack - so this is the same emscripten that will link the result. -->
         <Error Condition="'$(EmscriptenUpstreamEmscriptenPath)' == '' Or !Exists('$(EmscriptenUpstreamEmscriptenPath)emcc.bat')"
@@ -60,12 +61,18 @@
         <MakeDir Directories="$(WebGlShimDir)" />
         <Delete Files="$(WebGlShimObject)" />
 
-        <!-- The workload's emscripten reads its toolchain locations from these three variables
-             (see the emscripten/.emscripten file it ships); without them it fails with an empty
-             LLVM_ROOT. They are normally set by the wasm SDK's own Exec calls, which this target
-             has to reproduce. -->
+        <PropertyGroup>
+            <!-- Frozen only when EM_CACHE is the SDK's own (read-only) cache dir. The SDK's
+                 .emscripten defaults FROZEN_CACHE to True, so a fresh cache elsewhere fails every
+                 compile with "FROZEN_CACHE is set, but cache file is missing". -->
+            <_ShimFrozenCache Condition="'$(WasmCachePath)' == '$(EmscriptenCacheSdkCacheDir)'">1</_ShimFrozenCache>
+            <_ShimFrozenCache Condition="'$(WasmCachePath)' != '$(EmscriptenCacheSdkCacheDir)'">0</_ShimFrozenCache>
+        </PropertyGroup>
+        <!-- The workload's emscripten reads its toolchain locations from these variables (see the
+             emscripten/.emscripten file it ships); without them it fails with an empty LLVM_ROOT.
+             The node path needs its bin/ segment, which a hand-written list tends to omit. -->
         <Exec Command="&quot;$(EmscriptenUpstreamEmscriptenPath)emcc.bat&quot; -c -O2 -emit-llvm -sFULL_ES3 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 &quot;$(WebGlShimSource)&quot; -o &quot;$(WebGlShimObject)&quot;"
-              EnvironmentVariables="EM_CACHE=$(WasmCachePath);DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin;DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath);DOTNET_EMSCRIPTEN_NODE_JS=$(EmscriptenNodeToolsPath)node.exe;EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe;PYTHONHOME=;PYTHONPATH=$(EmscriptenSdkToolsPath)python;EMSDK=$(EmscriptenSdkToolsPath)"
+              EnvironmentVariables="EMSDK=$(EmscriptenSdkToolsPath);EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe;PYTHONHOME=;PYTHONPATH=$(EmscriptenSdkToolsPath)python;DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin;DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath);DOTNET_EMSCRIPTEN_NODE_JS=$(EmscriptenNodeToolsPath)bin/node.exe;EM_CACHE=$(WasmCachePath);EM_FROZEN_CACHE=$(_ShimFrozenCache)"
               StandardOutputImportance="low" />
 
         <!-- Delete before archiving: `llvm-ar crs` on an existing archive updates the member in
