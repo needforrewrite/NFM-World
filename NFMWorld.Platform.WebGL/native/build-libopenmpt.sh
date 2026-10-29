@@ -43,10 +43,17 @@ if [ -n "$emdk_root" ]; then
     source "$emdk_root/emsdk_env.sh" >/dev/null
 else
     # Workload packs live under the dotnet root, not the NuGet cache, and the Emscripten ones are
-    # per-RID: ...Emscripten.6.0.2.Sdk.<rid>. Derive the root from the running SDK rather than
-    # guessing /usr/share or /usr/lib, and take whichever version is installed.
-    dotnet_root="$(dirname "$(dirname "$(readlink -f "$(command -v dotnet)")")")"
+    # per-RID: ...Emscripten.6.0.2.Sdk.<rid>. Take the root from DOTNET_ROOT when the host sets it
+    # (GitHub's runner does), otherwise from the running dotnet binary - one dirname, since that
+    # binary sits directly in the root. Resolving it a second time lands on the parent of the
+    # install (/usr/share instead of /usr/share/dotnet) and finds no packs at all.
+    if [ -n "${DOTNET_ROOT:-}" ] && [ -d "$DOTNET_ROOT/packs" ]; then
+        dotnet_root="$DOTNET_ROOT"
+    else
+        dotnet_root="$(dirname "$(readlink -f "$(command -v dotnet)")")"
+    fi
     packs_dir="$dotnet_root/packs"
+    echo "==> dotnet root: $dotnet_root"
     find_emscripten_pack() {
         local kind="$1" dir
         dir="$(ls -d "$packs_dir"/Microsoft.NET.Runtime.Emscripten.*."$kind".* 2>/dev/null | sort -V | tail -1)"
@@ -55,17 +62,29 @@ else
         echo "$dir"/*/tools
     }
 
-    sdk_tools="$(find_emscripten_pack sdk)"
-    node_pack="$(find_emscripten_pack node)"
+    # Capitalised: the packs are ...Emscripten.<version>.Sdk.<rid> and .Node.<rid>, and a glob is
+    # case-sensitive on Linux, where this runs in CI. Lowercase matched here only because it was
+    # tested on Windows' case-insensitive filesystem.
+    sdk_tools="$(find_emscripten_pack Sdk)"
+    node_pack="$(find_emscripten_pack Node)"
     echo "==> emscripten: $sdk_tools"
 
     # The SDK pack's own emsdk_env.sh points PATH and the .emscripten config at this toolchain; it
     # reads these four variables and refuses to run without them.
+    #
+    # node_pack already ends at <pack>/<version>/tools, so the binary is directly under its bin -
+    # not another level down. A second wildcard here finds nothing and reports "no node" against a
+    # pack that has one. Both names are accepted because a Windows pack ships node.exe and a Linux
+    # one ships node, so the same script works in CI and in a WSL checkout of this tree.
     export EMSDK_PATH="$sdk_tools"
     export DOTNET_EMSCRIPTEN_LLVM_ROOT="$sdk_tools/bin"
     export DOTNET_EMSCRIPTEN_BINARYEN_ROOT="$sdk_tools"
-    export DOTNET_EMSCRIPTEN_NODE_JS="$(ls "$node_pack"/*/bin/node 2>/dev/null | head -1 || true)"
-    [ -n "$DOTNET_EMSCRIPTEN_NODE_JS" ] || { echo "no node in $node_pack" >&2; exit 1; }
+    DOTNET_EMSCRIPTEN_NODE_JS=""
+    for candidate in "$node_pack/bin/node" "$node_pack/bin/node.exe"; do
+        [ -x "$candidate" ] && { DOTNET_EMSCRIPTEN_NODE_JS="$candidate"; break; }
+    done
+    export DOTNET_EMSCRIPTEN_NODE_JS
+    [ -n "$DOTNET_EMSCRIPTEN_NODE_JS" ] || { echo "no node under $node_pack/bin" >&2; exit 1; }
 
     # shellcheck disable=SC1091
     source "$sdk_tools/emsdk_env.sh"
