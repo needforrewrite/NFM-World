@@ -30,8 +30,6 @@
         <PackageReference Include="MessagePack.Experimental" Version="3.1.8" />
         <PackageReference Include="Microsoft.Extensions.Logging" Version="11.0.0-preview.5.26302.115" />
         <None Include="data\**\*" CopyToOutputDirectory="Always" />
-        <ProjectReference Include="..\ClaySharp\ClaySharp.csproj" />
-        <ProjectReference Include="..\ClaySharp\plugins\ClaySharp.Plugin.TextInput\ClaySharp.Plugin.TextInput.csproj" />
         <ProjectReference Include="..\HoleyDiver\HoleyDiver.csproj" />
         <ProjectReference Include="..\MemoryPack\src\MemoryPack\MemoryPack.csproj" />
         <ProjectReference Include="..\MemoryPack\src\MemoryPack.Generator\MemoryPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
