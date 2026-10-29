@@ -5,6 +5,19 @@ name: Web (wasm)
 # Windows, not Linux: the shader pipeline runs NFMWorld.ShaderCompiler.Task at build time and that
 # P/Invokes hardcoded win-x64 shaderc/spirv-cross binaries, so the build host has to be Windows
 # until the task grows a Linux branch.
+#
+# To reproduce the libopenmpt job locally before pushing, run it with act against a copy of this
+# tree rather than the tree itself: act copies the whole checkout into the container, and with
+# bin/, obj/ and the submodules that is tens of GB.
+#
+#   mkdir /tmp/act && cp --parents .github/workflows/web.yml \
+#       NFMWorld.Platform.WebGL/native/build-libopenmpt.sh /tmp/act/ \
+#     && cd /tmp/act && git init -q && git add -A \
+#     && git -c user.email=a@b -c user.name=c commit -qm init
+#   act -j libopenmpt -P ubuntu-latest=catthehacker/ubuntu:act-latest
+#
+# It runs the job through to "==> wrote .../libopenmpt.a"; the upload step then fails with
+# "Unable to get the ACTIONS_RUNTIME_TOKEN", which is act's own limitation and not the build.
 
 on:
   push:

@@ -77,6 +77,23 @@ else
     node_pack="$(find_emscripten_pack Node)"
     echo "==> emscripten: $sdk_tools"
 
+    # The SDK pack's own emsdk_env.sh points PATH and the .emscripten config at this toolchain; it
+    # reads these four variables and refuses to run without them.
+    #
+    # node_pack already ends at <pack>/<version>/tools, so the binary is directly under its bin -
+    # not another level down. A second wildcard here finds nothing and reports "no node" against a
+    # pack that has one. Both names are accepted because a Windows pack ships node.exe and a Linux
+    # one ships node, so the same script works in CI and in a WSL checkout of this tree.
+    export EMSDK_PATH="$sdk_tools"
+    export DOTNET_EMSCRIPTEN_LLVM_ROOT="$sdk_tools/bin"
+    export DOTNET_EMSCRIPTEN_BINARYEN_ROOT="$sdk_tools"
+    DOTNET_EMSCRIPTEN_NODE_JS=""
+    for candidate in "$node_pack/bin/node" "$node_pack/bin/node.exe"; do
+        [ -x "$candidate" ] && { DOTNET_EMSCRIPTEN_NODE_JS="$candidate"; break; }
+    done
+    export DOTNET_EMSCRIPTEN_NODE_JS
+    [ -n "$DOTNET_EMSCRIPTEN_NODE_JS" ] || { echo "no node under $node_pack/bin" >&2; exit 1; }
+
     # Emscripten needs a cache it can write to. The SDK pack ships none of its own and its
     # .emscripten sets FROZEN_CACHE, so emcc refuses to build the missing entries and every compile
     # dies with "FROZEN_CACHE is set, but cache file is missing: sysroot_install.stamp".
@@ -108,23 +125,6 @@ else
     # Not the pack's own directory, so nothing here may be frozen.
     export EM_FROZEN_CACHE=0
     echo "==> emscripten cache: $EM_CACHE"
-
-    # The SDK pack's own emsdk_env.sh points PATH and the .emscripten config at this toolchain; it
-    # reads these four variables and refuses to run without them.
-    #
-    # node_pack already ends at <pack>/<version>/tools, so the binary is directly under its bin -
-    # not another level down. A second wildcard here finds nothing and reports "no node" against a
-    # pack that has one. Both names are accepted because a Windows pack ships node.exe and a Linux
-    # one ships node, so the same script works in CI and in a WSL checkout of this tree.
-    export EMSDK_PATH="$sdk_tools"
-    export DOTNET_EMSCRIPTEN_LLVM_ROOT="$sdk_tools/bin"
-    export DOTNET_EMSCRIPTEN_BINARYEN_ROOT="$sdk_tools"
-    DOTNET_EMSCRIPTEN_NODE_JS=""
-    for candidate in "$node_pack/bin/node" "$node_pack/bin/node.exe"; do
-        [ -x "$candidate" ] && { DOTNET_EMSCRIPTEN_NODE_JS="$candidate"; break; }
-    done
-    export DOTNET_EMSCRIPTEN_NODE_JS
-    [ -n "$DOTNET_EMSCRIPTEN_NODE_JS" ] || { echo "no node under $node_pack/bin" >&2; exit 1; }
 
     # shellcheck disable=SC1091
     source "$sdk_tools/emsdk_env.sh"
