@@ -49,6 +49,9 @@
          skips the whole target when it thinks they are current - including the Delete/compile
          steps that would have refreshed them, so a source change could be ignored indefinitely.
          The steps are idempotent and take about a second, so it just always runs. -->
+    <!-- Invoked by the browser head's BuildNativeArchives target, which passes RuntimeIdentifier
+         explicitly - MSBuild strips it from every project reference, so it is not visible on the
+         reference itself. -->
     <Target Name="BuildWebGlShim"
             Condition="'$(RuntimeIdentifier)' == 'browser-wasm'"
             BeforeTargets="PrepareForBuild;_WasmWriteRspForCompilingNativeSourceFiles"

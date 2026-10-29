@@ -196,6 +196,23 @@
                              Condition="Exists('$(MSBuildThisFileDirectory)..\NFMWorld.Platform.WebGL\native\libopenmpt.a')" />
     </ItemGroup>
 
+    <!-- The two native archives the link needs, built here rather than through their own
+         ProjectReference - see the note on those references for why a reference cannot reach the
+         targets that produce them. RID passed explicitly so their conditions see browser-wasm;
+         DependsOnTargets is not an option for the same reason. Early enough that the SDK's own
+         NativeFileReference validation (in _PrepareForBrowserWasmBuildNative, which
+         PrepareForWasmBuildNativeDependsOn runs) finds the archives on disk. -->
+    <Target Name="BuildNativeArchives"
+            BeforeTargets="PrepareForBuild;_WasmWriteRspForCompilingNativeSourceFiles"
+            Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+        <MSBuild Projects="$(MSBuildThisFileDirectory)..\NFMWorld.Platform.SDL3.Browser\NFMWorld.Platform.SDL3.Browser.csproj"
+                 Targets="BuildSDL3"
+                 Properties="Configuration=$(Configuration);RuntimeIdentifier=browser-wasm" />
+        <MSBuild Projects="$(MSBuildThisFileDirectory)..\NFMWorld.Platform.WebGL\NFMWorld.Platform.WebGL.csproj"
+                 Targets="BuildWebGlShim"
+                 Properties="Configuration=$(Configuration);RuntimeIdentifier=browser-wasm" />
+    </Target>
+
     <!-- The archive is a build input that is no longer checked in, so a missing one would
          otherwise surface only as a link failure naming a symbol, or worse as a P/Invoke that
          resolves to nothing at run time. -->
@@ -278,14 +295,14 @@
         <ProjectReference Include="..\NFMWorld.Interop.Browser\NFMWorld.Interop.Browser.csproj" />
         <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
-        <!-- Both build a native archive and hand it over as a NativeFileReference, and both key
-             that on RuntimeIdentifier. A csproj-set RuntimeIdentifier is not a global property, so
-             a referenced project does not inherit it - without these, the archives are declared
-             empty and the link fails on every SDL symbol, reported as an export that does not exist. -->
-        <ProjectReference Include="..\NFMWorld.Platform.SDL3.Browser\NFMWorld.Platform.SDL3.Browser.csproj"
-                          AdditionalProperties="RuntimeIdentifier=browser-wasm" />
-        <ProjectReference Include="..\NFMWorld.Platform.WebGL\NFMWorld.Platform.WebGL.csproj"
-                          AdditionalProperties="RuntimeIdentifier=browser-wasm" />
+        <!-- Both build a native archive that this project links as a NativeFileReference. Their
+             build targets are keyed on RuntimeIdentifier, and MSBuild strips the RID from every
+             project reference (Microsoft.Common.CurrentVersion.targets, RemoveProperties), so as
+             plain references they never run and the link fails on a missing archive. They are
+             built from BuildNativeArchives below instead, with the RID as an explicit global
+             property. -->
+        <ProjectReference Include="..\NFMWorld.Platform.SDL3.Browser\NFMWorld.Platform.SDL3.Browser.csproj" />
+        <ProjectReference Include="..\NFMWorld.Platform.WebGL\NFMWorld.Platform.WebGL.csproj" />
         <ProjectReference Include="..\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
     </ItemGroup>
 
