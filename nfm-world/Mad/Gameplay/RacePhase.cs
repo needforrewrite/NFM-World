@@ -371,7 +371,13 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         _host.Update();
 
         if (IsPaused && AllowPausing)
+        {
+            if (ClientCar is { } pausedCar &&
+                _cameraDirector.CurrentViewMode is RaceCameraDirector.ViewMode.Follow or RaceCameraDirector.ViewMode.FollowStatic)
+                _cameraDirector.Update(Camera, pausedCar);
+
             return;
+        }
 
         if (RaceState is RaceState.InProgress or RaceState.Finished)
         {

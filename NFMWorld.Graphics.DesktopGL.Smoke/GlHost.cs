@@ -15,7 +15,7 @@ extern alias SDL3New;
 
 using SDL3New::SDL3;
 using NFMWorld.Platform.SDL3;
-using SDL = SDL3.SDL;
+using SDL = SDL3New::SDL3.SDL;
 
 namespace NFMWorld.Graphics.DesktopGL.Smoke;
 

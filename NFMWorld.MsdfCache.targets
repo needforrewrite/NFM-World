@@ -25,7 +25,7 @@
     <!-- Builds the tool before anything tries to run it. Unconditional for the same reason the
          shader compiler's is: the check would be against a bin/ copy, which can be newer than the
          sources without being current. The nested build is incremental on its own. -->
-    <Target Name="BuildMsdfCacheTool" Condition="'$(MSBuildRuntimeType)' == 'Core'">
+    <Target Name="BuildMsdfCacheTool" Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(DesignTimeBuild)' != 'true'">
         <!-- Restore first, in a separate project instance so Build imports the generated package
              paths. Nothing references this project, so no restore from the consuming project
              reaches it: without this a clean checkout fails with NETSDK1004 "assets file not
@@ -68,7 +68,7 @@
     <Target Name="BakeMsdfCaches"
             BeforeTargets="PrepareForBuild"
             DependsOnTargets="BuildMsdfCacheTool"
-            Condition="'$(MSBuildRuntimeType)' == 'Core'"
+            Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(DesignTimeBuild)' != 'true'"
             Inputs="@(NFMWorldMsdfFont);@(NFMWorldMsdfSource)"
             Outputs="$(NFMWorldMsdfStamp)">
 

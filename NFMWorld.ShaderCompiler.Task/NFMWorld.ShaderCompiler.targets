@@ -54,7 +54,7 @@
       not, and the path in NFMWorldShaderTaskAssembly names net11.0 explicitly.
     -->
     <Target Name="BuildShaderCompilerTask"
-            Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(NFMWorldShaderBuildTask)' == 'true'">
+            Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(NFMWorldShaderBuildTask)' == 'true' AND '$(DesignTimeBuild)' != 'true'">
         <!-- Restore in a separate project instance so Build imports the generated package paths.
 
              RuntimeIdentifier and PublishReadyToRun cleared: the release workflows publish with a
@@ -122,7 +122,7 @@
     <Target Name="CompileShaders"
             BeforeTargets="CoreCompile"
             DependsOnTargets="ResolveShaderPaths;BuildShaderCompilerTask"
-            Condition="'$(MSBuildRuntimeType)' == 'Core'"
+            Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(DesignTimeBuild)' != 'true'"
             Inputs="@(NFMWorldShaderSource);@(NFMWorldShaderHeader);$(NFMWorldShaderTaskAssembly)"
             Outputs="$(NFMWorldShadersOutputDirectory)shaders.stamp">
 

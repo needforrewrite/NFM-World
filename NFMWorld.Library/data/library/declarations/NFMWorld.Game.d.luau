@@ -1,3 +1,32 @@
+declare extern type CounterData with
+    value: integer
+end
+
+declare CounterData: {
+}
+
+declare extern type CapturedKey with
+    action: string
+    keyCode: integer
+    cancelled: boolean
+end
+
+declare CapturedKey: {
+}
+
+declare extern type AvailableOptions with
+    renderers: { string }
+    resolutions: { string }
+    displayModes: { string }
+    antialiasModes: { string }
+    shadowCascadeLevels: { string }
+    shadowResolutions: { string }
+    renderDistanceNames: { string }
+end
+
+declare AvailableOptions: {
+}
+
 declare extern type CarStatsData with
     fileName: string
     name: string
@@ -57,35 +86,6 @@ declare extern type AccountData with
 end
 
 declare AccountData: {
-}
-
-declare extern type CapturedKey with
-    action: string
-    keyCode: integer
-    cancelled: boolean
-end
-
-declare CapturedKey: {
-}
-
-declare extern type AvailableOptions with
-    renderers: { string }
-    resolutions: { string }
-    displayModes: { string }
-    antialiasModes: { string }
-    shadowCascadeLevels: { string }
-    shadowResolutions: { string }
-    renderDistanceNames: { string }
-end
-
-declare AvailableOptions: {
-}
-
-declare extern type CounterData with
-    value: integer
-end
-
-declare CounterData: {
 }
 
 export type SettingsSnapshot = {
