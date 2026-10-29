@@ -103,6 +103,7 @@
   <Project Path="NFMWorld.LuaSourceGenerator/NFMWorld.LuaSourceGenerator.csproj" />
   <Project Path="NFMWorld.Math/NFMWorld.Math.csproj" />
   <Project Path="NFMWorld.MojoShader/NFMWorld.MojoShader.csproj" />
+  <Project Path="NFMWorld.MsdfCache.Tool/NFMWorld.MsdfCache.Tool.csproj" />
   <Project Path="NFMWorld.Multiplayer.Base/NFMWorld.Multiplayer.Base.csproj" />
   <Project Path="NFMWorld.NativeLibs/NFMWorld.NativeLibs.csproj" />
   <Project Path="NFMWorld.OpcodeSourceGen/NFMWorld.OpcodeSourceGen.csproj" />
