@@ -55,13 +55,19 @@
     -->
     <Target Name="BuildShaderCompilerTask"
             Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(NFMWorldShaderBuildTask)' == 'true'">
-        <!-- Restore in a separate project instance so Build imports the generated package paths. -->
+        <!-- Restore in a separate project instance so Build imports the generated package paths.
+
+             RuntimeIdentifier and PublishReadyToRun cleared: the release workflows publish with a
+             global -r, which travels in here. An Exe with a RID writes its output to
+             bin/<cfg>/<tfm>/<rid>/ as well as bin/<cfg>/<tfm>/, and the copy to the second path
+             then races the task host holding the first (MSB3027). The task runs on the build host
+             and is never published, so neither applies. -->
         <MSBuild Projects="$(MSBuildThisFileDirectory)..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.Task.csproj"
                  Targets="Restore"
-                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;ExcludeRestorePackageImports=true" />
+                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=;PublishReadyToRun=false;ExcludeRestorePackageImports=true" />
         <MSBuild Projects="$(MSBuildThisFileDirectory)..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.Task.csproj"
                  Targets="Build"
-                 Properties="Configuration=$(Configuration);TargetFramework=net11.0" />
+                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=;PublishReadyToRun=false" />
     </Target>
 
     <!-- Property defaults, so a consumer only has to name its shader directory. -->
