@@ -8,7 +8,6 @@ using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Graphics;
 using NFMWorld.Util;
-using NvgSharp;
 using DrawingColor = System.Drawing.Color;
 using TextHorizontalAlignment = NFMWorld.DriverInterface.DriverInterface.TextHorizontalAlignment;
 

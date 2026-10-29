@@ -4,6 +4,8 @@
 // build a pipeline from it, and draw one hardware-instanced line - proving out the FNA3D
 // Effect-blob-as-shader-module design end-to-end (device creation, clearing and presentation were
 // already proven in Milestones 1-2). Not wired into WorldGame yet (Milestone 5).
+
+extern alias SDL3New;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using NFMWorld.FNA3D;
@@ -11,7 +13,7 @@ using NFMWorld.Graphics;
 using NFMWorld.Graphics.FNA3D;
 using NFMWorld.Platform.SDL3;
 using NFMWorld.Shaders;
-using SDL3;
+using SDL3New::SDL3;
 using ClearOptions = NFMWorld.Graphics.ClearOptions;
 
 const int width = 1280;

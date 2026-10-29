@@ -9,15 +9,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <!-- FNA's own vendored SDL3-CS (not the unrelated NuGet package of the same name) -
-             kept for its marshaling style, matching what FNA's SDL3_FNAPlatform.cs itself uses.
-             The alias originated as collision-avoidance: while FNA.Core was in the build graph it
-             carried its own private, separately-compiled copy of the SDL3.SDL type, which collided
-             (CS0433) with this one. FNA.Core left the graph in Milestone 7, but the alias stays -
-             every file in this project reaches the type through "extern alias SDL3New", and the
-             exe's own direct reference to SDL3.Core is aliased the same way to match. -->
-        <ProjectReference Include="..\FNA\lib\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
+        <ProjectReference Include="..\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
     </ItemGroup>
 
 </Project>

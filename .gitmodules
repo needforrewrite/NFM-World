@@ -2,10 +2,6 @@
 	path = FontStashSharp
 	url = https://github.com/uwx/FontStashSharp
 	branch = main
-[submodule "NvgSharp"]
-	path = NvgSharp
-	url = https://github.com/uwx/NvgSharp
-	branch = master
 [submodule "Facepunch.Steamworks"]
 	path = Facepunch.Steamworks
 	url = https://github.com/uwx/Facepunch.Steamworks
@@ -42,9 +38,6 @@
 [submodule "NFMWorld.Library/data/library/preact-luau/upstream"]
 	path = NFMWorld.Library/data/library/preact-luau/upstream
 	url = https://github.com/preactjs/preact
-[submodule "SharpSokol"]
-	path = SharpSokol
-	url = https://github.com/uwx/SharpSokol
 [submodule "Maxine.Silk.EGL"]
 	path = Maxine.Silk.EGL
 	url = https://github.com/uwx/Maxine.Silk.EGL
@@ -54,3 +47,6 @@
 [submodule "NFMWorld.Platform.WebGL/ext/cimgui"]
 	path = NFMWorld.Platform.WebGL/ext/cimgui
 	url = https://github.com/elix22/cimgui.git
+[submodule "SDL3-CS"]
+	path = SDL3-CS
+	url = https://github.com/flibitijibibo/SDL3-CS

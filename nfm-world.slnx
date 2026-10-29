@@ -21,23 +21,15 @@
     <Project Path="FixedMathSharp/src/FixedMathSharp/FixedMathSharp.csproj" />
     <Project Path="FixedMathSharp/tests/FixedMathSharp.Tests/FixedMathSharp.Tests.csproj" />
   </Folder>
-  <Folder Name="/FNA/">
-    <Project Path="FNA.Math/FNA.Math.csproj" />
-    <Project Path="FNA/FNA.Core.csproj" />
-  </Folder>
   <Folder Name="/FontStashSharp/">
     <Project Path="FontStashSharp.Base/src/FontStashSharp.Base/FontStashSharp.Base.csproj" />
     <Project Path="FontStashSharp.Base/src/FontStashSharp.Rasterizers.StbTrueTypeSharp/FontStashSharp.Rasterizers.StbTrueTypeSharp.csproj" />
     <Project Path="FontStashSharp/src/FontStashSharp/FontStashSharp.PlatformAgnostic.csproj" />
-    <Project Path="FontStashSharp/src/XNA/FontStashSharp.FNA.Core.csproj" />
   </Folder>
   <Folder Name="/HoleyDiver/">
     <Project Path="HoleyDiver.UnitTest/HoleyDiver.UnitTest.csproj" />
     <Project Path="HoleyDiver/HoleyDiver.csproj" />
     <Project Path="Poly2Tri/Poly2Tri.csproj" />
-  </Folder>
-  <Folder Name="/ImGui/">
-    <Project Path="MonoGame.ImGuiNet/MonoGame.ImGuiNet/Monogame.ImGuiNet.csproj" />
   </Folder>
   <Folder Name="/Lua-CSharp/">
     <Project Path="Lua-CSharp/Lua.Compiler/Lua.Compiler.csproj" />
@@ -72,14 +64,6 @@
     <Project Path="MemoryPack/src/MemoryPack.Generator/MemoryPack.Generator.csproj" />
     <Project Path="MemoryPack/src/MemoryPack/MemoryPack.csproj" />
   </Folder>
-  <Folder Name="/NvgSharp/">
-    <Project Path="NvgSharp/src/NvgSharp.Text/NvgSharp.Text.csproj" />
-    <Project Path="NvgSharp/src/NvgSharp.Text/NvgSharp.Text.FNA.Core.csproj" />
-    <Project Path="NvgSharp/src/NvgSharp/NvgSharp.csproj" />
-    <Project Path="NvgSharp/src/XNA/NvgSharp.FNA.Core.csproj" />
-  </Folder>
-  <Project Path="c:/Users/Maxine/AppData/Local/Temp/structdefault/structdefault.csproj" />
-  <Project Path="FNA/lib/SDL3-CS/SDL3/SDL3.Core.csproj" />
   <Project Path="LibTessDotNet/LibTessDotNet/LibTessDotNet.csproj" />
   <Project Path="Maxine.Silk.EGL/native/Maxine.Silk.OpenGLES.ANGLE.Native/Maxine.Silk.OpenGLES.ANGLE.Native.csproj" />
   <Project Path="Maxine.Silk.EGL/src/Extensions/Maxine.EGL.Extensions.ANGLE/Maxine.EGL.Extensions.ANGLE.csproj" />
@@ -136,6 +120,6 @@
   <Project Path="NFMWorld.Shaders.Abstraction/NFMWorld.Shaders.Abstraction.csproj" />
   <Project Path="NFMWorld.UI/NFMWorld.UI.csproj" />
   <Project Path="NFMWorld/NFMWorld.csproj" />
-  <Project Path="SharpSokol/src/SharpSokol/SharpSokol.csproj" />
+  <Project Path="SDL3-CS/SDL3/SDL3.Core.csproj" />
   <Project Path="SoundTouch.Net.NAudioSupport/SoundTouch.Net.NAudioSupport.csproj" />
 </Solution>

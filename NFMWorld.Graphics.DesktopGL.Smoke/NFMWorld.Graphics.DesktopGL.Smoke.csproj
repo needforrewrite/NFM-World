@@ -23,7 +23,7 @@
              transitive project references do not carry NFMWorld.Platform.SDL3's own Aliases through,
              so a project that reads SDL directly has to alias it again or the two copies of the
              SDL3.SDL type collide. -->
-        <ProjectReference Include="..\FNA\lib\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
+        <ProjectReference Include="..\SDL3-CS\SDL3\SDL3.Core.csproj" />
         <ProjectReference Include="..\NFMWorld.Platform.SDL3\NFMWorld.Platform.SDL3.csproj" />
     </ItemGroup>
 
