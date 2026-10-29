@@ -33,10 +33,15 @@
              NFMWorld.ShaderCompiler.targets' BuildShaderCompilerTask. -->
         <MSBuild Projects="$(MSBuildThisFileDirectory)NFMWorld.MsdfCache.Tool\NFMWorld.MsdfCache.Tool.csproj"
                  Targets="Restore"
-                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;ExcludeRestorePackageImports=true" />
+                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=;ExcludeRestorePackageImports=true" />
+        <!-- RuntimeIdentifier cleared: the release workflows publish with a global -r, which travels
+             into this nested build, and an Exe project's output then moves to bin/<cfg>/<tfm>/<rid>/.
+             NFMWorldMsdfToolAssembly above names the rid-less path, so the bake would run a file that
+             is not there ("Could not execute because the specified command or file was not found").
+             The tool runs on the build host, not on the target RID, so it needs no RID either way. -->
         <MSBuild Projects="$(MSBuildThisFileDirectory)NFMWorld.MsdfCache.Tool\NFMWorld.MsdfCache.Tool.csproj"
                  Targets="Build"
-                 Properties="Configuration=$(Configuration);TargetFramework=net11.0" />
+                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=" />
     </Target>
 
     <!-- Bakes into the fonts directory itself, beside each font, so the output flows through the

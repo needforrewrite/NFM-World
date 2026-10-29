@@ -39,6 +39,11 @@ replay_pid*
 /nfm-world/DawnCache
 
 Generated
+# The exception: this binding's generated sources are the binding, not build output. Nothing in
+# the build regenerates them (they come from HexaGen, run by hand), so ignoring them leaves a
+# clean checkout without ImFontPtr, ImGuiInputTextFlags and the rest - the browser head then
+# fails to compile with CS0246 on every one.
+!/NFMWorld.ImGui.Browser/src/Generated/
 /nfm-world/imgui.ini
 /imgui.ini
 
