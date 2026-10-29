@@ -1,5 +1,15 @@
 <Project>
 
+    <PropertyGroup>
+        <!-- The release workflow publishes the host with -r <rid>, and a global RuntimeIdentifier
+             travels down to every project the build touches - including these, which the host
+             builds as plugins. Without a matching entry restore produces no assets for that RID and
+             the nested build then fails NETSDK1047 ("doesn't have a target for 'net11.0/<rid>'").
+             The plugin itself is rid-agnostic: it is loaded as an assembly by the host and never
+             runs on its own, so every platform the release builds for is listed. -->
+        <RuntimeIdentifiers>win-x64;linux-x64;osx-x64;osx-arm64</RuntimeIdentifiers>
+    </PropertyGroup>
+
     <!--
         Imported by each .NET gamemode project (NFMWorld.Gamemode.*).
 

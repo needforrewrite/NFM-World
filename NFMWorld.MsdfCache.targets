@@ -26,6 +26,14 @@
          shader compiler's is: the check would be against a bin/ copy, which can be newer than the
          sources without being current. The nested build is incremental on its own. -->
     <Target Name="BuildMsdfCacheTool" Condition="'$(MSBuildRuntimeType)' == 'Core'">
+        <!-- Restore first, in a separate project instance so Build imports the generated package
+             paths. Nothing references this project, so no restore from the consuming project
+             reaches it: without this a clean checkout fails with NETSDK1004 "assets file not
+             found", which is what the desktop release builds hit on every platform. Same shape as
+             NFMWorld.ShaderCompiler.targets' BuildShaderCompilerTask. -->
+        <MSBuild Projects="$(MSBuildThisFileDirectory)NFMWorld.MsdfCache.Tool\NFMWorld.MsdfCache.Tool.csproj"
+                 Targets="Restore"
+                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;ExcludeRestorePackageImports=true" />
         <MSBuild Projects="$(MSBuildThisFileDirectory)NFMWorld.MsdfCache.Tool\NFMWorld.MsdfCache.Tool.csproj"
                  Targets="Build"
                  Properties="Configuration=$(Configuration);TargetFramework=net11.0" />

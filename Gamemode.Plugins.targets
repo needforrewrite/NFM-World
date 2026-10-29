@@ -57,4 +57,41 @@
                  Properties="Configuration=$(Configuration);GamemodeOutputRoot=$(GamemodeOutputRoot);GamemodeId=%(GamemodePlugin.GamemodeId)" />
     </Target>
 
+    <!--
+        Carries the built plugins into `dotnet publish`.
+
+        They land in $(TargetDir)data/gamemodes/<id>/, but the output directory is not the source
+        of what gets published: publish collects the project's items, and the only gamemode items
+        are the .luau files that shipped by the data/** glob. So a plain build had gamemode.dll and
+        a published build did not - and with no assembly there, GamemodeFactory falls back to the
+        Luau script of the same id, which is why the compiled gamemodes appeared to be missing
+        from release builds only.
+
+        Read from GamemodeOutputRoot - the output of the project that built the plugins, which for
+        a publish is NFMWorld.Game's, not the host being published (NFMWorld). Those are different
+        directories, especially under a runtime identifier.
+    -->
+    <Target Name="PublishGamemodePlugins"
+            BeforeTargets="ComputeResolvedFilesToPublishList"
+            DependsOnTargets="BuildGamemodePlugins">
+        <ItemGroup>
+            <!-- Read from the output of the project that built the plugins (GamemodeOutputRoot),
+                 not from this host's, and not from the plugin's own bin, which still holds the
+                 original assembly name rather than gamemode.dll. `**` rather than `*` because
+                 only the recursive wildcard fills in RecursiveDir, which carries the gamemode id.
+
+                 A private item type, updated with a qualified self-reference, rather than
+                 setting RelativePath directly on ResolvedFileToPublish: that item already has
+                 RelativePath from the SDK, so `%(Filename)` there is a self-reference and MSBuild
+                 applies it over every existing publish item instead of just these. -->
+            <GamemodePluginPublish Include="$(GamemodeOutputRoot)/**/gamemode.*">
+                <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+            </GamemodePluginPublish>
+            <GamemodePluginPublish>
+                <RelativePath>data/gamemodes/%(GamemodePluginPublish.RecursiveDir)%(GamemodePluginPublish.Filename)%(GamemodePluginPublish.Extension)</RelativePath>
+            </GamemodePluginPublish>
+            <ResolvedFileToPublish Include="@(GamemodePluginPublish)" />
+        </ItemGroup>
+    </Target>
+
 </Project>
