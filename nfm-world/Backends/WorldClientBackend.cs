@@ -21,16 +21,22 @@ namespace NFMWorld;
 public class AposRenderer : IDisposable
 {
     private readonly ShapeBatch _sb;
+    private readonly ImmediateBatch3D _batch3D;
 
     public AposRenderer(IGraphicsDevice graphicsDevice)
     {
         _sb = new ShapeBatch(graphicsDevice);
-        IBackend.Backend = new WorldClientBackend(_sb, graphicsDevice);
+        _batch3D = new ImmediateBatch3D(graphicsDevice);
+        IBackend.Backend = new WorldClientBackend(_sb, _batch3D, graphicsDevice);
     }
 
     /// <summary>Must be called with the frame's live command buffer before any drawing is done
     /// through <see cref="IBackend.Backend"/>'s <see cref="IGraphics"/> this frame.</summary>
-    public void BeginFrame(ICommandBuffer cb) => _sb.Begin(cb);
+    public void BeginFrame(ICommandBuffer cb)
+    {
+        _batch3D.Reset();
+        _sb.Begin(cb);
+    }
 
     public void Render()
     {
@@ -40,11 +46,14 @@ public class AposRenderer : IDisposable
     public void Dispose()
     {
         _sb.Dispose();
+        _batch3D.Dispose();
     }
 }
 
-internal sealed class WorldClientBackend(ShapeBatch sb, IGraphicsDevice graphicsDevice) : IBackend
+internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D, IGraphicsDevice graphicsDevice) : IBackend
 {
+    public IGraphics3D Graphics3D => batch3D;
+
     // FAudio has no wasm build, so the browser plays the same decoded PCM through Web Audio.
     // Music is the exception the interface cannot express: it lives in a separate archive and has
     // to be fetched, so the browser's music loading is driven by the phase (see

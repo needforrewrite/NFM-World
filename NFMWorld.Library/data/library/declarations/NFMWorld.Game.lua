@@ -1,80 +1,45 @@
----@class AccountData : System.IEquatable_AccountData
----@field name string
----@field isLoggedIn boolean
----@field avatarUrl string
+---@class NFMWorld.UI.Cef.AccountData
 
-AccountData = {}
+NFMWorld.UI.Cef.AccountData = {}
 
 
----@class AvailableOptions
----@field renderers { string }
----@field resolutions { string }
----@field displayModes { string }
----@field antialiasModes { string }
----@field shadowCascadeLevels { string }
----@field shadowResolutions { string }
----@field renderDistanceNames { string }
+---@class NFMWorld.UI.Cef.AvailableOptions
 
-AvailableOptions = {}
+NFMWorld.UI.Cef.AvailableOptions = {}
 
 
----@class CapturedKey
----@field action string
----@field keyCode integer
----@field cancelled boolean
+---@class NFMWorld.UI.Cef.CapturedKey
 
-CapturedKey = {}
+NFMWorld.UI.Cef.CapturedKey = {}
 
 
----@class CarCollectionData
----@field id string
----@field cars { CarStatsData }
+---@class NFMWorld.UI.Cef.CarCollectionData
 
-CarCollectionData = {}
+NFMWorld.UI.Cef.CarCollectionData = {}
 
 
----@class CarCollectionsData
----@field collections { CarCollectionData }
+---@class NFMWorld.UI.Cef.CarCollectionsData
 
-CarCollectionsData = {}
-
-
----@class CarStatsData
----@field fileName string
----@field name string
----@field collection string
----@field topSpeed number
----@field acceleration number
----@field handling number
----@field powerSave number
----@field strength number
----@field maxHealth number
----@field stunting number
----@field hypergliding number
----@field abing number
-
-CarStatsData = {}
+NFMWorld.UI.Cef.CarCollectionsData = {}
 
 
----@class CounterData
----@field value integer
+---@class NFMWorld.UI.Cef.CarStatsData
 
-CounterData = {}
-
-
----@class CurrentCollectionData
----@field id string
-
-CurrentCollectionData = {}
+NFMWorld.UI.Cef.CarStatsData = {}
 
 
----@class PauseState
----@field lap integer
----@field totalLaps integer
----@field position integer
----@field totalRacers integer
----@field stageName string
+---@class NFMWorld.UI.Cef.CounterData
 
-PauseState = {}
+NFMWorld.UI.Cef.CounterData = {}
+
+
+---@class NFMWorld.UI.Cef.CurrentCollectionData
+
+NFMWorld.UI.Cef.CurrentCollectionData = {}
+
+
+---@class NFMWorld.UI.Cef.PauseState
+
+NFMWorld.UI.Cef.PauseState = {}
 
 

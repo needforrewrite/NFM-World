@@ -21,6 +21,16 @@ public sealed class DummyBackend : IBackend
 
     public IGraphics Graphics { get; } = new DummyGraphics();
 
+    public IGraphics3D Graphics3D { get; } = new DummyGraphics3D();
+
+    private sealed class DummyGraphics3D : IGraphics3D
+    {
+        public void DrawTriangles(ReadOnlySpan<Vector3> positions, ReadOnlySpan<int> indices, Color color) { }
+        public void DrawTriangles(ReadOnlySpan<Vector3> positions, ReadOnlySpan<Color> colors, ReadOnlySpan<int> indices) { }
+        public void DrawLines(ReadOnlySpan<Vector3> positions, ReadOnlySpan<int> indices, Color color) { }
+        public void DrawLines(ReadOnlySpan<Vector3> positions, ReadOnlySpan<Color> colors, ReadOnlySpan<int> indices) { }
+    }
+
     public sealed class DummyGraphics : IGraphics
     {
         public Vector2 Viewport => new();

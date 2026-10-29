@@ -110,6 +110,10 @@ internal static class Effects
     public static IPipelineState DebugLinePipeline { get => CheckNotNull(field); private set; }
     public static IPipelineState DebugGhostFillPipeline { get => CheckNotNull(field); private set; }
 
+    /// <summary><see cref="ImmediateBatch3D"/>'s pipelines: depth-tested triangles, opaque and alpha-blended (no depth write).</summary>
+    public static IPipelineState Immediate3DOpaquePipeline { get => CheckNotNull(field); private set; }
+    public static IPipelineState Immediate3DAlphaPipeline { get => CheckNotNull(field); private set; }
+
     /// <summary>Shared clamp/point sampler for the ShadowMap0/1/2 textures <see cref="Lighting.SetShadowMapParameters"/> binds.</summary>
     public static ISampler ShadowMapSampler { get => CheckNotNull(field); private set; }
 
@@ -148,7 +152,8 @@ internal static class Effects
         nameof(PolyModule), nameof(PolyShadowModule), nameof(PolyPipeline), nameof(PolyShadowPipeline),
         nameof(PolyDepthReadPipeline), nameof(PolyNoDepthPipeline),
         nameof(ParticleModule), nameof(ParticleOpaquePipeline), nameof(ParticleDepthReadPipeline), nameof(ParticleNoDepthPipeline),
-        nameof(DebugLinePipeline), nameof(DebugGhostFillPipeline), nameof(ShadowMapSampler))]
+        nameof(DebugLinePipeline), nameof(DebugGhostFillPipeline),
+        nameof(Immediate3DOpaquePipeline), nameof(Immediate3DAlphaPipeline), nameof(ShadowMapSampler))]
     public static void Initialize(IGraphicsDevice graphicsDevice)
     {
         // Each bundle is created once and its module is then used for BOTH stages: the GL backend
@@ -314,6 +319,21 @@ internal static class Effects
             Topology: PrimitiveTopology.TriangleList,
             BlendState: BlendStateDesc.NonPremultiplied,
             DepthStencilState: DepthStencilStateDesc.Default,
+            RasterizerState: ScissorRasterizer));
+
+        Immediate3DOpaquePipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
+            VertexShader: ParticleModule,
+            PixelShader: ParticleModule,
+            VertexLayouts: [PositionColorVertex.VertexLayout],
+            BlendState: BlendStateDesc.Opaque,
+            DepthStencilState: DepthStencilStateDesc.Default,
+            RasterizerState: ScissorRasterizer));
+        Immediate3DAlphaPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
+            VertexShader: ParticleModule,
+            PixelShader: ParticleModule,
+            VertexLayouts: [PositionColorVertex.VertexLayout],
+            BlendState: BlendStateDesc.NonPremultiplied,
+            DepthStencilState: DepthStencilStateDesc.Default with { DepthWriteEnabled = false },
             RasterizerState: ScissorRasterizer));
 
         // PointClamp, matching the old scene-wide default the pre-migration code force-set on all

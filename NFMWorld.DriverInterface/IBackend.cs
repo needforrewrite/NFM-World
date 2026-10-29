@@ -28,7 +28,10 @@ public interface IBackend
     
     [ClientOnly]
     IGraphics Graphics { get; }
-    
+
+    [ClientOnly]
+    IGraphics3D Graphics3D { get; }
+
     [ClientOnly]
     void SetAllVolumes(float vol);
 

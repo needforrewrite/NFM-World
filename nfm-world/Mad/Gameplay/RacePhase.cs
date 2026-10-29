@@ -351,6 +351,8 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         }
 
         GamemodeInstance?.Render();
+
+        (G3D as ImmediateBatch3D)?.Flush(cb, Camera);
     }
 
     private void ApplyPlayerState(int carIndex, PlayerState state)

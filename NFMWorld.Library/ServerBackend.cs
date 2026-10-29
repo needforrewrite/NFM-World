@@ -23,6 +23,8 @@ public class ServerBackend : IBackend
     public ISoundClip GetSound(string filePath) => ClientServer.AccidentallyCalledClientMethodOnServer<ISoundClip>();
 
     public IGraphics Graphics => ClientServer.AccidentallyCalledClientMethodOnServer<IGraphics>();
+
+    public IGraphics3D Graphics3D => ClientServer.AccidentallyCalledClientMethodOnServer<IGraphics3D>();
     
     public void SetAllVolumes(float vol) => ClientServer.AccidentallyCalledClientMethodOnServer();
     

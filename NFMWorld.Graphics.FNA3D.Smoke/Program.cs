@@ -13,7 +13,7 @@ using NFMWorld.Graphics;
 using NFMWorld.Graphics.FNA3D;
 using NFMWorld.Platform.SDL3;
 using NFMWorld.Shaders;
-using SDL3New::SDL3;
+using SDL3;
 using ClearOptions = NFMWorld.Graphics.ClearOptions;
 
 const int width = 1280;

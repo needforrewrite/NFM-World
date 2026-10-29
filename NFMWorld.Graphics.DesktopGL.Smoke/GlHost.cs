@@ -13,7 +13,6 @@
 // runs - which for a backend whose whole purpose is a fair comparison would defeat the exercise.
 extern alias SDL3New;
 
-using SDL3New::SDL3;
 using NFMWorld.Platform.SDL3;
 using SDL = SDL3.SDL;
 
