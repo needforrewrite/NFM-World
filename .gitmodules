@@ -1,7 +1,3 @@
-[submodule "FNA"]
-	path = FNA
-	url = https://github.com/uwx/FNA
-	branch = master
 [submodule "FontStashSharp"]
 	path = FontStashSharp
 	url = https://github.com/uwx/FontStashSharp
