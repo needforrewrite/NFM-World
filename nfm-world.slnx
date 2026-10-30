@@ -75,8 +75,6 @@
   <Project Path="NFMWorld.Graphics.Abstraction/NFMWorld.Graphics.Abstraction.csproj" />
   <Project Path="NFMWorld.Graphics.D3D11/NFMWorld.Graphics.D3D11.csproj" />
   <Project Path="NFMWorld.Graphics.D3D11.Smoke/NFMWorld.Graphics.D3D11.Smoke.csproj" />
-  <Project Path="NFMWorld.Graphics.FNA3D/NFMWorld.Graphics.FNA3D.csproj" />
-  <Project Path="NFMWorld.Graphics.FNA3D.Smoke/NFMWorld.Graphics.FNA3D.Smoke.csproj" />
   <Project Path="NFMWorld.Graphics.OpenGL.Smoke/NFMWorld.Graphics.OpenGL.Smoke.csproj" />
   <Project Path="NFMWorld.Graphics.OpenGL/NFMWorld.Graphics.OpenGL.csproj" />
   <Project Path="NFMWorld.Graphics.DesktopGL.Smoke/NFMWorld.Graphics.DesktopGL.Smoke.csproj" />
