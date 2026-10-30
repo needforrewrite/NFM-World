@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using Maxine.Extensions;
+using NFMWorld.CrashReporter;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.PluginSystem;
 using NFMWorld.Sentry;
