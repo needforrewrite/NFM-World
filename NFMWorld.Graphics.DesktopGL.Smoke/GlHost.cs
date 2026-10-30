@@ -13,7 +13,7 @@
 // runs - which for a backend whose whole purpose is a fair comparison would defeat the exercise.
 
 using NFMWorld.Platform.SDL3;
-using SDL = SDL3.SDL;
+using SDL = SDL3New::SDL3.SDL;
 
 namespace NFMWorld.Graphics.DesktopGL.Smoke;
 

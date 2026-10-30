@@ -30,11 +30,14 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
     public readonly BaseGamemodeFactory Gamemode;
     public readonly IReadOnlyList<ClientSidePlayerInfo> Players;
-    public IGamemode? GamemodeInstance { get; protected set; }
 
     private readonly IRaceHost _host;
     private uint _ticks;
     private readonly UnlimitedArray<uint> _lastTick = [];
+
+    private readonly RaceInputController _input = new();
+    private readonly RaceCameraDirector _cameraDirector = new();
+    public IGamemode? GamemodeInstance { get; protected set; }
 
     BackendStage IGamemodeContext.CurrentStage => CurrentStage.Backend;
 
@@ -112,9 +115,6 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     /// and the pause menu overlay is shown.
     /// </summary>
     public bool IsPaused { get; private set; }
-
-    private readonly RaceInputController _input = new();
-    private readonly RaceCameraDirector _cameraDirector = new();
 
     /// <summary>
     /// Writes this frame's HUD values into the race view's signals.
@@ -342,7 +342,13 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         _host.Update();
 
         if (IsPaused && AllowPausing)
+        {
+            if (ClientCar is { } pausedCar &&
+                _cameraDirector.CurrentViewMode is RaceCameraDirector.ViewMode.Follow or RaceCameraDirector.ViewMode.FollowStatic)
+                _cameraDirector.Update(Camera, pausedCar);
+
             return;
+        }
 
         if (RaceState is RaceState.InProgress or RaceState.Finished)
         {
