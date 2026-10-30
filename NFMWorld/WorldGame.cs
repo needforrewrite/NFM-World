@@ -1354,6 +1354,8 @@ public class WorldGame : IDisposable, IGameHost
         NativeLibrary.SetDllImportResolver(typeof(WorldGame).Assembly, ImportResolver);
         NativeLibrary.SetDllImportResolver(typeof(SDL).Assembly, ImportResolver);
 
+        BackendGameSparker.Load(isHeadless: false);
+
         // todo
         if (SettingsMenu.TrySelectRenderer(ref _renderer, ref _angleSelection))
         {
@@ -1371,7 +1373,6 @@ public class WorldGame : IDisposable, IGameHost
         // reads back for _selectedRenderer, and this parses the same keys.
         SettingsMenu.LoadConfigValues();
 
-        BackendGameSparker.Load(isHeadless: false);
         var program = new WorldGame();
         GameSparker.Game = program;
         program.Initialize();
