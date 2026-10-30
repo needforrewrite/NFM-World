@@ -42,7 +42,7 @@ public static class MainMenuView
         new("WORKSHOP", "Build your own models and stages.", () => PushPage(BuildWorkshopMenu(actions))),
         new("SETTINGS", "Adjust game settings.", () => SettingsOpen.Value = true),
         new("CREDITS", "View game credits.", () => actions.Unavailable("credits")),
-        new("QUIT", "Exit the game.", () => actions.Unavailable("quit")),
+        new("QUIT", "Exit the game.", () => System.Environment.Exit(0)),
     ]);
 
     // ── Styles ────────────────────────────────────────────────────────
