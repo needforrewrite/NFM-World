@@ -191,6 +191,8 @@ public partial class CarPhysics
 
     [PluginVisible]
     public fix64 Pxy;
+    // DEBUG: orientation jump detector, remove once the mid-air flip is found
+    private fix64 _dbgPxy, _dbgPzy, _dbgXz;
     
     [PluginVisible]
     public fix64 Pzy;
@@ -1579,7 +1581,18 @@ public partial class CarPhysics
         // Update: Uncommented because Audi reported it still happening.
         // Update 2: Remove nWheelsOnSurface > 0 condition. This makes bouncing more predictable (more
         // like original NFM), at the cost of worse behavior on surfaces. 
-        if (Scy[0] != Scy[1] || Scy[0] != Scy[2] || Scy[0] != Scy[3])
+        static bool Jumped(fix64 a, fix64 b)
+        {
+            var d = fix64.Abs(a - b);
+            while (d > 180) d = fix64.Abs(d - 360);
+            return d > 30;
+        }
+        if (Jumped(Pxy, _dbgPxy) || Jumped(Pzy, _dbgPzy) || Jumped(conto.Xz, _dbgXz))
+            Logging.Warning($"ORIENT JUMP before plane fit: Pxy {_dbgPxy:0.0}->{Pxy:0.0}, Pzy {_dbgPzy:0.0}->{Pzy:0.0}, Xz {_dbgXz:0.0}->{conto.Xz:0.0}\n{FrameTrace.GetMessageString()}");
+        var fitPxy = Pxy;
+        var fitPzy = Pzy;
+
+        // if (Scy[0] != Scy[1] || Scy[0] != Scy[2] || Scy[0] != Scy[3])
         {
             var wheelpos = new InlineArray4<f64Vector3>();
 
@@ -1600,61 +1613,28 @@ public partial class CarPhysics
 
             var terrainNormal = (terrainNormal1 + terrainNormal2).Normal;
 
-            // Half-space check: terrainNormal must point in the same hemisphere
-            // as the car's up. Only the Y component matters — X and Z depend on
-            // yaw (conto.Xz), which a naive localUp at Xz=0 gets wrong when
-            // Xz ≠ 0 (e.g. facing -Z on a steep ramp).
-            //   terrainNormal.Y < 0  ⟹  world-up    ⟹  car should be upright
-            //   car's up.Y = -cos(Pxy)·cos(Pzy) < 0 ⟹  upright; > 0 ⟹ inverted
-            // Flip the normal if its Y sign differs from the car's up-Y sign.
-            var carUpY = -UMath.Cos(Pxy) * UMath.Cos(Pzy);
-            var needsFlip = terrainNormal.Y * carUpY < fix64.Zero;
-            FrameTrace.AddMessage($"flipCheck: tn.Y={terrainNormal.Y:0.000}, carUpY={carUpY:0.000}, needsFlip={needsFlip}, Pxy={Pxy:0.0}, Pzy={Pzy:0.0}");
+            // Rotation order: Rx(Pxy)·Rz(Pzy)·Ry(Xz) applied to up=(0,-1,0):
+            //   up = (sinP·cosXz + cosP·sinZ·sinXz,  -cosP·cosZ,  sinP·sinXz - cosP·sinZ·cosXz)
+            var cosXz = UMath.Cos(conto.Xz);
+            var sinXz = UMath.Sin(conto.Xz);
+            var curSinP = UMath.Sin(Pxy);
+            var curCosP = UMath.Cos(Pxy);
+            var curSinZ = UMath.Sin(Pzy);
+            var curCosZ = UMath.Cos(Pzy);
+            var carUp = new f64Vector3(
+                curSinP * cosXz + curCosP * curSinZ * sinXz,
+                -curCosP * curCosZ,
+                curSinP * sinXz - curCosP * curSinZ * cosXz);
+
+            // Point the normal the same way as the car's up. Uses the full vector, not just Y,
+            // which is ~0 whenever the car is on its side or vertical.
+            var needsFlip = f64Vector3.Dot(terrainNormal, carUp) < fix64.Zero;
+            FrameTrace.AddMessage($"flipCheck: tn={terrainNormal}, carUp={carUp}, needsFlip={needsFlip}, Pxy={Pxy:0.0}, Pzy={Pzy:0.0}");
             if (needsFlip)
                 terrainNormal = -terrainNormal;
 
-            // When |terrainNormal.Y| ≈ 0 the cross-product plane fit is
-            // degenerate — at Pzy≈±90° all wheels share the same Z, at
-            // Pxy≈±90° they share the same X.  Fall back to computing
-            // pitch / roll directly from wheel height differences, which
-            // works at any orientation.
-            if (fix64.Abs(terrainNormal.Y) < (fix64)0.05f)
-            {
-                var avgFrontY = (wheelpos[0].Y + wheelpos[1].Y) * fix64.Half;
-                var avgRearY  = (wheelpos[2].Y + wheelpos[3].Y) * fix64.Half;
-                var avgLeftY  = (wheelpos[0].Y + wheelpos[2].Y) * fix64.Half;
-                var avgRightY = (wheelpos[1].Y + wheelpos[3].Y) * fix64.Half;
-
-                var wheelbase = fix64.Abs(conto.Keyz[0] - conto.Keyz[2]);
-                var track    = fix64.Abs(conto.Keyx[0] - conto.Keyx[1]);
-
-                var pitchTarget = fix64.Atan2(avgFrontY - avgRearY, wheelbase) * fix64.RadToDeg;
-                var rollTarget  = fix64.Atan2(avgLeftY - avgRightY, track)    * fix64.RadToDeg;
-
-                // Unwrap targets relative to current conto angles
-                while (pitchTarget - conto.Zy > 180) pitchTarget -= 360;
-                while (pitchTarget - conto.Zy < -180) pitchTarget += 360;
-                while (rollTarget - conto.Xy > 180) rollTarget -= 360;
-                while (rollTarget - conto.Xy < -180) rollTarget += 360;
-
-                // Nudge toward the target at a limited rate to prevent
-                // oscillation from frame-to-frame noise.
-                var maxDelta = (fix64)5;
-                Pzy = FixedMathSharp.FixedMath.MoveTowards(Pzy, pitchTarget, maxDelta);
-                Pxy = FixedMathSharp.FixedMath.MoveTowards(Pxy, rollTarget, maxDelta);
-
-                FrameTrace.AddMessage(
-                    $"wheelFit: frontY={avgFrontY:0.0}, rearY={avgRearY:0.0}, leftY={avgLeftY:0.0}, rightY={avgRightY:0.0}, "
-                    + $"pitchT={pitchTarget:0.0}°, rollT={rollTarget:0.0}°, → Pxy={Pxy:0.0}°, Pzy={Pzy:0.0}°");
-            }
-            else
             {
                 // Undo yaw before decomposing into Pxy/Pzy.
-                // Rotation order: Rx(Pxy)·Rz(Pzy)·Ry(Xz) applied to up=(0,-1,0):
-                //   up = (sinP·cosXz + cosP·sinZ·sinXz,  -cosP·cosZ,  sinP·sinXz - cosP·sinZ·cosXz)
-                // Solving for Pxy, Pzy given up=terrainNormal and Xz:
-                var cosXz = UMath.Cos(conto.Xz);
-                var sinXz = UMath.Sin(conto.Xz);
                 var sinP = terrainNormal.X * cosXz + terrainNormal.Z * sinXz;
                 var cosP_sinZ = terrainNormal.X * sinXz - terrainNormal.Z * cosXz;
                 var cosP_cosZ = -terrainNormal.Y; // = cos(Pxy)·cos(Pzy)
@@ -1662,10 +1642,6 @@ public partial class CarPhysics
                 // |cos(Pxy)| = sqrt(cosP_cosZ² + cosP_sinZ²)  because cos²Z+sin²Z=1
                 var absCosP = fix64.Sqrt(cosP_cosZ * cosP_cosZ + cosP_sinZ * cosP_sinZ);
 
-                // Guard: when |cos(Pxy)| ≈ 0 (car within a few degrees of ±90°
-                // roll) the decomposition amplifies noise — sinZ/cosZ both divide
-                // by cosP ≈ 0.  Skip and let stabilizers hold.
-                if (absCosP > (fix64)0.05f)
                 {
                     // The normal only fixes (Pxy, Pzy) up to the twin (180°-Pxy, Pzy+180°),
                     // which yields the same up vector. Pick whichever is closest to the
@@ -1677,13 +1653,21 @@ public partial class CarPhysics
                         return a;
                     }
 
-                    var p1 = Unwrap(fix64.Atan2(sinP, absCosP) * fix64.RadToDeg, Pxy);
-                    var z1 = Unwrap(fix64.Atan2(cosP_sinZ, cosP_cosZ) * fix64.RadToDeg, Pzy);
-                    var p2 = Unwrap(180 - p1, Pxy);
-                    var z2 = Unwrap(z1 + 180, Pzy);
+                    // Near ±90° roll, Pzy is the car's local yaw (gimbal lock): the normal
+                    // says nothing about it and atan2 of two near-zero products is noise.
+                    var gimbalLocked = absCosP < (fix64)0.15f;
 
-                    var useFirst = fix64.Abs(p1 - Pxy) + fix64.Abs(z1 - Pzy)
-                                   <= fix64.Abs(p2 - Pxy) + fix64.Abs(z2 - Pzy);
+                    var p1 = Unwrap(fix64.Atan2(sinP, absCosP) * fix64.RadToDeg, Pxy);
+                    var z1 = gimbalLocked ? Pzy : Unwrap(fix64.Atan2(cosP_sinZ, cosP_cosZ) * fix64.RadToDeg, Pzy);
+                    var p2 = Unwrap(180 - p1, Pxy);
+                    var z2 = gimbalLocked ? Pzy : Unwrap(z1 + 180, Pzy);
+
+                    // The twins face opposite ways (forward = (-cosZ·sinXz, -sinZ, cosZ·cosXz)
+                    // ignores Pxy), so keep the one whose Pzy preserves the current heading.
+                    // Comparing Pxy too lets a hard landing reverse the car.
+                    var useFirst = gimbalLocked
+                        ? fix64.Abs(p1 - Pxy) <= fix64.Abs(p2 - Pxy)
+                        : fix64.Abs(z1 - Pzy) <= fix64.Abs(z2 - Pzy);
                     Pxy = useFirst ? p1 : p2;
                     Pzy = useFirst ? z1 : z2;
 
@@ -1691,6 +1675,29 @@ public partial class CarPhysics
                 }
             }
         }
+
+        // Balanced on the nose or tail, the wheel plane agrees with the pose and nothing supplies
+        // the gravity torque that tips the car over, so lean it away from vertical. Exactly
+        // vertical leans towards Pzy=0. Skipped when on its side, where Pzy is local yaw.
+        if (nWheelsOnSurface > 0 && fix64.Abs(UMath.Cos(Pxy)) > fix64.Half)
+        {
+            var z = Pzy;
+            while (z > 180) z -= 360;
+            while (z <= -180) z += 360;
+            var lean = fix64.Abs(z) - 90; // > 0: past vertical, towards the roof
+            if (fix64.Abs(lean) < 15)
+            {
+                var away = lean > fix64.Zero ? fix64.One : -fix64.One;
+                Pzy += (z >= fix64.Zero ? away : -away) * 9 * _tickRate;
+                FrameTrace.AddMessage($"tipOver: lean={lean:0.0}, → Pzy={Pzy:0.0}°");
+            }
+        }
+
+        if (Jumped(Pxy, fitPxy) || Jumped(Pzy, fitPzy))
+            Logging.Warning($"ORIENT JUMP in plane fit: Pxy {fitPxy:0.0}->{Pxy:0.0}, Pzy {fitPzy:0.0}->{Pzy:0.0}\n{FrameTrace.GetMessageString()}");
+        _dbgPxy = Pxy;
+        _dbgPzy = Pzy;
+        _dbgXz = conto.Xz;
 
         if (nGroundedWheels == 4)
         {
