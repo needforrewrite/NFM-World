@@ -29,9 +29,6 @@
 [submodule "NAudio.Flac"]
 	path = NAudio.Flac
 	url = https://github.com/uwx/NAudio.Flac
-[submodule "Lua-CSharp"]
-	path = Lua-CSharp
-	url = https://github.com/uwx/Lua-CSharp
 [submodule "NanoSvgSharp"]
 	path = NanoSvgSharp
 	url = https://github.com/uwx/NanoSVGSharp
