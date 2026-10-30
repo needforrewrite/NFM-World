@@ -8,6 +8,7 @@
 using NFMWorld.DriverInterface.DriverInterface;
 #if WEB_AUDIO
 using System.Runtime.InteropServices.JavaScript;
+using System.Runtime.Versioning;
 #endif
 
 namespace NFMWorld.Audio;
