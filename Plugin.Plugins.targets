@@ -50,7 +50,7 @@
     -->
     <Target Name="BuildPlugins"
             BeforeTargets="AssignTargetPaths"
-            Condition="'$(MSBuildRuntimeType)' == 'Core'">
+            Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(DesignTimeBuild)' != 'true'">
         <!-- Read here, not at evaluation time. TargetDir is defined by the SDK's
              .targets, which are imported after the project body, so a PropertyGroup
              up there sees it empty and the copy destination silently degrades to a
