@@ -1,5 +1,6 @@
 ﻿using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
+using NFMWorld.Audio;
 using NFMWorld.Reactor;
 using NFMWorld.UI;
 using NFMWorld.UI.Routes;
@@ -140,6 +141,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     {
         if (IsPaused) return;
         IsPaused = true;
+        SoundEffects.SetPaused(true);
         RaceState = RaceState.Paused;
 
         // The pause menu reads the same signals the HUD does, so one write is enough.
@@ -158,6 +160,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         if (!IsPaused) return;
         IsPaused = false;
         RaceState = RaceState.InProgress;
+        SoundEffects.SetPaused(false);
         UiState.Race.Paused.Value = false;
     }
 

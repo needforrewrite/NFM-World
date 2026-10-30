@@ -16,6 +16,7 @@ public sealed class FaudioSoundClip : ISoundClip
     /// Must be accessed from the main/game thread only (no locking).
     /// </summary>
     private static readonly List<FaudioSoundClip> Pool = [];
+    private static bool _paused;
 
     /// <summary>
     /// Decoded PCM for this clip, kept alive for the clip's lifetime: FAudio reads from it
@@ -85,8 +86,9 @@ public sealed class FaudioSoundClip : ISoundClip
             return;
         }
 
-        FAudio.FAudioVoice_SetVolume(_voice, IRadicalMusic.CurrentVolume, 0);
-        FAudio.FAudioSourceVoice_Start(_voice, 0, 0);
+        FAudio.FAudioVoice_SetVolume(_voice, SoundEffects.Volume, 0);
+        if (!_paused)
+            FAudio.FAudioSourceVoice_Start(_voice, 0, 0);
     }
 
     /// <summary>Releases the pin taken for a voice once that voice is destroyed.</summary>
@@ -144,6 +146,21 @@ public sealed class FaudioSoundClip : ISoundClip
         foreach (var clip in Pool)
         {
             clip.Stop();
+        }
+        _paused = false;
+    }
+
+    public static void SetAllPaused(bool paused)
+    {
+        if (_paused == paused) return;
+        _paused = paused;
+        foreach (var clip in Pool)
+        {
+            if (clip._voice == IntPtr.Zero) continue;
+            if (paused)
+                FAudio.FAudioSourceVoice_Stop(clip._voice, 0, 0);
+            else
+                FAudio.FAudioSourceVoice_Start(clip._voice, 0, 0);
         }
     }
 

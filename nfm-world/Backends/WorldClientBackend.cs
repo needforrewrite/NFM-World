@@ -68,7 +68,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
 
     public ISoundClip GetSound(string filePath) =>
         OperatingSystem.IsBrowser()
-            ? new WebAudioSoundClip(filePath, IRadicalMusic.CurrentVolume)
+            ? new WebAudioSoundClip(filePath)
             : new FaudioSoundClip(filePath);
 
     public IGraphics Graphics { get; } = new AposGraphics(sb, graphicsDevice);
@@ -569,13 +569,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
         }
     }
 
-    public void SetAllVolumes(float vol)
-    {
-        if (OperatingSystem.IsBrowser())
-            WebAudioBackend.SetAllVolumes(vol);
-        else
-            FaudioSoundClip.SetAllVolumes(vol);
-    }
+    public void SetAllVolumes(float vol) => SoundEffects.SetVolume(vol);
 
     /// <summary>
     /// Layout-independent ("physical") key for the same press - used by the UI's

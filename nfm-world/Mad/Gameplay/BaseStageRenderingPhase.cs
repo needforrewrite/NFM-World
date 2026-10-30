@@ -61,6 +61,9 @@ public abstract class BaseStageRenderingPhase : BasePhase
     {
         base.Exit();
 
+        CurrentStage?.StopSounds();
+        IBackend.Backend.StopAllSounds();
+
         // Pause music while this phase is not displayed (buried in the stack).
         // Music is resumed in Enter() and unloaded in Dispose().
         GameSparker.CurrentMusic = null;

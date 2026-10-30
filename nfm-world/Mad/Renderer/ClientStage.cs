@@ -298,6 +298,12 @@ public class ClientStage : IDisposable
             obj.GameTick(Backend);
     }
 
+    public void StopSounds()
+    {
+        foreach (var visual in _carVisuals.Values)
+            visual.Sfx?.Stop();
+    }
+
     public void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha, bool useShadowMapping = true, bool clearRenderBuffer = true)
     {
         Renderer.ApplyValues();

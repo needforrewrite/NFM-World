@@ -276,6 +276,8 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
         ReleaseUnmanagedResources();
         if (disposing)
         {
+            Sfx?.Dispose();
+            Sfx = null;
         }
     }
 
