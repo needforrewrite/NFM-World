@@ -1,6 +1,4 @@
-﻿using Maxine.Extensions.Mathematics;
-using NFMWorldLibrary;
-using NFMWorldLibrary.FixedMath;
+﻿using NFMWorldLibrary.FixedMath;
 using BoundingSphere = Maxine.Extensions.Mathematics.BoundingSphere;
 
 namespace NFMWorld;

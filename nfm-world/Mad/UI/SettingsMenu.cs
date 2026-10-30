@@ -1,7 +1,6 @@
 ﻿using System.Globalization;
 using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
-using Lua;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Graphics.OpenGL;

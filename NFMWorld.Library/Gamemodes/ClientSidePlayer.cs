@@ -1,5 +1,4 @@
-﻿using Lua;
-using NFMWorld.Lua;
+﻿using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.AI;
 
@@ -11,23 +10,24 @@ namespace NFMWorldLibrary.Gamemodes;
 /// <param name="info">The player parameters.</param>
 /// <param name="index">The zero-based index of the player.</param>
 /// <param name="isFake">True if the player was created by the gamemode, such as the ball in football.</param>
-[LuaVisible]
+[PluginVisible]
+[method: PluginVisible]
 public partial class ClientSidePlayer(ClientSidePlayerInfo info, int index, bool isFake = false)
 {
     /// <summary>
     /// The player info.
     /// </summary>
-    [LuaName] public ClientSidePlayerInfo Info { get; } = info;
+    [PluginVisible] public ClientSidePlayerInfo Info { get; } = info;
     
     /// <summary>
     /// The zero-based index of the player.
     /// </summary>
-    public int Index { get; } = index;
+    [PluginVisible] public int Index { get; } = index;
 
     /// <summary>
     /// The one-based index of the player.
     /// </summary>
-    [LuaName("index")] public int LuaIndex => Index + 1;
+    [PluginVisible] public int LuaIndex => Index + 1;
 
     /// <summary>
     /// Raised when <see cref="Car"/> is assigned a different car.
@@ -38,7 +38,7 @@ public partial class ClientSidePlayer(ClientSidePlayerInfo info, int index, bool
     /// <summary>
     /// A reference to the car for the player if the player has a car.
     /// </summary>
-    [LuaName] public BackendCar? Car
+    [PluginVisible] public BackendCar? Car
     {
         get;
         set
@@ -54,10 +54,10 @@ public partial class ClientSidePlayer(ClientSidePlayerInfo info, int index, bool
     /// <summary>
     /// If this player is a bot, the bot object.
     /// </summary>
-    [LuaName] public BaseAi? Bot { get; set; }
+    [PluginVisible] public BaseAi? Bot { get; set; }
     
     /// <summary>
     /// True if the player was created by the gamemode.
     /// </summary>
-    [LuaName] public bool IsFake { get; } = isFake;
+    [PluginVisible] public bool IsFake { get; } = isFake;
 }

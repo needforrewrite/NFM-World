@@ -3,7 +3,6 @@ using NFMWorld.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Collision;
-using NFMWorldLibrary.FixedMath;
 
 namespace NFMWorld;
 

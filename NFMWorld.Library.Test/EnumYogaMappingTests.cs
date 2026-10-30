@@ -1,3 +1,4 @@
+using System.Numerics;
 using Microsoft.UI.Reactor.Layout;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
@@ -140,7 +141,7 @@ public class EnumYogaMappingTests
 
         IBackend.Backend = new DummyBackend();
 
-        root.LayoutAndRender(new LuaVector2(800, 600));
+        root.LayoutAndRender(new Vector2(800, 600));
 
         // 600 viewport, 300 content (100+200) => first starts at 150, second at 250.
         Assert.AreEqual(600f, container.LayoutHeight, 0.5f, "container must fill the viewport");

@@ -24,12 +24,10 @@
 // presents work into an unshown window, they just have nowhere to be seen.
 using System.Numerics;
 using System.Runtime.InteropServices;
-using NFMWorld.Graphics;
 using NFMWorld.Shaders;
 using NFMWorld.Shaders.Generated;
 using TerraFX.Interop.DirectX;
 using TerraFX.Interop.Windows;
-using ClearOptions = NFMWorld.Graphics.ClearOptions;
 using AposColor = Maxine.Extensions.Mathematics.Color;
 
 namespace NFMWorld.Graphics.D3D11.Smoke;

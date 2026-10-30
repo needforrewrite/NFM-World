@@ -1,23 +1,22 @@
-﻿using NFMWorld.Lua;
+﻿using NFMWorld.PluginSystem;
 using NFMWorldLibrary.FixedMath;
-using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Backend;
 
-[LuaVisible]
+[PluginVisible]
 public abstract partial class BackendGameObject : ITransform
 {
-    [LuaName("children")]
-    public LuaList<BackendGameObject> Children { get; } = [];
+    [PluginVisible]
+    public List<BackendGameObject> Children { get; } = [];
     IReadOnlyList<ITransform> ITransform.ChildTransforms => Children;
 
-    [LuaName("parent")]
+    [PluginVisible]
     public BackendGameObject? Parent { get; set; }
     ITransform? ITransform.Parent => Parent;
 
-    [LuaName("position")]
+    [PluginVisible]
     public f64Vector3 Position { get; set; }
     
-    [LuaName("rotation")]
+    [PluginVisible]
     public f64Euler Rotation { get; set; }
 }

@@ -1,6 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.IO;
-using System.Text;
 using Apos.Shapes;
 using CommunityToolkit.HighPerformance;
 using NFMWorld.Audio;
@@ -8,7 +6,6 @@ using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Graphics;
 using NFMWorld.Util;
-using DrawingColor = System.Drawing.Color;
 using TextHorizontalAlignment = NFMWorld.DriverInterface.DriverInterface.TextHorizontalAlignment;
 
 namespace NFMWorld;

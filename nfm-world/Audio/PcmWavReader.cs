@@ -1,7 +1,5 @@
-using System.Buffers.Binary;
 using System.Text;
 using NAudio.Wave;
-using Maxine.Extensions.Collections;
 
 namespace NFMWorld.Audio;
 
@@ -22,10 +20,6 @@ public sealed class PcmWavReader : IWaveProvider
     private long _dataStart;
     private long _dataLength;
     private long _position;
-
-    /// <summary>Set when the source is 8-bit: WAV's 8-bit samples are unsigned, NAudio's float
-    /// conversion expects signed, so the whole block is shifted on the way out.</summary>
-    private readonly bool _unsigned8Bit;
 
     public PcmWavReader(Stream stream)
     {
@@ -69,7 +63,6 @@ public sealed class PcmWavReader : IWaveProvider
                     _dataStart = stream.Position;
                     _dataLength = size;
                     _format = new WaveFormat(sampleRate, bitsPerSample, channels);
-                    _unsigned8Bit = bitsPerSample == 8;
 
                     // The stream stays where the data begins: reads serve the data chunk directly.
                     return;
@@ -97,12 +90,8 @@ public sealed class PcmWavReader : IWaveProvider
         var read = _stream.Read(buffer[..toRead]);
         _position += read;
 
-        if (_unsigned8Bit)
-        {
-            for (var i = 0; i < read; i++)
-                buffer[i] = (byte)(buffer[i] - 128);
-        }
-
+        // Do not convert 8-bit to signed here: NAudio's Pcm8BitToSampleProvider already subtracts
+        // 128, and doing it twice turns quiet samples into full-scale square-wave noise.
         return read;
     }
 }

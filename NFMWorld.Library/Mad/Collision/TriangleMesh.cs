@@ -1,6 +1,5 @@
 using System.Runtime.CompilerServices;
 using FixedMathSharp;
-using NFMWorldLibrary.FixedMath;
 
 namespace NFMWorldLibrary.Collision;
 

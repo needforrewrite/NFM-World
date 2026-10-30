@@ -5,7 +5,6 @@
 // Effect-blob-as-shader-module design end-to-end (device creation, clearing and presentation were
 // already proven in Milestones 1-2). Not wired into WorldGame yet (Milestone 5).
 
-extern alias SDL3New;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using NFMWorld.FNA3D;

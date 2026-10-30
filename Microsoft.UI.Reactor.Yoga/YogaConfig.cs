@@ -2,7 +2,6 @@
 // Ported from yoga/config/Config.h, yoga/config/Config.cpp
 
 using System.Diagnostics;
-using Microsoft.UI.Reactor.Layout;
 
 namespace Microsoft.UI.Reactor.Layout;
 

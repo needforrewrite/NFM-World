@@ -1,9 +1,10 @@
-﻿using NFMWorldLibrary.Backend;
-using NFMWorldLibrary.Multiplayer;
+﻿using NFMWorld.PluginSystem;
+using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
 
 namespace NFMWorldLibrary.Gamemodes;
 
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public interface IServerGamemodeContext
 {
     /// <summary>The stage being raced on (checkpoints, lap count, geometry).</summary>

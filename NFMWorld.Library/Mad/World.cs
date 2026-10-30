@@ -1,6 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using Maxine.Extensions.Collections;
-using NFMWorldLibrary.Util;
+﻿using Maxine.Extensions.Collections;
 
 namespace NFMWorldLibrary;
 
@@ -38,7 +36,7 @@ public static partial class World
                 : MathF.Log2(1e-6f);
         }
     }
-    public static LuaVector3 LightDirection = new LuaVector3(0, 1, 0);
+    public static Vector3 LightDirection = new Vector3(0, 1, 0);
     public static int FadeFrom;
     public static float BlackPoint = 0.37f;
     public static float WhitePoint = 0.63f;

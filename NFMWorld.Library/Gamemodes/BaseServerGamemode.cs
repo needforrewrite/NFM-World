@@ -1,3 +1,4 @@
+using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
 using NFMWorldLibrary.Multiplayer.Packets.S2C;
@@ -12,6 +13,7 @@ namespace NFMWorldLibrary.Gamemodes;
 /// input handling, or physics simulation. It validates events and
 /// drives the game state machine.
 /// </summary>
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public abstract class BaseServerGamemode : IServerGamemode
 {
     /// <summary>Gamemode identifier (e.g., "nfmm/pvp").</summary>

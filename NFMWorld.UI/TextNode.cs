@@ -1,20 +1,19 @@
 ﻿using Maxine.Extensions.Mathematics;
 using NFMWorld.DriverInterface.DriverInterface;
-using NFMWorld.Lua;
-using NFMWorldLibrary.Util;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorld.Reactor;
 
 /// <summary>
 /// A node containing text. This is a leaf node; it contains no children.
 /// </summary>
-[LuaVisible]
+[PluginVisible]
 public partial class TextNode : Node, IReceivesTextInvalidation, IRichTextLeaf
 {
-    [LuaName]
-    public override ReadOnlyLuaArray<Node> VisualChildren => ReadOnlyLuaArray<Node>.Empty;
+    [PluginVisible]
+    public override IReadOnlyList<Node> VisualChildren => Array.Empty<Node>();
 
-    [LuaName]
+    [PluginVisible]
     public string? Text
     {
         get;

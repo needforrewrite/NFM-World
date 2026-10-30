@@ -1,10 +1,6 @@
-﻿using Lua;
-using Lua.Standard;
-using NFMWorld.Lua;
-using NFMWorld.LuaSourceGenerator.Generator;
+﻿using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
-using NFMWorldLibrary.Gamemodes.Lua;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Backend.AI;
@@ -12,19 +8,20 @@ namespace NFMWorldLibrary.Backend.AI;
 [LuaVisible, LuaName("AiContext")]
 public partial class LuaAiContext(BaseClientGamemode gamemode, ClientSidePlayer aiPlayer, LuaAi ai)
 {
-    [LuaName("players")]
+    [PluginVisible]
     public LuaList<ClientSidePlayer> Players { get; } = new(gamemode.Players);
 
-    [LuaName]
+    [PluginVisible]
     public ClientSidePlayer Player => aiPlayer;
     
-    [LuaName("stage")]
+    [PluginVisible]
     public BackendStage CurrentStage => gamemode.CurrentStage;
     
-    [LuaName]
+    [PluginVisible]
     public LuaTable? Config { get; } = ai.Config;
 }
 
+[PluginVisible]
 public class LuaAi : BaseAi
 {
     private readonly string _scriptPath;

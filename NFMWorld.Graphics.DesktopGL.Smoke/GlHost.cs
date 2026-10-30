@@ -11,7 +11,6 @@
 // variant: same profile, same version, same stencil request, same order. If this test made its
 // context differently from the game, it would be measuring a driver configuration the game never
 // runs - which for a backend whose whole purpose is a fair comparison would defeat the exercise.
-extern alias SDL3New;
 
 using NFMWorld.Platform.SDL3;
 using SDL = SDL3.SDL;

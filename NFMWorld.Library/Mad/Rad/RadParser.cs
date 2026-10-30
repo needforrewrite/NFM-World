@@ -99,7 +99,7 @@ public partial class RadParser
     private List<Rad3dPoly> _mainCarPolys = [];
     private List<Vector3> _points = [];
     private List<uint> _tris = [];
-    private List<Util.LuaVector2> _atp = [];
+    private List<Vector2> _atp = [];
     private List<Rad3dAttachmentLine> _atLines = [];
     private bool _road;
     private bool _castsShadow;
@@ -190,8 +190,8 @@ public partial class RadParser
             castsShadow: parser._castsShadow,
             atp: parser._atp.ToArray(),
             atLines: parser._atLines.Count > 0 ? parser._atLines.ToArray() : null,
-            collisionMesh: parser._meshCollisionVerts.Count > 0 ? new SrcRad3dCollisionMesh(parser._meshCollisionVerts.ToArray(), parser._meshCollisionIndices.ToArray()) : null,
-            collisionHull: parser._hullVerts.Count > 0 ? new SrcRad3dCollisionHull(CollectionsMarshal.AsSpan(parser._hullVerts)) : null,
+            collisionMesh: parser._meshCollisionVerts.Count > 0 ? new Rad3dCollisionMesh(parser._meshCollisionVerts.ToArray(), parser._meshCollisionIndices.ToArray()) : null,
+            collisionHull: parser._hullVerts.Count > 0 ? new Rad3dCollisionHull(CollectionsMarshal.AsSpan(parser._hullVerts)) : null,
             fileName: fileName
         ));
         transaction.Finish();
@@ -200,7 +200,7 @@ public partial class RadParser
 
     private static Rad3d RepositionCar(Rad3d rad3d)
     {
-        if (rad3d.Wheels is { Count: < 4 }) return rad3d;
+        if (rad3d.Wheels is { Length: < 4 }) return rad3d;
 
         // reposition car so that ground is at y=0 and the wheel x and z are equidistant from the origin
         // this fixes masheen bouncing on the big ramp
@@ -229,7 +229,7 @@ public partial class RadParser
         // behavior at high tickrate, we instead move it by x/y/z * phyiscs_multiplier, which restores
         // behavior at vanilla tickrate speeds.
 
-        for (var i = 0; i < rad3d.Wheels.Count; i++)
+        for (var i = 0; i < rad3d.Wheels.Length; i++)
         {
             var wheel = rad3d.Wheels[i];
             rad3d.Wheels[i] = wheel with
@@ -242,7 +242,7 @@ public partial class RadParser
             };
         }
 
-        for (var i = 0; i < rad3d.Polys.Count; i++)
+        for (var i = 0; i < rad3d.Polys.Length; i++)
         {
             var poly = rad3d.Polys[i];
             for (var j = 0; j < poly.Points.Length; j++)
@@ -421,7 +421,7 @@ public partial class RadParser
         else if (line.StartsWith("atp("))
         {
             var (x, (z, _)) = BracketParser.GetNumbers(line, stackalloc fix64[2]);
-            _atp.Add(new Util.LuaVector2((float)x, (float)z));
+            _atp.Add(new Vector2((float)x, (float)z));
         }
 
         // SRC extension

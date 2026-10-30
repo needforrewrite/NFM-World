@@ -1,8 +1,10 @@
-﻿using NFMWorldLibrary.Multiplayer;
+﻿using NFMWorld.PluginSystem;
+using NFMWorldLibrary.Multiplayer;
 
 namespace NFMWorldLibrary.Backend.Gamemodes;
 
+[PluginVisible]
 public class ServerGamemodeParameters
 {
-    public required IReadOnlyList<ServerSidePlayerInfo> Players { get; init; }
+    [PluginVisible] public required IReadOnlyList<ServerSidePlayerInfo> Players { get; init; }
 }

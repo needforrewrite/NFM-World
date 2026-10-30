@@ -1,17 +1,16 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
-using Lua;
 using Maxine.Extensions.Mathematics;
 using MemoryPack;
-using NFMWorld.Lua;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.Util;
 
-[MemoryPackable, LuaVisible]
+[MemoryPackable, PluginVisible]
 public partial record struct Color3(
-    [property: JsonPropertyName("r"), LuaName("r")] short R,
-    [property: JsonPropertyName("g"), LuaName("g")] short G,
-    [property: JsonPropertyName("b"), LuaName("b")] short B
+    [property: JsonPropertyName("r"), PluginVisible] short R,
+    [property: JsonPropertyName("g"), PluginVisible] short G,
+    [property: JsonPropertyName("b"), PluginVisible] short B
 )
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

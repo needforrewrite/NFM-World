@@ -1,12 +1,14 @@
-﻿using NFMWorldLibrary.Backend;
-using NFMWorldLibrary.FixedMath;
+﻿using NFMWorld.PluginSystem;
+using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Helpers;
 
+[PluginVisible]
 public class FixHoopHelper
 {
     // TODO fix car, play car fixed sound
+    [PluginVisible]
     public static bool HandleFixHoops(
         BackendStage currentStage,
         BackendCar car)

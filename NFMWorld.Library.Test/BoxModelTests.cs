@@ -1,3 +1,4 @@
+using System.Numerics;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
 using NFMWorldLibrary.Util;
@@ -43,7 +44,7 @@ public class BoxModelTests
         });
         root.AddChild(card);
 
-        root.LayoutAndRender(new LuaVector2(340, 600));
+        root.LayoutAndRender(new Vector2(340, 600));
 
         // The margin must not be taken out of the painted rect.
         Assert.AreEqual(40f, card.LayoutBorderSize.Y, 0.01f, "the border box is the layout height");
@@ -77,7 +78,7 @@ public class BoxModelTests
         });
         root.AddChild(card);
 
-        root.LayoutAndRender(new LuaVector2(400, 400));
+        root.LayoutAndRender(new Vector2(400, 400));
 
         // Yoga: border-box corner at (7, 10), border-box size 100x40.
         Assert.AreEqual(7f, card.LayoutBorderPosition.X, 0.01f);
@@ -123,7 +124,7 @@ public class BoxModelTests
         });
         root.AddChild(card);
 
-        root.LayoutAndRender(new LuaVector2(400, 400));
+        root.LayoutAndRender(new Vector2(400, 400));
 
         Assert.AreEqual(100f, card.LayoutBorderSize.X, 0.01f);
         Assert.AreEqual(40f, card.LayoutBorderSize.Y, 0.01f);
@@ -159,7 +160,7 @@ public class BoxModelTests
         inner.AddChild(next);
         root.AddChild(inner);
 
-        root.LayoutAndRender(new LuaVector2(340, 600));
+        root.LayoutAndRender(new Vector2(340, 600));
 
         Assert.AreEqual(72f, card.LayoutBorderSize.Y, 0.01f, "the card keeps its full height");
         Assert.AreEqual(72f + 16f, next.LayoutBorderPosition.Y, 0.01f,
@@ -185,7 +186,7 @@ public class BoxModelTests
         var child = Box("child", new Styles { Height = 100, Width = 100, FlexShrink = 0, MarginBottom = 20 });
         root.AddChild(child);
 
-        root.LayoutAndRender(new LuaVector2(300, 100));
+        root.LayoutAndRender(new Vector2(300, 100));
 
         // Content box is 80 tall; the child reaches 100 + its 20px trailing margin = 120 from the
         // content origin, so the scrollable extent is 40.

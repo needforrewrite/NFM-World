@@ -4,8 +4,7 @@
 // and pipelines. These are thin wrappers over GL object names - the interesting work is in what
 // the device does at creation time and in GlShaderProgram's binding tables, which is where this
 // backend's one real piece of indirection lives.
-using System.Runtime.InteropServices;
-using NFMWorld.Shaders;
+
 using Silk.NET.OpenGLES;
 
 namespace NFMWorld.Graphics.OpenGL;

@@ -1,7 +1,4 @@
-﻿using System.Text.Json;
-using Lua;
-
-namespace NFMWorld.UI.Cef.Bridges;
+﻿namespace NFMWorld.UI.Cef.Bridges;
 
 public class DummyBridge() : PhaseBridge("empty")
 {

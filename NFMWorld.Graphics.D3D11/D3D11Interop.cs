@@ -8,7 +8,6 @@
 // copy of.
 using System.Runtime.InteropServices;
 using System.Text;
-using TerraFX.Interop.DirectX;
 using TerraFX.Interop.Windows;
 
 namespace NFMWorld.Graphics.D3D11;

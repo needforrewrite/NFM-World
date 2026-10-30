@@ -2,8 +2,6 @@
 // Ported from yoga/style/Style.h
 // Simplifies C++ StyleValuePool to plain fields (memory compaction less important in managed code).
 
-using Microsoft.UI.Reactor.Layout;
-
 namespace Microsoft.UI.Reactor.Layout;
 
 /// <summary>

@@ -1,8 +1,8 @@
-using NFMWorld.Lua;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary;
 
-[LuaVisible]
+[PluginVisible]
 public enum Collection
 {
     /// Game cars

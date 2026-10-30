@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace NFMWorld.PhysicsFS
+﻿namespace NFMWorld.PhysicsFS
 {
     public interface IVirtualFileSystem
     {

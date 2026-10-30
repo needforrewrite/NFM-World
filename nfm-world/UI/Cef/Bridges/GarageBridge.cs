@@ -1,8 +1,3 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using Lua;
-using MemoryPack;
-using NFMWorld.Lua;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Util;
 
@@ -91,44 +86,44 @@ public sealed class GarageBridge() : PhaseBridge("garage")
 /// <summary>
 /// Car stats sent to the garage JS page.
 /// </summary>
-[LuaVisible]
+[PluginVisible]
 public sealed partial class CarStatsData
 {
-    [LuaName] public string FileName { get; set; } = "";
-    [LuaName] public string Name { get; set; } = "";
-    [LuaName] public string Collection { get; set; } = nameof(NFMWorldLibrary.Collection.User);
-    [LuaName] public double TopSpeed { get; set; }
-    [LuaName] public double Acceleration { get; set; }
-    [LuaName] public double Handling { get; set; }
-    [LuaName] public double PowerSave { get; set; }
-    [LuaName] public double Strength { get; set; }
-    [LuaName] public double MaxHealth { get; set; }
-    [LuaName] public double Stunting { get; set; }
-    [LuaName] public double Hypergliding { get; set; }
-    [LuaName] public double Abing { get; set; }
+    [PluginVisible] public string FileName { get; set; } = "";
+    [PluginVisible] public string Name { get; set; } = "";
+    [PluginVisible] public string Collection { get; set; } = nameof(NFMWorldLibrary.Collection.User);
+    [PluginVisible] public double TopSpeed { get; set; }
+    [PluginVisible] public double Acceleration { get; set; }
+    [PluginVisible] public double Handling { get; set; }
+    [PluginVisible] public double PowerSave { get; set; }
+    [PluginVisible] public double Strength { get; set; }
+    [PluginVisible] public double MaxHealth { get; set; }
+    [PluginVisible] public double Stunting { get; set; }
+    [PluginVisible] public double Hypergliding { get; set; }
+    [PluginVisible] public double Abing { get; set; }
 }
 
 /// <summary>
 /// Collection of cars sent to the garage JS page.
 /// </summary>
-[LuaVisible]
+[PluginVisible]
 public sealed partial class CarCollectionsData
 {
-    [LuaName] public LuaArray<CarCollectionData> Collections { get; set; } = [];
+    [PluginVisible] public LuaArray<CarCollectionData> Collections { get; set; } = [];
 }
 
 /// <summary>
 /// Collection of cars sent to the garage JS page.
 /// </summary>
-[LuaVisible]
+[PluginVisible]
 public sealed partial class CarCollectionData
 {
-    [LuaName] public string Id { get; set; } = nameof(Collection.User);
-    [LuaName] public LuaArray<CarStatsData> Cars { get; set; } = [];
+    [PluginVisible] public string Id { get; set; } = nameof(Collection.User);
+    [PluginVisible] public LuaArray<CarStatsData> Cars { get; set; } = [];
 }
 
-[LuaVisible]
+[PluginVisible]
 public sealed partial class CurrentCollectionData
 {
-    [LuaName] public required string Id { get; set; }
+    [PluginVisible] public required string Id { get; set; }
 }

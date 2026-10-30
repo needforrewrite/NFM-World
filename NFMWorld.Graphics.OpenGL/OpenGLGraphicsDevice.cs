@@ -1,6 +1,4 @@
-﻿using Silk.NET.Core.Contexts;
-using Silk.NET.OpenGLES;
-using Silk.NET.OpenGLES.Extensions.ANGLE;
+﻿using Silk.NET.OpenGLES;
 
 namespace NFMWorld.Graphics.OpenGL;
 

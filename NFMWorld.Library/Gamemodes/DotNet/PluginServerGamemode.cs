@@ -1,4 +1,5 @@
 ﻿using MemoryPack;
+using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Multiplayer;
@@ -6,6 +7,7 @@ using NFMWorldLibrary.Multiplayer.Packets.C2S;
 
 namespace NFMWorldLibrary.Gamemodes.DotNet;
 
+[PluginVisible]
 public class PluginServerGamemode(
     ServerGamemodeParameters parameters,
     IServerGamemodeContext context,
@@ -15,16 +17,16 @@ public class PluginServerGamemode(
 {
     internal GameStateSnapshot? _snapshot;
 
-    public Dictionary<string, object>? Config { get; } = config;
+    [PluginVisible] public Dictionary<string, object>? Config { get; } = config;
 
     public override string GamemodeId { get; } = gamemodeId;
 
-    public ServerGamemodeParameters Parameters { get; } = parameters;
+    [PluginVisible] public ServerGamemodeParameters Parameters { get; } = parameters;
 
-    public IReadOnlyList<ServerSidePlayerInfo> Players => Parameters.Players;
-    
+    [PluginVisible] public IReadOnlyList<ServerSidePlayerInfo> Players => Parameters.Players;
+
     /// <summary>The stage being raced on (checkpoints, lap count, geometry).</summary>
-    public BackendStage CurrentStage => context.CurrentStage;
+    [PluginVisible] public BackendStage CurrentStage => context.CurrentStage;
 
     public override void Begin()
     {
@@ -36,22 +38,26 @@ public class PluginServerGamemode(
     /// Gets the latest relayed position for a player, or null if not yet received.
     /// Position data flows from <see cref="C2S_PlayerState"/> relay.
     /// </summary>
+    [PluginVisible]
     public f64Vector3? GetPlayerPosition(Guid playerId) => context.GetPlayerPosition(playerId);
-    
+
     /// <summary>
     /// Broadcast a payload to all clients.
     /// </summary>
     /// <param name="payload">The payload.</param>
+    [PluginVisible]
     public void BroadcastEvent(ReadOnlyMemory<byte> payload) => context.BroadcastEvent(payload);
-    
+
     /// <summary>
     /// Broadcast a payload to all clients.
     /// </summary>
     /// <param name="payload">The payload.</param>
+    [PluginVisible]
     public void BroadcastEvent<T>(T payload) => BroadcastEvent((ReadOnlyMemory<byte>)MemoryPackSerializer.Serialize(payload));
 
     public override GameStateSnapshot? GetStateSnapshot() => _snapshot;
 
+    [PluginVisible]
     public void FinishRace(TimeSpan raceDuration, RaceStanding[] standings) => _snapshot = new GameStateSnapshot()
     {
         IsFinished = true,

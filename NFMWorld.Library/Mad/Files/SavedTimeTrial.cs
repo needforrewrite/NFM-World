@@ -1,25 +1,21 @@
-using System.IO.Compression;
-using CommunityToolkit.HighPerformance;
 using Maxine.Extensions;
-using Maxine.Extensions.Io;
 using MemoryPack;
-using MemoryPack.Compression;
+using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Backend;
-using NFMWorldLibrary.Files.Demo;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Files;
 
-[MemoryPackable(GenerateType.CircularReference)]
+[MemoryPackable(GenerateType.CircularReference), PluginVisible]
 public partial class SavedTimeTrial
 {
-    public const int CURRENT_VERSION = 5;
-    
-    [MemoryPackOrder(0)] public string CarName;
-    [MemoryPackOrder(1)] public string StageName;
+    [PluginVisible] public const int CURRENT_VERSION = 5;
+
+    [MemoryPackOrder(0), PluginVisible] public string CarName;
+    [MemoryPackOrder(1), PluginVisible] public string StageName;
     [MemoryPackOrder(2)] public Demo.Demo DemoData;
-    [MemoryPackOrder(3)] public Splits Splits;
+    [MemoryPackOrder(3), PluginVisible] public Splits Splits;
     [MemoryPackOrder(4)] public int? Version; // New in version 1, defaults to 0
     [MemoryPackOrder(5)] public StageLoader? StageData; // New in version 2 
     [MemoryPackOrder(6)] public Rad3d? CarData; // New in version 2
@@ -71,17 +67,20 @@ public partial class SavedTimeTrial
         StageName = stageName;
     }
 
+    [PluginVisible]
     public SavedTimeTrial(string carName, string stageName, StageLoader stageData, Rad3d carData) : this(carName, stageName)
     {
         StageData = stageData;
         CarData = carData;
     }
 
+    [PluginVisible]
     public static SavedTimeTrial? Load(string carName, string stageName)
     {
         return Load(GetPathName(carName, stageName)) ?? Load(GetOldPathName(carName, stageName));
     }
 
+    [PluginVisible]
     public static SavedTimeTrial? Load(string fileName)
     {
         try
@@ -112,6 +111,7 @@ public partial class SavedTimeTrial
         return MemoryPackSerializer.Deserialize<SavedTimeTrial>(decompData, MemoryPackHelpers.Options);
     }
 
+    [PluginVisible]
     public void Save()
     {
         // Through the VFS: the browser has no writable install directory, so the write root is the
@@ -122,11 +122,14 @@ public partial class SavedTimeTrial
         Deflate.Compress(body, fileStream.AsBufferWriter<byte>());
     }
 
+    [PluginVisible]
     public void RecordTick(BackendCar car)
     {
         CarFrame entry = CarFrame.Create(car);
         DemoData.AddEntry(entry);
     }
+
+    [PluginVisible]
     public (bool Up, bool Down, bool Left, bool Right, bool Handb)? GetTick(int tick)
     {
         if(tick >= DemoData.Ticks.Count) return null;
@@ -134,16 +137,19 @@ public partial class SavedTimeTrial
         return (tickData.TheBitFlags.Up, tickData.TheBitFlags.Down, tickData.TheBitFlags.Left, tickData.TheBitFlags.Right, tickData.TheBitFlags.Handb);
     }
 
+    [PluginVisible]
     public void RecordSplit(long elapsed)
     {
         Splits.SplitTimes.Add(elapsed);
     }
 
+    [PluginVisible]
     public long GetSplitDiff(SavedTimeTrial other, int sample)
     {
         return Splits.SplitTimes[sample] - other.Splits.SplitTimes[sample];
     }
 
+    [PluginVisible]
     public long GetLapTime(int checkpointsInLap, int lap)
     {
         if (checkpointsInLap <= 0) return 0;

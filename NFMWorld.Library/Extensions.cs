@@ -2,9 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using CommunityToolkit.HighPerformance;
-using FixedMathSharp.Utility;
 using Maxine.Extensions.Mathematics;
-using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary;

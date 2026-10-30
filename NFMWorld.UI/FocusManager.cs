@@ -1,7 +1,6 @@
 ﻿using System.Numerics;
 using Maxine.Extensions.Mathematics;
 using NFMWorld.ClayDom.Events;
-using NFMWorldLibrary.Util;
 
 namespace NFMWorld.Reactor;
 
@@ -124,7 +123,7 @@ public static class FocusManager
     /// <paramref name="screenPos"/>. Empty when nothing hit. Uses the same z-index
     /// aware ordering as <see cref="HitTest"/> so hover matches the mousedown hit.
     /// </summary>
-    public static List<Component> HitTestChain(Component root, LuaVector2 screenPos)
+    public static List<Component> HitTestChain(Component root, Vector2 screenPos)
     {
         var chain = new List<Component>();
         var zCache = new Dictionary<Component, int>();
@@ -176,7 +175,7 @@ public static class FocusManager
             yield return c;
     }
 
-    private static bool HitTestChainRecursive(Component node, LuaVector2 pos, List<Component> chain, Dictionary<Component, int> zCache)
+    private static bool HitTestChainRecursive(Component node, Vector2 pos, List<Component> chain, Dictionary<Component, int> zCache)
     {
         if (!node.Styles.PointerEvents)
             return false;

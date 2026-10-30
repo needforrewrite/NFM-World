@@ -2,9 +2,8 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using Maxine.Extensions;
-using NFMWorld.CrashReporter;
-using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
+using NFMWorld.PluginSystem;
 using NFMWorld.Sentry;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Radpack;
@@ -12,9 +11,10 @@ using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary;
 
+[PluginVisible]
 public static class BackendGameSparker
 {
-    public static Dictionary<Collection, UnlimitedArray<Rad3d>> cars = new();
+    [PluginVisible] public static Dictionary<Collection, UnlimitedArray<Rad3d>> cars = new();
     public static UnlimitedArray<Rad3d> stage_parts = [];
     public static UnlimitedArray<Rad3d> vendor_stage_parts = [];
     public static UnlimitedArray<Rad3d> user_stage_parts = [];
@@ -300,6 +300,7 @@ public static class BackendGameSparker
         return NativeLibrary.Load($"libs/{dir}/{newLibraryName}");
     }
 
+    [PluginVisible]
     public static (int Id, Rad3d? Rad) GetCar(string name)
     {
         var total = 0;

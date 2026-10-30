@@ -4,8 +4,6 @@ using Maxine.Extensions.Mathematics;
 using Microsoft.UI.Reactor.Layout;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
-using NFMWorldLibrary;
-using NFMWorldLibrary.Util;
 using ObservableCollections;
 
 namespace NFMWorld.Reactor;
@@ -45,7 +43,7 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
 
     IEnumerable<IRichTextElement> IRichTextContainer.Children => Children.OfType<IRichTextElement>();
 
-    public override ReadOnlyLuaArray<Node> VisualChildren { get; }
+    public override IReadOnlyList<Node> VisualChildren { get; }
 
     // ── Visual children API ────────────────────────────────────────────
     public override bool CanHaveChildren => true;
@@ -63,7 +61,7 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
     public Text()
     {
         Children = new ComponentChildCollection(this);
-        VisualChildren = new ReadOnlyLuaArray<Node>(Children);
+        VisualChildren = Children;
 
         Children.CollectionChanged += OnChildrenChanged;
 
@@ -144,7 +142,7 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
     }
 
     [ClientOnly]
-    protected override void RenderBackground(LuaVector2 position, LuaVector2 size)
+    protected override void RenderBackground(Vector2 position, Vector2 size)
     {
         base.RenderBackground(position, size);
     }
@@ -178,7 +176,7 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
     }
 
     [ClientOnly]
-    protected override void RenderContent(LuaVector2 position, LuaVector2 size)
+    protected override void RenderContent(Vector2 position, Vector2 size)
     {
         base.RenderContent(position, size);
 

@@ -1,8 +1,11 @@
-﻿namespace NFMWorldLibrary.Backend;
+﻿using NFMWorld.PluginSystem;
+
+namespace NFMWorldLibrary.Backend;
 
 /// <summary>
 /// Functions that the gamemode is allowed to call on the client.
 /// </summary>
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public interface IClientCallbacks
 {
     void ResetCheckpointGlow();

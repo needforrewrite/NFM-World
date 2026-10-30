@@ -1,8 +1,9 @@
-﻿using Lua;
+﻿using NFMWorld.PluginSystem;
 using NFMWorldLibrary.FixedMath;
 
 namespace NFMWorldLibrary;
 
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public partial interface ITransform
 {
     IReadOnlyList<ITransform> ChildTransforms { get; }

@@ -1,8 +1,3 @@
-using System.Text.Json;
-using Lua;
-using MemoryPack;
-using NFMWorld.Lua;
-
 namespace NFMWorld.UI.Cef;
 
 /// <summary>
@@ -37,8 +32,8 @@ public sealed class TestPhaseBridge() : PhaseBridge("test")
     public event Action? BackRequested;
 }
 
-[LuaVisible]
+[PluginVisible]
 public sealed partial class CounterData
 {
-    [LuaName] public int Value { get; set; }
+    [PluginVisible] public int Value { get; set; }
 }

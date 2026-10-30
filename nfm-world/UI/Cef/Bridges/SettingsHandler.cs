@@ -1,8 +1,4 @@
-using System.Text.Json;
-using Lua;
-using MemoryPack;
 using NFMWorld.DriverInterface;
-using NFMWorld.Lua;
 using NFMWorldLibrary.Util;
 using WorldXaml.UI.Yoga;
 
@@ -196,12 +192,12 @@ public sealed class SettingsHandler : ISubHandler
 
 // ── MemoryPack data models ────────────────────────────────────────
 
-[LuaVisible]
+[PluginVisible]
 public sealed partial class CapturedKey
 {
-    [LuaName] public string? Action { get; set; }
-    [LuaName] public int KeyCode { get; set; }
-    [LuaName] public bool Cancelled { get; set; }
+    [PluginVisible] public string? Action { get; set; }
+    [PluginVisible] public int KeyCode { get; set; }
+    [PluginVisible] public bool Cancelled { get; set; }
 }
 
 /// <summary>
@@ -211,35 +207,35 @@ public sealed partial class CapturedKey
 public sealed partial class SettingsSnapshot
 {
     // Video
-    [LuaName] public int SelectedRenderer { get; set; }
-    [LuaName] public int SelectedResolution { get; set; }
-    [LuaName] public int SelectedDisplayMode { get; set; }
-    [LuaName] public bool Vsync { get; set; }
-    [LuaName] public int FpsLimit { get; set; }
-    [LuaName] public int Antialias { get; set; }
-    [LuaName] public int ShadowCascadeLevel { get; set; }
-    [LuaName] public int ShadowResolution { get; set; }
-    [LuaName] public int RenderDistance { get; set; }
-    [LuaName] public bool LowLatency { get; set; }
-    [LuaName] public float LineWidth { get; set; }
+    [PluginVisible] public int SelectedRenderer { get; set; }
+    [PluginVisible] public int SelectedResolution { get; set; }
+    [PluginVisible] public int SelectedDisplayMode { get; set; }
+    [PluginVisible] public bool Vsync { get; set; }
+    [PluginVisible] public int FpsLimit { get; set; }
+    [PluginVisible] public int Antialias { get; set; }
+    [PluginVisible] public int ShadowCascadeLevel { get; set; }
+    [PluginVisible] public int ShadowResolution { get; set; }
+    [PluginVisible] public int RenderDistance { get; set; }
+    [PluginVisible] public bool LowLatency { get; set; }
+    [PluginVisible] public float LineWidth { get; set; }
 
     // Audio
-    [LuaName] public float MasterVolume { get; set; }
-    [LuaName] public float MusicVolume { get; set; }
-    [LuaName] public float EffectsVolume { get; set; }
-    [LuaName] public bool MuteAll { get; set; }
-    [LuaName] public bool RemasteredMusic { get; set; }
+    [PluginVisible] public float MasterVolume { get; set; }
+    [PluginVisible] public float MusicVolume { get; set; }
+    [PluginVisible] public float EffectsVolume { get; set; }
+    [PluginVisible] public bool MuteAll { get; set; }
+    [PluginVisible] public bool RemasteredMusic { get; set; }
 
     // Game (Camera)
-    [LuaName] public float Fov { get; set; }
-    [LuaName] public int FollowY { get; set; }
-    [LuaName] public int FollowZ { get; set; }
-    [LuaName] public bool SmoothFov { get; set; }
+    [PluginVisible] public float Fov { get; set; }
+    [PluginVisible] public int FollowY { get; set; }
+    [PluginVisible] public int FollowZ { get; set; }
+    [PluginVisible] public bool SmoothFov { get; set; }
 
     // Key bindings
-    [LuaName] public KeyBindingData[] KeyBindings { get; set; } = [];
+    [PluginVisible] public KeyBindingData[] KeyBindings { get; set; } = [];
 
-    [LuaName] public int DistantOutlineBehavior { get; set; }
+    [PluginVisible] public int DistantOutlineBehavior { get; set; }
 }
 
 /// <summary>
@@ -249,26 +245,26 @@ public sealed partial class SettingsSnapshot
 public sealed partial class KeyBindingData
 {
     /// <summary>Property name on KeyBindings (e.g., "Accelerate").</summary>
-    [LuaName] public string Action { get; set; } = "";
+    [PluginVisible] public string Action { get; set; } = "";
 
     /// <summary>Human-readable display name (e.g., "Accelerate").</summary>
-    [LuaName] public string DisplayName { get; set; } = "";
+    [PluginVisible] public string DisplayName { get; set; } = "";
 
     /// <summary>SDL Key enum integer value.</summary>
-    [LuaName] public int KeyCode { get; set; }
+    [PluginVisible] public int KeyCode { get; set; }
 }
 
 /// <summary>
 /// Lists of valid choices for each dropdown/slider, sent once on enter.
 /// </summary>
-[LuaVisible]
+[PluginVisible]
 public sealed partial class AvailableOptions
 {
-    [LuaName] public LuaArray<string> Renderers { get; set; } = [];
-    [LuaName] public LuaArray<string> Resolutions { get; set; } = [];
-    [LuaName] public LuaArray<string> DisplayModes { get; set; } = [];
-    [LuaName] public LuaArray<string> AntialiasModes { get; set; } = [];
-    [LuaName] public LuaArray<string> ShadowCascadeLevels { get; set; } = [];
-    [LuaName] public LuaArray<string> ShadowResolutions { get; set; } = [];
-    [LuaName] public LuaArray<string> RenderDistanceNames { get; set; } = [];
+    [PluginVisible] public LuaArray<string> Renderers { get; set; } = [];
+    [PluginVisible] public LuaArray<string> Resolutions { get; set; } = [];
+    [PluginVisible] public LuaArray<string> DisplayModes { get; set; } = [];
+    [PluginVisible] public LuaArray<string> AntialiasModes { get; set; } = [];
+    [PluginVisible] public LuaArray<string> ShadowCascadeLevels { get; set; } = [];
+    [PluginVisible] public LuaArray<string> ShadowResolutions { get; set; } = [];
+    [PluginVisible] public LuaArray<string> RenderDistanceNames { get; set; } = [];
 }

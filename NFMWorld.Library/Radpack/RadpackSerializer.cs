@@ -1,7 +1,5 @@
 ﻿using System.Buffers;
-using System.IO.Compression;
 using MemoryPack;
-using MemoryPack.Compression;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 

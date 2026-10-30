@@ -20,18 +20,18 @@ function DeterministicRandom.new(value) end
 LuaRect = {}
 
 
----@class LuaVector2 : System.IEquatable_LuaVector2
+---@class Vector2 : System.IEquatable_Vector2
 ---@field x number
 ---@field y number
 
-LuaVector2 = {}
+Vector2 = {}
 
 
----@class LuaVector3 : System.IEquatable_LuaVector3
+---@class Vector3 : System.IEquatable_Vector3
 ---@field x number
 ---@field y number
 ---@field z number
 
-LuaVector3 = {}
+Vector3 = {}
 
 

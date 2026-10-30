@@ -1,8 +1,8 @@
-﻿using NFMWorld.Lua;
+﻿using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.Rad;
 
-[LuaVisible]
+[PluginVisible]
 public enum PolyType
 {
     // Put glass last so when rendering it is last in the render order due to alpha sorting

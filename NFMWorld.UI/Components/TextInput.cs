@@ -1,11 +1,9 @@
-﻿using Maxine.Extensions.Mathematics;
+﻿using System.Numerics;
+using Maxine.Extensions.Mathematics;
 using NFMWorld.ClayDom.Events;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
-using NFMWorld.Lua;
-using NFMWorld.Reactor;
-using NFMWorldLibrary;
-using NFMWorldLibrary.Util;
+using NFMWorld.PluginSystem;
 using MouseButton = NFMWorld.DriverInterface.MouseButton;
 
 namespace NFMWorld.Reactor;
@@ -15,7 +13,7 @@ namespace NFMWorld.Reactor;
 /// layout and measurement, plus a cursor overlay child rendered on top for
 /// the blinking cursor and selection highlight.
 /// </summary>
-[LuaVisible]
+[PluginVisible]
 public partial class TextInput : Component
 {
     // ── Internal children ──────────────────────────────────────────
@@ -91,7 +89,7 @@ public partial class TextInput : Component
     /// <summary>
     /// Placeholder text shown when <see cref="Text"/> is empty and the input is not focused.
     /// </summary>
-    [LuaName]
+    [PluginVisible]
     public string Placeholder
     {
         get;
@@ -119,7 +117,7 @@ public partial class TextInput : Component
     // ── Proxied TextRun properties ─────────────────────────────────
 
     /// <inheritdoc cref="Reactor.Text.TextContent"/>
-    [LuaName]
+    [PluginVisible]
     public string? Text
     {
         get;
@@ -194,13 +192,13 @@ public partial class TextInput : Component
         _cursorOverlay.VisualParent = this;
 
         _visualChildren = [_text, _cursorOverlay];
-        VisualChildren = new ReadOnlyLuaArray<Node>(_visualChildren);
+        VisualChildren = _visualChildren;
     }
 
     // ── Visual children (void element — no external children) ─────
 
     private readonly Node[] _visualChildren;
-    public override ReadOnlyLuaArray<Node> VisualChildren { get; }
+    public override IReadOnlyList<Node> VisualChildren { get; }
 
     // ── Text invalidation ─────────────────────────────────────────
 
@@ -648,7 +646,7 @@ public partial class TextInput : Component
         }
 
         [ClientOnly]
-        protected override void RenderContent(LuaVector2 position, LuaVector2 size)
+        protected override void RenderContent(Vector2 position, Vector2 size)
         {
             if (!_owner.IsFocused)
                 return;

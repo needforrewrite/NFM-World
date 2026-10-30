@@ -1,3 +1,4 @@
+using System.Numerics;
 using NFMWorld.ClayDom.Events;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
@@ -37,7 +38,7 @@ public class FocusManagerMousePressTests
     }
 
     private static BaseMouseEvent Press(float x, float y) =>
-        new(new LuaVector2(x, y), MouseButton.Primary, MouseButtons.Primary, false, false, false);
+        new(new Vector2(x, y), MouseButton.Primary, MouseButtons.Primary, false, false, false);
 
     [TestInitialize]
     public void Setup()
@@ -52,7 +53,7 @@ public class FocusManagerMousePressTests
         var root = MakeRoot();
         var btn = MakeBox("btn", 0, 0, 100, 100, focusable: true);
         root.AddChild(btn);
-        root.LayoutAndRender(new LuaVector2(200, 200));
+        root.LayoutAndRender(new Vector2(200, 200));
 
         FocusManager.HandleMousePressed(root, Press(50, 50));
 
@@ -68,7 +69,7 @@ public class FocusManagerMousePressTests
         var spacer = MakeBox("spacer", 100, 100, 100, 100); // non-focusable
         root.AddChild(btn);
         root.AddChild(spacer);
-        root.LayoutAndRender(new LuaVector2(200, 200));
+        root.LayoutAndRender(new Vector2(200, 200));
 
         // Focus the button first.
         FocusManager.HandleMousePressed(root, Press(50, 50));
@@ -89,7 +90,7 @@ public class FocusManagerMousePressTests
         var childBtn = MakeBox("childBtn", 10, 10, 50, 50, focusable: true);
         container.AddChild(childBtn);
         root.AddChild(container);
-        root.LayoutAndRender(new LuaVector2(200, 200));
+        root.LayoutAndRender(new Vector2(200, 200));
 
         FocusManager.HandleMousePressed(root, Press(30, 30));
 
@@ -102,7 +103,7 @@ public class FocusManagerMousePressTests
         var root = MakeRoot();
         var btn = MakeBox("btn", 0, 0, 100, 100, focusable: true);
         root.AddChild(btn);
-        root.LayoutAndRender(new LuaVector2(200, 200));
+        root.LayoutAndRender(new Vector2(200, 200));
 
         FocusManager.HandleMousePressed(root, Press(50, 50));
         Assert.AreSame(btn, FocusManager.ActiveNode);

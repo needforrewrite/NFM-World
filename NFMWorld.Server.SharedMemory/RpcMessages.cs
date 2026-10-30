@@ -1,7 +1,5 @@
 using MemoryPack;
 using NFMWorldLibrary;
-using NFMWorldLibrary.Multiplayer.HttpMessages;
-using NFMWorldLibrary.Multiplayer.Packets.S2C;
 
 namespace NFMWorld.Server.SharedMemory;
 

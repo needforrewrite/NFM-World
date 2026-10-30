@@ -1,8 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using HoleyDiver;
 using Maxine.Extensions.Mathematics;
-using NFMWorld.Graphics;
 using NFMWorld.Shaders;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Rad;
@@ -30,7 +28,7 @@ public enum PolyOverlayMode
 
 public class Mesh : IDisposable
 {
-    public LuaArray<Rad3dPoly> OriginalPolys;
+    public IReadOnlyList<Rad3dPoly> OriginalPolys;
     public Rad3dPoly[] Polys;
 
     protected Submesh?[] Submeshes;

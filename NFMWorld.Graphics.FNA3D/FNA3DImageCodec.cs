@@ -1,6 +1,3 @@
-using System;
-using System.IO;
-
 namespace NFMWorld.Graphics.FNA3D;
 
 /// <summary>

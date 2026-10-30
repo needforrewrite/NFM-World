@@ -1,8 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
-using NFMWorld.Lua;
-using NFMWorldLibrary.Util;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorld.Reactor;
 
@@ -10,12 +9,12 @@ namespace NFMWorld.Reactor;
 /// Represents a container node that can hold multiple child nodes and arrange them according to the Flexbox layout
 /// algorithm.
 /// </summary>
-[DebuggerDisplay("{DebugToString()}"), LuaVisible]
+[DebuggerDisplay("{DebugToString()}"), PluginVisible]
 public partial class View : Component
 {
     public ComponentChildCollection Children { get; }
 
-    public override ReadOnlyLuaArray<Node> VisualChildren { get; }
+    public override IReadOnlyList<Node> VisualChildren { get; }
 
     // ── Visual children API ────────────────────────────────────────────
     public override bool CanHaveChildren => true;
@@ -26,7 +25,7 @@ public partial class View : Component
     public View()
     {
         Children = new ComponentChildCollection(this);
-        VisualChildren = new ReadOnlyLuaArray<Node>(Children);
+        VisualChildren = Children;
     }
 
     [EditorBrowsable(EditorBrowsableState.Never)]

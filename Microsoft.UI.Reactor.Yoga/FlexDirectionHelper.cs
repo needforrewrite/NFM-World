@@ -1,8 +1,6 @@
 // C# port of Meta's Yoga layout engine FlexDirection utilities.
 // Ported from yoga/algorithm/FlexDirection.h
 
-using Microsoft.UI.Reactor.Layout;
-
 namespace Microsoft.UI.Reactor.Layout;
 
 /// <summary>

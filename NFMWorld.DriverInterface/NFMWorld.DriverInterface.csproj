@@ -6,15 +6,14 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
-    <ItemGroup>
-        <ProjectReference Include="..\NFMWorld.Lua\NFMWorld.Lua.csproj"/>
-        <ProjectReference Include="..\NFMWorld.LuaSourceGenerator\NFMWorld.LuaSourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
-    </ItemGroup>
-
     <!-- LuaCATS definition file output -->
     <ItemGroup>
         <CompilerVisibleProperty Include="LuaSourceGenerator_LuaCATSOutputDirectory"/>
         <CompilerVisibleProperty Include="LuaVisibleGenerator_StubsOutputDirectory"/>
+    </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.Mathematics\Maxine.Extensions.Mathematics.csproj" />
+      <ProjectReference Include="..\NFMWorld.PluginSystem\NFMWorld.PluginSystem.csproj" />
     </ItemGroup>
     <PropertyGroup>
         <LuaSourceGenerator_LuaCATSOutputDirectory>$(MSBuildProjectDirectory)\..\NFMWorld.Library\data\library\declarations</LuaSourceGenerator_LuaCATSOutputDirectory>

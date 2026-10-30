@@ -1,6 +1,4 @@
-﻿using System.Collections;
-
-namespace NFMWorld.PhysicsFS;
+﻿namespace NFMWorld.PhysicsFS;
 
 public class VirtualFS
 {

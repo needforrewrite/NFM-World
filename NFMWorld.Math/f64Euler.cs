@@ -1,9 +1,11 @@
 ﻿using Maxine.Extensions.Mathematics;
+using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Util;
 using NFMWorldMath;
 
 namespace NFMWorldLibrary.FixedMath;
 
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public struct f64Euler(f64AngleSingle yaw, f64AngleSingle pitch, f64AngleSingle roll) : IEquatable<f64Euler>
 {
     public f64AngleSingle Yaw { get; set; } = yaw;

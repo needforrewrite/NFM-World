@@ -2,7 +2,6 @@
 using System.Runtime.InteropServices;
 using Maxine.Extensions.Collections;
 using NFMWorld.Audio.FAudioBindings;
-using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Sentry;
 using NFMWorldLibrary;
@@ -125,15 +124,32 @@ public sealed class FaudioMusic : IRadicalMusic
         if (!_readable) return;
         _readable = false;
 
-        DestroyVoice();
+        var stretched = _hasStretchedPcm ? _stretchedPcm : default;
+        var decoded = _decoded;
 
-        if (_hasStretchedPcm)
+        // The music fade runs past this call on a thread pool thread that is still reading the
+        // pinned PCM, so the pin and both pooled buffers are only released once the voice is gone.
+        void ReleasePcm()
         {
-            _stretchedPcm.Dispose();
-            _stretchedPcm = default;
+            if (_pcmHandle.IsAllocated)
+                _pcmHandle.Free();
+
+            if (_hasStretchedPcm)
+                stretched.Dispose();
+
+            decoded.Dispose();
         }
 
-        _decoded.Dispose();
+        var engine = FaudioEngine.Instance;
+        if (_voice != IntPtr.Zero && engine is not null)
+        {
+            engine.FadeOutAndDestroy(_voice, ReleasePcm);
+            _voice = IntPtr.Zero;
+            return;
+        }
+
+        DestroyVoice();
+        ReleasePcm();
     }
 
     /// <summary>The PCM actually played: the stretched copy when one was produced, else the decoded original.</summary>

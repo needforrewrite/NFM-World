@@ -1,6 +1,5 @@
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
-using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Util;
 

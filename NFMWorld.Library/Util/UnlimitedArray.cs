@@ -1,19 +1,16 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Collections;
 using System.Runtime.CompilerServices;
-using Lua;
-using Lua.Runtime;
 using MemoryPack;
-using NFMWorld.Lua;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.Util;
 
 [MemoryPackable(GenerateType.Collection)]
-[LuaShimType("{ T }")]
-public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>, ILuaUserData
+[PluginVisible(Visible.IncludingAnyGenericInstantiationAndAllMembersOfType)]
+public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
 {
     private protected T[] _items = [];
     private protected int _size = 0;
@@ -330,84 +327,6 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>, ILuaUserDat
     internal Span<T> GetSpan()
     {
         return _items.AsSpan();
-    }
-
-    // ------------------------------------------------------------------
-    // ILuaUserData — table-like behaviour via metatable
-    // ------------------------------------------------------------------
-
-    LuaTable? ILuaUserData.Metatable
-    {
-        get
-        {
-            if (field == null)
-            {
-                field = SharedMetatable;
-            }
-            return field;
-        }
-        set;
-    }
-
-    /// <summary>Shared metatable for all <see cref="UnlimitedArray{T}"/> instances of the same T.</summary>
-    private static LuaTable SharedMetatable
-    {
-        get
-        {
-            if (field != null)
-                return field;
-
-            var mt = new LuaTable(0, 3);
-            mt[Metamethods.Index] = new LuaFunction("__index", IndexMetamethodImpl);
-            mt[Metamethods.NewIndex] = new LuaFunction("__newindex", NewIndexMetamethodImpl);
-            mt[Metamethods.Len] = new LuaFunction("__len", LenMetamethodImpl);
-
-            Interlocked.CompareExchange(ref field, mt, null);
-            return field!;
-        }
-    }
-
-    private static ValueTask<int> IndexMetamethodImpl(LuaFunctionExecutionContext context, CancellationToken ct)
-    {
-        var arr = context.GetArgument<UnlimitedArray<T>>(0);
-        var key = context.GetArgument(1);
-
-        // Integer key → array index (Lua is 1-indexed)
-        if (key.TryRead<double>(out var num) && LuaHelpers.IsLuaIndex(num, out var index))
-        {
-            if ((uint)index < (uint)arr.Count)
-            {
-                return new(context.Return(LuaValue.FromObject(arr[index]!)));
-            }
-        }
-
-        return new(context.Return(LuaValue.Nil));
-    }
-
-    private static ValueTask<int> NewIndexMetamethodImpl(LuaFunctionExecutionContext context, CancellationToken ct)
-    {
-        var arr = context.GetArgument<UnlimitedArray<T>>(0);
-        var key = context.GetArgument(1);
-        var value = context.GetArgument(2);
-
-        // Integer key → array index (Lua is 1-indexed)
-        if (key.TryRead<double>(out var num) && LuaHelpers.IsLuaIndex(num, out var index))
-        {
-            if (!value.TryRead<T>(out var typedValue))
-            {
-                // Fallback: try number → T conversion for common numeric types
-                typedValue = LuaHelpers.ConvertLuaValue<T>(value);
-            }
-            arr[index] = typedValue;
-        }
-
-        return new(context.Return());
-    }
-
-    private static ValueTask<int> LenMetamethodImpl(LuaFunctionExecutionContext context, CancellationToken ct)
-    {
-        var arr = context.GetArgument<UnlimitedArray<T>>(0);
-        return new(context.Return((double)arr.Count));
     }
 
     internal static UnlimitedArray<T> MarshalFrom(T[] arr)

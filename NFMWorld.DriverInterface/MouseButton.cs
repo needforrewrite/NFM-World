@@ -1,8 +1,8 @@
-﻿using NFMWorld.Lua;
+﻿using NFMWorld.PluginSystem;
 
 namespace NFMWorld.DriverInterface;
 
-[LuaVisible]
+[PluginVisible]
 public enum MouseButton
 {
     Primary = 1,

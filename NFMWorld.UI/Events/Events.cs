@@ -1,102 +1,102 @@
-﻿using NFMWorld.DriverInterface;
-using NFMWorld.Lua;
-using NFMWorldLibrary.Util;
+﻿using System.Numerics;
+using NFMWorld.DriverInterface;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorld.ClayDom.Events;
 
-[LuaVisible]
+[PluginVisible]
 public readonly partial record struct BaseMouseDragEvent(
-    [property: LuaName] LuaVector2 DragStart,
-    [property: LuaName] LuaVector2 Position,
-    [property: LuaName] byte Button,
-    [property: LuaName] MouseButtons Buttons,
-    [property: LuaName] bool CtrlKey,
-    [property: LuaName] bool MetaKey,
-    [property: LuaName] bool ShiftKey
+    [property: PluginVisible] Vector2 DragStart,
+    [property: PluginVisible] Vector2 Position,
+    [property: PluginVisible] byte Button,
+    [property: PluginVisible] MouseButtons Buttons,
+    [property: PluginVisible] bool CtrlKey,
+    [property: PluginVisible] bool MetaKey,
+    [property: PluginVisible] bool ShiftKey
 );
 
-[LuaVisible]
+[PluginVisible]
 public readonly partial record struct BaseMouseEvent(
-    [property: LuaName] LuaVector2 Position,
-    [property: LuaName] MouseButton Button,
-    [property: LuaName] MouseButtons Buttons,
-    [property: LuaName] bool CtrlKey,
-    [property: LuaName] bool AltKey,
-    [property: LuaName] bool ShiftKey
+    [property: PluginVisible] Vector2 Position,
+    [property: PluginVisible] MouseButton Button,
+    [property: PluginVisible] MouseButtons Buttons,
+    [property: PluginVisible] bool CtrlKey,
+    [property: PluginVisible] bool AltKey,
+    [property: PluginVisible] bool ShiftKey
 );
 
-[LuaVisible]
+[PluginVisible]
 public readonly partial record struct BaseMouseMoveEvent(
-    [property: LuaName] LuaVector2 Position,
-    [property: LuaName] MouseButtons Buttons,
-    [property: LuaName] bool CtrlKey,
-    [property: LuaName] bool AltKey,
-    [property: LuaName] bool ShiftKey
+    [property: PluginVisible] Vector2 Position,
+    [property: PluginVisible] MouseButtons Buttons,
+    [property: PluginVisible] bool CtrlKey,
+    [property: PluginVisible] bool AltKey,
+    [property: PluginVisible] bool ShiftKey
 );
 
-[LuaVisible]
+[PluginVisible]
 public readonly partial record struct BaseMouseWheelEvent(
-    [property: LuaName] LuaVector3 Delta,
-    [property: LuaName] LuaVector2 Position,
-    [property: LuaName] MouseButtons Buttons,
-    [property: LuaName] bool CtrlKey,
-    [property: LuaName] bool MetaKey,
-    [property: LuaName] bool ShiftKey
+    [property: PluginVisible] Vector3 Delta,
+    [property: PluginVisible] Vector2 Position,
+    [property: PluginVisible] MouseButtons Buttons,
+    [property: PluginVisible] bool CtrlKey,
+    [property: PluginVisible] bool MetaKey,
+    [property: PluginVisible] bool ShiftKey
 );
 
-[LuaVisible]
+[PluginVisible]
 public readonly partial record struct KeyboardEvent(
-    [property: LuaName] Key KeyChar,
-    [property: LuaName] Key KeyCode,
-    [property: LuaName] Keys Keys
+    [property: PluginVisible] Key KeyChar,
+    [property: PluginVisible] Key KeyCode,
+    [property: PluginVisible] Keys Keys
 );
 
-[LuaVisible]
+[PluginVisible]
 public readonly partial record struct KeyboardTypingEvent(
-    [property: LuaName] char KeyChar
+    [property: PluginVisible] char KeyChar
 );
 
-[LuaVisible]
+[PluginVisible]
 public readonly partial record struct MouseDragEvent(
-    [property: LuaName] LuaVector2 DragStart,
-    [property: LuaName] LuaVector2 RelativeDragStart,
-    [property: LuaName] LuaVector2 Position,
-    [property: LuaName] byte Button,
-    [property: LuaName] MouseButtons Buttons,
-    [property: LuaName] bool CtrlKey,
-    [property: LuaName] bool MetaKey,
-    [property: LuaName] bool ShiftKey,
-    [property: LuaName] LuaVector2 RelativePosition
+    [property: PluginVisible] Vector2 DragStart,
+    [property: PluginVisible] Vector2 RelativeDragStart,
+    [property: PluginVisible] Vector2 Position,
+    [property: PluginVisible] byte Button,
+    [property: PluginVisible] MouseButtons Buttons,
+    [property: PluginVisible] bool CtrlKey,
+    [property: PluginVisible] bool MetaKey,
+    [property: PluginVisible] bool ShiftKey,
+    [property: PluginVisible] Vector2 RelativePosition
 );
 
-[LuaVisible]
+[PluginVisible]
 public readonly partial record struct MouseEvent(
-    [property: LuaName] LuaVector2 Position,
-    [property: LuaName] MouseButton Button,
-    [property: LuaName] MouseButtons Buttons,
-    [property: LuaName] bool CtrlKey,
-    [property: LuaName] bool MetaKey,
-    [property: LuaName] bool ShiftKey,
-    [property: LuaName] LuaVector2 RelativePosition
+    [property: PluginVisible] Vector2 Position,
+    [property: PluginVisible] MouseButton Button,
+    [property: PluginVisible] MouseButtons Buttons,
+    [property: PluginVisible] bool CtrlKey,
+    [property: PluginVisible] bool MetaKey,
+    [property: PluginVisible] bool ShiftKey,
+    [property: PluginVisible] Vector2 RelativePosition
 );
 
-[LuaVisible]
+[PluginVisible]
 public readonly partial record struct MouseMoveEvent(
-    [property: LuaName] LuaVector2 Position,
-    [property: LuaName] MouseButtons Buttons,
-    [property: LuaName] bool CtrlKey,
-    [property: LuaName] bool MetaKey,
-    [property: LuaName] bool ShiftKey,
-    [property: LuaName] LuaVector2 RelativePosition
+    [property: PluginVisible] Vector2 Position,
+    [property: PluginVisible] MouseButtons Buttons,
+    [property: PluginVisible] bool CtrlKey,
+    [property: PluginVisible] bool MetaKey,
+    [property: PluginVisible] bool ShiftKey,
+    [property: PluginVisible] Vector2 RelativePosition
 );
 
-[LuaVisible]
+[PluginVisible]
 public readonly partial record struct MouseWheelEvent(
-    [property: LuaName] LuaVector3 Delta,
-    [property: LuaName] LuaVector2 Position,
-    [property: LuaName] MouseButtons Buttons,
-    [property: LuaName] bool CtrlKey,
-    [property: LuaName] bool MetaKey,
-    [property: LuaName] bool ShiftKey,
-    [property: LuaName] LuaVector2 RelativePosition
+    [property: PluginVisible] Vector3 Delta,
+    [property: PluginVisible] Vector2 Position,
+    [property: PluginVisible] MouseButtons Buttons,
+    [property: PluginVisible] bool CtrlKey,
+    [property: PluginVisible] bool MetaKey,
+    [property: PluginVisible] bool ShiftKey,
+    [property: PluginVisible] Vector2 RelativePosition
 );

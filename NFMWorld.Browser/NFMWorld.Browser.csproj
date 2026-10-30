@@ -56,6 +56,15 @@
              deferred to the end. -->
         <PublishTrimmed>true</PublishTrimmed>
 
+        <!-- Off, or the app does not start. Dedup builds a generated aot-instances assembly holding
+             the generic instantiations shared between AOT'd assemblies, and AOT fails on it in a way
+             that leaves the entry type unresolvable: the first [JSExport] call throws
+             "TypeLoadException: Attempting to load invalid type 'NFMWorld.Browser.Program'" before any
+             managed code runs, and because WasmStripILAfterAOT has already removed the IL there is
+             nothing to fall back to. The cost is a larger module (the generic instances are compiled
+             once per assembly instead of once). -->
+        <WasmDedup>false</WasmDedup>
+
         <!-- HoleyDiver and NFMWorld.CrashReporter are OutputType=Exe (they double as tools), and a
              self-contained app may not reference a non-self-contained exe (NETSDK1150). The SDK's
              own escape hatch: it lets such references through because the head is the app and the

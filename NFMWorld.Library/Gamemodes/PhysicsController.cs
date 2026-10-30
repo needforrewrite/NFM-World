@@ -1,15 +1,15 @@
-﻿using Lua;
-using NFMWorld.Lua;
+﻿using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Gamemodes;
 
 namespace NFMWorldLibrary.Backend.Gamemodes;
 
-[LuaVisible]
+[PluginVisible]
+[method: PluginVisible]
 public partial class PhysicsController(IReadOnlyList<ClientSidePlayer> players, BackendStage stage)
 {
     private int _newTick = 0;
 
-    [LuaName("gameTick")]
+    [PluginVisible]
     public void GameTick()
     {
         for (var i = 0; i < players.Count; i++)

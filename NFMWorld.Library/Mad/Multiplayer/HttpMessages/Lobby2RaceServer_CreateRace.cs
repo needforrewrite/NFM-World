@@ -1,5 +1,4 @@
 ﻿using MemoryPack;
-using NFMWorldLibrary.Multiplayer.Packets.S2C;
 
 namespace NFMWorldLibrary.Multiplayer.HttpMessages;
 

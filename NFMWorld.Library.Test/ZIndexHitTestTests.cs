@@ -46,7 +46,7 @@ public class ZIndexHitTestTests
         root.AddChild(front);
 
         IBackend.Backend = new DummyBackend();
-        root.LayoutAndRender(new LuaVector2(200, 200));
+        root.LayoutAndRender(new Vector2(200, 200));
 
         Assert.AreEqual(front, FocusManager.HitTest(root, new Vector2(50, 50)));
     }
@@ -61,7 +61,7 @@ public class ZIndexHitTestTests
         root.AddChild(front);
 
         IBackend.Backend = new DummyBackend();
-        root.LayoutAndRender(new LuaVector2(200, 200));
+        root.LayoutAndRender(new Vector2(200, 200));
 
         Assert.AreEqual(back, FocusManager.HitTest(root, new Vector2(50, 50)));
     }
@@ -76,7 +76,7 @@ public class ZIndexHitTestTests
         root.AddChild(front);
 
         IBackend.Backend = new DummyBackend();
-        root.LayoutAndRender(new LuaVector2(200, 200));
+        root.LayoutAndRender(new Vector2(200, 200));
 
         // (120,120) is over `front` only, not `back`.
         Assert.AreEqual(front, FocusManager.HitTest(root, new Vector2(120, 120)));

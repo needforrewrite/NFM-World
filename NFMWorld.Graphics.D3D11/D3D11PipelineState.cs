@@ -13,7 +13,6 @@
 // shader, in the shader's declaration order, using the element count the shader declares.
 using NFMWorld.Shaders;
 using TerraFX.Interop.DirectX;
-using TerraFX.Interop.Windows;
 
 namespace NFMWorld.Graphics.D3D11;
 

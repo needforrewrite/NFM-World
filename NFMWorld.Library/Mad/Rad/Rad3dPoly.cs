@@ -3,27 +3,27 @@ using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
 using HoleyDiver;
 using MemoryPack;
-using NFMWorld.Lua;
+using NFMWorld.PluginSystem;
 using NFMWorld.Sentry;
 
 namespace NFMWorldLibrary.Rad;
 
 [MemoryPackable(GenerateType.CircularReference)]
-[LuaVisible]
+[PluginVisible]
 public readonly partial record struct Rad3dPoly
 {
     public const int CurrentTriangulationVersion = 2;
     
-    [JsonPropertyName("c"), MemoryPackOrder(0), LuaName]
+    [JsonPropertyName("c"), MemoryPackOrder(0), PluginVisible]
     public Color3 Color { get; init; }
 
-    [JsonPropertyName("colnum"), MemoryPackOrder(1), LuaName]
+    [JsonPropertyName("colnum"), MemoryPackOrder(1), PluginVisible]
     public int? ColNum { get; init; }
 
-    [JsonPropertyName("polyType"), MemoryPackOrder(2), LuaName]
+    [JsonPropertyName("polyType"), MemoryPackOrder(2), PluginVisible]
     public PolyType PolyType { get; init; }
 
-    [JsonPropertyName("lineType"), MemoryPackOrder(3), LuaName]
+    [JsonPropertyName("lineType"), MemoryPackOrder(3), PluginVisible]
     public LineType? LineType { get; init; }
 
     [JsonPropertyName("decalOffset"), MemoryPackOrder(4)]

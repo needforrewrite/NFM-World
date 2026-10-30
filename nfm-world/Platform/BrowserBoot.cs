@@ -13,7 +13,6 @@
 // fetched per track rather than up front.
 
 #nullable enable
-using System.IO.Compression;
 using NFMWorld.PhysicsFS;
 using NFMWorldLibrary;
 

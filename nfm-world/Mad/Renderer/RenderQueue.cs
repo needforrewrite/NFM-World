@@ -1,9 +1,6 @@
-using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using Maxine.Extensions.Mathematics;
 using NFMWorld.Graphics;
-using NFMWorldLibrary;
 using BoundingSphere = Maxine.Extensions.Mathematics.BoundingSphere;
 
 namespace NFMWorld;

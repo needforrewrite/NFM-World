@@ -9,8 +9,6 @@
 //   - ProcessedDimensions: min/max collapsed — if min==max, dimension is locked
 //   - GetLayoutChildren() flattens Display.Contents nodes (like CSS display:contents)
 
-using Microsoft.UI.Reactor.Layout;
-
 namespace Microsoft.UI.Reactor.Layout;
 
 /// <summary>

@@ -1,3 +1,4 @@
+using System.Numerics;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
 using NFMWorldLibrary.Util;
@@ -54,17 +55,17 @@ public class UiScaleTextTests
     {
         IBackend.Backend.Graphics.Scale = 2f;
         var root = MakeRoot();
-        root.LayoutAndRender(new LuaVector2(400, 400));
+        root.LayoutAndRender(new Vector2(400, 400));
 
         // Mounted while the scale is already 2, and with no layout styles of its own: neither
         // the root's scale walk nor its own style assignment ever visits it.
         var text = MakeLabel(sized: false);
         root.AddChild(text);
-        root.LayoutAndRender(new LuaVector2(400, 400));
+        root.LayoutAndRender(new Vector2(400, 400));
         Assert.AreEqual(24f, LaidOutFontSize(text), 0.01f, "text is measured at 2x when created");
 
         IBackend.Backend.Graphics.Scale = 1f;
-        root.LayoutAndRender(new LuaVector2(400, 400));
+        root.LayoutAndRender(new Vector2(400, 400));
 
         Assert.AreEqual(12f, LaidOutFontSize(text), 0.01f,
             "the text must re-measure even though its available size never changed");
@@ -75,15 +76,15 @@ public class UiScaleTextTests
     {
         IBackend.Backend.Graphics.Scale = 2f;
         var root = MakeRoot();
-        root.LayoutAndRender(new LuaVector2(400, 400));
+        root.LayoutAndRender(new Vector2(400, 400));
 
         var text = MakeLabel(sized: true);
         root.AddChild(text);
-        root.LayoutAndRender(new LuaVector2(400, 400));
+        root.LayoutAndRender(new Vector2(400, 400));
         Assert.AreEqual(24f, LaidOutFontSize(text), 0.01f, "text is measured at 2x when created");
 
         IBackend.Backend.Graphics.Scale = 1f;
-        root.LayoutAndRender(new LuaVector2(400, 400));
+        root.LayoutAndRender(new Vector2(400, 400));
 
         Assert.AreEqual(12f, LaidOutFontSize(text), 0.01f, "text must re-measure at the new scale");
         Assert.AreEqual(100f, text.LayoutWidth, 0.01f, "the text's own box must rescale too");
@@ -95,11 +96,11 @@ public class UiScaleTextTests
         var root = MakeRoot();
         var text = MakeLabel(sized: false);
         root.AddChild(text);
-        root.LayoutAndRender(new LuaVector2(400, 400));
+        root.LayoutAndRender(new Vector2(400, 400));
         Assert.AreEqual(12f, LaidOutFontSize(text), 0.01f);
 
         IBackend.Backend.Graphics.Scale = 2f;
-        root.LayoutAndRender(new LuaVector2(400, 400));
+        root.LayoutAndRender(new Vector2(400, 400));
 
         Assert.AreEqual(24f, LaidOutFontSize(text), 0.01f, "text must grow with the scale");
     }

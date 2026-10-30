@@ -1,3 +1,4 @@
+using System.Numerics;
 using NFMWorld.ClayDom.Events;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
@@ -39,7 +40,7 @@ public class MousePressOcclusionTests
     }
 
     private static BaseMouseEvent Press(float x, float y) =>
-        new(new LuaVector2(x, y), MouseButton.Primary, MouseButtons.Primary, false, false, false);
+        new(new Vector2(x, y), MouseButton.Primary, MouseButtons.Primary, false, false, false);
 
     [TestMethod]
     public void DispatchMousePressed_HighZPopup_DoesNotTriggerOccludedSibling()
@@ -55,7 +56,7 @@ public class MousePressOcclusionTests
         occluded.MousePressed += _ => occludedPresses++;
 
         IBackend.Backend = new DummyBackend();
-        root.LayoutAndRender(new LuaVector2(200, 200));
+        root.LayoutAndRender(new Vector2(200, 200));
 
         root.DispatchMousePressed(Press(50, 50));
 
@@ -80,7 +81,7 @@ public class MousePressOcclusionTests
         child.MousePressed += _ => childPresses++;
 
         IBackend.Backend = new DummyBackend();
-        root.LayoutAndRender(new LuaVector2(200, 200));
+        root.LayoutAndRender(new Vector2(200, 200));
 
         root.DispatchMousePressed(Press(25, 25)); // over `child`
 

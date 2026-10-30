@@ -1,6 +1,5 @@
 using MemoryPack;
 using NFMWorldLibrary.Gamemodes;
-using NFMWorldLibrary.Multiplayer.Packets.S2C;
 
 namespace NFMWorldLibrary.Multiplayer.HttpMessages;
 

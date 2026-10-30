@@ -1,7 +1,7 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using NFMWorld.Lua;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.Util;
 
@@ -30,7 +30,7 @@ namespace NFMWorldLibrary.Util;
 /// appropriate events.
 /// </para>
 /// </remarks>
-[LuaShimType("{ T }")]
+[PluginVisible(Visible.IncludingAnyGenericInstantiationAndAllMembersOfType)]
 public class ObservableUnlimitedArray<T> : UnlimitedArray<T>,
     INotifyPropertyChanged,
     INotifyPropertyChanging,

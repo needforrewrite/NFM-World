@@ -1,7 +1,6 @@
 ﻿using NFMWorldLibrary.Multiplayer.HttpMessages;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
 using NFMWorldLibrary.Multiplayer.Packets.S2C;
-using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Multiplayer;
 

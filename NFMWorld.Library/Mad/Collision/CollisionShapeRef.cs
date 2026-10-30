@@ -1,6 +1,4 @@
 ﻿using System.Runtime.CompilerServices;
-using Maxine.Extensions.UnionGen;
-using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
 
 namespace NFMWorldLibrary.Collision;
@@ -121,8 +119,8 @@ public class CollisionShapeUnion : IUnion
     public bool HasValue => _unionKind != 0;
 }
 
-public readonly record struct ShapeMesh(f64Vector3 GameObjectPosition, fix64 GameObjectXz, SrcRad3dCollisionMesh CollisionMesh);
-public readonly record struct ShapeHull(f64Vector3 GameObjectPosition, fix64 GameObjectXz, SrcRad3dCollisionHull CollisionHull);
+public readonly record struct ShapeMesh(f64Vector3 GameObjectPosition, fix64 GameObjectXz, Rad3dCollisionMesh CollisionMesh);
+public readonly record struct ShapeHull(f64Vector3 GameObjectPosition, fix64 GameObjectXz, Rad3dCollisionHull CollisionHull);
 
 public readonly struct CollisionShapeRef : IQuadObject
 {
@@ -143,7 +141,7 @@ public readonly struct CollisionShapeRef : IQuadObject
         fix64 gameObjectY,
         fix64 gameObjectZ,
         fix64 gameObjectRotXz,
-        SrcRad3dCollisionMesh colMesh,
+        Rad3dCollisionMesh colMesh,
         fix64 radius,
         int index)
     {
@@ -164,7 +162,7 @@ public readonly struct CollisionShapeRef : IQuadObject
         fix64 gameObjectY,
         fix64 gameObjectZ,
         fix64 gameObjectRotXz,
-        SrcRad3dCollisionHull colHull,
+        Rad3dCollisionHull colHull,
         fix64 radius,
         int index)
     {

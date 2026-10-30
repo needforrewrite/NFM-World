@@ -98,8 +98,6 @@
 
         <ProjectReference Include="..\NvgSharp\src\NvgSharp\NvgSharp.csproj" />
         <ProjectReference Include="..\SoundTouch.Net.NAudioSupport\SoundTouch.Net.NAudioSupport.csproj" />
-
-        <ProjectReference Include="..\NFMWorld.LuaSourceGenerator\NFMWorld.LuaSourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
     </ItemGroup>
 
     <!-- Shader compilation, replacing the fxc path. The target it defines runs before CoreCompile,

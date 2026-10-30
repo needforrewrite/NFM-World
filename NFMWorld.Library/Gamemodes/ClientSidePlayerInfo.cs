@@ -1,33 +1,32 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Lua;
-using NFMWorld.Lua;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.Gamemodes;
 
 /// <summary>
 /// The information for <see cref="ClientSidePlayer"/> in the client gamemode.
 /// </summary>
-[LuaVisible]
+[PluginVisible]
 public partial class ClientSidePlayerInfo
 {
-    [LuaName] public required string PlayerName { get; init; } = "Player";
-    [LuaName] public required string CarName { get; init; } = "nfmm/radicalone";
-    [LuaName] public required Color3 Color { get; init; } = new Color3(255, 0, 0);
+    [PluginVisible] public required string PlayerName { get; init; } = "Player";
+    [PluginVisible] public required string CarName { get; init; } = "nfmm/radicalone";
+    [PluginVisible] public required Color3 Color { get; init; } = new Color3(255, 0, 0);
     /// <summary>
     /// If true, player is controlled by AI.
     /// </summary>
-    [LuaName] public required bool IsBot { get; init; } = false;
+    [PluginVisible] public required bool IsBot { get; init; } = false;
     /// <summary>
     /// Whether the player is the client player, i.e. the player that hosts the client gamemode.
     /// </summary>
-    [LuaName] public required bool IsClientPlayer { get; init; } = false;
+    [PluginVisible] public required bool IsClientPlayer { get; init; } = false;
 
     public ClientSidePlayerInfo()
     {
     }
 
     [SetsRequiredMembers]
-    [LuaName("new")]
+    [PluginVisible]
     public ClientSidePlayerInfo(string playerName, string carName, Color3 color, bool isBot, bool isClientPlayer)
     {
         PlayerName = playerName;

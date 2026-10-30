@@ -1,5 +1,8 @@
-﻿namespace NFMWorldLibrary;
+﻿using NFMWorld.PluginSystem;
 
+namespace NFMWorldLibrary;
+
+[PluginVisible]
 public enum RaceState : byte
 {
     WaitingToStart,

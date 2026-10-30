@@ -2,7 +2,6 @@
 using LibOpenMPT.NET;
 using Maxine.Extensions.Collections;
 using Microsoft.IO;
-using NFMWorldLibrary;
 
 namespace NFMWorld.Audio;
 

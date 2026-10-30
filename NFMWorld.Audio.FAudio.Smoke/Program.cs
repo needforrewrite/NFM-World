@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading;
 using NFMWorld.Audio.FAudioBindings;
 
 // Milestone 4 verification. Exercises the direct-FAudio path against the real native library,

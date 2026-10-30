@@ -1,7 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using Silk.NET.Core.Native;
 using Silk.NET.Shaderc;
 
 namespace NFMWorld.ShaderCompiler;

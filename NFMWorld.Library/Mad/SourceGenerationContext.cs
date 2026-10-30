@@ -1,5 +1,4 @@
 ﻿using System.Text.Json.Serialization;
-using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
 
 namespace NFMWorldLibrary;

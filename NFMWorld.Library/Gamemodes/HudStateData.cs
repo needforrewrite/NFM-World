@@ -1,28 +1,26 @@
-using Lua;
-using MemoryPack;
-using NFMWorld.Lua;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorld.DriverInterface;
 
 /// <summary>
 /// Per-frame HUD state sent from the gamemode to the CEF race overlay.
 /// </summary>
-[LuaVisible]
+[PluginVisible]
 public partial class HudStateData
 {
-    [LuaName("speed")] public float Speed { get; set; }
-    [LuaName("power")] public float Power { get; set; }
-    [LuaName("damage")] public float Damage { get; set; }
-    [LuaName("lap")] public int Lap { get; set; }
-    [LuaName("totalLaps")] public int TotalLaps { get; set; }
-    [LuaName("lapTime")] public int LapTime { get; set; }
-    [LuaName("position")] public int Position { get; set; }
-    [LuaName("totalRacers")] public int TotalRacers { get; set; }
-    [LuaName("stateText")] public string? StateText { get; set; }
-    public DateTime? StateTextEndsAt { get; set; }
-    [LuaName("countdownTimer")] public int CountdownTimer { get; set; }
+    [PluginVisible] public float Speed { get; set; }
+    [PluginVisible] public float Power { get; set; }
+    [PluginVisible] public float Damage { get; set; }
+    [PluginVisible] public int Lap { get; set; }
+    [PluginVisible] public int TotalLaps { get; set; }
+    [PluginVisible] public int LapTime { get; set; }
+    [PluginVisible] public int Position { get; set; }
+    [PluginVisible] public int TotalRacers { get; set; }
+    [PluginVisible] public string? StateText { get; set; }
+    [PluginVisible] public DateTime? StateTextEndsAt { get; set; }
+    [PluginVisible] public int CountdownTimer { get; set; }
 
-    [LuaName("stateTextEndsAt")]
+    [PluginVisible]
     public double? LuaStateTextEndsAt
     {
         get => (StateTextEndsAt?.ToUniversalTime() - DateTime.UnixEpoch)?.TotalSeconds;

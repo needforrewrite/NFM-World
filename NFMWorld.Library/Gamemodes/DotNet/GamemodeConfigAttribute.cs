@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.Gamemodes.DotNet;
 
@@ -8,6 +9,7 @@ namespace NFMWorldLibrary.Gamemodes.DotNet;
 
 [AttributeUsage(AttributeTargets.Assembly)]
 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public class GamemodeAttribute : Attribute
 {
     public required string Name { get; set; }
@@ -16,6 +18,7 @@ public class GamemodeAttribute : Attribute
 
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public class GamemodeConfigPropertyAttribute : Attribute
 {
     public required string Name { get; set; }
@@ -26,6 +29,7 @@ public class GamemodeConfigPropertyAttribute : Attribute
 
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public class GamemodeConfigPropertyOptionAttribute(string property) : Attribute
 {
     public string Property { get; } = property;

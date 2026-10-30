@@ -1,34 +1,35 @@
 using MemoryPack;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
+using NFMWorld.PluginSystem;
 using NFMWorld.Sfx;
-using NFMWorldLibrary.Backend.AI;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Backend.Gamemodes;
 
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public abstract class BaseClientGamemode : IGamemode
 {
     /// <summary>Gamemode identifier (e.g., "nfmm/pvp").</summary>
     public abstract string GamemodeId { get; }
 
-    public ClientGamemodeParameters Parameters { get; }
+    [PluginVisible] public ClientGamemodeParameters Parameters { get; }
     internal IGamemodeContext GamemodeContext { get; }
 
-    public ObservableUnlimitedArray<ClientSidePlayer> Players { get; }
-    public BackendStage CurrentStage => GamemodeContext.CurrentStage;
-    public int NumPlayers => Players.Count;
-    
+    [PluginVisible] public ObservableUnlimitedArray<ClientSidePlayer> Players { get; }
+    [PluginVisible] public BackendStage CurrentStage => GamemodeContext.CurrentStage;
+    [PluginVisible] public int NumPlayers => Players.Count;
+
     /// <summary>
     /// Returns the race results if the race has finished, or null otherwise.
     /// </summary>
-    public RaceResults? Results { get; protected internal set; }
+    [PluginVisible] public RaceResults? Results { get; protected internal set; }
 
     /// <summary>Per-frame HUD state for the client player.</summary>
-    public HudStateData HudState { get; protected internal set; } = new();
-    
-    public ClientSidePlayer ClientPlayer { get; }
+    [PluginVisible] public HudStateData HudState { get; protected internal set; } = new();
+
+    [PluginVisible] public ClientSidePlayer ClientPlayer { get; }
 
     protected BaseClientGamemode(ClientGamemodeParameters clientGamemodeParameters, IGamemodeContext gamemodeContext)
     {
@@ -45,7 +46,7 @@ public abstract class BaseClientGamemode : IGamemode
     /// The payload is a MemoryPack-serialized gamemode-specific event.
     /// </summary>
     public virtual void OnServerEvent(ReadOnlySpan<byte> payload) { }
-    
+
     /// <summary>
     /// Called when the race is finished server-side.
     /// </summary>
@@ -62,6 +63,7 @@ public abstract class BaseClientGamemode : IGamemode
     /// Sends a gamemode-specific event to the server using the sender injected
     /// by the host, falling back to <see cref="IGamemodeContext.SendServerEvent"/>.
     /// </summary>
+    [PluginVisible]
     protected internal void SendServerEvent(ReadOnlySpan<byte> payload)
     {
         GamemodeContext.SendServerEvent(payload);
@@ -71,6 +73,7 @@ public abstract class BaseClientGamemode : IGamemode
     /// Sends a gamemode-specific event to the server using the sender injected
     /// by the host, falling back to <see cref="IGamemodeContext.SendServerEvent"/>.
     /// </summary>
+    [PluginVisible]
     protected internal void SendServerEvent<T>(T payload)
     {
         SendServerEvent((ReadOnlySpan<byte>)MemoryPackSerializer.Serialize(payload));
@@ -195,7 +198,7 @@ public abstract class BaseClientGamemode : IGamemode
     /// Rendering callbacks for client cars, such as ghost opacity and
     /// checkpoint glow.
     /// </summary>
-    protected IClientCallbacks ClientCallbacks => GamemodeContext.ClientCallbacks;
+    [PluginVisible] protected IClientCallbacks ClientCallbacks => GamemodeContext.ClientCallbacks;
 
     private int _lastClientCheckpoint = 0;
     private int _lastCountdownTime = 0;
@@ -205,6 +208,7 @@ public abstract class BaseClientGamemode : IGamemode
     /// <summary>
     /// Convenience function to reset HUD state, visual FX and sounds.
     /// </summary>
+    [PluginVisible]
     protected internal void ClientReset()
     {
         GamemodeContext.ClientCallbacks.ResetCheckpointGlow();
@@ -217,6 +221,7 @@ public abstract class BaseClientGamemode : IGamemode
     /// Convenience function to update HUD state and play sounds based on the given car's state.
     /// </summary>
     /// <param name="car">The client car</param>
+    [PluginVisible]
     protected internal void UpdateHudAndSounds(BackendCar car)
     {
         var diffx = (float)(car.Position.X - _lcarx);
@@ -244,6 +249,7 @@ public abstract class BaseClientGamemode : IGamemode
     /// Updates the countdown timer and plays the corresponding sound.
     /// </summary>
     /// <param name="countdownTime">The current countdown time.</param>
+    [PluginVisible]
     protected void UpdateCountdown(int countdownTime)
     {
         if (countdownTime != _lastCountdownTime)

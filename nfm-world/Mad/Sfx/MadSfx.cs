@@ -1,6 +1,5 @@
 using Maxine.Extensions;
 using NFMWorldLibrary;
-using NFMWorldLibrary.FixedMath;
 
 namespace NFMWorld.Sfx;
 

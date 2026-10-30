@@ -7,7 +7,7 @@ namespace NFMWorld;
 
 public class EditorObject : StaticMeshObject, IDisposable
 {
-    public LuaArray<Rad3dBoxDef> Boxes { get; }
+    public IReadOnlyList<Rad3dBoxDef> Boxes { get; }
 
     private readonly CollisionDebugMesh? _collisionDebugMesh;
 
@@ -15,13 +15,13 @@ public class EditorObject : StaticMeshObject, IDisposable
 
     public IReadOnlyList<MeshedGameObject> WheelObjects => _wheels;
 
-    public LuaArray<Rad3dWheelDef> Wheels { get; }
+    public IReadOnlyList<Rad3dWheelDef> Wheels { get; }
 
     public EditorObject(Rad3d rad) : base(rad)
     {
         Boxes = rad.Boxes;
         Wheels = rad.Wheels;
-        if (rad.Boxes.Count > 0)
+        if (rad.Boxes.Length > 0)
         {
             _collisionDebugMesh = new CollisionDebugMesh(rad.Boxes)
             {

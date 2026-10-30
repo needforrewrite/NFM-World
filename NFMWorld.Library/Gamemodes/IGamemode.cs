@@ -1,4 +1,5 @@
 using NFMWorld.DriverInterface;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.Gamemodes;
 
@@ -7,6 +8,7 @@ namespace NFMWorldLibrary.Gamemodes;
 /// gameplay on the client (local physics, HUD, input) in both singleplayer
 /// and multiplayer. Server-side logic lives in <see cref="IServerGamemode"/>.
 /// </summary>
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public interface IGamemode
 {
     /// <summary>Gamemode identifier (e.g., "nfmm/pvp").</summary>

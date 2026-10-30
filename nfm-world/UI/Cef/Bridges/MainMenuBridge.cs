@@ -1,8 +1,3 @@
-using System.Text.Json;
-using Lua;
-using MemoryPack;
-using NFMWorld.Lua;
-
 namespace NFMWorld.UI.Cef;
 
 /// <summary>
@@ -62,5 +57,5 @@ public sealed class MainMenuBridge : PhaseBridge
     public event Action? SettingsRestartConfirmed;
 }
 
-[LuaVisible]
+[PluginVisible]
 public partial record AccountData([property: LuaName] string Name, [property: LuaName] bool IsLoggedIn, [property: LuaName] string? AvatarUrl);

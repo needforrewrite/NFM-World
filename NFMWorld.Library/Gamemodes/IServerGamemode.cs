@@ -1,3 +1,5 @@
+using NFMWorld.PluginSystem;
+
 namespace NFMWorldLibrary.Gamemodes;
 
 /// <summary>
@@ -9,6 +11,7 @@ namespace NFMWorldLibrary.Gamemodes;
 /// drives the game state machine. In the single-path model it also runs
 /// in-process on singleplayer via the local race host.
 /// </summary>
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public interface IServerGamemode
 {
     /// <summary>Gamemode identifier (e.g., "nfmm/pvp").</summary>

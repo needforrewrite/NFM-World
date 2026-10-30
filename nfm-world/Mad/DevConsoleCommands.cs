@@ -1,16 +1,13 @@
-﻿using System.Reflection;
-using NFMWorld.DriverInterface;
-using NFMWorld.DriverInterface.DriverInterface;
+﻿using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Gameplay;
 using NFMWorld.UI;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
-using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Gamemodes;
+using NFMWorldLibrary.Gamemodes.DotNet;
 using NFMWorldLibrary.Gamemodes.RaceHost;
 using NFMWorldLibrary.Multiplayer;
-using Steamworks;
 using Logging = NFMWorldLibrary.Logging;
 
 namespace NFMWorld;
@@ -66,7 +63,7 @@ public static class DevConsoleCommands
 
             if (GameSparker.CurrentPhase is RacePhase inRacePhase)
             {
-                var factory = new LuaGamemodeFactory(args[0]);
+                var factory = GamemodeFactory.Create(args[0]);
                 var inRace = new RacePhase(inRacePhase.StageName!, factory, inRacePhase.Players,
                     LocalRaceHost.Create(inRacePhase.StageName!, factory, new ClientGamemodeParameters { Players = inRacePhase.Players }));
                 inRace.Exited += (sender, args) =>

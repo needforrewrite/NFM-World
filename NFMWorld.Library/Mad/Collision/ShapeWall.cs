@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using NFMWorldLibrary.FixedMath;
 
 namespace NFMWorldLibrary.Collision;
 

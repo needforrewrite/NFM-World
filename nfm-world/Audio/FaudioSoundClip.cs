@@ -1,9 +1,6 @@
 using System.Runtime.InteropServices;
-using Maxine.Extensions.Collections;
 using NFMWorld.Audio.FAudioBindings;
-using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
-using NFMWorldLibrary;
 
 namespace NFMWorld.Audio;
 
@@ -73,7 +70,16 @@ public sealed class FaudioSoundClip : ISoundClip
             return; // no audio device - play silently rather than failing
 
         _voice = engine.CreateSourceVoice(_sampleRate, _channels);
-        if (_voice == IntPtr.Zero || !TrySubmitBuffer(loop))
+        if (_voice == IntPtr.Zero || _pcm.Length == 0)
+        {
+            StopVoice();
+            return;
+        }
+
+        // Pinned per voice, not per clip: the previous voice still reads this array while it fades
+        // out, so it keeps its own pin and this one can be freed when this voice is destroyed.
+        _pcmHandle = GCHandle.Alloc(_pcm, GCHandleType.Pinned);
+        if (!TrySubmitBuffer(loop))
         {
             StopVoice();
             return;
@@ -83,14 +89,16 @@ public sealed class FaudioSoundClip : ISoundClip
         FAudio.FAudioSourceVoice_Start(_voice, 0, 0);
     }
 
-    /// <summary>Pins this clip's PCM and queues it on the current voice, optionally looping forever.</summary>
+    /// <summary>Releases the pin taken for a voice once that voice is destroyed.</summary>
+    private static void ReleasePcm(GCHandle pin)
+    {
+        if (pin.IsAllocated)
+            pin.Free();
+    }
+
+    /// <summary>Queues this clip's pinned PCM on the current voice, optionally looping forever.</summary>
     private bool TrySubmitBuffer(bool loop)
     {
-        if (_pcm.Length == 0)
-            return false;
-
-        _pcmHandle = GCHandle.Alloc(_pcm, GCHandleType.Pinned);
-
         var buffer = new FAudio.FAudioBuffer
         {
             Flags = 0,
@@ -114,18 +122,22 @@ public sealed class FaudioSoundClip : ISoundClip
         if (_voice == IntPtr.Zero)
             return;
 
-        FAudio.FAudioSourceVoice_Stop(_voice, 0, 0);
-        // Destroying the voice is what makes FAudio stop reading pAudioData, so the pin can only
-        // be released after this call.
-        FaudioEngine.Instance?.DestroyVoice(_voice);
+        var voice = _voice;
+        var pin = _pcmHandle;
         _voice = IntPtr.Zero;
+        _pcmHandle = default;
 
-        if (_pcmHandle.IsAllocated)
-            _pcmHandle.Free();
+        // Destroying the voice is what makes FAudio stop reading pAudioData, so this voice's pin is
+        // only released once it is gone. A restart may already own a new voice and pin by then.
+        var engine = FaudioEngine.Instance;
+        if (engine is not null)
+            engine.FadeOutAndDestroy(voice, () => ReleasePcm(pin));
+        else
+            ReleasePcm(pin);
     }
 
     /// <summary>
-    /// Stops all sound effects in the pool immediately.
+    /// Stops all sound effects in the pool. Each one fades out rather than cutting off.
     /// </summary>
     public static void StopAll()
     {

@@ -1,8 +1,8 @@
-using NFMWorld.Lua;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorld.DriverInterface;
 
-[Flags, LuaVisible]
+[Flags, PluginVisible(Visible.IncludingAllMembersOfType)]
 public enum Key
 {
     /// <summary>
@@ -73,7 +73,7 @@ public enum Key
     /// <summary>
     ///  The RETURN key.
     /// </summary>
-    [LuaName("returnKey")] Return = 0x0D,
+    [PluginVisible] Return = 0x0D,
 
     /// <summary>
     ///  The ENTER key.
@@ -203,7 +203,7 @@ public enum Key
     /// <summary>
     ///  The END key.
     /// </summary>
-    [LuaName("endKey")] End = 0x23,
+    [PluginVisible] End = 0x23,
 
     /// <summary>
     ///  The HOME key.

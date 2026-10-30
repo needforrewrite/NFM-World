@@ -1,5 +1,3 @@
-using NFMWorldLibrary.FixedMath;
-
 namespace NFMWorldLibrary.Util;
 
 // https://stackoverflow.com/a/2147782

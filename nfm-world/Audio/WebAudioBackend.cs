@@ -5,8 +5,6 @@
 // same file compiles for the desktop head (this project is shared), where every call is a no-op and
 // the FAudio classes are used, so the browser-only pieces sit behind WEB_AUDIO.
 
-using System.Runtime.Versioning;
-using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 #if WEB_AUDIO
 using System.Runtime.InteropServices.JavaScript;

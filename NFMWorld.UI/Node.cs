@@ -1,16 +1,13 @@
-using System.Numerics;
-using NFMWorld.ClayDom.Events;
-using NFMWorld.Lua;
-using NFMWorldLibrary.Util;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorld.Reactor;
 
-[LuaVisible]
+[PluginVisible]
 public abstract partial class Node
 {
     #region Parent/child tree
 
-    [LuaName]
+    [PluginVisible]
     public Node? VisualParent
     {
         get;
@@ -26,8 +23,8 @@ public abstract partial class Node
     /// <summary>
     /// Gets the visual children of this visual element.
     /// </summary>
-    [LuaName]
-    public abstract ReadOnlyLuaArray<Node> VisualChildren { get; }
+    [PluginVisible]
+    public abstract IReadOnlyList<Node> VisualChildren { get; }
 
     public Node()
     {

@@ -9,7 +9,7 @@
 // std140 UBO and uploads the whole block per draw. Reading the block's offset table out of the
 // driver and comparing it against the reflection is what the smoke test does - see
 // GlUniformBlock.
-using System.Runtime.InteropServices;
+
 using NFMWorld.Shaders;
 using Silk.NET.OpenGL;
 

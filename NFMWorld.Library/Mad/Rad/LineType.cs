@@ -1,8 +1,8 @@
-﻿using NFMWorld.Lua;
+﻿using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.Rad;
 
-[LuaVisible]
+[PluginVisible]
 public enum LineType
 {
     Flat, Charged, Colored, BrightColored,

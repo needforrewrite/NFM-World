@@ -4,7 +4,6 @@ using Maxine.Extensions.Mathematics;
 using NFMWorld.DriverInterface;
 using NFMWorld.Gameplay;
 using NFMWorld.Platform.SDL3;
-using NFMWorld.Util;
 using NFMWorldLibrary;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;

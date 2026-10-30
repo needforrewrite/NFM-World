@@ -14,7 +14,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\FixedMathSharp\src\FixedMathSharp\FixedMathSharp.csproj" Private="false" ExcludeAssets="runtime" />
-        <ProjectReference Include="..\Lua-CSharp\src\Lua\Lua.csproj" Private="false" ExcludeAssets="runtime" />
         <ProjectReference Include="..\MemoryPack\src\MemoryPack.Core\MemoryPack.Core.csproj" Private="false" ExcludeAssets="runtime" />
         <ProjectReference Include="..\NFMWorld.DriverInterface\NFMWorld.DriverInterface.csproj" Private="false" ExcludeAssets="runtime" />
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" Private="false" ExcludeAssets="runtime"/>

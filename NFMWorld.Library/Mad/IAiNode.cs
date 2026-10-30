@@ -1,14 +1,15 @@
-﻿using NFMWorld.Lua;
+﻿using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary;
 
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public interface IAiNode : ITransform
 {
     AiNodeKind Kind { get; }
     bool IsSpecial { get; }
 }
 
-[LuaVisible]
+[PluginVisible]
 public enum AiNodeKind
 {
     CheckPoint,

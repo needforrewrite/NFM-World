@@ -1,14 +1,12 @@
-﻿using System.Text.Json.Serialization;
-using FixedMathSharp;
+﻿using System.Collections.Immutable;
+using System.Text.Json.Serialization;
 using MemoryPack;
-using NFMWorld.Lua;
-using NFMWorldLibrary.FixedMath;
-using NFMWorldLibrary.Util;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.Rad;
 
 // init properties aren't compatible with CircularReference, so can't use record
-[MemoryPackable(GenerateType.CircularReference), LuaVisible]
+[MemoryPackable(GenerateType.CircularReference), PluginVisible]
 public sealed partial class Rad3d(
     Color3[] colors,
     CarStats stats,
@@ -17,50 +15,50 @@ public sealed partial class Rad3d(
     Rad3dBoxDef[] boxes,
     Rad3dPoly[] polys,
     bool castsShadow,
-    Util.LuaVector2[] atp,
+    Vector2[] atp,
     string fileName = "hogan rewish",
-    SrcRad3dCollisionMesh? collisionMesh = null,
-    SrcRad3dCollisionHull? collisionHull = null,
+    Rad3dCollisionMesh? collisionMesh = null,
+    Rad3dCollisionHull? collisionHull = null,
     Rad3dAttachmentLine[]? atLines = null
 )
 {
-    [MemoryPackIgnore, LuaName] public int MaxRadius { get; } = CalculateMaxRadius(polys);
+    [MemoryPackIgnore, PluginVisible] public int MaxRadius { get; } = CalculateMaxRadius(polys);
 
-    [JsonPropertyName("colors"), MemoryPackOrder(0), LuaName]
-    public LuaArray<Color3> Colors { get; set; } = colors;
+    [JsonPropertyName("colors"), MemoryPackOrder(0), PluginVisible]
+    public IReadOnlyList<Color3> Colors { get; set; } = colors;
 
-    [JsonPropertyName("stats"), MemoryPackOrder(1), LuaName]
+    [JsonPropertyName("stats"), MemoryPackOrder(1), PluginVisible]
     public CarStats Stats { get; set; } = stats;
 
-    [JsonPropertyName("wheels"), MemoryPackOrder(2), LuaName]
-    public LuaArray<Rad3dWheelDef> Wheels { get; set; } = wheels;
+    [JsonPropertyName("wheels"), MemoryPackOrder(2), PluginVisible]
+    public Rad3dWheelDef[] Wheels { get; set; } = wheels;
 
-    [JsonPropertyName("rims"), MemoryPackOrder(3), LuaName]
+    [JsonPropertyName("rims"), MemoryPackOrder(3), PluginVisible]
     public Rad3dRimsDef? Rims { get; set; } = rims;
 
-    [JsonPropertyName("boxes"), MemoryPackOrder(4), LuaName]
-    public LuaArray<Rad3dBoxDef> Boxes { get; set; } = boxes;
+    [JsonPropertyName("boxes"), MemoryPackOrder(4), PluginVisible]
+    public Rad3dBoxDef[] Boxes { get; set; } = boxes;
 
-    [JsonPropertyName("polys"), MemoryPackOrder(5), LuaName]
-    public LuaArray<Rad3dPoly> Polys { get; set; } = polys;
+    [JsonPropertyName("polys"), MemoryPackOrder(5), PluginVisible]
+    public Rad3dPoly[] Polys { get; set; } = polys;
 
-    [JsonPropertyName("shadow"), MemoryPackOrder(6), LuaName]
+    [JsonPropertyName("shadow"), MemoryPackOrder(6), PluginVisible]
     public bool CastsShadow { get; set; } = castsShadow;
 
-    [JsonPropertyName("atp"), MemoryPackOrder(7), LuaName]
-    public LuaArray<Util.LuaVector2> Atp { get; set; } = atp;
+    [JsonPropertyName("atp"), MemoryPackOrder(7), PluginVisible]
+    public Vector2[] Atp { get; set; } = atp;
 
-    [JsonPropertyName("fileName"), MemoryPackOrder(8), LuaName]
+    [JsonPropertyName("fileName"), MemoryPackOrder(8), PluginVisible]
     public string FileName { get; set; } = fileName;
 
     [JsonPropertyName("collisionMesh"), MemoryPackOrder(9)]
-    public SrcRad3dCollisionMesh? CollisionMesh { get; set; } = collisionMesh;
+    public Rad3dCollisionMesh? CollisionMesh { get; set; } = collisionMesh;
 
     [JsonPropertyName("collisionHull"), MemoryPackOrder(10)]
-    public SrcRad3dCollisionHull? CollisionHull { get; set; } = collisionHull;
+    public Rad3dCollisionHull? CollisionHull { get; set; } = collisionHull;
 
-    [JsonPropertyName("atLines"), MemoryPackOrder(11), LuaName]
-    public LuaArray<Rad3dAttachmentLine>? AtLines { get; set; } = atLines != null ? new LuaArray<Rad3dAttachmentLine>(atLines) : null;
+    [JsonPropertyName("atLines"), MemoryPackOrder(11), PluginVisible]
+    public IReadOnlyList<Rad3dAttachmentLine>? AtLines { get; set; } = atLines;
 
     private readonly int _hashCode = CalculateHashCode(colors, stats, wheels, rims, boxes, polys, castsShadow, atp, collisionMesh, collisionHull, atLines);
     private readonly int _visualHashCode = CalculateVisualHashCode(colors, wheels, rims, polys, castsShadow);
@@ -115,9 +113,9 @@ public sealed partial class Rad3d(
         Rad3dBoxDef[] boxes,
         Rad3dPoly[] polys,
         bool castsShadow,
-        Util.LuaVector2[] atp,
-        SrcRad3dCollisionMesh? colMesh,
-        SrcRad3dCollisionHull? colHull,
+        Vector2[] atp,
+        Rad3dCollisionMesh? colMesh,
+        Rad3dCollisionHull? colHull,
         Rad3dAttachmentLine[]? atLines
     )
     {

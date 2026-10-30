@@ -26,11 +26,9 @@
 // there. CheckBundlePrograms is the assertion that this does not happen, per bundle, by name.
 using System.Runtime.InteropServices;
 using System.Numerics;
-using NFMWorld.Graphics;
 using NFMWorld.Shaders;
 using NFMWorld.Shaders.Generated;
 using Silk.NET.OpenGLES;
-using ClearOptions = NFMWorld.Graphics.ClearOptions;
 // Apos.Shapes reads its colours as Maxine's, which is what a Color converts into.
 using AposColor = Maxine.Extensions.Mathematics.Color;
 

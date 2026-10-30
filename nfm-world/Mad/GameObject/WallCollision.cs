@@ -1,5 +1,4 @@
 ﻿using NFMWorldLibrary;
-using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
 
 namespace NFMWorld;
@@ -26,7 +25,7 @@ public class WallCollision : GameObject, ICollidable
 
     public int MaxRadius { get; }
     
-    public SrcRad3dCollisionMesh? CollisionMesh => null;
+    public Rad3dCollisionMesh? CollisionMesh => null;
     
-    public SrcRad3dCollisionHull? CollisionHull => null;
+    public Rad3dCollisionHull? CollisionHull => null;
 }

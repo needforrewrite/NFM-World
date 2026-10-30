@@ -1,61 +1,60 @@
-using Lua;
 using Maxine.Extensions;
-using NFMWorld.Lua;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary;
 
-[LuaVisible]
+[PluginVisible]
 public partial class Control
 {
-    [LuaName("arrace")]
+    [PluginVisible]
     public bool Arrace;
 
-    [LuaName("chatup")]
+    [PluginVisible]
     public int Chatup;
     
-    [LuaName("down")]
+    [PluginVisible]
     public bool Down;
     
-    [LuaName("enter")]
+    [PluginVisible]
     public bool Enter;
     
-    [LuaName("exit")]
+    [PluginVisible]
     public bool Exit;
     
-    [LuaName("handb")]
+    [PluginVisible]
     public bool Handb;
     
-    [LuaName("multion")]
+    [PluginVisible]
     public int Multion;
     
-    [LuaName("mutem")]
+    [PluginVisible]
     public bool Mutem;
     
-    [LuaName("mutes")]
+    [PluginVisible]
     public bool Mutes;
     
-    [LuaName("radar")]
+    [PluginVisible]
     public bool Radar;
     
-    [LuaName("right")]
+    [PluginVisible]
     public bool Right;
     
-    [LuaName("up")]
+    [PluginVisible]
     public bool Up;
     
-    [LuaName("left")]
+    [PluginVisible]
     public bool Left;
     
-    [LuaName("lookback")]
+    [PluginVisible]
     public int Lookback;
     
-    [LuaName("wall")]
+    [PluginVisible]
     public int Wall = -1;
 
     /// <summary>
     /// Inverts the ZY angle. It is true if the AI axis is flipped.
     /// </summary>
-    [LuaName("zyinv")]
+    [PluginVisible]
     public bool Zyinv = false;
 
     internal void Falseo(int i)
@@ -89,7 +88,7 @@ public partial class Control
         Mutes = false;
     }
 
-    [LuaName("reset")]
+    [PluginVisible]
     internal void Reset()
     {
         Left = false;
@@ -117,6 +116,7 @@ public partial class Control
         Handb = enc[4];
     }
 
+    [PluginVisible]
     public void Decode((bool Up, bool Down, bool Left, bool Right, bool Handb) enc)
     {
         Right = enc.Right;

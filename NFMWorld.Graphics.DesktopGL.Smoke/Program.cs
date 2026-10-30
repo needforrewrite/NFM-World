@@ -33,11 +33,9 @@
 // location comes back -1, the sampler keeps unit 0, and a draw reads whatever happens to be bound
 // there. CheckBundlePrograms is the assertion that this does not happen, per bundle, by name.
 using System.Runtime.InteropServices;
-using NFMWorld.Graphics;
 using NFMWorld.Shaders;
 using NFMWorld.Shaders.Generated;
 using Silk.NET.OpenGL;
-using ClearOptions = NFMWorld.Graphics.ClearOptions;
 
 namespace NFMWorld.Graphics.DesktopGL.Smoke;
 

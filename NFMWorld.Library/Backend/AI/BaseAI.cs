@@ -1,15 +1,14 @@
-﻿using NFMWorld.Lua;
-using NFMWorldLibrary.Gamemodes;
+﻿using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.Backend.AI;
 
 /// <summary>
 /// Base AI class for gamemode-specific AI implementations.
 /// </summary>
-[LuaVisible]
+[PluginVisible]
 public abstract partial class BaseAi
 {
-    [LuaName]
+    [PluginVisible]
     public abstract void RunAi();
 }
 

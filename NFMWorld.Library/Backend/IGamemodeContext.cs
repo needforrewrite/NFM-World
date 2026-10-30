@@ -1,14 +1,12 @@
-﻿using NFMWorld.Lua;
-using NFMWorldLibrary.Backend.Gamemodes;
+﻿using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Gamemodes;
-using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Backend;
 
 /// <summary>
 /// Mutable data for the gamemode.
 /// </summary>
-[LuaVisible]
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public partial interface IGamemodeContext
 {
     BackendStage CurrentStage { get; }

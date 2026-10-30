@@ -1,8 +1,4 @@
-using System.Text.Json;
-using Lua;
-using MemoryPack;
 using NFMWorld.DriverInterface;
-using NFMWorld.Lua;
 
 namespace NFMWorld.UI.Cef;
 
@@ -110,12 +106,12 @@ public sealed class HudBridge : PhaseBridge
     public event Action? SettingsCloseRequested;
 }
 
-[LuaVisible]
+[PluginVisible]
 public partial class PauseState
 {
-    [LuaName] public int Lap;
-    [LuaName] public int TotalLaps;
-    [LuaName] public int Position;
-    [LuaName] public int TotalRacers;
-    [LuaName] public string StageName;
+    [PluginVisible] public int Lap;
+    [PluginVisible] public int TotalLaps;
+    [PluginVisible] public int Position;
+    [PluginVisible] public int TotalRacers;
+    [PluginVisible] public string StageName;
 }

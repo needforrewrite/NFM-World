@@ -1,8 +1,6 @@
 // C# port of Meta's Yoga layout engine LayoutResults.
 // Ported from yoga/node/LayoutResults.h, yoga/node/CachedMeasurement.h
 
-using Microsoft.UI.Reactor.Layout;
-
 namespace Microsoft.UI.Reactor.Layout;
 
 /// <summary>

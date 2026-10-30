@@ -1,5 +1,4 @@
-﻿using NFMWorldLibrary.Backend.Gamemodes;
-using NFMWorldLibrary.Gamemodes;
+﻿using NFMWorldLibrary.Gamemodes;
 
 namespace NFMWorldLibrary.Backend;
 

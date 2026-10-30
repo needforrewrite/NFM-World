@@ -37,16 +37,13 @@
         <ProjectReference Include="..\NFMWorld.CrashReporter\NFMWorld.CrashReporter.csproj" />
         <ProjectReference Include="..\NFMWorld.DriverInterface\NFMWorld.DriverInterface.csproj" />
         <ProjectReference Include="..\NFMWorld.Library.Base\NFMWorld.Library.Base.csproj" />
-        <ProjectReference Include="..\NFMWorld.LuaSourceGenerator\NFMWorld.LuaSourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
-        <ProjectReference Include="..\NFMWorld.Lua\NFMWorld.Lua.csproj" />
         <ProjectReference Include="..\NFMWorld.Math\NFMWorld.Math.csproj" />
         <ProjectReference Include="..\NFMWorld.OpcodeSourceGen\NFMWorld.OpcodeSourceGen.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
         <ProjectReference Include="..\NFMWorld.ClientOnlyAnalyzer\NFMWorld.ClientOnlyAnalyzer.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
         <ProjectReference Include="..\NFMWorld.PhysicsFS\NFMWorld.PhysicsFS.csproj" />
+        <ProjectReference Include="..\NFMWorld.PluginSystem\NFMWorld.PluginSystem.csproj" />
         <ProjectReference Include="..\NFMWorld.Reactor.ObservableCollections\NFMWorld.Reactor.ObservableCollections.csproj" />
         <ProjectReference Include="..\NFMWorld.Sentry\NFMWorld.Sentry.csproj" />
-        <ProjectReference Include="..\Lua-CSharp\src\Lua.SourceGenerator\Lua.SourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
-        <ProjectReference Include="..\Lua-CSharp\src\Lua\Lua.csproj" />
         <ProjectReference Include="..\NFMWorld.UI\NFMWorld.UI.csproj" />
     </ItemGroup>
 

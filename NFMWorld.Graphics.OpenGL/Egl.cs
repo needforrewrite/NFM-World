@@ -28,7 +28,6 @@
 // amount of regeneration can produce these constants. They are declared below, with their values.
 using Maxine.EGL;
 using Silk.NET.Core.Contexts;
-using Silk.NET.OpenGLES;
 
 namespace NFMWorld.Graphics.OpenGL;
 

@@ -3,13 +3,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using FixedMathSharp;
 using FixedMathSharp.Utility;
-using Lua;
-using Lua.Runtime;
-using Microsoft.Extensions.Logging;
-using NFMWorld.Lua;
+using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Collision;
-using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Util;
 
 /*************************************
@@ -32,7 +28,7 @@ namespace NFMWorldLibrary;
 //     public InlineArray4<fix64> wheelz;
 // }
 
-[LuaVisible]
+[PluginVisible]
 public enum SurfaceType
 {
     Road = 0,
@@ -43,229 +39,229 @@ public enum SurfaceType
     Spikes = 5
 }
 
-[LuaVisible]
+[PluginVisible]
 public partial class CarPhysics
 {
     private static readonly fix64 _tickRate = Physics.PHYSICS_MULTIPLIER_F64;
     private static readonly fix64 _oneOverTickRate = 1 / _tickRate;
     
-    [LuaName("halted")]
+    [PluginVisible]
     public bool Halted = false;
 
-    [LuaName("btab")]
+    [PluginVisible]
     public bool BackwardsTabletop;
     
-    [LuaName("capcnt")]
+    [PluginVisible]
     public int CapsizedCounter;
     
-    [LuaName("capsized")]
+    [PluginVisible]
     public bool BadLanding;
     
-    [LuaName("caught")]
-    public readonly LuaArray<bool> _caught = new(new UnlimitedArray<bool>());
+    [PluginVisible]
+    public readonly UnlimitedArray<bool> _caught = [];
     
-    [LuaName("stat")]
+    [PluginVisible]
     public CarStats Stat;
 
-    [LuaName("cn")]
+    [PluginVisible]
     public int Cn;
     
-    [LuaName("cntdest")]
+    [PluginVisible]
     public int Cntdest;
     
-    [LuaName("cntouch")]
+    [PluginVisible]
     public int _cntouch;
     
     /// <summary>
     /// Is colliding with the client player car
     /// </summary>
-    [LuaName("collidingWithClientPlayer")]
+    [PluginVisible]
     public bool _collidingWithClientPlayer;
     
-    [LuaName("crank")]
+    [PluginVisible]
     public readonly Array2D<int> _crank = new(4, 4);
     
-    [LuaName("lcrank")]
+    [PluginVisible]
     public readonly Array2D<int> _lcrank = new(4, 4);
     
-    [LuaName("cxz")]
+    [PluginVisible]
     public fix64 Cxz;
     
-    [LuaName("staticCameraXz")]
+    [PluginVisible]
     public fix64 StaticCameraXz;
     
-    [LuaName("dcnt")]
+    [PluginVisible]
     public int _dcnt;
     
-    [LuaName("dcomp")]
+    [PluginVisible]
     public fix64 DownComponent;
     
-    [LuaName("lcomp")]
+    [PluginVisible]
     public fix64 LeftComponent;
     
-    [LuaName("wasted")]
+    [PluginVisible]
     public bool Wasted;
     
-    [LuaName("dominate")]
+    [PluginVisible]
     public readonly UnlimitedArray<bool> _dominate = [];
     
-    [LuaName("drag")]
+    [PluginVisible]
     public readonly fix64 _drag = fix64.Half;
     
-    [LuaName("fixes")]
+    [PluginVisible]
     public int _fixes = -1;
     
-    [LuaName("forca")]
+    [PluginVisible]
     public fix64 _forca;
     
-    [LuaName("ftab")]
+    [PluginVisible]
     public bool ForwardTabletop;
     
-    [LuaName("turnXz")]
+    [PluginVisible]
     public fix64 _turnXz;
     
-    [LuaName("gtouch")]
+    [PluginVisible]
     public bool Gtouch;
     
-    [LuaName("hitmag")]
+    [PluginVisible]
     public int DamagePoints;
     
-    [LuaName("im")]
+    [PluginVisible]
     public int Im;
     
-    [LuaName("lastcolido")]
+    [PluginVisible]
     public int Lastcolido;
     
-    [LuaName("loop")]
+    [PluginVisible]
     public sbyte StuntState;
     
-    [LuaName("lxz")]
+    [PluginVisible]
     public fix64 _lxz;
     
-    [LuaName("mtouch")]
+    [PluginVisible]
     public bool Mtouch;
     
-    [LuaName("mxz")]
+    [PluginVisible]
     public fix64 Mxz;
     
-    [LuaName("numRoofDamage")]
+    [PluginVisible]
     public int _numRoofDamage;
     
-    [LuaName("newcar")]
+    [PluginVisible]
     public bool Newcar;
     
-    [LuaName("newedcar")]
+    [PluginVisible]
     public int Newedcar;
     
-    [LuaName("nmlt")]
+    [PluginVisible]
     public int _nmlt = 1;
     
-    [LuaName("nofocus")]
+    [PluginVisible]
     public bool Nofocus;
     
-    [LuaName("outshakedam")]
+    [PluginVisible]
     public int Outshakedam = 0;
     
-    [LuaName("pd")]
+    [PluginVisible]
     public bool PressDown;
     
-    [LuaName("pl")]
+    [PluginVisible]
     public bool PressLeft;
     
-    [LuaName("pmlt")]
+    [PluginVisible]
     public int _pmlt = 1;
     
-    [LuaName("point")]
+    [PluginVisible]
     public int Point;
     
-    [LuaName("power")]
+    [PluginVisible]
     public fix64 Power = 98;
     
-    [LuaName("powerup")]
+    [PluginVisible]
     public fix64 Powerup;
     
-    [LuaName("pr")]
+    [PluginVisible]
     public bool PressRight;
     
-    [LuaName("pu")]
+    [PluginVisible]
     public bool PressUp;
     
-    [LuaName("pushed")]
+    [PluginVisible]
     public bool Pushed;
 
-    [LuaName("pxy")]
+    [PluginVisible]
     public fix64 Pxy;
     
-    [LuaName("pzy")]
+    [PluginVisible]
     public fix64 Pzy;
     
-    [LuaName("rcomp")]
+    [PluginVisible]
     public fix64 RightComponent;
     
-    [LuaName("rtab")]
+    [PluginVisible]
     public bool RightTabletop;
     
-    [LuaName("scx")]
-    public LuaArray<fix64> Scx = new(4);
+    [PluginVisible]
+    public InlineArray4<fix64> Scx;
     
-    [LuaName("scy")]
-    public LuaArray<fix64> Scy = new(4);
+    [PluginVisible]
+    public InlineArray4<fix64> Scy;
     
-    [LuaName("scz")]
-    public LuaArray<fix64> Scz = new(4);
+    [PluginVisible]
+    public InlineArray4<fix64> Scz;
     
-    [LuaName("shakedam")]
+    [PluginVisible]
     public int Shakedam;
     
-    [LuaName("skid")]
+    [PluginVisible]
     public sbyte Skid;
     
-    [LuaName("speed")]
+    [PluginVisible]
     public fix64 Speed;
     
-    [LuaName("roofDamage")]
+    [PluginVisible]
     public int RoofDamage;
     
-    [LuaName("surfCount")]
+    [PluginVisible]
     public int _surfCount;
     
-    [LuaName("surfing")]
+    [PluginVisible]
     public bool Surfing;
     
-    [LuaName("tilt")]
+    [PluginVisible]
     public fix64 _tilt;
     
-    [LuaName("totalStuntXy")]
+    [PluginVisible]
     public fix64 TotalStuntXy;
     
-    [LuaName("totalStuntXz")]
+    [PluginVisible]
     public fix64 TotalStuntXz;
     
-    [LuaName("totalStuntZy")]
+    [PluginVisible]
     public fix64 TotalStuntZy;
     
-    [LuaName("tcnt")]
+    [PluginVisible]
     public int TabletopCounter;
     
-    [LuaName("txz")]
+    [PluginVisible]
     public fix64 Txz;
     
-    [LuaName("ucomp")]
+    [PluginVisible]
     public fix64 UpComponent;
     
-    [LuaName("wtouch")]
+    [PluginVisible]
     public bool Wtouch;
     
-    [LuaName("xtpower")]
+    [PluginVisible]
     public int _xtpower;
 
-    [LuaName("isClientPlayer")]
+    [PluginVisible]
     internal bool IsClientPlayer;
     
-    [LuaName("mtcount")]
+    [PluginVisible]
     internal int Mtcount = 0;
     
-    [LuaName("py")]
+    [PluginVisible]
     internal fix64 py = 0;
 
     public event EventHandler<(float f, int i)>? SfxPlayCrash;
@@ -274,9 +270,9 @@ public partial class CarPhysics
     public event EventHandler<(int i, int i2, int i3)>? SfxPlayGscrape;
     public event EventHandler<float>? PowerUp;
 
-    [LuaName("up")] private static f64Vector3 Up => new(0, -1, 0);
-    [LuaName("forward")] private static f64Vector3 Forward => new(0, 0, 1);
-    [LuaName("right")] private static f64Vector3 Right => new(1, 0, 0);
+    [PluginVisible] private static f64Vector3 Up => new(0, -1, 0);
+    [PluginVisible] private static f64Vector3 Forward => new(0, 0, 1);
+    [PluginVisible] private static f64Vector3 Right => new(1, 0, 0);
 
     public CarPhysics(CarStats stat, int im, bool isClientPlayer)
     {
@@ -3049,8 +3045,8 @@ public partial class CarPhysics
     }
 }
 
-[LuaShimType("{ T }")]
-public readonly struct Array2D<T>(int rows, int columns) : IEnumerable<T>, ILuaUserData
+[PluginVisible(Visible.IncludingAnyGenericInstantiationAndAllMembersOfType)]
+public readonly struct Array2D<T>(int rows, int columns) : IEnumerable<T>
 {
     private struct ArrayEnumerator : IEnumerator<T>, ICloneable
     {
@@ -3077,6 +3073,7 @@ public readonly struct Array2D<T>(int rows, int columns) : IEnumerable<T>, ILuaU
                 _index = length;
                 return false;
             }
+
             _index = index;
             return true;
         }
@@ -3124,7 +3121,7 @@ public readonly struct Array2D<T>(int rows, int columns) : IEnumerable<T>, ILuaU
         {
         }
     }
-    
+
     private readonly T[] _arr = new T[rows * columns];
 
     public T this[int row, int column]
@@ -3147,76 +3144,5 @@ public readonly struct Array2D<T>(int rows, int columns) : IEnumerable<T>, ILuaU
     IEnumerator IEnumerable.GetEnumerator()
     {
         return _arr.GetEnumerator();
-    }
-    
-    // ------------------------------------------------------------------
-    // ILuaUserData — table-like behaviour via metatable
-    // ------------------------------------------------------------------
-
-    LuaTable? ILuaUserData.Metatable
-    {
-        get => SharedMetatable;
-        set => throw new InvalidOperationException("Cannot set this object's metatable");
-    }
-
-    /// <summary>Shared metatable for all <see cref="UnlimitedArray{T}"/> instances of the same T.</summary>
-    private static LuaTable SharedMetatable
-    {
-        get
-        {
-            if (field != null)
-                return field;
-
-            var mt = new LuaTable(0, 3);
-            mt[Metamethods.Index] = new LuaFunction("__index", IndexMetamethodImpl);
-            mt[Metamethods.NewIndex] = new LuaFunction("__newindex", NewIndexMetamethodImpl);
-            mt[Metamethods.Len] = new LuaFunction("__len", LenMetamethodImpl);
-
-            Interlocked.CompareExchange(ref field, mt, null);
-            return field!;
-        }
-    }
-
-    private static ValueTask<int> IndexMetamethodImpl(LuaFunctionExecutionContext context, CancellationToken ct)
-    {
-        var arr = context.GetArgument<LuaArray<T>>(0);
-        var key = context.GetArgument(1);
-
-        // Integer key → array index (Lua is 1-indexed)
-        if (key.TryRead<double>(out var num) && LuaHelpers.IsLuaIndex(num, out var index))
-        {
-            if ((uint)index < (uint)arr.Value.Count)
-            {
-                return new(context.Return(LuaHelpers.ToLuaValue(arr[index]!)));
-            }
-        }
-
-        return new(context.Return(LuaValue.Nil));
-    }
-
-    private static ValueTask<int> NewIndexMetamethodImpl(LuaFunctionExecutionContext context, CancellationToken ct)
-    {
-        var arr = context.GetArgument<LuaArray<T>>(0);
-        var key = context.GetArgument(1);
-        var value = context.GetArgument(2);
-
-        // Integer key → array index (Lua is 1-indexed)
-        if (key.TryRead<double>(out var num) && LuaHelpers.IsLuaIndex(num, out var index))
-        {
-            if (!value.TryRead<T>(out var typedValue))
-            {
-                // Fallback: try number → T conversion for common numeric types
-                typedValue = LuaHelpers.ConvertLuaValue<T>(value);
-            }
-            arr[index] = typedValue;
-        }
-
-        return new(context.Return());
-    }
-
-    private static ValueTask<int> LenMetamethodImpl(LuaFunctionExecutionContext context, CancellationToken ct)
-    {
-        var arr = context.GetArgument<LuaArray<T>>(0);
-        return new(context.Return((double)arr.Value.Count));
     }
 }

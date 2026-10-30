@@ -1,6 +1,3 @@
-using System.Globalization;
-using NanoSvgSharp;
-
 [assembly: Parallelize(Scope = ExecutionScope.ClassLevel)]
 
 namespace NanoSvgSharp.Test;

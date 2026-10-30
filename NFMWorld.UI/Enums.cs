@@ -1,9 +1,9 @@
 using Microsoft.UI.Reactor.Layout;
-using NFMWorld.Lua;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorld.Reactor;
 
-[LuaVisible]
+[PluginVisible]
 public enum Direction
 {
     Inherit,
@@ -11,6 +11,7 @@ public enum Direction
     Rtl,
 }
 
+[PluginVisible]
 public enum FlexDirection
 {
     Column,
@@ -19,6 +20,7 @@ public enum FlexDirection
     RowReverse,
 }
 
+[PluginVisible]
 public enum Justify
 {
     // NOTE: must stay value-identical to Microsoft.UI.Reactor.Layout.FlexJustify
@@ -34,6 +36,7 @@ public enum Justify
     SpaceEvenly,
 }
 
+[PluginVisible]
 public enum Align
 {
     // value-identical to Microsoft.UI.Reactor.Layout.FlexAlign (raw cast in ToYogaAlign)
@@ -50,6 +53,7 @@ public enum Align
     End,
 }
 
+[PluginVisible]
 public enum Position
 {
     Static,
@@ -57,6 +61,7 @@ public enum Position
     Absolute,
 }
 
+[PluginVisible]
 public enum Wrap
 {
     NoWrap,
@@ -64,6 +69,7 @@ public enum Wrap
     WrapReverse,
 }
 
+[PluginVisible]
 public enum Overflow
 {
     Visible,
@@ -71,6 +77,7 @@ public enum Overflow
     Scroll,
 }
 
+[PluginVisible]
 public enum Display
 {
     // value-identical to Microsoft.UI.Reactor.Layout.YogaDisplay (raw cast in ToYogaDisplay)
@@ -80,18 +87,21 @@ public enum Display
     Grid,
 }
 
+[PluginVisible]
 public enum BoxSizing
 {
     BorderBox,
     ContentBox,
 }
 
+[PluginVisible]
 public enum NodeType
 {
     Default,
     Text,
 }
 
+[PluginVisible]
 public enum Visibility
 {
     Hidden,

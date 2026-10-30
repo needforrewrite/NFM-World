@@ -1,6 +1,4 @@
-﻿using NFMWorldLibrary.FixedMath;
-
-namespace NFMWorldLibrary.Collision;
+﻿namespace NFMWorldLibrary.Collision;
 
 public readonly struct ShapeRamp(
     f64Vector3 rad,

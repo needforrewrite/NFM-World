@@ -1,31 +1,30 @@
-﻿using NFMWorld.Lua;
+﻿using NFMWorld.PluginSystem;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Rad;
 using NFMWorld.Sentry;
-using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Backend;
 
-[LuaVisible]
+[PluginVisible]
 public partial class BackendCar : BackendGameObject
 {
-    [LuaName] public int GroundAt { get; }
-    [LuaName] public int MaxRadius { get; }
-    [LuaName] public f64Euler WheelAngle { get; set; }
-    [LuaName] public f64Euler TurningWheelAngle { get; set; }
-    [LuaName] public ReadOnlyLuaArray<Rad3dWheelDef> Wheels { get; }
+    [PluginVisible] public int GroundAt { get; }
+    [PluginVisible] public int MaxRadius { get; }
+    [PluginVisible] public f64Euler WheelAngle { get; set; }
+    [PluginVisible] public f64Euler TurningWheelAngle { get; set; }
+    [PluginVisible] public IReadOnlyList<Rad3dWheelDef> Wheels { get; }
 
-    [LuaName] public CarPhysics CarPhysics { get; }
-    [LuaName] public Control Control { get; }
-    [LuaName] public ushort CurrentCheckpoint { get; set; }
-    [LuaName] public byte CurrentLap { get; set; } // mad.nlaps
-    [LuaName] public int TotalCheckpoint { get; set; } // mad.clear
-    [LuaName] public int LastCheckpointNode { get; set; } = -1; // resets on new lap
-    [LuaName] public int Placement { get; set; } // cp.pos
-    [LuaName] public Rad3d Rad { get; }
-    [LuaName] public CarStats Stats { get; }
-    [LuaName] public bool Wasted => CarPhysics.Wasted;
+    [PluginVisible] public CarPhysics CarPhysics { get; }
+    [PluginVisible] public Control Control { get; }
+    [PluginVisible] public ushort CurrentCheckpoint { get; set; }
+    [PluginVisible] public byte CurrentLap { get; set; } // mad.nlaps
+    [PluginVisible] public int TotalCheckpoint { get; set; } // mad.clear
+    [PluginVisible] public int LastCheckpointNode { get; set; } = -1; // resets on new lap
+    [PluginVisible] public int Placement { get; set; } // cp.pos
+    [PluginVisible] public Rad3d Rad { get; }
+    [PluginVisible] public CarStats Stats { get; }
+    [PluginVisible] public bool Wasted => CarPhysics.Wasted;
 
     public event DamageFunc? DamagedX;
     public event RoofDamageFunc? DamagedY;
@@ -34,12 +33,13 @@ public partial class BackendCar : BackendGameObject
     public event DustFunc? Dusted;
     public event Action? Fixed;
 
-    [LuaName] public ClientSidePlayerInfo Player { get; }
+    [PluginVisible] public ClientSidePlayerInfo Player { get; }
     
     private bool _fixing;
     private byte _fixTimer;
     private int _fixTick = 0;
     
+    [PluginVisible]
     public BackendCar(
         BackendCar other,
         int im,
@@ -54,6 +54,7 @@ public partial class BackendCar : BackendGameObject
     {
     }
 
+    [PluginVisible]
     public BackendCar(ClientSidePlayerInfo player, int im, fix64 x, fix64 z) : this(BackendGameSparker.GetCar(player.CarName).Rad!, im, x, z, player.IsClientPlayer)
     {
         Player = player;
@@ -66,7 +67,7 @@ public partial class BackendCar : BackendGameObject
 
         GroundAt = rad.Wheels.FirstOrDefault().Ground;
         MaxRadius = rad.MaxRadius;
-        Wheels = new(rad.Wheels);
+        Wheels = rad.Wheels;
         
         CarPhysics = new CarPhysics(Stats, im, isClientPlayer);
         CarPhysics.Reseto(CarPhysics.Im, this);
@@ -85,7 +86,7 @@ public partial class BackendCar : BackendGameObject
         };
     }
 
-    [LuaName]
+    [PluginVisible]
     public void Drive(BackendStage stage)
     {
         var transaction = SentrySdk.StartTransaction("BackendCar.Drive", "drive-car");
@@ -117,6 +118,7 @@ public partial class BackendCar : BackendGameObject
         }
     }
 
+    [PluginVisible]
     public void Collide(BackendCar otherCar)
     {
         var transaction = SentrySdk.StartTransaction("BackendCar.Collide", "car-collide");
@@ -124,6 +126,7 @@ public partial class BackendCar : BackendGameObject
         transaction.Finish();
     }
 
+    [PluginVisible]
     public void ResetPosition()
     {
         CarPhysics.Reseto(CarPhysics.Im, this);
@@ -131,6 +134,7 @@ public partial class BackendCar : BackendGameObject
         Rotation = f64Euler.Identity;
     }
 
+    [PluginVisible]
     public void Fix()
     {
         _fixing = true;

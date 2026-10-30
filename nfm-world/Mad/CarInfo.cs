@@ -7,7 +7,7 @@ namespace NFMWorld;
 public class CarMesh : Mesh
 {
     public CarStats Stats;
-    public LuaArray<Rad3dWheelDef> Wheels;
+    public IReadOnlyList<Rad3dWheelDef> Wheels;
     public Rad3dRimsDef? Rims;
 
     public CarMesh(Rad3d rad) : base(rad)

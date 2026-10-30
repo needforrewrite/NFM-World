@@ -1,13 +1,15 @@
-﻿using NFMWorldLibrary.Backend;
+﻿using NFMWorld.PluginSystem;
+using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Collision;
-using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Helpers;
 
+[PluginVisible]
 public class CheckPointHelper
 {
+    [PluginVisible]
     public static void CalculatePositions(
         BackendStage currentStage,
         IReadOnlyList<ClientSidePlayer> players
@@ -70,6 +72,7 @@ public class CheckPointHelper
         }
     }
 
+    [PluginVisible]
     public static bool HandleCheckPoint(
         BackendStage currentStage,
         BackendCar car)

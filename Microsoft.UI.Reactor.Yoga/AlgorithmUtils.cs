@@ -12,8 +12,6 @@
 //   CacheHelper       — validates cached measurements to skip re-layout
 //   FlexLineHelper    — builds FlexLine by accumulating children until wrap threshold
 
-using Microsoft.UI.Reactor.Layout;
-
 namespace Microsoft.UI.Reactor.Layout;
 
 /// <summary>

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NFMWorld.DriverInterface.DriverInterface;
@@ -158,12 +159,61 @@ public sealed class FaudioEngine : IDisposable
             : voice;
     }
 
-    /// <summary>Destroys a voice created by <see cref="CreateSourceVoice"/>.</summary>
+    /// <summary>
+    /// Destroys a voice created by <see cref="CreateSourceVoice"/> without a fade.
+    /// </summary>
     public void DestroyVoice(IntPtr voice)
     {
         if (voice != IntPtr.Zero)
             FAudio.FAudioVoice_DestroyVoice(voice);
     }
+
+    /// <summary>
+    /// Fades a voice out from its current volume and then destroys it, so a sound stopped
+    /// mid-sample does not click. The ramp runs on the thread pool: <paramref name="afterDestroy"/>
+    /// fires once the voice is gone, and that is where the caller releases the PCM it had pinned.
+    /// </summary>
+    /// <remarks>
+    /// The fade has to span several of FAudio's ~20 ms mix quanta, so it cannot run inline in a
+    /// frame - and a real sleep is no use for a ramp at all (it costs ~15 ms here), hence the spin.
+    /// </remarks>
+    public void FadeOutAndDestroy(IntPtr voice, Action? afterDestroy = null)
+    {
+        if (voice == IntPtr.Zero)
+        {
+            afterDestroy?.Invoke();
+            return;
+        }
+
+        FAudio.FAudioVoice_GetVolume(voice, out var volume);
+        if (volume <= 0f)
+        {
+            DestroyVoice(voice);
+            afterDestroy?.Invoke();
+            return;
+        }
+
+        Task.Run(() =>
+        {
+            var clock = Stopwatch.StartNew();
+            double remaining;
+            while ((remaining = 1.0 - clock.Elapsed.TotalMilliseconds / FadeMilliseconds) > 0.0)
+            {
+                FAudio.FAudioVoice_SetVolume(voice, volume * (float)remaining, 0);
+                Thread.Yield();
+            }
+
+            DestroyVoice(voice);
+            afterDestroy?.Invoke();
+        });
+    }
+
+    /// <summary>
+    /// Length of the fade in <see cref="FadeOutAndDestroy"/>. Measured against the device output:
+    /// an abrupt destroy steps the waveform 11x its natural slope (the click), 50 ms still leaves 3x,
+    /// and from 100 ms the step is indistinguishable from the tone itself.
+    /// </summary>
+    public const int FadeMilliseconds = 100;
 
     public void Dispose()
     {

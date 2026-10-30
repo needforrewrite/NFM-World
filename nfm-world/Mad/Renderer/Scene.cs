@@ -1,7 +1,4 @@
-﻿using System;
-using Maxine.Extensions.Mathematics;
-using NFMWorld.Graphics;
-using NFMWorldLibrary;
+﻿using NFMWorld.Graphics;
 using NFMWorldLibrary.Backend;
 
 namespace NFMWorld;

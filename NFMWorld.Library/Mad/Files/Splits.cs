@@ -1,9 +1,10 @@
 using MemoryPack;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.Files;
 
-[MemoryPackable(GenerateType.VersionTolerant)]
+[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
 public partial class Splits
 {
-    [MemoryPackOrder(0)] public List<long> SplitTimes = [];
+    [MemoryPackOrder(0), PluginVisible] public List<long> SplitTimes = [];
 }

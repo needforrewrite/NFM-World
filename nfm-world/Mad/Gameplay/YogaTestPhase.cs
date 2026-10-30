@@ -15,7 +15,7 @@ public sealed class YogaTestPhase : BasePhase
 {
     private readonly View _root;
     private int _counter = 420;
-    private LuaVector2 _mouseDownPos;
+    private Vector2 _mouseDownPos;
     private MouseButton? _dragButton;
 
     public YogaTestPhase()
@@ -37,7 +37,7 @@ public sealed class YogaTestPhase : BasePhase
         if (imguiWantsMouse)
             return;
 
-        var pos = new LuaVector2(x, y);
+        var pos = new Vector2(x, y);
 
         FocusManager.DispatchMouseMove(_root, new BaseMouseMoveEvent(pos, buttons, ctrlKey, altKey, shiftKey));
 
@@ -52,10 +52,10 @@ public sealed class YogaTestPhase : BasePhase
         if (imguiWantsMouse)
             return;
 
-        _mouseDownPos = new LuaVector2(x, y);
+        _mouseDownPos = new Vector2(x, y);
         _dragButton = button;
 
-        var pos = new LuaVector2(x, y);
+        var pos = new Vector2(x, y);
         var @event = new BaseMouseEvent(pos, button, buttons, ctrlKey, altKey, shiftKey);
         FocusManager.HandleMousePressed(_root, @event);
         _root.DispatchMousePressed(@event);
@@ -68,7 +68,7 @@ public sealed class YogaTestPhase : BasePhase
 
         _dragButton = null;
 
-        var pos = new LuaVector2(x, y);
+        var pos = new Vector2(x, y);
         var @event = new BaseMouseEvent(pos, button, buttons, ctrlKey, altKey, shiftKey);
         FocusManager.HandleMouseReleased();
         _root.DispatchMouseReleased(@event);
@@ -79,8 +79,8 @@ public sealed class YogaTestPhase : BasePhase
         if (imguiWantsMouse)
             return;
 
-        var pos = new LuaVector2(x, y);
-        _root.DispatchMouseScrolled(new BaseMouseWheelEvent(new LuaVector3(0f, delta, 0f), pos, buttons, ctrlKey, altKey, shiftKey));
+        var pos = new Vector2(x, y);
+        _root.DispatchMouseScrolled(new BaseMouseWheelEvent(new Vector3(0f, delta, 0f), pos, buttons, ctrlKey, altKey, shiftKey));
     }
 
     public override void KeyPressed(Key key, bool imguiWantsKeyboard, in Keys keys)

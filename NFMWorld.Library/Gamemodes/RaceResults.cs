@@ -1,4 +1,5 @@
 using MemoryPack;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.Gamemodes;
 
@@ -6,7 +7,7 @@ namespace NFMWorldLibrary.Gamemodes;
 /// Results of a completed race. Returned by <see cref="IServerGamemode.GetStateSnapshot"/>
 /// and delivered by the race host on finish.
 /// </summary>
-[MemoryPackable]
+[MemoryPackable, PluginVisible(Visible.IncludingAllMembersOfType)]
 public readonly partial struct RaceResults
 {
     /// <summary>Players ordered by finish position (0 = first).</summary>
@@ -25,7 +26,7 @@ public readonly partial struct RaceResults
 /// <summary>
 /// Standing for a single player in race results.
 /// </summary>
-[MemoryPackable]
+[MemoryPackable, PluginVisible(Visible.IncludingAllMembersOfType)]
 public readonly partial struct RaceStanding
 {
     /// <summary>Application-level player ID.</summary>

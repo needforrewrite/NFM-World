@@ -11,9 +11,6 @@
 // SizingMode maps to CSS sizing: StretchFit=definite, FitContent=max-content-clamped, MaxContent=intrinsic.
 // All float math uses YogaFloat helpers (NaN = undefined, InexactEquals for float tolerance).
 
-using System.Threading;
-using Microsoft.UI.Reactor.Layout;
-
 namespace Microsoft.UI.Reactor.Layout;
 
 /// <summary>

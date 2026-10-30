@@ -1,6 +1,4 @@
-﻿using NFMWorldLibrary.FixedMath;
-
-namespace NFMWorldLibrary.Collision;
+﻿namespace NFMWorldLibrary.Collision;
 
 public readonly struct ShapeRoad(f64Vector3 rad, f64Vector3 trackersPosition, fix64 contoXz, f64Vector3 contoPosition)
 {

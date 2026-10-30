@@ -1,6 +1,5 @@
-﻿using System.Buffers;
-using System.Runtime.InteropServices;
-using NFMWorld.Lua;
+﻿using System.Runtime.InteropServices;
+using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Collision;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
@@ -10,18 +9,18 @@ using NFMWorldLibrary.Radpack;
 
 namespace NFMWorldLibrary.Backend;
 
-[LuaVisible]
+[PluginVisible]
 public partial class BackendStage
 {
-    [LuaName] public LuaUnlimitedArray<BackendGameObject> Pieces { get; } = [];
-    [LuaName] public LuaUnlimitedArray<StageObject> Nodes { get; } = [];
-    [LuaName] public LuaUnlimitedArray<StageObject> Checkpoints { get; } = [];
-    [LuaName] public LuaUnlimitedArray<StageObject> FixHoops { get; } = [];
-    [LuaName] public ushort Nlaps { get; set; }
+    [PluginVisible] public UnlimitedArray<BackendGameObject> Pieces { get; } = [];
+    [PluginVisible] public UnlimitedArray<StageObject> Nodes { get; } = [];
+    [PluginVisible] public UnlimitedArray<StageObject> Checkpoints { get; } = [];
+    [PluginVisible] public UnlimitedArray<StageObject> FixHoops { get; } = [];
+    [PluginVisible] public ushort Nlaps { get; set; }
 
-    [LuaName] public string Name = "hogan rewish";
+    [PluginVisible] public string Name = "hogan rewish";
 
-    [LuaName] public readonly string Path;
+    [PluginVisible] public readonly string Path;
     
     // left
     public int Sx;
@@ -34,7 +33,7 @@ public partial class BackendStage
 
     public int StagePartCount => Pieces.Count;
 
-    [LuaName] public readonly StageLoader StageLoader;
+    [PluginVisible] public readonly StageLoader StageLoader;
 
     protected BackendStage()
     {
@@ -283,19 +282,19 @@ public partial class BackendStage
     }
 }
 
-[LuaVisible]
+[PluginVisible]
 public partial class WallCollision : BackendGameObject, ICollidable
 {
-    [LuaName]
-    public LuaArray<Rad3dBoxDef> Boxes { get; }
+    [PluginVisible]
+    public IReadOnlyList<Rad3dBoxDef> Boxes { get; }
     
     IReadOnlyList<Rad3dBoxDef> ICollidable.Boxes => Boxes;
     
-    [LuaName]
+    [PluginVisible]
     public int MaxRadius { get; }
 
-    public SrcRad3dCollisionMesh? CollisionMesh => null;
-    public SrcRad3dCollisionHull? CollisionHull => null;
+    public Rad3dCollisionMesh? CollisionMesh => null;
+    public Rad3dCollisionHull? CollisionHull => null;
 
     public WallCollision(Rad3dBoxDef[] boxes)
     {
@@ -314,33 +313,33 @@ public partial class WallCollision : BackendGameObject, ICollidable
     }
 }
 
-[LuaVisible]
+[PluginVisible]
 public partial class StageObject(Rad3d rad) : BackendGameObject, IAiNode, ICollidable
 {
-    [LuaName("originalPlacement")]
+    [PluginVisible]
     public PiecePlacement OriginalPlacement { get; set; }
 
-    [LuaName("rad")]
+    [PluginVisible]
     public Rad3d Rad { get; } = rad;
     
-    [LuaName("nodeKind")]
+    [PluginVisible]
     public AiNodeKind Kind { get; set; } = AiNodeKind.Auto;
     
-    [LuaName]
+    [PluginVisible]
     public bool IsSpecial { get; set; }
     
-    [LuaName]
-    public LuaArray<Rad3dBoxDef> Boxes { get; } = rad.Boxes;
+    [PluginVisible]
+    public IReadOnlyList<Rad3dBoxDef> Boxes { get; } = rad.Boxes;
     IReadOnlyList<Rad3dBoxDef> ICollidable.Boxes => Boxes;
     
-    [LuaName]
+    [PluginVisible]
     public int MaxRadius { get; } = rad.MaxRadius;
     
-    [LuaName]
+    [PluginVisible]
     public string FileName => Rad.FileName;
 
-    public SrcRad3dCollisionMesh? CollisionMesh { get; set; } = rad.CollisionMesh;
-    public SrcRad3dCollisionHull? CollisionHull { get; set; } = rad.CollisionHull;
+    public Rad3dCollisionMesh? CollisionMesh { get; set; } = rad.CollisionMesh;
+    public Rad3dCollisionHull? CollisionHull { get; set; } = rad.CollisionHull;
 
     public StageObject(Rad3d rad, f64Vector3 position, f64Euler rotation, PiecePlacement originalPlacement) : this(rad)
     {

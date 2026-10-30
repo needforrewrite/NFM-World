@@ -1,7 +1,7 @@
+using System.Numerics;
 using Microsoft.UI.Reactor.Layout;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
-using NFMWorldLibrary.Util;
 
 namespace NFMWorld.DriverInterface.UI;
 
@@ -42,7 +42,7 @@ public partial class Image : Component
     } = 1f;
 
     [ClientOnly]
-    protected override void RenderContent(LuaVector2 position, LuaVector2 size)
+    protected override void RenderContent(Vector2 position, Vector2 size)
     {
         if (ImageData != null)
         {

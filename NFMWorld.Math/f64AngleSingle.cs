@@ -1,8 +1,10 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.FixedMath;
 
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public struct f64AngleSingle : IComparable, IComparable<f64AngleSingle>, IEquatable<f64AngleSingle>, ISpanFormattable
 {
     /// <summary>

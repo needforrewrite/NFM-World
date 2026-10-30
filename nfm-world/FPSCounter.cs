@@ -1,7 +1,4 @@
-﻿using Lua;
-using NFMWorld.DriverInterface;
-using NFMWorld.DriverInterface.DriverInterface;
-using NFMWorld.Util;
+﻿using NFMWorld.DriverInterface.DriverInterface;
 
 namespace NFMWorld;
 
@@ -14,13 +11,6 @@ public class FPSCounter
     private static double now = 0;
     private static double msgFrequency = 0.05f;
     private static string msg;
-    private static long lastCallCount = 0;
-    private static double lastLuaMs = 0;
-    private static long lastTableCount = 0;
-    private static long lastStringInsertCount = 0;
-    private static double lastStringInsertMs = 0;
-    private static long lastStringResizeCount = 0;
-    private static double lastStringResizeMs = 0;
 
     /// <summary>
     /// The msgFrequency here is the reporting time to update the message.
@@ -31,33 +21,7 @@ public class FPSCounter
         elapsed = now - last;
         if (elapsed > msgFrequency)
         {
-            var luaCalls = LuaCallDiagnostics.CallCount;
-            var luaMs = LuaCallDiagnostics.ElapsedMilliseconds;
-            if (luaCalls != 0)
-            {
-                lastCallCount = luaCalls;
-                lastLuaMs = luaMs;
-                Console.WriteLine($"Lua calls: {lastCallCount} ({lastLuaMs:0.00}ms)");
-            }
-            LuaCallDiagnostics.Reset();
-
-            var tableCount = LuaTableDiagnostics.TableCount;
-            var stringInsertCount = LuaTableDiagnostics.StringInsertCount;
-            var stringInsertMs = LuaTableDiagnostics.StringInsertMilliseconds;
-            var stringResizeCount = LuaTableDiagnostics.StringResizeCount;
-            var stringResizeMs = LuaTableDiagnostics.StringResizeMilliseconds;
-            if (tableCount != 0 || stringInsertCount != 0)
-            {
-                lastTableCount = tableCount;
-                lastStringInsertCount = stringInsertCount;
-                lastStringInsertMs = stringInsertMs;
-                lastStringResizeCount = stringResizeCount;
-                lastStringResizeMs = stringResizeMs;
-                Console.WriteLine($"Tables created: {lastTableCount}, string inserts: {lastStringInsertCount} ({lastStringInsertMs:0.00}ms), string resizes: {lastStringResizeCount} ({lastStringResizeMs:0.00}ms)");
-            }
-            LuaTableDiagnostics.Reset();
-
-            msg = $"Fps: {frames / elapsed:0.00}\nElapsed time: {elapsed:0.00}\nTick: {tickUs}us\nGTC: {asyncUs:0.00}us\nFrame (CPU): {frameMs}ms\nUpdates: {updates}\nFrames: {frames}\nLua calls: {lastCallCount} ({lastLuaMs:0.00}ms)\nTables: {lastTableCount}, str-ins: {lastStringInsertCount} ({lastStringInsertMs:0.00}ms), resize: {lastStringResizeCount} ({lastStringResizeMs:0.00}ms)";
+            msg = $"Fps: {frames / elapsed:0.00}\nElapsed time: {elapsed:0.00}\nTick: {tickUs}us\nGTC: {asyncUs:0.00}us\nFrame (CPU): {frameMs}ms\nUpdates: {updates}\nFrames: {frames}";
             //Console.WriteLine(msg);
             elapsed = 0;
             frames = 0;

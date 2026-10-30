@@ -1,12 +1,10 @@
 ﻿extern alias SDL3New;
 
 using System.Diagnostics;
-using System.Drawing;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
 using Maxine.Extensions.Mathematics;
-using Microsoft.Extensions.Logging;
 using NFMWorld.DriverInterface;
 using NFMWorld.Gameplay;
 using NFMWorld.Graphics;
@@ -21,7 +19,6 @@ using Silk.NET.Core.Contexts;
 using GlGraphicsDeviceDesktop = NFMWorld.Graphics.DesktopGL.GlGraphicsDevice;
 using NFMWorld.Platform.SDL3;
 using NFMWorld.UI;
-using NFMWorld.Util;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Gamemodes.DotNet;
 using NFMWorldLibrary.Util;

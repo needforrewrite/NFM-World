@@ -2,8 +2,6 @@
 // Ported from yoga/YGValue.h, yoga/numeric/FloatOptional.h, yoga/numeric/Comparison.h,
 // yoga/style/StyleLength.h, yoga/style/StyleSizeLength.h
 
-using Microsoft.UI.Reactor.Layout;
-
 namespace Microsoft.UI.Reactor.Layout;
 
 /// <summary>
