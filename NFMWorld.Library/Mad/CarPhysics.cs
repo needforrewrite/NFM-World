@@ -1667,52 +1667,27 @@ public partial class CarPhysics
                 // by cosP ≈ 0.  Skip and let stabilizers hold.
                 if (absCosP > (fix64)0.05f)
                 {
-                    // cosP_cosZ = cos(Pxy)·cos(Pzy) = -terrainNormal.Y
-                    //   cosP_cosZ > 0 → upright hemisphere → cosP > 0
-                    //   cosP_cosZ < 0 → one of cosP, cosZ is negative.
-                    //
-                    // Use the same detection the xyinv/zyinv flags use to decide which
-                    // axis carries the inversion: if the raw Pzy is past ±90°, Pzy
-                    // is inverted so cosZ < 0 and cosP > 0. Otherwise Pxy is inverted
-                    // so cosP < 0.
-                    //
-                    // Recompute the raw angles here because loop controls may have
-                    // changed Pxy/Pzy since the top of the tick.
-                    var rawXy = fix64.Abs(Pxy);
-                    while (rawXy > 270) rawXy -= 360;
-                    rawXy = fix64.Abs(rawXy);
-                    var rawZy = fix64.Abs(Pzy);
-                    while (rawZy > 270) rawZy -= 360;
-                    rawZy = fix64.Abs(rawZy);
+                    // The normal only fixes (Pxy, Pzy) up to the twin (180°-Pxy, Pzy+180°),
+                    // which yields the same up vector. Pick whichever is closest to the
+                    // current angles (loop controls may have moved them this tick).
+                    static fix64 Unwrap(fix64 a, fix64 reference)
+                    {
+                        while (a - reference > 180) a -= 360;
+                        while (a - reference < -180) a += 360;
+                        return a;
+                    }
 
-                    var cosP = cosP_cosZ >= fix64.Zero
-                        ? (rawXy > (fix64)90 && rawZy > (fix64)90 ? -absCosP : absCosP)
-                        : rawZy > (fix64)90 ? absCosP       // Pzy is the inverted axis → cosP > 0
-                            : rawXy > (fix64)90 ? -absCosP       // Pxy is the inverted axis → cosP < 0
-                                : absCosP;                            // neither > 90°, assume upright
+                    var p1 = Unwrap(fix64.Atan2(sinP, absCosP) * fix64.RadToDeg, Pxy);
+                    var z1 = Unwrap(fix64.Atan2(cosP_sinZ, cosP_cosZ) * fix64.RadToDeg, Pzy);
+                    var p2 = Unwrap(180 - p1, Pxy);
+                    var z2 = Unwrap(z1 + 180, Pzy);
 
-                    // Derive sin(Pzy) and cos(Pzy) by dividing the known products
-                    // by cosP — this correctly undoes the 180° shift that atan2
-                    // would introduce when cosP < 0.
-                    var sinZ = cosP_sinZ / cosP;
-                    var cosZ = cosP_cosZ / cosP;
+                    var useFirst = fix64.Abs(p1 - Pxy) + fix64.Abs(z1 - Pzy)
+                                   <= fix64.Abs(p2 - Pxy) + fix64.Abs(z2 - Pzy);
+                    Pxy = useFirst ? p1 : p2;
+                    Pzy = useFirst ? z1 : z2;
 
-                    // Guard: when |cosZ| ≈ 0 (Pzy near ±90°), the plane-fit can't
-                    // reliably determine Pzy — tiny noise in wheel positions flips
-                    // atan2 between +90° and -90°.  Only update Pxy.
-                    if (fix64.Abs(cosP_cosZ) > (fix64)0.05f)
-                        Pzy = fix64.Atan2(sinZ, cosZ) * fix64.RadToDeg;
-                    Pxy = fix64.Atan2(sinP, cosP) * fix64.RadToDeg;
-
-                    // Unwrap so Pxy/Pzy stay within 180° of conto.Xy/conto.Zy.
-                    // atan2 outputs [-180°, 180°] which wraps at ±180°; the
-                    // interpolation block below would see a 358° jump instead of 2°.
-                    while (Pxy - conto.Xy > 180) Pxy -= 360;
-                    while (Pxy - conto.Xy < -180) Pxy += 360;
-                    while (Pzy - conto.Zy > 180) Pzy -= 360;
-                    while (Pzy - conto.Zy < -180) Pzy += 360;
-
-                    FrameTrace.AddMessage($"terrainFit: cosP_cosZ={cosP_cosZ:0.000}, rawXy={rawXy:0.0}, rawZy={rawZy:0.0}, cosP={cosP:0.000}, sinP={sinP:0.000}, → Pxy={Pxy:0.0}°, Pzy={Pzy:0.0}°");
+                    FrameTrace.AddMessage($"terrainFit: cosP_cosZ={cosP_cosZ:0.000}, sinP={sinP:0.000}, twin={(useFirst ? 1 : 2)}, → Pxy={Pxy:0.0}°, Pzy={Pzy:0.0}°");
                 }
             }
         }
