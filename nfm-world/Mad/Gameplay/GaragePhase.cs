@@ -1,4 +1,7 @@
-﻿using NFMWorld.UI.Cef;
+﻿using NFMWorld.DriverInterface;
+using NFMWorld.Reactor;
+using NFMWorld.UI.Routes;
+using NFMWorld.UI.ViewModels;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Rad;
@@ -8,6 +11,7 @@ namespace NFMWorld.Gameplay;
 
 public class GaragePhase : BaseStageRenderingPhase
 {
+
     /// <summary>
     /// This should be hooked onto by the calling phase, so that the calling phase can be restored upon car selection.
     /// Returns the car that was selected.
@@ -26,11 +30,9 @@ public class GaragePhase : BaseStageRenderingPhase
     private UnlimitedArray<Rad3d> _cars = BackendGameSparker.cars[Collection.NFMM];
     private BackendCar? _backendCar;
 
-    private readonly GarageBridge _bridge = new();
 
     public GaragePhase(string? stageName = null) : base(stageName ?? GameSparker.GetAvailableStages().Shuffle().First())
     {
-        InitBridge();
     }
 
     public GaragePhase(Rad3d currentCar, string? stageName = null) : this(stageName)
@@ -42,89 +44,93 @@ public class GaragePhase : BaseStageRenderingPhase
         });
 
         if (_selectedCarIdx == -1) _selectedCarIdx = 0;
-
-        InitBridge();
     }
 
-    /// <summary>
-    /// Auto-called from all constructors to wire the CEF bridge events.
-    /// </summary>
-    private void InitBridge()
+    public override void KeyPressed(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
-        CefBridge = _bridge;
+        // Handled here rather than in the view: a key handler on the tree root only runs
+        // while the root has focus, and clicking the search box (or any focusable child)
+        // takes it away - the garage then stops responding. The phase sees every key.
+        base.KeyPressed(key, imguiWantsKeyboard, keys);
 
-        // Car selected from CEF — search ALL collections, switch if needed.
-        _bridge.CarSelected += (collection, fileName) =>
-        {
-            if (Enum.TryParse<Collection>(collection, out var col)
-                && BackendGameSparker.cars.TryGetValue(col, out var cars))
-            {
-                var idx = cars.ToList().FindIndex(c => c.FileName == fileName);
-                if (idx >= 0)
-                {
-                    _currentCollection = col;
-                    _cars = cars;
-                    _selectedCarIdx = idx;
-                    SetupCurrentCar();
-                    _bridge.PushCurrentCollection(_currentCollection);
-                }
-            }
-        };
+        if (imguiWantsKeyboard)
+            return;
 
-        // Collection switched from CEF.
-        _bridge.CollectionSelected += collectionName =>
+        switch (key)
         {
-            if (Enum.TryParse<Collection>(collectionName, out var col)
-                && BackendGameSparker.cars.TryGetValue(col, out var cars))
-            {
-                _cars = cars;
-                _selectedCarIdx = 0;
-                _currentCollection = col;
-                SetupCurrentCar();
-                _bridge.PushCurrentCollection(_currentCollection);
-            }
-        };
-
-        // Car cycling from CEF keyboard.
-        _bridge.CycleCarRequested += direction =>
-        {
-            if (direction > 0)
-                CycleCarRight();
-            else
+            case Key.Left:
                 CycleCarLeft();
-        };
+                break;
+            case Key.Right:
+                CycleCarRight();
+                break;
+            case Key.Enter:
+                SelectedCar();
+                break;
+            case Key.Escape:
+                if (!GarageView.ClearSearch())
+                    SelectionCancelled();
+                break;
+        }
+    }
 
-        // Confirm selection (Enter key in CEF).
-        _bridge.ConfirmSelection += SelectedCar;
+    /// <summary>The garage view, wired straight to this phase.</summary>
+    public override Node BuildUi() => GarageView.Build(new GarageView.Actions(
+        CarSelected: SelectCar,
+        CollectionSelected: SelectCollection,
+        Back: SelectionCancelled));
 
-        // Cancel selection (Escape key in CEF).
-        _bridge.CancelSelection += SelectionCancelled;
+    /// <summary>
+    /// Browses to a car without committing it: the panel and the 3D preview show it, and
+    /// Enter or the Back button commits. Matches the Luau garage, where clicking a card
+    /// only changed what you were looking at.
+    /// </summary>
+    private void SelectCar(string collection, string fileName)
+    {
+        // Search ALL collections, switching if the car lives in another one.
+        if (Enum.TryParse<Collection>(collection, out var col)
+            && BackendGameSparker.cars.TryGetValue(col, out var cars))
+        {
+            var idx = cars.ToList().FindIndex(c => c.FileName == fileName);
+            if (idx >= 0)
+            {
+                _currentCollection = col;
+                _cars = cars;
+                _selectedCarIdx = idx;
+                SetupCurrentCar();
+            }
+        }
+    }
 
-        _bridge.BackRequested += SelectionCancelled;
-        
-        _bridge.GarageDataRequested += GarageDataRequested;
+    private void SelectCollection(string collectionName)
+    {
+        if (Enum.TryParse<Collection>(collectionName, out var col)
+            && BackendGameSparker.cars.TryGetValue(col, out var cars))
+        {
+            _cars = cars;
+            _selectedCarIdx = 0;
+            _currentCollection = col;
+            SetupCurrentCar();
+        }
     }
 
     private void GarageDataRequested()
     {
-        var data = BackendGameSparker.cars
+        var collections = BackendGameSparker.cars
             .Where(kv => kv.Value.Count > 0)
-            .Select(kv => new CarCollectionData
-            {
-                Id = kv.Key.ToString(),
-                Cars = kv.Value
-                    .Select(c => new CarStatsData
-                    {
-                        FileName = c.FileName,
-                        Name = c.Stats.Name,
-                        Collection = kv.Key.ToString(),
-                    })
-                    .ToArray(),
-            })
+            .Select(kv => new CarCollectionViewModel(
+                kv.Key.ToString(),
+                kv.Value
+                    .Select(c => new CarStatsViewModel(
+                        c.FileName,
+                        c.Stats.Name,
+                        kv.Key.ToString(),
+                        0, 0, 0, 0, 0, 0, 0, 0, 0))
+                    .ToArray()))
             .ToArray();
 
-        _bridge.PushCollections(data);
-        
+        UiState.Garage.Collections.Value = collections;
+
         PushCurrentCar();
     }
 
@@ -160,31 +166,31 @@ public class GaragePhase : BaseStageRenderingPhase
 
         float ab = _backendCar.Stats.Airc / 75f;
 
-        // Push car stats to the Yoga garage page
-        _bridge.PushCurrentCar(new CarStatsData
-        {
-            FileName = _cars[_selectedCarIdx].FileName,
-            Name = _cars[_selectedCarIdx].Stats.Name,
-            Collection = _currentCollection.ToString(),
-            TopSpeed = switsLevel,
-            Acceleration = accel,
-            Handling = (float)_backendCar.Stats.Dishandle,
-            PowerSave = powerloss,
-            Strength = strength,
-            MaxHealth = health,
-            Stunting = airs,
-            Hypergliding = hglide,
-            Abing = ab,
-        });
+        UiState.Garage.CurrentCar.Value = new CarStatsViewModel(
+            _cars[_selectedCarIdx].FileName,
+            _cars[_selectedCarIdx].Stats.Name,
+            _currentCollection.ToString(),
+            switsLevel,
+            accel,
+            (float)_backendCar.Stats.Dishandle,
+            powerloss,
+            strength,
+            health,
+            airs,
+            hglide,
+            ab);
 
-        // Push current collection so Lua can highlight the active one.
-        _bridge.PushCurrentCollection(_currentCollection);
+        // Highlights the active collection in the sidebar.
+        UiState.Garage.CurrentCollection.Value = _currentCollection.ToString();
     }
 
     public override void Enter()
     {
         base.Enter();
         SetupCurrentCar();
+
+        // The view reads these signals directly; in Luau it asked for them on mount.
+        GarageDataRequested();
     }
 
     private void SelectedCar()

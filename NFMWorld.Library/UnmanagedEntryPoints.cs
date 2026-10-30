@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Maxine.Extensions;
 using NFMWorldLibrary.Files;
+using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Radpack;
 using NFMWorld.Sentry;
 
@@ -224,7 +225,7 @@ public static class UnmanagedEntryPoints
             var stageName = Encoding.UTF8.GetString(args->StageName);
             var carName = Encoding.UTF8.GetString(args->Cars[0].CarName);
 
-            var elapsedTicks = LuaTimeTrialSimulator.Run(
+            var elapsedTicks = TimeTrialSimulator.Run(
                 stageName, timeTrial, carName, timeTrial.DemoData.Ticks.Count + 500);
 
             return new SimulateTimeTrialResult

@@ -20,10 +20,11 @@ public sealed class YogaTestPhase : BasePhase
 
     public YogaTestPhase()
     {
-        // Pure NanoVG UI — no CEF page or bridge.
-        CefBridge = null;
+        // Owns its own UI root rather than going through the router.
         _root = TestView.Render(ref _counter);
     }
+
+    public override bool EnableUiInput => false;
 
     public override void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
     {

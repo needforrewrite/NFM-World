@@ -68,6 +68,7 @@ public class ComponentChildCollection(Component parent) : NonSynchronizedObserva
         var oldItem = Items[index];
         oldItem.VisualParent = null;
         SetDisposed(oldItem, true);
+        oldItem.Disposing?.Invoke();
         if (item is Component cmp)
             parent.NodeInternal.ReplaceChild(cmp.Contents, index);
         else if (oldItem is Component cmp1)
@@ -83,6 +84,7 @@ public class ComponentChildCollection(Component parent) : NonSynchronizedObserva
         {
             item.VisualParent = null;
             SetDisposed(item, true);
+            item.Disposing?.Invoke();
         }
         parent.NodeInternal.ClearChildren();
         base.ClearItems();
@@ -93,6 +95,7 @@ public class ComponentChildCollection(Component parent) : NonSynchronizedObserva
         var item = Items[index];
         item.VisualParent = null;
         SetDisposed(item, true);
+        item.Disposing?.Invoke();
         if (item is Component cmp)
             parent.NodeInternal.RemoveChild(cmp.Contents);
         base.RemoveItem(index);

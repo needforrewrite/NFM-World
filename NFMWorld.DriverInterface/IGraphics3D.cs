@@ -1,5 +1,6 @@
 using System.Numerics;
 using Maxine.Extensions.Mathematics;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorld.DriverInterface.DriverInterface;
 
@@ -8,6 +9,7 @@ namespace NFMWorld.DriverInterface.DriverInterface;
 /// drawn once per frame, after the scene and before 2D. Triangles are two-sided, depth-tested,
 /// and alpha-blended when any vertex alpha is below 255.
 /// </summary>
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public interface IGraphics3D
 {
     /// <summary>One color for the whole mesh. <paramref name="indices"/> index into <paramref name="positions"/>, three per triangle.</summary>

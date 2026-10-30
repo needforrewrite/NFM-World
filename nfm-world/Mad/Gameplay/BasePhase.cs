@@ -1,23 +1,23 @@
 using NFMWorld.DriverInterface;
-using NFMWorld.UI.Cef;
-using NFMWorld.UI.Cef.Bridges;
+
+
 
 namespace NFMWorld.Gameplay;
 
 public abstract class BasePhase : IDisposable
 {
     /// <summary>
-    /// Whether CEF input should be forwarded while this phase is active.
-    /// Defaults to the bridge's preference (<see cref="PhaseBridge.EnableInput"/>)
-    /// if a bridge is set, otherwise false. Override for custom logic.
+    /// Whether the UI should receive input while this phase is active. Menu phases
+    /// return true; race phases forward input only while paused.
     /// </summary>
-    public virtual bool EnableCefInput => CefBridge?.EnableInput ?? false;
+    public virtual bool EnableUiInput => true;
 
     /// <summary>
-    /// The phase's CEF bridge, if any. Subclasses set this in their constructor
-    /// or Enter(). The bridge is registered during Enter() and unregistered during Exit().
+    /// The UI this phase shows, or null for a phase with no UI (the editors, which draw
+    /// themselves). A phase owns its tree: it is built once on <see cref="Enter"/> and
+    /// torn down on <see cref="Exit"/>, so a phase buried in the stack contributes nothing.
     /// </summary>
-    public PhaseBridge? CefBridge { get; protected set; } = new DummyBridge();
+    public virtual NFMWorld.Reactor.Node? BuildUi() => null;
 
     /// <summary>
     /// Whether the mouse was pressed this game tick. Reset at the end of a game tick.
@@ -25,10 +25,10 @@ public abstract class BasePhase : IDisposable
     protected bool MouseDownThisFrame { get; private set; }
     
     /// <summary>
-    /// Invoked each frame by WorldGame.Update() when this phase has an active CefBridge.
-    /// Override to push per-frame state (e.g., HUD data) to JS.
+    /// Invoked each frame by the game loop. Override to write this frame's state into
+    /// the UI's signals (e.g. HUD telemetry).
     /// </summary>
-    public virtual void PushCefState()
+    public virtual void PushUiState()
     {
     }
 
@@ -53,11 +53,7 @@ public abstract class BasePhase : IDisposable
     {
         MouseDownThisFrame = false;
 
-        // Per-frame CEF state push: let the current phase push its state to JS.
-        if (CefBridge != null)
-        {
-            PushCefState();
-        }
+        PushUiState();
     }
 
     /// <summary>
@@ -88,11 +84,10 @@ public abstract class BasePhase : IDisposable
     /// </summary>
     public virtual void Enter()
     {
-        // Register the phase's Lua bridge if one is set
-        if (CefBridge != null && GameSparker.UiRenderer != null)
-        {
-            CefBridge.Register(GameSparker.UiRenderer);
-        }
+        // Navigation is driven by the phase stack: whichever phase is on top owns the UI.
+        // Phases are re-entered when an overlay above them pops, so this also restores
+        // the view on the way back.
+        GameSparker.UiRenderer?.ShowPhase(this);
     }
 
     /// <summary>
@@ -101,8 +96,10 @@ public abstract class BasePhase : IDisposable
     /// </summary>
     public virtual void Exit()
     {
-        // Unregister the phase's CEF bridge
-        CefBridge?.Unregister();
+        // The phase above is taking the screen; this one's tree goes with it. It is
+        // rebuilt from BuildUi when this phase is re-entered, which is also what makes
+        // the re-entry free of stale state.
+        GameSparker.UiRenderer?.HidePhase(this);
 
         // Disposal is now handled by PhaseManager.FlushDisposals() at end-of-frame.
         // Phases on the stack are kept alive; popped phases are queued for deferred disposal.

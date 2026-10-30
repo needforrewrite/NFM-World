@@ -1,5 +1,8 @@
-﻿namespace NFMWorld.DriverInterface.DriverInterface;
+﻿using NFMWorld.PluginSystem;
 
+namespace NFMWorld.DriverInterface.DriverInterface;
+
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public static class TheGraphics
 {
     public static IGraphics G => IBackend.Backend.Graphics;

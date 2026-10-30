@@ -3,73 +3,189 @@ using NFMWorld.DriverInterface.DriverInterface;
 
 namespace NFMWorld.Reactor;
 
+/// <summary>
+/// A Yoga style. Every field is nullable and null means "not set", so one style can be
+/// merged onto another (the styled components, hover states) without its unset fields
+/// overwriting anything. The web defaults live in <see cref="Resolved"/>, applied in one
+/// place when the style is pushed into Yoga.
+/// </summary>
 public struct Styles() : IEquatable<Styles>
 {
+    /// <summary>Defaults for every field this style leaves null. Web defaults, matching the Luau UI.</summary>
+    public readonly Styles Resolved => new()
+    {
+        Visibility = Visibility ?? Reactor.Visibility.Visible,
+        Opacity = Opacity ?? 1.0f,
+        Direction = Direction ?? Reactor.Direction.Ltr,
+        FlexDirection = FlexDirection ?? Reactor.FlexDirection.Row,
+        JustifyContent = JustifyContent ?? Justify.FlexStart,
+        AlignItems = AlignItems ?? Align.Stretch,
+        AlignSelf = AlignSelf ?? Align.Auto,
+        AlignContent = AlignContent ?? Align.Stretch,
+        Position = Position ?? Reactor.Position.Static,
+        FlexWrap = FlexWrap ?? Wrap.NoWrap,
+        Overflow = Overflow ?? Reactor.Overflow.Visible,
+        Display = Display ?? Reactor.Display.Flex,
+        BoxSizing = BoxSizing ?? Reactor.BoxSizing.BorderBox,
+        PointerEvents = PointerEvents ?? true,
+        Flex = Flex,
+        FlexGrow = FlexGrow,
+        FlexShrink = FlexShrink,
+        FlexBasis = FlexBasis,
+        Left = Left,
+        Top = Top,
+        Right = Right,
+        Bottom = Bottom,
+        MarginTop = MarginTop,
+        MarginBottom = MarginBottom,
+        MarginLeft = MarginLeft,
+        MarginRight = MarginRight,
+        PaddingTop = PaddingTop,
+        PaddingBottom = PaddingBottom,
+        PaddingLeft = PaddingLeft,
+        PaddingRight = PaddingRight,
+        BorderTop = BorderTop,
+        BorderBottom = BorderBottom,
+        BorderLeft = BorderLeft,
+        BorderRight = BorderRight,
+        GapColumn = GapColumn,
+        GapRow = GapRow,
+        Width = Width,
+        Height = Height,
+        MinWidth = MinWidth,
+        MinHeight = MinHeight,
+        MaxWidth = MaxWidth,
+        MaxHeight = MaxHeight,
+        AspectRatio = AspectRatio,
+        BorderColor = BorderColor,
+        BackgroundColor = BackgroundColor,
+        BorderTopLeftRadius = BorderTopLeftRadius,
+        BorderTopRightRadius = BorderTopRightRadius,
+        BorderBottomLeftRadius = BorderBottomLeftRadius,
+        BorderBottomRightRadius = BorderBottomRightRadius,
+        ZIndex = ZIndex ?? 0,
+    };
+
+    /// <summary>This style with <paramref name="overlay"/>'s set fields applied on top.</summary>
+    public readonly Styles Over(Styles overlay) => new()
+    {
+        Visibility = overlay.Visibility ?? Visibility,
+        Opacity = overlay.Opacity ?? Opacity,
+        Direction = overlay.Direction ?? Direction,
+        FlexDirection = overlay.FlexDirection ?? FlexDirection,
+        JustifyContent = overlay.JustifyContent ?? JustifyContent,
+        AlignItems = overlay.AlignItems ?? AlignItems,
+        AlignSelf = overlay.AlignSelf ?? AlignSelf,
+        AlignContent = overlay.AlignContent ?? AlignContent,
+        Position = overlay.Position ?? Position,
+        FlexWrap = overlay.FlexWrap ?? FlexWrap,
+        Overflow = overlay.Overflow ?? Overflow,
+        Display = overlay.Display ?? Display,
+        BoxSizing = overlay.BoxSizing ?? BoxSizing,
+        Flex = overlay.Flex ?? Flex,
+        FlexGrow = overlay.FlexGrow ?? FlexGrow,
+        FlexShrink = overlay.FlexShrink ?? FlexShrink,
+        FlexBasis = overlay.FlexBasis.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.FlexBasis : FlexBasis,
+        Left = overlay.Left.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.Left : Left,
+        Top = overlay.Top.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.Top : Top,
+        Right = overlay.Right.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.Right : Right,
+        Bottom = overlay.Bottom.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.Bottom : Bottom,
+        MarginTop = overlay.MarginTop.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.MarginTop : MarginTop,
+        MarginBottom = overlay.MarginBottom.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.MarginBottom : MarginBottom,
+        MarginLeft = overlay.MarginLeft.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.MarginLeft : MarginLeft,
+        MarginRight = overlay.MarginRight.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.MarginRight : MarginRight,
+        PaddingTop = overlay.PaddingTop.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.PaddingTop : PaddingTop,
+        PaddingBottom = overlay.PaddingBottom.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.PaddingBottom : PaddingBottom,
+        PaddingLeft = overlay.PaddingLeft.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.PaddingLeft : PaddingLeft,
+        PaddingRight = overlay.PaddingRight.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.PaddingRight : PaddingRight,
+        BorderTop = overlay.BorderTop ?? BorderTop,
+        BorderBottom = overlay.BorderBottom ?? BorderBottom,
+        BorderLeft = overlay.BorderLeft ?? BorderLeft,
+        BorderRight = overlay.BorderRight ?? BorderRight,
+        GapColumn = overlay.GapColumn.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.GapColumn : GapColumn,
+        GapRow = overlay.GapRow.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.GapRow : GapRow,
+        Width = overlay.Width.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.Width : Width,
+        Height = overlay.Height.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.Height : Height,
+        MinWidth = overlay.MinWidth.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.MinWidth : MinWidth,
+        MinHeight = overlay.MinHeight.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.MinHeight : MinHeight,
+        MaxWidth = overlay.MaxWidth.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.MaxWidth : MaxWidth,
+        MaxHeight = overlay.MaxHeight.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.MaxHeight : MaxHeight,
+        AspectRatio = overlay.AspectRatio ?? AspectRatio,
+        BorderColor = overlay.BorderColor ?? BorderColor,
+        BackgroundColor = overlay.BackgroundColor ?? BackgroundColor,
+        BorderTopLeftRadius = overlay.BorderTopLeftRadius ?? BorderTopLeftRadius,
+        BorderTopRightRadius = overlay.BorderTopRightRadius ?? BorderTopRightRadius,
+        BorderBottomLeftRadius = overlay.BorderBottomLeftRadius ?? BorderBottomLeftRadius,
+        BorderBottomRightRadius = overlay.BorderBottomRightRadius ?? BorderBottomRightRadius,
+        PointerEvents = overlay.PointerEvents ?? PointerEvents,
+        ZIndex = overlay.ZIndex ?? ZIndex,
+    };
+
     /// <summary>
     /// CSS: visibility - Controls whether the element is visible (visible/hidden/collapsed)
     /// </summary>
-    public Visibility Visibility = Visibility.Visible;
+    public Visibility? Visibility;
 
     /// <summary>
     /// CSS: opacity - Sets the transparency level (0.0 = fully transparent, 1.0 = fully opaque)
     /// </summary>
-    public float Opacity = 1.0f;
+    public float? Opacity;
 
     // https://css-tricks.com/snippets/css/a-guide-to-flexbox/
     /// <summary>
     /// CSS: direction - Establishes the main-axis (ltr/rtl/inherit)
     /// </summary>
-    public Direction Direction = Direction.Ltr;
+    public Direction? Direction;
 
     /// <summary>
     /// CSS: flex-direction - Establishes the main-axis (row/column/row-reverse/column-reverse)
     /// </summary>
-    public FlexDirection FlexDirection = FlexDirection.Row;
+    public FlexDirection? FlexDirection;
 
     /// <summary>
     /// CSS: justify-content - Defines alignment along the main axis
     /// </summary>
-    public Justify JustifyContent = Justify.FlexStart;
+    public Justify? JustifyContent;
 
     /// <summary>
     /// CSS: align-items - Defines default alignment for all children along the cross axis
     /// </summary>
-    public Align AlignItems = Align.Stretch;
+    public Align? AlignItems;
 
     /// <summary>
     /// CSS: align-self - Allows a child to override the default cross-axis alignment
     /// </summary>
-    public Align AlignSelf = Align.Auto;
+    public Align? AlignSelf;
 
     /// <summary>
     /// CSS: align-content - Aligns flex container's lines when there is extra space in the cross-axis
     /// </summary>
-    public Align AlignContent = Align.Stretch;
+    public Align? AlignContent;
 
     /// <summary>
     /// CSS: position - Sets how an element is positioned (static/relative/absolute/fixed)
     /// </summary>
-    public Position Position = Position.Static;
+    public Position? Position;
 
     /// <summary>
     /// CSS: flex-wrap - Controls whether flex items wrap onto multiple lines (nowrap/wrap/wrap-reverse)
     /// </summary>
-    public Wrap FlexWrap = Wrap.NoWrap;
+    public Wrap? FlexWrap;
 
     /// <summary>
     /// CSS: overflow - Controls what happens to content that is too big to fit (visible/hidden/scroll)
     /// </summary>
-    public Overflow Overflow = Overflow.Visible;
+    public Overflow? Overflow;
 
     /// <summary>
     /// CSS: display - Defines the display type of the element (flex/none/block)
     /// </summary>
-    public Display Display = Display.Flex;
+    public Display? Display;
 
     /// <summary>
     /// CSS: box-sizing - Defines how width/height calculations include padding/border (content-box/border-box)
     /// </summary>
-    public BoxSizing BoxSizing = BoxSizing.BorderBox;
+    public BoxSizing? BoxSizing;
 
     /// <summary>
     /// CSS: flex - Shorthand for flex-grow, flex-shrink, and flex-basis combined
@@ -218,12 +334,22 @@ public struct Styles() : IEquatable<Styles>
 
     public Color? BorderColor = null;
     public Color? BackgroundColor = null;
-    public CornerRadius BorderTopLeftRadius = 0f;
-    public CornerRadius BorderTopRightRadius = 0f;
-    public CornerRadius BorderBottomLeftRadius = 0f;
-    public CornerRadius BorderBottomRightRadius = 0f;
+    public CornerRadius? BorderTopLeftRadius;
+    public CornerRadius? BorderTopRightRadius;
+    public CornerRadius? BorderBottomLeftRadius;
+    public CornerRadius? BorderBottomRightRadius;
 
-    public bool PointerEvents = true;
+    /// <summary>
+    /// CSS: border-radius (shorthand) - Sets all four corners at once, and reads back
+    /// the top-left. The individual corners stay authoritative when set explicitly.
+    /// </summary>
+    public CornerRadius? BorderRadius
+    {
+        readonly get => BorderTopLeftRadius;
+        set => BorderTopLeftRadius = BorderTopRightRadius = BorderBottomLeftRadius = BorderBottomRightRadius = value;
+    }
+
+    public bool? PointerEvents;
 
     /// <summary>
     /// CSS: z-index - Controls the paint / hit-test stacking order of the element.
@@ -232,7 +358,7 @@ public struct Styles() : IEquatable<Styles>
     /// (so a high-z descendant like a dropdown popup wins over lower-z siblings of an
     /// ancestor). Default 0.
     /// </summary>
-    public int ZIndex = 0;
+    public int? ZIndex;
 
     public bool Equals(Styles other)
     {

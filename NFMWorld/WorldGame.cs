@@ -21,6 +21,7 @@ using NFMWorld.Platform.SDL3;
 using NFMWorld.UI;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Gamemodes.DotNet;
+using NFMWorldLibrary.Plugins;
 using NFMWorldLibrary.Util;
 using Keys = NFMWorld.DriverInterface.Keys;
 using Logging = NFMWorldLibrary.Logging;
@@ -220,9 +221,6 @@ public class WorldGame : IDisposable, IGameHost
     }
 
 #if ANGLE
-    /// <summary><c>SDL_GL_CONTEXT_PROFILE_ES</c>, from <c>SDL_video.h</c> - the EGL/ES profile, as opposed to Core or Compatibility. Only the GL path asks for a profile.</summary>
-    private const int EsProfile = 0x0004;
-
     /// <summary>
     /// Hands SDL the platform-attribute list that selects <paramref name="selection"/>'s ANGLE
     /// backend, and the <c>SDL_GL_EGL_PLATFORM</c> attribute that makes SDL ask for that platform at
@@ -407,6 +405,9 @@ public class WorldGame : IDisposable, IGameHost
 
     /// <summary><c>SDL_GL_CONTEXT_PROFILE_CORE</c>, from <c>SDL_video.h</c>.</summary>
     private const int CoreProfile = 0x0001;
+
+    /// <summary><c>SDL_GL_CONTEXT_PROFILE_ES</c>, from <c>SDL_video.h</c> - the EGL/ES profile, as opposed to Core or Compatibility. Only the GL path asks for a profile.</summary>
+    private const int EsProfile = 0x0004;
 
     /// <summary>
     /// The multisample count most recently asked of the swapchain, so
@@ -712,8 +713,17 @@ public class WorldGame : IDisposable, IGameHost
         //
         // Only asked for when multisampling is actually wanted: a config with EGL_SAMPLE_BUFFERS=1
         // and a count of 0 is not a way to say "off", and some drivers treat it as unsatisfiable.
+        //
+        // macOS's ES profile only ever reaches the shipped ANGLE build, which is Metal-only and
+        // generates exactly {0, 4} sample configs. EGL matches EGL_SAMPLES as a minimum, so the
+        // default 8x request matches nothing there and the window fails with SDL's "Could not create
+        // GLES window surface" - its own message, overwriting the "Couldn't find matching EGL config"
+        // that named the cause.
         if (RequestedMultiSampleCount() is var samples and > 1)
         {
+            if (profileMask == EsProfile && OperatingSystem.IsMacOS())
+                samples = Math.Min(samples, 4);
+
             SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_MULTISAMPLEBUFFERS, 1);
             SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_MULTISAMPLESAMPLES, samples);
         }

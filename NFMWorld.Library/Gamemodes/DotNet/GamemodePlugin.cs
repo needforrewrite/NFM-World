@@ -1,8 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.Loader;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
+using NFMWorldLibrary.Plugins;
 
 namespace NFMWorldLibrary.Gamemodes.DotNet;
 
@@ -11,50 +11,31 @@ namespace NFMWorldLibrary.Gamemodes.DotNet;
 /// (<c>data/gamemodes/&lt;id&gt;/gamemode.dll</c>) rather than from Luau scripts.
 /// </summary>
 /// <remarks>
-/// Loaded into its own collectible <see cref="AssemblyLoadContext"/>, so a gamemode's
-/// assembly is only resident while something is using it. See <see cref="Unload"/>.
+/// Loading, reflection and unloading are <see cref="PluginAssembly"/>'s; this adds the
+/// gamemode contract's two constructors and its config schema.
 /// </remarks>
 public sealed class GamemodePlugin
 {
-    private const BindingFlags PublicInstance =
-        BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
-
-    /// <summary>
-    /// Loaded plugins on a runtime with no collectible contexts, keyed by gamemode id.
-    /// There the assembly can never be released, so it is loaded once and reused rather
-    /// than re-read per race.
-    /// </summary>
-    private static readonly Dictionary<string, (PluginLoadContext Context, Assembly Assembly)> Resident = [];
-
     private static readonly Type[] ClientConstructorParameters =
         [typeof(ClientGamemodeParameters), typeof(IGamemodeContext), typeof(string), typeof(Dictionary<string, object>)];
 
     private static readonly Type[] ServerConstructorParameters =
         [typeof(ServerGamemodeParameters), typeof(IServerGamemodeContext), typeof(string), typeof(Dictionary<string, object>)];
 
-    private readonly PluginLoadContext _loadContext;
+    private readonly PluginAssembly _assembly;
     private ConstructorInfo? _clientConstructor;
     private ConstructorInfo? _serverConstructor;
-    private bool _unloaded;
-    private readonly WeakReference _assemblyRef;
 
     [RequiresUnreferencedCode("Loads an assembly into a collectible context.")]
-    private GamemodePlugin(
-        string id,
-        string name,
-        string description,
-        Assembly assembly,
-        PluginLoadContext loadContext)
+    private GamemodePlugin(string id, string name, string description, PluginAssembly assembly)
     {
         Id = id;
         Name = name;
         Description = description;
-        Assembly = assembly;
-        ConfigProperties = ReadConfigProperties(assembly);
-        _loadContext = loadContext;
-        _clientConstructor = FindConstructor<PluginGamemode>(assembly, id, ClientConstructorParameters);
-        _serverConstructor = FindConstructor<PluginServerGamemode>(assembly, id, ServerConstructorParameters);
-        _assemblyRef = new WeakReference(Assembly);
+        _assembly = assembly;
+        ConfigProperties = ReadConfigProperties(assembly.Assembly);
+        _clientConstructor = assembly.FindConstructor<PluginGamemode>(ClientConstructorParameters);
+        _serverConstructor = assembly.TryFindConstructor<PluginServerGamemode>(ServerConstructorParameters);
     }
 
     /// <summary>Gamemode identifier, e.g. <c>nfmm/pvp</c>.</summary>
@@ -72,7 +53,9 @@ public sealed class GamemodePlugin
     /// <summary>Whether the assembly implements a server-side gamemode.</summary>
     public bool HasServerGamemode => _serverConstructor is not null;
 
-    public Assembly Assembly { get; private set; }
+    public Assembly Assembly => _assembly.Assembly;
+
+    public bool IsAlive => _assembly.IsAlive;
 
     /// <summary>
     /// The reflected constructor, which keeps the plugin's assembly - and therefore
@@ -82,56 +65,24 @@ public sealed class GamemodePlugin
     private ConstructorInfo ClientConstructor
         => _clientConstructor ?? throw new InvalidOperationException($"Gamemode plugin '{Id}' has been unloaded.");
 
-    public bool IsAlive => _assemblyRef.IsAlive;
-
     /// <summary>
     /// Loads the plugin at <paramref name="path"/> into its own load context, or returns
     /// null if there is no assembly there or it is not marked <c>[assembly: Gamemode]</c>.
     /// </summary>
-    /// <remarks>
-    /// Read into memory and loaded from bytes rather than <c>Assembly.LoadFrom</c>:
-    /// a load-from context resolves the assembly's dependencies relative to the file
-    /// it was loaded from, which is the gamemode folder - the one place the shared
-    /// assemblies deliberately are not.
-    ///
-    /// A non-collectible context cannot be given a second assembly of one identity, and
-    /// cannot release the first, so there the load happens once per id and is reused.
-    /// </remarks>
     [RequiresUnreferencedCode("Loads an assembly into a collectible context.")]
     public static GamemodePlugin? Load(string id, string path)
     {
-        if (!VFS.FileExists(path))
+        var assembly = PluginAssembly.Load(id, path);
+        if (assembly is null)
             return null;
 
-        var cacheable = !PluginLoadContext.IsCollectibleSupported;
-
-        if (!cacheable || !Resident.TryGetValue(id, out var loaded))
+        if (assembly.Assembly.GetCustomAttribute<GamemodeAttribute>() is not { } attribute)
         {
-            var loadContext = new PluginLoadContext($"Gamemode:{id}");
-            using var stream = VFS.OpenRead(path);
-            using var buffer = new MemoryStream();
-            stream.CopyTo(buffer);
-            buffer.Position = 0;
-            loaded = (loadContext, loadContext.LoadFromStream(buffer));
-
-            if (cacheable) Resident[id] = loaded;
-        }
-
-        var (context, assembly) = loaded;
-
-        if (assembly.GetCustomAttribute<GamemodeAttribute>() is not { } attribute)
-        {
-            Resident.Remove(id);
-            if (PluginLoadContext.IsCollectibleSupported) context.Unload();
+            assembly.Unload();
             return null;
         }
 
-        return new GamemodePlugin(
-            id,
-            attribute.Name,
-            attribute.Description,
-            assembly,
-            context);
+        return new GamemodePlugin(id, attribute.Name, attribute.Description, assembly);
     }
 
     /// <summary>
@@ -159,42 +110,19 @@ public sealed class GamemodePlugin
 
     /// <summary>
     /// Detaches this plugin and asks its load context to unload. Returns immediately;
-    /// the assembly is only collected once nothing references it any more. Does nothing
-    /// where contexts cannot be collected.
+    /// the assembly is only collected once nothing references it any more.
     /// </summary>
-    /// <remarks>
-    /// Plugins declare their own MemoryPack event types, and the generated formatters
-    /// register themselves into MemoryPack's static table from the plugin's module
-    /// initializer - so the table holds them from the moment the plugin loads. It lives
-    /// in the host's MemoryPack assembly, so it holds the plugin's types, and through
-    /// them the whole context, and would keep the gamemode resident for the lifetime of
-    /// the process no matter what this method does. Dropping this plugin's entries is
-    /// what actually makes the unload possible, and it has to happen while the types are
-    /// still reachable through the reflection handles this object holds.
-    /// </remarks>
     public void Unload()
     {
-        if (_unloaded)
+        if (_clientConstructor is null)
             return;
-
-        _unloaded = true;
-
-        // Without a collectible context nothing is released, and the cached assembly is what
-        // the next race loads again - so its formatters and type handles have to stay too.
-        if (!PluginLoadContext.IsCollectibleSupported)
-            return;
-
-        var dropped = MemoryPackFormatterRegistry.DropFormatters(ClientConstructor.DeclaringType!.Assembly);
 
         // Drop the reflection handles last: they are the plugin object's own
         // remaining reference into the assembly.
         _clientConstructor = null;
         _serverConstructor = null;
-        Assembly = null!;
 
-        _loadContext.Unload();
-
-        Logging.Info($"Unloading gamemode plugin '{Id}': {dropped} memorypack formatter(s) dropped");
+        _assembly.Unload();
     }
 
     /// <summary>
@@ -229,31 +157,6 @@ public sealed class GamemodePlugin
         }
 
         return properties;
-    }
-
-    /// <summary>
-    /// Finds the constructor of the single public subtype of
-    /// <typeparamref name="T"/> the assembly declares. A gamemode declares one client
-    /// and at most one server gamemode, so a second of either is a packaging mistake
-    /// rather than something to guess between.
-    /// </summary>
-    [RequiresUnreferencedCode("Reflects over the assembly to find a constructor.")]
-    private static ConstructorInfo FindConstructor<T>(Assembly assembly, string id, Type[] parameters)
-    {
-        var types = assembly.GetExportedTypes()
-            .Where(t => !t.IsAbstract && typeof(T).IsAssignableFrom(t))
-            .ToArray();
-
-        if (types.Length != 1)
-        {
-            throw new InvalidOperationException(
-                $"Gamemode assembly '{assembly.GetName().Name}' must declare exactly one {typeof(T).Name} " +
-                $"subtype, but declares {types.Length}.");
-        }
-
-        return types[0].GetConstructor(PublicInstance, null, parameters, null)
-               ?? throw new InvalidOperationException(
-                   $"Gamemode '{id}': {types[0].FullName} does not have the expected constructor.");
     }
 }
 

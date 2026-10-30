@@ -1,8 +1,10 @@
 ﻿using System.Numerics;
 using Maxine.Extensions.Mathematics;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorld.DriverInterface.DriverInterface;
 
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public interface IGraphics
 {
     Vector2 Viewport { get; }

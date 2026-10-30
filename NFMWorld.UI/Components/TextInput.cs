@@ -166,23 +166,6 @@ public partial class TextInput : Component
         // screen-global coordinates instead of inside the input.
         AlwaysFormsContainingBlock = true;
 
-        TextInputStyles = TextInputStyles with
-        {
-            CursorColor = new Color(255, 255, 255, 255),
-            SelectionColor = new Color(100, 180, 255, 128),
-            PlaceholderColor = new Color(128, 128, 128, 255),
-        };
-
-        TextStyles = TextStyles with
-        {
-            ForegroundColor = new Color(255, 255, 255),
-            FontFamily = FontFamily.NotoSans,
-            FontSize = 12f,
-            FontStyle = FontStyle.Plain,
-            HorizontalAlignment = TextHorizontalAlignment.Left,
-            VerticalAlignment = TextVerticalAlignment.Top
-        };
-
         IsFocusable = true;
 
         NodeInternal.InsertChild(_text.Contents, 0);
@@ -219,12 +202,12 @@ public partial class TextInput : Component
         // Draw placeholder when empty and not focused
         if (string.IsNullOrEmpty(Text) && !string.IsNullOrEmpty(Placeholder))
         {
-            _text.TextStyles = _text.TextStyles with { ForegroundColor = TextInputStyles.PlaceholderColor };
+            _text.TextStyles = _text.TextStyles with { ForegroundColor = TextInputStyles.Resolved.PlaceholderColor };
             _text.TextContent = Placeholder;
         }
         else
         {
-            _text.TextStyles = _text.TextStyles with { ForegroundColor = TextStyles.ForegroundColor };
+            _text.TextStyles = _text.TextStyles with { ForegroundColor = TextStyles.Resolved.ForegroundColor };
             _text.TextContent = Text;
         }
     }
@@ -665,7 +648,7 @@ public partial class TextInput : Component
                 var selStartX = _owner.GetCursorXForCharIndex(range.start);
                 var selEndX = _owner.GetCursorXForCharIndex(range.end);
 
-                G.SetColor(_owner.TextInputStyles.SelectionColor);
+                G.SetColor(_owner.TextInputStyles.Resolved.SelectionColor!.Value);
                 G.FillRect(
                     (int)(baseX + selStartX), (int)contentTop,
                     (int)(selEndX - selStartX), (int)(contentBottom - contentTop));
@@ -676,7 +659,7 @@ public partial class TextInput : Component
             {
                 var cursorX = _owner.GetCursorXForCharIndex(_owner._cursorIndex);
 
-                G.SetColor(_owner.TextInputStyles.CursorColor);
+                G.SetColor(_owner.TextInputStyles.Resolved.CursorColor!.Value);
                 var cursorTop = contentTop;
                 var cursorBottom = contentBottom;
                 G.DrawLine(
@@ -687,23 +670,42 @@ public partial class TextInput : Component
     }
 }
 
+/// <summary>
+/// Input chrome. Nullable like <see cref="TextStyles"/>: null is "not set", and the
+/// defaults are applied where the colours are drawn.
+/// </summary>
 public struct TextInputStyles() : IEquatable<TextInputStyles>
 {
-    public Color CursorColor = new Color(255, 255, 255, 255);
-    public Color SelectionColor = new Color(100, 180, 255, 128);
-    public Color PlaceholderColor = new Color(128, 128, 128, 255);
+    public Color? CursorColor;
+    public Color? SelectionColor;
+    public Color? PlaceholderColor;
 
-    public bool Equals(TextInputStyles other)
+    /// <summary>Defaults for every field this style leaves null.</summary>
+    public readonly TextInputStyles Resolved => new()
     {
-        return CursorColor.Equals(other.CursorColor) && SelectionColor.Equals(other.SelectionColor) && PlaceholderColor.Equals(other.PlaceholderColor);
+        CursorColor = CursorColor ?? new Color(255, 255, 255, 255),
+        SelectionColor = SelectionColor ?? new Color(100, 180, 255, 128),
+        PlaceholderColor = PlaceholderColor ?? new Color(128, 128, 128, 255),
+    };
+
+    public readonly TextInputStyles Over(TextInputStyles overlay) => new()
+    {
+        CursorColor = overlay.CursorColor ?? CursorColor,
+        SelectionColor = overlay.SelectionColor ?? SelectionColor,
+        PlaceholderColor = overlay.PlaceholderColor ?? PlaceholderColor,
+    };
+
+    public readonly bool Equals(TextInputStyles other)
+    {
+        return Nullable.Equals(CursorColor, other.CursorColor) && Nullable.Equals(SelectionColor, other.SelectionColor) && Nullable.Equals(PlaceholderColor, other.PlaceholderColor);
     }
 
-    public override bool Equals(object? obj)
+    public override readonly bool Equals(object? obj)
     {
         return obj is TextInputStyles other && Equals(other);
     }
 
-    public override int GetHashCode()
+    public override readonly int GetHashCode()
     {
         return HashCode.Combine(CursorColor, SelectionColor, PlaceholderColor);
     }

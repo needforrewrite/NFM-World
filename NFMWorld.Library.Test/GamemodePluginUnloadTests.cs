@@ -5,6 +5,7 @@ using NFMWorldLibrary.Util;
 using NFMWorldLibrary.Gamemodes.DotNet;
 using NFMWorldLibrary.Gamemodes.RaceHost;
 using NFMWorldLibrary.Multiplayer;
+using NFMWorldLibrary.Plugins;
 
 namespace NFMWorld.Library.Test;
 

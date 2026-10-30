@@ -1,7 +1,9 @@
 ﻿using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
+using NFMWorld.Reactor;
 using NFMWorld.UI;
-using NFMWorld.UI.Cef;
+using NFMWorld.UI.Routes;
+using NFMWorld.UI.ViewModels;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
@@ -20,6 +22,12 @@ namespace NFMWorld.Gameplay;
 /// </summary>
 public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallbacks
 {
+    /// <summary>The in-race HUD, with its pause menu wired to this phase.</summary>
+    public override Node BuildUi() => RaceHudView.Build(new RaceHudView.Actions(
+        Resume: ResumeRace,
+        Restart: QuitRace, // Restart = quit for now; the caller re-pushes
+        Quit: QuitRace));
+
     public readonly BaseGamemodeFactory Gamemode;
     public readonly IReadOnlyList<ClientSidePlayerInfo> Players;
     public IGamemode? GamemodeInstance { get; protected set; }
@@ -29,12 +37,6 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     private readonly UnlimitedArray<uint> _lastTick = [];
 
     BackendStage IGamemodeContext.CurrentStage => CurrentStage.Backend;
-
-    /// <summary>
-    /// HUD bridge for in-race overlay. Set in constructor so base.Enter()
-    /// registers it and navigates to the race HUD page.
-    /// </summary>
-    protected HudBridge HudBridge { get; } = new();
 
     public bool AllowPausing { get; protected set; }
 
@@ -47,17 +49,6 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         Gamemode = gamemode;
         Players = players;
         _host = host;
-        CefBridge = HudBridge;
-
-        // Subscribe to pause-menu actions from the HUD bridge.
-        HudBridge.ResumeRequested += () => ResumeRace();
-        HudBridge.RestartRequested += () => QuitRace(); // Restart = quit for now; caller can re-push
-        HudBridge.QuitRequested += () => QuitRace();
-        HudBridge.SettingsCloseRequested += () =>
-        {
-            // Settings were dismissed — the JS PauseMenu handles its own
-            // view transition back to the pause menu. No hash navigation needed.
-        };
 
         // Create the gamemode once at construction time. Enter/Exit only handle
         // display-level activation/deactivation; the gamemode survives across
@@ -126,21 +117,17 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     private readonly RaceCameraDirector _cameraDirector = new();
 
     /// <summary>
-    /// Push HUD state to the CEF race overlay each frame.
-    /// Called by WorldGame.Update() when CefBridge is active.
-    /// Skipped while paused — the pause menu handles its own rendering.
+    /// Writes this frame's HUD values into the race view's signals.
+    /// Skipped while paused - the pause menu shows its own snapshot.
     /// </summary>
-    public override void PushCefState()
+    public override void PushUiState()
     {
-        base.PushCefState();
-
-        if (IsPaused)
-            return;
+        base.PushUiState();
 
         if (GamemodeInstance is not BaseClientGamemode gm)
             return;
 
-        HudBridge.PushHudState(gm.HudState);
+        UiState.Race.Update(gm.HudState, IsPaused);
     }
 
     // ── Pause / Resume / Quit ─────────────────────────────────────
@@ -155,18 +142,11 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         IsPaused = true;
         RaceState = RaceState.Paused;
 
-        // Push pause context for the overlay (lap, position, stage name)
+        // The pause menu reads the same signals the HUD does, so one write is enough.
         if (GamemodeInstance is BaseClientGamemode gm)
-        {
-            var hud = gm.HudState;
-            HudBridge.PushPauseState(hud.Lap, hud.TotalLaps, hud.Position, hud.TotalRacers, StageName ?? "");
-        }
+            UiState.Race.Update(gm.HudState, true);
         else
-        {
-            HudBridge.PushPauseState(1, 1, 1, 1, StageName ?? "");
-        }
-
-        HudBridge.PushPausedEvent(true);
+            UiState.Race.Paused.Value = true;
     }
 
     /// <summary>
@@ -178,7 +158,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         if (!IsPaused) return;
         IsPaused = false;
         RaceState = RaceState.InProgress;
-        HudBridge.PushPausedEvent(false);
+        UiState.Race.Paused.Value = false;
     }
 
     /// <summary>
@@ -248,25 +228,16 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         if (key == Key.Escape)
         {
             if (IsPaused)
-            {
-                // If settings is open, let CEF handle Escape (it will dismiss settings via JS).
-                // Otherwise, resume the race.
-                if (!HudBridge.IsSettingsOpen)
-                    ResumeRace();
-            }
+                ResumeRace();
             else if (RaceState == RaceState.InProgress && AllowPausing)
-            {
                 PauseRace();
-            }
+
             return;
         }
 
-        // ── While paused, only forward keys to SettingsHandler ─────
+        // ── While paused, the UI owns input ────────────────────────
         if (IsPaused)
-        {
-            HudBridge.Settings.TryHandleKeyPress(key);
             return;
-        }
 
         if (key == SettingsMenu.Bindings.CycleView)
             _cameraDirector.CycleViewMode();

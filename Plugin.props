@@ -1,0 +1,82 @@
+<Project>
+
+    <PropertyGroup>
+        <!-- Where this plugin's folder goes, relative to the host's output directory.
+             e.g. "gamemodes" -> data/gamemodes/<id>/, "ais" -> data/ais/<id>/. -->
+        <PluginDirectory>gamemodes</PluginDirectory>
+        <!-- File name of the shipped assembly, without extension. -->
+        <PluginFileName Condition="'$(PluginFileName)' == ''">gamemode</PluginFileName>
+        <!-- The plugin project's self-declared id, which is also its folder name. -->
+        <PluginId Condition="'$(PluginId)' == ''">$(GamemodeId)</PluginId>
+        <GamemodeId Condition="'$(GamemodeId)' == ''">$(PluginId)</GamemodeId>
+
+        <!-- The release workflow publishes the host with -r <rid>, and a global RuntimeIdentifier
+             travels down to every project the build touches - including these, which the host
+             builds as plugins. Without a matching entry restore produces no assets for that RID and
+             the nested build then fails NETSDK1047 ("doesn't have a target for 'net11.0/<rid>'").
+             The plugin itself is rid-agnostic: it is loaded as an assembly by the host and never
+             runs on its own, so every platform the release builds for is listed. -->
+        <RuntimeIdentifiers>win-x64;linux-x64;osx-x64;osx-arm64</RuntimeIdentifiers>
+    </PropertyGroup>
+
+    <!--
+        Imported by every plugin project (NFMWorld.Gamemode.*, NFMWorld.Ai.*).
+
+        A plugin ships as one fixed file name in a folder named for the plugin
+        (data/<kind>/<id>/), so a session can hold several of the same kind at once.
+        The file name is identical in every plugin of a kind and the folder is what
+        disambiguates them.
+
+        The plugin's references all use Private="false" ExcludeAssets="runtime",
+        so its output holds only its own files - the shared assemblies
+        (NFMWorld.Library, MemoryPack, ...) resolve against the host's base
+        directory at load time instead of being shadowed by a second copy.
+    -->
+
+    <!--
+        Copies this plugin's build output into the host that is building it.
+
+        The host passes PluginOutputRoot (its own output directory) when it builds
+        the plugins; a standalone build of this project leaves it empty and copies
+        nothing.
+
+        Nothing here is registered as build output. The host cleans its own output
+        directory, and registering these paths in *this* project's file list would
+        make its incremental clean delete them: the list is per-project, not
+        per-destination, so a second host building the same plugin into a different
+        folder would orphan - and then delete - the first host's copy.
+    -->
+    <Target Name="CopyPluginToHost" AfterTargets="Build" Condition="'$(PluginOutputRoot)' != ''">
+        <PropertyGroup>
+            <PluginDestination>$(PluginOutputRoot)/data/$(PluginDirectory)/$(PluginId)</PluginDestination>
+        </PropertyGroup>
+
+        <ItemGroup>
+            <!-- Anything else the plugin produced. The assembly and its symbols are
+                 excluded here because they are copied under a different name below,
+                 and the .deps/.runtimeconfig files because they only describe
+                 running the assembly standalone - which never happens, the host
+                 loads it in-process - and they name the identity renamed away. -->
+            <PluginExtra Include="$(TargetDir)*"
+                         Exclude="$(TargetPath);$(TargetDir)$(TargetName).pdb;$(TargetDir)*.deps.json;$(TargetDir)*.runtimeconfig.json" />
+        </ItemGroup>
+
+        <Copy SourceFiles="@(PluginExtra)"
+              DestinationFolder="$(PluginDestination)"
+              SkipUnchangedFiles="true" />
+
+        <!-- Renamed rather than named at compile time: the assembly identity
+             has to stay unique, because the runtime refuses to load a second assembly
+             under an identity it already has, and a session that runs one plugin
+             and then another loads both. Setting the output file name instead would
+             rename the assembly with it. -->
+        <Copy SourceFiles="$(TargetPath)"
+              DestinationFiles="$(PluginDestination)/$(PluginFileName)$(TargetExt)"
+              SkipUnchangedFiles="true" />
+        <Copy SourceFiles="$(TargetDir)$(TargetName).pdb"
+              DestinationFiles="$(PluginDestination)/$(PluginFileName).pdb"
+              SkipUnchangedFiles="true"
+              Condition="Exists('$(TargetDir)$(TargetName).pdb')" />
+    </Target>
+
+</Project>

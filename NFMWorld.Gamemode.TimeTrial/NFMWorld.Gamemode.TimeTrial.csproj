@@ -10,7 +10,7 @@
 
     <!-- Names the assembly gamemode.dll and copies the build output into the host
          that is building this project. See the file for why both live there. -->
-    <Import Project="..\Gamemode.Plugin.props" />
+    <Import Project="..\Plugin.props" />
 
     <ItemGroup>
         <ProjectReference Include="..\FixedMathSharp\src\FixedMathSharp\FixedMathSharp.csproj" Private="false" ExcludeAssets="runtime" />

@@ -27,6 +27,6 @@
 
     <!-- So the gamemode plugin loader tests exercise the real built plugins, and so a
          regression in the plugin build wiring fails the suite. -->
-    <Import Project="..\Gamemode.Plugins.targets" />
+    <Import Project="..\Plugin.Plugins.targets" />
 
 </Project>

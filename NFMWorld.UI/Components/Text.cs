@@ -52,11 +52,13 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
     public override void RemoveAt(int index) => Children.RemoveAt(index);
     
     Color? IRichTextElement.Background => Styles.BackgroundColor;
-    Color? IRichTextElement.Foreground => TextStyles.ForegroundColor;
-    Color? IRichTextElement.Stroke => TextStyles.StrokeColor;
-    FontFamily? IRichTextElement.FontFamily => TextStyles.FontFamily;
-    float? IRichTextElement.FontSize => TextStyles.FontSize;
-    FontStyle? IRichTextElement.FontStyle => TextStyles.FontStyle;
+    private TextStyles ResolvedStyles => TextStyles.Resolved;
+
+    Color? IRichTextElement.Foreground => ResolvedStyles.ForegroundColor;
+    Color? IRichTextElement.Stroke => ResolvedStyles.StrokeColor;
+    FontFamily? IRichTextElement.FontFamily => ResolvedStyles.FontFamily;
+    float? IRichTextElement.FontSize => ResolvedStyles.FontSize;
+    FontStyle? IRichTextElement.FontStyle => ResolvedStyles.FontStyle;
 
     public Text()
     {
@@ -122,10 +124,11 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
     {
         var flattened = ComplexTextMetrics.FlattenText(Children.OfType<IRichTextElement>());
         
-        var font = new Font(TextStyles.FontFamily, TextStyles.FontStyle, TextStyles.FontSize);
-        if (TextStyles.OverflowBehavior is not OverflowBehavior.Stretch and not OverflowBehavior.None && TextStyles.BreakType is not BreakType.None)
+        var resolved = ResolvedStyles;
+        var font = new Font(resolved.FontFamily!.Value, resolved.FontStyle!.Value, resolved.FontSize!.Value);
+        if (resolved.OverflowBehavior is not OverflowBehavior.Stretch and not OverflowBehavior.None && resolved.BreakType is not BreakType.None)
         {
-            flattened = ComplexTextMetrics.LayoutText(font, flattened, new Vector2(size.X, size.Y), TextStyles.BreakType, TextStyles.OverflowBehavior, G.Scale);
+            flattened = ComplexTextMetrics.LayoutText(font, flattened, new Vector2(size.X, size.Y), resolved.BreakType!.Value, resolved.OverflowBehavior!.Value, G.Scale);
         }
         var measurements = ComplexTextMetrics.MeasureRichText(flattened, font, G.Scale);
 
@@ -159,7 +162,8 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
     {
         base.OnPostLayout();
         
-        if (HasNewLayout && TextStyles.OverflowBehavior is not Reactor.OverflowBehavior.Stretch and not Reactor.OverflowBehavior.None && TextStyles.BreakType is not Reactor.BreakType.None)
+        var resolved = ResolvedStyles;
+        if (HasNewLayout && resolved.OverflowBehavior is not Reactor.OverflowBehavior.Stretch and not Reactor.OverflowBehavior.None && resolved.BreakType is not Reactor.BreakType.None)
         {
             Invalidated = true;
             HasNewLayout = false;
@@ -187,12 +191,13 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
             return;
         }
 
+        var resolved = ResolvedStyles;
         var basePosition = (Vector2)position;
-        ComplexTextMetrics.AlignBounds(LaidOutComplexText.Value.Size, (int)size.X, (int)size.Y, TextStyles.HorizontalAlignment, TextStyles.VerticalAlignment, ref basePosition.X, ref basePosition.Y);
+        ComplexTextMetrics.AlignBounds(LaidOutComplexText.Value.Size, (int)size.X, (int)size.Y, resolved.HorizontalAlignment!.Value, resolved.VerticalAlignment!.Value, ref basePosition.X, ref basePosition.Y);
 
         foreach (var element in LaidOutComplexText.Value.Elements)
         {
-            G.SetFont(element.Font with { Size = (element.FontSize ?? TextStyles.FontSize) });
+            G.SetFont(element.Font with { Size = (element.FontSize ?? resolved.FontSize!.Value) });
             if ((element.Background ?? Styles.BackgroundColor) is { } background)
             {
                 G.SetColor(background);
@@ -200,11 +205,11 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
             }
 
             float yOff = 0;
-            if (TextStyles.VerticalAlignment == TextVerticalAlignment.Center)
+            if (resolved.VerticalAlignment == TextVerticalAlignment.Center)
             {
                 yOff = (G.GetFontMetrics().LineHeight / 2.0f);
             }
-            else if (TextStyles.VerticalAlignment == TextVerticalAlignment.Top)
+            else if (resolved.VerticalAlignment == TextVerticalAlignment.Top)
             {
                 yOff = G.GetFontMetrics().LineHeight;
             }
@@ -212,8 +217,8 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
             int x = (int)(basePosition.X + (element.Position.X));
             int y = (int)(basePosition.Y + (element.Position.Y) + yOff);
 
-            G.SetColor(element.Foreground ?? TextStyles.ForegroundColor);
-            if ((element.Stroke ?? TextStyles.StrokeColor) is { } stroke)
+            G.SetColor(element.Foreground ?? resolved.ForegroundColor!.Value);
+            if ((element.Stroke ?? resolved.StrokeColor) is { } stroke)
             {
                 G.DrawStringOutlined(element.Text, x, y, stroke, 1f);
             }

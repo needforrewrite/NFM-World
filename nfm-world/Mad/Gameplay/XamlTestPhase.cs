@@ -1,24 +1,14 @@
-﻿using NFMWorld.UI.Cef;
+﻿namespace NFMWorld.Gameplay;
 
-namespace NFMWorld.Gameplay;
-
+/// <summary>
+/// Dev-only placeholder phase for the old HTML test page. The page is gone; this now
+/// just shows the main menu, and is kept so the <c>html_test</c> console command still
+/// resolves.
+/// </summary>
 public class XamlTestPhase : BasePhase
 {
-    private readonly TestPhaseBridge _bridge = new();
-    private int _counter;
-
-    public XamlTestPhase()
-    {
-        CefBridge = _bridge;
-        _bridge.IncrementRequested += () => _counter++;
-        _bridge.BackRequested += () => GameSparker.ReturnToMainMenu();
-    }
-
     public override void GameTick()
     {
         base.GameTick();
-        // Counter is incremented by the JS button via IncrementRequested.
-        // Push the current value each tick so the test page stays in sync.
-        _bridge.PushCounter(_counter);
     }
 }

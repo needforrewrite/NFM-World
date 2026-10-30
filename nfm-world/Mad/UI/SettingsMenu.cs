@@ -5,7 +5,7 @@ using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Graphics.OpenGL;
 using NFMWorld.Platform.SDL3;
-using NFMWorld.UI.Cef;
+using NFMWorld.UI.Settings;
 using NFMWorldLibrary;
 using NFMWorld.Sentry;
 
@@ -946,7 +946,7 @@ public class SettingsMenu()
             keyBindings[i] = new KeyBindingData
             {
                 Action = prop.Name,
-                DisplayName = prop.Name, // JS can localize
+                DisplayName = prop.Name,
                 KeyCode = (int)(prop.GetValue(Bindings) as Key? ?? Key.None)
             };
         }
@@ -1010,7 +1010,12 @@ public class SettingsMenu()
     /// Apply a single setting change from JS. Key is the setting name,
     /// value is parsed from the JsonElement.
     /// </summary>
-    public static void ApplySetting(string key, LuaTable args)
+    /// <summary>
+    /// Applies a single setting change. <paramref name="value"/> is an <see cref="int"/>,
+    /// <see cref="float"/> or <see cref="bool"/>; a key binding additionally carries an
+    /// action name via <paramref name="action"/>.
+    /// </summary>
+    public static void ApplySetting(string key, object? value, string? action = null)
     {
         switch (key)
         {
@@ -1018,111 +1023,127 @@ public class SettingsMenu()
             case "selectedRenderer":
                 // Bounded by the list: the UI sends an index, and an out-of-range one would leave
                 // SaveConfig indexing past the end when it writes the name back.
-                if (args.TryGetValue("value", out var v) && v.TryRead<int>(out var iv)
-                    && iv >= 0 && iv < Renderers.Length)
-                    _selectedRenderer = iv;
+                if (AsInt(value) is { } renderer && renderer >= 0 && renderer < Renderers.Length)
+                    _selectedRenderer = renderer;
                 break;
             case "selectedResolution":
-                if (args.TryGetValue("value", out v) && v.TryRead<int>(out iv))
-                    _selectedResolution = iv;
+                if (AsInt(value) is { } resolution)
+                    _selectedResolution = resolution;
                 break;
             case "selectedDisplayMode":
-                if (args.TryGetValue("value", out v) && v.TryRead<int>(out iv))
-                    _selectedDisplayMode = iv;
+                if (AsInt(value) is { } displayMode)
+                    _selectedDisplayMode = displayMode;
                 break;
             case "vsync":
-                if (args.TryGetValue("value", out v) && v.Type is LuaValueType.Boolean)
-                    _vsync = v.Read<bool>();
+                if (value is bool vsync)
+                    _vsync = vsync;
                 break;
             case "fpsLimit":
-                if (args.TryGetValue("value", out v) && v.TryRead<int>(out iv))
-                    _fpsLimit = iv;
+                if (AsInt(value) is { } fpsLimit)
+                    _fpsLimit = fpsLimit;
                 break;
             case "antialias":
-                if (args.TryGetValue("value", out v) && v.TryRead<int>(out iv))
-                    _antialias = iv;
+                if (AsInt(value) is { } antialias)
+                    _antialias = antialias;
                 break;
             case "shadowCascadeLevel":
-                if (args.TryGetValue("value", out v) && v.TryRead<int>(out iv))
-                    _shadowCascadeLevel = iv;
+                if (AsInt(value) is { } cascade)
+                    _shadowCascadeLevel = cascade;
                 break;
             case "shadowResolution":
-                if (args.TryGetValue("value", out v) && v.TryRead<int>(out iv))
-                    _shadowResolution = iv;
+                if (AsInt(value) is { } shadowResolution)
+                    _shadowResolution = shadowResolution;
                 break;
             case "renderDistance":
-                if (args.TryGetValue("value", out v) && v.TryRead<int>(out iv))
-                    _renderDistance = iv;
+                if (AsInt(value) is { } renderDistance)
+                    _renderDistance = renderDistance;
                 break;
             case "lowLatency":
-                if (args.TryGetValue("value", out v))
-                    _lowLatency = v.Read<bool>();
+                if (value is bool lowLatency)
+                    _lowLatency = lowLatency;
                 break;
             case "lineWidth":
-                if (args.TryGetValue("value", out v) && v.TryRead<float>(out var fv))
-                    _lineWidth = fv;
+                if (AsFloat(value) is { } lineWidth)
+                    _lineWidth = lineWidth;
                 break;
             case "distantOutlineBehavior":
-                if (args.TryGetValue("value", out v) &&
-                    v.TryRead<int>(out iv) &&
-                    Enum.IsDefined(typeof(DistantOutlineBehavior), iv))
-                    _distantOutlineBehavior = (DistantOutlineBehavior)iv;
+                if (AsInt(value) is { } outline && Enum.IsDefined(typeof(DistantOutlineBehavior), outline))
+                    _distantOutlineBehavior = (DistantOutlineBehavior)outline;
                 break;
 
             // Audio
             case "masterVolume":
-                if (args.TryGetValue("value", out v) && v.TryRead<float>(out fv))
-                    _masterVolume = fv;
+                if (AsFloat(value) is { } masterVolume)
+                    _masterVolume = masterVolume;
                 break;
             case "musicVolume":
-                if (args.TryGetValue("value", out v) && v.TryRead<float>(out fv))
-                    _musicVolume = fv;
+                if (AsFloat(value) is { } musicVolume)
+                    _musicVolume = musicVolume;
                 break;
             case "effectsVolume":
-                if (args.TryGetValue("value", out v) && v.TryRead<float>(out fv))
-                    _effectsVolume = fv;
+                if (AsFloat(value) is { } effectsVolume)
+                    _effectsVolume = effectsVolume;
                 break;
             case "muteAll":
-                if (args.TryGetValue("value", out v))
-                    _muteAll = v.Read<bool>();
+                if (value is bool muteAll)
+                    _muteAll = muteAll;
                 break;
             case "remasteredMusic":
-                if (args.TryGetValue("value", out v))
-                    _remasteredMusic = v.Read<bool>();
+                if (value is bool remasteredMusic)
+                    _remasteredMusic = remasteredMusic;
                 break;
 
             // Camera
             case "fov":
-                if (args.TryGetValue("value", out v) && v.TryRead<float>(out fv))
-                    _fov = fv;
+                if (AsFloat(value) is { } fov)
+                    _fov = fov;
                 break;
             case "followY":
-                if (args.TryGetValue("value", out v) && v.TryRead<int>(out iv))
-                    _followY = iv;
+                if (AsInt(value) is { } followY)
+                    _followY = followY;
                 break;
             case "followZ":
-                if (args.TryGetValue("value", out v) && v.TryRead<int>(out iv))
-                    _followZ = iv;
+                if (AsInt(value) is { } followZ)
+                    _followZ = followZ;
                 break;
             case "smoothFov":
-                if (args.TryGetValue("value", out v))
-                    _smoothFov = v.Read<bool>();
+                if (value is bool smoothFov)
+                    _smoothFov = smoothFov;
                 break;
 
             // Key binding
             case "keyBinding":
-                if (args.TryGetValue("action", out var actionProp)
-                    && args.TryGetValue("keyCode", out var codeProp)
-                    && codeProp.TryRead<int>(out var keyCode))
-                {
-                    var action = actionProp.ReadOrDefault<string>() ?? "";
-                    var prop = typeof(KeyBindings).GetProperty(action);
-                    prop?.SetValue(Bindings, (Key)keyCode);
-                }
+                if (action is { } actionName && AsInt(value) is { } keyCode)
+                    typeof(KeyBindings).GetProperty(actionName)?.SetValue(Bindings, (Key)keyCode);
                 break;
         }
 
         // Apply immediately for live preview
+        ApplySettings(out _);
+    }
+
+    private static int? AsInt(object? value) => value switch
+    {
+        int i => i,
+        float f => (int)f,
+        double d => (int)d,
+        _ => null
+    };
+
+    private static float? AsFloat(object? value) => value switch
+    {
+        float f => f,
+        int i => i,
+        double d => (float)d,
+        _ => null
+    };
+
+    /// <summary>
+    /// Reset every key binding to its default.
+    /// </summary>
+    public static void ResetKeyBindingDefaults()
+    {
+        Bindings = new KeyBindings();
         ApplySettings(out _);
     }
 

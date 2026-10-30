@@ -1,58 +1,90 @@
-﻿using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
+﻿using NFMWorld.ClayDom.Events;
 using NFMWorld;
-using NFMWorld.ClayDom.Events;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
-using NFMWorldLibrary.Util;
+using NFMWorld.Reactor.Sx;
+using NFMWorld.Gameplay;
+using NFMWorld.UI.ViewModels;
 
 namespace WorldXaml.UI.Yoga;
 
+/// <summary>
+/// Owns the mounted UI tree and forwards input to it.
+/// </summary>
+/// <remarks>
+/// Was the Luau host and then a router over hard-coded routes. Since phases are C# too,
+/// a phase simply builds its own tree (<see cref="Gameplay.BasePhase.BuildUi"/>) and the
+/// phase stack decides which one is on screen - the router was only ever a lookup table
+/// standing in for that, so it is gone.
+/// </remarks>
 public class UiRenderer : IDisposable
 {
-    private uint _maxEvent = 0;
-
-    private readonly Dictionary<string, MessageHandler> _toCsharpHandlers = new();
-    private readonly ConcurrentDictionary<uint, (string Event, Action<LuaValue> Handler)> _toLuaHandlers = new();
-    private LuaState _state;
-    private string _currentPhaseId = "main-menu";
+    private MountedUi? _mounted;
+    private object? _owner;
 
     public View? ActiveRoot { get; private set; }
 
     public UiRenderer()
     {
-        Reload();
+        // Effects run once per frame rather than once per write.
+        _ = UiScheduler.Instance;
     }
 
-    private Action OnEvent(string @event, Action<LuaValue> callback)
+    /// <summary>
+    /// Mounts the entering phase's tree, replacing whatever was on screen. A phase with
+    /// no UI clears the screen.
+    /// </summary>
+    public void ShowPhase(object phase)
     {
-        var key = _maxEvent++;
-        _toLuaHandlers[key] = (@event, callback);
-        return () => _toLuaHandlers.TryRemove(KeyValuePair.Create(key, (@event, callback)));
+        if (ReferenceEquals(_owner, phase) && _mounted is not null)
+            return;
+
+        Unmount();
+        _owner = phase;
+
+        if (phase is not BasePhase basePhase || basePhase.BuildUi() is not { } tree)
+            return;
+
+        _mounted = NFMWorld.Reactor.Sx.Renderer.Mount(() => tree);
+        ActiveRoot = (View)_mounted.Root;
     }
 
-    private void Call(string method, LuaValue payload)
+    /// <summary>Releases the tree if <paramref name="phase"/> is the one showing.</summary>
+    public void HidePhase(object phase)
     {
-        // Dispatch to the first registered handler.
-        // Only one phase is active at a time, so we dispatch to whichever handler is registered.
-        foreach (var handler in _toCsharpHandlers.Values)
-        {
-            handler(method, payload);
-            break;
-        }
+        if (!ReferenceEquals(_owner, phase))
+            return;
+
+        Unmount();
+        _owner = null;
     }
 
-    private void SetActiveRoot(View view)
+    /// <summary>Rebuilds the current tree, e.g. after a hot reload.</summary>
+    public void Reload()
     {
-        FocusManager.ActiveNode = null;
-        FocusManager.FocusedNode = null;
+        var owner = _owner;
+        Unmount();
+        _owner = null;
+
+        if (owner is not null)
+            ShowPhase(owner);
+    }
+
+    private void Unmount()
+    {
+        FocusManager.ClearFocus();
         FocusManager.ClearHover();
-        ActiveRoot = view;
+
+        _mounted?.Dispose();
+        _mounted = null;
+        ActiveRoot = null;
     }
 
     public void Update(GameTime gameTime)
     {
+        // Effects queued during the frame run here, so a frame's writes coalesce.
+        UiScheduler.Instance.Flush();
     }
 
     public void Render()
@@ -61,69 +93,10 @@ public class UiRenderer : IDisposable
         ActiveRoot?.LayoutAndRender(G.Viewport);
     }
 
-    /// <summary>
-    /// Delegate for handling Lua → C# messages.
-    /// </summary>
-    public delegate void MessageHandler(string method, LuaValue payload);
-
-    /// <summary>
-    /// Register a per-phase message handler. Only one handler per phase ID is allowed.
-    /// </summary>
-    public void Register(string phaseId, MessageHandler handler)
-    {
-        _toCsharpHandlers[phaseId] = handler;
-    }
-
-    /// <summary>
-    /// Unregister a per-phase message handler.
-    /// </summary>
-    public void Unregister(string phaseId)
-    {
-        _toCsharpHandlers.Remove(phaseId);
-    }
-
-    /// <summary>
-    /// Push an event from C# to Lua for a specific phase.
-    /// </summary>
-    public void PushToLua(string phaseId, string eventType, LuaValue payload)
-    {
-        var fullEventId = $"{phaseId}:{eventType}";
-
-        foreach (var (_, (@event, handler)) in _toLuaHandlers)
-        {
-            if (@event == fullEventId)
-            {
-                handler(payload);
-            }
-        }
-    }
-
-    public void Navigate(string phaseId)
-    {
-        _currentPhaseId = phaseId;
-        PushToLua("nfmw", "navigate", phaseId);
-    }
-
     public void Dispose()
     {
-
-    }
-
-    [MemberNotNull(nameof(_state))]
-    public void Reload()
-    {
-        // Drop all hooks registered by the previous Lua state (via UiLib.onEvent) and
-        // any per-phase C# message handlers. Otherwise stale hooks from the discarded
-        // state remain in _toLuaHandlers and get dispatched by PushToLua, invoking
-        // Lua callbacks against an abandoned LuaState.
-        _toLuaHandlers.Clear();
-        _maxEvent = 0;
-
-        _state = LuaHelpers.OpenState();
-        NFMWorld.LuaSourceGenerator.Generator.NFMWorld.Game.LuaVisibleTypeRegistry.RegisterAll(_state);
-        LuaUiLibrary.Register(_state, SetActiveRoot, Call, OnEvent);
-        _state.DoFile("data/uis/router.luau");
-        Navigate(_currentPhaseId);
+        Unmount();
+        _owner = null;
     }
 
     public void HandleKeyPressed(Key key, in Keys keys)

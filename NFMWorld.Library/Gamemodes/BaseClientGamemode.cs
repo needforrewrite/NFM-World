@@ -1,9 +1,12 @@
+using System.Diagnostics.CodeAnalysis;
 using MemoryPack;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.PluginSystem;
 using NFMWorld.Sfx;
+using NFMWorldLibrary.Backend.AI;
 using NFMWorldLibrary.Gamemodes;
+using NFMWorldLibrary.Plugins;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Backend.Gamemodes;
@@ -90,9 +93,13 @@ public abstract class BaseClientGamemode : IGamemode
     /// <summary>
     /// Called to deinitialize the gamemode.
     /// </summary>
+    /// <remarks>
+    /// Overrides must call the base implementation, which releases any AI plugins this
+    /// gamemode attached - those hold a collectible load context each.
+    /// </remarks>
     public virtual void End()
     {
-
+        ReleaseBots();
     }
 
     /// <summary>
@@ -199,6 +206,67 @@ public abstract class BaseClientGamemode : IGamemode
     /// checkpoint glow.
     /// </summary>
     [PluginVisible] protected IClientCallbacks ClientCallbacks => GamemodeContext.ClientCallbacks;
+
+    // One entry per attached AI: its plugin (which owns the load context) and the
+    // instances it created, so End() can drop both in the right order.
+    private readonly List<(AiPlugin Plugin, List<PluginAi> Instances)> _bots = [];
+
+    /// <summary>
+    /// Attaches an AI from <c>data/ais/&lt;aiId&gt;/ai.dll</c> to <paramref name="player"/>,
+    /// which drives it from then on via <see cref="PhysicsController.GameTick"/>.
+    /// </summary>
+    /// <remarks>
+    /// The plugin is loaded per gamemode instance and released in <see cref="End"/>, so it
+    /// is resident only for this race - never share one between runs. Returns null if no
+    /// plugin is present, which leaves the player driven by nothing rather than failing
+    /// the race.
+    /// </remarks>
+    [RequiresUnreferencedCode("Loads a plugin assembly at run time.")]
+    protected PluginAi? AttachBot(string aiId, ClientSidePlayer player)
+    {
+        var plugin = AiPlugin.Load(aiId, PluginPaths.For("ais", aiId, "ai.dll"));
+        if (plugin is null)
+        {
+            Logging.Warning($"No AI plugin at data/ais/{aiId}/ai.dll; '{player.Info.PlayerName}' will not be driven.");
+            return null;
+        }
+
+        var instance = plugin.Create(player, this);
+        player.Bot = instance;
+        _bots.Add((plugin, [instance]));
+        return instance;
+    }
+
+    /// <summary>
+    /// Drops every bot and releases the plugin assemblies that provided them.
+    /// </summary>
+    private void ReleaseBots()
+    {
+        if (_bots.Count == 0)
+            return;
+
+        // Drop the references the gamemode holds before releasing the assemblies: an
+        // instance's type lives in the plugin's context, so anything still pointing at
+        // one keeps the whole context resident.
+        foreach (var (_, instances) in _bots)
+        {
+            foreach (var instance in instances)
+            {
+                foreach (var player in Players)
+                {
+                    if (ReferenceEquals(player.Bot, instance))
+                        player.Bot = null;
+                }
+            }
+
+            instances.Clear();
+        }
+
+        foreach (var (plugin, _) in _bots)
+            plugin.Unload();
+
+        _bots.Clear();
+    }
 
     private int _lastClientCheckpoint = 0;
     private int _lastCountdownTime = 0;

@@ -14,6 +14,6 @@
     </ItemGroup>
 
     <!-- Runs the gamemodes server-side too, so it needs them in its own output. -->
-    <Import Project="..\Gamemode.Plugins.targets" />
+    <Import Project="..\Plugin.Plugins.targets" />
 
 </Project>

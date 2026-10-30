@@ -20,5 +20,5 @@
     <!-- The playable exe, so the gamemode plugins this imports land beside it in
          data/gamemodes/ - the game loads them relative to its own binary, which is here
          and not the referenced library's output. -->
-    <Import Project="..\Gamemode.Plugins.targets" />
+    <Import Project="..\Plugin.Plugins.targets" />
 </Project>

@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
+        <PluginId>el_stupido</PluginId>
+        <PluginFileName>ai</PluginFileName>
+    </PropertyGroup>
+
+    <!-- Copies the build output into the host that builds this project as
+         data/ais/el_stupido/ai.dll. See the props file for why the rename happens
+         at copy time. -->
+    <Import Project="..\Plugin.props" />
+
+    <ItemGroup>
+        <ProjectReference Include="..\FixedMathSharp\src\FixedMathSharp\FixedMathSharp.csproj" Private="false" ExcludeAssets="runtime" />
+        <ProjectReference Include="..\NFMWorld.DriverInterface\NFMWorld.DriverInterface.csproj" Private="false" ExcludeAssets="runtime" />
+        <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" Private="false" ExcludeAssets="runtime" />
+        <ProjectReference Include="..\NFMWorld.Math\NFMWorld.Math.csproj" Private="false" ExcludeAssets="runtime" />
+    </ItemGroup>
+
+</Project>

@@ -192,4 +192,31 @@ public class BoxModelTests
         // content origin, so the scrollable extent is 40.
         Assert.AreEqual(40f, root.ScrollableHeight, 0.01f);
     }
+
+    /// <summary>
+    /// A flow host (<c>Display.Contents</c>) is flattened by Yoga and carries a zero-size box, so
+    /// measuring only direct children loses everything inside it - which is how a list of rows
+    /// rendered by <c>Sx.For</c> ended up with no scrollable extent at all.
+    /// </summary>
+    [TestMethod]
+    public void ScrollExtent_DescendsIntoFlowHosts()
+    {
+        var root = Box("root", new Styles
+        {
+            Width = 300,
+            Height = 100,
+            FlexDirection = FlexDirection.Column,
+            Overflow = Overflow.Scroll,
+        });
+        var host = Box("host", new Styles { Display = Display.Contents });
+        host.AddChild(Box("row", new Styles { Height = 60, Width = 100, FlexShrink = 0 }));
+        host.AddChild(Box("row2", new Styles { Height = 60, Width = 100, FlexShrink = 0 }));
+        root.AddChild(host);
+
+        root.LayoutAndRender(new Vector2(300, 100));
+
+        // The rows lay out in the root itself: 120 of content in a 100-tall box.
+        Assert.AreEqual(0f, host.LayoutBorderSize.Y, 0.01f, "a flow host takes no box");
+        Assert.AreEqual(20f, root.ScrollableHeight, 0.01f);
+    }
 }

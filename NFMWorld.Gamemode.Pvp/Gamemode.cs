@@ -68,6 +68,9 @@ public class PvpGamemode : PluginGamemode
 
             car.CurrentCheckpoint = 0;
             car.CurrentLap = 0;
+
+            if (player.Info.IsBot)
+                AttachBot("el_stupido", player);
         }
     }
 

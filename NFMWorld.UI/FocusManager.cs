@@ -88,7 +88,7 @@ public static class FocusManager
 
     private static Component? HitTestRecursive(Component node, Vector2 pos, Dictionary<Component, int> zCache)
     {
-        if (!node.Styles.PointerEvents)
+        if (node.Styles.PointerEvents is false)
             return null;
 
         // Skip nodes (and their descendants) clipped out by an overflow ancestor.
@@ -177,7 +177,7 @@ public static class FocusManager
 
     private static bool HitTestChainRecursive(Component node, Vector2 pos, List<Component> chain, Dictionary<Component, int> zCache)
     {
-        if (!node.Styles.PointerEvents)
+        if (node.Styles.PointerEvents is false)
             return false;
 
         // Skip nodes (and their descendants) clipped out by an overflow ancestor.
@@ -189,6 +189,20 @@ public static class FocusManager
         var bounds = new RectangleF(
             node.FocusOrigin.X, node.FocusOrigin.Y,
             node.FocusSize.X, node.FocusSize.Y);
+
+        // A Contents node contributes no box, so it can never be "under" the cursor and
+        // must not absorb the hit: flow hosts (Show/For/Switch) would otherwise swallow
+        // presses meant for their own children.
+        if (node.Styles.Display == Display.Contents)
+        {
+            foreach (var visual in GetTopmostFirst(node, zCache))
+            {
+                if (visual.IsDisplayed && HitTestChainRecursive(visual, pos, chain, zCache))
+                    return true;
+            }
+
+            return false;
+        }
 
         if (bounds.Contains(pos.X, pos.Y))
         {

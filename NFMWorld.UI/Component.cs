@@ -87,59 +87,81 @@ public abstract partial class Component : Node, IAnimationCallback
 
     public Styles Styles
     {
-        get;
+        get => _styles;
         set
         {
-            if (field != value)
+            if (_styles != value)
             {
-                field = value;
+                _styles = value;
                 OnStylesChanged();
             }
         }
-    } = new();
+    }
+
+    /// <summary>
+    /// Replaces the style without pushing it into Yoga. For nodes that never take part in
+    /// layout (a <see cref="Display.Contents"/> flow host), which would otherwise force a
+    /// graphics backend at construction time.
+    /// </summary>
+    private Styles _styles = new();
+
+    /// <summary>
+    /// A flow host: contributes no box, so its children lay out in the grandparent.
+    /// </summary>
+    /// <remarks>
+    /// Sets the one Yoga property it needs directly rather than going through the Styles
+    /// setter, which would read the UI scale and so require a graphics backend - a flow
+    /// host exists before the host is up, and in tests there is none.
+    /// </remarks>
+    internal void MakeFlowHost()
+    {
+        _styles.Display = Display.Contents;
+        NodeInternal.Display = YogaDisplay.Contents;
+    }
 
     protected virtual void OnStylesChanged()
     {
-        NodeInternal.Style.Direction = Styles.Direction.ToYogaDirection();
-        NodeInternal.FlexDirection = Styles.FlexDirection.ToYogaFlexDirection();
-        NodeInternal.JustifyContent = Styles.JustifyContent.ToYogaJustify();
-        NodeInternal.AlignItems = Styles.AlignItems.ToYogaAlign();
-        NodeInternal.AlignSelf = Styles.AlignSelf.ToYogaAlign();
-        NodeInternal.AlignContent = Styles.AlignContent.ToYogaAlign();
-        NodeInternal.PositionType = Styles.Position.ToYogaPositionType();
-        NodeInternal.FlexWrap = Styles.FlexWrap.ToYogaWrap();
-        NodeInternal.Overflow = Styles.Overflow.ToYogaOverflow();
-        NodeInternal.Display = Styles.Display.ToYogaDisplay();
-        NodeInternal.Style.BoxSizing = Styles.BoxSizing.ToYogaBoxSizing();
-        NodeInternal.Style.Flex = Styles.Flex ?? float.NaN;
-        NodeInternal.FlexGrow = Styles.FlexGrow ?? float.NaN;
-        NodeInternal.FlexShrink = Styles.FlexShrink ?? float.NaN;
-        NodeInternal.FlexBasis = Styles.FlexBasis;
-        NodeInternal.SetPosition(YogaEdge.Left, Styles.Left.Scale(G.Scale));
-        NodeInternal.SetPosition(YogaEdge.Top, Styles.Top.Scale(G.Scale));
-        NodeInternal.SetPosition(YogaEdge.Right, Styles.Right.Scale(G.Scale));
-        NodeInternal.SetPosition(YogaEdge.Bottom, Styles.Bottom.Scale(G.Scale));
-        NodeInternal.SetMargin(YogaEdge.Top, Styles.MarginTop.Scale(G.Scale));
-        NodeInternal.SetMargin(YogaEdge.Bottom, Styles.MarginBottom.Scale(G.Scale));
-        NodeInternal.SetMargin(YogaEdge.Left, Styles.MarginLeft.Scale(G.Scale));
-        NodeInternal.SetMargin(YogaEdge.Right, Styles.MarginRight.Scale(G.Scale));
-        NodeInternal.SetPadding(YogaEdge.Top, Styles.PaddingTop.Scale(G.Scale));
-        NodeInternal.SetPadding(YogaEdge.Bottom, Styles.PaddingBottom.Scale(G.Scale));
-        NodeInternal.SetPadding(YogaEdge.Left, Styles.PaddingLeft.Scale(G.Scale));
-        NodeInternal.SetPadding(YogaEdge.Right, Styles.PaddingRight.Scale(G.Scale));
-        NodeInternal.SetBorder(YogaEdge.Top, Styles.BorderTop?.Value * G.Scale ?? float.NaN);
-        NodeInternal.SetBorder(YogaEdge.Bottom, Styles.BorderBottom?.Value * G.Scale ?? float.NaN);
-        NodeInternal.SetBorder(YogaEdge.Left, Styles.BorderLeft?.Value * G.Scale ?? float.NaN);
-        NodeInternal.SetBorder(YogaEdge.Right, Styles.BorderRight?.Value * G.Scale ?? float.NaN);
-        NodeInternal.SetGap(YogaGutter.Column, Styles.GapColumn.Scale(G.Scale));
-        NodeInternal.SetGap(YogaGutter.Row, Styles.GapRow.Scale(G.Scale));
-        NodeInternal.Width = Styles.Width.Scale(G.Scale);
-        NodeInternal.Height = Styles.Height.Scale(G.Scale);
-        NodeInternal.MinWidth = Styles.MinWidth.Scale(G.Scale);
-        NodeInternal.MinHeight = Styles.MinHeight.Scale(G.Scale);
-        NodeInternal.MaxWidth = Styles.MaxWidth.Scale(G.Scale);
-        NodeInternal.MaxHeight = Styles.MaxHeight.Scale(G.Scale);
-        NodeInternal.AspectRatio = Styles.AspectRatio?.Value ?? float.NaN;
+        var s = Styles.Resolved;
+        NodeInternal.Style.Direction = s.Direction!.Value.ToYogaDirection();
+        NodeInternal.FlexDirection = s.FlexDirection!.Value.ToYogaFlexDirection();
+        NodeInternal.JustifyContent = s.JustifyContent!.Value.ToYogaJustify();
+        NodeInternal.AlignItems = s.AlignItems!.Value.ToYogaAlign();
+        NodeInternal.AlignSelf = s.AlignSelf!.Value.ToYogaAlign();
+        NodeInternal.AlignContent = s.AlignContent!.Value.ToYogaAlign();
+        NodeInternal.PositionType = s.Position!.Value.ToYogaPositionType();
+        NodeInternal.FlexWrap = s.FlexWrap!.Value.ToYogaWrap();
+        NodeInternal.Overflow = s.Overflow!.Value.ToYogaOverflow();
+        NodeInternal.Display = s.Display!.Value.ToYogaDisplay();
+        NodeInternal.Style.BoxSizing = s.BoxSizing!.Value.ToYogaBoxSizing();
+        NodeInternal.Style.Flex = s.Flex ?? float.NaN;
+        NodeInternal.FlexGrow = s.FlexGrow ?? float.NaN;
+        NodeInternal.FlexShrink = s.FlexShrink ?? float.NaN;
+        NodeInternal.FlexBasis = s.FlexBasis;
+        NodeInternal.SetPosition(YogaEdge.Left, s.Left.Scale(G.Scale));
+        NodeInternal.SetPosition(YogaEdge.Top, s.Top.Scale(G.Scale));
+        NodeInternal.SetPosition(YogaEdge.Right, s.Right.Scale(G.Scale));
+        NodeInternal.SetPosition(YogaEdge.Bottom, s.Bottom.Scale(G.Scale));
+        NodeInternal.SetMargin(YogaEdge.Top, s.MarginTop.Scale(G.Scale));
+        NodeInternal.SetMargin(YogaEdge.Bottom, s.MarginBottom.Scale(G.Scale));
+        NodeInternal.SetMargin(YogaEdge.Left, s.MarginLeft.Scale(G.Scale));
+        NodeInternal.SetMargin(YogaEdge.Right, s.MarginRight.Scale(G.Scale));
+        NodeInternal.SetPadding(YogaEdge.Top, s.PaddingTop.Scale(G.Scale));
+        NodeInternal.SetPadding(YogaEdge.Bottom, s.PaddingBottom.Scale(G.Scale));
+        NodeInternal.SetPadding(YogaEdge.Left, s.PaddingLeft.Scale(G.Scale));
+        NodeInternal.SetPadding(YogaEdge.Right, s.PaddingRight.Scale(G.Scale));
+        NodeInternal.SetBorder(YogaEdge.Top, s.BorderTop?.Value * G.Scale ?? float.NaN);
+        NodeInternal.SetBorder(YogaEdge.Bottom, s.BorderBottom?.Value * G.Scale ?? float.NaN);
+        NodeInternal.SetBorder(YogaEdge.Left, s.BorderLeft?.Value * G.Scale ?? float.NaN);
+        NodeInternal.SetBorder(YogaEdge.Right, s.BorderRight?.Value * G.Scale ?? float.NaN);
+        NodeInternal.SetGap(YogaGutter.Column, s.GapColumn.Scale(G.Scale));
+        NodeInternal.SetGap(YogaGutter.Row, s.GapRow.Scale(G.Scale));
+        NodeInternal.Width = s.Width.Scale(G.Scale);
+        NodeInternal.Height = s.Height.Scale(G.Scale);
+        NodeInternal.MinWidth = s.MinWidth.Scale(G.Scale);
+        NodeInternal.MinHeight = s.MinHeight.Scale(G.Scale);
+        NodeInternal.MaxWidth = s.MaxWidth.Scale(G.Scale);
+        NodeInternal.MaxHeight = s.MaxHeight.Scale(G.Scale);
+        NodeInternal.AspectRatio = s.AspectRatio?.Value ?? float.NaN;
 
         // Applied at the current scale, so record it - Rescale compares against this.
         _lastScale = G.Scale;
@@ -599,6 +621,27 @@ public abstract partial class Component : Node, IAnimationCallback
         }
     }
 
+    /// <summary>
+    /// Folds one child's reach into the scrollable extent. Flow hosts
+    /// (<see cref="Display.Contents"/>) are flattened by Yoga and given a zero box, so
+    /// their own layout says nothing about the space they occupy: descend into them.
+    /// </summary>
+    private static void MeasureContentExtent(Component c, float originX, float originY, ref float maxRight, ref float maxBottom)
+    {
+        if (c.Styles.Display == Display.Contents)
+        {
+            foreach (var child in c.GetChildSnapshot())
+            {
+                if (child is Component grandchild)
+                    MeasureContentExtent(grandchild, originX, originY, ref maxRight, ref maxBottom);
+            }
+            return;
+        }
+
+        maxRight = Math.Max(maxRight, c.LayoutX - originX + c.LayoutWidth + c.LayoutMarginRight);
+        maxBottom = Math.Max(maxBottom, c.LayoutY - originY + c.LayoutHeight + c.LayoutMarginBottom);
+    }
+
     private void UpdateScrollExtent()
     {
         // Floating-point rounding shouldn't create a scrollbar.
@@ -620,11 +663,8 @@ public abstract partial class Component : Node, IAnimationCallback
 
         foreach (var child in GetChildSnapshot())
         {
-            if (child is not Component c)
-                continue;
-
-            maxRight = Math.Max(maxRight, c.LayoutX - originX + c.LayoutWidth + c.LayoutMarginRight);
-            maxBottom = Math.Max(maxBottom, c.LayoutY - originY + c.LayoutHeight + c.LayoutMarginBottom);
+            if (child is Component c)
+                MeasureContentExtent(c, originX, originY, ref maxRight, ref maxBottom);
         }
 
         _scrollableWidth = Math.Max(0f, maxRight - contentSize.X);
@@ -672,7 +712,10 @@ public abstract partial class Component : Node, IAnimationCallback
     #endregion
 
     [PluginVisible]
-    public bool IsDisplayed => Styles.Display != Display.None && Styles.Opacity > 0 && Styles.Visibility != Visibility.Hidden;
+    public bool IsDisplayed
+        => (Styles.Display ?? Display.Flex) != Display.None
+           && (Styles.Opacity ?? 1f) > 0
+           && (Styles.Visibility ?? Visibility.Visible) != Visibility.Hidden;
 
     // NaN means "no scale applied yet", so the first Rescale always runs. A node whose Styles
     // are never assigned (a text label styled with only font/color props) would otherwise keep
@@ -783,10 +826,10 @@ public abstract partial class Component : Node, IAnimationCallback
                 Styles.BorderRight?.Value ?? 0,
                 Styles.BorderBottom?.Value ?? 0,
                 Styles.BorderLeft?.Value ?? 0,
-                Styles.BorderTopLeftRadius,
-                Styles.BorderTopRightRadius,
-                Styles.BorderBottomRightRadius,
-                Styles.BorderBottomLeftRadius
+                Styles.BorderTopLeftRadius ?? default,
+                Styles.BorderTopRightRadius ?? default,
+                Styles.BorderBottomRightRadius ?? default,
+                Styles.BorderBottomLeftRadius ?? default
             );
         }
     }
@@ -805,10 +848,10 @@ public abstract partial class Component : Node, IAnimationCallback
                 Styles.BorderRight?.Value ?? 0,
                 Styles.BorderBottom?.Value ?? 0,
                 Styles.BorderLeft?.Value ?? 0,
-                Styles.BorderTopLeftRadius,
-                Styles.BorderTopRightRadius,
-                Styles.BorderBottomRightRadius,
-                Styles.BorderBottomLeftRadius
+                Styles.BorderTopLeftRadius ?? default,
+                Styles.BorderTopRightRadius ?? default,
+                Styles.BorderBottomRightRadius ?? default,
+                Styles.BorderBottomLeftRadius ?? default
             );
         }
     }
@@ -868,9 +911,9 @@ public abstract partial class Component : Node, IAnimationCallback
             return cached;
 
         int result;
-        if (node.Styles.ZIndex != 0)
+        if ((node.Styles.ZIndex ?? 0) != 0)
         {
-            result = node.Styles.ZIndex;
+            result = node.Styles.ZIndex!.Value;
         }
         else
         {
@@ -942,10 +985,12 @@ public abstract partial class Component : Node, IAnimationCallback
             Logging.Info($"[Render] TextRun reached. Display={Styles.Display} Vis={Styles.Visibility} Opacity={Styles.Opacity}");
         }
 
-        if (Styles.Display == Display.None || Styles.Visibility != Visibility.Visible || Styles.Opacity <= 0f)
+        if ((Styles.Display ?? Display.Flex) == Display.None
+            || (Styles.Visibility ?? Visibility.Visible) != Visibility.Visible
+            || (Styles.Opacity ?? 1f) <= 0f)
             return default;
 
-        var ownOpacity = context.InheritedOpacity * Styles.Opacity;
+        var ownOpacity = context.InheritedOpacity * (Styles.Opacity ?? 1f);
 
         // Recompute scroll extent from freshly laid-out children.
         UpdateScrollExtent();
@@ -993,8 +1038,8 @@ public abstract partial class Component : Node, IAnimationCallback
         foreach (var visual in VisualChildren)
         {
             if (visual is not Component c || !c.IsDisplayed) continue;
-            if (c.Styles.ZIndex != 0)
-                scs.Add(new StackEntry(c, s.ChildOrigin, s.Clip, c.Styles.ZIndex));
+            if ((c.Styles.ZIndex ?? 0) != 0)
+                scs.Add(new StackEntry(c, s.ChildOrigin, s.Clip, c.Styles.ZIndex!.Value));
             else
                 PaintNonStacking(c, s.ChildOrigin, s.OwnOpacity, s.Clip, scs);
         }
