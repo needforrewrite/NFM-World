@@ -62,6 +62,42 @@ public class ComponentChildCollection(Component parent) : NonSynchronizedObserva
         base.InsertItem(index, item);
     }
 
+    /// <summary>
+    /// Relocates an existing child without detaching it: no <see cref="Node.Disposing"/>,
+    /// no disposed marking, and the same parent. Used when a keyed list re-orders rows.
+    /// </summary>
+    public void MoveChild(int oldIndex, int newIndex)
+    {
+        if (oldIndex == newIndex)
+            return;
+
+        var item = Items[oldIndex];
+        base.RemoveItem(oldIndex);
+
+        if (newIndex > oldIndex)
+            newIndex--;
+
+        base.InsertItem(newIndex, item);
+
+        if (item is Component cmp)
+        {
+            parent.NodeInternal.RemoveChild(cmp.Contents);
+            parent.NodeInternal.InsertChild(cmp.Contents, CountComponentsBefore(newIndex));
+        }
+    }
+
+    /// <summary>How many Components sit strictly before <paramref name="index"/>.</summary>
+    private int CountComponentsBefore(int index)
+    {
+        var count = 0;
+        var limit = Math.Min(index, Items.Count);
+        for (var i = 0; i < limit; i++)
+        {
+            if (Items[i] is Component) count++;
+        }
+        return count;
+    }
+
     protected override void SetItem(int index, Node item)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(index, 0);

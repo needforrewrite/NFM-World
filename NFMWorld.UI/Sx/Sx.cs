@@ -1,4 +1,6 @@
-﻿using NFMWorld.ClayDom.Events;
+﻿using Maxine.Extensions.Mathematics;
+using NFMWorld.ClayDom.Events;
+using NFMWorld.DriverInterface.DriverInterface;
 using SignalsDotnet;
 
 namespace NFMWorld.Reactor.Sx;
@@ -16,6 +18,166 @@ namespace NFMWorld.Reactor.Sx;
 /// </remarks>
 public static class Sx
 {
+    // ── Style helpers ──────────────────────────────────────────────────
+    //
+    // Object-initialiser terse form, so a style reads like the rest of the tree:
+    //   Sx.View(style: Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 8))
+    // Every parameter is optional; an omitted one stays null, i.e. "not set", so the
+    // result still merges correctly through Styles.Over.
+
+    public static Styles Styles(
+        Visibility? visibility = null,
+        float? opacity = null,
+        Direction? direction = null,
+        FlexDirection? flexDirection = null,
+        Justify? justifyContent = null,
+        Align? alignItems = null,
+        Align? alignSelf = null,
+        Align? alignContent = null,
+        Position? position = null,
+        Wrap? flexWrap = null,
+        Overflow? overflow = null,
+        Display? display = null,
+        BoxSizing? boxSizing = null,
+        float? flex = null,
+        float? flexGrow = null,
+        float? flexShrink = null,
+        float? minWidth = null,
+        float? minHeight = null,
+        float? maxWidth = null,
+        float? maxHeight = null,
+        float? aspectRatio = null,
+        MeasurementWidthHeight? width = null,
+        MeasurementWidthHeight? height = null,
+        MeasurementMarginPosition? top = null,
+        MeasurementMarginPosition? right = null,
+        MeasurementMarginPosition? bottom = null,
+        MeasurementMarginPosition? left = null,
+        MeasurementGap? gapRow = null,
+        MeasurementGap? gapColumn = null,
+        float? paddingTop = null,
+        float? paddingBottom = null,
+        float? paddingLeft = null,
+        float? paddingRight = null,
+        float? marginTop = null,
+        float? marginBottom = null,
+        float? marginLeft = null,
+        float? marginRight = null,
+        float? borderTop = null,
+        float? borderBottom = null,
+        float? borderLeft = null,
+        float? borderRight = null,
+        Color? backgroundColor = null,
+        Color? borderColor = null,
+        CornerRadius? borderRadius = null,
+        bool? pointerEvents = null,
+        int? zIndex = null)
+        => new()
+        {
+            Visibility = visibility,
+            Opacity = opacity,
+            Direction = direction,
+            FlexDirection = flexDirection,
+            JustifyContent = justifyContent,
+            AlignItems = alignItems,
+            AlignSelf = alignSelf,
+            AlignContent = alignContent,
+            Position = position,
+            FlexWrap = flexWrap,
+            Overflow = overflow,
+            Display = display,
+            BoxSizing = boxSizing,
+            Flex = flex,
+            FlexGrow = flexGrow,
+            FlexShrink = flexShrink,
+            MinWidth = minWidth.ToMeasurementWidthHeight(),
+            MinHeight = minHeight.ToMeasurementWidthHeight(),
+            MaxWidth = maxWidth.ToMeasurementWidthHeight(),
+            MaxHeight = maxHeight.ToMeasurementWidthHeight(),
+            AspectRatio = aspectRatio,
+            Width = width.ToMeasurementWidthHeight(),
+            Height = height.ToMeasurementWidthHeight(),
+            Top = top.ToMeasurementMarginPosition(),
+            Right = right.ToMeasurementMarginPosition(),
+            Bottom = bottom.ToMeasurementMarginPosition(),
+            Left = left.ToMeasurementMarginPosition(),
+            GapRow = gapRow.ToMeasurementGap(),
+            GapColumn = gapColumn.ToMeasurementGap(),
+            PaddingTop = paddingTop.ToMeasurementPadding(),
+            PaddingBottom = paddingBottom.ToMeasurementPadding(),
+            PaddingLeft = paddingLeft.ToMeasurementPadding(),
+            PaddingRight = paddingRight.ToMeasurementPadding(),
+            MarginTop = marginTop.ToMeasurementMarginPosition(),
+            MarginBottom = marginBottom.ToMeasurementMarginPosition(),
+            MarginLeft = marginLeft.ToMeasurementMarginPosition(),
+            MarginRight = marginRight.ToMeasurementMarginPosition(),
+            BorderTop = borderTop,
+            BorderBottom = borderBottom,
+            BorderLeft = borderLeft,
+            BorderRight = borderRight,
+            BackgroundColor = backgroundColor,
+            BorderColor = borderColor,
+            BorderRadius = borderRadius,
+            PointerEvents = pointerEvents,
+            ZIndex = zIndex,
+        };
+
+    private static MeasurementWidthHeight ToMeasurementWidthHeight(this MeasurementWidthHeight? v)
+        => v ?? MeasurementWidthHeight.Undefined;
+
+    private static MeasurementWidthHeight ToMeasurementWidthHeight(this float? v)
+        => v is { } p ? p : MeasurementWidthHeight.Undefined;
+
+    private static MeasurementMarginPosition ToMeasurementMarginPosition(this MeasurementMarginPosition? v)
+        => v ?? MeasurementMarginPosition.Undefined;
+
+    private static MeasurementGap ToMeasurementGap(this MeasurementGap? v)
+        => v ?? MeasurementGap.Undefined;
+
+    private static MeasurementPadding ToMeasurementPadding(this float? v)
+        => v is { } p ? p : MeasurementPadding.Undefined;
+
+    private static MeasurementMarginPosition ToMeasurementMarginPosition(this float? v)
+        => v is { } p ? p : MeasurementMarginPosition.Undefined;
+
+    public static TextStyles TextStyles(
+        Color? foregroundColor = null,
+        Color? strokeColor = null,
+        FontFamily? fontFamily = null,
+        float? fontSize = null,
+        FontStyle? fontStyle = null,
+        BreakType? breakType = null,
+        OverflowBehavior? overflowBehavior = null,
+        TextHorizontalAlignment? horizontalAlignment = null,
+        TextVerticalAlignment? verticalAlignment = null)
+        => new()
+        {
+            ForegroundColor = foregroundColor,
+            StrokeColor = strokeColor,
+            FontFamily = fontFamily,
+            FontSize = fontSize,
+            FontStyle = fontStyle,
+            BreakType = breakType,
+            OverflowBehavior = overflowBehavior,
+            HorizontalAlignment = horizontalAlignment,
+            VerticalAlignment = verticalAlignment,
+        };
+
+    public static NFMWorld.Reactor.TextInputStyles TextInputStyles(
+        Color? cursorColor = null,
+        Color? selectionColor = null,
+        Color? placeholderColor = null)
+        => new()
+        {
+            CursorColor = cursorColor,
+            SelectionColor = selectionColor,
+            PlaceholderColor = placeholderColor,
+        };
+
+    private static class Measurement
+    {
+    }
+
     // ── Elements ───────────────────────────────────────────────────────
 
     public static View View(
@@ -223,6 +385,18 @@ public static class Sx
                 entry.Scope.Dispose();
                 host.RemoveAt(host.Children.IndexOf(entry.Node));
                 rows.Remove(item);
+            }
+
+            // Rows are keyed by value, but the item order is authoritative: without this
+            // a reused row keeps its old slot, so changing which items a page has (the
+            // menu's BACK, whose delegate compares equal on every page) leaves them in
+            // the previous order.
+            for (var target = 0; target < items.Count; target++)
+            {
+                var node = rows[items[target]].Node;
+                var current = host.Children.IndexOf(node);
+                if (current != target)
+                    host.Children.MoveChild(current, target);
             }
         }
 

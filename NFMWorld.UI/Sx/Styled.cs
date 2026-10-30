@@ -13,15 +13,15 @@ namespace NFMWorld.Reactor.Sx;
 /// Either style may set only what it changes: every <see cref="Styles"/> field is
 /// nullable, so <see cref="Styles.Over"/> leaves anything a style leaves null alone.
 /// </remarks>
-public sealed class StyledStyle
+public struct StyledStyle()
 {
     public Styles Base { get; init; } = new();
 
     /// <summary>Applied over <see cref="Base"/> while the pointer is over the node.</summary>
-    public Styles? Hover { get; init; }
+    public Styles? Hover { get; init; } = null;
 
     public TextStyles Text { get; init; } = new();
-    public TextStyles? HoverText { get; init; }
+    public TextStyles? HoverText { get; init; } = null;
 }
 
 /// <summary>
@@ -58,32 +58,59 @@ public static class Styled
 {
     /// <summary>Styles a <see cref="View"/>.</summary>
     public static StyledView StyleView(
-        StyledStyle definition) => (style, name, onmousedown, children) =>
+        Styles baseStyle = default,
+        Styles? hoverStyle = null,
+        TextStyles textStyle = default,
+        TextStyles? hoverTextStyle = null
+    )
     {
-        var hovered = new Signal<bool>(false);
+        var definition = new StyledStyle
+        {
+            Base = baseStyle,
+            Hover = hoverStyle,
+            Text = textStyle,
+            HoverText = hoverTextStyle,
+        };
+        
+        return (style, name, onmousedown, children) =>
+        {
+            var hovered = new Signal<bool>(false);
 
-        return Sx.View(
-            style: () => Merge(definition, style?.Invoke(), hovered.Value),
-            name: () => name,
-            onmousedown: onmousedown is null
-                ? null
-                : e => onmousedown(e),
-            onmouseenter: definition.Hover is null ? null : _ => hovered.Value = true,
-            onmouseleave: definition.Hover is null ? null : _ => hovered.Value = false,
-            children: children);
-    };
+            return Sx.View(
+                style: () => Merge(definition, style?.Invoke(), hovered.Value),
+                name: () => name,
+                onmousedown: onmousedown,
+                onmouseenter: definition.Hover is null ? null : _ => hovered.Value = true,
+                onmouseleave: definition.Hover is null ? null : _ => hovered.Value = false,
+                children: children);
+        };
+    }
 
     /// <summary>Styles a <see cref="Text"/>.</summary>
     public static StyledText StyleText(
-        StyledStyle definition) => (style, text, children) =>
+        Styles baseStyle = default,
+        Styles? hoverStyle = null,
+        TextStyles textStyle = default,
+        TextStyles? hoverTextStyle = null)
     {
-        var hovered = new Signal<bool>(false);
+        var definition = new StyledStyle
+        {
+            Base = baseStyle,
+            Hover = hoverStyle,
+            Text = textStyle,
+            HoverText = hoverTextStyle,
+        };
 
-        return Sx.Text(
-            style: () => MergeText(definition, style?.Invoke(), hovered.Value),
-            text: text,
-            children: children);
-    };
+        return (style, text, children) =>
+        {
+            var hovered = new Signal<bool>(false);
+
+            return Sx.Text(
+                style: () => MergeText(definition, style?.Invoke(), hovered.Value),
+                text: text,
+                children: children);
+        };
+    }
 
     private static TextStyles MergeText(StyledStyle definition, TextStyles? caller, bool hovered)
     {

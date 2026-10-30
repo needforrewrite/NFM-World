@@ -23,15 +23,13 @@ public static class MainMenuView
     public sealed record MenuPage(string Title, IReadOnlyList<MenuItem> Items);
 
     /// <summary>What the menu asks the game to do. The phase fills these in.</summary>
-    public sealed record Actions(Action Play, Action Garage, Action ModelEditor, Action StageEditor, Action<string> Unavailable);
-
-    /// <summary>The default actions: everything unavailable, which is what the editors see.</summary>
-    public static readonly Actions NoActions = new(
-        Play: static () => { },
-        Garage: static () => { },
-        ModelEditor: static () => { },
-        StageEditor: static () => { },
-        Unavailable: static _ => { });
+    public sealed record Actions(
+        Action Play,
+        Action Garage,
+        Action ModelEditor,
+        Action StageEditor,
+        Action TimeTrials,
+        Action<string> Unavailable);
 
     private static readonly Signal<IReadOnlyList<MenuPage>> PageStack = new([]);
     private static readonly Signal<bool> SettingsOpen = new(false);
@@ -50,76 +48,75 @@ public static class MainMenuView
     // ── Styles ────────────────────────────────────────────────────────
 
     private static readonly StyledView ItemRow =
-        Styled.StyleView(new StyledStyle
-        {
-            Base = new Styles
-            {
-                FlexDirection = FlexDirection.Column,
-                AlignItems = Align.FlexStart,
-                PaddingTop = 14,
-                PaddingBottom = 14,
-                PaddingLeft = 14,
-                PaddingRight = 14,
-                BackgroundColor = new Color(60, 60, 60, 31),
-                BorderTop = 1,
-                BorderBottom = 1,
-                BorderLeft = 1,
-                BorderRight = 1,
-                BorderColor = new Color(255, 255, 255, 26),
-                BorderRadius = 8,
-            },
-            Hover = new Styles
-            {
-                BackgroundColor = Theme.AccentSoftStrong,
-                BorderColor = Theme.AccentBorder,
-            },
-        });
+        Styled.StyleView(
+            baseStyle: Sx.Styles(
+                flexDirection: FlexDirection.Column,
+                alignItems: Align.FlexStart,
+                paddingTop: 14,
+                paddingBottom: 14,
+                paddingLeft: 14,
+                paddingRight: 14,
+                backgroundColor: new Color(60, 60, 60, 31),
+                borderTop: 1,
+                borderBottom: 1,
+                borderLeft: 1,
+                borderRight: 1,
+                borderColor: new Color(255, 255, 255, 26),
+                borderRadius: 8
+            ),
+            hoverStyle: Sx.Styles(
+                backgroundColor: Theme.AccentSoftStrong,
+                borderColor: Theme.AccentBorder
+            )
+        );
 
     private static readonly StyledText ItemLabel =
-        Styled.StyleText(new StyledStyle
-        {
-            Text = new TextStyles { FontSize = 16, FontStyle = FontStyle.Bold },
-        });
+        Styled.StyleText(
+            textStyle: Sx.TextStyles(fontSize: 16, fontStyle: FontStyle.Bold)
+        );
 
     private static readonly StyledText ItemDesc =
-        Styled.StyleText(new StyledStyle
-        {
-            Text = new TextStyles { FontSize = 12, ForegroundColor = new Color(255, 255, 255, 102) },
-        });
+        Styled.StyleText(
+            textStyle: Sx.TextStyles(fontSize: 12, foregroundColor: new Color(255, 255, 255, 102))
+        );
 
     // The Luau originals carry their own spacing, so it lives with the style rather than
     // at the call site where it is easy to drop.
     private static readonly StyledText PageTitle =
-        Styled.StyleText(new StyledStyle
-        {
-            Base = new Styles { MarginBottom = 8 },
-            Text = new TextStyles { FontSize = 48, FontStyle = FontStyle.Bold, FontFamily = FontFamily.Adventure },
-        });
+        Styled.StyleText(
+            textStyle: Sx.TextStyles(fontSize: 48, fontStyle: FontStyle.Bold, fontFamily: FontFamily.Adventure),
+            hoverTextStyle: null
+        );
 
     private static readonly StyledText Subtitle =
-        Styled.StyleText(new StyledStyle
-        {
-            Base = new Styles { MarginBottom = 40 },
-            Text = new TextStyles { FontSize = 14, ForegroundColor = Theme.TextMuted },
-        });
+        Styled.StyleText(
+            baseStyle: Sx.Styles(marginBottom: 40),
+            textStyle: Sx.TextStyles(fontSize: 14, foregroundColor: Theme.TextMuted)
+        );
 
     public static Node Build(Actions actions)
     {
+        // Built once, not per read: the items hold lambdas that capture `actions`, so a
+        // freshly built page never compares equal to the mounted one. `For` keys by value,
+        // so those items would be torn down and re-appended on every read - which is what
+        // reordered the menu (the stable-delegate items kept their slots) and gave the
+        // recreated rows fresh hover signals.
+        var root = MainPage(actions);
+
         MenuPage CurrentPage()
         {
             var stack = PageStack.Value;
-            return stack.Count > 0 ? stack[^1] : MainPage(actions);
+            return stack.Count > 0 ? stack[^1] : root;
         }
 
         return Sx.View(
-            style: () => new Styles
-            {
-                Width = MeasurementWidthHeight.Percent(100),
-                Height = MeasurementWidthHeight.Percent(100),
-                FlexDirection = FlexDirection.Column,
-                AlignItems = Align.Center,
-                JustifyContent = Justify.Center,
-            },
+            style: () => Sx.Styles(
+                width: "100%",
+                height: "100%",
+                flexDirection: FlexDirection.Column,
+                alignItems: Align.Center,
+                justifyContent: Justify.Center
+            ),
             children:
             [
                 PageTitle(text: () => CurrentPage().Title),
@@ -129,29 +126,28 @@ public static class MainMenuView
                     then: () => Subtitle(text: () => $"Welcome, {UiState.MainMenu.PlayerName.Value}")),
 
                 Sx.View(
-                    style: () => new Styles
-                    {
-                        FlexDirection = FlexDirection.Column,
-                        GapColumn = 6,
-                        GapRow = 6,
-                        MinWidth = 320,
-                        AlignItems = Align.Stretch,
-                        AlignContent = Align.Stretch,
-                    },
+                    style: () => Sx.Styles(
+                        flexDirection: FlexDirection.Column,
+                        gapColumn: 6,
+                        gapRow: 6,
+                        minWidth: 320,
+                        alignItems: Align.Stretch,
+                        alignContent: Align.Stretch
+                    ),
                     children: Sx.For(
-                        each: () => PageStack.Value.Count > 0 ? PageStack.Value[^1].Items : MainPage(actions).Items,
+                        each: () => CurrentPage().Items,
                         row: (item, _) => ItemButton(item))),
 
                 Sx.Show(
                     when: () => PageStack.Value.Count == 0,
                     then: () => Sx.Text(
-                        style: () => new TextStyles { FontSize = 11, ForegroundColor = Theme.TextFaint },
+                        style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.TextFaint),
                         text: () => "NFM World",
-                        layout: () => new Styles { Position = Position.Absolute, Bottom = 20 })),
+                        layout: () => Sx.Styles(position: Position.Absolute, bottom: 20))),
 
                 Sx.Show(
                     when: () => SettingsOpen.Value,
-                    then: () => SettingsView.Build(() => SettingsOpen.Value = false)),
+                    then: () => SettingsView.Build(() => SettingsOpen.Value = false))
             ]);
     }
 
@@ -200,7 +196,7 @@ public static class MainMenuView
 
     private static MenuPage BuildTrainingMenu(Actions actions) => new("TRAINING",
     [
-        new("TIME TRIALS", "Flex your fastest time against other people.", () => actions.Unavailable("timeTrials")),
+        new("TIME TRIALS", "Flex your fastest time against other people.", actions.TimeTrials),
         new("CHALLENGES", "Complete challenges to sharpen your mechanical skills.", () => actions.Unavailable("challenges")),
         new("GAME INSTRUCTIONS", "Read about the rules and controls of the game.", () => actions.Unavailable("gameInstructions")),
         new("BACK", "Return to the previous menu.", PopPage),
@@ -211,7 +207,7 @@ public static class MainMenuView
 
     private static void PopPage()
         => PageStack.Value = PageStack.Value.Count > 0
-            ? PageStack.Value.Cast<MenuPage>().Take(PageStack.Value.Count - 1).ToArray()
+            ? [.. PageStack.Value.Take(PageStack.Value.Count - 1)]
             : PageStack.Value;
 
     /// <summary>Clears the page stack, for when the menu is re-entered.</summary>

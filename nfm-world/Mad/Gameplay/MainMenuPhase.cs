@@ -32,6 +32,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
         Garage: OnGarageClicked,
         ModelEditor: GameSparker.StartModelViewer,
         StageEditor: GameSparker.StartStageEditor,
+        TimeTrials: OnTTClicked,
         Unavailable: _ => GameSparker.MessageWindow.ShowMessage("Info", "This feature is currently unavailable.")));
 
     private void OnActiveAccountChanged(Account? account)
@@ -89,6 +90,47 @@ public class MainMenuPhase : BaseStageRenderingPhase
         };
 
         GameSparker.PushPhase(gp);
+    }
+
+    private void OnTTClicked()
+    {
+        StageSelectPhase ssp = new();
+        ssp.StageSelected += (sender, stageName) =>
+        {
+            PhaseSharedState.SelectedStageName = stageName;
+
+            GaragePhase gp = new(stageName);
+            gp.CarSelected += (sender, car) =>
+            {
+                var factory = GamemodeFactory.Create("nfmm/timetrial");
+                ClientSidePlayerInfo[] players = [
+                    new()
+                    {
+                        CarName = car.FileName,
+                        Color = default,
+                        IsBot = false,
+                        IsClientPlayer = true,
+                        PlayerName = "MadPlayer"
+                    }
+                ];
+                var inRace = new RacePhase(stageName, factory, players,
+                    LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = players }));
+                inRace.Exited += (sender, args) =>
+                {
+                    GameSparker.PopGroup(PhaseManager.Groups.Event);
+                };
+                GameSparker.PushPhase(inRace, PhaseManager.Groups.Event);
+            };
+
+            gp.CarSelectionCancelled += (sender, _) =>
+            {
+                GameSparker.PopPhase();
+            };
+
+            GameSparker.PushPhase(gp, PhaseManager.Groups.Event);
+        };
+
+        GameSparker.PushPhase(ssp, PhaseManager.Groups.Event);
     }
 
     public override void GameTick()

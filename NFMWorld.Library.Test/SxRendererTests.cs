@@ -102,6 +102,42 @@ public class SxRendererTests
     }
 
     /// <summary>
+    /// A row whose item is reused on a shorter list must move, not keep its old slot.
+    /// The menu's BACK button is the same item (its method-group delegate compares equal)
+    /// on every page, so before this it stayed first while the new page's items were
+    /// appended behind it.
+    /// </summary>
+    [TestMethod]
+    public void For_ReordersAReusedRowToTheItemOrder()
+    {
+        var page = new Signal<string>("training");
+
+        // "back" is on both pages and must end up last in both.
+        IReadOnlyList<string> Items() => page.Value == "training"
+            ? ["trials", "challenges", "back"]
+            : ["single", "multi", "back"];
+
+        var mounted = Renderer.Mount(() => Sx.For(
+            each: Items,
+            row: (item, _) => Sx.Text(text: () => item)));
+
+        var host = (View)mounted.Root;
+        List<string?> Order() => host.VisualChildren.OfType<Text>()
+            .Select(t => t.Children.OfType<TextNode>().FirstOrDefault()?.Text)
+            .ToList();
+
+        CollectionAssert.AreEqual(new[] { "trials", "challenges", "back" }, Order());
+
+        page.Value = "play";
+        Renderer.Flush();
+
+        CollectionAssert.AreEqual(new[] { "single", "multi", "back" }, Order(),
+            "the reused BACK row kept its old position");
+
+        mounted.Dispose();
+    }
+
+    /// <summary>
     /// A card style that mentions only layout must not wipe the card's own padding. The
     /// old merge copied every field unconditionally, so an unset PaddingTop reset it to 0
     /// and the content sat flush against the accent bar - the "margin where padding should

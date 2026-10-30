@@ -22,12 +22,10 @@ public static class RaceHudView
     private static UiState.RaceState Race => UiState.Race;
 
     public static Node Build(Actions actions) => Sx.View(
-        style: () => new Styles
-        {
-            Width = MeasurementWidthHeight.Percent(100),
-            Height = MeasurementWidthHeight.Percent(100),
-            Position = Position.Relative,
-        },
+        style: () => Sx.Styles(
+            width: MeasurementWidthHeight.Percent(100),
+            height: MeasurementWidthHeight.Percent(100),
+            position: Position.Relative),
         children:
         [
             Sx.Show(
