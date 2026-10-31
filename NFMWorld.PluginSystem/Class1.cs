@@ -1,4 +1,4 @@
-﻿namespace NFMWorld.PluginSystem;
+namespace NFMWorld.PluginSystem;
 
 [AttributeUsage(
     AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Interface |
@@ -9,8 +9,10 @@ public class PluginVisibleAttribute(Visible visible = Visible.Self) : Attribute
 }
 
 /// <summary>
-/// Marks a type as globally visible to the plugin system. This means that the type (and optionally all its members)
-/// will be visible to plugins.
+/// Names a type outside the host (a vendor dependency) that plugins may reach, and how
+/// much of it. <see cref="Visible.Self"/> exposes only the type and the members it marks
+/// itself - typically none - so use <see cref="Visible.IncludingAllMembersOfType"/> to
+/// expose its public members.
 /// </summary>
 /// <typeparam name="T"></typeparam>
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
@@ -20,8 +22,9 @@ public class VendorPluginVisibleAttribute<T>(Visible visible = Visible.Self) : A
 }
 
 /// <summary>
-/// Marks a type as globally visible to the plugin system. This means that the type (and optionally all its members)
-/// will be visible to plugins.
+/// Names a type outside the host that plugins may reach, and how much of it. The
+/// non-generic form is for a type that cannot be used as a generic argument, such as a
+/// static class.
 /// </summary>
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
 public class VendorPluginVisibleAttribute(Type type, Visible visible = Visible.Self) : Attribute
@@ -34,11 +37,14 @@ public enum Visible
 {
     /// <summary>
     /// Make this class, struct, enum, interface, method, property, or field visible to the plugin system.
+    /// On a type this exposes the type and the members that carry their own marker; it
+    /// does not expose the type's other members, private or otherwise.
     /// </summary>
     Self,
-    
+
     /// <summary>
-    /// When applied on a type, make itself and all members of that type visible to the plugin system.
+    /// When applied on a type, make its public members visible to the plugin system
+    /// without each needing a marker of its own. Members that are not public stay hidden.
     /// </summary>
     IncludingAllMembersOfType,
     

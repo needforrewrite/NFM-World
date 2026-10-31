@@ -231,7 +231,7 @@ replacement path for Lua — currently a proof of concept.
 
 Every plugin assembly loads through `CasAssemblyLoader` (`PluginAssembly.Load`), so a plugin
 only reaches what the policy admits. `PluginPolicy` builds it: CasCore's default sandbox
-plus whatever the host marked `[PluginVisible]` / `[PublicVisible<T>]`. `Unsafe` is denied
+plus whatever the host marked `[PluginVisible]` / `[VendorPluginVisible]`. `Unsafe` is denied
 outright, and MemoryPack's reader/writer primitives are named one at a time — they carry
 their lengths, `Unsafe` does not.
 
@@ -241,6 +241,8 @@ their lengths, `Unsafe` does not.
 | Policy entries by token | `CasPolicy` identifies a member by **module handle + metadata token**, not by `MemberInfo` instance. Denying through a type-forwarder (`Unsafe` forwards to `System.Private.CoreLib`) therefore removes unrelated members that share the arithmetic — filter to `DeclaringType == typeof(...)` and only deny what `Build()` says is allowed |
 | Accessibility is inclusive | `Private` ⊇ `Protected` ⊇ `Public`. A visible base a plugin overrides needs `Private`; `Public` excludes protected members such as a formatter's constructor |
 | Generated MemoryPack code | formatters are ordinary plugin IL, so they only reach the policy. The generator emits `Unsafe.As`/`Unsafe.SizeOf`; those are patched to a cast and `MemoryPackUnmanaged.SizeOf<T>` so the sandbox can deny `Unsafe` (`MemoryPackGenerator.Emitter.cs`) |
+| Visibility levels | `Visible.Self` on a type exposes the type and the members that carry their own `[PluginVisible]` — nothing else, and never private members. `IncludingAllMembersOfType` exposes the type's **public** members without a marker each. Use the latter for a base class plugins derive from, where overrides call protected members |
+| `[UnsafeAccessor]` in probes | a probe that reads a private host field this way compiles to a direct `ldfld`, which is the token the policy must refuse; it fails as `InvalidProgramException` from CasCore's IL verifier rather than `SecurityException`, so assert "throws", not the type |
 | Proving the sandbox | `NFMWorld.Gamemode.Hostile` has one probe per forbidden reach; `PluginSandboxTests` loads it like the game does and asserts every probe throws `SecurityException`. The test host declares its own plugin list, so the probes never reach release output |
 | Not everywhere | `PluginPolicy.Supported` is false without dynamic code (the wasm head), where loads fall back to the plain `PluginLoadContext` |
 

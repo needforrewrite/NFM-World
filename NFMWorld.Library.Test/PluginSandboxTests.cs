@@ -59,6 +59,22 @@ public class PluginSandboxTests
     [TestMethod]
     public void LoadingANativeLibrary_IsBlocked() => AssertBlocked("LoadNative");
 
+    /// <summary>
+    /// A type marked [PluginVisible] with no visibility argument is visible through its
+    /// marked members only. Reading one of its private fields must be refused, or the
+    /// marker is a grant of internals nobody asked for.
+    /// </summary>
+    [TestMethod]
+    public void ReadingAPrivateFieldOfAMarkedType_IsBlocked()
+    {
+        // CasCore's IL verifier catches the direct ldfld first, so this is an invalid
+        // program rather than a policy violation. Either way the reach does not run.
+        var target = _hostile.GetType("NFMWorld.Gamemode.Hostile.HostileGamemode", throwOnError: true)!
+            .GetMethod("ReadAPrivateField", BindingFlags.Public | BindingFlags.Static)!;
+
+        Assert.ThrowsExactly<TargetInvocationException>(() => target.Invoke(null, null));
+    }
+
     [TestMethod]
     public void UninitializedMemory_IsBlocked() => AssertBlocked("UninitializedMemory");
 

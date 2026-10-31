@@ -18,7 +18,7 @@ namespace NFMWorldLibrary.Plugins;
 /// <summary>
 /// The CasCore policy every plugin assembly is loaded under: CasCore's default sandbox
 /// plus exactly what the host marked <see cref="PluginVisibleAttribute"/> or
-/// <see cref="PublicVisibleAttribute{T}"/>.
+/// <see cref="VendorPluginVisibleAttribute"/>.
 /// </summary>
 /// <remarks>
 /// Without it a downloaded plugin runs with the host's privileges - filesystem, network,
@@ -27,12 +27,23 @@ namespace NFMWorldLibrary.Plugins;
 ///
 /// The visible surface is read from the attributes rather than listed by hand, so a
 /// member cannot be reachable and unmarked at once, and exposing one stays a one-line
-/// change next to the code. <see cref="Visible.Self"/> exposes a type's public members;
-/// the <c>IncludingAllMembersOfType</c> variants expose all of them.
+/// change next to the code.
+///
+/// What each marker means:
+///
+/// - <see cref="Visible.Self"/> on a type exposes the type and the members that carry
+///   their own <c>[PluginVisible]</c>. It grants nothing by itself, and in particular not
+///   the type's private members.
+/// - <c>Visible.IncludingAllMembersOfType</c> exposes the type's public members when they
+///   have no marker of their own. It is how a base class a plugin derives from - where a
+///   plugin's overrides call protected members - and a record's generated members are
+///   reached. It still stops at public.
+/// - <see cref="VendorPluginVisibleAttribute"/> on the assembly names a type outside the
+///   host (FixedMathSharp and friends) that the host's own visible members mention.
 ///
 /// A handful of members the runtime and the plugin's own package make it reach for -
 /// not part of the host surface, but unavoidable around it - are listed in
-/// <see cref="RuntimeReachable"/>.
+/// <see cref="AllowMemoryPack"/>.
 ///
 /// Only built once a plugin is actually loaded. Not supported where the runtime cannot
 /// JIT the instrumented IL.
@@ -67,13 +78,14 @@ internal static class PluginPolicy
 
         AllowRuntimeReachable(builder);
 
-        // Nothing in a plugin needs to reinterpret memory. The one place the generator
-        // emits it - Unsafe.As/SizeOf for unions and fixed sizes - is served by the fixed
-        // wrappers in AllowMemoryPack, which carry their lengths.
+        // Nothing in a plugin needs to reinterpret memory: Unsafe.As/SizeOf has no length,
+        // so nothing can check a reinterpretation through it. The generator's uses are
+        // served by the fixed wrappers in AllowMemoryPack instead.
         //
-        // Deny only what is actually on the policy: Unsafe is a type-forwarder, so
-        // reflecting over it returns System.Private.CoreLib methods, and removing those
-        // by identity takes unrelated members of the same module with them.
+        // The deny runs last, on the finished policy, and only over what it admits:
+        // Unsafe is a type-forwarder, so reflecting over it returns System.Private.CoreLib
+        // methods, and removing those by identity takes unrelated members of the same
+        // module with them.
         var policy = builder.Build();
         var unsafeType = typeof(Unsafe);
         foreach (var method in unsafeType.GetMethods(AllMembers).Where(m => m.DeclaringType == unsafeType))
@@ -88,8 +100,8 @@ internal static class PluginPolicy
     [RequiresUnreferencedCode("Walks the host assemblies' attributes and types.")]
     private static void AllowVisible(CasPolicyBuilder builder, Assembly assembly)
     {
-        // [PublicVisible<T>] names a type outright - a vendor type with no host attributes
-        // of its own - along with how much of it is exposed.
+        // [VendorPluginVisible] names a type outside this assembly outright - a vendor
+        // type with no host attributes of its own - along with how much of it is exposed.
         foreach (var marker in assembly.GetCustomAttributesData())
         {
             if (marker.AttributeType is { IsGenericType: true } attribute
@@ -107,23 +119,19 @@ internal static class PluginPolicy
 
         foreach (var type in Types(assembly))
         {
-            // A marked type is open through its whole surface: a plugin's subclass calls
-            // protected members of it and is called back through it.
-            if (type.GetCustomAttributesData().Any(IsPluginVisible))
+            // A marked type contributes what it marked, member by member. Its bare marker
+            // is not a grant of its whole surface: that is what IncludingAllMembersOfType
+            // is for, and this path only runs for types that were not marked with it.
+            var typeMarker = type.GetCustomAttributesData().FirstOrDefault(IsPluginVisible);
+            if (typeMarker is not null)
             {
-                Allow(builder, type, Visible.IncludingAllMembersOfType);
-
-                // Its bases too, member by member: a plugin's override of Begin() reaches
-                // the base implementation through the plugin's own type, which the policy
-                // resolves back to the base's member.
-                for (var baseType = type.BaseType; baseType is not null; baseType = baseType.BaseType)
-                    AllowMembers(builder, baseType);
+                Allow(builder, type, VisibilityOf(typeMarker));
 
                 // Implementing a visible interface is itself a cross-assembly reach, so its
-                // members have to be open too - this is what lets an object returned as an
+                // members have to be open - this is what lets an object returned as an
                 // interface be called through it.
                 foreach (var contract in type.GetInterfaces())
-                    Allow(builder, Definition(contract), Visible.Self);
+                    Allow(builder, Definition(contract), Visible.IncludingAllMembersOfType);
             }
 
             foreach (var member in type.GetMembers(AllMembers))
@@ -246,14 +254,17 @@ internal static class PluginPolicy
     }
 
     private static void Allow(CasPolicyBuilder builder, Type type, Visible visible)
-        => builder.Allow(new TypeBinding(type, visible switch
-        {
-            // Accessibility is inclusive: Private admits every member, so a plugin's
-            // subclass sees protected members it overrides.
-            Visible.IncludingAllMembersOfType or Visible.IncludingAnyGenericInstantiationAndAllMembersOfType
-                => Accessibility.Private,
-            _ => Accessibility.Protected
-        }));
+    {
+        // Self promises a type whose members are visible one by one, each marked
+        // [PluginVisible] - it admits no members of its own, only the type, whose marked
+        // members AllowMember adds. The IncludingAllMembersOfType variants make the type's
+        // own members visible without a marker, and that stops at public: a plugin never
+        // needs a host type's internals.
+        if (visible == Visible.Self)
+            return;
+
+        builder.Allow(new TypeBinding(type, Accessibility.Public));
+    }
 
     /// <summary>
     /// Allows the callable members behind a marked member: a property's or event's
@@ -277,19 +288,6 @@ internal static class PluginPolicy
             case MethodBase or FieldInfo:
                 builder.Allow(member);
                 break;
-        }
-    }
-
-    /// <summary>
-    /// Allows every member a derived override can reach through its base - the whole
-    /// contract, not just the public slice.
-    /// </summary>
-    private static void AllowMembers(CasPolicyBuilder builder, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
-    {
-        foreach (var member in type.GetMembers(AllMembers))
-        {
-            if (member.MemberType != MemberTypes.NestedType)
-                AllowMember(builder, member);
         }
     }
 

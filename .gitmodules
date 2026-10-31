@@ -47,3 +47,7 @@
 [submodule "SDL3-CS"]
 	path = SDL3-CS
 	url = https://github.com/flibitijibibo/SDL3-CS
+[submodule "CasCore"]
+	path = CasCore
+	url = https://github.com/uwx/CasCore
+	branch = nfmw

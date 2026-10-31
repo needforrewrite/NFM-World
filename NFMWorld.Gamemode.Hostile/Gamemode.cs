@@ -1,4 +1,6 @@
 using MemoryPack;
+using System.Runtime.CompilerServices;
+using NFMWorld.DriverInterface;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Files;
 using NFMWorldLibrary.Backend.Gamemodes;
@@ -60,6 +62,23 @@ public class HostileGamemode : PluginGamemode
         ref var wide = ref System.Runtime.CompilerServices.Unsafe.As<int, long>(ref value);
         wide = 0;
     }
+
+    /// <summary>
+    /// Reads a private field of a host type that is marked [PluginVisible] with no
+    /// visibility argument. Such a type is visible through its marked members only, so
+    /// this field is out of reach however the plugin spells the access.
+    /// </summary>
+    public static bool ReadAPrivateField()
+    {
+        var keys = default(Keys);
+        return LowBits(ref keys) != UInt128.Zero;
+    }
+
+    // Compiles to a direct ldfld of the private field, which is the token the policy has
+    // to refuse. InternalsVisibleTo would not help: that grants internal, not private.
+    // UnsafeAccessor only lets the probe name the field.
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lowBits")]
+    private static extern ref UInt128 LowBits(ref Keys keys);
 
     /// <summary>Serializes a plugin event, which runs the generated MemoryPack formatter.</summary>
     public static byte[] SerializeAnEvent() => MemoryPackSerializer.Serialize(new HostileEvent(42));

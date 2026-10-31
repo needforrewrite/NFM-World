@@ -7,7 +7,7 @@ using NFMWorldLibrary.Multiplayer.Packets.C2S;
 
 namespace NFMWorldLibrary.Gamemodes.DotNet;
 
-[PluginVisible]
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public class PluginServerGamemode(
     ServerGamemodeParameters parameters,
     IServerGamemodeContext context,
