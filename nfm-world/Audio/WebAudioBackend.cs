@@ -33,7 +33,7 @@ public static partial class WebAudioBackend
     internal static void ReleaseBuffer(int buffer) { }
     internal static void StopAll() { }
     public static void SetAllVolumes(float volume) { }
-    public static void StopAllSounds() { }
+    public static void StopAllSounds() => WebAudioSoundClip.StopAll();
 }
 #else
 /// <summary>
@@ -106,7 +106,7 @@ public static partial class WebAudioBackend
     }
 
     /// <summary>Stops every sound effect currently playing.</summary>
-    public static void StopAllSounds() => StopAll();
+    public static void StopAllSounds() => WebAudioSoundClip.StopAll();
 }
 #endif
 
@@ -115,15 +115,13 @@ public sealed class WebAudioSoundClip : ISoundClip
 {
     /// <summary>Clips started and not yet stopped, for the bulk volume/stop operations.</summary>
     internal static readonly List<WebAudioSoundClip> Active = [];
+    private static bool _paused;
 
     private readonly int _buffer;
-    private double _volume;
     private int _source;
 
-    public WebAudioSoundClip(string filePath, double volume = 1.0)
+    public WebAudioSoundClip(string filePath)
     {
-        _volume = volume;
-
         var extension = Path.GetExtension(filePath).ToLowerInvariant();
         using var stream = NFMWorldLibrary.TheVFS.VFS.OpenRead(filePath);
         using var decoded = AudioDecoder.Decode(stream, extension);
@@ -136,6 +134,20 @@ public sealed class WebAudioSoundClip : ISoundClip
 
     public void Loop() => Start(loop: true);
 
+    public static void SetAllPaused(bool paused)
+    {
+        _paused = paused;
+        foreach (var clip in Active)
+            WebAudioBackend.SetSourcePaused(clip._source, paused);
+    }
+
+    public static void StopAll()
+    {
+        foreach (var clip in Active.ToArray())
+            clip.Stop();
+        _paused = false;
+    }
+
     public void Stop()
     {
         Active.Remove(this);
@@ -146,7 +158,6 @@ public sealed class WebAudioSoundClip : ISoundClip
 
     internal void ApplyVolume(double volume)
     {
-        _volume = volume;
         if (_source != 0) WebAudioBackend.SetSourceVolume(_source, volume);
     }
 
@@ -155,10 +166,11 @@ public sealed class WebAudioSoundClip : ISoundClip
         Stop();
         if (_buffer == 0) return;
 
-        var source = WebAudioBackend.StartBuffer(_buffer, _volume, 1.0, loop);
+        var source = WebAudioBackend.StartBuffer(_buffer, SoundEffects.Volume, 1.0, loop);
         if (source != 0)
         {
             _source = source;
+            if (_paused) WebAudioBackend.SetSourcePaused(source, true);
             if (!Active.Contains(this)) Active.Add(this);
         }
     }

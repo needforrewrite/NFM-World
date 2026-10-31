@@ -3,7 +3,7 @@ using NFMWorldLibrary;
 
 namespace NFMWorld.Sfx;
 
-public class MadSfx
+public class MadSfx : IDisposable
 {
     private int bfcrash = 0;
     private int bfskid = 0;
@@ -25,6 +25,7 @@ public class MadSfx
     private bool pwastd = false;
     private int lcn = 0;
     private bool[] pengs = new bool[7];
+    private int _engineSignature;
 
     private CarPhysics _carPhysics;
 
@@ -46,10 +47,45 @@ public class MadSfx
         if(!Mute) SfxLibrary.powerup?.Play();
     }
 
+    public void Stop()
+    {
+        for (var gear = 0; gear < 5; gear++)
+        {
+            if (!pengs[gear]) continue;
+            SfxLibrary.engs[_engineSignature, gear].Stop();
+            pengs[gear] = false;
+        }
+
+        if (grrd || aird || stopcnt > 0)
+            StopAirs();
+        if (pwastd)
+            SfxLibrary.wastd?.Stop();
+
+        grrd = false;
+        aird = false;
+        pwastd = false;
+        stopcnt = 0;
+        pwait = 7;
+    }
+
+    public void Dispose()
+    {
+        Stop();
+        _carPhysics.SfxPlayCrash -= SfxPlayCrash;
+        _carPhysics.SfxPlayScrape -= SfxPlayScrape;
+        _carPhysics.SfxPlayGscrape -= SfxPlayGscrape;
+        _carPhysics.SfxPlaySkid -= SfxPlaySkid;
+        _carPhysics.PowerUp -= SfxPlayPowerup;
+    }
+
     private void SparkEng(int cgear, int cn, CarStats stats)
     {
         if (!Mute)
         {
+            if (_engineSignature != stats.Enginsignature)
+                Stop();
+            _engineSignature = stats.Enginsignature;
+
             if (lcn != cn)
             {
                 for (int gear = 0; gear < 5; gear++)

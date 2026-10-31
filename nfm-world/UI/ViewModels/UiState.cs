@@ -60,6 +60,13 @@ public static class UiState
     /// <summary>Account state shown in the main menu.</summary>
     public sealed class MainMenuState
     {
+        public Signal<bool> MenuVisible { get; } = new(false);
+        public Signal<bool> GarageOpen { get; } = new(false);
+        public Signal<bool> InputEnabled { get; } = new(false);
+        public Signal<float> LogoOpacity { get; } = new(0);
+        public Signal<float> PromptOpacity { get; } = new(0);
+        public Signal<float> BlackOpacity { get; } = new(1);
+        public Signal<string> StageName { get; } = new("");
         public Signal<string> PlayerName { get; } = new("");
         public Signal<bool> IsLoggedIn { get; } = new(false);
 
