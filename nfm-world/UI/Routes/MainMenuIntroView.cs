@@ -44,7 +44,8 @@ public static class MainMenuIntroView
                         },
                         Sx.Show(() => !state.GarageOpen.Value, () => menu(Logo(logo))),
                         Sx.Show(() => state.GarageOpen.Value, () => garage()),
-                        MainMenuView.SettingsOverlay()
+                        MainMenuView.SettingsOverlay(),
+                        MainMenuView.QuitOverlay()
                     ])),
                 Sx.View(style: () => Sx.Styles(position: Position.Absolute, top: 0, left: 0,
                     width: "100%", height: "100%", backgroundColor: new Color(0, 0, 0),
@@ -62,6 +63,9 @@ public static class MainMenuIntroView
     {
         protected override void RenderContent(Vector2 position, Vector2 size)
         {
+            if (NFMWorld.UI.Components.SettingsView.CameraPreviewActive)
+                return;
+
             G.SetLinearGradient((int)position.X, (int)position.Y, (int)size.X, 0,
                 [new Color(3, 8, 20, 205), new Color(3, 8, 20, 0)], null);
             G.FillRect((int)position.X, (int)position.Y, (int)size.X, (int)size.Y);

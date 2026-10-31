@@ -295,7 +295,7 @@ public class DevConsole
                 
             ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 4.0f);
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(8, 8));
-            ImGui.PushStyleColor(ImGuiCol.WindowBg, new Vector4(0.1f, 0.1f, 0.1f, 0.95f));
+            ImGui.PushStyleColor(ImGuiCol.WindowBg, ImGui.GetStyle().Colors[(int)ImGuiCol.PopupBg]);
                 
             if (ImGui.Begin("##Autocomplete", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoInputs))
             {
@@ -314,7 +314,7 @@ public class DevConsole
                             drawList.AddRectFilled(
                                 new Vector2(textPos.X - 4, textPos.Y),
                                 new Vector2(textPos.X + textSize.X + 4, textPos.Y + textSize.Y),
-                                ImGui.GetColorU32(new Vector4(0.3f, 0.3f, 0.8f, 0.6f))
+                                ImGui.GetColorU32(ImGuiCol.HeaderHovered)
                             );
                         }
                             

@@ -15,7 +15,6 @@ nlaps(3)
 
 mountains(false)
 clouds(false)
-polys(false)
 
 soundtrack(nfm1,stage8.zipo)
 soundtrackfreqmul(1.01)

@@ -94,9 +94,6 @@
 
         <ProjectReference Include="..\MemoryPack\src\MemoryPack.Generator\MemoryPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
 
-        <ProjectReference Include="..\NvgSharp\src\NvgSharp.Text\NvgSharp.Text.csproj" />
-
-        <ProjectReference Include="..\NvgSharp\src\NvgSharp\NvgSharp.csproj" />
         <ProjectReference Include="..\SoundTouch.Net.NAudioSupport\SoundTouch.Net.NAudioSupport.csproj" />
     </ItemGroup>
 

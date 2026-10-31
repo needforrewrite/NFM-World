@@ -14,7 +14,6 @@ nlaps(2)
 
 mountains(false)
 clouds(false)
-polys(false)
 noarrow()
 
 soundtrack(nfm1,stage10.zipo)

@@ -62,6 +62,8 @@ public class SettingsMenu()
         _ => ["Auto", "OpenGL", "Vulkan via ANGLE", "OpenGL via ANGLE", "OpenGL ES via ANGLE"]
     };
     private static int _selectedRenderer = 0;
+    public static string SelectedRendererName => Renderers[_selectedRenderer];
+    public static void PrepareStartupRecovery() => _antialias = 0;
     private static int _originalRenderer = _selectedRenderer;
     private static string[] _resolutions = GetSupportedResolutions();
     public static string[] Resolutions => _resolutions;
@@ -148,6 +150,7 @@ public class SettingsMenu()
     /// </summary>
     public static void RegisterResolution(int width, int height)
     {
+        if (!OperatingSystem.IsBrowser() && _selectedDisplayMode == 2) return;
         var res = $"{width} x {height}";
 
         // Already exists — just select it
@@ -344,6 +347,8 @@ public class SettingsMenu()
             }
         }
 
+        game.Window.BorderlessDesktop = !OperatingSystem.IsBrowser() && _selectedDisplayMode == 2;
+
         if (_selectedDisplayMode == 0) // fullscreen
         {
             if (!game.Graphics.IsFullScreen)
@@ -459,12 +464,16 @@ public class SettingsMenu()
     /// </summary>
     public static bool SaveConfigAndCheckRestart()
     {
-        ApplySettings(out var requireRestart);
-        SaveConfig();
-        return requireRestart;
+        return SaveConfigAndCheckRestart(out var requireRestart) && requireRestart;
     }
 
-    public static void SaveConfig()
+    public static bool SaveConfigAndCheckRestart(out bool requireRestart)
+    {
+        ApplySettings(out requireRestart);
+        return SaveConfig();
+    }
+
+    public static bool SaveConfig()
     {
         var content = SaveConfigToString();
         try
@@ -476,11 +485,13 @@ public class SettingsMenu()
             using (var writer = new StreamWriter(stream))
                 writer.Write(content);
             Logging.Debug($"Config saved to {configPath}");
+            return true;
         }
         catch (Exception ex)
         {
             SentrySdk.CaptureException(ex);
             Logging.Error($"Error saving config: {ex.Message}");
+            return false;
         }
     }
 
@@ -937,6 +948,12 @@ public class SettingsMenu()
     public static SettingsSnapshot GetCurrentSnapshot()
     {
         SyncRuntimeOutlineSettings();
+        var borderlessResolution = "";
+        if (!OperatingSystem.IsBrowser() && _selectedDisplayMode == 2)
+        {
+            var (width, height) = SdlWindow.GetPrimaryDesktopResolution();
+            borderlessResolution = $"{width} x {height}";
+        }
 
         var bindingProps = typeof(KeyBindings).GetProperties();
         var keyBindings = new KeyBindingData[bindingProps.Length];
@@ -955,14 +972,13 @@ public class SettingsMenu()
         {
             SelectedRenderer = _selectedRenderer,
             SelectedResolution = _selectedResolution,
+            BorderlessResolution = borderlessResolution,
             SelectedDisplayMode = _selectedDisplayMode,
             Vsync = _vsync,
             FpsLimit = _fpsLimit,
-            // Report what the drawable actually has, not the requested count: the hardware clamps
-            // (asking for 8x on a device that caps at 4x gets 4x), and MSAA lands on the next frame's
-            // swapchain sync rather than during ApplySettings - so a stored request could otherwise be
-            // shown as if it had taken effect when the backbuffer never changed.
-            Antialias = SampleCountToAntialias(GameSparker.Game.Graphics.AppliedMultiSampleCount),
+            Antialias = _antialias,
+            AppliedAntialias = SampleCountToAntialias(GameSparker.Game.Graphics.AppliedMultiSampleCount),
+            AntialiasRequiresRestart = GameSparker.Game.Graphics.RequiresRestartForMultiSampling,
             ShadowCascadeLevel = _shadowCascadeLevel,
             ShadowResolution = _shadowResolution,
             RenderDistance = _renderDistance,

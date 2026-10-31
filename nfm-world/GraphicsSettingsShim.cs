@@ -25,14 +25,16 @@ namespace NFMWorld;
 /// the drawable, so <c>WorldGame</c> pushes it onto whichever backend is in play on every frame.
 /// </para>
 /// </remarks>
-public sealed class GraphicsSettingsShim(SdlWindow window, ISwapchain swapchain)
+public sealed class GraphicsSettingsShim(SdlWindow window, ISwapchain swapchain, int? startupMultiSampleRequest = null)
 {
+    private readonly int _startupMultiSampleRequest = (startupMultiSampleRequest ?? swapchain.MultiSampleCount) <= 1
+        ? 0 : startupMultiSampleRequest ?? swapchain.MultiSampleCount;
     public bool SynchronizeWithVerticalRetrace { get; set; } = true;
     public bool PreferMultiSampling { get; set; }
 
     public bool IsFullScreen
     {
-        get => window.Fullscreen;
+        get => window.RequestedFullscreen;
         set => window.Fullscreen = value;
     }
 
@@ -87,10 +89,21 @@ public sealed class GraphicsSettingsShim(SdlWindow window, ISwapchain swapchain)
     public bool RequiresRestartForMultiSampling =>
         !OperatingSystem.IsBrowser()
         && swapchain.MultiSampleChangeRequiresRestart
-        && DesiredMultiSampleCount != AppliedMultiSampleCount;
+        && DesiredMultiSampleCount != (AppliedMultiSampleCount <= 1 ? 0 : AppliedMultiSampleCount)
+        && DesiredMultiSampleCount != _startupMultiSampleRequest;
 
     public void ApplyChanges()
     {
+        if (window.BorderlessDesktop)
+        {
+            window.RefreshBorderlessDesktop();
+            return;
+        }
+        if (window.RequestedFullscreen && !OperatingSystem.IsBrowser())
+        {
+            window.SetFullscreenResolution(PreferredBackBufferWidth, PreferredBackBufferHeight);
+            return;
+        }
         if (window.Width != PreferredBackBufferWidth || window.Height != PreferredBackBufferHeight)
             window.SetSize(PreferredBackBufferWidth, PreferredBackBufferHeight);
     }
