@@ -107,6 +107,7 @@ public static class SettingsView
         var confirm = new Signal<(string Title, string Message, Action OnConfirm)?>(null);
         var restartRequired = new Signal<bool>(false);
         var cameraPreview = new Signal<bool>(false);
+        var cameraPresetEditor = new Signal<bool>(false);
         var applied = new Signal<bool>(false);
         var closeAfterRestartPrompt = false;
 
@@ -155,6 +156,11 @@ public static class SettingsView
                 if (key != Key.Escape && key != Key.None)
                     Set("keyBinding", (int)key, action);
                 return true;
+            }
+            if (cameraPresetEditor.Value)
+            {
+                if (key == Key.Escape) cameraPresetEditor.Value = false;
+                return key == Key.Escape;
             }
             if (key != Key.Escape) return false;
             if (cameraPreview.Value)
@@ -262,7 +268,8 @@ public static class SettingsView
                             SettingsMenu.ResetKeyBindingDefaults)),
                         [Tab.Video] = () => VideoTab(config, options, Set),
                         [Tab.Audio] = () => AudioTab(config, Set),
-                        [Tab.Game] = () => GameTab(() => cameraPreview.Value = true, () => ConfirmReset(
+                        [Tab.Game] = () => GameTab(config, Refresh, () => cameraPresetEditor.Value = true,
+                            () => cameraPreview.Value = true, () => ConfirmReset(
                             "Reset Camera",
                             "Are you sure you want to reset all camera settings to their defaults?",
                             SettingsMenu.ResetCameraDefaults))
@@ -294,7 +301,10 @@ public static class SettingsView
             backgroundColor: cameraPreview.Value ? Theme.Transparent : new Color(3, 8, 20, 150))));
         root.AddChild(Body());
         root.AddChild(Sx.Show(() => cameraPreview.Value,
-            () => CameraPreviewPanel(config, Set, () => cameraPreview.Value = false)));
+            () => CameraPreviewPanel(config, Set, Refresh, () => cameraPresetEditor.Value = true,
+                () => cameraPreview.Value = false)));
+        root.AddChild(Sx.Show(() => cameraPresetEditor.Value,
+            () => CameraPresetEditor(config, Refresh, () => cameraPresetEditor.Value = false)));
         return root;
     }
 
@@ -480,18 +490,21 @@ public static class SettingsView
             Divider(),
             Row("Remastered Music", Controls.Checkbox(() => config.Value?.RemasteredMusic ?? false, () => set("remasteredMusic", !(config.Value?.RemasteredMusic ?? false), null))));
 
-    private static Node GameTab(Action preview, Action onResetCamera)
+    private static Node GameTab(Signal<SettingsSnapshot?> config, Action refresh, Action manage,
+        Action preview, Action onResetCamera)
         => Content(
             Section("Camera"),
+            Row("Camera Preset", CameraPresetDropdown(config, refresh)),
             Sx.Text(style: () => Sx.TextStyles(fontSize: 14, foregroundColor: TextBlue),
                 layout: () => Sx.Styles(marginBottom: 16),
                 text: () => "Adjust your driving camera with a live view from behind the car."),
-            SettingsButton("Adjust Camera", preview),
+            Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 12),
+                children: [SettingsButton("Adjust Camera", preview), SettingsButton("Manage Presets", manage)]),
             Divider(),
             ResetLink("Reset Camera Defaults", onResetCamera));
 
     private static Node CameraPreviewPanel(Signal<SettingsSnapshot?> config,
-        Action<string, object?, string?> set, Action back)
+        Action<string, object?, string?> set, Action refresh, Action manage, Action back)
         => Sx.View(
             style: () => Sx.Styles(position: Position.Absolute, left: "3%", right: "3%", bottom: "3%",
                 flexDirection: FlexDirection.Column, gapRow: 12,
@@ -509,9 +522,11 @@ public static class SettingsView
                         Sx.Text(style: () => Sx.TextStyles(fontSize: 18, fontFamily: FontFamily.Adventure,
                                 foregroundColor: Blue), text: () => "CAMERA PREVIEW"),
                         Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row,
-                                alignItems: Align.Center, gapColumn: 20),
+                                alignItems: Align.Center, gapColumn: 12, flexWrap: Wrap.Wrap, gapRow: 8),
                             children:
                             [
+                                Sx.View(style: () => Sx.Styles(width: 220), children: CameraPresetDropdown(config, refresh)),
+                                SettingsButton("Manage Presets", manage),
                                 Controls.Checkbox(() => config.Value?.SmoothFov ?? false,
                                     () => set("smoothFov", !(config.Value?.SmoothFov ?? false), null),
                                     () => "Smooth FOV"),
@@ -520,6 +535,118 @@ public static class SettingsView
                     ]),
                 CameraControls(config, set)
             ]);
+
+    private static Node CameraPresetDropdown(Signal<SettingsSnapshot?> config, Action refresh) => Controls.Dropdown(
+        () => (config.Value?.ModifiedCameraPreset is not null ? new[] { "Modified" } : Array.Empty<string>())
+            .Concat(config.Value?.CameraPresets.Select(p => p.Name) ?? []).ToArray(),
+        () => config.Value is { } current
+            ? current.ModifiedCameraPreset is not null ? current.SelectedCameraPreset + 1 : current.SelectedCameraPreset
+            : -1,
+        index =>
+        {
+            var presets = config.Value?.CameraPresets;
+            if (config.Value?.ModifiedCameraPreset is not null)
+            {
+                if (index == 0)
+                {
+                    SettingsMenu.SelectModifiedCameraPreset();
+                    refresh();
+                    return;
+                }
+                index--;
+            }
+            if (presets is null || index < 0 || index >= presets.Count) return;
+            SettingsMenu.SelectCameraPreset(presets[index].Name);
+            refresh();
+        }, unselectedLabel: "Modified");
+
+    private static Node CameraPresetEditor(Signal<SettingsSnapshot?> config, Action refresh, Action close)
+    {
+        var custom = config.Value?.CameraPresets.Skip(2).ToArray() ?? [];
+        var initial = custom.FirstOrDefault(p => p.Name == config.Value?.CameraPresetName);
+        var target = new Signal<string?>(initial?.Name);
+        var name = new Signal<string>(initial?.Name ?? "");
+        var message = new Signal<string>("");
+        var deleting = new Signal<bool>(false);
+
+        void Save(bool update)
+        {
+            try
+            {
+                SettingsMenu.SaveCameraPreset(name.Value, update ? target.Value : null);
+                refresh();
+                target.Value = config.Value!.CameraPresetName;
+                name.Value = target.Value!;
+                deleting.Value = false;
+                message.Value = "Preset saved. Use Apply or OK to keep your changes.";
+            }
+            catch (ArgumentException ex) { message.Value = ex.Message; }
+        }
+
+        return Sx.View(style: () => Sx.Styles(position: Position.Absolute,
+                top: 0, bottom: 0, left: 0, right: 0, zIndex: 25,
+                alignItems: Align.Center, justifyContent: Justify.Center,
+                backgroundColor: new Color(3, 8, 20, 150)),
+            children: Sx.View(style: () => Sx.Styles(width: "90%", maxWidth: 520,
+                    paddingTop: 24, paddingBottom: 24, paddingLeft: 24, paddingRight: 24,
+                    backgroundColor: Panel, borderColor: Border, borderTop: 1, borderBottom: 1,
+                    borderLeft: 1, borderRight: 1, borderRadius: 10, flexDirection: FlexDirection.Column, gapRow: 14),
+                children:
+                [
+                    Section("Camera Presets"),
+                    Sx.Text(style: () => Sx.TextStyles(fontSize: 13, foregroundColor: TextBlue),
+                        text: () => "Save the current camera values, or update and rename a custom preset."),
+                    Controls.Dropdown(
+                        () => new[] { "New preset" }.Concat(config.Value?.CameraPresets.Skip(2).Select(p => p.Name) ?? []).ToArray(),
+                        () => Math.Max(0, Array.FindIndex(config.Value?.CameraPresets.Skip(2).ToArray() ?? [], p => p.Name == target.Value) + 1),
+                        index =>
+                        {
+                            var presets = config.Value?.CameraPresets.Skip(2).ToArray() ?? [];
+                            target.Value = index > 0 && index <= presets.Length ? presets[index - 1].Name : null;
+                            name.Value = target.Value ?? "";
+                            message.Value = "";
+                            deleting.Value = false;
+                        }),
+                    Controls.TextField(() => name.Value, value => name.Value = value, () => "Preset name"),
+                    Sx.Text(style: () => Sx.TextStyles(fontSize: 12, foregroundColor: TextBlue),
+                        text: () => $"Current: FOV {config.Value?.Fov:F1}° / Y {config.Value?.FollowY} / Z {config.Value?.FollowZ} / Smooth FOV {(config.Value?.SmoothFov == true ? "On" : "Off")}"),
+                    Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10, gapRow: 8, flexWrap: Wrap.Wrap),
+                        children:
+                        [
+                            SettingsButton("Save as New", () => Save(false)),
+                            Sx.Show(() => target.Value is not null, () => Sx.View(
+                                style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10),
+                                children:
+                                [
+                                    SettingsButton("Update / Rename", () => Save(true)),
+                                    SettingsButton("Remove", () => deleting.Value = true)
+                                ]))
+                        ]),
+                    Sx.Show(() => deleting.Value, () => Sx.View(
+                        style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 10),
+                        children:
+                        [
+                            Sx.Text(style: () => Sx.TextStyles(fontSize: 13, foregroundColor: TextBlue),
+                                text: () => $"Remove '{target.Value}'? Your current camera values will stay unchanged."),
+                            Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10), children:
+                            [
+                                SettingsButton("Remove Preset", () =>
+                                {
+                                    if (target.Value is not { } preset) return;
+                                    SettingsMenu.RemoveCameraPreset(preset);
+                                    target.Value = null;
+                                    name.Value = "";
+                                    deleting.Value = false;
+                                    refresh();
+                                    message.Value = "Preset removed. Use Apply or OK to keep your changes.";
+                                }),
+                                SettingsButton("Keep Preset", () => deleting.Value = false)
+                            ])
+                        ])),
+                    Sx.Text(style: () => Sx.TextStyles(fontSize: 12, foregroundColor: TextBlue), text: () => message.Value),
+                    SettingsButton("Done", close)
+                ]));
+    }
 
     private static Node CameraControls(Signal<SettingsSnapshot?> config, Action<string, object?, string?> set)
         => Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row, flexWrap: Wrap.Wrap,

@@ -1,3 +1,5 @@
+using NFMWorldLibrary.Util;
+
 namespace NFMWorld.UI.Settings;
 
 /// <summary>
@@ -34,6 +36,10 @@ public sealed class SettingsSnapshot
     public int FollowY { get; set; }
     public int FollowZ { get; set; }
     public bool SmoothFov { get; set; }
+    public IReadOnlyList<CameraPreset> CameraPresets { get; set; } = [];
+    public CameraPreset? ModifiedCameraPreset { get; set; }
+    public string CameraPresetName { get; set; } = "";
+    public int SelectedCameraPreset { get; set; } = -1;
 
     // Key bindings
     public IReadOnlyList<KeyBindingData> KeyBindings { get; set; } = [];

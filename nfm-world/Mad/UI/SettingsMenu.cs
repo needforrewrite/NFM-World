@@ -7,6 +7,7 @@ using NFMWorld.Graphics.OpenGL;
 using NFMWorld.Platform.SDL3;
 using NFMWorld.UI.Settings;
 using NFMWorldLibrary;
+using NFMWorldLibrary.Util;
 using NFMWorld.Sentry;
 
 namespace NFMWorld.UI;
@@ -109,10 +110,13 @@ public class SettingsMenu()
     private static bool _remasteredMusic = false;
 
     // Game settings — Camera (static)
-    private static float _fov = PerspectiveCamera.DefaultFov;
-    private static int _followY = 0;
-    private static int _followZ = 0;
-    private static bool _smoothFov;
+    private static float _fov = CameraPreset.NFMW.Fov;
+    private static int _followY = CameraPreset.NFMW.FollowY;
+    private static int _followZ = CameraPreset.NFMW.FollowZ;
+    private static bool _smoothFov = CameraPreset.NFMW.SmoothFov;
+    private static List<CameraPreset> _cameraPresets = [];
+    private static CameraPreset? _modifiedCameraPreset;
+    private static string _cameraPresetName = "NFMW";
 
     // Keyboard settings
     private string _settingMessage = "";
@@ -502,6 +506,7 @@ public class SettingsMenu()
     public static string SaveConfigToString()
     {
         SyncRuntimeOutlineSettings();
+        RememberModifiedCamera();
 
         using var sw = new StringWriter();
         sw.WriteLine("// NFM-World Configuration File");
@@ -528,10 +533,13 @@ public class SettingsMenu()
         sw.WriteLine($"audio_remaster {(_remasteredMusic ? 1 : 0)}");
         sw.WriteLine();
         sw.WriteLine("// Camera Settings");
-        sw.WriteLine($"camera_fov {_fov.ToString("F1", CultureInfo.InvariantCulture)}");
+        sw.WriteLine($"camera_fov {_fov.ToString("R", CultureInfo.InvariantCulture)}");
         sw.WriteLine($"camera_follow_y {_followY}");
         sw.WriteLine($"camera_follow_z {_followZ}");
         sw.WriteLine($"camera_smooth_fov {(_smoothFov ? 1 : 0)}");
+        sw.WriteLine($"camera_preset_name {_cameraPresetName}");
+        sw.WriteLine($"camera_presets {CameraPresetConfig.WritePresets(_cameraPresets)}");
+        sw.WriteLine($"camera_modified_preset {CameraPresetConfig.WritePresets(_modifiedCameraPreset is { } modified ? [modified] : [])}");
         sw.WriteLine();
         sw.WriteLine("// Key Bindings");
         sw.WriteLine($"key_accelerate {(int)Bindings.Accelerate}");
@@ -559,6 +567,7 @@ public class SettingsMenu()
     /// </summary>
     public static void LoadConfigFromSnapshot(string configString)
     {
+        InitializeCameraConfig(configString);
         using var sr = new StringReader(configString);
         string? line;
         while ((line = sr.ReadLine()) != null)
@@ -642,17 +651,14 @@ public class SettingsMenu()
                     break;
 
                 // Camera settings
-                case "camera_fov":
-                    _fov = float.Parse(value, CultureInfo.InvariantCulture);
+                case "camera_preset_name":
+                    _cameraPresetName = value;
                     break;
-                case "camera_follow_y":
-                    _followY = int.Parse(value, CultureInfo.InvariantCulture);
+                case "camera_presets":
+                    _cameraPresets = CameraPresetConfig.ReadPresets(value);
                     break;
-                case "camera_follow_z":
-                    _followZ = int.Parse(value, CultureInfo.InvariantCulture);
-                    break;
-                case "camera_smooth_fov":
-                    _smoothFov = int.Parse(value) != 0;
+                case "camera_modified_preset":
+                    _modifiedCameraPreset = CameraPresetConfig.ReadPresets(value).FirstOrDefault();
                     break;
 
                 // Key bindings
@@ -868,10 +874,13 @@ public class SettingsMenu()
             if (!TheVFS.VFS.FileExists(configPath))
             {
                 Logging.Warning("No config file found, using defaults.");
+                InitializeCameraConfig("");
                 return;
             }
 
-            foreach (var line in TheVFS.VFS.ReadAllLines(configPath))
+            var content = TheVFS.VFS.ReadAllText(configPath);
+            InitializeCameraConfig(content);
+            foreach (var line in content.Split('\n'))
             {
                 var trimmed = line.Trim();
                 if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("//"))
@@ -948,6 +957,7 @@ public class SettingsMenu()
     public static SettingsSnapshot GetCurrentSnapshot()
     {
         SyncRuntimeOutlineSettings();
+        RememberModifiedCamera();
         var borderlessResolution = "";
         if (!OperatingSystem.IsBrowser() && _selectedDisplayMode == 2)
         {
@@ -994,6 +1004,10 @@ public class SettingsMenu()
             FollowY = _followY,
             FollowZ = _followZ,
             SmoothFov = _smoothFov,
+            CameraPresets = [CameraPreset.NFMW, CameraPreset.Classic, .. _cameraPresets],
+            ModifiedCameraPreset = _modifiedCameraPreset,
+            CameraPresetName = _cameraPresetName,
+            SelectedCameraPreset = SelectedCameraPreset(),
             KeyBindings = keyBindings
         };
     }
@@ -1134,6 +1148,9 @@ public class SettingsMenu()
                 break;
         }
 
+        if (key is "fov" or "followY" or "followZ" or "smoothFov")
+            RememberModifiedCamera();
+
         // Apply immediately for live preview
         ApplySettings(out _);
     }
@@ -1168,10 +1185,82 @@ public class SettingsMenu()
     /// </summary>
     public static void ResetCameraDefaults()
     {
-        _fov = 90.0f;
-        _smoothFov = true;
-        _followY = 0;
-        _followZ = 0;
+        SelectCameraPreset("NFMW");
+    }
+
+    private static CameraPreset CurrentCamera(string name) => new(name, _fov, _followY, _followZ, _smoothFov);
+
+    private static void SetCamera(CameraPreset preset)
+    {
+        _fov = preset.Fov;
+        _followY = preset.FollowY;
+        _followZ = preset.FollowZ;
+        _smoothFov = preset.SmoothFov;
+    }
+
+    private static void InitializeCameraConfig(string content)
+    {
+        SetCamera(CameraPresetConfig.ReadCamera(content));
+        _cameraPresets = [];
+        _modifiedCameraPreset = null;
+        _cameraPresetName = "";
+    }
+
+    private static void RememberModifiedCamera()
+    {
+        if (SelectedCameraPreset() < 0)
+            _modifiedCameraPreset = CurrentCamera("Modified");
+    }
+
+    public static void SelectModifiedCameraPreset()
+    {
+        if (_modifiedCameraPreset is not { } modified) return;
+        SetCamera(modified);
+        _cameraPresetName = "";
         ApplySettings(out _);
+    }
+
+    private static int SelectedCameraPreset()
+    {
+        CameraPreset[] presets = [CameraPreset.NFMW, CameraPreset.Classic, .. _cameraPresets];
+        var current = CurrentCamera("");
+        var index = Array.FindIndex(presets, p => p.Name == _cameraPresetName && p.Matches(current));
+        if (index < 0) index = Array.FindIndex(presets, p => p.Matches(current));
+        return index;
+    }
+
+    public static void SelectCameraPreset(string name)
+    {
+        CameraPreset[] presets = [CameraPreset.NFMW, CameraPreset.Classic, .. _cameraPresets];
+        var preset = presets.Single(p => p.Name == name);
+        SetCamera(preset);
+        _cameraPresetName = preset.Name;
+        ApplySettings(out _);
+    }
+
+    public static void SaveCameraPreset(string name, string? replaceName = null)
+    {
+        name = CameraPreset.ValidateCustomName(name);
+        if (_cameraPresets.Any(p => p.Name != replaceName && p.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+            throw new ArgumentException("A camera preset with this name already exists.");
+        var preset = CurrentCamera(name);
+        if (replaceName is null)
+            _cameraPresets.Add(preset);
+        else
+        {
+            var index = _cameraPresets.FindIndex(p => p.Name == replaceName);
+            if (index < 0) throw new ArgumentException("Choose a custom preset to update.");
+            _cameraPresets[index] = preset;
+        }
+        _cameraPresetName = name;
+        if (_modifiedCameraPreset?.Matches(preset) == true)
+            _modifiedCameraPreset = null;
+    }
+
+    public static void RemoveCameraPreset(string name)
+    {
+        if (_cameraPresets.RemoveAll(p => p.Name == name) == 0)
+            throw new ArgumentException("Only custom presets can be removed.");
+        if (_cameraPresetName == name) _cameraPresetName = "";
     }
 }
