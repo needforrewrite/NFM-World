@@ -30,6 +30,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private GarageController? _garage;
     private BackendCar? _garageEntryCar;
     private float _garageBlend;
+    private readonly GarageCameraControls _garageCamera = new();
     private MenuAttractDrive? _attractDrive;
     private int _attractShot = -1;
     private bool _transitionToMenu = true;
@@ -149,6 +150,8 @@ public class MainMenuPhase : BaseStageRenderingPhase
     {
         if (_garage != null || _menuCar == null) return;
         _garageEntryCar = _menuCar;
+        if (_garageBlend == 0)
+            _garageCamera.Reset();
         _garage = new GarageController(CarsInRace, _menuCar);
         _garage.CarSelected += (_, _) => CloseGarage(true);
         _garage.CarSelectionCancelled += (_, _) => CloseGarage(false);
@@ -158,6 +161,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void CloseGarage(bool commit)
     {
+        _garageCamera.Release(MouseButton.Primary);
         _menuCar = commit ? _garage?.CurrentCar : _garageEntryCar;
         if (_menuCar != null && CarsInRace[0] != _menuCar)
             CarsInRace[0] = _menuCar;
@@ -213,10 +217,13 @@ public class MainMenuPhase : BaseStageRenderingPhase
         if (_menuVisible)
         {
             _menuTime += seconds;
+            if (_garage != null)
+                _garageCamera.Tick(seconds);
             _garageBlend = Math.Clamp(_garageBlend + (_garage != null ? seconds : -seconds) / 1.1f, 0, 1);
             _menuCar = _garage?.CurrentCar ?? _menuCar;
             if (_menuCar != null)
-                _cameraDirector.ShowCar(Camera, _menuCar, _menuTime, garageBlend: Smooth(_garageBlend));
+                _cameraDirector.ShowCar(Camera, _menuCar, _menuTime, garageBlend: Smooth(_garageBlend),
+                    garageAngle: _garageCamera.Angle, garageHeight: _garageCamera.Height);
         }
         else
         {
@@ -322,7 +329,24 @@ public class MainMenuPhase : BaseStageRenderingPhase
         MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
     {
         base.MousePressed(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
+        if (_garage != null && EnableUiInput)
+            _garageCamera.Press(x, y, imguiWantsMouse, button);
         if (!imguiWantsMouse && !_menuVisible && _introTime >= PromptFadeStart && _transitionTime < 0)
             BeginTransition(true);
+    }
+
+    public override void MouseMoved(int x, int y, bool imguiWantsMouse, MouseButtons buttons,
+        bool ctrlKey, bool shiftKey, bool altKey)
+    {
+        base.MouseMoved(x, y, imguiWantsMouse, buttons, ctrlKey, shiftKey, altKey);
+        if (_garage != null && EnableUiInput)
+            _garageCamera.Move(x, y, imguiWantsMouse, buttons);
+    }
+
+    public override void MouseReleased(int x, int y, bool imguiWantsMouse, MouseButton button,
+        MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    {
+        base.MouseReleased(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
+        _garageCamera.Release(button);
     }
 }

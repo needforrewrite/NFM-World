@@ -103,7 +103,7 @@ public class Submesh : IInstancedRenderElement, IDisposable
         p.IsFullbright.SetValue(cb, PolyType is PolyType.BrakeLight or PolyType.Light or PolyType.ReverseLight && World.LightsOn);
         p.UseBaseColor.SetValue(cb, PolyType is PolyType.Glass or PolyType.CGround);
         p.BaseColor.SetValue(cb, PolyType is PolyType.CGround ? World.GroundColor : World.Sky);
-        p.FogColor.SetValue(cb, World.Fog.Snap(World.Snap));
+        p.FogColor.SetValue(cb, World.Fog);
         p.FogDistance.SetValue(cb, World.FadeFrom);
         p.FogLogDensity.SetValue(cb, World.FogLogDensity);
         p.EnvironmentLight.SetValue(cb, new Vector2(World.BlackPoint, World.WhitePoint));

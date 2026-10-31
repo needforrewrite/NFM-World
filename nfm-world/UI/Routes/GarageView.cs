@@ -14,6 +14,7 @@ namespace NFMWorld.UI.Routes;
 /// </summary>
 public static class GarageView
 {
+    internal const int SidebarWidth = 340;
     /// <summary>What the garage asks the game to do. The phase fills these in.</summary>
     public sealed record Actions(
         Action<string, string> CarSelected,
@@ -53,7 +54,7 @@ public static class GarageView
                 Sx.View(
                     style: () => new Styles
                     {
-                        Width = 340,
+                        Width = SidebarWidth,
                         Height = MeasurementWidthHeight.Percent(100),
                         PaddingTop = 32,
                         PaddingBottom = 32,

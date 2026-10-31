@@ -77,7 +77,7 @@ public class GroundPolys : Transform, IRenderable, IImmediateRenderElement, IDis
 
         p.WorldView.SetValue(cb, camera.ViewMatrix);
         p.WorldViewProj.SetValue(cb, camera.ViewMatrix * camera.ProjectionMatrix);
-        p.FogColor.SetValue(cb, World.Fog.Snap(World.Snap));
+        p.FogColor.SetValue(cb, World.Fog);
         p.FogDistance.SetValue(cb, World.FadeFrom);
         p.FogLogDensity.SetValue(cb, World.FogLogDensity);
 

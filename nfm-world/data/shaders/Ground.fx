@@ -50,9 +50,8 @@ float4 PixelShaderFunction(VertexShaderOutput input) : SV_TARGET
     float3 diffuse = input.Color.xyz;
 
     float viewLength = length(input.ViewPos.xyz);
-    VS_ApplyFog(diffuse, viewLength, FogColor, FogDistance, FogLogDensity);
-
     PS_ApplyShadowing(diffuse, float4(input.WorldPos.xyz, 1), float3(0, 1, 0));
+    VS_ApplyFog(diffuse, viewLength, FogColor, FogDistance, FogLogDensity);
 
     return float4(diffuse, input.Color.w);
 }

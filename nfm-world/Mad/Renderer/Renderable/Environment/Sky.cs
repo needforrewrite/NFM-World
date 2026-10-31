@@ -16,23 +16,28 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
     {
         _graphicsDevice = graphicsDevice;
 
-        var skyline = -300;
-
+        const float skyHeight = 1000;
+        const float skyDistance = 7000;
+        Vector3 skyColor = World.Sky.Snap(World.Snap);
+        Vector3 fogColor = World.Fog;
         var layers = new LinkedList<(Vector3 Position, Vector3 Color)>();
-        layers.AddLast((new Vector3(0, skyline - 700, 7000), World.Sky.Snap(World.Snap)));
+        layers.AddLast((new Vector3(0, -skyHeight, skyDistance), skyColor));
 
-        Vector3 col = World.Sky.Snap(World.Snap);
-        for (var i = 0; i < 16; ++i) {
-            col = ((new Vector3(7, 7, 7) * col) + World.Fog) / (new Vector3(8, 8, 8));
-            layers.AddLast((new Vector3(0, skyline, Fade(i)), col));
+        // Reach the terrain's fog color at the horizon with a flat slope at both ends.
+        const int fogLayers = 32;
+        for (var i = 1; i <= fogLayers; ++i) {
+            var t = i / (float)fogLayers;
+            var blend = t * t * (3 - 2 * t);
+            layers.AddLast((new Vector3(0, -skyHeight * (1 - t), skyDistance),
+                Vector3.Lerp(skyColor, fogColor, blend)));
         }
 
-        col = World.Sky.Snap(World.Snap);
+        var col = skyColor;
         for (var i = 1; i < 20; ++i) {
             col = new Vector3(0.991f, 0.991f, 0.998f) * col;
-            layers.AddFirst((new Vector3(0, skyline - 700 - i * 70, 7000), col));
+            layers.AddFirst((new Vector3(0, -skyHeight - i * 70, skyDistance), col));
         }
-        layers.AddLast((new Vector3(0, 10250, 7000), World.Fog));
+        layers.AddLast((new Vector3(0, 10250, skyDistance), fogColor));
 
         var data = new List<PositionColorVertex>();
 
@@ -57,11 +62,6 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
             new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length), vertexBytes);
 
         _triangleCount = data.Count / 3;
-        return;
-
-        static float Fade(int i) {
-            return World.FadeFrom / 2f * (i + 1);
-        }
     }
 
     ~Sky()
@@ -83,17 +83,16 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
         cb.SetPipeline(Effects.SkyPipeline);
         cb.SetVertexBuffer(0, _vertexBuffer, PositionColorVertex.Stride);
 
-        // The sky is authored in camera-relative space (a huge wall at z = -7000, see the
-        // constructor), so it must NOT be transformed by the camera's world view matrix. The
-        // original FNA implementation built a rotation-only (yaw) view matrix here and used that -
-        // passing camera.ViewMatrix instead (which also carries the camera's translation) leaves
-        // the wall at an arbitrary world position, which is why the sky vanished entirely.
-        var viewDirection = Vector3.Normalize(camera.LookAt - camera.Position);
-        var yaw = (float)Math.Atan2(viewDirection.X, viewDirection.Z);
-        var yawRotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY, -yaw);
-        var fullRotation = Quaternion.CreateFromYawPitchRoll(yaw, 0, 0);
-        var combinedRotation = Quaternion.Inverse(yawRotation * fullRotation);
-        var viewMatrix = Matrix.CreateFromQuaternion(combinedRotation);
+        // Keep the sky wall facing the camera horizontally, but let pitch and roll move its horizon.
+        var viewMatrix = camera.ViewMatrix;
+        viewMatrix.Translation = Vector3.Zero;
+        var horizontalDirection = new Vector3(-viewMatrix.M13, 0, -viewMatrix.M33);
+        if (horizontalDirection.LengthSquared() < 1e-6f)
+        {
+            horizontalDirection = Vector3.UnitZ;
+        }
+        var skyWorld = Matrix.CreateWorld(Vector3.Zero, Vector3.Normalize(horizontalDirection), -Vector3.UnitY);
+        viewMatrix = skyWorld * viewMatrix;
 
         // Background: World.Sky darkened by the same 0.991/0.998-per-step falloff the topmost
         // gradient layer uses, so the clear colour and the layers match. This is colour-only (the

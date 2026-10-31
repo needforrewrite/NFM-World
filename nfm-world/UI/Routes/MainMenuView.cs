@@ -19,7 +19,12 @@ namespace NFMWorld.UI.Routes;
 /// </remarks>
 public static class MainMenuView
 {
-    public sealed record MenuItem(string Label, string Description, Action Action);
+    public sealed class MenuItem(string label, string description, Action action)
+    {
+        public string Label { get; } = label;
+        public string Description { get; } = description;
+        public Action Action { get; } = action;
+    }
 
     public sealed record MenuPage(string Title, IReadOnlyList<MenuItem> Items);
 

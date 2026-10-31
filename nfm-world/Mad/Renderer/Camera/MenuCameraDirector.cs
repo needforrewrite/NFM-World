@@ -286,12 +286,13 @@ public sealed class MenuCameraDirector
         }
     }
 
-    public void ShowCar(PerspectiveCamera camera, BackendCar car, float seconds, bool cut = false, float garageBlend = 0)
+    public void ShowCar(PerspectiveCamera camera, BackendCar car, float seconds, bool cut = false, float garageBlend = 0,
+        float garageAngle = 0, float garageHeight = 0)
     {
-        var target = ToVector(car.Position) + new Vector3(0, -120, 0);
-        var angle = 0.65f + 1.7f * garageBlend + MathF.Sin(seconds * 0.06f) * 0.12f * (1 - garageBlend);
+        var target = ToVector(car.Position) + new Vector3(0, -120 + (car.GroundAt - 60) * garageBlend, 0);
+        var angle = 0.65f + (1.7f + garageAngle) * garageBlend + MathF.Sin(seconds * 0.06f) * 0.12f * (1 - garageBlend);
         var radius = 1600 - 400 * garageBlend;
-        var height = 500 - 170 * garageBlend;
+        var height = 500 + (garageHeight - 170) * garageBlend;
         var position = target + new Vector3(MathF.Cos(angle) * radius, -height, MathF.Sin(angle) * radius);
         // Keep the car on the right, clear of the menu.
         var framing = 410 - 130 * garageBlend;

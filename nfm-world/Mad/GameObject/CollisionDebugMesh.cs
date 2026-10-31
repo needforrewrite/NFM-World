@@ -185,7 +185,7 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
         LineEffectDistantOutlineSettings.Apply(cb, DistantOutlineBehavior.AlwaysRender);
 
         p.LightDirection.SetValue(cb, World.LightDirection);
-        p.FogColor.SetValue(cb, (Vector3)World.Fog.Snap(World.Snap));
+        p.FogColor.SetValue(cb, (Vector3)World.Fog);
         p.FogDistance.SetValue(cb, World.FadeFrom);
         p.FogLogDensity.SetValue(cb, World.FogLogDensity);
         p.EnvironmentLight.SetValue(cb, new Vector2(World.BlackPoint, World.WhitePoint));
