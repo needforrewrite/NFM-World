@@ -75,7 +75,7 @@ internal static class PluginPolicy
         // reflecting over it returns System.Private.CoreLib methods, and removing those
         // by identity takes unrelated members of the same module with them.
         var policy = builder.Build();
-        var unsafeType = typeof(System.Runtime.CompilerServices.Unsafe);
+        var unsafeType = typeof(Unsafe);
         foreach (var method in unsafeType.GetMethods(AllMembers).Where(m => m.DeclaringType == unsafeType))
         {
             if (policy.CanAccess(method))
@@ -93,9 +93,15 @@ internal static class PluginPolicy
         foreach (var marker in assembly.GetCustomAttributesData())
         {
             if (marker.AttributeType is { IsGenericType: true } attribute
-                && attribute.GetGenericTypeDefinition() == typeof(PublicVisibleAttribute<>))
+                && attribute.GetGenericTypeDefinition() == typeof(VendorPluginVisibleAttribute<>))
             {
                 Allow(builder, attribute.GetGenericArguments()[0], VisibilityOf(marker));
+            }
+            
+            if (marker.AttributeType == typeof(VendorPluginVisibleAttribute))
+            {
+                var type = (Type)marker.ConstructorArguments[0].Value!;
+                Allow(builder, type, VisibilityOf(marker));
             }
         }
 
@@ -143,24 +149,6 @@ internal static class PluginPolicy
     /// </remarks>
     private static void AllowRuntimeReachable(CasPolicyBuilder builder)
     {
-        // Generic argument carriers and the value types used in signatures.
-        foreach (var type in new[]
-                 {
-                     typeof(FixedMathSharp.Fixed64), typeof(FixedMathSharp.Vector3d),
-                     typeof(f64Euler), typeof(f64AngleSingle), typeof(Color3),
-                     typeof(HudStateData), typeof(Key), typeof(Keys),
-                     typeof(MouseButton), typeof(MouseButtons),
-                     typeof(CarPhysics), typeof(CarStats), typeof(Control),
-                     typeof(Physics), typeof(BackendCar), typeof(BackendGameObject),
-                     typeof(BackendStage), typeof(BackendGameSparker), typeof(StageLoader),
-                     typeof(ClientSidePlayer), typeof(ClientSidePlayerInfo),
-                     typeof(ServerSidePlayerInfo), typeof(IClientCallbacks),
-                     typeof(IClientCarCallbacks), typeof(IGamemodeContext),
-                     typeof(IServerGamemodeContext), typeof(RaceState),
-                     typeof(NFMWorldLibrary.Files.SavedTimeTrial)
-                 })
-            Allow(builder, Definition(type), Visible.Self);
-
         AllowMemoryPack(builder);
     }
 
@@ -296,7 +284,7 @@ internal static class PluginPolicy
     /// Allows every member a derived override can reach through its base - the whole
     /// contract, not just the public slice.
     /// </summary>
-    private static void AllowMembers(CasPolicyBuilder builder, Type type)
+    private static void AllowMembers(CasPolicyBuilder builder, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
     {
         foreach (var member in type.GetMembers(AllMembers))
         {
@@ -308,12 +296,13 @@ internal static class PluginPolicy
     private static Type Definition(Type type) => type.IsGenericType ? type.GetGenericTypeDefinition() : type;
 
     private static Visible VisibilityOf(CustomAttributeData marker)
-        => marker.ConstructorArguments.Count == 0 ? Visible.Self : (Visible)(int)marker.ConstructorArguments[0].Value!;
+        => marker.ConstructorArguments.Count == 0 ? Visible.Self : (Visible)(int)marker.ConstructorArguments[^1].Value!;
 
     private static bool IsPluginVisible(CustomAttributeData attribute)
         => attribute.AttributeType == typeof(PluginVisibleAttribute);
 
     /// <summary>Every type the assembly defines, including ones that fail to load.</summary>
+    [RequiresUnreferencedCode("Calls System.Reflection.Assembly.GetTypes()")]
     private static IEnumerable<Type> Types(Assembly assembly)
     {
         try

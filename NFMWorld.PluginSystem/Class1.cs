@@ -14,8 +14,19 @@ public class PluginVisibleAttribute(Visible visible = Visible.Self) : Attribute
 /// </summary>
 /// <typeparam name="T"></typeparam>
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
-public class PublicVisibleAttribute<T>(Visible visible = Visible.Self) : Attribute
+public class VendorPluginVisibleAttribute<T>(Visible visible = Visible.Self) : Attribute
 {
+    public Visible Visible { get; set; } = visible;
+}
+
+/// <summary>
+/// Marks a type as globally visible to the plugin system. This means that the type (and optionally all its members)
+/// will be visible to plugins.
+/// </summary>
+[AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+public class VendorPluginVisibleAttribute(Type type, Visible visible = Visible.Self) : Attribute
+{
+    public Type Type { get; } = type;
     public Visible Visible { get; set; } = visible;
 }
 
