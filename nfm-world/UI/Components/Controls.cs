@@ -215,7 +215,8 @@ public static class Controls
     public static Node Dropdown(
         Func<IReadOnlyList<string>> options,
         Func<int> value,
-        Action<int> onSelect)
+        Action<int> onSelect,
+        string unselectedLabel = "")
     {
         var open = new Signal<bool>(false);
         var opensAbove = new Signal<bool>(false);
@@ -348,7 +349,7 @@ public static class Controls
                             FontSize = 13,
                             ForegroundColor = open.Value ? new Color(255, 255, 255) : new Color(255, 255, 255, 204),
                         },
-                        text: () => SelectedLabel(options(), value())),
+                        text: () => SelectedLabel(options(), value(), unselectedLabel)),
                     Sx.Text(
                         style: () => new TextStyles { FontSize = 12, ForegroundColor = new Color(255, 255, 255, 128) },
                         text: () => "▾")
@@ -358,8 +359,8 @@ public static class Controls
         return root;
     }
 
-    private static string SelectedLabel(IReadOnlyList<string> options, int value)
-        => value >= 0 && value < options.Count ? options[value] : "";
+    private static string SelectedLabel(IReadOnlyList<string> options, int value, string unselectedLabel)
+        => value >= 0 && value < options.Count ? options[value] : unselectedLabel;
 
     // ── Text field ────────────────────────────────────────────────────
 

@@ -21,4 +21,5 @@
          data/gamemodes/ - the game loads them relative to its own binary, which is here
          and not the referenced library's output. -->
     <Import Project="..\Plugin.Plugins.targets" />
+    <Import Project="..\BuildMetadata.targets" />
 </Project>

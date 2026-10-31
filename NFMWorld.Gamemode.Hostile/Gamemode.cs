@@ -82,6 +82,19 @@ public class HostileGamemode : PluginGamemode
 
     /// <summary>Serializes a plugin event, which runs the generated MemoryPack formatter.</summary>
     public static byte[] SerializeAnEvent() => MemoryPackSerializer.Serialize(new HostileEvent(42));
+
+    public void CallRenderingCallbacks()
+    {
+        var callbacks = ClientCallbacks;
+        callbacks.ResetCheckpointGlow();
+        callbacks.UpdateCheckpointGlow(2, true);
+        var car = callbacks.GetClientCarCallbacks(null!);
+        car.CastsShadow = true;
+        car.GetsShadowed = false;
+        car.AlphaOverride = 0.5f;
+        car.Glow = true;
+        car.Finish = false;
+    }
 }
 
 /// <summary>A plugin event, to exercise the generated MemoryPack formatter path.</summary>
