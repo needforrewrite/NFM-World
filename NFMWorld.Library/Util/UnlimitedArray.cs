@@ -292,6 +292,7 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
             Array.Copy(_items, index, _items, index + 1, _size - index);
         }
         _items[index] = item;
+        _size++;
     }
 
     public virtual void RemoveAt(int index)

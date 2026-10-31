@@ -170,9 +170,13 @@ internal static class Egl
             var gles = new DefaultNativeContext("libGLESv2.dll");
             var glContext = new MultiNativeContext(egl.Context, gles);
 
+            // Tracked out of the try so a failure partway through releases the EGL objects
+            // already created rather than orphaning ANGLE's display and device.
+            nint display = 0, context = 0, surface = 0;
+
             try
             {
-                var display = GetAngleDisplay(egl, selection);
+                display = GetAngleDisplay(egl, selection);
                 if (display == 0)
                     throw new InvalidOperationException(
                         $"eglGetPlatformDisplay returned no display for {selection.Describe()} " +
@@ -206,11 +210,11 @@ internal static class Egl
                     throw new InvalidOperationException($"eglChooseConfig found no ES3 config (EGL error {ErrorText(egl)}).");
                 var config = configs[0];
 
-                var context = egl.CreateContext(display, config, 0, [(int)EGLEnum.ContextClientVersion, 3, (int)EGLEnum.None]);
+                context = egl.CreateContext(display, config, 0, [(int)EGLEnum.ContextClientVersion, 3, (int)EGLEnum.None]);
                 if (context == 0)
                     throw new InvalidOperationException($"eglCreateContext failed (EGL error {ErrorText(egl)}).");
 
-                var surface = egl.CreatePbufferSurface(display, config, [(int)EGLEnum.Width, width, (int)EGLEnum.Height, height, (int)EGLEnum.None]);
+                surface = egl.CreatePbufferSurface(display, config, [(int)EGLEnum.Width, width, (int)EGLEnum.Height, height, (int)EGLEnum.None]);
                 if (surface == 0)
                     throw new InvalidOperationException($"eglCreatePbufferSurface failed (EGL error {ErrorText(egl)}).");
 
@@ -229,9 +233,14 @@ internal static class Egl
             }
             catch
             {
+                // Release whatever EGL objects were created before the failure, so a broken
+                // backend selection does not leave ANGLE's display and D3D device alive.
+                if (surface != 0) egl.DestroySurface(display, surface);
+                if (context != 0) egl.DestroyContext(display, context);
+                if (display != 0) egl.Terminate(display);
+
                 // The same single-owner rule as Dispose: releasing the multi-context releases the
-                // contexts it was built over. Nothing else is disposed here, or the handle that was
-                // already freed would be freed again.
+                // contexts it was built over.
                 glContext.Dispose();
                 throw;
             }

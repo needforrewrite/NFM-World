@@ -236,8 +236,16 @@ public class PvpServerGamemode(
         var e = MemoryPackSerializer.Deserialize<ClientToServerEvent>(payload);
         if (e is CheckpointEvent { Index: var cp, Lap: var lap, Placement: var placement })
         {
-            var ps = _perPlayer[clientId];
-            
+            if (!_perPlayer.TryGetValue(clientId, out var ps))
+                return;
+
+            // The client's numbers are only a hint. Accept one only when it advances the
+            // race by exactly one checkpoint and the player's reported position is
+            // actually at the checkpoint they claim - otherwise a client could declare
+            // itself the winner by sending a large lap number.
+            if (!IsPlausibleProgress(clientId, ps, cp, lap))
+                return;
+
             ps.Lap = lap;
             ps.Checkpoint = cp;
             ps.Position = placement;
@@ -248,6 +256,44 @@ public class PvpServerGamemode(
                 CompleteRace();
             }
         }
+    }
+
+    /// <summary>
+    /// True when the claim advances the player by exactly one checkpoint and their last
+    /// relayed position is actually at the checkpoint they claim to have reached.
+    /// </summary>
+    private bool IsPlausibleProgress(
+        Guid playerId,
+        PerPlayerGamemodeInfo ps,
+        ushort claimedCheckpoint,
+        byte claimedLap)
+    {
+        var checkpointCount = CurrentStage.Checkpoints.Count;
+        if (checkpointCount == 0)
+            return false;
+
+        var currentTotal = ps.Checkpoint + ps.Lap * checkpointCount;
+        var claimedTotal = claimedCheckpoint + claimedLap * checkpointCount;
+
+        if (claimedTotal != currentTotal + 1)
+            return false;
+
+        // Without a relayed position yet there is nothing to corroborate the claim against.
+        if (GetPlayerPosition(playerId) is not { } position)
+            return false;
+
+        if (claimedCheckpoint >= checkpointCount || claimedLap >= CurrentStage.Nlaps)
+            return false;
+
+        var checkpoint = CurrentStage.Checkpoints[claimedCheckpoint].Position;
+
+        // A generous radius: this only has to reject a player who is nowhere near the
+        // checkpoint they claim, not to police the exact line.
+        const float radiusSq = 5000f * 5000f;
+        var dx = (float)position.X - (float)checkpoint.X;
+        var dz = (float)position.Z - (float)checkpoint.Z;
+
+        return dx * dx + dz * dz <= radiusSq;
     }
 }
 

@@ -190,7 +190,9 @@ public static class PauseMenuView
                     ])
             ]);
 
-        // Clicking the backdrop (but not the box) cancels.
+        // Clicking the backdrop (but not the box) cancels: presses bubble leaf→root, and
+        // the card's own handlers stop propagation, so a press inside it never reaches
+        // this one.
         return Overlay(Sx.View(
             style: () => new Styles
             {

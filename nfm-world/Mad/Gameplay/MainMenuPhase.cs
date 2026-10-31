@@ -71,6 +71,11 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     public override void Enter()
     {
+        // The page stack and settings overlay live in static signals, so they survive
+        // Exit(). Without this, quitting a race from a submenu lands back on that submenu
+        // rather than the root.
+        MainMenuView.Reset();
+
         if (_entered && StageName != MenuHistory.Stage)
             LoadStage(MenuHistory.Stage, reloadIfLoaded: true);
         CurrentStage!.CarSoundsEnabled = false;

@@ -62,45 +62,19 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
                     polled = true;
                 }
 
-                switch (netEvent.Type) {
-                    case EventType.None:
-                        break;
-
-                    case EventType.Connect:
-                        Logging.Info("Client connected - ID: " + netEvent.Peer.ID + ", IP: " + netEvent.Peer.IP);
-                        ClientConnecting?.Invoke(this, netEvent.Peer.ID);
-                        ClientConnected?.Invoke(this, netEvent.Peer.ID);
-                        _connectedClients.TryAdd(netEvent.Peer.ID, netEvent.Peer);
-                        break;
-
-                    case EventType.Disconnect:
-                        Logging.Info("Client disconnected - ID: " + netEvent.Peer.ID + ", IP: " + netEvent.Peer.IP);
-                        ClientDisconnected?.Invoke(this, netEvent.Peer.ID);
-                        _connectedClients.TryRemove(netEvent.Peer.ID, out _);
-                        break;
-
-                    case EventType.Timeout:
-                        Logging.Info("Client timeout - ID: " + netEvent.Peer.ID + ", IP: " + netEvent.Peer.IP);
-                        ClientDisconnected?.Invoke(this, netEvent.Peer.ID);
-                        _connectedClients.TryRemove(netEvent.Peer.ID, out _);
-                        break;
-
-                    case EventType.Receive:
-                        Logging.Info("Packet received from - ID: " + netEvent.Peer.ID + ", IP: " + netEvent.Peer.IP + ", Channel ID: " + netEvent.ChannelID + ", Data length: " + netEvent.Packet.Length);
-                        try
-                        {
-                            using var messageData = netEvent.Packet.AsMemory();
-                            ReceivePacket(netEvent.Peer.ID, messageData.Memory);
-                        }
-                        finally
-                        {
-                            netEvent.Packet.Dispose();
-                        }
-
-                        break;
+                // One bad event (a malformed packet, or a handler that throws) must not end
+                // the receive thread for every client on the host.
+                try
+                {
+                    HandleEvent(netEvent);
+                }
+                catch (Exception ex)
+                {
+                    Logging.Error($"Error processing a network event: {ex}");
                 }
             }
-            
+
+            // Send queued packets
             while (_sendPacketQueue.TryDequeue(out var sendPacket))
             {
                 if (_connectedClients.TryGetValue(sendPacket.Peer, out var peer))
@@ -109,7 +83,7 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
                 }
             }
         }
-        
+
         while (_sendPacketQueue.TryDequeue(out var packet))
         {
             packet.Packet.Dispose();
@@ -117,6 +91,47 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
 
         _server.Flush();
         _server.Dispose();
+    }
+
+    private void HandleEvent(Event netEvent)
+    {
+        switch (netEvent.Type)
+        {
+            case EventType.None:
+                break;
+
+            case EventType.Connect:
+                Logging.Info("Client connected - ID: " + netEvent.Peer.ID + ", IP: " + netEvent.Peer.IP);
+                ClientConnecting?.Invoke(this, netEvent.Peer.ID);
+                ClientConnected?.Invoke(this, netEvent.Peer.ID);
+                _connectedClients.TryAdd(netEvent.Peer.ID, netEvent.Peer);
+                break;
+
+            case EventType.Disconnect:
+                Logging.Info("Client disconnected - ID: " + netEvent.Peer.ID + ", IP: " + netEvent.Peer.IP);
+                ClientDisconnected?.Invoke(this, netEvent.Peer.ID);
+                _connectedClients.TryRemove(netEvent.Peer.ID, out _);
+                break;
+
+            case EventType.Timeout:
+                Logging.Info("Client timeout - ID: " + netEvent.Peer.ID + ", IP: " + netEvent.Peer.IP);
+                ClientDisconnected?.Invoke(this, netEvent.Peer.ID);
+                _connectedClients.TryRemove(netEvent.Peer.ID, out _);
+                break;
+
+            case EventType.Receive:
+                try
+                {
+                    using var messageData = netEvent.Packet.AsMemory();
+                    ReceivePacket(netEvent.Peer.ID, messageData.Memory);
+                }
+                finally
+                {
+                    netEvent.Packet.Dispose();
+                }
+
+                break;
+        }
     }
 
     public override void SendRawPacketToClients(ReadOnlySpan<uint> clientIndices, ReadOnlySpan<byte> span, bool reliable)

@@ -142,11 +142,21 @@ internal sealed class YogaNode
         _children.AddRange(children);
     }
 
-    internal void ReplaceChild(YogaNode child, int index) => _children[index] = child;
+    /// <summary>Swaps the child at <paramref name="index"/>, transferring ownership to the new one.</summary>
+    internal void ReplaceChild(YogaNode child, int index)
+    {
+        var old = _children[index];
+        if (!ReferenceEquals(old, child))
+            old._owner = null;
+
+        _children[index] = child;
+        child._owner = this;
+        MarkDirtyAndPropagate();
+    }
     internal void ReplaceChild(YogaNode oldChild, YogaNode newChild)
     {
         int idx = _children.IndexOf(oldChild);
-        if (idx >= 0) _children[idx] = newChild;
+        if (idx >= 0) ReplaceChild(newChild, idx);
     }
 
     /// <summary>

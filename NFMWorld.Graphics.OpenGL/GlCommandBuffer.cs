@@ -87,12 +87,25 @@ internal sealed class GlCommandBuffer : ICommandBuffer
         internal int OffsetBytes { get; init; }
     }
 
-    internal GlCommandBuffer(GL gl, GlGraphicsDevice device, GlBaseVertexDraw baseVertexDraw)
+    private readonly Action<GlObjectKind, uint>? _delete;
+
+    internal GlCommandBuffer(GL gl, GlGraphicsDevice device, GlBaseVertexDraw baseVertexDraw, Action<GlObjectKind, uint>? delete)
     {
         _gl = gl;
         _device = device;
         _baseVertexDraw = baseVertexDraw;
+        _delete = delete;
         _targetHeight = device.Swapchain.Height;
+    }
+
+    /// <summary>Queues the uniform buffer for deletion on the context thread.</summary>
+    public void Dispose()
+    {
+        if (_uniformBuffer != 0)
+        {
+            _delete?.Invoke(GlObjectKind.Buffer, _uniformBuffer);
+            _uniformBuffer = 0;
+        }
     }
 
     /// <summary>

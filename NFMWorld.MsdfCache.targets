@@ -10,8 +10,11 @@
          out-of-process so its own build can replace it on the next run. -->
 
     <PropertyGroup>
-        <NFMWorldMsdfFontsDirectory Condition="'$(NFMWorldMsdfFontsDirectory)' == ''">$(MSBuildThisFileDirectory)nfm-world\data\fonts</NFMWorldMsdfFontsDirectory>
-        <NFMWorldMsdfToolAssembly Condition="'$(NFMWorldMsdfToolAssembly)' == ''">$(MSBuildThisFileDirectory)NFMWorld.MsdfCache.Tool\bin\$(Configuration)\net11.0\NFMWorld.MsdfCache.Tool.dll</NFMWorldMsdfToolAssembly>
+        <!-- Joined with Path.Combine rather than backslash literals: these strings go
+             straight into an Exec command line and a task parameter, which MSBuild does
+             not normalise, so on Linux a backslashed path names a file that is not there. -->
+        <NFMWorldMsdfFontsDirectory Condition="'$(NFMWorldMsdfFontsDirectory)' == ''">$([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', 'nfm-world', 'data', 'fonts'))</NFMWorldMsdfFontsDirectory>
+        <NFMWorldMsdfToolAssembly Condition="'$(NFMWorldMsdfToolAssembly)' == ''">$([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', 'NFMWorld.MsdfCache.Tool', 'bin', '$(Configuration)', 'net11.0', 'NFMWorld.MsdfCache.Tool.dll'))</NFMWorldMsdfToolAssembly>
         <!-- The stamp records the fonts and the baker, so either changing rebakes. Kept beside the
              baking tool's own output rather than in this project's obj/: several projects import
              this file (the game, the browser head through it), and they would otherwise each keep
@@ -19,7 +22,7 @@
 
              Absolute, because MSBuild resolves some of the tasks below against the process working
              directory, which under TaskHostFactory is not the project directory. -->
-        <NFMWorldMsdfStamp Condition="'$(NFMWorldMsdfStamp)' == ''">$(MSBuildThisFileDirectory)NFMWorld.MsdfCache.Tool\obj\$(Configuration)\msdf.stamp</NFMWorldMsdfStamp>
+        <NFMWorldMsdfStamp Condition="'$(NFMWorldMsdfStamp)' == ''">$([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', 'NFMWorld.MsdfCache.Tool', 'obj', '$(Configuration)', 'msdf.stamp'))</NFMWorldMsdfStamp>
     </PropertyGroup>
 
     <!-- Builds the tool before anything tries to run it. Unconditional for the same reason the
@@ -38,10 +41,10 @@
              command or file was not found"). Clearing the RID then makes the inherited
              PublishReadyToRun unsatisfiable (NETSDK1191), so that goes too. The tool runs on the
              build host, not on the target RID, and is never published, so neither applies. -->
-        <MSBuild Projects="$(MSBuildThisFileDirectory)NFMWorld.MsdfCache.Tool\NFMWorld.MsdfCache.Tool.csproj"
+        <MSBuild Projects="$([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', 'NFMWorld.MsdfCache.Tool', 'NFMWorld.MsdfCache.Tool.csproj'))"
                  Targets="Restore"
                  Properties="Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=;PublishReadyToRun=false;ExcludeRestorePackageImports=true" />
-        <MSBuild Projects="$(MSBuildThisFileDirectory)NFMWorld.MsdfCache.Tool\NFMWorld.MsdfCache.Tool.csproj"
+        <MSBuild Projects="$([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', 'NFMWorld.MsdfCache.Tool', 'NFMWorld.MsdfCache.Tool.csproj'))"
                  Targets="Build"
                  Properties="Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=;PublishReadyToRun=false" />
     </Target>
@@ -59,10 +62,13 @@
     <ItemGroup>
         <NFMWorldMsdfFont Include="$(NFMWorldMsdfFontsDirectory)\*.ttf" />
         <NFMWorldMsdfFont Include="$(NFMWorldMsdfFontsDirectory)\*.otf" />
-        <NFMWorldMsdfSource Include="$(MSBuildThisFileDirectory)Apos.Shapes\Source\MsdfBake.cs" />
-        <NFMWorldMsdfSource Include="$(MSBuildThisFileDirectory)Apos.Shapes\Source\MsdfCache.cs" />
-        <NFMWorldMsdfSource Include="$(MSBuildThisFileDirectory)Apos.Shapes\Source\GlyphFont.cs" />
-        <NFMWorldMsdfSource Include="$(MSBuildThisFileDirectory)Apos.Shapes\Source\GlyphBake.cs" />
+        <!-- Every source the bake depends on, not only the four entry points: a change to
+             the glyph ranges (the tool's own Program.cs), the atlas or the table changes
+             the output just as much as a change to the bake itself. -->
+        <NFMWorldMsdfSource Include="$(MSBuildThisFileDirectory)Apos.Shapes\Source\Msdf*.cs" />
+        <NFMWorldMsdfSource Include="$(MSBuildThisFileDirectory)Apos.Shapes\Source\Glyph*.cs" />
+        <NFMWorldMsdfSource Include="$(MSBuildThisFileDirectory)Apos.Shapes\Source\ShapeFont.cs" />
+        <NFMWorldMsdfSource Include="$(MSBuildThisFileDirectory)NFMWorld.MsdfCache.Tool\Program.cs" />
     </ItemGroup>
 
     <Target Name="BakeMsdfCaches"

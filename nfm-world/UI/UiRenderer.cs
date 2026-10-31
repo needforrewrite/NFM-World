@@ -43,10 +43,15 @@ public class UiRenderer : IDisposable
         Unmount();
         _owner = phase;
 
-        if (phase is not BasePhase basePhase || basePhase.BuildUi() is not { } tree)
+        if (phase is not BasePhase basePhase)
             return;
 
-        _mounted = NFMWorld.Reactor.Sx.Renderer.Mount(() => tree);
+        // Build INSIDE Mount: BuildUi creates the whole tree, and every effect it makes
+        // must register against the mount scope. Building it first would leave each
+        // node's effects in a per-node pending scope that only the root's is adopted
+        // from, so the rest would never be disposed - and would keep re-running for a
+        // tree that is no longer on screen.
+        _mounted = NFMWorld.Reactor.Sx.Renderer.Mount(() => basePhase.BuildUi() ?? new View());
         ActiveRoot = (View)_mounted.Root;
     }
 
@@ -85,6 +90,9 @@ public class UiRenderer : IDisposable
     {
         // Effects queued during the frame run here, so a frame's writes coalesce.
         UiScheduler.Instance.Flush();
+
+        // Drives per-node per-frame logic (the text cursor's blink); nothing else calls it.
+        ActiveRoot?.Update((float)gameTime.ElapsedGameTime.TotalMilliseconds);
     }
 
     public void Render()

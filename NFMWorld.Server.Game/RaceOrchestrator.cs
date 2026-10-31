@@ -100,9 +100,11 @@ public class RaceOrchestrator : IDisposable
             var snapshot = gm.GetStateSnapshot();
             if (!session.ResultsBroadcasted && snapshot is { IsFinished: true, Results: { } results })
             {
-                // Broadcast final results as S2C_GameFinished
+                // To this race's clients only: the GM runs many sessions, and a broadcast
+                // would end every other race on the host with these standings.
                 session.ResultsBroadcasted = true;
-                _transport.BroadcastPacket(
+                _transport.SendPacketToClients(
+                    session.Clients.Keys.ToArray(),
                     new S2C_GameFinished { Results = results },
                     reliable: true);
 
@@ -171,15 +173,18 @@ public class RaceOrchestrator : IDisposable
 
     private void HandleRaceLoaded(uint clientIndex, C2S_RaceLoaded raceLoaded)
     {
-        if (!_joinTokens.TryGetValue(raceLoaded.JoinToken, out var entry))
+        // Single use: the first client to present a token claims it, and a replay of the
+        // same token must not count a second player as loaded (or join under the first
+        // player's id).
+        if (!_joinTokens.TryRemove(raceLoaded.JoinToken, out var entry))
         {
-            Logging.Warning($"[GM] Invalid join token from client {clientIndex}");
+            Logging.Warning($"[GM] Invalid or already-used join token from client {clientIndex}");
             return;
         }
 
         var clientId = entry.ClientId;
 
-        entry.Session.Clients.TryAdd(clientIndex, clientId);
+        entry.Session.Clients[clientIndex] = clientId;
         entry.Session.LoadedCount++;
 
         Logging.Info(
@@ -197,6 +202,12 @@ public class RaceOrchestrator : IDisposable
     {
         if (!TryFindSession(clientIndex, out var session, out var clientId)) return;
 
+        // A peer's state is relayed verbatim to the other clients and fed to the physics
+        // angle-normalisation loops, so an absurd angle (or speed) from one client would
+        // freeze every client in the race. Drop the packet rather than pass it on.
+        if (!IsSanePlayerState(playerState.State))
+            return;
+
         // Store latest position for server gamemode queries
         var pos = playerState.State.CarFrame.CarPosition;
         session.PlayerPositions[clientId] = new f64Vector3(pos.X, pos.Y, pos.Z);
@@ -211,6 +222,25 @@ public class RaceOrchestrator : IDisposable
                 CurrentServerTime = DateTimeOffset.UtcNow
             }, false);
         }
+    }
+
+    /// <summary>
+    /// Cheap sanity check on a relayed car state. The angle fields are what the receiving
+    /// physics walks down in 360-degree steps, and speed drives its correction loops, so
+    /// bounds here are what stops one client freezing the others.
+    /// </summary>
+    private static bool IsSanePlayerState(PlayerState state)
+    {
+        const double maxAngle = 1_000_000;
+        const double maxSpeed = 10_000;
+
+        var rotation = state.CarFrame.CarRotation;
+        var speed = (double)state.CarFrame.Speed;
+
+        return double.IsFinite((double)rotation.Xz) && Math.Abs((double)rotation.Xz) <= maxAngle
+               && double.IsFinite((double)rotation.Pzy) && Math.Abs((double)rotation.Pzy) <= maxAngle
+               && double.IsFinite((double)rotation.Pxy) && Math.Abs((double)rotation.Pxy) <= maxAngle
+               && double.IsFinite(speed) && Math.Abs(speed) <= maxSpeed;
     }
 
     // ── HTTP handler ─────────────────────────────────────────────────
@@ -239,7 +269,10 @@ public class RaceOrchestrator : IDisposable
         var context = new OrchestratorServerContext(
             session,
             raceParams.MatchGameplayInfo.StageName,
-            payload => _transport.BroadcastPacket(new S2C_ServerEvent { Payload = payload }, reliable: true));
+            payload => _transport.SendPacketToClients(
+                session.Clients.Keys.ToArray(),
+                new S2C_ServerEvent { Payload = payload },
+                reliable: true));
 
         // TODO this is a bit janky and could probably be improved
         var gm = factory.CreateServerGamemode(new ServerGamemodeParameters()

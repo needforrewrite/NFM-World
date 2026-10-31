@@ -8,8 +8,6 @@ namespace NFMWorldLibrary.Rad;
 [method: MemoryPackConstructor]
 public readonly partial record struct Rad3dCollisionHull([property: MemoryPackOrder(0)] f64Vector3[] Vertices, [property: MemoryPackOrder(1)] ushort[] Indices)
 {
-    private static readonly ConvexHullCalculator _calculator = new();
-    
     private readonly int _hashCode = CalculateHashCode(Vertices, Indices);
 
     private static int CalculateHashCode(f64Vector3[] vertices, ushort[] indices)
@@ -55,7 +53,9 @@ public readonly partial record struct Rad3dCollisionHull([property: MemoryPackOr
         var stopwatch = Stopwatch.StartNew();
         var verts = new List<f64Vector3>(hullVerts.Length);
         var indices = new List<ushort>(hullVerts.Length / 3);
-        _calculator.GenerateHull(hullVerts, false, verts, indices, null);
+        // Per hull, not shared: hulls are generated in parallel by the model loader and
+        // the calculator keeps its working state on the instance.
+        new ConvexHullCalculator().GenerateHull(hullVerts, false, verts, indices, null);
         
         Logging.Debug($"Convex hull generated with {verts.Count} vertices and {indices.Count / 3} triangles in {stopwatch.Elapsed.TotalSeconds:F2} seconds");
         

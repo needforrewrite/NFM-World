@@ -48,10 +48,20 @@ public sealed class NetworkRaceHost(
                     break;
                 case S2C_PlayerState playerState:
                 {
-                    var carIndex = session.Players
-                        .First(e => e.Value.Id == playerState.PlayerId)
-                        .Key;
-                    PlayerStateReceived?.Invoke(carIndex, playerState.State);
+                    // An id not in this match (version skew, a late join, a replayed or
+                    // malicious packet) must not throw in the game loop.
+                    var carIndex = -1;
+                    foreach (var (index, info) in session.Players)
+                    {
+                        if (info.Id == playerState.PlayerId)
+                        {
+                            carIndex = index;
+                            break;
+                        }
+                    }
+
+                    if (carIndex >= 0)
+                        PlayerStateReceived?.Invoke(carIndex, playerState.State);
                     break;
                 }
                 case S2C_ServerEvent serverEvent:

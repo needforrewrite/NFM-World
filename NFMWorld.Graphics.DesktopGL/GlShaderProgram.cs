@@ -117,10 +117,14 @@ internal sealed class GlShaderProgram : IDisposable
         _deletions = deletions;
         Reflection = reflection;
 
-        var vertexShader = Compile(ShaderType.VertexShader, vertex.Glsl330, "vertex");
-        var pixelShader = Compile(ShaderType.FragmentShader, pixel.Glsl330, "pixel");
+        // Both compiles inside the try: if the pixel stage fails, the vertex shader
+        // object already created must still be deleted or it outlives the context.
+        var vertexShader = 0u;
+        var pixelShader = 0u;
         try
         {
+            vertexShader = Compile(ShaderType.VertexShader, vertex.Glsl330, "vertex");
+            pixelShader = Compile(ShaderType.FragmentShader, pixel.Glsl330, "pixel");
             Handle = Link(vertexShader, pixelShader);
         }
         finally
@@ -128,8 +132,8 @@ internal sealed class GlShaderProgram : IDisposable
             // The program keeps the compiled result; the shader objects are only needed until the
             // link. Deleting them here still leaves the program usable - the linked program is a
             // separate object in GL.
-            _gl.DeleteShader(vertexShader);
-            _gl.DeleteShader(pixelShader);
+            if (vertexShader != 0) _gl.DeleteShader(vertexShader);
+            if (pixelShader != 0) _gl.DeleteShader(pixelShader);
         }
 
         UniformBlock = ResolveUniformBlock(reflection);

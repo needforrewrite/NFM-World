@@ -229,6 +229,13 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         }
     }
 
+    /// <summary>
+    /// The buffer handed out by <see cref="AcquireCommandBuffer"/>, kept and reused rather
+    /// than allocated per frame. Its GPU objects (the uniform buffer, the depth-stencil
+    /// state) belong to the instance, so a fresh buffer each frame leaked them.
+    /// </summary>
+    private D3D11CommandBuffer? _commandBuffer;
+
     public ICommandBuffer AcquireCommandBuffer()
     {
         if (_activeCommandBuffer is not null)
@@ -238,7 +245,7 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
                 "was submitted - only one command buffer may be live at a time.");
         }
 
-        var commandBuffer = new D3D11CommandBuffer(this);
+        var commandBuffer = _commandBuffer ??= new D3D11CommandBuffer(this);
         _activeCommandBuffer = commandBuffer;
         return commandBuffer;
     }
@@ -556,6 +563,8 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         // releasing the device with them still referenced is what the debug layer reports as a leak.
         _activeCommandBuffer?.Dispose();
         _activeCommandBuffer = null;
+        _commandBuffer?.Dispose();
+        _commandBuffer = null;
 
         // The swapchain next: it holds views over the back buffers, and a view outliving the
         // resource it points into is a dangling reference the debug layer reports at device teardown.

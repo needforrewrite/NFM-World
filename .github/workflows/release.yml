@@ -60,8 +60,27 @@ jobs:
             echo "Tag $TAG_NAME already exists, skipping tag creation"
           fi
 
+  test:
+    # Gates the publish jobs: the unit tests cover the plugin loader, the Sx renderer
+    # and the UI, and nothing else runs them.
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.x'
+          dotnet-quality: 'preview'
+
+      - name: Test
+        run: dotnet test NFMWorld.Library.Test/NFMWorld.Library.Test.csproj -c Debug
+
   build-windows:
-    needs: prepare
+    needs: [prepare, test]
     runs-on: windows-latest
     strategy:
       matrix:
@@ -135,7 +154,7 @@ jobs:
           path: ./publish/${{ matrix.rid }}/
 
   build-linux:
-    needs: prepare
+    needs: [prepare, test]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -204,7 +223,7 @@ jobs:
           path: ./publish/${{ matrix.rid }}/
 
   build-macos:
-    needs: prepare
+    needs: [prepare, test]
     runs-on: macos-latest
 
     steps:

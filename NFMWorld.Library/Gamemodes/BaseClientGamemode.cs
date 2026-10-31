@@ -112,8 +112,14 @@ public abstract class BaseClientGamemode : IGamemode
     /// <summary>
     /// User-callable reset function that can be used to reset the gamemode state.
     /// </summary>
+    /// <remarks>
+    /// Releases any AI plugins first: overrides commonly call <see cref="Begin"/>, which
+    /// re-attaches a bot per player, and an attach without a release leaks a load context
+    /// per reset.
+    /// </remarks>
     public virtual void Reset()
     {
+        ReleaseBots();
     }
 
     /// <summary>
@@ -277,6 +283,7 @@ public abstract class BaseClientGamemode : IGamemode
     /// Convenience function to reset HUD state, visual FX and sounds.
     /// </summary>
     [PluginVisible]
+    [ClientOnly]
     protected internal void ClientReset()
     {
         GamemodeContext.ClientCallbacks.ResetCheckpointGlow();
@@ -290,6 +297,7 @@ public abstract class BaseClientGamemode : IGamemode
     /// </summary>
     /// <param name="car">The client car</param>
     [PluginVisible]
+    [ClientOnly]
     protected internal void UpdateHudAndSounds(BackendCar car)
     {
         var diffx = (float)(car.Position.X - _lcarx);
@@ -318,6 +326,7 @@ public abstract class BaseClientGamemode : IGamemode
     /// </summary>
     /// <param name="countdownTime">The current countdown time.</param>
     [PluginVisible]
+    [ClientOnly]
     protected void UpdateCountdown(int countdownTime)
     {
         if (countdownTime != _lastCountdownTime)

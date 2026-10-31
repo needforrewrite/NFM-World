@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System.Collections;
+using System.Numerics;
 using Maxine.Extensions.Mathematics;
 using NFMWorld.ClayDom.Events;
 
@@ -98,7 +99,7 @@ public static class FocusManager
         // Walk children topmost-first for z-index aware occlusion: a high-z subtree
         // (e.g. a dropdown popup) is hit-tested before lower-z siblings of an ancestor,
         // even if it appears earlier in the tree.
-        foreach (var visual in GetTopmostFirst(node, zCache))
+        foreach (var visual in Topmost(node, zCache))
         {
             if (!visual.IsDisplayed)
                 continue;
@@ -132,6 +133,21 @@ public static class FocusManager
     }
 
     /// <summary>
+    /// As <see cref="HitTestChain"/>, but writes into a caller-supplied list, so a caller
+    /// that only walks the chain once per event does not allocate one each time.
+    /// </summary>
+    public static void HitTestChain(Component root, Vector2 screenPos, List<Component> chain)
+    {
+        chain.Clear();
+        var zCache = _zCacheScratch ??= new Dictionary<Component, int>();
+        zCache.Clear();
+        HitTestChainRecursive(root, screenPos, chain, zCache);
+    }
+
+    /// <summary>Scratch z-index cache for the allocation-free <see cref="HitTestChain"/> overload.</summary>
+    [ThreadStatic] private static Dictionary<Component, int>? _zCacheScratch;
+
+    /// <summary>
     /// Enumerates a node's visual children topmost-first for hit-testing:
     /// higher subtree z-index first, then later (rendered-last) siblings first.
     /// A node's effective z for ordering is the max z-index of itself and its subtree,
@@ -139,6 +155,16 @@ public static class FocusManager
     /// siblings of an ancestor. Falls back to plain reverse (later-first) when the
     /// whole subtree has no positive z-index, preserving the old zero-allocation path.
     /// </summary>
+    /// <summary>
+    /// Enumerates children topmost-first without allocating when the subtree has no
+    /// positive z-index (the overwhelmingly common case); otherwise falls back to the
+    /// sorted iterator, which is the only case that needs the list and the sort.
+    /// </summary>
+    private static ChildOrder Topmost(Component node, Dictionary<Component, int> zCache)
+        => Component.EscapeZ(node, zCache) <= 0
+            ? new ChildOrder(node.VisualChildren)
+            : new ChildOrder(GetTopmostFirst(node, zCache));
+
     private static IEnumerable<Component> GetTopmostFirst(Component node, Dictionary<Component, int> zCache)
     {
         // Fast path: no positive z-index under this node → plain reverse (later-first),
@@ -195,7 +221,7 @@ public static class FocusManager
         // presses meant for their own children.
         if (node.Styles.Display == Display.Contents)
         {
-            foreach (var visual in GetTopmostFirst(node, zCache))
+            foreach (var visual in Topmost(node, zCache))
             {
                 if (visual.IsDisplayed && HitTestChainRecursive(visual, pos, chain, zCache))
                     return true;
@@ -215,7 +241,7 @@ public static class FocusManager
         if (!selfHit && node.IsFocusable)
             return false;
 
-        foreach (var visual in GetTopmostFirst(node, zCache))
+        foreach (var visual in Topmost(node, zCache))
         {
             if (!visual.IsDisplayed)
                 continue;
@@ -225,6 +251,81 @@ public static class FocusManager
         }
 
         return selfHit;
+    }
+
+    /// <summary>
+    /// A struct enumerable over children topmost-first. The no-z case walks the index
+    /// backwards with no allocation; the z case wraps the allocating sorted iterator,
+    /// which is the only one that needs it.
+    /// </summary>
+    private readonly struct ChildOrder : IEnumerable<Component>
+    {
+        private readonly IReadOnlyList<Node>? _children;
+        private readonly IEnumerable<Component>? _sorted;
+
+        public ChildOrder(IReadOnlyList<Node> children) => _children = children;
+        public ChildOrder(IEnumerable<Component> sorted) => _sorted = sorted;
+
+        public Enumerator GetEnumerator() => new(_children, _sorted);
+
+        IEnumerator<Component> IEnumerable<Component>.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public struct Enumerator : IEnumerator<Component>
+        {
+            private readonly IReadOnlyList<Node>? _children;
+            private readonly IEnumerable<Component>? _sorted;
+            private IEnumerator<Component>? _inner;
+            private int _index;
+
+            public Enumerator(IReadOnlyList<Node>? children, IEnumerable<Component>? sorted)
+            {
+                _children = children;
+                _sorted = sorted;
+                _index = children?.Count ?? 0;
+                _inner = null;
+                Current = null!;
+            }
+
+            public Component Current { get; private set; }
+
+            readonly object IEnumerator.Current => Current;
+
+            public bool MoveNext()
+            {
+                if (_sorted is not null)
+                {
+                    _inner ??= _sorted.GetEnumerator();
+                    if (_inner.MoveNext())
+                    {
+                        Current = _inner.Current;
+                        return true;
+                    }
+
+                    Dispose();
+                    return false;
+                }
+
+                while (_index > 0)
+                {
+                    if (_children![--_index] is Component c)
+                    {
+                        Current = c;
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            public void Reset() => throw new NotSupportedException();
+
+            public void Dispose()
+            {
+                _inner?.Dispose();
+                _inner = null;
+            }
+        }
     }
 
     private static List<Component> _hoveredChain = [];

@@ -27,9 +27,9 @@ public sealed class LocalRaceHost : IRaceHost
     public event Action<ReadOnlyMemory<byte>>? ServerEventReceived;
     public event Action<RaceResults>? GameFinished;
 
-    private LocalRaceHost(string stageName, ClientGamemodeParameters parameters, ServerSidePlayerInfo serverSidePlayerInfo)
+    private LocalRaceHost(string stageName, ClientGamemodeParameters parameters, ServerSidePlayerInfo serverSidePlayerInfo, StageLoader? stageData)
     {
-        _context = new LocalServerContext(stageName, BroadcastToClient);
+        _context = new LocalServerContext(stageName, stageData, BroadcastToClient);
         _localPlayerId = serverSidePlayerInfo.Id;
     }
 
@@ -37,13 +37,18 @@ public sealed class LocalRaceHost : IRaceHost
     /// Creates a local host for the given factory. If the factory has no
     /// server gamemode (e.g., time trial), the host runs client-only.
     /// </summary>
+    /// <param name="stageData">
+    /// The stage to use instead of reading the current stage files, for replay
+    /// verification where the recorded stage must match the simulation.
+    /// </param>
     public static LocalRaceHost Create(
         string stageName,
         BaseGamemodeFactory factory,
-        ClientGamemodeParameters parameters)
+        ClientGamemodeParameters parameters,
+        StageLoader? stageData = null)
     {
         var ids = new List<ServerSidePlayerInfo>(parameters.Players.Count);
-        for (byte i = 0; i < parameters.Players.Count; i++)
+        for (var i = 0; i < parameters.Players.Count; i++)
         {
             var player = parameters.Players[i];
             var id = Guid.NewGuid();
@@ -55,8 +60,12 @@ public sealed class LocalRaceHost : IRaceHost
                 Color = player.Color
             });
         }
-        
-        var host = new LocalRaceHost(stageName, parameters, ids[parameters.Players.FindIndex(e => e.IsClientPlayer)]);
+
+        var clientPlayerIndex = parameters.Players.FindIndex(e => e.IsClientPlayer);
+        if (clientPlayerIndex < 0)
+            throw new InvalidOperationException("A local race needs exactly one client player.");
+
+        var host = new LocalRaceHost(stageName, parameters, ids[clientPlayerIndex], stageData);
 
         // TODO this is a bit janky and could probably be improved
         var serverGamemode = factory.CreateServerGamemode(new ServerGamemodeParameters
@@ -123,12 +132,12 @@ public sealed class LocalRaceHost : IRaceHost
     /// Server-side data context for the local race. Backs
     /// <see cref="IServerGamemodeContext"/> without any networking.
     /// </summary>
-    private sealed class LocalServerContext(string stageName, Action<ReadOnlyMemory<byte>> broadcast)
+    private sealed class LocalServerContext(string stageName, StageLoader? stageData, Action<ReadOnlyMemory<byte>> broadcast)
         : IServerGamemodeContext
     {
         private readonly Dictionary<Guid, f64Vector3> _positions = new();
 
-        public BackendStage CurrentStage { get; } = new(stageName);
+        public BackendStage CurrentStage { get; } = stageData is { } data ? new BackendStage(stageName, data) : new BackendStage(stageName);
 
         public f64Vector3? GetPlayerPosition(Guid playerId)
             => _positions.TryGetValue(playerId, out var pos) ? pos : null;

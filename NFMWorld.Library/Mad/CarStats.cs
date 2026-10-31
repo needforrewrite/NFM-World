@@ -167,6 +167,10 @@ public partial record struct CarStats
         else if(Maxmag == int.MinValue) return ValidateFail(nameof(Maxmag));
         else if(Outdam == fix64.MinValue) return ValidateFail(nameof(Outdam));
         else if(TurnRadius == int.MinValue) return ValidateFail(nameof(TurnRadius));
+        // Divisors: a zero here throws DivideByZeroException on the first drive tick.
+        else if(Simag <= fix64.Zero) return ValidateFail(nameof(Simag));
+        else if(Powerloss == 0) return ValidateFail(nameof(Powerloss));
+        else if(Swits[2] == 0) return ValidateFail(nameof(Swits));
         else if(Name == "hogan rewish") return ValidateFailName(fileName);
 
         return null;

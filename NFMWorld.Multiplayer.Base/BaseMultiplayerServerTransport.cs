@@ -42,12 +42,38 @@ public abstract class BaseMultiplayerServerTransport : IMultiplayerServerTranspo
 
     protected void ReceivePacket(uint clientIndex, Memory<byte> memory)
     {
+        // An empty datagram has no opcode; remote input, so it must not throw here.
+        if (memory.IsEmpty)
+        {
+            Logging.Warning($"Client {clientIndex} sent an empty packet");
+            return;
+        }
+
         var opcode = (sbyte)memory.Span[0];
         var message = memory[1..];
 
-        if (MultiplayerUtils.TryDeserializeC2SPacket(opcode, message) is { } packet)
+        IPacketClientToServer? packet;
+        try
         {
-            PacketReceived?.Invoke(this, (clientIndex, packet));
+            packet = MultiplayerUtils.TryDeserializeC2SPacket(opcode, message);
+        }
+        catch (Exception ex)
+        {
+            Logging.Warning($"Client {clientIndex} sent an unreadable packet (opcode {opcode})", exception: ex);
+            return;
+        }
+
+        if (packet is { } p)
+        {
+            // A throwing handler must not take down the receive thread for every client.
+            try
+            {
+                PacketReceived?.Invoke(this, (clientIndex, p));
+            }
+            catch (Exception ex)
+            {
+                Logging.Error($"Error handling packet from client {clientIndex}", exception: ex);
+            }
         }
         else
         {

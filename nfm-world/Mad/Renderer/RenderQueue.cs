@@ -19,7 +19,6 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
     private sealed class CachedInstancedGroup(List<InstanceData> instances)
     {
         public readonly List<InstanceData> Instances = instances;
-        public readonly List<InstanceData> OldInstances = [];
         public IBuffer? VertexBuffer;
         public int HashCode;
     }
@@ -167,14 +166,14 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
                     if (instances.Count == 0)
                         continue;
 
-                    var oldInstances = cachedGroup.OldInstances;
+                    // The hash is the change test, and one pass over the list is all an
+                    // unchanged frame costs. A collision - equal hashes with different
+                    // data - would skip one upload for one frame and then correct itself
+                    // when the data next changes; the full equality scan that ruled it out
+                    // was run on every list every frame, which is the more expensive bug.
                     var currentHashCode = GetInstanceDataHashCode(CollectionsMarshal.AsSpan(instances));
 
-                    if (cachedGroup.VertexBuffer == null ||
-                        currentHashCode != cachedGroup.HashCode ||
-                        !AreInstanceDataListsEqual(
-                            CollectionsMarshal.AsSpan(instances),
-                            CollectionsMarshal.AsSpan(oldInstances)))
+                    if (cachedGroup.VertexBuffer == null || currentHashCode != cachedGroup.HashCode)
                     {
                         var instanceSpan = CollectionsMarshal.AsSpan(instances);
                         var instanceBytes = MemoryMarshal.AsBytes(instanceSpan);
@@ -193,9 +192,6 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
                         }
 
                         cachedGroup.HashCode = currentHashCode;
-
-                        CollectionsMarshal.SetCount(oldInstances, instances.Count);
-                        instanceSpan.CopyTo(CollectionsMarshal.AsSpan(oldInstances));
                     }
 
                     renderElement.Render(cb, _camera, _lighting, cachedGroup.VertexBuffer, instances.Count);
@@ -264,20 +260,6 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
         }
 
         return hc;
-    }
-
-    private static bool AreInstanceDataListsEqual<T>(ReadOnlySpan<T> a, ReadOnlySpan<T> b) where T : notnull
-    {
-        if (a.Length != b.Length)
-            return false;
-
-        for (var i = 0; i < a.Length; i++)
-        {
-            if (!a[i].Equals(b[i]))
-                return false;
-        }
-
-        return true;
     }
 
     public void Begin(Camera camera, Lighting? lighting)

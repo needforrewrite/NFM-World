@@ -91,6 +91,32 @@ public sealed class ShaderCompileTask : Microsoft.Build.Utilities.Task
 
         GeneratedFiles = written.ToArray();
 
+        // Remove bundles whose shader or technique no longer exists. The target globs this
+        // directory into Compile, so a leftover bundle would compile forever (and a
+        // recycled program name would define the same type twice).
+        if (!failed && Directory.Exists(OutputDirectory))
+        {
+            var writtenPaths = new HashSet<string>(
+                written.Select(item => Path.GetFullPath(item.ItemSpec)),
+                StringComparer.OrdinalIgnoreCase);
+
+            foreach (var stale in Directory.EnumerateFiles(OutputDirectory, "*.g.cs"))
+            {
+                if (writtenPaths.Contains(Path.GetFullPath(stale)))
+                    continue;
+
+                try
+                {
+                    File.Delete(stale);
+                    Log.LogMessage(MessageImportance.Low, $"Removed stale shader bundle {stale}");
+                }
+                catch (IOException e)
+                {
+                    Log.LogWarning(null, null, null, stale, 0, 0, 0, 0, $"Could not remove stale shader bundle: {e.Message}");
+                }
+            }
+        }
+
         if (failed)
             return false;
 

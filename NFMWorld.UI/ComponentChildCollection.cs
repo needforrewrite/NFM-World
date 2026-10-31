@@ -106,9 +106,15 @@ public class ComponentChildCollection(Component parent) : NonSynchronizedObserva
         SetDisposed(oldItem, true);
         oldItem.Disposing?.Invoke();
         if (item is Component cmp)
-            parent.NodeInternal.ReplaceChild(cmp.Contents, index);
+        {
+            // itemYogaIndex, not index: Items interleaves TextNode anchors, and Yoga only
+            // holds Components - the same mapping InsertItem has to do.
+            parent.NodeInternal.ReplaceChild(cmp.Contents, CountComponentsBefore(index));
+        }
         else if (oldItem is Component cmp1)
+        {
             parent.NodeInternal.RemoveChild(cmp1.Contents);
+        }
         item.VisualParent = parent;
         SetDisposed(item, false);
         base.SetItem(index, item);

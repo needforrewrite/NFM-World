@@ -37,7 +37,10 @@ public static class TimeTrialSimulator
             ["simulation"] = true
         });
 
-        var host = LocalRaceHost.Create(stageName, factory, parameters);
+        // Give the host the recorded stage too, not just the client: it builds its own
+        // stage from the current files otherwise, so a stage edited since the recording
+        // would make valid replays fail (or invalid ones pass).
+        var host = LocalRaceHost.Create(stageName, factory, parameters, replay.StageData);
 
         var context = new BackendGamemodeContext
         {
@@ -72,8 +75,10 @@ public static class TimeTrialSimulator
             tick++;
         }
 
-        // The factory owns what it loaded; this one is per run.
+        // The factory owns what it loaded; this one is per run. The host releases its own
+        // server gamemode and must go before the factory unloads the plugin behind it.
         client.End();
+        host.Dispose();
         factory.End();
 
         return finished ? tick : null;

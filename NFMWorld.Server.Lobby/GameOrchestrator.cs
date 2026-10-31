@@ -60,6 +60,7 @@ public class GameOrchestrator
     {
         while (_lobbyIsRunning)
         {
+            _sessions.PruneFinished();
             _broadcaster.BroadcastToAll();
 
             foreach (var session in _sessions.CheckTimeouts())
@@ -80,8 +81,20 @@ public class GameOrchestrator
 
     // ── Transport events ─────────────────────────────────────────────
 
+    /// <summary>
+    /// Upper bound on simultaneous lobby connections. A public WebSocket endpoint with no
+    /// limit lets one client exhaust memory and bandwidth cheaply.
+    /// </summary>
+    private const int MaxConnections = 512;
+
     private void TransportOnClientConnecting(object? sender, uint clientIndex)
     {
+        if (_players.Count >= MaxConnections)
+        {
+            Logging.Warning($"[Lobby] Connection limit reached ({MaxConnections}); dropping client {clientIndex}");
+            return;
+        }
+
         _players.GetOrAdd(clientIndex, ClientState.Connecting);
         _broadcaster.BroadcastToAll();
     }
@@ -247,9 +260,10 @@ public class GameOrchestrator
             Players = playerInfos
         };
 
+        ResolvedGameMaster? gm = null;
         try
         {
-            var gm = _gmRegistry.SelectGameMaster();
+            gm = _gmRegistry.SelectGameMaster();
             var createRequest = new Lobby2RaceServer_CreateRace
             {
                 MatchKey = Guid.NewGuid(),
@@ -290,6 +304,11 @@ public class GameOrchestrator
         }
         catch (Exception ex)
         {
+            // One dead GM must not keep being selected: enough failures take it out of
+            // rotation until a refresh and a successful race bring it back.
+            if (gm is not null)
+                _gmRegistry.MarkFailure(gm);
+
             // Revert session state on failure
             session.State = SessionState.NotStarted;
             session.StartTime = null;

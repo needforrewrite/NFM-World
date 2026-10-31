@@ -71,22 +71,42 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
         ClientDisconnected?.Invoke(this, id);
     }
 
+    /// <summary>
+    /// Largest message a client may send. Packets are a few dozen bytes; this exists only
+    /// so a client cannot grow the reassembly buffer without bound.
+    /// </summary>
+    private const int MaxMessageBytes = 64 * 1024;
+
     private async Task ReceiveLoop(WsClient client, CancellationToken ct)
     {
         var buffer = ArrayPool<byte>.Shared.Rent(4096);
         using var ms = new MemoryStream();
 
-        while (client.Socket.State == WebSocketState.Open && !ct.IsCancellationRequested)
+        try
         {
-            var result = await client.Socket.ReceiveAsync(buffer, ct);
-            if (result.MessageType == WebSocketMessageType.Close) break;
-
-            ms.Write(buffer, 0, result.Count);
-            if (result.EndOfMessage)
+            while (client.Socket.State == WebSocketState.Open && !ct.IsCancellationRequested)
             {
-                ReceivePacket(client.Id, ms.ToArray());
-                ms.SetLength(0);
+                var result = await client.Socket.ReceiveAsync(buffer, ct);
+                if (result.MessageType == WebSocketMessageType.Close) break;
+
+                ms.Write(buffer, 0, result.Count);
+                if (ms.Length > MaxMessageBytes)
+                {
+                    Logging.Warning($"WS client {client.Id} sent a message over {MaxMessageBytes} bytes; closing");
+                    await client.Socket.CloseAsync(WebSocketCloseStatus.MessageTooBig, "message too big", ct);
+                    break;
+                }
+
+                if (result.EndOfMessage)
+                {
+                    ReceivePacket(client.Id, ms.ToArray());
+                    ms.SetLength(0);
+                }
             }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
         }
     }
 

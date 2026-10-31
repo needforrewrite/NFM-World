@@ -957,18 +957,25 @@ public abstract partial class Component : Node, IAnimationCallback
         var s = BeginPaint(context);
         if (!s.Visible) return;
 
-        var scs = new List<StackEntry>();
-        PaintChildren(s, scs);
-        scs.Sort((a, b) => a.Z.CompareTo(b.Z));
+        // Most nodes have no z-indexed child. PaintChildren reports whether one was
+        // collected before a list is allocated at all, so the common case allocates
+        // nothing - the previous code allocated a List per node per frame unconditionally.
+        List<StackEntry>? scs = null;
+        PaintChildren(s, ref scs);
+        if (scs is not null)
+            scs.Sort(static (a, b) => a.Z.CompareTo(b.Z));
 
-        foreach (var e in scs)
+        if (scs is not null)
         {
-            // Preserve the accumulated ancestor clip for the escaped stacking context.
-            G.SaveState();
-            if (e.Clip is { } c)
-                G.IntersectScissor(c.X, c.Y, c.Width, c.Height);
-            e.Node.PaintStacking(new RenderContext(e.Origin, s.OwnOpacity, e.Clip));
-            G.RestoreState();
+            foreach (var e in scs)
+            {
+                // Preserve the accumulated ancestor clip for the escaped stacking context.
+                G.SaveState();
+                if (e.Clip is { } c)
+                    G.IntersectScissor(c.X, c.Y, c.Width, c.Height);
+                e.Node.PaintStacking(new RenderContext(e.Origin, s.OwnOpacity, e.Clip));
+                G.RestoreState();
+            }
         }
 
         EndPaint(s);
@@ -1033,23 +1040,28 @@ public abstract partial class Component : Node, IAnimationCallback
         G.Alpha = 1f;
     }
 
-    private void PaintChildren(PaintState s, List<StackEntry> scs)
+    private void PaintChildren(PaintState s, ref List<StackEntry>? scs)
     {
         foreach (var visual in VisualChildren)
         {
             if (visual is not Component c || !c.IsDisplayed) continue;
             if ((c.Styles.ZIndex ?? 0) != 0)
+            {
+                scs ??= new List<StackEntry>();
                 scs.Add(new StackEntry(c, s.ChildOrigin, s.Clip, c.Styles.ZIndex!.Value));
+            }
             else
-                PaintNonStacking(c, s.ChildOrigin, s.OwnOpacity, s.Clip, scs);
+            {
+                PaintNonStacking(c, s.ChildOrigin, s.OwnOpacity, s.Clip, ref scs);
+            }
         }
     }
 
-    private static void PaintNonStacking(Component node, Vector2 origin, float opacity, RectangleF? clip, List<StackEntry> scs)
+    private static void PaintNonStacking(Component node, Vector2 origin, float opacity, RectangleF? clip, ref List<StackEntry>? scs)
     {
         var s = node.BeginPaint(new RenderContext(origin, opacity, clip));
         if (!s.Visible) return;
-        node.PaintChildren(s, scs);
+        node.PaintChildren(s, ref scs);
         node.EndPaint(s);
     }
 
@@ -1075,13 +1087,29 @@ public abstract partial class Component : Node, IAnimationCallback
         Render(new RenderContext(origin ?? default));
     }
 
-    public void Update()
+    /// <summary>
+    /// Elapsed time of the frame being updated, in milliseconds, for <see cref="GameTick"/>.
+    /// Set by <see cref="Update"/> before it walks the tree.
+    /// </summary>
+    private protected float FrameDeltaMs { get; private set; } = 1000f / 60f;
+
+    public void Update() => Update(1000f / 60f);
+
+    public void Update(float frameDeltaMs)
     {
+        FrameDeltaMs = frameDeltaMs;
         GameTick();
+
         foreach (var child in GetChildSnapshot())
         {
             if (child is Component cmp)
-                cmp.Update();
+                cmp.FrameDeltaMs = frameDeltaMs;
+        }
+
+        foreach (var child in GetChildSnapshot())
+        {
+            if (child is Component cmp)
+                cmp.Update(frameDeltaMs);
         }
     }
 
@@ -1192,9 +1220,14 @@ public abstract partial class Component : Node, IAnimationCallback
         // element drawn beneath it (e.g. a dropdown whose trigger sat under the popup).
         // Browsers only target the topmost element — matching focus/hover, which already
         // dispatch through FocusManager.HitTestChain.
-        var chain = FocusManager.HitTestChain(this, @event.Position);
-        foreach (var node in chain)
+        // Leaf to root, like DOM bubbling: the deepest node handles the press first, and a
+        // handler that calls StopPropagation keeps it from reaching its ancestors.
+        var chain = _pressDispatchChain ??= [];
+        FocusManager.HitTestChain(this, @event.Position, chain);
+        var dispatch = new MouseEventDispatch();
+        for (var i = chain.Count - 1; i >= 0; i--)
         {
+            var node = chain[i];
             if (!IsPointWithinPadding(node, @event.Position))
                 continue;
             var relativeEvent = new MouseEvent(
@@ -1204,20 +1237,32 @@ public abstract partial class Component : Node, IAnimationCallback
                 CtrlKey: @event.CtrlKey,
                 MetaKey: @event.AltKey,
                 ShiftKey: @event.ShiftKey,
-                RelativePosition: @event.Position - node.LayoutPaddingPosition
+                RelativePosition: @event.Position - node.LayoutPaddingPosition,
+                Dispatch: dispatch
             );
             node.MousePressed?.Invoke(relativeEvent);
             node.OnMousePressed(relativeEvent);
+
+            if (dispatch.Stopped)
+                break;
         }
+
+        _pressDispatchChain = chain;
     }
+
+    /// <summary>Reused hit-test chain for press/release dispatch, so a mouse event allocates no list.</summary>
+    [ThreadStatic] private static List<Component>? _pressDispatchChain;
 
     public void DispatchMouseReleased(BaseMouseEvent @event)
     {
         // Occlusion-aware, like DispatchMousePressed (see above): only the topmost
         // hit-test chain under the cursor receives the release.
-        var chain = FocusManager.HitTestChain(this, @event.Position);
-        foreach (var node in chain)
+        var chain = _pressDispatchChain ??= [];
+        FocusManager.HitTestChain(this, @event.Position, chain);
+        var dispatch = new MouseEventDispatch();
+        for (var i = chain.Count - 1; i >= 0; i--)
         {
+            var node = chain[i];
             if (!IsPointWithinPadding(node, @event.Position))
                 continue;
             var relativeEvent = new MouseEvent(
@@ -1227,11 +1272,17 @@ public abstract partial class Component : Node, IAnimationCallback
                 CtrlKey: @event.CtrlKey,
                 MetaKey: @event.AltKey,
                 ShiftKey: @event.ShiftKey,
-                RelativePosition: @event.Position - node.LayoutPaddingPosition
+                RelativePosition: @event.Position - node.LayoutPaddingPosition,
+                Dispatch: dispatch
             );
             node.MouseReleased?.Invoke(relativeEvent);
             node.OnMouseReleased(relativeEvent);
+
+            if (dispatch.Stopped)
+                break;
         }
+
+        _pressDispatchChain = chain;
     }
 
     private static bool IsPointWithinPadding(Component node, Vector2 pos)

@@ -1,4 +1,5 @@
-﻿using NFMWorld.DriverInterface.DriverInterface;
+﻿using NFMWorld.DriverInterface;
+using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.UI;
 using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
@@ -85,6 +86,21 @@ public static class SettingsView
                 BackgroundColor = new Color(0, 0, 0, 166),
                 ZIndex = 20,
             },
+            tabIndex: 0,
+            // Esc closes; while a binding is being captured, the next key becomes that
+            // binding and Esc cancels instead.
+            onkeydown: e =>
+            {
+                if (capturing.Value is not { } action)
+                    return;
+
+                capturing.Value = null;
+                if (e.KeyCode == Key.Escape)
+                    return;
+
+                Set("keyBinding", (int)e.KeyCode, action);
+            },
+            onmount: view => view.Focus(),
             children:
             [
                 Sx.Text(
@@ -379,6 +395,8 @@ public static class SettingsView
                 BackgroundColor = new Color(0, 0, 0, 128),
                 ZIndex = 30,
             },
+            // Presses bubble leaf→root, and the card's buttons stop propagation, so a
+            // press inside the dialog never reaches this cancel.
             onmousedown: _ => onCancel(),
             children: Sx.View(
                 style: () => new Styles

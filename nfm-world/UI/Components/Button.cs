@@ -91,8 +91,10 @@ public static class Button
                 // only, say, MinWidth keeps the variant's padding and border.
                 return style?.Invoke() is { } overrides ? result.Over(overrides) : result;
             },
-            onmousedown: _ =>
+            onmousedown: e =>
             {
+                // Handled here: a modal backdrop behind the button must not also see it.
+                e.StopPropagation();
                 if (!disabled)
                     onPress();
             },

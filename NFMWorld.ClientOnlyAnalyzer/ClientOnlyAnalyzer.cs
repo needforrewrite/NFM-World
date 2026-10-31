@@ -15,14 +15,19 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
 
     private const string Category = "Usage";
 
-    private const string ClientOnlyAttributeFullName = "NFMWorldLibrary.Backend.Gamemodes.ClientOnlyAttribute";
-    private const string ClientServerTypeFullName = "NFMWorldLibrary.Backend.Gamemodes.ClientServer";
+    private const string ClientOnlyAttributeFullName = "NFMWorld.DriverInterface.ClientOnlyAttribute";
+    private const string ClientServerTypeFullName = "NFMWorldLibrary.Gamemodes.ClientServer";
     private const string RunIfOnClientMethodName = "RunIfOnClient";
 
     /// <summary>
-    /// The name of the NFMWorld executable project assembly.
+    /// The game assembly that is allowed to call client-only members directly. It is the
+    /// project the desktop head builds (`nfm-world/NFMWorld.Game.csproj`), not the
+    /// `NFMWorld` exe that references it.
     /// </summary>
-    private const string NfmWorldAssemblyName = "NFMWorld";
+    private const string NfmWorldAssemblyName = "NFMWorld.Game";
+
+    private static bool IsClientAssembly(string assemblyName)
+        => assemblyName is NfmWorldAssemblyName or "NFMWorld.Library.Test";
 
     private static readonly DiagnosticDescriptor Rule = new(
         id: DiagnosticId,
@@ -65,7 +70,9 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
         if (!IsClientOnly(symbol))
             return false;
 
-        if (context.Compilation.Assembly.Name == NfmWorldAssemblyName)
+        // The game assembly is the client, and the tests drive client APIs against fakes
+        // on purpose.
+        if (IsClientAssembly(context.Compilation.Assembly.Name))
             return false;
 
         if (IsInsideRunIfOnClientArgument(node, context.SemanticModel, context.CancellationToken))

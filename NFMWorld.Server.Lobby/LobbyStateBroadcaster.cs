@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using NFMWorldLibrary.Multiplayer.Packets.S2C;
 
 namespace NFMWorldLibrary.Multiplayer;
@@ -39,6 +40,10 @@ public class LobbyStateBroadcaster(
 
         foreach (var (_, session) in sessions.All)
         {
+            // Copy the live membership dictionary: the packet is serialized off-thread
+            // while joins and leaves mutate it.
+            var players = new ConcurrentDictionary<byte, Guid>(session.Players);
+
             sessionList.Add(new S2C_LobbyState.GameSession
             {
                 Id = session.Id,
@@ -46,7 +51,7 @@ public class LobbyStateBroadcaster(
                 CreatorName = session.CreatorName,
                 StageName = session.StageName,
                 MaxPlayers = session.MaxPlayers,
-                Players = session.Players,
+                Players = players,
                 State = session.State
             });
         }

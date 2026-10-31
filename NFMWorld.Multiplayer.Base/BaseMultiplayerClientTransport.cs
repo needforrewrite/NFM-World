@@ -25,12 +25,29 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
 
     protected void ReceivePacket(Memory<byte> memory)
     {
+        if (memory.IsEmpty)
+        {
+            Logging.Warning("Server sent an empty packet");
+            return;
+        }
+
         var opcode = (sbyte)memory.Span[0];
         var message = memory[1..];
 
-        if (MultiplayerUtils.TryDeserializeS2CPacket(opcode, message) is {} packet)
+        IPacketServerToClient? packet;
+        try
         {
-            _receivedPacketQueue.Enqueue(packet);
+            packet = MultiplayerUtils.TryDeserializeS2CPacket(opcode, message);
+        }
+        catch (Exception ex)
+        {
+            Logging.Warning($"Server sent an unreadable packet (opcode {opcode})", exception: ex);
+            return;
+        }
+
+        if (packet is { } p)
+        {
+            _receivedPacketQueue.Enqueue(p);
         }
         else
         {

@@ -10,6 +10,7 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
     private readonly ConcurrentDictionary<uint, GameSession> _sessions = new();
     private uint _maxSessionId;
     private readonly IMultiplayerServerTransport _transport = transport;
+    private readonly Lock _lock = new();
 
     public IEnumerable<KeyValuePair<uint, GameSession>> All => _sessions;
 
@@ -54,31 +55,35 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         var player = players.Get(clientIndex);
         if (player is null) return (null, null);
 
-        GameSession? leftSession = null;
-
-        // Leave current session if in one
-        if (player.InSession is { } current &&
-            _sessions.TryGetValue(current.SessionIndex, out var leaving))
+        // Two joins arriving at once must not both take the same free slot.
+        lock (_lock)
         {
-            leaving.Players.TryRemove(KeyValuePair.Create(current.PlayerIndex, player.Id));
-            player.InSession = null;
-            leftSession = leaving;
+            GameSession? leftSession = null;
+
+            // Leave current session if in one
+            if (player.InSession is { } current &&
+                _sessions.TryGetValue(current.SessionIndex, out var leaving))
+            {
+                leaving.Players.TryRemove(KeyValuePair.Create(current.PlayerIndex, player.Id));
+                player.InSession = null;
+                leftSession = leaving;
+            }
+
+            // Join new session
+            if (_sessions.TryGetValue(sessionId, out var target) &&
+                target.Players.Count < target.MaxPlayers)
+            {
+                byte playerIndex = 0;
+                while (target.Players.ContainsKey(playerIndex))
+                    playerIndex++;
+
+                target.Players[playerIndex] = player.Id;
+                player.InSession = (playerIndex, target.Id);
+                return (target, leftSession);
+            }
+
+            return (null, leftSession);
         }
-
-        // Join new session
-        if (_sessions.TryGetValue(sessionId, out var target) &&
-            target.Players.Count < target.MaxPlayers)
-        {
-            byte playerIndex = 0;
-            while (target.Players.ContainsKey(playerIndex))
-                playerIndex++;
-
-            target.Players[playerIndex] = player.Id;
-            player.InSession = (playerIndex, target.Id);
-            return (target, leftSession);
-        }
-
-        return (null, leftSession);
     }
 
     /// <summary>Leaves the player's current session. Returns the session left, if any.</summary>
@@ -103,26 +108,31 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         var player = players.Get(clientIndex);
         if (player is null)
             return false;
-        
-        if (_sessions.TryGetValue(sessionId, out var session) &&
-            session.Players.Any(e => e.Value == player.Id) &&
-            session.State == SessionState.NotStarted)
-        {
-            session.State = SessionState.WaitingToLoad;
-            session.StartTime = DateTimeOffset.Now.AddSeconds(20);
 
-            foreach (var (_, id) in session.Players)
+        // The state check and the transition must be atomic, or two members' start
+        // packets both pass it and two races are created for one session.
+        lock (_lock)
+        {
+            if (_sessions.TryGetValue(sessionId, out var session) &&
+                session.Players.Any(e => e.Value == player.Id) &&
+                session.State == SessionState.NotStarted)
             {
-                var aplayer = players.Get(id);
-                if (aplayer is null)
-                    return false;
-                aplayer.IsInGame = true;
+                session.State = SessionState.WaitingToLoad;
+                session.StartTime = DateTimeOffset.UtcNow.AddSeconds(20);
+
+                foreach (var (_, id) in session.Players)
+                {
+                    var aplayer = players.Get(id);
+                    if (aplayer is null)
+                        return false;
+                    aplayer.IsInGame = true;
+                }
+
+                return true;
             }
 
-            return true;
+            return false;
         }
-
-        return false;
     }
 
     /// <summary>
@@ -136,7 +146,7 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         {
             if (session.State == SessionState.WaitingToLoad &&
                 session.StartTime is { } startTime &&
-                DateTimeOffset.Now >= startTime)
+                DateTimeOffset.UtcNow >= startTime)
             {
                 session.State = SessionState.Finished;
                 timedOut.Add(session);
@@ -154,6 +164,21 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         }
 
         return timedOut;
+    }
+
+    /// <summary>
+    /// Removes sessions that are over or empty so the lobby list does not grow forever.
+    /// Only sessions in a terminal state are dropped; a race in progress stays visible.
+    /// </summary>
+    public void PruneFinished()
+    {
+        foreach (var (id, session) in _sessions)
+        {
+            var finished = session.State == SessionState.Finished;
+            var empty = session.State == SessionState.NotStarted && session.Players.IsEmpty;
+            if (finished || empty)
+                _sessions.TryRemove(id, out _);
+        }
     }
 
     /// <summary>Marks a player as ready/unready in their session.</summary>

@@ -581,7 +581,7 @@ public partial class StageLoader
                 {
                     if (!TryGetPieceToPlace("nfmm/thewall", out var wall)) continue;
 
-                    var n = Utility.GetInt("maxr", line, 0);
+                    var n = GetWallCount("maxr", line);
                     var o = Utility.GetInt("maxr", line, 1);
                     maxr = o;
                     var p = Utility.GetInt("maxr", line, 2);
@@ -598,8 +598,8 @@ public partial class StageLoader
                     }
 
                     walls.Add(new Rad3dBoxDef(
-                        Translation: new f64Vector3(o + 500, -5000, n * 4800 / 2 + p - 2400),
-                        Radius: new f64Vector3(600, 7100, n * 4800 / 2),
+                        Translation: new f64Vector3(o + 500, -5000, (long)n * 4800 / 2 + p - 2400),
+                        Radius: new f64Vector3(600, 7100, (long)n * 4800 / 2),
                         Xy: 90,
                         Zy: 0,
                         SurfaceType: 0,
@@ -614,7 +614,7 @@ public partial class StageLoader
                 {
                     if (!TryGetPieceToPlace("nfmm/thewall", out var wall)) continue;
 
-                    var n = Utility.GetInt("maxl", line, 0);
+                    var n = GetWallCount("maxl", line);
                     var o = Utility.GetInt("maxl", line, 1);
                     maxl = o;
                     var p = Utility.GetInt("maxl", line, 2);
@@ -631,8 +631,8 @@ public partial class StageLoader
                     }
 
                     walls.Add(new Rad3dBoxDef(
-                        Translation: new f64Vector3(o - 500, -5000, n * 4800 / 2 + p - 2400),
-                        Radius: new f64Vector3(600, 7100, n * 4800 / 2),
+                        Translation: new f64Vector3(o - 500, -5000, (long)n * 4800 / 2 + p - 2400),
+                        Radius: new f64Vector3(600, 7100, (long)n * 4800 / 2),
                         Xy: -90,
                         Zy: 0,
                         SurfaceType: 0,
@@ -647,7 +647,7 @@ public partial class StageLoader
                 {
                     if (!TryGetPieceToPlace("nfmm/thewall", out var wall)) continue;
 
-                    var n = Utility.GetInt("maxt", line, 0);
+                    var n = GetWallCount("maxt", line);
                     var o = Utility.GetInt("maxt", line, 1);
                     maxt = o;
                     var p = Utility.GetInt("maxt", line, 2);
@@ -664,8 +664,8 @@ public partial class StageLoader
                     }
 
                     walls.Add(new Rad3dBoxDef(
-                        Translation: new f64Vector3(n * 4800 / 2 + p - 2400, -5000, o + 500),
-                        Radius: new f64Vector3(n * 4800 / 2, 7100, 600),
+                        Translation: new f64Vector3((long)n * 4800 / 2 + p - 2400, -5000, o + 500),
+                        Radius: new f64Vector3((long)n * 4800 / 2, 7100, 600),
                         Xy: 0,
                         Zy: 90,
                         SurfaceType: 0,
@@ -680,7 +680,7 @@ public partial class StageLoader
                 {
                     if (!TryGetPieceToPlace("nfmm/thewall", out var wall)) continue;
 
-                    var n = Utility.GetInt("maxb", line, 0);
+                    var n = GetWallCount("maxb", line);
                     var o = Utility.GetInt("maxb", line, 1);
                     maxb = o;
                     var p = Utility.GetInt("maxb", line, 2);
@@ -697,8 +697,8 @@ public partial class StageLoader
                     }
 
                     walls.Add(new Rad3dBoxDef(
-                        Translation: new f64Vector3(n * 4800 / 2 + p - 2400, -5000, o - 500),
-                        Radius: new f64Vector3(n * 4800 / 2, 7100, 600),
+                        Translation: new f64Vector3((long)n * 4800 / 2 + p - 2400, -5000, o - 500),
+                        Radius: new f64Vector3((long)n * 4800 / 2, 7100, 600),
                         Xy: 180,
                         Zy: -90,
                         SurfaceType: 0,
@@ -728,6 +728,15 @@ public partial class StageLoader
         currentGroup = ungrouped;
         Path = "default_stage";
     }
+
+    /// <summary>
+    /// The wall-piece count from a <c>maxr/l/t/b</c> line, clamped. The value comes from a
+    /// user-editable file and drives a loop that allocates one piece per iteration.
+    /// </summary>
+    private const int MaxWallCount = 10_000;
+
+    private static int GetWallCount(string command, string line)
+        => Math.Clamp(Utility.GetInt(command, line, 0), 0, MaxWallCount);
 
     private bool TryGetPieceToPlace(string setstring, out Rad3d mesh)
     {

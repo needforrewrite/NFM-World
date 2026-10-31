@@ -93,7 +93,10 @@
     -->
     <Target Name="ResolveShaderPaths" Condition="'$(MSBuildRuntimeType)' == 'Core'">
         <PropertyGroup>
-            <NFMWorldShadersOutputDirectory Condition="'$(NFMWorldShadersOutputDirectory)' == ''">$(MSBuildProjectDirectory)\$(IntermediateOutputPath)ShaderCompiler\</NFMWorldShadersOutputDirectory>
+            <!-- Joined, not backslash-concatenated: this is passed as a task parameter and
+                 reaches the C# task unnormalised, so on Linux a literal backslash would
+                 create a directory whose name contains it. -->
+            <NFMWorldShadersOutputDirectory Condition="'$(NFMWorldShadersOutputDirectory)' == ''">$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'ShaderCompiler'))$([System.IO.Path]::DirectorySeparatorChar)</NFMWorldShadersOutputDirectory>
         </PropertyGroup>
     </Target>
 

@@ -89,4 +89,32 @@ public class MousePressOcclusionTests
         Assert.AreEqual(1, parentPresses, "parent ancestor still receives the press");
         Assert.AreEqual(1, childPresses, "topmost target receives the press");
     }
+
+    [TestMethod]
+    public void DispatchMousePressed_StopPropagation_DoesNotReachAncestor()
+    {
+        // A button inside a modal dialog: its handler stops propagation, so the dialog's
+        // backdrop-cancel handler must not also run for the same press.
+        var root = MakeRoot();
+        var backdrop = MakeBox("backdrop", 0, 0, 0, 200, 200);
+        var button = MakeBox("button", 0, 50, 50, 50, 50);
+        backdrop.AddChild(button);
+        root.AddChild(backdrop);
+
+        int backdropPresses = 0, buttonPresses = 0;
+        backdrop.MousePressed += _ => backdropPresses++;
+        button.MousePressed += e =>
+        {
+            buttonPresses++;
+            e.StopPropagation();
+        };
+
+        IBackend.Backend = new DummyBackend();
+        root.LayoutAndRender(new Vector2(200, 200));
+
+        root.DispatchMousePressed(Press(60, 60)); // over `button`
+
+        Assert.AreEqual(1, buttonPresses, "the button receives the press");
+        Assert.AreEqual(0, backdropPresses, "a press that stopped propagation must not reach the backdrop");
+    }
 }

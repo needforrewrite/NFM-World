@@ -28,6 +28,9 @@ public class WebSocketMultiplayerClientTransport : BaseMultiplayerClientTranspor
         }
     }
 
+    /// <summary>Largest message the server may send, so a bad server cannot exhaust memory.</summary>
+    private const int MaxMessageBytes = 4 * 1024 * 1024;
+
     private async Task ReceiveLoop()
     {
         var buffer = new byte[4096];
@@ -41,6 +44,12 @@ public class WebSocketMultiplayerClientTransport : BaseMultiplayerClientTranspor
                 if (result.MessageType == WebSocketMessageType.Close) break;
 
                 ms.Write(buffer, 0, result.Count);
+                if (ms.Length > MaxMessageBytes)
+                {
+                    Logging.Warning($"Server sent a message over {MaxMessageBytes} bytes; disconnecting");
+                    break;
+                }
+
                 if (result.EndOfMessage)
                 {
                     ReceivePacket(ms.ToArray());

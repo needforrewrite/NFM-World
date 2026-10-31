@@ -81,9 +81,9 @@ public class Dust : IDisposable, IImmediateRenderElement
                 Sz[_ust] = ((wheelz + ((float)_car.Position.Z + scz)) / 2.0F);
                 Sy[_ust] = wheely;
             }
-            if (Sy[wheelidx] > 250)
+            if (Sy[_ust] > 250)
             {
-                Sy[wheelidx] = 250;
+                Sy[_ust] = 250;
             }
             Osmag[_ust] = simag * dist;
             Scx[_ust] = scx;
@@ -176,7 +176,7 @@ public class Dust : IDisposable, IImmediateRenderElement
                 f = 1.0F;
             }
             Scx[dust] = (Scx[dust] * f);
-            Scz[dust] = (Scx[dust] * f);
+            Scz[dust] = (Scz[dust] * f);
             for (var i216 = 0; i216 < 8; i216++)
             {
                 _smag[dust, i216] = Osmag[dust] * URandom.Single() * 50.0F;

@@ -119,17 +119,35 @@ public class GameMasterRegistry : IDisposable
 
     private void RefreshAll()
     {
+        // Snapshot the domains, resolve without the lock (a slow DNS lookup would
+        // otherwise block every SelectGameMaster caller for its duration), then apply.
+        string[] domains;
         lock (_lock)
         {
-            for (var i = _masters.Count - 1; i >= 0; i--)
+            domains = _masters.Select(m => m.Domain).ToArray();
+        }
+
+        var resolved = new List<(string Domain, ResolvedGameMaster Gm)>(domains.Length);
+        foreach (var domain in domains)
+        {
+            if (ResolveDomain(domain) is { } updated)
+                resolved.Add((domain, updated));
+        }
+
+        lock (_lock)
+        {
+            foreach (var (domain, updated) in resolved)
             {
-                var updated = ResolveDomain(_masters[i].Domain);
-                if (updated is not null)
+                for (var i = 0; i < _masters.Count; i++)
                 {
+                    if (!string.Equals(_masters[i].Domain, domain, StringComparison.Ordinal))
+                        continue;
+
                     // Preserve health state
                     updated.IsHealthy = _masters[i].IsHealthy;
                     updated.ConsecutiveFailures = _masters[i].ConsecutiveFailures;
                     _masters[i] = updated;
+                    break;
                 }
             }
         }

@@ -193,10 +193,16 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
                 "was submitted - only one command buffer may be live at a time.");
         }
 
-        var commandBuffer = new GlCommandBuffer(_gl, this, _baseVertexDraw);
+        // Reused rather than allocated per frame: the buffer owns a uniform GL buffer, so a
+        // fresh one each frame leaked a GL name per frame.
+        var commandBuffer = _commandBuffer ??= new GlCommandBuffer(_gl, this, _baseVertexDraw, DeleteDeferred);
         _activeCommandBuffer = commandBuffer;
         return commandBuffer;
     }
+
+    private GlCommandBuffer? _commandBuffer;
+
+    private void DeleteDeferred(GlObjectKind kind, uint handle) => _deletions.Request(kind, handle);
 
     /// <summary>
     /// Ends the frame.
@@ -523,6 +529,9 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
 
         _disposed = true;
         _activeCommandBuffer = null;
+        _commandBuffer?.Dispose();
+        _commandBuffer = null;
+        _deletions.Drain(_gl);
 
         // The context is destroyed last: every GL object created through this device belongs to it,
         // and a Delete* call after eglTerminate has no context to act on.

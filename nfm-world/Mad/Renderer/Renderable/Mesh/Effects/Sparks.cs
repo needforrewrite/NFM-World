@@ -152,18 +152,6 @@ public class Sparks : IDisposable, IImmediateRenderElement
                     var inheritedVx = _vrx[i];
                     var inheritedVy = _vry[i];
                     var inheritedVz = _vrz[i];
-                    var inheritedSpeedSq = inheritedVx * inheritedVx + inheritedVy * inheritedVy + inheritedVz * inheritedVz;
-                    if (inheritedSpeedSq > 1.0f)
-                    {
-                        Logging.Info(
-                            $"Sparks: inherited non-zero velocity at slot {i} | " +
-                            $"v=({inheritedVx:F2},{inheritedVy:F2},{inheritedVz:F2}) speedSq={inheritedSpeedSq:F2}");
-                        SentrySdk.CaptureMessage(
-                            $"Sparks: inherited non-zero velocity at slot {i} | " +
-                            $"v=({inheritedVx:F2},{inheritedVy:F2},{inheritedVz:F2}) speedSq={inheritedSpeedSq:F2}",
-                            SentryLevel.Warning);
-                    }
-
                     // Zero velocity so inherited values don't leak from the previous
                     // spark that occupied this slot. Conditional init below has only
                     // ~50% chance per component of overwriting.
@@ -226,35 +214,6 @@ public class Sparks : IDisposable, IImmediateRenderElement
                 var end = new Vector3(_rx[i] + _vrx[i], _ry[i] + _vry[i], _rz[i] + _vrz[i]);
                 var lineLenSq = (start - end).LengthSquared();
                 var color = new Color3(255, (short)(197 - 30 * _rtg[i]), 0);
-
-                // Log near-degenerate lines that pass the threshold but are still short
-                // enough that screen-space projection may produce unstable normalize() in
-                // the Line.fx vertex shader.
-                if (lineLenSq is >= 0.01f and < 0.05f)
-                {
-                    // Logging.Info(
-                    //     $"Sparks: near-degenerate line at slot {i} | " +
-                    //     $"lenSq={lineLenSq:F4} start=({start.X:F2},{start.Y:F2},{start.Z:F2}) end=({end.X:F2},{end.Y:F2},{end.Z:F2})");
-
-                    SentrySdk.CaptureMessage(
-                        $"Sparks: near-degenerate line at slot {i} | " +
-                        $"lenSq={lineLenSq:F4} start=({start.X:F2},{start.Y:F2},{start.Z:F2}) end=({end.X:F2},{end.Y:F2},{end.Z:F2})",
-                        SentryLevel.Warning);
-                }
-
-                // Log black/dark spark colors (green channel negative or near-zero).
-                var greenChannel = (short)(197 - 30 * _rtg[i]);
-                if (greenChannel <= 0)
-                {
-                    // Logging.Info(
-                    //     $"Sparks: dark/black spark at slot {i} | " +
-                    //     $"rtg={_rtg[i]} green={greenChannel} color=({color.R},{color.G},{color.B})");
-
-                    SentrySdk.CaptureMessage(
-                        $"Sparks: dark/black spark at slot {i} | " +
-                        $"rtg={_rtg[i]} green={greenChannel} color=({color.R},{color.G},{color.B})",
-                        SentryLevel.Warning);
-                }
 
                 if (lineLenSq < 0.01f)
                 {

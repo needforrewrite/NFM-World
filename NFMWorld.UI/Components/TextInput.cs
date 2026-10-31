@@ -595,7 +595,7 @@ public partial class TextInput : Component
 
     protected override void GameTick()
     {
-        _cursorBlinkTimer += 1000f / 63f; // approximate per-frame delta
+        _cursorBlinkTimer += FrameDeltaMs;
         if (_cursorBlinkTimer >= CursorBlinkPeriodMs)
         {
             _cursorBlinkTimer -= CursorBlinkPeriodMs;

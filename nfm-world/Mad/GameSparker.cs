@@ -5,6 +5,7 @@ using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Gameplay;
 using NFMWorld.Graphics;
+using NFMWorld.Reactor;
 using NFMWorld.Sfx;
 using NFMWorld.UI;
 
@@ -374,6 +375,13 @@ public static partial class GameSparker
         if (!wantCaptureMouse)
         {
             UiRenderer?.HandleMouseMoved(mouseX, mouseY, buttons, ctrlKey, shiftKey, altKey);
+        }
+        else
+        {
+            // The pointer is over an ImGui window, so nothing in the Yoga tree is hovered.
+            // Without this the last hovered button keeps its hover style while the pointer
+            // is somewhere else entirely.
+            FocusManager.ClearHover();
         }
 
         CurrentPhase.MouseMoved(mouseX, mouseY, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);

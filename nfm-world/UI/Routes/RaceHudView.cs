@@ -186,13 +186,18 @@ public static class RaceHudView
     /// <summary>The centre-screen text, counting down or showing a transient message.</summary>
     private static string StateText()
     {
+        // Read the per-tick lap clock so the message re-evaluates (and expires) on the
+        // tick it ends, not only when some other HUD value happens to change.
+        _ = Race.LapTimeMs.Value;
+
         var countdown = Race.CountdownTimer.Value;
         if (countdown > 0)
             return $"Starting in {countdown}";
 
         if (Race.StateText.Value is { } text)
         {
-            if (Race.StateTextEndsAt.Value is { } endsAt && DateTime.Now >= endsAt)
+            // Stored UTC (see HudStateData.LuaStateTextEndsAt).
+            if (Race.StateTextEndsAt.Value is { } endsAt && DateTime.UtcNow >= endsAt)
                 return "";
 
             return text;

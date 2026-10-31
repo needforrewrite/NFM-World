@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using FixedMathSharp;
@@ -407,7 +407,7 @@ public partial class CarPhysics
                             {
                                 othermad._collidingWithClientPlayer = false;
                             }
-                            if (UMath.RandomBoolean())
+                            if (random.Next(2) == 0)
                             {
                                 otherconto.Spark(
                                     (wheelx[wheel] + otherwheelx[otherwheel]) * fix64.Half, 
@@ -463,7 +463,7 @@ public partial class CarPhysics
                             {
                                 othermad._collidingWithClientPlayer = false;
                             }
-                            if (UMath.RandomBoolean())
+                            if (random.Next(2) == 0)
                             {
                                 otherconto.Spark(
                                     (wheelx[wheel] + otherwheelx[otherwheel]) * fix64.Half, 
