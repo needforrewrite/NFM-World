@@ -62,6 +62,8 @@ public class SettingsMenu()
         _ => ["Auto", "OpenGL", "Vulkan via ANGLE", "OpenGL via ANGLE", "OpenGL ES via ANGLE"]
     };
     private static int _selectedRenderer = 0;
+    public static string SelectedRendererName => Renderers[_selectedRenderer];
+    public static void PrepareStartupRecovery() => _antialias = 0;
     private static int _originalRenderer = _selectedRenderer;
     private static string[] _resolutions = GetSupportedResolutions();
     public static string[] Resolutions => _resolutions;

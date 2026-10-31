@@ -55,6 +55,16 @@
                 yield return Path.GetRelativePath(_root, file).Replace("\\", "/");
         }
 
+        public IEnumerable<string> EnumerateDirectories(string path)
+        {
+            var fullPath = Resolve(path);
+            if (fullPath is null || !Directory.Exists(fullPath))
+                yield break;
+
+            foreach (var directory in Directory.EnumerateDirectories(fullPath))
+                yield return Path.GetRelativePath(_root, directory).Replace("\\", "/");
+        }
+
         /// <summary>
         /// Resolves a virtual path and validates it stays within the mount root.
         /// Returns null if the path escapes the root (path traversal attempt).

@@ -25,8 +25,10 @@ namespace NFMWorld;
 /// the drawable, so <c>WorldGame</c> pushes it onto whichever backend is in play on every frame.
 /// </para>
 /// </remarks>
-public sealed class GraphicsSettingsShim(SdlWindow window, ISwapchain swapchain)
+public sealed class GraphicsSettingsShim(SdlWindow window, ISwapchain swapchain, int? startupMultiSampleRequest = null)
 {
+    private readonly int _startupMultiSampleRequest = (startupMultiSampleRequest ?? swapchain.MultiSampleCount) <= 1
+        ? 0 : startupMultiSampleRequest ?? swapchain.MultiSampleCount;
     public bool SynchronizeWithVerticalRetrace { get; set; } = true;
     public bool PreferMultiSampling { get; set; }
 
@@ -87,7 +89,8 @@ public sealed class GraphicsSettingsShim(SdlWindow window, ISwapchain swapchain)
     public bool RequiresRestartForMultiSampling =>
         !OperatingSystem.IsBrowser()
         && swapchain.MultiSampleChangeRequiresRestart
-        && DesiredMultiSampleCount != AppliedMultiSampleCount;
+        && DesiredMultiSampleCount != (AppliedMultiSampleCount <= 1 ? 0 : AppliedMultiSampleCount)
+        && DesiredMultiSampleCount != _startupMultiSampleRequest;
 
     public void ApplyChanges()
     {

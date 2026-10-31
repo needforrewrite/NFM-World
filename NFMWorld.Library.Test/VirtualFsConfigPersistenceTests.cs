@@ -58,4 +58,24 @@ public class VirtualFsConfigPersistenceTests
         fs.MountDirectory(second);
         Assert.AreEqual("first", fs.ReadAllText(ConfigPath));
     }
+
+    [TestMethod]
+    public async Task SavedConfigurationOverridesBundledCopyForSyncAndAsyncReads()
+    {
+        var install = Path.Combine(_root, "install");
+        var user = Path.Combine(_root, "user");
+        Directory.CreateDirectory(Path.Combine(install, "data", "cfg"));
+        File.WriteAllText(Path.Combine(install, ConfigPath), "video_renderer3 OpenGL via ANGLE");
+        var fs = new VirtualFS();
+        fs.MountDirectory(install);
+        fs.MountWriteDestination(user);
+        using (var writer = new StreamWriter(fs.OpenWrite(ConfigPath)))
+            writer.Write("video_renderer3 Auto");
+
+        Assert.AreEqual("video_renderer3 Auto", fs.ReadAllText(ConfigPath));
+        using var stream = await fs.OpenReadAsync(ConfigPath);
+        using var reader = new StreamReader(stream);
+        Assert.AreEqual("video_renderer3 Auto", await reader.ReadToEndAsync());
+        Assert.AreEqual("video_renderer3 OpenGL via ANGLE", File.ReadAllText(Path.Combine(install, ConfigPath)));
+    }
 }

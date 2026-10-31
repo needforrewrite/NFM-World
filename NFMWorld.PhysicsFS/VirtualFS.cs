@@ -143,6 +143,8 @@ public class VirtualFS
 
     public Stream OpenRead(string path)
     {
+        if (SavedConfigPath(path) is { } saved)
+            return File.OpenRead(saved);
         foreach (var mount in _readMounts)
         {
             var stream = mount.OpenRead(path);
@@ -170,6 +172,8 @@ public class VirtualFS
     /// </summary>
     public async System.Threading.Tasks.Task<Stream> OpenReadAsync(string path)
     {
+        if (SavedConfigPath(path) is { } saved)
+            return File.OpenRead(saved);
         foreach (var mount in _readMounts)
         {
             var stream = await mount.OpenReadAsync(path).ConfigureAwait(false);
@@ -199,6 +203,14 @@ public class VirtualFS
             Directory.CreateDirectory(dir);
 
         return File.Open(fullPath, FileMode.Create, FileAccess.Write, FileShare.Read);
+    }
+
+    private string? SavedConfigPath(string path)
+    {
+        if (_writeRoot is null || !path.Replace('\\', '/').StartsWith("data/cfg/", StringComparison.OrdinalIgnoreCase))
+            return null;
+        var fullPath = Path.Combine(_writeRoot, path);
+        return File.Exists(fullPath) ? fullPath : null;
     }
 
     public byte[] ReadAllBytes(string path)

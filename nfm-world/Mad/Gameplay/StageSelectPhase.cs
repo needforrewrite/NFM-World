@@ -30,10 +30,12 @@ public class StageSelectPhase : BaseStageRenderingPhase
         // behind them, and these two listings are how the stage list is discovered.
         foreach (var dir in TheVFS.VFS.EnumerateDirectories("data/stages"))
         {
-            if (!TheVFS.VFS.EnumerateFiles(dir).Any()) continue;
+            if (!TheVFS.VFS.EnumerateFiles(dir, "*.txt").Any()) continue;
 
             _stageCollections.Add(Path.GetFileName(dir));
         }
+        if (_stageCollections.Count == 0)
+            throw new DirectoryNotFoundException("No playable stages were found in data/stages. Check that the game assets are installed.");
         // randomly select collection
         _selectedCollection = _stageCollections[new System.Random().Next(0, _stageCollections.Count)];
         LoadStagesInCollection(_selectedCollection);
@@ -63,6 +65,8 @@ public class StageSelectPhase : BaseStageRenderingPhase
             var stageFilename = Path.GetFileName(entry).Replace(".txt", "");
             _stagesInCollection.Add(stageFilename);
         }
+        if (_stagesInCollection.Count == 0)
+            throw new DirectoryNotFoundException($"No playable stages were found in {dirPath}.");
     }
 
     private void LoadStageInCollection()

@@ -175,7 +175,17 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void OnTTClicked()
     {
-        StageSelectPhase ssp = new();
+        StageSelectPhase ssp;
+        try
+        {
+            ssp = new StageSelectPhase();
+        }
+        catch (DirectoryNotFoundException ex)
+        {
+            Logging.Error(ex.Message);
+            GameSparker.MessageWindow.ShowMessage("Stages unavailable", ex.Message);
+            return;
+        }
         ssp.StageSelected += (sender, stageName) =>
         {
             PhaseSharedState.SelectedStageName = stageName;

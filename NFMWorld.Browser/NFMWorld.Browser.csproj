@@ -321,6 +321,7 @@
          invisible to the desktop build and vice versa. -->
     <ItemGroup>
         <Compile Include="..\NFMWorld\WorldGame.cs" Link="Shared\WorldGame.cs" />
+        <Compile Include="..\NFMWorld\WorldGame.Recovery.cs" Link="Shared\WorldGame.Recovery.cs" />
         <Compile Include="..\NFMWorld\GlobalUsings.cs" Link="Shared\GlobalUsings.cs" />
     </ItemGroup>
 

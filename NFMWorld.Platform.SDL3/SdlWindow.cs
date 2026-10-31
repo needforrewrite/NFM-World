@@ -21,6 +21,14 @@ public sealed class SdlWindow : IDisposable
     private bool _fullscreenRetryOnFocus;
     private int _fullscreenWidth;
     private int _fullscreenHeight;
+    private int _windowedWidth;
+    private int _windowedHeight;
+    private bool _windowedSizePending;
+    private int _logicalWidth;
+    private int _logicalHeight;
+    // SDL input uses window coordinates; the game uses drawable pixels.
+    private static float _mouseScaleX = 1;
+    private static float _mouseScaleY = 1;
     private bool _borderlessDesktop;
     private bool _borderlessPending;
 
@@ -32,6 +40,7 @@ public sealed class SdlWindow : IDisposable
             if (_borderlessDesktop == value) return;
             _borderlessDesktop = value;
             _borderlessPending = value;
+            if (value) _windowedSizePending = false;
         }
     }
 
@@ -40,6 +49,7 @@ public sealed class SdlWindow : IDisposable
     public bool RequestedFullscreen { get; private set; }
 
     public IntPtr Handle => _window;
+    /// <summary>Drawable dimensions in pixels, including Retina pixel density.</summary>
     public int Width { get; private set; }
     public int Height { get; private set; }
     public bool ShouldQuit { get; private set; }
@@ -54,7 +64,7 @@ public sealed class SdlWindow : IDisposable
         _fullscreenPending = true;
     }
 
-    /// <summary>Raised on SDL_EVENT_WINDOW_RESIZED with the new client size, in pixels.</summary>
+    /// <summary>Raised when the drawable dimensions change, in pixels.</summary>
     public event Action<int, int>? Resized;
 
     /// <summary>Raised on SDL_EVENT_KEY_DOWN/SDL_EVENT_KEY_UP.</summary>
@@ -82,6 +92,9 @@ public sealed class SdlWindow : IDisposable
         _window = window;
         Width = width;
         Height = height;
+        _logicalWidth = width;
+        _logicalHeight = height;
+        RefreshSize();
         RequestedFullscreen = Fullscreen;
         MouseWheel += (_, y) => _scrollWheelValue += (int)(y * 120);
     }
@@ -141,6 +154,7 @@ public sealed class SdlWindow : IDisposable
         set
         {
             RequestedFullscreen = value;
+            if (value) _windowedSizePending = false;
             if (OperatingSystem.IsBrowser())
             {
                 if (!SDL.SDL_SetWindowFullscreen(_window, value))
@@ -177,8 +191,18 @@ public sealed class SdlWindow : IDisposable
 
     private void RefreshSize()
     {
-        if (!SDL.SDL_GetWindowSize(_window, out var width, out var height) || width <= 0 || height <= 0)
+        if (!SDL.SDL_GetWindowSize(_window, out var logicalWidth, out var logicalHeight)
+            || logicalWidth <= 0 || logicalHeight <= 0)
             return;
+        var width = logicalWidth;
+        var height = logicalHeight;
+        if (!OperatingSystem.IsBrowser()
+            && (!SDL.SDL_GetWindowSizeInPixels(_window, out width, out height) || width <= 0 || height <= 0))
+            return;
+        _logicalWidth = logicalWidth;
+        _logicalHeight = logicalHeight;
+        _mouseScaleX = width / (float)logicalWidth;
+        _mouseScaleY = height / (float)logicalHeight;
         if (Width == width && Height == height) return;
         Width = width;
         Height = height;
@@ -228,8 +252,34 @@ public sealed class SdlWindow : IDisposable
 
     public void SetSize(int width, int height)
     {
+        if (OperatingSystem.IsBrowser())
+        {
+            if (!SDL.SDL_SetWindowSize(_window, width, height))
+                throw new InvalidOperationException($"SDL_SetWindowSize failed: {SDL.SDL_GetError()}");
+            return;
+        }
+        _windowedWidth = width;
+        _windowedHeight = height;
+        _windowedSizePending = true;
+    }
+
+    private void ApplyPendingWindowedSize()
+    {
+        if (!_windowedSizePending || RequestedFullscreen || Fullscreen || _borderlessDesktop) return;
+        _windowedSizePending = false;
+        if ((SDL.SDL_GetWindowFlags(_window) & SDL.SDL_WindowFlags.SDL_WINDOW_MAXIMIZED) != 0)
+        {
+            if (!SDL.SDL_RestoreWindow(_window))
+                throw new InvalidOperationException($"SDL_RestoreWindow failed: {SDL.SDL_GetError()}");
+            SDL.SDL_SyncWindow(_window);
+        }
+        RefreshSize();
+        var width = Math.Max(1, (int)Math.Round(_windowedWidth * (_logicalWidth / (double)Width)));
+        var height = Math.Max(1, (int)Math.Round(_windowedHeight * (_logicalHeight / (double)Height)));
         if (!SDL.SDL_SetWindowSize(_window, width, height))
             throw new InvalidOperationException($"SDL_SetWindowSize failed: {SDL.SDL_GetError()}");
+        SDL.SDL_SyncWindow(_window);
+        RefreshSize();
     }
 
     public void SetTitle(string title) => SDL.SDL_SetWindowTitle(_window, title);
@@ -247,6 +297,8 @@ public sealed class SdlWindow : IDisposable
                     break;
 
                 case (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_RESIZED:
+                case (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+                case (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
                     RefreshSize();
                     RefreshBorderlessDesktop();
                     break;
@@ -283,15 +335,17 @@ public sealed class SdlWindow : IDisposable
                     break;
 
                 case (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_MOTION:
-                    MouseMoved?.Invoke((int)e.motion.x, (int)e.motion.y);
+                    MouseMoved?.Invoke((int)MathF.Round(e.motion.x * _mouseScaleX), (int)MathF.Round(e.motion.y * _mouseScaleY));
                     break;
 
                 case (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN:
-                    MouseButtonDown?.Invoke(SdlKeyMap.FromButtonIndex(e.button.button), (int)e.button.x, (int)e.button.y);
+                    MouseButtonDown?.Invoke(SdlKeyMap.FromButtonIndex(e.button.button),
+                        (int)MathF.Round(e.button.x * _mouseScaleX), (int)MathF.Round(e.button.y * _mouseScaleY));
                     break;
 
                 case (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP:
-                    MouseButtonUp?.Invoke(SdlKeyMap.FromButtonIndex(e.button.button), (int)e.button.x, (int)e.button.y);
+                    MouseButtonUp?.Invoke(SdlKeyMap.FromButtonIndex(e.button.button),
+                        (int)MathF.Round(e.button.x * _mouseScaleX), (int)MathF.Round(e.button.y * _mouseScaleY));
                     break;
 
                 case (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_WHEEL:
@@ -301,6 +355,7 @@ public sealed class SdlWindow : IDisposable
         }
 
         ApplyPendingFullscreen();
+        ApplyPendingWindowedSize();
         ApplyPendingBorderless();
         RefreshSize();
     }
@@ -326,7 +381,8 @@ public sealed class SdlWindow : IDisposable
     public static (MouseButtons Buttons, int X, int Y) GetMouseState()
     {
         var flags = SDL.SDL_GetMouseState(out var x, out var y);
-        return (SdlKeyMap.FromButtonFlags(flags), (int)x, (int)y);
+        return (SdlKeyMap.FromButtonFlags(flags),
+            (int)MathF.Round(x * _mouseScaleX), (int)MathF.Round(y * _mouseScaleY));
     }
 
     /// <summary>Cumulative scroll value, replacing FNA's <c>MouseState.ScrollWheelValue</c>.</summary>

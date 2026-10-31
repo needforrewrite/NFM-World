@@ -66,7 +66,7 @@ namespace NFMWorld;
 /// rather than reporting it as a typo.
 /// </para>
 /// </remarks>
-public class WorldGame : IDisposable, IGameHost
+public partial class WorldGame : IDisposable, IGameHost
 {
     /// <summary>Compatibility shim for <c>Mad/UI/SettingsMenu.cs</c>'s existing settings-application logic. See <see cref="GraphicsSettingsShim"/>.</summary>
     public GraphicsSettingsShim Graphics { get; }
@@ -641,7 +641,7 @@ public class WorldGame : IDisposable, IGameHost
             }
         }
 
-        Graphics = new GraphicsSettingsShim(Window, _device.Swapchain);
+        Graphics = new GraphicsSettingsShim(Window, _device.Swapchain, SettingsMenu.RequestedMultiSampleCount);
 
         // VSync is applied per present rather than at creation (the present interval is an argument
         // to IDXGISwapChain::Present), so unlike the GL path it can follow the setting - the frame
@@ -649,7 +649,7 @@ public class WorldGame : IDisposable, IGameHost
         // presented with the wrong interval.
         SyncBackendVSync();
 
-
+        if (_graphicsRecoveryMode) return;
         Window.Resized += OnWindowResized;
         Window.MouseButtonDown += (button, x, y) => _mouseButtonEvents.Enqueue((button, true, x, y));
         Window.MouseButtonUp += (button, x, y) => _mouseButtonEvents.Enqueue((button, false, x, y));
@@ -1082,7 +1082,7 @@ public class WorldGame : IDisposable, IGameHost
         if (Window.Width != swapchain.Width || Window.Height != swapchain.Height
             || multiSampleCount != _appliedMultiSampleRequest)
         {
-            swapchain.Resize(Window.Width, Window.Height, multiSampleCount);
+            swapchain.Resize(Window.Width, Window.Height, multiSampleCount == 0 ? 1 : multiSampleCount);
             _appliedMultiSampleRequest = multiSampleCount;
         }
     }
@@ -1397,10 +1397,28 @@ public class WorldGame : IDisposable, IGameHost
         // reads back for _selectedRenderer, and this parses the same keys.
         SettingsMenu.LoadConfigValues();
 
-        var program = new WorldGame();
-        GameSparker.Game = program;
-        program.Initialize();
-        program.LoadContent();
+        if (args.Contains(GraphicsRecoveryArgument) || !string.IsNullOrEmpty(ReadStartupStatus()))
+        {
+            RunGraphicsRecovery(args);
+            return;
+        }
+
+        WriteStartupStatus($"Starting {SettingsMenu.SelectedRendererName}. The previous launch did not finish initializing.");
+        WorldGame? program = null;
+        try
+        {
+            program = new WorldGame();
+            GameSparker.Game = program;
+            program.Initialize();
+            program.LoadContent();
+        }
+        catch (Exception ex)
+        {
+            RecoverFailedStartup(program, args, ex);
+            return;
+        }
+        if (program is null) return;
+        var firstFrame = true;
 
         // Manual game loop replacing XNA's Game.Run() - timing algorithm ported from FNA's own
         // Game.Tick() (see AdvanceElapsedTime/UpdateEstimatedSleepPrecision above) so a fixed-cap
@@ -1427,25 +1445,26 @@ public class WorldGame : IDisposable, IGameHost
                 }
             }
 
-            program.Tick(stopwatch);
+            try
+            {
+                program.Tick(stopwatch);
+            }
+            catch (Exception ex) when (firstFrame)
+            {
+                RecoverFailedStartup(program, args, ex);
+                return;
+            }
+            if (firstFrame)
+            {
+                WriteStartupStatus("");
+                firstFrame = false;
+            }
         }
 
         program.Dispose();
         if (program._restartRequested)
         {
-            var executable = System.Environment.ProcessPath
-                ?? throw new InvalidOperationException("Cannot determine the game executable for restart.");
-            var start = new ProcessStartInfo(executable)
-            {
-                UseShellExecute = false,
-                WorkingDirectory = System.Environment.CurrentDirectory
-            };
-            if (string.Equals(Path.GetFileNameWithoutExtension(executable), "dotnet", StringComparison.OrdinalIgnoreCase))
-                start.ArgumentList.Add(Assembly.GetEntryAssembly()!.Location);
-            foreach (var argument in args)
-                start.ArgumentList.Add(argument);
-            using var restarted = Process.Start(start)
-                ?? throw new InvalidOperationException("Failed to restart the game.");
+            Relaunch(args);
         }
     }
 
