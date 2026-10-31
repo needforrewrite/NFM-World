@@ -174,6 +174,9 @@ public static partial class GameSparker
     {
         DebugKeyStates[key] = true;
 
+        if (!imguiWantsKeyboard && NFMWorld.UI.Components.SettingsView.HandleKeyPressed(UiRenderer?.ActiveRoot, key))
+            return;
+
         var bindings = SettingsMenu.Bindings;
 
         if (key == bindings.ToggleDevConsole)

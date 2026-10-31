@@ -483,6 +483,14 @@ public class WorldGame : IDisposable, IGameHost
     private static readonly Key[] AllKeys = Enum.GetValues<Key>().Where(k => (uint)k <= 0xFE).Distinct().ToArray();
 
     private bool _disposed;
+    private bool _restartRequested;
+    private readonly Queue<(MouseButtons Button, bool Down, int X, int Y)> _mouseButtonEvents = new();
+
+    public void Restart()
+    {
+        _restartRequested = true;
+        Window.RequestClose();
+    }
 
     /// <summary>
     /// The browser's context, for the arm below. Null on every desktop path, which is what keeps
@@ -643,6 +651,8 @@ public class WorldGame : IDisposable, IGameHost
 
 
         Window.Resized += OnWindowResized;
+        Window.MouseButtonDown += (button, x, y) => _mouseButtonEvents.Enqueue((button, true, x, y));
+        Window.MouseButtonUp += (button, x, y) => _mouseButtonEvents.Enqueue((button, false, x, y));
 
         Window.TextInput += character =>
         {
@@ -932,7 +942,7 @@ public class WorldGame : IDisposable, IGameHost
         var altKey = _oldKeyState[Key.Alt];
         var wantCaptureMouse = ImguiRenderer is not null && ImGui.GetIO().WantCaptureMouse;
 
-        foreach (var button in MouseButtonsArray)
+        void DispatchButton(MouseButtons button, bool down, int x, int y, MouseButtons state)
         {
             var nfmButton = button switch
             {
@@ -945,24 +955,38 @@ public class WorldGame : IDisposable, IGameHost
                 _ => throw new ArgumentOutOfRangeException()
             };
 
-            if (buttons.HasFlag(button) && !_oldMouseState.HasFlag(button))
+            if (down)
             {
-                GameSparker.MousePressed(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
+                GameSparker.MousePressed(x, y, wantCaptureMouse, nfmButton, state, ctrlKey, shiftKey, altKey);
                 if (!wantCaptureMouse && nfmButton == MouseButton.Primary)
                 {
                     _mouseDragging = true;
-                    _mouseDragStart = mousePosition;
+                    _mouseDragStart = new Int2(x, y);
                 }
             }
-            else if (!buttons.HasFlag(button) && _oldMouseState.HasFlag(button))
+            else
             {
-                GameSparker.MouseReleased(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
+                GameSparker.MouseReleased(x, y, wantCaptureMouse, nfmButton, state, ctrlKey, shiftKey, altKey);
 
                 if (nfmButton == MouseButton.Primary)
                 {
                     _mouseDragging = false;
                 }
             }
+        }
+
+        while (_mouseButtonEvents.TryDequeue(out var mouseEvent))
+        {
+            _oldMouseState = mouseEvent.Down
+                ? _oldMouseState | mouseEvent.Button
+                : _oldMouseState & ~mouseEvent.Button;
+            DispatchButton(mouseEvent.Button, mouseEvent.Down, mouseEvent.X, mouseEvent.Y, _oldMouseState);
+        }
+
+        foreach (var button in MouseButtonsArray)
+        {
+            if (buttons.HasFlag(button) != _oldMouseState.HasFlag(button))
+                DispatchButton(button, buttons.HasFlag(button), mouseX, mouseY, buttons);
         }
 
         if (mousePosition.X != _oldMousePosition.X || mousePosition.Y != _oldMousePosition.Y)
@@ -1407,6 +1431,22 @@ public class WorldGame : IDisposable, IGameHost
         }
 
         program.Dispose();
+        if (program._restartRequested)
+        {
+            var executable = System.Environment.ProcessPath
+                ?? throw new InvalidOperationException("Cannot determine the game executable for restart.");
+            var start = new ProcessStartInfo(executable)
+            {
+                UseShellExecute = false,
+                WorkingDirectory = System.Environment.CurrentDirectory
+            };
+            if (string.Equals(Path.GetFileNameWithoutExtension(executable), "dotnet", StringComparison.OrdinalIgnoreCase))
+                start.ArgumentList.Add(Assembly.GetEntryAssembly()!.Location);
+            foreach (var argument in args)
+                start.ArgumentList.Add(argument);
+            using var restarted = Process.Start(start)
+                ?? throw new InvalidOperationException("Failed to restart the game.");
+        }
     }
 
     private static IntPtr ImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)

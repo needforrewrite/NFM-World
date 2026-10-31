@@ -55,7 +55,7 @@ public class Ground : Transform, IRenderable, IImmediateRenderElement, IDisposab
 
         p.WorldView.SetValue(cb, camera.ViewMatrix);
         p.WorldViewProj.SetValue(cb, camera.ViewMatrix * camera.ProjectionMatrix);
-        p.FogColor.SetValue(cb, World.Fog);
+        p.FogColor.SetValue(cb, World.Fog.Snap(World.Snap));
         p.FogDistance.SetValue(cb, World.FadeFrom);
         p.FogLogDensity.SetValue(cb, World.FogLogDensity);
 

@@ -232,7 +232,7 @@ public sealed class ImmediateBatch3D(IGraphicsDevice device) : IGraphics3D, IDis
         p.ChargedBlinkAmount.SetValue(cb, 0f);
         p.HalfThickness.SetValue(cb, World.OutlineThickness);
         LineEffectDistantOutlineSettings.Apply(cb, DistantOutlineBehavior.AlwaysRender);
-        p.FogColor.SetValue(cb, World.Fog);
+        p.FogColor.SetValue(cb, World.Fog.Snap(World.Snap));
         p.FogDistance.SetValue(cb, World.FadeFrom);
         p.FogLogDensity.SetValue(cb, World.FogLogDensity);
         p.View.SetValue(cb, camera.ViewMatrix);

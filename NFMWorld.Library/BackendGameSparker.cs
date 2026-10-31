@@ -82,7 +82,22 @@ public static class BackendGameSparker
         {
             VFS.MountDirectory(AppDomain.CurrentDomain.BaseDirectory);
             VFS.MountDirectory(Directory.GetCurrentDirectory());
-            VFS.MountWriteDestination(Directory.GetCurrentDirectory());
+            if (OperatingSystem.IsMacOS() && !isHeadless)
+            {
+                var applicationData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
+                if (string.IsNullOrWhiteSpace(applicationData))
+                    applicationData = Path.Combine(
+                        System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile),
+                        "Library", "Application Support");
+                var userDirectory = Path.Combine(applicationData, "NFMWorld");
+                VFS.MountWriteDestination(userDirectory);
+                VFS.MountDirectory(userDirectory, prepend: true);
+                Logging.Info($"User data directory: {userDirectory}");
+            }
+            else
+            {
+                VFS.MountWriteDestination(Directory.GetCurrentDirectory());
+            }
 
             var modsFolder = Path.Combine(Directory.GetCurrentDirectory(), "mods");
             if (Directory.Exists(modsFolder))

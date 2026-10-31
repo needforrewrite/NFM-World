@@ -38,6 +38,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
     private readonly RaceInputController _input = new();
     private readonly RaceCameraDirector _cameraDirector = new();
+    private readonly SettingsCameraPreview _settingsCamera = new();
     public IGamemode? GamemodeInstance { get; protected set; }
 
     BackendStage IGamemodeContext.CurrentStage => CurrentStage.Backend;
@@ -343,6 +344,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
     public override void GameTick()
     {
+        _settingsCamera.RestoreNormal(Camera);
         // Pump host traffic first: race start signals, player states,
         // server events, and (for the local host) server gamemode ticks.
         _host.Update();
@@ -353,8 +355,13 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
                 _cameraDirector.CurrentViewMode is RaceCameraDirector.ViewMode.Follow or RaceCameraDirector.ViewMode.FollowStatic)
                 _cameraDirector.Update(Camera, pausedCar);
 
+            if (ClientCar is { } previewCar)
+                _settingsCamera.Update(Camera, previewCar, NFMWorld.UI.Components.SettingsView.CameraPreviewActive);
+
             return;
         }
+
+        _settingsCamera.Reset();
 
         if (RaceState is RaceState.InProgress or RaceState.Finished)
         {

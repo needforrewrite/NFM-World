@@ -17,11 +17,42 @@ public sealed class SdlWindow : IDisposable
 {
     private readonly IntPtr _window;
     private bool _disposed;
+    private bool _fullscreenPending;
+    private bool _fullscreenRetryOnFocus;
+    private int _fullscreenWidth;
+    private int _fullscreenHeight;
+    private bool _borderlessDesktop;
+    private bool _borderlessPending;
+
+    public bool BorderlessDesktop
+    {
+        get => _borderlessDesktop;
+        set
+        {
+            if (_borderlessDesktop == value) return;
+            _borderlessDesktop = value;
+            _borderlessPending = value;
+        }
+    }
+
+    public void RefreshBorderlessDesktop() => _borderlessPending = _borderlessDesktop;
+
+    public bool RequestedFullscreen { get; private set; }
 
     public IntPtr Handle => _window;
     public int Width { get; private set; }
     public int Height { get; private set; }
     public bool ShouldQuit { get; private set; }
+
+    public void RequestClose() => ShouldQuit = true;
+
+    public void SetFullscreenResolution(int width, int height)
+    {
+        if (_fullscreenWidth == width && _fullscreenHeight == height) return;
+        _fullscreenWidth = width;
+        _fullscreenHeight = height;
+        _fullscreenPending = true;
+    }
 
     /// <summary>Raised on SDL_EVENT_WINDOW_RESIZED with the new client size, in pixels.</summary>
     public event Action<int, int>? Resized;
@@ -51,6 +82,7 @@ public sealed class SdlWindow : IDisposable
         _window = window;
         Width = width;
         Height = height;
+        RequestedFullscreen = Fullscreen;
         MouseWheel += (_, y) => _scrollWheelValue += (int)(y * 120);
     }
 
@@ -108,9 +140,79 @@ public sealed class SdlWindow : IDisposable
         get => (SDL.SDL_GetWindowFlags(_window) & SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN) != 0;
         set
         {
-            if (!SDL.SDL_SetWindowFullscreen(_window, value))
-                throw new InvalidOperationException($"SDL_SetWindowFullscreen failed: {SDL.SDL_GetError()}");
+            RequestedFullscreen = value;
+            if (OperatingSystem.IsBrowser())
+            {
+                if (!SDL.SDL_SetWindowFullscreen(_window, value))
+                    throw new InvalidOperationException($"SDL_SetWindowFullscreen failed: {SDL.SDL_GetError()}");
+                return;
+            }
+
+            // Apply after sizing and event processing, once focus permits fullscreen entry.
+            _fullscreenPending = true;
+            _fullscreenRetryOnFocus = false;
         }
+    }
+
+    private void ApplyPendingFullscreen()
+    {
+        if (OperatingSystem.IsBrowser() || !_fullscreenPending || (RequestedFullscreen && !HasFocus)) return;
+
+        _fullscreenPending = false;
+        if (RequestedFullscreen && _fullscreenWidth > 0 && _fullscreenHeight > 0)
+        {
+            if (!SDL.SDL_GetClosestFullscreenDisplayMode(SDL.SDL_GetPrimaryDisplay(),
+                    _fullscreenWidth, _fullscreenHeight, 0, true, out var mode))
+                throw new InvalidOperationException($"Cannot select fullscreen resolution: {SDL.SDL_GetError()}");
+            if (!SDL.SDL_SetWindowFullscreenMode(_window, ref mode))
+                throw new InvalidOperationException($"SDL_SetWindowFullscreenMode failed: {SDL.SDL_GetError()}");
+        }
+        if (!SDL.SDL_SetWindowFullscreen(_window, RequestedFullscreen))
+            throw new InvalidOperationException($"SDL_SetWindowFullscreen failed: {SDL.SDL_GetError()}");
+
+        var synchronized = SDL.SDL_SyncWindow(_window);
+        _fullscreenRetryOnFocus = !synchronized || Fullscreen != RequestedFullscreen;
+        RefreshSize();
+    }
+
+    private void RefreshSize()
+    {
+        if (!SDL.SDL_GetWindowSize(_window, out var width, out var height) || width <= 0 || height <= 0)
+            return;
+        if (Width == width && Height == height) return;
+        Width = width;
+        Height = height;
+        Resized?.Invoke(Width, Height);
+    }
+
+    private void ApplyPendingBorderless()
+    {
+        if (OperatingSystem.IsBrowser() || !_borderlessDesktop || !_borderlessPending || Fullscreen)
+            return;
+        var flags = SDL.SDL_GetWindowFlags(_window);
+        if ((flags & SDL.SDL_WindowFlags.SDL_WINDOW_MINIMIZED) != 0) return;
+        _borderlessPending = false;
+
+        if (!SDL.SDL_GetDisplayBounds(SDL.SDL_GetPrimaryDisplay(), out var bounds))
+            throw new InvalidOperationException($"SDL_GetDisplayBounds failed: {SDL.SDL_GetError()}");
+
+        if ((flags & SDL.SDL_WindowFlags.SDL_WINDOW_MAXIMIZED) != 0)
+        {
+            if (!SDL.SDL_RestoreWindow(_window))
+                throw new InvalidOperationException($"SDL_RestoreWindow failed: {SDL.SDL_GetError()}");
+            SDL.SDL_SyncWindow(_window);
+        }
+
+        if (!SDL.SDL_GetWindowPosition(_window, out var x, out var y)
+            || !SDL.SDL_GetWindowSize(_window, out var width, out var height))
+            throw new InvalidOperationException($"Cannot query window bounds: {SDL.SDL_GetError()}");
+
+        if (x == bounds.x && y == bounds.y && width == bounds.w && height == bounds.h) return;
+        if (!SDL.SDL_SetWindowPosition(_window, bounds.x, bounds.y)
+            || !SDL.SDL_SetWindowSize(_window, bounds.w, bounds.h))
+            throw new InvalidOperationException($"Cannot fit borderless window to primary display: {SDL.SDL_GetError()}");
+        SDL.SDL_SyncWindow(_window);
+        RefreshSize();
     }
 
     /// <summary>Whether the window has no title bar/border. Replaces FNA's <c>GameWindow.IsBorderlessEXT</c>.</summary>
@@ -128,8 +230,6 @@ public sealed class SdlWindow : IDisposable
     {
         if (!SDL.SDL_SetWindowSize(_window, width, height))
             throw new InvalidOperationException($"SDL_SetWindowSize failed: {SDL.SDL_GetError()}");
-        Width = width;
-        Height = height;
     }
 
     public void SetTitle(string title) => SDL.SDL_SetWindowTitle(_window, title);
@@ -147,9 +247,19 @@ public sealed class SdlWindow : IDisposable
                     break;
 
                 case (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_RESIZED:
-                    Width = e.window.data1;
-                    Height = e.window.data2;
-                    Resized?.Invoke(Width, Height);
+                    RefreshSize();
+                    RefreshBorderlessDesktop();
+                    break;
+
+                case (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_MOVED:
+                case (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_DISPLAY_CHANGED:
+                    RefreshBorderlessDesktop();
+                    break;
+
+                case (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_FOCUS_GAINED:
+                    if (!OperatingSystem.IsBrowser() && (_fullscreenRetryOnFocus || RequestedFullscreen != Fullscreen))
+                        _fullscreenPending = true;
+                    RefreshBorderlessDesktop();
                     break;
 
                 case (uint)SDL.SDL_EventType.SDL_EVENT_KEY_DOWN:
@@ -189,6 +299,10 @@ public sealed class SdlWindow : IDisposable
                     break;
             }
         }
+
+        ApplyPendingFullscreen();
+        ApplyPendingBorderless();
+        RefreshSize();
     }
 
     /// <summary>Polling-style full keyboard state, replacing FNA's Keyboard.GetState().</summary>
@@ -217,6 +331,15 @@ public sealed class SdlWindow : IDisposable
 
     /// <summary>Cumulative scroll value, replacing FNA's <c>MouseState.ScrollWheelValue</c>.</summary>
     public static int GetScrollWheelValue() => _scrollWheelValue;
+
+    /// <summary>The primary display's desktop resolution in pixels.</summary>
+    public static unsafe (int Width, int Height) GetPrimaryDesktopResolution()
+    {
+        var mode = SDL.SDL_GetDesktopDisplayMode(SDL.SDL_GetPrimaryDisplay());
+        if (mode == null)
+            throw new InvalidOperationException($"SDL_GetDesktopDisplayMode failed: {SDL.SDL_GetError()}");
+        return (mode->w, mode->h);
+    }
 
     /// <summary>
     /// The primary display's supported fullscreen modes, deduplicated per (width, height) - SDL

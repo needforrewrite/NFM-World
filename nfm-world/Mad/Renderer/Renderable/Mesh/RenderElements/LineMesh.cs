@@ -116,7 +116,7 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         p.OutlineFalloffInverseLinearFadeLength.SetValue(cb, inverseLinearFadeLength);
 
         p.LightDirection.SetValue(cb, World.LightDirection);
-        p.FogColor.SetValue(cb, World.Fog);
+        p.FogColor.SetValue(cb, World.Fog.Snap(World.Snap));
         p.FogDistance.SetValue(cb, World.FadeFrom);
         p.FogLogDensity.SetValue(cb, World.FogLogDensity);
         p.EnvironmentLight.SetValue(cb, new Vector2(World.BlackPoint, World.WhitePoint));

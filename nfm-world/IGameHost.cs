@@ -23,4 +23,5 @@ public interface IGameHost
     bool IsActive { get; }
 
     void SetFullScreenScissor(ICommandBuffer cb);
+    void Restart();
 }

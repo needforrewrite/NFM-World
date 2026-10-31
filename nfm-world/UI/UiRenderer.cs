@@ -137,11 +137,15 @@ public class UiRenderer : IDisposable
     public void HandleMousePressed(int x, int y, MouseButton button, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
     {
         if (ActiveRoot == null) return;
+        UiScheduler.Instance.Flush();
+        NFMWorld.UI.Components.Controls.DismissDropdowns(ActiveRoot, new Vector2(x, y));
+        UiScheduler.Instance.Flush();
         var @event = new BaseMouseEvent(new Vector2(x, y), button, buttons, ctrlKey, altKey, shiftKey);
         // Focus handling lives in FocusManager: it focuses the focusable element
         // under the cursor, or clears focus when the clicked tree has none.
         FocusManager.HandleMousePressed(ActiveRoot, @event);
         ActiveRoot.DispatchMousePressed(@event);
+        UiScheduler.Instance.Flush();
     }
 
     public void HandleMouseReleased(int x, int y, MouseButton button, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)

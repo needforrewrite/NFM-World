@@ -13,6 +13,32 @@ namespace NFMWorld.UI.Components;
 /// </summary>
 public static class Controls
 {
+    private sealed class DropdownView(Action dismiss) : View
+    {
+        public void Dismiss() => dismiss();
+    }
+
+    public static void DismissDropdowns(View root, Vector2 position)
+    {
+        var hit = FocusManager.HitTestChain(root, position);
+        void Visit(Node node)
+        {
+            if (node is DropdownView dropdown)
+            {
+                var inside = hit.Any(target =>
+                {
+                    for (Node? current = target; current != null; current = current.VisualParent)
+                        if (ReferenceEquals(current, dropdown)) return true;
+                    return false;
+                });
+                if (!inside) dropdown.Dismiss();
+            }
+            foreach (var child in node.VisualChildren)
+                Visit(child);
+        }
+        Visit(root);
+    }
+
     // ── Checkbox ──────────────────────────────────────────────────────
 
     public static Node Checkbox(Func<bool> checkedValue, Action onToggle, Func<string?>? label = null)
@@ -184,8 +210,7 @@ public static class Controls
     // ── Dropdown ──────────────────────────────────────────────────────
 
     /// <summary>
-    /// A value list that opens a popup. The popup is absolutely positioned with a high
-    /// z-index so it paints over whatever follows it.
+    /// A value list that opens within its ancestors' visible scroll region.
     /// </summary>
     public static Node Dropdown(
         Func<IReadOnlyList<string>> options,
@@ -193,14 +218,33 @@ public static class Controls
         Action<int> onSelect)
     {
         var open = new Signal<bool>(false);
+        var opensAbove = new Signal<bool>(false);
+        var popupHeight = new Signal<float>(200);
         var hovered = new Signal<int>(-1);
         View? root = null;
 
         Node? popup = null;
 
-        // The trigger is nested rather than a row, so it can hold an absolutely positioned
-        // popup against its own box. A plain row trigger (or a boxless flow host) gives the
-        // popup no containing block, which puts it off-screen.
+        void Toggle()
+        {
+            if (open.Value)
+            {
+                open.Value = false;
+                return;
+            }
+            if (root == null) return;
+
+            var clip = root.ScissorRect;
+            var position = root.LayoutBorderPosition;
+            var size = root.LayoutBorderSize;
+            var scale = Math.Max(G.Scale, 0.01f);
+            var above = Math.Max(0, (position.Y - clip.Y) / scale - 4);
+            var below = Math.Max(0, (clip.Y + clip.Height - position.Y - size.Y) / scale - 4);
+            var desired = Math.Min(200, options().Count * 32 + 2);
+            opensAbove.Value = below < desired && above > below;
+            popupHeight.Value = Math.Min(200, opensAbove.Value ? above : below);
+            open.Value = true;
+        }
 
         popup = Sx.Show(
             when: () => open.Value,
@@ -208,10 +252,11 @@ public static class Controls
                 style: () => new Styles
                 {
                     Position = Position.Absolute,
-                    Top = MeasurementMarginPosition.Percent(100),
+                    Top = opensAbove.Value ? MeasurementMarginPosition.Undefined : MeasurementMarginPosition.Percent(100),
+                    Bottom = opensAbove.Value ? MeasurementMarginPosition.Percent(100) : MeasurementMarginPosition.Undefined,
                     Left = 0,
                     Width = MeasurementWidthHeight.Percent(100),
-                    MaxHeight = 200,
+                    MaxHeight = popupHeight.Value,
                     FlexDirection = FlexDirection.Column,
                     BackgroundColor = new Color(20, 24, 32, 250),
                     BorderTop = 1,
@@ -220,14 +265,19 @@ public static class Controls
                     BorderRight = 1,
                     BorderColor = new Color(255, 255, 255, 38),
                     BorderRadius = 6,
-                    Overflow = Overflow.Scroll,
+                    Overflow = Overflow.Hidden,
                     ZIndex = 1000,
                 },
-                children: Sx.For(
+                children: Sx.View(
+                    style: () => Sx.Styles(flexDirection: FlexDirection.Column,
+                        maxHeight: Math.Max(0, popupHeight.Value - 2), overflow: Overflow.Scroll),
+                    children: Sx.For(
                     each: () => options(),
                     row: (option, index) => Sx.View(
                         style: () => new Styles
                         {
+                            Height = 32,
+                            Overflow = Overflow.Hidden,
                             PaddingTop = 7,
                             PaddingBottom = 7,
                             PaddingLeft = 12,
@@ -252,29 +302,34 @@ public static class Controls
                                     ? Theme.Accent
                                     : index == hovered.Value ? new Color(255, 255, 255) : new Color(255, 255, 255, 204),
                             },
-                            text: () => option)))));
+                            text: () => option))))));
 
-        root = Sx.View(
-            style: () => new Styles
+        root = new DropdownView(() => open.Value = false)
+        {
+            Styles = new Styles
             {
                 Position = Position.Relative,
+                FlexDirection = FlexDirection.Column,
                 Width = 240,
-            },
-            children: Sx.View(
+                MaxWidth = MeasurementWidthHeight.Percent(100),
+            }
+        };
+        root.AddChild(Sx.View(
                 style: () => new Styles
                 {
+                    Width = MeasurementWidthHeight.Percent(100),
                     PaddingTop = 8,
                     PaddingBottom = 8,
                     PaddingLeft = 12,
                     PaddingRight = 12,
-                    BackgroundColor = new Color(255, 255, 255, 15),
+                    BackgroundColor = new Color(22, 42, 80, 145),
                     BorderTop = 1,
                     BorderBottom = 1,
                     BorderLeft = 1,
                     BorderRight = 1,
                     BorderColor = open.Value
-                        ? new Color(79, 195, 247, 153)
-                        : hovered.Value >= 0 ? new Color(255, 255, 255, 102) : new Color(255, 255, 255, 38),
+                        ? new Color(128, 170, 255)
+                        : hovered.Value >= 0 ? new Color(205, 227, 255) : new Color(128, 170, 255, 100),
                     BorderRadius = 6,
                     FlexDirection = FlexDirection.Row,
                     AlignItems = Align.Center,
@@ -282,7 +337,7 @@ public static class Controls
                     GapColumn = 8,
                     GapRow = 8,
                 },
-                onmousedown: _ => open.Value = !open.Value,
+                onmousedown: _ => Toggle(),
                 onmouseenter: _ => hovered.Value = 0,
                 onmouseleave: _ => hovered.Value = -1,
                 children:
@@ -296,9 +351,9 @@ public static class Controls
                         text: () => SelectedLabel(options(), value())),
                     Sx.Text(
                         style: () => new TextStyles { FontSize = 12, ForegroundColor = new Color(255, 255, 255, 128) },
-                        text: () => "▾"),
-                    popup
+                        text: () => "▾")
                 ]));
+        root.AddChild(popup);
 
         return root;
     }

@@ -7,9 +7,13 @@ public class VirtualFS
 
     // ── Mounting ──────────────────────────────────────────────
 
-    public void MountDirectory(string root)
+    public void MountDirectory(string root, bool prepend = false)
     {
-        _readMounts.Add(new DirectoryFS(root));
+        var mount = new DirectoryFS(root);
+        if (prepend)
+            _readMounts.Insert(0, mount);
+        else
+            _readMounts.Add(mount);
     }
 
     public void MountZip(string zipFile)

@@ -16,10 +16,12 @@ namespace NFMWorld.Gameplay;
 
 public class MainMenuPhase : BaseStageRenderingPhase
 {
+    private const float IntroFadeStart = 3;
     private const float LogoFadeStart = 5.2f;
     private const float LogoFadeDuration = 2.2f;
     private const float PromptFadeStart = LogoFadeStart + LogoFadeDuration + 0.2f;
     private readonly MenuCameraDirector _cameraDirector = new();
+    private readonly SettingsCameraPreview _settingsCamera = new();
     private readonly IImage _logo;
     private float _introTime;
     private float _transitionTime = -1;
@@ -36,7 +38,8 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private bool _transitionToMenu = true;
     private bool _transitionSwitched;
 
-    public override bool EnableUiInput => _menuVisible && _transitionTime < 0;
+    public override bool EnableUiInput => _menuVisible
+        && (_transitionTime < 0 || (_transitionToMenu && _transitionSwitched));
 
     public MainMenuPhase(string stageName) : base(stageName)
     {
@@ -214,6 +217,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
     public override void GameTick()
     {
         const float seconds = 1f / Physics.TargetTps;
+        _settingsCamera.RestoreNormal(Camera);
         if (_menuVisible)
         {
             _menuTime += seconds;
@@ -222,11 +226,15 @@ public class MainMenuPhase : BaseStageRenderingPhase
             _garageBlend = Math.Clamp(_garageBlend + (_garage != null ? seconds : -seconds) / 1.1f, 0, 1);
             _menuCar = _garage?.CurrentCar ?? _menuCar;
             if (_menuCar != null)
+            {
                 _cameraDirector.ShowCar(Camera, _menuCar, _menuTime, garageBlend: Smooth(_garageBlend),
                     garageAngle: _garageCamera.Angle, garageHeight: _garageCamera.Height);
+                _settingsCamera.Update(Camera, _menuCar, NFMWorld.UI.Components.SettingsView.CameraPreviewActive);
+            }
         }
         else
         {
+            _settingsCamera.Reset();
             _introTime += seconds;
             _cameraDirector.Tick(Camera, CurrentStage!.Backend, seconds);
             if (_attractShot != _cameraDirector.ShotId)
@@ -249,6 +257,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 _menuVisible = _transitionToMenu;
                 if (_menuVisible)
                 {
+                    _menuTime = 0;
                     SetupMenuCar();
                     if (_menuCar != null)
                         _cameraDirector.ShowCar(Camera, _menuCar, 0, true);
@@ -273,13 +282,13 @@ public class MainMenuPhase : BaseStageRenderingPhase
         }
         else if (!_menuVisible)
         {
-            UiState.MainMenu.BlackOpacity.Value = Math.Max(1 - Smooth((_introTime - 3) / 2), _cameraDirector.Fade);
+            UiState.MainMenu.BlackOpacity.Value = Math.Max(1 - Smooth((_introTime - IntroFadeStart) / 2), _cameraDirector.Fade);
         }
         if (!_menuVisible)
         {
             UiState.MainMenu.LogoOpacity.Value = Smooth((_introTime - LogoFadeStart) / LogoFadeDuration);
             UiState.MainMenu.PromptOpacity.Value = Smooth((_introTime - PromptFadeStart) / 0.8f)
-                * (0.82f + 0.18f * MathF.Cos((_introTime - PromptFadeStart) * MathF.Tau / 4));
+                * (0.82f + 0.18f * MathF.Cos((_introTime - PromptFadeStart) * MathF.Tau / 1.5f));
         }
         CurrentStage!.FadeFromOverride = _menuVisible ? null : _cameraDirector.ViewDistance;
         UiState.MainMenu.InputEnabled.Value = EnableUiInput;
@@ -294,6 +303,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void BeginTransition(bool toMenu)
     {
+        if (_transitionTime >= 0) return;
         _transitionToMenu = toMenu;
         _transitionSwitched = false;
         _transitionTime = 0;
@@ -321,7 +331,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
         }
         if (!imguiWantsKeyboard && EnableUiInput)
             MainMenuView.KeyPressed(key);
-        if (!imguiWantsKeyboard && !_menuVisible && _introTime >= PromptFadeStart && _transitionTime < 0)
+        if (!imguiWantsKeyboard && !_menuVisible && _introTime >= IntroFadeStart && _transitionTime < 0)
             BeginTransition(true);
     }
 
@@ -331,7 +341,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
         base.MousePressed(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
         if (_garage != null && EnableUiInput)
             _garageCamera.Press(x, y, imguiWantsMouse, button);
-        if (!imguiWantsMouse && !_menuVisible && _introTime >= PromptFadeStart && _transitionTime < 0)
+        if (!imguiWantsMouse && !_menuVisible && _introTime >= IntroFadeStart && _transitionTime < 0)
             BeginTransition(true);
     }
 

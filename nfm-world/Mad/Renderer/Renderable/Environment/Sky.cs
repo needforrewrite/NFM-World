@@ -19,7 +19,7 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
         const float skyHeight = 1000;
         const float skyDistance = 7000;
         Vector3 skyColor = World.Sky.Snap(World.Snap);
-        Vector3 fogColor = World.Fog;
+        Vector3 fogColor = World.Fog.Snap(World.Snap);
         var layers = new LinkedList<(Vector3 Position, Vector3 Color)>();
         layers.AddLast((new Vector3(0, -skyHeight, skyDistance), skyColor));
 

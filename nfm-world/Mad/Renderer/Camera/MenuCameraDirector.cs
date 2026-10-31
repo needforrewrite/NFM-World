@@ -15,6 +15,8 @@ public sealed class MenuCameraDirector
     private float _endFov;
     private int _lastKind = -1;
     private float _pace;
+    private BackendCar? _arrivalCar;
+    private Vector3 _arrivalStart;
     public int ShotId { get; private set; }
     public MenuRoadSegment? CurrentRoad { get; private set; }
     public MenuRoadSegment? CarActionRoad { get; private set; }
@@ -290,10 +292,35 @@ public sealed class MenuCameraDirector
         float garageAngle = 0, float garageHeight = 0)
     {
         var target = ToVector(car.Position) + new Vector3(0, -120 + (car.GroundAt - 60) * garageBlend, 0);
-        var angle = 0.65f + (1.7f + garageAngle) * garageBlend + MathF.Sin(seconds * 0.06f) * 0.12f * (1 - garageBlend);
+        var angle = 0.65f + (1.7f + garageAngle) * garageBlend;
         var radius = 1600 - 400 * garageBlend;
         var height = 500 + (garageHeight - 170) * garageBlend;
         var position = target + new Vector3(MathF.Cos(angle) * radius, -height, MathF.Sin(angle) * radius);
+        if (seconds < 4 && garageBlend < 1)
+        {
+            if (_arrivalCar != car)
+            {
+                _arrivalCar = car;
+                _arrivalStart = position;
+                for (var attempt = 0; attempt < 8; attempt++)
+                {
+                    var heading = angle + (attempt % 2 == 0 ? 1 : -1) * (attempt / 2) * MathF.PI / 12;
+                    var start = target + new Vector3(MathF.Cos(heading) * 8000, -3000, MathF.Sin(heading) * 8000);
+                    if (_stage != null && !_survey.IsClear(start, position, 150)) continue;
+                    _arrivalStart = start;
+                    break;
+                }
+            }
+            var t = Math.Clamp(seconds / 4, 0, 1);
+            var remaining = 1 - t * t * (3 - 2 * t);
+            position = Vector3.Lerp(position, _arrivalStart, remaining * (1 - garageBlend));
+        }
+        var driftTime = Math.Max(0, seconds - 4);
+        var settle = Math.Clamp(driftTime / 2, 0, 1);
+        settle = settle * settle * (3 - 2 * settle);
+        position += new Vector3((MathF.Cos(driftTime * 0.15f) - 1) * 240,
+            MathF.Sin(driftTime * 0.075f) * 45, MathF.Sin(driftTime * 0.15f) * 350)
+            * settle * (1 - garageBlend);
         // Keep the car on the right, clear of the menu.
         var framing = 410 - 130 * garageBlend;
         target += new Vector3(MathF.Sin(angle) * framing, 0, -MathF.Cos(angle) * framing);

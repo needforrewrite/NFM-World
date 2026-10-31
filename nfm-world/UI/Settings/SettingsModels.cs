@@ -8,10 +8,13 @@ public sealed class SettingsSnapshot
     // Video
     public int SelectedRenderer { get; set; }
     public int SelectedResolution { get; set; }
+    public string BorderlessResolution { get; set; } = "";
     public int SelectedDisplayMode { get; set; }
     public bool Vsync { get; set; }
     public int FpsLimit { get; set; }
     public int Antialias { get; set; }
+    public int AppliedAntialias { get; set; }
+    public bool AntialiasRequiresRestart { get; set; }
     public int ShadowCascadeLevel { get; set; }
     public int ShadowResolution { get; set; }
     public int RenderDistance { get; set; }

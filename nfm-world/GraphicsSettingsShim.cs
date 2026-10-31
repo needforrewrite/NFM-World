@@ -32,7 +32,7 @@ public sealed class GraphicsSettingsShim(SdlWindow window, ISwapchain swapchain)
 
     public bool IsFullScreen
     {
-        get => window.Fullscreen;
+        get => window.RequestedFullscreen;
         set => window.Fullscreen = value;
     }
 
@@ -91,6 +91,16 @@ public sealed class GraphicsSettingsShim(SdlWindow window, ISwapchain swapchain)
 
     public void ApplyChanges()
     {
+        if (window.BorderlessDesktop)
+        {
+            window.RefreshBorderlessDesktop();
+            return;
+        }
+        if (window.RequestedFullscreen && !OperatingSystem.IsBrowser())
+        {
+            window.SetFullscreenResolution(PreferredBackBufferWidth, PreferredBackBufferHeight);
+            return;
+        }
         if (window.Width != PreferredBackBufferWidth || window.Height != PreferredBackBufferHeight)
             window.SetSize(PreferredBackBufferWidth, PreferredBackBufferHeight);
     }
