@@ -43,8 +43,9 @@ public enum Visible
     Self,
 
     /// <summary>
-    /// When applied on a type, make its public members visible to the plugin system
-    /// without each needing a marker of its own. Members that are not public stay hidden.
+    /// When applied on a type, make its public members and its public or protected
+    /// constructors visible to the plugin system without each needing a marker of its
+    /// own. Everything else stays hidden.
     /// </summary>
     IncludingAllMembersOfType,
     

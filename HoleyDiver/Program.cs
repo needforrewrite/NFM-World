@@ -42,7 +42,7 @@ public class PolygonTriangulator
             // Construct the contour from inputData.
             // A polygon can be composed of multiple contours which are all tessellated at the same time.
             int numPoints = projected2D.Count;
-            var contour = new ContourVertex[numPoints];
+            var contour = new List<ContourVertex>(numPoints);
             for (int i = 0; i < numPoints; i++)
             {
                 if (float.IsNaN(projected2D[i].X) || float.IsNaN(projected2D[i].Y))
@@ -51,18 +51,25 @@ public class PolygonTriangulator
                     continue;
                 }
 
-                // NOTE : Z is here for convenience if you want to keep a 3D vertex position throughout the tessellation process but only X and Y are important.
-                contour[i].Position = new Vec3(projected2D[i].X, projected2D[i].Y, i);
+                // Z must stay 0: libtess derives its projection plane from all three coordinates
+                contour.Add(new ContourVertex(new Vec3(projected2D[i].X, projected2D[i].Y, 0), i));
             }
 
             // Add the contour with a specific orientation, use "Original" if you want to keep the input orientation.
-            tess.AddContour(contour);
+            tess.AddContour(contour.ToArray());
 
             // Tessellate!
             // The winding rule determines how the different contours are combined together.
             // See http://www.glprogramming.com/red/chapter11.html (section "Winding Numbers and Winding Rules") for more information.
             // If you want triangles as output, you need to use "Polygons" type as output and 3 vertices per polygon.
-            tess.Tessellate();
+            // shortcut: an edge crossing has no source vertex, so it snaps to the heaviest contributor; emit new vertices if that distorts
+            tess.Tessellate(combineCallback: (_, data, weights) =>
+            {
+                int best = 0;
+                for (int k = 1; k < weights.Length; k++)
+                    if (weights[k] > weights[best]) best = k;
+                return data[best];
+            });
 
             // Same call but the last callback is optional. Data will be null because no interpolated data would have been generated.
             //tess.Tessellate(LibTessDotNet.WindingRule.EvenOdd, LibTessDotNet.ElementType.Polygons, 3); // Some vertices will have null Data in this case.
@@ -71,12 +78,9 @@ public class PolygonTriangulator
             int numTriangles = tess.ElementCount;
             for (int i = 0; i < numTriangles; i++)
             {
-                var v0 = tess.Vertices[tess.Elements[i * 3]].Position;
-                var v1 = tess.Vertices[tess.Elements[i * 3 + 1]].Position;
-                var v2 = tess.Vertices[tess.Elements[i * 3 + 2]].Position;
-                simpleTriangles[i * 3] = (uint)v0.Z;
-                simpleTriangles[i * 3 + 1] = (uint)v1.Z;
-                simpleTriangles[i * 3 + 2] = (uint)v2.Z;
+                simpleTriangles[i * 3] = (uint)(int)tess.Vertices[tess.Elements[i * 3]].Data!;
+                simpleTriangles[i * 3 + 1] = (uint)(int)tess.Vertices[tess.Elements[i * 3 + 1]].Data!;
+                simpleTriangles[i * 3 + 2] = (uint)(int)tess.Vertices[tess.Elements[i * 3 + 2]].Data!;
             }
 
             return new TriangulationResult

@@ -74,6 +74,27 @@ public class AiPluginTests
     }
 
     /// <summary>
+    /// Constructing the client gamemode calls the protected constructor of its abstract
+    /// base through the sandbox, which no server-only race path exercises.
+    /// </summary>
+    [TestMethod]
+    [DataRow("nfmm/pvp")]
+    [DataRow("nfmm/timetrial")]
+    public void CreateClient_PassesTheSandbox(string id)
+    {
+        NFMWorldLibrary.TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
+        var plugin = NFMWorldLibrary.Gamemodes.DotNet.GamemodePlugin.Load(id, $"data/gamemodes/{id}/gamemode.dll")!;
+
+        var gamemode = plugin.CreateClient(new ClientGamemodeParameters
+        {
+            Players = [new ClientSidePlayerInfo { PlayerName = "Human", CarName = "nfmm/radicalone", Color = default, IsBot = false, IsClientPlayer = true }]
+        }, new StubContext("empty"));
+
+        Assert.AreEqual(id, gamemode.GamemodeId);
+        plugin.Unload();
+    }
+
+    /// <summary>
     /// The minimum a gamemode has to provide for a bot: the player roster and the stage.
     /// </summary>
     private sealed class StubGamemode : BaseClientGamemode
@@ -94,13 +115,13 @@ public class AiPluginTests
         public override string GamemodeId => "test/stub";
     }
 
-    private sealed class StubContext : IGamemodeContext
+    private sealed class StubContext(string stageName = "test_stage") : IGamemodeContext
     {
         // Lazy: building a stage at all reads stage data and reports failures through
         // Sentry, which these tests do not initialize.
         private BackendStage? _stage;
 
-        public BackendStage CurrentStage => _stage ??= new BackendStage("test_stage");
+        public BackendStage CurrentStage => _stage ??= new BackendStage(stageName);
 
         public RaceState RaceState => RaceState.InProgress;
 

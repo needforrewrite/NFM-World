@@ -59,8 +59,6 @@
   <Project Path="Maxine.Silk.EGL/src/Extensions/Maxine.EGL.Extensions.EXT/Maxine.EGL.Extensions.EXT.csproj" />
   <Project Path="Maxine.Silk.EGL/src/Maxine.EGL/Maxine.EGL.csproj" />
   <Project Path="Microsoft.UI.Reactor.Yoga/Microsoft.UI.Reactor.Yoga.csproj" />
-  <Project Path="NanoSvgSharp.Test/NanoSvgSharp.Test.csproj" />
-  <Project Path="NanoSvgSharp/NanoSvgSharp.csproj" />
   <Project Path="NAudio.Flac/NAudio.Flac/NAudio.Flac.csproj" />
   <Project Path="nfm-world/NFMWorld.Game.csproj" />
   <Project Path="NFMW.GenerateSinCosTable/NFMW.GenerateSinCosTable.csproj" />

@@ -37,7 +37,9 @@ namespace NFMWorldLibrary.Plugins;
 /// - <c>Visible.IncludingAllMembersOfType</c> exposes the type's public members when they
 ///   have no marker of their own. It is how a base class a plugin derives from - where a
 ///   plugin's overrides call protected members - and a record's generated members are
-///   reached. It still stops at public.
+///   reached. It still stops at public, except constructors: the public and protected
+///   ones are admitted, since a plugin calls the protected constructor of the abstract
+///   base it derives from.
 /// - <see cref="VendorPluginVisibleAttribute"/> on the assembly names a type outside the
 ///   host (FixedMathSharp and friends) that the host's own visible members mention.
 ///
@@ -264,7 +266,15 @@ internal static class PluginPolicy
             return;
 
         builder.Allow(new TypeBinding(type, Accessibility.Public));
+
+        // TypeBinding drops protected constructors, but a plugin derives from these bases
+        // and calls that constructor, which is protected on an abstract class.
+        builder.Allow(Constructors(type));
     }
+
+    private static IEnumerable<ConstructorInfo> Constructors(Type type)
+        => type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+            .Where(c => c.IsPublic || c.IsFamily || c.IsFamilyOrAssembly);
 
     /// <summary>
     /// Allows the callable members behind a marked member: a property's or event's
