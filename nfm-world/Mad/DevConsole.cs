@@ -7,6 +7,7 @@ namespace NFMWorld;
 public class DevConsole
 {
     private bool _isOpen = false;
+    private bool _focusInput;
     private string _currentInput = string.Empty;
     private readonly Dictionary<string, Action<DevConsole, string[]>> _commands = new();
         
@@ -31,6 +32,7 @@ public class DevConsole
     public void Toggle()
     {
         _isOpen = !_isOpen;
+        _focusInput = _isOpen;
     }
 
     public bool IsOpen()
@@ -79,7 +81,6 @@ public class DevConsole
     public void ClearLog()
     {
         NfmwLoggerProvider.ClearMessages();
-        Logging.Info(GameSparker.version);
     }
 
     public void Render()
@@ -99,6 +100,7 @@ public class DevConsole
         // windows size
         ImGui.SetNextWindowPos(new Vector2(50, 50), ImGuiCond.FirstUseEver);
         ImGui.SetNextWindowSize(new Vector2(540, 400), ImGuiCond.FirstUseEver);
+        if (_focusInput) ImGui.SetNextWindowFocus();
 
         // console pos on screen so autocomplete window moves with it
         Vector2 consolePos = default;
@@ -146,10 +148,11 @@ public class DevConsole
             ImGui.Spacing();
                 
             // focus input when console opens
-            if (ImGui.IsWindowAppearing())
+            if (_focusInput || ImGui.IsWindowAppearing())
             {
                 ImGui.SetWindowFocus();
                 ImGui.SetKeyboardFocusHere();
+                _focusInput = false;
             }
 
             if (ImGui.IsWindowFocused())

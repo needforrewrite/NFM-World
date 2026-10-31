@@ -169,11 +169,19 @@ public static partial class GameSparker
     /////////////////////////////////
 
     public static Dictionary<Key, bool> DebugKeyStates = new();
+    private static readonly HashSet<Key> PhaseKeys = [];
     public static MainMenuPhase MainMenuPhase;
 
     public static void KeyPressed(Key key, Keys keys, bool imguiWantsKeyboard)
     {
         DebugKeyStates[key] = true;
+
+        if (devConsole.IsOpen())
+        {
+            if (key == SettingsMenu.Bindings.ToggleDevConsole || key == Key.Escape)
+                devConsole.Toggle();
+            return;
+        }
 
         if (!imguiWantsKeyboard && NFMWorld.UI.Components.SettingsView.HandleKeyPressed(UiRenderer?.ActiveRoot, key))
             return;
@@ -183,6 +191,15 @@ public static partial class GameSparker
         if (key == bindings.ToggleDevConsole)
         {
             devConsole.Toggle();
+            var phase = CurrentPhase;
+            var heldKeys = PhaseKeys.ToArray();
+            PhaseKeys.Clear();
+            foreach (var heldKey in heldKeys)
+            {
+                DebugKeyStates[heldKey] = false;
+                phase.KeyReleased(heldKey, true, default);
+            }
+            return;
         }
         
         if (!imguiWantsKeyboard)
@@ -190,12 +207,14 @@ public static partial class GameSparker
             UiRenderer?.HandleKeyPressed(key, keys);
         }
 
+        PhaseKeys.Add(key);
         CurrentPhase.KeyPressed(key, imguiWantsKeyboard, keys);
     }
 
     public static void KeyReleased(Key key, Keys keys, bool imguiWantsKeyboard)
     {
         DebugKeyStates[key] = false;
+        if (!PhaseKeys.Remove(key) || devConsole.IsOpen()) return;
 
         if (!imguiWantsKeyboard)
         {
@@ -355,6 +374,7 @@ public static partial class GameSparker
 
     public static void MousePressed(int mouseX, int mouseY, bool wantCaptureMouse, MouseButton nfmButton, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
     {
+        if (devConsole.IsOpen()) return;
         if (!wantCaptureMouse)
         {
             UiRenderer?.HandleMousePressed(mouseX, mouseY, nfmButton, buttons, ctrlKey, shiftKey, altKey);
@@ -365,6 +385,7 @@ public static partial class GameSparker
 
     public static void MouseReleased(int mouseX, int mouseY, bool wantCaptureMouse, MouseButton nfmButton, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
     {
+        if (devConsole.IsOpen()) return;
         if (!wantCaptureMouse)
         {
             UiRenderer?.HandleMouseReleased(mouseX, mouseY, nfmButton, buttons, ctrlKey, shiftKey, altKey);
@@ -375,6 +396,7 @@ public static partial class GameSparker
 
     public static void MouseMoved(int mouseX, int mouseY, bool wantCaptureMouse, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
     {
+        if (devConsole.IsOpen()) return;
         if (!wantCaptureMouse)
         {
             UiRenderer?.HandleMouseMoved(mouseX, mouseY, buttons, ctrlKey, shiftKey, altKey);
@@ -392,11 +414,13 @@ public static partial class GameSparker
 
     public static void MouseDragged(int mouseX, int mouseY, int mouseDragStartX, int mouseDragStartY, MouseButton button, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
     {
+        if (devConsole.IsOpen()) return;
         UiRenderer?.HandleMouseDragged(mouseX, mouseY, mouseDragStartX, mouseDragStartY, button, buttons, ctrlKey, shiftKey, altKey);
     }
 
     public static void MouseScrolled(int mouseX, int mouseY, int delta, bool wantCaptureMouse, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
     {
+        if (devConsole.IsOpen()) return;
         if (!wantCaptureMouse)
         {
             UiRenderer?.HandleMouseScrolled(mouseX, mouseY, delta, buttons, ctrlKey, shiftKey, altKey);
