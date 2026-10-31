@@ -227,6 +227,23 @@ replacement path for Lua — currently a proof of concept.
 | Factory lifetime | one factory per run — never share one between two `RacePhase`s. The replaced phase's `Dispose` is deferred to end-of-frame, so it runs after the replacement is already live and its `End()` releases the plugin the replacement is using. Build a fresh factory from `Config` instead (`map`/`car`) |
 | Verifying an unload | never inside `Unload`/`End()`: the frames up the stack to there are still live roots, so a collection forced from within always finds the assembly alive and reports the caller's own reference. `PluginUnloadVerifier` (DEBUG) does it from the host loop instead — `End()` arms it, the game calls `Verify()` per frame and the server per tick, both *after* that frame's teardown, and it only judges a plugin armed on an earlier frame. Tests assert it the same way, through a `WeakReference` to the plugin's **assembly** after `GC.Collect` (`GamemodePluginUnloadTests`), never by trusting `Unload`'s return — there isn't one |
 
+### Plugin sandbox (CasCore)
+
+Every plugin assembly loads through `CasAssemblyLoader` (`PluginAssembly.Load`), so a plugin
+only reaches what the policy admits. `PluginPolicy` builds it: CasCore's default sandbox
+plus whatever the host marked `[PluginVisible]` / `[PublicVisible<T>]`. `Unsafe` is denied
+outright, and MemoryPack's reader/writer primitives are named one at a time — they carry
+their lengths, `Unsafe` does not.
+
+| Gotcha | Rule |
+|---|---|
+| CasCore is vendored | `CasCore/` (MIT, upstream `488193c`) with two fixes upstream 0.3.0 needs on this runtime: `base.Foo()` calls went through the static guard and were always refused, and the JSON bindings name members .NET 11 no longer has. Re-apply both on any bump |
+| Policy entries by token | `CasPolicy` identifies a member by **module handle + metadata token**, not by `MemberInfo` instance. Denying through a type-forwarder (`Unsafe` forwards to `System.Private.CoreLib`) therefore removes unrelated members that share the arithmetic — filter to `DeclaringType == typeof(...)` and only deny what `Build()` says is allowed |
+| Accessibility is inclusive | `Private` ⊇ `Protected` ⊇ `Public`. A visible base a plugin overrides needs `Private`; `Public` excludes protected members such as a formatter's constructor |
+| Generated MemoryPack code | formatters are ordinary plugin IL, so they only reach the policy. The generator emits `Unsafe.As`/`Unsafe.SizeOf`; those are patched to a cast and `MemoryPackUnmanaged.SizeOf<T>` so the sandbox can deny `Unsafe` (`MemoryPackGenerator.Emitter.cs`) |
+| Proving the sandbox | `NFMWorld.Gamemode.Hostile` has one probe per forbidden reach; `PluginSandboxTests` loads it like the game does and asserts every probe throws `SecurityException`. The test host declares its own plugin list, so the probes never reach release output |
+| Not everywhere | `PluginPolicy.Supported` is false without dynamic code (the wasm head), where loads fall back to the plain `PluginLoadContext` |
+
 ---
 
 ## Lua Table Storage (`Lua-CSharp`)

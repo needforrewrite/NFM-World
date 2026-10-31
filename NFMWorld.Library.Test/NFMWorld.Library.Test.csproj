@@ -27,6 +27,35 @@
 
     <!-- So the gamemode plugin loader tests exercise the real built plugins, and so a
          regression in the plugin build wiring fails the suite. -->
+    <ItemGroup>
+        <Plugin Include="Pvp">
+            <Project>$(MSBuildThisFileDirectory)..\NFMWorld.Gamemode.Pvp\NFMWorld.Gamemode.Pvp.csproj</Project>
+            <PluginId>nfmm/pvp</PluginId>
+            <PluginDirectory>gamemodes</PluginDirectory>
+            <PluginFileName>gamemode</PluginFileName>
+        </Plugin>
+        <Plugin Include="TimeTrial">
+            <Project>$(MSBuildThisFileDirectory)..\NFMWorld.Gamemode.TimeTrial\NFMWorld.Gamemode.TimeTrial.csproj</Project>
+            <PluginId>nfmm/timetrial</PluginId>
+            <PluginDirectory>gamemodes</PluginDirectory>
+            <PluginFileName>gamemode</PluginFileName>
+        </Plugin>
+        <Plugin Include="ElStupido">
+            <Project>$(MSBuildThisFileDirectory)..\NFMWorld.Ai.ElStupido\NFMWorld.Ai.ElStupido.csproj</Project>
+            <PluginId>el_stupido</PluginId>
+            <PluginDirectory>ais</PluginDirectory>
+            <PluginFileName>ai</PluginFileName>
+        </Plugin>
+        <!-- The sandbox probes: PluginSandboxTests loads this and asserts every hostile
+             reach is refused. Test-only, and Debug-only where the game hosts build it. -->
+        <Plugin Include="Hostile">
+            <Project>$(MSBuildThisFileDirectory)..\NFMWorld.Gamemode.Hostile\NFMWorld.Gamemode.Hostile.csproj</Project>
+            <PluginId>sandbox/hostile</PluginId>
+            <PluginDirectory>gamemodes</PluginDirectory>
+            <PluginFileName>gamemode</PluginFileName>
+        </Plugin>
+    </ItemGroup>
+
     <Import Project="..\Plugin.Plugins.targets" />
 
 </Project>

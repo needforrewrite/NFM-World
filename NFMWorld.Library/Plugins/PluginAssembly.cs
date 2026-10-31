@@ -1,5 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.Loader;
+using DouglasDwyer.CasCore;
 using NFMWorldLibrary.Backend;
 
 namespace NFMWorldLibrary.Plugins;
@@ -34,18 +36,18 @@ public sealed class PluginAssembly
     /// There the assembly can never be released, so it is loaded once and reused rather
     /// than re-read per run.
     /// </summary>
-    private static readonly Dictionary<string, (PluginLoadContext Context, Assembly Assembly)> Resident = [];
+    private static readonly Dictionary<string, (Assembly Assembly, Action Unload)> Resident = [];
 
-    private readonly PluginLoadContext _loadContext;
+    private readonly Action _unloadContext;
     private readonly WeakReference _assemblyRef;
     private bool _unloaded;
 
-    private PluginAssembly(string id, string path, Assembly assembly, PluginLoadContext loadContext)
+    private PluginAssembly(string id, string path, Assembly assembly, Action unloadContext)
     {
         Id = id;
         Path = path;
         Assembly = assembly;
-        _loadContext = loadContext;
+        _unloadContext = unloadContext;
         _assemblyRef = new WeakReference(assembly);
     }
 
@@ -82,17 +84,28 @@ public sealed class PluginAssembly
 
         if (!cacheable || !Resident.TryGetValue(id, out var loaded))
         {
-            var loadContext = new PluginLoadContext($"Plugin:{id}");
             using var stream = VFS.OpenRead(path);
             using var buffer = new MemoryStream();
             stream.CopyTo(buffer);
             buffer.Position = 0;
-            loaded = (loadContext, loadContext.LoadFromStream(buffer));
+
+            if (PluginPolicy.Supported)
+            {
+                // Sandboxed load: CasCore rewrites the plugin's IL so every reach outside
+                // the policy throws. Nothing outside that context can see the plugin.
+                var sandbox = new CasAssemblyLoader(PluginPolicy.Instance, $"Plugin:{id}", isCollectible: true);
+                loaded = (sandbox.LoadFromStream(buffer), sandbox.Unload);
+            }
+            else
+            {
+                var loadContext = new PluginLoadContext($"Plugin:{id}");
+                loaded = (loadContext.LoadFromStream(buffer), loadContext.Unload);
+            }
 
             if (cacheable) Resident[id] = loaded;
         }
 
-        return new PluginAssembly(id, path, loaded.Assembly, loaded.Context);
+        return new PluginAssembly(id, path, loaded.Assembly, loaded.Unload);
     }
 
     /// <summary>
@@ -169,7 +182,7 @@ public sealed class PluginAssembly
 
         Assembly = null!;
 
-        _loadContext.Unload();
+        _unloadContext();
 
         Logging.Info($"Unloading plugin '{Id}': {dropped} memorypack formatter(s) dropped");
     }

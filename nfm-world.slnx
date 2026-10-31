@@ -45,6 +45,9 @@
     </Project>
     <Project Path="Maxine.RustBindGen/Maxine.RustBindGen.csproj" />
   </Folder>
+  <Folder Name="/CasCore/">
+    <Project Path="CasCore/CasCore.csproj" />
+  </Folder>
   <Folder Name="/MemoryPack/">
     <Project Path="MemoryPack/src/MemoryPack.Core/MemoryPack.Core.csproj" />
     <Project Path="MemoryPack/src/MemoryPack.Generator/MemoryPack.Generator.csproj" />

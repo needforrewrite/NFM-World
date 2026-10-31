@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- A deliberately hostile gamemode, loaded by PluginSandboxTests to prove the CasCore
+         policy stops it. Never shipped: it is only registered as a plugin for Debug builds,
+         in Plugin.Plugins.targets, so release output carries no copy. -->
+    <Import Project="..\Plugin.props" />
+
+    <PropertyGroup>
+        <PluginId>sandbox/hostile</PluginId>
+        <PluginFileName>gamemode</PluginFileName>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\FixedMathSharp\src\FixedMathSharp\FixedMathSharp.csproj" Private="false" ExcludeAssets="runtime" />
+        <ProjectReference Include="..\MemoryPack\src\MemoryPack.Core\MemoryPack.Core.csproj" Private="false" ExcludeAssets="runtime" />
+        <ProjectReference Include="..\MemoryPack\src\MemoryPack\MemoryPack.csproj" Private="false" ExcludeAssets="runtime" />
+        <ProjectReference Include="..\MemoryPack\src\MemoryPack.Generator\MemoryPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+        <ProjectReference Include="..\NFMWorld.DriverInterface\NFMWorld.DriverInterface.csproj" Private="false" ExcludeAssets="runtime" />
+        <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" Private="false" ExcludeAssets="runtime" />
+    </ItemGroup>
+
+</Project>

@@ -17,7 +17,9 @@
         giving every plugin the same destination folder.
     -->
 
-    <ItemGroup>
+    <!-- Game hosts only: a test host declares its own list, since it needs the sandbox
+         probes and not the AI. Everything else about how a plugin is built is shared. -->
+    <ItemGroup Condition="'$(IsTestProject)' != 'true'">
         <Plugin Include="Pvp">
             <Project>$(MSBuildThisFileDirectory)NFMWorld.Gamemode.Pvp\NFMWorld.Gamemode.Pvp.csproj</Project>
             <PluginId>nfmm/pvp</PluginId>
@@ -47,6 +49,12 @@
         Unconditional, and the plugins are free to build on their own: MSBuild
         de-duplicates nested build requests, so importing this from two projects
         builds each plugin once.
+    -->
+    <!--
+        Only builds. Copying is each plugin's own CopyPluginToHost - it reads
+        PluginOutputRoot, which is set below - so a host never needs the plugin list to
+        place a plugin, only to choose which ones to build. That is what lets the test
+        host add its own (the sandbox probes) without the game hosts growing them too.
     -->
     <Target Name="BuildPlugins"
             BeforeTargets="AssignTargetPaths"
