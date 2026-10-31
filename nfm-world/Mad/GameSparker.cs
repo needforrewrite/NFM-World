@@ -279,7 +279,8 @@ public static partial class GameSparker
 
         // init menu
         SettingsMenu = new SettingsMenu();
-        PhaseSharedState.SelectedStageName = "nfm2/16_4dv";
+        MenuHistory.Load();
+        PhaseSharedState.SelectedStageName = MenuHistory.Stage;
         MainMenuPhase = new MainMenuPhase(PhaseSharedState.SelectedStageName);
 
         Phases.SetRoot(MainMenuPhase);

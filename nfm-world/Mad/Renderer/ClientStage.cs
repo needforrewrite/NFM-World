@@ -23,6 +23,8 @@ public class ClientStage : IDisposable
     public BackendStage Backend { get; }
     public ClientStageRenderer Renderer { get; }
     public Camera Camera { get; set; }
+    public bool CarSoundsEnabled { get; set; } = true;
+    public int? FadeFromOverride { get; set; }
     public IReadOnlyList<Camera> LightCameras { get; set; }
 
     // ── Music metadata from stage loader ──
@@ -295,7 +297,15 @@ public class ClientStage : IDisposable
     public void GameTick()
     {
         foreach (var obj in _scene.Objects)
+        {
+            if (obj is CarVisual { Sfx: { } sfx })
+            {
+                sfx.Mute = !CarSoundsEnabled;
+                if (!CarSoundsEnabled)
+                    sfx.Stop();
+            }
             obj.GameTick(Backend);
+        }
     }
 
     public void StopSounds()
@@ -307,6 +317,8 @@ public class ClientStage : IDisposable
     public void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha, bool useShadowMapping = true, bool clearRenderBuffer = true)
     {
         Renderer.ApplyValues();
+        if (FadeFromOverride is { } fadeFrom)
+            World.FadeFrom = fadeFrom;
         _scene.ActiveCamera = Camera;
         _scene.Render(cb, alpha, useShadowMapping, clearRenderBuffer);
     }

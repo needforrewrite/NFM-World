@@ -19,12 +19,14 @@ public class AposRenderer : IDisposable
 {
     private readonly ShapeBatch _sb;
     private readonly ImmediateBatch3D _batch3D;
+    private readonly WorldClientBackend.AposGraphics _graphics;
 
     public AposRenderer(IGraphicsDevice graphicsDevice)
     {
         _sb = new ShapeBatch(graphicsDevice);
         _batch3D = new ImmediateBatch3D(graphicsDevice);
         IBackend.Backend = new WorldClientBackend(_sb, _batch3D, graphicsDevice);
+        _graphics = (WorldClientBackend.AposGraphics)IBackend.Backend.Graphics;
     }
 
     /// <summary>Must be called with the frame's live command buffer before any drawing is done
@@ -32,6 +34,7 @@ public class AposRenderer : IDisposable
     public void BeginFrame(ICommandBuffer cb)
     {
         _batch3D.Reset();
+        _graphics.PrepareSvgImages(_sb, cb);
         _sb.Begin(cb);
     }
 
@@ -43,6 +46,7 @@ public class AposRenderer : IDisposable
     public void Dispose()
     {
         _sb.Dispose();
+        _graphics.ReleaseSvgImages();
         _batch3D.Dispose();
     }
 }
@@ -76,6 +80,31 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
     public sealed class AposGraphics : IGraphics
     {
         private readonly IGraphicsDevice _graphicsDevice;
+        private ITexture? _svgCacheGuard;
+
+        internal void PrepareSvgImages(ShapeBatch batch, ICommandBuffer cb)
+        {
+            var images = _imageCache.Values.OfType<AposShapeSvg>()
+                .Where(image => image.NeedsCache(_graphicsDevice)).ToArray();
+            if (images.Length == 0) return;
+
+            // Replace the batch's retained texture before rebuilding a cache it may reference.
+            _svgCacheGuard ??= _graphicsDevice.CreateTexture(new TextureDesc(1, 1, TextureFormat.Rgba8),
+                new byte[] { 255, 255, 255, 255 });
+            batch.Begin(cb);
+            batch.Draw(_svgCacheGuard, new RectangleF(-2, -2, 1, 1));
+            batch.End();
+            foreach (var image in images)
+                image.Prepare(_graphicsDevice, batch, cb);
+        }
+
+        internal void ReleaseSvgImages()
+        {
+            foreach (var image in _imageCache.Values.OfType<AposShapeSvg>())
+                image.ReleaseCache();
+            _svgCacheGuard?.Dispose();
+            _svgCacheGuard = null;
+        }
 
         public Vector2 Viewport => new(_graphicsDevice.Swapchain.Width, _graphicsDevice.Swapchain.Height);
 
@@ -279,7 +308,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             }
             else if (image is AposShape shape)
             {
-                shape.Draw(_sb, x, y, shape.Width, shape.Height);
+                shape.Draw(_sb, x, y, shape.Width, shape.Height, _alpha);
             }
         }
         
@@ -369,7 +398,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             }
             else if (image is AposShape shape)
             {
-                shape.Draw(_sb, x, y, width, height);
+                shape.Draw(_sb, x, y, width, height, _alpha);
             }
         }
 
@@ -586,7 +615,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
 
 internal abstract class AposShape : IImage
 {
-    public abstract void Draw(ShapeBatch sb, float x, float y, float width, float height);
+    public abstract void Draw(ShapeBatch sb, float x, float y, float width, float height, Color opacity);
     public abstract int Height { get; }
     public abstract int Width { get; }
 }
@@ -594,10 +623,58 @@ internal abstract class AposShape : IImage
 internal class AposShapeSvg(Stream stream) : AposShape
 {
     private readonly ShapeSvg _shape = new(stream);
+    private IRenderTarget? _cache;
+    private int _contentWidth;
+    private int _contentHeight;
 
-    public override void Draw(ShapeBatch sb, float x, float y, float width, float height)
+    public bool NeedsCache(IGraphicsDevice device) => _cache?.ColorTexture is not { } texture
+        || texture.Width != Math.Max(1, device.Swapchain.Width)
+        || texture.Height != Math.Max(1, device.Swapchain.Height);
+
+    public void Prepare(IGraphicsDevice device, ShapeBatch batch, ICommandBuffer cb)
     {
-        sb.DrawSvg(_shape, new Vector2(x, y), height);
+        var width = Math.Max(1, device.Swapchain.Width);
+        var height = Math.Max(1, device.Swapchain.Height);
+        _contentWidth = Math.Max(1, (int)Math.Ceiling(Math.Min(width * 0.55f, height * _shape.Width / _shape.Height)));
+        _contentHeight = Math.Max(1, Math.Min(height, (int)Math.Ceiling(_contentWidth * _shape.Height / _shape.Width)));
+
+        ReleaseCache();
+        _cache = device.CreateRenderTarget(new RenderTargetDesc(width, height, TextureFormat.Rgba8,
+            HasDepthStencil: false));
+        try
+        {
+            cb.SetRenderTarget(_cache);
+            cb.SetViewport(new Viewport(0, 0, width, height));
+            cb.SetScissorRect(new ScissorRect(0, 0, width, height));
+            cb.Clear(ClearOptions.Color, new ColorRgba(0, 0, 0, 0));
+            // Flip the cache projection on GL so its texture samples upright.
+            var projection = device.HasBottomLeftFramebufferOrigin
+                ? Matrix.CreateOrthographicOffCenter(0, width, 0, height, 0, 1)
+                : Matrix.CreateOrthographicOffCenter(0, width, height, 0, 0, 1);
+            batch.Begin(cb, projection: projection);
+            batch.SetClipRect(null);
+            batch.DrawSvg(_shape, Vector2.Zero, _contentHeight);
+            batch.End();
+        }
+        finally
+        {
+            cb.SetRenderTarget(null);
+            cb.SetViewport(new Viewport(0, 0, device.Swapchain.Width, device.Swapchain.Height));
+            cb.SetScissorRect(new ScissorRect(0, 0, device.Swapchain.Width, device.Swapchain.Height));
+        }
+    }
+
+    public override void Draw(ShapeBatch sb, float x, float y, float width, float height, Color opacity)
+    {
+        if (_cache != null)
+            sb.Draw(_cache.ColorTexture, new RectangleF(x, y, width, height),
+                new RectangleF(0, 0, _contentWidth, _contentHeight), Color.White * (opacity.A / 255f));
+    }
+
+    public void ReleaseCache()
+    {
+        _cache?.Dispose();
+        _cache = null;
     }
 
     public override int Height => (int)_shape.Height;

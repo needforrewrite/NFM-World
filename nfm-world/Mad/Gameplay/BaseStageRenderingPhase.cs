@@ -96,8 +96,12 @@ public abstract class BaseStageRenderingPhase : BasePhase
 
     protected virtual void LoadStageMusic(bool reloadIfLoaded = false)
     {
-        if ((reloadIfLoaded && GameSparker.CurrentMusic != null) || _stageMusic == null)
+        if (reloadIfLoaded || _stageMusic == null)
         {
+            if (ReferenceEquals(GameSparker.CurrentMusic, _stageMusic))
+                GameSparker.CurrentMusic = null;
+            _stageMusic?.Dispose();
+            _stageMusic = null;
             Logging.Debug($"playing stage music: {CurrentStage!.MusicPath}");
 
             bool useRemastered = GameSparker.UseRemasteredMusic && !string.IsNullOrEmpty(CurrentStage!.RemasteredMusicPath);

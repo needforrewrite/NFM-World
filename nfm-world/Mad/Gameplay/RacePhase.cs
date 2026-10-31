@@ -185,6 +185,9 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         // Enter/Exit only handle display activation/deactivation (CEF bridge,
         // camera, music) — no gamemode or stage reload.
         base.Enter();
+        var player = Players.FirstOrDefault(p => p.IsClientPlayer);
+        if (player != null)
+            MenuHistory.Remember(StageName, player.CarName);
     }
 
     protected IGamemode ReloadGamemode()
