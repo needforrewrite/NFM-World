@@ -1,6 +1,0 @@
-<Project>
-    <ItemGroup Condition="'$(MSBuildProjectFullPath)' == '$(MSBuildThisFileDirectory)Apos.Shapes\Example\Platforms\NFMW\NFMW.csproj'">
-        <ProjectReference Remove="..\..\..\..\FNA\lib\SDL3-CS\SDL3\SDL3.Core.csproj" />
-        <ProjectReference Include="$(MSBuildThisFileDirectory)SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
-    </ItemGroup>
-</Project>
