@@ -7,6 +7,7 @@ using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Plugins;
+using NFMWorldLibrary.Rad;
 
 namespace NFMWorld.Library.Test;
 
@@ -102,14 +103,17 @@ public class AiPluginTests
             "nfmm/pvp", "data/gamemodes/nfmm/pvp/gamemode.dll");
         Assert.IsNotNull(plugin);
         BaseClientGamemode? gamemode = null;
+        var carName = $"sandbox-test/{Guid.NewGuid():N}";
         try
         {
+            var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
+            BackendGameSparker.dynamic_models.Add(carName, (0, car));
             gamemode = plugin.CreateClient(new ClientGamemodeParameters
             {
                 Players =
                 [
-                    new ClientSidePlayerInfo { PlayerName = "Human", CarName = "nfmm/cars/radicalone", Color = default, IsBot = false, IsClientPlayer = true },
-                    new ClientSidePlayerInfo { PlayerName = "ElStupido", CarName = "nfmm/cars/audir8", Color = default, IsBot = true, IsClientPlayer = false }
+                    new ClientSidePlayerInfo { PlayerName = "Human", CarName = carName, Color = default, IsBot = false, IsClientPlayer = true },
+                    new ClientSidePlayerInfo { PlayerName = "ElStupido", CarName = carName, Color = default, IsBot = true, IsClientPlayer = false }
                 ]
             }, new StubContext("empty"));
 
@@ -124,8 +128,15 @@ public class AiPluginTests
         }
         finally
         {
-            gamemode?.End();
-            plugin.Unload();
+            BackendGameSparker.dynamic_models.Remove(carName);
+            try
+            {
+                gamemode?.End();
+            }
+            finally
+            {
+                plugin.Unload();
+            }
         }
     }
 
