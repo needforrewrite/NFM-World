@@ -1685,7 +1685,7 @@ public partial class CarPhysics
             while (z > 180) z -= 360;
             while (z <= -180) z += 360;
             var lean = fix64.Abs(z) - 90; // > 0: past vertical, towards the roof
-            if (fix64.Abs(lean) < 15)
+            if (fix64.Abs(lean) < 30)
             {
                 var away = lean > fix64.Zero ? fix64.One : -fix64.One;
                 Pzy += (z >= fix64.Zero ? away : -away) * 9 * _tickRate;
