@@ -21,6 +21,8 @@ public enum RenderBucket : byte
     
     Cars,
     
+    CheckpointBounds,
+
     CollisionDebugMesh
 }
 
