@@ -66,13 +66,29 @@
         <PropertyGroup>
             <PluginOutputRoot>$(TargetDir)</PluginOutputRoot>
         </PropertyGroup>
-        <!-- Build must re-evaluate the project after restore generates its NuGet imports. -->
-        <MSBuild Projects="%(Plugin.Project)"
+        <ItemGroup>
+            <!-- Restore writes assets beside the project, so this is where to look for them. A
+                 second item type because metadata set in the same item definition is not yet
+                 populated when that item's condition is evaluated. -->
+            <_PluginAssets Include="@(Plugin)">
+                <AssetsFile>$([System.IO.Path]::GetDirectoryName('%(Plugin.Project)'))\obj\project.assets.json</AssetsFile>
+            </_PluginAssets>
+            <_PluginUnrestored Include="@(_PluginAssets)" Condition="!Exists('%(_PluginAssets.AssetsFile)')" />
+        </ItemGroup>
+        <!-- Restore and Build are separate evaluations because Build has to re-evaluate the project
+             once restore has generated its NuGet imports. Only a plugin that has none is restored
+             here: an existing project.assets.json is imported by the Build call below anyway, and
+             restoring every plugin on every host build is several seconds of nothing changing. -->
+        <MSBuild Projects="@(_PluginUnrestored->'%(Project)')"
                  Targets="Restore"
-                 Properties="Configuration=$(Configuration);PluginOutputRoot=$(PluginOutputRoot);PluginId=%(Plugin.PluginId);PluginDirectory=%(Plugin.PluginDirectory);PluginFileName=%(Plugin.PluginFileName);GamemodeId=%(Plugin.PluginId);ExcludeRestorePackageImports=true" />
+                 Properties="Configuration=$(Configuration);ExcludeRestorePackageImports=true" />
+        <!-- Only the output root is handed down; the id, folder and file name are the plugin
+             project's own, so passing them here would only duplicate what Plugin.props already
+             sets. They would also be global properties, which travel to everything the plugin
+             references, making each plugin build its own copy of the shared libraries. -->
         <MSBuild Projects="%(Plugin.Project)"
                  Targets="Build"
-                 Properties="Configuration=$(Configuration);PluginOutputRoot=$(PluginOutputRoot);PluginId=%(Plugin.PluginId);PluginDirectory=%(Plugin.PluginDirectory);PluginFileName=%(Plugin.PluginFileName);GamemodeId=%(Plugin.PluginId)" />
+                 Properties="Configuration=$(Configuration);PluginOutputRoot=$(PluginOutputRoot)" />
     </Target>
 
     <!--

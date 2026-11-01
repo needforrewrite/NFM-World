@@ -17,6 +17,11 @@
              The plugin itself is rid-agnostic: it is loaded as an assembly by the host and never
              runs on its own, so every platform the release builds for is listed. -->
         <RuntimeIdentifiers>win-x64;linux-x64;osx-x64;osx-arm64</RuntimeIdentifiers>
+
+        <!-- The host passes this down as a global property, so it would otherwise reach every
+             project this plugin references and give each one its own build configuration - the
+             shared libraries would be rebuilt per plugin. Only the copy target needs it. -->
+        <_GlobalPropertiesToRemoveFromProjectReferences>$(_GlobalPropertiesToRemoveFromProjectReferences);PluginOutputRoot</_GlobalPropertiesToRemoveFromProjectReferences>
     </PropertyGroup>
 
     <!--

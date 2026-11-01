@@ -182,10 +182,15 @@ replacement path for Lua — currently a proof of concept.
   (server), and mark the assembly with `[assembly: Gamemode(Name = ..., Description = ...)]`
   plus `[assembly: GamemodeConfigProperty(...)]` / `GamemodeConfigPropertyOption`.
   Projects: `NFMWorld.Gamemode.Pvp`, `NFMWorld.Gamemode.TimeTrial`.
-- **Build** — `Gamemode.Plugin.props` is imported by each plugin project;
-  `Gamemode.Plugins.targets` is imported by each *host* (game, server, test) and
+- **Build** — `Plugin.props` is imported by each plugin project;
+  `Plugin.Plugins.targets` is imported by each *host* (game, server, test) and
   builds the plugins, passing its own output dir down so each plugin copies only
-  its own output into `data/gamemodes/{id}/`.
+  its own output into `data/gamemodes/{id}/`. `PluginOutputRoot` is the only
+  property handed down: it is global, so anything else passed there (an id, a
+  folder) would also reach every project the plugin references and give each
+  plugin its own build of the shared libraries. Restore is skipped when the
+  plugin already has `obj/project.assets.json`, so a host rebuild only costs a
+  no-op Build per plugin.
 - **Resolution** — `GamemodeFactory.Create(id, config)` in
   `NFMWorld.Library/Mad/Multiplayer/GameModes.cs` returns a `NativeGamemodeFactory`
   when a plugin is present and a `LuaGamemodeFactory` otherwise. Call sites use
