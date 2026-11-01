@@ -77,7 +77,7 @@ public class CameraPresetTests
     [TestMethod]
     public void BuiltInNamesAndLineBreaksCannotBeUsedForCustomPresets()
     {
-        foreach (var name in new[] { "NFMW", "classic", " ", "Name\nAnother setting", new string('x', 41) })
+        foreach (var name in new[] { CameraPreset.NFMW.Name, "wOrLd", "classic", " ", "Name\nAnother setting", new string('x', 41) })
             Assert.ThrowsExactly<ArgumentException>(() => CameraPreset.ValidateCustomName(name));
     }
 
@@ -86,7 +86,7 @@ public class CameraPresetTests
     {
         var saved = CameraPresetConfig.WritePresets(
         [
-            new("NFMW", 80, 0, 0, false),
+            new(CameraPreset.NFMW.Name, 80, 0, 0, false),
             new("Valid", 80, -98, -250, true),
             new("valid", 90, 0, 0, false),
             new("Invalid FOV", 200, 0, 0, false)
