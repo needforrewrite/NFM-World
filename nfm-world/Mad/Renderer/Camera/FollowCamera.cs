@@ -6,11 +6,19 @@ namespace NFMWorld;
 
 public class FollowCamera
 {
-    public static int FollowYOffset = 0;
+    public static int FollowYOffset
+    {
+        get;
+        set => field = Math.Clamp(value, CameraPreset.MinFollowY, CameraPreset.MaxFollowY);
+    }
 
     private float _bcxz;
     private Euler _angle;
-    public static int FollowZOffset = 0;
+    public static int FollowZOffset
+    {
+        get;
+        set => field = Math.Clamp(value, CameraPreset.MinFollowZ, CameraPreset.MaxFollowZ);
+    }
 
     private static int _oldlookback = 0;
 

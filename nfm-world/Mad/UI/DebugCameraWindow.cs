@@ -1,5 +1,7 @@
 using Hexa.NET.ImGui;
 
+using NFMWorldLibrary.Util;
+
 namespace NFMWorld.UI;
 
 public class DebugCameraWindow
@@ -36,7 +38,7 @@ public class DebugCameraWindow
             ImGui.Spacing();
                 
             ImGui.Text("Field of View:");
-            if (ImGui.SliderFloat("##FOV", ref _fov, 70.0f, 120.0f, "%.1f°"))
+            if (ImGui.SliderFloat("##FOV", ref _fov, CameraPreset.MinFov, CameraPreset.MaxFov, "%.1f°"))
             {
                 CameraSettings.Fov = _fov;
             }
@@ -47,7 +49,7 @@ public class DebugCameraWindow
                 
             // Follow Y Offset
             ImGui.Text("Follow Y Offset:");
-            if (ImGui.SliderInt("##FollowY", ref _followY, -160, 500))
+            if (ImGui.SliderInt("##FollowY", ref _followY, CameraPreset.MinFollowY, CameraPreset.MaxFollowY))
             {
                 FollowCamera.FollowYOffset = _followY;
             }
@@ -56,7 +58,7 @@ public class DebugCameraWindow
                 
             // Follow Z Offset
             ImGui.Text("Follow Z Offset:");
-            if (ImGui.SliderInt("##FollowZ", ref _followZ, -500, 500))
+            if (ImGui.SliderInt("##FollowZ", ref _followZ, CameraPreset.MinFollowZ, CameraPreset.MaxFollowZ))
             {
                 FollowCamera.FollowZOffset = _followZ;
             }

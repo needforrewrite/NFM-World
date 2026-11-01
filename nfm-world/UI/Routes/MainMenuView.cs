@@ -301,7 +301,7 @@ public static class MainMenuView
 
     public static Node SettingsOverlay() => Sx.Show(
         when: () => SettingsOpen.Value,
-        then: () => SettingsView.Build(() => SettingsOpen.Value = false));
+        then: () => SettingsView.Build(() => SettingsOpen.Value = false, menuPreviewAvailable: true));
 
     public static Node QuitOverlay() => Sx.Show(() => QuitOpen.Value, () => Sx.View(
         style: () => Sx.Styles(position: Position.Absolute, top: 0, left: 0, right: 0, bottom: 0,

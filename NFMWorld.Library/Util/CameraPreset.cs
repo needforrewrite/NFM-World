@@ -6,8 +6,24 @@ namespace NFMWorldLibrary.Util;
 
 public sealed record CameraPreset(string Name, float Fov, int FollowY, int FollowZ, bool SmoothFov)
 {
+    public const float MinFov = 58.7f;
+    public const float MaxFov = 120f;
+    public const int MinFollowY = -160;
+    public const int MaxFollowY = 500;
+    public const int MinFollowZ = -250;
+    public const int MaxFollowZ = 50;
+
     public static CameraPreset NFMW { get; } = new("World", 80, -98, -250, true);
     public static CameraPreset Classic { get; } = new("Classic", 58.715516388168026651329f, 0, 0, false);
+
+    public static float ClampFov(float value) => float.IsFinite(value) ? Math.Clamp(value, MinFov, MaxFov) : NFMW.Fov;
+
+    public CameraPreset Clamp() => this with
+    {
+        Fov = ClampFov(Fov),
+        FollowY = Math.Clamp(FollowY, MinFollowY, MaxFollowY),
+        FollowZ = Math.Clamp(FollowZ, MinFollowZ, MaxFollowZ)
+    };
 
     public bool Matches(CameraPreset other) => Math.Abs(Fov - other.Fov) < 0.051f
         && FollowY == other.FollowY && FollowZ == other.FollowZ && SmoothFov == other.SmoothFov;
@@ -36,7 +52,7 @@ public static class CameraPresetConfig
             switch (key)
             {
                 case "camera_fov" when float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var fov)
-                                       && float.IsFinite(fov) && fov > 0 && fov < 180:
+                                       && float.IsFinite(fov):
                     camera = camera with { Fov = fov }; break;
                 case "camera_follow_y" when int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var y):
                     camera = camera with { FollowY = y }; break;
@@ -46,7 +62,7 @@ public static class CameraPresetConfig
                     camera = camera with { SmoothFov = smooth != 0 }; break;
             }
         }
-        return camera;
+        return camera.Clamp();
     }
 
     public static List<CameraPreset> ReadPresets(string json)
@@ -60,7 +76,7 @@ public static class CameraPresetConfig
             try
             {
                 var name = CameraPreset.ValidateCustomName(preset.Name);
-                if (names.Add(name)) result.Add(preset with { Name = name });
+                if (names.Add(name)) result.Add((preset with { Name = name }).Clamp());
             }
             catch (ArgumentException) { }
         }

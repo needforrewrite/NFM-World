@@ -26,10 +26,10 @@ public class CameraPresetTests
     public void ExistingCustomizedCameraIsPreservedExactly()
     {
         var camera = CameraPresetConfig.ReadCamera(
-            "video_antialias 4\ncamera_fov 93.25\ncamera_follow_y -86\ncamera_follow_z -260\ncamera_smooth_fov 1\n");
+            "video_antialias 4\ncamera_fov 93.25\ncamera_follow_y -86\ncamera_follow_z -160\ncamera_smooth_fov 1\n");
         Assert.AreEqual(93.25f, camera.Fov);
         Assert.AreEqual(-86, camera.FollowY);
-        Assert.AreEqual(-260, camera.FollowZ);
+        Assert.AreEqual(-160, camera.FollowZ);
         Assert.IsTrue(camera.SmoothFov);
     }
 
@@ -57,7 +57,7 @@ public class CameraPresetTests
     [TestMethod]
     public void CustomPresetsRoundTripWithNamesAndAllCameraValues()
     {
-        CameraPreset[] presets = [new("My \"wide\" view", 104.5f, -120, -330, true), new("Miesto kamera", 78, -50, -200, false)];
+        CameraPreset[] presets = [new("My \"wide\" view", 104.5f, -120, -150, true), new("Miesto kamera", 78, -50, -200, false)];
         var json = CameraPresetConfig.WritePresets(presets);
         CollectionAssert.AreEqual(presets, CameraPresetConfig.ReadPresets(json).ToArray());
         Assert.IsFalse(json.Contains('\n'));
@@ -87,12 +87,48 @@ public class CameraPresetTests
         var saved = CameraPresetConfig.WritePresets(
         [
             new(CameraPreset.NFMW.Name, 80, 0, 0, false),
-            new("Valid", 80, -98, -250, true),
+            new("Valid", 80, -98, -200, true),
             new("valid", 90, 0, 0, false),
             new("Invalid FOV", 200, 0, 0, false)
         ]);
         var presets = CameraPresetConfig.ReadPresets(saved);
         Assert.AreEqual(1, presets.Count);
         Assert.AreEqual("Valid", presets[0].Name);
+    }
+
+    [TestMethod]
+    [DataRow("-999", int.MinValue, int.MinValue, CameraPreset.MinFov, CameraPreset.MinFollowY, CameraPreset.MinFollowZ)]
+    [DataRow("999", int.MaxValue, int.MaxValue, CameraPreset.MaxFov, CameraPreset.MaxFollowY, CameraPreset.MaxFollowZ)]
+    [DataRow("80", -98, -250, 80f, -98, -250)]
+    public void EditedConfigClampsCameraLimits(string fov, int y, int z, float expectedFov, int expectedY, int expectedZ)
+    {
+        var camera = CameraPresetConfig.ReadCamera($"camera_fov {fov}\ncamera_follow_y {y}\ncamera_follow_z {z}\n");
+        Assert.AreEqual(expectedFov, camera.Fov, 0.001f);
+        Assert.AreEqual(expectedY, camera.FollowY);
+        Assert.AreEqual(expectedZ, camera.FollowZ);
+    }
+
+    [TestMethod]
+    public void SavedPresetsClampCameraLimits()
+    {
+        var json = CameraPresetConfig.WritePresets([
+            new CameraPreset("Low", 1, int.MinValue, int.MinValue, false),
+            new CameraPreset("High", 179, int.MaxValue, int.MaxValue, true)
+        ]);
+        var presets = CameraPresetConfig.ReadPresets(json);
+        Assert.AreEqual(2, presets.Count);
+        Assert.AreEqual(CameraPreset.MinFov, presets[0].Fov, 0.001f);
+        Assert.AreEqual(CameraPreset.MinFollowY, presets[0].FollowY);
+        Assert.AreEqual(CameraPreset.MinFollowZ, presets[0].FollowZ);
+        Assert.AreEqual(CameraPreset.MaxFov, presets[1].Fov, 0.001f);
+        Assert.AreEqual(CameraPreset.MaxFollowY, presets[1].FollowY);
+        Assert.AreEqual(CameraPreset.MaxFollowZ, presets[1].FollowZ);
+    }
+
+    [TestMethod]
+    public void NonFiniteFovFallsBackToWorldDefault()
+    {
+        foreach (var fov in new[] { float.NaN, float.PositiveInfinity, float.NegativeInfinity })
+            Assert.AreEqual(CameraPreset.NFMW.Fov, CameraPreset.ClampFov(fov));
     }
 }

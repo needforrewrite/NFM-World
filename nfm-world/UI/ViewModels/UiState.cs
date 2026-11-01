@@ -64,6 +64,7 @@ public static class UiState
         public Signal<bool> GarageOpen { get; } = new(false);
         public Signal<bool> InputEnabled { get; } = new(false);
         public Signal<float> LogoOpacity { get; } = new(0);
+        public Signal<bool> SceneryOnly { get; } = new(false);
         public Signal<float> PromptOpacity { get; } = new(0);
         public Signal<float> BlackOpacity { get; } = new(1);
         public Signal<string> StageName { get; } = new("");

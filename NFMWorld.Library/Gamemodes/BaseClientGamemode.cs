@@ -232,6 +232,7 @@ public abstract class BaseClientGamemode : IGamemode
     /// the race.
     /// </remarks>
     [RequiresUnreferencedCode("Loads a plugin assembly at run time.")]
+    [PluginVisible]
     protected PluginAi? AttachBot(string aiId, ClientSidePlayer player)
     {
         var plugin = AiPlugin.Load(aiId, PluginPaths.For("ais", aiId, "ai.dll"));

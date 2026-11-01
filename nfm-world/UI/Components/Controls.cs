@@ -221,7 +221,8 @@ public static class Controls
         var open = new Signal<bool>(false);
         var opensAbove = new Signal<bool>(false);
         var popupHeight = new Signal<float>(200);
-        var hovered = new Signal<int>(-1);
+        var hovered = new Signal<bool>(false);
+        var selectedIndex = Sx.Computed(value);
         View? root = null;
 
         Node? popup = null;
@@ -274,36 +275,40 @@ public static class Controls
                         maxHeight: Math.Max(0, popupHeight.Value - 2), overflow: Overflow.Scroll),
                     children: Sx.For(
                     each: () => options(),
-                    row: (option, index) => Sx.View(
-                        style: () => new Styles
-                        {
-                            Height = 32,
-                            Overflow = Overflow.Hidden,
-                            PaddingTop = 7,
-                            PaddingBottom = 7,
-                            PaddingLeft = 12,
-                            PaddingRight = 12,
-                            FlexShrink = 0,
-                            BackgroundColor = index == value()
-                                ? Theme.AccentSoft
-                                : index == hovered.Value ? new Color(255, 255, 255, 20) : Theme.Transparent,
-                        },
-                        onmousedown: _ =>
-                        {
-                            onSelect(index);
-                            open.Value = false;
-                        },
-                        onmouseenter: _ => hovered.Value = index,
-                        onmouseleave: _ => hovered.Value = -1,
-                        children: Sx.Text(
-                            style: () => new TextStyles
+                    row: (option, index) =>
+                    {
+                        var rowHovered = new Signal<bool>(false);
+                        return Sx.View(
+                            style: () => new Styles
                             {
-                                FontSize = 13,
-                                ForegroundColor = index == value()
-                                    ? Theme.Accent
-                                    : index == hovered.Value ? new Color(255, 255, 255) : new Color(255, 255, 255, 204),
+                                Height = 32,
+                                Overflow = Overflow.Hidden,
+                                PaddingTop = 7,
+                                PaddingBottom = 7,
+                                PaddingLeft = 12,
+                                PaddingRight = 12,
+                                FlexShrink = 0,
+                                BackgroundColor = index == selectedIndex.Value
+                                    ? Theme.AccentSoft
+                                    : rowHovered.Value ? new Color(255, 255, 255, 20) : Theme.Transparent,
                             },
-                            text: () => option))))));
+                            onmousedown: _ =>
+                            {
+                                onSelect(index);
+                                open.Value = false;
+                            },
+                            onmouseenter: _ => rowHovered.Value = true,
+                            onmouseleave: _ => rowHovered.Value = false,
+                            children: Sx.Text(
+                                style: () => new TextStyles
+                                {
+                                    FontSize = 13,
+                                    ForegroundColor = index == selectedIndex.Value
+                                        ? Theme.Accent
+                                        : rowHovered.Value ? new Color(255, 255, 255) : new Color(255, 255, 255, 204),
+                                },
+                                text: () => option));
+                    }))));
 
         root = new DropdownView(() => open.Value = false)
         {
@@ -330,7 +335,7 @@ public static class Controls
                     BorderRight = 1,
                     BorderColor = open.Value
                         ? new Color(128, 170, 255)
-                        : hovered.Value >= 0 ? new Color(205, 227, 255) : new Color(128, 170, 255, 100),
+                        : hovered.Value ? new Color(205, 227, 255) : new Color(128, 170, 255, 100),
                     BorderRadius = 6,
                     FlexDirection = FlexDirection.Row,
                     AlignItems = Align.Center,
@@ -339,8 +344,8 @@ public static class Controls
                     GapRow = 8,
                 },
                 onmousedown: _ => Toggle(),
-                onmouseenter: _ => hovered.Value = 0,
-                onmouseleave: _ => hovered.Value = -1,
+                onmouseenter: _ => hovered.Value = true,
+                onmouseleave: _ => hovered.Value = false,
                 children:
                 [
                     Sx.Text(

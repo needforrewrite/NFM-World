@@ -116,7 +116,10 @@ public class SettingsMenu()
     private static bool _smoothFov = CameraPreset.NFMW.SmoothFov;
     private static List<CameraPreset> _cameraPresets = [];
     private static CameraPreset? _modifiedCameraPreset;
-    private static string _cameraPresetName = "NFMW";
+    private static string _cameraPresetName = CameraPreset.NFMW.Name;
+
+    public static string MenuStage { get; private set; } = MenuPreferences.LastPlayedStage;
+    public static string MenuMusic { get; private set; } = MenuPreferences.StageSoundtrack;
 
     // Keyboard settings
     private string _settingMessage = "";
@@ -541,6 +544,10 @@ public class SettingsMenu()
         sw.WriteLine($"camera_presets {CameraPresetConfig.WritePresets(_cameraPresets)}");
         sw.WriteLine($"camera_modified_preset {CameraPresetConfig.WritePresets(_modifiedCameraPreset is { } modified ? [modified] : [])}");
         sw.WriteLine();
+        sw.WriteLine("// Menu");
+        sw.WriteLine($"menu_stage {MenuStage}");
+        sw.WriteLine($"menu_music {MenuMusic}");
+        sw.WriteLine();
         sw.WriteLine("// Key Bindings");
         sw.WriteLine($"key_accelerate {(int)Bindings.Accelerate}");
         sw.WriteLine($"key_ab {(int)Bindings.AerialBounce}");
@@ -567,6 +574,8 @@ public class SettingsMenu()
     /// </summary>
     public static void LoadConfigFromSnapshot(string configString)
     {
+        MenuStage = MenuPreferences.LastPlayedStage;
+        MenuMusic = MenuPreferences.StageSoundtrack;
         InitializeCameraConfig(configString);
         using var sr = new StringReader(configString);
         string? line;
@@ -648,6 +657,13 @@ public class SettingsMenu()
                     break;
                 case "audio_remaster":
                     _remasteredMusic = int.Parse(value) != 0;
+                    break;
+
+                case "menu_stage":
+                    MenuStage = MenuPreferences.NormalizeStage(value);
+                    break;
+                case "menu_music":
+                    MenuMusic = MenuPreferences.NormalizeMusic(value);
                     break;
 
                 // Camera settings
@@ -867,6 +883,8 @@ public class SettingsMenu()
     /// </summary>
     public static void LoadConfigValues()
     {
+        MenuStage = MenuPreferences.LastPlayedStage;
+        MenuMusic = MenuPreferences.StageSoundtrack;
         try
         {
             const string configPath = "data/cfg/config.cfg";
@@ -1008,6 +1026,8 @@ public class SettingsMenu()
             ModifiedCameraPreset = _modifiedCameraPreset,
             CameraPresetName = _cameraPresetName,
             SelectedCameraPreset = SelectedCameraPreset(),
+            MenuStage = MenuStage,
+            MenuMusic = MenuMusic,
             KeyBindings = keyBindings
         };
     }
@@ -1032,7 +1052,9 @@ public class SettingsMenu()
             AntialiasModes = AntialiasModes,
             ShadowCascadeLevels = ShadowCascadeLevelNames,
             ShadowResolutions = ShadowResolutionNames,
-            RenderDistanceNames = RenderDistanceNames
+            RenderDistanceNames = RenderDistanceNames,
+            MenuStages = MenuPreferences.GetStages(TheVFS.VFS),
+            MenuTracks = MenuPreferences.GetMusic(TheVFS.VFS)
         };
     }
 
@@ -1123,6 +1145,13 @@ public class SettingsMenu()
                     _remasteredMusic = remasteredMusic;
                 break;
 
+            case "menuStage":
+                if (value is string stage) MenuStage = MenuPreferences.NormalizeStage(stage);
+                break;
+            case "menuMusic":
+                if (value is string music) MenuMusic = MenuPreferences.NormalizeMusic(music);
+                break;
+
             // Camera
             case "fov":
                 if (AsFloat(value) is { } fov)
@@ -1149,7 +1178,10 @@ public class SettingsMenu()
         }
 
         if (key is "fov" or "followY" or "followZ" or "smoothFov")
+        {
+            SetCamera(CurrentCamera(_cameraPresetName));
             RememberModifiedCamera();
+        }
 
         // Apply immediately for live preview
         ApplySettings(out _);
@@ -1185,13 +1217,14 @@ public class SettingsMenu()
     /// </summary>
     public static void ResetCameraDefaults()
     {
-        SelectCameraPreset("NFMW");
+        SelectCameraPreset(CameraPreset.NFMW.Name);
     }
 
     private static CameraPreset CurrentCamera(string name) => new(name, _fov, _followY, _followZ, _smoothFov);
 
     private static void SetCamera(CameraPreset preset)
     {
+        preset = preset.Clamp();
         _fov = preset.Fov;
         _followY = preset.FollowY;
         _followZ = preset.FollowZ;

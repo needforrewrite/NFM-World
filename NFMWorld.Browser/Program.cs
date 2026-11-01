@@ -45,7 +45,7 @@ public static partial class Program
 
     private static void MountMusicArchive(string musicUrl)
     {
-        // Opened on the first fetch, which is the only time a track is wanted. The read itself is
+        // Opened on the first fetch or track listing. The read itself is
         // synchronous (see BrowserHttp) because zip parsing is, and the game is paused meanwhile.
         MusicFetch? fetch = null;
         BrowserBoot.MountMusic(path =>
@@ -64,6 +64,18 @@ public static partial class Program
             {
                 Console.WriteLine($"[nfmw] music fetch failed for {path}: {e.Message}");
                 return null;
+            }
+        }, () =>
+        {
+            try
+            {
+                fetch ??= MusicFetch.Open(musicUrl);
+                return fetch?.Paths ?? [];
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"[nfmw] music listing failed: {e.Message}");
+                return [];
             }
         });
     }

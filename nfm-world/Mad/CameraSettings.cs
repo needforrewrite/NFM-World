@@ -2,7 +2,11 @@
 
 public class CameraSettings
 {
-    public static float Fov { get; set; } = PerspectiveCamera.DefaultFov;
+    public static float Fov
+    {
+        get;
+        set => field = NFMWorldLibrary.Util.CameraPreset.ClampFov(value);
+    } = PerspectiveCamera.DefaultFov;
     public static bool SmoothFov { get; set; } = true;
 
     /// <summary>

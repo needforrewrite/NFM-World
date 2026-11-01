@@ -17,12 +17,17 @@ public sealed class FetchFileSystem : IVirtualFileSystem
 {
     private readonly Func<string, byte[]?> _fetch;
     private readonly ConcurrentDictionary<string, byte> _known;
+    private readonly Func<IEnumerable<string>>? _listPaths;
+    private bool _pathsLoaded;
 
     /// <param name="fetch">Returns the file's bytes, or null when the path is not in this mount.</param>
     /// <param name="paths">Every path this mount serves, used for the synchronous existence checks.</param>
-    public FetchFileSystem(Func<string, byte[]?> fetch, IEnumerable<string>? paths = null)
+    /// <param name="listPaths">Lists archive entries without fetching their contents.</param>
+    public FetchFileSystem(Func<string, byte[]?> fetch, IEnumerable<string>? paths = null,
+        Func<IEnumerable<string>>? listPaths = null)
     {
         _fetch = fetch;
+        _listPaths = listPaths;
         _known = new ConcurrentDictionary<string, byte>(
             (paths ?? []).Select(p => new KeyValuePair<string, byte>(Normalize(p), 0)),
             StringComparer.OrdinalIgnoreCase);
@@ -50,9 +55,31 @@ public sealed class FetchFileSystem : IVirtualFileSystem
 
     public bool FileExists(string path) => _known.ContainsKey(Normalize(path));
 
-    public bool DirectoryExists(string path) => false;
+    public bool DirectoryExists(string path)
+    {
+        LoadPaths();
+        var prefix = Normalize(path).TrimEnd('/');
+        if (prefix.Length > 0) prefix += "/";
+        return _known.Keys.Any(key => key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+    }
 
-    public IEnumerable<string> EnumerateFiles(string path, string searchPattern, SearchOption searchOption) => [];
+    public IEnumerable<string> EnumerateFiles(string path, string searchPattern, SearchOption searchOption)
+    {
+        LoadPaths();
+        var prefix = Normalize(path).TrimEnd('/');
+        if (prefix.Length > 0) prefix += "/";
+        return _known.Keys.Where(key => key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+            && (searchOption == SearchOption.AllDirectories || !key[prefix.Length..].Contains('/'))
+            && System.IO.Enumeration.FileSystemName.MatchesSimpleExpression(
+                searchPattern, key[(key.LastIndexOf('/') + 1)..], ignoreCase: true));
+    }
+
+    private void LoadPaths()
+    {
+        if (_pathsLoaded || _listPaths == null) return;
+        foreach (var path in _listPaths()) Register(path);
+        _pathsLoaded = true;
+    }
 
     // Callers pass paths the way a filesystem would take them ("./data/music/x.mp3"), and archive
     // entries are never spelled with a leading dot segment - the same normalisation ZipFS needs.

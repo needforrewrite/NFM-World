@@ -94,6 +94,41 @@ public class AiPluginTests
         plugin.Unload();
     }
 
+    [TestMethod]
+    public void BeginPvp_WithBot_PassesTheSandbox()
+    {
+        TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
+        var plugin = NFMWorldLibrary.Gamemodes.DotNet.GamemodePlugin.Load(
+            "nfmm/pvp", "data/gamemodes/nfmm/pvp/gamemode.dll");
+        Assert.IsNotNull(plugin);
+        BaseClientGamemode? gamemode = null;
+        try
+        {
+            gamemode = plugin.CreateClient(new ClientGamemodeParameters
+            {
+                Players =
+                [
+                    new ClientSidePlayerInfo { PlayerName = "Human", CarName = "nfmm/cars/radicalone", Color = default, IsBot = false, IsClientPlayer = true },
+                    new ClientSidePlayerInfo { PlayerName = "ElStupido", CarName = "nfmm/cars/audir8", Color = default, IsBot = true, IsClientPlayer = false }
+                ]
+            }, new StubContext("empty"));
+
+            gamemode.Begin();
+
+            var player = gamemode.Players[1];
+            var bot = player.Bot as PluginAi;
+            Assert.IsNotNull(player.Car);
+            Assert.IsNotNull(bot);
+            Assert.AreSame(player, bot.Player);
+            Assert.AreEqual("el_stupido", bot.AiId);
+        }
+        finally
+        {
+            gamemode?.End();
+            plugin.Unload();
+        }
+    }
+
     /// <summary>
     /// The minimum a gamemode has to provide for a bot: the player roster and the stage.
     /// </summary>

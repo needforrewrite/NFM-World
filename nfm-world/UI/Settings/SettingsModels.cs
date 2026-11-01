@@ -41,6 +41,9 @@ public sealed class SettingsSnapshot
     public string CameraPresetName { get; set; } = "";
     public int SelectedCameraPreset { get; set; } = -1;
 
+    public string MenuStage { get; set; } = MenuPreferences.LastPlayedStage;
+    public string MenuMusic { get; set; } = MenuPreferences.StageSoundtrack;
+
     // Key bindings
     public IReadOnlyList<KeyBindingData> KeyBindings { get; set; } = [];
 }
@@ -61,6 +64,8 @@ public sealed class KeyBindingData
 /// <summary>Valid choices for each dropdown, for the current platform.</summary>
 public sealed class AvailableOptions
 {
+    public IReadOnlyList<string> MenuStages { get; set; } = [];
+    public IReadOnlyList<string> MenuTracks { get; set; } = [];
     public IReadOnlyList<string> Renderers { get; set; } = [];
     public IReadOnlyList<string> Resolutions { get; set; } = [];
     public IReadOnlyList<string> DisplayModes { get; set; } = [];
