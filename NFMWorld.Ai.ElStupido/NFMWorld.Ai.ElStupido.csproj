@@ -6,6 +6,7 @@
         <Nullable>enable</Nullable>
         <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
         <PluginId>el_stupido</PluginId>
+        <PluginDirectory>ais</PluginDirectory>
         <PluginFileName>ai</PluginFileName>
     </PropertyGroup>
 

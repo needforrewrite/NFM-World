@@ -3,7 +3,7 @@
     <PropertyGroup>
         <!-- Where this plugin's folder goes, relative to the host's output directory.
              e.g. "gamemodes" -> data/gamemodes/<id>/, "ais" -> data/ais/<id>/. -->
-        <PluginDirectory>gamemodes</PluginDirectory>
+        <PluginDirectory Condition="'$(PluginDirectory)' == ''">gamemodes</PluginDirectory>
         <!-- File name of the shipped assembly, without extension. -->
         <PluginFileName Condition="'$(PluginFileName)' == ''">gamemode</PluginFileName>
         <!-- The plugin project's self-declared id, which is also its folder name. -->
