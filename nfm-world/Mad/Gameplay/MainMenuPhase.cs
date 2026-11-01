@@ -11,6 +11,7 @@ using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Gamemodes.RaceHost;
 using NFMWorldLibrary.Multiplayer;
+using NFMWorldLibrary.Util;
 
 namespace NFMWorld.Gameplay;
 
@@ -19,15 +20,16 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private const float IntroFadeStart = 3;
     private const float LogoFadeStart = 5.2f;
     private const float LogoFadeDuration = 2.2f;
+    private const float TransitionDuration = 2f;
     private const float PromptFadeStart = LogoFadeStart + LogoFadeDuration + 0.2f;
     private readonly MenuCameraDirector _cameraDirector = new();
     private readonly SettingsCameraPreview _settingsCamera = new();
     private readonly IImage _logo;
     private float _introTime;
+    private float _introVisibility = 1;
     private float _transitionTime = -1;
     private float _menuTime;
     private bool _menuVisible;
-    private bool _entered;
     private BackendCar? _menuCar;
     private GarageController? _garage;
     private BackendCar? _garageEntryCar;
@@ -37,17 +39,24 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private int _attractShot = -1;
     private bool _transitionToMenu = true;
     private bool _transitionSwitched;
+    private string _appliedMenuStage;
+    private string _appliedMenuMusic;
+    private bool _appliedRemasteredMusic;
 
     public override bool EnableUiInput => _menuVisible
         && (_transitionTime < 0 || (_transitionToMenu && _transitionSwitched));
 
-    public MainMenuPhase(string stageName) : base(stageName)
+    public MainMenuPhase(string stageName) : base(MenuPreferences.ResolveStage(TheVFS.VFS, SettingsMenu.MenuStage, stageName))
     {
+        _appliedMenuStage = SettingsMenu.MenuStage;
+        _appliedMenuMusic = SettingsMenu.MenuMusic;
+        _appliedRemasteredMusic = GameSparker.UseRemasteredMusic;
         _logo = G.LoadImage("data/images/logo.svg");
         CurrentStage!.CarSoundsEnabled = false;
         _cameraDirector.Reset(Camera, CurrentStage!.Backend);
         CurrentStage.FadeFromOverride = _cameraDirector.ViewDistance;
         UiState.MainMenu.MenuVisible.Value = false;
+        UiState.MainMenu.SceneryOnly.Value = false;
         UiState.MainMenu.GarageOpen.Value = false;
         UiState.MainMenu.InputEnabled.Value = false;
         UiState.MainMenu.BlackOpacity.Value = 1;
@@ -80,8 +89,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
         // rather than the root.
         MainMenuView.Reset();
 
-        if (_entered && StageName != MenuHistory.Stage)
-            LoadStage(MenuHistory.Stage, reloadIfLoaded: true);
+        ApplyMenuPreferences(checkHistory: true);
         CurrentStage!.CarSoundsEnabled = false;
         if (_menuVisible)
         {
@@ -90,7 +98,6 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 _cameraDirector.ShowCar(Camera, _menuCar, _menuTime, true);
         }
         UiState.MainMenu.StageName.Value = CurrentStage!.Backend.Name;
-        _entered = true;
         base.Enter();
     }
 
@@ -100,6 +107,46 @@ public class MainMenuPhase : BaseStageRenderingPhase
         CarsInRace.Clear();
         _menuCar = new BackendCar(car, 0, 0, 0, true);
         CarsInRace.Add(_menuCar);
+    }
+
+    protected override (string Path, double Tempo, double Frequency)? GetMusicTrack()
+        => MenuPreferences.ResolveMusic(TheVFS.VFS, SettingsMenu.MenuMusic) is { } path
+            ? (path, 1d, 1d) : base.GetMusicTrack();
+
+    private void ApplyMenuPreferences(bool checkHistory = false)
+    {
+        var stageChanged = _appliedMenuStage != SettingsMenu.MenuStage;
+        var musicChanged = _appliedMenuMusic != SettingsMenu.MenuMusic
+            || (_appliedRemasteredMusic != GameSparker.UseRemasteredMusic
+                && MenuPreferences.ResolveMusic(TheVFS.VFS, SettingsMenu.MenuMusic) == null);
+        _appliedRemasteredMusic = GameSparker.UseRemasteredMusic;
+        if (!stageChanged && !musicChanged && !checkHistory) return;
+
+        var stageName = MenuPreferences.ResolveStage(TheVFS.VFS, SettingsMenu.MenuStage, MenuHistory.Stage);
+        if (StageName != stageName)
+        {
+            StopAttractDrive();
+            _settingsCamera.Reset();
+            LoadStage(stageName, loadMusic: false);
+            CurrentStage!.CarSoundsEnabled = false;
+            _cameraDirector.Reset(Camera, CurrentStage.Backend);
+            _attractShot = -1;
+            if (_menuVisible && _menuCar != null)
+            {
+                CurrentStage.GetCarVisual(_menuCar);
+                _cameraDirector.ShowCar(Camera, _menuCar, _menuTime, true);
+            }
+            UiState.MainMenu.StageName.Value = CurrentStage.Backend.Name;
+            musicChanged |= MenuPreferences.ResolveMusic(TheVFS.VFS, SettingsMenu.MenuMusic) == null;
+        }
+
+        if (musicChanged)
+        {
+            LoadStageMusic(reloadIfLoaded: true);
+            if (!checkHistory) GameSparker.CurrentMusic = StageMusic;
+        }
+        _appliedMenuStage = SettingsMenu.MenuStage;
+        _appliedMenuMusic = SettingsMenu.MenuMusic;
     }
 
     protected override void Dispose(bool disposing)
@@ -233,6 +280,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
     {
         const float seconds = 1f / Physics.TargetTps;
         _settingsCamera.RestoreNormal(Camera);
+        ApplyMenuPreferences();
         if (_menuVisible)
         {
             _menuTime += seconds;
@@ -292,7 +340,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
             UiState.MainMenu.BlackOpacity.Value = _transitionTime < 0.8f
                 ? Smooth(_transitionTime / 0.8f)
                 : 1 - Smooth((_transitionTime - 0.8f) / 1.2f);
-            if (_transitionTime >= 2)
+            if (_transitionTime >= TransitionDuration)
                 _transitionTime = -1;
         }
         else if (!_menuVisible)
@@ -301,8 +349,11 @@ public class MainMenuPhase : BaseStageRenderingPhase
         }
         if (!_menuVisible)
         {
-            UiState.MainMenu.LogoOpacity.Value = Smooth((_introTime - LogoFadeStart) / LogoFadeDuration);
-            UiState.MainMenu.PromptOpacity.Value = Smooth((_introTime - PromptFadeStart) / 0.8f)
+            _introVisibility = Math.Clamp(_introVisibility
+                + (UiState.MainMenu.SceneryOnly.Value ? -seconds : seconds) / 0.6f, 0, 1);
+            var visibility = Smooth(_introVisibility);
+            UiState.MainMenu.LogoOpacity.Value = Smooth((_introTime - LogoFadeStart) / LogoFadeDuration) * visibility;
+            UiState.MainMenu.PromptOpacity.Value = Smooth((_introTime - PromptFadeStart) / 0.8f) * visibility
                 * (0.82f + 0.18f * MathF.Cos((_introTime - PromptFadeStart) * MathF.Tau / 1.5f));
         }
         CurrentStage!.FadeFromOverride = _menuVisible ? null : _cameraDirector.ViewDistance;
@@ -319,6 +370,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private void BeginTransition(bool toMenu)
     {
         if (_transitionTime >= 0) return;
+        UiState.MainMenu.SceneryOnly.Value = false;
         _transitionToMenu = toMenu;
         _transitionSwitched = false;
         _transitionTime = 0;
@@ -338,6 +390,13 @@ public class MainMenuPhase : BaseStageRenderingPhase
             _garage.KeyPressed(key, imguiWantsKeyboard, keys);
             return;
         }
+        if (!imguiWantsKeyboard && key == Key.Enter
+            && ((!_menuVisible && _transitionTime < 0) || (_transitionTime >= 0 && _transitionToMenu)))
+        {
+            BeginTransition(true);
+            _transitionTime = TransitionDuration;
+            return;
+        }
         if (!imguiWantsKeyboard && EnableUiInput && key == Key.Escape)
         {
             if (!MainMenuView.NavigateBack())
@@ -347,7 +406,14 @@ public class MainMenuPhase : BaseStageRenderingPhase
         if (!imguiWantsKeyboard && EnableUiInput)
             MainMenuView.KeyPressed(key);
         if (!imguiWantsKeyboard && !_menuVisible && _introTime >= IntroFadeStart && _transitionTime < 0)
+        {
+            if (key == Key.Escape)
+            {
+                UiState.MainMenu.SceneryOnly.Value = !UiState.MainMenu.SceneryOnly.Value;
+                return;
+            }
             BeginTransition(true);
+        }
     }
 
     public override void MousePressed(int x, int y, bool imguiWantsMouse, MouseButton button,

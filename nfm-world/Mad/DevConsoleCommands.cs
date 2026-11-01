@@ -8,6 +8,10 @@ using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Gamemodes.DotNet;
 using NFMWorldLibrary.Gamemodes.RaceHost;
 using NFMWorldLibrary.Multiplayer;
+using NFMWorldLibrary.Util;
+using System.Globalization;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using Logging = NFMWorldLibrary.Logging;
 
 namespace NFMWorld;
@@ -23,6 +27,7 @@ public static class DevConsoleCommands
 
         // general
         console.RegisterCommand("help", (c, args) => PrintHelp(c));
+        console.RegisterCommand("version", (c, args) => PrintVersion());
         console.RegisterCommand("clear", (c, args) => ClearLog(c));
         console.RegisterCommand("speed", SetSpeed);
         console.RegisterCommand("map", LoadStage);
@@ -358,6 +363,22 @@ public static class DevConsoleCommands
     {
         console.ToggleCameraSettings();
         Logging.Info("Camera settings window toggled");
+    }
+
+    private static void PrintVersion()
+    {
+        var assembly = Assembly.GetEntryAssembly() ?? typeof(GameSparker).Assembly;
+        var build = BuildInformation.Read(assembly);
+        Logging.Info(GameSparker.version);
+        Logging.Info($"Branch: {build.Branch}");
+        Logging.Info($"Commit: {build.Commit}");
+        var date = build.BuiltAtUtc?.ToString("HH:mm:ss MMM dd yyyy 'UTC'", CultureInfo.InvariantCulture) ?? "unknown";
+        var number = build.BuildNumber?.ToString(CultureInfo.InvariantCulture) ?? "unknown";
+        Logging.Info($"Exe build: {date} (build {number})");
+        Logging.Info($"Configuration: {build.Configuration}, target: {build.TargetFramework}, RID: {build.RuntimeIdentifier}");
+        Logging.Info($"Renderer: {GameSparker.GraphicsDevice?.GetType().FullName ?? "not initialized"}");
+        Logging.Info($"Runtime: {RuntimeInformation.FrameworkDescription} ({RuntimeInformation.ProcessArchitecture})");
+        Logging.Info($"Platform: {RuntimeInformation.OSDescription} ({RuntimeInformation.OSArchitecture})");
     }
 
     private static void PrintHelp(DevConsole console)

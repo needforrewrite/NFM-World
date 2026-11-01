@@ -63,7 +63,7 @@ public static class MainMenuIntroView
     {
         protected override void RenderContent(Vector2 position, Vector2 size)
         {
-            if (NFMWorld.UI.Components.SettingsView.CameraPreviewActive)
+            if (NFMWorld.UI.Components.SettingsView.ScenePreviewActive)
                 return;
 
             G.SetLinearGradient((int)position.X, (int)position.Y, (int)size.X, 0,

@@ -48,9 +48,10 @@ public static class BrowserBoot
     /// paused while a track loads, so blocking here costs a frame rather than a hang.
     /// </summary>
     /// <param name="readEntry">Reads one entry of the music archive, or returns null when absent.</param>
-    public static void MountMusic(Func<string, byte[]?> readEntry)
+    /// <param name="listPaths">Lists archive entries without fetching their contents.</param>
+    public static void MountMusic(Func<string, byte[]?> readEntry, Func<IEnumerable<string>>? listPaths = null)
     {
-        TheVFS.VFS.Mount(new FetchFileSystem(readEntry));
+        TheVFS.VFS.Mount(new FetchFileSystem(readEntry, listPaths: listPaths));
     }
 
     /// <summary>

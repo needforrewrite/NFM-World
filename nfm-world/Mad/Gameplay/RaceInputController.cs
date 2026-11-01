@@ -13,6 +13,15 @@ public sealed class RaceInputController
 {
     private readonly HashSet<Key> _pressedKeys = new();
 
+    public void Reset(Control? control)
+    {
+        _pressedKeys.Clear();
+        UpdateControlState(control);
+        if (control is null) return;
+        control.Enter = false;
+        control.Lookback = 0;
+    }
+
     /// <summary>Call on key press with the client car's control (may be null).</summary>
     public void KeyPressed(Key key, Control? control)
     {

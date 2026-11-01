@@ -21,6 +21,9 @@ internal sealed class MusicFetch : IDisposable
     private readonly ZipArchive _archive;
     private Dictionary<string, ZipArchiveEntry>? _entries;
 
+    public IEnumerable<string> Paths => _archive.Entries.Where(entry => !string.IsNullOrEmpty(entry.Name))
+        .Select(entry => entry.FullName);
+
     private MusicFetch(RangeReadStream reader, ZipArchive archive)
     {
         _reader = reader;

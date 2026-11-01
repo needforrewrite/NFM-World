@@ -656,6 +656,7 @@ public partial class WorldGame : IDisposable, IGameHost
 
         Window.TextInput += character =>
         {
+            if (GameSparker.devConsole.IsOpen()) return;
             var imguiWantsKeyboard = ImguiRenderer is not null && ImGui.GetIO().WantCaptureKeyboard;
             if (!imguiWantsKeyboard)
             {
@@ -914,7 +915,7 @@ public partial class WorldGame : IDisposable, IGameHost
             {
                 GameSparker.KeyPressed(key, keys, imguiWantsKeyboard);
 
-                if (key == Key.F9)
+                if (key == Key.F9 && !GameSparker.devConsole.IsOpen() && !imguiWantsKeyboard)
                 {
                     _yogaDebugPage++;
                     if (_yogaDebugPage > YogaDebugger.MaxPages) _yogaDebugPage = -1;
@@ -940,7 +941,9 @@ public partial class WorldGame : IDisposable, IGameHost
         var ctrlKey = _oldKeyState[Key.LControlKey] || _oldKeyState[Key.RControlKey];
         var shiftKey = _oldKeyState[Key.LShiftKey] || _oldKeyState[Key.RShiftKey];
         var altKey = _oldKeyState[Key.Alt];
-        var wantCaptureMouse = ImguiRenderer is not null && ImGui.GetIO().WantCaptureMouse;
+        var wantCaptureMouse = GameSparker.devConsole.IsOpen()
+            || (ImguiRenderer is not null && ImGui.GetIO().WantCaptureMouse);
+        if (GameSparker.devConsole.IsOpen()) _mouseDragging = false;
 
         void DispatchButton(MouseButtons button, bool down, int x, int y, MouseButtons state)
         {

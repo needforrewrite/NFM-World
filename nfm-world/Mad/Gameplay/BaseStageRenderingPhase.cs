@@ -30,6 +30,7 @@ public abstract class BaseStageRenderingPhase : BasePhase
     public ObservableUnlimitedArray<BackendCar> CarsInRace { get; protected set; } = [];
 
     private IRadicalMusic? _stageMusic;
+    protected IRadicalMusic? StageMusic => _stageMusic;
 
     public string? StageName;
     
@@ -90,8 +91,17 @@ public abstract class BaseStageRenderingPhase : BasePhase
         CurrentStage?.Dispose();
         CurrentStage = new ClientStage(stageName, CarsInRace, Camera, LightCameras);
 
-        if (loadMusic && !string.IsNullOrEmpty(CurrentStage.MusicPath))
+        if (loadMusic)
             LoadStageMusic(reloadIfLoaded: reloadIfLoaded);
+    }
+
+    protected virtual (string Path, double Tempo, double Frequency)? GetMusicTrack()
+    {
+        if (CurrentStage == null || string.IsNullOrEmpty(CurrentStage.MusicPath)) return null;
+        var remastered = GameSparker.UseRemasteredMusic && !string.IsNullOrEmpty(CurrentStage.RemasteredMusicPath);
+        return ($"data/music/{(remastered ? CurrentStage.RemasteredMusicPath : CurrentStage.MusicPath)}",
+            remastered ? 1d : CurrentStage.MusicTempoMul,
+            remastered ? 1d : CurrentStage.MusicFreqMul);
     }
 
     protected virtual void LoadStageMusic(bool reloadIfLoaded = false)
@@ -102,21 +112,16 @@ public abstract class BaseStageRenderingPhase : BasePhase
                 GameSparker.CurrentMusic = null;
             _stageMusic?.Dispose();
             _stageMusic = null;
-            Logging.Debug($"playing stage music: {CurrentStage!.MusicPath}");
-
-            bool useRemastered = GameSparker.UseRemasteredMusic && !string.IsNullOrEmpty(CurrentStage!.RemasteredMusicPath);
-            string path = useRemastered ? CurrentStage!.RemasteredMusicPath : CurrentStage!.MusicPath;
-            double tempoMul = !useRemastered ? CurrentStage.MusicTempoMul : 1d;
-            double freqMul = !useRemastered ? CurrentStage.MusicFreqMul : 1d;
+            if (GetMusicTrack() is not { } track) return;
+            Logging.Debug($"playing music: {track.Path}");
 
             // The browser's music mount fetches synchronously (see http.js) - there is no thread to
             // await on and the parse has to return immediately - so both paths load inline. The
             // fetch is a few hundred kilobytes for one track rather than the whole archive.
-            var musicPath = $"./data/music/{path}";
             _stageMusic = OperatingSystem.IsBrowser()
-                ? LoadBrowserMusic(musicPath, tempoMul)
-                : IBackend.Backend.LoadMusic(musicPath, tempoMul);
-            _stageMusic.SetFreqMultiplier(freqMul);
+                ? LoadBrowserMusic(track.Path, track.Tempo)
+                : IBackend.Backend.LoadMusic(track.Path, track.Tempo);
+            _stageMusic.SetFreqMultiplier(track.Frequency);
         }
     }
 

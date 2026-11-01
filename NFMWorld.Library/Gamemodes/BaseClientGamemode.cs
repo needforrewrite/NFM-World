@@ -33,6 +33,7 @@ public abstract class BaseClientGamemode : IGamemode
     [PluginVisible] public HudStateData HudState { get; protected internal set; } = new();
 
     [PluginVisible] public ClientSidePlayer ClientPlayer { get; }
+    private readonly IClientCallbacks _clientCallbacks;
 
     protected BaseClientGamemode(ClientGamemodeParameters clientGamemodeParameters, IGamemodeContext gamemodeContext)
     {
@@ -42,6 +43,7 @@ public abstract class BaseClientGamemode : IGamemode
         foreach (var (parameters, idx) in clientGamemodeParameters.Players.Select((p, idx) => (p, idx)))
             Players.Add(new ClientSidePlayer(parameters, idx));
         ClientPlayer = Players.Single(p => p.Info.IsClientPlayer);
+        _clientCallbacks = new PluginClientCallbacks(gamemodeContext.ClientCallbacks);
     }
 
     /// <summary>
@@ -120,6 +122,8 @@ public abstract class BaseClientGamemode : IGamemode
     public virtual void Reset()
     {
         ReleaseBots();
+        Results = null;
+        GamemodeContext.ClientCallbacks.RaceRestarted();
     }
 
     /// <summary>
@@ -211,7 +215,7 @@ public abstract class BaseClientGamemode : IGamemode
     /// Rendering callbacks for client cars, such as ghost opacity and
     /// checkpoint glow.
     /// </summary>
-    [PluginVisible] protected IClientCallbacks ClientCallbacks => GamemodeContext.ClientCallbacks;
+    [PluginVisible] protected IClientCallbacks ClientCallbacks => _clientCallbacks;
 
     // One entry per attached AI: its plugin (which owns the load context) and the
     // instances it created, so End() can drop both in the right order.
@@ -227,7 +231,8 @@ public abstract class BaseClientGamemode : IGamemode
     /// plugin is present, which leaves the player driven by nothing rather than failing
     /// the race.
     /// </remarks>
-    [RequiresUnreferencedCode("Loads a plugin assembly at run time."), PluginVisible]
+    [RequiresUnreferencedCode("Loads a plugin assembly at run time.")]
+    [PluginVisible]
     protected PluginAi? AttachBot(string aiId, ClientSidePlayer player)
     {
         var plugin = AiPlugin.Load(aiId, PluginPaths.For("ais", aiId, "ai.dll"));

@@ -1,4 +1,5 @@
-﻿using NFMWorld.DriverInterface.DriverInterface;
+using NFMWorld.DriverInterface;
+using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
 using NFMWorld.UI.Routes;
@@ -7,212 +8,184 @@ using SignalsDotnet;
 
 namespace NFMWorld.UI.Components;
 
-/// <summary>
-/// Pause overlay with confirm dialogs. Port of
-/// <c>data/uis/components/pausemenu.luau</c>.
-/// </summary>
 public static class PauseMenuView
 {
-    private enum Page
+    private static readonly Color Blue = new(128, 170, 255);
+    private static readonly Color TextBlue = new(185, 211, 255);
+    private static readonly Color Panel = new(12, 22, 42, 245);
+    private static readonly Color Border = new(128, 170, 255, 140);
+
+    private enum Page { Menu, Settings, ConfirmQuit, ConfirmRestart }
+
+    private sealed class InputView(Func<Key, bool> handleKey) : View
     {
-        Menu,
-        Settings,
-        ConfirmQuit,
-        ConfirmRestart
+        public bool HandleKey(Key key) => handleKey(key);
+    }
+
+    public static bool HandleKeyPressed(Node? node, Key key)
+    {
+        if (node is null || node is Component { IsDisplayed: false }) return false;
+        if (node is InputView menu) return menu.HandleKey(key);
+        foreach (var child in node.VisualChildren)
+            if (HandleKeyPressed(child, key)) return true;
+        return false;
     }
 
     public static Node Build(RaceHudView.Actions actions)
     {
         var page = new Signal<Page>(Page.Menu);
+        var selected = new Signal<int>(0);
         var race = UiState.Race;
+        var descriptions = new[]
+        {
+            "Get back to the action.",
+            "Start a fresh run on this stage.",
+            "Adjust controls, display, audio and gameplay.",
+            "Leave this game and return to the main menu."
+        };
 
-        return Sx.Switch(
-            page,
-            new Dictionary<Page, Func<Node>>
+        void Open(Page next)
+        {
+            selected.Value = 0;
+            page.Value = next;
+        }
+
+        void Activate()
+        {
+            if (page.Value == Page.Menu)
             {
-                [Page.Menu] = () => MenuPage(page, race, actions),
-                [Page.Settings] = () => SettingsView.Build(() => page.Value = Page.Menu),
-                [Page.ConfirmQuit] = () => Confirm(
-                    "Quit to Main Menu?",
-                    "All race progress will be lost.",
-                    "Quit",
-                    () =>
-                    {
-                        race.Paused.Value = false;
-                        actions.Quit();
-                    },
-                    () => page.Value = Page.Menu),
-                [Page.ConfirmRestart] = () => Confirm(
-                    "Restart Race?",
-                    "Your current lap time and position will be reset.",
-                    "Restart",
-                    () =>
-                    {
-                        race.Paused.Value = false;
-                        actions.Restart();
-                    },
-                    () => page.Value = Page.Menu)
-            });
+                switch (selected.Value)
+                {
+                    case 0: actions.Resume(); break;
+                    case 1: Open(Page.ConfirmRestart); break;
+                    case 2: Open(Page.Settings); break;
+                    case 3: Open(Page.ConfirmQuit); break;
+                }
+            }
+            else if (selected.Value == 0)
+                Open(Page.Menu);
+            else if (page.Value == Page.ConfirmRestart)
+                actions.Restart();
+            else if (page.Value == Page.ConfirmQuit)
+                actions.Quit();
+        }
+
+        bool HandleKey(Key key)
+        {
+            if (page.Value == Page.Settings) return true;
+            var count = page.Value == Page.Menu ? 4 : 2;
+            if (key is Key.Up or Key.Down or Key.Left or Key.Right)
+            {
+                var direction = key is Key.Up or Key.Left ? -1 : 1;
+                selected.Value = (selected.Value + direction + count) % count;
+            }
+            else if (key is Key.Enter or Key.Space)
+                Activate();
+            else if (key == Key.Escape)
+            {
+                if (page.Value == Page.Menu) actions.Resume();
+                else Open(Page.Menu);
+            }
+            return true;
+        }
+
+        Node Menu() => Overlay(Card(
+        [
+            Heading("PAUSED"),
+            RaceInfo(race),
+            MenuButton("RESUME", 0, selected, Activate),
+            MenuButton("RESTART", 1, selected, Activate),
+            MenuButton("SETTINGS", 2, selected, Activate),
+            MenuButton("LEAVE GAME", 3, selected, Activate),
+            Sx.View(style: () => Sx.Styles(marginTop: 8, paddingTop: 8, paddingBottom: 8,
+                    paddingLeft: 12, paddingRight: 12, backgroundColor: new Color(3, 8, 20, 170), borderRadius: 6),
+                children: Sx.Text(style: () => Sx.TextStyles(fontSize: 12, foregroundColor: TextBlue,
+                        horizontalAlignment: TextHorizontalAlignment.Center),
+                    text: () => descriptions[selected.Value]))
+        ]));
+
+        Node Confirmation(bool restart) => Overlay(Card(
+        [
+            Heading(restart ? "RESTART RUN?" : "LEAVE GAME?"),
+            Sx.Text(style: () => Sx.TextStyles(fontSize: 14, foregroundColor: TextBlue,
+                    horizontalAlignment: TextHorizontalAlignment.Center),
+                layout: () => Sx.Styles(marginBottom: 22),
+                text: () => restart ? "Your current run will be reset." : "Your current game progress will be lost."),
+            MenuButton("CANCEL", 0, selected, Activate),
+            MenuButton(restart ? "RESTART" : "LEAVE GAME", 1, selected, Activate)
+        ]));
+
+        var root = new InputView(HandleKey)
+        {
+            Styles = Sx.Styles(position: Position.Absolute,
+                top: 0, bottom: 0, left: 0, right: 0, zIndex: 10)
+        };
+        root.AddChild(Sx.Switch(page, new Dictionary<Page, Func<Node>>
+        {
+            [Page.Menu] = Menu,
+            [Page.Settings] = () => SettingsView.Build(() => Open(Page.Menu)),
+            [Page.ConfirmQuit] = () => Confirmation(false),
+            [Page.ConfirmRestart] = () => Confirmation(true)
+        }));
+        return root;
     }
 
-    private static Node MenuPage(Signal<Page> page, UiState.RaceState race, RaceHudView.Actions actions) => Overlay(
-        Sx.View(
-            style: () => new Styles
-            {
-                Width = 380,
-                PaddingTop = 36,
-                PaddingBottom = 36,
-                PaddingLeft = 40,
-                PaddingRight = 40,
-                BackgroundColor = new Color(20, 20, 40, 217),
-                BorderTop = 1,
-                BorderBottom = 1,
-                BorderLeft = 1,
-                BorderRight = 1,
-                BorderColor = new Color(255, 255, 255, 26),
-                BorderRadius = 16,
-                FlexDirection = FlexDirection.Column,
-                AlignItems = Align.Center,
-                GapColumn = 6,
-                GapRow = 6,
-            },
-            children:
-            [
-                Sx.Text(
-                    style: () => new TextStyles { FontSize = 22, FontStyle = FontStyle.Bold },
-                    layout: () => new Styles { MarginBottom = 4 },
-                    text: () => "Paused"),
-                Sx.Text(
-                    style: () => new TextStyles { FontSize = 12, ForegroundColor = Theme.TextFaint },
-                    layout: () => new Styles { MarginBottom = 20 },
-                    text: () => "Race"),
-                RaceInfo(race),
-                MenuButton("Resume", ButtonVariant.Primary, actions.Resume),
-                MenuButton("Restart", ButtonVariant.Default, () => page.Value = Page.ConfirmRestart),
-                MenuButton("Settings", ButtonVariant.Default, () => page.Value = Page.Settings),
-                MenuButton("Quit to Main Menu", ButtonVariant.Danger, () => page.Value = Page.ConfirmQuit)
-            ]));
+    private static View Overlay(Node content) => Sx.View(
+        style: () => Sx.Styles(position: Position.Absolute, top: 0, left: 0, right: 0, bottom: 0,
+            alignItems: Align.Center, justifyContent: Justify.Center,
+            backgroundColor: new Color(3, 8, 20, 145)),
+        children: content);
 
-    private static Node RaceInfo(UiState.RaceState race) => Sx.View(
-        style: () => new Styles
-        {
-            Width = MeasurementWidthHeight.Percent(100),
-            FlexDirection = FlexDirection.Row,
-            JustifyContent = Justify.Center,
-            GapColumn = 32,
-            GapRow = 32,
-            MarginBottom = 20,
-            PaddingTop = 10,
-            PaddingBottom = 10,
-            BorderTop = 1,
-            BorderBottom = 1,
-            BorderColor = new Color(255, 255, 255, 15),
-        },
+    private static View Card(object?[] children) => Sx.View(
+        style: () => Sx.Styles(width: "90%", maxWidth: 430,
+            paddingTop: 20, paddingBottom: 20, paddingLeft: 28, paddingRight: 28,
+            flexDirection: FlexDirection.Column, alignItems: Align.Stretch, gapRow: 8,
+            backgroundColor: Panel, borderTop: 1, borderBottom: 1, borderLeft: 1, borderRight: 1,
+            borderColor: Border, borderRadius: 10),
+        onmousedown: e => e.StopPropagation(), children: children);
+
+    private static Text Heading(string text) => Sx.Text(
+        style: () => Sx.TextStyles(fontSize: 32, fontFamily: FontFamily.Adventure,
+            fontStyle: FontStyle.Bold, foregroundColor: Blue,
+            horizontalAlignment: TextHorizontalAlignment.Center), text: () => text);
+
+    private static View RaceInfo(UiState.RaceState race) => Sx.View(
+        style: () => Sx.Styles(flexDirection: FlexDirection.Row, alignItems: Align.Center,
+            justifyContent: Justify.Center, gapColumn: 20,
+            paddingTop: 8, paddingBottom: 8, marginBottom: 4,
+            borderTop: 1, borderBottom: 1, borderLeft: 0, borderRight: 0, borderColor: Border),
         children:
         [
-            InfoItem("Lap", () => $"{race.Lap.Value}/{race.TotalLaps.Value}"),
-            InfoItem("Position", () => $"{race.Position.Value}/{race.TotalRacers.Value}")
+            InfoItem("LAP", () => $"{race.Lap.Value} / {race.TotalLaps.Value}"),
+            InfoItem("POSITION", () => $"{race.Position.Value} / {race.TotalRacers.Value}")
         ]);
 
     private static View InfoItem(string label, Func<string> value) => Sx.View(
-        style: () => new Styles { FlexDirection = FlexDirection.Column, AlignItems = Align.Center },
+        style: () => Sx.Styles(flexDirection: FlexDirection.Column, alignItems: Align.Stretch,
+            flexGrow: 1, width: 0, minWidth: 0, gapRow: 3),
         children:
         [
-            Sx.Text(style: () => new TextStyles { FontSize = 10, ForegroundColor = Theme.TextFaint }, text: () => label),
-            Sx.Text(style: () => new TextStyles { FontSize = 18, FontStyle = FontStyle.Bold }, text: value)
+            Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: TextBlue,
+                horizontalAlignment: TextHorizontalAlignment.Center), text: () => label),
+            Sx.Text(style: () => Sx.TextStyles(fontSize: 20, fontStyle: FontStyle.Bold,
+                foregroundColor: Blue, horizontalAlignment: TextHorizontalAlignment.Center), text: value)
         ]);
 
-    private static View Overlay(Node content) => Sx.View(
-        style: () => new Styles
+    private static View MenuButton(string label, int index, Signal<int> selected, Action activate) => Sx.View(
+        style: () => Sx.Styles(height: 38, flexShrink: 0, flexDirection: FlexDirection.Row,
+            alignItems: Align.Center, justifyContent: Justify.Center, paddingLeft: 14, paddingRight: 14,
+            backgroundColor: selected.Value == index ? new Color(55, 90, 150, 220) : new Color(22, 42, 80, 170),
+            borderColor: selected.Value == index ? new Color(205, 227, 255) : Border,
+            borderTop: 1, borderBottom: 1, borderLeft: 1, borderRight: 1, borderRadius: 6),
+        onmouseenter: _ => selected.Value = index,
+        onmousedown: e =>
         {
-            Position = Position.Absolute,
-            Top = 0,
-            Left = 0,
-            Right = 0,
-            Bottom = 0,
-            AlignItems = Align.Center,
-            JustifyContent = Justify.Center,
-            BackgroundColor = Theme.Overlay,
-            ZIndex = 10,
+            e.StopPropagation();
+            if (e.Button != MouseButton.Primary) return;
+            selected.Value = index;
+            activate();
         },
-        children: content);
-
-    private static View MenuButton(string label, ButtonVariant variant, Action onPress) => Button.Create(
-        label: () => label,
-        onPress: onPress,
-        variant: variant,
-        size: ButtonSize.Lg,
-        fullWidth: true,
-        style: () => new Styles { BorderRadius = 8 },
-        textStyle: () => new TextStyles { FontSize = 15 });
-
-    private static Node Confirm(string title, string message, string confirmLabel, Action onConfirm, Action onCancel)
-    {
-        var box = Sx.View(
-            style: () => new Styles
-            {
-                BackgroundColor = Theme.Panel,
-                BorderTop = 1,
-                BorderBottom = 1,
-                BorderLeft = 1,
-                BorderRight = 1,
-                BorderColor = Theme.SurfaceBorder,
-                BorderRadius = 10,
-                PaddingTop = 24,
-                PaddingBottom = 24,
-                PaddingLeft = 28,
-                PaddingRight = 28,
-                MinWidth = 320,
-                AlignItems = Align.Center,
-                FlexDirection = FlexDirection.Column,
-            },
-            children:
-            [
-                Sx.Text(
-                    style: () => new TextStyles { FontSize = 16, FontStyle = FontStyle.Bold },
-                    layout: () => new Styles { MarginBottom = 8 },
-                    text: () => title),
-                Sx.Text(
-                    style: () => new TextStyles
-                    {
-                        FontSize = 13,
-                        ForegroundColor = Theme.TextFaint,
-                        HorizontalAlignment = TextHorizontalAlignment.Center,
-                    },
-                    layout: () => new Styles { MarginBottom = 20 },
-                    text: () => message),
-                Sx.View(
-                    style: () => new Styles { FlexDirection = FlexDirection.Row, JustifyContent = Justify.Center, GapColumn = 10, GapRow = 10 },
-                    children:
-                    [
-                        ConfirmButton("Cancel", ButtonVariant.Default, onCancel),
-                        ConfirmButton(confirmLabel, ButtonVariant.Danger, onConfirm)
-                    ])
-            ]);
-
-        // Clicking the backdrop (but not the box) cancels: presses bubble leaf→root, and
-        // the card's own handlers stop propagation, so a press inside it never reaches
-        // this one.
-        return Overlay(Sx.View(
-            style: () => new Styles
-            {
-                Position = Position.Absolute,
-                Top = 0,
-                Left = 0,
-                Right = 0,
-                Bottom = 0,
-                AlignItems = Align.Center,
-                JustifyContent = Justify.Center,
-                BackgroundColor = new Color(0, 0, 0, 179),
-                ZIndex = 11,
-            },
-            onmousedown: _ => onCancel(),
-            children: box));
-    }
-
-    private static View ConfirmButton(string label, ButtonVariant variant, Action onPress) => Button.Create(
-        label: () => label,
-        onPress: onPress,
-        variant: variant,
-        style: () => new Styles { PaddingTop = 10, PaddingBottom = 10, PaddingLeft = 28, PaddingRight = 28 });
+        children: Sx.Text(style: () => Sx.TextStyles(fontSize: 23, fontFamily: FontFamily.Adventure,
+            fontStyle: FontStyle.Bold, foregroundColor: Blue,
+            horizontalAlignment: TextHorizontalAlignment.Center), text: () => label));
 }

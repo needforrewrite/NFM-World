@@ -33,7 +33,7 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
             Span<LineMesh.LineMeshVertexAttribute> verts = stackalloc LineMesh.LineMeshVertexAttribute[LineMeshHelpers.VerticesPerLine];
             Span<int> inds = stackalloc int[LineMeshHelpers.IndicesPerLine];
 
-            LineMeshHelpers.CreateLineMesh(p0, p1, data.Count, default, default, color, 0f, in verts, in inds);
+            LineMeshHelpers.CreateLineMesh(p0, p1, data.Count, Vector3.UnitY, (p0 + p1) * 0.5f, color, 0f, in verts, in inds);
             indices.AddRange(inds);
             data.AddRange(verts);
         }
@@ -180,6 +180,9 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
         p.BaseColor.SetValue(cb, new Vector3(0, 0, 0));
         p.ChargedBlinkAmount.SetValue(cb, 0.0f);
         p.HalfThickness.SetValue(cb, World.OutlineThickness);
+        p.Resolution.SetValue(cb, new Vector2(
+            Math.Max(1, GameSparker.GraphicsDevice.Swapchain.Width),
+            Math.Max(1, GameSparker.GraphicsDevice.Swapchain.Height)));
 
         // Collision debug lines are editor/debug overlays, so gameplay outline modes must not hide them.
         LineEffectDistantOutlineSettings.Apply(cb, DistantOutlineBehavior.AlwaysRender);

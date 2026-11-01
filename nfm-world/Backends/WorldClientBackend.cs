@@ -6,6 +6,7 @@ using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Graphics;
 using NFMWorld.Util;
+using NFMWorldLibrary.Util;
 using TextHorizontalAlignment = NFMWorld.DriverInterface.DriverInterface.TextHorizontalAlignment;
 
 namespace NFMWorld;
@@ -622,7 +623,7 @@ internal abstract class AposShape : IImage
 
 internal class AposShapeSvg(Stream stream) : AposShape
 {
-    private readonly ShapeSvg _shape = new(stream);
+    private readonly ShapeSvg _shape = new(SvgStyles.ReadWithInlineStyles(stream));
     private IRenderTarget? _cache;
     private int _contentWidth;
     private int _contentHeight;

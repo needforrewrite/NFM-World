@@ -1,0 +1,38 @@
+<Project>
+    <Target Name="NfmwStampBuildMetadata" BeforeTargets="GetAssemblyAttributes"
+            DependsOnTargets="InitializeSourceControlInformation"
+            Condition="'$(DesignTimeBuild)' != 'true'">
+        <PropertyGroup>
+            <NfmwBuildUtc Condition="'$(NfmwBuildUtc)' == ''">$([System.DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ'))</NfmwBuildUtc>
+            <NfmwBuildBranch Condition="'$(NfmwBuildBranch)' == ''">$(GITHUB_HEAD_REF)</NfmwBuildBranch>
+            <NfmwBuildBranch Condition="'$(NfmwBuildBranch)' == ''">$(GITHUB_REF_NAME)</NfmwBuildBranch>
+            <NfmwBuildCommit Condition="'$(NfmwBuildCommit)' == ''">$(SourceRevisionId)</NfmwBuildCommit>
+            <NfmwBuildRuntimeIdentifier>$(RuntimeIdentifier)</NfmwBuildRuntimeIdentifier>
+            <NfmwBuildRuntimeIdentifier Condition="'$(NfmwBuildRuntimeIdentifier)' == ''">portable</NfmwBuildRuntimeIdentifier>
+        </PropertyGroup>
+        <Exec Command="git rev-parse --abbrev-ref HEAD" WorkingDirectory="$(MSBuildThisFileDirectory)"
+              Condition="'$(NfmwBuildBranch)' == ''" ConsoleToMSBuild="true" IgnoreExitCode="true"
+              StandardOutputImportance="Low" StandardErrorImportance="Low">
+            <Output TaskParameter="ConsoleOutput" PropertyName="_NfmwGitBranch" />
+            <Output TaskParameter="ExitCode" PropertyName="_NfmwGitBranchExitCode" />
+        </Exec>
+        <Exec Command="git rev-parse HEAD" WorkingDirectory="$(MSBuildThisFileDirectory)"
+              Condition="'$(NfmwBuildCommit)' == ''" ConsoleToMSBuild="true" IgnoreExitCode="true"
+              StandardOutputImportance="Low" StandardErrorImportance="Low">
+            <Output TaskParameter="ConsoleOutput" PropertyName="_NfmwGitCommit" />
+            <Output TaskParameter="ExitCode" PropertyName="_NfmwGitCommitExitCode" />
+        </Exec>
+        <PropertyGroup>
+            <NfmwBuildBranch Condition="'$(NfmwBuildBranch)' == '' and '$(_NfmwGitBranchExitCode)' == '0'">$(_NfmwGitBranch)</NfmwBuildBranch>
+            <NfmwBuildCommit Condition="'$(NfmwBuildCommit)' == '' and '$(_NfmwGitCommitExitCode)' == '0'">$(_NfmwGitCommit)</NfmwBuildCommit>
+        </PropertyGroup>
+        <ItemGroup>
+            <AssemblyMetadata Include="NfmwBuildUtc" Value="$(NfmwBuildUtc)" />
+            <AssemblyMetadata Include="NfmwBuildBranch" Value="$(NfmwBuildBranch)" />
+            <AssemblyMetadata Include="NfmwBuildCommit" Value="$(NfmwBuildCommit)" />
+            <AssemblyMetadata Include="NfmwBuildConfiguration" Value="$(Configuration)" />
+            <AssemblyMetadata Include="NfmwTargetFramework" Value="$(TargetFramework)" />
+            <AssemblyMetadata Include="NfmwRuntimeIdentifier" Value="$(NfmwBuildRuntimeIdentifier)" />
+        </ItemGroup>
+    </Target>
+</Project>

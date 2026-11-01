@@ -106,6 +106,16 @@ public sealed class LocalRaceHost : IRaceHost
         }
     }
 
+    public void Restart()
+    {
+        _serverGamemode?.End();
+        _context.ClearPlayerPositions();
+        _finished = false;
+        _started = false;
+        _serverGamemode?.Begin();
+        Start();
+    }
+
     public void SendServerEvent(ReadOnlyMemory<byte> payload)
         => _serverGamemode?.OnClientEvent(_localPlayerId, payload.Span);
 
@@ -147,5 +157,7 @@ public sealed class LocalRaceHost : IRaceHost
 
         public void RecordPlayerState(Guid playerId, fix64 x, fix64 y, fix64 z)
             => _positions[playerId] = new f64Vector3(x, y, z);
+
+        public void ClearPlayerPositions() => _positions.Clear();
     }
 }

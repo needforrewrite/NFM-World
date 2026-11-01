@@ -1,6 +1,10 @@
 using System.Reflection;
 using System.Security;
 using NFMWorldLibrary.Gamemodes.DotNet;
+using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.Backend.Gamemodes;
+using NFMWorldLibrary.Gamemodes;
+using NFMWorldLibrary;
 
 namespace NFMWorld.Library.Test;
 
@@ -95,6 +99,68 @@ public class PluginSandboxTests
         var payload = (byte[])target.Invoke(null, null)!;
 
         Assert.IsTrue(payload.Length > 0);
+    }
+
+    [TestMethod]
+    public void RenderingCallbacksUseTrustedWrappers()
+    {
+        var callbacks = new RenderingCallbacks();
+        var target = _hostile.GetType("NFMWorld.Gamemode.Hostile.HostileGamemode", throwOnError: true)!
+            .GetMethod("CallRenderingCallbacks", BindingFlags.Public | BindingFlags.Instance)!;
+        var client = _plugin!.CreateClient(new ClientGamemodeParameters
+        {
+            Players = [new ClientSidePlayerInfo
+            {
+                PlayerName = "test", CarName = "nfmm/radicalone", Color = default,
+                IsBot = false, IsClientPlayer = true
+            }]
+        }, new RenderingContext(callbacks));
+
+        target.Invoke(client, null);
+        client.End();
+
+        Assert.AreEqual(1, callbacks.GlowResets);
+        Assert.AreEqual((ushort)2, callbacks.Checkpoint);
+        Assert.IsTrue(callbacks.IsFinish);
+        Assert.IsTrue(callbacks.Car.CastsShadow);
+        Assert.AreEqual(false, callbacks.Car.GetsShadowed);
+        Assert.AreEqual(0.5f, callbacks.Car.AlphaOverride);
+        Assert.AreEqual(true, callbacks.Car.Glow);
+        Assert.AreEqual(false, callbacks.Car.Finish);
+    }
+
+    private sealed class RenderingCallbacks : IClientCallbacks
+    {
+        public int GlowResets { get; private set; }
+        public ushort Checkpoint { get; private set; }
+        public bool IsFinish { get; private set; }
+        public CarCallbacks Car { get; } = new();
+
+        public void ResetCheckpointGlow() => GlowResets++;
+        public void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish)
+        {
+            Checkpoint = currentCheckpoint;
+            IsFinish = isFinish;
+        }
+        public IClientCarCallbacks GetClientCarCallbacks(BackendCar car) => Car;
+    }
+
+    private sealed class RenderingContext(RenderingCallbacks callbacks) : IGamemodeContext
+    {
+        public BackendStage CurrentStage => throw new NotSupportedException();
+        public RaceState RaceState => RaceState.InProgress;
+        public IClientCallbacks ClientCallbacks => callbacks;
+        public void SendServerEvent(ReadOnlySpan<byte> payload) { }
+        public void UpdatePlayers(IReadOnlyList<ClientSidePlayer> players) { }
+    }
+
+    private sealed class CarCallbacks : IClientCarCallbacks
+    {
+        public bool CastsShadow { get; set; }
+        public bool? GetsShadowed { get; set; }
+        public float? AlphaOverride { get; set; }
+        public bool? Glow { get; set; }
+        public bool? Finish { get; set; }
     }
 
 }

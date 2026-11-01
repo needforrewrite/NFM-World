@@ -334,4 +334,5 @@
         <WasmExtraFilesToDeploy Include="wwwroot\data.music.zip" />
     </ItemGroup>
 
+    <Import Project="..\BuildMetadata.targets" />
 </Project>

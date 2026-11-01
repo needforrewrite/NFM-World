@@ -5,6 +5,7 @@ using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
 using NFMWorld.UI.Settings;
 using SignalsDotnet;
+using NFMWorldLibrary.Util;
 using NFMWorld.DriverInterface;
 
 namespace NFMWorld.UI.Components;
@@ -53,19 +54,21 @@ public static class SettingsView
         }
     }
 
-    private sealed class InputView(Func<Key, bool> handleKey, Func<bool> previewActive) : View
+    private sealed class InputView(Func<Key, bool> handleKey, Func<bool> previewActive, Func<bool> menuPreviewActive) : View
     {
         public bool HandleKey(Key key) => handleKey(key);
         public bool PreviewActive => previewActive();
+        public bool ScenePreviewActive => previewActive() || menuPreviewActive();
     }
 
     public static bool CameraPreviewActive => FindPreview(GameSparker.UiRenderer?.ActiveRoot);
+    public static bool ScenePreviewActive => FindPreview(GameSparker.UiRenderer?.ActiveRoot, scene: true);
 
-    private static bool FindPreview(Node? node)
+    private static bool FindPreview(Node? node, bool scene = false)
     {
         if (node is null || node is Component { IsDisplayed: false }) return false;
-        if (node is InputView settings) return settings.PreviewActive;
-        return node.VisualChildren.Any(FindPreview);
+        if (node is InputView settings) return scene ? settings.ScenePreviewActive : settings.PreviewActive;
+        return node.VisualChildren.Any(child => FindPreview(child, scene));
     }
 
     public static bool HandleKeyPressed(Node? node, Key key)
@@ -98,7 +101,7 @@ public static class SettingsView
         "Hide Outlines"
     ];
 
-    public static Node Build(Action onClose)
+    public static Node Build(Action onClose, bool menuPreviewAvailable = false)
     {
         var tab = new Signal<Tab>(Tab.Video);
         var config = new Signal<SettingsSnapshot?>(SettingsMenu.GetCurrentSnapshot());
@@ -107,6 +110,8 @@ public static class SettingsView
         var confirm = new Signal<(string Title, string Message, Action OnConfirm)?>(null);
         var restartRequired = new Signal<bool>(false);
         var cameraPreview = new Signal<bool>(false);
+        var menuPreview = new Signal<bool>(false);
+        var cameraPresetEditor = new Signal<bool>(false);
         var applied = new Signal<bool>(false);
         var closeAfterRestartPrompt = false;
 
@@ -156,7 +161,17 @@ public static class SettingsView
                     Set("keyBinding", (int)key, action);
                 return true;
             }
+            if (cameraPresetEditor.Value)
+            {
+                if (key == Key.Escape) cameraPresetEditor.Value = false;
+                return key == Key.Escape;
+            }
             if (key != Key.Escape) return false;
+            if (menuPreview.Value)
+            {
+                menuPreview.Value = false;
+                return true;
+            }
             if (cameraPreview.Value)
             {
                 cameraPreview.Value = false;
@@ -203,8 +218,8 @@ public static class SettingsView
             style: () => new Styles
             {
                 Position = Position.Relative,
-                Visibility = cameraPreview.Value ? Visibility.Hidden : Visibility.Visible,
-                PointerEvents = !cameraPreview.Value,
+                Visibility = cameraPreview.Value || menuPreview.Value ? Visibility.Hidden : Visibility.Visible,
+                PointerEvents = !cameraPreview.Value && !menuPreview.Value,
                 Width = MeasurementWidthHeight.Percent(90),
                 MaxWidth = 1000,
                 Height = MeasurementWidthHeight.Percent(90),
@@ -262,10 +277,12 @@ public static class SettingsView
                             SettingsMenu.ResetKeyBindingDefaults)),
                         [Tab.Video] = () => VideoTab(config, options, Set),
                         [Tab.Audio] = () => AudioTab(config, Set),
-                        [Tab.Game] = () => GameTab(() => cameraPreview.Value = true, () => ConfirmReset(
+                        [Tab.Game] = () => GameTab(config, Refresh, () => cameraPresetEditor.Value = true,
+                            () => cameraPreview.Value = true, () => ConfirmReset(
                             "Reset Camera",
                             "Are you sure you want to reset all camera settings to their defaults?",
-                            SettingsMenu.ResetCameraDefaults))
+                            SettingsMenu.ResetCameraDefaults), () => MainMenuSettings(config, options, Set,
+                                menuPreviewAvailable, () => menuPreview.Value = true))
                     }),
                 BottomBar(() => Save(true), () => Save(false), Cancel, () => applied.Value),
                 Sx.Show(
@@ -284,17 +301,22 @@ public static class SettingsView
                         DismissRestart))
             ]);
 
-        var root = new InputView(HandleKey, () => cameraPreview.Value)
+        var root = new InputView(HandleKey, () => cameraPreview.Value, () => menuPreview.Value)
         {
             Styles = Sx.Styles(position: Position.Absolute, top: 0, left: 0, right: 0, bottom: 0,
                 alignItems: Align.Center, justifyContent: Justify.Center, zIndex: 20)
         };
         root.AddChild(Sx.View(style: () => Sx.Styles(position: Position.Absolute,
             top: 0, left: 0, right: 0, bottom: 0, pointerEvents: false,
-            backgroundColor: cameraPreview.Value ? Theme.Transparent : new Color(3, 8, 20, 150))));
+            backgroundColor: cameraPreview.Value || menuPreview.Value ? Theme.Transparent : new Color(3, 8, 20, 150))));
         root.AddChild(Body());
         root.AddChild(Sx.Show(() => cameraPreview.Value,
-            () => CameraPreviewPanel(config, Set, () => cameraPreview.Value = false)));
+            () => CameraPreviewPanel(config, Set, Refresh, () => cameraPresetEditor.Value = true,
+                () => cameraPreview.Value = false)));
+        root.AddChild(Sx.Show(() => cameraPresetEditor.Value,
+            () => CameraPresetEditor(config, Refresh, () => cameraPresetEditor.Value = false)));
+        root.AddChild(Sx.Show(() => menuPreview.Value,
+            () => MenuPreviewPanel(config, options, Set, () => menuPreview.Value = false)));
         return root;
     }
 
@@ -480,18 +502,92 @@ public static class SettingsView
             Divider(),
             Row("Remastered Music", Controls.Checkbox(() => config.Value?.RemasteredMusic ?? false, () => set("remasteredMusic", !(config.Value?.RemasteredMusic ?? false), null))));
 
-    private static Node GameTab(Action preview, Action onResetCamera)
+    private static Node GameTab(Signal<SettingsSnapshot?> config, Action refresh, Action manage,
+        Action preview, Action onResetCamera, Func<Node> menuSettings)
         => Content(
             Section("Camera"),
+            Row("Camera Preset", CameraPresetDropdown(config, refresh)),
             Sx.Text(style: () => Sx.TextStyles(fontSize: 14, foregroundColor: TextBlue),
                 layout: () => Sx.Styles(marginBottom: 16),
                 text: () => "Adjust your driving camera with a live view from behind the car."),
-            SettingsButton("Adjust Camera", preview),
+            Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 12),
+                children: [SettingsButton("Adjust Camera", preview), SettingsButton("Manage Presets", manage)]),
             Divider(),
-            ResetLink("Reset Camera Defaults", onResetCamera));
+            ResetLink("Reset Camera Defaults", onResetCamera),
+            Divider(),
+            menuSettings());
+
+    private static Node MainMenuSettings(Signal<SettingsSnapshot?> config, Signal<AvailableOptions?> options,
+        Action<string, object?, string?> set, bool previewAvailable, Action preview) => Sx.View(
+        style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0), children:
+        [
+            Section("Main Menu"),
+            Sx.Text(style: () => Sx.TextStyles(fontSize: 14, foregroundColor: TextBlue),
+                layout: () => Sx.Styles(marginBottom: 16),
+                text: () => previewAvailable
+                    ? "Choose a background stage and soundtrack with a clear view of the menu."
+                    : "These choices take effect when you return to the main menu. Preview is available there."),
+            previewAvailable
+                ? Sx.View(style: () => Sx.Styles(alignSelf: Align.FlexStart),
+                    children: SettingsButton("Choose Stage & Music", preview))
+                : Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Column), children:
+                [
+                    Row("Background Stage", MenuChoiceDropdown(
+                        () => options.Value?.MenuStages ?? [], () => config.Value?.MenuStage ?? MenuPreferences.LastPlayedStage,
+                        "Last played stage", MenuPreferences.LastPlayedStage, v => set("menuStage", v, null))),
+                    Row("Menu Music", MenuChoiceDropdown(
+                        () => options.Value?.MenuTracks ?? [], () => config.Value?.MenuMusic ?? MenuPreferences.StageSoundtrack,
+                        "Stage soundtrack", MenuPreferences.StageSoundtrack, v => set("menuMusic", v, null)))
+                ])
+        ]);
+
+    private static Node MenuPreviewPanel(Signal<SettingsSnapshot?> config, Signal<AvailableOptions?> options,
+        Action<string, object?, string?> set, Action back) => Sx.View(
+        style: () => Sx.Styles(position: Position.Absolute, left: "3%", right: "3%", bottom: "3%",
+            flexDirection: FlexDirection.Row, alignItems: Align.Center, justifyContent: Justify.SpaceBetween,
+            flexWrap: Wrap.Wrap, gapColumn: 16, gapRow: 12,
+            paddingTop: 12, paddingBottom: 12, paddingLeft: 18, paddingRight: 18,
+            backgroundColor: new Color(12, 22, 42, 220),
+            borderTop: 1, borderBottom: 1, borderLeft: 1, borderRight: 1,
+            borderColor: Border, borderRadius: 10),
+        children:
+        [
+            Sx.Text(style: () => Sx.TextStyles(fontSize: 18, fontFamily: FontFamily.Adventure,
+                foregroundColor: Blue), text: () => "MENU PREVIEW"),
+            Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row, flexWrap: Wrap.Wrap,
+                alignItems: Align.Center, gapColumn: 16, gapRow: 12), children:
+            [
+                Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 4), children:
+                [
+                    Sx.Text(style: () => Sx.TextStyles(fontSize: 12, foregroundColor: TextBlue), text: () => "Background Stage"),
+                    MenuChoiceDropdown(
+                        () => options.Value?.MenuStages ?? [], () => config.Value?.MenuStage ?? MenuPreferences.LastPlayedStage,
+                        "Last played stage", MenuPreferences.LastPlayedStage, v => set("menuStage", v, null))
+                ]),
+                Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 4), children:
+                [
+                    Sx.Text(style: () => Sx.TextStyles(fontSize: 12, foregroundColor: TextBlue), text: () => "Menu Music"),
+                    MenuChoiceDropdown(
+                        () => options.Value?.MenuTracks ?? [], () => config.Value?.MenuMusic ?? MenuPreferences.StageSoundtrack,
+                        "Stage soundtrack", MenuPreferences.StageSoundtrack, v => set("menuMusic", v, null))
+                ])
+            ]),
+            SettingsButton("Back to Settings", back)
+        ]);
+
+    private static Node MenuChoiceDropdown(Func<IReadOnlyList<string>> choices, Func<string> selected,
+        string defaultLabel, string defaultValue, Action<string> select) => Controls.Dropdown(
+        () => new[] { defaultLabel }.Concat(choices()).ToArray(),
+        () => selected() == defaultValue ? 0 : Math.Max(0, Array.IndexOf(choices().ToArray(), selected()) + 1),
+        index =>
+        {
+            var items = choices();
+            if (index == 0) select(defaultValue);
+            else if (index > 0 && index <= items.Count) select(items[index - 1]);
+        });
 
     private static Node CameraPreviewPanel(Signal<SettingsSnapshot?> config,
-        Action<string, object?, string?> set, Action back)
+        Action<string, object?, string?> set, Action refresh, Action manage, Action back)
         => Sx.View(
             style: () => Sx.Styles(position: Position.Absolute, left: "3%", right: "3%", bottom: "3%",
                 flexDirection: FlexDirection.Column, gapRow: 12,
@@ -509,9 +605,11 @@ public static class SettingsView
                         Sx.Text(style: () => Sx.TextStyles(fontSize: 18, fontFamily: FontFamily.Adventure,
                                 foregroundColor: Blue), text: () => "CAMERA PREVIEW"),
                         Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row,
-                                alignItems: Align.Center, gapColumn: 20),
+                                alignItems: Align.Center, gapColumn: 12, flexWrap: Wrap.Wrap, gapRow: 8),
                             children:
                             [
+                                Sx.View(style: () => Sx.Styles(width: 220), children: CameraPresetDropdown(config, refresh)),
+                                SettingsButton("Manage Presets", manage),
                                 Controls.Checkbox(() => config.Value?.SmoothFov ?? false,
                                     () => set("smoothFov", !(config.Value?.SmoothFov ?? false), null),
                                     () => "Smooth FOV"),
@@ -521,19 +619,131 @@ public static class SettingsView
                 CameraControls(config, set)
             ]);
 
+    private static Node CameraPresetDropdown(Signal<SettingsSnapshot?> config, Action refresh) => Controls.Dropdown(
+        () => (config.Value?.ModifiedCameraPreset is not null ? new[] { "Modified" } : Array.Empty<string>())
+            .Concat(config.Value?.CameraPresets.Select(p => p.Name) ?? []).ToArray(),
+        () => config.Value is { } current
+            ? current.ModifiedCameraPreset is not null ? current.SelectedCameraPreset + 1 : current.SelectedCameraPreset
+            : -1,
+        index =>
+        {
+            var presets = config.Value?.CameraPresets;
+            if (config.Value?.ModifiedCameraPreset is not null)
+            {
+                if (index == 0)
+                {
+                    SettingsMenu.SelectModifiedCameraPreset();
+                    refresh();
+                    return;
+                }
+                index--;
+            }
+            if (presets is null || index < 0 || index >= presets.Count) return;
+            SettingsMenu.SelectCameraPreset(presets[index].Name);
+            refresh();
+        }, unselectedLabel: "Modified");
+
+    private static Node CameraPresetEditor(Signal<SettingsSnapshot?> config, Action refresh, Action close)
+    {
+        var custom = config.Value?.CameraPresets.Skip(2).ToArray() ?? [];
+        var initial = custom.FirstOrDefault(p => p.Name == config.Value?.CameraPresetName);
+        var target = new Signal<string?>(initial?.Name);
+        var name = new Signal<string>(initial?.Name ?? "");
+        var message = new Signal<string>("");
+        var deleting = new Signal<bool>(false);
+
+        void Save(bool update)
+        {
+            try
+            {
+                SettingsMenu.SaveCameraPreset(name.Value, update ? target.Value : null);
+                refresh();
+                target.Value = config.Value!.CameraPresetName;
+                name.Value = target.Value!;
+                deleting.Value = false;
+                message.Value = "Preset saved. Use Apply or OK to keep your changes.";
+            }
+            catch (ArgumentException ex) { message.Value = ex.Message; }
+        }
+
+        return Sx.View(style: () => Sx.Styles(position: Position.Absolute,
+                top: 0, bottom: 0, left: 0, right: 0, zIndex: 25,
+                alignItems: Align.Center, justifyContent: Justify.Center,
+                backgroundColor: new Color(3, 8, 20, 150)),
+            children: Sx.View(style: () => Sx.Styles(width: "90%", maxWidth: 520,
+                    paddingTop: 24, paddingBottom: 24, paddingLeft: 24, paddingRight: 24,
+                    backgroundColor: Panel, borderColor: Border, borderTop: 1, borderBottom: 1,
+                    borderLeft: 1, borderRight: 1, borderRadius: 10, flexDirection: FlexDirection.Column, gapRow: 14),
+                children:
+                [
+                    Section("Camera Presets"),
+                    Sx.Text(style: () => Sx.TextStyles(fontSize: 13, foregroundColor: TextBlue),
+                        text: () => "Save the current camera values, or update and rename a custom preset."),
+                    Controls.Dropdown(
+                        () => new[] { "New preset" }.Concat(config.Value?.CameraPresets.Skip(2).Select(p => p.Name) ?? []).ToArray(),
+                        () => Math.Max(0, Array.FindIndex(config.Value?.CameraPresets.Skip(2).ToArray() ?? [], p => p.Name == target.Value) + 1),
+                        index =>
+                        {
+                            var presets = config.Value?.CameraPresets.Skip(2).ToArray() ?? [];
+                            target.Value = index > 0 && index <= presets.Length ? presets[index - 1].Name : null;
+                            name.Value = target.Value ?? "";
+                            message.Value = "";
+                            deleting.Value = false;
+                        }),
+                    Controls.TextField(() => name.Value, value => name.Value = value, () => "Preset name"),
+                    Sx.Text(style: () => Sx.TextStyles(fontSize: 12, foregroundColor: TextBlue),
+                        text: () => $"Current: FOV {config.Value?.Fov:F1}° / Y {config.Value?.FollowY} / Z {config.Value?.FollowZ} / Smooth FOV {(config.Value?.SmoothFov == true ? "On" : "Off")}"),
+                    Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10, gapRow: 8, flexWrap: Wrap.Wrap),
+                        children:
+                        [
+                            SettingsButton("Save as New", () => Save(false)),
+                            Sx.Show(() => target.Value is not null, () => Sx.View(
+                                style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10),
+                                children:
+                                [
+                                    SettingsButton("Update / Rename", () => Save(true)),
+                                    SettingsButton("Remove", () => deleting.Value = true)
+                                ]))
+                        ]),
+                    Sx.Show(() => deleting.Value, () => Sx.View(
+                        style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 10),
+                        children:
+                        [
+                            Sx.Text(style: () => Sx.TextStyles(fontSize: 13, foregroundColor: TextBlue),
+                                text: () => $"Remove '{target.Value}'? Your current camera values will stay unchanged."),
+                            Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10), children:
+                            [
+                                SettingsButton("Remove Preset", () =>
+                                {
+                                    if (target.Value is not { } preset) return;
+                                    SettingsMenu.RemoveCameraPreset(preset);
+                                    target.Value = null;
+                                    name.Value = "";
+                                    deleting.Value = false;
+                                    refresh();
+                                    message.Value = "Preset removed. Use Apply or OK to keep your changes.";
+                                }),
+                                SettingsButton("Keep Preset", () => deleting.Value = false)
+                            ])
+                        ])),
+                    Sx.Text(style: () => Sx.TextStyles(fontSize: 12, foregroundColor: TextBlue), text: () => message.Value),
+                    SettingsButton("Done", close)
+                ]));
+    }
+
     private static Node CameraControls(Signal<SettingsSnapshot?> config, Action<string, object?, string?> set)
         => Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row, flexWrap: Wrap.Wrap,
                 gapColumn: 16, gapRow: 12),
             children:
             [
                 CameraRow("Field of View",
-                    Controls.Slider(() => config.Value?.Fov ?? 60, v => set("fov", (float)v, null), 58.7, 120, 0.5),
+                    Controls.Slider(() => config.Value?.Fov ?? 60, v => set("fov", (float)v, null), CameraPreset.MinFov, CameraPreset.MaxFov, 0.5),
                     CameraValue(() => $"{config.Value?.Fov ?? 0:F1}°")),
                 CameraRow("Follow Y Offset",
-                    Controls.Slider(() => config.Value?.FollowY ?? 0, v => set("followY", (int)v, null), -160, 500, 1),
+                    Controls.Slider(() => config.Value?.FollowY ?? 0, v => set("followY", (int)v, null), CameraPreset.MinFollowY, CameraPreset.MaxFollowY, 1),
                     CameraValue(() => $"{config.Value?.FollowY ?? 0}")),
                 CameraRow("Follow Z Offset",
-                    Controls.Slider(() => config.Value?.FollowZ ?? 0, v => set("followZ", (int)v, null), -500, 500, 1),
+                    Controls.Slider(() => config.Value?.FollowZ ?? 0, v => set("followZ", (int)v, null), CameraPreset.MinFollowZ, CameraPreset.MaxFollowZ, 1),
                     CameraValue(() => $"{config.Value?.FollowZ ?? 0}"))
             ]);
 
@@ -642,7 +852,7 @@ public static class SettingsView
                 FontSize = 12,
                 ForegroundColor = hovered.Value ? new Color(205, 227, 255) : Blue,
             },
-            layout: () => new Styles { PaddingTop = 8, PaddingBottom = 8, FlexShrink = 0 },
+            layout: () => new Styles { AlignSelf = Align.FlexStart, MarginTop = 8, MarginBottom = 8, FlexShrink = 0 },
             text: () => label);
 
         node.MousePressed = _ => onPress();

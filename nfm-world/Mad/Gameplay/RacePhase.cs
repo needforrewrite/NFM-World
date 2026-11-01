@@ -3,6 +3,7 @@ using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Audio;
 using NFMWorld.Reactor;
 using NFMWorld.UI;
+using NFMWorld.UI.Components;
 using NFMWorld.UI.Routes;
 using NFMWorld.UI.ViewModels;
 using NFMWorldLibrary;
@@ -26,7 +27,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     /// <summary>The in-race HUD, with its pause menu wired to this phase.</summary>
     public override Node BuildUi() => RaceHudView.Build(new RaceHudView.Actions(
         Resume: ResumeRace,
-        Restart: QuitRace, // Restart = quit for now; the caller re-pushes
+        Restart: RestartRace,
         Quit: QuitRace));
 
     public readonly BaseGamemodeFactory Gamemode;
@@ -39,6 +40,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     private readonly RaceInputController _input = new();
     private readonly RaceCameraDirector _cameraDirector = new();
     private readonly SettingsCameraPreview _settingsCamera = new();
+    private RaceState _stateBeforePause;
     public IGamemode? GamemodeInstance { get; protected set; }
 
     BackendStage IGamemodeContext.CurrentStage => CurrentStage.Backend;
@@ -112,9 +114,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     public event EventHandler? Exited;
 
     /// <summary>
-    /// Whether the race is currently paused (pause menu is visible).
-    /// While paused, CEF input is enabled, the gamemode does not tick,
-    /// and the pause menu overlay is shown.
+    /// Whether gameplay is paused and the pause menu is visible.
     /// </summary>
     public bool IsPaused { get; private set; }
 
@@ -135,12 +135,13 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     // ── Pause / Resume / Quit ─────────────────────────────────────
 
     /// <summary>
-    /// Pause the race: freeze gameplay, show the pause menu overlay,
-    /// and enable CEF input so the player can interact with buttons.
+    /// Freeze gameplay and show the pause menu.
     /// </summary>
     private void PauseRace()
     {
         if (IsPaused) return;
+        _stateBeforePause = RaceState;
+        _input.Reset(ClientCar?.Control);
         IsPaused = true;
         SoundEffects.SetPaused(true);
         RaceState = RaceState.Paused;
@@ -153,14 +154,32 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     }
 
     /// <summary>
-    /// Resume the race: hide the pause menu, disable CEF input,
-    /// and restore the race HUD.
+    /// Hide the pause menu and restore the previous race state.
     /// </summary>
     private void ResumeRace()
     {
         if (!IsPaused) return;
         IsPaused = false;
+        RaceState = _stateBeforePause;
+        SoundEffects.SetPaused(false);
+        UiState.Race.Paused.Value = false;
+    }
+
+    private void RestartRace()
+    {
+        if (!AllowPausing) return;
+        GamemodeInstance?.Reset();
+    }
+
+    void IClientCallbacks.RaceRestarted()
+    {
+        if (_host is not LocalRaceHost localHost) return;
+        localHost.Restart();
+        RaceResults = null;
         RaceState = RaceState.InProgress;
+        IsPaused = false;
+        _input.Reset(ClientCar?.Control);
+        _ticks = 0;
         SoundEffects.SetPaused(false);
         UiState.Race.Paused.Value = false;
     }
@@ -171,12 +190,8 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     /// </summary>
     private void QuitRace()
     {
-        // Resume input forwarding state before exiting so the next phase
-        // (main menu) gets clean input state.
-        if (IsPaused)
-        {
-            IsPaused = false;
-        }
+        ResumeRace();
+        _input.Reset(ClientCar?.Control);
         Exited?.Invoke(this, EventArgs.Empty);
     }
 
@@ -231,12 +246,15 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
         if (imguiWantsKeyboard) return;
 
+        if (IsPaused && PauseMenuView.HandleKeyPressed(GameSparker.UiRenderer?.ActiveRoot, key))
+            return;
+
         // ── Pause toggle (Escape) ──────────────────────────────────
         if (key == Key.Escape)
         {
             if (IsPaused)
                 ResumeRace();
-            else if (RaceState == RaceState.InProgress && AllowPausing)
+            else if (AllowPausing && RaceState is (RaceState.InProgress or RaceState.Finished))
                 PauseRace();
 
             return;
@@ -258,7 +276,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     {
         base.KeyTyped(character, imguiWantsKeyboard);
 
-        if (imguiWantsKeyboard) return;
+        if (imguiWantsKeyboard || IsPaused) return;
 
         GamemodeInstance?.KeyTyped(character);
     }
@@ -267,11 +285,9 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     {
         base.KeyReleased(key, imguiWantsKeyboard, keys);
 
-        // While paused, skip all game control updates.
-        if (IsPaused)
-            return;
-
         _input.KeyReleased(key, ClientCar?.Control);
+
+        if (IsPaused) return;
 
         GamemodeInstance?.KeyReleased(key, keys);
     }
@@ -281,6 +297,8 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     {
         base.MousePressed(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
 
+        if (IsPaused) return;
+
         GamemodeInstance?.MousePressed(x, y, button, buttons, ctrlKey, shiftKey, altKey);
     }
 
@@ -288,6 +306,8 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         bool shiftKey, bool altKey)
     {
         base.MouseReleased(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
+
+        if (IsPaused) return;
 
         GamemodeInstance?.MouseReleased(x, y, button, buttons, ctrlKey, shiftKey, altKey);
     }
@@ -297,12 +317,16 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     {
         base.MouseScrolled(x, y, delta, imguiWantsMouse, buttons, ctrlKey, shiftKey, altKey);
 
+        if (IsPaused) return;
+
         GamemodeInstance?.MouseScrolled(x, y, delta, buttons, ctrlKey, shiftKey, altKey);
     }
 
     public override void MouseMoved(int x, int y, bool imguiWantsMouse, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
     {
         base.MouseMoved(x, y, imguiWantsMouse, buttons, ctrlKey, shiftKey, altKey);
+
+        if (IsPaused) return;
 
         GamemodeInstance?.MouseMoved(x, y, buttons, ctrlKey, shiftKey, altKey);
     }
@@ -345,10 +369,6 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     public override void GameTick()
     {
         _settingsCamera.RestoreNormal(Camera);
-        // Pump host traffic first: race start signals, player states,
-        // server events, and (for the local host) server gamemode ticks.
-        _host.Update();
-
         if (IsPaused && AllowPausing)
         {
             if (ClientCar is { } pausedCar &&
@@ -360,6 +380,8 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
             return;
         }
+
+        _host.Update();
 
         _settingsCamera.Reset();
 
