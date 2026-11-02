@@ -210,6 +210,11 @@ file sealed class DummyFontMetrics : IFontMetrics
 
 file sealed class DummySoundClip : ISoundClip
 {
+    public bool IsActive => false;
+    public ISoundClip CreateSpatialInstance(bool followPosition = false) => new DummySoundClip();
+    public void SetPosition(Vector3 position) { }
+    public void Dispose() { }
+
     public void Play()
     {
     }

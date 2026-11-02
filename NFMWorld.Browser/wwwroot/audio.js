@@ -77,7 +77,10 @@ export function startBufferAt(buffer, volume, rate, loop, offset) {
     gainOf(node).gain.value = node.userVolume;
 
     const id = nextId++;
-    node.onended = () => sources.delete(id);
+    node.onended = () => {
+        sources.delete(id);
+        disconnectSource(node);
+    };
     sources.set(id, node);
     node.start(0, loop ? offset : 0);
     return id;
@@ -88,6 +91,13 @@ export function stopSource(id) {
     if (!node) return;
     sources.delete(id);
     try { node.stop(); } catch { /* already ended */ }
+    disconnectSource(node);
+}
+
+function disconnectSource(node) {
+    node.disconnect();
+    node.gain?.disconnect();
+    node.panner?.disconnect();
 }
 
 // AudioBufferSourceNode has no gain of its own, so a per-source node is inserted on demand. Every
@@ -101,6 +111,52 @@ function gainOf(node) {
         node.gain = g;
     }
     return node.gain;
+}
+
+export function setSourcePosition(id, x, y, z) {
+    const node = sources.get(id);
+    if (!node) return;
+    if (!node.panner) {
+        const panner = node.context.createPanner();
+        panner.panningModel = 'HRTF';
+        // Both backends use the game's distance curve in managed code.
+        panner.rolloffFactor = 0;
+        const gain = gainOf(node);
+        gain.disconnect();
+        gain.connect(panner);
+        panner.connect(node.context.destination);
+        node.panner = panner;
+    }
+    if (node.panner.positionX) {
+        node.panner.positionX.value = x;
+        node.panner.positionY.value = y;
+        node.panner.positionZ.value = z;
+    } else {
+        node.panner.setPosition(x, y, z);
+    }
+}
+
+export function setListener(x, y, z, fx, fy, fz, ux, uy, uz) {
+    const listener = context()?.listener;
+    if (!listener) return;
+    if (listener.positionX) {
+        listener.positionX.value = x;
+        listener.positionY.value = y;
+        listener.positionZ.value = z;
+        listener.forwardX.value = fx;
+        listener.forwardY.value = fy;
+        listener.forwardZ.value = fz;
+        listener.upX.value = ux;
+        listener.upY.value = uy;
+        listener.upZ.value = uz;
+    } else {
+        listener.setPosition(x, y, z);
+        listener.setOrientation(fx, fy, fz, ux, uy, uz);
+    }
+}
+
+export function isSourceActive(id) {
+    return sources.has(id);
 }
 
 export function setSourceVolume(id, volume) {

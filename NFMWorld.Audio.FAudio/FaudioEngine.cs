@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Numerics;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorldLibrary;
 
@@ -26,6 +27,9 @@ public sealed class FaudioEngine : IDisposable
     private IntPtr _audio;
     private IntPtr _masteringVoice;
     private bool _disposed;
+    private byte[]? _spatialHandle;
+    private float[] _spatialMatrix = [];
+    private bool _spatialUnavailable;
 
     /// <summary>
     /// The process-wide engine, created on first use. Returns null if FAudio is unavailable
@@ -167,6 +171,68 @@ public sealed class FaudioEngine : IDisposable
         if (voice != IntPtr.Zero)
             FAudio.FAudioVoice_DestroyVoice(voice);
     }
+
+    public unsafe void ApplySpatial(IntPtr voice, Vector3 listenerPosition, Vector3 listenerForward,
+        Vector3 listenerUp, Vector3 emitterPosition)
+    {
+        if (_disposed || voice == IntPtr.Zero || _spatialUnavailable) return;
+        try
+        {
+            if (_spatialHandle is null)
+            {
+                FAudio.FAudioVoice_GetVoiceDetails(_masteringVoice, out var details);
+                if (FAudio.FAudio_GetDeviceDetails(_audio, 0, out var device) != 0 || details.InputChannels == 0
+                    || BitOperations.PopCount(device.OutputFormat.dwChannelMask) != details.InputChannels)
+                    throw new InvalidOperationException("Could not query the audio speaker layout.");
+                _spatialMatrix = new float[details.InputChannels];
+                var handle = new byte[FAudio.F3DAUDIO_HANDLE_BYTESIZE];
+                FAudio.F3DAudioInitialize(device.OutputFormat.dwChannelMask, 34300, handle);
+                _spatialHandle = handle;
+            }
+
+            var listener = new FAudio.F3DAUDIO_LISTENER
+            {
+                Position = ToAudioVector(listenerPosition),
+                OrientFront = ToAudioVector(listenerForward),
+                OrientTop = ToAudioVector(listenerUp)
+            };
+            FAudio.F3DAUDIO_DISTANCE_CURVE_POINT* points = stackalloc FAudio.F3DAUDIO_DISTANCE_CURVE_POINT[2];
+            // Distance gain is shared with Web Audio rather than applied twice.
+            points[0] = new() { Distance = 0, DSPSetting = 1 };
+            points[1] = new() { Distance = 1, DSPSetting = 1 };
+            var curve = new FAudio.F3DAUDIO_DISTANCE_CURVE { pPoints = (IntPtr)points, PointCount = 2 };
+            var emitter = new FAudio.F3DAUDIO_EMITTER
+            {
+                Position = ToAudioVector(emitterPosition),
+                OrientFront = new() { z = 1 },
+                OrientTop = new() { y = 1 },
+                ChannelCount = 1,
+                InnerRadius = 300,
+                CurveDistanceScaler = SoundSpatialization.ReferenceDistance,
+                pVolumeCurve = (IntPtr)(&curve)
+            };
+            fixed (float* matrix = _spatialMatrix)
+            {
+                var dsp = new FAudio.F3DAUDIO_DSP_SETTINGS
+                {
+                    pMatrixCoefficients = (IntPtr)matrix,
+                    SrcChannelCount = 1,
+                    DstChannelCount = (uint)_spatialMatrix.Length
+                };
+                FAudio.F3DAudioCalculate(_spatialHandle, ref listener, ref emitter, FAudio.F3DAUDIO_CALCULATE_MATRIX, ref dsp);
+                if (FAudio.FAudioVoice_SetOutputMatrix(voice, _masteringVoice, 1, dsp.DstChannelCount, (IntPtr)matrix, 0) != 0)
+                    throw new InvalidOperationException("Could not apply the 3D speaker matrix.");
+            }
+        }
+        catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException or InvalidOperationException)
+        {
+            _spatialUnavailable = true;
+            Logging.Error($"3D speaker mixing is unavailable; retaining distance attenuation. {ex.Message}");
+        }
+    }
+
+    // Reflect the game's downward Y axis into F3DAudio's left-handed coordinates.
+    private static FAudio.F3DAUDIO_VECTOR ToAudioVector(Vector3 vector) => new() { x = vector.X, y = -vector.Y, z = vector.Z };
 
     /// <summary>
     /// Fades a voice out from its current volume and then destroys it, so a sound stopped

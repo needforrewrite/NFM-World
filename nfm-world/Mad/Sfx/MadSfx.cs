@@ -1,5 +1,7 @@
 using Maxine.Extensions;
 using NFMWorldLibrary;
+using NFMWorldLibrary.Backend;
+using NFMWorld.DriverInterface.DriverInterface;
 
 namespace NFMWorld.Sfx;
 
@@ -21,19 +23,28 @@ public class MadSfx : IDisposable
     private int stopcnt = 0;
     private bool grrd = false;
     private bool aird = false;
-    private int cntwis = 0;
     private bool pwastd = false;
+    private CarDestructionStage _destructionStage;
     private int lcn = 0;
     private bool[] pengs = new bool[7];
     private int _engineSignature;
+    private static readonly int DriftConfirmationTicks = Math.Max(1, (int)MathF.Ceiling(Physics.TargetTps * 0.1f));
+    private int _driftTicks;
 
     private CarPhysics _carPhysics;
+    private readonly BackendCar _car;
+    private readonly Dictionary<(ISoundClip Sample, CrashSoundContact? Contact), ISoundClip> _sounds = [];
+    private readonly CrashSoundQueue<MadSfx> _crashSounds;
+    private readonly List<(ISoundClip Sample, CrashSoundContact? Contact)> _finishedSounds = [];
 
     public bool Mute = false;
+    public bool PlayPowerUp { get; set; }
 
-    public MadSfx(CarPhysics carPhysics)
+    public MadSfx(BackendCar car, CrashSoundQueue<MadSfx> crashSounds)
     {
-        _carPhysics = carPhysics;
+        _car = car;
+        _crashSounds = crashSounds;
+        _carPhysics = car.CarPhysics;
 
         _carPhysics.SfxPlayCrash += SfxPlayCrash;
         _carPhysics.SfxPlayScrape += SfxPlayScrape;
@@ -42,9 +53,26 @@ public class MadSfx : IDisposable
         _carPhysics.PowerUp += SfxPlayPowerup;
     }
 
+    private Vector3 SoundPosition => new((float)_car.Position.X, (float)_car.Position.Y, (float)_car.Position.Z);
+
+    private ISoundClip Sound(ISoundClip sample, CrashSoundContact? contact = null, Vector3? position = null, bool followPosition = false)
+    {
+        if (!_sounds.TryGetValue((sample, contact), out var instance))
+        {
+            instance = sample.CreateSpatialInstance(followPosition);
+            _sounds.Add((sample, contact), instance);
+        }
+        instance.SetPosition(position ?? SoundPosition);
+        return instance;
+    }
+
+    private ISoundClip ImpactSound(ISoundClip sample, CrashSoundEvent crash) => Sound(sample, crash.Contact, crash.Position);
+
+    private ISoundClip? OptionalSound(ISoundClip? sample) => sample is null ? null : Sound(sample);
+
     private void SfxPlayPowerup(object? sender, float f)
     {
-        if(!Mute) SfxLibrary.powerup?.Play();
+        if (!Mute && PlayPowerUp) SfxLibrary.powerup?.Play();
     }
 
     public void Stop()
@@ -52,30 +80,37 @@ public class MadSfx : IDisposable
         for (var gear = 0; gear < 5; gear++)
         {
             if (!pengs[gear]) continue;
-            SfxLibrary.engs[_engineSignature, gear].Stop();
+            Sound(SfxLibrary.engs[_engineSignature, gear]).Stop();
             pengs[gear] = false;
         }
 
         if (grrd || aird || stopcnt > 0)
             StopAirs();
         if (pwastd)
-            SfxLibrary.wastd?.Stop();
+            OptionalSound(SfxLibrary.wastd)?.Stop();
+
+        foreach (var sound in _sounds.Values) sound.Stop();
 
         grrd = false;
         aird = false;
         pwastd = false;
         stopcnt = 0;
         pwait = 7;
+        _driftTicks = 0;
     }
 
     public void Dispose()
     {
+        _crashSounds.RemoveCar(_carPhysics.Im);
         Stop();
         _carPhysics.SfxPlayCrash -= SfxPlayCrash;
         _carPhysics.SfxPlayScrape -= SfxPlayScrape;
         _carPhysics.SfxPlayGscrape -= SfxPlayGscrape;
         _carPhysics.SfxPlaySkid -= SfxPlaySkid;
         _carPhysics.PowerUp -= SfxPlayPowerup;
+        foreach (var sound in _sounds.Values) sound.Dispose();
+        _sounds.Clear();
+        _finishedSounds.Clear();
     }
 
     private void SparkEng(int cgear, int cn, CarStats stats)
@@ -91,7 +126,7 @@ public class MadSfx : IDisposable
                 for (int gear = 0; gear < 5; gear++)
                     if (pengs[gear])
                     {
-                        SfxLibrary.engs[stats.Enginsignature, gear].Stop();
+                        Sound(SfxLibrary.engs[stats.Enginsignature, gear]).Stop();
                         pengs[gear] = false;
                     }
                 lcn = cn;
@@ -102,13 +137,13 @@ public class MadSfx : IDisposable
                 {
                     if (!pengs[gear])
                     {
-                        SfxLibrary.engs[stats.Enginsignature, gear].Loop();
+                        Sound(SfxLibrary.engs[stats.Enginsignature, gear]).Loop();
                         pengs[gear] = true;
                     }
                 }
                 else if (pengs[gear])
                 {
-                    SfxLibrary.engs[stats.Enginsignature, gear].Stop();
+                    Sound(SfxLibrary.engs[stats.Enginsignature, gear]).Stop();
                     pengs[gear] = false;
                 }
         }
@@ -119,30 +154,106 @@ public class MadSfx : IDisposable
     {
         for (int airs = 0; airs < 6; airs++)
         {
-            SfxLibrary.air[airs].Stop();
+            if (_sounds.TryGetValue((SfxLibrary.air[airs], null), out var sound) && sound.IsActive)
+                sound.Stop();
         }
     }
 
-    public void Tick(Control control, CarPhysics carPhysics, CarStats stats)
+    private bool HasLateralTireSlip()
     {
+        var heading = (float)_car.Rotation.Yaw.Degrees;
+        for (var wheel = 0; wheel < 4; wheel++)
+            if (SkidSoundFilter.HasLateralSlip((float)_carPhysics.Scx[wheel], (float)_carPhysics.Scz[wheel], heading))
+                return true;
+        return false;
+    }
+
+    private bool HasDriftSlip()
+    {
+        var velocityX = 0f;
+        var velocityZ = 0f;
+        for (var wheel = 0; wheel < 4; wheel++)
+        {
+            velocityX += (float)_carPhysics.Scx[wheel] * 0.25f;
+            velocityZ += (float)_carPhysics.Scz[wheel] * 0.25f;
+        }
+        return SkidSoundFilter.HasDriftSlip(velocityX, velocityZ, (float)_car.Rotation.Yaw.Degrees);
+    }
+
+    private void StopSkidSounds()
+    {
+        for (var i = 0; i < 3; i++)
+        {
+            if (_sounds.TryGetValue((SfxLibrary.skid[i], null), out var road) && road.IsActive) road.Stop();
+            if (_sounds.TryGetValue((SfxLibrary.dustskid[i], null), out var dirt) && dirt.IsActive) dirt.Stop();
+        }
+    }
+
+    private void UpdateDestructionSound(CarDestructionStage stage)
+    {
+        if (!Mute && stage == CarDestructionStage.WhiteSparks)
+        {
+            if (!pwastd)
+            {
+                OptionalSound(SfxLibrary.wastd)?.Loop();
+                pwastd = true;
+            }
+        }
+        else if (pwastd)
+        {
+            OptionalSound(SfxLibrary.wastd)?.Stop();
+            pwastd = false;
+        }
+        if (stage != CarDestructionStage.Fire && _destructionStage == CarDestructionStage.Fire)
+            OptionalSound(SfxLibrary.firewasted)?.Stop();
+        if (!Mute && stage == CarDestructionStage.Fire && _destructionStage != CarDestructionStage.Fire)
+            OptionalSound(SfxLibrary.firewasted)?.Play();
+        _destructionStage = stage;
+    }
+
+    public void Tick(Control control, CarPhysics carPhysics, CarStats stats, CarDestructionStage destructionStage)
+    {
+        var position = SoundPosition;
+        foreach (var (key, sound) in _sounds)
+        {
+            if (key.Contact is not null && !sound.IsActive)
+            {
+                sound.Dispose();
+                _finishedSounds.Add(key);
+            }
+            else if (key.Contact is null)
+                sound.SetPosition(position);
+        }
+        foreach (var key in _finishedSounds) _sounds.Remove(key);
+        _finishedSounds.Clear();
         if (!Mute)
         {
-            if (/*(fase == 0 || fase == 7001) && starcnt < 35 && cntwis != 8 && !mutes*/true)
+            var lateralSlip = carPhysics.Wtouch && !carPhysics.BadLanding && HasLateralTireSlip();
+            if (!lateralSlip) StopSkidSounds();
+            if (carPhysics.Wtouch && !carPhysics.BadLanding && !carPhysics.Wasted && HasDriftSlip())
+                _driftTicks = Math.Min(_driftTicks + 1, DriftConfirmationTicks);
+            else _driftTicks = 0;
+            var drifting = _driftTicks >= DriftConfirmationTicks;
+            if (/*(fase == 0 || fase == 7001) && starcnt < 35 && !mutes*/true)
             {
-                bool moving = control.Up && carPhysics.Speed > (fix64)0.0F || control.Down && carPhysics.Speed < (fix64)10.0F;
-                bool drifting = carPhysics.Skid == 1 && control.Handb || fix64.Abs(carPhysics.Scz[0] - (carPhysics.Scz[1] + carPhysics.Scz[0] + carPhysics.Scz[2] + carPhysics.Scz[3]) / (fix64)4.0F) > (fix64)1.0F || fix64.Abs(carPhysics.Scx[0] - (carPhysics.Scx[1] + carPhysics.Scx[0] + carPhysics.Scx[2] + carPhysics.Scx[3]) / (fix64)4.0F) > (fix64)1.0F;
+                bool moving = !carPhysics.Wasted &&
+                    ((control.Up && carPhysics.Speed > (fix64)0.0F) || (control.Down && carPhysics.Speed < (fix64)10.0F));
                 bool revbraking = false;
-                if (control.Up && carPhysics.Speed < (fix64)10.0F)
+                if (!carPhysics.Wasted && control.Up && carPhysics.Speed < (fix64)10.0F)
                 {
-                    drifting = true;
                     moving = true;
                     revbraking = true;
                 }
-                if (moving && carPhysics.Mtouch)
+                if (moving && carPhysics.Wtouch)
                 {
+                    if (!revbraking && !drifting)
+                    {
+                        StopAirs();
+                        stopcnt = 0;
+                    }
                     if (!carPhysics.BadLanding)
                     {
-                        if (!drifting)
+                        if (!revbraking && !drifting)
                         {
                             if (carPhysics.Power != (fix64)98.0F)
                             {
@@ -216,13 +327,13 @@ public class MadSfx : IDisposable
                             {
                                 if (stopcnt <= 0)
                                 {
-                                    SfxLibrary.air[5].Loop();
+                                    Sound(SfxLibrary.air[5]).Loop();
                                     stopcnt = 10;
                                 }
                             }
                             else if (stopcnt <= -2)
                             {
-                                SfxLibrary.air[2 + (int)(Random.Shared.NextDouble() * 3.0F)].Loop();
+                                Sound(SfxLibrary.air[2 + (int)(Random.Shared.NextDouble() * 3.0F)]).Loop();
                                 stopcnt = 7;
                             }
                         }
@@ -234,43 +345,39 @@ public class MadSfx : IDisposable
                     grrd = false;
                     aird = false;
                 }
+                else if (carPhysics.Wasted)
+                {
+                    SparkEng(-2, carPhysics.Cn, stats);
+                    StopAirs();
+                    grrd = false;
+                    aird = false;
+                    stopcnt = 0;
+                    pwait = 7;
+                }
                 else
                 {
                     pwait = 15;
-                    if (!carPhysics.Mtouch && !grrd && Random.Shared.NextDouble() > 0.4)
+                    if (carPhysics.Wtouch)
                     {
-                        SfxLibrary.air[(int)(Random.Shared.NextDouble() * 4.0F)].Loop();
+                        StopAirs();
+                        stopcnt = 0;
+                        grrd = false;
+                        aird = false;
+                    }
+                    if (!carPhysics.Wtouch && !grrd && Random.Shared.NextDouble() > 0.4)
+                    {
+                        Sound(SfxLibrary.air[(int)(Random.Shared.NextDouble() * 4.0F)]).Loop();
                         stopcnt = 5;
                         grrd = true;
                     }
                     if (!carPhysics.Wtouch && !aird)
                     {
                         StopAirs();
-                        SfxLibrary.air[(int)(Random.Shared.NextDouble() * 4.0F)].Loop();
+                        Sound(SfxLibrary.air[(int)(Random.Shared.NextDouble() * 4.0F)]).Loop();
                         stopcnt = 10;
                         aird = true;
                     }
                     SparkEng(-1, carPhysics.Cn, stats);
-                }
-                if (carPhysics.Cntdest != 0 && cntwis < 7)
-                {
-                    if (!pwastd)
-                    {
-                        SfxLibrary.wastd?.Loop();
-                        pwastd = true;
-                    }
-                }
-                else
-                {
-                    if (pwastd)
-                    {
-                        SfxLibrary.wastd?.Stop();
-                        pwastd = false;
-                    }
-                    if (cntwis == 7/* && !mutes*/)
-                    {
-                        SfxLibrary.firewasted?.Play();
-                    }
                 }
             }
             else
@@ -278,7 +385,7 @@ public class MadSfx : IDisposable
                 SparkEng(-2, carPhysics.Cn, stats);
                 if (pwastd)
                 {
-                    SfxLibrary.wastd?.Stop();
+                    OptionalSound(SfxLibrary.wastd)?.Stop();
                     pwastd = false;
                 }
             }
@@ -310,10 +417,6 @@ public class MadSfx : IDisposable
             {
                 bfskid--;
             }
-            if (carPhysics.Newcar)
-            {
-                cntwis = 0;
-            }
             /*if (fase == 0 || fase == 7001 || fase == 6 || fase == -1 || fase == -2 || fase == -3 || fase == -4 || fase == -5) {
             if (mutes != control.mutes) {
                 mutes = control.mutes;
@@ -329,25 +432,8 @@ public class MadSfx : IDisposable
                 }
             }
         }*/
-            if (carPhysics.Cntdest != 0 && cntwis < 7)
-            {
-                if (carPhysics.Wasted)
-                {
-                    cntwis++;
-                }
-            }
-            else
-            {
-                if (carPhysics.Cntdest == 0)
-                {
-                    cntwis = 0;
-                }
-                if (cntwis == 7)
-                {
-                    cntwis = 8;
-                }
-            }
         }
+        UpdateDestructionSound(destructionStage);
     }
 
     private void SfxPlayScrape(object? sender, (int i, int i266, int i267) position)
@@ -381,7 +467,7 @@ public class MadSfx : IDisposable
                     sturn1 = 0;
                 }
             }
-            SfxLibrary.scrape[scrapes].Play();
+            Sound(SfxLibrary.scrape[scrapes]).Play();
             bfscrape = (int)(5 * (1 / Physics.PHYSICS_MULTIPLIER));
         }
     }
@@ -391,35 +477,41 @@ public class MadSfx : IDisposable
         if (!Mute && (bfsc1 == 0 || bfsc2 == 0) && Math.Sqrt(position.i * position.i + position.i269 * position.i269 + position.i270 * position.i270) / 10.0 > 15.0)
             if (bfsc1 == 0)
             {
-                SfxLibrary.scrape[2].Stop();
-                SfxLibrary.scrape[2].Play();
+                Sound(SfxLibrary.scrape[2]).Stop();
+                Sound(SfxLibrary.scrape[2]).Play();
                 bfsc1 = (int)(12 * (1 / Physics.PHYSICS_MULTIPLIER));
                 bfsc2 = (int)(6 * (1 / Physics.PHYSICS_MULTIPLIER));
             }
             else
             {
-                SfxLibrary.scrape[3].Stop();
-                SfxLibrary.scrape[3].Play();
+                Sound(SfxLibrary.scrape[3]).Stop();
+                Sound(SfxLibrary.scrape[3]).Play();
                 bfsc2 = (int)(12 * (1 / Physics.PHYSICS_MULTIPLIER));
                 bfsc1 = (int)(6 * (1 / Physics.PHYSICS_MULTIPLIER));
             }
     }
 
-    private void SfxPlayCrash(object? sender, (float f, int i) crashData)
+    private void SfxPlayCrash(object? sender, CrashSoundEvent crash)
     {
-        crashData.f *= 1 / Physics.PHYSICS_MULTIPLIER;
-        if (!Mute && bfcrash == 0)
+        if (!Mute && (crash.Kind == 1 || MathF.Abs(crash.Strength / Physics.PHYSICS_MULTIPLIER) > 25))
+            _crashSounds.Enqueue(this, crash);
+    }
+
+    internal void PlayCrashSound(CrashSoundEvent crash)
+    {
+        var crashData = (f: crash.Strength / Physics.PHYSICS_MULTIPLIER, i: crash.Kind);
+        if (!Mute)
         {
             if (crashData.i == 0)
             {
                 if (Math.Abs(crashData.f) > 25.0F && Math.Abs(crashData.f) < 170.0F)
                 {
-                    SfxLibrary.lowcrash[crshturn].Play();
+                    ImpactSound(SfxLibrary.lowcrash[crshturn], crash).Play();
                     bfcrash = (int)(2 * (1 / Physics.PHYSICS_MULTIPLIER));
                 }
                 if (Math.Abs(crashData.f) >= 170.0F)
                 {
-                    SfxLibrary.crash[crshturn].Play();
+                    ImpactSound(SfxLibrary.crash[crshturn], crash).Play();
                     bfcrash = (int)(2 * (1 / Physics.PHYSICS_MULTIPLIER));
                 }
                 if (Math.Abs(crashData.f) > 25.0F)
@@ -446,18 +538,18 @@ public class MadSfx : IDisposable
             {
                 if (Math.Abs(crashData.f) > 25.0F && Math.Abs(crashData.f) < 170.0F)
                 {
-                    SfxLibrary.lowcrash[2].Play();
+                    ImpactSound(SfxLibrary.lowcrash[2], crash).Play();
                     bfcrash = (int)(2 * (1 / Physics.PHYSICS_MULTIPLIER));
                 }
-                if (Math.Abs(crashData.f) > 170.0F)
+                if (Math.Abs(crashData.f) >= 170.0F)
                 {
-                    SfxLibrary.crash[2].Play();
+                    ImpactSound(SfxLibrary.crash[2], crash).Play();
                     bfcrash = (int)(2 * (1 / Physics.PHYSICS_MULTIPLIER));
                 }
             }
             if (crashData.i == 1)
             {
-                SfxLibrary.tires?.Play();
+                if (SfxLibrary.tires is { } tires) ImpactSound(tires, crash).Play();
                 bfcrash = (int)(3 * (1 / Physics.PHYSICS_MULTIPLIER));
             }
         }
@@ -469,7 +561,7 @@ public class MadSfx : IDisposable
         {
             if (skidData.surfaceType == SurfaceType.Road)
             {
-                SfxLibrary.skid[skflg].Play();
+                Sound(SfxLibrary.skid[skflg], followPosition: true).Play();
                 if (skidup)
                 {
                     skflg++;
@@ -489,7 +581,7 @@ public class MadSfx : IDisposable
             }
             else
             {
-                SfxLibrary.dustskid[dskflg].Play();
+                Sound(SfxLibrary.dustskid[dskflg], followPosition: true).Play();
                 if (skidup)
                 {
                     dskflg++;

@@ -126,13 +126,14 @@ internal sealed class CustomHud : Component
         var bottom = y + height;
         foreach (var racer in _data.Racers)
         {
+            if (racer.Wasted) continue;
             if (y + rowHeight > bottom) break;
             if (racer.IsClient)
             {
                 G.SetColor(element.Background);
                 G.FillRect((int)x, (int)y, (int)width, (int)rowHeight);
             }
-            DrawText($"{racer.Position}. {racer.Name}{(racer.Wasted ? " [WASTED]" : "")}", element, x, y, width, scale);
+            DrawText($"{racer.Position}. {racer.Name}", element, x, y, width, scale);
             y += rowHeight;
         }
     }

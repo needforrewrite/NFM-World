@@ -19,15 +19,20 @@ public sealed class FaudioSoundClip : ISoundClip
     private static bool _paused;
 
     /// <summary>
-    /// Decoded PCM for this clip, kept alive for the clip's lifetime: FAudio reads from it
-    /// whenever a voice has it queued. A plain owned copy rather than the decoder's pooled
-    /// segment, because <see cref="ISoundClip"/> has no Dispose - there is nowhere to
-    /// return a pooled buffer to.
+    /// Decoded PCM shared between the sample and its spatial instances.
+    /// Each playing voice pins it until that voice is destroyed.
     /// </summary>
     private readonly byte[] _pcm;
 
     private readonly int _sampleRate;
     private readonly int _channels;
+    private byte[]? _monoPcm;
+    private readonly bool _spatial;
+    private readonly bool _followPosition;
+    private bool _loop;
+    private bool _disposed;
+    private Vector3 _position;
+    private Vector3 _playPosition;
 
     private IntPtr _voice;
     private GCHandle _pcmHandle;
@@ -41,8 +46,7 @@ public sealed class FaudioSoundClip : ISoundClip
     {
         var extension = Path.GetExtension(filePath).ToLowerInvariant();
 
-        // Read file from disk (direct path, matching old behavior)
-        var stream = VFS.OpenRead(filePath);
+        using var stream = VFS.OpenRead(filePath);
 
         // Decode to PCM (stream formats only; SFX are not tracker formats)
         using var result = AudioDecoder.Decode(stream, extension);
@@ -52,19 +56,50 @@ public sealed class FaudioSoundClip : ISoundClip
         _pcm = result.PcmData.AsSpan(0, result.PcmData.Count).ToArray();
         _sampleRate = result.SampleRate;
         _channels = (int)result.Channels;
+    }
 
-        Pool.Add(this);
+    private FaudioSoundClip(FaudioSoundClip sample, bool followPosition)
+    {
+        _pcm = sample._channels == 1 ? sample._pcm : (sample._monoPcm ??= SpatialAudio.ToMono(sample._pcm, sample._channels));
+        _sampleRate = sample._sampleRate;
+        _channels = 1;
+        _spatial = true;
+        _followPosition = followPosition;
+    }
+
+    public ISoundClip CreateSpatialInstance(bool followPosition = false)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return new FaudioSoundClip(this, followPosition);
+    }
+
+    public void SetPosition(Vector3 position)
+    {
+        if (!SpatialAudio.Finite(position)) return;
+        _position = position;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        StopVoice();
     }
 
     public void Play() => StartVoice(loop: false);
+    public bool IsActive => _voice != IntPtr.Zero;
 
     public void Loop() => StartVoice(loop: true);
 
     private void StartVoice(bool loop)
     {
+        if (_disposed) return;
         // Voices are single-use once their buffer has played out, so every start builds a fresh
         // one - matching the old per-Play SoundEffectInstance.
         StopVoice();
+        _loop = loop;
+        _playPosition = _position;
+        if (_spatial && !loop && SpatialAudio.Gain(_playPosition) <= 0) return;
 
         var engine = FaudioEngine.Instance;
         if (engine is null)
@@ -86,7 +121,8 @@ public sealed class FaudioSoundClip : ISoundClip
             return;
         }
 
-        FAudio.FAudioVoice_SetVolume(_voice, SoundEffects.Volume, 0);
+        Pool.Add(this);
+        ApplySpatial();
         if (!_paused)
             FAudio.FAudioSourceVoice_Start(_voice, 0, 0);
     }
@@ -119,8 +155,9 @@ public sealed class FaudioSoundClip : ISoundClip
 
     public void Stop() => StopVoice();
 
-    private void StopVoice()
+    private void StopVoice(bool fade = true)
     {
+        Pool.Remove(this);
         if (_voice == IntPtr.Zero)
             return;
 
@@ -132,10 +169,36 @@ public sealed class FaudioSoundClip : ISoundClip
         // Destroying the voice is what makes FAudio stop reading pAudioData, so this voice's pin is
         // only released once it is gone. A restart may already own a new voice and pin by then.
         var engine = FaudioEngine.Instance;
-        if (engine is not null)
+        if (engine is not null && fade)
             engine.FadeOutAndDestroy(voice, () => ReleasePcm(pin));
         else
+        {
+            engine?.DestroyVoice(voice);
             ReleasePcm(pin);
+        }
+    }
+
+    private void ApplySpatial(float? volume = null)
+    {
+        if (_voice == IntPtr.Zero) return;
+        var position = _loop || _followPosition ? _position : _playPosition;
+        if (_spatial)
+            FaudioEngine.Instance?.ApplySpatial(_voice, SpatialAudio.ListenerPosition,
+                SpatialAudio.ListenerForward, SpatialAudio.ListenerUp, position);
+        FAudio.FAudioVoice_SetVolume(_voice, (volume ?? SoundEffects.Volume) * (_spatial ? SpatialAudio.Gain(position) : 1), 0);
+    }
+
+    public static void UpdateSpatialSounds()
+    {
+        for (var i = Pool.Count - 1; i >= 0; i--)
+        {
+            var clip = Pool[i];
+            FAudio.FAudioSourceVoice_GetState(clip._voice, out var state, FAudio.FAUDIO_VOICE_NOSAMPLESPLAYED);
+            if (state.BuffersQueued == 0)
+                clip.StopVoice(fade: false);
+            else if (clip._spatial)
+                clip.ApplySpatial();
+        }
     }
 
     /// <summary>
@@ -143,7 +206,7 @@ public sealed class FaudioSoundClip : ISoundClip
     /// </summary>
     public static void StopAll()
     {
-        foreach (var clip in Pool)
+        foreach (var clip in Pool.ToArray())
         {
             clip.Stop();
         }
@@ -173,7 +236,7 @@ public sealed class FaudioSoundClip : ISoundClip
         foreach (var clip in Pool)
         {
             if (clip._voice != IntPtr.Zero)
-                FAudio.FAudioVoice_SetVolume(clip._voice, vol, 0);
+                clip.ApplySpatial(vol);
         }
     }
 }

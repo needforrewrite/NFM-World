@@ -266,11 +266,47 @@ public partial class CarPhysics
     [PluginVisible]
     internal fix64 py = 0;
 
-    public event EventHandler<(float f, int i)>? SfxPlayCrash;
+    public event EventHandler<CrashSoundEvent>? SfxPlayCrash;
     public event EventHandler<(SurfaceType i, float f)>? SfxPlaySkid;
     public event EventHandler<(int i, int i2, int i3)>? SfxPlayScrape;
     public event EventHandler<(int i, int i2, int i3)>? SfxPlayGscrape;
     public event EventHandler<float>? PowerUp;
+
+    private readonly record struct CrashContactContext(int OtherCar, int OtherPoint, Vector3 Position);
+    private CrashContactContext? _crashContact;
+
+    private readonly struct CrashContactScope : IDisposable
+    {
+        private readonly CarPhysics _first;
+        private readonly CarPhysics _second;
+        private readonly CrashContactContext? _firstPrevious;
+        private readonly CrashContactContext? _secondPrevious;
+
+        public CrashContactScope(CarPhysics first, int point, CarPhysics second, int otherPoint, Vector3 position)
+        {
+            _first = first;
+            _second = second;
+            _firstPrevious = first._crashContact;
+            _secondPrevious = second._crashContact;
+            first._crashContact = new(second.Im, otherPoint, position);
+            second._crashContact = new(first.Im, point, position);
+        }
+
+        public void Dispose()
+        {
+            _first._crashContact = _firstPrevious;
+            _second._crashContact = _secondPrevious;
+        }
+    }
+
+    private void EmitCrashSound(int point, float strength, int kind, ContO car, int surface = -1, Vector3? position = null)
+    {
+        var contact = _crashContact is { } pair
+            ? CrashSoundContact.Cars(Im, point, pair.OtherCar, pair.OtherPoint)
+            : CrashSoundContact.Obstacle(Im, point, surface);
+        var location = _crashContact?.Position ?? position ?? new Vector3((float)car.X, (float)car.Y, (float)car.Z);
+        SfxPlayCrash?.Invoke(this, new CrashSoundEvent(contact, location, strength, kind));
+    }
 
     [PluginVisible] private static f64Vector3 Up => new(0, -1, 0);
     [PluginVisible] private static f64Vector3 Forward => new(0, 0, 1);
@@ -365,6 +401,11 @@ public partial class CarPhysics
                     if (UMath.Rpy(wheelx[wheel], otherwheelx[otherwheel], wheely[wheel], otherwheely[otherwheel], wheelz[wheel], otherwheelz[otherwheel]) <
                         (impactMagnitude + impactExtraRdius) * (othermad.Stat.Comprad + Stat.Comprad))
                     {
+                        // Both cars and damage axes report the same contact to the audio queue.
+                        using var soundContact = new CrashContactScope(this, wheel, othermad, otherwheel,
+                            new Vector3(((float)wheelx[wheel] + (float)otherwheelx[otherwheel]) * 0.5f,
+                                ((float)wheely[wheel] + (float)otherwheely[otherwheel]) * 0.5f,
+                                ((float)wheelz[wheel] + (float)otherwheelz[otherwheel]) * 0.5f));
                         if (fix64.Abs(Scx[wheel] * Stat.Moment) > fix64.Abs(othermad.Scx[otherwheel] * othermad.Stat.Moment))
                         {
                             var f130 = othermad.Scx[otherwheel] * Stat.Revpush;
@@ -545,7 +586,7 @@ public partial class CarPhysics
 
     public event EventHandler? Distruct;
 
-    public void bounceRebound(int wi, ContO conto, DeterministicRandom random)
+    public void bounceRebound(int wi, ContO conto, DeterministicRandom random, int soundSurface = -1, Vector3? soundPosition = null)
     {
         // part 1: the closer we are to 90/-90 in Pxy or Pzy, the bigger the bounce
         fix64 rebound = (fix64.Abs(UMath.Sin(Pxy)) + fix64.Abs(UMath.Sin(Pzy))) / (fix64)3;
@@ -557,7 +598,7 @@ public partial class CarPhysics
         fix64 minRebound = (fix64)(1.1F);
         rebound = fix64.Max(rebound, minRebound);
 
-        Regy(wi, fix64.Abs(Scy[wi] * rebound), conto, random);
+        Regy(wi, fix64.Abs(Scy[wi] * rebound), conto, random, soundSurface, soundPosition);
         // if scy is > 0 then we are going down, apply the rebound bounce
         if (Scy[wi] > 0)
             // we are subtracting scy * f_51 from scy
@@ -1399,7 +1440,7 @@ public partial class CarPhysics
                         {
                             conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
                                 f42 * Stat.Simag, (int)_tilt, BadLanding && Mtouch, wheelGround);
-                            if (IsClientPlayer && !BadLanding)
+                            if (!BadLanding && SkidSoundFilter.HasLateralSlip((float)Scx[j], (float)Scz[j], (float)conto.Xz))
                             {
                                 SfxPlaySkid?.Invoke(this, (surfaceType, (float)fix64.Sqrt(Scx[j] * Scx[j] + Scz[j] * Scz[j])));
                                 //XTPart2.Skidf(Im, i32,
@@ -1518,7 +1559,7 @@ public partial class CarPhysics
                 isWheelGrounded[i49] = true;
                 wheelContactNormal[i49] = Up;
 
-                bounceRebound(i49, conto, random);
+                bounceRebound(i49, conto, random, soundPosition: new Vector3((float)wheelx[i49], (float)wheely[i49], (float)wheelz[i49]));
             }
         }
 
@@ -2516,14 +2557,12 @@ public partial class CarPhysics
                                         conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0,
                                             (int)wheelGround);
 
-                                        if (IsClientPlayer)
-                                        {
-                                            SfxPlayScrape?.Invoke(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
-                                        }
+                                        SfxPlayScrape?.Invoke(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                                     }
 
                                     var reboundVelocityDelta = worldImpact * (-GetReboundMul(wasMtouch));
-                                    Regz(k, reboundVelocityDelta.Length() * 1, conto, random);
+                                    Regz(k, reboundVelocityDelta.Length() * 1, conto, random, collidable.Index,
+                                        new Vector3((float)wheelx[k], (float)wheely[k], (float)wheelz[k]));
                                     Scx[k] += reboundVelocityDelta.X;
                                     Scz[k] += reboundVelocityDelta.Z;
 
@@ -2567,13 +2606,11 @@ public partial class CarPhysics
                             {
                                 conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, (int)wheelGround);
                                 //if (Im == /*this.xt.im*/ 0)
-                                if (IsClientPlayer)
-                                {
-                                    SfxPlayGscrape?.Invoke(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
-                                }
+                                SfxPlayGscrape?.Invoke(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                             }
 
-                            bounceRebound(k, conto, random);
+                            bounceRebound(k, conto, random, collidable.Index,
+                                new Vector3((float)wheelx[k], (float)wheely[k], (float)wheelz[k]));
                             isWheelTouchingPiece[k] = true;
                             break;
                         }
@@ -2596,15 +2633,13 @@ public partial class CarPhysics
                             if (_crank[0, k] > 1)
                             {
                                 conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, (int)wheelGround);
-                                if (IsClientPlayer)
-                                {
-                                    SfxPlayScrape?.Invoke(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
-                                }
+                                SfxPlayScrape?.Invoke(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                             }
 
                             // z rebound CHK5
                             f64Vector3 reboundVelocityDelta = collision.impactComponent * (-GetReboundMul(wasMtouch));
-                            Regz(k, reboundVelocityDelta.Length() * collidable.Damage, conto, random);
+                            Regz(k, reboundVelocityDelta.Length() * collidable.Damage, conto, random, collidable.Index,
+                                new Vector3((float)wheelx[k], (float)wheely[k], (float)wheelz[k]));
                             Scx[k] += reboundVelocityDelta.X;
                             Scy[k] += reboundVelocityDelta.Y;
                             Scz[k] += reboundVelocityDelta.Z;
@@ -2654,10 +2689,7 @@ public partial class CarPhysics
                                 if (BadLanding && collidable.SurfaceType is SurfaceType.Road or SurfaceType.OffTrack)
                                 {
                                     conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, (int)wheelGround);
-                                    if (IsClientPlayer)
-                                    {
-                                        SfxPlayGscrape?.Invoke(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
-                                    }
+                                    SfxPlayGscrape?.Invoke(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                                 }
 
                                 if (!wasMtouch && surfaceType != SurfaceType.Road)
@@ -2724,11 +2756,7 @@ public partial class CarPhysics
                 f += 100;
             }
             Shakedam = (int)((fix64.Abs(f) + Shakedam) * fix64.Half);
-            if (IsClientPlayer || _collidingWithClientPlayer)
-            {
-                SfxPlayCrash?.Invoke(this, ((int)f, 0));
-                //XTGraphics.Acrash(Im, f, 0);
-            }
+            EmitCrashSound(i, (int)f, 0, conto);
             for (var i111 = 0; i111 < 40; i111++)
             {
                 fix64 f112 = 0;
@@ -2746,7 +2774,7 @@ public partial class CarPhysics
         return i110;
     }
 
-    private int Regy(int i, fix64 f, ContO conto, DeterministicRandom random)
+    private int Regy(int i, fix64 f, ContO conto, DeterministicRandom random, int soundSurface = -1, Vector3? soundPosition = null)
     {
         conto.DamageY(i, f, Mtouch, _numRoofDamage, RoofDamage);
         var i97 = 0;
@@ -2805,11 +2833,7 @@ public partial class CarPhysics
                 Shakedam = (int)((fix64.Abs(f) + Shakedam) * fix64.Half);
             }
             
-            if (IsClientPlayer || _collidingWithClientPlayer)
-            {
-                SfxPlayCrash?.Invoke(this, ((int)f, i99 * i98));
-                //XTGraphics.Acrash(Im, f, i99 * i98);
-            }
+            EmitCrashSound(i, (int)f, i99 * i98, conto, soundSurface, soundPosition);
             if (i99 * i98 == 0 || Mtouch)
             {
                 for (var i102 = 0; i102 < 40; i102++)
@@ -2859,7 +2883,7 @@ public partial class CarPhysics
         return i97;
     }
 
-    private int Regz(int i, fix64 f, ContO conto, DeterministicRandom random)
+    private int Regz(int i, fix64 f, ContO conto, DeterministicRandom random, int soundSurface = -1, Vector3? soundPosition = null)
     {
         conto.DamageZ(i, f);
         var i114 = 0;
@@ -2890,11 +2914,7 @@ public partial class CarPhysics
             }
             Shakedam = (int)((fix64.Abs(f) + Shakedam) * fix64.Half);
             
-            if (IsClientPlayer || _collidingWithClientPlayer)
-            {
-                SfxPlayCrash?.Invoke(this, ((int)f, 0));
-                //XTGraphics.Acrash(Im, f, 0);
-            }
+            EmitCrashSound(i, (int)f, 0, conto, soundSurface, soundPosition);
             for (var i115 = 0; i115 < 40; i115++)
             {
                 fix64 f116 = 0;

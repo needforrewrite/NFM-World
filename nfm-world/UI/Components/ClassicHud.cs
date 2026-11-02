@@ -51,7 +51,7 @@ public sealed class ClassicHud(IHudData race) : Component
             {
                 Text($"WASTED: {Race.Wasted} / {Race.Opponents}", left + 128 * scale, top + 5 * scale, scale, adventure: true);
             }
-            if (Race.HasPosition) PositionReadout(left + 30 * scale, top + 24 * scale, scale);
+            if (Race.HasPosition) PositionReadout(left + 30 * scale, top + 18 * scale, scale);
             var timerY = top + (Race.HasPosition ? 49 : 30) * scale;
             Text(Race.TimeTrial ? "TIME TRIAL" : "TIME", left + 14 * scale, timerY, scale, adventure: true);
             Digits(HudText.FormatTime(Race.LapTimeMs), left + 14 * scale, timerY + 16 * scale, 22 * scale);
@@ -68,27 +68,29 @@ public sealed class ClassicHud(IHudData race) : Component
 
             if (!Race.TimeTrial && Race.Racers.Count > 1)
             {
+                var opponentScale = scale * 0.55f;
+                var opponentRight = right - 8 * scale;
                 var y = top + 80 * scale;
                 foreach (var racer in Race.Racers)
                 {
-                    if (y + 22 * scale > top + size.Y - 30 * scale) break;
+                    if (racer.Wasted) continue;
+                    if (y + 24 * opponentScale > top + size.Y - 30 * scale) break;
                     if (racer.IsClient)
                     {
                         G.SetColor(Snap(new Color(90, 195, 255, 60)));
-                        G.FillRect((int)(right - 144 * scale), (int)y, (int)(136 * scale), (int)(24 * scale));
+                        G.FillRect((int)(opponentRight - 136 * opponentScale), (int)y, (int)(136 * opponentScale), (int)(24 * opponentScale));
                     }
-                    Text(Ordinal(racer.Position), right - 138 * scale, y + 5 * scale, scale, color: new Color(20, 20, 120));
-                    Text(racer.Name, right - 110 * scale, y, scale);
-                    var barX = right - 110 * scale;
-                    var barY = y + 15 * scale;
+                    Text(Ordinal(racer.Position), opponentRight - 130 * opponentScale, y + 5 * opponentScale, opponentScale, color: new Color(20, 20, 120));
+                    Text(racer.Name, opponentRight - 102 * opponentScale, y, opponentScale);
+                    var barX = opponentRight - 102 * opponentScale;
+                    var barY = y + 15 * opponentScale;
                     G.SetColor(new Color(0, 0, 0));
-                    G.FillRect((int)barX, (int)barY, (int)(82 * scale), Math.Max(1, (int)(5 * scale)));
+                    G.FillRect((int)barX, (int)barY, (int)(82 * opponentScale), Math.Max(1, (int)(5 * opponentScale)));
                     G.SetColor(Snap(190, 240, 245));
-                    G.FillRect((int)(barX + scale), (int)(barY + scale), (int)(80 * scale), Math.Max(1, (int)(3 * scale)));
+                    G.FillRect((int)(barX + opponentScale), (int)(barY + opponentScale), (int)(80 * opponentScale), Math.Max(1, (int)(3 * opponentScale)));
                     G.SetColor(Snap(244, 244, 11));
-                    G.FillRect((int)(barX + scale), (int)(barY + scale), (int)(80 * scale * Clamp(racer.Damage)), Math.Max(1, (int)(3 * scale)));
-                    if (racer.Wasted) Text("WASTED", right - 70 * scale, y, scale, color: new Color(200, 20, 0));
-                    y += 29 * scale;
+                    G.FillRect((int)(barX + opponentScale), (int)(barY + opponentScale), (int)(80 * opponentScale * Clamp(racer.Damage)), Math.Max(1, (int)(3 * opponentScale)));
+                    y += 29 * opponentScale;
                 }
             }
         }
