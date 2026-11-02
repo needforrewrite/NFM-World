@@ -109,6 +109,8 @@ public class SettingsMenu()
     private static float _musicVolume = 0.8f;
     private static float _effectsVolume = 0.9f;
     private static bool _muteAll = false;
+    private static bool _musicMuted;
+    private static bool _effectsMuted;
     private static bool _remasteredMusic = false;
 
     // Game settings — Camera (static)
@@ -292,26 +294,34 @@ public class SettingsMenu()
         SaveConfig();
     }
 
+    public static void ToggleMusicMute()
+    {
+        _musicMuted = !_musicMuted;
+        ApplyAudioSettings();
+    }
+
+    public static void ToggleSfxMute()
+    {
+        _effectsMuted = !_effectsMuted;
+        ApplyAudioSettings();
+    }
+
+    private static void ApplyAudioSettings()
+    {
+        IBackend.Backend.SetAllVolumes(_muteAll || _effectsMuted ? 0 : _effectsVolume * _masterVolume);
+        var musicVolume = _muteAll || _musicMuted ? 0 : _musicVolume * _masterVolume;
+        GameSparker.CurrentMusic?.SetVolume(musicVolume);
+        IRadicalMusic.CurrentVolume = musicVolume;
+    }
+
     public static void ApplySettings(out bool requireRestart)
     {
         var game = GameSparker.Game;
 
         // Apply audio settings
-        if (_muteAll)
-        {
-            // Mute all sounds
-            IBackend.Backend.SetAllVolumes(0);
-            GameSparker.CurrentMusic?.SetVolume(0);
-            IRadicalMusic.CurrentVolume = 0;
-        }
-        else
-        {
-            // Apply volume settings
-            IBackend.Backend.SetAllVolumes(_effectsVolume * _masterVolume);
-            GameSparker.CurrentMusic?.SetVolume(_musicVolume * _masterVolume);
-            IRadicalMusic.CurrentVolume = _musicVolume * _masterVolume;
+        ApplyAudioSettings();
+        if (!_muteAll)
             GameSparker.UseRemasteredMusic = _remasteredMusic;
-        }
 
         // Apply camera settings
         CameraSettings.Fov = _fov;

@@ -29,8 +29,14 @@ public sealed class RaceInputController
 
         // Track pressed keys and update movement state before handling
         // non-movement keys.
-        _pressedKeys.Add(key);
+        var firstPress = _pressedKeys.Add(key);
         UpdateControlState(control);
+
+        if (firstPress && key == bindings.ToggleMusic)
+            SettingsMenu.ToggleMusicMute();
+
+        if (firstPress && key == bindings.ToggleSFX)
+            SettingsMenu.ToggleSfxMute();
 
         if (control is null)
             return;
@@ -46,12 +52,6 @@ public sealed class RaceInputController
 
         if (key == bindings.LookRight)
             control.Lookback = 2;
-
-        if (key == bindings.ToggleMusic)
-            control.Mutem = !control.Mutem;
-
-        if (key == bindings.ToggleSFX)
-            control.Mutes = !control.Mutes;
 
         if (key == bindings.ToggleArrace)
             control.Arrace = canTargetCars && !control.Arrace;

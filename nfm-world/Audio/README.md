@@ -4,6 +4,8 @@ Each `MadSfx` owns spatial instances of the shared `SfxLibrary` samples. Engines
 air, impacts, scrapes, tires, road/dirt skids and destruction sounds use these
 instances; countdown, checkpoint, power-up and music playback remain non-positional.
 Power-up notifications play only for the locally controlled car.
+In-race music/SFX mute bindings (M/N by default) toggle their output independently
+without changing the configured volume sliders. Mute All still takes precedence.
 `wasted.wav` loops during the visual white-spark phase. It stops and
 `firewasted.wav` plays once when the orange flames begin. Repair resets this phase.
 Stereo car samples are downmixed to mono once and shared between instances.
