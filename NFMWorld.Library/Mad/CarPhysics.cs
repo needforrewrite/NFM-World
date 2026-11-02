@@ -2326,14 +2326,13 @@ public partial class CarPhysics
                 }
             }
         } // CHK18
-        if (/*Im == XTGraphics.Im*/Im == 0)
+        // Wall touch is a per-tick flag: it feeds `Surfing` above, so every car must
+        // clear it or one wall hit leaves it surfing (and earning power) forever.
+        if (control.Wall != -1)
         {
-            if (control.Wall != -1)
-            {
-                control.Wall = -1;
-            }
+            control.Wall = -1;
         }
-        else if (Lastcolido != 0 && !Wasted)
+        if (Im != 0 && Lastcolido != 0 && !Wasted)
         {
             Lastcolido--;
         }
