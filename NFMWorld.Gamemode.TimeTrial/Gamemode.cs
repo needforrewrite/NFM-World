@@ -149,7 +149,8 @@ public class TimeTrialGamemode : PluginGamemode
         if (Players[PlayerCarIndex].Car is { } car)
         {
             FixHoopHelper.HandleFixHoops(CurrentStage, car);
-            CheckPointHelper.HandleCheckPoint(CurrentStage, car);
+            if (CheckPointHelper.HandleCheckPoint(CurrentStage, car))
+                _current?.RecordSplit((long)_timer.Elapsed.TotalMilliseconds);
 
             car.Drive(CurrentStage);
 
@@ -288,9 +289,7 @@ public class TimeTrialGamemode : PluginGamemode
         if (_current is null)
             return;
 
-        if (_best is null ||
-            (_current.Splits.SplitTimes.Count > 0 &&
-             _current.GetSplitDiff(_best, _current.Splits.SplitTimes.Count - 1) < 0))
+        if (_best is null || _current.IsFasterThan(_best))
         {
             _current.Save();
         }

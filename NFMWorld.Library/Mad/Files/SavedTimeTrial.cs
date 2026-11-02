@@ -123,6 +123,13 @@ public partial class SavedTimeTrial
     }
 
     [PluginVisible]
+    public bool IsFasterThan(SavedTimeTrial other)
+    {
+        var ticks = DemoData.Ticks.Count;
+        return ticks > 0 && (other.DemoData.Ticks.Count == 0 || ticks < other.DemoData.Ticks.Count);
+    }
+
+    [PluginVisible]
     public void RecordTick(BackendCar car)
     {
         CarFrame entry = CarFrame.Create(car);
