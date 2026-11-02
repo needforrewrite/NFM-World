@@ -276,6 +276,37 @@ public partial class CarPhysics
     [PluginVisible] private static f64Vector3 Forward => new(0, 0, 1);
     [PluginVisible] private static f64Vector3 Right => new(1, 0, 0);
 
+    internal static (fix64 Pxy, fix64 Pzy, bool GimbalLocked) FitTerrainAngles(f64Vector3 normal, fix64 yaw, fix64 currentPxy, fix64 currentPzy)
+    {
+        static fix64 Unwrap(fix64 angle, fix64 reference)
+        {
+            while (angle - reference > 180) angle -= 360;
+            while (angle - reference < -180) angle += 360;
+            return angle;
+        }
+
+        var cosYaw = UMath.Cos(yaw);
+        var sinYaw = UMath.Sin(yaw);
+        var sinP = normal.X * cosYaw + normal.Z * sinYaw;
+        var cosPsinZ = normal.X * sinYaw - normal.Z * cosYaw;
+        var cosPcosZ = -normal.Y;
+        var absCosP = fix64.Sqrt(cosPcosZ * cosPcosZ + cosPsinZ * cosPsinZ);
+        var signedCosP = cosPcosZ * UMath.Cos(currentPzy) + cosPsinZ * UMath.Sin(currentPzy);
+        var cosP = signedCosP < fix64.Zero ? -absCosP : absCosP;
+        var gimbalLocked = absCosP < (fix64)0.15f;
+
+        var fittedPxy = Unwrap(fix64.Atan2(sinP, cosP) * fix64.RadToDeg, currentPxy);
+        var fittedPzy = currentPzy;
+        if (!gimbalLocked)
+        {
+            var sinZ = cosPsinZ / cosP;
+            var cosZ = cosPcosZ / cosP;
+            fittedPzy = Unwrap(fix64.Atan2(sinZ, cosZ) * fix64.RadToDeg, currentPzy);
+        }
+
+        return (fittedPxy, fittedPzy, gimbalLocked);
+    }
+
     public CarPhysics(CarStats stat, int im, bool isClientPlayer)
     {
         Stat = stat;
@@ -1633,47 +1664,10 @@ public partial class CarPhysics
             if (needsFlip)
                 terrainNormal = -terrainNormal;
 
-            {
-                // Undo yaw before decomposing into Pxy/Pzy.
-                var sinP = terrainNormal.X * cosXz + terrainNormal.Z * sinXz;
-                var cosP_sinZ = terrainNormal.X * sinXz - terrainNormal.Z * cosXz;
-                var cosP_cosZ = -terrainNormal.Y; // = cos(Pxy)·cos(Pzy)
-
-                // |cos(Pxy)| = sqrt(cosP_cosZ² + cosP_sinZ²)  because cos²Z+sin²Z=1
-                var absCosP = fix64.Sqrt(cosP_cosZ * cosP_cosZ + cosP_sinZ * cosP_sinZ);
-
-                {
-                    // The normal only fixes (Pxy, Pzy) up to the twin (180°-Pxy, Pzy+180°),
-                    // which yields the same up vector. Pick whichever is closest to the
-                    // current angles (loop controls may have moved them this tick).
-                    static fix64 Unwrap(fix64 a, fix64 reference)
-                    {
-                        while (a - reference > 180) a -= 360;
-                        while (a - reference < -180) a += 360;
-                        return a;
-                    }
-
-                    // Near ±90° roll, Pzy is the car's local yaw (gimbal lock): the normal
-                    // says nothing about it and atan2 of two near-zero products is noise.
-                    var gimbalLocked = absCosP < (fix64)0.15f;
-
-                    var p1 = Unwrap(fix64.Atan2(sinP, absCosP) * fix64.RadToDeg, Pxy);
-                    var z1 = gimbalLocked ? Pzy : Unwrap(fix64.Atan2(cosP_sinZ, cosP_cosZ) * fix64.RadToDeg, Pzy);
-                    var p2 = Unwrap(180 - p1, Pxy);
-                    var z2 = gimbalLocked ? Pzy : Unwrap(z1 + 180, Pzy);
-
-                    // The twins face opposite ways (forward = (-cosZ·sinXz, -sinZ, cosZ·cosXz)
-                    // ignores Pxy), so keep the one whose Pzy preserves the current heading.
-                    // Comparing Pxy too lets a hard landing reverse the car.
-                    var useFirst = gimbalLocked
-                        ? fix64.Abs(p1 - Pxy) <= fix64.Abs(p2 - Pxy)
-                        : fix64.Abs(z1 - Pzy) <= fix64.Abs(z2 - Pzy);
-                    Pxy = useFirst ? p1 : p2;
-                    Pzy = useFirst ? z1 : z2;
-
-                    FrameTrace.AddMessage($"terrainFit: cosP_cosZ={cosP_cosZ:0.000}, sinP={sinP:0.000}, twin={(useFirst ? 1 : 2)}, → Pxy={Pxy:0.0}°, Pzy={Pzy:0.0}°");
-                }
-            }
+            var (fittedPxy, fittedPzy, gimbalLocked) = FitTerrainAngles(terrainNormal, conto.Xz, Pxy, Pzy);
+            Pxy = fittedPxy;
+            Pzy = fittedPzy;
+            FrameTrace.AddMessage($"terrainFit: tn={terrainNormal}, gimbalLocked={gimbalLocked}, → Pxy={Pxy:0.0}°, Pzy={Pzy:0.0}°");
         }
 
         // Balanced on the nose or tail, the wheel plane agrees with the pose and nothing supplies

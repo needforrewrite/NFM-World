@@ -16,6 +16,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="NFMWorld.Library.Test" />
+    </ItemGroup>
+
+    <ItemGroup>
         <!-- Exclude emitted source-generator files from implicit *.cs glob to prevent double compilation -->
         <Compile Remove="Generated/**" />
     </ItemGroup>
