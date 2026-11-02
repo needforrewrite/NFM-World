@@ -29,6 +29,9 @@ public static partial class WebAudioBackend
     internal static void StopSource(int source) { }
     internal static void SetSourceVolume(int source, double volume) { }
     internal static void SetSourceRate(int source, double rate) { }
+    internal static void SetSourcePosition(int source, double x, double y, double z) { }
+    internal static void SetListener(double x, double y, double z, double fx, double fy, double fz, double ux, double uy, double uz) { }
+    internal static bool IsSourceActive(int source) => false;
     internal static void SetSourcePaused(int source, bool paused) { }
     internal static void ReleaseBuffer(int buffer) { }
     internal static void StopAll() { }
@@ -89,6 +92,16 @@ public static partial class WebAudioBackend
     [JSImport("setSourceRate", Module)]
     internal static partial void SetSourceRate(int source, double rate);
 
+    [JSImport("setSourcePosition", Module)]
+    internal static partial void SetSourcePosition(int source, double x, double y, double z);
+
+    [JSImport("setListener", Module)]
+    internal static partial void SetListener(double x, double y, double z, double fx, double fy, double fz,
+        double ux, double uy, double uz);
+
+    [JSImport("isSourceActive", Module)]
+    internal static partial bool IsSourceActive(int source);
+
     [JSImport("setSourcePaused", Module)]
     internal static partial void SetSourcePaused(int source, bool paused);
 
@@ -113,12 +126,34 @@ public static partial class WebAudioBackend
 /// <summary>A short sound effect played through Web Audio. Replaces <c>FaudioSoundClip</c>.</summary>
 public sealed class WebAudioSoundClip : ISoundClip
 {
+    private sealed class Sample(int buffer, int monoBuffer)
+    {
+        public int Buffer { get; } = buffer;
+        public int MonoBuffer { get; } = monoBuffer;
+        public int Users { get; set; } = 1;
+
+        public void Release()
+        {
+            if (--Users != 0) return;
+            WebAudioBackend.ReleaseBuffer(Buffer);
+            if (MonoBuffer != Buffer) WebAudioBackend.ReleaseBuffer(MonoBuffer);
+        }
+    }
+
     /// <summary>Clips started and not yet stopped, for the bulk volume/stop operations.</summary>
     internal static readonly List<WebAudioSoundClip> Active = [];
     private static bool _paused;
 
-    private readonly int _buffer;
+    private readonly Sample _sample;
+    private int Buffer => _spatial ? _sample.MonoBuffer : _sample.Buffer;
+    public bool IsActive => _source != 0;
     private int _source;
+    private readonly bool _spatial;
+    private readonly bool _followPosition;
+    private bool _loop;
+    private bool _disposed;
+    private Vector3 _position;
+    private Vector3 _playPosition;
 
     public WebAudioSoundClip(string filePath)
     {
@@ -126,8 +161,62 @@ public sealed class WebAudioSoundClip : ISoundClip
         using var stream = NFMWorldLibrary.TheVFS.VFS.OpenRead(filePath);
         using var decoded = AudioDecoder.Decode(stream, extension);
 
-        _buffer = WebAudioBackend.CreateBuffer(
+        var buffer = WebAudioBackend.CreateBuffer(
             decoded.PcmData.AsSpan(0, decoded.PcmData.Count), decoded.SampleRate, (int)decoded.Channels);
+        var monoBuffer = (int)decoded.Channels == 1 ? buffer : WebAudioBackend.CreateBuffer(
+            SpatialAudio.ToMono(decoded.PcmData.AsSpan(0, decoded.PcmData.Count), (int)decoded.Channels), decoded.SampleRate, 1);
+        _sample = new Sample(buffer, monoBuffer);
+    }
+
+    private WebAudioSoundClip(WebAudioSoundClip sample, bool followPosition)
+    {
+        _sample = sample._sample;
+        _sample.Users++;
+        _spatial = true;
+        _followPosition = followPosition;
+    }
+
+    public ISoundClip CreateSpatialInstance(bool followPosition = false)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return new WebAudioSoundClip(this, followPosition);
+    }
+
+    public void SetPosition(Vector3 position)
+    {
+        if (!SpatialAudio.Finite(position)) return;
+        _position = position;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        Stop();
+        _sample.Release();
+    }
+
+    private void ApplySpatial()
+    {
+        if (_source == 0 || !_spatial) return;
+        var position = _loop || _followPosition ? _position : _playPosition;
+        WebAudioBackend.SetSourcePosition(_source, position.X, position.Y, position.Z);
+        ApplyVolume(SoundEffects.Volume);
+    }
+
+    public static void UpdateSpatialSounds()
+    {
+        for (var i = Active.Count - 1; i >= 0; i--)
+        {
+            var clip = Active[i];
+            if (!WebAudioBackend.IsSourceActive(clip._source))
+            {
+                clip._source = 0;
+                Active.RemoveAt(i);
+            }
+            else if (clip._spatial)
+                clip.ApplySpatial();
+        }
     }
 
     public void Play() => Start(loop: false);
@@ -158,18 +247,24 @@ public sealed class WebAudioSoundClip : ISoundClip
 
     internal void ApplyVolume(double volume)
     {
-        if (_source != 0) WebAudioBackend.SetSourceVolume(_source, volume);
+        if (_source != 0) WebAudioBackend.SetSourceVolume(_source,
+            volume * (_spatial ? SpatialAudio.Gain(_loop || _followPosition ? _position : _playPosition) : 1));
     }
 
     private void Start(bool loop)
     {
+        if (_disposed) return;
         Stop();
-        if (_buffer == 0) return;
+        if (Buffer == 0) return;
+        _loop = loop;
+        _playPosition = _position;
+        if (_spatial && !loop && SpatialAudio.Gain(_playPosition) <= 0) return;
 
-        var source = WebAudioBackend.StartBuffer(_buffer, SoundEffects.Volume, 1.0, loop);
+        var source = WebAudioBackend.StartBuffer(Buffer, _spatial ? 0 : SoundEffects.Volume, 1.0, loop);
         if (source != 0)
         {
             _source = source;
+            ApplySpatial();
             if (_paused) WebAudioBackend.SetSourcePaused(source, true);
             if (!Active.Contains(this)) Active.Add(this);
         }

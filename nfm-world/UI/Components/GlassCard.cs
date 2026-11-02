@@ -102,7 +102,8 @@ public static class GlassCardUi
     }
 
     /// <summary>Large centre-screen text, split on newlines.</summary>
-    public static View CenterText(Func<string?>? text = null, float size = 64, Color? color = null)
+    public static View CenterText(Func<string?>? text = null, float size = 64, Color? color = null,
+        Func<Color>? colorAccessor = null)
     {
         var textColor = color ?? Theme.TextSecondary;
 
@@ -125,7 +126,7 @@ public static class GlassCardUi
                     {
                         FontSize = size,
                         FontStyle = FontStyle.Bold,
-                        ForegroundColor = textColor,
+                        ForegroundColor = colorAccessor?.Invoke() ?? textColor,
                         HorizontalAlignment = TextHorizontalAlignment.Center,
                     },
                     text: () => line)));

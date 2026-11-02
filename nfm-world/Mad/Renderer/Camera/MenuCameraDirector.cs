@@ -292,9 +292,10 @@ public sealed class MenuCameraDirector
         float garageAngle = 0, float garageHeight = 0)
     {
         var target = ToVector(car.Position) + new Vector3(0, -120 + (car.GroundAt - 60) * garageBlend, 0);
-        var angle = 0.65f + (1.7f + garageAngle) * garageBlend;
-        var radius = 1600 - 400 * garageBlend;
-        var height = 500 + (garageHeight - 170) * garageBlend;
+        var menuAngle = MathF.PI - 0.65f;
+        var angle = menuAngle + (2.35f + garageAngle - menuAngle) * garageBlend;
+        var radius = 1300 - 100 * garageBlend;
+        var height = 410 + (garageHeight - 80) * garageBlend;
         var position = target + new Vector3(MathF.Cos(angle) * radius, -height, MathF.Sin(angle) * radius);
         if (seconds < 4 && garageBlend < 1)
         {
@@ -318,11 +319,11 @@ public sealed class MenuCameraDirector
         var driftTime = Math.Max(0, seconds - 4);
         var settle = Math.Clamp(driftTime / 2, 0, 1);
         settle = settle * settle * (3 - 2 * settle);
-        position += new Vector3((MathF.Cos(driftTime * 0.15f) - 1) * 240,
-            MathF.Sin(driftTime * 0.075f) * 45, MathF.Sin(driftTime * 0.15f) * 350)
+        position += new Vector3((1 - MathF.Cos(driftTime * 0.15f)) * 195,
+            MathF.Sin(driftTime * 0.075f) * 37, MathF.Sin(driftTime * 0.15f) * 285)
             * settle * (1 - garageBlend);
         // Keep the car on the right, clear of the menu.
-        var framing = 410 - 130 * garageBlend;
+        var framing = 335 - 55 * garageBlend;
         target += new Vector3(MathF.Sin(angle) * framing, 0, -MathF.Cos(angle) * framing);
         camera.Fov = 53;
         if (cut)

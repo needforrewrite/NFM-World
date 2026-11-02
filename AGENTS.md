@@ -170,6 +170,18 @@ Gamemodes are written in **Luau** and share one code path for singleplayer and m
 
 ---
 
+## Race HUD
+
+- `nfm-world/UI/Hud/HudSkinRegistry.cs` registers Classic, World and discovered JSON skins; `UI/Routes/RaceHudView.cs` mounts the selected entry. Pause/settings stay outside the skin subtree.
+- Settings > Game > HUD stores `hud_skin <id>` (default `classic`); old Classic/World values migrate. Missing skins fall back without losing the saved ID.
+- `hud_scale` is a 0.5–2 user multiplier (default 1), live in the HUD preview; Classic adds a 1.15 default multiplier. `HudScaleSettings` validates config; `HudScaleHost` isolates World's Sx scale from menu UI.
+- `hud_safezone_x`/`hud_safezone_y` keep 0.8–1 of each viewport axis (default 1). All skins inset anchors symmetrically via `HudSafeZoneSettings`, without reducing scale. Settings/preview controls stay outside the safe area; preview shows a boundary guide.
+- Keep `HudScaleHost` absolutely positioned: countdown/finish overlays must not consume flex space beside the HUD. TT position compares the player with its recorded ghost; ghost checkpoint progress updates during playback, while arrow targeting still excludes fake players.
+- Skins consume `NFMWorld.Library/Hud/IHudData.cs`; `RacePhase.UpdateHudPresentation` copies standings/targets without retaining plugin objects. Keep telemetry/target logic in the host.
+- Custom skins live in `data/hud/skins/<id>/skin.json`. Schema/discovery/tests: `NFMWorld.Library/Hud/`, `NFMWorld.Library.Test/HudSkinTests.cs`. Authoring guide and sample: `nfm-world/data/hud/README.md`, `skins/minimal/`. No per-frame file reads.
+- Classic uses generated `data/images/power.hud.svg` and `damage.hud.svg`; editable sources remain `power.svg`/`damage.svg`. Regenerate with `node tools/svg/export-hud.mjs` and existing BandCheck/game binaries (no game build). Damage color/flashing and arrow geometry follow `nfm2/src/xtGraphics.java` (`drawstat`/`arrow`).
+- Classic SVGs use `IGraphics.LoadSvgImage` with stage snap and the original `loadsnap` channel cap (225). Text/outline colors also receive snap. `SvgColorAdjustment` adjusts generated hex paints/gradient stops; the image cache replaces its current stage variant rather than accumulating variants.
+
 ## .NET Gamemode Plugins (`NFMWorld.Gamemode.*`)
 
 A gamemode can also be a compiled plugin instead of Luau scripts. This is the

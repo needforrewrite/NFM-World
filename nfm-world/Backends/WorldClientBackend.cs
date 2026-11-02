@@ -82,10 +82,12 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
     {
         private readonly IGraphicsDevice _graphicsDevice;
         private ITexture? _svgCacheGuard;
+        private readonly ConcurrentDictionary<string, AposShapeSvg> _adjustedSvgImages = new();
 
         internal void PrepareSvgImages(ShapeBatch batch, ICommandBuffer cb)
         {
             var images = _imageCache.Values.OfType<AposShapeSvg>()
+                .Concat(_adjustedSvgImages.Values)
                 .Where(image => image.NeedsCache(_graphicsDevice)).ToArray();
             if (images.Length == 0) return;
 
@@ -101,7 +103,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
 
         internal void ReleaseSvgImages()
         {
-            foreach (var image in _imageCache.Values.OfType<AposShapeSvg>())
+            foreach (var image in _imageCache.Values.OfType<AposShapeSvg>().Concat(_adjustedSvgImages.Values))
                 image.ReleaseCache();
             _svgCacheGuard?.Dispose();
             _svgCacheGuard = null;
@@ -247,6 +249,17 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
 
                 return new TextureImage(TextureLoader.LoadFromStream(_graphicsDevice, stream));
             }
+        }
+
+        public IImage LoadSvgImage(string file, Vector3 rgbMultiplier, byte maximumChannel = 255)
+        {
+            var image = _adjustedSvgImages.GetOrAdd(file, path =>
+            {
+                using var stream = VFS.OpenRead(path);
+                return new AposShapeSvg(stream, rgbMultiplier, maximumChannel);
+            });
+            image.SetColorAdjustment(rgbMultiplier, maximumChannel);
+            return image;
         }
 
         public IImage LoadImage(ReadOnlyMemory<byte> file)
@@ -578,13 +591,12 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
 
         public void FillPolygon(ReadOnlySpan<int> x, ReadOnlySpan<int> y, int n)
         {
-            Span<Vector2> points = stackalloc Vector2[n];
-            for (var i = 0; i < n; i++)
-            {
-                points[i] = new Vector2(x[i], y[i]);
-            }
-
-            _sb.DrawPath(points, 0, _color, Color.Transparent, 0);
+            if (n < 3) return;
+            BeginPath();
+            MoveTo(x[0], y[0]);
+            for (var i = 1; i < n; i++) LineTo(x[i], y[i]);
+            ClosePath();
+            Fill();
         }
 
         public void DrawPolygon(ReadOnlySpan<int> x, ReadOnlySpan<int> y, int n)
@@ -595,7 +607,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
                 points[i] = new Vector2(x[i], y[i]);
             }
 
-            _sb.DrawPath(points, 0, Color.Transparent, _color, _strokeWidth);
+            _sb.DrawPath(points, 0, Color.Transparent, _color, _strokeWidth, closed: true);
         }
     }
 
@@ -621,14 +633,36 @@ internal abstract class AposShape : IImage
     public abstract int Width { get; }
 }
 
-internal class AposShapeSvg(Stream stream) : AposShape
+internal class AposShapeSvg : AposShape
 {
-    private readonly ShapeSvg _shape = new(SvgStyles.ReadWithInlineStyles(stream));
+    private readonly string _markup;
+    private ShapeSvg _shape;
+    private Vector3 _rgbMultiplier = Vector3.One;
+    private byte _maximumChannel = 255;
+    private bool _colorDirty;
     private IRenderTarget? _cache;
     private int _contentWidth;
     private int _contentHeight;
 
-    public bool NeedsCache(IGraphicsDevice device) => _cache?.ColorTexture is not { } texture
+    public AposShapeSvg(Stream stream, Vector3? rgbMultiplier = null, byte maximumChannel = 255)
+    {
+        _markup = SvgStyles.ReadWithInlineStyles(stream);
+        _rgbMultiplier = rgbMultiplier ?? Vector3.One;
+        _maximumChannel = maximumChannel;
+        _shape = new ShapeSvg(rgbMultiplier is null ? _markup : SvgColorAdjustment.Apply(_markup, _rgbMultiplier, maximumChannel));
+    }
+
+    public void SetColorAdjustment(Vector3 multiplier, byte maximumChannel)
+    {
+        if (_rgbMultiplier == multiplier && _maximumChannel == maximumChannel) return;
+        var adjusted = new ShapeSvg(SvgColorAdjustment.Apply(_markup, multiplier, maximumChannel));
+        _shape = adjusted;
+        _rgbMultiplier = multiplier;
+        _maximumChannel = maximumChannel;
+        _colorDirty = true;
+    }
+
+    public bool NeedsCache(IGraphicsDevice device) => _colorDirty || _cache?.ColorTexture is not { } texture
         || texture.Width != Math.Max(1, device.Swapchain.Width)
         || texture.Height != Math.Max(1, device.Swapchain.Height);
 
@@ -656,6 +690,7 @@ internal class AposShapeSvg(Stream stream) : AposShape
             batch.SetClipRect(null);
             batch.DrawSvg(_shape, Vector2.Zero, _contentHeight);
             batch.End();
+            _colorDirty = false;
         }
         finally
         {

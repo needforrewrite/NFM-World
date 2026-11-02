@@ -2,8 +2,16 @@
 using System.Runtime.InteropServices;
 using NFMWorld.Graphics;
 using NFMWorldLibrary;
+using NFMWorldLibrary.Rad;
 
 namespace NFMWorld;
+
+public enum CarDestructionStage
+{
+    None,
+    WhiteSparks,
+    Fire
+}
 
 public class Flames : IDisposable, IImmediateRenderElement
 {
@@ -13,11 +21,27 @@ public class Flames : IDisposable, IImmediateRenderElement
     private int[] _pa, _pb;
 
     private PositionColorVertex[] _triangles;
+    private readonly Vector3[] _sparkPoints;
+    private int _vertexCount;
     // Upload happens in Render() rather than GameTick() - see Sparks.cs's identical pattern for why.
     private bool _dirty;
     private readonly IBuffer _vertexBuffer;
 
     private int _tick;
+
+    public CarDestructionStage DestructionStage => !_car.VisuallyWasted || _embos == 0
+        ? CarDestructionStage.None
+        : _embos < 16 ? CarDestructionStage.WhiteSparks : CarDestructionStage.Fire;
+
+    public void Reset()
+    {
+        _embos = 0;
+        _tick = 0;
+        _vertexCount = 0;
+        _dirty = false;
+        _car.Mesh.Expand = false;
+        _car.Mesh.Darken = 1;
+    }
 
     public Flames(CarVisual car, IGraphicsDevice graphicsDevice)
     {
@@ -26,7 +50,16 @@ public class Flames : IDisposable, IImmediateRenderElement
         _pa = new int[car.Mesh.Polys.Length];
         _pb = new int[car.Mesh.Polys.Length];
 
-        _triangles = new PositionColorVertex[9 * car.Mesh.Polys.Length];
+        var sparkVertexCount = 0;
+        var maxPoints = 0;
+        foreach (var poly in car.Mesh.Polys)
+        {
+            if (poly.PolyType == PolyType.Glass) continue;
+            sparkVertexCount += poly.Triangles.Length;
+            maxPoints = Math.Max(maxPoints, poly.Points.Length);
+        }
+        _sparkPoints = new Vector3[maxPoints];
+        _triangles = new PositionColorVertex[Math.Max(9 * car.Mesh.Polys.Length, sparkVertexCount)];
         var maxBytes = _triangles.Length * PositionColorVertex.Stride;
         _vertexBuffer = graphicsDevice.CreateBuffer(
             new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxBytes), new byte[maxBytes]);
@@ -38,9 +71,11 @@ public class Flames : IDisposable, IImmediateRenderElement
         {
             if (++_tick == Physics.OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
             {
+                _vertexCount = 0;
                 if (_embos <= 11)
                 {
                     _car.Mesh.Expand = URandom.Boolean();
+                    BuildWhiteSparks();
                 }
                 else
                 {
@@ -286,19 +321,37 @@ public class Flames : IDisposable, IImmediateRenderElement
                         _triangles[triBase + 8] = new PositionColorVertex(inner2, innerColor);
                     }
 
+                    _vertexCount = 9 * _car.Mesh.Polys.Length;
                     _dirty = true;
                 }
             }
         }
     }
 
+    private void BuildWhiteSparks()
+    {
+        var color = new Color(230, 230, 230);
+        foreach (var poly in _car.Mesh.Polys)
+        {
+            if (poly.PolyType == PolyType.Glass || !URandom.Boolean()) continue;
+            for (var i = 0; i < poly.Points.Length; i++)
+                _sparkPoints[i] = poly.Points[i] + new Vector3(
+                    15 - URandom.Single() * 30,
+                    15 - URandom.Single() * 30,
+                    15 - URandom.Single() * 30);
+            foreach (var index in poly.Triangles)
+                _triangles[_vertexCount++] = new PositionColorVertex(_sparkPoints[index], color);
+        }
+        _dirty = _vertexCount > 0;
+    }
+
     public void Render(ICommandBuffer cb, Camera camera, Lighting? _)
     {
-        if (_embos < 16) return;
+        if (!_car.VisuallyWasted || _vertexCount == 0) return;
 
         if (_dirty)
         {
-            cb.UpdateBuffer(_vertexBuffer, MemoryMarshal.AsBytes(_triangles.AsSpan()));
+            cb.UpdateBuffer(_vertexBuffer, MemoryMarshal.AsBytes(_triangles.AsSpan(0, _vertexCount)));
             _dirty = false;
         }
 
@@ -311,7 +364,7 @@ public class Flames : IDisposable, IImmediateRenderElement
         p.View.SetValue(cb, camera.ViewMatrix);
         p.Projection.SetValue(cb, camera.ProjectionMatrix);
 
-        cb.Draw(startVertex: 0, primitiveCount: _triangles.Length / 3);
+        cb.Draw(startVertex: 0, primitiveCount: _vertexCount / 3);
     }
 
     private void ReleaseUnmanagedResources()

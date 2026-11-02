@@ -41,6 +41,9 @@ public sealed class DummyBackend : IBackend
             return new DummyImage();
         }
 
+        public IImage LoadSvgImage(string file, Vector3 rgbMultiplier, byte maximumChannel = 255)
+            => new DummyImage();
+
         public IImage LoadImage(ReadOnlyMemory<byte> file)
         {
             return new DummyImage();
@@ -207,6 +210,11 @@ file sealed class DummyFontMetrics : IFontMetrics
 
 file sealed class DummySoundClip : ISoundClip
 {
+    public bool IsActive => false;
+    public ISoundClip CreateSpatialInstance(bool followPosition = false) => new DummySoundClip();
+    public void SetPosition(Vector3 position) { }
+    public void Dispose() { }
+
     public void Play()
     {
     }

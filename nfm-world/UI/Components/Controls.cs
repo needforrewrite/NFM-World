@@ -18,6 +18,98 @@ public static class Controls
         public void Dismiss() => dismiss();
     }
 
+    private sealed class DropdownListView : View
+    {
+        private const int RowHeight = 32;
+        private readonly IReadOnlyList<string> _options;
+        private readonly Func<int> _selected;
+        private readonly DropdownOptionView[] _rows;
+
+        public DropdownListView(IReadOnlyList<string> options, Func<int> selected, Action<int> onSelect, float maxHeight)
+        {
+            _options = options;
+            _selected = selected;
+            Styles = Sx.Styles(flexDirection: FlexDirection.Column, maxHeight: maxHeight, overflow: Overflow.Scroll);
+            var content = new View
+            {
+                Styles = Sx.Styles(position: Position.Relative, height: options.Count * RowHeight, flexShrink: 0)
+            };
+            // Keep the full scroll extent while recycling only the visible rows and a buffer.
+            _rows = new DropdownOptionView[Math.Min(options.Count, (int)Math.Ceiling(maxHeight / RowHeight) + 2)];
+            for (var i = 0; i < _rows.Length; i++)
+            {
+                var row = new DropdownOptionView(onSelect);
+                row.SetOption(i, options[i], i == selected());
+                _rows[i] = row;
+                content.AddChild(row);
+            }
+            AddChild(content);
+        }
+
+        protected override bool OnPostLayout()
+        {
+            var changed = base.OnPostLayout();
+            var first = Math.Clamp((int)(ScrollTop / (RowHeight * Math.Max(G.Scale, 0.01f))) - 1,
+                0, Math.Max(0, _options.Count - _rows.Length));
+            var selected = _selected();
+            for (var i = 0; i < _rows.Length; i++)
+            {
+                var index = first + i;
+                changed |= _rows[i].SetOption(index, _options[index], index == selected);
+            }
+            return changed;
+        }
+
+        private sealed class DropdownOptionView : View
+        {
+            private readonly Text _text = new();
+            private int _index = -1;
+            private bool _selected;
+            private bool _hovered;
+
+            public DropdownOptionView(Action<int> onSelect)
+            {
+                Styles = Sx.Styles(position: Position.Absolute, left: 0, right: 0, height: RowHeight,
+                    overflow: Overflow.Hidden, paddingTop: 7, paddingBottom: 7, paddingLeft: 12, paddingRight: 12);
+                MousePressed = _ => onSelect(_index);
+                MouseEntered = _ => { _hovered = true; UpdateColors(); };
+                MouseLeft = _ => { _hovered = false; UpdateColors(); };
+                AddChild(_text);
+            }
+
+            public bool SetOption(int index, string option, bool selected)
+            {
+                if (_index == index && _selected == selected) return false;
+                if (_index != index)
+                {
+                    _hovered = false;
+                    var style = Styles;
+                    style.Top = index * RowHeight;
+                    Styles = style;
+                    _text.TextContent = option;
+                }
+                _index = index;
+                _selected = selected;
+                UpdateColors();
+                return true;
+            }
+
+            private void UpdateColors()
+            {
+                var style = Styles;
+                style.BackgroundColor = _selected ? Theme.AccentSoft
+                    : _hovered ? new Color(255, 255, 255, 20) : Theme.Transparent;
+                Styles = style;
+                _text.TextStyles = new TextStyles
+                {
+                    FontSize = 13,
+                    ForegroundColor = _selected ? Theme.Accent
+                        : _hovered ? new Color(255, 255, 255) : new Color(255, 255, 255, 204)
+                };
+            }
+        }
+    }
+
     public static void DismissDropdowns(View root, Vector2 position)
     {
         var hit = FocusManager.HitTestChain(root, position);
@@ -270,45 +362,12 @@ public static class Controls
                     Overflow = Overflow.Hidden,
                     ZIndex = 1000,
                 },
-                children: Sx.View(
-                    style: () => Sx.Styles(flexDirection: FlexDirection.Column,
-                        maxHeight: Math.Max(0, popupHeight.Value - 2), overflow: Overflow.Scroll),
-                    children: Sx.For(
-                    each: () => options(),
-                    row: (option, index) =>
+                children: new DropdownListView(options(), () => selectedIndex.Value,
+                    index =>
                     {
-                        var rowHovered = new Signal<bool>(false);
-                        return Sx.View(
-                            style: () => new Styles
-                            {
-                                Height = 32,
-                                Overflow = Overflow.Hidden,
-                                PaddingTop = 7,
-                                PaddingBottom = 7,
-                                PaddingLeft = 12,
-                                PaddingRight = 12,
-                                FlexShrink = 0,
-                                BackgroundColor = index == selectedIndex.Value
-                                    ? Theme.AccentSoft
-                                    : rowHovered.Value ? new Color(255, 255, 255, 20) : Theme.Transparent,
-                            },
-                            onmousedown: _ =>
-                            {
-                                onSelect(index);
-                                open.Value = false;
-                            },
-                            onmouseenter: _ => rowHovered.Value = true,
-                            onmouseleave: _ => rowHovered.Value = false,
-                            children: Sx.Text(
-                                style: () => new TextStyles
-                                {
-                                    FontSize = 13,
-                                    ForegroundColor = index == selectedIndex.Value
-                                        ? Theme.Accent
-                                        : rowHovered.Value ? new Color(255, 255, 255) : new Color(255, 255, 255, 204),
-                                },
-                                text: () => option));
-                    }))));
+                        onSelect(index);
+                        open.Value = false;
+                    }, Math.Max(0, popupHeight.Value - 2))));
 
         root = new DropdownView(() => open.Value = false)
         {

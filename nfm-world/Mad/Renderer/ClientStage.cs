@@ -1,5 +1,6 @@
 ﻿using System.Collections.Specialized;
 using NFMWorldLibrary;
+using NFMWorld.Sfx;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Util;
@@ -15,6 +16,7 @@ public class ClientStage : IDisposable
 {
     private readonly Dictionary<BackendCar, CarVisual> _carVisuals = new();
     private readonly Dictionary<ClientSidePlayer, CarVisual> _playerVisuals = new();
+    private readonly CrashSoundQueue<MadSfx> _crashSounds = new();
     private ObservableUnlimitedArray<BackendCar> _cars;
     private ObservableUnlimitedArray<ClientSidePlayer>? _players;
     private Scene _scene;
@@ -106,7 +108,7 @@ public class ClientStage : IDisposable
     {
         if (!_carVisuals.TryGetValue(car, out var visual))
         {
-            visual = _carVisuals[car] = new CarVisual(car);
+            visual = _carVisuals[car] = new CarVisual(car, _crashSounds);
             _scene.Objects.Add(visual);
         }
         return visual;
@@ -175,7 +177,10 @@ public class ClientStage : IDisposable
 
     private void CreatePlayerVisual(ClientSidePlayer player, BackendCar car)
     {
-        _playerVisuals[player] = GetCarVisual(car);
+        var visual = GetCarVisual(car);
+        if (visual.Sfx is { } sfx)
+            sfx.PlayPowerUp = player.Info.IsClientPlayer && !player.IsFake;
+        _playerVisuals[player] = visual;
     }
 
     private void PlayersOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -225,7 +230,7 @@ public class ClientStage : IDisposable
                 {
                     if (!_carVisuals.ContainsKey(car))
                     {
-                        var visual = _carVisuals[car] = new CarVisual(car);
+                        var visual = _carVisuals[car] = new CarVisual(car, _crashSounds);
                         _scene.Objects.Add(visual);
                     }
                 }
@@ -254,7 +259,7 @@ public class ClientStage : IDisposable
                 {
                     if (!_carVisuals.ContainsKey(car))
                     {
-                        var visual = _carVisuals[car] = new CarVisual(car);
+                        var visual = _carVisuals[car] = new CarVisual(car, _crashSounds);
                         _scene.Objects.Add(visual);
                     }
                 }
@@ -280,7 +285,7 @@ public class ClientStage : IDisposable
                 {
                     if (!_carVisuals.ContainsKey(car))
                     {
-                        var visual = _carVisuals[car] = new CarVisual(car);
+                        var visual = _carVisuals[car] = new CarVisual(car, _crashSounds);
                         _scene.Objects.Add(visual);
                     }
                 }
@@ -306,10 +311,13 @@ public class ClientStage : IDisposable
             }
             obj.GameTick(Backend);
         }
+        _crashSounds.Flush(static (source, crash) => source.PlayCrashSound(crash));
+        NFMWorld.Audio.SpatialAudio.UpdateListener(Camera.Position, Camera.LookAt - Camera.Position, Camera.Up);
     }
 
     public void StopSounds()
     {
+        _crashSounds.Clear();
         foreach (var visual in _carVisuals.Values)
             visual.Sfx?.Stop();
     }

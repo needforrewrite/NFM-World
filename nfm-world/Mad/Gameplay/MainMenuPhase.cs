@@ -293,6 +293,15 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 _cameraDirector.ShowCar(Camera, _menuCar, _menuTime, garageBlend: Smooth(_garageBlend),
                     garageAngle: _garageCamera.Angle, garageHeight: _garageCamera.Height);
                 _settingsCamera.Update(Camera, _menuCar, NFMWorld.UI.Components.SettingsView.CameraPreviewActive);
+                if (NFMWorld.UI.Components.SettingsView.MenuHudPreviewData is { } preview)
+                {
+                    preview.Power.Value = (float)_menuCar.CarPhysics.Power / 100f;
+                    preview.Damage.Value = _menuCar.Stats.Maxmag > 0
+                        ? (float)_menuCar.CarPhysics.DamagePoints / _menuCar.Stats.Maxmag : 0;
+                    preview.Racers.Clear();
+                    preview.Racers.Add(new NFMWorldLibrary.Hud.HudRacer(1, _menuCar.Stats.Name,
+                        preview.DamageFraction, true, _menuCar.Wasted));
+                }
             }
         }
         else

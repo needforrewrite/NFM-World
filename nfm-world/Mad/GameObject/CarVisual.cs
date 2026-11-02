@@ -36,7 +36,7 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
     private byte _fixTimer;
     private int _fixTick = 0;
 
-    public CarVisual(BackendCar car)
+    public CarVisual(BackendCar car, CrashSoundQueue<MadSfx> crashSounds)
         : base(new CarMesh(car.Rad))
     {
         Bfase = new float[Mesh.Polys.Length];
@@ -69,7 +69,7 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
         car.CarPhysics.Distruct += OnDistruct;
         car.Fixed += OnFixed;
 
-        Sfx = new MadSfx(car.CarPhysics);
+        Sfx = new MadSfx(car, crashSounds);
     }
 
     #region Event handlers
@@ -107,6 +107,8 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
     private void OnFixed()
     {
         _fixing = true;
+        VisuallyWasted = false;
+        Flames.Reset();
     }
 
     #endregion
@@ -142,7 +144,7 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
         Dust.GameTick(stage);
         Chips.GameTick();
         Sparks.GameTick();
-        Sfx?.Tick(Car.Control, Car.CarPhysics, Car.Stats);
+        Sfx?.Tick(Car.Control, Car.CarPhysics, Car.Stats, Flames.DestructionStage);
 
         IterateFix();
     }

@@ -1,4 +1,5 @@
 using NFMWorldLibrary.Util;
+using NFMWorldLibrary.Hud;
 
 namespace NFMWorld.UI.Settings;
 
@@ -32,6 +33,10 @@ public sealed class SettingsSnapshot
     public bool RemasteredMusic { get; set; }
 
     // Game (Camera)
+    public string HudSkin { get; set; } = HudSkinId.Default;
+    public float HudScale { get; set; } = HudScaleSettings.Default;
+    public float HudSafeZoneHorizontal { get; set; } = HudSafeZoneSettings.Default;
+    public float HudSafeZoneVertical { get; set; } = HudSafeZoneSettings.Default;
     public float Fov { get; set; }
     public int FollowY { get; set; }
     public int FollowZ { get; set; }
@@ -64,6 +69,7 @@ public sealed class KeyBindingData
 /// <summary>Valid choices for each dropdown, for the current platform.</summary>
 public sealed class AvailableOptions
 {
+    public IReadOnlyList<HudSkinInfo> HudSkins { get; set; } = [];
     public IReadOnlyList<string> MenuStages { get; set; } = [];
     public IReadOnlyList<string> MenuTracks { get; set; } = [];
     public IReadOnlyList<string> Renderers { get; set; } = [];

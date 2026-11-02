@@ -1,6 +1,7 @@
 ﻿using NFMWorld.DriverInterface;
 using NFMWorldLibrary;
 using SignalsDotnet;
+using NFMWorldLibrary.Hud;
 
 namespace NFMWorld.UI.ViewModels;
 
@@ -21,8 +22,18 @@ public static class UiState
     public static SettingsState Settings { get; } = new();
 
     /// <summary>Per-frame HUD values, written by the race phase.</summary>
-    public sealed class RaceState
+    public sealed class RaceState : IHudData
     {
+        public Signal<string> Skin { get; } = new(HudSkinId.Default);
+        public Signal<Color3> StageSnap { get; } = new(default(Color3));
+        public bool TimeTrial { get; set; }
+        public bool IsPreview { get; set; }
+        public int Wasted { get; set; }
+        public int Opponents { get; set; }
+        public float? ArrowAngle { get; set; }
+        public string ArrowTarget { get; set; } = "";
+        public bool ArrowAtCars { get; set; }
+        public List<HudRacer> Racers { get; } = [];
         public Signal<float> Speed { get; } = new(0);
         public Signal<float> Power { get; } = new(1);
         public Signal<float> Damage { get; } = new(0);
@@ -36,11 +47,37 @@ public static class UiState
         public Signal<DateTime?> StateTextEndsAt { get; } = new(null);
         public Signal<bool> Paused { get; } = new(false);
 
+        public int SpeedKmh => float.IsFinite(Speed.Value)
+            ? Math.Max(0, (int)Math.Floor(Speed.Value * 1.4 * 21 * 3600 / 100000 + 0.5)) : 0;
+        public float PowerFraction => Fraction(Power.Value / 0.98f);
+        public float DamageFraction => Fraction(Damage.Value);
+        int IHudData.Lap => Lap.Value;
+        int IHudData.TotalLaps => TotalLaps.Value;
+        int IHudData.LapTimeMs => LapTimeMs.Value;
+        int IHudData.Position => Position.Value;
+        int IHudData.TotalRacers => TotalRacers.Value;
+        public int Countdown => CountdownTimer.Value;
+        bool IHudData.Paused => Paused.Value;
+        IReadOnlyList<HudRacer> IHudData.Racers => Racers;
+        public string Message
+        {
+            get
+            {
+                _ = LapTimeMs.Value;
+                if (CountdownTimer.Value > 0) return $"Starting in {CountdownTimer.Value}";
+                return StateTextEndsAt.Value is { } endsAt && DateTime.UtcNow >= endsAt
+                    ? "" : StateText.Value ?? "";
+            }
+        }
+
+        private static float Fraction(float value) => float.IsFinite(value) ? Math.Clamp(value, 0, 1) : 0;
+
         /// <summary>Writes the whole frame's HUD state as one flush.</summary>
         public void Update(HudStateData hud, bool paused)
         {
             Signal.Batch(() =>
             {
+                StageSnap.Value = World.Snap;
                 Speed.Value = hud.Speed;
                 Power.Value = hud.Power;
                 Damage.Value = hud.Damage;
@@ -86,6 +123,7 @@ public static class UiState
         public Signal<CarStatsViewModel?> CurrentCar { get; } = new(null);
     }
 }
+
 
 /// <summary>Car stats shown in the garage.</summary>
 public sealed record CarStatsViewModel(
