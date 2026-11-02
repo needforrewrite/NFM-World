@@ -56,7 +56,7 @@ public static class MainMenuView
         new("GARAGE", "Customize and inspect your vehicles in the garage.", actions.Garage),
         new("WORKSHOP", "Build your own models and stages.", () => PushPage(BuildWorkshopMenu(actions))),
         new("SETTINGS", "Adjust game settings.", () => SettingsOpen.Value = true),
-        new("CREDITS", "View game credits.", () => actions.Unavailable("credits")),
+        new("EXTRAS", "View credits, statistics and replays.", () => PushPage(BuildExtrasMenu(actions))),
         new("QUIT", "Exit the game.", () =>
         {
             QuitChoice.Value = 0;
@@ -217,11 +217,19 @@ public static class MainMenuView
         new("BACK", "Return to the previous menu.", PopPage),
     ]);
 
+    private static MenuPage BuildExtrasMenu(Actions actions) => new("EXTRAS",
+    [
+        new("CREDITS", "View game credits.", () => actions.Unavailable("credits")),
+        new("STATS", "View your gameplay statistics.", () => actions.Unavailable("stats")),
+        new("REPLAYS", "Browse and watch saved replays.", () => actions.Unavailable("replays")),
+        new("BACK", "Return to the previous menu.", PopPage),
+    ]);
+
     private static MenuPage BuildTrainingMenu(Actions actions) => new("TRAINING",
     [
         new("TIME TRIALS", "Flex your fastest time against other people.", actions.TimeTrials),
         new("CHALLENGES", "Complete challenges to sharpen your mechanical skills.", () => actions.Unavailable("challenges")),
-        new("GAME INSTRUCTIONS", "Read about the rules and controls of the game.", () => actions.Unavailable("gameInstructions")),
+        new("TUTORIAL", "Learn the rules and controls of the game.", () => actions.Unavailable("tutorial")),
         new("BACK", "Return to the previous menu.", PopPage),
     ]);
 

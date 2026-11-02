@@ -70,7 +70,7 @@ public class SettingsMenu()
     private static int _originalRenderer = _selectedRenderer;
     private static string[] _resolutions = GetSupportedResolutions();
     public static string[] Resolutions => _resolutions;
-    private static int _selectedResolution = Array.FindIndex(_resolutions, e => e == "1280 x 720");
+    private static int _selectedResolution = Math.Max(0, Array.FindIndex(_resolutions, e => e == "1280 x 720"));
     public static readonly string[] DisplayModes = ["Fullscreen", "Windowed", "Borderless"];
     private static int _selectedDisplayMode = 1;
     private static bool _vsync = true;
@@ -137,25 +137,38 @@ public class SettingsMenu()
 
     private static Vector4 RGB(int r, int g, int b, float a = 1.0f) => new Vector4(r / 255f, g / 255f, b / 255f, a);
 
-    private static string[] GetSupportedResolutions()
+    private static string[] GetSupportedResolutions(IntPtr window = default)
     {
-        // Everybody should be able to use these
-        SortedSet<string> resolutions = new(Comparer<string>.Create((a, b) => {
-            var aParts = a.Split('x', StringSplitOptions.TrimEntries).Select(int.Parse).ToArray();
-            var bParts = b.Split('x', StringSplitOptions.TrimEntries).Select(int.Parse).ToArray();
-            var aPixels = aParts[0] * aParts[1];
-            var bPixels = bParts[0] * bParts[1];
-            return aPixels.CompareTo(bPixels);
-        }))
-        {
+        if (OperatingSystem.IsBrowser()) return
+        [
             "640 x 480", "800 x 600", "1024 x 768", "1280 x 720", "1280 x 1024", "1920 x 1080", "2560 x 1440",
             "3840 x 2160"
-        };
-        foreach (var (width, height) in SdlWindow.GetFullscreenDisplayModes())
+        ];
+        var resolutions = SdlWindow.GetFullscreenDisplayModes(window)
+            .OrderBy(mode => (long)mode.Width * mode.Height)
+            .ThenBy(mode => mode.Width)
+            .ThenBy(mode => mode.Height)
+            .Select(mode => $"{mode.Width} x {mode.Height}")
+            .ToArray();
+        return resolutions.Length > 0 ? resolutions : ["1280 x 720"];
+    }
+
+    public static void RefreshSupportedResolutions()
+    {
+        if (OperatingSystem.IsBrowser()) return;
+        var selected = _resolutions[Math.Clamp(_selectedResolution, 0, _resolutions.Length - 1)];
+        var resolutions = GetSupportedResolutions(GameSparker.Game.Window.Handle);
+        if (_selectedDisplayMode == 1)
         {
-            resolutions.Add($"{width} x {height}");
+            var window = GameSparker.Game.Window;
+            var current = $"{window.Width} x {window.Height}";
+            if (!resolutions.Contains(current)) resolutions = [.. resolutions, current];
         }
-        return resolutions.ToArray();
+        if (_resolutions.SequenceEqual(resolutions)) return;
+        _resolutions = resolutions;
+        _selectedResolution = Array.IndexOf(resolutions, selected);
+        if (_selectedResolution < 0) _selectedResolution = resolutions.Length - 1;
+        ResolutionsChanged?.Invoke();
     }
 
     /// <summary>
@@ -1125,12 +1138,15 @@ public class SettingsMenu()
                     _selectedRenderer = renderer;
                 break;
             case "selectedResolution":
-                if (AsInt(value) is { } resolution)
+                if (AsInt(value) is { } resolution && resolution >= 0 && resolution < _resolutions.Length)
                     _selectedResolution = resolution;
                 break;
             case "selectedDisplayMode":
-                if (AsInt(value) is { } displayMode)
+                if (AsInt(value) is { } displayMode && displayMode >= 0 && displayMode < DisplayModes.Length)
+                {
                     _selectedDisplayMode = displayMode;
+                    RefreshSupportedResolutions();
+                }
                 break;
             case "vsync":
                 if (value is bool vsync)

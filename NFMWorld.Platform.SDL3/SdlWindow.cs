@@ -17,6 +17,7 @@ public sealed class SdlWindow : IDisposable
 {
     private readonly IntPtr _window;
     private bool _disposed;
+    private bool _relativeMouseModeRequested;
     private bool _fullscreenPending;
     private bool _fullscreenRetryOnFocus;
     private int _fullscreenWidth;
@@ -148,6 +149,30 @@ public sealed class SdlWindow : IDisposable
     /// <summary>Whether the window currently has input focus. Replaces FNA's <c>Game.IsActive</c>.</summary>
     public bool HasFocus => (SDL.SDL_GetWindowFlags(_window) & SDL.SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS) != 0;
 
+    public bool CursorVisible
+    {
+        get;
+        set
+        {
+            if (field == value) return;
+            if (value) SDL.SDL_ShowCursor();
+            else SDL.SDL_HideCursor();
+            field = value;
+        }
+    } = true;
+
+    public void WarpMouse(float x, float y)
+        => SDL.SDL_WarpMouseInWindow(_window, x / _mouseScaleX, y / _mouseScaleY);
+
+    public void SetRelativeMouseMode(bool enabled)
+    {
+        if (_relativeMouseModeRequested == enabled) return;
+        _relativeMouseModeRequested = enabled;
+        if (enabled) SDL.SDL_SetHint(SDL.SDL_HINT_MOUSE_RELATIVE_MODE_CENTER, "1");
+        if (!SDL.SDL_SetWindowRelativeMouseMode(_window, enabled))
+            NFMWorldLibrary.Logging.Warning($"Could not {(enabled ? "capture" : "release")} mouse: {SDL.SDL_GetError()}");
+    }
+
     public bool Fullscreen
     {
         get => (SDL.SDL_GetWindowFlags(_window) & SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN) != 0;
@@ -175,18 +200,36 @@ public sealed class SdlWindow : IDisposable
         _fullscreenPending = false;
         if (RequestedFullscreen && _fullscreenWidth > 0 && _fullscreenHeight > 0)
         {
-            if (!SDL.SDL_GetClosestFullscreenDisplayMode(SDL.SDL_GetPrimaryDisplay(),
+            var display = SDL.SDL_GetDisplayForWindow(_window);
+            if (display == 0) display = SDL.SDL_GetPrimaryDisplay();
+            if (!SDL.SDL_GetClosestFullscreenDisplayMode(display,
                     _fullscreenWidth, _fullscreenHeight, 0, true, out var mode))
-                throw new InvalidOperationException($"Cannot select fullscreen resolution: {SDL.SDL_GetError()}");
+            {
+                RejectFullscreenChange($"Cannot select fullscreen resolution {_fullscreenWidth} x {_fullscreenHeight}: {SDL.SDL_GetError()}");
+                return;
+            }
             if (!SDL.SDL_SetWindowFullscreenMode(_window, ref mode))
-                throw new InvalidOperationException($"SDL_SetWindowFullscreenMode failed: {SDL.SDL_GetError()}");
+            {
+                RejectFullscreenChange($"SDL_SetWindowFullscreenMode failed: {SDL.SDL_GetError()}");
+                return;
+            }
         }
         if (!SDL.SDL_SetWindowFullscreen(_window, RequestedFullscreen))
-            throw new InvalidOperationException($"SDL_SetWindowFullscreen failed: {SDL.SDL_GetError()}");
+        {
+            RejectFullscreenChange($"SDL_SetWindowFullscreen failed: {SDL.SDL_GetError()}");
+            return;
+        }
 
         var synchronized = SDL.SDL_SyncWindow(_window);
         _fullscreenRetryOnFocus = !synchronized || Fullscreen != RequestedFullscreen;
         RefreshSize();
+    }
+
+    private void RejectFullscreenChange(string error)
+    {
+        NFMWorldLibrary.Logging.Warning(error);
+        RequestedFullscreen = Fullscreen;
+        _fullscreenRetryOnFocus = false;
     }
 
     private void RefreshSize()
@@ -398,13 +441,10 @@ public sealed class SdlWindow : IDisposable
     }
 
     /// <summary>
-    /// The primary display's supported fullscreen modes, deduplicated per (width, height) - SDL
-    /// reports one entry per refresh rate - and in pixels, matching what
-    /// <see cref="SetSize"/> takes. Replaces FNA's
-    /// <c>GraphicsAdapter.DefaultAdapter.SupportedDisplayModes</c>: FNA built that list from this
-    /// same SDL call (<c>SDL3_FNAPlatform.GetGraphicsAdapters</c>), so the entries are equivalent.
+    /// Supported fullscreen modes for the window's display, or the primary display without a window.
+    /// Sizes are in pixels and deduplicated across refresh rates.
     /// </summary>
-    public static unsafe IReadOnlyList<(int Width, int Height)> GetFullscreenDisplayModes()
+    public static unsafe IReadOnlyList<(int Width, int Height)> GetFullscreenDisplayModes(IntPtr window = default)
     {
         // FNA's GraphicsAdapter only worked because touching it ran its platform class's static
         // ctor, which initializes SDL video; do the same here since the settings menu builds its
@@ -413,9 +453,16 @@ public sealed class SdlWindow : IDisposable
         if (!SDL.SDL_Init(SDL.SDL_InitFlags.SDL_INIT_VIDEO))
             throw new InvalidOperationException($"SDL_Init failed: {SDL.SDL_GetError()}");
 
-        var modes = (SDL.SDL_DisplayMode**)SDL.SDL_GetFullscreenDisplayModes(SDL.SDL_GetPrimaryDisplay(), out var count);
+        var display = window == IntPtr.Zero ? SDL.SDL_GetPrimaryDisplay() : SDL.SDL_GetDisplayForWindow(window);
+        if (display == 0) display = SDL.SDL_GetPrimaryDisplay();
+        var modes = (SDL.SDL_DisplayMode**)SDL.SDL_GetFullscreenDisplayModes(display, out var count);
         try
         {
+            if (modes == null || count <= 0)
+            {
+                NFMWorldLibrary.Logging.Warning($"Cannot enumerate fullscreen display modes: {SDL.SDL_GetError()}");
+                return [];
+            }
             var seen = new HashSet<(int Width, int Height)>();
             var result = new List<(int Width, int Height)>(count);
             for (var i = 0; i < count; i++)
@@ -466,6 +513,8 @@ public sealed class SdlWindow : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        SetRelativeMouseMode(false);
+        CursorVisible = true;
         SDL.SDL_DestroyWindow(_window);
         SDL.SDL_Quit();
     }

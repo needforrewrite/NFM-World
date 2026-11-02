@@ -2,6 +2,10 @@
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorld.Sentry;
+using NFMWorldLibrary.Rad;
+using NFMWorldLibrary.Rendering;
+using NFMWorldLibrary.Util;
+using NFMWorldLibrary.FixedMath;
 
 namespace NFMWorld;
 
@@ -29,6 +33,7 @@ public class ClientStageRenderer : GameObject, IDisposable
     private (bool drawMountains, int maxl, int maxr, int maxb, int maxt) _mountainsKey;
 
     private int _lastIndex;
+    private readonly List<Mesh> _resolvedMeshes = [];
 
     // we use the object instance hashcode instead of the value hashcode for performance
     private class StageObjectVisualComparer : IEqualityComparer<StageObject>
@@ -139,6 +144,7 @@ public class ClientStageRenderer : GameObject, IDisposable
                     }
                 }
             }
+            ResolveSurfaceOverlaps();
         }
         catch (Exception exception)
         {
@@ -205,12 +211,14 @@ public class ClientStageRenderer : GameObject, IDisposable
             _mountainsKey = mountainsKey;
         }
 
+        var geometryChanged = false;
         foreach (var piece in backendStage.Pieces)
         {
             if (piece is StageObject obj)
             {
                 seenObjects.Add(obj);
                 if (_cachedObjects.ContainsKey(obj)) continue;
+                geometryChanged = true;
                 
                 var mesh = GameSparker.GetStagePartMesh(obj.Rad);
                 if (obj.Kind == AiNodeKind.CheckPoint)
@@ -264,6 +272,40 @@ public class ClientStageRenderer : GameObject, IDisposable
         {
             _cachedObjects.Remove(obj);
         }
+        if (geometryChanged || objsToRemove.Count > 0) ResolveSurfaceOverlaps();
+    }
+
+    private void ResolveSurfaceOverlaps()
+    {
+        var resolver = new CoplanarSurfaceResolver();
+        var entries = _cachedObjects.OrderBy(entry => entry.Value.Layer ?? 0).ToArray();
+        var replacements = new List<(StageObjectGameObject Visual, Mesh Mesh)>();
+        var owned = new List<Mesh>();
+        try
+        {
+            for (var i = 0; i < entries.Length; i++)
+            {
+                var (obj, visual) = entries[i];
+                var world = Matrix.CreateFromEuler((Euler)obj.Rotation) * Matrix.CreateTranslation((Vector3)obj.Position);
+                var polygons = StageSurfaceOverlaps.Resolve(resolver, i, obj.Rad.Polys, world);
+                var mesh = GameSparker.GetStagePartMesh(obj.Rad);
+                if (!ReferenceEquals(polygons, obj.Rad.Polys))
+                {
+                    mesh = new Mesh(new Rad3d(polygons, obj.Rad.CastsShadow, obj.Rad.FileName));
+                    owned.Add(mesh);
+                }
+                replacements.Add((visual, mesh));
+            }
+        }
+        catch
+        {
+            foreach (var mesh in owned) mesh.Dispose();
+            throw;
+        }
+        foreach (var (visual, mesh) in replacements) visual.Mesh = mesh;
+        foreach (var mesh in _resolvedMeshes) mesh.Dispose();
+        _resolvedMeshes.Clear();
+        _resolvedMeshes.AddRange(owned);
     }
 
     public void ApplyValues()
@@ -400,6 +442,9 @@ public class ClientStageRenderer : GameObject, IDisposable
         polys?.Dispose();
         clouds?.Dispose();
         mountains?.Dispose();
+
+        foreach (var mesh in _resolvedMeshes) mesh.Dispose();
+        _resolvedMeshes.Clear();
 
         _cachedObjects.Clear();
         _mutableChildren.Clear();

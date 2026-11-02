@@ -75,6 +75,11 @@ public class MadSfx : IDisposable
         if (!Mute && PlayPowerUp) SfxLibrary.powerup?.Play();
     }
 
+    internal void PlayFixSound()
+    {
+        if (!Mute && SfxLibrary.carfixed is { } sample) Sound(sample, followPosition: true).Play();
+    }
+
     public void Stop()
     {
         for (var gear = 0; gear < 5; gear++)

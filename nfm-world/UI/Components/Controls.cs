@@ -1,5 +1,6 @@
 ﻿using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
+using NFMWorld.DriverInterface;
 using NFMWorld.Reactor.Sx;
 using MouseEvent = NFMWorld.ClayDom.Events.MouseEvent;
 using MouseDragEvent = NFMWorld.ClayDom.Events.MouseDragEvent;
@@ -24,6 +25,7 @@ public static class Controls
         private readonly IReadOnlyList<string> _options;
         private readonly Func<int> _selected;
         private readonly DropdownOptionView[] _rows;
+        private int _lastSelected = -1;
 
         public DropdownListView(IReadOnlyList<string> options, Func<int> selected, Action<int> onSelect, float maxHeight)
         {
@@ -49,9 +51,20 @@ public static class Controls
         protected override bool OnPostLayout()
         {
             var changed = base.OnPostLayout();
+            var selected = _selected();
+            if (_lastSelected != selected)
+            {
+                var top = selected * RowHeight * Math.Max(G.Scale, 0.01f);
+                var bottom = top + RowHeight * Math.Max(G.Scale, 0.01f);
+                var previous = ScrollTop;
+                if (top < ScrollTop) ScrollTop = top;
+                else if (bottom > ScrollTop + LayoutPaddingSize.Y) ScrollTop = bottom - LayoutPaddingSize.Y;
+                changed |= previous != ScrollTop;
+                if (top >= ScrollTop - 0.5f && bottom <= ScrollTop + LayoutPaddingSize.Y + 0.5f)
+                    _lastSelected = selected;
+            }
             var first = Math.Clamp((int)(ScrollTop / (RowHeight * Math.Max(G.Scale, 0.01f))) - 1,
                 0, Math.Max(0, _options.Count - _rows.Length));
-            var selected = _selected();
             for (var i = 0; i < _rows.Length; i++)
             {
                 var index = first + i;
@@ -136,8 +149,9 @@ public static class Controls
     public static Node Checkbox(Func<bool> checkedValue, Action onToggle, Func<string?>? label = null)
     {
         var hovered = new Signal<bool>(false);
+        var focused = new Signal<bool>(false);
 
-        return Sx.View(
+        var node = Sx.View(
             style: () => new Styles
             {
                 FlexDirection = FlexDirection.Row,
@@ -160,7 +174,7 @@ public static class Controls
                         BorderBottom = 1,
                         BorderLeft = 1,
                         BorderRight = 1,
-                        BorderColor = checkedValue()
+                        BorderColor = focused.Value ? new Color(205, 227, 255) : checkedValue()
                             ? Theme.Accent
                             : hovered.Value ? new Color(255, 255, 255, 128) : new Color(255, 255, 255, 64),
                         BackgroundColor = checkedValue()
@@ -185,6 +199,13 @@ public static class Controls
                         },
                         text: () => label?.Invoke()))
             ]);
+        return KeyboardNavigation.Bind(node, key =>
+        {
+            if (key is not (Key.Enter or Key.Space or Key.Left or Key.Right)) return false;
+            if (key == Key.Left && !checkedValue() || key == Key.Right && checkedValue()) return true;
+            onToggle();
+            return true;
+        }, value => focused.Value = value);
     }
 
     // ── Slider ────────────────────────────────────────────────────────
@@ -205,6 +226,7 @@ public static class Controls
         const float trackHeight = 4f;
         const float rowHeight = 20f;
         View? row = null;
+        var focused = new Signal<bool>(false);
 
         double Progress() => max - min <= 0 ? 0 : Math.Clamp((value() - min) / (max - min), 0, 1);
 
@@ -262,7 +284,7 @@ public static class Controls
                 BorderBottom = 2,
                 BorderLeft = 2,
                 BorderRight = 2,
-                BorderColor = Theme.AccentBorder,
+                BorderColor = focused.Value ? new Color(255, 255, 255) : Theme.AccentBorder,
                 BorderRadius = 7,
                 ZIndex = 1,
             });
@@ -290,13 +312,23 @@ public static class Controls
                 Position = Position.Relative,
                 MarginLeft = 8,
                 MarginRight = 8,
+                BackgroundColor = focused.Value ? Theme.AccentSoft : Theme.Transparent,
+                BorderRadius = 4,
             },
             onmousedown: SetFromPointer,
             onmousedrag: SetFromDrag,
             children: new object?[] { track });
 
         // The row is positioned, so it is the containing block for the track and thumb.
-        return row;
+        return KeyboardNavigation.Bind(row, key =>
+        {
+            if (key is Key.Enter or Key.Space) return true;
+            if (key is not (Key.Left or Key.Right or Key.Home or Key.End)) return false;
+            var next = key == Key.Home ? min : key == Key.End ? max
+                : Math.Round((value() + (key == Key.Left ? -step : step)) / step) * step;
+            onValue(Math.Clamp(next, min, max));
+            return true;
+        }, value => focused.Value = value);
     }
 
     // ── Dropdown ──────────────────────────────────────────────────────
@@ -314,7 +346,9 @@ public static class Controls
         var opensAbove = new Signal<bool>(false);
         var popupHeight = new Signal<float>(200);
         var hovered = new Signal<bool>(false);
-        var selectedIndex = Sx.Computed(value);
+        var focused = new Signal<bool>(false);
+        var cursor = new Signal<int>(0);
+        IReadOnlyList<string> openOptions = [];
         View? root = null;
 
         Node? popup = null;
@@ -328,13 +362,16 @@ public static class Controls
             }
             if (root == null) return;
 
+            openOptions = options().ToArray();
+            cursor.Value = Math.Clamp(value(), 0, Math.Max(0, openOptions.Count - 1));
+
             var clip = root.ScissorRect;
             var position = root.LayoutBorderPosition;
             var size = root.LayoutBorderSize;
             var scale = Math.Max(G.Scale, 0.01f);
             var above = Math.Max(0, (position.Y - clip.Y) / scale - 4);
             var below = Math.Max(0, (clip.Y + clip.Height - position.Y - size.Y) / scale - 4);
-            var desired = Math.Min(200, options().Count * 32 + 2);
+            var desired = Math.Min(200, openOptions.Count * 32 + 2);
             opensAbove.Value = below < desired && above > below;
             popupHeight.Value = Math.Min(200, opensAbove.Value ? above : below);
             open.Value = true;
@@ -362,7 +399,7 @@ public static class Controls
                     Overflow = Overflow.Hidden,
                     ZIndex = 1000,
                 },
-                children: new DropdownListView(options(), () => selectedIndex.Value,
+                children: new DropdownListView(openOptions, () => cursor.Value,
                     index =>
                     {
                         onSelect(index);
@@ -392,7 +429,7 @@ public static class Controls
                     BorderBottom = 1,
                     BorderLeft = 1,
                     BorderRight = 1,
-                    BorderColor = open.Value
+                    BorderColor = open.Value || focused.Value
                         ? new Color(128, 170, 255)
                         : hovered.Value ? new Color(205, 227, 255) : new Color(128, 170, 255, 100),
                     BorderRadius = 6,
@@ -420,7 +457,41 @@ public static class Controls
                 ]));
         root.AddChild(popup);
 
-        return root;
+        return KeyboardNavigation.Bind(root, key =>
+        {
+            if (key == Key.Escape && open.Value)
+            {
+                open.Value = false;
+                return true;
+            }
+            if (key is Key.Enter or Key.Space)
+            {
+                if (!open.Value) Toggle();
+                else
+                {
+                    if (cursor.Value >= 0 && cursor.Value < openOptions.Count) onSelect(cursor.Value);
+                    open.Value = false;
+                }
+                return true;
+            }
+            if (open.Value && key is (Key.Up or Key.Down or Key.Left or Key.Right or Key.Home or Key.End))
+            {
+                cursor.Value = key == Key.Home ? 0 : key == Key.End ? Math.Max(0, openOptions.Count - 1)
+                    : Math.Clamp(cursor.Value + (key is Key.Up or Key.Left ? -1 : 1), 0, Math.Max(0, openOptions.Count - 1));
+                return true;
+            }
+            if (!open.Value && key is (Key.Left or Key.Right))
+            {
+                var count = options().Count;
+                if (count > 0) onSelect(Math.Clamp(value() + (key == Key.Left ? -1 : 1), 0, count - 1));
+                return true;
+            }
+            return false;
+        }, value =>
+        {
+            focused.Value = value;
+            if (!value) open.Value = false;
+        });
     }
 
     private static string SelectedLabel(IReadOnlyList<string> options, int value, string unselectedLabel)
@@ -432,7 +503,9 @@ public static class Controls
         Func<string> value,
         Action<string> onChange,
         Func<string?>? placeholder = null)
-        => Sx.TextInput(
+    {
+        var focused = new Signal<bool>(false);
+        var node = Sx.TextInput(
             style: () => new Styles
             {
                 PaddingTop = 6,
@@ -444,11 +517,13 @@ public static class Controls
                 BorderBottom = 1,
                 BorderLeft = 1,
                 BorderRight = 1,
-                BorderColor = Theme.SurfaceBorder,
+                BorderColor = focused.Value ? Theme.AccentBorder : Theme.SurfaceBorder,
                 BorderRadius = 6,
                 MinWidth = 180,
             },
             text: value,
             onchange: onChange,
             placeholder: placeholder);
+        return KeyboardNavigation.Bind(node, _ => false, value => focused.Value = value);
+    }
 }

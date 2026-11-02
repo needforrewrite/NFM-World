@@ -23,6 +23,7 @@ public static class SfxLibrary
 
     public static ISoundClip? tires;
     public static ISoundClip? powerup;
+    public static ISoundClip? carfixed;
 
     [ClientOnly]
     public static void LoadSounds()
@@ -77,6 +78,7 @@ public static class SfxLibrary
         checkpoint = IBackend.Backend.GetSound("data/sound/checkpoint.wav");
         
         powerup = IBackend.Backend.GetSound("data/sound/powerup.wav");
+        carfixed = IBackend.Backend.GetSound("data/sound/carfixed.wav");
     }
 
     private static string GetEngineSignature(int engine)

@@ -474,6 +474,12 @@ public static class DevConsoleCommands
 
         if (GameSparker.CurrentPhase is RacePhase inRacePhase)
         {
+            if (!TheVFS.VFS.FileExists($"data/stages/{stageName}.txt")
+                && !TheVFS.VFS.FileExists($"data/stages/{stageName}.radpack"))
+            {
+                Logging.Warning($"Stage '{stageName}' not found. Keeping the current stage.");
+                return;
+            }
             Logging.Info($"Switched to stage '{stageName}'");
 
             // A factory belongs to one run and releases what it loaded in End(), which the
