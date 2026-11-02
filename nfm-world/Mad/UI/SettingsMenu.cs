@@ -9,6 +9,8 @@ using NFMWorld.UI.Settings;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Util;
 using NFMWorld.Sentry;
+using NFMWorld.UI.Hud;
+using NFMWorldLibrary.Hud;
 
 namespace NFMWorld.UI;
 
@@ -118,6 +120,10 @@ public class SettingsMenu()
     private static CameraPreset? _modifiedCameraPreset;
     private static string _cameraPresetName = CameraPreset.NFMW.Name;
 
+    public static string HudSkin { get; private set; } = HudSkinId.Default;
+    public static float HudScale { get; private set; } = HudScaleSettings.Default;
+    public static float HudSafeZoneHorizontal { get; private set; } = HudSafeZoneSettings.Default;
+    public static float HudSafeZoneVertical { get; private set; } = HudSafeZoneSettings.Default;
     public static string MenuStage { get; private set; } = MenuPreferences.LastPlayedStage;
     public static string MenuMusic { get; private set; } = MenuPreferences.StageSoundtrack;
 
@@ -545,6 +551,10 @@ public class SettingsMenu()
         sw.WriteLine($"camera_modified_preset {CameraPresetConfig.WritePresets(_modifiedCameraPreset is { } modified ? [modified] : [])}");
         sw.WriteLine();
         sw.WriteLine("// Menu");
+        sw.WriteLine($"hud_skin {HudSkin}");
+        sw.WriteLine($"hud_scale {HudScale.ToString("R", CultureInfo.InvariantCulture)}");
+        sw.WriteLine($"hud_safezone_x {HudSafeZoneHorizontal.ToString("R", CultureInfo.InvariantCulture)}");
+        sw.WriteLine($"hud_safezone_y {HudSafeZoneVertical.ToString("R", CultureInfo.InvariantCulture)}");
         sw.WriteLine($"menu_stage {MenuStage}");
         sw.WriteLine($"menu_music {MenuMusic}");
         sw.WriteLine();
@@ -574,6 +584,10 @@ public class SettingsMenu()
     /// </summary>
     public static void LoadConfigFromSnapshot(string configString)
     {
+        HudSkin = HudSkinId.Default;
+        HudScale = HudScaleSettings.Default;
+        HudSafeZoneHorizontal = HudSafeZoneSettings.Default;
+        HudSafeZoneVertical = HudSafeZoneSettings.Default;
         MenuStage = MenuPreferences.LastPlayedStage;
         MenuMusic = MenuPreferences.StageSoundtrack;
         InitializeCameraConfig(configString);
@@ -659,6 +673,18 @@ public class SettingsMenu()
                     _remasteredMusic = int.Parse(value) != 0;
                     break;
 
+                case "hud_skin":
+                    HudSkin = HudSkinId.Normalize(value);
+                    break;
+                case "hud_scale":
+                    HudScale = HudScaleSettings.Parse(value);
+                    break;
+                case "hud_safezone_x":
+                    HudSafeZoneHorizontal = HudSafeZoneSettings.Parse(value);
+                    break;
+                case "hud_safezone_y":
+                    HudSafeZoneVertical = HudSafeZoneSettings.Parse(value);
+                    break;
                 case "menu_stage":
                     MenuStage = MenuPreferences.NormalizeStage(value);
                     break;
@@ -883,6 +909,10 @@ public class SettingsMenu()
     /// </summary>
     public static void LoadConfigValues()
     {
+        HudSkin = HudSkinId.Default;
+        HudScale = HudScaleSettings.Default;
+        HudSafeZoneHorizontal = HudSafeZoneSettings.Default;
+        HudSafeZoneVertical = HudSafeZoneSettings.Default;
         MenuStage = MenuPreferences.LastPlayedStage;
         MenuMusic = MenuPreferences.StageSoundtrack;
         try
@@ -1027,6 +1057,10 @@ public class SettingsMenu()
             CameraPresetName = _cameraPresetName,
             SelectedCameraPreset = SelectedCameraPreset(),
             MenuStage = MenuStage,
+            HudSkin = HudSkin,
+            HudScale = HudScale,
+            HudSafeZoneHorizontal = HudSafeZoneHorizontal,
+            HudSafeZoneVertical = HudSafeZoneVertical,
             MenuMusic = MenuMusic,
             KeyBindings = keyBindings
         };
@@ -1044,8 +1078,10 @@ public class SettingsMenu()
     /// </summary>
     public static AvailableOptions GetAvailableOptions()
     {
+        HudSkinRegistry.Refresh();
         return new AvailableOptions
         {
+            HudSkins = HudSkinRegistry.Options,
             Renderers = Renderers,
             Resolutions = Resolutions,
             DisplayModes = DisplayModes,
@@ -1145,6 +1181,18 @@ public class SettingsMenu()
                     _remasteredMusic = remasteredMusic;
                 break;
 
+            case "hudSkin":
+                if (value is string skin) HudSkin = HudSkinId.Normalize(skin);
+                break;
+            case "hudScale":
+                if (AsFloat(value) is { } hudScale) HudScale = HudScaleSettings.Normalize(hudScale);
+                break;
+            case "hudSafeZoneHorizontal":
+                if (AsFloat(value) is { } hudSafeZoneHorizontal) HudSafeZoneHorizontal = HudSafeZoneSettings.Normalize(hudSafeZoneHorizontal);
+                break;
+            case "hudSafeZoneVertical":
+                if (AsFloat(value) is { } hudSafeZoneVertical) HudSafeZoneVertical = HudSafeZoneSettings.Normalize(hudSafeZoneVertical);
+                break;
             case "menuStage":
                 if (value is string stage) MenuStage = MenuPreferences.NormalizeStage(stage);
                 break;

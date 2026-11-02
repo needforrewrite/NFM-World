@@ -13,6 +13,7 @@ using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Gamemodes.RaceHost;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Util;
+using NFMWorldLibrary.Hud;
 
 namespace NFMWorld.Gameplay;
 
@@ -130,6 +131,73 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             return;
 
         UiState.Race.Update(gm.HudState, IsPaused);
+        UpdateHudPresentation(gm);
+    }
+
+    private void UpdateHudPresentation(BaseClientGamemode gm)
+    {
+        var hud = UiState.Race;
+        hud.IsPreview = NFMWorld.UI.Components.SettingsView.HudPreviewActive;
+        hud.Skin.Value = SettingsMenu.HudSkin;
+        hud.Wasted = 0;
+        hud.Opponents = 0;
+        hud.Racers.Clear();
+        hud.ArrowAngle = null;
+        hud.ArrowTarget = "";
+        hud.ArrowAtCars = false;
+        hud.TimeTrial = gm.GamemodeId == "nfmm/timetrial";
+        var client = ClientCar;
+        BackendCar? targetCar = null;
+        var nearest = double.PositiveInfinity;
+        var targetOnscreen = false;
+        foreach (var player in gm.Players)
+        {
+            if (player.IsFake || player.Car is not { } car) continue;
+            var damage = car.Stats.Maxmag > 0 ? (float)car.CarPhysics.DamagePoints / car.Stats.Maxmag : 0;
+            hud.Racers.Add(new HudRacer(car.Placement + 1, car.Stats.Name, damage,
+                player.Info.IsClientPlayer, car.Wasted));
+            if (player.Info.IsClientPlayer) continue;
+            hud.Opponents++;
+            if (car.Wasted) { hud.Wasted++; continue; }
+            if (client is null) continue;
+            var dx = (double)(car.Position.X - client.Position.X);
+            var dz = (double)(car.Position.Z - client.Position.Z);
+            var distance = dx * dx + dz * dz;
+            var clip = Vector4.Transform(new Vector4((float)car.Position.X, (float)car.Position.Y,
+                (float)car.Position.Z, 1), Camera.ViewProjectionMatrix);
+            var onscreen = clip.W > 0 && MathF.Abs(clip.X) <= clip.W && MathF.Abs(clip.Y) <= clip.W;
+            if ((targetOnscreen && !onscreen) || (onscreen == targetOnscreen && distance >= nearest)) continue;
+            nearest = distance;
+            targetCar = car;
+            targetOnscreen = onscreen;
+        }
+        hud.Racers.Sort(static (a, b) => a.Position.CompareTo(b.Position));
+        if (client is not null && (targetCar is null || client.Wasted)) client.Control.Arrace = false;
+        hud.ArrowAtCars = client?.Control.Arrace ?? false;
+        if (client is null || client.Wasted) return;
+
+        Vector3 target;
+        if (hud.ArrowAtCars)
+        {
+            if (targetCar is null) return;
+            target = new Vector3((float)targetCar.Position.X, (float)targetCar.Position.Y, (float)targetCar.Position.Z);
+            hud.ArrowTarget = targetCar.Stats.Name;
+        }
+        else
+        {
+            var checkpoints = CurrentStage.Backend.Checkpoints;
+            if (checkpoints.Count == 0) return;
+            var checkpoint = checkpoints[Math.Clamp((int)client.CurrentCheckpoint, 0, checkpoints.Count - 1)];
+            target = new Vector3((float)checkpoint.Position.X, (float)checkpoint.Position.Y, (float)checkpoint.Position.Z);
+        }
+
+        var direction = target - new Vector3((float)client.Position.X, (float)client.Position.Y, (float)client.Position.Z);
+        var forward = Camera.LookAt - Camera.Position;
+        if (direction.X * direction.X + direction.Z * direction.Z < 1 ||
+            forward.X * forward.X + forward.Z * forward.Z < 1) return;
+        var angle = MathF.Atan2(forward.Z * direction.X - forward.X * direction.Z,
+            forward.X * direction.X + forward.Z * direction.Z) * (180 / MathF.PI);
+        hud.ArrowAngle = Math.Clamp(angle, hud.ArrowAtCars ? -100 : -130, hud.ArrowAtCars ? 100 : 130);
     }
 
     // ── Pause / Resume / Quit ─────────────────────────────────────
@@ -267,7 +335,10 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         if (key == SettingsMenu.Bindings.CycleView)
             _cameraDirector.CycleViewMode();
 
-        _input.KeyPressed(key, ClientCar?.Control);
+        var canTargetCars = key == SettingsMenu.Bindings.ToggleArrace &&
+            GamemodeInstance is BaseClientGamemode gm && gm.Players.Any(player =>
+                !player.IsFake && !player.Info.IsClientPlayer && player.Car is { Wasted: false });
+        _input.KeyPressed(key, ClientCar?.Control, canTargetCars);
 
         GamemodeInstance?.KeyPressed(key, in keys);
     }

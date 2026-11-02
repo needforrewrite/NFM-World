@@ -4,6 +4,9 @@ using NFMWorld.UI;
 using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
 using NFMWorld.UI.Settings;
+using NFMWorld.UI.Hud;
+using NFMWorld.UI.ViewModels;
+using NFMWorldLibrary.Hud;
 using SignalsDotnet;
 using NFMWorldLibrary.Util;
 using NFMWorld.DriverInterface;
@@ -54,21 +57,35 @@ public static class SettingsView
         }
     }
 
-    private sealed class InputView(Func<Key, bool> handleKey, Func<bool> previewActive, Func<bool> menuPreviewActive) : View
+    private sealed class InputView(Func<Key, bool> handleKey, Func<bool> previewActive, Func<bool> menuPreviewActive,
+        Func<UiState.RaceState?> menuHudPreview, Func<bool> hudPreviewActive) : View
     {
         public bool HandleKey(Key key) => handleKey(key);
         public bool PreviewActive => previewActive();
         public bool ScenePreviewActive => previewActive() || menuPreviewActive();
+        public UiState.RaceState? MenuHudPreview => menuHudPreview();
+        public bool HudPreviewActive => hudPreviewActive();
     }
 
     public static bool CameraPreviewActive => FindPreview(GameSparker.UiRenderer?.ActiveRoot);
     public static bool ScenePreviewActive => FindPreview(GameSparker.UiRenderer?.ActiveRoot, scene: true);
+    public static bool HudPreviewActive => FindPreview(GameSparker.UiRenderer?.ActiveRoot, hud: true);
+    public static UiState.RaceState? MenuHudPreviewData => FindMenuHudPreview(GameSparker.UiRenderer?.ActiveRoot);
 
-    private static bool FindPreview(Node? node, bool scene = false)
+    private static UiState.RaceState? FindMenuHudPreview(Node? node)
+    {
+        if (node is null || node is Component { IsDisplayed: false }) return null;
+        if (node is InputView settings) return settings.MenuHudPreview;
+        foreach (var child in node.VisualChildren)
+            if (FindMenuHudPreview(child) is { } preview) return preview;
+        return null;
+    }
+
+    private static bool FindPreview(Node? node, bool scene = false, bool hud = false)
     {
         if (node is null || node is Component { IsDisplayed: false }) return false;
-        if (node is InputView settings) return scene ? settings.ScenePreviewActive : settings.PreviewActive;
-        return node.VisualChildren.Any(child => FindPreview(child, scene));
+        if (node is InputView settings) return hud ? settings.HudPreviewActive : scene ? settings.ScenePreviewActive : settings.PreviewActive;
+        return node.VisualChildren.Any(child => FindPreview(child, scene, hud));
     }
 
     public static bool HandleKeyPressed(Node? node, Key key)
@@ -111,6 +128,12 @@ public static class SettingsView
         var restartRequired = new Signal<bool>(false);
         var cameraPreview = new Signal<bool>(false);
         var menuPreview = new Signal<bool>(false);
+        var hudPreview = new Signal<bool>(false);
+        var previewData = new UiState.RaceState();
+        previewData.IsPreview = true;
+        previewData.ArrowAngle = 0;
+        previewData.Paused.Value = true;
+        previewData.TotalLaps.Value = 1;
         var cameraPresetEditor = new Signal<bool>(false);
         var applied = new Signal<bool>(false);
         var closeAfterRestartPrompt = false;
@@ -167,6 +190,11 @@ public static class SettingsView
                 return key == Key.Escape;
             }
             if (key != Key.Escape) return false;
+            if (hudPreview.Value)
+            {
+                hudPreview.Value = false;
+                return true;
+            }
             if (menuPreview.Value)
             {
                 menuPreview.Value = false;
@@ -218,8 +246,8 @@ public static class SettingsView
             style: () => new Styles
             {
                 Position = Position.Relative,
-                Visibility = cameraPreview.Value || menuPreview.Value ? Visibility.Hidden : Visibility.Visible,
-                PointerEvents = !cameraPreview.Value && !menuPreview.Value,
+                Visibility = cameraPreview.Value || menuPreview.Value || hudPreview.Value ? Visibility.Hidden : Visibility.Visible,
+                PointerEvents = !cameraPreview.Value && !menuPreview.Value && !hudPreview.Value,
                 Width = MeasurementWidthHeight.Percent(90),
                 MaxWidth = 1000,
                 Height = MeasurementWidthHeight.Percent(90),
@@ -277,7 +305,8 @@ public static class SettingsView
                             SettingsMenu.ResetKeyBindingDefaults)),
                         [Tab.Video] = () => VideoTab(config, options, Set),
                         [Tab.Audio] = () => AudioTab(config, Set),
-                        [Tab.Game] = () => GameTab(config, Refresh, () => cameraPresetEditor.Value = true,
+                        [Tab.Game] = () => GameTab(config, options, Set, () => hudPreview.Value = true,
+                            Refresh, () => cameraPresetEditor.Value = true,
                             () => cameraPreview.Value = true, () => ConfirmReset(
                             "Reset Camera",
                             "Are you sure you want to reset all camera settings to their defaults?",
@@ -301,14 +330,15 @@ public static class SettingsView
                         DismissRestart))
             ]);
 
-        var root = new InputView(HandleKey, () => cameraPreview.Value, () => menuPreview.Value)
+        var root = new InputView(HandleKey, () => cameraPreview.Value || hudPreview.Value, () => menuPreview.Value,
+            () => menuPreviewAvailable && hudPreview.Value ? previewData : null, () => hudPreview.Value)
         {
             Styles = Sx.Styles(position: Position.Absolute, top: 0, left: 0, right: 0, bottom: 0,
                 alignItems: Align.Center, justifyContent: Justify.Center, zIndex: 20)
         };
         root.AddChild(Sx.View(style: () => Sx.Styles(position: Position.Absolute,
             top: 0, left: 0, right: 0, bottom: 0, pointerEvents: false,
-            backgroundColor: cameraPreview.Value || menuPreview.Value ? Theme.Transparent : new Color(3, 8, 20, 150))));
+            backgroundColor: cameraPreview.Value || menuPreview.Value || hudPreview.Value ? Theme.Transparent : new Color(3, 8, 20, 150))));
         root.AddChild(Body());
         root.AddChild(Sx.Show(() => cameraPreview.Value,
             () => CameraPreviewPanel(config, Set, Refresh, () => cameraPresetEditor.Value = true,
@@ -317,6 +347,18 @@ public static class SettingsView
             () => CameraPresetEditor(config, Refresh, () => cameraPresetEditor.Value = false)));
         root.AddChild(Sx.Show(() => menuPreview.Value,
             () => MenuPreviewPanel(config, options, Set, () => menuPreview.Value = false)));
+        root.AddChild(Sx.Show(() => hudPreview.Value, () => Sx.View(
+            style: () => Sx.Styles(position: Position.Absolute, top: 0, left: 0, right: 0, bottom: 0),
+            children:
+            [
+                menuPreviewAvailable
+                    ? Sx.Switch(Sx.Computed(() => config.Value?.HudSkin ?? NFMWorldLibrary.Hud.HudSkinId.Default),
+                        HudSkinRegistry.Branches(previewData), () => HudSkinRegistry.BuildDefault(previewData))
+                    : null,
+                new HudSafeZoneGuide { Styles = Sx.Styles(width: "100%", height: "100%",
+                    position: Position.Absolute, left: 0, top: 0, pointerEvents: false) },
+                HudPreviewPanel(config, options, Set, () => hudPreview.Value = false)
+            ])));
         return root;
     }
 
@@ -373,11 +415,11 @@ public static class SettingsView
         Func<string>? feedbackLabel = null)
     {
         var hovered = new Signal<bool>(false);
-        var feedback = new FeedbackView { Styles = Sx.Styles(flexDirection: FlexDirection.Column) };
+        var feedback = new FeedbackView { Styles = Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0) };
         feedback.AddChild(Sx.View(
             style: () => Sx.Styles(paddingTop: feedback.Pressed.Value ? 9 : 8,
                 paddingBottom: feedback.Pressed.Value ? 7 : 8, paddingLeft: 18, paddingRight: 18,
-                minWidth: 90, alignItems: Align.Center, justifyContent: Justify.Center,
+                minWidth: 90, minHeight: 36, flexShrink: 0, alignItems: Align.Center, justifyContent: Justify.Center,
                 borderTop: 1, borderBottom: 1, borderLeft: 1, borderRight: 1, borderRadius: 6,
                 borderColor: feedback.Pressed.Value ? new Color(230, 240, 255)
                     : hovered.Value ? new Color(205, 227, 255) : isActive?.Invoke() == true ? Blue : Border,
@@ -441,7 +483,9 @@ public static class SettingsView
             PaddingRight = 24,
             PaddingBottom = 20,
         },
-        children: children);
+        children: Sx.View(
+            style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0, width: "100%"),
+            children: children));
 
     // ── Tabs ──────────────────────────────────────────────────────────
 
@@ -502,29 +546,77 @@ public static class SettingsView
             Divider(),
             Row("Remastered Music", Controls.Checkbox(() => config.Value?.RemasteredMusic ?? false, () => set("remasteredMusic", !(config.Value?.RemasteredMusic ?? false), null))));
 
-    private static Node GameTab(Signal<SettingsSnapshot?> config, Action refresh, Action manage,
+    private static Node GameTab(Signal<SettingsSnapshot?> config, Signal<AvailableOptions?> options,
+        Action<string, object?, string?> set, Action previewHud, Action refresh, Action manage,
         Action preview, Action onResetCamera, Func<Node> menuSettings)
         => Content(
+            Section("HUD"),
+            Row("Skin", HudSkinDropdown(config, options, set)),
+            Description(() => options.Value?.HudSkins.FirstOrDefault(candidate => candidate.Id == config.Value?.HudSkin) is { } skin
+                    ? $"{skin.Description}{(skin.Author.Length > 0 ? $" — {skin.Author}" : "")}" : ""),
+            Sx.View(style: () => Sx.Styles(alignSelf: Align.FlexStart, flexShrink: 0),
+                children: SettingsButton("Preview HUD", previewHud)),
+            Divider(),
             Section("Camera"),
             Row("Camera Preset", CameraPresetDropdown(config, refresh)),
-            Sx.Text(style: () => Sx.TextStyles(fontSize: 14, foregroundColor: TextBlue),
-                layout: () => Sx.Styles(marginBottom: 16),
-                text: () => "Adjust your driving camera with a live view from behind the car."),
-            Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 12),
+            Description(() => "Adjust your driving camera with a live view from behind the car."),
+            Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row, flexShrink: 0,
+                    flexWrap: Wrap.Wrap, gapColumn: 12, gapRow: 12),
                 children: [SettingsButton("Adjust Camera", preview), SettingsButton("Manage Presets", manage)]),
             Divider(),
             ResetLink("Reset Camera Defaults", onResetCamera),
             Divider(),
             menuSettings());
 
+    private static Node HudSkinDropdown(Signal<SettingsSnapshot?> config, Signal<AvailableOptions?> options,
+        Action<string, object?, string?> set) => Controls.Dropdown(
+        () => options.Value?.HudSkins.Select(skin => skin.Name).ToArray() ?? [],
+        () => options.Value?.HudSkins.ToList().FindIndex(skin => skin.Id == config.Value?.HudSkin) ?? -1,
+        index =>
+        {
+            if (options.Value?.HudSkins is { } skins && index >= 0 && index < skins.Count)
+                set("hudSkin", skins[index].Id, null);
+        }, "Saved skin unavailable (using Classic)");
+
+    private static Node HudPreviewPanel(Signal<SettingsSnapshot?> config, Signal<AvailableOptions?> options,
+        Action<string, object?, string?> set, Action back) => Sx.View(
+        style: () => Sx.Styles(position: Position.Absolute, left: "3%", bottom: "3%",
+            width: "36%", minWidth: 280, maxWidth: 420, flexDirection: FlexDirection.Column,
+            flexShrink: 0, gapRow: 10, paddingTop: 12, paddingBottom: 12, paddingLeft: 16, paddingRight: 16,
+            backgroundColor: new Color(12, 22, 42, 220), borderColor: Border, borderRadius: 10,
+            borderTop: 1, borderBottom: 1, borderLeft: 1, borderRight: 1),
+        children:
+        [
+            Sx.Text(style: () => Sx.TextStyles(fontSize: 18, fontFamily: FontFamily.Adventure, foregroundColor: Blue),
+                text: () => "HUD PREVIEW"),
+            HudSkinDropdown(config, options, set),
+            HudPreviewSlider("HUD Scale", () => config.Value?.HudScale ?? HudScaleSettings.Default,
+                value => set("hudScale", (float)value, null), HudScaleSettings.Minimum, HudScaleSettings.Maximum, 0.05),
+            HudPreviewSlider("Horizontal Safe Zone", () => config.Value?.HudSafeZoneHorizontal ?? HudSafeZoneSettings.Default,
+                value => set("hudSafeZoneHorizontal", (float)value, null), HudSafeZoneSettings.Minimum, HudSafeZoneSettings.Maximum, 0.01),
+            HudPreviewSlider("Vertical Safe Zone", () => config.Value?.HudSafeZoneVertical ?? HudSafeZoneSettings.Default,
+                value => set("hudSafeZoneVertical", (float)value, null), HudSafeZoneSettings.Minimum, HudSafeZoneSettings.Maximum, 0.01),
+            SettingsButton("Back to Settings", back)
+        ]);
+
+    private static Node HudPreviewSlider(string label, Func<double> value, Action<double> set,
+        double min, double max, double step) => Sx.View(
+        style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0, gapRow: 6), children:
+        [
+            Sx.View(style: () => Sx.Styles(justifyContent: Justify.SpaceBetween), children:
+            [
+                Sx.Text(style: () => Sx.TextStyles(fontSize: 12, foregroundColor: TextBlue), text: () => label),
+                Value(() => $"{Math.Round(value() * 100)}%")
+            ]),
+            Controls.Slider(value, set, min, max, step)
+        ]);
+
     private static Node MainMenuSettings(Signal<SettingsSnapshot?> config, Signal<AvailableOptions?> options,
         Action<string, object?, string?> set, bool previewAvailable, Action preview) => Sx.View(
         style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0), children:
         [
             Section("Main Menu"),
-            Sx.Text(style: () => Sx.TextStyles(fontSize: 14, foregroundColor: TextBlue),
-                layout: () => Sx.Styles(marginBottom: 16),
-                text: () => previewAvailable
+            Description(() => previewAvailable
                     ? "Choose a background stage and soundtrack with a clear view of the menu."
                     : "These choices take effect when you return to the main menu. Preview is available there."),
             previewAvailable
@@ -788,6 +880,11 @@ public static class SettingsView
                     text: () => "Press any key to bind, or ESC to cancel...")));
 
     // ── Primitives ────────────────────────────────────────────────────
+
+    private static Node Description(Func<string> text) => Sx.Text(
+        style: () => Sx.TextStyles(fontSize: 12, foregroundColor: TextBlue),
+        layout: () => Sx.Styles(flexShrink: 0, marginTop: 4, marginBottom: 12),
+        text: text);
 
     private static Node Section(string label) => Sx.Text(
         style: () => new TextStyles

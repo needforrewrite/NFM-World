@@ -14,6 +14,7 @@ public partial class HudStateData
     [PluginVisible] public int Lap { get; set; }
     [PluginVisible] public int TotalLaps { get; set; }
     [PluginVisible] public int LapTime { get; set; }
+    /// <summary>One-based position; zero means the gamemode has no position to report.</summary>
     [PluginVisible] public int Position { get; set; }
     [PluginVisible] public int TotalRacers { get; set; }
     [PluginVisible] public string? StateText { get; set; }

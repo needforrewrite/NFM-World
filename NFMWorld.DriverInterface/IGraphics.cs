@@ -13,6 +13,7 @@ public interface IGraphics
     private const float NVG_KAPPA90 = 0.5522847493f;
     
     IImage LoadImage(string file);
+    IImage LoadSvgImage(string file, Vector3 rgbMultiplier, byte maximumChannel = 255);
     IImage LoadImage(ReadOnlyMemory<byte> file);
 
     void SetLinearGradient(int x, int y, int width, int height, Color[] colors, float[]? colorPos);

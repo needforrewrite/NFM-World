@@ -23,7 +23,7 @@ public sealed class RaceInputController
     }
 
     /// <summary>Call on key press with the client car's control (may be null).</summary>
-    public void KeyPressed(Key key, Control? control)
+    public void KeyPressed(Key key, Control? control, bool canTargetCars)
     {
         var bindings = SettingsMenu.Bindings;
 
@@ -54,7 +54,7 @@ public sealed class RaceInputController
             control.Mutes = !control.Mutes;
 
         if (key == bindings.ToggleArrace)
-            control.Arrace = !control.Arrace;
+            control.Arrace = canTargetCars && !control.Arrace;
 
         if (key == bindings.ToggleRadar)
             control.Radar = !control.Radar;

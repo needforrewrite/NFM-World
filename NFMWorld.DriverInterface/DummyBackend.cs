@@ -41,6 +41,9 @@ public sealed class DummyBackend : IBackend
             return new DummyImage();
         }
 
+        public IImage LoadSvgImage(string file, Vector3 rgbMultiplier, byte maximumChannel = 255)
+            => new DummyImage();
+
         public IImage LoadImage(ReadOnlyMemory<byte> file)
         {
             return new DummyImage();

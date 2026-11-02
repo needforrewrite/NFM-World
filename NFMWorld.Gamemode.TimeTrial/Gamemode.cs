@@ -32,7 +32,6 @@ internal enum TimeTrialState
 public class TimeTrialGamemode : PluginGamemode
 {
     private const int PlayerCarIndex = 0;
-    private const int GhostCarIndex = 1;
 
     private readonly Stopwatch _timer = new();
     private readonly bool _simulation;
@@ -41,6 +40,8 @@ public class TimeTrialGamemode : PluginGamemode
     private int _countdown;
     private int _inner;
     private int _tick;
+    private int? _ghostFinishTick;
+    private int? _ghostIndex;
     private bool _written;
 
     private SavedTimeTrial? _best;
@@ -72,6 +73,8 @@ public class TimeTrialGamemode : PluginGamemode
         base.Reset();
 
         _tick = 0;
+        _ghostFinishTick = null;
+        _ghostIndex = null;
         _written = false;
         _timer.Reset();
 
@@ -90,6 +93,7 @@ public class TimeTrialGamemode : PluginGamemode
         RemoveFakePlayers();
         SetupPlayer();
         SetupGhost();
+        UpdatePosition();
     }
 
     public override void GameTick()
@@ -150,11 +154,12 @@ public class TimeTrialGamemode : PluginGamemode
             car.Drive(CurrentStage);
 
             UpdateHudAndSounds(car);
-            HudState.Lap = car.CurrentLap + 1;
+            HudState.Lap = Math.Min(car.CurrentLap + 1, CurrentStage.Nlaps);
             HudState.LapTime = (int)_timer.Elapsed.TotalMilliseconds;
 
             _current?.RecordTick(car);
             ApplyGhost();
+            UpdatePosition();
 
             if (car.CurrentLap >= CurrentStage.Nlaps)
             {
@@ -195,7 +200,13 @@ public class TimeTrialGamemode : PluginGamemode
 
         HudState.Lap = 1;
         HudState.TotalLaps = CurrentStage.Nlaps;
+        HudState.LapTime = 0;
+        HudState.Speed = 0;
+        HudState.CountdownTimer = _simulation ? 0 : _countdown;
+        HudState.Position = 1;
+        HudState.TotalRacers = 1;
         HudState.StateText = "";
+        HudState.StateTextEndsAt = null;
         ClientCallbacks.ResetCheckpointGlow();
 
         if (_simulation)
@@ -216,22 +227,57 @@ public class TimeTrialGamemode : PluginGamemode
         var ghostIndex = Players.Count;
         var ghostCar = new BackendCar(source, ghostIndex, false) { CurrentLap = 0 };
         Players.Add(new ClientSidePlayer(source.Player, ghostIndex, isFake: true) { Car = ghostCar });
+        _ghostIndex = ghostIndex;
 
         ClientCallbacks.GetClientCarCallbacks(ghostCar).AlphaOverride = 0.5f;
     }
 
     private void ApplyGhost()
     {
-        if (_best is null || Players.Count <= GhostCarIndex)
+        if (_best is null || _ghostIndex is not { } index || index >= Players.Count || _ghostFinishTick is not null)
             return;
 
-        if (Players[GhostCarIndex].Car is not { } ghostCar)
+        if (Players[index].Car is not { } ghostCar)
             return;
 
         if (_best.GetTick(_tick) is { } controls)
             ghostCar.Control.Decode(controls);
 
+        FixHoopHelper.HandleFixHoops(CurrentStage, ghostCar);
+        CheckPointHelper.HandleCheckPoint(CurrentStage, ghostCar);
         ghostCar.Drive(CurrentStage);
+        if (ghostCar.CurrentLap >= CurrentStage.Nlaps)
+        {
+            _ghostFinishTick = _tick;
+            ghostCar.CarPhysics.Halted = true;
+        }
+    }
+
+    private void UpdatePosition()
+    {
+        HudState.Position = 1;
+        HudState.TotalRacers = 1;
+        if (Players[PlayerCarIndex].Car is not { } car || _ghostIndex is not { } index || index >= Players.Count ||
+            Players[index].Car is not { } ghost) return;
+        HudState.TotalRacers = 2;
+        if (_ghostFinishTick is { } finished)
+            HudState.Position = car.CurrentLap >= CurrentStage.Nlaps && finished == _tick ? 1 : 2;
+        else if (car.CurrentLap < CurrentStage.Nlaps)
+        {
+            if (car.TotalCheckpoint != ghost.TotalCheckpoint)
+                HudState.Position = car.TotalCheckpoint > ghost.TotalCheckpoint ? 1 : 2;
+            else if (car.CurrentCheckpoint < CurrentStage.Checkpoints.Count)
+            {
+                var next = CurrentStage.Checkpoints[car.CurrentCheckpoint].Position;
+                var dx = (double)(car.Position.X - next.X);
+                var dz = (double)(car.Position.Z - next.Z);
+                var ghostDx = (double)(ghost.Position.X - next.X);
+                var ghostDz = (double)(ghost.Position.Z - next.Z);
+                HudState.Position = dx * dx + dz * dz <= ghostDx * ghostDx + ghostDz * ghostDz ? 1 : 2;
+            }
+        }
+        car.Placement = HudState.Position - 1;
+        ghost.Placement = 1 - car.Placement;
     }
 
     /// <summary>
