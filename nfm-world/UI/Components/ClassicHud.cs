@@ -194,7 +194,7 @@ public sealed class ClassicHud(IHudData race) : Component
             Snap(new Color(220, 245, 255, 170)), 0.5f * scale);
         G.SetFont(new Font(FontFamily.Adventure, FontStyle.Bold, 9 * scale));
         G.SetColor(new Color(0, 0, 0));
-        G.DrawStringOutlined(OrdinalSuffix(Race.Position), (int)(numberX + numberWidth + 2 * scale),
+        G.DrawStringOutlined(OrdinalSuffix(Race.Position), (int)(numberX + numberWidth + 6 * scale),
             (int)(baseline - 5 * scale), Snap(new Color(220, 245, 255, 170)), 0.5f * scale);
     }
 
