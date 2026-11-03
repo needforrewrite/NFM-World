@@ -98,6 +98,63 @@ public class FocusManagerMousePressTests
     }
 
     [TestMethod]
+    public void OverflowingPopupKeepsItsFocusableOwnerAndReceivesMouseSelection()
+    {
+        var root = MakeRoot();
+        var dropdown = MakeBox("dropdown", 10, 10, 100, 20, focusable: true);
+        var popup = MakeBox("popup", 0, 20, 100, 80);
+        popup.Styles = popup.Styles with { ZIndex = 1000 };
+        dropdown.AddChild(popup);
+        var underlying = MakeBox("underlying", 10, 30, 100, 80, focusable: true);
+        root.AddChild(dropdown);
+        root.AddChild(underlying);
+        var selections = 0;
+        var underlyingPresses = 0;
+        var blurs = 0;
+        popup.MousePressed = _ => selections++;
+        underlying.MousePressed = _ => underlyingPresses++;
+        dropdown.Unfocused = () =>
+        {
+            blurs++;
+            popup.Styles = popup.Styles with { Display = Display.None };
+        };
+        dropdown.Focus();
+        root.LayoutAndRender(new Vector2(200, 200));
+
+        var chain = FocusManager.HitTestChain(root, new Vector2(30, 45));
+        Assert.IsTrue(chain.Contains(dropdown));
+        Assert.IsTrue(chain.Contains(popup));
+        FocusManager.HandleMousePressed(root, Press(30, 45));
+        root.DispatchMousePressed(Press(30, 45));
+
+        Assert.AreSame(dropdown, FocusManager.FocusedNode);
+        Assert.AreEqual(0, blurs);
+        Assert.AreEqual(1, selections);
+        Assert.AreEqual(0, underlyingPresses);
+    }
+
+    [TestMethod]
+    public void ClippedOverflowStillRejectsMouseSelection()
+    {
+        var root = MakeRoot();
+        var dropdown = MakeBox("dropdown", 10, 10, 100, 20, focusable: true);
+        dropdown.Styles = dropdown.Styles with { Overflow = Overflow.Hidden };
+        var popup = MakeBox("popup", 0, 20, 100, 80);
+        popup.Styles = popup.Styles with { ZIndex = 1000 };
+        dropdown.AddChild(popup);
+        var underlying = MakeBox("underlying", 10, 30, 100, 80, focusable: true);
+        root.AddChild(dropdown);
+        root.AddChild(underlying);
+        root.LayoutAndRender(new Vector2(200, 200));
+
+        var chain = FocusManager.HitTestChain(root, new Vector2(30, 45));
+        Assert.IsFalse(chain.Contains(popup));
+        FocusManager.HandleMousePressed(root, Press(30, 45));
+
+        Assert.AreSame(underlying, FocusManager.FocusedNode);
+    }
+
+    [TestMethod]
     public void HandleMouseReleased_ClearsActiveButKeepsFocus()
     {
         var root = MakeRoot();

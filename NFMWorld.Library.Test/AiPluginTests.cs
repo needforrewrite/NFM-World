@@ -140,6 +140,45 @@ public class AiPluginTests
         }
     }
 
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void TimeTrialWithoutCheckpointsDoesNotStartOrRestart(bool simulation)
+    {
+        TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
+        var plugin = NFMWorldLibrary.Gamemodes.DotNet.GamemodePlugin.Load(
+            "nfmm/timetrial", "data/gamemodes/nfmm/timetrial/gamemode.dll");
+        Assert.IsNotNull(plugin);
+        BaseClientGamemode? gamemode = null;
+        try
+        {
+            gamemode = plugin.CreateClient(new ClientGamemodeParameters
+            {
+                Players = [new ClientSidePlayerInfo
+                {
+                    PlayerName = "Human", CarName = "missing/checkpoint-free-test", Color = default,
+                    IsBot = false, IsClientPlayer = true
+                }]
+            }, new StubContext(initialStage: new EmptyStage()), new Dictionary<string, object> { ["simulation"] = simulation });
+            gamemode.Begin();
+            for (var i = 0; i < 10; i++) gamemode.GameTick();
+            gamemode.KeyPressed(Key.R, default);
+            gamemode.Reset();
+            gamemode.GameTick();
+
+            Assert.IsNull(gamemode.ClientPlayer.Car);
+            Assert.AreEqual(0, gamemode.HudState.CountdownTimer);
+            Assert.AreEqual(0, gamemode.HudState.LapTime);
+            Assert.AreEqual(0, gamemode.HudState.Position);
+            StringAssert.Contains(gamemode.HudState.StateText ?? "", "no checkpoints");
+        }
+        finally
+        {
+            try { gamemode?.End(); }
+            finally { plugin.Unload(); }
+        }
+    }
+
     /// <summary>
     /// The minimum a gamemode has to provide for a bot: the player roster and the stage.
     /// </summary>
@@ -161,11 +200,13 @@ public class AiPluginTests
         public override string GamemodeId => "test/stub";
     }
 
-    private sealed class StubContext(string stageName = "test_stage") : IGamemodeContext
+    private sealed class EmptyStage : BackendStage { }
+
+    private sealed class StubContext(string stageName = "test_stage", BackendStage? initialStage = null) : IGamemodeContext
     {
         // Lazy: building a stage at all reads stage data and reports failures through
         // Sentry, which these tests do not initialize.
-        private BackendStage? _stage;
+        private BackendStage? _stage = initialStage;
 
         public BackendStage CurrentStage => _stage ??= new BackendStage(stageName);
 

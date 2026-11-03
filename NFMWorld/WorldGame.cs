@@ -427,6 +427,7 @@ public partial class WorldGame : IDisposable, IGameHost
     private Keys _oldKeyState;
     private MouseButtons _oldMouseState;
     private Int2 _oldMousePosition;
+    private readonly NFMWorld.Reactor.MouseCursorState _mouseCursor = new();
     private int _oldScrollValue;
     // UI drag state: the renderer only receives pressed/moved/released today, so
     // mouse-drag events (needed by the Sx Slider) are synthesized here from a held
@@ -653,6 +654,12 @@ public partial class WorldGame : IDisposable, IGameHost
         Window.Resized += OnWindowResized;
         Window.MouseButtonDown += (button, x, y) => _mouseButtonEvents.Enqueue((button, true, x, y));
         Window.MouseButtonUp += (button, x, y) => _mouseButtonEvents.Enqueue((button, false, x, y));
+        Window.KeyChanged += (key, down, repeat) =>
+        {
+            if (!down || !repeat) return;
+            var imguiWantsKeyboard = ImguiRenderer is not null && ImGui.GetIO().WantCaptureKeyboard;
+            GameSparker.KeyRepeated(key, SdlWindow.GetKeyboardState(), imguiWantsKeyboard);
+        };
 
         Window.TextInput += character =>
         {
@@ -757,6 +764,7 @@ public partial class WorldGame : IDisposable, IGameHost
         FPSCounter.Update(gameTime, LastTickTime, LastFrameTime, LastAsyncTime);
 
         UpdateInput();
+        UpdateMouseCursor();
         UpdateMouse();
 
         _uiRenderer?.Update(gameTime);
@@ -806,6 +814,7 @@ public partial class WorldGame : IDisposable, IGameHost
         // than where the release happens: that frame's stack is gone by now, so a forced
         // collection can actually see whether the assembly was let go.
         PluginUnloadVerifier.Verify();
+        UpdateMouseCursor();
     }
 
     /// <summary>Brings the renderer, UI and input state up. Public so the browser head can boot the
@@ -929,6 +938,24 @@ public partial class WorldGame : IDisposable, IGameHost
 
         // Update saved state.
         _oldKeyState = keys;
+    }
+
+    private void UpdateMouseCursor()
+    {
+        var menuVisible = GameSparker.CurrentPhase is not RacePhase { IsPaused: false }
+            || GameSparker.devConsole.IsOpen() || GameSparker.MessageWindow.IsOpen;
+        var (_, x, y) = SdlWindow.GetMouseState();
+        var (visible, warpTo) = _mouseCursor.Update(menuVisible, Window.HasFocus,
+            new System.Numerics.Vector2(x, y), new System.Numerics.Vector2(Window.Width, Window.Height));
+        if (_mouseCursor.Locked) Window.SetRelativeMouseMode(true);
+        if (!visible) _mouseDragging = false;
+        if (warpTo is { } position)
+        {
+            Window.WarpMouse(position.X, position.Y);
+            _oldMousePosition = new Int2((int)MathF.Round(position.X), (int)MathF.Round(position.Y));
+        }
+        if (!_mouseCursor.Locked) Window.SetRelativeMouseMode(false);
+        Window.CursorVisible = visible;
     }
 
     private static readonly MouseButtons[] MouseButtonsArray = Enum.GetValues<MouseButtons>();

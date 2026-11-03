@@ -66,9 +66,6 @@ VertexShaderOutput MainVS(
     bool glow;
     VS_UnpackParameters(parameters, getsShadowed, alphaOverride, isFullbright, glow);
 
-    float layer;
-    VS_UnpackParameters2(parameters2, layer);
-
 	VertexShaderOutput output = (VertexShaderOutput)0;
 
     float3 position = input.Position;
@@ -101,10 +98,6 @@ VertexShaderOutput MainVS(
     // We used to nudge the outline towards instead, but that was introducing ever so slight Z-fighting with unrelated geometry so let's try the other way around
     output.Position.z += 0.1;
     
-    // Apply layer nudge to prevent Z-fighting
-    // AWAY from the camera because it's less noticeable (won't clip against the car etc)
-    output.Position.z += 0.01 * layer;
-
     if (Darken < 1.0f)
     {
         VS_Darken(color, Darken);

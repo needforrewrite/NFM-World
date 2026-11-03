@@ -9,7 +9,6 @@ using NFMWorld.UI.ViewModels;
 using NFMWorldLibrary.Hud;
 using SignalsDotnet;
 using NFMWorldLibrary.Util;
-using NFMWorld.DriverInterface;
 
 namespace NFMWorld.UI.Components;
 
@@ -57,14 +56,27 @@ public static class SettingsView
         }
     }
 
-    private sealed class InputView(Func<Key, bool> handleKey, Func<bool> previewActive, Func<bool> menuPreviewActive,
+    private sealed class InputView(KeyboardNavigation navigation, Func<Key, bool> handleKey, Func<bool> capturing,
+        Func<bool> previewActive, Func<bool> menuPreviewActive,
         Func<UiState.RaceState?> menuHudPreview, Func<bool> hudPreviewActive) : View
     {
         public bool HandleKey(Key key) => handleKey(key);
+        public void HandleRepeatedKey(Key key, in Keys keys)
+        {
+            if (capturing()) return;
+            if (!handleKey(key)) GameSparker.UiRenderer?.HandleKeyPressed(key, keys);
+        }
         public bool PreviewActive => previewActive();
         public bool ScenePreviewActive => previewActive() || menuPreviewActive();
         public UiState.RaceState? MenuHudPreview => menuHudPreview();
         public bool HudPreviewActive => hudPreviewActive();
+
+        protected override bool OnPostLayout()
+        {
+            var changed = base.OnPostLayout();
+            if (!GameSparker.devConsole.IsOpen()) navigation.UpdateFocus(this);
+            return changed;
+        }
     }
 
     public static bool CameraPreviewActive => FindPreview(GameSparker.UiRenderer?.ActiveRoot);
@@ -97,17 +109,23 @@ public static class SettingsView
         return false;
     }
 
+    public static bool HandleKeyRepeated(Node? node, Key key, in Keys keys)
+    {
+        if (node is null || node is Component { IsDisplayed: false }) return false;
+        if (node is InputView settings)
+        {
+            settings.HandleRepeatedKey(key, keys);
+            return true;
+        }
+        foreach (var child in node.VisualChildren)
+            if (HandleKeyRepeated(child, key, keys)) return true;
+        return false;
+    }
+
     private static readonly Color Blue = new(128, 170, 255);
     private static readonly Color TextBlue = new(185, 211, 255);
     private static readonly Color Panel = new(12, 22, 42, 245);
     private static readonly Color Border = new(128, 170, 255, 100);
-    private enum Tab
-    {
-        Keyboard,
-        Video,
-        Audio,
-        Game
-    }
 
     private static readonly string[] DistantOutlineBehaviours =
     [
@@ -117,9 +135,17 @@ public static class SettingsView
         "Always Render",
         "Hide Outlines"
     ];
+    private enum Tab
+    {
+        Keyboard,
+        Video,
+        Audio,
+        Game
+    }
 
     public static Node Build(Action onClose, bool menuPreviewAvailable = false)
     {
+        SettingsMenu.RefreshSupportedResolutions();
         var tab = new Signal<Tab>(Tab.Video);
         var config = new Signal<SettingsSnapshot?>(SettingsMenu.GetCurrentSnapshot());
         var options = new Signal<AvailableOptions?>(SettingsMenu.GetAvailableOptions());
@@ -137,6 +163,8 @@ public static class SettingsView
         var cameraPresetEditor = new Signal<bool>(false);
         var applied = new Signal<bool>(false);
         var closeAfterRestartPrompt = false;
+        var navigation = new KeyboardNavigation();
+        InputView? root = null;
 
         // Cancel restores the last applied settings.
         var original = SettingsMenu.SaveConfigToString();
@@ -166,6 +194,14 @@ public static class SettingsView
 
         bool HandleKey(Key key)
         {
+            if (capturing.Value is { } action)
+            {
+                capturing.Value = null;
+                if (key != Key.Escape && key != Key.None)
+                    Set("keyBinding", (int)key, action);
+                return true;
+            }
+            if (root is not null && navigation.HandleKey(root, key)) return true;
             if (confirm.Value is not null || restartRequired.Value)
             {
                 if (key == Key.Escape)
@@ -175,13 +211,6 @@ public static class SettingsView
                     else
                         confirm.Value = null;
                 }
-                return true;
-            }
-            if (capturing.Value is { } action)
-            {
-                capturing.Value = null;
-                if (key != Key.Escape && key != Key.None)
-                    Set("keyBinding", (int)key, action);
                 return true;
             }
             if (cameraPresetEditor.Value)
@@ -260,21 +289,6 @@ public static class SettingsView
                 BorderColor = Border,
                 BorderRadius = 12,
             },
-            tabIndex: 0,
-            // Esc closes; while a binding is being captured, the next key becomes that
-            // binding and Esc cancels instead.
-            onkeydown: e =>
-            {
-                if (capturing.Value is not { } action)
-                    return;
-
-                capturing.Value = null;
-                if (e.KeyCode == Key.Escape)
-                    return;
-
-                Set("keyBinding", (int)e.KeyCode, action);
-            },
-            onmount: view => view.Focus(),
             children:
             [
                 Sx.Text(
@@ -330,7 +344,8 @@ public static class SettingsView
                         DismissRestart))
             ]);
 
-        var root = new InputView(HandleKey, () => cameraPreview.Value || hudPreview.Value, () => menuPreview.Value,
+        root = new InputView(navigation, HandleKey, () => capturing.Value is not null,
+            () => cameraPreview.Value || hudPreview.Value, () => menuPreview.Value,
             () => menuPreviewAvailable && hudPreview.Value ? previewData : null, () => hudPreview.Value)
         {
             Styles = Sx.Styles(position: Position.Absolute, top: 0, left: 0, right: 0, bottom: 0,
@@ -341,12 +356,12 @@ public static class SettingsView
             backgroundColor: cameraPreview.Value || menuPreview.Value || hudPreview.Value ? Theme.Transparent : new Color(3, 8, 20, 150))));
         root.AddChild(Body());
         root.AddChild(Sx.Show(() => cameraPreview.Value,
-            () => CameraPreviewPanel(config, Set, Refresh, () => cameraPresetEditor.Value = true,
-                () => cameraPreview.Value = false)));
+            () => KeyboardNavigation.Scope(CameraPreviewPanel(config, Set, Refresh, () => cameraPresetEditor.Value = true,
+                () => cameraPreview.Value = false))));
         root.AddChild(Sx.Show(() => cameraPresetEditor.Value,
-            () => CameraPresetEditor(config, Refresh, () => cameraPresetEditor.Value = false)));
+            () => KeyboardNavigation.Scope(CameraPresetEditor(config, Refresh, () => cameraPresetEditor.Value = false))));
         root.AddChild(Sx.Show(() => menuPreview.Value,
-            () => MenuPreviewPanel(config, options, Set, () => menuPreview.Value = false)));
+            () => KeyboardNavigation.Scope(MenuPreviewPanel(config, options, Set, () => menuPreview.Value = false))));
         root.AddChild(Sx.Show(() => hudPreview.Value, () => Sx.View(
             style: () => Sx.Styles(position: Position.Absolute, top: 0, left: 0, right: 0, bottom: 0),
             children:
@@ -357,14 +372,14 @@ public static class SettingsView
                     : null,
                 new HudSafeZoneGuide { Styles = Sx.Styles(width: "100%", height: "100%",
                     position: Position.Absolute, left: 0, top: 0, pointerEvents: false) },
-                HudPreviewPanel(config, options, Set, () => hudPreview.Value = false)
+                KeyboardNavigation.Scope(HudPreviewPanel(config, options, Set, () => hudPreview.Value = false))
             ])));
         return root;
     }
 
     // ── Shell ─────────────────────────────────────────────────────────
 
-    private static Node TabBar(Signal<Tab> tab, Action<Tab> selectTab) => Sx.View(
+    private static Node TabBar(Signal<Tab> tab, Action<Tab> selectTab) => KeyboardNavigation.Row(Sx.View(
         style: () => new Styles
         {
             FlexDirection = FlexDirection.Row,
@@ -384,17 +399,18 @@ public static class SettingsView
             TabButton("Video", () => tab.Value == Tab.Video, () => selectTab(Tab.Video)),
             TabButton("Audio", () => tab.Value == Tab.Audio, () => selectTab(Tab.Audio)),
             TabButton("Game", () => tab.Value == Tab.Game, () => selectTab(Tab.Game))
-        ]);
+        ]));
 
     private static Node TabButton(string label, Func<bool> isActive, Action onPress)
     {
         var hovered = new Signal<bool>(false);
-        return Sx.View(
+        var focused = new Signal<bool>(false);
+        var node = Sx.View(
             style: () => Sx.Styles(position: Position.Relative,
                 paddingTop: 14, paddingBottom: 14, paddingLeft: 24, paddingRight: 24,
                 minWidth: 110, alignItems: Align.Center, justifyContent: Justify.Center,
                 backgroundColor: isActive() ? new Color(22, 42, 80, 220)
-                    : hovered.Value ? new Color(22, 42, 80, 130) : Theme.Transparent),
+                    : hovered.Value || focused.Value ? new Color(22, 42, 80, 130) : Theme.Transparent),
             onmouseenter: _ => hovered.Value = true,
             onmouseleave: _ => hovered.Value = false,
             onmousedown: _ => onPress(),
@@ -406,15 +422,22 @@ public static class SettingsView
                     text: () => label),
                 Sx.View(style: () => Sx.Styles(position: Position.Absolute,
                     left: 0, right: 0, bottom: 0, height: 3,
-                    backgroundColor: isActive() ? Blue : Theme.Transparent,
+                    backgroundColor: focused.Value ? new Color(230, 240, 255) : isActive() ? Blue : Theme.Transparent,
                     pointerEvents: false))
             ]);
+        return KeyboardNavigation.Bind(node, key =>
+        {
+            if (key is not (Key.Enter or Key.Space)) return false;
+            onPress();
+            return true;
+        }, value => focused.Value = value, isActive);
     }
 
     private static Node SettingsButton(string label, Action onPress, Func<bool>? isActive = null,
         Func<string>? feedbackLabel = null)
     {
         var hovered = new Signal<bool>(false);
+        var focused = new Signal<bool>(false);
         var feedback = new FeedbackView { Styles = Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0) };
         feedback.AddChild(Sx.View(
             style: () => Sx.Styles(paddingTop: feedback.Pressed.Value ? 9 : 8,
@@ -422,9 +445,9 @@ public static class SettingsView
                 minWidth: 90, minHeight: 36, flexShrink: 0, alignItems: Align.Center, justifyContent: Justify.Center,
                 borderTop: 1, borderBottom: 1, borderLeft: 1, borderRight: 1, borderRadius: 6,
                 borderColor: feedback.Pressed.Value ? new Color(230, 240, 255)
-                    : hovered.Value ? new Color(205, 227, 255) : isActive?.Invoke() == true ? Blue : Border,
+                    : hovered.Value || focused.Value ? new Color(205, 227, 255) : isActive?.Invoke() == true ? Blue : Border,
                 backgroundColor: feedback.Pressed.Value ? new Color(80, 125, 205)
-                    : hovered.Value ? new Color(55, 90, 150, 190)
+                    : hovered.Value || focused.Value ? new Color(55, 90, 150, 190)
                     : isActive?.Invoke() == true ? new Color(42, 68, 115) : new Color(22, 42, 80, 145)),
             onmouseenter: _ => hovered.Value = true,
             onmouseleave: _ =>
@@ -441,10 +464,17 @@ public static class SettingsView
             children: Sx.Text(style: () => Sx.TextStyles(fontSize: 13, fontStyle: FontStyle.Bold,
                     foregroundColor: hovered.Value ? new Color(205, 227, 255) : TextBlue),
                 text: () => feedbackLabel?.Invoke() ?? label)));
-        return feedback;
+        return KeyboardNavigation.Bind(feedback, key =>
+        {
+            if (key is not (Key.Enter or Key.Space)) return false;
+            feedback.Press();
+            onPress();
+            feedback.Release();
+            return true;
+        }, value => focused.Value = value);
     }
 
-    private static Node BottomBar(Action onSave, Action onApply, Action onClose, Func<bool> applied) => Sx.View(
+    private static Node BottomBar(Action onSave, Action onApply, Action onClose, Func<bool> applied) => KeyboardNavigation.Row(Sx.View(
         style: () => new Styles
         {
             FlexDirection = FlexDirection.Row,
@@ -468,7 +498,7 @@ public static class SettingsView
             SettingsButton("OK", onSave, () => true),
             SettingsButton("Cancel", onClose),
             SettingsButton("Apply", onApply, feedbackLabel: () => applied() ? "Applied" : "Apply")
-        ]);
+        ]));
 
     private static Node Content(params object?[] children) => Sx.View(
         style: () => new Styles
@@ -502,7 +532,7 @@ public static class SettingsView
                     children: Sx.Text(style: () => Sx.TextStyles(fontSize: 13,
                             foregroundColor: new Color(130, 155, 195)),
                         text: () => $"{config.Value!.BorderlessResolution} (Native)")),
-                () => Controls.Dropdown(() => options.Value?.Resolutions ?? [],
+                () => Controls.Dropdown(() => SettingsMenu.Resolutions,
                     () => config.Value?.SelectedResolution ?? 0, v => set("selectedResolution", v, null)))),
             Row("Display Mode", Controls.Dropdown(() => options.Value?.DisplayModes ?? [], () => config.Value?.SelectedDisplayMode ?? 0, v => set("selectedDisplayMode", v, null))),
             Row("VSync", Controls.Checkbox(() => config.Value?.Vsync ?? false, () => set("vsync", !(config.Value?.Vsync ?? false), null))),
@@ -561,9 +591,9 @@ public static class SettingsView
             Section("Camera"),
             Row("Camera Preset", CameraPresetDropdown(config, refresh)),
             Description(() => "Adjust your driving camera with a live view from behind the car."),
-            Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row, flexShrink: 0,
+            KeyboardNavigation.Row(Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row, flexShrink: 0,
                     flexWrap: Wrap.Wrap, gapColumn: 12, gapRow: 12),
-                children: [SettingsButton("Adjust Camera", preview), SettingsButton("Manage Presets", manage)]),
+                children: [SettingsButton("Adjust Camera", preview), SettingsButton("Manage Presets", manage)])),
             Divider(),
             ResetLink("Reset Camera Defaults", onResetCamera),
             Divider(),
@@ -845,7 +875,7 @@ public static class SettingsView
             horizontalAlignment: TextHorizontalAlignment.Right),
         layout: () => Sx.Styles(minWidth: 44, flexShrink: 0), text: text);
 
-    private static Node CameraRow(string label, params object?[] controls) => Sx.View(
+    private static Node CameraRow(string label, params object?[] controls) => KeyboardNavigation.Row(Sx.View(
         style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexGrow: 1,
             width: 0, minWidth: 240, gapRow: 6),
         children:
@@ -853,7 +883,7 @@ public static class SettingsView
             Sx.Text(style: () => Sx.TextStyles(fontSize: 13, foregroundColor: TextBlue), text: () => label),
             Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row, alignItems: Align.Center,
                 justifyContent: Justify.SpaceBetween, gapColumn: 12), children: controls)
-        ]);
+        ]));
 
     private static Node KeyboardTab(Signal<SettingsSnapshot?> config, Signal<string?> capturing, Action<string, object?, string?> set, Action onReset)
         => Content(
@@ -898,7 +928,7 @@ public static class SettingsView
         layout: () => new Styles { MarginBottom = 10, FlexShrink = 0 },
         text: () => label);
 
-    private static Node Row(string label, params object?[] controls) => Sx.View(
+    private static Node Row(string label, params object?[] controls) => KeyboardNavigation.Row(Sx.View(
         style: () => new Styles
         {
             FlexDirection = FlexDirection.Row,
@@ -924,7 +954,7 @@ public static class SettingsView
             Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row, flexGrow: 1, minWidth: 0,
                     maxWidth: 420, alignItems: Align.Center, justifyContent: Justify.FlexEnd, gapColumn: 12),
                 children: controls)
-        ]);
+        ]));
 
     private static Node Value(Func<string> text) => Sx.Text(
         style: () => new TextStyles { FontSize = 12, ForegroundColor = TextBlue },
@@ -943,12 +973,13 @@ public static class SettingsView
     private static Node ResetLink(string label, Action onPress)
     {
         var hovered = new Signal<bool>(false);
+        var focused = new Signal<bool>(false);
 
         var node = Sx.Text(
             style: () => new TextStyles
             {
                 FontSize = 12,
-                ForegroundColor = hovered.Value ? new Color(205, 227, 255) : Blue,
+                ForegroundColor = hovered.Value || focused.Value ? new Color(205, 227, 255) : Blue,
             },
             layout: () => new Styles { AlignSelf = Align.FlexStart, MarginTop = 8, MarginBottom = 8, FlexShrink = 0 },
             text: () => label);
@@ -956,22 +987,41 @@ public static class SettingsView
         node.MousePressed = _ => onPress();
         node.MouseEntered = _ => hovered.Value = true;
         node.MouseLeft = _ => hovered.Value = false;
-        return node;
+        return KeyboardNavigation.Bind(node, key =>
+        {
+            if (key is not (Key.Enter or Key.Space)) return false;
+            onPress();
+            return true;
+        }, value => focused.Value = value);
     }
 
     private static Node CapturingButton(Func<bool> capturing, Func<string> label, Action onPress)
-        => Button.Create(
+    {
+        var focused = new Signal<bool>(false);
+        var node = Button.Create(
             label: label,
             onPress: onPress,
             active: capturing,
-            style: () => new Styles { MinWidth = 160, JustifyContent = Justify.Center });
+            style: () => new Styles
+            {
+                MinWidth = 160,
+                JustifyContent = Justify.Center,
+                BorderColor = focused.Value ? Blue : Theme.SurfaceBorder
+            });
+        return KeyboardNavigation.Bind(node, key =>
+        {
+            if (key is not (Key.Enter or Key.Space)) return false;
+            onPress();
+            return true;
+        }, value => focused.Value = value);
+    }
 
     private static Node ConfirmDialog(
         Func<string> title,
         Func<string> message,
         Action onConfirm,
         Action onCancel)
-        => Sx.View(
+        => KeyboardNavigation.Scope(Sx.View(
             style: () => new Styles
             {
                 Position = Position.Absolute,
@@ -1020,14 +1070,14 @@ public static class SettingsView
                         },
                         layout: () => new Styles { MarginBottom = 20 },
                         text: message),
-                    Sx.View(
+                    KeyboardNavigation.Row(Sx.View(
                         style: () => new Styles { FlexDirection = FlexDirection.Row, JustifyContent = Justify.Center, GapColumn = 10, GapRow = 10 },
                         children:
                         [
                             SettingsButton("Yes", onConfirm, () => true),
                             SettingsButton("No", onCancel)
-                        ])
-                ]));
+                        ]))
+                ])));
 
     /// <summary>SDL key code as a readable name, for the key-binding rows.</summary>
     private static string KeyCodeToName(int code)

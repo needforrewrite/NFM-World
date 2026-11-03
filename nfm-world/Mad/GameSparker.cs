@@ -211,6 +211,14 @@ public static partial class GameSparker
         CurrentPhase.KeyPressed(key, imguiWantsKeyboard, keys);
     }
 
+    public static void KeyRepeated(Key key, Keys keys, bool imguiWantsKeyboard)
+    {
+        if (key is not (Key.Up or Key.Down or Key.Left or Key.Right)
+            || imguiWantsKeyboard || devConsole.IsOpen()) return;
+        if (NFMWorld.UI.Components.SettingsView.HandleKeyRepeated(UiRenderer?.ActiveRoot, key, keys)) return;
+        if (CurrentPhase is MainMenuPhase menu) menu.NavigationKeyRepeated(key);
+    }
+
     public static void KeyReleased(Key key, Keys keys, bool imguiWantsKeyboard)
     {
         DebugKeyStates[key] = false;

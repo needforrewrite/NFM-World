@@ -19,6 +19,7 @@ namespace NFMWorld.Gamemode.TimeTrial;
 internal enum TimeTrialState
 {
     NotStarted,
+    Unavailable,
     Countdown,
     InProgress,
     Finished
@@ -59,6 +60,7 @@ public class TimeTrialGamemode : PluginGamemode
 
     public override void Begin()
     {
+        if (!ValidateStage()) return;
         base.Begin();
         _state = TimeTrialState.NotStarted;
         HudState.Lap = 1;
@@ -70,6 +72,7 @@ public class TimeTrialGamemode : PluginGamemode
 
     public override void Reset()
     {
+        if (!ValidateStage()) return;
         base.Reset();
 
         _tick = 0;
@@ -98,6 +101,7 @@ public class TimeTrialGamemode : PluginGamemode
 
     public override void GameTick()
     {
+        if (_state == TimeTrialState.Unavailable) return;
         base.GameTick();
 
         switch (_state)
@@ -124,6 +128,20 @@ public class TimeTrialGamemode : PluginGamemode
         base.KeyPressed(key, keys);
         if (key == Key.R)
             Reset();
+    }
+
+    private bool ValidateStage()
+    {
+        if (CurrentStage.Checkpoints.Count > 0) return true;
+        _state = TimeTrialState.Unavailable;
+        _timer.Reset();
+        HudState.CountdownTimer = 0;
+        HudState.LapTime = 0;
+        HudState.Position = 0;
+        HudState.TotalRacers = 0;
+        HudState.StateText = "Time trial unavailable: this stage has no checkpoints.";
+        HudState.StateTextEndsAt = null;
+        return false;
     }
 
     private void TickCountdown()

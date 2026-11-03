@@ -129,9 +129,6 @@ VertexShaderOutput MainVS(
     bool glow;
     VS_UnpackParameters(parameters, getsShadowed, alphaOverride, isFullbright, glow);
     
-    float layer;
-    VS_UnpackParameters2(parameters2, layer);
-
 	VertexShaderOutput output = (VertexShaderOutput)0;
 
     // Distance behavior uses the line centroid and camera-space depth rather than an endpoint or radial distance.
@@ -216,10 +213,6 @@ VertexShaderOutput MainVS(
     color = lerp(color, BaseColor, UseBaseColor ? 1.0 : 0.0);
 
     output.Position = clipPos + float4(offset * clipPos.w, 0, 0);
-
-    // Apply layer nudge to prevent Z-fighting
-    // AWAY from the camera because it's less noticeable (won't clip against the car etc)
-    output.Position.z += 0.01 * layer;
 
     // Collapse hidden line quads outside clip space without a pixel-shader discard.
     output.Position = lerp(output.Position, float4(2.0, 2.0, 0.0, 1.0), hideLine);

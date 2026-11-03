@@ -55,7 +55,7 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
         Dust = new Dust(this, GameSparker.GraphicsDevice);
         Chips = new Chips(this, GameSparker.GraphicsDevice);
         Sparks = new Sparks(car, this, GameSparker.GraphicsDevice);
-        FixFlare = new FixFlare(car, this, GameSparker.GraphicsDevice);
+        FixFlare = new FixFlare(this, _wheels, GameSparker.GraphicsDevice);
 
         PositionWithoutInterpolation = car.Position;
         RotationWithoutInterpolation = car.Rotation;
@@ -153,6 +153,7 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
     {
         if (_fixing)
         {
+            if (_fixTimer == 0 && _fixTick == 0) Sfx?.PlayFixSound();
             if (++_fixTick == Physics.OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
             {
                 _fixTick = 0;

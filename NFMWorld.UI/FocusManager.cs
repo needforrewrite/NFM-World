@@ -210,8 +210,6 @@ public static class FocusManager
         if (node.ClipRect is { } clip && !clip.Contains(pos.X, pos.Y))
             return false;
 
-        var selfHit = false;
-
         var bounds = new RectangleF(
             node.FocusOrigin.X, node.FocusOrigin.Y,
             node.FocusSize.X, node.FocusSize.Y);
@@ -230,16 +228,9 @@ public static class FocusManager
             return false;
         }
 
-        if (bounds.Contains(pos.X, pos.Y))
-        {
-            chain.Add(node);       // ancestor added before children
-            selfHit = true;
-        }
-
-        // If self isn't hit, children can't be hit either (they're contained within self).
-        // Exception: non-focusable containers — they pass through even though selfHit=false.
-        if (!selfHit && node.IsFocusable)
-            return false;
+        var selfHit = bounds.Contains(pos.X, pos.Y);
+        var ancestorIndex = chain.Count;
+        chain.Add(node);
 
         foreach (var visual in Topmost(node, zCache))
         {
@@ -250,7 +241,9 @@ public static class FocusManager
                 return true;           // deepest child hit — stop
         }
 
-        return selfHit;
+        if (selfHit) return true;
+        chain.RemoveAt(ancestorIndex);
+        return false;
     }
 
     /// <summary>

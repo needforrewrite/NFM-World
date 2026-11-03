@@ -240,6 +240,12 @@ public class MainMenuPhase : BaseStageRenderingPhase
         }
         ssp.StageSelected += (sender, stageName) =>
         {
+            if (ssp.CurrentStage?.Backend.Checkpoints.Count is not > 0)
+            {
+                GameSparker.MessageWindow.ShowMessage("Time trial unavailable",
+                    "This stage has no checkpoints. Choose a stage with checkpoints to start a time trial.");
+                return;
+            }
             PhaseSharedState.SelectedStageName = stageName;
 
             GaragePhase gp = new(stageName);
@@ -389,6 +395,12 @@ public class MainMenuPhase : BaseStageRenderingPhase
     {
         value = Math.Clamp(value, 0, 1);
         return value * value * (3 - 2 * value);
+    }
+
+    public void NavigationKeyRepeated(Key key)
+    {
+        if (EnableUiInput && _garage is null)
+            MainMenuView.KeyPressed(key);
     }
 
     public override void KeyPressed(Key key, bool imguiWantsKeyboard, in Keys keys)
