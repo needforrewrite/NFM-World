@@ -231,6 +231,8 @@ public sealed class ImmediateBatch3D(IGraphicsDevice device) : IGraphics3D, IDis
         p.UseBaseColor.SetValue(cb, false);
         p.ChargedBlinkAmount.SetValue(cb, 0f);
         p.HalfThickness.SetValue(cb, World.OutlineThickness);
+        p.PixelOutlineMask.SetValue(cb, World.PixelOutlines ? 1f : 0f);
+        p.PixelOriginBottomLeft.SetValue(cb, GameSparker.GraphicsDevice.HasBottomLeftFramebufferOrigin ? 1f : 0f);
         LineEffectDistantOutlineSettings.Apply(cb, DistantOutlineBehavior.AlwaysRender);
         p.FogColor.SetValue(cb, World.Fog.Snap(World.Snap));
         p.FogDistance.SetValue(cb, World.FadeFrom);

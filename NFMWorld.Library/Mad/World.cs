@@ -9,6 +9,7 @@ public static partial class World
     /// </summary>
     public static bool UseMultiplayerCollisionModifiers = true;
     public static float OutlineThickness = 1f;
+    public static bool PixelOutlines;
     public static bool IsHyperglidingEnabled = true;
     public static int MountainSeed;
     public static float MountainCoverage;

@@ -527,6 +527,7 @@ public static class SettingsView
             Row("Outline Width",
                 Controls.Slider(() => config.Value?.LineWidth ?? 1, v => set("lineWidth", (float)v, null), 0.5, 4, 0.1),
                 Value(() => $"{config.Value?.LineWidth ?? 0:F1}")),
+            Row("Pixel Outlines", Controls.Checkbox(() => config.Value?.PixelOutlines ?? false, () => set("pixelOutlines", !(config.Value?.PixelOutlines ?? false), null))),
             Row("Distant Outlines", Controls.Dropdown(() => DistantOutlineBehaviours, () => config.Value?.DistantOutlineBehavior ?? 0, v => set("distantOutlineBehavior", v, null))));
 
     private static Node AudioTab(Signal<SettingsSnapshot?> config, Action<string, object?, string?> set)

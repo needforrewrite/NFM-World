@@ -103,6 +103,8 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         p.BaseColor.SetValue(cb, new Vector3(0, 0, 0));
         p.ChargedBlinkAmount.SetValue(cb, _lineType is LineType.Charged && World.ChargedPolyBlink ? World.ChargeAmount : 0.0f);
         p.HalfThickness.SetValue(cb, World.OutlineThickness);
+        p.PixelOutlineMask.SetValue(cb, World.PixelOutlines ? 1f : 0f);
+        p.PixelOriginBottomLeft.SetValue(cb, GameSparker.GraphicsDevice.HasBottomLeftFramebufferOrigin ? 1f : 0f);
 
         // Line meshes are batched, so cutoff and falloff are evaluated per-line in the shader.
         LineEffectDistantOutlineSettings.Apply(cb, World.DistantOutlineBehavior);

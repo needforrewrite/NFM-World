@@ -97,6 +97,7 @@ public class SettingsMenu()
     private static readonly DistantOutlineBehavior[] DistantOutlineBehaviors = Enum.GetValues<DistantOutlineBehavior>();
     private static DistantOutlineBehavior _distantOutlineBehavior = DistantOutlineBehavior.DistanceFalloffWithCutoff;
     private static bool _lowLatency = false;
+    private static bool _pixelOutlines = false;
     public static readonly string[] RenderDistanceNames = ["Tiny", "Short", "Medium", "Far", "Very Far", "Unlimited"];
     // Squared by ApplySettings before being stored, so the "Unlimited" entry has to be the
     // float sentinel - int.MaxValue would square into a real ~46 341-unit cut-off. See
@@ -478,6 +479,7 @@ public class SettingsMenu()
         }
 
         World.OutlineThickness = _lineWidth;
+        World.PixelOutlines = _pixelOutlines;
         World.DistantOutlineBehavior = _distantOutlineBehavior;
     }
 
@@ -542,6 +544,7 @@ public class SettingsMenu()
         sw.WriteLine($"video_shadow_cascade {_shadowCascadeLevel}");
         sw.WriteLine($"video_shadow_res {_shadowResolution}");
         sw.WriteLine($"video_low_latency {(_lowLatency ? 1 : 0)}");
+        sw.WriteLine($"video_pixel_outlines {(_pixelOutlines ? 1 : 0)}");
         sw.WriteLine($"video_render_distance {_renderDistance}");
         sw.WriteLine();
         sw.WriteLine("// Audio Settings");
@@ -661,6 +664,9 @@ public class SettingsMenu()
                     break;
                 case "video_low_latency":
                     _lowLatency = int.Parse(value) != 0;
+                    break;
+                case "video_pixel_outlines":
+                    _pixelOutlines = int.Parse(value) != 0;
                     break;
                 case "video_render_distance":
                     _renderDistance = int.Parse(value, CultureInfo.InvariantCulture);
@@ -1051,6 +1057,7 @@ public class SettingsMenu()
             ShadowResolution = _shadowResolution,
             RenderDistance = _renderDistance,
             LowLatency = _lowLatency,
+            PixelOutlines = _pixelOutlines,
             LineWidth = _lineWidth,
             DistantOutlineBehavior = (int)_distantOutlineBehavior,
             MasterVolume = _masterVolume,
@@ -1080,6 +1087,7 @@ public class SettingsMenu()
     {
         // Console commands can change these directly, so refresh the model before snapshotting or saving it.
         _lineWidth = World.OutlineThickness;
+        _pixelOutlines = World.PixelOutlines;
         _distantOutlineBehavior = World.DistantOutlineBehavior;
     }
 
@@ -1159,6 +1167,10 @@ public class SettingsMenu()
             case "lowLatency":
                 if (value is bool lowLatency)
                     _lowLatency = lowLatency;
+                break;
+            case "pixelOutlines":
+                if (value is bool pixelOutlines)
+                    _pixelOutlines = pixelOutlines;
                 break;
             case "lineWidth":
                 if (AsFloat(value) is { } lineWidth)

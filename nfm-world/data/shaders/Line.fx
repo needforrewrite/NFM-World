@@ -50,6 +50,11 @@ float OutlineFalloffLinearFadeStartDistance;
 float OutlineFalloffLinearFadeStartThickness;
 float OutlineFalloffInverseLinearFadeLength;
 
+// 1 = aliased pixel-exact (Bresenham-style) lines, 0 = smooth quads.
+float PixelOutlineMask;
+// 1 when SV_Position's y runs bottom-up (GL backends), 0 for top-down (D3D).
+float PixelOriginBottomLeft;
+
 struct VertexShaderInput
 {
 	float3 PositionA : POSITION0;
@@ -65,6 +70,9 @@ struct VertexShaderOutput
 {
 	float4 Position : SV_POSITION;
 	float4 Color : COLOR0;
+    // Flat: interpolating even a constant across these thin quads is noisy enough to move pixels.
+    nointerpolation float4 LinePixels : TEXCOORD0; // window-pixel endpoints A.xy, B.xy, same space as SV_Position
+    nointerpolation float PixelWidth : TEXCOORD1;  // pixel line width
     float4 WorldPos : TEXCOORD2;
     float GetsShadowed : TEXCOORD3;
     float3 NormalWorld : TEXCOORD4;   // world-space face normal
@@ -134,16 +142,23 @@ VertexShaderOutput MainVS(
     float hideLine;
     CalculateDistantOutline(viewDepth, renderedHalfThickness, hideLine);
 
-    // Decode Side: abs > 1.5 means endpoint B, sign gives offset direction
-    float3 position = (abs(input.Side) > 1.5) ? input.PositionB : input.PositionA;
-    float sideSign = sign(input.Side);
-
-    VS_DecalOffset(position, input.Normal, input.DecalOffset);
+    // Both endpoints get the same displacement as the quad vertices, so the pixel-outline
+    // test in MainPS runs along the line the quad was actually built around.
+    float3 positionA = input.PositionA;
+    float3 positionB = input.PositionB;
+    VS_DecalOffset(positionA, input.Normal, input.DecalOffset);
+    VS_DecalOffset(positionB, input.Normal, input.DecalOffset);
 
     if (Expand == true)
     {
-        VS_Expand(position, input.Centroid, RandomFloat);
+        VS_Expand(positionA, input.Centroid, RandomFloat);
+        VS_Expand(positionB, input.Centroid, RandomFloat);
     }
+
+    // Decode Side: abs > 1.5 means endpoint B, sign gives offset direction
+    bool isEndpointB = abs(input.Side) > 1.5;
+    float3 position = isEndpointB ? positionB : positionA;
+    float sideSign = sign(input.Side);
 
     // Save the vertices position in world space (for shadow mapping)
     output.WorldPos = mul(float4(position, 1), world);
@@ -155,9 +170,15 @@ VertexShaderOutput MainVS(
     // affine), but costs one varying instead of a 4x4 multiply per pixel.
     output.ViewLength = length(viewPos);
 
+    // A pixel line's single row can sit inside an adjacent face that is nearer at that pixel's
+    // center, hiding it. Pull it along the view ray (screen position unchanged) by a few pixels'
+    // worth of depth: a slope-scaled bias for faces up to ~75 degrees off the view direction.
+    float pixelFootprint = -viewPos.z * 2.0 / (Resolution.y * abs(Projection._22));
+    viewPos.xyz *= 1.0 - PixelOutlineMask * 4.0 * pixelFootprint / max(length(viewPos.xyz), 0.0001);
+
     // Transform both endpoints to clip space for screen-space line direction
-    float4 clipA = mul(mul(float4(input.PositionA, 1), world), ViewProj);
-    float4 clipB = mul(mul(float4(input.PositionB, 1), world), ViewProj);
+    float4 clipA = mul(mul(float4(positionA, 1), world), ViewProj);
+    float4 clipB = mul(mul(float4(positionB, 1), world), ViewProj);
 
     float2 screenA = Resolution * clipA.xy / clipA.w;
     float2 screenB = Resolution * clipB.xy / clipB.w;
@@ -171,7 +192,23 @@ VertexShaderOutput MainVS(
 
     // Screen-space offset for line thickness
     float4 clipPos = mul(viewPos, Projection);
-    float2 offset = normal * renderedHalfThickness * sideSign / Resolution * 2.0;
+    // Pixel outlines: the quad is only a carrier that fully covers every pixel MainPS keeps
+    // (so MSAA can't soften it), extended past both ends for the same reason.
+    float pixelWidth = max(1.0, floor(2.0 * renderedHalfThickness + 0.5));
+    float quadHalfThickness = lerp(renderedHalfThickness, pixelWidth * 0.5 + 1.5, PixelOutlineMask);
+    float endSign = isEndpointB ? 1.0 : -1.0;
+    float2 offsetPixels = normal * quadHalfThickness * sideSign + dir * endSign * 1.5 * PixelOutlineMask;
+    float2 offset = offsetPixels / Resolution * 2.0;
+
+    // Endpoints behind the camera don't project; clip the segment to the near side first.
+    const float nearW = 0.0001;
+    float4 nearA = clipA.w < nearW ? lerp(clipA, clipB, (nearW - clipA.w) / (clipB.w - clipA.w)) : clipA;
+    float4 nearB = clipB.w < nearW ? lerp(clipB, clipA, (nearW - clipB.w) / (clipA.w - clipB.w)) : clipB;
+    float2 ndcToPixels = Resolution * float2(0.5, lerp(-0.5, 0.5, PixelOriginBottomLeft));
+    output.LinePixels = float4(
+        nearA.xy / nearA.w * ndcToPixels + Resolution * 0.5,
+        nearB.xy / nearB.w * ndcToPixels + Resolution * 0.5);
+    output.PixelWidth = pixelWidth;
 
 	float3 color = input.Color;
 
@@ -212,8 +249,40 @@ VertexShaderOutput MainVS(
 	return output;
 }
 
+// DDA with pixel-center sampling: the same pixels Bresenham lights, bar exact .5 ties.
+float PixelOutlineCoverage(float4 linePixels, float width, float2 fragPos)
+{
+    float2 frag = floor(fragPos);
+    float2 a = linePixels.xy;
+    float2 b = linePixels.zw;
+    float2 d = b - a;
+
+    // Swizzle so .x is the major axis.
+    bool yMajor = abs(d.y) > abs(d.x);
+    frag = yMajor ? frag.yx : frag;
+    a = yMajor ? a.yx : a;
+    b = yMajor ? b.yx : b;
+    d = yMajor ? d.yx : d;
+
+    float a0 = floor(a.x);
+    float b0 = floor(b.x);
+    float inSpan = (frag.x >= min(a0, b0) && frag.x <= max(a0, b0)) ? 1.0 : 0.0;
+
+    float slope = abs(d.x) > 0.0001 ? d.y / d.x : 0.0;
+    float lineMinor = a.y + (frag.x + 0.5 - a.x) * slope;
+
+    float below = floor((width - 1.0) * 0.5);
+    float off = frag.y - floor(lineMinor) + below;
+    float inWidth = (off >= 0.0 && off < width) ? 1.0 : 0.0;
+
+    return inSpan * inWidth;
+}
+
 float4 MainPS(VertexShaderOutput input) : SV_TARGET
 {
+    float keep = PixelOutlineCoverage(input.LinePixels, input.PixelWidth, input.Position.xy);
+    clip(lerp(1.0, keep - 0.5, PixelOutlineMask));
+
     float3 color = input.Color.rgb;
     float  alpha = input.Color.a;
 

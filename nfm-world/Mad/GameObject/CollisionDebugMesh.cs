@@ -180,6 +180,8 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
         p.BaseColor.SetValue(cb, new Vector3(0, 0, 0));
         p.ChargedBlinkAmount.SetValue(cb, 0.0f);
         p.HalfThickness.SetValue(cb, World.OutlineThickness);
+        p.PixelOutlineMask.SetValue(cb, World.PixelOutlines ? 1f : 0f);
+        p.PixelOriginBottomLeft.SetValue(cb, GameSparker.GraphicsDevice.HasBottomLeftFramebufferOrigin ? 1f : 0f);
         p.Resolution.SetValue(cb, new Vector2(
             Math.Max(1, GameSparker.GraphicsDevice.Swapchain.Width),
             Math.Max(1, GameSparker.GraphicsDevice.Swapchain.Height)));
