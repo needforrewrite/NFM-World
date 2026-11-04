@@ -67,6 +67,13 @@ public class AerialStageTests
     public void HandleAerialFall_LastCheckpointInAir_TeleportsToIt()
     {
         var (stage, car, lastCheckpoint) = CreateSetup(aerial: true, lastCheckpointY: -1000, nextCheckpointY: -2000);
+        var crossingRotation = new f64Euler(
+            f64AngleSingle.FromDegrees(45),
+            f64AngleSingle.FromDegrees(10),
+            f64AngleSingle.FromDegrees(20));
+        car.LastCheckpointRotation = crossingRotation;
+        car.LastCheckpointPxy = 33;
+        car.LastCheckpointPzy = 44;
 
         var teleported = CheckPointHelper.HandleAerialFall(stage, car);
 
@@ -74,7 +81,11 @@ public class AerialStageTests
         Assert.AreEqual((double)lastCheckpoint.Position.X, (double)car.Position.X, 1e-6);
         Assert.AreEqual((double)lastCheckpoint.Position.Z, (double)car.Position.Z, 1e-6);
         Assert.AreEqual((double)(lastCheckpoint.Position.Y - car.GroundAt), (double)car.Position.Y, 1e-6);
-        Assert.AreEqual(90.0, (double)car.Rotation.Xz.Degrees, 0.001);
+        Assert.AreEqual(45.0, (double)car.Rotation.Xz.Degrees, 0.001);
+        Assert.AreEqual(10.0, (double)car.Rotation.Zy.Degrees, 0.001);
+        Assert.AreEqual(20.0, (double)car.Rotation.Xy.Degrees, 0.001);
+        Assert.AreEqual(33.0, (double)car.CarPhysics.Pxy, 1e-6);
+        Assert.AreEqual(44.0, (double)car.CarPhysics.Pzy, 1e-6);
         Assert.IsFalse(car.CarPhysics.OnGroundPlane);
     }
 
@@ -121,6 +132,30 @@ public class AerialStageTests
 
         Assert.IsFalse(teleported);
         Assert.AreEqual(0.0, (double)car.Position.X, 1e-6);
+    }
+
+    [TestMethod]
+    public void HandleCheckPoint_CapturesCarAngles()
+    {
+        var stage = new BackendStage("aerial-test", new StageLoader());
+        stage.Checkpoints.Add(CreateCheckpoint(0, World.Ground, 0));
+
+        var car = new BackendCar(CreateRad(), 0, 0, 0, isClientPlayer: false);
+        car.Rotation = new f64Euler(
+            f64AngleSingle.FromDegrees(45),
+            f64AngleSingle.FromDegrees(10),
+            f64AngleSingle.FromDegrees(20));
+        car.CarPhysics.Pxy = 33;
+        car.CarPhysics.Pzy = 44;
+
+        var crossed = CheckPointHelper.HandleCheckPoint(stage, car);
+
+        Assert.IsTrue(crossed);
+        Assert.AreEqual(45.0, (double)car.LastCheckpointRotation.Xz.Degrees, 0.001);
+        Assert.AreEqual(10.0, (double)car.LastCheckpointRotation.Zy.Degrees, 0.001);
+        Assert.AreEqual(20.0, (double)car.LastCheckpointRotation.Xy.Degrees, 0.001);
+        Assert.AreEqual(33.0, (double)car.LastCheckpointPxy, 1e-6);
+        Assert.AreEqual(44.0, (double)car.LastCheckpointPzy, 1e-6);
     }
 
     [TestMethod]

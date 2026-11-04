@@ -46,6 +46,7 @@ internal sealed class MenuAttractDrive : IDisposable
                 car.LastCheckpointNode = Math.Max(-1, road.StartNode - 1);
                 car.Rotation = new f64Euler(f64AngleSingle.FromDegrees((fix64)(heading + random.Next(-5, 6))),
                     f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle);
+                car.LastCheckpointRotation = car.Rotation;
                 player.Car = car;
                 sceneCars.Add(car);
                 if (stage.GetCarVisual(car).Sfx is { } sfx)

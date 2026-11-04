@@ -1,7 +1,6 @@
 ﻿using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Collision;
-using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Util;
 
@@ -98,6 +97,10 @@ public class CheckPointHelper
 
         if (box.ResolveCollision(carPos) is not null)
         {
+            car.LastCheckpointRotation = car.Rotation;
+            car.LastCheckpointPxy = mad.Pxy;
+            car.LastCheckpointPzy = mad.Pzy;
+
             car.CurrentCheckpoint++;
             if (car.CurrentCheckpoint >= currentStage.Checkpoints.Count)
             {
@@ -146,11 +149,13 @@ public class CheckPointHelper
 
         car.CarPhysics.Reseto(car.CarPhysics.Im, car);
         car.CarPhysics.OnGroundPlane = false;
+        car.CarPhysics.Pxy = car.LastCheckpointPxy;
+        car.CarPhysics.Pzy = car.LastCheckpointPzy;
         car.Position = new f64Vector3(
             lastCheckpoint.Position.X,
             lastCheckpoint.Position.Y - car.GroundAt,
             lastCheckpoint.Position.Z);
-        car.Rotation = new f64Euler(lastCheckpoint.Rotation.Xz, f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle);
+        car.Rotation = car.LastCheckpointRotation;
         return true;
     }
 }

@@ -22,6 +22,12 @@ public partial class BackendCar : BackendGameObject
     [PluginVisible] public byte CurrentLap { get; set; } // mad.nlaps
     [PluginVisible] public int TotalCheckpoint { get; set; } // mad.clear
     [PluginVisible] public int LastCheckpointNode { get; set; } = -1; // resets on new lap
+
+    /// <summary>Car angles at the moment the last checkpoint was crossed.</summary>
+    [PluginVisible] public f64Euler LastCheckpointRotation { get; set; } = f64Euler.Identity;
+    [PluginVisible] public fix64 LastCheckpointPxy { get; set; }
+    [PluginVisible] public fix64 LastCheckpointPzy { get; set; }
+
     [PluginVisible] public int Placement { get; set; } // cp.pos
     [PluginVisible] public Rad3d Rad { get; }
     [PluginVisible] public CarStats Stats { get; }
