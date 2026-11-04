@@ -73,7 +73,8 @@ public class StageSelectPhase : BaseStageRenderingPhase
     {
         World.DrawClouds = false;
         LoadStage(_selectedCollection + "/" + _stagesInCollection[_selectedStageIndex], false);
-        World.FadeFrom = 9999999;
+        // ApplyValues re-applies the stage's fadefrom() every frame, so override it after that.
+        CurrentStage!.FadeFromOverride = 9999999;
         _aroundStageCamera = new AroundStageCamera();
     }
 
