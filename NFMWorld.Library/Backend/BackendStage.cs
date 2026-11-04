@@ -23,18 +23,19 @@ public partial class BackendStage
     [PluginVisible] public readonly string Path;
     
     // left
-    public int Sx;
+    [PluginVisible] public int Sx;
     // top
-    public int Sz;
+    [PluginVisible] public int Sz;
     // width
-    public int Ncx;
+    [PluginVisible] public int Ncx;
     // height
-    public int Ncz;
+    [PluginVisible] public int Ncz;
 
-    public int StagePartCount => Pieces.Count;
+    [PluginVisible] public int StagePartCount => Pieces.Count;
 
     [PluginVisible] public readonly StageLoader StageLoader;
 
+    [PluginVisible]
     protected BackendStage()
     {
         // Creates an empty stage for inheritance
@@ -42,6 +43,7 @@ public partial class BackendStage
         StageLoader = new StageLoader();
     }
 
+    [PluginVisible]
     public BackendStage(string stageName, StageLoader? stageLoader = null) : this()
     {
         Path = stageName;
@@ -191,6 +193,7 @@ public partial class BackendStage
         _collisionQuadTree.TrimExcess();
     }
 
+    [PluginVisible]
     public ITransform CreateObject(string objectName, int x, int y, int z, int r)
     {
         var part = BackendGameSparker.GetStagePart(objectName);
@@ -272,6 +275,8 @@ public partial class BackendStage
     }
     
     private readonly List<CollisionShapeRef> _tempTrackers = new();
+    
+    [PluginVisible]
     public ReadOnlySpan<CollisionShapeRef> RetrievePointCollidables(fix64 x, fix64 z)
     {
         _tempTrackers.Clear();
@@ -330,6 +335,8 @@ public partial class StageObject(Rad3d rad) : BackendGameObject, IAiNode, IColli
     
     [PluginVisible]
     public IReadOnlyList<Rad3dBoxDef> Boxes { get; } = rad.Boxes;
+    
+    [PluginVisible]
     IReadOnlyList<Rad3dBoxDef> ICollidable.Boxes => Boxes;
     
     [PluginVisible]
@@ -338,9 +345,13 @@ public partial class StageObject(Rad3d rad) : BackendGameObject, IAiNode, IColli
     [PluginVisible]
     public string FileName => Rad.FileName;
 
+    [PluginVisible]
     public Rad3dCollisionMesh? CollisionMesh { get; set; } = rad.CollisionMesh;
+    
+    [PluginVisible]
     public Rad3dCollisionHull? CollisionHull { get; set; } = rad.CollisionHull;
 
+    [PluginVisible]
     public StageObject(Rad3d rad, f64Vector3 position, f64Euler rotation, PiecePlacement originalPlacement) : this(rad)
     {
         Position = position;
@@ -348,6 +359,7 @@ public partial class StageObject(Rad3d rad) : BackendGameObject, IAiNode, IColli
         OriginalPlacement = originalPlacement;
     }
 
+    [PluginVisible]
     public static StageObject CreateDefaultObject(Rad3d rad, f64Vector3 position, f64Euler rotation, PiecePlacementType placementType = PiecePlacementType.CollisionObject, AiNodeKind? aiNodeKind = null, bool isSpecial = false, bool isWall = false)
     {
         return new StageObject(rad, position, rotation, new PiecePlacement(placementType, rad, position, rotation, aiNodeKind, isSpecial, isWall));

@@ -1,10 +1,11 @@
 ﻿using System.Diagnostics;
 using MemoryPack;
+using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Collision;
 
 namespace NFMWorldLibrary.Rad;
 
-[MemoryPackable(GenerateType.VersionTolerant)]
+[MemoryPackable(GenerateType.VersionTolerant), PluginVisible(Visible.IncludingAllMembersOfType)]
 [method: MemoryPackConstructor]
 public readonly partial record struct Rad3dCollisionHull([property: MemoryPackOrder(0)] f64Vector3[] Vertices, [property: MemoryPackOrder(1)] ushort[] Indices)
 {

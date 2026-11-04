@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using MemoryPack;
 using NFMWorld.PluginSystem;
@@ -7,6 +8,7 @@ namespace NFMWorldLibrary.Rad;
 
 // init properties aren't compatible with CircularReference, so can't use record
 [MemoryPackable(GenerateType.CircularReference), PluginVisible]
+[method: PluginVisible]
 public sealed partial class Rad3d(
     Color3[] colors,
     CarStats stats,
@@ -51,10 +53,10 @@ public sealed partial class Rad3d(
     [JsonPropertyName("fileName"), MemoryPackOrder(8), PluginVisible]
     public string FileName { get; set; } = fileName;
 
-    [JsonPropertyName("collisionMesh"), MemoryPackOrder(9)]
+    [JsonPropertyName("collisionMesh"), MemoryPackOrder(9), PluginVisible]
     public Rad3dCollisionMesh? CollisionMesh { get; set; } = collisionMesh;
 
-    [JsonPropertyName("collisionHull"), MemoryPackOrder(10)]
+    [JsonPropertyName("collisionHull"), MemoryPackOrder(10), PluginVisible]
     public Rad3dCollisionHull? CollisionHull { get; set; } = collisionHull;
 
     [JsonPropertyName("atLines"), MemoryPackOrder(11), PluginVisible]
@@ -84,6 +86,7 @@ public sealed partial class Rad3d(
     {
     }
 
+    [PluginVisible]
     public bool Equals(Rad3d? other)
     {
         if (other is null) return false;
@@ -191,19 +194,24 @@ public sealed partial class Rad3d(
         return hashCode.ToHashCode();
     }
 
+    [PluginVisible]
     public override int GetHashCode()
     {
         return _hashCode;
     }
 
+    [PluginVisible]
     public Rad3d(Rad3dPoly[] polys, bool castsShadow, string fileName) : this([], new CarStats(), [], null, [], polys, castsShadow, [], fileName)
     {
     }
 
+    [PluginVisible]
     public class VisualEqualityComparer : IEqualityComparer<Rad3d>
     {
+        [PluginVisible]
         public static VisualEqualityComparer Instance { get; } = new();
         
+        [PluginVisible]
         public bool Equals(Rad3d? x, Rad3d? y)
         {
             if (x is null && y is null) return true;
@@ -216,6 +224,7 @@ public sealed partial class Rad3d(
             return true;
         }
 
+        [PluginVisible]
         public int GetHashCode(Rad3d obj)
         {
             return obj._visualHashCode;
