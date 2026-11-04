@@ -1,6 +1,7 @@
 ﻿using NFMWorld.PluginSystem;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Gamemodes;
+using NFMWorldLibrary.Helpers;
 using NFMWorldLibrary.Rad;
 using NFMWorld.Sentry;
 
@@ -92,6 +93,8 @@ public partial class BackendCar : BackendGameObject
         var transaction = SentrySdk.StartTransaction("BackendCar.Drive", "drive-car");
         CarPhysics.Drive(Control, this, stage);
         transaction.Finish();
+
+        CheckPointHelper.HandleAerialFall(stage, this);
 
         IterateFix();
     }

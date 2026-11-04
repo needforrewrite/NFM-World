@@ -402,6 +402,7 @@ public partial class StageEditorPhase : BasePhase
         "modeloffset(",
         "swapRotY(",
         "reverseChkY(",
+        "aerial(",
         "nlaps(",
         "stagemaker(",
         "publish("

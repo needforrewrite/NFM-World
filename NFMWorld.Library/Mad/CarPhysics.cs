@@ -122,6 +122,10 @@ public partial class CarPhysics
     
     [PluginVisible]
     public bool Gtouch;
+
+    /// <summary>Any wheel touched the world ground plane this tick (as opposed to a track piece).</summary>
+    [PluginVisible]
+    public bool OnGroundPlane;
     
     [PluginVisible]
     public int DamagePoints;
@@ -659,6 +663,7 @@ public partial class CarPhysics
         FrameTrace.AddMessage($"xz: {conto.Xz:0.00}, mxz: {Mxz:0.00}, lxz: {_lxz:0.00}, fxz: {_turnXz:0.00}, cxz: {Cxz:0.00}");
         FrameTrace.AddMessage($"xy: {conto.Xy:0.00}, pxy: {Pxy:0.00}, zy: {conto.Zy:0.00}, pzy: {Pzy:0.00}, xz: {conto.Xz:0.00}");
         FrameTrace.AddMessage($"Travxz: {TotalStuntXz:0.00}, Travxy: {TotalStuntXy:0.00}, Travzy: {TotalStuntZy:0.00}, Surfing: {Surfing}");
+        OnGroundPlane = false;
 
         var xneg = 1;
         var zneg = 1;
@@ -1560,6 +1565,7 @@ public partial class CarPhysics
             isWheelGrounded[i49] = false;
             if (wheely[i49] > (groundY - (fix64)5))
             {
+                OnGroundPlane = true;
                 nGroundedWheels++;
                 Wtouch = true;
                 Gtouch = true;

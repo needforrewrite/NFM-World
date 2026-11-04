@@ -1,6 +1,7 @@
 ﻿using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Collision;
+using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Util;
 
@@ -9,6 +10,8 @@ namespace NFMWorldLibrary.Helpers;
 [PluginVisible]
 public class CheckPointHelper
 {
+    // Checkpoints at or within this distance of the world ground count as ground-level.
+    private static readonly fix64 AerialGroundTolerance = (fix64)50;
     [PluginVisible]
     public static void CalculatePositions(
         BackendStage currentStage,
@@ -112,5 +115,42 @@ public class CheckPointHelper
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// On an aerial stage, returns a car that fell to the world ground to the last checkpoint it
+    /// crossed, but only when that checkpoint was in the air. A ground-level next checkpoint means
+    /// the route is supposed to come down, so no teleport happens in that case.
+    /// </summary>
+    [PluginVisible]
+    public static bool HandleAerialFall(BackendStage currentStage, BackendCar car)
+    {
+        if (!currentStage.StageLoader.Aerial) return false;
+        if (!car.CarPhysics.OnGroundPlane) return false;
+        if (currentStage.Checkpoints.Count == 0) return false;
+        if (car.CurrentCheckpoint > currentStage.Checkpoints.Count) return false;
+
+        // No checkpoint crossed yet (CurrentCheckpoint wraps to 0 after the last one).
+        if (car.CurrentLap == 0 && car.CurrentCheckpoint == 0) return false;
+
+        var lastIndex = car.CurrentCheckpoint == 0
+            ? currentStage.Checkpoints.Count - 1
+            : car.CurrentCheckpoint - 1;
+
+        var lastCheckpoint = currentStage.Checkpoints[lastIndex];
+        if (lastCheckpoint.Position.Y >= (fix64)World.Ground - AerialGroundTolerance) return false;
+
+        if (car.CurrentCheckpoint < currentStage.Checkpoints.Count &&
+            currentStage.Checkpoints[car.CurrentCheckpoint].Position.Y >= (fix64)World.Ground - AerialGroundTolerance)
+            return false;
+
+        car.CarPhysics.Reseto(car.CarPhysics.Im, car);
+        car.CarPhysics.OnGroundPlane = false;
+        car.Position = new f64Vector3(
+            lastCheckpoint.Position.X,
+            lastCheckpoint.Position.Y - car.GroundAt,
+            lastCheckpoint.Position.Z);
+        car.Rotation = new f64Euler(lastCheckpoint.Rotation.Xz, f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle);
+        return true;
     }
 }

@@ -126,6 +126,9 @@ public partial class StageLoader
     [MemoryPackOrder(36), PluginVisible] public bool DrawPolys = true;
     [MemoryPackOrder(37), PluginVisible] public bool DrawClouds = true;
 
+    // aerial()
+    [MemoryPackOrder(38), PluginVisible] public bool Aerial;
+
     [MemoryPackIgnore] public UnlimitedArray<StageWall> wallDefs = [];
 
     [MemoryPackIgnore] public UnlimitedArray<HierarchyGroup> groups = [];
@@ -528,6 +531,10 @@ public partial class StageLoader
                 else if (line.StartsWith("name"))
                 {
                     Name = Utility.GetString("name", line, 0);
+                }
+                else if (line.StartsWith("aerial("))
+                {
+                    Aerial = true;
                 }
                 else if (line.StartsWith("stagemaker"))
                 {
