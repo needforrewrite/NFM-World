@@ -25,6 +25,8 @@ public static class UiState
     public sealed class RaceState : IHudData
     {
         public Signal<string> Skin { get; } = new(HudSkinId.Default);
+        /// <summary>Bumped once the plain-list presentation data (<see cref="Racers"/> etc.) has been rewritten for the frame.</summary>
+        public Signal<int> PresentationRevision { get; } = new(0);
         public Signal<Color3> StageSnap { get; } = new(default(Color3));
         public bool TimeTrial { get; set; }
         public bool IsPreview { get; set; }

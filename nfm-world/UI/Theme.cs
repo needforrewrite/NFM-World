@@ -46,6 +46,15 @@ public static class Theme
 
     public static readonly Color Transparent = new(0, 0, 0, 0);
 
+    // Main menu / settings blue. Those screens still hold their own copies of these literals.
+    public static readonly Color MenuBlue = new(128, 170, 255);
+    public static readonly Color MenuTextBlue = new(185, 211, 255);
+    public static readonly Color MenuPanel = new(12, 22, 42, 220);
+    public static readonly Color MenuBorder = new(128, 170, 255, 100);
+    public static readonly Color MenuFill = new(22, 42, 80, 145);
+    public static readonly Color MenuHighlight = new(55, 90, 150, 190);
+    public static readonly Color MenuDim = new(130, 155, 195);
+
     private static Color FromHex(int rgb)
         => new((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
 }

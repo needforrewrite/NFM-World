@@ -132,6 +132,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
         UiState.Race.Update(gm.HudState, IsPaused);
         UpdateHudPresentation(gm);
+        UiState.Race.PresentationRevision.Value++;
     }
 
     private void UpdateHudPresentation(BaseClientGamemode gm)

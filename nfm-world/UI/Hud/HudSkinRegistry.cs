@@ -29,8 +29,8 @@ public static class HudSkinRegistry
         Skins.Clear();
         Failed.Clear();
         Register(new HudSkinInfo("classic", "Classic", "NeedForRewrite Team", "The classic Need for Madness look."), BuildDefault);
-        Register(new HudSkinInfo("world", "World", "NeedForRewrite Team", "The NFM World look (temporary until our designers come through)."),
-            data => new HudScaleHost((Component)new WorldHudView(data).Build()));
+        Register(new HudSkinInfo("world", "World", "NeedForRewrite Team", "Blue glass HUD with radar, standings and a destination arrow."),
+            data => new HudScaleHost(new WorldSkin.WorldHud(data).Build()));
         try
         {
             foreach (var package in HudSkinCatalog.Discover(VFS, (path, error) =>

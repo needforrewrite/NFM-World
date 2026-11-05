@@ -160,6 +160,10 @@ public static class SettingsView
         previewData.ArrowAngle = 0;
         previewData.Paused.Value = true;
         previewData.TotalLaps.Value = 1;
+        previewData.Racers.Add(new HudRacer(1, "Opponent", 0.2f, false, false, 1));
+        previewData.Racers.Add(new HudRacer(2, "You", 0.1f, true, false));
+        previewData.ClientPosition = (0, 0, 0);
+        previewData.Markers.Add(new HudRacerMarker("Opponent", 1200, 0, 1800, 1, false, false));
         var cameraPresetEditor = new Signal<bool>(false);
         var applied = new Signal<bool>(false);
         var closeAfterRestartPrompt = false;

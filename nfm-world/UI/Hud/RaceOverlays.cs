@@ -20,9 +20,12 @@ public sealed class RaceOverlays : Component
 
     private readonly IHudData _race;
 
-    public RaceOverlays(IHudData race)
+    private readonly Func<bool> _skinDrawsRadar;
+
+    public RaceOverlays(IHudData race, Func<bool>? skinDrawsRadar = null)
     {
         _race = race;
+        _skinDrawsRadar = skinDrawsRadar ?? (() => false);
         Styles = Sx.Styles(position: Position.Absolute, left: 0, top: 0,
             width: "100%", height: "100%", flexShrink: 0, pointerEvents: false);
     }
@@ -33,7 +36,7 @@ public sealed class RaceOverlays : Component
         G.SaveState();
         try
         {
-            if (SettingsMenu.HudRadar) DrawRadar(position, size);
+            if (SettingsMenu.HudRadar && !_skinDrawsRadar()) DrawRadar(position, size);
             // The standings panel belongs to the skin: ClassicHud and JSON skins each draw their
             // own, so one here would be a second list beside theirs.
             if (SettingsMenu.HudNameTags) DrawNameTags(position, size);
