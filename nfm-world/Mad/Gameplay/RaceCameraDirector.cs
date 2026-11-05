@@ -15,14 +15,22 @@ public sealed class RaceCameraDirector
         Around,
         /// <summary>Behind the car, aimed at whatever the guidance arrow points to.</summary>
         CarCam,
-        Watch
+        /// <summary>Stationary trackside camera that turns to watch the car pass.</summary>
+        Watch,
+        /// <summary>Free-flying camera, steered with the driving keys.</summary>
+        Freelook
     }
 
     private readonly FollowCamera _playerFollowCamera = new();
     private readonly AroundCamera _playerAroundCamera = new();
     private readonly AroundStageCamera _stageAroundCamera = new();
+    private readonly WatchCamera _watchCamera = new();
+    private readonly FreelookCamera _freelookCamera = new();
 
     public ViewMode CurrentViewMode { get; private set; } = ViewMode.Follow;
+
+    /// <summary>Navigation keys held, for <see cref="ViewMode.Freelook"/>.</summary>
+    public FreelookInput Navigation { get; set; }
 
     /// <summary>Where the guidance arrow points, for <see cref="ViewMode.CarCam"/>.</summary>
     public Vector3? ArrowTarget { get; set; }
@@ -32,6 +40,8 @@ public sealed class RaceCameraDirector
         CurrentViewMode = (ViewMode)(((int)CurrentViewMode + 1) % Enum.GetValues<ViewMode>().Length);
         // Entering the car cam should start already facing the arrow, not sweep round to it.
         _playerFollowCamera.ResetAim();
+        _watchCamera.Reset();
+        _freelookCamera.Reset();
     }
 
     public void Update(PerspectiveCamera camera, BackendCar car)
@@ -65,6 +75,12 @@ public sealed class RaceCameraDirector
                 break;
             case ViewMode.Around:
                 _playerAroundCamera.Around(camera, car);
+                break;
+            case ViewMode.Watch:
+                _watchCamera.Watch(camera, car, (float)car.CarPhysics.Mxz);
+                break;
+            case ViewMode.Freelook:
+                _freelookCamera.Fly(camera, Navigation);
                 break;
         }
     }

@@ -13,6 +13,33 @@ public sealed class RaceInputController
 {
     private readonly HashSet<Key> _pressedKeys = new();
 
+    private bool _freelook;
+
+    /// <summary>
+    /// While free-looking, the driving keys fly the camera instead of the car (Q/E climb and
+    /// descend), so the car coasts.
+    /// </summary>
+    public void SetFreelook(bool freelook, Control? control)
+    {
+        _freelook = freelook;
+        UpdateControlState(control);
+    }
+
+    public FreelookInput Navigation
+    {
+        get
+        {
+            var bindings = SettingsMenu.Bindings;
+            return new FreelookInput(
+                _pressedKeys.Contains(bindings.Accelerate),
+                _pressedKeys.Contains(bindings.Brake),
+                _pressedKeys.Contains(bindings.TurnLeft),
+                _pressedKeys.Contains(bindings.TurnRight),
+                _pressedKeys.Contains(bindings.AerialBounce),
+                _pressedKeys.Contains(bindings.AerialStrafe));
+        }
+    }
+
     public void Reset(Control? control)
     {
         _pressedKeys.Clear();
@@ -122,10 +149,10 @@ public sealed class RaceInputController
         bool handbrakePressed = _pressedKeys.Contains(bindings.Handbrake);
 
         // apply Up/Down controls
-        control.Up = acceleratePressed || aerialBouncePressed;
-        control.Down = brakePressed || aerialBouncePressed;
-        control.Left = turnLeftPressed || aerialStrafePressed;
-        control.Right = turnRightPressed || aerialStrafePressed;
+        control.Up = !_freelook && (acceleratePressed || aerialBouncePressed);
+        control.Down = !_freelook && (brakePressed || aerialBouncePressed);
+        control.Left = !_freelook && (turnLeftPressed || aerialStrafePressed);
+        control.Right = !_freelook && (turnRightPressed || aerialStrafePressed);
         control.Handb = handbrakePressed;
     }
 }

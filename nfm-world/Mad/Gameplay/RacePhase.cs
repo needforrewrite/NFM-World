@@ -484,7 +484,10 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             return;
 
         if (key == SettingsMenu.Bindings.CycleView)
+        {
             _cameraDirector.CycleViewMode();
+            _input.SetFreelook(_cameraDirector.CurrentViewMode == RaceCameraDirector.ViewMode.Freelook, ClientCar?.Control);
+        }
 
         // The arrow can only target cars while there is one to target.
         var lockable = LockableOpponents();
@@ -629,6 +632,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             // Per tick, not per UI push: the camera runs here, before PushUiState, so the target
             // is resolved fresh rather than read from the HUD a frame late.
             _cameraDirector.ArrowTarget = ArrowTarget(car, TargetCarFor(car));
+            _cameraDirector.Navigation = _input.Navigation;
             _cameraDirector.Update(Camera, car);
         }
 
