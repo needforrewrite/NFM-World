@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Numerics;
 using Apos.Shapes;
 using CommunityToolkit.HighPerformance;
 using NFMWorld.Audio;
@@ -112,7 +113,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
         public Vector2 Viewport => new(_graphicsDevice.Swapchain.Width, _graphicsDevice.Swapchain.Height);
 
         public float Scale { get; set; } = 1;
-        
+
         private Color _alpha = new Color(1f, 1f, 1f, 1f);
 
         public float Alpha
@@ -174,7 +175,8 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
         // so the path builder keeps its own for the Arc overload to join to.
         private bool _hasCurrentPoint;
         private RectangleF? _clipRect;
-        private readonly Stack<RectangleF?> _savedClipRects = [];
+        private float _clipRounding;
+        private readonly Stack<(RectangleF?, float)> _savedClipRects = [];
 
         public AposGraphics(ShapeBatch sb, IGraphicsDevice graphicsDevice)
         {
@@ -271,6 +273,9 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
 
             return new TextureImage(TextureLoader.LoadFromStream(_graphicsDevice, file.AsStream()));
         }
+
+        public IImage? WrapTexture(object texture)
+            => texture is ITexture owned ? new TextureImage(owned) : null;
 
         public void SetLinearGradient(int x, int y, int width, int height, Color[] colors, float[]? colorPos)
         {
@@ -416,6 +421,24 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             }
         }
 
+        public void DrawImageTransformed(IImage image, Vector2 origin, Vector2 axisX, Vector2 axisY, Color tint)
+        {
+            if (image is not TextureImage img) return;
+
+            // The caller works in upright image space. Where the backend's textures start at the
+            // bottom row (GL), the quad has to be flipped to keep the image that way: V runs the
+            // other direction and the quad's corner moves to the far edge.
+            var flip = _graphicsDevice.HasBottomLeftFramebufferOrigin;
+            var start = flip ? origin + axisY : origin;
+            var vAxis = flip ? -axisY : axisY;
+
+            // Maps the unit square's (u, v) to start + u*axisX + v*vAxis: the quad is placed
+            // first and translated after, matching the batch's row-vector convention.
+            var quad = new Matrix3x2(axisX.X, axisX.Y, vAxis.X, vAxis.Y, 0f, 0f)
+                       * Matrix3x2.CreateTranslation(start);
+            _sb.Draw(img.Texture, quad, mask: tint * (_alpha.A / 255f));
+        }
+
         public void BeginPath()
         {
             _sb.BeginShapePath();
@@ -507,29 +530,38 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
 
         public void SaveState()
         {
-            _savedClipRects.Push(_clipRect);
+            _savedClipRects.Push((_clipRect, _clipRounding));
         }
 
         public void RestoreState()
         {
-            _clipRect = _savedClipRects.Pop();
-            _sb.SetClipRect(_clipRect);
+            (_clipRect, _clipRounding) = _savedClipRects.Pop();
+            _sb.SetClipRect(_clipRect, _clipRounding, 0f, 1.5f);
         }
 
         public void Scissor(float x, float y, float w, float h)
         {
             _clipRect = new RectangleF(x, y, w, h);
+            _clipRounding = 0f;
         }
 
-        public void IntersectScissor(float x, float y, float w, float h)
+        public void IntersectScissor(float x, float y, float w, float h, float cornerRadius = 0f)
         {
-            _clipRect = RectangleF.Intersect(_clipRect ?? new RectangleF(0, 0, float.MaxValue, float.MaxValue), new RectangleF(x, y, w, h));
-            _sb.SetClipRect(_clipRect);
+            var requested = new RectangleF(x, y, w, h);
+            // Rounding describes the rectangle just asked for. If an outer clip narrows it, the
+            // result is that outer rectangle and the radius no longer describes its corners.
+            var narrowed = _clipRect is { } outer &&
+                (requested.X < outer.X || requested.Y < outer.Y ||
+                 requested.Right > outer.Right || requested.Bottom > outer.Bottom);
+            _clipRect = RectangleF.Intersect(_clipRect ?? new RectangleF(0, 0, float.MaxValue, float.MaxValue), requested);
+            _clipRounding = narrowed ? 0f : cornerRadius;
+            _sb.SetClipRect(_clipRect, _clipRounding, 0f, 1.5f);
         }
 
         public void ResetScissor()
         {
             _clipRect = null;
+            _clipRounding = 0f;
             _sb.SetClipRect(_clipRect);
         }
 

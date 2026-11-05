@@ -59,29 +59,37 @@ public sealed class ClassicHud(IHudData race) : Component
             var speedX = left + size.X / 2;
             var speedY = top + size.Y - 55 * scale;
             var speed = Race.SpeedKmh;
-            Digits($"{speed}", speedX, speedY, 30 * scale, center: true);
-            Text("KM/H", speedX, speedY + 34 * scale, scale, adventure: true, center: true);
+            if (Race.IsPreview || SettingsMenu.HudClassicMeters)
+            {
+                Digits($"{speed}", speedX, speedY, 30 * scale, center: true);
+                Text("KM/H", speedX, speedY + 34 * scale, scale, adventure: true, center: true);
 
-            Meter(_damage, right - 166 * scale, top + 5 * scale, scale, Race.DamageFraction, true);
-            Meter(_power, right - 166 * scale, top + 24 * scale, scale, Race.PowerFraction, false);
+                Meter(_damage, right - 166 * scale, top + 5 * scale, scale, Race.DamageFraction, true);
+                Meter(_power, right - 166 * scale, top + 24 * scale, scale, Race.PowerFraction, false);
+            }
             Arrow(position, size, scale, Race.Paused ? 0 : dt);
 
-            if (!Race.TimeTrial && Race.Racers.Count > 1)
+            if ((Race.IsPreview || SettingsMenu.HudOpponents) && !Race.TimeTrial && Race.Racers.Count > 1)
             {
                 var opponentScale = scale * 0.55f;
                 var opponentRight = right - 8 * scale;
                 var y = top + 80 * scale;
                 foreach (var racer in Race.Racers)
                 {
-                    if (racer.Wasted) continue;
                     if (y + 24 * opponentScale > top + size.Y - 30 * scale) break;
                     if (racer.IsClient)
                     {
                         G.SetColor(Snap(new Color(90, 195, 255, 60)));
                         G.FillRect((int)(opponentRight - 136 * opponentScale), (int)y, (int)(136 * opponentScale), (int)(24 * opponentScale));
                     }
-                    Text(Ordinal(racer.Position), opponentRight - 130 * opponentScale, y + 5 * opponentScale, opponentScale, color: new Color(20, 20, 120));
-                    Text(racer.Name, opponentRight - 102 * opponentScale, y, opponentScale);
+
+                    // The digit comes from the phase, which numbered opponents in the same order
+                    // the lock keys resolve, so this can never drift from what a key does. Past the
+                    // tenth opponent there is no key, so show nothing rather than repeat a digit.
+                    var key = racer.LockSlot is > 0 and <= 10 ? $"{racer.LockSlot % 10}" : "";
+                    Text(key, opponentRight - 134 * opponentScale, y, opponentScale, color: new Color(20, 20, 120));
+                    Text(Ordinal(racer.Position), opponentRight - 124 * opponentScale, y + 5 * opponentScale, opponentScale, color: new Color(20, 20, 120));
+                    Text(racer.Name, opponentRight - 96 * opponentScale, y, opponentScale);
                     var barX = opponentRight - 102 * opponentScale;
                     var barY = y + 15 * opponentScale;
                     G.SetColor(new Color(0, 0, 0));
@@ -149,7 +157,8 @@ public sealed class ClassicHud(IHudData race) : Component
         var center = position.X + size.X / 2;
         var top = position.Y;
         if (Race.ArrowAtCars)
-            Text($"[ {Race.ArrowTarget} ]", center, top + 3 * scale, scale, center: true, color: new Color(20, 20, 120));
+            Text(Race.ArrowLocked ? $"< {Race.ArrowTarget} >" : $"[ {Race.ArrowTarget} ]",
+                center, top + 3 * scale, scale, center: true, color: new Color(20, 20, 120));
         if (_clock < _modeMessageUntil)
             Text($"Arrow now pointing at {(Race.ArrowAtCars ? "Cars" : "Track")} <", center, top + 89 * scale, scale, center: true);
         if (!Race.IsPreview && !Race.ArrowAtCars && MathF.Abs(_arrowAngle) <= 7) return;
@@ -170,10 +179,13 @@ public sealed class ClassicHud(IHudData race) : Component
             py[i] = (int)(top + (200 - 290 * 400 / z) * scale);
         }
         var turn = MathF.Abs(_arrowAngle);
-        G.SetColor(Race.ArrowAtCars ? Snap(159, 207, 255) :
+        // A locked arrow takes the palette of the car it is following (phy's alocked), so you can
+        // tell at a glance that it is no longer picking for itself.
+        var locked = Race.ArrowLocked;
+        G.SetColor(locked ? Snap(255, 128, 0) : Race.ArrowAtCars ? Snap(159, 207, 255) :
             Snap((int)(190 + 65 * Math.Clamp((turn - 90) / 50, 0, 1)), 255, 0));
         G.FillPolygon(px, py, 7);
-        G.SetColor(Race.ArrowAtCars ? Snap(120, 114, 255) : Snap(115, 170, 0));
+        G.SetColor(locked ? Snap(160, 70, 0) : Race.ArrowAtCars ? Snap(120, 114, 255) : Snap(115, 170, 0));
         G.SetStrokeWidth(MathF.Max(1, scale));
         G.DrawPolygon(px, py, 7);
     }

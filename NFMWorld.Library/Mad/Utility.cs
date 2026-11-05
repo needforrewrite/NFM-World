@@ -4,9 +4,18 @@ namespace NFMWorldLibrary;
 
 public static class Utility
 {
+    /// <summary>
+    /// Where a directive's arguments begin. Callers pass either the bare name (<c>lava</c>) or
+    /// the matched form with its parenthesis (<c>lava(</c>); both land in the same place. The
+    /// parenthesised form matters: slicing by the bare name alone stops on the bracket, so the
+    /// first argument would come out as <c>(10</c>.
+    /// </summary>
+    private static int ArgumentStart(ReadOnlySpan<char> prefix)
+        => prefix.Length > 0 && prefix[^1] == '(' ? prefix.Length : prefix.Length + 1;
+
     public static int GetValue(ReadOnlySpan<char> prefix, ReadOnlySpan<char> line, int index)
     {
-        line = line[(prefix.Length + 1)..];
+        line = line[ArgumentStart(prefix)..];
         var i = 0;
         foreach (var range in line.SplitAny(',', ')'))
         {
@@ -21,7 +30,7 @@ public static class Utility
 
     public static int GetInt(ReadOnlySpan<char> prefix, ReadOnlySpan<char> line, int index)
     {
-        line = line[(prefix.Length + 1)..];
+        line = line[ArgumentStart(prefix)..];
         var i = 0;
         foreach (var range in line.SplitAny(',', ')'))
         {
@@ -36,7 +45,7 @@ public static class Utility
 
     public static string GetString(ReadOnlySpan<char> prefix, ReadOnlySpan<char> line, int index)
     {
-        line = line[(prefix.Length + 1)..];
+        line = line[ArgumentStart(prefix)..];
         var i = 0;
         foreach (var range in line.SplitAny(',', ')'))
         {
@@ -51,7 +60,7 @@ public static class Utility
 
     public static float GetFloat(ReadOnlySpan<char> prefix, ReadOnlySpan<char> line, int index)
     {
-        line = line[(prefix.Length + 1)..];
+        line = line[ArgumentStart(prefix)..];
         var i = 0;
         foreach (var range in line.SplitAny(',', ')'))
         {

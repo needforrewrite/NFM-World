@@ -151,7 +151,7 @@ public sealed class DummyBackend : IBackend
         {
         }
 
-        public void IntersectScissor(float x, float y, float w, float h)
+        public void IntersectScissor(float x, float y, float w, float h, float cornerRadius = 0f)
         {
         }
 

@@ -18,6 +18,8 @@ public partial class BackendStage
     [PluginVisible] public UnlimitedArray<StageObject> FixHoops { get; } = [];
     [PluginVisible] public ushort Nlaps { get; set; }
 
+    [PluginVisible] public StagePhysics Physics { get; private set; }
+
     [PluginVisible] public string Name = "hogan rewish";
 
     [PluginVisible] public readonly string Path;
@@ -157,6 +159,7 @@ public partial class BackendStage
 
         Nlaps = stageLoader.nlaps;
         Name = stageLoader.Name;
+        Physics = stageLoader.Physics;
             
         // stage walls
         if (stageLoader.walls.Count > 0)

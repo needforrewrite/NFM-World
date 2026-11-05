@@ -38,6 +38,10 @@ public sealed class SettingsSnapshot
     public float HudScale { get; set; } = HudScaleSettings.Default;
     public float HudSafeZoneHorizontal { get; set; } = HudSafeZoneSettings.Default;
     public float HudSafeZoneVertical { get; set; } = HudSafeZoneSettings.Default;
+    public bool HudClassicMeters { get; set; } = true;
+    public bool HudRadar { get; set; } = true;
+    public bool HudOpponents { get; set; } = true;
+    public bool HudNameTags { get; set; } = true;
     public float Fov { get; set; }
     public int FollowY { get; set; }
     public int FollowZ { get; set; }

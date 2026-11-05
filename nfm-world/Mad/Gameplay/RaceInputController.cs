@@ -23,7 +23,11 @@ public sealed class RaceInputController
     }
 
     /// <summary>Call on key press with the client car's control (may be null).</summary>
-    public void KeyPressed(Key key, Control? control, bool canTargetCars)
+    /// <param name="lockTarget">
+    /// Resolves a lock slot (0-based, in sidebar order) to the opponent's stable player index, or
+    /// -1 when that slot holds no lockable opponent. Null when there is nothing to lock onto.
+    /// </param>
+    public void KeyPressed(Key key, Control? control, bool canTargetCars, Func<int, int>? lockTarget)
     {
         var bindings = SettingsMenu.Bindings;
 
@@ -54,7 +58,27 @@ public sealed class RaceInputController
             control.Lookback = 2;
 
         if (key == bindings.ToggleArrace)
+        {
             control.Arrace = canTargetCars && !control.Arrace;
+            // Turning the car targeting on by hand starts from the automatic pick, not from
+            // whatever slot was locked when it was last switched off.
+            if (!control.Arrace) control.ArrowLock = -1;
+        }
+
+        if (firstPress && canTargetCars)
+        {
+            var slots = bindings.LockSlots;
+            for (var slot = 0; slot < slots.Length; slot++)
+            {
+                if (key != slots[slot]) continue;
+                var target = lockTarget?.Invoke(slot) ?? -1;
+                if (target < 0) break;
+                // Locking implies targeting; pressing the same digit again releases it.
+                control.ArrowLock = control.ArrowLock == target ? -1 : target;
+                control.Arrace = true;
+                break;
+            }
+        }
 
         if (key == bindings.ToggleRadar)
             control.Radar = !control.Radar;

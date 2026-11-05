@@ -29,7 +29,7 @@ public partial class PhysicsController(IReadOnlyList<ClientSidePlayer> players, 
             {
                 if (i != j && players[i].Car is { } leftCar && players[j].Car is { } rightCar)
                 {
-                    leftCar.Collide(rightCar);
+                    leftCar.Collide(rightCar, stage);
                 }
             }
 

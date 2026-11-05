@@ -30,7 +30,7 @@ public partial class BackendCar : BackendGameObject
 
     [PluginVisible] public int Placement { get; set; } // cp.pos
     [PluginVisible] public Rad3d Rad { get; }
-    [PluginVisible] public CarStats Stats { get; }
+    [PluginVisible] public CarStats Stats { get; internal set; }
     [PluginVisible] public bool Wasted => CarPhysics.Wasted;
 
     public event DamageFunc? DamagedX;
@@ -77,6 +77,7 @@ public partial class BackendCar : BackendGameObject
         Wheels = rad.Wheels;
         
         CarPhysics = new CarPhysics(Stats, im, isClientPlayer);
+        CarPhysics.Car = this;
         CarPhysics.Reseto(CarPhysics.Im, this);
         Control = new Control();
         
@@ -128,10 +129,10 @@ public partial class BackendCar : BackendGameObject
     }
 
     [PluginVisible]
-    public void Collide(BackendCar otherCar)
+    public void Collide(BackendCar otherCar, BackendStage stage)
     {
         var transaction = SentrySdk.StartTransaction("BackendCar.Collide", "car-collide");
-        CarPhysics.Collide(this, otherCar.CarPhysics, otherCar);
+        CarPhysics.Collide(this, otherCar.CarPhysics, otherCar, stage);
         transaction.Finish();
     }
 

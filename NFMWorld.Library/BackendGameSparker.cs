@@ -380,6 +380,24 @@ public static class BackendGameSparker
             }
         }
 
+        // Read-only legacy import: a .radq the user dropped in data/legacy/cars first, then the
+        // original download host.
+        if ((LegacyAssets.LegacyAssetImporter.TryReadLocal("cars", name)
+                ?? LegacyAssets.LegacyAssetImporter.TryFetch("cars", name)) is { } legacyRad)
+        {
+            try
+            {
+                total += dynamic_models.Count;
+                var rad = RadParser.ParseRad(legacyRad, name);
+                Logging.Info($"Imported legacy car '{name}' from .radq.");
+                return dynamic_models[name] = (total, rad);
+            }
+            catch (Exception ex)
+            {
+                Logging.Info($"Error importing legacy car '{name}': {ex.Message}");
+            }
+        }
+
         SentrySdk.CaptureMessage("No results for GetCar: " + name, SentryLevel.Warning);
         Logging.Info("No results for GetCar: " + name);
         return (-1, null!);
@@ -442,6 +460,24 @@ public static class BackendGameSparker
                     Message = $"Error loading dynamic model '{name}'"
                 });
                 Logging.Info($"Error loading dynamic model '{name}': {ex.Message}\n{ex.StackTrace}");
+            }
+        }
+
+        // Read-only legacy import, same on-demand path as GetCar. Only a phy:/ds:/nfm: label
+        // names a download; a bare part name has no source outside the shipped archive.
+        if ((LegacyAssets.LegacyAssetImporter.TryReadLocal("stage", name)
+                ?? LegacyAssets.LegacyAssetImporter.TryFetchModel(name)) is { } legacyPart)
+        {
+            try
+            {
+                total += dynamic_models.Count;
+                var rad = RadParser.ParseRad(legacyPart, name);
+                Logging.Info($"Imported legacy stage part '{name}'.");
+                return dynamic_models[name] = (total, rad);
+            }
+            catch (Exception ex)
+            {
+                Logging.Info($"Error importing legacy stage part '{name}': {ex.Message}");
             }
         }
 

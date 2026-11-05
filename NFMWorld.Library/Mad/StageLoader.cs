@@ -1,4 +1,5 @@
-﻿using MemoryPack;
+﻿using System.Text;
+using MemoryPack;
 using NFMWorld.PluginSystem;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
@@ -129,14 +130,20 @@ public partial class StageLoader
     // aerial()
     [MemoryPackOrder(38), PluginVisible] public bool Aerial;
 
-    [MemoryPackIgnore] public UnlimitedArray<StageWall> wallDefs = [];
+    /// <summary>Per-stage physics overrides (phy-addons stage properties).</summary>
+    [MemoryPackOrder(39), PluginVisible] public StagePhysics Physics { get; set; } = new StagePhysics();
 
-    [MemoryPackIgnore] public UnlimitedArray<HierarchyGroup> groups = [];
-    [MemoryPackIgnore] public HierarchyGroup ungrouped = new("Ungrouped", [], []);
-    [MemoryPackIgnore] public HierarchyGroup currentGroup;
-    [MemoryPackIgnore] public int UngroupedOrderIndex = -1;
+    [MemoryPackOrder(40), PluginVisible] public UnlimitedArray<StageWall> wallDefs = [];
 
-    [MemoryPackIgnore] public UnlimitedArray<string> unknownParameters = [];
+    [MemoryPackIgnore, PluginVisible] public UnlimitedArray<HierarchyGroup> groups = [];
+    [MemoryPackIgnore, PluginVisible] public HierarchyGroup ungrouped = new("Ungrouped", [], []);
+    [MemoryPackIgnore, PluginVisible] public HierarchyGroup currentGroup;
+    [MemoryPackIgnore, PluginVisible] public int UngroupedOrderIndex = -1;
+
+    [MemoryPackOrder(41), PluginVisible] public UnlimitedArray<string> unknownParameters = [];
+
+    // amodel/amodel2 models, resolved while loading only; pieces hold the Rad3d directly.
+    [MemoryPackIgnore] private readonly Dictionary<string, Rad3d> _embeddedModels = new(StringComparer.OrdinalIgnoreCase);
 
     public StageLoader(string stageName)
     {
@@ -144,15 +151,50 @@ public partial class StageLoader
 
         Path = stageName;
         var customStagePath = $"data/stages/{stageName}.txt";
+
+        // Read-only legacy fallback: a tracks .radq the user put in data/legacy/tracks, then the
+        // original track host.
+        var stageLines = VFS.FileExists(customStagePath)
+            ? VFS.ReadAllLines(customStagePath)
+            : (LegacyAssets.LegacyAssetImporter.TryReadLocal("tracks", stageName)
+                ?? LegacyAssets.LegacyAssetImporter.TryFetch("tracks", stageName)) is { } legacy
+                ? legacy.Split('\n').Select(l => l.TrimEnd('\r'))
+                : [];
+
         var line = "";
         int lineNumber = 0;
+        string? embeddedLabel = null;
+        var embeddedLines = 0;
+        var embeddedData = new StringBuilder();
 
         try
         {
-            foreach (var aline in VFS.ReadAllLines(customStagePath))
+            foreach (var aline in stageLines)
             {
                 line = aline.Trim();
+
+                // ds:/? prefixes mark lines a phy-addons stage editor added; load them as usual.
+                if (line.StartsWith("ds:")) line = line[3..];
+                if (line.StartsWith('?')) line = line[1..];
+
                 lineNumber++;
+
+                // amodel2 payload: the model data continues on `//- ` lines.
+                if (embeddedLabel != null)
+                {
+                    if (line.StartsWith("//- "))
+                    {
+                        embeddedData.Append(line[4..]);
+                        if (--embeddedLines > 0) continue;
+
+                        RegisterEmbeddedModel(embeddedLabel, embeddedData.ToString());
+                        embeddedLabel = null;
+                        embeddedData.Clear();
+                        continue;
+                    }
+
+                    embeddedLabel = null;
+                }
 
                 if (line.StartsWith("#editor_group"))
                 {
@@ -528,13 +570,94 @@ public partial class StageLoader
                 {
                     nlaps = (ushort)Utility.GetInt("nlaps", line, 0);
                 }
-                else if (line.StartsWith("name"))
+                // phy-addons stage properties. `gravity`, `grip`, `dam` etc. are not stock
+                // directives; they are read by phy-addons that scan for these prefixes. The
+                // parenthesis is required: a bare prefix makes `dam` swallow `damagevents()` and
+                // `lava` swallow `lavavents()`, which are other addons' scenery directives, and
+                // the numeric parse then throws the whole stage away.
+                else if (line.StartsWith("stats("))
                 {
-                    Name = Utility.GetString("name", line, 0);
+                    Physics = Physics with { RechargedStats = true };
+                }
+                else if (line.StartsWith("gravity("))
+                {
+                    Physics = Physics with { Gravity = Utility.GetFloat("gravity(", line, 0) };
+                }
+                else if (line.StartsWith("grip("))
+                {
+                    Physics = Physics with { Grip = Utility.GetFloat("grip(", line, 0) };
+                }
+                else if (line.StartsWith("powerloss("))
+                {
+                    Physics = Physics with { Powerloss = Utility.GetFloat("powerloss(", line, 0) };
+                }
+                else if (line.StartsWith("dam("))
+                {
+                    Physics = Physics with { Damage = Utility.GetFloat("dam(", line, 0) };
+                }
+                else if (line.StartsWith("lava("))
+                {
+                    Physics = Physics with { Lava = Utility.GetFloat("lava(", line, 0) };
+                }
+                else if (line.StartsWith("maxhit("))
+                {
+                    // The directive is a multiplier on the stock 300 impulse clamp.
+                    Physics = Physics with { MaxHit = 300f * Utility.GetFloat("maxhit(", line, 0) };
+                }
+                else if (line.StartsWith("recoil("))
+                {
+                    Physics = Physics with { Recoil = Utility.GetFloat("recoil(", line, 0) };
+                }
+                else if (line.StartsWith("rage("))
+                {
+                    Physics = Physics with { Rage = Math.Max(Utility.GetFloat("rage(", line, 0), 1f) };
+                }
+                else if (line.StartsWith("noarrow(") || line.StartsWith("disableArrow("))
+                {
+                    Physics = Physics with { NoArrow = true };
+                }
+                else if (line.StartsWith("name("))
+                {
+                    Name = Utility.GetString("name(", line, 0);
                 }
                 else if (line.StartsWith("aerial("))
                 {
                     Aerial = true;
+                }
+                else if (line.StartsWith("amodel("))
+                {
+                    // phy-addons embedded model. The third argument is a source URL phy-addons
+                    // would fetch instead; NFMW never fetches from a stage file.
+                    var label = Utility.GetString("amodel", line, 0);
+                    var data = Utility.GetString("amodel", line, 1);
+                    if (data.Length > 0) RegisterEmbeddedModel(label, data);
+                }
+                else if (line.StartsWith("amodel2("))
+                {
+                    // Same model, with the payload continued over the next `//- ` lines.
+                    embeddedLabel = Utility.GetString("amodel2", line, 0);
+                    embeddedLines = Math.Max(Utility.GetInt("amodel2", line, 1), 0);
+                    embeddedData.Clear();
+                    if (embeddedLines == 0) embeddedLabel = null;
+                }
+                else if (line.StartsWith("model("))
+                {
+                    // phy-addons free-placed model: model(label,x,y,z,xy,xz,zy)
+                    if (!TryGetPieceToPlace(Utility.GetString("model", line, 0), out var model)) continue;
+
+                    var obj = new PiecePlacement(
+                        PiecePlacementType.CollisionObject,
+                        model,
+                        new f64Vector3(
+                            Utility.GetInt("model", line, 1),
+                            World.Ground - Utility.GetInt("model", line, 2),
+                            Utility.GetInt("model", line, 3)),
+                        new f64Euler(
+                            f64AngleSingle.FromDegrees(Utility.GetInt("model", line, 5)),
+                            f64AngleSingle.FromDegrees(Utility.GetInt("model", line, 6)),
+                            f64AngleSingle.FromDegrees(Utility.GetInt("model", line, 4))));
+                    pieces.Add(obj);
+                    currentGroup.Pieces.Add(obj);
                 }
                 else if (line.StartsWith("stagemaker"))
                 {
@@ -745,6 +868,28 @@ public partial class StageLoader
     private static int GetWallCount(string command, string line)
         => Math.Clamp(Utility.GetInt(command, line, 0), 0, MaxWallCount);
 
+    /// <summary>Registers an amodel/amodel2 payload so <c>set</c>/<c>chk</c>/<c>fix</c> can place it.</summary>
+    private void RegisterEmbeddedModel(string label, string data)
+    {
+        if (string.IsNullOrWhiteSpace(label)) return;
+
+        if (LegacyAssets.LegacyAssetImporter.DecodeEmbeddedRad(data) is not { } text)
+        {
+            Logging.Error($"Could not decode embedded stage model '{label}'.");
+            return;
+        }
+
+        try
+        {
+            _embeddedModels[label] = RadParser.ParseRad(text, label);
+        }
+        catch (Exception ex)
+        {
+            // A stage's embedded model is untrusted input; it must not take the stage down.
+            Logging.Error($"Could not parse embedded stage model '{label}': {ex.Message}");
+        }
+    }
+
     private bool TryGetPieceToPlace(string setstring, out Rad3d mesh)
     {
         if (int.TryParse(setstring, out var setindex))
@@ -761,6 +906,14 @@ public partial class StageLoader
         }
         else
         {
+            // Numbered labels stay stock parts, as in phy-addons, which only reaches its model
+            // cache for a label it cannot parse as an index.
+            if (_embeddedModels.TryGetValue(setstring, out var embedded))
+            {
+                mesh = embedded;
+                return true;
+            }
+
             var stagePart = BackendGameSparker.GetStagePart(setstring);
             if (stagePart.Rad == null)
             {

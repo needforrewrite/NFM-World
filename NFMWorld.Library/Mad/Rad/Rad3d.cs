@@ -21,7 +21,8 @@ public sealed partial class Rad3d(
     string fileName = "hogan rewish",
     Rad3dCollisionMesh? collisionMesh = null,
     Rad3dCollisionHull? collisionHull = null,
-    Rad3dAttachmentLine[]? atLines = null
+    Rad3dAttachmentLine[]? atLines = null,
+    CarStats? rechargedStats = null
 )
 {
     [MemoryPackIgnore, PluginVisible] public int MaxRadius { get; } = CalculateMaxRadius(polys);
@@ -31,6 +32,10 @@ public sealed partial class Rad3d(
 
     [JsonPropertyName("stats"), MemoryPackOrder(1), PluginVisible]
     public CarStats Stats { get; set; } = stats;
+
+    /// <summary>The car's second stat set (the <c>stats()</c> directive), or null if it had none.</summary>
+    [JsonPropertyName("rechargedStats"), MemoryPackOrder(12), PluginVisible]
+    public CarStats? RechargedStats { get; set; } = rechargedStats;
 
     [JsonPropertyName("wheels"), MemoryPackOrder(2), PluginVisible]
     public Rad3dWheelDef[] Wheels { get; set; } = wheels;

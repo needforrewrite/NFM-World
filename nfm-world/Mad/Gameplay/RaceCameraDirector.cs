@@ -13,6 +13,8 @@ public sealed class RaceCameraDirector
         Follow,
         FollowStatic,
         Around,
+        /// <summary>Behind the car, aimed at whatever the guidance arrow points to.</summary>
+        CarCam,
         Watch
     }
 
@@ -22,13 +24,27 @@ public sealed class RaceCameraDirector
 
     public ViewMode CurrentViewMode { get; private set; } = ViewMode.Follow;
 
+    /// <summary>Where the guidance arrow points, for <see cref="ViewMode.CarCam"/>.</summary>
+    public Vector3? ArrowTarget { get; set; }
+
     public void CycleViewMode()
-        => CurrentViewMode = (ViewMode)(((int)CurrentViewMode + 1) % Enum.GetValues<ViewMode>().Length);
+    {
+        CurrentViewMode = (ViewMode)(((int)CurrentViewMode + 1) % Enum.GetValues<ViewMode>().Length);
+        // Entering the car cam should start already facing the arrow, not sweep round to it.
+        _playerFollowCamera.ResetAim();
+    }
 
     public void Update(PerspectiveCamera camera, BackendCar car)
     {
         switch (CurrentViewMode)
         {
+            // No arrow target (stage finished, nothing to aim at): the plain follow view is the
+            // same seat, just looking down the car instead of at the objective.
+            case ViewMode.CarCam when ArrowTarget is { } target:
+                _playerFollowCamera.FollowTarget(camera, car, (float)car.CarPhysics.Cxz,
+                    (float)car.CarPhysics.Speed, car.Stats.Swits[2], target, interpolate: true);
+                break;
+            case ViewMode.CarCam:
             case ViewMode.Follow:
                 _playerFollowCamera.Follow(
                     camera,

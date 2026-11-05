@@ -62,6 +62,8 @@ public partial class CarPhysics
     
     [PluginVisible]
     public CarStats Stat;
+    /// <summary>Set once the car is attached to a stage; used to pick its recharged stat set.</summary>
+    public BackendCar? Car;
 
     [PluginVisible]
     public int Cn;
@@ -354,7 +356,30 @@ public partial class CarPhysics
         IsClientPlayer = isClientPlayer;
     }
 
-    public void Collide(BackendCar self, CarPhysics othermad, BackendCar other)
+    // Stats with the stage's physics overrides and the current damage applied, refreshed once
+    // per tick. Cleared when the stage changes.
+    private EffectiveStats _effective;
+    private bool _hasEffective;
+    private BackendStage? _effectiveStage;
+
+    public EffectiveStats Effective => _effective;
+
+    private EffectiveStats GetEffective(BackendStage stage)
+    {
+        if (!_hasEffective || _effectiveStage != stage)
+        {
+            _effective = EffectiveStats.From(Stat, stage.Physics, DamagePoints);
+            _hasEffective = true;
+            _effectiveStage = stage;
+        }
+
+        return _effective;
+    }
+
+    /// <summary>Collision damage scale from the stage's <c>dam()</c> directive.</summary>
+    private static fix64 StageDamage(BackendStage stage) => (fix64)stage.Physics.Damage;
+
+    public void Collide(BackendCar self, CarPhysics othermad, BackendCar other, BackendStage stage)
     {
         ContO conto = new ContO(self);
         ContO otherconto = new ContO(other);
@@ -375,6 +400,12 @@ public partial class CarPhysics
 
         var wheelGround = GetWheelGround(this, conto, bottomy);
         var otherWheelGround = GetWheelGround(othermad, otherconto, otherbottomy);
+
+        var physics = stage.Physics;
+        var recoil = (fix64)physics.Recoil;
+        var maxHit = (fix64)physics.MaxHit;
+        var ownStats = _effective;
+        var otherStats = othermad.GetEffective(stage);
 
         for (var i1 = 0; i1 < 4; i1++)
         {
@@ -397,15 +428,15 @@ public partial class CarPhysics
         {
             if (!_caught[othermad.Im] && (Speed != 0 || othermad.Speed != 0))
             {
-                var ownMoment = fix64.Abs(Power * Speed * Stat.Moment);
-                var otherMoment = fix64.Abs(othermad.Power * othermad.Speed * othermad.Stat.Moment);
+                var ownMoment = fix64.Abs(Power * Speed * ownStats.Moment);
+                var otherMoment = fix64.Abs(othermad.Power * othermad.Speed * otherStats.Moment);
                 if (fix64.Abs(ownMoment - otherMoment) > (fix64)0.001f)
                 {
                     _dominate[othermad.Im] = ownMoment > otherMoment;
                 }
                 else
                 {
-                    _dominate[othermad.Im] = Stat.Moment > othermad.Stat.Moment;
+                    _dominate[othermad.Im] = ownStats.Moment > otherStats.Moment;
                 }
 
                 _caught[othermad.Im] = true;
@@ -441,44 +472,44 @@ public partial class CarPhysics
                             new Vector3(((float)wheelx[wheel] + (float)otherwheelx[otherwheel]) * 0.5f,
                                 ((float)wheely[wheel] + (float)otherwheely[otherwheel]) * 0.5f,
                                 ((float)wheelz[wheel] + (float)otherwheelz[otherwheel]) * 0.5f));
-                        if (fix64.Abs(Scx[wheel] * Stat.Moment) > fix64.Abs(othermad.Scx[otherwheel] * othermad.Stat.Moment))
+                        if (fix64.Abs(Scx[wheel] * ownStats.Moment) > fix64.Abs(othermad.Scx[otherwheel] * otherStats.Moment))
                         {
-                            var f130 = othermad.Scx[otherwheel] * Stat.Revpush;
-                            if (f130 > 300)
+                            var f130 = othermad.Scx[otherwheel] * ownStats.Revpush * recoil;
+                            if (f130 > maxHit)
                             {
-                                f130 = 300;
+                                f130 = maxHit;
                             }
-                            if (f130 < -300)
+                            if (f130 < -maxHit)
                             {
-                                f130 = -300;
+                                f130 = -maxHit;
                             }
-                            var f131 = Scx[wheel] * Stat.Push;
-                            if (f131 > 300)
+                            var f131 = Scx[wheel] * ownStats.Push;
+                            if (f131 > maxHit)
                             {
-                                f131 = 300;
+                                f131 = maxHit;
                             }
-                            if (f131 < -300)
+                            if (f131 < -maxHit)
                             {
-                                f131 = -300;
+                                f131 = -maxHit;
                             }
                             othermad.Scx[otherwheel] += f131;
                             if (IsClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = true;
                             }
-                            totalOtherDamage += othermad.Regx(otherwheel, f131 * Stat.Moment * damageMult, otherconto, random);
+                            totalOtherDamage += othermad.Regx(otherwheel, f131 * ownStats.Moment * damageMult, otherconto, random);
                             if (othermad._collidingWithClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = false;
                             }
                             Scx[wheel] -= f130;
-                            totalOwnDamage += Regx(wheel, -f130 * Stat.Moment * damageMult, conto, random);
-                            Scy[wheel] -= Stat.Revlift;
+                            totalOwnDamage += Regx(wheel, -f130 * ownStats.Moment * damageMult, conto, random);
+                            Scy[wheel] -= ownStats.Revlift * recoil;
                             if (IsClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = true;
                             }
-                            totalOtherDamage += othermad.Regy(otherwheel, Stat.Revlift * 7, otherconto, random);
+                            totalOtherDamage += othermad.Regy(otherwheel, ownStats.Revlift * 7 * recoil, otherconto, random);
                             if (othermad._collidingWithClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = false;
@@ -497,44 +528,44 @@ public partial class CarPhysics
                                 );
                             }
                         }
-                        if (fix64.Abs(Scz[wheel] * Stat.Moment) > fix64.Abs(othermad.Scz[otherwheel] * othermad.Stat.Moment))
+                        if (fix64.Abs(Scz[wheel] * ownStats.Moment) > fix64.Abs(othermad.Scz[otherwheel] * otherStats.Moment))
                         {
-                            var f132 = othermad.Scz[otherwheel] * Stat.Revpush;
-                            if (f132 > 300)
+                            var f132 = othermad.Scz[otherwheel] * ownStats.Revpush * recoil;
+                            if (f132 > maxHit)
                             {
-                                f132 = 300;
+                                f132 = maxHit;
                             }
-                            if (f132 < -300)
+                            if (f132 < -maxHit)
                             {
-                                f132 = -300;
+                                f132 = -maxHit;
                             }
-                            var f133 = Scz[wheel] * Stat.Push;
-                            if (f133 > 300)
+                            var f133 = Scz[wheel] * ownStats.Push;
+                            if (f133 > maxHit)
                             {
-                                f133 = 300;
+                                f133 = maxHit;
                             }
-                            if (f133 < -300)
+                            if (f133 < -maxHit)
                             {
-                                f133 = -300;
+                                f133 = -maxHit;
                             }
                             othermad.Scz[otherwheel] += f133;
                             if (IsClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = true;
                             }
-                            totalOtherDamage += othermad.Regz(otherwheel, f133 * Stat.Moment * damageMult, otherconto, random);
+                            totalOtherDamage += othermad.Regz(otherwheel, f133 * ownStats.Moment * damageMult, otherconto, random);
                             if (othermad._collidingWithClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = false;
                             }
                             Scz[wheel] -= f132;
-                            totalOwnDamage += Regz(wheel, -f132 * Stat.Moment * damageMult, conto, random);
-                            Scy[wheel] -= Stat.Revlift;
+                            totalOwnDamage += Regz(wheel, -f132 * ownStats.Moment * damageMult, conto, random);
+                            Scy[wheel] -= ownStats.Revlift * recoil;
                             if (IsClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = true;
                             }
-                            totalOtherDamage += othermad.Regy(otherwheel, Stat.Revlift * 7, otherconto, random);
+                            totalOtherDamage += othermad.Regy(otherwheel, ownStats.Revlift * 7 * recoil, otherconto, random);
                             if (othermad._collidingWithClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = false;
@@ -560,7 +591,7 @@ public partial class CarPhysics
                         {
                             Lastcolido = 70;
                         }
-                        othermad.Scy[otherwheel] -= Stat.Lift;
+                        othermad.Scy[otherwheel] -= ownStats.Lift;
                     }
                 }
             }
@@ -656,6 +687,19 @@ public partial class CarPhysics
 
     public void Drive(Control control, BackendCar car, BackendStage stage)
     {
+        // Damage and stage overrides change the collision response, so refresh them first.
+        _effective = EffectiveStats.From(Stat, stage.Physics, DamagePoints);
+        _hasEffective = true;
+        _effectiveStage = stage;
+
+        // stats(): a stage with recharged stats swaps every car to its second stat set.
+        if (stage.Physics.RechargedStats && Car?.Rad.RechargedStats is { } recharged && Stat != recharged)
+        {
+            Stat = recharged;
+            Car.Stats = recharged;
+        }
+
+        var gravity = (fix64)stage.Physics.Gravity;
         ContO conto = new ContO(car);
         DeterministicRandom random = new((ulong)(conto.X.rawValue ^ conto.Y.rawValue ^ conto.Z.rawValue));
 
@@ -1276,7 +1320,7 @@ public partial class CarPhysics
             wheelx[i24] = conto.Keyx[i24] + conto.X;
             wheely[i24] = bottomy + conto.Y;
             wheelz[i24] = conto.Z + conto.Keyz[i24];
-            Scy[i24] += 7 * _tickRate;
+            Scy[i24] += 7 * gravity * _tickRate;
         }
 
         UMath.Rot(wheelx, wheely, conto.X, conto.Y, Pxy, 4);
@@ -1347,14 +1391,14 @@ public partial class CarPhysics
         if (Mtouch)
         {
             // Jacher: 1/_tickrate for traction; Txz is set on previous tick so we need to scale
-            var traction = Stat.Grip;
+            var traction = _effective.Grip;
             traction -= fix64.Abs(Txz - conto.Xz) * (_oneOverTickRate) * Speed / 250;
             if (control.Handb)
             {
                 traction -= fix64.Abs(Txz - conto.Xz) * (_oneOverTickRate) * 4;
             }
 
-            if (traction < Stat.Grip)
+            if (traction < _effective.Grip)
             {
                 if (Skid != 2)
                 {
@@ -1393,7 +1437,7 @@ public partial class CarPhysics
                 speedx = 0;
                 speedz = 0;
                 speedy = 0;
-                traction = Stat.Grip / 5;
+                traction = _effective.Grip / 5;
                 Speed -= 2 * (Speed).Sign() * _tickRate;
             } //
 
@@ -1453,7 +1497,7 @@ public partial class CarPhysics
                 } //
 
                 // maxine: maybe this should be scaled to tickrate?
-                if (traction < Stat.Grip)
+                if (traction < _effective.Grip)
                 {
                     if (fix64.Abs(Txz - conto.Xz) > fix64.Half)
                     {
@@ -1464,7 +1508,7 @@ public partial class CarPhysics
                         _dcnt = 0;
                     }
 
-                    if (_dcnt > 40 * traction / Stat.Grip || BadLanding)
+                    if (_dcnt > 40 * traction / _effective.Grip || BadLanding)
                     {
                         fix64 f42 = 1;
                         if (surfaceType != SurfaceType.Road)
@@ -1569,7 +1613,7 @@ public partial class CarPhysics
                 nGroundedWheels++;
                 Wtouch = true;
                 Gtouch = true;
-                if (!wasMtouch && Scy[i49] != 7)
+                if (!wasMtouch && Scy[i49] != 7 * gravity * _tickRate)
                 {
                     var f50 = Scy[i49] / (fix64)(333.33F);
                     if (f50 > (fix64)(0.3F))
@@ -1601,7 +1645,7 @@ public partial class CarPhysics
         }
 
         // OmarTrackPieceCollision(control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical, isWheelGrounded, random);
-        PhyTrackPieceCollision(stage, control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical, isWheelGrounded, wheelContactNormal, random);
+        PhyTrackPieceCollision(stage, control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical, isWheelGrounded, wheelContactNormal, random, gravity);
 
         // sparks and scrapes
         for (var i = 0; i < 4; i++)
@@ -2354,7 +2398,7 @@ public partial class CarPhysics
                 {
                     if (Power > 0)
                     {
-                        Power -= (Power * Power * Power / Stat.Powerloss) * _tickRate;
+                        Power -= (Power * Power * Power / Stat.Powerloss * (fix64)stage.Physics.Powerloss) * _tickRate;
                     }
                     else
                     {
@@ -2367,6 +2411,15 @@ public partial class CarPhysics
                 }
             }
         } // CHK18
+
+        // lava(): burn a share of max health while grounded. phy-addons applies this per
+        // original-rate tick (21.4 Hz), so scale it to this submission's tick rate.
+        if (stage.Physics.Lava > 0 && Mtouch && !Wasted && DamagePoints < Stat.Maxmag &&
+            conto.Y + conto.Grat >= -250)
+        {
+            DamagePoints += (int)((fix64)stage.Physics.Lava / 100 * Stat.Maxmag / (fix64)21.276596F * _tickRate);
+        }
+
         // Wall touch is a per-tick flag: it feeds `Surfing` above, so every car must
         // clear it or one wall hit leaves it surfing (and earning power) forever.
         if (control.Wall != -1)
@@ -2417,7 +2470,7 @@ public partial class CarPhysics
         Span<fix64> wheelx, Span<fix64> wheely, Span<fix64> wheelz,
         fix64 groundY, fix64 wheelYThreshold, fix64 wheelGround, ref int nGroundedWheels, bool wasMtouch,
         SurfaceType surfaceType, out bool hitVertical, Span<bool> isWheelGrounded, Span<f64Vector3> wheelContactNormal,
-        DeterministicRandom random)
+        DeterministicRandom random, fix64 gravity)
     {
         hitVertical = false;
 
@@ -2511,7 +2564,7 @@ public partial class CarPhysics
                                         Scy[k] -= zTmp / liftDivider;
                                     }
 
-                                    if (!wasMtouch && Scy[k] != 7 /* * checkpoints.gravity */ * _tickRate)
+                                    if (!wasMtouch && Scy[k] != 7 * gravity * _tickRate)
                                     {
                                         fix64 dustMag = Scy[k] / (fix64)(333.33F);
                                         if (dustMag > (fix64)(0.3F))
@@ -2588,7 +2641,7 @@ public partial class CarPhysics
                             Wtouch = true;
                             Gtouch = true;
 
-                            if (!wasMtouch && Scy[k] != 7 /* * checkpoints.gravity */ * _tickRate)
+                            if (!wasMtouch && Scy[k] != 7 * gravity * _tickRate)
                             {
                                 fix64 dustMag = Scy[k] / (fix64)(333.33F);
                                 if (dustMag > (fix64)(0.3F))
@@ -2638,7 +2691,7 @@ public partial class CarPhysics
 
                             // z rebound CHK5
                             f64Vector3 reboundVelocityDelta = collision.impactComponent * (-GetReboundMul(wasMtouch));
-                            Regz(k, reboundVelocityDelta.Length() * collidable.Damage, conto, random, collidable.Index,
+                            Regz(k, reboundVelocityDelta.Length() * collidable.Damage * StageDamage(stage), conto, random, collidable.Index,
                                 new Vector3((float)wheelx[k], (float)wheely[k], (float)wheelz[k]));
                             Scx[k] += reboundVelocityDelta.X;
                             Scy[k] += reboundVelocityDelta.Y;
@@ -3146,4 +3199,4 @@ public readonly struct Array2D<T>(int rows, int columns) : IEnumerable<T>
     {
         return _arr.GetEnumerator();
     }
-}
+}

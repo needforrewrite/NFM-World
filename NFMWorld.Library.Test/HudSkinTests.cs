@@ -196,5 +196,12 @@ public class HudSkinTests
         public string ArrowTarget => "{damage}";
         public bool ArrowAtCars => true;
         public IReadOnlyList<HudRacer> Racers => [];
+        public (float X, float Y, float Z)? ClientPosition => null;
+        public float ClientHeading => 0;
+        public (float X, float Z) TrackCenter => default;
+        public (float X, float Z)? TargetCheckpoint => null;
+        public IReadOnlyList<(float X, float Z)> Checkpoints => [];
+        public IReadOnlyList<HudRacerMarker> Markers => [];
+        public System.Numerics.Matrix4x4 ViewProjection => System.Numerics.Matrix4x4.Identity;
     }
 }

@@ -43,9 +43,27 @@ public class SettingsMenu()
         public Key ToggleSFX { get; set; } = Key.N;
         public Key ToggleArrace { get; set; } = Key.A;
         public Key ToggleRadar { get; set; } = Key.S;
-        public Key ToggleCarCam { get; set; } = Key.W;
         public Key ToggleDevConsole { get; set; } = Key.Oemtilde;
         public Key CycleView { get; set; } = Key.V;
+
+        /// <summary>
+        /// Locks the guidance arrow (and the car cam) onto the opponent in that sidebar slot.
+        /// Slot 9 is 0 and slot 10 is the OemMinus key, as in the original game's number row.
+        /// </summary>
+        public Key LockSlot1 { get; set; } = Key.D1;
+        public Key LockSlot2 { get; set; } = Key.D2;
+        public Key LockSlot3 { get; set; } = Key.D3;
+        public Key LockSlot4 { get; set; } = Key.D4;
+        public Key LockSlot5 { get; set; } = Key.D5;
+        public Key LockSlot6 { get; set; } = Key.D6;
+        public Key LockSlot7 { get; set; } = Key.D7;
+        public Key LockSlot8 { get; set; } = Key.D8;
+        public Key LockSlot9 { get; set; } = Key.D9;
+        public Key LockSlot10 { get; set; } = Key.D0;
+
+        /// <summary>The ten lock keys, in slot order.</summary>
+        public Key[] LockSlots => [LockSlot1, LockSlot2, LockSlot3, LockSlot4, LockSlot5,
+            LockSlot6, LockSlot7, LockSlot8, LockSlot9, LockSlot10];
     }
 
     public static KeyBindings Bindings = new KeyBindings();
@@ -127,6 +145,10 @@ public class SettingsMenu()
     public static float HudScale { get; private set; } = HudScaleSettings.Default;
     public static float HudSafeZoneHorizontal { get; private set; } = HudSafeZoneSettings.Default;
     public static float HudSafeZoneVertical { get; private set; } = HudSafeZoneSettings.Default;
+    public static bool HudClassicMeters { get; private set; } = true;
+    public static bool HudRadar { get; private set; } = true;
+    public static bool HudOpponents { get; private set; } = true;
+    public static bool HudNameTags { get; private set; } = true;
     public static string MenuStage { get; private set; } = MenuPreferences.LastPlayedStage;
     public static string MenuMusic { get; private set; } = MenuPreferences.StageSoundtrack;
 
@@ -581,6 +603,10 @@ public class SettingsMenu()
         sw.WriteLine($"hud_scale {HudScale.ToString("R", CultureInfo.InvariantCulture)}");
         sw.WriteLine($"hud_safezone_x {HudSafeZoneHorizontal.ToString("R", CultureInfo.InvariantCulture)}");
         sw.WriteLine($"hud_safezone_y {HudSafeZoneVertical.ToString("R", CultureInfo.InvariantCulture)}");
+        sw.WriteLine($"hud_classic_meters {(HudClassicMeters ? 1 : 0)}");
+        sw.WriteLine($"hud_radar {(HudRadar ? 1 : 0)}");
+        sw.WriteLine($"hud_opponents {(HudOpponents ? 1 : 0)}");
+        sw.WriteLine($"hud_nametags {(HudNameTags ? 1 : 0)}");
         sw.WriteLine($"menu_stage {MenuStage}");
         sw.WriteLine($"menu_music {MenuMusic}");
         sw.WriteLine();
@@ -601,6 +627,8 @@ public class SettingsMenu()
         sw.WriteLine($"key_toggleradar {(int)Bindings.ToggleRadar}");
         sw.WriteLine($"key_cycleview {(int)Bindings.CycleView}");
         sw.WriteLine($"key_console {(int)Bindings.ToggleDevConsole}");
+        for (var i = 0; i < 10; i++)
+            sw.WriteLine($"key_lockslot{i + 1} {(int)Bindings.LockSlots[i]}");
         return sw.ToString();
     }
 
@@ -614,6 +642,10 @@ public class SettingsMenu()
         HudScale = HudScaleSettings.Default;
         HudSafeZoneHorizontal = HudSafeZoneSettings.Default;
         HudSafeZoneVertical = HudSafeZoneSettings.Default;
+        HudRadar = true;
+        HudClassicMeters = true;
+        HudOpponents = true;
+        HudNameTags = true;
         MenuStage = MenuPreferences.LastPlayedStage;
         MenuMusic = MenuPreferences.StageSoundtrack;
         InitializeCameraConfig(configString);
@@ -714,6 +746,18 @@ public class SettingsMenu()
                 case "hud_safezone_y":
                     HudSafeZoneVertical = HudSafeZoneSettings.Parse(value);
                     break;
+                case "hud_classic_meters":
+                    HudClassicMeters = int.Parse(value) != 0;
+                    break;
+                case "hud_radar":
+                    HudRadar = int.Parse(value) != 0;
+                    break;
+                case "hud_opponents":
+                    HudOpponents = int.Parse(value) != 0;
+                    break;
+                case "hud_nametags":
+                    HudNameTags = int.Parse(value) != 0;
+                    break;
                 case "menu_stage":
                     MenuStage = MenuPreferences.NormalizeStage(value);
                     break;
@@ -781,6 +825,16 @@ public class SettingsMenu()
                 case "key_cycleview":
                     Bindings.CycleView = (Key)int.Parse(value, CultureInfo.InvariantCulture);
                     break;
+                case "key_lockslot1": Bindings.LockSlot1 = (Key)int.Parse(value, CultureInfo.InvariantCulture); break;
+                case "key_lockslot2": Bindings.LockSlot2 = (Key)int.Parse(value, CultureInfo.InvariantCulture); break;
+                case "key_lockslot3": Bindings.LockSlot3 = (Key)int.Parse(value, CultureInfo.InvariantCulture); break;
+                case "key_lockslot4": Bindings.LockSlot4 = (Key)int.Parse(value, CultureInfo.InvariantCulture); break;
+                case "key_lockslot5": Bindings.LockSlot5 = (Key)int.Parse(value, CultureInfo.InvariantCulture); break;
+                case "key_lockslot6": Bindings.LockSlot6 = (Key)int.Parse(value, CultureInfo.InvariantCulture); break;
+                case "key_lockslot7": Bindings.LockSlot7 = (Key)int.Parse(value, CultureInfo.InvariantCulture); break;
+                case "key_lockslot8": Bindings.LockSlot8 = (Key)int.Parse(value, CultureInfo.InvariantCulture); break;
+                case "key_lockslot9": Bindings.LockSlot9 = (Key)int.Parse(value, CultureInfo.InvariantCulture); break;
+                case "key_lockslot10": Bindings.LockSlot10 = (Key)int.Parse(value, CultureInfo.InvariantCulture); break;
             }
         }
         catch { /* skip malformed lines */ }
@@ -942,6 +996,10 @@ public class SettingsMenu()
         HudScale = HudScaleSettings.Default;
         HudSafeZoneHorizontal = HudSafeZoneSettings.Default;
         HudSafeZoneVertical = HudSafeZoneSettings.Default;
+        HudRadar = true;
+        HudClassicMeters = true;
+        HudOpponents = true;
+        HudNameTags = true;
         MenuStage = MenuPreferences.LastPlayedStage;
         MenuMusic = MenuPreferences.StageSoundtrack;
         try
@@ -1042,7 +1100,11 @@ public class SettingsMenu()
             borderlessResolution = $"{width} x {height}";
         }
 
-        var bindingProps = typeof(KeyBindings).GetProperties();
+        // Only Key-typed properties are bindings. Everything else on KeyBindings (such as the
+        // LockSlots view) is derived and must not appear, but a new Key property shows up here
+        // automatically - so the filter is by type, not by a name list to keep in step.
+        var bindingProps = typeof(KeyBindings).GetProperties()
+            .Where(p => p.PropertyType == typeof(Key)).ToArray();
         var keyBindings = new KeyBindingData[bindingProps.Length];
         for (var i = 0; i < bindingProps.Length; i++)
         {
@@ -1050,7 +1112,9 @@ public class SettingsMenu()
             keyBindings[i] = new KeyBindingData
             {
                 Action = prop.Name,
-                DisplayName = prop.Name,
+                DisplayName = prop.Name.StartsWith("LockSlot", StringComparison.Ordinal)
+                    ? $"Lock Arrow on Car {prop.Name["LockSlot".Length..]}"
+                    : prop.Name,
                 KeyCode = (int)(prop.GetValue(Bindings) as Key? ?? Key.None)
             };
         }
@@ -1091,6 +1155,10 @@ public class SettingsMenu()
             HudScale = HudScale,
             HudSafeZoneHorizontal = HudSafeZoneHorizontal,
             HudSafeZoneVertical = HudSafeZoneVertical,
+            HudClassicMeters = HudClassicMeters,
+            HudRadar = HudRadar,
+            HudOpponents = HudOpponents,
+            HudNameTags = HudNameTags,
             MenuMusic = MenuMusic,
             KeyBindings = keyBindings
         };
@@ -1230,6 +1298,18 @@ public class SettingsMenu()
                 break;
             case "hudSafeZoneVertical":
                 if (AsFloat(value) is { } hudSafeZoneVertical) HudSafeZoneVertical = HudSafeZoneSettings.Normalize(hudSafeZoneVertical);
+                break;
+            case "hudClassicMeters":
+                if (value is bool classicMeters) HudClassicMeters = classicMeters;
+                break;
+            case "hudRadar":
+                if (value is bool radar) HudRadar = radar;
+                break;
+            case "hudOpponents":
+                if (value is bool opponents) HudOpponents = opponents;
+                break;
+            case "hudNameTags":
+                if (value is bool nameTags) HudNameTags = nameTags;
                 break;
             case "menuStage":
                 if (value is string stage) MenuStage = MenuPreferences.NormalizeStage(stage);

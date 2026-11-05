@@ -93,6 +93,8 @@ public partial class RadParser
 
     private Dictionary<Color3, int> _colors = new();
     private CarStats _stats = new();
+    // Starts as a copy of _stats; the second stat set updates it in place.
+    private CarStats? _rechargedStats;
     private List<Rad3dWheelDef> _wheels = [];
     private Rad3dRimsDef? _rims;
     private List<Rad3dBoxDef> _boxes = [];
@@ -183,6 +185,7 @@ public partial class RadParser
         var result = RepositionCar(new Rad3d(
             colors: parser._colors.Keys.ToArray(),
             stats: parser._stats,
+            rechargedStats: parser._rechargedStats,
             wheels: parser._wheels.ToArray(),
             rims: parser._rims,
             boxes: parser._boxes.ToArray(),
@@ -291,6 +294,9 @@ public partial class RadParser
             _colors[color] = 3;
         }
 
+        // A second `stats(` block replaces the base stat definitions with the car's recharged
+        // set (phy-addons). The first block keeps filling _stats as usual.
+        else if (line.StartsWith("stats(")) { _rechargedStats = _stats; _stats = new CarStats(); }
         else if (line.StartsWith("swits(")) _stats = _stats with { Swits = Int3.FromSpan(BracketParser.GetNumbers(line, stackalloc int[3])) };
         else if (line.StartsWith("acelf(")) _stats = _stats with { Acelf = f64Vector3.FromSpan(BracketParser.GetNumbers(line, stackalloc fix64[3])) };
         else if (line.StartsWith("handb(")) _stats = _stats with { Handb = BracketParser.GetNumber<int>(line) };

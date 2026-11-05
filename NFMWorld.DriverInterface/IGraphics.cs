@@ -16,6 +16,12 @@ public interface IGraphics
     IImage LoadSvgImage(string file, Vector3 rgbMultiplier, byte maximumChannel = 255);
     IImage LoadImage(ReadOnlyMemory<byte> file);
 
+    /// <summary>
+    /// Wraps a texture the game already owns (e.g. a render target's) so it can be drawn through
+    /// this interface. The image does not own the texture.
+    /// </summary>
+    IImage? WrapTexture(object texture) => null;
+
     void SetLinearGradient(int x, int y, int width, int height, Color[] colors, float[]? colorPos);
     void SetColor(Color c);
 
@@ -250,6 +256,16 @@ public interface IGraphics
 
     void DrawImage(IImage image, int x, int y, int width, int height);
 
+    /// <summary>
+    /// Draws the image as the parallelogram <c>origin + u*axisX + v*axisY</c> over the unit square
+    /// <c>(u, v) ∈ [0,1]²</c>, tinted. This is the general form the radar needs to rotate the map
+    /// into the car's frame without rotating its blips separately.
+    /// </summary>
+    /// <remarks>The default is a no-op so that non-game graphics implementations need no change.</remarks>
+    void DrawImageTransformed(IImage image, Vector2 origin, Vector2 axisX, Vector2 axisY, Color tint)
+    {
+    }
+
     void SetAntialiasing(bool useAntialias)
     {
         // empty
@@ -286,7 +302,12 @@ public interface IGraphics
 
     void Scissor(float x, float y, float w, float h);
 
-    void IntersectScissor(float x, float y, float w, float h);
+    /// <summary>
+    /// Intersects the current clip with a rectangle. A non-zero <paramref name="cornerRadius"/>
+    /// rounds it, so clipped content follows a rounded container's corners instead of squaring
+    /// them off inside it.
+    /// </summary>
+    void IntersectScissor(float x, float y, float w, float h, float cornerRadius = 0f);
 
     void ResetScissor();
     

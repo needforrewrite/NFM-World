@@ -24,6 +24,9 @@ public class ClientStage : IDisposable
 
     public BackendStage Backend { get; }
     public ClientStageRenderer Renderer { get; }
+
+    /// <summary>The baked top-down map, rendered once on the first race frame that needs it.</summary>
+    public StageMinimap Minimap { get; }
     public Camera Camera { get; set; }
     public bool CarSoundsEnabled { get; set; } = true;
     public int? FadeFromOverride { get; set; }
@@ -48,6 +51,7 @@ public class ClientStage : IDisposable
         Backend = new BackendStage(stageName);
         Renderer = new ClientStageRenderer(Backend);
         Renderer.ApplyValues();
+        Minimap = new StageMinimap(Backend);
 
         // Scene starts with just the stage renderer — car visuals are added lazily in GameTick().
         // ClientStageRenderer is itself a GameObject.
@@ -331,6 +335,14 @@ public class ClientStage : IDisposable
         _scene.Render(cb, alpha, useShadowMapping, clearRenderBuffer);
     }
 
+    /// <summary>
+    /// Bakes the minimap into the given frame buffer. Separate from <see cref="Render"/> because
+    /// a bake is its own scene pass - it repoints the target and restores the backbuffer, which
+    /// has to happen outside the frame's main pass.
+    /// </summary>
+    public void BakeMinimap(NFMWorld.Graphics.ICommandBuffer cb, int frameWidth, int frameHeight)
+        => Minimap.Bake(cb, frameWidth, frameHeight);
+
     #region IDisposable
 
     public void Dispose()
@@ -355,6 +367,7 @@ public class ClientStage : IDisposable
 
         _scene.Dispose();
         Renderer.Dispose();
+        Minimap.Dispose();
 
         GC.SuppressFinalize(this);
     }

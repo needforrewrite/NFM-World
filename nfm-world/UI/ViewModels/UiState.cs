@@ -33,7 +33,19 @@ public static class UiState
         public float? ArrowAngle { get; set; }
         public string ArrowTarget { get; set; } = "";
         public bool ArrowAtCars { get; set; }
+        public bool ArrowLocked { get; set; }
         public List<HudRacer> Racers { get; } = [];
+        public List<HudRacerMarker> Markers { get; } = [];
+        public (float X, float Y, float Z)? ClientPosition { get; set; }
+        public float ClientHeading { get; set; }
+        public (float X, float Z) TrackCenter { get; set; }
+        public (float X, float Z)? TargetCheckpoint { get; set; }
+        public List<(float X, float Z)> Checkpoints { get; } = [];
+        /// <summary>Live camera view-projection, for projecting name tags onto the screen.</summary>
+        public Matrix ViewProjection { get; set; } = Matrix.Identity;
+        /// <summary>The baked top-down stage image, once <see cref="NFMWorld.StageMinimap"/> has one.</summary>
+        public NFMWorld.DriverInterface.DriverInterface.IImage? MapImage { get; set; }
+        public (float MinX, float MaxZ, float UnitsPerPixel) MapFrame { get; set; }
         public Signal<float> Speed { get; } = new(0);
         public Signal<float> Power { get; } = new(1);
         public Signal<float> Damage { get; } = new(0);
@@ -58,7 +70,17 @@ public static class UiState
         int IHudData.TotalRacers => TotalRacers.Value;
         public int Countdown => CountdownTimer.Value;
         bool IHudData.Paused => Paused.Value;
+        bool IHudData.ArrowLocked => ArrowLocked;
         IReadOnlyList<HudRacer> IHudData.Racers => Racers;
+        (float X, float Y, float Z)? IHudData.ClientPosition => ClientPosition;
+        float IHudData.ClientHeading => ClientHeading;
+        (float X, float Z) IHudData.TrackCenter => TrackCenter;
+        (float X, float Z)? IHudData.TargetCheckpoint => TargetCheckpoint;
+        IReadOnlyList<(float X, float Z)> IHudData.Checkpoints => Checkpoints;
+        IReadOnlyList<HudRacerMarker> IHudData.Markers => Markers;
+        Matrix IHudData.ViewProjection => ViewProjection;
+        object? IHudData.MapImage => MapImage;
+        (float MinX, float MaxZ, float UnitsPerPixel) IHudData.MapFrame => MapFrame;
         public string Message
         {
             get

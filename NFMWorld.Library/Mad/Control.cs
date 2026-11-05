@@ -9,6 +9,14 @@ public partial class Control
     [PluginVisible]
     public bool Arrace;
 
+    /// <summary>
+    /// The <see cref="Gamemodes.ClientSidePlayer.Index"/> of the opponent the arrow is locked onto,
+    /// or -1 to auto-pick the nearest. An identity, not a sidebar slot, so the lock survives other
+    /// cars being wasted and reordering the list. Only meaningful while <see cref="Arrace"/> is on.
+    /// </summary>
+    [PluginVisible]
+    public int ArrowLock = -1;
+
     [PluginVisible]
     public int Chatup;
     
@@ -74,6 +82,7 @@ public partial class Control
 
         Radar = false;
         Arrace = false;
+        ArrowLock = -1;
         Chatup = 0;
         if (i != 2)
         {
