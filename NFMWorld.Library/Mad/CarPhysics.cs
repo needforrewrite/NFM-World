@@ -1,8 +1,10 @@
 ﻿using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using FixedMathSharp;
 using FixedMathSharp.Utility;
+using Maxine.Extensions.Collections;
 using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Collision;
@@ -210,13 +212,13 @@ public partial class CarPhysics
     public bool RightTabletop;
     
     [PluginVisible]
-    public InlineArray4<fix64> Scx;
+    public SafeInlineArray4<fix64> Scx;
     
     [PluginVisible]
-    public InlineArray4<fix64> Scy;
+    public SafeInlineArray4<fix64> Scy;
     
     [PluginVisible]
-    public InlineArray4<fix64> Scz;
+    public SafeInlineArray4<fix64> Scz;
     
     [PluginVisible]
     public int Shakedam;
@@ -226,6 +228,15 @@ public partial class CarPhysics
     
     [PluginVisible]
     public fix64 Speed;
+
+    /// <summary>
+    /// Summed wheel velocity (X, Y, Z) of the four wheels.
+    /// </summary>
+    [PluginVisible]
+    public f64Vector3 SummedWheelVelocity => new(
+        Scx[0] + Scx[1] + Scx[2] + Scx[3],
+        Scy[0] + Scy[1] + Scy[2] + Scy[3],
+        Scz[0] + Scz[1] + Scz[2] + Scz[3]);
     
     [PluginVisible]
     public int RoofDamage;
@@ -3199,4 +3210,4 @@ public readonly struct Array2D<T>(int rows, int columns) : IEnumerable<T>
     {
         return _arr.GetEnumerator();
     }
-}
+}

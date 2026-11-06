@@ -70,7 +70,7 @@ public class PvpGamemode : PluginGamemode
             car.CurrentLap = 0;
 
             if (player.Info.IsBot)
-                AttachBot("el_stupido", player);
+                AttachBot("classic", player);
         }
     }
 

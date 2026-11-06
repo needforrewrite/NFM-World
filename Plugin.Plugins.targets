@@ -38,6 +38,12 @@
             <PluginDirectory>ais</PluginDirectory>
             <PluginFileName>ai</PluginFileName>
         </Plugin>
+        <Plugin Include="Classic">
+            <Project>$(MSBuildThisFileDirectory)NFMWorld.Ai.Classic\NFMWorld.Ai.Classic.csproj</Project>
+            <PluginId>classic</PluginId>
+            <PluginDirectory>ais</PluginDirectory>
+            <PluginFileName>ai</PluginFileName>
+        </Plugin>
     </ItemGroup>
 
     <!--

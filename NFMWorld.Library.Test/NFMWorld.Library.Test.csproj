@@ -46,6 +46,12 @@
             <PluginDirectory>ais</PluginDirectory>
             <PluginFileName>ai</PluginFileName>
         </Plugin>
+        <Plugin Include="Classic">
+            <Project>$(MSBuildThisFileDirectory)..\NFMWorld.Ai.Classic\NFMWorld.Ai.Classic.csproj</Project>
+            <PluginId>classic</PluginId>
+            <PluginDirectory>ais</PluginDirectory>
+            <PluginFileName>ai</PluginFileName>
+        </Plugin>
         <!-- The sandbox probes: PluginSandboxTests loads this and asserts every hostile
              reach is refused. Test-only, and Debug-only where the game hosts build it. -->
         <Plugin Include="Hostile">

@@ -142,7 +142,7 @@ Gamemodes are written in **Luau** and share one code path for singleplayer and m
 ### Lua framework (`NFMWorld.Library/Gamemodes/Lua/`)
 
 - Scripts live at `data/gamemodes/{id}/client.luau` and `server.luau` (shipped via the existing `data/**` copy rule). `LuaGamemodeFactory` / `GamemodeRegistry.RegisterLua(id, path)` wire them up; `nfmm/racing|wasting|both` → `pvp/`, `nfmm/timetrial` → `timetrial/`.
-- Globals injected into scripts: `stage` (`LuaStage`), `players` (`LuaPlayers` — generic `UnlimitedArray<T>` constructed types only get opaque Lua stubs, so use this wrapper), `hud` (`LuaHudState`, writes through to `HudStateData`), `physics` (`PhysicsController`), `time_trial` (`LuaTimeTrial` ghost/recording helper), `config` (JSON table from the factory), plus functions `create_car`, `drive`, `physics_tick`, `calculate_positions`, `handle_checkpoint`, `handle_fix_hoops`, `send_event`, `countdown_interval`, `client_index`, `attach_bot` (C# `ElStupido` for now), `reset_client_state`, `update_hud`, `add_ghost_player`, `remove_fake_players`. Server scripts get `server` (`LuaServerData`), `broadcast_event`, `finish_race`.
+- Globals injected into scripts: `stage` (`LuaStage`), `players` (`LuaPlayers` — generic `UnlimitedArray<T>` constructed types only get opaque Lua stubs, so use this wrapper), `hud` (`LuaHudState`, writes through to `HudStateData`), `physics` (`PhysicsController`), `time_trial` (`LuaTimeTrial` ghost/recording helper), `config` (JSON table from the factory), plus functions `create_car`, `drive`, `physics_tick`, `calculate_positions`, `handle_checkpoint`, `handle_fix_hoops`, `send_event`, `countdown_interval`, `client_index`, `attach_bot`, `reset_client_state`, `update_hud`, `add_ghost_player`, `remove_fake_players`. Server scripts get `server` (`LuaServerData`), `broadcast_event`, `finish_race`.
 - Callback contract (invoked synchronously each tick): `on_begin`, `on_end`, `on_reset`, `on_game_tick`, `on_render`, `on_key_pressed(key)` / `on_key_released(key)` / `on_key_typed(char)` (keys passed as ints), `on_server_event(type, table)` / `on_client_event(playerId, type, table)` (server), `on_ai_tick(car, index)` (bots via `LuaBot`).
 - Events between client and server are `LuaEventEnvelope { Type, JsonPayload }` (MemoryPack + JSON Lua table) — not MemoryPack unions. `LuaJson` handles Lua table ↔ JSON.
 - `wait()`-style coroutine suspension is **not** supported yet — callbacks must be synchronous per-tick (countdown is tick-counted in Lua).
@@ -263,6 +263,27 @@ their lengths, `Unsafe` does not.
 | `[UnsafeAccessor]` in probes | a probe that reads a private host field this way compiles to a direct `ldfld`, which is the token the policy must refuse; it fails as `InvalidProgramException` from CasCore's IL verifier rather than `SecurityException`, so assert "throws", not the type |
 | Proving the sandbox | `NFMWorld.Gamemode.Hostile` has one probe per forbidden reach; `PluginSandboxTests` loads it like the game does and asserts every probe is refused (`SecurityException`, or `InvalidProgramException` for the `[UnsafeAccessor]` probe). `AiPluginTests.CreateClient_PassesTheSandbox` constructs each real plugin's client gamemode, which no server-only race path does. The test host declares its own plugin list, so the probes never reach release output |
 | Not everywhere | `PluginPolicy.Supported` is false without dynamic code (the wasm head), where loads fall back to the plain `PluginLoadContext` |
+| `InlineArray4` element access | indexing one compiles to a BCL `InlineArrayFirstElementRef` helper that the IL verifier rejects (`BadImageFormatException`), so a plugin cannot read `CarPhysics.Scx/Scy/Scz` directly — add a summed accessor on the host instead (`CarPhysics.SummedWheelVelocity`) |
+
+---
+
+## Bot AI (`NFMWorld.Ai.*`)
+
+A bot is `BaseAi`, attached by `BaseClientGamemode.AttachBot(id, player)` from
+`data/ais/<id>/ai.dll` and driven from `PhysicsController.GameTick`. Two ship:
+
+- **`classic`** (`NFMWorld.Ai.Classic`) — a port of the original game's driver
+  (ezBeanie/need-for-madness `src/race/ai.js`), minus everything keyed on a campaign stage
+  number or car type. PvP attaches it, so free play races against it.
+- **`el_stupido`** (`NFMWorld.Ai.ElStupido`) — a minimal node follower, still used by the
+  main-menu attract drive.
+
+| Gotcha | Rule |
+|---|---|
+| Path point tracking | the physics-side `pathPointAhead` in `CarPhysics.cs` is dead code (`/* … }*/ // CHK16`), so `mad.Point` is never assigned. `ClassicAi` carries its own index over `TrackPath`, built from `BackendStage.Nodes` minus the fix hoops, with `LastCheckpointNode` as the checkpoint floor |
+| Standings | PvP never calls `CheckPointHelper.CalculatePositions`, so `Placement` is 0 for everyone. A bot that needs rank computes it itself — calling the helper would take over the HUD's standings as a side effect |
+| Y axis | `Position.Y` is height *below* `World.Ground` and `CarPhysics.Scy` is positive downward; the original's `car.y`/`wheelSpeedY` are the other way round. The stunt take-off and landing triggers both sum `Scy`, so check the sign against a real jump |
+| Controls are ours | `Control` is not cleared between ticks — every bot must write Up/Down/Left/Right/Handb every `RunAi()`, or the car keeps its last input |
 
 ---
 

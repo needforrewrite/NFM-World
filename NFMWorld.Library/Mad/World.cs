@@ -1,4 +1,5 @@
 ﻿using Maxine.Extensions.Collections;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary;
 
@@ -41,6 +42,7 @@ public static partial class World
     public static int FadeFrom;
     public static float BlackPoint = 0.37f;
     public static float WhitePoint = 0.63f;
+    [PluginVisible]
     public static int Ground = 250;
     public static Color3 Snap;
     public static Color3 Fog;

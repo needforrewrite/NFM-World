@@ -184,7 +184,47 @@ public class MainMenuPhase : BaseStageRenderingPhase
             {
                 CarName = "nfmm/audir8",
                 IsClientPlayer = false,
-                PlayerName = "ElStupido",
+                PlayerName = "ElStupido1",
+                Color = default,
+                IsBot = true
+            },
+            new()
+            {
+                CarName = "nfmm/audir8",
+                IsClientPlayer = false,
+                PlayerName = "ElStupido2",
+                Color = default,
+                IsBot = true
+            },
+            new()
+            {
+                CarName = "nfmm/audir8",
+                IsClientPlayer = false,
+                PlayerName = "ElStupido3",
+                Color = default,
+                IsBot = true
+            },
+            new()
+            {
+                CarName = "nfmm/audir8",
+                IsClientPlayer = false,
+                PlayerName = "ElStupido4",
+                Color = default,
+                IsBot = true
+            },
+            new()
+            {
+                CarName = "nfmm/audir8",
+                IsClientPlayer = false,
+                PlayerName = "ElStupido5",
+                Color = default,
+                IsBot = true
+            },
+            new()
+            {
+                CarName = "nfmm/audir8",
+                IsClientPlayer = false,
+                PlayerName = "ElStupido6",
                 Color = default,
                 IsBot = true
             }
