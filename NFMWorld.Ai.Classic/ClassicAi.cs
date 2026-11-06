@@ -25,7 +25,7 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
     private const int AiStage = 1;
 
     private readonly DriverState _driver = new();
-    private readonly DeterministicRandom _random = new(0x5EED_0000_0000_0001UL);
+    private DeterministicRandom _random = new(0x5EED_0000_0000_0001UL);
 
     // The original ticks at 21.4 Hz; this runs at 63. Only the bookkeeping counters are
     // gated, which is what the original's `tick.fraction >= tick.scale` did - the controls
