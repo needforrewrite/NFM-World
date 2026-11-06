@@ -149,6 +149,8 @@ public class SettingsMenu()
     public static bool HudRadar { get; private set; } = true;
     public static bool HudOpponents { get; private set; } = true;
     public static bool HudNameTags { get; private set; } = true;
+    /// <summary>Blinking HUD text and warning flashes; off for motion/photosensitivity safety.</summary>
+    public static bool HudFlash { get; private set; } = true;
     public static string MenuStage { get; private set; } = MenuPreferences.LastPlayedStage;
     public static string MenuMusic { get; private set; } = MenuPreferences.StageSoundtrack;
 
@@ -607,6 +609,7 @@ public class SettingsMenu()
         sw.WriteLine($"hud_radar {(HudRadar ? 1 : 0)}");
         sw.WriteLine($"hud_opponents {(HudOpponents ? 1 : 0)}");
         sw.WriteLine($"hud_nametags {(HudNameTags ? 1 : 0)}");
+        sw.WriteLine($"hud_flash {(HudFlash ? 1 : 0)}");
         sw.WriteLine($"menu_stage {MenuStage}");
         sw.WriteLine($"menu_music {MenuMusic}");
         sw.WriteLine();
@@ -646,6 +649,7 @@ public class SettingsMenu()
         HudClassicMeters = true;
         HudOpponents = true;
         HudNameTags = true;
+        HudFlash = true;
         MenuStage = MenuPreferences.LastPlayedStage;
         MenuMusic = MenuPreferences.StageSoundtrack;
         InitializeCameraConfig(configString);
@@ -757,6 +761,9 @@ public class SettingsMenu()
                     break;
                 case "hud_nametags":
                     HudNameTags = int.Parse(value) != 0;
+                    break;
+                case "hud_flash":
+                    HudFlash = int.Parse(value) != 0;
                     break;
                 case "menu_stage":
                     MenuStage = MenuPreferences.NormalizeStage(value);
@@ -1000,6 +1007,7 @@ public class SettingsMenu()
         HudClassicMeters = true;
         HudOpponents = true;
         HudNameTags = true;
+        HudFlash = true;
         MenuStage = MenuPreferences.LastPlayedStage;
         MenuMusic = MenuPreferences.StageSoundtrack;
         try
@@ -1159,6 +1167,7 @@ public class SettingsMenu()
             HudRadar = HudRadar,
             HudOpponents = HudOpponents,
             HudNameTags = HudNameTags,
+            HudFlash = HudFlash,
             MenuMusic = MenuMusic,
             KeyBindings = keyBindings
         };
@@ -1310,6 +1319,9 @@ public class SettingsMenu()
                 break;
             case "hudNameTags":
                 if (value is bool nameTags) HudNameTags = nameTags;
+                break;
+            case "hudFlash":
+                if (value is bool flash) HudFlash = flash;
                 break;
             case "menuStage":
                 if (value is string stage) MenuStage = MenuPreferences.NormalizeStage(stage);

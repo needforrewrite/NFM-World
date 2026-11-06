@@ -57,6 +57,8 @@ public static class UiState
         public Signal<int> Position { get; } = new(1);
         public Signal<int> TotalRacers { get; } = new(1);
         public Signal<int> CountdownTimer { get; } = new(0);
+        public HudMessage? StatusMessage { get; set; }
+        public HudMessage? StuntMessage { get; set; }
         public Signal<string?> StateText { get; } = new(null);
         public Signal<DateTime?> StateTextEndsAt { get; } = new(null);
         public Signal<bool> Paused { get; } = new(false);
@@ -113,6 +115,8 @@ public static class UiState
                 CountdownTimer.Value = hud.CountdownTimer;
                 StateText.Value = hud.StateText;
                 StateTextEndsAt.Value = hud.StateTextEndsAt;
+                StatusMessage = hud.StatusMessage;
+                StuntMessage = hud.StuntMessage;
                 Paused.Value = paused;
             });
         }

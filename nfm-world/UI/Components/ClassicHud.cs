@@ -16,8 +16,6 @@ public sealed class ClassicHud(IHudData race) : Component
     private float _clock;
     private float _arrowAngle;
     private bool _hadArrow;
-    private bool? _atCars;
-    private float _modeMessageUntil;
 
     private IHudData Race => race;
 
@@ -131,7 +129,7 @@ public sealed class ClassicHud(IHudData race) : Component
     {
         var amount = (int)(98 * damage);
         var green = amount > 33 ? (int)(244 - 233f * (amount - 33) / 65) : 244;
-        if (amount > 70)
+        if (amount > 70 && SettingsMenu.HudFlash)
         {
             var period = (168 - amount * 1.5f) / 30;
             var phase = _clock % period;
@@ -142,9 +140,6 @@ public sealed class ClassicHud(IHudData race) : Component
 
     private void Arrow(Vector2 position, Vector2 size, float scale, float dt)
     {
-        if (_atCars is { } previous && previous != Race.ArrowAtCars)
-            _modeMessageUntil = _clock + 2;
-        _atCars = Race.ArrowAtCars;
         var angle = Race.ArrowAngle ?? (Race.IsPreview ? 0f : (float?)null);
         if (angle is not { } target)
         {
@@ -159,8 +154,6 @@ public sealed class ClassicHud(IHudData race) : Component
         if (Race.ArrowAtCars)
             Text(Race.ArrowLocked ? $"< {Race.ArrowTarget} >" : $"[ {Race.ArrowTarget} ]",
                 center, top + 3 * scale, scale, center: true, color: new Color(20, 20, 120));
-        if (_clock < _modeMessageUntil)
-            Text($"Arrow now pointing at {(Race.ArrowAtCars ? "Cars" : "Track")} <", center, top + 89 * scale, scale, center: true);
         if (!Race.IsPreview && !Race.ArrowAtCars && MathF.Abs(_arrowAngle) <= 7) return;
 
         // xtGraphics.arrow: rotate its seven X/Z vertices, then project at y=-90.

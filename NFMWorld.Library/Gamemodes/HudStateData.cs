@@ -1,4 +1,5 @@
 using NFMWorld.PluginSystem;
+using NFMWorldLibrary.Hud;
 
 namespace NFMWorld.DriverInterface;
 
@@ -19,6 +20,10 @@ public partial class HudStateData
     [PluginVisible] public int TotalRacers { get; set; }
     [PluginVisible] public string? StateText { get; set; }
     [PluginVisible] public DateTime? StateTextEndsAt { get; set; }
+    /// <summary>Transient status line from <see cref="NFMWorldLibrary.Hud.RaceAnnouncer"/>.</summary>
+    [PluginVisible] public HudMessage? StatusMessage { get; set; }
+    /// <summary>Transient stunt line, shown above the status line.</summary>
+    [PluginVisible] public HudMessage? StuntMessage { get; set; }
     [PluginVisible] public int CountdownTimer { get; set; }
 
     [PluginVisible]

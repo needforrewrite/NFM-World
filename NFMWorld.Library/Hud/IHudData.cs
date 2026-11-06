@@ -13,6 +13,10 @@ public interface IHudData
     bool HasPosition => Position > 0 && Position <= TotalRacers;
     int Countdown { get; }
     string Message { get; }
+    /// <summary>Transient status line (checkpoints, warnings), or null.</summary>
+    HudMessage? StatusMessage => null;
+    /// <summary>Transient stunt line, shown above the status line.</summary>
+    HudMessage? StuntMessage => null;
     bool Paused { get; }
     bool TimeTrial { get; }
     bool IsPreview => false;

@@ -139,7 +139,14 @@ public partial class CarPhysics
     
     [PluginVisible]
     public int Lastcolido;
-    
+
+    /// <summary>
+    /// Index of the car whose contact last damaged this one, or -1 for a stage hit.
+    /// Display only, so it is not part of the rollback frame.
+    /// </summary>
+    [PluginVisible]
+    public int LastDamageFrom = -1;
+
     [PluginVisible]
     public sbyte StuntState;
     
@@ -508,7 +515,8 @@ public partial class CarPhysics
                             {
                                 othermad._collidingWithClientPlayer = true;
                             }
-                            totalOtherDamage += othermad.Regx(otherwheel, f131 * ownStats.Moment * damageMult, otherconto, random);
+                            totalOtherDamage += othermad.Regx(otherwheel, f131 * ownStats.Moment * damageMult, otherconto,
+                                random, Im);
                             if (othermad._collidingWithClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = false;
@@ -520,7 +528,8 @@ public partial class CarPhysics
                             {
                                 othermad._collidingWithClientPlayer = true;
                             }
-                            totalOtherDamage += othermad.Regy(otherwheel, ownStats.Revlift * 7 * recoil, otherconto, random);
+                            totalOtherDamage += othermad.Regy(otherwheel, ownStats.Revlift * 7 * recoil, otherconto, random,
+                                sourceCar: Im);
                             if (othermad._collidingWithClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = false;
@@ -564,7 +573,8 @@ public partial class CarPhysics
                             {
                                 othermad._collidingWithClientPlayer = true;
                             }
-                            totalOtherDamage += othermad.Regz(otherwheel, f133 * ownStats.Moment * damageMult, otherconto, random);
+                            totalOtherDamage += othermad.Regz(otherwheel, f133 * ownStats.Moment * damageMult, otherconto,
+                                random, -1, null, Im);
                             if (othermad._collidingWithClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = false;
@@ -576,7 +586,8 @@ public partial class CarPhysics
                             {
                                 othermad._collidingWithClientPlayer = true;
                             }
-                            totalOtherDamage += othermad.Regy(otherwheel, ownStats.Revlift * 7 * recoil, otherconto, random);
+                            totalOtherDamage += othermad.Regy(otherwheel, ownStats.Revlift * 7 * recoil, otherconto, random,
+                                sourceCar: Im);
                             if (othermad._collidingWithClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = false;
@@ -2789,7 +2800,7 @@ public partial class CarPhysics
         return reboundMul;
     }
 
-    private int Regx(int i, fix64 f, ContO conto, DeterministicRandom random)
+    private int Regx(int i, fix64 f, ContO conto, DeterministicRandom random, int sourceCar = -1)
     {
         conto.DamageX(i, f);
 
@@ -2835,10 +2846,12 @@ public partial class CarPhysics
                 }
             }
         }
+        if (i110 > 0) LastDamageFrom = sourceCar;
         return i110;
     }
 
-    private int Regy(int i, fix64 f, ContO conto, DeterministicRandom random, int soundSurface = -1, Vector3? soundPosition = null)
+    private int Regy(int i, fix64 f, ContO conto, DeterministicRandom random, int soundSurface = -1,
+        Vector3? soundPosition = null, int sourceCar = -1)
     {
         conto.DamageY(i, f, Mtouch, _numRoofDamage, RoofDamage);
         var i97 = 0;
@@ -2944,10 +2957,12 @@ public partial class CarPhysics
                 }
             }
         }
+        if (i97 > 0) LastDamageFrom = sourceCar;
         return i97;
     }
 
-    private int Regz(int i, fix64 f, ContO conto, DeterministicRandom random, int soundSurface = -1, Vector3? soundPosition = null)
+    private int Regz(int i, fix64 f, ContO conto, DeterministicRandom random, int soundSurface = -1,
+        Vector3? soundPosition = null, int sourceCar = -1)
     {
         conto.DamageZ(i, f);
         var i114 = 0;
@@ -2993,6 +3008,7 @@ public partial class CarPhysics
                 }
             }
         }
+        if (i114 > 0) LastDamageFrom = sourceCar;
         return i114;
     }
 

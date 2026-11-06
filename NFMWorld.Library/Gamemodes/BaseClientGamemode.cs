@@ -6,6 +6,7 @@ using NFMWorld.PluginSystem;
 using NFMWorld.Sfx;
 using NFMWorldLibrary.Backend.AI;
 using NFMWorldLibrary.Gamemodes;
+using NFMWorldLibrary.Hud;
 using NFMWorldLibrary.Plugins;
 using NFMWorldLibrary.Util;
 
@@ -279,6 +280,8 @@ public abstract class BaseClientGamemode : IGamemode
         _bots.Clear();
     }
 
+    private readonly RaceAnnouncer Announcer = new();
+
     private int _lastClientCheckpoint = 0;
     private int _lastCountdownTime = 0;
     private fix64 _lcarx;
@@ -294,6 +297,7 @@ public abstract class BaseClientGamemode : IGamemode
         GamemodeContext.ClientCallbacks.ResetCheckpointGlow();
 
         HudState = new HudStateData { Lap = 1, TotalLaps = CurrentStage.Nlaps };
+        Announcer.Reset();
         IBackend.Backend.StopAllSounds();
     }
 
@@ -324,6 +328,10 @@ public abstract class BaseClientGamemode : IGamemode
             car.CurrentCheckpoint,
             car.CurrentCheckpoint == CurrentStage.Checkpoints.Count - 1 && car.CurrentLap == CurrentStage.Nlaps - 1
         );
+
+        Announcer.Tick(car, this);
+        HudState.StatusMessage = Announcer.Status;
+        HudState.StuntMessage = Announcer.Stunt;
     }
 
     /// <summary>
