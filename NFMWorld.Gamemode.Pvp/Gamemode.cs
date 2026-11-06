@@ -82,6 +82,8 @@ public class PvpGamemode : PluginGamemode
         _countdown = 3;
         _inner = GamemodeUtils.CountdownInterval;
         _clientTick = 0;
+        HudState.StateText = null;
+        HudState.StateTextEndsAt = null;
     }
 
     public override void Reset()
@@ -124,10 +126,13 @@ public class PvpGamemode : PluginGamemode
                 if (ClientPlayer.Car != null)
                 {
                     UpdateHudAndSounds(ClientPlayer.Car);
-                    HudState.Lap = ClientPlayer.Car.CurrentLap + 1;
+                    HudState.Lap = Math.Min(ClientPlayer.Car.CurrentLap + 1, CurrentStage.Nlaps);
                     HudState.TotalLaps = CurrentStage.Nlaps;
                     HudState.Position = ClientPlayer.Car.Placement + 1;
                     HudState.TotalRacers = Players.Count;
+
+                    if (ClientPlayer.Car.CurrentLap >= CurrentStage.Nlaps)
+                        Finish();
                 }
                 break;
             case GamemodeState.Finished:
@@ -147,6 +152,35 @@ public class PvpGamemode : PluginGamemode
             HudState.CountdownTimer = 0;
             _state = GamemodeState.InProgress;
         }
+    }
+
+    public override void OnServerRaceFinished(RaceResults results)
+    {
+        base.OnServerRaceFinished(results);
+        Finish();
+    }
+
+    /// <summary>
+    /// The race is over: every car coasts to a stop and the HUD stops advancing laps.
+    /// </summary>
+    private void Finish()
+    {
+        if (_state == GamemodeState.Finished)
+            return;
+
+        _state = GamemodeState.Finished;
+        foreach (var player in Players)
+        {
+            if (player.Car is { } car)
+                car.CarPhysics.Halted = true;
+        }
+
+        HudState.StateText = "Finished!";
+        HudState.StateTextEndsAt = null;
+
+        // The announcer stops ticking with the race, so its lines would otherwise stay up.
+        HudState.StatusMessage = null;
+        HudState.StuntMessage = null;
     }
 }
 
@@ -278,14 +312,17 @@ public class PvpServerGamemode(
         if (claimedTotal != currentTotal + 1)
             return false;
 
+        if (claimedCheckpoint >= checkpointCount || claimedLap > CurrentStage.Nlaps)
+            return false;
+
         // Without a relayed position yet there is nothing to corroborate the claim against.
         if (GetPlayerPosition(playerId) is not { } position)
             return false;
 
-        if (claimedCheckpoint >= checkpointCount || claimedLap >= CurrentStage.Nlaps)
-            return false;
-
-        var checkpoint = CurrentStage.Checkpoints[claimedCheckpoint].Position;
+        // The client reports the checkpoint it is now heading for, so the crossing that sent
+        // this event was the one before it - wrapping back to the last checkpoint on a lap.
+        var crossed = claimedCheckpoint == 0 ? checkpointCount - 1 : claimedCheckpoint - 1;
+        var checkpoint = CurrentStage.Checkpoints[crossed].Position;
 
         // A generous radius: this only has to reject a player who is nowhere near the
         // checkpoint they claim, not to police the exact line.
