@@ -9,260 +9,183 @@ does what it does unless it could be confusing to a future maintainer, and keep 
 bugfixes unless they're so confusing there's a likelihood of them being reverted.
 Don't reference Claude Code/Copilot projects in comments as it's likely other maintainers won't have context for them.
 
-When writing Luau, ALWAYS write type-safe code with type annotations (like if you were writing TypeScript!). Don't just stuff `any` everywhere. Check your Luau code with `luau-analyze` in strict mode and fix any errors unless fixing them is impossible within the type system or would strongly reduce readability.
+NFM World is a custom game engine and game written in **C#**, targeting `net11.0`. Everything — UI, gamemodes, AI — is
+C#; there are no Lua or Luau code paths in the main tree any more. Older comments and docs still mention them — see
+[Agent working guidelines](#agent-working-guidelines) for which references are stale and why.
 
-Don't run all Lua-CSharp tests unless you've touched Lua-CSharp code, as they have a bunch of regression tests that take minutes to execute.
+## Layout
 
-For writing code with Sx cross-reference the [sx guide](NFMWorld.Library\data\library\sx\GUIDE.md).
-
-NFM World is a custom game engine and game written primarily in **C#**, targeting `net10.0`. The playable app lives in `nfm-world/` (`NFMWorld.csproj`) and depends on many sibling projects — notably `NFMWorld.Library`, `FNA.Core` (via NvgSharp), and `MonoGame.ImGuiNet`. Treat `nfm-world/` as the app entry point; engine/framework code is in `FNA/`; rendering and GUI glue is under `NvgSharp/`, `FontStashSharp/`, and `MonoGame.ImGuiNet/` (FontStashSharp is in the solution but not a direct ProjectReference of the app).
-
-- **Big picture:** The playable app lives in `nfm-world/` (`NFMWorld.csproj`) and depends on many sibling projects (notably `NFMWorld.Library`, `NvgSharp.FNA.Core`, `NvgSharp.Text.FNA.Core`, `MonoGame.ImGuiNet`). Treat `nfm-world` as the app entry; engine/framework code is in `FNA/` and rendering/GUI glue under `NvgSharp/`, `FontStashSharp/`, and `MonoGame.ImGuiNet/`.
+| Path | Role |
+|---|---|
+| `NFMWorld/` (`NFMWorld.csproj`) | Desktop **exe**. `WorldGame.cs` (main loop, entry point), `WorldGame.Recovery.cs`. Imports `Plugin.Plugins.targets` so plugin output lands beside the binary. |
+| `nfm-world/` (`NFMWorld.Game.csproj`) | The game body as a **library**: `Mad/` (gameplay, physics, menu), `UI/` (views, HUD, renderer), `Backends/`, `Content/`, `Renderer.cs`. `OutputType=Library` so the browser and tests can reference it. |
+| `NFMWorld.Browser/` | Browser head (`Microsoft.NET.Sdk.WebAssembly`), `browser-wasm`. Mirror of the exe. |
+| `NFMWorld.Library/` | Backend/game systems: gamemodes, physics (`Mad/`), stages, HUD data, VFS (`TheVFS`), plugin loader/sandbox. AOT-compiled shared library for the native hosts (except `browser-wasm`). |
+| `NFMWorld.Library.Base`, `NFMWorld.Math` | Small shared primitives (logging, arrays, fixed-point helpers). |
+| `NFMWorld.UI/` | The UI framework itself: Yoga-backed `Component`/`Node`, `Styles`, Sx (`Sx/`), focus/keyboard/mouse, `NodeDebugger`. |
+| `NFMWorld.DriverInterface/` | `IGraphics`, `IGraphics3D`, keys, `TheGraphics`, `DummyBackend`. The platform-neutral surface the game draws against. |
+| `NFMWorld.Graphics.Abstraction` | Backend-neutral GPU API (`IGraphicsDevice`, `ICommandBuffer`, pipelines, buffers). |
+| `NFMWorld.Graphics.OpenGL` | ANGLE/GLES backend (the non-Windows default). `NFMWorld.Graphics.DesktopGL` — desktop core GL. `NFMWorld.Graphics.D3D11` — the Windows default. Each has a `.Smoke` harness. |
+| `NFMWorld.Platform.SDL3`, `NFMWorld.Platform.WebGL` | Window/input layer. |
+| `NFMWorld.ShaderCompiler*` | HLSL → SPIR-V → cross-compiled bundles, at build time. |
+| `NFMWorld.Gamemode.Pvp`, `.TimeTrial`, `.Hostile` | Gamemode **plugins** (see below). |
+| `NFMWorld.Ai.Classic`, `NFMWorld.Ai.ElStupido` | AI **plugins**. |
+| `NFMWorld.Server.Game`, `.Server.Lobby`, `.Server.SharedMemory` | Dedicated server, `RaceOrchestrator`. |
+| `NFMWorld.Multiplayer.Base`, `NFMWorld.Api`, `NFMWorld.Sentry`, `NFMWorld.CrashReporter` | Transport, HTTP API, telemetry, crash reports. |
+| `Microsoft.UI.Reactor.Yoga` | Yoga layout binding. |
+| `NFMWorld.Reactor.ObservableCollections` | `ObservableUnlimitedArray<T>`, `ClientStage` observes these. |
+| `CasCore/` (submodule) | The plugin sandbox. |
+| `Apos.Shapes/` (submodule) | 2D shapes and SVG rendering (Classic HUD, `ShapeSvg`). |
+| `HoleyDiver/` | Offline polygon triangulator used by the RAD asset pipeline. |
 
 Key characteristics:
-- **Luau/Yoga-based UI** — the UI is written in Luau (`data/uis/` + `NFMWorld.Library/data/library/`) and rendered by a Yoga layout host (`nfm-world/UI/UiRenderer.cs` / `NFMWorld.Library/Util/Lua/LuaUiLibrary.cs`). Replaces the legacy XAML, Reactor VDOM, and CEF systems. New UI work targets **Sx**; preact-luau remains for unmigrated routes.
-- A custom **shader pipeline**: shaders in `data/shaders/*.fx` are compiled to `.fxb` via `fxc.exe` during build.
-- **Fixed-point math** (`FixedMathSharp`) for deterministic physics and gameplay logic.
-- A **virtual file system** (`Maxine.VFS`) with path abstraction over real and in-memory backends.
+- **Fine-grained reactive UI in C#** (`NFMWorld.Reactor.Sx`, backed by `SignalsDotnet` and Yoga). See
+  [Fine-Grained Reactive UI](#fine-grained-reactive-ui-sx).
+- **Shader pipeline**: `data/shaders/*.fx` compiled at build to C# bundles (HLSL + GLSL + merged reflection). No
+  `.fxb`, no `fxc.exe`, no wine.
+- **Fixed-point math** (`FixedMathSharp`) for deterministic physics.
+- **Virtual file system** (`Maxine.VFS`, via `TheVFS.VFS`) — every game file read goes through it.
 - A Blender-based asset pipeline using the proprietary **RAD 3D** car format.
 
-- **Build / run:** Use the .NET SDK (this repo targets `net10.0`). Typical commands:
-  - Build entire workspace: `dotnet build nfm-world.slnx -c Debug`
-  - Build single project: `dotnet build nfm-world/NFMWorld.csproj`
-  - Run: `dotnet run --project nfm-world/NFMWorld.csproj`
-  - Run tests: `dotnet test --no-build` from solution root or test project folder.
+- **Build / run** (`net11.0`; the shader task needs `dotnet build`, not MSBuild.exe):
+  - Solution: `dotnet build nfm-world.slnx -c Debug`
+  - Game only: `dotnet build NFMWorld/NFMWorld.csproj`
+  - Run: `dotnet run --project NFMWorld/NFMWorld.csproj`
+  - Tests: `dotnet test --no-build` from the solution root, or from a test project folder.
+  - Browser: `dotnet build NFMWorld.Browser/NFMWorld.Browser.csproj` (it sets `browser-wasm` itself).
 
-- **Shaders & tools:** Shaders in `data/shaders/*.fx` are compiled to `.fxb` via `fxc.exe` during build (`BuildShaders` target). On non-Windows builds the project expects `wine` + a Windows DirectX SDK `fxc.exe` (winetricks `dxsdk_jun2010`) or a `tools/fxc.exe` helper. If altering shader handling, preserve the MSBuild targets in `nfm-world/NFMWorld.csproj` that produce and include `.fxb` files.
+- **Compile symbols**: `ANGLE` is defined in the game project and the backends; `WEB_AUDIO` is set only by the browser
+  head (which passes `NfmwBrowser=true` through its references). Keep both when touching compilation logic.
 
-- **Platform nuances:**
-  - The project sets `AllowUnsafeBlocks` and several compile symbols (e.g. `USE_BASS`). Keep those when editing compilation logic.
-
-- **Project patterns / conventions:**
-  - Most subprojects are referenced with `ProjectReference` from `NFMWorld.csproj`; prefer keeping cross-project ref changes small and use `dotnet sln` only when adding/removing whole projects.
-  - Game logic vs UI: `NFMWorld.Library` contains backend/game systems; UI, rendering and native interops live in `nfm-world/`, `NvgSharp/`, and `FNA/`. The Luau/Yoga UI lives in `data/uis/` (routes/components) and `NFMWorld.Library/data/library/` (reactlib + Sx), hosted by `nfm-world/UI/UiRenderer.cs` and `NFMWorld.Library/Util/Lua/LuaUiLibrary.cs`.
-  - Data and assets: NFMWorld and NFMWorld.Library include `None Include="data\**\*" CopyToOutputDirectory=...` — follow existing CopyToOutputDirectory semantics rather than inventing new asset pipelines.
-
-- **Dependencies & runtime notes:**
-  - NuGet packages used by the app include `ImGui.NET`, `ManagedBass` (and related). When adding packages, prefer matching versions already in the csproj.
-  - For local developer builds on Linux/macOS, ensure native dependencies (OpenGL drivers, libSDL, wine for shader compilation) are present.
-
-- **Tests and CI hints:**
-  - Run `dotnet test` at repo root; test projects are co-located with their libraries (e.g. `HoleyDiver.UnitTest`).
-  - CI should `dotnet restore` then `dotnet build` then `dotnet test`. If CI runs on Linux/macOS, ensure native copy targets won't fail due to missing platform files — add conditional guards or include stub files as needed.
-
-- **When editing MSBuild targets:** Inspect `nfm-world/NFMWorld.csproj` for patterns: shader compilation targets, copy-to-output items, and platform-specific Publish hooks. Changes here affect runtime asset layout; run a local `dotnet publish` to validate.
-
-- **Where to look for behavior:**
-  - Initialization / main loop: `nfm-world/NFMWorld.csproj` → `WorldGame.cs`, `NFMWorld.csproj` references `WorldGame.cs` as a logical entry point.
-  - Luau/Yoga UI host: `nfm-world/UI/UiRenderer.cs`, `NFMWorld.Library/Util/Lua/LuaUiLibrary.cs` (Yoga layout, events, `defer` batching).
-  - Luau UI views: `data/uis/` (`router.luau`, `routes/{mainmenu,garage,racehud,test}.luau`, `components/`).
-  - Reactive UI framework: `NFMWorld.Library/data/library/sx/` (Sx)
-  - Game backend: [NFMWorld.Library](../NFMWorld.Library/NFMWorld.Library.csproj)
-  - Rendering and fonts: `NvgSharp/`, `FontStashSharp/` and `FNA/`.
-
-- **Examples to follow:**
-  - Adding native files: put in the right location under NFMWorld.NativeLibs to load via the DllImport resolver.
-  - Adding compiled assets (shaders): add `.fx` to `CompileShader` ItemGroup so builders include shader compilation automatically.
-
-- **Do NOT:**
-  - Remove or flatten the MSBuild platform conditionals without testing on all OSes.
-  - Change shader/tool expectations without keeping a non-Windows fallback path (`tools/fxc.exe` or documented wine steps).
-
-
-If anything above is unclear or you want examples inserted for a specific task (adding a native plugin, publishing for Linux, or modifying shader flow), tell me which area to expand and I will update this file.
+- **Don't** remove or flatten the MSBuild platform conditionals, or the `RuntimeIdentifier != 'browser-wasm'` guards
+  that keep `PublishAot`/`NativeLib` off in the wasm head.
 
 ---
 
-## Build, Run & CI
+## UI (Sx + Yoga)
 
-```bash
-# Build entire solution
-dotnet build nfm-world.slnx -c Debug
+The UI is C#. A phase builds its own tree (`BasePhase.BuildUi()`), and `nfm-world/UI/UiRenderer.cs` mounts whatever
+the phase stack puts on top (`ShowPhase`/`HidePhase`). There is no router and no separate frontend build step.
 
-# Build single project
-dotnet build nfm-world/NFMWorld.csproj
+- **Views**: `nfm-world/UI/Routes/` (`MainMenuView`, `MainMenuIntroView`, `GarageView`, `RaceHudView`) and
+  `nfm-world/UI/Components/` (`Button`, `GlassCard`, `ClassicHud`, `SettingsView`, `PauseMenuView`).
+- **Framework**: `NFMWorld.UI/` — `Component`, `Node`, `Styles`, `TextStyles`, `FocusManager`,
+  `KeyboardNavigation`, `Sx/`, plus the base `View`/`Text`/`Image`/`TextInput` in `NFMWorld.UI/Components/`.
+- **Yoga config** (`NFMWorld.UI/Component.cs`): `UseWebDefaults = true` plus `FixFlexBasisFitContent`. The defaults
+  live in `Styles.Resolved` (`NFMWorld.UI/Styles.cs`): `FlexDirection.Row`, `Align.Stretch`, `Position.Static`,
+  `BoxSizing.BorderBox`, `Display.Flex`, `PointerEvents = true`; `flexShrink` comes from Yoga's web default (1).
 
-# Run
-dotnet run --project nfm-world/NFMWorld.csproj
+## Fine-Grained Reactive UI (Sx)
 
-# Run all tests
-dotnet test --no-build          # from solution root
-dotnet test                     # from individual test project folder
-```
+SolidJS-style: signals, per-slot effects, **no vnode and no diffing**. Backed by `SignalsDotnet`.
 
-**CI pipeline:** `dotnet restore` → `dotnet build` → `dotnet test`. On Linux/macOS, add conditional guards to ensure platform-specific MSBuild copy targets don't fail for missing Windows-only native files.
+- **Where**: `NFMWorld.UI/Sx/` — `Sx.cs` (component API), `Renderer.cs` (mount), `RenderScope.cs` (ownership),
+  `Styled.cs` (named styles), `UiScheduler.cs` (frame batching).
+- **`Sx.View(style: () => Sx.Styles(...), children)`** — `style` and `text` parameters are `Func<>` accessors, and a
+  child that is a `Func` is a **reactive slot** installed as its own effect. A component method runs **once**.
+- **Flow**: `Sx.Show(when, then, otherwise)` (one branch exists), `Sx.For(each, row)` (keyed by value identity, no
+  `key` prop), `Sx.Switch(signal, branches, fallback)`. There is **no `Index`** — `For` is the only list helper. All of
+  them mount their content under a fresh `RenderScope` and use a **flow host** (`Display.Contents`, dropped from the
+  layout pass) as their anchor.
+- **Styles**: `Sx.Styles(...)` builds a `Styles`; every field is nullable and `Styles.Over` leaves unset fields alone.
+  Named/reusable styles are `Styled.StyleView(baseStyle: ..., hoverStyle: ...)` (`NFMWorld.UI/Sx/Styled.cs`), which
+  wires hover as a local signal so hovering restyles that node only — see `MainMenuView.ItemRow`. (The XML doc in
+  `Styled.cs` still shows an older `Sx.Styled(Sx.View, ...)` call shape; the real API is `Styled.StyleView`.)
+- **Scheduler**: `UiScheduler.Instance` (installed on first `UiRenderer` construction) replaces
+  `Effect.DefaultScheduler`, so every write made during a frame coalesces into **one effect pass** at end of frame.
+  Nothing in the UI fires timers itself.
 
-### Shaders
+### Sx gotchas
 
-Shaders in `data/shaders/*.fx` are compiled to `.fxb` by the `BuildShaders` MSBuild target via `fxc.exe`. On non-Windows:
-- Use `wine` + a Windows DirectX SDK `fxc.exe` (via `winetricks dxsdk_jun2010`), **or**
-- Provide a `tools/fxc.exe` helper shim.
-
-To add a new shader, add the `.fx` source to the `<CompileShader>` ItemGroup in `NFMWorld.csproj`. Do not manually copy `.fxb` files.
-
-### UI (Luau/Yoga)
-
-The UI is written in Luau and rendered by a Yoga layout host — there is **no separate frontend build step**. Views live in `data/uis/` and ship via the existing `data/**` copy rule. See the [Fine-Grained Reactive UI (Sx)](#fine-grained-reactive-ui-sx) section and `NFMWorld.Library/data/library/sx/GUIDE.md` for the framework and gotchas.
-
-Yoga is configured with web defaults, so:
-- flexDirection defaults to row
-- alignContent defaults to stretch
-- flexShrink defaults to 1
-- position defaults to static
-
-But:
-- boxSizing defaults to border-box
-
-### Source generator output (Reactor, legacy)
-
-```bash
-# Force regeneration of all source-generated files
-Remove-Item -Recurse nfm-world/Generated
-dotnet build nfm-world/NFMWorld.csproj
-```
-
-Generated files appear in `nfm-world/Generated/NFMWorld.Reactor.Generator/.../*.g.cs`. The csproj must have `<Compile Remove="Generated/**" />` to prevent double-compilation.
-
-**Note:** The Reactor VDOM framework has been replaced by the Luau/Yoga UI. New UI work should target **Sx**.
+| Gotcha | Rule |
+|---|---|
+| Reactive slots | A `Func<T>` prop or `Func<object?>` child is an effect. Pass `() => value`, never a snapshot — a plain value is read once at mount and never updates. |
+| Components run once | There is no re-render. Anything that must change feedbacks through a signal read inside a slot. |
+| Flow hosts | `Show`/`For`/`Switch`/slots insert into a `Display.Contents` host, which Yoga flattens out of layout. Don't give a flow host padding/background and expect it to apply. |
+| `For` keys by value | Rows are keyed by item equality and built **once**; moving them only reorders nodes. So a row remounts whenever `each` yields a new item value (a freshly built record or string does), and the `index` passed to the row is the one it was created with — read position from a signal inside the row, not from that argument. |
+| Scopes own effects | Content mounted by a flow helper lives in its own `RenderScope`; disposing that scope tears down everything created inside it. Reusing a node across mounts without adopting a new scope leaves its effects dead. |
+| Style structs are nullable | `Styles` fields are `T?` on purpose (merge semantics). Setting a field to its CLR default is not the same as leaving it null. |
 
 ---
 
-## Gamemodes (Lua-driven)
+## Gamemodes (plugins only)
 
-Gamemodes are written in **Luau** and share one code path for singleplayer and multiplayer.
+Gamemodes are compiled `.NET` plugins — the Lua path is gone. Singleplayer and multiplayer share one code path.
 
 ### Architecture
 
-- **One race phase** — `nfm-world/Mad/Gameplay/RacePhase.cs` is the only in-race phase. It composes `RaceInputController` and `RaceCameraDirector` and talks to an `IRaceHost` (`NFMWorld.Library/Gamemodes/RaceHost/`):
-  - `LocalRaceHost` — singleplayer: runs the factory's `IServerGamemode` in-process, so SP exercises the same client/server split as online play.
-  - `NetworkRaceHost` (`nfm-world/Mad/Gameplay/RaceHost/`) — multiplayer: bridges an `IMultiplayerClientTransport` (join token, C2S/S2C packets) to the same interface.
-- **Contracts** — `IGamemode` (client lifecycle/input/render/results) and `IServerGamemode` (server lifecycle + `IServerGamemodeData`), both in `NFMWorld.Library/Gamemodes/`.
-- **Players as the single source of truth** — gamemodes own `ObservableUnlimitedArray<ClientSidePlayer>` (`Players`, each with an `IInGameCar? Car`). `ClientStage.SetPlayers(...)` observes collection + `CarChanged` events and creates one `CarVisual` per car. There is no separate `CarsInRace` array on the race phase (garage/menu phases still use `BaseStageRenderingPhase.CarsInRace` with `ClientStage.SetCars`).
+- **One race phase** — `nfm-world/Mad/Gameplay/RacePhase.cs`. It composes `RaceInputController` and
+  `RaceCameraDirector` and talks to an `IRaceHost` (`NFMWorld.Library/Gamemodes/RaceHost/`):
+  - `LocalRaceHost` — singleplayer: runs the factory's `IServerGamemode` in-process, so SP exercises the same
+    client/server split as online play.
+  - `NetworkRaceHost` (`nfm-world/Mad/Gameplay/RaceHost/`) — multiplayer: bridges an `IMultiplayerClientTransport`
+    (join token, C2S/S2C packets) to the same interface.
+- **Contracts** — `IGamemode` and `IServerGamemode` in `NFMWorld.Library/Gamemodes/`. Base classes:
+  `BaseClientGamemode` / `BaseServerGamemode`.
+- **Players are the source of truth** — gamemodes own `ObservableUnlimitedArray<ClientSidePlayer>` (`Players`, each
+  with a `BackendCar? Car`). `ClientStage.SetPlayers(...)` observes the collection and each player's `CarChanged` and
+  keeps one `CarVisual` per car. Race phases do not keep a `CarsInRace` array; `BaseStageRenderingPhase` phases
+  (garage, menu) still use `ClientStage.SetCars`.
 
-### Lua framework (`NFMWorld.Library/Gamemodes/Lua/`)
+### Plugin layout & lifecycle
 
-- Scripts live at `data/gamemodes/{id}/client.luau` and `server.luau` (shipped via the existing `data/**` copy rule). `LuaGamemodeFactory` / `GamemodeRegistry.RegisterLua(id, path)` wire them up; `nfmm/racing|wasting|both` → `pvp/`, `nfmm/timetrial` → `timetrial/`.
-- Globals injected into scripts: `stage` (`LuaStage`), `players` (`LuaPlayers` — generic `UnlimitedArray<T>` constructed types only get opaque Lua stubs, so use this wrapper), `hud` (`LuaHudState`, writes through to `HudStateData`), `physics` (`PhysicsController`), `time_trial` (`LuaTimeTrial` ghost/recording helper), `config` (JSON table from the factory), plus functions `create_car`, `drive`, `physics_tick`, `calculate_positions`, `handle_checkpoint`, `handle_fix_hoops`, `send_event`, `countdown_interval`, `client_index`, `attach_bot`, `reset_client_state`, `update_hud`, `add_ghost_player`, `remove_fake_players`. Server scripts get `server` (`LuaServerData`), `broadcast_event`, `finish_race`.
-- Callback contract (invoked synchronously each tick): `on_begin`, `on_end`, `on_reset`, `on_game_tick`, `on_render`, `on_key_pressed(key)` / `on_key_released(key)` / `on_key_typed(char)` (keys passed as ints), `on_server_event(type, table)` / `on_client_event(playerId, type, table)` (server), `on_ai_tick(car, index)` (bots via `LuaBot`).
-- Events between client and server are `LuaEventEnvelope { Type, JsonPayload }` (MemoryPack + JSON Lua table) — not MemoryPack unions. `LuaJson` handles Lua table ↔ JSON.
-- `wait()`-style coroutine suspension is **not** supported yet — callbacks must be synchronous per-tick (countdown is tick-counted in Lua).
-- Lua-CSharp does not support __gc or __mode in metatables, so weak tables must be either managed in C# or avoided entirely.
-
-### Lua binding pipeline
-
-- `[LuaVisible]` / `[LuaName]` / `[LuaHidden]` (in `NFMWorld.Lua`). Marking a class/struct LuaVisible makes the `NFMWorld.LuaSourceGenerator` emit a partial `T : ILuaUserData` with metatables, type tables, and `data/lua/library/*.lua` stubs — **declare such types `partial`**.
-- Hidden ctor pattern: `[LuaHidden]` on constructors whose parameters the generator can't marshal.
-- `LuaVisibleTypeRegistry.RegisterAll(state)` installs namespaces/types into a `LuaState`; call it after `OpenStandardLibraries()`.
-- Cars cross to Lua via `LuaValue.FromUserData(car, LuaVisibleTypeMetatableRegistry<IInGameCar>.Metatable)` (see `LuaGamemode.ToLua`).
-- Lua-CSharp fork: sync execution via `DoString`/`DoFile`/`Run` (throws `LuaYieldException` on suspension); `LuaNfmwPlatform` is VFS-backed.
-
-### Gotchas
-
-| Gotcha | Rule |
-|---|---|
-| New `[LuaVisible]` type | declare the class/struct `partial` |
-| Ctor with unmarshalable params | `[LuaHidden]` on the constructor |
-| `UnlimitedArray<T>` in Lua | opaque stub — wrap it (`LuaPlayers`) |
-| Cars in Lua | use the `IInGameCar` metatable, not `FromObject` |
-| `HudStateData` (DriverInterface) | never mark `[LuaVisible]` — use `LuaHudState` |
-| Race finish broadcasts | guard with `_finished` / `ResultsBroadcasted` (done in both hosts) |
-| TT preview/simulation | still C# (`TimeTrialPreviewGamemode`/`TimeTrialSimulationGamemode` derive from C# `TimeTrialGamemode`) |
-
----
-
-## Race HUD
-
-- `nfm-world/UI/Hud/HudSkinRegistry.cs` registers Classic, World and discovered JSON skins; `UI/Routes/RaceHudView.cs` mounts the selected entry. Pause/settings stay outside the skin subtree.
-- Settings > Game > HUD stores `hud_skin <id>` (default `classic`); old Classic/World values migrate. Missing skins fall back without losing the saved ID.
-- World (`nfm-world/UI/Hud/WorldSkin/`) is Sx in the main-menu blue (`Theme.Menu*`): stats top-left, destination arrow top-centre, standings right, radar bottom-left, speed bottom-centre. It draws its own radar (`WorldRadar`), so `RaceOverlays` skips the shared one for it. Racers/arrow are plain lists; slots re-read them off `UiState.RaceState.PresentationRevision`, bumped once per frame after `UpdateHudPresentation`.
-- `hud_scale` is a 0.5–2 user multiplier (default 1), live in the HUD preview; Classic adds a 1.15 default multiplier. `HudScaleSettings` validates config; `HudScaleHost` isolates World's Sx scale from menu UI.
-- `hud_safezone_x`/`hud_safezone_y` keep 0.8–1 of each viewport axis (default 1). All skins inset anchors symmetrically via `HudSafeZoneSettings`, without reducing scale. Settings/preview controls stay outside the safe area; preview shows a boundary guide.
-- Keep `HudScaleHost` absolutely positioned: countdown/finish overlays must not consume flex space beside the HUD. TT position compares the player with its recorded ghost; ghost checkpoint progress updates during playback, while arrow targeting still excludes fake players.
-- Skins consume `NFMWorld.Library/Hud/IHudData.cs`; `RacePhase.UpdateHudPresentation` copies standings/targets without retaining plugin objects. Keep telemetry/target logic in the host.
-- Race status text is `RaceAnnouncer` (`NFMWorld.Library/Hud/`), ticked from `BaseClientGamemode.UpdateHudAndSounds`: it diffs car/opponent state and posts into two timed slots (`StatusMessage`, `StuntMessage` on `HudStateData`). Durations are seconds, so nothing needs the 21.4 tps translation phy's counters did. `nfm-world/UI/Hud/RaceMessages.cs` draws both lines outside the skin; blinking is gated on `SettingsMenu.HudFlash` (`hud_flash`, Settings > Game > HUD, default on) along with the Classic damage-bar blink. Kill credit reads `CarPhysics.LastDamageFrom`, written by `Regx`/`Regy`/`Regz` when they actually deal damage. Trigger delays are seconds, not tick counts: phy's counters were 21.4 tps, so copying a tick number gives a third of phy's delay at 63 tps (wrong-way did, and fired almost immediately on wide-open stages). Missed-checkpoint detection lives in the announcer (`MissedCheckpointDistance`, ground contact required), not in the physics step where phy kept it.
-- Custom skins live in `data/hud/skins/<id>/skin.json`. Schema/discovery/tests: `NFMWorld.Library/Hud/`, `NFMWorld.Library.Test/HudSkinTests.cs`. Authoring guide and sample: `nfm-world/data/hud/README.md`, `skins/minimal/`. No per-frame file reads.
-- Classic uses generated `data/images/power.hud.svg` and `damage.hud.svg`; editable sources remain `power.svg`/`damage.svg`. Regenerate with `node tools/svg/export-hud.mjs` and existing BandCheck/game binaries (no game build). Damage color/flashing and arrow geometry follow `nfm2/src/xtGraphics.java` (`drawstat`/`arrow`).
-- Classic SVGs use `IGraphics.LoadSvgImage` with stage snap and the original `loadsnap` channel cap (225). Text/outline colors also receive snap. `SvgColorAdjustment` adjusts generated hex paints/gradient stops; the image cache replaces its current stage variant rather than accumulating variants.
-
-## .NET Gamemode Plugins (`NFMWorld.Gamemode.*`)
-
-A gamemode can also be a compiled plugin instead of Luau scripts. This is the
-replacement path for Lua — currently a proof of concept.
-
-- **Layout** — `data/gamemodes/{id}/gamemode.dll`, beside that gamemode's
-  `.luau` scripts. The file name is identical in every gamemode; the folder
-  disambiguates them.
-- **Authoring** — derive from `PluginGamemode` (client) and `PluginServerGamemode`
-  (server), and mark the assembly with `[assembly: Gamemode(Name = ..., Description = ...)]`
-  plus `[assembly: GamemodeConfigProperty(...)]` / `GamemodeConfigPropertyOption`.
-  Projects: `NFMWorld.Gamemode.Pvp`, `NFMWorld.Gamemode.TimeTrial`.
-- **Build** — `Plugin.props` is imported by each plugin project;
-  `Plugin.Plugins.targets` is imported by each *host* (game, server, test) and
-  builds the plugins, passing its own output dir down so each plugin copies only
-  its own output into `data/gamemodes/{id}/`. `PluginOutputRoot` is the only
-  property handed down: it is global, so anything else passed there (an id, a
-  folder) would also reach every project the plugin references and give each
-  plugin its own build of the shared libraries. Restore is skipped when the
-  plugin already has `obj/project.assets.json`, so a host rebuild only costs a
-  no-op Build per plugin.
-- **Resolution** — `GamemodeFactory.Create(id, config)` in
-  `NFMWorld.Library/Mad/Multiplayer/GameModes.cs` returns a `NativeGamemodeFactory`
-  when a plugin is present and a `LuaGamemodeFactory` otherwise. Call sites use
-  this, not the raw factories.
-- **Loader** — `NFMWorld.Library/Gamemodes/DotNet/GamemodePlugin.cs` reads the
-  assembly into memory and loads it into its own **collectible**
-  `AssemblyLoadContext` (`PluginLoadContext`), then reflects the gamemode types and
-  constructors once.
-- **Unloading** — a plugin is only resident for its race. `GamemodeFactory.Create`
-  loads fresh (no cache), and `BaseGamemodeFactory.End()` (overridden by
-  `NativeGamemodeFactory` to call `GamemodePlugin.Unload`) releases the context.
-  Call `End()` when the race is over: `RacePhase.Dispose` does it for the client,
-  `LocalRaceHost.Dispose` for the singleplayer server side, and `RaceOrchestrator`
-  does it when a server-side race finishes.
-- **Unload verification** — `PluginUnloadVerifier` (DEBUG only) asserts the release
-  actually took, since an unload that silently fails looks identical to one that
-  worked. `End()` arms it with a `WeakReference` to the assembly; the host loop
-  calls `Verify()` after that frame's teardown — `WorldGame.Update` (client) and
-  `RaceOrchestrator.TickServerGamemodes` (server) — and it reports a leak by
-  throwing, once per plugin.
-- **One factory per run** — a factory owns what it loaded and releases it in `End()`,
-  so it must never outlive its run or be shared with a second one. Anything starting
-  another run builds its own from `BaseGamemodeFactory.Config`; the `map` and `car`
-  dev commands are the cases that matter, because they replace a `RacePhase` while the
-  old one's disposal is still pending — the deferred `Dispose` runs *after* the new
-  race is live, so a shared factory would unload the plugin out from under it.
+- **Layout** — `data/gamemodes/{id}/gamemode.dll`, `data/ais/{id}/ai.dll`. The file name is identical in every
+  plugin of a kind; the folder disambiguates.
+- **Authoring** — derive from `PluginGamemode` / `PluginServerGamemode` (gamemodes) or `PluginAi` (AI), and mark the
+  assembly with `[assembly: Gamemode(Name = ..., Description = ...)]` or `[assembly: Ai(...)]`, plus
+  `GamemodeConfigProperty` / `GamemodeConfigPropertyOption`.
+- **Build** — `Plugin.props` is imported by each plugin project; `Plugin.Plugins.targets` is imported by each *host*
+  (`NFMWorld`, `nfm-world`, `NFMWorld.Server.Game`, `NFMWorld.Library.Test`) and builds the plugins, passing its own
+  output dir down so each plugin copies only its own output. `PluginOutputRoot` is the only property handed down: it
+  is global, so anything else (an id, a folder) would also reach every project the plugin references and give each
+  plugin its own build of the shared libraries. Restore is skipped when the plugin already has
+  `obj/project.assets.json`, so a host rebuild costs a no-op Build per plugin.
+- **Resolution** — `GamemodeFactory.Create(id, config)` in `NFMWorld.Library/Mad/Multiplayer/GameModes.cs` loads the
+  plugin fresh (no cache) and returns a `NativeGamemodeFactory`. There is **no fallback**: a missing plugin throws.
+  `BaseGamemodeFactory.Config` lets a caller build a second factory for the same run.
+- **Loader** — `NFMWorld.Library/Gamemodes/DotNet/GamemodePlugin.cs` reads the assembly into memory, loads it into its
+  own **collectible** `AssemblyLoadContext` (`PluginLoadContext`), then reflects the gamemode types once.
+- **Unloading** — `BaseGamemodeFactory.End()` (overridden by `NativeGamemodeFactory` to call `GamemodePlugin.Unload`)
+  releases the context. `RacePhase.Dispose` does it for the client, `LocalRaceHost.Dispose` for the singleplayer
+  server side, and `RaceOrchestrator.TickServerGamemodes` when a server-side race finishes.
+- **Unload verification** — `PluginUnloadVerifier` (DEBUG) asserts the release actually took, since a silent failure
+  is indistinguishable from success. `End()` arms it with a `WeakReference`; `WorldGame.Update` and
+  `RaceOrchestrator.TickServerGamemodes` call `Verify()` **after** that frame's teardown, and it judges only plugins
+  armed on an earlier frame.
+- **One factory per run** — a factory owns what it loaded and releases it in `End()`. Never share one between two
+  `RacePhase`s: the replaced phase's `Dispose` is deferred to end-of-frame, so it runs after the replacement is live
+  and would unload the plugin out from under it. The `map` and `car` dev commands are the cases that matter; they
+  build a fresh factory instead.
 
 ### Gotchas
 
 | Gotcha | Rule |
 |---|---|
-| Assembly identity | Ship the file as `gamemode.dll` by **renaming at copy time** (`Gamemode.Plugin.props`), never via `TargetName`/`AssemblyName` — those rename the assembly *identity* too, and the runtime refuses to load two assemblies under one identity, so the second gamemode of a session would fail |
-| Plugin dependencies | Reference shared assemblies (`NFMWorld.Library`, `Lua`, `MemoryPack`, …) with `Private="false" ExcludeAssets="runtime"` so the plugin resolves against the host's copies rather than shadowing them |
-| `DisableTransitiveProjectReferences` | every plugin csproj sets it, so a type used from a transitive dependency (e.g. `Nibble<T>` from `Maxine.Extensions`) needs its own explicit reference |
+| Assembly identity | Ship the file as `gamemode.dll` / `ai.dll` by **renaming at copy time** (`Plugin.props`), never via `TargetName`/`AssemblyName` — those rename the assembly *identity* too, and the runtime refuses to load two assemblies under one identity |
+| Plugin dependencies | Reference shared assemblies (`NFMWorld.Library`, `MemoryPack`, …) with `Private="false" ExcludeAssets="runtime"` so the plugin resolves against the host's copies instead of shadowing them |
+| `DisableTransitiveProjectReferences` | every plugin csproj sets it, so a type used from a transitive dependency needs its own explicit reference |
 | Target resolution timing | read `$(TargetDir)` inside the target, not at evaluation time — the SDK sets it after the project body |
-| Unload is silent | `AssemblyLoadContext.Unload()` on a context something still references does nothing and reports nothing. Any surviving reference — a gamemode instance, a `CarVisual`, a reflected `ConstructorInfo` — keeps the whole assembly loaded, so teardown has to drop them *in order* (see below) |
-| MemoryPack pins the context | a plugin's generated formatters register into MemoryPack's **static** table from the plugin's module initializer, i.e. on load, and hold its types for the process lifetime. `MemoryPackFormatterRegistry` removes them in `Unload` by reflection (MemoryPack has no unregister API); without it the plugin never unloads, with no error to show for it |
-| Teardown ordering | release the objects that reference the plugin *before* `End()`: `RacePhase.Dispose` nulls `GamemodeInstance` and clears the stage's players first, `LocalRaceHost.Dispose` nulls its server gamemode. Anything held past that keeps the assembly alive |
-| Factory lifetime | one factory per run — never share one between two `RacePhase`s. The replaced phase's `Dispose` is deferred to end-of-frame, so it runs after the replacement is already live and its `End()` releases the plugin the replacement is using. Build a fresh factory from `Config` instead (`map`/`car`) |
-| Verifying an unload | never inside `Unload`/`End()`: the frames up the stack to there are still live roots, so a collection forced from within always finds the assembly alive and reports the caller's own reference. `PluginUnloadVerifier` (DEBUG) does it from the host loop instead — `End()` arms it, the game calls `Verify()` per frame and the server per tick, both *after* that frame's teardown, and it only judges a plugin armed on an earlier frame. Tests assert it the same way, through a `WeakReference` to the plugin's **assembly** after `GC.Collect` (`GamemodePluginUnloadTests`), never by trusting `Unload`'s return — there isn't one |
+| Unload is silent | `AssemblyLoadContext.Unload()` on a context something still references does nothing and reports nothing. Any surviving reference — a gamemode instance, a `CarVisual`, a reflected `ConstructorInfo` — keeps the assembly loaded, so teardown drops them *in order* |
+| MemoryPack pins the context | a plugin's generated formatters register into MemoryPack's **static** table from the plugin's module initializer (i.e. on load) and hold its types for the process lifetime. `MemoryPackFormatterRegistry` removes them in `Unload` by reflection (MemoryPack has no unregister API); without it the plugin never unloads, with no error to show |
+| Teardown ordering | release the objects that reference the plugin *before* the factory's `End()`. `RacePhase.Dispose` does them in order: `_host.Dispose()`, `CurrentStage.SetPlayers(null)` (drops the `CarVisual`s), `GamemodeInstance?.End()`, `GamemodeInstance = null`, and only then `Gamemode.End()` — the factory release has to be last. `LocalRaceHost.Dispose` ends its server gamemode and then nulls the field for the same reason |
+| Verifying an unload | never inside `Unload`/`End()`: the frames above are live roots, so a forced collection always finds the assembly alive. `PluginUnloadVerifier` does it from the host loop. Tests assert it through a `WeakReference` to the plugin's **assembly** after `GC.Collect` (`GamemodePluginUnloadTests`), never by trusting `Unload`'s return — there isn't one |
 
 ### Plugin sandbox (CasCore)
 
-Every plugin assembly loads through `CasAssemblyLoader` (`PluginAssembly.Load`), so a plugin
-only reaches what the policy admits. `PluginPolicy` builds it: CasCore's default sandbox
-plus whatever the host marked `[PluginVisible]` / `[VendorPluginVisible]`. `Unsafe` is denied
-outright, and MemoryPack's reader/writer primitives are named one at a time — they carry
-their lengths, `Unsafe` does not.
+Every plugin assembly loads through `CasAssemblyLoader` (`PluginAssembly.Load`), so a plugin only reaches what the
+policy admits. `PluginPolicy` builds it: CasCore's default sandbox plus whatever the host marked `[PluginVisible]` /
+`[VendorPluginVisible]`. `Unsafe` is denied outright, and MemoryPack's reader/writer primitives are named one at a
+time — they carry their lengths, `Unsafe` does not.
 
 | Gotcha | Rule |
 |---|---|
 | CasCore is a fork | `CasCore/` is a submodule on `uwx/CasCore` branch `nfmw`, carrying two fixes upstream 0.3.0 needs on this runtime: `base.Foo()` calls went through the static guard and were always refused, and the JSON bindings name members .NET 11 no longer has. Rebase both on any upstream bump |
-| Policy entries by token | `CasPolicy` identifies a member by **module handle + metadata token**, not by `MemberInfo` instance. Denying through a type-forwarder (`Unsafe` forwards to `System.Private.CoreLib`) therefore removes unrelated members that share the arithmetic — filter to `DeclaringType == typeof(...)` and only deny what `Build()` says is allowed |
-| Accessibility is inclusive | `Private` ⊇ `Protected` ⊇ `Public`. `IncludingAllMembersOfType` binds `Public` members plus public and protected constructors; any other protected member a plugin calls needs its own `[PluginVisible]` (`[method: PluginVisible]` on a ctor, see `PluginAi`) |
+| Policy entries by token | `CasPolicy` identifies a member by **module handle + metadata token**, not by `MemberInfo` instance. Denying through a type-forwarder (`Unsafe` forwards to `System.Private.CoreLib`) removes unrelated members that share the arithmetic — filter to `DeclaringType == typeof(...)` |
+| Accessibility is inclusive | `Private` ⊇ `Protected` ⊇ `Public`. `IncludingAllMembersOfType` binds public members plus public and protected constructors; any other protected member a plugin calls needs its own `[PluginVisible]` (`[method: PluginVisible]` on a ctor) |
 | Generated MemoryPack code | formatters are ordinary plugin IL, so they only reach the policy. The generator emits `Unsafe.As`/`Unsafe.SizeOf`; those are patched to a cast and `MemoryPackUnmanaged.SizeOf<T>` so the sandbox can deny `Unsafe` (`MemoryPackGenerator.Emitter.cs`) |
-| Visibility levels | `Visible.Self` on a type exposes the type and the members that carry their own `[PluginVisible]` — nothing else, and never private members. `IncludingAllMembersOfType` exposes the type's **public** members without a marker each. Use the latter for a base class plugins derive from, where overrides call protected members |
-| `[UnsafeAccessor]` in probes | a probe that reads a private host field this way compiles to a direct `ldfld`, which is the token the policy must refuse; it fails as `InvalidProgramException` from CasCore's IL verifier rather than `SecurityException`, so assert "throws", not the type |
-| Proving the sandbox | `NFMWorld.Gamemode.Hostile` has one probe per forbidden reach; `PluginSandboxTests` loads it like the game does and asserts every probe is refused (`SecurityException`, or `InvalidProgramException` for the `[UnsafeAccessor]` probe). `AiPluginTests.CreateClient_PassesTheSandbox` constructs each real plugin's client gamemode, which no server-only race path does. The test host declares its own plugin list, so the probes never reach release output |
+| Visibility levels | `Visible.Self` on a type exposes the type and members carrying their own `[PluginVisible]` — never private members. `IncludingAllMembersOfType` exposes the type's **public** members without a marker each; use it for a base class plugins derive from |
+| `[UnsafeAccessor]` in probes | a probe reading a private host field this way compiles to a direct `ldfld`, which the policy must refuse; it fails as `InvalidProgramException` from CasCore's IL verifier rather than `SecurityException`, so assert "throws", not the type |
+| Proving the sandbox | `NFMWorld.Gamemode.Hostile` has one probe per forbidden reach; `PluginSandboxTests` loads it like the game does and asserts every probe is refused. `AiPluginTests.CreateClient_PassesTheSandbox` constructs each real plugin's client gamemode, which no server-only path does. The test host declares its own plugin list, so probes never reach release output |
 | Not everywhere | `PluginPolicy.Supported` is false without dynamic code (the wasm head), where loads fall back to the plain `PluginLoadContext` |
 | `InlineArray4` element access | indexing one compiles to a BCL `InlineArrayFirstElementRef` helper that the IL verifier rejects (`BadImageFormatException`), so a plugin cannot read `CarPhysics.Scx/Scy/Scz` directly — add a summed accessor on the host instead (`CarPhysics.SummedWheelVelocity`) |
 
@@ -270,382 +193,280 @@ their lengths, `Unsafe` does not.
 
 ## Bot AI (`NFMWorld.Ai.*`)
 
-A bot is `BaseAi`, attached by `BaseClientGamemode.AttachBot(id, player)` from
-`data/ais/<id>/ai.dll` and driven from `PhysicsController.GameTick`. Two ship:
+A bot is `PluginAi`, attached by `BaseClientGamemode.AttachBot(id, player)` from `data/ais/<id>/ai.dll` and driven
+from `PhysicsController.GameTick`. Two ship:
 
-- **`classic`** (`NFMWorld.Ai.Classic`) — a port of the original game's driver
-  (ezBeanie/need-for-madness `src/race/ai.js`), minus everything keyed on a campaign stage
-  number or car type. PvP attaches it, so free play races against it.
-- **`el_stupido`** (`NFMWorld.Ai.ElStupido`) — a minimal node follower, still used by the
-  main-menu attract drive.
+- **`classic`** (`NFMWorld.Ai.Classic`) — a port of the original game's driver (ezBeanie/need-for-madness
+  `src/race/ai.js`), minus everything keyed on a campaign stage number or car type. PvP attaches it, so free play
+  races against it.
+- **`el_stupido`** (`NFMWorld.Ai.ElStupido`) — a minimal node follower, used by the main-menu attract drive.
 
 | Gotcha | Rule |
 |---|---|
-| Path point tracking | the physics-side `pathPointAhead` in `CarPhysics.cs` is dead code (`/* … }*/ // CHK16`), so `mad.Point` is never assigned. `ClassicAi` carries its own index over `TrackPath`, built from `BackendStage.Nodes` minus the fix hoops, with `LastCheckpointNode` as the checkpoint floor |
-| Standings | PvP never calls `CheckPointHelper.CalculatePositions`, so `Placement` is 0 for everyone. A bot that needs rank computes it itself — calling the helper would take over the HUD's standings as a side effect |
+| Path point tracking | the physics-side path walk in `CarPhysics.cs` is commented out (`/* … }*/ // CHK16`), so `CarPhysics.Point` is never assigned. `ClassicAi` carries its own index over `TrackPath`, built from `BackendStage.Nodes` minus the fix hoops, with `LastCheckpointNode` as the checkpoint floor |
+| Standings | PvP never calls `CheckPointHelper.CalculatePositions`, so `Placement` is 0 for everyone. A bot that needs rank computes it itself (`ClassicAi.RankCars`) — calling the helper would take over the HUD's standings as a side effect |
 | Y axis | `Position.Y` is height *below* `World.Ground` and `CarPhysics.Scy` is positive downward; the original's `car.y`/`wheelSpeedY` are the other way round. The stunt take-off and landing triggers both sum `Scy`, so check the sign against a real jump |
 | Controls are ours | `Control` is not cleared between ticks — every bot must write Up/Down/Left/Right/Handb every `RunAi()`, or the car keeps its last input |
 
 ---
 
-## Lua Table Storage (`Lua-CSharp`)
+## Race HUD
 
-`LuaTable` splits its storage three ways: a dense array part (integer keys near the array
-length), an **embedded struct** `LuaStringDictionary` (string keys — the common
-record-shaped case, so it costs no separate object per table), and a lazily created
-`LuaValueDictionary` class (everything else, including sparse integers). Both dictionaries
-use the same **signature-bucket** layout, ported from Faster.Map's `BlitzMap`:
+- `nfm-world/UI/Hud/HudSkinRegistry.cs` registers Classic, World and discovered JSON skins;
+  `UI/Routes/RaceHudView.cs` mounts the selected entry. Pause/settings stay outside the skin subtree.
+- Settings > Game > HUD stores `hud_skin <id>` (default `classic`, from `HudSkinId.Default`); old `Classic`/`World`
+  values migrate. Missing skins fall back without losing the saved ID.
+- World (`nfm-world/UI/Hud/WorldSkin/`) is Sx in the main-menu blue (`Theme.Menu*`): stats top-left, destination
+  arrow top-centre, standings right, radar bottom-left, speed bottom-centre. It draws its own radar (`WorldRadar`), so
+  `RaceOverlays` skips the shared one for it (`RaceHudView` passes `race.Skin.Value == "world"`). Racers/arrow are
+  plain lists; slots re-read them off `UiState.RaceState.PresentationRevision`, bumped once per frame after
+  `RacePhase.UpdateHudPresentation`.
+- `hud_scale` is a 0.5–2 user multiplier (`HudScaleSettings`, default 1), live in the HUD preview; Classic adds a
+  1.15 default multiplier (`HudScaleSettings.ClassicDefault`). `HudScaleHost` isolates the skin's scale from menu UI.
+- `hud_safezone_x`/`hud_safezone_y` keep 0.8–1 of each viewport axis (default 1). Skins inset anchors symmetrically via
+  `HudSafeZoneSettings`, without reducing scale. Settings/preview controls stay outside the safe area; the preview
+  shows a boundary guide.
+- Keep `HudScaleHost` absolutely positioned: countdown/finish overlays must not consume flex space beside the HUD.
+  TT position compares the player with its recorded ghost; ghost checkpoint progress updates during playback, while
+  arrow targeting still excludes fake players.
+- Skins consume `NFMWorld.Library/Hud/IHudData.cs`; `RacePhase.UpdateHudPresentation` copies standings/targets without
+  retaining plugin objects. Keep telemetry/target logic in the host.
+- Race status text is `RaceAnnouncer` (`NFMWorld.Library/Hud/`), ticked from
+  `BaseClientGamemode.UpdateHudAndSounds`: it diffs car/opponent state and posts into two timed slots
+  (`StatusMessage`, `StuntMessage` on `HudStateData`). Durations are **seconds** and converted with `SecondsToTicks`;
+  phy's counters were 21.4 tps, so copying a tick number fires a third as late at 63 tps. `nfm-world/UI/Hud/RaceMessages.cs`
+  draws both lines outside the skin; blinking is gated on `SettingsMenu.HudFlash` (`hud_flash`, default on) along with
+  the Classic damage-bar blink. Kill credit reads `CarPhysics.LastDamageFrom`, written by `Regx`/`Regy`/`Regz` when
+  they actually deal damage. Missed-checkpoint detection lives in the announcer (`CheckpointNear` / `CheckpointFar`,
+  ground contact required), not in the physics step where phy kept it.
+- Custom skins live in `data/hud/skins/<id>/skin.json`. Schema/discovery/tests: `NFMWorld.Library/Hud/`,
+  `NFMWorld.Library.Test/HudSkinTests.cs`; sample: `nfm-world/data/hud/skins/minimal/`. Discovery happens once
+  (`HudSkinCatalog.Discover`), never per frame.
+- Classic (`nfm-world/UI/Components/ClassicHud.cs`) uses the generated `data/images/power.hud.svg` and
+  `damage.hud.svg`; editable sources remain `power.svg`/`damage.svg`. It loads them through `IGraphics.LoadSvgImage`
+  with stage snap and the original `loadsnap` channel cap (225); text/outline colors also receive snap.
+  `SvgColorAdjustment` adjusts generated hex paints, `fill`/`stroke`/`stop-color`/`color` attributes, and gradient
+  stops.
 
-- A bucket is one `ulong`: `next << 32 | (signature | slot)`. `signature = hash & ~mask`, so
-  it is a multiple of the power-of-two bucket length and its low bits are free for the slot
-  index. An empty bucket is all ones; `next == 0xFFFFFFFF` ends a chain.
-- `FindValue` filters with `packed ^ signature <= mask`, which is an **exact** signature
-  match (not probabilistic) because both signatures are mask-aligned. A mismatch therefore
-  costs no entries-array access — that is the entire point of the layout.
-- The bucket length is a power of two and at least 2, so a signature is always even and can
-  never equal the all-ones empty marker. This is load-bearing: don't "simplify" the marker.
-- Entries are compact in slot order and removal **swap-erases** the last slot into the hole,
-  repairing the bucket that pointed at it. There is no free list and no stored hash.
-- Iteration order is array part → string dictionary → generic dictionary, and is stable
-  across a resize because slots are preserved.
-- `T` (`hash & mask`) must be ≤ 0.8 of the bucket array so `FindEmptyBucket` always has slack;
-  growth lands on exact powers of two (`maxCount = length / 2`).
-- `Entry` is 48 bytes for string keys (vs 56 before) and 80 for `LuaValue` keys (vs 96), at
-  the cost of a `ulong[]` bucket array. Net allocation is ~+4-7% (measured) for all three
-  table shapes in `LuaTableBenchmark`.
+---
 
-### Lua table gotchas
+## Graphics & audio
+
+- **Backends** — `IGraphicsDevice`/`ICommandBuffer` in `NFMWorld.Graphics.Abstraction`; implementations
+  `NFMWorld.Graphics.OpenGL` (ANGLE GLES), `NFMWorld.Graphics.DesktopGL` (desktop core profile),
+  `NFMWorld.Graphics.D3D11`, and `NFMWorld.Platform.WebGL` for the browser. Selection is a `switch` on `Renderer` in
+  `WorldGame`'s constructor (`Renderer.Angle` / `D3d11` / `DesktopGl`), and the default branch picks **D3D11 on
+  Windows** and **ANGLE everywhere else**. Each backend has a `.Smoke` project that runs it headless. The ANGLE arm is
+  `#if ANGLE`, which the game and backend projects define.
+- **Text/fonts** — `FontStashSharp` with pre-baked MSDF atlases. `NFMWorld.MsdfCache.targets` bakes
+  `data/fonts/*.msdf` at build time (the game loads that file instead of baking ~220 glyphs at startup); adding a font
+  means adding it under `data/fonts/`.
+- **Audio** — FAudio (`NFMWorld.Audio.FAudio`) plus NAudio/LibOpenMPT for tracker formats, behind
+  `NFMWorld.DriverInterface`. There is no BASS path.
+
+## Shader Pipeline (HLSL → SPIR-V → C#)
+
+Shaders live in `data/shaders/*.fx` with `*.fxh` headers (`Mad.fxh` is included by four shaders). At build,
+`NFMWorld.ShaderCompiler.Task` — imported via `NFMWorld.ShaderCompiler.Task/NFMWorld.ShaderCompiler.targets` — runs
+before `CoreCompile` and:
+
+1. compiles HLSL with **shaderc** (`Silk.NET.Shaderc`), targeting Vulkan 1.1 SPIR-V,
+2. reflects and cross-compiles with **spirv-cross** (`Silk.NET.SPIRV.Cross`) to the per-backend sources (HLSL for
+   D3D11, GLSL for GL),
+3. emits **one C# bundle class per technique** under `obj/…/ShaderCompiler/`, and `IncludeShaders` globs those into
+   the compile.
+
+There are no `.fxb` files, no `fxc.exe`, and no wine path; the old target that copied `.fxb` into publish is commented
+out. To add a shader, drop the `.fx`/`.fxh` into `data/shaders/` — discovery is a glob, there is no `<CompileShader>`
+item group to update. Two things that bite:
 
 | Gotcha | Rule |
 |---|---|
-| nil assignment | Stores a **dead entry** (keeps the key findable so `next` can continue from it) instead of removing it. Never change this to a real remove — `tests-lua/nextvar.lua` clears keys mid-`pairs` and expects every key to be visited. |
-| Liveness | Counted, not derived: `LiveCount` scans slots. `Count` includes dead entries, so never use it as a "size". |
-| Resizing re-hashes | Entries don't store their hash, so the bucket rebuild (and `Insert`'s owner check) re-invokes `GetHashCode` on stored keys. Keep stored-key hashing off the hot read/update path. |
-| Sentinel safety | `signature != 0xFFFFFFFF` relies on the bucket length being a power of two ≥ 2. A length of 1 would make every live bucket look empty. |
-| Hash quality | `double.GetHashCode()` leaves the low ~20 bits of small integers zero, so `hash & mask` is 0 for all of them and sparse numeric keys (`t[1000]`) collapse into one chain. Measured ~15x slower than string lookups. A hash-mixing step in `ComputeHash` would fix it if it ever matters. |
-| Load factor | `_maxCount` must keep at least ~1/5 of the bucket array free, or `FindEmptyBucket` degrades to a long scan. |
+| Task host | the task is `net11.0` and loads out-of-process (`TaskHostFactory`); that is what lets its own project be rebuilt. It will not load under .NET Framework `msbuild.exe` |
+| One-to-many | a `.fx` file can produce several techniques (`Nvg.fx` yields four, `Poly.fx` two), so nothing may name a bundle by `%(Filename)` |
+
+`NFMWorld.ShaderSourceGen` still exists in the solution for the old FNA-style effect wrappers, but the game does not
+reference it; new shader work goes through `NFMWorld.ShaderCompiler`.
 
 ---
 
-## Fine-Grained Reactive UI (Sx)
+## Assets & data
 
-A SolidJS/dom-expressions-style fine-grained reactivity UI framework for the Lua `UiLib`,
-built to fix the per-frame re-render cost of preact-luau. It is a **sibling** to
-preact-luau — new UI work should target Sx; preact-luau stays for unmigrated routes.
-
-- **Where:** `NFMWorld.Library/data/library/sx/` (`signals.luau`, `host.luau`, `h.luau`,
-  `dom.luau`, `styled.luau`, `index.luau`, `declarations.d.luau`, `GUIDE.md`). Ships via the existing `data/**` copy rule.
-- **Beginner guide:** `NFMWorld.Library/data/library/sx/GUIDE.md` teaches the framework from
-  zero (no web/signals/SolidJS assumed): mental model, `x`, `For`/`Show`/`Switch`, events,
-  `styled`, the game bridge, and gotchas.
-- **Public module `Sx`** (`index.luau`): `createSignal/createMemo/createEffect/createRoot/
-  batch/untrack/onCleanup/onMount/getOwner/runWithOwner/setScheduler/flushSync`, the
-  hyperscript `x`, `render`, `Fragment`, and flow components `Show/Switch/Match/For/Index`.
-- **Core model** (port of Solid `reactive/signal.js`): signals are cells; memos are lazy
-  pull computations (recompute on read when stale); effects are eager push computations.
-  Reading a signal/memo during a computation subscribes it. Writing a signal marks
-  observers STALE and propagates through memos, queueing effects. Effects run once per
-  batched flush in dependency order; memos recompute lazily during effect execution.
-- **Renderer** (`dom.luau`): components run **ONCE** under their own owner (`createRoot`)
-  and return a descriptor built by `x`. Static children/props mount once; **function-valued
-  children are installed as per-slot effects** — a dynamic text child updates via a single
-  `commitTextUpdate` on its anchor node; a function-valued (non-`on`) prop updates via a
-  single `setProperty`. Flow components use a hidden empty `TextNode` anchor as the slot
-  terminator.
-  **`Switch` mounts the selected `Match`'s children under a fresh isolated root** (not owned
-  by the switch effect) and fast-paths out when the chosen Match descriptor is unchanged.
-  This is required so a `Match.when` that reads a frequently-changing signal (e.g. a
-  settings loading-state `when` reading `config()`) does NOT cause the whole subtree to
-  remount on every write: without the isolated root, the switch effect's re-run would
-  `cleanNode` (dispose) the mounted subtree's owned reactive effects and leave them dead,
-  and without the fast path it would rebuild the entire chosen branch. Only a change of
-  WHICH match is selected does structural work. (Same latent pattern applies to `Show` and
-  `For`/`Index` — keep their `when`/`each` reads to rarely-changing signals.)
-- **Events:** props with an `on` prefix are event handlers, wired **once** at
-  `createInstance` (the host replaces, never `+=`) — they are static, not reactive
-  accessors. A non-`on` function prop is treated as a **reactive accessor** (Solid
-  gotcha) — name callbacks with an `on` prefix.
-- **`styled(tag)(baseStyle)`** (`styled.luau`): CSS-in-JS wrapper returning a component
-  that merges the base style + caller `style` override + a `hover` variant driven by a
-  hover signal. Wires `onmouseenter`/`onmouseleave` ONLY when a `hover` variant exists.
-- **Scheduler:** auto-wired at module load — `dom.luau` calls `Sx.setScheduler(Host.defer)`
-  (→ `UiLib.defer` → `GameThreadContext.Post`), so a frame's signal writes coalesce into
-  ONE end-of-frame effect pass (the game's per-frame batching). Tests use a synchronous
-  fake `defer`; opt out with `Sx.setScheduler(nil)`. NOTE: navigation ordering (the page
-  must mount before C# pushes phase data, e.g. `main-menu:account`) is NOT handled in Lua
-  — do NOT add a Lua `flushSync` workaround; it is a pending C#-side fix.
-- **Ports:** all views are Sx ports — `data/uis/router.luau` (route signal +
-  `Sx.Switch`/`Match` + default-route fallback), `data/uis/routes/{mainmenu,garage,
-  racehud,test}.luau`, and `data/uis/components/{glasscard,settings,pausemenu}.luau`.
-  Shared primitives are reactivity-aware: `GlassCard`/`StatBar`/`CenterText` accept
-  accessor props (color/value/text) and only re-set the affected node. `settings` uses
-  `Fragment` for its tabs and a `config` GETTER passed to tab content (reactive reads).
-- **Renderer perf:** the reactive-prop effect skips `setProperty` when the accessor
-  returns the same reference as last time, and `GlassCard` caches its merged style by
-  input reference — so changing one garage car's selection updates only that card.
-- **Benchmark:** `bench/luau-benchmark/scripts/hud_sx.luau` mirrors `hud_render.luau`
-  (17-node HUD, signals feed dynamic text + reactive bar widths). Scenario `hud_sx`.
-  Expected: ~2 setProp + ~2 commitText per frame, 0 structural ops (vs preact 13–39
-  setProps/f), and ~3–4x less wall time on the same machine.
-- **Tests:** `Lua-CSharp/tests/Lua.Tests/SxReactiveTests.cs` (NUnit, loads the real
-  `.luau` via memory FS + fake host) covers signal/memo/effect semantics, batch
-  coalescing, root disposal, Show/Switch, For keyed single-row update (1 commit), the
-  single-leaf HUD case (1 commit, 0 structural), and end-to-end port tests: router +
-  mainmenu (account, PLAY/BACK, fallback), all routes (garage with collections/stats,
-  race telemetry, test counter, back to main menu), and Settings loading state.
-- **DevTools:** an in-game inspector overlay (`data/uis/components/devtools.luau`, mounted
-  in `router.luau` behind the route Switch) shows a component/flow/host **tree** and a live
-  **signals/memos/effects** list. It's backed by optional introspection in the sx core,
-  all inert unless enabled:
-  - `sx/signals.luau` keeps a `LiveNodes` registry of every signal + computation
-    (`Sx.debug.list()`) and an injectable `Sx.debug.setOnChange(fn)` hook fired after any
-    signal write that marks observers stale (used by auto-refresh).
-  - `sx/dom.luau` builds a component tree during mount via `Dom.devtools` (`enable` /
-    `snapshot`); each component/host/flow node records a name + children. Component names
-    come from `debug.info(fn, "n")`. Lua-CSharp tracks declaration names on
-    `Prototype.Name` (parser records them for `local function X()`, `function X()`, and
-    `local X = function()`) and exposes them via the Luau-style `debug.info(fn, "n")`
-    (added to `DebugLibrary`; `debug.getinfo` stays conformant). `devName` falls back to
-    `debug.getinfo(fn)` → `short_src:linedefined` for unnamed functions. Styled components
-    are anonymous closures, so `styled.luau` registers a readable `Styled<tag>` name (e.g.
-    `StyledView`) via `Sx.debug.setStyledName`; `devName` checks `Sx.debug.styledName(fn)`
-    first (weak-keyed registry — Lua-CSharp functions can't hold properties).
-  - `devName` prefers the **creation call site** over the declaration site: `x` (in
-    `h.luau`) records the `short_src:line` of each `x(...){...}` call onto the descriptor
-    (`desc.callSite`) when capture is on, and `Dom.devtools` toggles it through
-    `h.setCaptureCallSites` (wired in `enable`/`disable`). `captureCallSite()` (h.luau)
-    walks `debug.traceback("", 2)` and returns the FIRST frame not inside the Sx library
-    (path contains `sx/`) — so it resolves to the user's source even when flow/effect
-    machinery (`For`/`Show`/`Switch`, signals, `styled`) sits between the render function
-    and the `x` call (a `<For>` row fn lives in the user's module, not dom.luau).
-    `captureCallSite` is called in the **outer** `x(vtype)` builder, NOT the returned
-    function: `x(ItemBtn){...}` is `x(ItemBtn)({...})`, so `x(ItemBtn)` is never in a tail
-    position and its caller frame survives — whereas capturing in the returned builder
-    would lose a `<For>` row's frame to tail-call elimination (a row's `return
-    x(ItemBtn){...}` resolved to the mount line instead of the user's row fn).
-    `mountComponent` passes `descriptor.callSite` to `devName`, so each tree node shows
-    where its instance was created in the source, falling back to the declaration site (or
-    `"anonymous"`) when there is no captured call site (e.g. the root mounted via `render`).
-  - `Sx.devtools` / `Sx.debug` are exported from `sx/index.luau`.
-  - The pane re-snapshots only when the tree's structural signature changes (preserves
-    expand/collapse across value-only updates); auto-refresh is opt-in and guarded against
-    feedback loops (a `refreshing` flag suppresses the hook for its own writes).
-
-### Sx gotchas
-
-| Gotcha | Rule |
-|---|---|
-| Reactive text children | Must be accessor functions: `x(Text){ () => item().label }`, not `x(Text){ item.label }` (plain reads don't update). |
-| `For`/`Index` | Solid semantics: `For` keys by value identity, `Index` by position. No per-element `key` prop. |
-| Non-`on` function props | Treated as reactive accessors (Solid gotcha). Use `on`-prefixed names for callbacks. |
-| `and/or` falsy trap | `(type(w)=="function") and w() or w` returns `w` when `w()` is `false`/`nil`. Use an explicit `if`. |
-| Memos must store values | `updateMemo` assigns `node.value = result`; a memo whose result is discarded returns `nil` forever. |
-| Flow `when`/`each` reading hot signals | `Switch` mounts its chosen `Match` under an isolated root and fast-paths when the chosen descriptor is unchanged, so a `Match.when` reading a frequently-changing signal (e.g. settings `config()`) won't remount the subtree. Keep `Show`/`For`/`Index` `when`/`each` reads to rarely-changing signals — they lack the isolated-root fast path. |
-| Empty `TextNode` anchors | `Show`/`Switch`/`For`/dynamic slots use an invisible empty `TextNode` as the insertion anchor. These are direct children of Views, interleaved with Components. The host's `insertBefore` must map the all-children index to the Component-only Yoga index (`ComponentChildCollection.InsertItem`) or `YogaNode.InsertChild` throws `ArgumentOutOfRangeException`. |
-| Lua 5.3 `%d` | `("%d%%"):format(v * 100)` errors ("number has no integer representation") for non-exact floats like `0.8*100`. Always `math.floor(v * 100 + 0.5)` first. |
-
----
-
-## Shader Pipeline (HLSL / SPIR-V)
-
-Shaders live in `data/shaders/*.fx` and are compiled to `.fxb` by the `BuildShaders` MSBuild target via `fxc.exe`. The `ShaderSourceGen` Roslyn source generator additionally wraps compiled shaders and emits C# binding code.
-
-**`ShaderSourceGen` naming:** generated C# shader wrapper files use a deterministic naming convention based on shader entry point and target profile. Do not rename shaders without updating all downstream C# references.
-
----
+- Both the game project and `NFMWorld.Library` ship data with `None Include="data\**\*" CopyToOutputDirectory="Always"`.
+  Follow that rule; don't invent a second asset pipeline.
+- The browser head packs `nfm-world/data`, `NFMWorld.Library/data` **and** the built `data/` output into archives at
+  build time — plugin DLLs only exist in the build output, never in the sources, which is why the output directory is
+  in that list.
+- RAD car/stage meshes are parsed by `NFMWorld.Library/Mad/Rad/RadParser.cs`; a `phyangulation` line selects the
+  `Phyrexian` triangulation algorithm (see HoleyDiver below).
+- Native libraries live under `NFMWorld.NativeLibs/libs/` and are resolved by the `DllImport` resolver in
+  `NFMWorld/WorldGame.cs` — add a new native file there, not next to the consuming code.
 
 ## Virtual File System (Maxine.VFS)
 
-Provides a path-abstraction layer decoupling game code from the real filesystem.
-
-**Key types:**
+`TheVFS.VFS` (`NFMWorld.Library/TheVFS.cs`) is the single entry point; everything is a `VirtualFS` over `IPath`.
 
 | Type | Role |
 |---|---|
 | `IPath` | Abstract path interface |
 | `MemoryPath` | In-memory path implementation |
-| `IoPath` | Wraps real filesystem paths (internal) |
-| `FallbackFileSystem` | Chains multiple `ReadOnlyFileSystem` implementations, trying each in order |
+| `IoPath` | Wraps real filesystem paths (internal; `IPath.IoPath.Instance`) |
+| `FallbackFileSystem` | Chains multiple `ReadOnlyFileSystem`s, trying each in order |
+| `MemoryFileSystem`, `ZipFileSystem`, `HttpFileSystem`, `MountingFileSystem` | Other backends |
 
-**Tested behaviours (MSTest):**
-- `GetFullPath` resolves `..` segments correctly.
-- `Combine` handles absolute path override on both Windows (`C:\...`) and Unix (`/...`).
-- Path normalization converts `\` to `/`.
-- `FallbackFileSystem` falls through on `FileNotFoundException` (in `OpenRead`/`GetAttributes`) and `DirectoryNotFoundException` (in `EnumerateFiles`/`EnumerateDirectories`). Other IO exceptions propagate immediately.
+**Tested behaviours (`Maxine.Extensions/Maxine.VFS.Test`, MSTest):** `GetFullPath` resolves `..`; `Combine` handles
+both Windows (`C:\...`) and Unix (`/...`) absolute override; normalization converts `\` to `/`;
+`FallbackFileSystem` falls through on `FileNotFoundException` (`OpenRead`/`GetAttributes`) and
+`DirectoryNotFoundException` (enumerate) while other IO exceptions propagate.
+
+**Rules:** always normalize `\` to `/` in game and test code; replicate `Path.Combine`'s absolute-path semantics
+exactly. Never read files with `System.IO` directly — the browser's MEMFS has nothing in it.
 
 ---
 
 ## FixedMath / Fixed-Point Math
 
-`FixedMathSharp` provides fixed-point arithmetic for deterministic simulation:
-- `Fixed4x4` — 4×4 transformation matrix
-- Various `Fixed*` scalar and vector types
+`FixedMathSharp` (`FixedMathSharp/src/FixedMathSharp/`) provides fixed-point arithmetic for deterministic simulation:
+`fix64`, `f64Vector3`, `Fixed4x4`, `DeterministicRandom`, etc. Fixed → float conversions are **lossy** by design:
+never use `==` between fixed-point and float values, use epsilon tolerance in tests. A `FixedMathSharp` bump breaks
+every dependent project — run all downstream tests.
 
-Fixed → float conversions are **lossy** by design. Never use `==` between fixed-point and float values; use epsilon tolerance in tests.
+## Testing
 
----
-
-## Testing Infrastructure
-
-- **Test framework:** MSTest (`[TestClass]`, `[TestMethod]`, `Assert.AreEqual`, `Assert.ThrowsException<T>`, `Assert.IsNotNull`). The project was converted from NUnit. **Never use NUnit APIs** (`[Test]`, `[TestFixture]`, `Assert.That`, `Assert.Throws`, etc.).
-- **Test runner:** `dotnet test` from the solution root or individual test project folder.
-- **Test projects:** `NFMWorld.Reactor.Test`, `NFMWorld.Library.Test`, `Maxine.VFS.Test`, `Maxine.Extensions.Test`, `HoleyDiver.UnitTest`.
-
-**MSTest pattern:**
+- **Frameworks differ by project — match the one you're in:**
+  - `NFMWorld.Library.Test` — **MSTest 4** (`[TestClass]`, `[TestMethod]`, `[DataRow]`, `Assert.AreEqual`). This is the
+    project to extend for game/UI/HUD/plugin behaviour. Do not use NUnit APIs here.
+  - `HoleyDiver.UnitTest` — NUnit (`[Test]`, `[SetUp]`). Leave it NUnit.
+  - `FixedMathSharp/tests/FixedMathSharp.Tests` and `Maxine.Extensions.Mathematics.Tests` — xUnit.
+  - `Maxine.Extensions/Maxine.VFS.Test` — MSTest, but not in `nfm-world.slnx`; run it from its own folder.
+- **Never delete a test.** If an interface changed, update the test to the new contract.
+- **Don't run everything** when you touched one area: `NFMWorld.Library.Test` has plugin-loading and unload regression
+  tests (`GamemodePluginUnloadTests`, `PluginSandboxTests`) that are slow and GC-sensitive.
+- **Source-generated code is untracked build output** (`*/Generated/`, `GenerateCompilerGeneratedFiles` is on).
+  After changing a generator, read the emitted `.g.cs` to confirm the shape; don't commit it, and don't rely on a clean
+  build alone.
 
 ```csharp
 [TestClass]
-public class SomeTests {
+public class SomeTests
+{
     [TestMethod]
-    public void MethodName_Scenario_ExpectedBehavior() {
-        // Arrange
+    public void MethodName_Scenario_ExpectedBehavior()
+    {
         var sut = new SystemUnderTest();
-
-        // Act
         var result = sut.DoThing();
-
-        // Assert
         Assert.AreEqual(expected, result);
     }
-
-    [TestMethod]
-    [ExpectedException(typeof(ArgumentException))]
-    public void Method_InvalidInput_Throws() { ... }
 }
 ```
 
-**Coverage priorities:**
-- VFS path operations (`GetFullPath`, `Combine`, normalization, `FallbackFileSystem`)
-- Lua generator output correctness (method table structure, metamethods, constructor presence/absence, operator overloads, InlineArray indexers)
-- FixedMath conversion accuracy
-- Polygon triangulation correctness (HoleyDiver)
+### Phase lifecycle
+
+`BasePhase.Enter()` calls `UiRenderer.ShowPhase(this)`; `Exit()` calls `HidePhase(this)`. Popped phases are queued and
+disposed by `PhaseManager.FlushDisposals()` at end of frame (`WorldGame.Update`) — anything holding plugin objects must
+be released there, before `PluginUnloadVerifier.Verify()`. There is no per-phase bridge to `Unregister()` any more.
 
 ---
 
-## Lessons Learned by Subsystem
+## Polygon Triangulation (HoleyDiver)
 
-### Shader Pipeline
+`HoleyDiver/Program.cs` is the offline triangulator for non-planar n-gons with holes defined by self-intersecting
+paths. **Two algorithms, and the default is LibTess**:
 
-**L1 — Do not rename shaders without updating downstream C# references.** `ShaderSourceGen` generates wrapper classes with deterministic names based on shader entry points.
+- `TriangulationAlgorithm.Libtess` (**default**) — GLU-style tessellation via **LibTessDotNet**: project to the
+  best-fit plane, feed one contour, and let the tessellator handle self-intersections. An edge crossing has no source
+  vertex, so the `combineCallback` snaps it to the heaviest-weight contributor.
+- `TriangulationAlgorithm.Phyrexian` — the original pipeline: dedupe, `ExtractRegions` (mirrored-sequence hole
+  detection, ported from a Python reference), reconstruct the outer boundary in path order, bridge-filter, then
+  **Poly2Tri** constrained Delaunay, with an ear-cut fallback if Poly2Tri throws.
 
-### VFS / Path Handling
+The choice is per polygon (`Rad3dPoly.TriangulationAlgorithm`, default `Libtess`), set by a `phyangulation` or
+`libtess` line in the RAD file (`RadParser.cs`).
 
-**L1 — Replicate `Path.Combine` semantics exactly.** An absolute path on the right-hand side must discard the left-hand side. Test with both Windows and Unix absolute paths.
+Both share `TryTriangulateSimple` (fast path for simple polygons) and the best-fit-plane projection with axis-aligned
+fallback when the plane collapses.
 
-**L2 — Always normalize `\` to `/`.** Code consuming VFS paths must not assume OS-native separators.
+**Phyrexian-path lessons (still valid if you touch it):**
 
-**L3 — `FallbackFileSystem` falls through on `FileNotFoundException` (in `OpenRead`/`GetAttributes`) and `DirectoryNotFoundException` (in enumerate methods).** Other IO exceptions propagate immediately. Test this boundary explicitly.
+**L1 — Convex hull destroys concave features. Never use it as an outer boundary replacement.** A Graham scan was
+once used to "fix" incomplete outer boundaries and silently dropped concave indentations (a car rear panel's bottom
+`(19,-43) (0,-45) (-19,-43)`). Reconstruct from the original path minus hole vertices, in path order
+(`ComputeConvexHull` is still in the file but has no call sites — don't reintroduce one).
 
-### FixedMath
+**L2 — `ExtractRegions` may return an incomplete outer boundary.** Rebuild `polyLines[0]` as
+`initialPoly \ holeVertices`, preserving order and deduplicating.
 
-**L1 — Fixed → float is lossy. Never use `==`.** Use epsilon-based comparison in all tests.
+**L3 — Filter bridge vertices out of hole definitions** or Poly2Tri sees duplicate constraints and fails/degenerates.
 
-**L2 — `FixedMathSharp` updates break dependent projects.** Run all downstream test suites after any bump.
+**L4 — Map `PolygonPoint` → unique index → `indexMap` → original index and reject any triangle with an unmappable
+vertex**, or the triangle count goes non-integer.
 
-### Polygon Triangulation (HoleyDiver)
+**L5 — `ExtractRegions` is a direct port.** It tests all `(i,j)` pairs, walks forward from `i` and backward from `j`,
+and requires `polyLines[0].Count >= 6`. Keep it a port.
 
-The `HoleyDiver` project (`HoleyDiver/Program.cs`) provides a robust polygon triangulator for non-planar 3D n-gons with holes defined by self-intersecting paths. It uses **Poly2Tri** (constrained Delaunay) as the primary triangulator with an ear-cut fallback.
+**L6 — Poly2Tri handles hole winding itself.** Don't pre-reverse.
 
-**Pipeline overview:**
+**L7 — Best-fit plane needs fallbacks**: covariance → Newell's method → `Vector3.UnitZ`; validate that no two 3D
+points collapse to one 2D point.
 
-1. **Best-fit plane projection** — Compute centroid + covariance matrix → eigenvector for plane normal. Project 3D vertices to 2D via `GetProjectionBasis`. Falls back to axis-aligned projections (XY/XZ/YZ) if the best-fit plane collapses distinct 3D points.
-2. **Vertex deduplication** — Merge vertices within epsilon (`1e-5`) using `Vector2.Distance`. Build an `indexMap` from original indices → unique indices.
-3. **Region extraction** (`ExtractRegions`) — Detects holes in self-intersecting paths by finding mirrored vertex sequences. Ported from a Python reference algorithm.
-4. **Outer boundary reconstruction** — After `ExtractRegions`, the outer polygon is reconstructed from the original path by **excluding all hole vertices** (in path order). This is critical: do NOT use convex hull as it strips concave features.
-5. **Bridge vertex filtering** — Vertices shared between outer and holes (bridge points from self-intersection) are removed from hole definitions to avoid duplicate constraints in Poly2Tri.
-6. **Poly2Tri triangulation** — Outer polygon + cleaned holes passed as `Polygon` constraints. Triangles mapped back through unique→original indices.
-7. **Incomplete triangle filtering** — Only triangles with all 3 vertices successfully mapped to original indices are emitted. Poly2Tri may produce degenerate triangles when hole vertices share edges with the outer boundary.
+**L8 — Do not add "safety" guards to the mirrored-sequence walker.** Extra bounds and `break` conditions diverged from
+the reference and caused subtle mismatches. `k0` advances forward and `k1` backward; it terminates.
 
-**Key types / entry point:**
+**L9 — The `le == 1` check is one-directional.** Only `AllPointsInPolygon(points0, pointsNew)` decides the swap; the
+old `!newInsidePoly0` requirement was wrong. For `le > 1` the new region is always a hole.
 
-| Type | Role |
-|---|---|
-| `PolygonTriangulator.Triangulate(IReadOnlyList<Vector3>)` | Main entry — returns `TriangulationResult` with `Triangles`, `PlaneNormal`, `Centroid`, `RegionCount` |
-| `ExtractRegions(List<int>, List<Vector2>)` | Mirrored-sequence hole detection; returns list of poly-lines with holes marked by `-1` prefix |
-| `Poly2Tri.Polygon` / `DTSweepContext` | Constrained Delaunay triangulation |
+**L10 — `CombineWithHoles` / `EarCutTriangulateSimple` are fallback-only** (Poly2Tri threw). Don't optimise them.
 
-**Lessons learned:**
-
-**L1 — Convex hull destroys concave features. Never use it as an outer boundary replacement.**
-The Graham scan convex hull was initially used to "fix" incomplete outer boundaries from `ExtractRegions`. This silently removed concave indentations (e.g., the bottom indentation of a car rear panel: vertices `(19,-43)`, `(0,-45)`, `(-19,-43)` were dropped). The correct outer boundary **must** be reconstructed from the original path by filtering out hole vertices while preserving path order.
-
-**L2 — `ExtractRegions` may produce incomplete outer boundaries. Always validate and reconstruct.**
-The mirrored-sequence detection algorithm can leave the outer polygon with only a subset of vertices. The workaround: collect all vertices belonging to non-outer regions (holes), then rebuild `polyLines[0]` as `initialPoly \ holeVertices` (in original path order, with deduplication).
-
-**L3 — Poly2Tri requires clean hole definitions. Filter bridge vertices.**
-Self-intersecting path holes share "bridge" vertices with the outer polygon (the points where the path crosses itself). These must be removed from hole vertex lists before passing to Poly2Tri, otherwise the triangulator sees duplicate constraints and may fail or produce degenerate output.
-
-**L4 — Map triangles through unique→original indices carefully. Reject incomplete ones.**
-Poly2Tri works with the deduplicated unique vertex set. Each triangle vertex must be mapped: `PolygonPoint` → `uniqueVertices` index → `indexMap` → original 3D vertex index. If any of the 3 vertices fails to map (e.g., Poly2Tri created a triangle using a point not in the original set), **reject the entire triangle**. Without this filter, the triangle count can be non-integer.
-
-**L5 — The Python hole-finding algorithm was ported directly.**
-The `ExtractRegions` method is a direct C# translation of a Python reference implementation. It finds mirrored sequences in a self-intersecting path by testing all `(i,j)` pairs, walking forward from `i` and backward from `j`, measuring the length of matching vertices. When `le == 1` (mirror length 1), it checks containment via `AllPointsInPolygon` to decide whether to swap outer/hole roles. The algorithm requires `polyLines[0].Count >= 6` to continue (minimum path for a hole).
-
-**L6 — Polygon winding direction matters for Poly2Tri but is handled automatically.**
-Poly2Tri's `Polygon` constructor and `AddHole` handle winding internally. Do NOT manually reverse hole winding before passing to Poly2Tri — the library expects holes in their natural winding and will reverse them if needed.
-
-**L7 — Best-fit plane fallback is essential for near-planar or degenerate input.**
-When the covariance matrix produces a near-zero normal (length < `1e-10`), fall back to Newell's method (sum of cross products of adjacent edges). If that also fails, default to `Vector3.UnitZ`. The projection validator also checks that no two 3D points collapse to the same 2D point under the chosen projection.
-
-**L8 — Do NOT add "safety" guards to the mirrored-sequence walker.**
-The Python algorithm walks `while k0 != k1 && poly[0][k0] == poly[0][k1]`. An earlier C# implementation added `maxMatchIterations` bounds and extra `break` conditions (nextK0 == k1, k0 == nextK1) that diverged from the reference, causing subtle mismatches. The walker naturally terminates because `k0` advances forward and `k1` advances backward — they either meet or mismatch. Trust the reference algorithm.
-
-**L9 — The `le == 1` containment check differs from `le > 1`.**
-When the mirrored sequence length is exactly 1, the Python algorithm checks if all points of `polyLines[0]` are inside the new region (`AllPointsInPolygon(points0, pointsNew)`). If so, it swaps them (the new region becomes the outer). The old C# code also required `!newInsidePoly0` (an "only one contains" check), which was wrong. For `le > 1`, no containment check is performed — the new region is always treated as a hole.
-
-**L10 — The `CombineWithHoles` / ear-cut path is fallback-only.**
-`CombineWithHoles` (bridge-based hole merging for ear-cut) and `EarCutTriangulateSimple` are the fallback path used only when Poly2Tri throws. They are NOT exercised during normal operation. Changes to the primary pipeline should focus on `ExtractRegions` + Poly2Tri.
-
-**L11 — Test polygons are embedded in `Main()`.**
-Two test cases exist in `Program.Main()`: (1) a windshield-shaped polygon with 1 rectangular hole (19 vertices, planar Z≈207.4), (2) a car rear panel with 2 holes and concave bottom indentation (19 vertices, near-planar Z≈-103). Swap between them by commenting/uncommenting vertex blocks. Validate with `dotnet run 2>$null | Select-String -Pattern 'Plane|Regions|Triangles:'`.
-
-**Common gotchas:**
+**L11 — Test polygons are embedded in `Main()`** (~28 vertices, one windshield-like case). Validate with
+`dotnet run` and the printed `Plane normal` / `Regions Detected` / `Triangles` lines. The real coverage lives in
+`HoleyDiver.UnitTest` (NUnit, 5 parameterised cases).
 
 | Gotcha | Rule |
 |---|---|
-| Convex hull for outer boundary | **Never** — reconstruct from original path minus hole vertices |
-| Duplicate vertices | Deduplicate with epsilon before region extraction |
-| Bridge vertices in holes | Filter out vertices that also appear in outer polygon |
-| Poly2Tri degenerate triangles | Check `triIndices.Count == 3` before emitting |
-| Hole marker convention | Holes are prefixed with `-1` in the poly-lines list |
-| Ear-cut fallback | Only used when Poly2Tri throws; filters triangles by centroid-in-hole test |
-| Safety guards in walker | Do NOT add `maxMatchIterations` or extra `break` conditions — trust the reference algorithm |
-| `le == 1` containment check | Check only `AllPointsInPolygon(points0, pointsNew)` — not both directions |
-| Test polygon swapping | Comment/uncomment vertex blocks in `Main()`; validate with `dotnet run` |
+| Convex hull for outer boundary | **Never** — reconstruct from the original path minus hole vertices |
+| Duplicate vertices | deduplicate at `1e-5` before region extraction |
+| Bridge vertices in holes | filter out vertices that also appear in the outer polygon |
+| Poly2Tri degenerate triangles | check `triIndices.Count == 3` before emitting |
+| Hole marker convention | holes are prefixed with `-1` in the poly-lines list |
+| Ear-cut fallback | only when Poly2Tri throws; filters by centroid-in-hole |
+| Algorithm default | `Libtess`; `Phyrexian` is opt-in per RAD file |
 
 ---
 
-## Agent Working Guidelines
+## Agent working guidelines
 
-### Before starting any task
+### Before starting
 
-- Identify which subsystem(s) are involved and re-read the relevant section of this document.
+- Identify the subsystem(s) involved and re-read the matching section above. If a doc or code comment mentions Luau,
+  `data/uis/`, `LuaUiLibrary`, `NvgSharp`, `FNA`, `fxc.exe`, `.fxb`, or `Lua-CSharp`, it is stale — check the tree
+  first. Current facts:
+  - No `.luau` file is tracked outside the `luau/` upstream submodule. `NFMWorld.Library/data/` holds only
+    `models/` and `stages/`; `bin/` still contains old `data/uis` and `preact-luau` copies from September builds.
+    Old `LuaGamemode`/`LuaUiLibrary` doc comments in `ElStupidoAi.cs`, `Plugin.Plugins.targets`,
+    `GameModes.cs`, `HudStateData.cs` and `ComponentChildCollection.cs` are leftovers (`LuaStateTextEndsAt` is a
+    Unix-seconds marshalling property for `StateTextEndsAt` whose name outlived its consumer).
+  - `NanoSvgSharp` was removed; SVG goes through Apos.Shapes (`ShapeSvg`, `IGraphics.LoadSvgImage`).
+  - `NFMWorld.Reactor.Test` and `NFMWorld.Reactor.TestFixtures` are empty output folders with no project file.
+  - `NFMWorld.FNA3D`, `NFMWorld.MojoShader` and `NFMWorld.ShaderSourceGen` are still in `nfm-world.slnx` but the game
+    does not reference them; the FNA-style `*.g.cs` under `nfm-world/Generated/` are stale output.
+  - `NFMW.GenerateSinCosTable`, `NFMWorld.GenerateHmacKey` and `NFMWorld.MsdfCache.Tool` are build/codegen tools.
 
 ### While working
 
-1. **Set up a todo list for multi-step tasks.** The codebase is complex enough that losing track mid-task causes compounding errors.
-2. **Verify generated output, not just build success.** After any source generator change, read the corresponding `.g.cs` file and confirm the emitted C# is structurally correct.
-3. **Run the full test suite for the affected project** — many edge cases have dedicated tests (e.g., `NFMWorld.Library.Test`, `Maxine.VFS.Test`).
-4. **Never delete a test.** If an interface changed, update the test to match the new contract.
+1. **Todo list for multi-step tasks** — the codebase is large and losing track compounds errors.
+2. **Verify generated output, not just build success.** After a generator or shader change, read the emitted file.
+3. **Run the tests for the affected project** — not the whole suite (see Testing).
+4. **Never delete a test.** Update it to the new contract.
 
-### After completing a task
+### After completing
 
-5. Ensure all tests pass in affected projects.
-6. If you introduced or significantly changed a subsystem, update the relevant section of this document.
+5. Tests green in affected projects.
+6. If you introduced or significantly changed a subsystem, update the matching section here.
 
 ### Do NOT
 
-- Remove or flatten the MSBuild platform conditionals without testing on all OSes.
-- Change shader/tool expectations without keeping a non-Windows fallback (`tools/fxc.exe` or documented wine steps).
-- Use NUnit APIs — the project uses MSTest.
-- Rely on OS-native path separators anywhere in game or test code — use VFS normalization.
-
-### Common gotchas at a glance
-
-| Gotcha | Rule |
-|---|---|
-| Test framework | MSTest only — no `Assert.That`, `[Test]`, `[TestFixture]` |
-| Phase bridge cleanup | Always call `Unregister()` in `Phase.Exit` |
-| Source gen output | Check `nfm-world/Generated/` — do not trust a clean build alone |
-
----
+- Use NUnit APIs in `NFMWorld.Library.Test` (MSTest), or MSTest APIs in `HoleyDiver.UnitTest` (NUnit).
+- Rely on OS-native path separators in game or test code — use VFS normalization.
+- Read game files with `System.IO` — go through `TheVFS.VFS`.
+- Add a second asset-copy pipeline; extend `data\**\*`.
+- Flatten MSBuild platform/RID conditionals without testing desktop and `browser-wasm`.
