@@ -49,27 +49,25 @@ public static class RadpackSerializer
         
     }
 
-    public static RadpackAsset Deserialize(ReadOnlySequence<byte> data)
+    /// <summary>
+    /// Deserializes an asset that arrived from an untrusted source, capping the decompressed size.
+    /// The header is tiny relative to the payload it can expand to, so the ceiling has to be
+    /// enforced during decompression rather than by checking the compressed length first.
+    /// </summary>
+    public static RadpackAsset Deserialize(ReadOnlySpan<byte> data, int maxDecompressedBytes)
     {
-        var reader = new SequenceReader<byte>(data.Slice(0, 4));
-        if (!reader.TryRead(out var r) || r != 'R')
-        {
-            throw new InvalidDataException("Not a Radpack asset");
-        }
-        if (!reader.TryRead(out var a) || a != 'A')
-        {
-            throw new InvalidDataException("Not a Radpack asset");
-        }
-        if (!reader.TryRead(out var d) || d != 'D')
-        {
-            throw new InvalidDataException("Not a Radpack asset");
-        }
-        if (!reader.TryRead(out var type) || type > (byte)RadpackType.Max)
+        if (data.Length < 4 || data[0] != (byte)'R' || data[1] != (byte)'A' || data[2] != (byte)'D')
         {
             throw new InvalidDataException("Not a Radpack asset");
         }
 
-        var decompData = Deflate.Decompress(data.Slice(4));
+        var type = data[3];
+        if (type > (byte)RadpackType.Max)
+        {
+            throw new InvalidDataException("Not a Radpack asset");
+        }
+
+        var decompData = Deflate.Decompress(data[4..], maxDecompressedBytes);
         var result = MemoryPackSerializer.Deserialize<RadpackAsset>(decompData);
         if (result == null)
         {
@@ -78,6 +76,10 @@ public static class RadpackSerializer
         result.Metadata.Type = (RadpackType)type;
         return result;
     }
+
+    /// <summary>Equivalent to the sequence overload, with an output ceiling.</summary>
+    public static RadpackAsset Deserialize(ReadOnlySequence<byte> data, int maxDecompressedBytes)
+        => Deserialize(data.ToArray(), maxDecompressedBytes);
 }
 
 [MemoryPackable]

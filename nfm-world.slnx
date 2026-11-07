@@ -92,6 +92,7 @@
   <Project Path="NFMWorld.MojoShader/NFMWorld.MojoShader.csproj" />
   <Project Path="NFMWorld.MsdfCache.Tool/NFMWorld.MsdfCache.Tool.csproj" />
   <Project Path="NFMWorld.Multiplayer.Base/NFMWorld.Multiplayer.Base.csproj" />
+  <Project Path="NFMWorld.Archive/NFMWorld.Archive.csproj" />
   <Project Path="NFMWorld.NativeLibs/NFMWorld.NativeLibs.csproj" />
   <Project Path="NFMWorld.OpcodeSourceGen/NFMWorld.OpcodeSourceGen.csproj" />
   <Project Path="NFMWorld.PhysicsFS/NFMWorld.PhysicsFS.csproj" />

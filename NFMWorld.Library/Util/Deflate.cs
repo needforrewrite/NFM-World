@@ -52,4 +52,29 @@ internal static class Deflate
 
     /// <summary>Decompresses a raw deflate stream that arrives as a read-only sequence.</summary>
     internal static byte[] Decompress(in ReadOnlySequence<byte> source) => Decompress(source.ToArray());
+
+    /// <summary>
+    /// Decompresses with a ceiling on the output size, for input that arrived over the network.
+    /// Without it a small payload can expand without bound (a deflate bomb) and take the process
+    /// down; the cap is enforced while reading rather than after, so the allocation never happens.
+    /// </summary>
+    public static byte[] Decompress(ReadOnlySpan<byte> source, int maxOutputBytes)
+    {
+        using var input = new MemoryStream(source.ToArray(), writable: false);
+        using var stream = new DeflateStream(input, CompressionMode.Decompress);
+        using var output = new MemoryStream();
+        var buffer = new byte[81920];
+        int read;
+        while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
+        {
+            if (output.Length + read > maxOutputBytes)
+                throw new InvalidDataException($"Decompressed payload exceeds {maxOutputBytes} bytes");
+            output.Write(buffer, 0, read);
+        }
+
+        return output.ToArray();
+    }
+
+    internal static byte[] Decompress(in ReadOnlySequence<byte> source, int maxOutputBytes)
+        => Decompress(source.ToArray(), maxOutputBytes);
 }
