@@ -20,4 +20,15 @@
       <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
     </ItemGroup>
 
+    <!-- Pages were being picked up as plain Content and served verbatim as static files
+         rather than compiled. Be explicit about the item type. -->
+    <PropertyGroup>
+        <EnableDefaultRazorGenerateItems>true</EnableDefaultRazorGenerateItems>
+        <EnableDefaultRazorComponentItems>true</EnableDefaultRazorComponentItems>
+    </PropertyGroup>
+    <ItemGroup>
+        <Content Remove="Pages\**\*.cshtml" />
+        <RazorGenerate Include="Pages\**\*.cshtml" />
+    </ItemGroup>
+
 </Project>

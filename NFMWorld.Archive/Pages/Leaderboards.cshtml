@@ -1,0 +1,45 @@
+@page
+@model NFMWorld.Archive.Pages.LeaderboardsModel
+@{
+    ViewData["Title"] = "Time trials";
+}
+
+<h1>Time trials</h1>
+
+@if (Model.Boards.Count == 0)
+{
+    <p class="muted">No verified time trials yet.</p>
+}
+else
+{
+    <form method="get" class="row">
+        <select name="stageHash" onchange="this.form.carHash.value='';this.form.submit()">
+            @foreach (var board in Model.Boards.GroupBy(b => (b.StageHash, b.StageName)))
+            {
+                <option value="@board.Key.StageHash" selected="@(Model.StageHash == board.Key.StageHash)">@board.Key.StageName</option>
+            }
+        </select>
+        <select name="carHash" onchange="this.form.submit()">
+            @foreach (var board in Model.Boards.Where(b => b.StageHash == Model.StageHash))
+            {
+                <option value="@board.CarHash" selected="@(Model.CarHash == board.CarHash)">@board.CarName</option>
+            }
+        </select>
+        <button type="submit">Show</button>
+    </form>
+
+    <table>
+        <tr><th>#</th><th>Player</th><th>Time</th><th>Set</th><th></th></tr>
+        @for (var i = 0; i < Model.Entries.Count; i++)
+        {
+            var entry = Model.Entries[i];
+            <tr>
+                <td>@(i + 1)</td>
+                <td>@entry.User.Username</td>
+                <td>@TimeSpan.FromSeconds(entry.TotalTicks / (double)NFMWorldLibrary.Physics.TargetTps).ToString(@"m\:ss\.fff")</td>
+                <td>@entry.CreatedAt.ToString("yyyy-MM-dd")</td>
+                <td><a href="/tt/replay/@entry.Id">Replay</a></td>
+            </tr>
+        }
+    </table>
+}

@@ -49,6 +49,7 @@ public static class AuthEndpoints
             Audit(db, user.Id, "register", null, http);
             var token = await sessions.CreateAsync(user, UserAgent(http), Ip(http), ct);
             await db.SaveChangesAsync(ct);
+            SetSessionCookie(http, token, options);
 
             return Results.Ok(new TokenResponse(token,
                 new AccountResponse(user.Username, user.IsAdmin, 1500, 0, 0, 0)));
@@ -91,6 +92,7 @@ public static class AuthEndpoints
             Audit(db, user.Id, "login", null, http);
             var token = await sessions.CreateAsync(user, UserAgent(http), Ip(http), ct);
             await db.SaveChangesAsync(ct);
+            SetSessionCookie(http, token, options);
 
             var rating = await db.Ratings.FirstOrDefaultAsync(r => r.UserId == user.Id && r.Gamemode == "nfmm/pvp", ct);
             return Results.Ok(new TokenResponse(token, new AccountResponse(
@@ -143,6 +145,22 @@ public static class AuthEndpoints
             await db.SaveChangesAsync(ct);
             await sessions.RevokeAllAsync(user.Id, ct);
             return Results.NoContent();
+        });
+    }
+
+    /// <summary>
+    /// Issues the session as an HttpOnly cookie as well as returning it in the body. The game
+    /// client uses the body token; the website uses the cookie, which keeps the token out of
+    /// script and out of URLs.
+    /// </summary>
+    internal static void SetSessionCookie(HttpContext http, string token, ArchiveOptions options)
+    {
+        http.Response.Cookies.Append("nfmw_session", token, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = http.Request.IsHttps,
+            SameSite = SameSiteMode.Lax,
+            Expires = DateTimeOffset.UtcNow + options.SessionLifetime
         });
     }
 

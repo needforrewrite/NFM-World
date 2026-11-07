@@ -1,0 +1,39 @@
+@page
+@model NFMWorld.Archive.Pages.BrowseModel
+@{
+    ViewData["Title"] = "Browse";
+}
+
+<h1>Browse</h1>
+
+<form method="get" class="row">
+    <input name="query" value="@Model.Query" placeholder="Search by name" />
+    <select name="type">
+        <option value="">Any type</option>
+        @foreach (var type in Enum.GetNames<NFMWorld.Archive.Data.AssetType>())
+        {
+            <option value="@type" selected="@(Model.Type == type)">@type</option>
+        }
+    </select>
+    <button type="submit">Search</button>
+</form>
+
+@if (Model.Assets.Count == 0)
+{
+    <p class="muted">Nothing here yet.</p>
+}
+else
+{
+    <table>
+        <tr><th>Name</th><th>Type</th><th>Size</th><th>Downloads</th></tr>
+        @foreach (var asset in Model.Assets)
+        {
+            <tr>
+                <td><a href="/assets/@asset.ContentHash">@asset.Name</a></td>
+                <td>@asset.Type</td>
+                <td>@((asset.SizeBytes / 1024) + " KB")</td>
+                <td>@asset.DownloadCount</td>
+            </tr>
+        }
+    </table>
+}

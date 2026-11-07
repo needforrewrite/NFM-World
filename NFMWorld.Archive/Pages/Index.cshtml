@@ -1,0 +1,38 @@
+@page
+@model NFMWorld.Archive.Pages.IndexModel
+@{
+    ViewData["Title"] = "Account";
+}
+
+<h1>@Model.Account!.Username</h1>
+
+@if (Model.Account.IsAdmin)
+{
+    <p class="muted">Administrator</p>
+}
+
+<h2>Ratings</h2>
+@if (Model.Ratings.Count == 0)
+{
+    <p class="muted">No ranked matches yet.</p>
+}
+else
+{
+    <table>
+        <tr><th>Gamemode</th><th>Elo</th><th>Wins</th><th>Losses</th><th>Matches</th></tr>
+        @foreach (var rating in Model.Ratings)
+        {
+            <tr>
+                <td>@rating.Gamemode</td>
+                <td>@Math.Round(rating.Elo)</td>
+                <td>@rating.Wins</td>
+                <td>@rating.Losses</td>
+                <td>@rating.Matches</td>
+            </tr>
+        }
+    </table>
+}
+
+<h2>Your content</h2>
+<p>@Model.AssetCount uploaded assets · @Model.TimeTrialCount time trials</p>
+<p><a href="/upload">Upload something</a></p>
