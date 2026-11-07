@@ -95,7 +95,8 @@ public class PlayerRegistry
         public uint ClientIndex { get; set; }
         public Guid Id { get; set; }
         public ClientState State { get; set; }
-        public string Name { get; set; } = "hogan rewish";
+        /// <summary>Empty until the client authenticates or sends its identity.</summary>
+        public string Name { get; set; } = "";
 
         /// <summary>Archive account id, or 0 for a guest.</summary>
         public int AccountId { get; set; }

@@ -121,8 +121,9 @@ public static class AssetEndpoints
             if (!string.IsNullOrWhiteSpace(type) && Enum.TryParse<AssetType>(type, ignoreCase: true, out var parsed))
                 q = q.Where(a => a.Type == parsed);
 
+            // By id: SQLite cannot ORDER BY a DateTimeOffset, and ids follow creation order.
             return Results.Ok(await q
-                .OrderByDescending(a => a.CreatedAt)
+                .OrderByDescending(a => a.Id)
                 .Take(Math.Clamp(limit ?? 50, 1, 100))
                 .Select(a => new AssetInfo(a.Id, a.Name, a.Type.ToString(), a.ContentHash, a.SizeBytes, a.DownloadCount))
                 .ToListAsync(ct));

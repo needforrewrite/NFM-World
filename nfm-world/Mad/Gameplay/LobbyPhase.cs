@@ -179,14 +179,16 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         var gameTransport = new ENetMultiplayerClientTransport(ipString, gameAddr.Port);
 
         var session = raceStarted.MatchGameplayInfo;
-        var players = session.Players
+        // Slot order, not dictionary enumeration order: the gamemode indexes players by array
+        // position and relayed state arrives in an order that has to agree with it.
+        var players = session.InSlotOrder()
             .Select(c => new ClientSidePlayerInfo
             {
-                CarName = c.Value.CarName,
-                Color = c.Value.Color,
-                PlayerName = c.Value.PlayerName,
-                IsBot = c.Value.IsBot,
-                IsClientPlayer = c.Value.Id == _player.Id
+                CarName = c.CarName,
+                Color = c.Color,
+                PlayerName = c.PlayerName,
+                IsBot = c.IsBot,
+                IsClientPlayer = c.Id == _player.Id
             })
             .ToArray();
 

@@ -162,7 +162,8 @@ public sealed class RaceAnnouncer
 
     private string WastedText(BackendCar car, BaseClientGamemode gamemode)
     {
-        var name = car.Stats.Name;
+        // Player names, not car names: in a race every car can be the same model.
+        var name = NameOf(car, gamemode);
         var killer = car.CarPhysics.LastDamageFrom;
         if (killer < 0) return $"{name} has been wasted!";
         if (gamemode.ClientPlayer.Car is { } own && own.CarPhysics.Im == killer)
@@ -170,10 +171,21 @@ public sealed class RaceAnnouncer
         foreach (var player in gamemode.Players)
         {
             if (player.Car is not { } other || other.CarPhysics.Im != killer) continue;
-            return $"{name} has been wasted by {other.Stats.Name}!";
+            return $"{name} has been wasted by {NameOf(other, gamemode)}!";
         }
 
         return $"{name} has been wasted!";
+    }
+
+    private static string NameOf(BackendCar car, BaseClientGamemode gamemode)
+    {
+        foreach (var player in gamemode.Players)
+        {
+            if (ReferenceEquals(player.Car, car))
+                return player.Info.PlayerName;
+        }
+
+        return car.Stats.Name;
     }
 
     private void CheckOwnState(BackendCar client, BaseClientGamemode gamemode)
@@ -291,7 +303,7 @@ public sealed class RaceAnnouncer
         if (index < 0) return null;
         foreach (var player in gamemode.Players)
         {
-            if (player.Index == index) return player.Car?.Stats.Name ?? player.Info.PlayerName;
+            if (player.Index == index) return player.Info.PlayerName;
         }
 
         return null;

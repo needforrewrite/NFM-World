@@ -176,9 +176,11 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             var damage = car.Stats.Maxmag > 0 ? (float)car.CarPhysics.DamagePoints / car.Stats.Maxmag : 0;
             // Opponents are numbered in listing order; that is what the lock keys address.
             var slot = player.Info.IsClientPlayer ? 0 : ++lockSlot;
-            hud.Racers.Add(new HudRacer(car.Placement + 1, car.Stats.Name, damage,
+            // The player's name, not the car's: every car in a race can be the same model.
+            var name = player.Info.PlayerName;
+            hud.Racers.Add(new HudRacer(car.Placement + 1, name, damage,
                 player.Info.IsClientPlayer, car.Wasted, slot));
-            hud.Markers.Add(new HudRacerMarker(car.Stats.Name,
+            hud.Markers.Add(new HudRacerMarker(name,
                 (float)car.Position.X, (float)car.Position.Y, (float)car.Position.Z,
                 car.Placement + 1, player.Info.IsClientPlayer, car.Wasted));
             if (player.Info.IsClientPlayer) continue;
@@ -212,7 +214,13 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             client.Control.ArrowLock = -1;
         hud.ArrowAtCars = client?.Control.Arrace ?? false;
         hud.ArrowLocked = hud.ArrowAtCars && (client?.Control.ArrowLock ?? -1) >= 0;
-        if (client is not null && hud.ArrowAtCars) hud.ArrowTarget = targetCar?.Stats.Name ?? "";
+        if (client is not null && hud.ArrowAtCars)
+        {
+            hud.ArrowTarget = targetCar is null
+                ? ""
+                : OrderedOpponents(gm).FirstOrDefault(p => ReferenceEquals(p.Car, targetCar))?.Info.PlayerName
+                  ?? "";
+        }
         if (ArrowTarget(client, targetCar) is not { } target) return;
 
         var direction = target - new Vector3((float)client.Position.X, (float)client.Position.Y, (float)client.Position.Z);

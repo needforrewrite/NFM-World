@@ -149,8 +149,8 @@ public class RaceAnnouncerTests
         announcer.Tick(car, gamemode);
 
         var text = announcer.Status?.Text ?? "";
-        StringAssert.EndsWith(text, "has been wasted by " + killer.Stats.Name + "!");
-        StringAssert.StartsWith(text, victim.Stats.Name);
+        StringAssert.EndsWith(text, "has been wasted by " + gamemode.Players[2].Info.PlayerName + "!");
+        StringAssert.StartsWith(text, gamemode.Players[1].Info.PlayerName);
     }
 
     [TestMethod]
@@ -164,7 +164,7 @@ public class RaceAnnouncerTests
         victim.CarPhysics.Wasted = true;
         announcer.Tick(car, gamemode);
 
-        Assert.AreEqual($"You wasted {victim.Stats.Name}!", announcer.Status?.Text);
+        Assert.AreEqual($"You wasted {gamemode.Players[1].Info.PlayerName}!", announcer.Status?.Text);
     }
 
     [TestMethod]
@@ -178,7 +178,7 @@ public class RaceAnnouncerTests
         victim.CarPhysics.Wasted = true;
         announcer.Tick(car, gamemode);
 
-        Assert.AreEqual($"{victim.Stats.Name} has been wasted!", announcer.Status?.Text);
+        Assert.AreEqual($"{gamemode.Players[1].Info.PlayerName} has been wasted!", announcer.Status?.Text);
     }
 
     [TestMethod]

@@ -338,6 +338,7 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
 | Untrusted decompression | `Deflate.Decompress(source, maxOutputBytes)` and `RadpackSerializer.Deserialize(data, maxDecompressedBytes)` are the bounded overloads; the unbounded ones are for data this build produced |
 | Login enumeration | a missing user still pays for a password hash (`PasswordHasher.DummyHash`) and returns the same error as a wrong password |
 | Uploaded files | are served with a download disposition and `nosniff` and belong on a separate origin; the in-app endpoint is a development convenience |
+| `DateTimeOffset` ordering | SQLite refuses to `ORDER BY` a `DateTimeOffset` (stored as TEXT), throwing `NotSupportedException` at query time. Order by `Id` instead — it follows creation order — or sort in LINQ to Objects when the result set is already bounded. Both `/browse` and `/assets/search` hit this |
 
 ## Multiplayer lobby (client)
 
@@ -377,6 +378,9 @@ palette). One lobby; whether a race is rated is chosen per race, not by a menu p
 | Status line | the connection text is only written when it changes, so a rejected-action notice is not wiped next frame |
 | Membership actions | only the creator starts a race; a member leaves. The old port wired both to `StartRace`, so LEAVE launched a race. START RACE is only rendered for `CurrentSession.IsCreator` |
 | Struct `FirstOrDefault` | a struct-valued lookup's default (`uint` → 0) is a real connection index/slot, so lookups that must distinguish "absent" need an explicit `T?` loop or a `.Any(...)` predicate — the GM's re-attach check and the lobby's duplicate-account check both had this |
+| Roster order | `MatchGameplayInfo.Players` is keyed by **slot**, but the client gamemode addresses players by **array position**. Always build the array (and the id→index map) through `MatchGameplayInfo.InSlotOrder()`; a dictionary enumerates in no order, and building it as-is put each player in another player's slot, so relayed state landed on the wrong car and opponents never moved |
+| Who is in the roster | `PlayerRegistry.ClientInfo` has an empty `Name` until the client authenticates, and `LobbyStateBroadcaster` skips connections that have not, so a half-open connection is not listed as a player |
+| Names in the HUD | the sidebar, car markers, the arrow target and the announcer show `ClientSidePlayerInfo.PlayerName`, not `car.Stats.Name` — in a race every car can be the same model |
 | Stage list | enumerate once per dialog mount (`CreateDialog`), not per frame |
 | Child collections | `Sx` flattens a nested `IEnumerable` child, but an unsupported child throws inside an effect — and the signal machinery swallows it, so the subtree silently fails to mount. Keep the flattened case covered (`SxRendererTests`) |
 

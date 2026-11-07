@@ -26,6 +26,15 @@ public partial struct MatchGameplayInfo()
     /// property is a string; the plugin boundary converts to <c>object</c>.
     /// </summary>
     [MemoryPackOrder(3)] public Dictionary<string, string> Parameters { get; set; } = [];
+
+    /// <summary>
+    /// The players in array order. The client gamemode addresses players by array position
+    /// while relayed state is addressed by id, so the array has to be the slots in key order -
+    /// a dictionary enumerates in no particular order, and building it as-is put each player
+    /// in another player's slot.
+    /// </summary>
+    public readonly ServerSidePlayerInfo[] InSlotOrder()
+        => [.. Players.OrderBy(kv => kv.Key).Select(kv => kv.Value)];
 }
 
 public static class DefaultGamemodes

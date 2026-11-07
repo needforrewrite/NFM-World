@@ -29,6 +29,11 @@ public class LobbyStateBroadcaster(
 
         foreach (var (id, client) in players.All)
         {
+            // A connection that has not authenticated yet is not a player: listing it showed
+            // the registry's placeholder name until the handshake finished.
+            if (!client.IsAuthenticated)
+                continue;
+
             playerList.Add(new ServerSidePlayerInfo
             {
                 Id = client.Id,

@@ -21,7 +21,9 @@ public sealed class BrowseModel(ArchiveDbContext db) : ArchivePageModel(db)
         if (!string.IsNullOrWhiteSpace(Type) && Enum.TryParse<AssetType>(Type, true, out var parsed))
             q = q.Where(a => a.Type == parsed);
 
-        Assets = await q.OrderByDescending(a => a.CreatedAt).Take(100).ToListAsync();
+        // By id, not CreatedAt: SQLite cannot ORDER BY a DateTimeOffset, and insertion order is
+        // creation order for assets. Ordering it in LINQ to Objects would load the whole table.
+        Assets = await q.OrderByDescending(a => a.Id).Take(100).ToListAsync();
         return Page();
     }
 }

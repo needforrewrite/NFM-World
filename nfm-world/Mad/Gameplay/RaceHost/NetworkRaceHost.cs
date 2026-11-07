@@ -16,15 +16,21 @@ namespace NFMWorld.Gameplay.RaceHost;
 public sealed class NetworkRaceHost : IRaceHost
 {
     private readonly IMultiplayerClientTransport _transport;
-    private readonly MatchGameplayInfo _session;
     private readonly Guid _joinToken;
+    private readonly Dictionary<Guid, int> _playerIndexById = [];
     private bool _sentRaceLoaded;
 
     public NetworkRaceHost(IMultiplayerClientTransport transport, MatchGameplayInfo session, Guid joinToken)
     {
         _transport = transport;
-        _session = session;
         _joinToken = joinToken;
+
+        // The roster is fixed for the race, so resolve it once. Relay carries the player's id,
+        // but the gamemode addresses players by array position - and that array is the roster
+        // in slot order, so the two have to agree.
+        var index = 0;
+        foreach (var info in session.InSlotOrder())
+            _playerIndexById[info.Id] = index++;
 
         // The Game Master dropped our connection index when the link went away, so it has to be
         // told which player this is again before it can relay anything. Clearing the flag lets
@@ -64,23 +70,11 @@ public sealed class NetworkRaceHost : IRaceHost
                     RaceFailedToStart?.Invoke();
                     break;
                 case S2C_PlayerState playerState:
-                {
                     // An id not in this match (version skew, a late join, a replayed or
                     // malicious packet) must not throw in the game loop.
-                    var carIndex = -1;
-                    foreach (var (index, info) in _session.Players)
-                    {
-                        if (info.Id == playerState.PlayerId)
-                        {
-                            carIndex = index;
-                            break;
-                        }
-                    }
-
-                    if (carIndex >= 0)
+                    if (_playerIndexById.TryGetValue(playerState.PlayerId, out var carIndex))
                         PlayerStateReceived?.Invoke(carIndex, playerState.State);
                     break;
-                }
                 case S2C_ServerEvent serverEvent:
                     try
                     {

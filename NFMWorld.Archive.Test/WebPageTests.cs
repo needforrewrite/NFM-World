@@ -127,6 +127,28 @@ public class WebPageTests
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
     }
 
+    /// <summary>
+    /// The browse page used to order assets by CreatedAt, which SQLite refuses to sort
+    /// (DateTimeOffset is stored as TEXT), so the page failed with a 500 as soon as it loaded.
+    /// </summary>
+    [TestMethod]
+    public async Task BrowsePage_LoadsWithAssetsTheDatabaseCanOrder()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = Browser(factory);
+
+        var page = await client.GetAsync("/account/login");
+        var token = ExtractAntiforgery(await page.Content.ReadAsStringAsync());
+        await client.PostAsync("/account/login?handler=Register", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Username"] = "browser", ["RegisterPassword"] = "password123", ["__RequestVerificationToken"] = token
+        }));
+
+        var browse = await client.GetAsync("/browse");
+        Assert.AreEqual(HttpStatusCode.OK, browse.StatusCode,
+            await browse.Content.ReadAsStringAsync());
+    }
+
     private static string ExtractAntiforgery(string html)
     {
         // Attribute order is Razor's business; match the input element and pull value out of it.

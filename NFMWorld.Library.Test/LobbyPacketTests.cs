@@ -103,4 +103,34 @@ public class LobbyPacketTests
         Assert.AreEqual("racing", received.MatchGameplayInfo.Parameters["constraint"]);
         Assert.AreEqual("alice", received.MatchGameplayInfo.Players[0].PlayerName);
     }
+
+    /// <summary>
+    /// The client gamemode indexes players by array position while relayed car state is
+    /// addressed by id, so the roster has to be laid out in slot order. Enumerated as-is, a
+    /// dictionary built by the lobby put each player in another player's slot and the cars
+    /// never moved - and what order a dictionary enumerates in is not something to rely on.
+    /// </summary>
+    [TestMethod]
+    public void InSlotOrder_LaysPlayersOutBySlotNotEnumerationOrder()
+    {
+        var info = new MatchGameplayInfo
+        {
+            StageName = "nfmm/road",
+            Gamemode = "nfmm/pvp",
+            Players = new Dictionary<byte, ServerSidePlayerInfo>
+            {
+                [2] = Player("carol"),
+                [0] = Player("alice"),
+                [1] = Player("bob")
+            }
+        };
+
+        Assert.AreEqual("alice,bob,carol",
+            string.Join(",", info.InSlotOrder().Select(p => p.PlayerName)));
+
+        static ServerSidePlayerInfo Player(string name) => new()
+        {
+            Id = Guid.NewGuid(), PlayerName = name, CarName = "nfmm/radicalone", Color = default
+        };
+    }
 }
