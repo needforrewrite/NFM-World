@@ -42,6 +42,13 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         if (!_sentClientIdentity && transport.State == ClientState.Connected)
         {
             _sentClientIdentity = true;
+
+            // Presented before the identity packet: a signed-in player's name and account come
+            // from the account, and the identity packet's name is ignored for them.
+            transport.SendPacketToServer(new C2S_Authenticate
+            {
+                Token = GameSparker.AccountManager.ActiveAccount?.Token ?? ""
+            });
             SendUpdatePlayerIdentity();
         }
 
@@ -63,6 +70,15 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
                     });
                     break;
                 }
+                case S2C_Authenticated authenticated:
+                    if (!authenticated.Accepted)
+                    {
+                        // The lobby holds the authority here, so a token it refuses is treated as
+                        // signed out locally too.
+                        Logging.Info($"Lobby rejected the session: {authenticated.Error}");
+                        GameSparker.AccountManager.LogOut();
+                    }
+                    break;
                 case S2C_LobbyState lobbyState:
                 {
                     _player.Id = lobbyState.ClientId;
