@@ -1,4 +1,4 @@
-namespace NFMWorld.Archive.Auth;
+namespace NFMWorldLibrary.Multiplayer;
 
 /// <summary>
 /// Remembers nonces from signed server requests so a captured request cannot be replayed inside

@@ -4,6 +4,7 @@ using NFMWorld.Archive.Auth;
 using NFMWorld.Archive.Data;
 using NFMWorld.Archive.Endpoints;
 using NFMWorld.Archive.Validation;
+using NFMWorldLibrary.Multiplayer;
 
 var builder = WebApplication.CreateBuilder(args);
 

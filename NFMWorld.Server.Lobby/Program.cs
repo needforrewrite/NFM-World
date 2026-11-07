@@ -28,6 +28,10 @@ if (knownKeys.Count == 0)
     Logging.Warning("[Lobby] WARNING: no HMAC keys configured; /race-ended will reject every request.");
 const int MaxBodyBytes = 1 << 20;
 
+// Rejects a captured /race-ended replayed inside its timestamp window, which would otherwise
+// report the same finished race a second time.
+var seenNonces = new NonceCache();
+
 // The archive only trusts this server to report results, so this key must not reach a game master.
 ArchiveClient? archive = null;
 if (Environment.GetEnvironmentVariable("ARCHIVE_URL") is { Length: > 0 } archiveUrl)
@@ -59,7 +63,7 @@ _ = Task.Run(async () =>
             if (ctx.Request.IsWebSocketRequest)
                 _ = transport.AcceptWebSocketRequest(ctx, cts.Token);
             else
-                _ = Task.Run(() => HandleHttpRequest(ctx, knownKeys, MaxBodyBytes, orchestrator));
+                _ = Task.Run(() => HandleHttpRequest(ctx, knownKeys, MaxBodyBytes, orchestrator, seenNonces));
         }
         catch (OperationCanceledException)
         {
@@ -90,7 +94,8 @@ static async Task HandleHttpRequest(
     HttpListenerContext ctx,
     IReadOnlyDictionary<string, byte[]> knownKeys,
     int maxBodyBytes,
-    GameOrchestrator orchestrator)
+    GameOrchestrator orchestrator,
+    NonceCache seenNonces)
 {
     var req = ctx.Request;
     var res = ctx.Response;
@@ -125,10 +130,10 @@ static async Task HandleHttpRequest(
 
         // The body is what the signature covers, so it has to be read before verifying.
         var authError = HmacAuth.Verify(req.HttpMethod, req.Url!.LocalPath, body, req.Headers["Authorization"], knownKeys,
-            out _, out var nonce);
-        if (authError is not null)
+            out var keyId, out var nonce);
+        if (authError is not null || !seenNonces.TryUse(keyId ?? "", nonce))
         {
-            Logging.Warning($"[Lobby] /race-ended rejected: {authError}");
+            Logging.Warning($"[Lobby] /race-ended rejected: {authError ?? "nonce is missing or was already used"}");
             res.StatusCode = 401;
             res.Close();
             return;
