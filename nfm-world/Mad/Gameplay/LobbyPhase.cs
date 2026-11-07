@@ -32,12 +32,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         Leave: OnLeave,
         StartRace: OnStartRace,
         Create: OnCreate,
-        Refresh: () =>
-        {
-            // Recomputes even if the text is unchanged, so the button always acknowledges.
-            _lastStatus = null;
-            UpdateStatus();
-        },
+        Refresh: () => Lobby.Status.Value = ConnectionStatus(),
         SendChat: OnSendChat,
         Back: OnBack,
         OpenCreate: () => Lobby.ShowCreateDialog.Value = true,
@@ -108,6 +103,12 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
                 case S2C_RaceStarted raceStarted:
                     StartRace(raceStarted);
+                    break;
+
+                // The session's load window elapsed (or the game master refused it). Nothing
+                // else resets the row, so say so rather than leaving it on "LOADING".
+                case S2C_RaceFailedToStart:
+                    SetStatus("The race could not start. Try again.");
                     break;
             }
         }
@@ -205,6 +206,12 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         Lobby.Status.Value = status;
     }
 
+    /// <summary>
+    /// A notice shown until the connection text next changes: <see cref="_lastStatus"/> still
+    /// holds the connection text, so the per-tick update leaves the notice alone.
+    /// </summary>
+    private static void SetStatus(string message) => Lobby.Status.Value = message;
+
     private string ConnectionStatus() => transport.State switch
     {
         ClientState.Connected when GameSparker.AccountManager.LoggedIn =>
@@ -258,7 +265,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         var stage = Lobby.SelectedStage.Value;
         if (string.IsNullOrEmpty(stage))
         {
-            Lobby.Status.Value = "Choose a stage first.";
+            SetStatus("Choose a stage first.");
             return;
         }
 
