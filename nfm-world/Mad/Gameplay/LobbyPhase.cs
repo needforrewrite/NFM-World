@@ -1,39 +1,63 @@
-﻿using Hexa.NET.ImGui;
-using NFMWorld.Gameplay.RaceHost;
+﻿using NFMWorld.Gameplay.RaceHost;
+using NFMWorld.Reactor;
+using NFMWorld.Reactor.Sx;
+using NFMWorld.UI.Routes;
+using NFMWorld.UI.ViewModels;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
 using NFMWorldLibrary.Multiplayer.Packets.S2C;
-using NFMWorldLibrary.Rad;
 
 namespace NFMWorld.Gameplay;
 
+/// <summary>
+/// The multiplayer lobby. All state lives here and is published into <see cref="UiState.Lobby"/>;
+/// <see cref="LobbyView"/> only reads it.
+/// </summary>
 public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 {
-    private Player _player = new();
-    
-    private struct ChatMessage
-    {
-        public required Guid SenderId { get; set; }
-        public required string Sender { get; set; }
-        public required string Message { get; set; }
-        public Color3 Color { get; set; }
-    }
-
-    // Dummy data
+    private readonly Player _player = new();
     private List<ServerSidePlayerInfo> _players = [];
-
     private List<S2C_LobbyState.GameSession> _activeSessions = [];
+    private readonly List<UiState.LobbyChatLine> _chatMessages = [];
+    private long _nextChatLineId;
+    private bool _sentClientIdentity;
+    private string? _lastStatus;
 
-    private List<ChatMessage> _chatMessages = [];
+    private static UiState.LobbyState Lobby => UiState.Lobby;
 
-    private string _chatInput = "";
-    private float _sidebarWidth = 250f;
-    private float _gameListHeight = 200f;
+    private LobbyView.Actions Actions => new(
+        Join: OnJoin,
+        Leave: OnLeave,
+        StartRace: OnStartRace,
+        Create: OnCreate,
+        Refresh: () =>
+        {
+            // Recomputes even if the text is unchanged, so the button always acknowledges.
+            _lastStatus = null;
+            UpdateStatus();
+        },
+        SendChat: OnSendChat,
+        Back: OnBack,
+        OpenCreate: () => Lobby.ShowCreateDialog.Value = true,
+        CloseCreate: () => Lobby.ShowCreateDialog.Value = false,
+        Select: id => Lobby.SelectedSessionId.Value = id,
+        SetStage: stage => Lobby.SelectedStage.Value = stage,
+        SetMaxPlayers: count => Lobby.MaxPlayers.Value = count);
 
-    private bool _sentClientIdentity = false;
-    private bool _showCreateGameDialog = false;
+    public override Node BuildUi() => LobbyView.Build(Actions);
+
+    public override void Enter()
+    {
+        LobbyView.Reset();
+        Lobby.Reset();
+        // Returning from a race re-enters this phase, and the server only resends lobby state
+        // on the next change; the transcript this client already received stays put.
+        Lobby.Chat.Value = _chatMessages.ToArray();
+        UpdateStatus();
+        base.Enter();
+    }
 
     public override void GameTick()
     {
@@ -52,24 +76,19 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             SendUpdatePlayerIdentity();
         }
 
+        // The transport can drop at any point (server restart, network loss); the status line
+        // has to follow it or it stays on "Connecting..." forever after a failed connect.
+        UpdateStatus();
+
         foreach (var packet in transport.GetNewPackets())
         {
             switch (packet)
             {
                 case S2C_LobbyChatMessage chatMessage:
-                {
-                    _chatMessages.Add(new ChatMessage 
-                    {
-                        SenderId = chatMessage.SenderId,
-                        Sender = chatMessage.Sender, 
-                        Message = chatMessage.Message,
-                        Color = _players
-                            .Select(e => (ServerSidePlayerInfo?)e)
-                            .FirstOrDefault(p => p!.Value.Id == chatMessage.SenderId, null)
-                            ?.Color ?? new Color3(255, 255, 255)
-                    });
+                    _chatMessages.Add(ChatLine(chatMessage));
+                    Lobby.Chat.Value = _chatMessages.ToArray();
                     break;
-                }
+
                 case S2C_Authenticated authenticated:
                     if (!authenticated.Accepted)
                     {
@@ -79,171 +98,191 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
                         GameSparker.AccountManager.LogOut();
                     }
                     break;
+
                 case S2C_LobbyState lobbyState:
-                {
                     _player.Id = lobbyState.ClientId;
                     _players = lobbyState.Players.ToList();
                     _activeSessions = lobbyState.ActiveSessions.ToList();
+                    Publish();
                     break;
-                }
+
                 case S2C_RaceStarted raceStarted:
-                {
-                    // Create a NEW transport to the Game Master for in-game traffic.
-                    // Keep the lobby transport alive — we return to THIS lobby instance after the race.
-                    var gameAddr = raceStarted.JoinInfo.RaceServerIpAddress;
-                    var ipString = ((System.Net.IPAddress)gameAddr.Address).ToString();
-                    var gameTransport = new ENetMultiplayerClientTransport(ipString, gameAddr.Port);
-
-                    var session = raceStarted.MatchGameplayInfo;
-                    var players = session.Players
-                        .Select(c => new ClientSidePlayerInfo
-                        {
-                            CarName = c.Value.CarName,
-                            Color = c.Value.Color,
-                            PlayerName = c.Value.PlayerName,
-                            IsBot = false,
-                            IsClientPlayer = c.Value.Id == _player.Id
-                        })
-                        .ToArray();
-
-                    var phase = new RacePhase(
-                        session.StageName,
-                        GetGameModeFactory(session),
-                        players,
-                        new NetworkRaceHost(gameTransport, session, raceStarted.JoinInfo.JoinToken));
-
-                    phase.Exited += (sender, args) =>
-                    {
-                        GameSparker.PopGroup(PhaseManager.Groups.Event);
-                    };
-
-                    GameSparker.PushPhase(phase, PhaseManager.Groups.Event);
+                    StartRace(raceStarted);
                     break;
-                }
             }
         }
     }
 
-    public override void RenderImgui()
+    protected override void Dispose(bool disposing)
     {
-        base.RenderImgui();
-
-        var viewport = ImGui.GetMainViewport();
-        ImGui.SetNextWindowPos(viewport.Pos);
-        ImGui.SetNextWindowSize(viewport.Size);
-
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0.0f);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0.0f);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
-
-        var windowFlags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | 
-                         ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove |
-                         ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoNavFocus;
-
-        if (ImGui.Begin("Lobby", windowFlags))
-        {
-            ImGui.PopStyleVar(3);
-
-            var availSize = ImGui.GetContentRegionAvail();
-            
-            // Left sidebar - Players
-            RenderPlayerSidebar();
-
-            ImGui.SameLine();
-
-            // Right side - Game list and chat
-            ImGui.BeginGroup();
-            {
-                var rightSideWidth = availSize.X - _sidebarWidth - ImGui.GetStyle().ItemSpacing.X;
-                
-                // Top section - Active games
-                RenderActiveGames(rightSideWidth);
-
-                // Bottom section - Chat
-                RenderChat(rightSideWidth);
-            }
-            ImGui.EndGroup();
-        }
-        else
-        {
-            ImGui.PopStyleVar(3);
-        }
-        ImGui.End();
-        RenderCreateGameDialog();
+        // Leaving the lobby must close the socket: the server only drops the ghost player when
+        // the connection goes, and the receive loop would otherwise run for the process lifetime.
+        if (disposing)
+            transport.Stop();
+        base.Dispose(disposing);
     }
 
-    private void RenderPlayerSidebar()
+    private void StartRace(S2C_RaceStarted raceStarted)
     {
-        ImGui.BeginChild("PlayerSidebar", new Vector2(_sidebarWidth, 0), (ImGuiChildFlags)1);
-        
-        ImGui.Text("Players");
-        ImGui.Separator();
-        
-        foreach (var player in _players)
-        {
-            ImGui.PushStyleColor(ImGuiCol.Text, player.Color);
-            ImGui.Text($"� {player.PlayerName}");
-            ImGui.PopStyleColor();
-            
-            ImGui.Indent(20);
-            ImGui.TextDisabled($"Vehicle: {BackendGameSparker.GetCar(player.CarName).Rad?.Stats.Name}");
-            ImGui.Unindent(20);
-            ImGui.Spacing();
-        }
-        
-        ImGui.Separator();
-        
-        if (ImGui.Button("Change Vehicle", new Vector2(-1, 0)))
-        {
-            ImGui.OpenPopup("VehicleSelection");
-        }
-        RenderVehicleSelectionDialog();
-        
-        if (ImGui.Button(_player.IsReady ? "Unready" : "Ready", new Vector2(-1, 0)))
-        {
-            // TODO: Toggle ready status
-        }
-        
-        if (_activeSessions.FirstOrDefault(e => e.Players.Any(e1 => e1.Value == _player.Id)) is {} session)
-        {
-            if (ImGui.Button("Start Race", new Vector2(-1, 0)))
-            {
-                transport.SendPacketToServer(new C2S_LobbyStartRace
-                {
-                    SessionId = session.Id 
-                });
-            }
-        }
+        // A NEW transport to the Game Master for in-game traffic. The lobby transport stays
+        // alive, so exiting the race returns to this lobby.
+        var gameAddr = raceStarted.JoinInfo.RaceServerIpAddress;
+        var ipString = ((System.Net.IPAddress)gameAddr.Address).ToString();
+        var gameTransport = new ENetMultiplayerClientTransport(ipString, gameAddr.Port);
 
-        ImGui.EndChild();
+        var session = raceStarted.MatchGameplayInfo;
+        var players = session.Players
+            .Select(c => new ClientSidePlayerInfo
+            {
+                CarName = c.Value.CarName,
+                Color = c.Value.Color,
+                PlayerName = c.Value.PlayerName,
+                IsBot = c.Value.IsBot,
+                IsClientPlayer = c.Value.Id == _player.Id
+            })
+            .ToArray();
+
+        var phase = new RacePhase(
+            session.StageName,
+            GetGameModeFactory(session),
+            players,
+            new NetworkRaceHost(gameTransport, session, raceStarted.JoinInfo.JoinToken));
+
+        phase.Exited += (_, _) => GameSparker.PopGroup(PhaseManager.Groups.Event);
+        GameSparker.PushPhase(phase, PhaseManager.Groups.Event);
     }
-    
-    private void RenderVehicleSelectionDialog()
+
+    // ── State publication ──────────────────────────────────────────
+
+    private void Publish()
     {
-        if (ImGui.BeginPopupModal("VehicleSelection", ImGuiWindowFlags.AlwaysAutoResize))
+        // GameSession is a struct, so FirstOrDefault yields a default that looks like a real
+        // session; the predicate has to be the only source of truth.
+        UiState.LobbySession? current = null;
+        foreach (var s in _activeSessions)
         {
-            ImGui.Text("Select a car:");
-            ImGui.Separator();
-
-            // Dummy vehicle list
-            foreach (var vehicle in (Span<Rad3d>)[..BackendGameSparker.cars.Values.SelectMany(i => i)])
-            {
-                if (ImGui.Selectable(vehicle.Stats.Name + "##" + vehicle.FileName))
-                {
-                    _player.Vehicle = vehicle.FileName;
-                    SendUpdatePlayerIdentity();
-                    ImGui.CloseCurrentPopup();
-                }
-            }
-
-            if (ImGui.Button("Cancel"))
-            {
-                ImGui.CloseCurrentPopup();
-            }
-
-            ImGui.EndPopup();
+            if (!s.Players.Values.Contains(_player.Id))
+                continue;
+            current = new UiState.LobbySession(s.Id, s.CreatorName, s.StageName, s.PlayerCount,
+                s.MaxPlayers, s.State, IsMember: true, IsCreator: s.CreatorId == _player.Id);
+            break;
         }
+
+        Lobby.Players.Value = _players
+            .Select(p => new UiState.LobbyPlayer(
+                p.Id, p.PlayerName, p.CarName, ToColor(p.Color), p.Id == _player.Id))
+            .ToArray();
+
+        Lobby.Sessions.Value = _activeSessions
+            .Select(s => new UiState.LobbySession(
+                s.Id, s.CreatorName, s.StageName, s.PlayerCount, s.MaxPlayers, s.State,
+                IsMember: s.Players.Values.Contains(_player.Id),
+                IsCreator: s.CreatorId == _player.Id))
+            .ToArray();
+
+        Lobby.CurrentSession.Value = current;
+
+        // A highlight has to point at a row that still exists, or JOIN acts on a stale id.
+        if (Lobby.SelectedSessionId.Value is { } selected
+            && !_activeSessions.Any(s => s.Id == selected))
+            Lobby.SelectedSessionId.Value = null;
+
+        Lobby.MaxPlayers.Value = Math.Clamp(Lobby.MaxPlayers.Value, 2, 8);
+        if (string.IsNullOrEmpty(Lobby.SelectedStage.Value))
+            Lobby.SelectedStage.Value = GameSparker.GetAvailableStages().FirstOrDefault() ?? "";
     }
+
+    private void UpdateStatus()
+    {
+        Lobby.Connected.Value = transport.State == ClientState.Connected;
+
+        // Only written when the connection text itself changes: a notice the player just saw
+        // (a rejected action, say) must not be wiped by the next frame.
+        var status = ConnectionStatus();
+        if (status == _lastStatus)
+            return;
+        _lastStatus = status;
+        Lobby.Status.Value = status;
+    }
+
+    private string ConnectionStatus() => transport.State switch
+    {
+        ClientState.Connected when GameSparker.AccountManager.LoggedIn =>
+            $"Signed in as {GameSparker.AccountManager.ActiveAccount!.Username}",
+        ClientState.Connected => "Connected as a guest",
+        ClientState.Connecting => "Connecting...",
+        _ => "Disconnected",
+    };
+
+    private static Color ToColor(Color3 color)
+    {
+        static byte Channel(short value) => (byte)Math.Clamp((int)value, 0, 255);
+        return new Color(Channel(color.R), Channel(color.G), Channel(color.B));
+    }
+
+    private UiState.LobbyChatLine ChatLine(S2C_LobbyChatMessage message)
+    {
+        var isSystem = message.SenderId == Guid.Empty;
+        var color = _players.FirstOrDefault(p => p.Id == message.SenderId) is { } sender
+            ? ToColor(sender.Color)
+            : new Color(185, 211, 255);
+        return new UiState.LobbyChatLine(++_nextChatLineId, message.Sender, message.Message, color, isSystem);
+    }
+
+    // ── Actions ────────────────────────────────────────────────────
+
+    private void OnJoin()
+    {
+        // The highlighted row, never the session we are already in: joining is what changes
+        // membership, so reading CurrentSession here would make JOIN a no-op.
+        if (Lobby.SelectedSessionId.Value is not { } id)
+            return;
+        if (Lobby.CurrentSession.Value?.Id == id)
+            return;
+
+        transport.SendPacketToServer(new C2S_JoinSession { SessionId = id });
+    }
+
+    private void OnLeave()
+    {
+        if (Lobby.CurrentSession.Value is { } session)
+            transport.SendPacketToServer(new C2S_LeaveSession { SessionId = session.Id });
+    }
+
+    private void OnStartRace()
+    {
+        if (Lobby.CurrentSession.Value is { IsCreator: true } session)
+            transport.SendPacketToServer(new C2S_LobbyStartRace { SessionId = session.Id });
+    }
+
+    private void OnCreate()
+    {
+        var stage = Lobby.SelectedStage.Value;
+        if (string.IsNullOrEmpty(stage))
+        {
+            Lobby.Status.Value = "Choose a stage first.";
+            return;
+        }
+
+        transport.SendPacketToServer(new C2S_CreateSession
+        {
+            GameMode = DefaultGamemodes.PvP,
+            StageName = stage,
+            // The wire field is an int; the server clamps it to its own maximum.
+            MaxPlayers = Lobby.MaxPlayers.Value,
+            GameModeParameters = new Dictionary<string, object> { ["constraint"] = "both" }
+        });
+        Lobby.ShowCreateDialog.Value = false;
+    }
+
+    private void OnSendChat(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            return;
+        transport.SendPacketToServer(new C2S_LobbyChatMessage { Message = message });
+    }
+
+    private void OnBack() => GameSparker.PopPhase();
 
     private void SendUpdatePlayerIdentity()
     {
@@ -255,228 +294,8 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         });
     }
 
-    private void RenderActiveGames(float width)
-    {
-        ImGui.BeginChild("ActiveGames", new Vector2(width, _gameListHeight), (ImGuiChildFlags)1);
-        
-        ImGui.Text("Active Games");
-        ImGui.Separator();
-        
-        ImGui.Columns(4, "GamesColumns");
-        ImGui.SetColumnWidth(0, width * 0.4f);
-        ImGui.SetColumnWidth(1, width * 0.2f);
-        ImGui.SetColumnWidth(2, width * 0.2f);
-        ImGui.SetColumnWidth(3, width * 0.2f);
-        
-        // Header
-        ImGui.Text("Stage Name");
-        ImGui.NextColumn();
-        ImGui.Text("Players");
-        ImGui.NextColumn();
-        ImGui.Text("Status");
-        ImGui.NextColumn();
-        ImGui.Text("Action");
-        ImGui.NextColumn();
-        ImGui.Separator();
-        
-        // Game sessions
-        for (int i = 0; i < _activeSessions.Count; i++)
-        {
-            var session = _activeSessions[i];
-            
-            ImGui.Text(session.StageName);
-            ImGui.NextColumn();
-            
-            ImGui.Text($"{session.PlayerCount}/{session.MaxPlayers}");
-            ImGui.NextColumn();
-
-            if (session.State == SessionState.Started)
-            {
-                ImGui.TextColored(new Vector4(0.5f, 0.5f, 1.0f, 1.0f), "Started");
-            }
-            else if (session.PlayerCount >= session.MaxPlayers)
-            {
-                ImGui.TextColored(new Vector4(1.0f, 0.5f, 0.0f, 1.0f), "Full - Waiting to Start");
-            }
-            else
-            {
-                ImGui.TextColored(new Vector4(0.0f, 1.0f, 0.0f, 1.0f), "Open");
-            }
-            ImGui.NextColumn();
-            
-            if (session.PlayerCount >= session.MaxPlayers)
-            {
-                ImGui.BeginDisabled();
-            }
-
-            if (session.State == SessionState.Started)
-            {
-                if (ImGui.Button($"Spectate##{i}"))
-                {
-                    // TODO: Spectate game session
-                }
-            }
-            else if (session.Players.Any(e => e.Value == _player.Id))
-            {
-                if (ImGui.Button($"Leave##{i}"))
-                {
-                    transport.SendPacketToServer(new C2S_LeaveSession
-                    {
-                        SessionId = session.Id
-                    });
-                }
-            }
-            else
-            {
-                if (ImGui.Button($"Join##{i}"))
-                {
-                    transport.SendPacketToServer(new C2S_JoinSession
-                    {
-                        SessionId = session.Id
-                    });
-                }
-            }
-            
-            if (session.PlayerCount >= session.MaxPlayers)
-            {
-                ImGui.EndDisabled();
-            }
-            
-            ImGui.NextColumn();
-        }
-        
-        ImGui.Columns(1);
-        ImGui.Separator();
-        
-        if (ImGui.Button("Create New Game"))
-        {
-            _showCreateGameDialog = true;
-        }
-        
-        ImGui.SameLine();
-        
-        if (ImGui.Button("Refresh"))
-        {
-            // TODO: Refresh game list
-        }
-        
-        ImGui.EndChild();
-    }
-    
-    private int _selectedStage = 0;
-    private int _maxPlayers = 4;
-    private void RenderCreateGameDialog()
-    {
-        if (!_showCreateGameDialog) return;
-
-        ImGui.OpenPopup("CreateGameDialog");
-        if (ImGui.BeginPopupModal("CreateGameDialog", ImGuiWindowFlags.AlwaysAutoResize))
-        {
-            ImGui.Text("Create New Game");
-            ImGui.Separator();
-
-            // Dummy stage list
-            var items = new List<string>();
-            foreach (var stage in GameSparker.GetAvailableStages())
-            {
-                items.Add($"{stage}##{stage}");
-            }
-            var stages = items.ToArray();
-            ImGui.Combo("Stage", ref _selectedStage, stages, stages.Length);
-
-            ImGui.SliderInt("Max Players", ref _maxPlayers, 1, 127);
-
-            if (ImGui.Button("Create"))
-            {
-                transport.SendPacketToServer(new C2S_CreateSession()
-                {
-                    GameMode = DefaultGamemodes.PvP,
-                    StageName = stages[_selectedStage].Split("##")[0],
-                    MaxPlayers = (byte)_maxPlayers,
-                    GameModeParameters = new Dictionary<string, object>()
-                    {
-                        ["constraint"] = "both"
-                    }
-                });
-                _showCreateGameDialog = false;
-                ImGui.CloseCurrentPopup();
-            }
-            ImGui.SameLine();
-            if (ImGui.Button("Cancel"))
-            {
-                _showCreateGameDialog = false;
-                ImGui.CloseCurrentPopup();
-            }
-
-            ImGui.EndPopup();
-        }
-    }
-
-    private void RenderChat(float width)
-    {
-        ImGui.BeginChild("Chat", new Vector2(width, 0), (ImGuiChildFlags)1);
-        
-        ImGui.Text("Chat");
-        ImGui.Separator();
-        
-        // Chat message area
-        var chatMessagesHeight = ImGui.GetContentRegionAvail().Y - 60;
-        ImGui.BeginChild("ChatMessages", new Vector2(0, chatMessagesHeight), (ImGuiChildFlags)1, ImGuiWindowFlags.AlwaysVerticalScrollbar);
-        
-        foreach (var msg in _chatMessages)
-        {
-            ImGui.PushStyleColor(ImGuiCol.Text, msg.Color);
-            ImGui.Text($"{msg.Sender}:");
-            ImGui.PopStyleColor();
-            
-            ImGui.SameLine();
-            ImGui.TextWrapped(msg.Message);
-        }
-        
-        // Auto-scroll to bottom
-        if (ImGui.GetScrollY() >= ImGui.GetScrollMaxY())
-        {
-            ImGui.SetScrollHereY(1.0f);
-        }
-        
-        ImGui.EndChild();
-        
-        // Chat input
-        ImGui.SetNextItemWidth(-80);
-        if (ImGui.InputText("##ChatInput", ref _chatInput, 256, ImGuiInputTextFlags.EnterReturnsTrue))
-        {
-            if (!string.IsNullOrWhiteSpace(_chatInput))
-            {
-                SendChatMessage(_chatInput);
-                _chatInput = "";
-            }
-        }
-        
-        ImGui.SameLine();
-        if (ImGui.Button("Send", new Vector2(70, 0)))
-        {
-            if (!string.IsNullOrWhiteSpace(_chatInput))
-            {
-                SendChatMessage(_chatInput);
-                _chatInput = "";
-            }
-        }
-        
-        ImGui.EndChild();
-    }
-
-    private void SendChatMessage(string chatInput)
-    {
-        transport.SendPacketToServer(new C2S_LobbyChatMessage
-        {
-            Message = chatInput
-        });
-    }
-
     private static BaseGamemodeFactory GetGameModeFactory(MatchGameplayInfo matchGameplayInfo)
-    {
-        return GamemodeFactory.Create(matchGameplayInfo.Gamemode, matchGameplayInfo.Parameters);
-    }
+        => GamemodeFactory.Create(matchGameplayInfo.Gamemode, matchGameplayInfo.Parameters);
 }
 
 internal class Player
@@ -485,6 +304,4 @@ internal class Player
     public string Name { get; set; } = System.Environment.UserName;
     public string Vehicle { get; set; } = "nfmm/radicalone";
     public Color3 Color { get; set; } = new(0, 128, 255);
-    public bool IsReady { get; set; }
-    public int? InEventId { get; set; }
 }

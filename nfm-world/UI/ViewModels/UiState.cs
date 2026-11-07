@@ -2,6 +2,7 @@
 using NFMWorldLibrary;
 using SignalsDotnet;
 using NFMWorldLibrary.Hud;
+using NFMWorldLibrary.Multiplayer;
 
 namespace NFMWorld.UI.ViewModels;
 
@@ -20,6 +21,7 @@ public static class UiState
     public static GarageState Garage { get; } = new();
     public static RaceState Race { get; } = new();
     public static SettingsState Settings { get; } = new();
+    public static LobbyState Lobby { get; } = new();
 
     /// <summary>Per-frame HUD values, written by the race phase.</summary>
     public sealed class RaceState : IHudData
@@ -142,6 +144,50 @@ public static class UiState
             IsLoggedIn.Value = loggedIn;
         }
     }
+
+    /// <summary>
+    /// Lobby state. The phase writes these from <c>GameTick</c>; the view only reads them, so a
+    /// lobby packet updates just the slots that changed.
+    /// </summary>
+    public sealed class LobbyState
+    {
+        public Signal<bool> Connected { get; } = new(false);
+        public Signal<string> Status { get; } = new("");
+        public Signal<IReadOnlyList<LobbyPlayer>> Players { get; } = new([]);
+        public Signal<IReadOnlyList<LobbySession>> Sessions { get; } = new([]);
+        public Signal<IReadOnlyList<LobbyChatLine>> Chat { get; } = new([]);
+
+        /// <summary>The session the local player is in, or null.</summary>
+        public Signal<LobbySession?> CurrentSession { get; } = new(null);
+
+        /// <summary>The row the player has highlighted, which JOIN acts on.</summary>
+        public Signal<uint?> SelectedSessionId { get; } = new(null);
+
+        public Signal<bool> ShowCreateDialog { get; } = new(false);
+        public Signal<string> SelectedStage { get; } = new("");
+        public Signal<int> MaxPlayers { get; } = new(4);
+
+        public void Reset()
+        {
+            Connected.Value = false;
+            Status.Value = "";
+            Players.Value = [];
+            Sessions.Value = [];
+            Chat.Value = [];
+            CurrentSession.Value = null;
+            SelectedSessionId.Value = null;
+            ShowCreateDialog.Value = false;
+        }
+    }
+
+    public sealed record LobbyPlayer(Guid Id, string Name, string Car, Color Color, bool IsSelf);
+
+    public sealed record LobbySession(
+        uint Id, string CreatorName, string StageName, int PlayerCount, int MaxPlayers,
+        SessionState State, bool IsMember, bool IsCreator);
+
+    /// <summary>Id keys the row: two identical lines from one sender are still two lines.</summary>
+    public sealed record LobbyChatLine(long Id, string Sender, string Message, Color Color, bool IsSystem);
 
     /// <summary>Garage car list and the selected car's stats.</summary>
     public sealed class GarageState

@@ -85,7 +85,8 @@ public class MainMenuPhase : BaseStageRenderingPhase
                     StageEditor: GameSparker.StartStageEditor,
                     TimeTrials: OnTTClicked,
                     Unavailable: _ => GameSparker.MessageWindow.ShowMessage("Info", "This feature is currently unavailable."),
-                    Account: AccountView.Show), logo),
+                    Account: AccountView.Show,
+                    Multiplayer: OnMultiplayerClicked), logo),
                 AccountView.Build(new AccountView.Actions(
                     SignIn: OnSignIn,
                     Register: OnRegister,
@@ -220,6 +221,14 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private void OnActiveAccountChanged(Account? account)
     {
         UiState.MainMenu.Set(account?.Username, account != null);
+    }
+
+    private void OnMultiplayerClicked()
+    {
+        if (!LobbyConnection.TryOpen(LobbyEndpoint.Host, LobbyEndpoint.Port, out var error))
+        {
+            GameSparker.MessageWindow.ShowMessage("Multiplayer unavailable", error);
+        }
     }
 
     private void OnFreePlayClicked()

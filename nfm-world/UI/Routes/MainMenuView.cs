@@ -39,7 +39,8 @@ public static class MainMenuView
         Action StageEditor,
         Action TimeTrials,
         Action<string> Unavailable,
-        Action Account);
+        Action Account,
+        Action Multiplayer);
 
     private static readonly Signal<IReadOnlyList<MenuPage>> PageStack = new([]);
     private static readonly Signal<bool> SettingsOpen = new(false);
@@ -190,7 +191,8 @@ public static class MainMenuView
     private static MenuPage BuildPlayMenu(Actions actions) => new("PLAY",
     [
         new("SINGLEPLAYER", "Play the original single player experiences.", () => PushPage(BuildSpMenu(actions))),
-        new("MULTIPLAYER", "Play online with other players.", () => PushPage(BuildMpMenu(actions))),
+        // One lobby: whether a race is rated is chosen per-race, not here.
+        new("MULTIPLAYER", "Play online with other players.", actions.Multiplayer),
         new("TRAINING", "Train your skills and learn the game mechanics.", () => PushPage(BuildTrainingMenu(actions))),
         new("BACK", "Return to the previous menu.", PopPage),
     ]);
@@ -201,13 +203,6 @@ public static class MainMenuView
         new("NFM2", "Play the original NFM2 singleplayer campaign.", () => actions.Unavailable("playNfm2")),
         new("COMMUNITY", "Play custom experiences crafted by the community.", () => actions.Unavailable("playCommunity")),
         new("FREE PLAY", "Play freely without any restrictions.", actions.Play),
-        new("BACK", "Return to the previous menu.", PopPage),
-    ]);
-
-    private static MenuPage BuildMpMenu(Actions actions) => new("MULTIPLAYER",
-    [
-        new("COMPETITIVE", "Compete against other players via matchmaking.", () => actions.Unavailable("multiplayer")),
-        new("CASUAL", "Play with people in a free relaxed environment.", () => actions.Unavailable("casual")),
         new("BACK", "Return to the previous menu.", PopPage),
     ]);
 

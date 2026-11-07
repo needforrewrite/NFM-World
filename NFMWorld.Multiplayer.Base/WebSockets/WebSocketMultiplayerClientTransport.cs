@@ -71,7 +71,8 @@ public class WebSocketMultiplayerClientTransport : BaseMultiplayerClientTranspor
 
     public override void Stop()
     {
+        // Cancelling is enough to end the receive loop; the close is a courtesy the server
+        // does not need, and an unawaited CloseAsync can fault with nothing to observe it.
         _cts.Cancel();
-        _client.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
     }
 }

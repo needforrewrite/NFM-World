@@ -237,28 +237,17 @@ public static class DevConsoleCommands
 
     private static void Connect(DevConsole console, string[] args)
     {
-        // Multiplayer is out of scope for the browser build: ENet is a native library with no wasm
-        // build, so initialising it there fails. The lobby is unreachable from the UI anyway; this
-        // only keeps the dev command from killing the page.
-        if (OperatingSystem.IsBrowser())
-        {
-            Logging.Info("Multiplayer is not available in the browser build.");
-            return;
-        }
-
-        ENetMultiplayer.Init();
-            
         if (args.Length < 1)
         {
-            Logging.Info("Usage: connect <host> <port>");
+            Logging.Info($"Connect to a lobby. Usage: connect <host> <port> (default {LobbyEndpoint.Host}:{LobbyEndpoint.Port})");
             return;
         }
-            
-        if (args.Length < 2 || !ushort.TryParse(args[1], out ushort port))
-            port = 7000;
 
-        GameSparker.PushPhase(new LobbyPhase(
-            new WebSocketMultiplayerClientTransport(args[0], port)));
+        if (args.Length < 2 || !ushort.TryParse(args[1], out ushort port))
+            port = LobbyEndpoint.Port;
+
+        if (!LobbyConnection.TryOpen(args[0], port, out var error))
+            Logging.Info(error);
     }
 
     private static void BreakX(DevConsole console, string[] args)
