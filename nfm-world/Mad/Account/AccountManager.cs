@@ -1,190 +1,165 @@
-using System.Diagnostics;
-using System.Reactive.Linq;
-using System.Runtime.InteropServices;
-using NFMWorld.Api;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Text.Json;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Util;
 
 namespace NFMWorld.Accounts;
 
-public class AccountManager
+/// <summary>
+/// Talks to the archive's account endpoints.
+///
+/// Replaces the generated <c>NfmwClient</c>, which was bound to an OpenAPI document whose routes
+/// no longer exist. The archive is a small, stable surface now, so the three calls it needs are
+/// written directly.
+/// </summary>
+public sealed class AccountManager : IDisposable
 {
-    public static NfmwClient Client { get; } = new("https://nfmwapi.jacher.io", new HttpClient());
-    
-    public Account? ActiveAccount
-    {
-        get;
-        set
-        {
-            field = value;
-            ActiveAccountChanged?.Invoke(value);
-        }
-    }
-
-    public IObservable<Account?> ActiveAccountObservable;
-
-    public event Action<Account?>? ActiveAccountChanged;
-
+    private readonly HttpClient _http;
+    private readonly Uri _baseUri;
     private bool _signingIn;
 
     public AccountManager()
     {
-        ActiveAccountObservable = Observable.FromEventPattern<Action<Account?>, Account?>(
-                h => ActiveAccountChanged += h,
-                h => ActiveAccountChanged -= h)
-            .Select(e => e.EventArgs);
+        var url = System.Environment.GetEnvironmentVariable("NFMW_ARCHIVE_URL") ?? "https://archive.nfmw.net";
+        _baseUri = new Uri(url.EndsWith('/') ? url : url + "/");
+        _http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+
+        // A token from a previous run is used immediately; the archive confirms it on first use
+        // and a rejected token simply behaves as signed out.
+        if (AccountStore.Load() is { } stored)
+            ActiveAccount = new Account(stored.Token, stored.Username);
     }
+
+    public Account? ActiveAccount { get; private set; }
 
     public bool LoggedIn => ActiveAccount is not null;
 
-    // TODO: Logout properly by querying API to invalidate token?
-    public void LogOut()
+    public event Action<Account?>? ActiveAccountChanged;
+
+    private void SetActive(Account? account)
     {
-        ActiveAccount = null;
+        ActiveAccount = account;
+        ActiveAccountChanged?.Invoke(account);
     }
 
-    /// <summary>
-    /// Create an account. On success, this method has no side effects.
-    /// Once an account is successfully created, it can be logged into with AccountManager.LogIn
-    /// For now, this endpoint requires use of the "master token" set in Authorization. This allows admins
-    /// to create accounts.
-    /// Oauth2 accounts can be made by anyone but may stil need approval after creation.
-    /// </summary>
-    /// <param name="username">The username</param>
-    /// <param name="password">The password</param>
-    /// <returns>The result of account creation. Throws an exception where there is a server error or input validation error.</returns>
+    /// <summary>Confirms the stored token still works and refreshes the username.</summary>
+    public async Task<bool> RefreshAsync()
+    {
+        if (ActiveAccount is null)
+            return false;
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(_baseUri, "auth/me"));
+            request.Headers.Authorization = new("Bearer", ActiveAccount.Token);
+            using var response = await _http.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                SetActive(null);
+                AccountStore.Clear();
+                return false;
+            }
+
+            var account = await response.Content.ReadFromJsonAsync<AccountResponse>();
+            if (account is { Username.Length: > 0 })
+                SetActive(new Account(ActiveAccount.Token, account.Username));
+            return true;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            Logging.Warning($"Could not reach the archive: {ex.Message}");
+            return false;
+        }
+    }
+
     public async Task<RequestResult> CreateLocalAccount(string username, string password)
     {
         try
         {
-            var res = await Client.CreateLocalAccountAsync(new CreateLocalAccountRequest()
-            {
-                Username = username,
-                Password = password
-            });
+            using var response = await _http.PostAsJsonAsync(new Uri(_baseUri, "auth/register"),
+                new { Username = username, Password = password });
+            if (response.IsSuccessStatusCode)
+                return new RequestResult("Success", true);
 
-            return new RequestResult("Success", true);
+            return new RequestResult(await ReadErrorAsync(response), false);
         }
-        catch (ApiException<ErrorResponse> ex)
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
-            return new RequestResult(ex.Result.Error, false);
+            return new RequestResult($"Could not reach the archive: {ex.Message}", false);
         }
     }
 
-    /// <summary>
-    /// Log in to a local account. On success, Account property is set to the logged in account.
-    /// Account must be null or an exception will be thrown. Call LogOut first to remove the active session
-    /// if already logged in.
-    /// For Oauth2 accounts use those respective methods.
-    /// 
-    /// Session token retention policy is that a session token remains valid for a minimum of 24 hours after creation,
-    /// and this duration resets every time the session token is used. However, session tokens are force invalidated after
-    /// a period of 28 days. They are also invalidated if the user manually revokes any active session tokens.
-    /// 
-    /// Each user can only have one active session token at a time. If the user logs in from a new source when still logged in,
-    /// the prior session token is revoked. This prevents multiple users playing from a single account at a time.
-    /// </summary>
-    /// <param name="username">The username</param>
-    /// <param name="password">The password</param>
-    /// <returns>The log in result. Throws an exception on serious failure.</returns>
     public async Task<RequestResult> LogInToLocalAccount(string username, string password)
     {
         try
         {
-            var res = await Client.LoginLocalAccountAsync(new LoginLocalAccountRequest()
-            {
-                Username = username,
-                Password = password
-            });
+            using var response = await _http.PostAsJsonAsync(new Uri(_baseUri, "auth/login"),
+                new { Username = username, Password = password });
+            if (!response.IsSuccessStatusCode)
+                return new RequestResult(await ReadErrorAsync(response), false);
 
-            ActiveAccount = new Account(res.SessionToken, res.Username);
-            
+            var body = await response.Content.ReadFromJsonAsync<LoginResponse>();
+            if (body?.Token is not { Length: > 0 })
+                return new RequestResult("The archive returned no session token.", false);
+
+            AccountStore.Save(body.Token, body.Account.Username);
+            SetActive(new Account(body.Token, body.Account.Username));
             return new RequestResult("Success", true);
         }
-        catch (ApiException<ErrorResponse> ex)
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
-            return new RequestResult(ex.Result.Error, false);
+            return new RequestResult($"Could not reach the archive: {ex.Message}", false);
         }
     }
 
-    /// <summary>
-    /// Update the Account's password. Must have a logged in account to do this.
-    /// Only works for a local account (NOT Oauth2)
-    /// </summary>
-    /// <param name="current">Current password</param>
-    /// <param name="updated">New password</param>
-    /// <returns>The change password result.</returns>
-    public async Task ChangeLocalAccountPassword(string current, string updated)
-    {
-        throw new NotImplementedException();
-    }
-
-    private static void OpenUrl(string url)
-    {
-        // hack because of this: https://github.com/dotnet/corefx/issues/10361
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            url = url.Replace("&", "^&");
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-        {
-            Process.Start("xdg-open", url);
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-        {
-            Process.Start("open", url);
-        }
-        else
-        {
-            throw new PlatformNotSupportedException(RuntimeInformation.OSDescription);
-        }
-    }
-    
-    public async Task<RequestResult> LogInWithDiscord()
+    /// <summary>Opens the archive's Discord flow in the browser; the session arrives by cookie there.</summary>
+    public Task OpenDiscordLogin()
     {
         if (_signingIn)
-        {
-            return new RequestResult("Already started signing in, please finish on that window first.", false);
-        }
+            return Task.CompletedTask;
 
+        _signingIn = true;
         try
         {
-            _signingIn = true;
-
-            var response = await Client.InitDiscordOauthAsync();
-
-            var uri = new Uri(response.Url);
-            if (uri.Scheme != "https")
-            {
-                throw new Exception("Invalid URL scheme for Discord OAuth: " + uri.Scheme);
-            }
-        
-            OpenUrl(uri.AbsoluteUri);
-
-            var pollCount = 0;
-            const int maxPollCount = 120;
-
-            while (pollCount < maxPollCount)
-            {
-                var oauth = await Client.PollOauthAsync(response.PollId);
-                if (oauth.Status == "login")
-                {
-                    ActiveAccount = new Account(oauth.Payload!, ""); // TODO...
-                    return new RequestResult("Success", true);
-                }
-                else if (oauth.Status == "error")
-                {
-                    return new RequestResult(oauth.Payload ?? "Unknown error", false);
-                }
-            
-                await Task.Delay(1000);
-                pollCount++;
-            }
-
-            return new RequestResult("Timed out", false);
+            // There is no desktop hand-off for this yet, so the flow completes on the website
+            // rather than signing the game in. Discarding the result would be worse than saying so.
+            Logging.Info("Discord sign-in is only available on the archive website for now.");
+            return Task.CompletedTask;
         }
         finally
         {
             _signingIn = false;
         }
     }
+
+    public void LogOut()
+    {
+        AccountStore.Clear();
+        SetActive(null);
+    }
+
+    private static async Task<string> ReadErrorAsync(HttpResponseMessage response)
+    {
+        try
+        {
+            var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+            if (body.TryGetProperty("error", out var error) && error.GetString() is { Length: > 0 } message)
+                return message;
+        }
+        catch (JsonException) { }
+
+        return response.StatusCode switch
+        {
+            System.Net.HttpStatusCode.Unauthorized => "Wrong username or password.",
+            System.Net.HttpStatusCode.Conflict => "That username is taken.",
+            System.Net.HttpStatusCode.TooManyRequests => "Too many attempts. Try again later.",
+            _ => "The archive rejected the request."
+        };
+    }
+
+    public void Dispose() => _http.Dispose();
+
+    private sealed record AccountResponse(string Username, bool IsAdmin, double Elo, int Wins, int Losses, int Matches);
+    private sealed record LoginResponse(string Token, AccountResponse Account);
 }

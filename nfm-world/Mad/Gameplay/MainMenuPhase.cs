@@ -2,6 +2,7 @@
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
+using NFMWorld.Reactor.Sx;
 using NFMWorld.UI;
 using NFMWorld.UI.Routes;
 using NFMWorld.UI.ViewModels;
@@ -73,14 +74,70 @@ public class MainMenuPhase : BaseStageRenderingPhase
     }
 
     /// <summary>The menu's items, wired straight to this phase's handlers.</summary>
-    public override Node BuildUi() => MainMenuIntroView.Build(_logo, logo => MainMenuView.Build(new MainMenuView.Actions(
-        Play: OnFreePlayClicked,
-        Garage: OnGarageClicked,
-        ModelEditor: GameSparker.StartModelViewer,
-        StageEditor: GameSparker.StartStageEditor,
-        TimeTrials: OnTTClicked,
-        Unavailable: _ => GameSparker.MessageWindow.ShowMessage("Info", "This feature is currently unavailable.")), logo),
+    public override Node BuildUi() => MainMenuIntroView.Build(_logo, logo => Sx.View(
+            style: () => Sx.Styles(position: Position.Absolute, left: 0, top: 0, width: "100%", height: "100%"),
+            children:
+            [
+                MainMenuView.Build(new MainMenuView.Actions(
+                    Play: OnFreePlayClicked,
+                    Garage: OnGarageClicked,
+                    ModelEditor: GameSparker.StartModelViewer,
+                    StageEditor: GameSparker.StartStageEditor,
+                    TimeTrials: OnTTClicked,
+                    Unavailable: _ => GameSparker.MessageWindow.ShowMessage("Info", "This feature is currently unavailable."),
+                    Account: AccountView.Show), logo),
+                AccountView.Build(new AccountView.Actions(
+                    SignIn: OnSignIn,
+                    Register: OnRegister,
+                    SignOut: OnSignOut,
+                    Close: AccountView.Hide),
+                    () => GameSparker.AccountManager.LoggedIn,
+                    () => GameSparker.AccountManager.ActiveAccount?.Username ?? "")
+            ]),
         () => _garage!.BuildUi());
+
+    private void OnSignIn(string username, string password)
+    {
+        AccountView.SetBusy();
+        _ = SignInAsync(username, password);
+    }
+
+    private async Task SignInAsync(string username, string password)
+    {
+        var result = await GameSparker.AccountManager.LogInToLocalAccount(username, password);
+        AccountView.SetStatus(result.Success ? "Signed in." : "!" + result.Message, isError: !result.Success);
+        if (result.Success)
+            AccountView.Hide();
+    }
+
+    private void OnRegister(string username, string password)
+    {
+        AccountView.SetBusy();
+        _ = RegisterAsync(username, password);
+    }
+
+    private async Task RegisterAsync(string username, string password)
+    {
+        var created = await GameSparker.AccountManager.CreateLocalAccount(username, password);
+        if (!created.Success)
+        {
+            AccountView.SetStatus("!" + created.Message, isError: true);
+            return;
+        }
+
+        // Creating an account and signing in are separate calls, so do both rather than make
+        // the player type the password again.
+        var signedIn = await GameSparker.AccountManager.LogInToLocalAccount(username, password);
+        AccountView.SetStatus(signedIn.Success ? "Account created." : "!" + signedIn.Message, isError: !signedIn.Success);
+        if (signedIn.Success)
+            AccountView.Hide();
+    }
+
+    private void OnSignOut()
+    {
+        GameSparker.AccountManager.LogOut();
+        AccountView.Hide();
+    }
 
     public override void Enter()
     {

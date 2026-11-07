@@ -21,7 +21,7 @@ public static class MainMenuView
 {
     private const int ItemHeight = 36;
     private const int ItemGap = 11;
-    private const int MenuRows = 6;
+    private const int MenuRows = 7;
     public sealed class MenuItem(string label, string description, Action action)
     {
         public string Label { get; } = label;
@@ -38,7 +38,8 @@ public static class MainMenuView
         Action ModelEditor,
         Action StageEditor,
         Action TimeTrials,
-        Action<string> Unavailable);
+        Action<string> Unavailable,
+        Action Account);
 
     private static readonly Signal<IReadOnlyList<MenuPage>> PageStack = new([]);
     private static readonly Signal<bool> SettingsOpen = new(false);
@@ -56,6 +57,7 @@ public static class MainMenuView
         new("GARAGE", "Customize and inspect your vehicles in the garage.", actions.Garage),
         new("WORKSHOP", "Build your own models and stages.", () => PushPage(BuildWorkshopMenu(actions))),
         new("SETTINGS", "Adjust game settings.", () => SettingsOpen.Value = true),
+        new("ACCOUNT", "Sign in, or create an archive account.", actions.Account),
         new("EXTRAS", "View credits, statistics and replays.", () => PushPage(BuildExtrasMenu(actions))),
         new("QUIT", "Exit the game.", () =>
         {
