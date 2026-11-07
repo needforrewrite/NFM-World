@@ -40,6 +40,30 @@ public static class HmacAuth
     }
 
     /// <summary>
+    /// Signs with a nonce folded into the timestamp field as <c>ts.nonce</c>, so a captured
+    /// request stays inside the clock window but is only accepted once. Use this for endpoints
+    /// where a replay would change state (match results, bans); the plain overload is fine for
+    /// read-only work like creating a race.
+    /// </summary>
+    public static string SignWithNonce(
+        string method,
+        string path,
+        ReadOnlySpan<byte> body,
+        string keyId,
+        ReadOnlySpan<byte> secretKey,
+        string nonce)
+    {
+        var ts = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var bodyHash = SHA256.HashData(body);
+        var hexBodyHash = Convert.ToHexStringLower(bodyHash);
+        var stringToSign = $"{method}\n{path}\n{ts}.{nonce}\n{hexBodyHash}";
+
+        var signature = HMACSHA256.HashData(secretKey, Encoding.UTF8.GetBytes(stringToSign));
+
+        return $"{Scheme} keyId={keyId},ts={ts}.{nonce},sig={Convert.ToHexStringLower(signature)}";
+    }
+
+    /// <summary>
     /// Verifies an incoming request's Authorization header.
     /// Returns null on success, or an error message on failure.
     /// </summary>
@@ -50,7 +74,24 @@ public static class HmacAuth
         string? authHeader,
         IReadOnlyDictionary<string, byte[]> knownKeys,
         int maxClockSkewSec = 30)
+        => Verify(method, path, body, authHeader, knownKeys, out _, out _, maxClockSkewSec);
+
+    /// <summary>
+    /// As above, also reporting the verified key id and the nonce (empty when the caller signed
+    /// without one) so the caller can check replays against its own nonce cache.
+    /// </summary>
+    public static string? Verify(
+        string method,
+        string path,
+        ReadOnlySpan<byte> body,
+        string? authHeader,
+        IReadOnlyDictionary<string, byte[]> knownKeys,
+        out string? keyIdOut,
+        out string nonce,
+        int maxClockSkewSec = 30)
     {
+        keyIdOut = null;
+        nonce = "";
         if (string.IsNullOrEmpty(authHeader))
             return "Missing Authorization header";
 
@@ -60,7 +101,7 @@ public static class HmacAuth
         // Parse keyId, ts, sig from: HMAC-SHA256 keyId=X,ts=Y,sig=Z
         var parts = authHeader[(Scheme.Length + 1)..];
         string? keyId = null;
-        long ts = 0;
+        string? tsField = null;
         string? sig = null;
 
         foreach (var part in parts.Split(','))
@@ -69,13 +110,20 @@ public static class HmacAuth
             if (trimmed.StartsWith("keyId="))
                 keyId = trimmed[6..];
             else if (trimmed.StartsWith("ts="))
-                long.TryParse(trimmed[3..], out ts);
+                tsField = trimmed[3..];
             else if (trimmed.StartsWith("sig="))
                 sig = trimmed[4..];
         }
 
-        if (keyId is null || ts == 0 || sig is null)
+        if (keyId is null || tsField is null || sig is null)
             return "Malformed Authorization header: missing keyId, ts, or sig";
+
+        // ts may carry a nonce as "ts.nonce"; the signature covers the field verbatim.
+        var dot = tsField.IndexOf('.');
+        var tsText = dot < 0 ? tsField : tsField[..dot];
+        var nonceText = dot < 0 ? "" : tsField[(dot + 1)..];
+        if (!long.TryParse(tsText, out var ts) || ts == 0)
+            return "Malformed Authorization header: bad timestamp";
 
         // Replay check
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -89,7 +137,7 @@ public static class HmacAuth
         // Reconstruct signature
         var bodyHash = SHA256.HashData(body);
         var hexBodyHash = Convert.ToHexStringLower(bodyHash);
-        var stringToSign = $"{method}\n{path}\n{ts}\n{hexBodyHash}";
+        var stringToSign = $"{method}\n{path}\n{tsField}\n{hexBodyHash}";
 
         var expectedSig = HMACSHA256.HashData(
             secretKey,
@@ -101,6 +149,8 @@ public static class HmacAuth
                 Encoding.UTF8.GetBytes(sig)))
             return "Signature mismatch";
 
+        keyIdOut = keyId;
+        nonce = nonceText;
         return null; // Success
     }
 

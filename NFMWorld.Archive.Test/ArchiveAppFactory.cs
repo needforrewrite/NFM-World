@@ -8,7 +8,7 @@ namespace NFMWorld.Archive.Test;
 /// Boots the real app against a throwaway SQLite file, so migrations, cookies and the
 /// endpoint pipeline are exercised as deployed rather than mocked out.
 /// </summary>
-public sealed class ArchiveAppFactory : WebApplicationFactory<Program>
+public class ArchiveAppFactory : WebApplicationFactory<Program>
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "nfmw-archive-test", Guid.NewGuid().ToString("N"));
 
