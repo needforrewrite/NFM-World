@@ -23,7 +23,9 @@ public class CrashSoundQueueTests
         var position = new Vector3(11, 12, 13);
         var registerDamage = typeof(CarPhysics).GetMethod("Regz", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
-        registerDamage.Invoke(car.CarPhysics, [1, (Fixed64)750, new ContO(car), new DeterministicRandom(1), 12, position]);
+        // Reflection fills optional parameters with nothing, so every parameter is passed.
+        registerDamage.Invoke(car.CarPhysics,
+            [1, (Fixed64)750, new ContO(car), new DeterministicRandom(1), 12, position, -1]);
 
         Assert.AreEqual(1, played.Count);
         Assert.AreEqual(CrashSoundContact.Obstacle(6, 1, 12), played[0].Contact);
