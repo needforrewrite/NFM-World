@@ -20,7 +20,12 @@ public partial struct MatchGameplayInfo()
 
     [MemoryPackOrder(2)] public required string Gamemode { get; set; } = DefaultGamemodes.PvP;
     
-    [MemoryPackOrder(3)] public Dictionary<string, object> Parameters { get; set; } = [];
+    /// <summary>
+    /// Gamemode config. Strings, not objects: MemoryPack has no formatter for <c>object</c>,
+    /// and resolving one fails even for an empty dictionary. Every declared gamemode config
+    /// property is a string; the plugin boundary converts to <c>object</c>.
+    /// </summary>
+    [MemoryPackOrder(3)] public Dictionary<string, string> Parameters { get; set; } = [];
 }
 
 public static class DefaultGamemodes

@@ -105,4 +105,31 @@ public class TextInputKeyTests
 
         Assert.AreEqual("abc", input.Text);
     }
+
+    /// <summary>
+    /// A masked field must not draw the secret. The value in <see cref="TextInput.Text"/> is the
+    /// real one, so only the inner text is masked.
+    /// </summary>
+    [TestMethod]
+    public void MaskCharacter_HidesTheValueButKeepsIt()
+    {
+        var input = new TextInput { Name = "password", MaskCharacter = '*' };
+        input.Focus();
+        foreach (var c in "hunter2")
+            input.DispatchKeyTyped(new KeyboardTypingEvent(c));
+
+        Assert.AreEqual("hunter2", input.Text, "the real value must survive");
+        Assert.AreEqual("*******", DisplayedText(input));
+    }
+
+    [TestMethod]
+    public void MaskCharacter_ShowsThePlaceholderWhenEmpty()
+    {
+        var input = new TextInput { Name = "password", MaskCharacter = '*', Placeholder = "Password" };
+
+        Assert.AreEqual("Password", DisplayedText(input));
+    }
+
+    private static string? DisplayedText(TextInput input)
+        => ((Text)input.VisualChildren[0]).Children.OfType<TextNode>().FirstOrDefault()?.Text;
 }

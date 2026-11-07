@@ -109,6 +109,32 @@ public partial class TextInput : Component
     public Action<string>? Submitted { get; set; }
 
     /// <summary>
+    /// A single character to display in place of every typed character, for passwords.
+    /// <see cref="Text"/> still holds the real value; only what is drawn is masked.
+    /// </summary>
+    [PluginVisible]
+    public char? MaskCharacter
+    {
+        get;
+        set
+        {
+            if (field != value)
+            {
+                field = value;
+                OnTextInvalidated(false);
+            }
+        }
+    }
+
+    /// <summary>What the inner text should display: the placeholder, the masked value, or the text.</summary>
+    private string DisplayText()
+    {
+        if (string.IsNullOrEmpty(Text))
+            return Placeholder ?? "";
+        return MaskCharacter is { } mask ? new string(mask, Text.Length) : Text;
+    }
+
+    /// <summary>
     /// Raised whenever the text content changes (typing, backspace, delete, paste, programmatic set).
     /// The new text value is passed as the argument.
     /// </summary>
@@ -208,7 +234,7 @@ public partial class TextInput : Component
         else
         {
             _text.TextStyles = _text.TextStyles with { ForegroundColor = TextStyles.Resolved.ForegroundColor };
-            _text.TextContent = Text;
+            _text.TextContent = DisplayText();
         }
     }
 

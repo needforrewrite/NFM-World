@@ -304,7 +304,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             StageName = stage,
             // The wire field is an int; the server clamps it to its own maximum.
             MaxPlayers = Lobby.MaxPlayers.Value,
-            GameModeParameters = new Dictionary<string, object> { ["constraint"] = "both" }
+            GameModeParameters = new Dictionary<string, string> { ["constraint"] = "both" }
         });
         Lobby.ShowCreateDialog.Value = false;
     }

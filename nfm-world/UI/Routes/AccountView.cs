@@ -124,9 +124,12 @@ public static class AccountView
                         [
                             Field("USERNAME", Username, password: false),
                             Field("PASSWORD", Password, password: true),
+                            // Word-wrap: an archive error is a full sentence, and without it the
+                            // line ran out of the card's width.
                             Sx.Text(
-                                style: () => Sx.TextStyles(fontSize: 12,
+                                style: () => Sx.TextStyles(fontSize: 12, breakType: BreakType.Word,
                                     foregroundColor: Status.Value.StartsWith("!") ? ErrorRed : MenuBlue),
+                                layout: () => Sx.Styles(width: MeasurementWidthHeight.Percent(100)),
                                 text: () => Status.Value.TrimStart('!')),
                             Sx.View(
                                 style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10),
@@ -165,6 +168,9 @@ public static class AccountView
             actions.Register(Username.Value, Password.Value);
     }
 
+    /// <summary>Room for one line of the field's own font plus its padding.</summary>
+    private const float FieldHeight = 34;
+
     private static Node Field(string label, Signal<string> value, bool password)
     {
         return Sx.View(
@@ -175,6 +181,9 @@ public static class AccountView
                 Sx.TextInput(
                     style: () => Sx.Styles(
                         width: MeasurementWidthHeight.Percent(100),
+                        // The inner text collapses to ~0 high when the field is empty, so the
+                        // input's own size has to come from minHeight, not its content.
+                        minHeight: FieldHeight,
                         paddingTop: 8, paddingBottom: 8, paddingLeft: 10, paddingRight: 10,
                         backgroundColor: new Color(255, 255, 255, 16),
                         borderTop: 1, borderBottom: 1, borderLeft: 1, borderRight: 1,
@@ -182,6 +191,7 @@ public static class AccountView
                         borderRadius: 6),
                     text: () => value.Value,
                     onchange: v => value.Value = v,
+                    maskCharacter: password ? '*' : null,
                     // Enter submits, so the form behaves like a form.
                     onsubmit: _ => value.Value = value.Value)
             ]);

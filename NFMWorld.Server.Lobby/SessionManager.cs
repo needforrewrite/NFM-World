@@ -21,7 +21,8 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
     }
 
     /// <summary>Creates a new session. Returns the created session.</summary>
-    public GameSession? CreateSession(uint creatorclientIndex, string stageName, byte maxPlayers, string gamemode)
+    public GameSession? CreateSession(uint creatorclientIndex, string stageName, byte maxPlayers, string gamemode,
+        Dictionary<string, string>? gamemodeParameters = null)
     {
         var creator = players.Get(creatorclientIndex);
         if (creator is null)
@@ -35,6 +36,7 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
             StageName = stageName,
             MaxPlayers = maxPlayers,
             Gamemode = gamemode,
+            GamemodeParameters = gamemodeParameters is null ? [] : new(gamemodeParameters),
             Players = new ConcurrentDictionary<byte, Guid> { [0] = creator.Id }
         };
 
@@ -210,6 +212,6 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         public DateTimeOffset? StartTime { get; set; }
         public SessionState State { get; set; } = SessionState.NotStarted;
         public string Gamemode { get; set; } = DefaultGamemodes.PvP;
-        public Dictionary<string, object> GamemodeParameters { get; set; } = [];
+        public Dictionary<string, string> GamemodeParameters { get; set; } = [];
     }
 }

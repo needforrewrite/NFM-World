@@ -67,6 +67,19 @@ public static class GamemodeFactory
             : throw new InvalidOperationException("Could not load gamemode plugin for " + gamemodeId);
     }
 
+    /// <summary>
+    /// The same factory from config carried over the wire, whose values are strings because
+    /// that is all MemoryPack can round-trip for a dictionary of mixed values.
+    /// </summary>
+    [RequiresUnreferencedCode("Plugin loading requires loading code at runtime.")]
+    public static BaseGamemodeFactory Create(string gamemodeId, IReadOnlyDictionary<string, string> config)
+    {
+        var boxed = new Dictionary<string, object>(config.Count);
+        foreach (var (key, value) in config)
+            boxed[key] = value;
+        return Create(gamemodeId, boxed);
+    }
+
     [RequiresUnreferencedCode("Plugin loading requires loading code at runtime.")]
     public static BaseGamemodeFactory Create(string gamemodeId)
     {

@@ -247,10 +247,12 @@ public static class Sx
         Action<string>? onchange = null,
         Func<string?>? placeholder = null,
         Action<string>? onsubmit = null,
+        char? maskCharacter = null,
         params object?[] children)
     {
         var node = new TextInput();
         ApplyStyle(node, style);
+        node.MaskCharacter = maskCharacter;
 
         // Text: the input mirrors TextStyles onto its inner Text, so it has to be the
         // resolved form or that child would read nulls.

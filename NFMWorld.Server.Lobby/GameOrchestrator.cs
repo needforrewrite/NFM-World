@@ -341,7 +341,8 @@ public class GameOrchestrator
         var player = _players.Get(clientId);
         if (player is null) return;
 
-        var session = _sessions.CreateSession(clientId, create.StageName, (byte)create.MaxPlayers, create.GameMode);
+        var session = _sessions.CreateSession(clientId, create.StageName, (byte)create.MaxPlayers,
+            create.GameMode, create.GameModeParameters);
 
         _chat.BroadcastSystem(
             $"{session.CreatorName} has started a session for {session.StageName}!");
@@ -419,6 +420,7 @@ public class GameOrchestrator
         {
             StageName = session.StageName,
             Gamemode = session.Gamemode,
+            Parameters = new(session.GamemodeParameters),
             Players = playerInfos
         };
 
