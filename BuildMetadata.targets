@@ -3,7 +3,10 @@
             DependsOnTargets="InitializeSourceControlInformation"
             Condition="'$(DesignTimeBuild)' != 'true'">
         <PropertyGroup>
-            <NfmwBuildUtc Condition="'$(NfmwBuildUtc)' == ''">$([System.DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ'))</NfmwBuildUtc>
+            <!-- Date, not time: this lands in AssemblyInfo, so a per-second stamp recompiled
+                 every build and rewrote NFMWorld.exe, which then could not be replaced while
+                 an instance was running. The build number only counts days anyway. -->
+            <NfmwBuildUtc Condition="'$(NfmwBuildUtc)' == ''">$([System.DateTime]::UtcNow.ToString('yyyy-MM-dd'))</NfmwBuildUtc>
             <NfmwBuildBranch Condition="'$(NfmwBuildBranch)' == ''">$(GITHUB_HEAD_REF)</NfmwBuildBranch>
             <NfmwBuildBranch Condition="'$(NfmwBuildBranch)' == ''">$(GITHUB_REF_NAME)</NfmwBuildBranch>
             <NfmwBuildCommit Condition="'$(NfmwBuildCommit)' == ''">$(SourceRevisionId)</NfmwBuildCommit>

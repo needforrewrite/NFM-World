@@ -361,7 +361,7 @@ public static class DevConsoleCommands
         Logging.Info(GameSparker.version);
         Logging.Info($"Branch: {build.Branch}");
         Logging.Info($"Commit: {build.Commit}");
-        var date = build.BuiltAtUtc?.ToString("HH:mm:ss MMM dd yyyy 'UTC'", CultureInfo.InvariantCulture) ?? "unknown";
+        var date = build.BuiltAtUtc?.ToString("MMM dd yyyy 'UTC'", CultureInfo.InvariantCulture) ?? "unknown";
         var number = build.BuildNumber?.ToString(CultureInfo.InvariantCulture) ?? "unknown";
         Logging.Info($"Exe build: {date} (build {number})");
         Logging.Info($"Configuration: {build.Configuration}, target: {build.TargetFramework}, RID: {build.RuntimeIdentifier}");
