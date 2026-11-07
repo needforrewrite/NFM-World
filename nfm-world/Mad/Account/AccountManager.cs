@@ -1,6 +1,7 @@
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
+using NFMWorld.Gameplay;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Util;
 
@@ -21,7 +22,7 @@ public sealed class AccountManager : IDisposable
 
     public AccountManager()
     {
-        var url = System.Environment.GetEnvironmentVariable("NFMW_ARCHIVE_URL") ?? "https://archive.nfmw.net";
+        var url = ArchiveEndpoint.Url;
         _baseUri = new Uri(url.EndsWith('/') ? url : url + "/");
         _http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
 
