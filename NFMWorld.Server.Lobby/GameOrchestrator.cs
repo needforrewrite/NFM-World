@@ -25,7 +25,7 @@ public class GameOrchestrator
     /// <summary>Matches handed to a game master and not yet reported back, keyed by match key.</summary>
     private readonly ConcurrentDictionary<Guid, PendingMatch> _pendingMatches = new();
 
-    private sealed record PendingMatch(MatchGameplayInfo Info);
+    private sealed record PendingMatch(MatchGameplayInfo Info, uint SessionId);
 
     private Thread? _lobbyThread;
     private bool _lobbyIsRunning = true;
@@ -40,6 +40,20 @@ public class GameOrchestrator
         {
             Logging.Warning($"[Lobby] Result for an unknown or already-reported match {matchKey}");
             return false;
+        }
+
+        // The race is over, so its players are back in the lobby and free to start another.
+        // IsInGame is set when a race starts and was only ever cleared on timeout or failure.
+        var session = _sessions.Get(pending.SessionId);
+        if (session is not null)
+        {
+            session.State = SessionState.Finished;
+            foreach (var (_, id) in session.Players)
+            {
+                var participant = _players.Get(id);
+                if (participant is not null)
+                    participant.IsInGame = false;
+            }
         }
 
         if (_archive is not { CanReportResults: true })
@@ -391,7 +405,7 @@ public class GameOrchestrator
 
             // Kept until the game master reports the race over. This is what lets the lobby turn
             // the GM's player slots into accounts when the result comes back.
-            _pendingMatches[createRequest.MatchKey] = new PendingMatch(matchInfo);
+            _pendingMatches[createRequest.MatchKey] = new PendingMatch(matchInfo, session.Id);
 
             _chat.BroadcastSystem(
                 $"{session.CreatorName} has started the race on {session.StageName}!");

@@ -47,6 +47,9 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     {
         LobbyView.Reset();
         Lobby.Reset();
+        // Reset emptied the status signal, so the cached text would make UpdateStatus a no-op
+        // and leave the line blank on re-entry.
+        _lastStatus = null;
         // Returning from a race re-enters this phase, and the server only resends lobby state
         // on the next change; the transcript this client already received stays put.
         Lobby.Chat.Value = _chatMessages.ToArray();
