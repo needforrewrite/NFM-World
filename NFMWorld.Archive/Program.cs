@@ -48,6 +48,27 @@ app.MapTimeTrialEndpoints();
 app.MapAssetEndpoints();
 app.MapRazorPages();
 
+// WAL is a per-database setting, so it is applied once at startup rather than per connection.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+    db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
+    db.Database.ExecuteSqlRaw("PRAGMA foreign_keys=ON;");
+}
+
+app.Use(async (context, next) =>
+{
+    var headers = context.Response.Headers;
+    // Assets are meant to be downloaded, and a same-origin HTML/SVG payload would otherwise
+    // run as script; nosniff keeps a browser from second-guessing the declared type.
+    headers.XContentTypeOptions = "nosniff";
+    headers.XFrameOptions = "DENY";
+    headers["Referrer-Policy"] = "no-referrer";
+    headers["Content-Security-Policy"] =
+        "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'";
+    await next();
+});
+
 app.Run();
 
 /// <summary>Entry point marker so integration tests can host the real app.</summary>
