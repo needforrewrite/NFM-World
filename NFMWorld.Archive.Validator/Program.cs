@@ -73,6 +73,11 @@ public static class Program
         if (replay is null)
             return Fail("replay could not be read");
 
+        // Refused before simulating, for the same reason tt-info refuses it: another backend's
+        // ticks are different physics, so the result is not comparable with the leaderboard's.
+        if ((replay.Version ?? 0) != SavedTimeTrial.CURRENT_VERSION)
+            return Fail($"The replay is version {replay.Version ?? 0}, this backend is version {SavedTimeTrial.CURRENT_VERSION}.");
+
         var expectedTicks = replay.DemoData.Ticks.Count;
         var elapsed = TimeTrialSimulator.Run(stageName, replay, carName, expectedTicks + 500);
         if (elapsed is null)
@@ -83,7 +88,8 @@ public static class Program
         {
             ok,
             elapsedTicks = elapsed.Value,
-            expectedTicks
+            expectedTicks,
+            replayVersion = replay.Version ?? 0
         }));
 
         return ok ? 0 : 3;

@@ -60,6 +60,11 @@ public static class TimeTrialEndpoints
                 || elapsed.GetInt32() != expected.GetInt32())
                 return Results.BadRequest(new { error = "The replay did not reproduce its own time." });
 
+            // Replays from another backend version tick different physics, so their time is not
+            // comparable with the leaderboard's.
+            if (!output.TryGetProperty("replayVersion", out var replayVersion))
+                return Results.BadRequest(new { error = "The replay did not report its version." });
+
             var totalTicks = elapsed.GetInt32();
             var existing = await db.TimeTrials
                 .FirstOrDefaultAsync(t => t.UserId == user.Id && t.StageHash == stageHash && t.CarHash == carHash, ct);
@@ -95,7 +100,7 @@ public static class TimeTrialEndpoints
                     CarName = carName,
                     TotalTicks = totalTicks,
                     StoragePath = stored.StoragePath,
-                    ReplayVersion = output.TryGetProperty("replayVersion", out var v) ? v.GetInt32() : 0
+                    ReplayVersion = replayVersion.GetInt32()
                 });
             }
 
