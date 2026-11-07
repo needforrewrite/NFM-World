@@ -126,16 +126,24 @@ public static class LobbyView
     {
         var lobby = UiState.Lobby;
         return Sx.View(
-            style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexGrow: 1, gapRow: 10),
+            style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexGrow: 1, gapRow: 10,
+                overflow: Overflow.Hidden),
             children:
             [
-                Panel("GAMES", null, () => Sx.Show(
-                    when: () => lobby.Sessions.Value.Count == 0,
-                    then: () => Sx.Text(style: () => Sx.TextStyles(fontSize: 13, foregroundColor: Theme.MenuDim),
-                        text: () => "No games yet. Create one to get started."),
-                    otherwise: () => Sx.For(
-                        each: () => lobby.Sessions.Value,
-                        row: (session, _) => SessionRow(session, actions)))),
+                // flexShrink: 0 would let a long list push the buttons off the bottom; the
+                // panel takes what is left and its list scrolls.
+                Sx.View(style: () => Sx.Styles(flexGrow: 1, flexShrink: 1, flexDirection: FlexDirection.Column),
+                    children:
+                    [
+                        Panel("GAMES", null, () => Sx.Show(
+                            when: () => lobby.Sessions.Value.Count == 0,
+                            then: () => Sx.Text(style: () => Sx.TextStyles(fontSize: 13,
+                                    foregroundColor: Theme.MenuDim),
+                                text: () => "No games yet. Create one to get started."),
+                            otherwise: () => Sx.For(
+                                each: () => lobby.Sessions.Value,
+                                row: (session, _) => SessionRow(session, actions))))
+                    ]),
                 Sx.View(
                     style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10, flexShrink: 0),
                     children:
@@ -207,26 +215,32 @@ public static class LobbyView
     private static Node ChatPanel(Actions actions)
     {
         var lobby = UiState.Lobby;
+        // The input row must not be squeezed as the transcript grows, and the transcript must
+        // not grow the column past the viewport: Panel's list takes what is left and scrolls.
         return Sx.View(
-            style: () => Sx.Styles(width: 300, flexShrink: 0, flexDirection: FlexDirection.Column, gapRow: 8),
+            style: () => Sx.Styles(width: 300, flexShrink: 0, flexDirection: FlexDirection.Column, gapRow: 8,
+                overflow: Overflow.Hidden),
             children:
             [
-                Panel("CHAT", null, () => Sx.View(
-                    style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 4,
-                        overflow: Overflow.Scroll),
-                    children: Sx.For(
-                        each: () => lobby.Chat.Value,
-                        row: (line, _) => Sx.View(
-                            style: () => Sx.Styles(flexDirection: FlexDirection.Column),
-                            children:
-                            [
-                                Sx.Text(style: () => Sx.TextStyles(fontSize: 11, fontStyle: FontStyle.Bold,
-                                    foregroundColor: line.IsSystem ? Theme.MenuDim : line.Color),
-                                    text: () => line.Sender),
-                                Sx.Text(style: () => Sx.TextStyles(fontSize: 12,
-                                    foregroundColor: line.IsSystem ? Theme.MenuDim : TextBlue),
-                                    text: () => line.Message)
-                            ])))),
+                Sx.View(style: () => Sx.Styles(flexGrow: 1, flexShrink: 1, flexDirection: FlexDirection.Column),
+                    children:
+                    [
+                        Panel("CHAT", null, () => Sx.View(
+                            style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 4),
+                            children: Sx.For(
+                                each: () => lobby.Chat.Value,
+                                row: (line, _) => Sx.View(
+                                    style: () => Sx.Styles(flexDirection: FlexDirection.Column),
+                                    children:
+                                    [
+                                        Sx.Text(style: () => Sx.TextStyles(fontSize: 11, fontStyle: FontStyle.Bold,
+                                            foregroundColor: line.IsSystem ? Theme.MenuDim : line.Color),
+                                            text: () => line.Sender),
+                                        Sx.Text(style: () => Sx.TextStyles(fontSize: 12,
+                                            foregroundColor: line.IsSystem ? Theme.MenuDim : TextBlue),
+                                            text: () => line.Message)
+                                    ]))))
+                    ]),
                 Sx.View(
                     style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6, flexShrink: 0),
                     children:
@@ -359,6 +373,7 @@ public static class LobbyView
         return Sx.View(
             style: () => Sx.Styles(
                 flexDirection: FlexDirection.Column, flexGrow: width is null ? 1 : 0,
+                flexShrink: 1, minHeight: 0,
                 width: width is { } w ? w : null,
                 gapRow: 8, paddingTop: 10, paddingBottom: 10, paddingLeft: 12, paddingRight: 12,
                 backgroundColor: new Color(22, 42, 80, 90),
@@ -367,8 +382,13 @@ public static class LobbyView
             children:
             [
                 Sx.Text(style: () => Sx.TextStyles(fontSize: 11, fontStyle: FontStyle.Bold,
-                    foregroundColor: Blue), text: () => title),
-                content()
+                    foregroundColor: Blue), layout: () => Sx.Styles(flexShrink: 0),
+                    text: () => title),
+                // The panel's height is its parent's, so the list takes the remainder and
+                // scrolls: an unbounded list would push past the panel instead.
+                Sx.View(style: () => Sx.Styles(flexGrow: 1, flexShrink: 1, flexDirection: FlexDirection.Column,
+                        overflow: Overflow.Scroll),
+                    children: [content()])
             ]);
     }
 
