@@ -3,6 +3,7 @@ using Maxine.Extensions;
 using MemoryPack;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Multiplayer;
+using NFMWorldLibrary.Multiplayer.Archive;
 using NFMWorldLibrary.Multiplayer.HttpMessages;
 
 Console.WriteLine("NFMWorld Lobby Server starting...");
@@ -27,6 +28,17 @@ if (knownKeys.Count == 0)
     Logging.Warning("[Lobby] WARNING: no HMAC keys configured; /race-ended will reject every request.");
 const int MaxBodyBytes = 1 << 20;
 
+// The archive only trusts this server to report results, so this key must not reach a game master.
+ArchiveClient? archive = null;
+if (Environment.GetEnvironmentVariable("ARCHIVE_URL") is { Length: > 0 } archiveUrl)
+{
+    archive = new ArchiveClient(archiveUrl,
+        Environment.GetEnvironmentVariable("HMAC_KEY_ID"),
+        Environment.GetEnvironmentVariable("ARCHIVE_SECRET_KEY"));
+    if (!archive.CanReportResults)
+        Logging.Warning("[Lobby] ARCHIVE_URL is set but no ARCHIVE_SECRET_KEY, so results will not be reported.");
+}
+
 var cts = new CancellationTokenSource();
 Console.CancelKeyPress += (_, _) =>
 {
@@ -47,7 +59,7 @@ _ = Task.Run(async () =>
             if (ctx.Request.IsWebSocketRequest)
                 _ = transport.AcceptWebSocketRequest(ctx, cts.Token);
             else
-                _ = Task.Run(() => HandleHttpRequest(ctx, knownKeys, MaxBodyBytes));
+                _ = Task.Run(() => HandleHttpRequest(ctx, knownKeys, MaxBodyBytes, orchestrator));
         }
         catch (OperationCanceledException)
         {
@@ -74,10 +86,11 @@ http.Stop();
 orchestrator.Stop();
 return;
 
-static void HandleHttpRequest(
+static async Task HandleHttpRequest(
     HttpListenerContext ctx,
     IReadOnlyDictionary<string, byte[]> knownKeys,
-    int maxBodyBytes)
+    int maxBodyBytes,
+    GameOrchestrator orchestrator)
 {
     var req = ctx.Request;
     var res = ctx.Response;
@@ -111,7 +124,8 @@ static void HandleHttpRequest(
         var body = System.Buffers.BuffersExtensions.ToArray(seq.Sequence);
 
         // The body is what the signature covers, so it has to be read before verifying.
-        var authError = HmacAuth.Verify(req.HttpMethod, req.Url!.LocalPath, body, req.Headers["Authorization"], knownKeys);
+        var authError = HmacAuth.Verify(req.HttpMethod, req.Url!.LocalPath, body, req.Headers["Authorization"], knownKeys,
+            out _, out var nonce);
         if (authError is not null)
         {
             Logging.Warning($"[Lobby] /race-ended rejected: {authError}");
@@ -120,8 +134,14 @@ static void HandleHttpRequest(
             return;
         }
 
+        // A game master is untrusted, so its report is only a claim: the signature proves which
+        // lobby-issued race it refers to, and the lobby decides whether the match is still open.
         var results = MemoryPackSerializer.Deserialize<RaceServer2Lobby_RaceResults>(body);
         Logging.Info($"[Lobby] Race ended: MatchKey={results.MatchKey}, Players={results.Results.Standings?.Length ?? 0}");
+
+        if (Guid.TryParse(results.MatchKey, out var matchKey))
+            await orchestrator.ReportMatchResultsAsync(matchKey, results.Results, CancellationToken.None);
+
         res.StatusCode = 200;
         res.Close();
     }

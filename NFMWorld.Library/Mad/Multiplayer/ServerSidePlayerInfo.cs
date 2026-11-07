@@ -31,4 +31,10 @@ public partial struct ServerSidePlayerInfo
     /// The color of the player's vehicle.
     /// </summary>
     [MemoryPackOrder(3), PluginVisible] public required Color3 Color { get; set; }
+
+    /// <summary>
+    /// Archive account id, or 0 for a guest. The lobby fills this in from the authenticated
+    /// token so a result can be attributed to an account without trusting the client's name.
+    /// </summary>
+    [MemoryPackOrder(4), PluginVisible] public int AccountId { get; set; }
 }

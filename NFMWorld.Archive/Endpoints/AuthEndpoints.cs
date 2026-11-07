@@ -120,6 +120,17 @@ public static class AuthEndpoints
                 rating?.Wins ?? 0, rating?.Losses ?? 0, rating?.Matches ?? 0));
         });
 
+        // Called by the lobby with a player's token to learn who they are. Returns only the id
+        // and username, so a compromised lobby learns nothing else about the account.
+        auth.MapGet("/verify", async (
+            HttpContext http, ArchiveDbContext db, CancellationToken ct) =>
+        {
+            var user = await http.GetUserAsync(db, ct);
+            return user is null
+                ? Results.Unauthorized()
+                : Results.Ok(new { AccountId = user.Id, user.Username });
+        });
+
         auth.MapPost("/logout-all", async (
             HttpContext http, ArchiveDbContext db, SessionService sessions, CancellationToken ct) =>
         {

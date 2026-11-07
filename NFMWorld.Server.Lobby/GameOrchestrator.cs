@@ -1,4 +1,7 @@
-﻿using NFMWorldLibrary.Multiplayer.HttpMessages;
+﻿using System.Collections.Concurrent;
+using NFMWorldLibrary.Gamemodes;
+using NFMWorldLibrary.Multiplayer.Archive;
+using NFMWorldLibrary.Multiplayer.HttpMessages;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
 using NFMWorldLibrary.Multiplayer.Packets.S2C;
 
@@ -17,9 +20,54 @@ public class GameOrchestrator
     private readonly LobbyStateBroadcaster _broadcaster;
     private readonly GameMasterRegistry _gmRegistry;
     private readonly GameMasterHttpClient _gmClient;
+    private readonly ArchiveClient? _archive;
+
+    /// <summary>Matches handed to a game master and not yet reported back, keyed by match key.</summary>
+    private readonly ConcurrentDictionary<Guid, PendingMatch> _pendingMatches = new();
+
+    private sealed record PendingMatch(MatchGameplayInfo Info);
 
     private Thread? _lobbyThread;
     private bool _lobbyIsRunning = true;
+
+    /// <summary>
+    /// Turns a game master's result report into an archive report and sends it. Called from the
+    /// /race-ended HTTP handler, which is the only place a trusted server proves itself.
+    /// </summary>
+    public async Task<bool> ReportMatchResultsAsync(Guid matchKey, RaceResults results, CancellationToken ct)
+    {
+        if (!_pendingMatches.TryRemove(matchKey, out var pending))
+        {
+            Logging.Warning($"[Lobby] Result for an unknown or already-reported match {matchKey}");
+            return false;
+        }
+
+        if (_archive is not { CanReportResults: true })
+            return false;
+
+        var players = new List<ResultPlayer>();
+        foreach (var standing in results.Standings)
+        {
+            // Match the standing's player id back to the slot, then to the account.
+            var slot = pending.Info.Players.FirstOrDefault(p => p.Value.Id == standing.PlayerId);
+            if (slot.Value.Id != standing.PlayerId)
+                continue;
+
+            players.Add(new ResultPlayer(
+                slot.Value.AccountId > 0 ? slot.Value.AccountId : null,
+                standing.FinishPosition,
+                standing.FinishTime?.Ticks,
+                IsBot: false));
+        }
+
+        return await _archive.ReportMatchAsync(new MatchReport(
+            matchKey.ToString("N"),
+            pending.Info.Gamemode,
+            pending.Info.StageName,
+            StageHash: null,
+            results.RaceDuration.Ticks,
+            players), ct);
+    }
 
     public GameOrchestrator(IMultiplayerServerTransport transport)
     {
@@ -33,6 +81,15 @@ public class GameOrchestrator
         _gmClient = new GameMasterHttpClient(
             Environment.GetEnvironmentVariable("HMAC_KEY_ID") ?? "primary",
             Environment.GetEnvironmentVariable("HMAC_SECRET_KEY") ?? "");
+
+        // The archive is optional: a lobby run without one still works, it just admits everyone
+        // as a guest and reports no results.
+        if (Environment.GetEnvironmentVariable("ARCHIVE_URL") is { Length: > 0 } archiveUrl)
+        {
+            _archive = new ArchiveClient(archiveUrl,
+                Environment.GetEnvironmentVariable("HMAC_KEY_ID"),
+                Environment.GetEnvironmentVariable("ARCHIVE_SECRET_KEY"));
+        }
 
         transport.PacketReceived += TransportOnPacketReceived;
         transport.ClientConnected += TransportOnClientConnected;
@@ -129,6 +186,10 @@ public class GameOrchestrator
     {
         switch (e.Packet)
         {
+            case C2S_Authenticate authenticate:
+                _ = HandleAuthenticateAsync(e.ClientIndex, authenticate);
+                break;
+
             case C2S_PlayerIdentity identity:
                 HandlePlayerIdentity(e.ClientIndex, identity);
                 break;
@@ -165,12 +226,59 @@ public class GameOrchestrator
 
     // ── Packet handlers ──────────────────────────────────────────────
 
+    private async Task HandleAuthenticateAsync(uint clientIndex, C2S_Authenticate authenticate)
+    {
+        var client = _players.Get(clientIndex);
+        if (client is null) return;
+
+        if (string.IsNullOrEmpty(authenticate.Token))
+        {
+            client.AccountId = 0;
+            client.IsAuthenticated = true;
+            SendAuthenticated(clientIndex, true, client.Name, null);
+            return;
+        }
+
+        if (_archive is null)
+        {
+            SendAuthenticated(clientIndex, false, "", "This lobby is not connected to an account server.");
+            return;
+        }
+
+        var account = await _archive.VerifyTokenAsync(authenticate.Token, CancellationToken.None);
+        if (account is null)
+        {
+            SendAuthenticated(clientIndex, false, "", "Your session has expired. Sign in again.");
+            return;
+        }
+
+        client.AccountId = account.AccountId;
+        client.IsAuthenticated = true;
+        client.Name = account.Username;
+        SendAuthenticated(clientIndex, true, account.Username, null);
+        _broadcaster.BroadcastToAll();
+    }
+
+    private void SendAuthenticated(uint clientIndex, bool accepted, string username, string? error)
+    {
+        var client = _players.Get(clientIndex);
+        _transport.SendPacketToClient(clientIndex, new S2C_Authenticated
+        {
+            Accepted = accepted,
+            AccountId = client?.AccountId ?? 0,
+            Username = username,
+            Error = error
+        });
+    }
+
     private void HandlePlayerIdentity(uint clientId, C2S_PlayerIdentity identity)
     {
         var client = _players.Get(clientId);
         if (client is null) return;
 
-        client.Name = identity.PlayerName;
+        // A signed-in player's name comes from their account; only a guest may choose one.
+        if (client.AccountId == 0)
+            client.Name = identity.PlayerName;
         client.Vehicle = identity.SelectedVehicle;
         client.Color = identity.Color;
     }
@@ -249,7 +357,8 @@ public class GameOrchestrator
                 Id = p.Id,
                 PlayerName = p.Name,
                 CarName = p.Vehicle,
-                Color = p.Color
+                Color = p.Color,
+                AccountId = p.AccountId
             };
         }
 
@@ -272,6 +381,10 @@ public class GameOrchestrator
 
             var createResponse = await _gmClient.CreateRaceAsync(gm, createRequest);
             _gmRegistry.MarkSuccess(gm);
+
+            // Kept until the game master reports the race over. This is what lets the lobby turn
+            // the GM's player slots into accounts when the result comes back.
+            _pendingMatches[createRequest.MatchKey] = new PendingMatch(matchInfo);
 
             _chat.BroadcastSystem(
                 $"{session.CreatorName} has started the race on {session.StageName}!");

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using MemoryPack;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
@@ -108,6 +109,8 @@ public class RaceOrchestrator : IDisposable
                     new S2C_GameFinished { Results = results },
                     reliable: true);
 
+                ReportToLobby(session, results);
+
                 // The race is over, so the gamemode and the plugin assembly behind it are
                 // done: release both now rather than holding them until shutdown. Sessions
                 // are not removed here, so player state keeps relaying as before - the
@@ -121,6 +124,52 @@ public class RaceOrchestrator : IDisposable
         // Finished sessions released their plugin in a frame of this tick loop, which is
         // still on the stack; the check only sees the truth on a later tick.
         PluginUnloadVerifier.Verify();
+    }
+
+    /// <summary>
+    /// Tells the lobby this race is over. The lobby is the only party that knows which account
+    /// each player slot belongs to, so it composes the report to the archive; the game master
+    /// deliberately has no archive key of its own.
+    /// </summary>
+    private void ReportToLobby(RaceSession session, RaceResults results)
+    {
+        var lobby = Environment.GetEnvironmentVariable("LOBBY_RESULTS_URL");
+        if (string.IsNullOrEmpty(lobby))
+        {
+            Logging.Info("[GM] No LOBBY_RESULTS_URL configured; the lobby is not told this race ended.");
+            return;
+        }
+
+        var body = MemoryPackSerializer.Serialize(new RaceServer2Lobby_RaceResults
+        {
+            MatchKey = session.MatchKey.ToString(),
+            Results = results
+        });
+
+        var keyId = Environment.GetEnvironmentVariable("HMAC_KEY_ID") ?? "primary";
+        var secret = Convert.FromBase64String(Environment.GetEnvironmentVariable("HMAC_SECRET_KEY") ?? "");
+        var auth = HmacAuth.SignWithNonce("POST", "/race-ended", body, keyId, secret, Guid.NewGuid().ToString("N"));
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+                using var request = new HttpRequestMessage(HttpMethod.Post, lobby)
+                {
+                    Content = new ByteArrayContent(body)
+                };
+                request.Headers.Authorization = System.Net.Http.Headers.AuthenticationHeaderValue.Parse(auth);
+
+                using var response = await client.SendAsync(request);
+                if (!response.IsSuccessStatusCode)
+                    Logging.Warning($"[GM] Lobby rejected the result report: {(int)response.StatusCode}");
+            }
+            catch (Exception ex)
+            {
+                Logging.Warning($"[GM] Could not report the race result to the lobby: {ex.Message}");
+            }
+        });
     }
 
     // ── Transport events ─────────────────────────────────────────────
@@ -253,9 +302,11 @@ public class RaceOrchestrator : IDisposable
         var session = new RaceSession
         {
             Id = sessionId,
+            MatchKey = raceParams.MatchKey,
             PlayerCount = raceParams.MatchGameplayInfo.Players.Count,
             Clients = [],
-            PlayerInfos = raceParams.MatchGameplayInfo.Players
+            PlayerInfos = raceParams.MatchGameplayInfo.Players,
+            Gamemode = raceParams.MatchGameplayInfo.Gamemode
         };
 
         foreach (var (playerIndex, playerInfo) in raceParams.MatchGameplayInfo.Players)
@@ -342,6 +393,11 @@ public class RaceOrchestrator : IDisposable
     private class RaceSession
     {
         public uint Id { get; set; }
+
+        /// <summary>The lobby's key for this match; the report back to the lobby is identified by it.</summary>
+        public Guid MatchKey { get; set; }
+
+        public string Gamemode { get; set; } = DefaultGamemodes.PvP;
         public int PlayerCount { get; set; }
         public int LoadedCount { get; set; }
         public ConcurrentDictionary<uint, Guid> Clients { get; set; } = [];

@@ -96,6 +96,12 @@ public class PlayerRegistry
         public Guid Id { get; set; }
         public ClientState State { get; set; }
         public string Name { get; set; } = "hogan rewish";
+
+        /// <summary>Archive account id, or 0 for a guest.</summary>
+        public int AccountId { get; set; }
+
+        /// <summary>False until the client has presented a token or been admitted as a guest.</summary>
+        public bool IsAuthenticated { get; set; }
         public string Vehicle { get; set; } = "nfmm/radicalone";
         public Color3 Color { get; set; }
         public (byte PlayerIndex, uint SessionIndex)? InSession { get; set; }
