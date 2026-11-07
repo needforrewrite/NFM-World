@@ -48,3 +48,7 @@
 	path = CasCore
 	url = https://github.com/uwx/CasCore
 	branch = nfmw
+[submodule "SignalsDotnet"]
+	path = SignalsDotnet
+	url = https://github.com/uwx/SignalsDotnet.git
+	branch = nfmw

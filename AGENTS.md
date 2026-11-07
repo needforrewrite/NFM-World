@@ -35,6 +35,7 @@ C#; there are no Lua or Luau code paths in the main tree any more. Older comment
 | `Microsoft.UI.Reactor.Yoga` | Yoga layout binding. |
 | `NFMWorld.Reactor.ObservableCollections` | `ObservableUnlimitedArray<T>`, `ClientStage` observes these. |
 | `CasCore/` (submodule) | The plugin sandbox. |
+| `SignalsDotnet/` (submodule) | The Sx signal library. A fork on `uwx/SignalsDotnet` branch `nfmw`, carrying the subscription-leak fix described under [Fine-Grained Reactive UI](#fine-grained-reactive-ui-sx). |
 | `Apos.Shapes/` (submodule) | 2D shapes and SVG rendering (Classic HUD, `ShapeSvg`). |
 | `HoleyDiver/` | Offline polygon triangulator used by the RAD asset pipeline. |
 
@@ -94,6 +95,13 @@ SolidJS-style: signals, per-slot effects, **no vnode and no diffing**. Backed by
 - **Scheduler**: `UiScheduler.Instance` (installed on first `UiRenderer` construction) replaces
   `Effect.DefaultScheduler`, so every write made during a frame coalesces into **one effect pass** at end of frame.
   Nothing in the UI fires timers itself.
+- **SignalsDotnet is vendored** — `SignalsDotnet/` (submodule, `uwx/SignalsDotnet` branch `nfmw`) rather than the
+  NuGet package. Upstream 3.4.1's `SignalsRequestedObservable.SubscribeCore` discarded the disposable returned by
+  `subject.Subscribe(...)`, so `SignalsRequestedDisposable` only ever cleared the ambient scope and every compute
+  that reused a scope left an observer on its subject **forever**. After ~30 minutes of HUD updates one subject held
+  over a million observers: `Signal.Value` fanned out to all of them and the game fell to 2 fps with the cost
+  aggregating over time (not a per-frame cost that was always there). Rebase the one-commit fix on any upstream bump
+  and re-check that `_currentScope`'s subscription is still disposed with the compute.
 
 ### Sx gotchas
 

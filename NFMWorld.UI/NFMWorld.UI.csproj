@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="SignalsDotnet" Version="3.4.1" />
+        <ProjectReference Include="..\SignalsDotnet\SignalsDotnet\SignalsDotnet\SignalsDotnet.csproj" />
     </ItemGroup>
 
     <ItemGroup>

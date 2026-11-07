@@ -48,6 +48,10 @@
   <Folder Name="/CasCore/">
     <Project Path="CasCore/CasCore/CasCore.csproj" />
   </Folder>
+  <Folder Name="/SignalsDotnet/">
+    <Project Path="SignalsDotnet/SignalsDotnet/SignalsDotnet/SignalsDotnet.csproj" />
+    <Project Path="SignalsDotnet/SignalsDotnet/SignalsDotnet.SourceGenerators/SignalsDotnet.SourceGenerators.csproj" />
+  </Folder>
   <Folder Name="/MemoryPack/">
     <Project Path="MemoryPack/src/MemoryPack.Core/MemoryPack.Core.csproj" />
     <Project Path="MemoryPack/src/MemoryPack.Generator/MemoryPack.Generator.csproj" />
