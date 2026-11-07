@@ -27,6 +27,12 @@ public interface IGamemode
     void Reset();
 
     /// <summary>
+    /// Called when the player leaves the race without finishing, so the gamemode can tell the
+    /// host. The race keeps running for everyone still in it.
+    /// </summary>
+    void Forfeit();
+
+    /// <summary>
     /// Called by the host when authoritative server results arrive
     /// (<c>S2C_GameFinished</c>).
     /// </summary>

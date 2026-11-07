@@ -149,17 +149,81 @@ public class PvpFinishTests
         }
     }
 
+    private static readonly Guid OtherPlayerId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+
+    /// <summary>
+    /// Leaving mid-race forfeits: the leaver is placed last but the race carries on, because
+    /// ending it on one player's departure would take everyone else's race away too.
+    /// </summary>
+    [TestMethod]
+    public void OnePlayerForfeiting_LeavesTheRaceRunning()
+    {
+        var factory = CreateFactory();
+        try
+        {
+            var server = factory.CreateServerGamemode(new ServerGamemodeParameters
+            {
+                Players = new List<ServerSidePlayerInfo>
+                {
+                    new() { Id = PlayerId, PlayerName = "a", CarName = "a", Color = default },
+                    new() { Id = OtherPlayerId, PlayerName = "b", CarName = "b", Color = default }
+                }
+            }, new ServerContext(CreateStage(laps: 1, checkpoints: 2)))!;
+            server.Begin();
+            server.StartRace();
+
+            server.OnClientEvent(PlayerId, SerializeEvent(factory, "ForfeitEvent").Span);
+
+            Assert.IsFalse(server.GetStateSnapshot() is { IsFinished: true },
+                "the other player is still racing");
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
+
+    [TestMethod]
+    public void EveryoneForfeiting_EndsTheRace()
+    {
+        var factory = CreateFactory();
+        try
+        {
+            var server = factory.CreateServerGamemode(new ServerGamemodeParameters
+            {
+                Players = new List<ServerSidePlayerInfo>
+                {
+                    new() { Id = PlayerId, PlayerName = "a", CarName = "a", Color = default },
+                    new() { Id = OtherPlayerId, PlayerName = "b", CarName = "b", Color = default }
+                }
+            }, new ServerContext(CreateStage(laps: 1, checkpoints: 2)))!;
+            server.Begin();
+            server.StartRace();
+
+            server.OnClientEvent(PlayerId, SerializeEvent(factory, "ForfeitEvent").Span);
+            server.OnClientEvent(OtherPlayerId, SerializeEvent(factory, "ForfeitEvent").Span);
+
+            Assert.IsTrue(server.GetStateSnapshot() is { IsFinished: true },
+                "an empty race has nothing left to run");
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
+
     private sealed class ClientContext(BackendStage stage) : IGamemodeContext, IClientCallbacks
     {
         public BackendStage CurrentStage { get; } = stage;
         public RaceState RaceState => RaceState.InProgress;
         public IClientCallbacks ClientCallbacks => this;
+        public List<byte[]> SentEvents { get; } = [];
 
         public void RaceRestarted() { }
         public void ResetCheckpointGlow() { }
         public void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish) { }
         public IClientCarCallbacks GetClientCarCallbacks(BackendCar car) => throw new NotSupportedException();
-        public void SendServerEvent(ReadOnlySpan<byte> payload) { }
+        public void SendServerEvent(ReadOnlySpan<byte> payload) => SentEvents.Add(payload.ToArray());
         public void UpdatePlayers(IReadOnlyList<ClientSidePlayer> players) { }
     }
 
@@ -191,6 +255,41 @@ public class PvpFinishTests
 
             Assert.AreEqual(3, client.HudState.Lap, "the lap counter must stop at the stage's lap count");
             Assert.IsTrue(client.ClientPlayer.Car.CarPhysics.Halted, "the car stops driving once the race is over");
+        }
+        finally
+        {
+            BackendGameSparker.dynamic_models.Remove(carName);
+            client?.End();
+            factory.End();
+        }
+    }
+
+    /// <summary>
+    /// Leaving online sends a forfeit to the server, so the abandoned car does not sit on the
+    /// grid forever and the race can still end.
+    /// </summary>
+    [TestMethod]
+    public void ClientForfeiting_TellsTheServer()
+    {
+        var factory = CreateFactory();
+        var carName = $"pvp-test/{Guid.NewGuid():N}";
+        BaseClientGamemode? client = null;
+        try
+        {
+            BackendGameSparker.dynamic_models.Add(carName,
+                (0, new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName)));
+
+            var context = new ClientContext(CreateStage(laps: 1, checkpoints: 2));
+            client = (BaseClientGamemode)factory.CreateGameMode(new ClientGamemodeParameters
+            {
+                Players = [new ClientSidePlayerInfo(carName, carName, new Color3(255, 0, 0),
+                    isBot: false, isClientPlayer: true)]
+            }, context);
+            client.Begin();
+
+            client.Forfeit();
+
+            Assert.AreEqual(1, context.SentEvents.Count, "forfeiting must reach the server");
         }
         finally
         {

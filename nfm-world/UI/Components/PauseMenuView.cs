@@ -36,13 +36,17 @@ public static class PauseMenuView
         var page = new Signal<Page>(Page.Menu);
         var selected = new Signal<int>(0);
         var race = UiState.Race;
-        var descriptions = new[]
+
+        // RESTART only exists when this client owns the race. Online the Game Master does, and
+        // resetting the local gamemode would just desync it.
+        var items = new List<(string Label, string Description, Action Activate)>
         {
-            "Get back to the action.",
-            "Start a fresh run on this stage.",
-            "Adjust controls, display, audio and gameplay.",
-            "Leave this game and return to the main menu."
+            ("RESUME", "Get back to the action.", actions.Resume)
         };
+        if (actions.Restart is not null)
+            items.Add(("RESTART", "Start a fresh run on this stage.", () => Open(Page.ConfirmRestart)));
+        items.Add(("SETTINGS", "Adjust controls, display, audio and gameplay.", () => Open(Page.Settings)));
+        items.Add(("LEAVE GAME", "Leave this game and return to the main menu.", () => Open(Page.ConfirmQuit)));
 
         void Open(Page next)
         {
@@ -53,19 +57,11 @@ public static class PauseMenuView
         void Activate()
         {
             if (page.Value == Page.Menu)
-            {
-                switch (selected.Value)
-                {
-                    case 0: actions.Resume(); break;
-                    case 1: Open(Page.ConfirmRestart); break;
-                    case 2: Open(Page.Settings); break;
-                    case 3: Open(Page.ConfirmQuit); break;
-                }
-            }
+                items[selected.Value].Activate();
             else if (selected.Value == 0)
                 Open(Page.Menu);
             else if (page.Value == Page.ConfirmRestart)
-                actions.Restart();
+                actions.Restart?.Invoke();
             else if (page.Value == Page.ConfirmQuit)
                 actions.Quit();
         }
@@ -73,7 +69,7 @@ public static class PauseMenuView
         bool HandleKey(Key key)
         {
             if (page.Value == Page.Settings) return true;
-            var count = page.Value == Page.Menu ? 4 : 2;
+            var count = page.Value == Page.Menu ? items.Count : 2;
             if (key is Key.Up or Key.Down or Key.Left or Key.Right)
             {
                 var direction = key is Key.Up or Key.Left ? -1 : 1;
@@ -93,15 +89,12 @@ public static class PauseMenuView
         [
             Heading("PAUSED"),
             RaceInfo(race),
-            MenuButton("RESUME", 0, selected, Activate),
-            MenuButton("RESTART", 1, selected, Activate),
-            MenuButton("SETTINGS", 2, selected, Activate),
-            MenuButton("LEAVE GAME", 3, selected, Activate),
+            ..items.Select((item, index) => MenuButton(item.Label, index, selected, Activate)),
             Sx.View(style: () => Sx.Styles(marginTop: 8, paddingTop: 8, paddingBottom: 8,
                     paddingLeft: 12, paddingRight: 12, backgroundColor: new Color(3, 8, 20, 170), borderRadius: 6),
                 children: Sx.Text(style: () => Sx.TextStyles(fontSize: 12, foregroundColor: TextBlue,
                         horizontalAlignment: TextHorizontalAlignment.Center),
-                    text: () => descriptions[selected.Value]))
+                    text: () => items[Math.Clamp(selected.Value, 0, items.Count - 1)].Description))
         ]));
 
         Node Confirmation(bool restart) => Overlay(Card(

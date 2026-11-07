@@ -9,7 +9,8 @@ namespace NFMWorld.UI.Routes;
 
 public static class RaceHudView
 {
-    public sealed record Actions(Action Resume, Action Restart, Action Quit);
+    /// <summary><paramref name="Restart"/> is null when the host owns the race (online).</summary>
+    public sealed record Actions(Action Resume, Action? Restart, Action Quit);
 
     public static Node Build(Actions actions)
     {

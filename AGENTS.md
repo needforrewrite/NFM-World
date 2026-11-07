@@ -361,14 +361,22 @@ palette). One lobby; whether a race is rated is chosen per race, not by a menu p
   `ArchiveClient.ValidateTokenAsync`, which distinguishes `Rejected` (archive said no → sign out) from
   `Unavailable` (could not ask → admit as guest, keep the token). Signing in while already in the lobby is forwarded
   too, via `AccountManager.ActiveAccountChanged`. A lobby with no `ARCHIVE_URL` admits everyone as a guest rather
-  than refusing the token, since it cannot check it.
+  than refusing the token, since it cannot check it. **One account, one connection**: a second connection presenting
+  an account already in the lobby is refused and disconnected, because it could otherwise take two cars in a race.
+- **Pausing is local.** `RacePhase.IsPaused` shows the pause menu; only a `LocalRaceHost` also stops the tick
+  (`GameTick` returns early). Online the world keeps running, the client just stops driving, and `RaceState` is left
+  alone. `RaceHudView.Actions.Restart` is null online, so RESTART is not offered. Quitting an in-progress online race
+  calls `IGamemode.Forfeit()` (PvP sends `ForfeitEvent`) and then drops the ENet transport in `Dispose` — the server
+  places the leaver last and carries on for everyone still racing; the race only ends early when every player has
+  forfeited.
 
 | Gotcha | Rule |
 |---|---|
 | Rows are built once | a row from `Sx.For` never re-renders; anything that can change (highlight, selection) must be read inside a `Func` in a style/text slot, not captured as a local |
 | Chat list keying | `LobbyChatLine` carries an `Id`; keyed by text, two identical lines collapse into one row |
 | Status line | the connection text is only written when it changes, so a rejected-action notice is not wiped next frame |
-| Membership actions | only the creator starts a race; a member leaves. The old port wired both to `StartRace`, so LEAVE launched a race |
+| Membership actions | only the creator starts a race; a member leaves. The old port wired both to `StartRace`, so LEAVE launched a race. START RACE is only rendered for `CurrentSession.IsCreator` |
+| Struct `FirstOrDefault` | a struct-valued lookup's default (`uint` → 0) is a real connection index/slot, so lookups that must distinguish "absent" need an explicit `T?` loop or a `.Any(...)` predicate — the GM's re-attach check and the lobby's duplicate-account check both had this |
 | Stage list | enumerate once per dialog mount (`CreateDialog`), not per frame |
 | Child collections | `Sx` flattens a nested `IEnumerable` child, but an unsupported child throws inside an effect — and the signal machinery swallows it, so the subtree silently fails to mount. Keep the flattened case covered (`SxRendererTests`) |
 

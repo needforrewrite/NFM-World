@@ -158,8 +158,12 @@ public static class LobbyView
                             () => Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10),
                                 children:
                                 [
-                                    ActionButton(() => "START RACE", actions.StartRace, primary: true,
-                                        disabled: () => !lobby.Connected.Value),
+                                    // Only the creator may start, so it is not shown to a member
+                                    // who cannot use it.
+                                    Sx.Show(() => lobby.CurrentSession.Value?.IsCreator == true,
+                                        () => ActionButton(() => "START RACE", actions.StartRace, primary: true,
+                                            disabled: () => !lobby.Connected.Value
+                                                          || lobby.CurrentSession.Value?.State != SessionState.NotStarted)),
                                     ActionButton("LEAVE", actions.Leave,
                                         disabled: () => !lobby.Connected.Value)
                                 ]))

@@ -142,6 +142,11 @@ public class ENetMultiplayerClientTransport : BaseMultiplayerClientTransport
     {
         IsStopping = true;
         base.Stop();
+
+        // The receive thread is what sends queued packets, so one written a moment before Stop
+        // (a race forfeit) was dropped. Let it drain before the peer goes.
+        SpinWait.SpinUntil(() => _sendPacketQueue.IsEmpty, TimeSpan.FromMilliseconds(250));
+
         _isRunning = false;
         _peer.DisconnectNow(0);
     }

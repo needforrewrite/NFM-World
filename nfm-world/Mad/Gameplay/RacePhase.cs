@@ -29,7 +29,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     /// <summary>The in-race HUD, with its pause menu wired to this phase.</summary>
     public override Node BuildUi() => RaceHudView.Build(new RaceHudView.Actions(
         Resume: ResumeRace,
-        Restart: RestartRace,
+        Restart: _host is LocalRaceHost ? RestartRace : null,
         Quit: QuitRace));
 
     public readonly BaseGamemodeFactory Gamemode;
@@ -42,12 +42,9 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     private readonly RaceInputController _input = new();
     private readonly RaceCameraDirector _cameraDirector = new();
     private readonly SettingsCameraPreview _settingsCamera = new();
-    private RaceState _stateBeforePause;
     public IGamemode? GamemodeInstance { get; protected set; }
 
     BackendStage IGamemodeContext.CurrentStage => CurrentStage.Backend;
-
-    public bool AllowPausing { get; protected set; }
 
     public RacePhase(
         string stageName,
@@ -72,7 +69,6 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
         // Host wiring: identical for local and network hosts.
         RaceState = RaceState.WaitingToStart;
-        AllowPausing = host is LocalRaceHost;
         host.RaceCanStart += () => RaceState = RaceState.InProgress;
         host.RaceFailedToStart += () => RaceState = RaceState.FailedToStart;
         host.PlayerStateReceived += ApplyPlayerState;
@@ -355,16 +351,15 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     // ── Pause / Resume / Quit ─────────────────────────────────────
 
     /// <summary>
-    /// Freeze gameplay and show the pause menu.
+    /// Show the pause menu. Online this only stops this client driving - the race keeps
+    /// running for everyone else, so <see cref="RaceState"/> is left alone.
     /// </summary>
     private void PauseRace()
     {
         if (IsPaused) return;
-        _stateBeforePause = RaceState;
         _input.Reset(ClientCar?.Control);
         IsPaused = true;
         SoundEffects.SetPaused(true);
-        RaceState = RaceState.Paused;
 
         // The pause menu reads the same signals the HUD does, so one write is enough.
         if (GamemodeInstance is BaseClientGamemode gm)
@@ -374,20 +369,19 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     }
 
     /// <summary>
-    /// Hide the pause menu and restore the previous race state.
+    /// Hide the pause menu.
     /// </summary>
     private void ResumeRace()
     {
         if (!IsPaused) return;
         IsPaused = false;
-        RaceState = _stateBeforePause;
         SoundEffects.SetPaused(false);
         UiState.Race.Paused.Value = false;
     }
 
     private void RestartRace()
     {
-        if (!AllowPausing) return;
+        if (_host is not LocalRaceHost) return;
         GamemodeInstance?.Reset();
     }
 
@@ -412,6 +406,12 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     {
         ResumeRace();
         _input.Reset(ClientCar?.Control);
+
+        // Online, leaving mid-race is a forfeit: the Game Master keeps the race going for
+        // everyone else, and the transport is dropped by Dispose as if the game had closed.
+        if (_host is NetworkRaceHost && RaceState == RaceState.InProgress)
+            GamemodeInstance?.Forfeit();
+
         Exited?.Invoke(this, EventArgs.Empty);
     }
 
@@ -476,8 +476,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
                 ResumeRace();
             // FailedToStart is always escapable: it is the only way out of a race whose Game
             // Master went away, and the pause menu's Quit is outside the host.
-            else if (RaceState == RaceState.FailedToStart
-                     || (AllowPausing && RaceState is (RaceState.InProgress or RaceState.Finished)))
+            else if (RaceState is RaceState.FailedToStart or RaceState.InProgress or RaceState.Finished)
                 PauseRace();
 
             return;
@@ -615,9 +614,9 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     public override void GameTick()
     {
         _settingsCamera.RestoreNormal(Camera);
-        // An online race cannot pause (the server keeps racing), except once its Game Master is
-        // gone - that screen is the only way to quit.
-        if (IsPaused && (AllowPausing || RaceState == RaceState.FailedToStart))
+        // Only a local race actually stops when paused. Online the world keeps ticking: the
+        // pause menu just means this client has stopped driving.
+        if (IsPaused && _host is LocalRaceHost)
         {
             InvalidateOrdering();
             if (ClientCar is { } pausedCar &&

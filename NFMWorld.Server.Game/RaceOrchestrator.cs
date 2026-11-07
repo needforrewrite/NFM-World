@@ -236,14 +236,23 @@ public class RaceOrchestrator : IDisposable
         var session = entry.Session;
 
         // Already attached under another connection index: this is a reconnect. Move the
-        // mapping rather than counting the player as loaded twice.
-        var existingIndex = session.Clients.FirstOrDefault(kv => kv.Value == clientId).Key;
-        var reattaching = session.Clients.ContainsKey(existingIndex);
-
-        if (reattaching)
+        // mapping rather than counting the player as loaded twice. A loop, not FirstOrDefault:
+        // the struct default is 0, which is a real slot, so every second player looked
+        // attached and was never counted as loaded.
+        uint? existingIndex = null;
+        foreach (var (index, id) in session.Clients)
         {
-            if (existingIndex != clientIndex)
-                session.Clients.TryRemove(existingIndex, out _);
+            if (id == clientId)
+            {
+                existingIndex = index;
+                break;
+            }
+        }
+
+        if (existingIndex is { } attached)
+        {
+            if (attached != clientIndex)
+                session.Clients.TryRemove(attached, out _);
             session.Clients[clientIndex] = clientId;
 
             Logging.Info($"[GM] Client {clientId} re-attached");

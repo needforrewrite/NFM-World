@@ -285,6 +285,17 @@ public class GameOrchestrator
         switch (status)
         {
             case TokenVerification.Valid:
+                // One account, one seat: a second connection on the same account would let one
+                // player take two cars in a race and vote twice in every session.
+                if (account!.AccountId != 0 && _players.All.Any(p =>
+                        p.Key != clientIndex && p.Value.AccountId == account.AccountId))
+                {
+                    SendAuthenticated(clientIndex, false, "",
+                        "This account is already in the lobby on another connection.", accountId: 0);
+                    _transport.DisconnectClient(clientIndex);
+                    break;
+                }
+
                 client.AccountId = account!.AccountId;
                 client.IsAuthenticated = true;
                 client.Name = account.Username;

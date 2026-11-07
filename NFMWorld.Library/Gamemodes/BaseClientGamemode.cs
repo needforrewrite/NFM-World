@@ -128,6 +128,14 @@ public abstract class BaseClientGamemode : IGamemode
     }
 
     /// <summary>
+    /// Called when the player leaves the race before finishing. Gamemodes that tell the host
+    /// about it override this; the default does nothing.
+    /// </summary>
+    public virtual void Forfeit()
+    {
+    }
+
+    /// <summary>
     /// Invoked when a key is pressed.
     /// </summary>
     /// <param name="key">The key.</param>

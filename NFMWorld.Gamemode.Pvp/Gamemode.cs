@@ -92,6 +92,8 @@ public class PvpGamemode : PluginGamemode
         Begin();
     }
 
+    public override void Forfeit() => SendServerEvent<ClientToServerEvent>(new ForfeitEvent());
+
     public override void GameTick()
     {
         base.GameTick();
@@ -197,6 +199,7 @@ public class PvpServerGamemode(
         public byte Lap;
         public ushort Checkpoint;
         public int Position;
+        public bool Forfeited;
     }
 
     private ServerGamemodeState _state;
@@ -268,9 +271,29 @@ public class PvpServerGamemode(
     {
         base.OnClientEvent(clientId, payload);
         var e = MemoryPackSerializer.Deserialize<ClientToServerEvent>(payload);
+
+        // Leaving forfeits: the player is placed last and the race carries on for everyone
+        // else. Without this the abandoned player stayed on the grid at their last relayed
+        // position and the race could never end on its own.
+        if (e is ForfeitEvent && _perPlayer.TryGetValue(clientId, out var forfeiter)
+                             && !forfeiter.Forfeited)
+        {
+            forfeiter.Forfeited = true;
+            forfeiter.Position = Players.Count;
+
+            // Nobody left to race: end it rather than ticking an empty session forever.
+            if (_perPlayer.Values.All(p => p.Forfeited))
+            {
+                _state = ServerGamemodeState.Finished;
+                CompleteRace();
+            }
+
+            return;
+        }
+
         if (e is CheckpointEvent { Index: var cp, Lap: var lap, Placement: var placement })
         {
-            if (!_perPlayer.TryGetValue(clientId, out var ps))
+            if (!_perPlayer.TryGetValue(clientId, out var ps) || ps.Forfeited)
                 return;
 
             // The client's numbers are only a hint. Accept one only when it advances the
@@ -336,10 +359,15 @@ public class PvpServerGamemode(
 
 [MemoryPackable]
 [MemoryPackUnion(0, typeof(CheckpointEvent))]
+[MemoryPackUnion(1, typeof(ForfeitEvent))]
 public abstract partial record ClientToServerEvent;
 
 [MemoryPackable]
 public partial record CheckpointEvent(ushort Index, byte Lap, int Placement, int Tick) : ClientToServerEvent;
+
+/// <summary>A player left the race before finishing.</summary>
+[MemoryPackable]
+public partial record ForfeitEvent : ClientToServerEvent;
 
 [MemoryPackable]
 [MemoryPackUnion(0, typeof(CountdownGoEvent))]
