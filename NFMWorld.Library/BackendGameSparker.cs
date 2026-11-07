@@ -102,6 +102,10 @@ public static class BackendGameSparker
             var modsFolder = Path.Combine(Directory.GetCurrentDirectory(), "mods");
             if (Directory.Exists(modsFolder))
                 VFS.MountDirectory(modsFolder);
+
+            // Mounted after the local directories so a local stage or car always wins over a
+            // remote copy of the same name.
+            ArchiveMount.MountIfConfigured(Environment.GetEnvironmentVariable("NFMW_ARCHIVE_URL"));
         }
 
         cars.Add(Collection.NFMM, []);
