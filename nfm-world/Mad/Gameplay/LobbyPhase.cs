@@ -231,12 +231,10 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
     // ── Actions ────────────────────────────────────────────────────
 
-    private void OnJoin()
+    private void OnJoin(uint id)
     {
-        // The highlighted row, never the session we are already in: joining is what changes
-        // membership, so reading CurrentSession here would make JOIN a no-op.
-        if (Lobby.SelectedSessionId.Value is not { } id)
-            return;
+        // Never the session we are already in: joining is what changes membership, so reading
+        // CurrentSession here would make JOIN a no-op.
         if (Lobby.CurrentSession.Value?.Id == id)
             return;
 

@@ -23,8 +23,9 @@ namespace NFMWorld.UI.Routes;
 /// </remarks>
 public static class LobbyView
 {
+    /// <summary>Join takes the row's id: a button stops propagation, so the row's own click never fires.</summary>
     public sealed record Actions(
-        Action Join,
+        Action<uint> Join,
         Action Leave,
         Action StartRace,
         Action Create,
@@ -183,7 +184,7 @@ public static class LobbyView
                         disabled: session.State != SessionState.NotStarted)
                     : session.IsMember
                         ? ActionButton(() => "LEAVE", actions.Leave, small: true)
-                        : ActionButton(() => "JOIN", actions.Join, small: true,
+                        : ActionButton(() => "JOIN", () => actions.Join(session.Id), small: true,
                             disabled: session.State != SessionState.NotStarted)
             ]);
     }
