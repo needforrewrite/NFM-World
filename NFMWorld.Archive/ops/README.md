@@ -18,9 +18,42 @@ Set through the `Archive__*` environment variables (double underscore nests).
 | `Archive__DiscordClientId` / `DiscordClientSecret` / `DiscordRedirectUri` | Discord sign-in |
 | `Archive__ReadOnly` | Disables registration and uploads |
 
-Generate a server key with `NFMWorld.GenerateHmacKey`, and give the same value to the lobby as
-`ARCHIVE_SECRET_KEY`. A game master must **not** receive it: it can only report races to the
-lobby, which is what stops one GM fabricating results.
+### Generating keys
+
+There are two independent keys in the system. Generate each with the same tool:
+
+```sh
+dotnet run --project NFMWorld.GenerateHmacKey            # key id defaults to "primary"
+dotnet run --project NFMWorld.GenerateHmacKey archive    # a named key
+```
+
+It prints a random 256-bit secret, base64-encoded, and the environment lines for every server
+that needs it. Run it twice: one key for the **archive** trust level and one for the **game
+master** trust level. They are not interchangeable — the archive key lets its holder write
+ratings, and only the lobby should have it.
+
+**Archive ↔ lobby** (the key that signs `POST /results/match`):
+
+| Where | Variable |
+|---|---|
+| Lobby | `ARCHIVE_URL` (also enables token checks on join), `HMAC_KEY_ID`, `ARCHIVE_SECRET_KEY` |
+| Archive | `Archive__TrustedServerKeys=<keyId>=<secret>` |
+
+**Lobby ↔ game master** (the key that signs `/create-race` and `/race-ended`):
+
+| Where | Variable |
+|---|---|
+| Lobby | `HMAC_KEY_ID`, `HMAC_SECRET_KEY` |
+| Game master | `GM_HMAC_KEYS=<keyId>=<secret>` |
+
+The same `HMAC_KEY_ID`/`HMAC_SECRET_KEY` pair may be reused for both trust levels if you keep it
+to one deployment, but never hand the archive key to a game master: the game master runs on
+machines you do not control, and that key can write ratings directly.
+
+`Archive__TrustedServerKeys` and `GM_HMAC_KEYS` both take a comma-separated list
+(`primary=secret,primary-v2=newsecret`), which is what a rotation relies on: add the new key
+everywhere, switch the lobby's `HMAC_KEY_ID`/`HMAC_SECRET_KEY` to it, then drop the old one once
+no request signed with it can still be in flight.
 
 ## Why uploads are on another origin
 

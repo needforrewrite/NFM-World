@@ -215,7 +215,25 @@ GAME_MASTER_DOMAINS=localhost:7002+7003,gm1.nfmw.example.com
 dotnet run --project NFMWorld.GenerateHmacKey
 ```
 
-Save the output — you'll need `HMAC_KEY_ID`, `HMAC_SECRET_KEY`, and `GM_HMAC_KEYS`.
+Save the output — you'll need `HMAC_KEY_ID`, `HMAC_SECRET_KEY`, and `GM_HMAC_KEYS`. The lobby
+sets `GM_HMAC_KEYS` too, to check what the game masters send back.
+
+### 1b. (Optional) Wire up the archive
+
+Without an archive the lobby admits everyone as a guest and rates nothing, which is fine for a
+local test. To get accounts, ratings and token checks, generate a **second** key and give it to
+both sides — the archive, not the lobby, is what it protects:
+
+```powershell
+# on the lobby
+$env:ARCHIVE_URL = "http://localhost:5288"
+$env:ARCHIVE_SECRET_KEY = "<the second secret>"
+
+# on the archive
+$env:Archive__TrustedServerKeys = "primary=<the second secret>"
+```
+
+A game master must never receive `ARCHIVE_SECRET_KEY`. See `NFMWorld.Archive/ops/README.md`.
 
 ### 2. Start the Game Master
 
@@ -237,18 +255,22 @@ dotnet run --project NFMWorld.Server.Game
 ```powershell
 $env:HMAC_KEY_ID = "primary"
 $env:HMAC_SECRET_KEY = "LC7aXjNZ5mcB2AJxwXZ+OZjAKyEaCjV6pTXIpRAmrjY="
+$env:GM_HMAC_KEYS = "primary=LC7aXjNZ5mcB2AJxwXZ+OZjAKyEaCjV6pTXIpRAmrjY="
 $env:GAME_MASTER_DOMAINS = "localhost:7002+7003"
-$env:LOBBY_PORT = "7000"
 $env:LOBBY_HTTP_ENDPOINT = "http://localhost:7001/"
 
 dotnet run --project NFMWorld.Server.Lobby
 ```
 
+There is no separate WebSocket port: the client connects to `/game` on `LOBBY_HTTP_ENDPOINT`, the
+same listener that takes race results.
+
 ### 4. Connect the client
 
-In the game's dev console:
+The menu's PLAY > MULTIPLAYER item uses the endpoint baked into the build (a Debug build defaults
+to `localhost:7001`). To reach a different lobby, use the dev console:
 ```
-connect localhost 7000
+connect localhost 7001
 ```
 
 ### Full environment variable reference
@@ -257,11 +279,17 @@ connect localhost 7000
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `LOBBY_PORT` | `7000` | WebSocket port for clients |
-| `LOBBY_HTTP_ENDPOINT` | `http://localhost:7001/` | HTTP endpoint for race results |
+| `LOBBY_HTTP_ENDPOINT` | `http://localhost:7001/` | HTTP endpoint for race results **and** the client WebSocket (`/game`) |
 | `GAME_MASTER_DOMAINS` | `localhost` | GM addresses (dev or SRV format) |
-| `HMAC_KEY_ID` | `primary` | Key ID for HMAC signing |
-| `HMAC_SECRET_KEY` | *(required)* | Base64 HMAC secret |
+| `GM_HMAC_KEYS` | *(required)* | `keyId=base64secret,...` the game masters sign with (verifies `/race-ended`) |
+| `HMAC_KEY_ID` | `primary` | Key ID this lobby signs `/create-race` with |
+| `HMAC_SECRET_KEY` | *(required)* | Base64 secret for `HMAC_KEY_ID` |
+| `ARCHIVE_URL` | *(unset)* | Archive base URL. Set, the lobby verifies player tokens on join and can report results |
+| `ARCHIVE_SECRET_KEY` | *(unset)* | Archive server key; **never** give this to a game master |
+
+Generate any of these secrets with `dotnet run --project NFMWorld.GenerateHmacKey [keyId]`. The
+lobby's WebSocket and the race-results endpoint share `LOBBY_HTTP_ENDPOINT`; a public lobby needs
+a TLS terminator in front of it, because the client presents its session token on that socket.
 
 #### Game Master
 
@@ -270,6 +298,7 @@ connect localhost 7000
 | `GM_GAME_PORT` | `7002` | ENet UDP port for players |
 | `GM_HTTP_ENDPOINT` | `http://localhost:7003/` | HTTP endpoint for Lobby API |
 | `GM_HMAC_KEYS` | *(required)* | `keyId=base64secret,...` pairs |
+| `LOBBY_RESULTS_URL` | *(unset)* | Where the GM posts a finished race (the lobby's `http://host:7001/race-ended`) |
 | `WORKER_BINARY_PATH` | `dotnet` | Path to Worker binary, or `dotnet` for dev |
 
 #### Worker (v2 only — receives config via CLI args)

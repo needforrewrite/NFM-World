@@ -355,7 +355,13 @@ palette). One lobby; whether a race is rated is chosen per race, not by a menu p
   the `connect` command), so the browser guard and `ENetMultiplayer.Init` live in one place. `Dispose` must call
   `transport.Stop()` — otherwise the server keeps a ghost player and the receive loop runs for the process.
 - **The view reads `UiState.Lobby` only.** The phase writes it from `GameTick`. `LobbyView.Actions` carries every
-  callback; `Select` (highlighted row) is what JOIN acts on — never `CurrentSession`, which is the session you are in.
+  callback; JOIN takes the clicked row's id (`Action<uint>`), because a button stops the press reaching its row, so
+  the row's own click handler never runs.
+- **Auth to the archive.** `C2S_Authenticate` carries the account token; the lobby validates it with
+  `ArchiveClient.ValidateTokenAsync`, which distinguishes `Rejected` (archive said no → sign out) from
+  `Unavailable` (could not ask → admit as guest, keep the token). Signing in while already in the lobby is forwarded
+  too, via `AccountManager.ActiveAccountChanged`. A lobby with no `ARCHIVE_URL` admits everyone as a guest rather
+  than refusing the token, since it cannot check it.
 
 | Gotcha | Rule |
 |---|---|
@@ -364,6 +370,7 @@ palette). One lobby; whether a race is rated is chosen per race, not by a menu p
 | Status line | the connection text is only written when it changes, so a rejected-action notice is not wiped next frame |
 | Membership actions | only the creator starts a race; a member leaves. The old port wired both to `StartRace`, so LEAVE launched a race |
 | Stage list | enumerate once per dialog mount (`CreateDialog`), not per frame |
+| Child collections | `Sx` flattens a nested `IEnumerable` child, but an unsupported child throws inside an effect — and the signal machinery swallows it, so the subtree silently fails to mount. Keep the flattened case covered (`SxRendererTests`) |
 
 ## Virtual File System (Maxine.VFS)
 

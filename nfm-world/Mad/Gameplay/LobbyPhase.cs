@@ -54,7 +54,19 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         // on the next change; the transcript this client already received stays put.
         Lobby.Chat.Value = _chatMessages.ToArray();
         UpdateStatus();
+        // Signing in from the account screen while sitting in the lobby has to be presented too;
+        // Enter is paired with the Unsubscribe in Dispose, and pop/re-enter is balanced.
+        GameSparker.AccountManager.ActiveAccountChanged += OnAccountChanged;
         base.Enter();
+    }
+
+    private void OnAccountChanged(NFMWorld.Accounts.Account? account)
+    {
+        // Empty token = signing out, which the lobby models as a guest.
+        if (transport.State != ClientState.Connected)
+            return;
+        transport.SendPacketToServer(new C2S_Authenticate { Token = account?.Token ?? "" });
+        UpdateStatus();
     }
 
     public override void GameTick()
@@ -94,6 +106,17 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
                         // signed out locally too.
                         Logging.Info($"Lobby rejected the session: {authenticated.Error}");
                         GameSparker.AccountManager.LogOut();
+                        SetStatus(authenticated.Error is { Length: > 0 }
+                            ? authenticated.Error
+                            : "Your session was rejected. Sign in again.");
+                    }
+                    else if (authenticated.AccountId == 0 && GameSparker.AccountManager.LoggedIn)
+                    {
+                        // Admitted as a guest even though we presented a token: the lobby could
+                        // not check it. Keep the token - it is not known to be bad.
+                        SetStatus(authenticated.Error is { Length: > 0 }
+                            ? authenticated.Error
+                            : "Playing as a guest.");
                     }
                     break;
 
@@ -119,10 +142,13 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
     protected override void Dispose(bool disposing)
     {
-        // Leaving the lobby must close the socket: the server only drops the ghost player when
-        // the connection goes, and the receive loop would otherwise run for the process lifetime.
         if (disposing)
+        {
+            // Leaving the lobby must close the socket: the server only drops the ghost player when
+            // the connection goes, and the receive loop would otherwise run for the process lifetime.
+            GameSparker.AccountManager.ActiveAccountChanged -= OnAccountChanged;
             transport.Stop();
+        }
         base.Dispose(disposing);
     }
 

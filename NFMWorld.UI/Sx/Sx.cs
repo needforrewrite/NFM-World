@@ -499,6 +499,12 @@ public static class Sx
             _ => throw new InvalidOperationException($"A component returned {value.GetType().Name}, not a Node.")
         };
 
+    /// <summary>
+    /// A nested collection is flattened, so a helper that builds a list of rows can be passed
+    /// as one child. Without this it fell into the throw below - and an exception inside a
+    /// component's effect is swallowed by the signal machinery, so the whole subtree silently
+    /// failed to mount instead of reporting anything.
+    /// </summary>
     internal static void AddChildren(Component parent, object?[] children)
     {
         foreach (var child in children)
@@ -515,6 +521,12 @@ public static class Sx
                     break;
                 case Func<object?> slot:
                     parent.AddChild(MountSlot(slot));
+                    break;
+                case System.Collections.IEnumerable items:
+                    var flattened = new List<object?>();
+                    foreach (var item in items)
+                        flattened.Add(item);
+                    AddChildren(parent, [.. flattened]);
                     break;
                 default:
                     throw new ArgumentException($"Unsupported child {child.GetType().Name} on {parent.GetType().Name}.");

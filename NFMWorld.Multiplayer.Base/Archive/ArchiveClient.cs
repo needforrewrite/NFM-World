@@ -6,6 +6,17 @@ namespace NFMWorldLibrary.Multiplayer.Archive;
 
 public sealed record ArchiveAccount(int AccountId, string Username);
 
+/// <summary>
+/// What the archive said about a token. <see cref="Unavailable"/> is not a rejection: the lobby
+/// must not destroy a player's session because it could not reach the archive.
+/// </summary>
+public enum TokenVerification
+{
+    Valid,
+    Rejected,
+    Unavailable,
+}
+
 public sealed record ResultPlayer(int? AccountId, int FinishPosition, long? FinishTimeTicks, bool IsBot);
 
 public sealed record MatchReport(
@@ -43,27 +54,36 @@ public sealed class ArchiveClient
     public bool CanReportResults => _keyId is not null && _secret is not null;
 
     /// <summary>
-    /// Resolves an account token to an account, or null when the archive rejects it. A network
-    /// failure is reported as null too: refusing a player whose token cannot be checked is safer
-    /// than admitting them on trust.
+    /// Resolves an account token to an account. A token the archive refuses is
+    /// <see cref="TokenVerification.Rejected"/>; a token it could not be asked about - a network
+    /// failure, a timeout, an unusable answer - is <see cref="TokenVerification.Unavailable"/>,
+    /// which the lobby treats as a guest, not as a reason to sign the player out.
     /// </summary>
-    public async Task<ArchiveAccount?> VerifyTokenAsync(string token, CancellationToken ct)
+    public async Task<(TokenVerification Status, ArchiveAccount? Account)> ValidateTokenAsync(
+        string token, CancellationToken ct)
     {
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(_baseUri, "auth/verify"));
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             using var response = await _http.SendAsync(request, ct);
+
+            // 5xx means the archive is broken, not that the player's session ended.
+            if ((int)response.StatusCode >= 500)
+                return (TokenVerification.Unavailable, null);
+
             if (!response.IsSuccessStatusCode)
-                return null;
+                return (TokenVerification.Rejected, null);
 
             var account = await response.Content.ReadFromJsonAsync<ArchiveAccount>(ct);
-            return account is { AccountId: > 0 } ? account : null;
+            return account is { AccountId: > 0 }
+                ? (TokenVerification.Valid, account)
+                : (TokenVerification.Rejected, null);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
         {
             Logging.Warning($"[Archive] Token verification failed: {ex.Message}");
-            return null;
+            return (TokenVerification.Unavailable, null);
         }
     }
 

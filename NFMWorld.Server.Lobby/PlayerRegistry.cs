@@ -102,6 +102,9 @@ public class PlayerRegistry
 
         /// <summary>False until the client has presented a token or been admitted as a guest.</summary>
         public bool IsAuthenticated { get; set; }
+
+        /// <summary>The last token presented, so a reconnect loop cannot re-verify it every tick.</summary>
+        public string? PresentedToken { get; set; }
         public string Vehicle { get; set; } = "nfmm/radicalone";
         public Color3 Color { get; set; }
         public (byte PlayerIndex, uint SessionIndex)? InSession { get; set; }

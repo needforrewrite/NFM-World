@@ -307,7 +307,7 @@ public static class LobbyView
                             text: () => $"Max players: {lobby.MaxPlayers.Value}"),
                         Sx.View(
                             style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6),
-                            children: MaxPlayerButtons(actions)),
+                            children: [..MaxPlayerButtons(actions)]),
                         Sx.View(
                             style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10, marginTop: 6),
                             children:

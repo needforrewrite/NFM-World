@@ -256,37 +256,69 @@ public class GameOrchestrator
         {
             client.AccountId = 0;
             client.IsAuthenticated = true;
+            // Cleared so signing back in with the same token is not treated as a repeat.
+            client.PresentedToken = null;
             SendAuthenticated(clientIndex, true, client.Name, null);
             return;
         }
 
+        // A client controls how often it presents a token, and every attempt is an HTTP round
+        // trip to the archive, so a re-auth is accepted once per connection unless the text
+        // actually changed.
+        if (client.IsAuthenticated && authenticate.Token == client.PresentedToken)
+            return;
+
         if (_archive is null)
         {
-            SendAuthenticated(clientIndex, false, "", "This lobby is not connected to an account server.");
+            // Not signed out: this lobby simply cannot check accounts. The client keeps its
+            // token and plays as a guest rather than losing its saved session.
+            client.AccountId = 0;
+            client.IsAuthenticated = true;
+            client.PresentedToken = authenticate.Token;
+            SendAuthenticated(clientIndex, true, client.Name, null);
             return;
         }
 
-        var account = await _archive.VerifyTokenAsync(authenticate.Token, CancellationToken.None);
-        if (account is null)
+        var (status, account) = await _archive.ValidateTokenAsync(authenticate.Token, CancellationToken.None);
+        client.PresentedToken = authenticate.Token;
+
+        switch (status)
         {
-            SendAuthenticated(clientIndex, false, "", "Your session has expired. Sign in again.");
-            return;
-        }
+            case TokenVerification.Valid:
+                client.AccountId = account!.AccountId;
+                client.IsAuthenticated = true;
+                client.Name = account.Username;
+                SendAuthenticated(clientIndex, true, account.Username, null, account.AccountId);
+                _broadcaster.BroadcastToAll();
+                break;
 
-        client.AccountId = account.AccountId;
-        client.IsAuthenticated = true;
-        client.Name = account.Username;
-        SendAuthenticated(clientIndex, true, account.Username, null);
-        _broadcaster.BroadcastToAll();
+            case TokenVerification.Rejected:
+                // The archive has spoken: the session is gone. Say so, so the client drops it.
+                client.AccountId = 0;
+                client.IsAuthenticated = true;
+                SendAuthenticated(clientIndex, false, "", "Your session has expired. Sign in again.",
+                    accountId: 0);
+                break;
+
+            default:
+                // Could not ask. Admitted as a guest: `Accepted` false means "the archive
+                // rejected you" to the client, which would throw away a session over what may
+                // be a momentary network failure.
+                client.AccountId = 0;
+                client.IsAuthenticated = true;
+                SendAuthenticated(clientIndex, true, client.Name, "Could not reach the account server; playing as a guest.");
+                break;
+        }
     }
 
-    private void SendAuthenticated(uint clientIndex, bool accepted, string username, string? error)
+    private void SendAuthenticated(uint clientIndex, bool accepted, string username, string? error,
+        int? accountId = null)
     {
         var client = _players.Get(clientIndex);
         _transport.SendPacketToClient(clientIndex, new S2C_Authenticated
         {
             Accepted = accepted,
-            AccountId = client?.AccountId ?? 0,
+            AccountId = accountId ?? client?.AccountId ?? 0,
             Username = username,
             Error = error
         });

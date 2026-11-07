@@ -312,6 +312,29 @@ public class SxRendererTests
     }
 
     /// <summary>
+    /// A helper that returns a list of nodes can be passed as one child. Before this it threw
+    /// inside the component's effect, and the signal machinery swallowed the exception, so the
+    /// subtree failed to mount with no error anywhere - the lobby's create dialog was blank.
+    /// </summary>
+    [TestMethod]
+    public void CollectionsOfChildren_AreFlattened()
+    {
+        var mounted = Renderer.Mount(() => Sx.View(children: [new List<Node>
+        {
+            Sx.Text(text: () => "one"),
+            Sx.Text(text: () => "two"),
+        }]));
+
+        var texts = ((View)mounted.Root).VisualChildren.OfType<Text>()
+            .Select(t => t.Children.OfType<TextNode>().FirstOrDefault()?.Text)
+            .ToList();
+
+        CollectionAssert.AreEqual(new[] { "one", "two" }, texts);
+
+        mounted.Dispose();
+    }
+
+    /// <summary>
     /// A For host that leaves the tree must release its rows. The parent only detaches
     /// nodes, so this is what the Disposing hook exists for.
     /// </summary>
