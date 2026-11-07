@@ -45,6 +45,16 @@ public static class TimeTrialEndpoints
             if (file is null || string.IsNullOrEmpty(stageHash) || string.IsNullOrEmpty(carHash))
                 return Results.BadRequest(new { error = "Missing replay, stage hash or car hash." });
 
+            // Both hashes have to name content the archive actually holds, of the right kind.
+            // They are the leaderboard's key, so an invented hash would rank a time against
+            // content that does not exist. This binds the claim to real assets; the validator
+            // still resolves the stage by name, so it is not yet proof of what was simulated.
+            // shortcut: hashes are not used to load the stage for simulation, upgrade when the
+            // validator can be pointed at an asset by hash.
+            if (!await db.Assets.AnyAsync(a => a.ContentHash == stageHash && a.Type == AssetType.Stage, ct)
+                || !await db.Assets.AnyAsync(a => a.ContentHash == carHash && a.Type == AssetType.Car, ct))
+                return Results.BadRequest(new { error = "The stage or car is not in the archive." });
+
             if (file.Length > RadpackLimits.MaxTimeTrialBytes)
                 return Results.BadRequest(new { error = "Replay exceeds the size limit." });
 
