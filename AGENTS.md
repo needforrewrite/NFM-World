@@ -339,6 +339,28 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
 | Login enumeration | a missing user still pays for a password hash (`PasswordHasher.DummyHash`) and returns the same error as a wrong password |
 | Uploaded files | are served with a download disposition and `nosniff` and belong on a separate origin; the in-app endpoint is a development convenience |
 
+## Multiplayer lobby (client)
+
+`nfm-world/Mad/Gameplay/LobbyPhase.cs` (WebSocket to the lobby) and `nfm-world/UI/Routes/LobbyView.cs` (Sx, main-menu
+palette). One lobby; whether a race is rated is chosen per race, not by a menu page.
+
+- **Endpoint is a build property**, not a setting — `LobbyEndpoint`/`LobbyPort` in `NFMWorld.Game.csproj`, emitted as
+  `AssemblyMetadata` and read by `LobbyEndpoint.cs`. Debug defaults to `localhost:7000` (the release lobby refuses a
+  debug client); `connect <host> [port]` reaches any other.
+- **One transport per phase, and the phase owns it.** `LobbyConnection.TryOpen` is the only entry point (menu item and
+  the `connect` command), so the browser guard and `ENetMultiplayer.Init` live in one place. `Dispose` must call
+  `transport.Stop()` — otherwise the server keeps a ghost player and the receive loop runs for the process.
+- **The view reads `UiState.Lobby` only.** The phase writes it from `GameTick`. `LobbyView.Actions` carries every
+  callback; `Select` (highlighted row) is what JOIN acts on — never `CurrentSession`, which is the session you are in.
+
+| Gotcha | Rule |
+|---|---|
+| Rows are built once | a row from `Sx.For` never re-renders; anything that can change (highlight, selection) must be read inside a `Func` in a style/text slot, not captured as a local |
+| Chat list keying | `LobbyChatLine` carries an `Id`; keyed by text, two identical lines collapse into one row |
+| Status line | the connection text is only written when it changes, so a rejected-action notice is not wiped next frame |
+| Membership actions | only the creator starts a race; a member leaves. The old port wired both to `StartRace`, so LEAVE launched a race |
+| Stage list | enumerate once per dialog mount (`CreateDialog`), not per frame |
+
 ## Virtual File System (Maxine.VFS)
 
 `TheVFS.VFS` (`NFMWorld.Library/TheVFS.cs`) is the single entry point; everything is a `VirtualFS` over `IPath`.
