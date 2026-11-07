@@ -31,6 +31,7 @@ C#; there are no Lua or Luau code paths in the main tree any more. Older comment
 | `NFMWorld.Gamemode.Pvp`, `.TimeTrial`, `.Hostile` | Gamemode **plugins** (see below). |
 | `NFMWorld.Ai.Classic`, `NFMWorld.Ai.ElStupido` | AI **plugins**. |
 | `NFMWorld.Server.Game`, `.Server.Lobby`, `.Server.SharedMemory` | Dedicated server, `RaceOrchestrator`. |
+| `NFMWorld.Archive`, `.Archive.Test`, `.Archive.Validator` | Account/asset server (ASP.NET Core + SQLite) and its out-of-process validator. See [Archive server](#archive-server). |
 | `NFMWorld.Multiplayer.Base`, `NFMWorld.Api`, `NFMWorld.Sentry`, `NFMWorld.CrashReporter` | Transport, HTTP API, telemetry, crash reports. |
 | `Microsoft.UI.Reactor.Yoga` | Yoga layout binding. |
 | `NFMWorld.Reactor.ObservableCollections` | `ObservableUnlimitedArray<T>`, `ClientStage` observes these. |
@@ -310,6 +311,34 @@ reference it; new shader work goes through `NFMWorld.ShaderCompiler`.
 - Native libraries live under `NFMWorld.NativeLibs/libs/` and are resolved by the `DllImport` resolver in
   `NFMWorld/WorldGame.cs` — add a new native file there, not next to the consuming code.
 
+## Archive server
+
+In-tree replacement for the Rust `nfmw-archive`. ASP.NET Core minimal APIs plus Razor Pages, EF Core on SQLite,
+uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment configuration and the backup drill.
+
+- **Trust boundaries.** Accounts are the archive's; ratings are only written by a request signed with a trusted
+  server key, and only the lobby holds one. A game master is run by anyone, so it reports a finished race to the
+  lobby (`LOBBY_RESULTS_URL`) and the lobby forwards it to `/results/match`.
+- **Sessions** are opaque tokens stored as `selector.SHA256(secret)`; the plaintext is only in the response and the
+  client. A security stamp on the user revokes every session at once.
+- **Content-addressed storage.** Every upload is stored under its own SHA-256 (`FileStorage`), so a re-upload of the
+  same bytes resolves to the same path — never delete a rejected upload without checking no row still references the
+  hash.
+- **Validation is out of process** (`NFMWorld.Archive.Validator`). `TimeTrialSimulator` is synchronous and cannot be
+  cancelled, so the archive runs it as a child process with a wall clock and kills it. A time trial is ranked only by
+  that simulation's tick count, never by a number the client sends.
+- **Client.** `AccountManager` (`nfm-world/Mad/Account/`) talks to `/auth/*` directly and persists the token through
+  the VFS write root; the menu's ACCOUNT item opens `AccountView`. `ArchiveMount` mounts the asset store as a read-only
+  VFS layer when `NFMW_ARCHIVE_URL` is set, after the local directories so local content wins.
+
+| Gotcha | Rule |
+|---|---|
+| Razor page items | `.cshtml` under `Pages/` is picked up as plain `Content` in this project and gets served verbatim as a static file; the csproj declares `<RazorGenerate Include="Pages\**\*.cshtml" />` explicitly |
+| `_ViewImports` | must sit at `Pages/_ViewImports.cshtml`, not `Pages/Shared/`, or the layout and tag helpers do not apply to subpages |
+| Untrusted decompression | `Deflate.Decompress(source, maxOutputBytes)` and `RadpackSerializer.Deserialize(data, maxDecompressedBytes)` are the bounded overloads; the unbounded ones are for data this build produced |
+| Login enumeration | a missing user still pays for a password hash (`PasswordHasher.DummyHash`) and returns the same error as a wrong password |
+| Uploaded files | are served with a download disposition and `nosniff` and belong on a separate origin; the in-app endpoint is a development convenience |
+
 ## Virtual File System (Maxine.VFS)
 
 `TheVFS.VFS` (`NFMWorld.Library/TheVFS.cs`) is the single entry point; everything is a `VirtualFS` over `IPath`.
@@ -344,6 +373,9 @@ every dependent project — run all downstream tests.
 - **Frameworks differ by project — match the one you're in:**
   - `NFMWorld.Library.Test` — **MSTest 4** (`[TestClass]`, `[TestMethod]`, `[DataRow]`, `Assert.AreEqual`). This is the
     project to extend for game/UI/HUD/plugin behaviour. Do not use NUnit APIs here.
+  - `NFMWorld.Archive.Test` — **MSTest 4** as well. It boots the real archive through
+    `WebApplicationFactory` against a throwaway SQLite file, so the endpoint pipeline and Razor pages are exercised as
+    deployed; add archive behaviour tests here, not against mocks.
   - `HoleyDiver.UnitTest` — NUnit (`[Test]`, `[SetUp]`). Leave it NUnit.
   - `FixedMathSharp/tests/FixedMathSharp.Tests` and `Maxine.Extensions.Mathematics.Tests` — xUnit.
   - `Maxine.Extensions/Maxine.VFS.Test` — MSTest, but not in `nfm-world.slnx`; run it from its own folder.
