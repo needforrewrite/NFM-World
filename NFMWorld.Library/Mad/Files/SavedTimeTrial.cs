@@ -3,6 +3,7 @@ using MemoryPack;
 using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Rad;
+using NFMWorldLibrary.Radpack;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Files;
@@ -105,9 +106,13 @@ public partial class SavedTimeTrial
         return null;
     }
 
+    /// <summary>
+    /// Loads from bytes, capping the decompressed size: this overload also reads uploads, whose
+    /// compressed length says nothing about how far they expand.
+    /// </summary>
     public static SavedTimeTrial? Load(ReadOnlyMemory<byte> data)
     {
-        var decompData = Deflate.Decompress(data.Span);
+        var decompData = Deflate.Decompress(data.Span, RadpackLimits.MaxDecompressedBytes);
         return MemoryPackSerializer.Deserialize<SavedTimeTrial>(decompData, MemoryPackHelpers.Options);
     }
 

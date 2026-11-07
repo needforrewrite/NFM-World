@@ -58,9 +58,14 @@ public static class TimeTrialEndpoints
             if (file.Length > RadpackLimits.MaxTimeTrialBytes)
                 return Results.BadRequest(new { error = "Replay exceeds the size limit." });
 
+            // The validator simulates against the archive's stored stage, not the one the replay
+            // carries, so the replay cannot choose the course it is verified on.
+            var stageAsset = await db.Assets.FirstAsync(a => a.ContentHash == stageHash && a.Type == AssetType.Stage, ct);
+            var stagePath = Path.Combine(storage.Root, stageAsset.StoragePath);
+
             await using var received = file.OpenReadStream();
             var stored = await StoreAndValidateAsync(
-                db, validator, storage, received, stageName, carName, ct);
+                db, validator, storage, received, stageName, carName, stagePath, ct);
 
             // The simulation is the authority on the time; a replay that does not reproduce its
             // own tick count is refused, not stored.
@@ -83,18 +88,13 @@ public static class TimeTrialEndpoints
             // replacing it, so a player cannot lose a good time by retrying.
             if (existing is not null && existing.TotalTicks <= totalTicks)
             {
-                // Storage is content-addressed, so re-uploading the same replay yields the path
-                // the kept entry already uses; deleting it would delete the entry's own file.
-                if (stored.StoragePath != existing.StoragePath)
-                    storage.Delete(stored.StoragePath);
+                await storage.DeleteIfUnreferencedAsync(stored.StoragePath, db, ct);
                 return Results.Ok(new { status = "kept existing faster time", existing.TotalTicks });
             }
 
             if (existing is not null)
             {
-                // Same hazard in reverse: the faster replay can be byte-identical to the old one.
-                if (existing.StoragePath != stored.StoragePath)
-                    storage.Delete(existing.StoragePath);
+                await storage.DeleteIfUnreferencedAsync(existing.StoragePath, db, ct);
                 existing.TotalTicks = totalTicks;
                 existing.StoragePath = stored.StoragePath;
                 existing.CreatedAt = DateTimeOffset.UtcNow;
@@ -152,16 +152,16 @@ public static class TimeTrialEndpoints
     /// </summary>
     private static async Task<StoredReplay> StoreAndValidateAsync(
         ArchiveDbContext db, ValidatorRunner validator, FileStorage storage, Stream source,
-        string stageName, string carName, CancellationToken ct)
+        string stageName, string carName, string stageAssetPath, CancellationToken ct)
     {
         var (_, relative, _) = await storage.PutAsync(source, RadpackLimits.MaxTimeTrialBytes, ct);
         var path = Path.Combine(storage.Root, relative);
 
-        var result = await validator.RunAsync("tt-sim", [path, stageName, carName], ct);
-        // The path is content-addressed: a replay already ranked under the same bytes must not
-        // lose its file because a second, identical upload failed to validate.
-        if (!result.Ok && !await db.TimeTrials.AnyAsync(t => t.StoragePath == relative, ct))
-            storage.Delete(relative);
+        var result = await validator.RunAsync("tt-sim", [path, stageName, carName, stageAssetPath], ct);
+        // The path is content-addressed: a replay or asset already stored under the same bytes
+        // must not lose its file because a second, identical upload failed to validate.
+        if (!result.Ok)
+            await storage.DeleteIfUnreferencedAsync(relative, db, ct);
 
         return new StoredReplay(relative, result.Output);
     }

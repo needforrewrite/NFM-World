@@ -15,7 +15,7 @@ namespace NFMWorld.Archive.Validator;
 /// archive instead runs this and applies a wall clock of its own.
 ///
 /// Usage: validator tt-info &lt;replay-file&gt;
-///        validator tt-sim &lt;replay-file&gt; &lt;stage-name&gt; &lt;car-name&gt;
+///        validator tt-sim &lt;replay-file&gt; &lt;stageName&gt; &lt;car-name&gt; [stage-radpack-file]
 ///        validator radpack &lt;radpack-file&gt;
 ///
 /// Every command prints one JSON object to stdout and exits non-zero on refusal.
@@ -34,7 +34,7 @@ public static class Program
             return args[0] switch
             {
                 "tt-info" => TimeTrialInfo(args[1]),
-                "tt-sim" => TimeTrialSimulation(args[1], args[2], args[3]),
+                "tt-sim" => TimeTrialSimulation(args[1], args[2], args[3], args.Length > 4 ? args[4] : null),
                 "radpack" => Radpack(args[1]),
                 _ => Fail($"unknown command {args[0]}")
             };
@@ -67,7 +67,7 @@ public static class Program
         return (replay.Version ?? 0) == SavedTimeTrial.CURRENT_VERSION ? 0 : 2;
     }
 
-    private static int TimeTrialSimulation(string path, string stageName, string carName)
+    private static int TimeTrialSimulation(string path, string stageName, string carName, string? stageRadpackPath)
     {
         var replay = SavedTimeTrial.Load(File.ReadAllBytes(path));
         if (replay is null)
@@ -78,8 +78,19 @@ public static class Program
         if ((replay.Version ?? 0) != SavedTimeTrial.CURRENT_VERSION)
             return Fail($"The replay is version {replay.Version ?? 0}, this backend is version {SavedTimeTrial.CURRENT_VERSION}.");
 
+        // The stage must come from the archive's own stored asset, never from the replay. A
+        // replay carries its own StageData and the simulator prefers it, which made the tick
+        // count circular: a replay of a stage whose finish is at the start reproduces itself.
+        if (stageRadpackPath is null)
+            return Fail("No stage asset was supplied to simulate against.");
+
+        var stageAsset = RadpackSerializer.Deserialize(
+            File.ReadAllBytes(stageRadpackPath), RadpackLimits.MaxDecompressedBytes);
+        if (stageAsset is not RadpackTrack track)
+            return Fail("The stage asset is not a track.");
+
         var expectedTicks = replay.DemoData.Ticks.Count;
-        var elapsed = TimeTrialSimulator.Run(stageName, replay, carName, expectedTicks + 500);
+        var elapsed = TimeTrialSimulator.Run(stageName, replay, carName, expectedTicks + 500, track.Stage);
         if (elapsed is null)
             return Fail("simulation did not finish within the tick limit");
 

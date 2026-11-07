@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using NFMWorld.Archive;
 using NFMWorld.Archive.Auth;
@@ -24,6 +25,18 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.ConfigureFilter(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute()));
 
 var app = builder.Build();
+
+// TLS terminates at the proxy in the documented deployment, so without this every request
+// looks like local plain HTTP: the login throttle would share one global IP bucket (locking
+// everyone out on one attacker's attempts) and the session cookie would be issued without
+// Secure. KnownNetworks/Proxies are cleared because the proxy is the only thing in front.
+var forwarded = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwarded.KnownNetworks.Clear();
+forwarded.KnownProxies.Clear();
+app.UseForwardedHeaders(forwarded);
 
 using (var scope = app.Services.CreateScope())
 {

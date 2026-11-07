@@ -16,6 +16,13 @@ namespace NFMWorldLibrary.Gamemodes;
 public static class TimeTrialSimulator
 {
     public static int? Run(string stageName, SavedTimeTrial replay, string carName, int tickLimit)
+        => Run(stageName, replay, carName, tickLimit, replay.StageData);
+
+    /// <summary>
+    /// Simulates against a supplied stage rather than the one the replay carries. The archive
+    /// uses this so a replay cannot choose the course it is verified on.
+    /// </summary>
+    public static int? Run(string stageName, SavedTimeTrial replay, string carName, int tickLimit, StageLoader? stageData)
     {
         var parameters = new ClientGamemodeParameters
         {
@@ -40,11 +47,11 @@ public static class TimeTrialSimulator
         // Give the host the recorded stage too, not just the client: it builds its own
         // stage from the current files otherwise, so a stage edited since the recording
         // would make valid replays fail (or invalid ones pass).
-        var host = LocalRaceHost.Create(stageName, factory, parameters, replay.StageData);
+        var host = LocalRaceHost.Create(stageName, factory, parameters, stageData);
 
         var context = new BackendGamemodeContext
         {
-            CurrentStage = replay.StageData is { } stageData
+            CurrentStage = stageData is not null
                 ? new BackendStage(stageName, stageData)
                 : new BackendStage(stageName),
             RaceState = RaceState.InProgress,

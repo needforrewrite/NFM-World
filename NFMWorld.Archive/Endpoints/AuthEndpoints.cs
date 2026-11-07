@@ -22,11 +22,17 @@ public static class AuthEndpoints
         var auth = app.MapGroup("/auth");
 
         auth.MapPost("/register", async (
-            RegisterRequest request, ArchiveDbContext db, ArchiveOptions options,
+            RegisterRequest request, ArchiveDbContext db, ArchiveOptions options, LoginThrottle throttle,
             SessionService sessions, HttpContext http, CancellationToken ct) =>
         {
             if (options.ReadOnly)
                 return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+
+            // Each attempt costs a full PBKDF2 hash and a row, so registration is throttled by
+            // the same per-IP limiter as login.
+            if (throttle.IsBlocked("ip:" + (Ip(http) ?? "unknown"), out _))
+                return Results.Json(new { error = "Too many attempts. Try again later." },
+                    statusCode: StatusCodes.Status429TooManyRequests);
 
             if (!UsernamePolicy.TryValidate(request.Username, out var nameError))
                 return Results.BadRequest(new { error = nameError });
@@ -46,6 +52,7 @@ public static class AuthEndpoints
             db.Users.Add(user);
             await db.SaveChangesAsync(ct);
 
+            throttle.RecordFailure("ip:" + (Ip(http) ?? "unknown"));
             Audit(db, user.Id, "register", null, http);
             var token = await sessions.CreateAsync(user, UserAgent(http), Ip(http), ct);
             await db.SaveChangesAsync(ct);

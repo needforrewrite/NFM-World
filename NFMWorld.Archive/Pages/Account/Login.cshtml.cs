@@ -65,6 +65,13 @@ public sealed class LoginModel(ArchiveDbContext db, SessionService sessions, Arc
             return Page();
         }
 
+        var ipKey = "ip:" + (HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+        if (throttle.IsBlocked(ipKey, out _))
+        {
+            Error = "Too many attempts. Try again in a few minutes.";
+            return Page();
+        }
+
         if (!UsernamePolicy.TryValidate(Username, out var nameError))
         {
             Error = nameError;
@@ -95,6 +102,7 @@ public sealed class LoginModel(ArchiveDbContext db, SessionService sessions, Arc
 
         var token = await sessions.CreateAsync(user, Request.Headers.UserAgent.ToString(),
             HttpContext.Connection.RemoteIpAddress?.ToString(), HttpContext.RequestAborted);
+        throttle.RecordFailure(ipKey);
         AuthEndpoints.Audit(Db, user.Id, "web_register", null, HttpContext);
         await Db.SaveChangesAsync();
         AuthEndpoints.SetSessionCookie(HttpContext, token, options);

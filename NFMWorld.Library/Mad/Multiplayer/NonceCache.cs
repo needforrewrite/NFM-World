@@ -5,9 +5,9 @@ namespace NFMWorldLibrary.Multiplayer;
 /// its timestamp window. Entries expire at the same time the signature does, so the cache only
 /// ever holds what is still replayable.
 /// </summary>
-public sealed class NonceCache
+public sealed class NonceCache(TimeSpan? ttl = null)
 {
-    private static readonly TimeSpan Ttl = TimeSpan.FromSeconds(60);
+    private readonly TimeSpan _ttl = ttl ?? TimeSpan.FromSeconds(60);
     private readonly Lock _lock = new();
     private readonly Dictionary<string, DateTimeOffset> _seen = new(StringComparer.Ordinal);
 
@@ -25,7 +25,7 @@ public sealed class NonceCache
             if (_seen.TryGetValue(key, out var expires) && expires > now)
                 return false;
 
-            _seen[key] = now + Ttl;
+            _seen[key] = now + _ttl;
 
             if (_seen.Count > 10_000)
             {

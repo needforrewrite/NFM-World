@@ -1,4 +1,6 @@
 using System.Security.Cryptography;
+using Microsoft.EntityFrameworkCore;
+using NFMWorld.Archive.Data;
 
 namespace NFMWorld.Archive;
 
@@ -87,6 +89,20 @@ public sealed class FileStorage(string root)
         var full = Resolve(relativePath);
         if (File.Exists(full))
             File.Delete(full);
+    }
+
+    /// <summary>
+    /// Deletes only when no row still references the path. Storage is content-addressed, so
+    /// identical uploads share one file; a blind delete on a rejected or replaced upload would
+    /// take the file out from under every other row pointing at it.
+    /// </summary>
+    public async Task DeleteIfUnreferencedAsync(
+        string relativePath, ArchiveDbContext db, CancellationToken ct)
+    {
+        var referenced = await db.TimeTrials.AnyAsync(t => t.StoragePath == relativePath, ct)
+                         || await db.Assets.AnyAsync(a => a.StoragePath == relativePath, ct);
+        if (!referenced)
+            Delete(relativePath);
     }
 
     /// <summary>

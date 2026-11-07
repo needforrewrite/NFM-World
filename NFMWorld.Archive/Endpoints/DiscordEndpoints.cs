@@ -27,7 +27,8 @@ public static class DiscordEndpoints
     public static void MapDiscordEndpoints(this WebApplication app)
     {
         app.MapGet("/auth/discord/start", async (
-            ArchiveOptions options, ArchiveDbContext db, IHttpClientFactory clients, CancellationToken ct) =>
+            ArchiveOptions options, ArchiveDbContext db, IHttpClientFactory clients, HttpContext http,
+            CancellationToken ct) =>
         {
             if (string.IsNullOrEmpty(options.DiscordClientId) || string.IsNullOrEmpty(options.DiscordRedirectUri))
                 return Results.NotFound();
@@ -44,6 +45,17 @@ public static class DiscordEndpoints
             });
             await db.SaveChangesAsync(ct);
 
+            // Bind the state to this browser. Without it anyone could start a login as
+            // themselves and send the callback URL to a victim, silently signing them into the
+            // attacker's account (login CSRF).
+            http.Response.Cookies.Append("nfmw_oauth_state", state, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = http.Request.IsHttps,
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTimeOffset.UtcNow.AddMinutes(10)
+            });
+
             var url = $"{AuthorizeUrl}?client_id={Uri.EscapeDataString(options.DiscordClientId)}"
                       + $"&redirect_uri={Uri.EscapeDataString(options.DiscordRedirectUri)}"
                       + "&response_type=code&scope=identify"
@@ -59,6 +71,15 @@ public static class DiscordEndpoints
         {
             if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state))
                 return Results.BadRequest(new { error = "Missing code or state." });
+
+            // The state must be the one this browser started with, not merely a live one: a
+            // state handed to a victim would otherwise sign them into the attacker's account.
+            if (http.Request.Cookies["nfmw_oauth_state"] is not { Length: > 0 } browserState
+                || !System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
+                    System.Text.Encoding.UTF8.GetBytes(browserState), System.Text.Encoding.UTF8.GetBytes(state)))
+                return Results.BadRequest(new { error = "This login attempt was started in a different browser." });
+
+            http.Response.Cookies.Delete("nfmw_oauth_state");
 
             var stateHash = Tokens.Hash(state);
             var pending = await db.OauthPending.FirstOrDefaultAsync(p => p.StateHash == stateHash, ct);

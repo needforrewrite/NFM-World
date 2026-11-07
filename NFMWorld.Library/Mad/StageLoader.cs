@@ -146,20 +146,31 @@ public partial class StageLoader
     [MemoryPackIgnore] private readonly Dictionary<string, Rad3d> _embeddedModels = new(StringComparer.OrdinalIgnoreCase);
 
     public StageLoader(string stageName)
+        : this(stageName, stageName, null)
+    {
+    }
+
+    /// <summary>
+    /// Parses explicit stage lines instead of reading them from the VFS. Used by the archive's
+    /// validator, which must simulate against the stage it was told to, not one the replay carries.
+    /// </summary>
+    public static StageLoader FromLines(string stageName, IEnumerable<string> stageLines)
+        => new(stageName, stageName, stageLines);
+
+    private StageLoader(string stageName, string path, IEnumerable<string>? providedLines)
     {
         currentGroup = ungrouped;
 
-        Path = stageName;
-        var customStagePath = $"data/stages/{stageName}.txt";
+        Path = path;
 
         // Read-only legacy fallback: a tracks .radq the user put in data/legacy/tracks, then the
         // original track host.
-        var stageLines = VFS.FileExists(customStagePath)
-            ? VFS.ReadAllLines(customStagePath)
+        var stageLines = providedLines ?? (VFS.FileExists($"data/stages/{stageName}.txt")
+            ? VFS.ReadAllLines($"data/stages/{stageName}.txt")
             : (LegacyAssets.LegacyAssetImporter.TryReadLocal("tracks", stageName)
                 ?? LegacyAssets.LegacyAssetImporter.TryFetch("tracks", stageName)) is { } legacy
                 ? legacy.Split('\n').Select(l => l.TrimEnd('\r'))
-                : [];
+                : []);
 
         var line = "";
         int lineNumber = 0;
