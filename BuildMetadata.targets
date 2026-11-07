@@ -1,11 +1,13 @@
 <Project>
+    <!-- Runs during design-time builds too. Both kinds write the same AssemblyInfo.cs, so
+         skipping this one left the IDE's continuous design-time build rewriting that file
+         with the attributes missing; the next real build saw it newer than the assembly and
+         recompiled, rewriting NFMWorld.exe and colliding with a running instance. -->
     <Target Name="NfmwStampBuildMetadata" BeforeTargets="GetAssemblyAttributes"
-            DependsOnTargets="InitializeSourceControlInformation"
-            Condition="'$(DesignTimeBuild)' != 'true'">
+            DependsOnTargets="InitializeSourceControlInformation">
         <PropertyGroup>
-            <!-- Date, not time: this lands in AssemblyInfo, so a per-second stamp recompiled
-                 every build and rewrote NFMWorld.exe, which then could not be replaced while
-                 an instance was running. The build number only counts days anyway. -->
+            <!-- Date, not time: a per-second stamp also recompiled every build. The build
+                 number only counts days. -->
             <NfmwBuildUtc Condition="'$(NfmwBuildUtc)' == ''">$([System.DateTime]::UtcNow.ToString('yyyy-MM-dd'))</NfmwBuildUtc>
             <NfmwBuildBranch Condition="'$(NfmwBuildBranch)' == ''">$(GITHUB_HEAD_REF)</NfmwBuildBranch>
             <NfmwBuildBranch Condition="'$(NfmwBuildBranch)' == ''">$(GITHUB_REF_NAME)</NfmwBuildBranch>

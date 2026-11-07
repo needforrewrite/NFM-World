@@ -5,8 +5,11 @@
     </PropertyGroup>
     
     <ItemGroup>
+        <!-- PreserveNewest, not Always: Always rewrote every native DLL into each
+             dependent project's output on every build, which fails against a running
+             instance that has them loaded and forced a rebuild to be a relaunch blocker. -->
         <None Include="libs\**\*">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
     </ItemGroup>
 
