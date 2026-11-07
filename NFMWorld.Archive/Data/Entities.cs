@@ -40,6 +40,9 @@ public sealed class Session
 
     public required string TokenHash { get; set; }
 
+    /// <summary>Snapshot of the user's stamp when the session was issued; a mismatch revokes it.</summary>
+    public int SecurityStamp { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset ExpiresAt { get; set; }
     public DateTimeOffset LastUsedAt { get; set; } = DateTimeOffset.UtcNow;

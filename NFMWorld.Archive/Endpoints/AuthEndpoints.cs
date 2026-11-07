@@ -1,0 +1,155 @@
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using NFMWorld.Archive.Auth;
+using NFMWorld.Archive.Data;
+
+namespace NFMWorld.Archive.Endpoints;
+
+public sealed record RegisterRequest(string? Username, string? Password);
+public sealed record LoginRequest(string? Username, string? Password);
+public sealed record AccountResponse(string Username, bool IsAdmin, double Elo, int Wins, int Losses, int Matches);
+public sealed record TokenResponse(string Token, AccountResponse Account);
+
+/// <summary>
+/// Account endpoints. Registration and login are deliberately uniform in failure: a wrong
+/// password and an unknown username cost the same work and return the same error, so the login
+/// form cannot be used to enumerate accounts.
+/// </summary>
+public static class AuthEndpoints
+{
+    public static void MapAuthEndpoints(this WebApplication app)
+    {
+        var auth = app.MapGroup("/auth");
+
+        auth.MapPost("/register", async (
+            RegisterRequest request, ArchiveDbContext db, ArchiveOptions options,
+            SessionService sessions, HttpContext http, CancellationToken ct) =>
+        {
+            if (options.ReadOnly)
+                return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+
+            if (!UsernamePolicy.TryValidate(request.Username, out var nameError))
+                return Results.BadRequest(new { error = nameError });
+            if (!PasswordPolicy.TryValidate(request.Password, out var passwordError))
+                return Results.BadRequest(new { error = passwordError });
+
+            var normalized = UsernamePolicy.Normalize(request.Username!);
+            if (await db.Users.AnyAsync(u => u.UsernameNormalized == normalized, ct))
+                return Results.Conflict(new { error = "That username is taken." });
+
+            var user = new User
+            {
+                Username = request.Username!,
+                UsernameNormalized = normalized,
+                PasswordHash = PasswordHasher.Hash(request.Password!)
+            };
+            db.Users.Add(user);
+            await db.SaveChangesAsync(ct);
+
+            Audit(db, user.Id, "register", null, http);
+            var token = await sessions.CreateAsync(user, UserAgent(http), Ip(http), ct);
+            await db.SaveChangesAsync(ct);
+
+            return Results.Ok(new TokenResponse(token,
+                new AccountResponse(user.Username, user.IsAdmin, 1500, 0, 0, 0)));
+        });
+
+        auth.MapPost("/login", async (
+            LoginRequest request, ArchiveDbContext db, ArchiveOptions options,
+            SessionService sessions, HttpContext http, CancellationToken ct) =>
+        {
+            var normalized = request.Username is null ? "" : UsernamePolicy.Normalize(request.Username);
+            var user = await db.Users.FirstOrDefaultAsync(u => u.UsernameNormalized == normalized, ct);
+
+            // A miss still pays for a hash, so response time does not reveal whether the name exists.
+            var hash = user?.PasswordHash ?? PasswordHasher.DummyHash;
+            var valid = PasswordHasher.Verify(request.Password ?? "", hash) && user?.PasswordHash is not null;
+
+            if (!valid || user is null)
+            {
+                Audit(db, user?.Id, "login_failed", null, http);
+                await db.SaveChangesAsync(ct);
+                return Results.Unauthorized();
+            }
+
+            Audit(db, user.Id, "login", null, http);
+            var token = await sessions.CreateAsync(user, UserAgent(http), Ip(http), ct);
+            await db.SaveChangesAsync(ct);
+
+            var rating = await db.Ratings.FirstOrDefaultAsync(r => r.UserId == user.Id && r.Gamemode == "nfmm/pvp", ct);
+            return Results.Ok(new TokenResponse(token, new AccountResponse(
+                user.Username, user.IsAdmin, rating?.Elo ?? 1500,
+                rating?.Wins ?? 0, rating?.Losses ?? 0, rating?.Matches ?? 0)));
+        });
+
+        auth.MapPost("/logout", async (
+            HttpContext http, ArchiveDbContext db, SessionService sessions, CancellationToken ct) =>
+        {
+            var token = BearerToken(http);
+            if (token is not null)
+                await sessions.RevokeAsync(token, ct);
+            return Results.NoContent();
+        });
+
+        auth.MapGet("/me", async (
+            HttpContext http, ArchiveDbContext db, ArchiveOptions options, CancellationToken ct) =>
+        {
+            var user = await http.GetUserAsync(db, ct);
+            if (user is null)
+                return Results.Unauthorized();
+
+            var rating = await db.Ratings.FirstOrDefaultAsync(r => r.UserId == user.Id && r.Gamemode == "nfmm/pvp", ct);
+            return Results.Ok(new AccountResponse(
+                user.Username, user.IsAdmin, rating?.Elo ?? 1500,
+                rating?.Wins ?? 0, rating?.Losses ?? 0, rating?.Matches ?? 0));
+        });
+
+        auth.MapPost("/logout-all", async (
+            HttpContext http, ArchiveDbContext db, SessionService sessions, CancellationToken ct) =>
+        {
+            var user = await http.GetUserAsync(db, ct);
+            if (user is null)
+                return Results.Unauthorized();
+
+            // Bumping the stamp invalidates every session, including ones we cannot see here.
+            user.SecurityStamp++;
+            await db.SaveChangesAsync(ct);
+            await sessions.RevokeAllAsync(user.Id, ct);
+            return Results.NoContent();
+        });
+    }
+
+    internal static string? BearerToken(HttpContext http)
+    {
+        var header = http.Request.Headers.Authorization.ToString();
+        return header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+            ? header["Bearer ".Length..].Trim()
+            : null;
+    }
+
+    internal static async Task<User?> GetUserAsync(this HttpContext http, ArchiveDbContext db, CancellationToken ct)
+    {
+        var token = BearerToken(http) ?? http.Request.Cookies["nfmw_session"];
+        if (string.IsNullOrEmpty(token))
+            return null;
+
+        var sessions = http.RequestServices.GetRequiredService<SessionService>();
+        return await sessions.ValidateAsync(token, ct);
+    }
+
+    internal static void Audit(ArchiveDbContext db, int? userId, string @event, string? detail, HttpContext http)
+    {
+        db.AuthAudit.Add(new AuthAudit
+        {
+            UserId = userId,
+            Event = @event,
+            Detail = detail,
+            IpAddress = Ip(http)
+        });
+    }
+
+    private static string? Ip(HttpContext http) => http.Connection.RemoteIpAddress?.ToString();
+
+    private static string? UserAgent(HttpContext http)
+        => http.Request.Headers.UserAgent.ToString() is { Length: > 0 } ua ? ua : null;
+}
