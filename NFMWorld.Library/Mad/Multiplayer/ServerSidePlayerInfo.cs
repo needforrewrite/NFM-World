@@ -37,4 +37,9 @@ public partial struct ServerSidePlayerInfo
     /// token so a result can be attributed to an account without trusting the client's name.
     /// </summary>
     [MemoryPackOrder(4), PluginVisible] public int AccountId { get; set; }
+
+    /// <summary>
+    /// True when this slot was filled by a server-side bot rather than a connected client.
+    /// </summary>
+    [MemoryPackOrder(5), PluginVisible] public bool IsBot { get; set; }
 }

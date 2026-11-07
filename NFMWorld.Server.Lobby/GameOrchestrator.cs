@@ -48,16 +48,23 @@ public class GameOrchestrator
         var players = new List<ResultPlayer>();
         foreach (var standing in results.Standings)
         {
-            // Match the standing's player id back to the slot, then to the account.
-            var slot = pending.Info.Players.FirstOrDefault(p => p.Value.Id == standing.PlayerId);
-            if (slot.Value.Id != standing.PlayerId)
+            if (standing.PlayerId == Guid.Empty)
                 continue;
 
+            // Match the standing's player id back to the slot it was issued for. An id the
+            // match does not know is dropped rather than attributed to slot 0.
+            var slot = pending.Info.Players.FirstOrDefault(p => p.Value.Id == standing.PlayerId);
+            if (slot.Value.Id != standing.PlayerId || slot.Value.Id == Guid.Empty)
+                continue;
+
+            // A guest has a slot but no account: they take part and can be ranked in the result,
+            // they just cannot be rated. Bots are distinguished from guests upstream (the client
+            // marks them), so an accountless slot is a guest here rather than a bot.
             players.Add(new ResultPlayer(
                 slot.Value.AccountId > 0 ? slot.Value.AccountId : null,
                 standing.FinishPosition,
                 standing.FinishTime?.Ticks,
-                IsBot: false));
+                IsBot: slot.Value.IsBot));
         }
 
         return await _archive.ReportMatchAsync(new MatchReport(
