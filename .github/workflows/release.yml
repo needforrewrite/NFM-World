@@ -79,6 +79,11 @@ jobs:
       - name: Test
         run: dotnet test NFMWorld.Library.Test/NFMWorld.Library.Test.csproj -c Debug
 
+      # The archive is deployed separately from the game, but its auth and endpoint
+      # behaviour is exactly what a broken change here would touch.
+      - name: Test archive
+        run: dotnet test NFMWorld.Archive.Test/NFMWorld.Archive.Test.csproj -c Debug
+
   build-windows:
     needs: [prepare, test]
     runs-on: windows-latest
