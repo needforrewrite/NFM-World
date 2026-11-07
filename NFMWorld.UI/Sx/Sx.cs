@@ -174,6 +174,26 @@ public static class Sx
             PlaceholderColor = placeholderColor,
         };
 
+    /// <summary>
+    /// Text style that wraps inside its box. <see cref="BreakType.Word"/> alone does nothing:
+    /// <see cref="Text.RelayoutText"/> only lays text out when the overflow behaviour is not
+    /// <see cref="OverflowBehavior.Stretch"/>, which is the default.
+    /// </summary>
+    public static TextStyles WrappingText(
+        Color? foregroundColor = null,
+        float? fontSize = null,
+        FontStyle? fontStyle = null,
+        FontFamily? fontFamily = null,
+        TextHorizontalAlignment? horizontalAlignment = null)
+        => TextStyles(
+            foregroundColor: foregroundColor,
+            fontFamily: fontFamily,
+            fontSize: fontSize,
+            fontStyle: fontStyle,
+            breakType: BreakType.Word,
+            overflowBehavior: OverflowBehavior.ContinueVertically,
+            horizontalAlignment: horizontalAlignment);
+
     private static class Measurement
     {
     }

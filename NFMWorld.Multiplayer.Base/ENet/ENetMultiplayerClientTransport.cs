@@ -3,27 +3,47 @@ using ENet;
 
 namespace NFMWorldLibrary.Multiplayer;
 
+/// <summary>
+/// The race connection to a Game Master. Reconnects on its own when the peer drops, so a
+/// game-master restart or a lost packet path does not leave the race frozen for good.
+/// </summary>
 public class ENetMultiplayerClientTransport : BaseMultiplayerClientTransport
 {
     private readonly Host _client;
-    private Peer _peer;
+    private readonly Address _address;
     private readonly Thread _receiveThread;
-    private bool _isRunning = true;
-    private ConcurrentQueue<Packet> _sendPacketQueue = new();
+    private Peer _peer;
+    private volatile bool _isRunning = true;
+    // Set when the next Connect is the result of a reconnect rather than the initial dial.
+    private volatile bool _reconnectAttempted;
+    private readonly ConcurrentQueue<Packet> _sendPacketQueue = new();
 
     public ENetMultiplayerClientTransport(string hostName, ushort port = 7000)
     {
         _client = new Host();
-        
-        var address = new Address();
-        address.SetHost(hostName);
-        address.Port = port;
-        
         _client.Create();
-        _peer = _client.Connect(address);
-        
+
+        _address = new Address();
+        _address.SetHost(hostName);
+        _address.Port = port;
+
+        _peer = _client.Connect(_address);
+
         _receiveThread = new Thread(ReceiveLoop) { IsBackground = true };
         _receiveThread.Start();
+    }
+
+    /// <summary>
+    /// Reconnects the peer. ENet keeps the host and its event queue across a reconnect, so
+    /// this only replaces the peer rather than rebuilding the host.
+    /// </summary>
+    protected override Task<bool> ConnectAsync(CancellationToken ct)
+    {
+        _peer = _client.Connect(_address);
+        // ENet reports the real outcome as a Connect/Disconnect event on the receive loop,
+        // which is also what sets State; until then this stays Connecting.
+        State = ClientState.Connecting;
+        return Task.FromResult(true);
     }
 
     private void ReceiveLoop()
@@ -34,30 +54,43 @@ public class ENetMultiplayerClientTransport : BaseMultiplayerClientTransport
 
             while (!polled)
             {
-                if (_client.CheckEvents(out var netEvent) <= 0) {
+                if (_client.CheckEvents(out var netEvent) <= 0)
+                {
                     if (_client.Service(15, out netEvent) <= 0)
                         break;
 
                     polled = true;
                 }
 
-                switch (netEvent.Type) {
+                switch (netEvent.Type)
+                {
                     case EventType.None:
                         break;
 
                     case EventType.Connect:
                         Logging.Info("Client connected to server");
                         State = ClientState.Connected;
+                        // Only a genuine reconnect: the first Connect also lands here, and
+                        // raising it then would make the lobby re-handshake for nothing.
+                        if (_reconnectAttempted)
+                        {
+                            _reconnectAttempted = false;
+                            // The caller re-sends its handshake (join token, loaded state) here.
+                            RaiseReconnected();
+                        }
                         break;
 
                     case EventType.Disconnect:
+                    case EventType.Timeout:
                         Logging.Info("Client disconnected from server");
                         State = ClientState.Disconnected;
-                        break;
-
-                    case EventType.Timeout:
-                        Logging.Info("Client connection timeout");
-                        State = ClientState.Disconnected;
+                        // Reconnect unless the transport is being stopped; a deliberate
+                        // leave must not bring the peer back.
+                        if (_isRunning && !IsStopping)
+                        {
+                            _reconnectAttempted = true;
+                            BeginReconnect();
+                        }
                         break;
 
                     case EventType.Receive:
@@ -76,22 +109,24 @@ public class ENetMultiplayerClientTransport : BaseMultiplayerClientTransport
                         break;
                 }
             }
-            
+
             // Send queued packets
             while (_sendPacketQueue.TryDequeue(out var packet))
             {
                 _peer.Send(0, ref packet);
             }
         }
-        
+
         while (_sendPacketQueue.TryDequeue(out var packet))
         {
             packet.Dispose();
         }
-        
+
         _client.Flush();
         _client.Dispose();
     }
+
+    private bool IsStopping { get; set; }
 
     protected override void SendRawPacketToServer(ReadOnlySpan<byte> span, bool reliable)
     {
@@ -105,6 +140,9 @@ public class ENetMultiplayerClientTransport : BaseMultiplayerClientTransport
 
     public override void Stop()
     {
+        IsStopping = true;
+        base.Stop();
         _isRunning = false;
+        _peer.DisconnectNow(0);
     }
 }

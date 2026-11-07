@@ -66,6 +66,18 @@ static void HandleRequest(
 
     Logging.Info($"[GameMaster] HTTP {req.HttpMethod} {req.Url!.LocalPath} from {req.RemoteEndPoint}");
 
+    // Unauthenticated liveness probe, so the lobby can tell a GM that recovered from one that
+    // is still down. It says nothing about this host beyond "the process is serving".
+    if (req.HttpMethod == "GET" && req.Url!.LocalPath == "/health")
+    {
+        var ok = Encoding.UTF8.GetBytes("ok");
+        res.StatusCode = 200;
+        res.ContentLength64 = ok.Length;
+        res.OutputStream.Write(ok);
+        res.Close();
+        return;
+    }
+
     // Read body
     using var ms = new MemoryStream();
     req.InputStream.CopyTo(ms);

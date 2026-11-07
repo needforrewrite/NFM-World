@@ -134,6 +134,12 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
         }
     }
 
+    public override void DisconnectClient(uint clientIndex)
+    {
+        if (_connectedClients.TryGetValue(clientIndex, out var peer))
+            peer.DisconnectNow(0);
+    }
+
     public override void SendRawPacketToClients(ReadOnlySpan<uint> clientIndices, ReadOnlySpan<byte> span, bool reliable)
     {
         foreach (var clientIndex in clientIndices)

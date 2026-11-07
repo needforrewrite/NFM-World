@@ -122,9 +122,11 @@ public class GameMasterRegistry : IDisposable
         // Snapshot the domains, resolve without the lock (a slow DNS lookup would
         // otherwise block every SelectGameMaster caller for its duration), then apply.
         string[] domains;
+        bool anyUnhealthy;
         lock (_lock)
         {
             domains = _masters.Select(m => m.Domain).ToArray();
+            anyUnhealthy = _masters.Any(m => !m.IsHealthy);
         }
 
         var resolved = new List<(string Domain, ResolvedGameMaster Gm)>(domains.Length);
@@ -149,6 +151,46 @@ public class GameMasterRegistry : IDisposable
                     _masters[i] = updated;
                     break;
                 }
+            }
+        }
+
+        // A GM that failed three races is taken out of rotation, but a successful race is the
+        // only thing that used to restore it - and it cannot race while excluded. Without this
+        // it stays dead for the process lifetime. Probe outside the lock.
+        if (anyUnhealthy)
+            _ = ProbeUnhealthyAsync();
+    }
+
+    /// <summary>
+    /// Asks every excluded Game Master whether it is back. A reachable one is returned to
+    /// rotation; one that is still down stays out until the next probe.
+    /// </summary>
+    private async Task ProbeUnhealthyAsync()
+    {
+        ResolvedGameMaster[] unhealthy;
+        lock (_lock)
+            unhealthy = _masters.Where(m => !m.IsHealthy).ToArray();
+
+        foreach (var master in unhealthy)
+        {
+            try
+            {
+                using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+                using var response = await http.GetAsync(new Uri(master.HttpEndpoint, "/health"));
+                if (!response.IsSuccessStatusCode)
+                    continue;
+
+                lock (_lock)
+                {
+                    master.ConsecutiveFailures = 0;
+                    master.IsHealthy = true;
+                }
+
+                Console.WriteLine($"[GameMasterRegistry] {master.Domain} is healthy again");
+            }
+            catch
+            {
+                // Still down; next refresh probes again.
             }
         }
     }

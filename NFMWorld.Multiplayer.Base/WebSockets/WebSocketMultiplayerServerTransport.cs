@@ -110,6 +110,12 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
         }
     }
 
+    public override void DisconnectClient(uint clientIndex)
+    {
+        if (_clients.TryGetValue(clientIndex, out var client))
+            _ = client.CloseAsync();
+    }
+
     public override void SendRawPacketToClients(ReadOnlySpan<uint> clientIndices, ReadOnlySpan<byte> span, bool reliable)
     {
         var data = span.ToArray();
@@ -135,6 +141,19 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
             catch (Exception ex)
             {
                 Logging.Warning($"Failed to send data to WS client {Id}", exception: ex);
+            }
+        }
+
+        public async Task CloseAsync()
+        {
+            try
+            {
+                if (Socket.State == WebSocketState.Open)
+                    await Socket.CloseAsync(WebSocketCloseStatus.PolicyViolation, "refused", CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                Logging.Warning($"Failed to close WS client {Id}", exception: ex);
             }
         }
     }

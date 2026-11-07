@@ -16,6 +16,11 @@ public abstract class BaseMultiplayerServerTransport : IMultiplayerServerTranspo
     
     public abstract void SendRawPacketToClients(ReadOnlySpan<uint> clientIndices, ReadOnlySpan<byte> span, bool reliable);
 
+    /// <summary>Closes one client's connection. Defaults to dropping it from the write path.</summary>
+    public virtual void DisconnectClient(uint clientIndex)
+    {
+    }
+
     public void SendPacketToClient<T>(uint clientIndex, T packet, bool reliable = true) where T : IPacketServerToClient<T>
     {
         using var arrayWriter = new ArrayPoolBufferWriter<byte>();

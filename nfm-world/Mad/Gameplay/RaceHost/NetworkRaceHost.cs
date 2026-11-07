@@ -13,14 +13,31 @@ namespace NFMWorld.Gameplay.RaceHost;
 /// <see cref="IMultiplayerClientTransport"/>. Translates C2S/S2C packets
 /// into <see cref="IRaceHost"/> events.
 /// </summary>
-public sealed class NetworkRaceHost(
-    IMultiplayerClientTransport transport,
-    MatchGameplayInfo session,
-    Guid joinToken) : IRaceHost
+public sealed class NetworkRaceHost : IRaceHost
 {
+    private readonly IMultiplayerClientTransport _transport;
+    private readonly MatchGameplayInfo _session;
+    private readonly Guid _joinToken;
     private bool _sentRaceLoaded;
 
-    public bool IsConnected => transport.State == ClientState.Connected;
+    public NetworkRaceHost(IMultiplayerClientTransport transport, MatchGameplayInfo session, Guid joinToken)
+    {
+        _transport = transport;
+        _session = session;
+        _joinToken = joinToken;
+
+        // The Game Master dropped our connection index when the link went away, so it has to be
+        // told which player this is again before it can relay anything. Clearing the flag lets
+        // Update re-send it on the next tick, by which point the transport really is connected.
+        transport.Reconnected += OnReconnected;
+    }
+
+    private void OnReconnected() => _sentRaceLoaded = false;
+
+    public bool IsConnected => _transport.State == ClientState.Connected;
+
+    /// <summary>True once the race connection dropped and reconnection gave up.</summary>
+    public bool ReconnectFailed => _transport.ReconnectFailed;
 
     public event Action? RaceCanStart;
     public event Action? RaceFailedToStart;
@@ -33,10 +50,10 @@ public sealed class NetworkRaceHost(
         if (!_sentRaceLoaded && IsConnected)
         {
             _sentRaceLoaded = true;
-            transport.SendPacketToServer(new C2S_RaceLoaded { JoinToken = joinToken });
+            _transport.SendPacketToServer(new C2S_RaceLoaded { JoinToken = _joinToken });
         }
 
-        foreach (var packet in transport.GetNewPackets())
+        foreach (var packet in _transport.GetNewPackets())
         {
             switch (packet)
             {
@@ -51,7 +68,7 @@ public sealed class NetworkRaceHost(
                     // An id not in this match (version skew, a late join, a replayed or
                     // malicious packet) must not throw in the game loop.
                     var carIndex = -1;
-                    foreach (var (index, info) in session.Players)
+                    foreach (var (index, info) in _session.Players)
                     {
                         if (info.Id == playerState.PlayerId)
                         {
@@ -82,11 +99,14 @@ public sealed class NetworkRaceHost(
     }
 
     public void SendServerEvent(ReadOnlyMemory<byte> payload)
-        => transport.SendPacketToServer(new C2S_ClientEvent { Payload = payload.ToArray() }, reliable: true);
+        => _transport.SendPacketToServer(new C2S_ClientEvent { Payload = payload.ToArray() }, reliable: true);
 
     public void SendPlayerState(PlayerState state)
-        => transport.SendPacketToServer(new C2S_PlayerState { State = state }, false);
+        => _transport.SendPacketToServer(new C2S_PlayerState { State = state }, false);
 
     public void Dispose()
-        => transport.Stop();
+    {
+        _transport.Reconnected -= OnReconnected;
+        _transport.Stop();
+    }
 }

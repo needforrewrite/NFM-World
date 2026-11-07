@@ -1,6 +1,7 @@
 ﻿using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Audio;
+using NFMWorld.Gameplay.RaceHost;
 using NFMWorld.Reactor;
 using NFMWorld.UI;
 using NFMWorld.UI.Components;
@@ -473,7 +474,10 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         {
             if (IsPaused)
                 ResumeRace();
-            else if (AllowPausing && RaceState is (RaceState.InProgress or RaceState.Finished))
+            // FailedToStart is always escapable: it is the only way out of a race whose Game
+            // Master went away, and the pause menu's Quit is outside the host.
+            else if (RaceState == RaceState.FailedToStart
+                     || (AllowPausing && RaceState is (RaceState.InProgress or RaceState.Finished)))
                 PauseRace();
 
             return;
@@ -573,6 +577,19 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             G.SetColor(new Color(255, 255, 255));
             G.DrawStringOutlinedAligned("Waiting for other players to load...", 0, 150, (int)G.Viewport.X, (int)G.Viewport.Y, new Color(0, 0, 0), 1f, TextHorizontalAlignment.Center);
         }
+        else if (RaceState == RaceState.FailedToStart)
+        {
+            // Nothing else says anything when the Game Master is unreachable, so the player
+            // was left on a dead screen. The pause menu's Quit is the way out.
+            G.SetFont(new Font(FontFamily.NotoSans, FontStyle.Plain, 26));
+            G.SetColor(new Color(255, 180, 180));
+            G.DrawStringOutlinedAligned("Lost connection to the Game Master.", 0, 130,
+                (int)G.Viewport.X, (int)G.Viewport.Y, new Color(0, 0, 0), 1f, TextHorizontalAlignment.Center);
+            G.SetFont(new Font(FontFamily.NotoSans, FontStyle.Plain, 16));
+            G.SetColor(new Color(230, 230, 230));
+            G.DrawStringOutlinedAligned("Press Escape to quit the race.", 0, 170,
+                (int)G.Viewport.X, (int)G.Viewport.Y, new Color(0, 0, 0), 1f, TextHorizontalAlignment.Center);
+        }
 
         GamemodeInstance?.Render();
 
@@ -598,7 +615,9 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     public override void GameTick()
     {
         _settingsCamera.RestoreNormal(Camera);
-        if (IsPaused && AllowPausing)
+        // An online race cannot pause (the server keeps racing), except once its Game Master is
+        // gone - that screen is the only way to quit.
+        if (IsPaused && (AllowPausing || RaceState == RaceState.FailedToStart))
         {
             InvalidateOrdering();
             if (ClientCar is { } pausedCar &&
@@ -617,6 +636,15 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         }
 
         _host.Update();
+
+        // The Game Master is gone and reconnection gave up. WaitingToStart used to sit on the
+        // "waiting for other players" screen forever in this case.
+        if (!_host.IsConnected && _host is NetworkRaceHost { ReconnectFailed: true }
+            && RaceState is RaceState.WaitingToStart or RaceState.InProgress)
+        {
+            RaceState = RaceState.FailedToStart;
+            return;
+        }
 
         _settingsCamera.Reset();
         // Positions and placement just changed; the camera below reads them first.

@@ -57,7 +57,20 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         // Signing in from the account screen while sitting in the lobby has to be presented too;
         // Enter is paired with the Unsubscribe in Dispose, and pop/re-enter is balanced.
         GameSparker.AccountManager.ActiveAccountChanged += OnAccountChanged;
+        // A reconnected socket is a new session on the server, so the handshake is replayed.
+        transport.Reconnected += OnReconnected;
         base.Enter();
+    }
+
+    private void OnReconnected()
+    {
+        // A reconnected transport is a brand-new connection: the lobby knows nothing about
+        // this player until it authenticates and identifies itself again.
+        _sentClientIdentity = false;
+        _player.Id = Guid.Empty;
+        _players = [];
+        _activeSessions = [];
+        Publish();
     }
 
     private void OnAccountChanged(NFMWorld.Accounts.Account? account)
@@ -103,12 +116,16 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
                     if (!authenticated.Accepted)
                     {
                         // The lobby holds the authority here, so a token it refuses is treated as
-                        // signed out locally too.
+                        // signed out locally too. The lobby also disconnects us, and reconnecting
+                        // would only repeat the refusal.
                         Logging.Info($"Lobby rejected the session: {authenticated.Error}");
                         GameSparker.AccountManager.LogOut();
-                        SetStatus(authenticated.Error is { Length: > 0 }
-                            ? authenticated.Error
-                            : "Your session was rejected. Sign in again.");
+                        transport.StopReconnecting();
+                        GameSparker.PopPhase();
+                        GameSparker.MessageWindow.ShowMessage("Session refused",
+                            authenticated.Error is { Length: > 0 }
+                                ? authenticated.Error
+                                : "Your session was rejected. Sign in again.");
                     }
                     else if (authenticated.AccountId == 0 && GameSparker.AccountManager.LoggedIn)
                     {
@@ -147,6 +164,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             // Leaving the lobby must close the socket: the server only drops the ghost player when
             // the connection goes, and the receive loop would otherwise run for the process lifetime.
             GameSparker.AccountManager.ActiveAccountChanged -= OnAccountChanged;
+            transport.Reconnected -= OnReconnected;
             transport.Stop();
         }
         base.Dispose(disposing);
@@ -225,6 +243,9 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     private void UpdateStatus()
     {
         Lobby.Connected.Value = transport.State == ClientState.Connected;
+        // Only once retries are exhausted; while reconnecting, Connected is already false but
+        // the player is not being asked to do anything yet.
+        Lobby.Disconnected.Value = transport.ReconnectFailed;
 
         // Only written when the connection text itself changes: a notice the player just saw
         // (a rejected action, say) must not be wiped by the next frame.
@@ -247,6 +268,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             $"Signed in as {GameSparker.AccountManager.ActiveAccount!.Username}",
         ClientState.Connected => "Connected as a guest",
         ClientState.Connecting => "Connecting...",
+        _ when transport.IsReconnecting => "Connection lost - reconnecting...",
         _ => "Disconnected",
     };
 
@@ -267,11 +289,17 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
     // ── Actions ────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Whether an action can reach the lobby. Everything but BACK needs a live connection;
+    /// while reconnecting a packet would be written into a closed socket and dropped.
+    /// </summary>
+    private bool CanAct => transport.State == ClientState.Connected;
+
     private void OnJoin(uint id)
     {
         // Never the session we are already in: joining is what changes membership, so reading
         // CurrentSession here would make JOIN a no-op.
-        if (Lobby.CurrentSession.Value?.Id == id)
+        if (!CanAct || Lobby.CurrentSession.Value?.Id == id)
             return;
 
         transport.SendPacketToServer(new C2S_JoinSession { SessionId = id });
@@ -279,18 +307,24 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
     private void OnLeave()
     {
-        if (Lobby.CurrentSession.Value is { } session)
+        if (CanAct && Lobby.CurrentSession.Value is { } session)
             transport.SendPacketToServer(new C2S_LeaveSession { SessionId = session.Id });
     }
 
     private void OnStartRace()
     {
-        if (Lobby.CurrentSession.Value is { IsCreator: true } session)
+        if (CanAct && Lobby.CurrentSession.Value is { IsCreator: true } session)
             transport.SendPacketToServer(new C2S_LobbyStartRace { SessionId = session.Id });
     }
 
     private void OnCreate()
     {
+        if (!CanAct)
+        {
+            SetStatus("Not connected to the lobby.");
+            return;
+        }
+
         var stage = Lobby.SelectedStage.Value;
         if (string.IsNullOrEmpty(stage))
         {
@@ -311,7 +345,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
     private void OnSendChat(string message)
     {
-        if (string.IsNullOrWhiteSpace(message))
+        if (!CanAct || string.IsNullOrWhiteSpace(message))
             return;
         transport.SendPacketToServer(new C2S_LobbyChatMessage { Message = message });
     }

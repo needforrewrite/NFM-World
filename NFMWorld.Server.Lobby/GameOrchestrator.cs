@@ -293,11 +293,12 @@ public class GameOrchestrator
                 break;
 
             case TokenVerification.Rejected:
-                // The archive has spoken: the session is gone. Say so, so the client drops it.
+                // The archive has spoken: the session is gone. Say so and evict: leaving the
+                // connection open let a refused client keep sitting in the lobby.
                 client.AccountId = 0;
-                client.IsAuthenticated = true;
                 SendAuthenticated(clientIndex, false, "", "Your session has expired. Sign in again.",
                     accountId: 0);
+                _transport.DisconnectClient(clientIndex);
                 break;
 
             default:

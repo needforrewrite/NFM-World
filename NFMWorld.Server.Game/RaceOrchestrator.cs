@@ -104,6 +104,7 @@ public class RaceOrchestrator : IDisposable
                 // To this race's clients only: the GM runs many sessions, and a broadcast
                 // would end every other race on the host with these standings.
                 session.ResultsBroadcasted = true;
+                session.LastResults = results;
                 _transport.SendPacketToClients(
                     session.Clients.Keys.ToArray(),
                     new S2C_GameFinished { Results = results },
@@ -222,28 +223,50 @@ public class RaceOrchestrator : IDisposable
 
     private void HandleRaceLoaded(uint clientIndex, C2S_RaceLoaded raceLoaded)
     {
-        // Single use: the first client to present a token claims it, and a replay of the
-        // same token must not count a second player as loaded (or join under the first
-        // player's id).
-        if (!_joinTokens.TryRemove(raceLoaded.JoinToken, out var entry))
+        // A token belongs to one player for the life of the session. It stays reclaimable so a
+        // client whose connection dropped can attach again, but the *same* player may not use it
+        // to occupy a second slot.
+        if (!_joinTokens.TryGetValue(raceLoaded.JoinToken, out var entry))
         {
-            Logging.Warning($"[GM] Invalid or already-used join token from client {clientIndex}");
+            Logging.Warning($"[GM] Invalid join token from client {clientIndex}");
             return;
         }
 
         var clientId = entry.ClientId;
+        var session = entry.Session;
 
-        entry.Session.Clients[clientIndex] = clientId;
-        entry.Session.LoadedCount++;
+        // Already attached under another connection index: this is a reconnect. Move the
+        // mapping rather than counting the player as loaded twice.
+        var existingIndex = session.Clients.FirstOrDefault(kv => kv.Value == clientId).Key;
+        var reattaching = session.Clients.ContainsKey(existingIndex);
+
+        if (reattaching)
+        {
+            if (existingIndex != clientIndex)
+                session.Clients.TryRemove(existingIndex, out _);
+            session.Clients[clientIndex] = clientId;
+
+            Logging.Info($"[GM] Client {clientId} re-attached");
+            // Everything it needs to rejoin the race as it was.
+            if (session.ResultsBroadcasted)
+                _transport.SendPacketToClient(clientIndex,
+                    new S2C_GameFinished { Results = session.LastResults });
+            else if (session.LoadedCount >= session.PlayerCount)
+                _transport.SendPacketToClient(clientIndex, new S2C_RaceCanStart());
+            return;
+        }
+
+        session.Clients[clientIndex] = clientId;
+        session.LoadedCount++;
 
         Logging.Info(
-            $"[GM] Client {clientId} loaded ({entry.Session.LoadedCount}/{entry.Session.PlayerCount})");
+            $"[GM] Client {clientId} loaded ({session.LoadedCount}/{session.PlayerCount})");
 
-        if (entry.Session.LoadedCount >= entry.Session.PlayerCount)
+        if (session.LoadedCount >= session.PlayerCount)
         {
-            entry.Session.ServerGamemode?.StartRace();
-            _transport.SendPacketToClients(entry.Session.Clients.Keys.ToArray(), new S2C_RaceCanStart());
-            Logging.Info($"[GM] Race starting: {entry.Session.PlayerCount} players");
+            session.ServerGamemode?.StartRace();
+            _transport.SendPacketToClients(session.Clients.Keys.ToArray(), new S2C_RaceCanStart());
+            Logging.Info($"[GM] Race starting: {session.PlayerCount} players");
         }
     }
 
@@ -408,6 +431,9 @@ public class RaceOrchestrator : IDisposable
         public ConcurrentDictionary<Guid, f64Vector3> PlayerPositions { get; set; } = [];
         public IDictionary<byte, ServerSidePlayerInfo> PlayerInfos { get; set; } = new Dictionary<byte, ServerSidePlayerInfo>();
         public bool ResultsBroadcasted { get; set; }
+
+        /// <summary>Kept so a client that reconnects after the finish still gets the results.</summary>
+        public RaceResults LastResults { get; set; } = default!;
     }
 
     /// <summary>

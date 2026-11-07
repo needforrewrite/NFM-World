@@ -98,7 +98,11 @@ public static class LobbyView
                             text: () => "MULTIPLAYER"),
                         Sx.Text(style: () => Sx.TextStyles(fontSize: 12,
                                 foregroundColor: lobby.Connected.Value ? TextBlue : Theme.Danger),
-                            text: () => lobby.Status.Value.Length > 0 ? lobby.Status.Value : "Connecting...")
+                            text: () => lobby.Status.Value.Length > 0 ? lobby.Status.Value : "Connecting..."),
+                        // Only once retries are exhausted: leaving is the way out.
+                        Sx.Show(() => lobby.Disconnected.Value,
+                            () => Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.Danger),
+                                text: () => "Could not reconnect. Press BACK and try again."))
                     ]),
                 SmallButton("REFRESH", actions.Refresh),
                 SmallButton("BACK", actions.Back)
@@ -148,13 +152,16 @@ public static class LobbyView
                     style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10, flexShrink: 0),
                     children:
                     [
-                        ActionButton("CREATE GAME", actions.OpenCreate, primary: true),
+                        ActionButton("CREATE GAME", actions.OpenCreate, primary: true,
+                            disabled: () => !lobby.Connected.Value),
                         Sx.Show(() => lobby.CurrentSession.Value is not null,
                             () => Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10),
                                 children:
                                 [
-                                    ActionButton(() => "START RACE", actions.StartRace, primary: true),
-                                    ActionButton("LEAVE", actions.Leave)
+                                    ActionButton(() => "START RACE", actions.StartRace, primary: true,
+                                        disabled: () => !lobby.Connected.Value),
+                                    ActionButton("LEAVE", actions.Leave,
+                                        disabled: () => !lobby.Connected.Value)
                                 ]))
                     ])
             ]);
@@ -189,11 +196,12 @@ public static class LobbyView
                 // Both used to call StartRace, so LEAVE launched a race and nothing left.
                 session.IsMember && session.IsCreator
                     ? ActionButton(() => "START", actions.StartRace, small: true,
-                        disabled: session.State != SessionState.NotStarted)
+                        disabled: () => session.State != SessionState.NotStarted || !lobby.Connected.Value)
                     : session.IsMember
-                        ? ActionButton(() => "LEAVE", actions.Leave, small: true)
+                        ? ActionButton(() => "LEAVE", actions.Leave, small: true,
+                            disabled: () => !lobby.Connected.Value)
                         : ActionButton(() => "JOIN", () => actions.Join(session.Id), small: true,
-                            disabled: session.State != SessionState.NotStarted)
+                            disabled: () => session.State != SessionState.NotStarted || !lobby.Connected.Value)
             ]);
     }
 
@@ -236,19 +244,26 @@ public static class LobbyView
                                         Sx.Text(style: () => Sx.TextStyles(fontSize: 11, fontStyle: FontStyle.Bold,
                                             foregroundColor: line.IsSystem ? Theme.MenuDim : line.Color),
                                             text: () => line.Sender),
-                                        Sx.Text(style: () => Sx.TextStyles(fontSize: 12,
-                                            foregroundColor: line.IsSystem ? Theme.MenuDim : TextBlue),
+                                        // Word-wrap: a long message ran out of the column and
+                                        // off the right edge of the lobby.
+                                        Sx.Text(style: () => Sx.WrappingText(fontSize: 12,
+                                                foregroundColor: line.IsSystem ? Theme.MenuDim : TextBlue),
+                                            layout: () => Sx.Styles(width: MeasurementWidthHeight.Percent(100)),
                                             text: () => line.Message)
                                     ]))))
                     ]),
                 Sx.View(
-                    style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6, flexShrink: 0),
+                    // A row stretches its children by default, which made the button as tall
+                    // as the input; centring keeps it beside the field instead.
+                    style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6, flexShrink: 0,
+                        alignItems: Align.Center),
                     children:
                     [
-                        Sx.View(style: () => Sx.Styles(flexGrow: 1), children:
+                        Sx.View(style: () => Sx.Styles(flexGrow: 1, flexShrink: 1), children:
                         [
                             Sx.TextInput(
                                 style: () => Sx.Styles(width: MeasurementWidthHeight.Percent(100),
+                                    minHeight: 30,
                                     paddingTop: 6, paddingBottom: 6, paddingLeft: 8, paddingRight: 8,
                                     backgroundColor: new Color(255, 255, 255, 16),
                                     borderTop: 1, borderBottom: 1, borderLeft: 1, borderRight: 1,
@@ -259,7 +274,8 @@ public static class LobbyView
                                 // Enter submits, so the field behaves like a chat box.
                                 onsubmit: _ => Send(actions))
                         ]),
-                        ActionButton("SEND", () => Send(actions), small: true)
+                        ActionButton("SEND", () => Send(actions), small: true,
+                            disabled: () => !lobby.Connected.Value)
                     ])
             ]);
     }
@@ -411,18 +427,19 @@ public static class LobbyView
     }
 
     private static Node ActionButton(Func<string> label, Action onPress, bool primary = false, bool small = false,
-        bool disabled = false, Func<bool>? active = null)
+        Func<bool>? disabled = null, Func<bool>? active = null)
         => MenuButton(label, onPress, primary, small, disabled, active);
 
-    private static Node ActionButton(string label, Action onPress, bool primary = false, bool small = false)
-        => MenuButton(() => label, onPress, primary, small, false, null);
+    private static Node ActionButton(string label, Action onPress, bool primary = false, bool small = false,
+        Func<bool>? disabled = null)
+        => MenuButton(() => label, onPress, primary, small, disabled, null);
 
     private static Node SmallButton(string label, Action onPress)
-        => MenuButton(() => label, onPress, false, true, false, null);
+        => MenuButton(() => label, onPress, false, true, null, null);
 
     /// <summary>The shared button, restyled into the menu palette.</summary>
-    private static Node MenuButton(Func<string> label, Action onPress, bool primary, bool small, bool disabled,
-        Func<bool>? active)
+    private static Node MenuButton(Func<string> label, Action onPress, bool primary, bool small,
+        Func<bool>? disabled, Func<bool>? active)
     {
         return Button.Create(
             label,
@@ -430,10 +447,10 @@ public static class LobbyView
             variant: primary ? ButtonVariant.Primary : ButtonVariant.Default,
             active: active,
             size: small ? ButtonSize.Sm : ButtonSize.Md,
-            disabled: disabled,
-            // Only the border is overridden: the variant still owns the fill, so the button
-            // keeps its hover and active feedback.
+            // Evaluated per style pass, so it follows the connection state. The press guard in
+            // the handler is what actually stops the action.
             style: () => Sx.Styles(
+                opacity: disabled?.Invoke() == true ? 0.4f : 1f,
                 borderColor: primary ? Theme.AccentBorder : new Color(128, 170, 255, 170)),
             textStyle: () => Sx.TextStyles(fontSize: small ? 11 : 13, fontStyle: FontStyle.Bold,
                 foregroundColor: Blue));

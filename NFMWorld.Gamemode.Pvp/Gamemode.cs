@@ -208,7 +208,7 @@ public class PvpServerGamemode(
     {
         base.Begin();
         _perPlayer.Clear();
-        _inner = GamemodeUtils.CountdownInterval;
+        _inner = GamemodeUtils.ServerCountdownInterval;
         _countdown = 3;
         _state = ServerGamemodeState.WaitingToStart;
         
@@ -228,7 +228,7 @@ public class PvpServerGamemode(
         base.StartRace();
         _state = ServerGamemodeState.Countdown;
         _countdown = 3;
-        _inner = GamemodeUtils.CountdownInterval;
+        _inner = GamemodeUtils.ServerCountdownInterval;
     }
 
     public override void GameTick()
@@ -240,7 +240,7 @@ public class PvpServerGamemode(
                 _inner--;
                 if (_inner <= 0)
                 {
-                    _inner = GamemodeUtils.CountdownInterval;
+                    _inner = GamemodeUtils.ServerCountdownInterval;
                     _countdown--;
                     if (_countdown <= 0)
                     {

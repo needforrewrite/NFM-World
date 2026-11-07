@@ -127,7 +127,7 @@ public static class AccountView
                             // Word-wrap: an archive error is a full sentence, and without it the
                             // line ran out of the card's width.
                             Sx.Text(
-                                style: () => Sx.TextStyles(fontSize: 12, breakType: BreakType.Word,
+                                style: () => Sx.WrappingText(fontSize: 12,
                                     foregroundColor: Status.Value.StartsWith("!") ? ErrorRed : MenuBlue),
                                 layout: () => Sx.Styles(width: MeasurementWidthHeight.Percent(100)),
                                 text: () => Status.Value.TrimStart('!')),

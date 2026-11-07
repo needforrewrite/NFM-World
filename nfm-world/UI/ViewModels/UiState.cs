@@ -152,6 +152,8 @@ public static class UiState
     public sealed class LobbyState
     {
         public Signal<bool> Connected { get; } = new(false);
+        /// <summary>Reconnection has given up; only leaving the lobby will help.</summary>
+        public Signal<bool> Disconnected { get; } = new(false);
         public Signal<string> Status { get; } = new("");
         public Signal<IReadOnlyList<LobbyPlayer>> Players { get; } = new([]);
         public Signal<IReadOnlyList<LobbySession>> Sessions { get; } = new([]);
@@ -170,6 +172,7 @@ public static class UiState
         public void Reset()
         {
             Connected.Value = false;
+            Disconnected.Value = false;
             Status.Value = "";
             Players.Value = [];
             Sessions.Value = [];
