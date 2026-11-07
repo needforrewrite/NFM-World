@@ -24,6 +24,18 @@ public static class AssetEndpoints
         ".radpack", ".rad"
     };
 
+    /// <summary>
+    /// Deletes a rejected upload unless the same bytes are already indexed under another name.
+    /// Storage is content-addressed, so re-uploading an existing asset and failing validation
+    /// would otherwise delete the copy everyone else downloads.
+    /// </summary>
+    private static async Task DiscardIfUnreferencedAsync(
+        ArchiveDbContext db, FileStorage storage, string hash, string relative, CancellationToken ct)
+    {
+        if (!await db.Assets.AnyAsync(a => a.ContentHash == hash, ct))
+            storage.Delete(relative);
+    }
+
     public static void MapAssetEndpoints(this WebApplication app)
     {
         var assets = app.MapGroup("/assets");
@@ -72,7 +84,7 @@ public static class AssetEndpoints
                 var result = await validator.RunAsync("radpack", [path], ct);
                 if (!result.Ok)
                 {
-                    storage.Delete(relative);
+                    await DiscardIfUnreferencedAsync(db, storage, hash, relative, ct);
                     return Results.BadRequest(new { error = result.Error ?? "The asset is not a readable radpack." });
                 }
 
@@ -82,7 +94,7 @@ public static class AssetEndpoints
                     && output.TryGetProperty("type", out var validated)
                     && !string.Equals(validated.GetString(), type.ToString(), StringComparison.OrdinalIgnoreCase))
                 {
-                    storage.Delete(relative);
+                    await DiscardIfUnreferencedAsync(db, storage, hash, relative, ct);
                     return Results.BadRequest(new { error = $"The asset is a {validated.GetString()}, not a {type}." });
                 }
             }
