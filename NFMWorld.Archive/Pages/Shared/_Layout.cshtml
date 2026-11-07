@@ -32,9 +32,12 @@
         <a href="/clans">Clans</a>
         <a href="/upload">Upload</a>
     </nav>
-    @if (User.Identity?.IsAuthenticated == true)
+    @{
+        var viewer = ViewData["Viewer"] as NFMWorld.Archive.Pages.ViewerState;
+    }
+    @if (viewer?.Username is { } username)
     {
-        <span class="muted" style="margin-left:auto">@User.Identity.Name</span>
+        <span class="muted" style="margin-left:auto">@username</span>
         <form method="post" action="/logout" style="margin:0">
             <button type="submit">Sign out</button>
         </form>

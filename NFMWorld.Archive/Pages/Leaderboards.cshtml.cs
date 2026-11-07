@@ -17,15 +17,22 @@ public sealed class LeaderboardsModel(ArchiveDbContext db) : ArchivePageModel(db
         await ResolveAccountAsync();
 
         // Distinct stage/car pairs that have at least one entry: the boards a visitor can pick.
-        Boards = await Db.TimeTrials.Where(t => t.IsValid)
-            .GroupBy(t => new { t.StageHash, t.CarHash })
-            .Select(g => new { g.Key.StageHash, g.Key.CarHash })
-            .Join(Db.TimeTrials, k => new { k.StageHash, k.CarHash }, t => new { t.StageHash, t.CarHash },
-                (k, t) => new { k.StageHash, k.CarHash, t.StageName, t.CarName })
-            .Distinct()
-            .Take(200)
-            .Select(x => ValueTuple.Create(x.StageHash, x.StageName, x.CarHash, x.CarName))
-            .ToListAsync();
+        // The names come along with the group rather than a second join, which would pair every
+        // row with every other row of the same board.
+        Boards = (await Db.TimeTrials.Where(t => t.IsValid)
+                .GroupBy(t => new { t.StageHash, t.CarHash })
+                .Select(g => new
+                {
+                    g.Key.StageHash,
+                    g.Key.CarHash,
+                    StageName = g.Min(t => t.StageName),
+                    CarName = g.Min(t => t.CarName)
+                })
+                .OrderBy(b => b.StageName)
+                .Take(200)
+                .ToListAsync())
+            .Select(b => (b.StageHash, b.StageName, b.CarHash, b.CarName))
+            .ToList();
 
         if (string.IsNullOrEmpty(StageHash) && Boards.Count > 0)
         {

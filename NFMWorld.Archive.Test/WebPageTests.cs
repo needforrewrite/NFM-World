@@ -52,7 +52,9 @@ public class WebPageTests
 
         var account = await client.GetAsync("/");
         Assert.AreEqual(HttpStatusCode.OK, account.StatusCode);
-        StringAssert.Contains(await account.Content.ReadAsStringAsync(), "websiteuser");
+        var html = await account.Content.ReadAsStringAsync();
+        StringAssert.Contains(html, "websiteuser");
+        StringAssert.Contains(html, "Sign out");
     }
 
     [TestMethod]
