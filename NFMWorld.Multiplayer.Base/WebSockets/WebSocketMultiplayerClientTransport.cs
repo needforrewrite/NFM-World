@@ -7,17 +7,25 @@ public class WebSocketMultiplayerClientTransport : BaseMultiplayerClientTranspor
     private readonly ClientWebSocket _client;
     private readonly CancellationTokenSource _cts = new();
 
-    public WebSocketMultiplayerClientTransport(string hostName, ushort port = 7000)
+    /// <summary>
+    /// Connects to <c>/game</c> on the lobby.
+    /// </summary>
+    /// <param name="insecure">
+    /// Plain <c>ws://</c> - only for a lobby on this machine or a trusted network. The session
+    /// token is presented on this connection, so a public lobby needs <c>wss://</c>.
+    /// </param>
+    public WebSocketMultiplayerClientTransport(string hostName, ushort port = 7000, bool insecure = true)
     {
         _client = new ClientWebSocket();
-        _ = ConnectAsync(hostName, port);
+        _ = ConnectAsync(hostName, port, insecure);
     }
 
-    private async Task ConnectAsync(string host, ushort port)
+    private async Task ConnectAsync(string host, ushort port, bool insecure)
     {
         try
         {
-            await _client.ConnectAsync(new Uri($"ws://{host}:{port}/game"), _cts.Token);
+            var scheme = insecure ? "ws" : "wss";
+            await _client.ConnectAsync(new Uri($"{scheme}://{host}:{port}/game"), _cts.Token);
             State = ClientState.Connected;
             _ = ReceiveLoop();
         }

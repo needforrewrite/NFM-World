@@ -344,9 +344,13 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
 `nfm-world/Mad/Gameplay/LobbyPhase.cs` (WebSocket to the lobby) and `nfm-world/UI/Routes/LobbyView.cs` (Sx, main-menu
 palette). One lobby; whether a race is rated is chosen per race, not by a menu page.
 
-- **Endpoint is a build property**, not a setting — `LobbyEndpoint`/`LobbyPort` in `NFMWorld.Game.csproj`, emitted as
-  `AssemblyMetadata` and read by `LobbyEndpoint.cs`. Debug defaults to `localhost:7000` (the release lobby refuses a
-  debug client); `connect <host> [port]` reaches any other.
+- **Endpoint is a build property**, not a setting — `LobbyEndpoint`/`LobbyPort`/`LobbyInsecure` in
+  `NFMWorld.Game.csproj`, emitted as `AssemblyMetadata` and read by `LobbyEndpoint.cs`. Debug defaults to
+  `localhost:7001` over `ws` (the release lobby refuses a debug client); Release is `lobby.nfmw.net:443` over `wss`,
+  because the client presents its session token on this socket. `connect <host> [port]` reaches any other lobby, and
+  it always uses plain `ws`.
+- **The port is the lobby's HTTP/WebSocket listener** (`LOBBY_HTTP_ENDPOINT`, default 7001), not the game master's
+  ENet port. A public lobby must sit behind a TLS terminator that proxies `wss` to it.
 - **One transport per phase, and the phase owns it.** `LobbyConnection.TryOpen` is the only entry point (menu item and
   the `connect` command), so the browser guard and `ENetMultiplayer.Init` live in one place. `Dispose` must call
   `transport.Stop()` — otherwise the server keeps a ghost player and the receive loop runs for the process.

@@ -22,15 +22,22 @@
 
         <!-- The lobby the game connects to by default. A Debug build talks to a local lobby,
              because the release lobby will not authenticate a debug client. Override with
-             -p:LobbyEndpoint=host -p:LobbyPort=port; the `connect` command still reaches others. -->
+             -p:LobbyEndpoint=host -p:LobbyPort=port; the `connect` command still reaches others.
+             The port is the lobby's HTTP/WebSocket listener (LOBBY_HTTP_ENDPOINT), not the game
+             master's ENet port. The session token travels on this connection, so the release
+             lobby is wss only. -->
         <LobbyEndpoint Condition="'$(LobbyEndpoint)' == '' and '$(Configuration)' == 'Release'">lobby.nfmw.net</LobbyEndpoint>
         <LobbyEndpoint Condition="'$(LobbyEndpoint)' == ''">localhost</LobbyEndpoint>
-        <LobbyPort Condition="'$(LobbyPort)' == ''">7000</LobbyPort>
+        <LobbyPort Condition="'$(LobbyPort)' == '' and '$(Configuration)' == 'Release'">443</LobbyPort>
+        <LobbyPort Condition="'$(LobbyPort)' == ''">7001</LobbyPort>
+        <LobbyInsecure Condition="'$(LobbyInsecure)' == '' and '$(Configuration)' == 'Release'">false</LobbyInsecure>
+        <LobbyInsecure Condition="'$(LobbyInsecure)' == ''">true</LobbyInsecure>
     </PropertyGroup>
 
     <ItemGroup>
         <AssemblyMetadata Include="NfmwLobbyEndpoint" Value="$(LobbyEndpoint)" />
         <AssemblyMetadata Include="NfmwLobbyPort" Value="$(LobbyPort)" />
+        <AssemblyMetadata Include="NfmwLobbyInsecure" Value="$(LobbyInsecure)" />
     </ItemGroup>
     <ItemGroup>
         <!-- Exclude emitted source-generator files from implicit *.cs glob to prevent double compilation -->

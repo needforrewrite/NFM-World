@@ -14,7 +14,14 @@ public static class LobbyEndpoint
     public static string Host { get; } = Metadata("NfmwLobbyEndpoint") ?? "localhost";
 
     public static ushort Port { get; } =
-        ushort.TryParse(Metadata("NfmwLobbyPort"), out var port) ? port : (ushort)7000;
+        ushort.TryParse(Metadata("NfmwLobbyPort"), out var port) ? port : (ushort)7001;
+
+    /// <summary>
+    /// Whether to use plain <c>ws://</c>. Defaults to true: a build with no metadata is a local
+    /// one. A lobby that carries the session token over the internet needs <c>wss://</c>.
+    /// </summary>
+    public static bool Insecure { get; } =
+        !bool.TryParse(Metadata("NfmwLobbyInsecure"), out var insecure) || insecure;
 
     private static string? Metadata(string key)
         => Assembly.GetExecutingAssembly()

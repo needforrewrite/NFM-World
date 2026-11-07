@@ -9,8 +9,21 @@ namespace NFMWorld.Gameplay;
 /// </summary>
 public static class LobbyConnection
 {
-    /// <summary>Joins a lobby, or returns false with a reason when this build cannot.</summary>
+    /// <summary>
+    /// Joins the build's configured lobby. <c>connect</c> uses the other overload to reach a
+    /// different one.
+    /// </summary>
+    public static bool TryOpen(out string error)
+        => TryOpen(LobbyEndpoint.Host, LobbyEndpoint.Port, LobbyEndpoint.Insecure, out error);
+
+    /// <summary>
+    /// Joins a lobby over plain <c>ws://</c>. The session token travels on this connection, so
+    /// this is for a lobby on this machine or a trusted network.
+    /// </summary>
     public static bool TryOpen(string host, ushort port, out string error)
+        => TryOpen(host, port, insecure: true, out error);
+
+    public static bool TryOpen(string host, ushort port, bool insecure, out string error)
     {
         // ENet is a native library with no wasm build, so the browser cannot join at all.
         if (OperatingSystem.IsBrowser())
@@ -20,7 +33,7 @@ public static class LobbyConnection
         }
 
         ENetMultiplayer.Init();
-        GameSparker.PushPhase(new LobbyPhase(new WebSocketMultiplayerClientTransport(host, port)));
+        GameSparker.PushPhase(new LobbyPhase(new WebSocketMultiplayerClientTransport(host, port, insecure)));
         error = "";
         return true;
     }

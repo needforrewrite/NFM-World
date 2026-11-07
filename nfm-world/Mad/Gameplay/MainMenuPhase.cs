@@ -225,7 +225,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void OnMultiplayerClicked()
     {
-        if (!LobbyConnection.TryOpen(LobbyEndpoint.Host, LobbyEndpoint.Port, out var error))
+        if (!LobbyConnection.TryOpen(out var error))
         {
             GameSparker.MessageWindow.ShowMessage("Multiplayer unavailable", error);
         }
