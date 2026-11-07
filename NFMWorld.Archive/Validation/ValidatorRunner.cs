@@ -58,7 +58,8 @@ public sealed class ValidatorRunner(ArchiveOptions options, ILogger<ValidatorRun
             if (Environment.GetEnvironmentVariable(name) is { } value)
                 startInfo.Environment[name] = value;
 
-        using var process = new Process { StartInfo = startInfo };
+        using var process = new Process();
+        process.StartInfo = startInfo;
         process.StartInfo.ArgumentList.Add(command);
         foreach (var arg in args)
             process.StartInfo.ArgumentList.Add(arg);
