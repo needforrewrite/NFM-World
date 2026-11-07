@@ -55,23 +55,39 @@ public static class AuthEndpoints
         });
 
         auth.MapPost("/login", async (
-            LoginRequest request, ArchiveDbContext db, ArchiveOptions options,
+            LoginRequest request, ArchiveDbContext db, ArchiveOptions options, LoginThrottle throttle,
             SessionService sessions, HttpContext http, CancellationToken ct) =>
         {
             var normalized = request.Username is null ? "" : UsernamePolicy.Normalize(request.Username);
+            var ipKey = "ip:" + (Ip(http) ?? "unknown");
+            var nameKey = "name:" + normalized;
+
+            // Both keys are checked so a distributed spray against one account and a spread across
+            // many accounts both slow down.
+            if (throttle.IsBlocked(ipKey, out var retry) || throttle.IsBlocked(nameKey, out retry))
+            {
+                http.Response.Headers.RetryAfter = ((int)retry.TotalSeconds).ToString();
+                return Results.Json(new { error = "Too many attempts. Try again later." },
+                    statusCode: StatusCodes.Status429TooManyRequests);
+            }
+
             var user = await db.Users.FirstOrDefaultAsync(u => u.UsernameNormalized == normalized, ct);
 
-            // A miss still pays for a hash, so response time does not reveal whether the name exists.
+            // Verified unconditionally so a missing account costs the same hash as a wrong password;
+            // the `user` null check is what actually rejects the request.
             var hash = user?.PasswordHash ?? PasswordHasher.DummyHash;
-            var valid = PasswordHasher.Verify(request.Password ?? "", hash) && user?.PasswordHash is not null;
+            var valid = user is not null && PasswordHasher.Verify(request.Password ?? "", hash);
 
-            if (!valid || user is null)
+            if (user is null || !valid)
             {
+                throttle.RecordFailure(ipKey);
+                throttle.RecordFailure(nameKey);
                 Audit(db, user?.Id, "login_failed", null, http);
                 await db.SaveChangesAsync(ct);
                 return Results.Unauthorized();
             }
 
+            throttle.Reset(nameKey);
             Audit(db, user.Id, "login", null, http);
             var token = await sessions.CreateAsync(user, UserAgent(http), Ip(http), ct);
             await db.SaveChangesAsync(ct);

@@ -120,6 +120,20 @@ public class AuthEndpointTests
     }
 
     [TestMethod]
+    public async Task Login_BlocksAfterRepeatedFailures()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = factory.CreateClient();
+        await client.PostAsJsonAsync("/auth/register", new { Username = "alice", Password = "password123" });
+
+        for (var i = 0; i < 10; i++)
+            await client.PostAsJsonAsync("/auth/login", new { Username = "alice", Password = "wrong" });
+
+        var blocked = await client.PostAsJsonAsync("/auth/login", new { Username = "alice", Password = "wrong" });
+        Assert.AreEqual(HttpStatusCode.TooManyRequests, blocked.StatusCode);
+    }
+
+    [TestMethod]
     public async Task Me_RejectsAMadeUpToken()
     {
         using var factory = new ArchiveAppFactory();

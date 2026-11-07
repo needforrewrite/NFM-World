@@ -11,6 +11,7 @@ builder.Services.AddSingleton(options);
 builder.Services.AddSingleton(new FileStorage(options.StorageRoot));
 builder.Services.AddDbContext<ArchiveDbContext>(o => o.UseSqlite(options.Database));
 builder.Services.AddScoped<SessionService>();
+builder.Services.AddSingleton<LoginThrottle>();
 builder.Services.AddHttpClient();
 
 var app = builder.Build();
