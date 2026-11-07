@@ -32,4 +32,13 @@ public sealed class ArchiveOptions
 
     /// <summary>Disables the registration and upload endpoints, for a read-only or private deployment.</summary>
     public bool ReadOnly { get; set; }
+
+    /// <summary>Path to the validator executable. Time-trial and radpack validation are refused when empty.</summary>
+    public string? ValidatorPath { get; set; }
+
+    /// <summary>Directory the validator runs in; it needs the game's data tree beside it.</summary>
+    public string? ValidatorWorkingDirectory { get; set; }
+
+    /// <summary>Hard wall clock for one validation. The validator is killed when it expires.</summary>
+    public TimeSpan ValidationTimeout { get; set; } = TimeSpan.FromSeconds(30);
 }

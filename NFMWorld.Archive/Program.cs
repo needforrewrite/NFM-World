@@ -3,6 +3,7 @@ using NFMWorld.Archive;
 using NFMWorld.Archive.Auth;
 using NFMWorld.Archive.Data;
 using NFMWorld.Archive.Endpoints;
+using NFMWorld.Archive.Validation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,7 @@ builder.Services.AddScoped<SessionService>();
 builder.Services.AddSingleton<LoginThrottle>();
 builder.Services.AddSingleton<NonceCache>();
 builder.Services.AddSingleton<TrustedServerAuth>();
+builder.Services.AddSingleton<ValidatorRunner>();
 builder.Services.AddHttpClient();
 
 var app = builder.Build();
@@ -28,6 +30,8 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 app.MapAuthEndpoints();
 app.MapDiscordEndpoints();
 app.MapResultEndpoints();
+app.MapTimeTrialEndpoints();
+app.MapAssetEndpoints();
 
 app.Run();
 

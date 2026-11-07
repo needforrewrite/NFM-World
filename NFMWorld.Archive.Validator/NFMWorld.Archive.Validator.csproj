@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>NFMWorld.Archive.Validator</RootNamespace>
+        <!-- Runs a time-trial replay and a radpack parse over untrusted input, so it must die
+             rather than corrupt anything; no AOT here because the gamemode plugin it loads is
+             an ordinary assembly loaded through the plugin loader. -->
+        <PublishAot Condition="'$(RuntimeIdentifier)' != 'browser-wasm'">false</PublishAot>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
+    </ItemGroup>
+
+    <!-- The validator loads gamemode plugins from data/gamemodes, so its output needs them. -->
+    <Import Project="..\Plugin.Plugins.targets" />
+
+</Project>
