@@ -20,6 +20,12 @@ public partial class HudStateData
     [PluginVisible] public int TotalRacers { get; set; }
     [PluginVisible] public string? StateText { get; set; }
     [PluginVisible] public DateTime? StateTextEndsAt { get; set; }
+    /// <summary>The race is over; the HUD can show its outcome.</summary>
+    [PluginVisible] public bool Finished { get; set; }
+    /// <summary>The client crossed the line first.</summary>
+    [PluginVisible] public bool ClientWon { get; set; }
+    /// <summary>Another car crossed the line first.</summary>
+    [PluginVisible] public bool ClientLost { get; set; }
     /// <summary>Transient status line from <see cref="NFMWorldLibrary.Hud.RaceAnnouncer"/>.</summary>
     [PluginVisible] public HudMessage? StatusMessage { get; set; }
     /// <summary>Transient stunt line, shown above the status line.</summary>

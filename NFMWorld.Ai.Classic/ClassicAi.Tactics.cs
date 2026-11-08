@@ -6,12 +6,18 @@ namespace NFMWorld.Ai.Classic;
 
 public sealed partial class ClassicAi
 {
+    /// <summary>The original's 2000 in 1/100-unit squared distance, in <see cref="DistanceSquared10"/> units.</summary>
+    private const int FixCloseSquared = 200_000;
+
+    /// <summary>Distance a shortcut must save, in <see cref="Distance10"/> units (500 world units).</summary>
+    private const int ShortcutMinSave = 50;
+
+    /// <summary>How far (in 1000-unit steps) the skipped nodes may sit off the shortcut line.</summary>
+    private static readonly fix64 ShortcutCorridor = (fix64)1.2f;
+
     /// <summary>Re-rolls how this driver likes to drive, every so often while grounded.</summary>
     private void Rethink(BackendCar car)
     {
-        ChooseAimLag(car);
-        ChooseHoldBack(car);
-        ChooseCornerCutting(car);
         ChooseRamps(car);
         ChooseTurnStyle();
         ChooseLandingCare(car);
@@ -20,137 +26,156 @@ public sealed partial class ClassicAi
         ChooseWhomToAttack(car);
         ChooseWhetherToFix(car);
 
+        _driver.SteerTolerance = (fix64)4;
         _driver.TicksSinceRethink = 0;
         _driver.RethinkAfter = (int)FixedMath.Floor((fix64)20 * Sim());
     }
 
-    /// <summary>Aims at a position, refreshing only every <see cref="DriverState.AimLag"/> ticks.</summary>
-    private void AimAtPathPoint(BackendCar car, int point)
-    {
-        if (_driver.TicksSinceAim > _driver.TicksToNextAim)
-        {
-            var path = Path;
-            _driver.AimHeading = HeadingTo(car, path.X(point), path.Z(point));
-            _driver.TicksSinceAim = 0;
-            _driver.TicksToNextAim = (int)FixedMath.Floor(_driver.AimLag * Sim());
-        }
-        else if (_originalTick)
-        {
-            _driver.TicksSinceAim++;
-        }
-    }
-
-    /// <summary>The point to drive at, after ramps and corner cutting.</summary>
-    /// <remarks>
-    /// The original branches here between this and a "bully" route that hunts the player;
-    /// only the racing route survives, so the condition that picked it is always true.
-    /// </remarks>
+    /// <summary>The point to drive at, after ramps and the next-gate clamp.</summary>
     private int ChoosePathPoint(BackendCar car, int point)
     {
-        point = TakeOrAvoidRamps(point);
-        return CutCorners(car, point);
+        var path = Path;
+
+        // On a fix lane, follow its nodes and take its ramps; skipping the entry/apex is
+        // how the car ends up circling the `)po`.
+        if (_driver.Fixing != Fix.None && path.InFixBlock(_driver.PathIndex))
+        {
+            _driver.TargetsFix = true;
+            _driver.RampChoice = Ramps.Take;
+
+            // While the entry node itself is not reached, aim at it. Aiming at the next
+            // node makes the car orbit the next node and never get within capture of the
+            // entry.
+            var currentDistance = DistanceSquared10(
+                car.Position.X, car.Position.Z, path.X(_driver.PathIndex), path.Z(_driver.PathIndex));
+
+            return currentDistance > (fix64)FixLaneCaptureSquared
+                ? _driver.PathIndex
+                : path.Step(_driver.PathIndex, _driver.FixDirection);
+        }
+
+        if (_driver.Missed)
+        {
+            return path.CheckpointCount > 0
+                ? path.CheckpointPath(car.CurrentCheckpoint % path.CheckpointCount)
+                : point;
+        }
+
+        point = TakeOrAvoidRamps(car, point);
+        point = ClampToCheckpoint(car, point);
+        return TryShortcut(car, point);
     }
 
-    private int TakeOrAvoidRamps(int point)
+    /// <summary>
+    /// Slightly straightens a gentle bend by aiming a node or two further along the path.
+    /// </summary>
+    /// <remarks>
+    /// Conservative on purpose: the skipped nodes must lie within about a road-width of the
+    /// new line, no gate may be skipped, the line must save real distance, and a damaged car
+    /// keeps to the exact path. That skips redundant pieces on a sweep without cutting
+    /// across the infield into a wall.
+    /// </remarks>
+    private int TryShortcut(BackendCar car, int point)
     {
         var path = Path;
+        if (_driver.Missed || _driver.Fixing != Fix.None || path.Typ(point) > 0)
+            return point;
+
+        // Damage is the dynamic risk gate: a healthy car takes the cleaner line.
+        if (car.CarPhysics.DamagePoints * 2 > car.CarPhysics.Stat.Maxmag)
+            return point;
+
+        var nearest = _driver.PathIndex;
+        var gateLimit = path.CheckpointCount > 0
+            ? path.ForwardDistance(nearest, path.CheckpointPath(car.CurrentCheckpoint % path.CheckpointCount))
+            : int.MaxValue;
+
+        for (var skip = 3; skip >= 2; skip--)
+        {
+            // Never jump the checkpoint that still has to be cleared.
+            if (skip >= gateLimit)
+                continue;
+
+            var candidate = path.AdvanceNormal(nearest, skip);
+            if (path.Typ(candidate) > 0 || path.Typ(candidate) == TrackPath.FixRoadStart
+                || path.InFixBlock(candidate))
+                continue;
+
+            if (ShortcutClear(car, path, nearest, candidate, skip))
+                return candidate;
+        }
+
+        return point;
+    }
+
+    private static bool ShortcutClear(BackendCar car, TrackPath path, int nearest, int candidate, int skip)
+    {
+        var headingOff = Normalize(Heading(car) - (fix64)HeadingTo(car, path.X(candidate), path.Z(candidate)));
+        if (FixedMath.Abs(headingOff) > (fix64)90)
+            return false;
+
+        var first = path.AdvanceNormal(nearest, 1);
+        var direct = Distance10(car.Position.X, car.Position.Z, path.X(candidate), path.Z(candidate));
+        var via = Distance10(car.Position.X, car.Position.Z, path.X(first), path.Z(first));
+        for (var i = 2; i <= skip; i++)
+        {
+            var a = path.AdvanceNormal(nearest, i - 1);
+            var b = path.AdvanceNormal(nearest, i);
+            via += Distance10(path.X(a), path.Z(a), path.X(b), path.Z(b));
+        }
+
+        if (via - direct < (fix64)ShortcutMinSave)
+            return false;
+
+        // Perpendicular distance of each skipped node from the new line. Scaled by 1000 so
+        // the squares stay well inside fix64 on the widest stages.
+        var ax = (path.X(candidate) - car.Position.X) / (fix64)1000;
+        var az = (path.Z(candidate) - car.Position.Z) / (fix64)1000;
+        var lengthSquared = (ax * ax) + (az * az);
+        if (lengthSquared == fix64.Zero)
+            return false;
+
+        for (var i = 1; i < skip; i++)
+        {
+            var skipped = path.AdvanceNormal(nearest, i);
+            if (path.Typ(skipped) > 0 || path.Typ(skipped) == TrackPath.FixRoadStart || path.InFixBlock(skipped))
+                return false;
+
+            var px = (path.X(skipped) - car.Position.X) / (fix64)1000;
+            var pz = (path.Z(skipped) - car.Position.Z) / (fix64)1000;
+            var t = ((px * ax) + (pz * az)) / lengthSquared;
+            if (t < fix64.Zero) t = fix64.Zero;
+            if (t > fix64.One) t = fix64.One;
+
+            var dx = (ax * t) - px;
+            var dz = (az * t) - pz;
+            if ((dx * dx) + (dz * dz) > ShortcutCorridor * ShortcutCorridor)
+                return false;
+        }
+
+        return true;
+    }
+
+    private int TakeOrAvoidRamps(BackendCar car, int point)
+    {
+        var path = Path;
+        var normal = _driver.Fixing == Fix.None;
         if (_driver.RampChoice == Ramps.Take && path.Typ(point) <= 0)
         {
-            var next = point + 1;
-            if (next >= path.Count)
-                next = 0;
-            if (path.Typ(next) == TrackPath.Ramp)
+            var next = normal ? path.AdvanceNormal(point, 1) : path.Advance(point, 1);
+            // A ramp right before a gate launches the car over the checkpoint box; the
+            // driver then has to turn back and can orbit the gate. Stay on the ground.
+            var skipsGate = path.CheckpointCount > 0
+                && path.ForwardDistance(next, path.CheckpointPath(car.CurrentCheckpoint % path.CheckpointCount)) <= 2;
+
+            if (path.Typ(next) == TrackPath.Ramp && !skipsGate)
                 point = next;
         }
 
         if (_driver.RampChoice == Ramps.Avoid && path.Typ(point) == TrackPath.Ramp)
-        {
-            point++;
-            if (point >= path.Count)
-                point = 0;
-        }
+            point = normal ? path.AdvanceNormal(point, 1) : path.Advance(point, 1);
 
         return point;
-    }
-
-    /// <summary>Skips turns and already-taken points, more often for a driver further back.</summary>
-    private int CutCorners(BackendCar car, int point)
-    {
-        var path = Path;
-
-        // Two independent draws, as the original: the first cuts corners wholesale (only
-        // while the car is within its checkpoint), the second only steps over turns.
-        if (Sim() <= _driver.CornerCutting)
-        {
-            if (Sim() > _driver.CornerCutting)
-            {
-                while (path.Typ(point) == TrackPath.Turn)
-                {
-                    point++;
-                    if (point >= path.Count)
-                        point = 0;
-                }
-            }
-
-            return point;
-        }
-
-        var target = point;
-        var notPastCheckpoint = false;
-        if (path.Typ(target) > 0)
-            notPastCheckpoint = car.TotalCheckpoint != CheckpointsBefore(target) + (car.CurrentLap * Path.CountCheckpoints());
-
-        // Bounded by the path length, and never past the checkpoint being chased: on a stage
-        // whose points are all road (or whose next checkpoint the car has not reached) the
-        // original's loop walks the whole lap and wraps onto point 0 - behind the car - which
-        // makes the driver double back on itself every few ticks.
-        var limit = CheckpointAhead(point);
-        for (var hop = 0; hop < path.Count; hop++)
-        {
-            if (path.Typ(target) is not (TrackPath.Road or TrackPath.Turn or TrackPath.FixRoadStart) && !notPastCheckpoint)
-                break;
-            if (limit >= 0 && point == limit)
-                break;
-
-            point = target;
-            target++;
-            if (target >= path.Count)
-                target = 0;
-
-            notPastCheckpoint = false;
-            if (path.Typ(target) > 0)
-                notPastCheckpoint = car.TotalCheckpoint != CheckpointsBefore(target) + (car.CurrentLap * Path.CountCheckpoints());
-        }
-
-        return point;
-    }
-
-    /// <summary>How many checkpoints come before a path point.</summary>
-    /// <summary>The next checkpoint at or after <paramref name="point"/>, or -1 if none.</summary>
-    private int CheckpointAhead(int point)
-    {
-        var path = Path;
-        for (var i = 0; i < path.Count; i++)
-        {
-            var index = (point + i) % path.Count;
-            if (path.Typ(index) > 0)
-                return index;
-        }
-
-        return -1;
-    }
-
-    private int CheckpointsBefore(int point)
-    {
-        var path = Path;
-        var count = 0;
-        for (var i = 0; i < point && i < path.Count; i++)
-        {
-            if (path.Typ(i) > 0)
-                count++;
-        }
-
-        return count;
     }
 
     /// <summary>Detours to a fix hoop when the car is damaged, and pulls in when close.</summary>
@@ -158,52 +183,181 @@ public sealed partial class ClassicAi
     {
         if (_driver.Fixing == Fix.None)
             return point;
-        if (_driver.Missed && !_driver.IgnoreMissed && _driver.Fixing != Fix.Jumping)
-            return point;
 
         var path = Path;
+
+        // Already on the fix lane: let the normal path advance along it. Re-targeting the
+        // `)po` entry every tick makes the car orbit the entry node forever. Only a lane
+        // the driver actually chose counts; the initial nearest-point search can land on a
+        // lane node from the main line.
+        if (_driver.FixLaneActive && path.InFixBlock(_driver.PathIndex))
+            return point;
+
+        // A gate comes first. Detouring to a hoop on the approach to a checkpoint is how a
+        // damaged driver loses the checkpoint it was about to clear.
+        if (_driver.Missed && !_driver.IgnoreMissed && _driver.Fixing != Fix.Jumping)
+            return point;
+        if (NearNextCheckpoint(car) && _driver.Fixing != Fix.Jumping)
+            return point;
+
         if (path.FixApproach.Length == 0)
             return point;
 
         if (_driver.Fixing == Fix.Nearest)
         {
+            // A hoop is reachable from its ordinary approach and, on a `)po` lane, from the
+            // closing marker driven backwards. Take whichever entry is closest.
             var nearest = fix64.Zero;
-            var nearestFix = 0;
-            for (var i = 0; i < path.FixApproach.Length; i++)
+            var nearestFix = -1;
+            var nearestApproach = -1;
+            var nearestDirection = 1;
+            var nearestRoad = false;
+            var nearestRamp = false;
+
+            void Consider(int index, int approach, int direction, bool road, bool ramp)
             {
-                var approach = path.FixApproach[i];
-                var d = DistanceSquared10(car.Position.X, car.Position.Z, path.X(approach), path.Z(approach));
-                if (d < nearest || nearest == fix64.Zero)
-                {
-                    nearest = d;
-                    nearestFix = i;
-                }
+                if (approach < 0)
+                    return;
+
+                // A hoop in the air with no ramp or explicit fix road cannot be reached.
+                if (path.FixAerial[index] && !ramp && !road)
+                    return;
+
+                // A detached `)po` block can sit more than half the node list away while
+                // still being the route to take. Only ordinary approaches need the
+                // behind-the-car guard; explicit roads are protected by the fix cooldown
+                // once the car has left them.
+                if (!road && path.ForwardDistance(_driver.PathIndex, approach) > path.Count / 2)
+                    return;
+
+                // Critically damaged, an explicit `)po` route is worth going to even if the
+                // array order puts it far ahead; otherwise keep the U-turn guard.
+                if (!FixAhead(path, approach, road))
+                    return;
+
+                var d = DistanceSquared10(
+                    car.Position.X, car.Position.Z, path.X(approach), path.Z(approach));
+
+                if (nearestFix >= 0 && d >= nearest)
+                    return;
+
+                nearest = d;
+                nearestFix = index;
+                nearestApproach = approach;
+                nearestDirection = direction;
+                nearestRoad = road;
+                nearestRamp = ramp;
             }
 
-            point = path.FixApproach[nearestFix];
-            _driver.IgnoreMissed = path.FixIsSpecial[nearestFix];
+            for (var i = 0; i < path.FixApproach.Length; i++)
+            {
+                Consider(i, path.FixApproach[i], 1, path.FixRoad[i], path.FixRamp[i]);
+                Consider(i, path.FixApproachEnd[i], -1, true, path.FixRamp[i]);
+            }
+
+            if (nearestFix >= 0)
+            {
+                point = nearestApproach;
+                _driver.IgnoreMissed = path.FixIsSpecial[nearestFix];
+                _driver.TargetsFix = true;
+                _driver.FixDirection = nearestDirection;
+                if (nearestRamp)
+                    _driver.RampChoice = Ramps.Take;
+
+                // Pin the tracker to an explicit `)po` entry. Otherwise a main-path node
+                // that happens to be closer can win the nearest search and the car orbits
+                // the entry without ever entering the fix block.
+                if (nearestRoad)
+                {
+                    _driver.PathIndex = point;
+                    _driver.FixLaneActive = true;
+                }
+            }
+            else
+            {
+                // Nothing useful ahead: keep racing and repair only if the path happens to
+                // take the car through a hoop.
+                _driver.Fixing = Fix.OnTheWay;
+            }
+        }
+
+        // A `)po` fix road is a branch: turn onto it while it is ahead, before the next
+        // gate, so "repair on the way" actually enters the repair route. A `)pr` ramp is
+        // on the line; take it while it is still ahead.
+        if (_driver.Fixing != Fix.Nearest)
+        {
+            for (var i = 0; i < path.FixApproach.Length; i++)
+            {
+                if (!path.FixRoad[i] && !path.FixRamp[i])
+                    continue;
+
+                var approach = path.FixApproach[i];
+                if (!FixAhead(path, approach, false))
+                    continue;
+
+                if (path.CheckpointCount > 0)
+                {
+                    var checkpoint = path.CheckpointPath(car.CurrentCheckpoint % path.CheckpointCount);
+                    if (path.ForwardDistance(_driver.PathIndex, approach)
+                        >= path.ForwardDistance(_driver.PathIndex, checkpoint))
+                        continue;
+                }
+
+                point = approach;
+                _driver.TargetsFix = true;
+                _driver.FixDirection = 1;
+                if (path.FixRoad[i])
+                {
+                    _driver.PathIndex = approach;
+                    _driver.FixLaneActive = true;
+                }
+                if (path.FixRamp[i])
+                    _driver.RampChoice = Ramps.Take;
+                break;
+            }
         }
 
         for (var i = 0; i < path.FixApproach.Length; i++)
         {
+            if (path.FixAerial[i] && !path.FixRamp[i] && !path.FixRoad[i])
+                continue;
+
             var approach = path.FixApproach[i];
-            if (DistanceSquared10(car.Position.X, car.Position.Z, path.X(approach), path.Z(approach)) < (fix64)2000)
+            if (!FixAhead(path, approach, false))
+                continue;
+
+            // The original measures this in 1/100-unit squared distance (2000 means ~4470
+            // units); DistanceSquared10 is in 1/10 units, so the threshold scales by 100.
+            if (DistanceSquared10(car.Position.X, car.Position.Z, path.X(approach), path.Z(approach))
+                < (fix64)FixCloseSquared)
             {
                 _driver.IgnoreMissed = false;
-                _driver.HoldBackNow = 0;
-                _driver.HoldBack = 0;
                 _driver.SharpTurn = SharpTurn.Handbrake;
-                _driver.TicksToNextAim = -1;
-                _driver.AimLag = 0;
-                _driver.RampChoice = Ramps.Either;
+                _driver.RampChoice = path.FixRamp[i] ? Ramps.Take : Ramps.Either;
+                _driver.SteerTolerance = (fix64)2;
                 _driver.Fixing = Fix.Close;
             }
         }
 
-        if (_driver.Fixing == Fix.Close)
-            _nofocus = true;
-
         return point;
+    }
+
+    /// <summary>True when a fix approach is still ahead of the car in this lap.</summary>
+    private bool FixAhead(TrackPath path, int approach, bool explicitRoad)
+    {
+        if (path.Count == 0 || _driver.PathIndex < 0)
+            return false;
+
+        // A critically damaged driver will go to a designed `)po` route wherever it sits in
+        // the node list; a lap's array position does not describe the detour distance.
+        if (explicitRoad && _driver.Fixing == Fix.Nearest)
+            return true;
+
+        var ahead = path.ForwardDistance(_driver.PathIndex, approach);
+
+        // A ramp/hoop can legitimately sit a little further ahead than eight points; the
+        // U-turn guard is the half-lap test, not a short window.
+        return ahead <= Math.Min(16, path.Count / 2);
     }
 
     /// <summary>Drives at an opponent it has decided to attack.</summary>
@@ -256,14 +410,12 @@ public sealed partial class ClassicAi
     private void RankCars()
     {
         var stage = CurrentStage;
-        var nsp = Path.CountCheckpoints();
+        var nsp = Path.CheckpointCount;
 
         for (var i = 0; i < Players.Count; i++)
         {
             if (Players[i].Car is { } carA)
-            {
                 carA.Placement = 0;
-            }
         }
 
         for (var i = 0; i < Players.Count; i++)
@@ -301,63 +453,12 @@ public sealed partial class ClassicAi
                 if (next >= nsp)
                     next = 0;
                 var checkpoint = stage.Checkpoints[next];
-                if (DistanceSquared(carA.Position.X, carA.Position.Z, checkpoint.Position.X, checkpoint.Position.Z)
-                    > DistanceSquared(carB.Position.X, carB.Position.Z, checkpoint.Position.X, checkpoint.Position.Z))
+                if (DistanceSquared10(carA.Position.X, carA.Position.Z, checkpoint.Position.X, checkpoint.Position.Z)
+                    > DistanceSquared10(carB.Position.X, carB.Position.Z, checkpoint.Position.X, checkpoint.Position.Z))
                     carA.Placement++;
                 else
                     carB.Placement++;
             }
-        }
-    }
-
-    private void ChooseAimLag(BackendCar car)
-    {
-        var rival = Rank(RivalCar(car));
-        var lag = (int)FixedMath.Floor(((fix64)7 - Rank(car)) * rival * ((fix64)6 - (fix64)(AiStage * 2)));
-        _driver.AimLag = Math.Max(0, lag);
-        _driver.SteerTolerance = (fix64)5;
-    }
-
-    private void ChooseHoldBack(BackendCar car)
-    {
-        var rival = Rank(RivalCar(car));
-        var mine = Rank(car);
-        var behind = rival - mine;
-        var holdBack = (int)FixedMath.Floor(behind * behind * behind * HoldBackScale());
-        _driver.HoldBack = Math.Min(80, holdBack);
-        if (AiStage == 1 && _driver.HoldBack < 20)
-            _driver.HoldBack = 20;
-    }
-
-    private static fix64 HoldBackScale() => AiStage switch
-    {
-        1 => (fix64)2,
-        2 => (fix64)1.5f,
-        3 => (fix64)0.5f,
-        4 => (fix64)0.5f,
-        _ => fix64.Zero
-    };
-
-    private void ChooseCornerCutting(BackendCar car)
-    {
-        var maxCutting = AiStage switch
-        {
-            1 or 2 => (fix64)1,
-            3 or 4 => (fix64)0.5f,
-            _ => (fix64)0.2f
-        };
-
-        if (car.TotalCheckpoint >= RivalCar(car).TotalCheckpoint - 1)
-        {
-            _driver.CornerCutting -= (fix64)0.1f;
-            if (_driver.CornerCutting < fix64.Zero)
-                _driver.CornerCutting = fix64.Zero;
-        }
-        else
-        {
-            _driver.CornerCutting += (fix64)0.2f;
-            if (_driver.CornerCutting > maxCutting)
-                _driver.CornerCutting = maxCutting;
         }
     }
 
@@ -396,20 +497,12 @@ public sealed partial class ClassicAi
         var margin = (int)FixedMath.Floor(((fix64)98 - power) * (fix64)0.5f * ((Sim() * (fix64)0.5f) + (fix64)0.5f));
         _driver.LandingMargin = Math.Min(20, margin);
 
-        var sloppiness = AiStage switch
-        {
-            1 => (fix64)0.9f,
-            2 => (fix64)0.7f,
-            3 => (fix64)0.4f,
-            _ => fix64.Zero
-        };
-
-        _driver.LandingSloppiness = sloppiness + ((Sim() / (fix64)2) - (fix64)0.25f);
+        _driver.LandingSloppiness = (Sim() / (fix64)2) - (fix64)0.25f;
 
         if (power > (fix64)50)
         {
             if (car.TotalCheckpoint < RivalCar(car).TotalCheckpoint)
-                _driver.LandingMargin *= AiStage switch { 1 => (fix64)5, 2 => (fix64)2, 3 => (fix64)1.5f, _ => fix64.One };
+                _driver.LandingMargin *= 2;
             else
                 _driver.LandingSloppiness = fix64.Zero;
         }
@@ -438,16 +531,15 @@ public sealed partial class ClassicAi
     private void ChooseWhetherToFix(BackendCar car)
     {
         var mad = car.CarPhysics;
-        if (_driver.Fixing == Fix.Close)
-        {
-            _driver.HoldBack = 0;
-            _driver.AimLag = 0;
-            _driver.CornerCutting = (fix64)1;
-            _driver.SteerTolerance = (fix64)2;
-            return;
-        }
 
+        // Always recomputed: holding the "at the hoop" state would keep a repaired driver
+        // circling it, because nothing else clears it.
         _driver.Fixing = Fix.None;
+
+        // Do not immediately turn back into the lane the car just left.
+        if (_driver.FixCooldown > 0)
+            return;
+
         var damage = (fix64)100 * mad.DamagePoints / (fix64)mad.Stat.Maxmag;
         if (damage > (fix64)50)
             _driver.Fixing = Fix.OnTheWay;
@@ -480,6 +572,16 @@ public sealed partial class ClassicAi
         if (!ReferenceEquals(other, RivalCar(car)))
             return;
 
+        // Chasing a car takes the bot off the path. Never do it on the approach to a gate:
+        // that is how a driver loses a checkpoint it was about to clear.
+        if (_driver.Missed || NearNextCheckpoint(car))
+            return;
+
+        // A damaged car races for the line, it does not pick a fight.
+        var mad = car.CarPhysics;
+        if ((fix64)100 * mad.DamagePoints / (fix64)mad.Stat.Maxmag > (fix64)50)
+            return;
+
         var heading = Heading(car);
         var headingToOther = Normalize((fix64)HeadingTo(car, other.Position.X, other.Position.Z));
         var angleOff = FixedMath.Abs(Normalize(heading - headingToOther));
@@ -507,6 +609,16 @@ public sealed partial class ClassicAi
 
         if (Sim() < chance)
             StartAttack(car, other);
+    }
+
+    private bool NearNextCheckpoint(BackendCar car)
+    {
+        var path = Path;
+        if (path.CheckpointCount == 0 || _driver.PathIndex < 0)
+            return false;
+
+        var checkpoint = path.CheckpointPath(car.CurrentCheckpoint % path.CheckpointCount);
+        return path.ForwardDistance(_driver.PathIndex, checkpoint) <= 3;
     }
 
     // The original raises the bar on some stages and for some car types; without either,

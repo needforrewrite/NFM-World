@@ -527,6 +527,15 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         GamemodeInstance?.KeyTyped(character);
     }
 
+    public override void KeyHeld(bool imguiWantsKeyboard, in Keys keys)
+    {
+        base.KeyHeld(imguiWantsKeyboard, keys);
+
+        if (imguiWantsKeyboard || IsPaused || GameSparker.devConsole.IsOpen()) return;
+
+        _input.Refresh(in keys, ClientCar?.Control, ClientCar?.CarPhysics.Mtouch == false);
+    }
+
     public override void KeyReleased(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
         base.KeyReleased(key, imguiWantsKeyboard, keys);

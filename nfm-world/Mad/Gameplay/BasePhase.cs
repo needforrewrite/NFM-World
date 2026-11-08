@@ -120,6 +120,21 @@ public abstract class BasePhase : IDisposable
     }
 
     /// <summary>
+    /// Invoked every frame with the physical key state, between press/release events.
+    /// </summary>
+    /// <remarks>
+    /// Edge-triggered input alone loses a held key whenever its state is not recomputed: a
+    /// dropped release, a pause/reset that clears the phase's pressed set, or a frame where
+    /// ImGui captured the keydown. Re-applying physical state each frame makes held keys
+    /// authoritative.
+    /// </remarks>
+    /// <param name="imguiWantsKeyboard">If Imgui wants the keyboard.</param>
+    /// <param name="keys">The state of all keys.</param>
+    public virtual void KeyHeld(bool imguiWantsKeyboard, in Keys keys)
+    {
+    }
+
+    /// <summary>
     /// Invoked when a key is released.
     /// </summary>
     /// <param name="key">The key.</param>

@@ -167,7 +167,66 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void OnFreePlayClicked()
     {
-        var playerCar = MenuHistory.Car?.FileName ?? MenuHistory.DefaultCar;
+        StageSelectPhase ssp;
+        try
+        {
+            ssp = new StageSelectPhase();
+        }
+        catch (DirectoryNotFoundException ex)
+        {
+            Logging.Error(ex.Message);
+            GameSparker.MessageWindow.ShowMessage("Stages unavailable", ex.Message);
+            return;
+        }
+
+        ssp.StageSelected += (sender, stageName) =>
+        {
+            PhaseSharedState.SelectedStageName = stageName;
+
+            GaragePhase gp = new(ssp);
+            gp.CarSelected += (sender, car) =>
+            {
+                var factory = GamemodeFactory.Create("nfmm/pvp", new Dictionary<string, object>()
+                {
+                    ["constraint"] = "both"
+                });
+                var players = CreateFreePlayPlayers(car.FileName);
+                LocalRaceHost host;
+                try
+                {
+                    host = LocalRaceHost.Create(stageName, factory,
+                        new ClientGamemodeParameters { Players = players });
+                }
+                catch
+                {
+                    factory.End();
+                    throw;
+                }
+                var inRace = new RacePhase(stageName, factory, players, host, gp);
+                inRace.Exited += (sender, args) =>
+                {
+                    GameSparker.PopGroup(PhaseManager.Groups.Event);
+                };
+                GameSparker.Phases.ReplaceGroup(inRace, PhaseManager.Groups.Event);
+
+                Logging.Info("Game started!");
+            };
+
+            gp.CarSelectionCancelled += (sender, _) =>
+            {
+                ssp.TakeStageFrom(gp, takeMusic: false);
+                ssp.CurrentStage!.FadeFromOverride = 9999999;
+                GameSparker.PopPhase();
+            };
+
+            GameSparker.PushPhase(gp, PhaseManager.Groups.Event);
+        };
+
+        GameSparker.PushPhase(ssp, PhaseManager.Groups.Event);
+    }
+
+    private static ClientSidePlayerInfo[] CreateFreePlayPlayers(string playerCar)
+    {
         var opponentCars = BackendGameSparker.cars[Collection.NFMM]
             .Select(car => car.FileName)
             .Where(name => !string.Equals(name, playerCar, StringComparison.OrdinalIgnoreCase))
@@ -175,10 +234,6 @@ public class MainMenuPhase : BaseStageRenderingPhase
             .ToArray();
         System.Random.Shared.Shuffle(opponentCars);
 
-        var factory = GamemodeFactory.Create("nfmm/pvp", new Dictionary<string, object>()
-        {
-            ["constraint"] = "both"
-        });
         var players = new ClientSidePlayerInfo[1 + Math.Min(6, opponentCars.Length)];
         players[0] = new()
         {
@@ -199,16 +254,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 IsBot = true
             };
         }
-        var stageName = MenuHistory.Stage;
-        var inRace = new RacePhase(stageName, factory, players,
-            LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = players }));
-        inRace.Exited += (sender, args) =>
-        {
-            GameSparker.PopGroup(PhaseManager.Groups.Event);
-        };
-        GameSparker.PushPhase(inRace, PhaseManager.Groups.Event);
-
-        Logging.Info("Game started!");
+        return players;
     }
 
     private void OnGarageClicked()

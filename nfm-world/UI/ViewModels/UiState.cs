@@ -61,6 +61,9 @@ public static class UiState
         public HudMessage? StuntMessage { get; set; }
         public Signal<string?> StateText { get; } = new(null);
         public Signal<DateTime?> StateTextEndsAt { get; } = new(null);
+        public Signal<bool> Finished { get; } = new(false);
+        public Signal<bool> ClientWon { get; } = new(false);
+        public Signal<bool> ClientLost { get; } = new(false);
         public Signal<bool> Paused { get; } = new(false);
 
         public int SpeedKmh => float.IsFinite(Speed.Value)
@@ -115,6 +118,9 @@ public static class UiState
                 CountdownTimer.Value = hud.CountdownTimer;
                 StateText.Value = hud.StateText;
                 StateTextEndsAt.Value = hud.StateTextEndsAt;
+                Finished.Value = hud.Finished;
+                ClientWon.Value = hud.ClientWon;
+                ClientLost.Value = hud.ClientLost;
                 StatusMessage = hud.StatusMessage;
                 StuntMessage = hud.StuntMessage;
                 Paused.Value = paused;

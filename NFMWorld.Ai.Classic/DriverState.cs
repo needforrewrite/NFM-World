@@ -51,12 +51,6 @@ internal sealed class DriverState
 
     public int Fixing;
 
-    /// <summary>Up to how many ticks between aiming anew; sloppier drivers aim less often.</summary>
-    public int AimLag;
-
-    /// <summary>Ticks per gas cycle it rolls without gas, letting the player catch up.</summary>
-    public int HoldBack;
-
     public bool IgnoreMissed;
 
     /// <summary>Ticks it keeps its steering after hitting a wall.</summary>
@@ -68,10 +62,7 @@ internal sealed class DriverState
     public int TicksSinceRethink;
 
     /// <summary>Degrees off its aim it does not steer for.</summary>
-    public fix64 SteerTolerance = (fix64)5;
-
-    /// <summary>The chance of skipping path points (0..1).</summary>
-    public fix64 CornerCutting = (fix64)1;
+    public fix64 SteerTolerance = (fix64)4;
 
     public int RampChoice;
     public int TurnStyleTicks;
@@ -96,20 +87,7 @@ internal sealed class DriverState
 
     public int StuntPhase;
 
-    /// <summary>Ticks into the gas cycle, and the hold back of this cycle.</summary>
-    public int GasCycle;
-
-    public int HoldBackNow;
-
-    /// <summary>Ticks it backs up at the start.</summary>
-    public int ReverseTicks;
-
-    public int TicksToNextAim;
-    public int TicksSinceAim;
-
     public bool LastTurnedLeft;
-    public int LastWall = -1;
-    public bool WallTurnLeft;
 
     /// <summary>A stunt: its angles at take-off, ticks in the air, flip and roll (-1, 0, 1).</summary>
     public fix64 TakeoffXy;
@@ -133,16 +111,42 @@ internal sealed class DriverState
     public bool StraightenRoll;
     public int LandingStep;
 
-    /// <summary>The path point it follows, or -1 while it is holding for a checkpoint.</summary>
+    /// <summary>The path point it aims at.</summary>
     public int Point;
 
-    /// <summary>Set when it drops behind its checkpoint gate; cleared when it passes one.</summary>
-    public int Focus = -1;
+    /// <summary>The path point nearest the car, tracked between ticks.</summary>
+    public int PathIndex = -1;
 
-    /// <summary>
-    /// The original's <c>missedCheckpoint</c>. A bot only ever sees "none" from the physics,
-    /// but the path walk writes "following" while it has no focus and "started" once it has
-    /// one, and repair is gated on the former.
-    /// </summary>
+    /// <summary>Set when the next gate is behind the car: it drives back to it.</summary>
     public bool Missed;
+
+    /// <summary>This tick's target is a fix approach/ramp, not the racing line.</summary>
+    public bool TargetsFix;
+
+    /// <summary>Whether the tracker was inside a fix lane on the previous tick.</summary>
+    public bool WasInFixBlock;
+
+    /// <summary>The driver deliberately entered a `)po` lane and is following it.</summary>
+    public bool FixLaneActive;
+
+    /// <summary>+1 follows a fix lane forward, -1 enters from the closing marker.</summary>
+    public int FixDirection = 1;
+
+    /// <summary>Original frames to wait after leaving a fix lane before seeking another.</summary>
+    public int FixCooldown;
+
+    /// <summary>Progress counters for the stuck check.</summary>
+    public int SampleTicks;
+    public int StuckTicks;
+    public fix64 LastSampleX;
+    public fix64 LastSampleZ;
+    public fix64 LastHeading;
+
+    /// <summary>Ticks left backing out of an obstacle, and which way it steers while doing so.</summary>
+    public int UnstickTicks;
+    public bool UnstickLeft;
+    public int RecoveryAttempts;
+
+    /// <summary>Samples of clean movement since the last stall; recovery attempts are forgotten after a while.</summary>
+    public int GoodSamples;
 }

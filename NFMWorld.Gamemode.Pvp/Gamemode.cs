@@ -84,6 +84,9 @@ public class PvpGamemode : PluginGamemode
         _clientTick = 0;
         HudState.StateText = null;
         HudState.StateTextEndsAt = null;
+        HudState.Finished = false;
+        HudState.ClientWon = false;
+        HudState.ClientLost = false;
     }
 
     public override void Reset()
@@ -130,10 +133,22 @@ public class PvpGamemode : PluginGamemode
                     HudState.TotalLaps = CurrentStage.Nlaps;
                     HudState.Position = ClientPlayer.Car.Placement + 1;
                     HudState.TotalRacers = Players.Count;
-
-                    if (ClientPlayer.Car.CurrentLap >= CurrentStage.Nlaps)
-                        Finish();
                 }
+
+                // The first car across the line ends the race for everyone. Waiting for the
+                // client to finish let a bot complete every lap while the race carried on.
+                ClientSidePlayer? winner = null;
+                foreach (var player in Players)
+                {
+                    if (player.Car is { } car && car.CurrentLap >= CurrentStage.Nlaps)
+                    {
+                        winner = player;
+                        break;
+                    }
+                }
+
+                if (winner is not null)
+                    Finish(winner);
                 break;
             case GamemodeState.Finished:
                 _physics.GameTick();
@@ -163,7 +178,7 @@ public class PvpGamemode : PluginGamemode
     /// <summary>
     /// The race is over: every car coasts to a stop and the HUD stops advancing laps.
     /// </summary>
-    private void Finish()
+    private void Finish(ClientSidePlayer? winner = null)
     {
         if (_state == GamemodeState.Finished)
             return;
@@ -175,7 +190,21 @@ public class PvpGamemode : PluginGamemode
                 car.CarPhysics.Halted = true;
         }
 
-        HudState.StateText = "Finished!";
+        if (winner is not null)
+        {
+            var clientWon = winner.Info.IsClientPlayer;
+            HudState.StateText = clientWon
+                ? "You finished first, nice job!"
+                : $"{winner.Info.PlayerName} finished first, race over!";
+            HudState.ClientWon = clientWon;
+            HudState.ClientLost = !clientWon;
+        }
+        else
+        {
+            HudState.StateText = "Finished!";
+        }
+
+        HudState.Finished = true;
         HudState.StateTextEndsAt = null;
 
         // The announcer stops ticking with the race, so its lines would otherwise stay up.

@@ -102,8 +102,11 @@ public static class GlassCardUi
     }
 
     /// <summary>Large centre-screen text, split on newlines.</summary>
+    /// <param name="top">Top of the band the text centres in; null fills the screen.</param>
+    /// <param name="height">Height of that band; null fills the screen.</param>
     public static View CenterText(Func<string?>? text = null, float size = 64, Color? color = null,
-        Func<Color>? colorAccessor = null)
+        Func<Color>? colorAccessor = null, float? top = null, float? height = null,
+        FontFamily? fontFamily = null, FontStyle? fontStyle = null)
     {
         var textColor = color ?? Theme.TextSecondary;
 
@@ -111,10 +114,11 @@ public static class GlassCardUi
             style: () => new Styles
             {
                 Position = Position.Absolute,
-                Top = 0,
+                Top = top ?? 0f,
                 Left = 0,
                 Right = 0,
-                Bottom = 0,
+                Bottom = height is null ? 0f : MeasurementMarginPosition.Undefined,
+                Height = height is { } h ? h : MeasurementWidthHeight.Undefined,
                 FlexDirection = FlexDirection.Column,
                 AlignItems = Align.Center,
                 JustifyContent = Justify.Center,
@@ -125,7 +129,8 @@ public static class GlassCardUi
                     style: () => new TextStyles
                     {
                         FontSize = size,
-                        FontStyle = FontStyle.Bold,
+                        FontFamily = fontFamily,
+                        FontStyle = fontStyle ?? FontStyle.Bold,
                         ForegroundColor = colorAccessor?.Invoke() ?? textColor,
                         HorizontalAlignment = TextHorizontalAlignment.Center,
                     },

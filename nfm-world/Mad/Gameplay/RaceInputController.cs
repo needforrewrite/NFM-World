@@ -16,6 +16,13 @@ public sealed class RaceInputController
     private bool _freelook;
 
     /// <summary>
+    /// Q/E only apply while airborne. On the ground they press both halves of a pair
+    /// (bounce = up+down, strafe = left+right), which cancels normal driving — holding E
+    /// through a landing is what makes left steering look dead.
+    /// </summary>
+    private bool _airborne;
+
+    /// <summary>
     /// While free-looking, the driving keys fly the camera instead of the car (Q/E climb and
     /// descend), so the car coasts.
     /// </summary>
@@ -47,6 +54,38 @@ public sealed class RaceInputController
         if (control is null) return;
         control.Enter = false;
         control.Lookback = 0;
+    }
+
+    /// <summary>
+    /// Synchronizes movement keys with physical state, including releases missed by event routing.
+    /// </summary>
+    public void Refresh(in Keys keys, Control? control, bool airborne)
+    {
+        _airborne = airborne;
+        if (control is null)
+            return;
+
+        var bindings = SettingsMenu.Bindings;
+        Hold(bindings.Accelerate, in keys);
+        Hold(bindings.Brake, in keys);
+        Hold(bindings.TurnLeft, in keys);
+        Hold(bindings.TurnRight, in keys);
+        Hold(bindings.AerialBounce, in keys);
+        Hold(bindings.AerialStrafe, in keys);
+        Hold(bindings.Handbrake, in keys);
+
+        UpdateControlState(control);
+    }
+
+    /// <summary>
+    /// Applies both pressed and released states from the same snapshot used for key events.
+    /// </summary>
+    private void Hold(Key key, in Keys keys)
+    {
+        if (keys[key])
+            _pressedKeys.Add(key);
+        else
+            _pressedKeys.Remove(key);
     }
 
     /// <summary>Call on key press with the client car's control (may be null).</summary>
@@ -144,8 +183,8 @@ public sealed class RaceInputController
         bool brakePressed = _pressedKeys.Contains(bindings.Brake);
         bool turnLeftPressed = _pressedKeys.Contains(bindings.TurnLeft);
         bool turnRightPressed = _pressedKeys.Contains(bindings.TurnRight);
-        bool aerialBouncePressed = _pressedKeys.Contains(bindings.AerialBounce);
-        bool aerialStrafePressed = _pressedKeys.Contains(bindings.AerialStrafe);
+        bool aerialBouncePressed = _airborne && _pressedKeys.Contains(bindings.AerialBounce);
+        bool aerialStrafePressed = _airborne && _pressedKeys.Contains(bindings.AerialStrafe);
         bool handbrakePressed = _pressedKeys.Contains(bindings.Handbrake);
 
         // apply Up/Down controls

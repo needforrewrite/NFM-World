@@ -916,10 +916,10 @@ public partial class WorldGame : IDisposable, IGameHost
     private void UpdateInput()
     {
         var keys = SdlWindow.GetKeyboardState();
+        var imguiWantsKeyboard = ImguiRenderer is not null && ImGui.GetIO().WantCaptureKeyboard;
 
         foreach (var key in AllKeys)
         {
-            var imguiWantsKeyboard = ImguiRenderer is not null && ImGui.GetIO().WantCaptureKeyboard;
             if (keys[key] && !_oldKeyState[key])
             {
                 GameSparker.KeyPressed(key, keys, imguiWantsKeyboard);
@@ -938,6 +938,10 @@ public partial class WorldGame : IDisposable, IGameHost
 
         // Update saved state.
         _oldKeyState = keys;
+
+        // Edge events alone can drop a key that is still held; let the phase re-assert the
+        // physical state before the frame's game tick.
+        GameSparker.CurrentPhase.KeyHeld(imguiWantsKeyboard, keys);
     }
 
     private void UpdateMouseCursor()

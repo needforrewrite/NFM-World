@@ -191,6 +191,57 @@ public class PvpFinishTests
 
             Assert.AreEqual(3, client.HudState.Lap, "the lap counter must stop at the stage's lap count");
             Assert.IsTrue(client.ClientPlayer.Car.CarPhysics.Halted, "the car stops driving once the race is over");
+            Assert.IsTrue(client.HudState.Finished);
+            Assert.IsTrue(client.HudState.ClientWon);
+            Assert.IsFalse(client.HudState.ClientLost);
+            StringAssert.Contains(client.HudState.StateText ?? "", "You finished first");
+        }
+        finally
+        {
+            BackendGameSparker.dynamic_models.Remove(carName);
+            client?.End();
+            factory.End();
+        }
+    }
+
+    /// <summary>
+    /// A bot crossing the line has to end the race. The client-only finish check let every
+    /// bot complete the race while the player kept driving.
+    /// </summary>
+    [TestMethod]
+    public void BotPassingItsFinalLap_EndsTheRaceForTheClient()
+    {
+        var factory = CreateFactory();
+        var carName = $"pvp-test/{Guid.NewGuid():N}";
+        BaseClientGamemode? client = null;
+        try
+        {
+            BackendGameSparker.dynamic_models.Add(carName,
+                (0, new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName)));
+
+            client = (BaseClientGamemode)factory.CreateGameMode(new ClientGamemodeParameters
+            {
+                Players =
+                [
+                    new ClientSidePlayerInfo(carName, carName, new Color3(255, 0, 0),
+                        isBot: false, isClientPlayer: true),
+                    new ClientSidePlayerInfo("Classic", carName, new Color3(0, 0, 255),
+                        isBot: true, isClientPlayer: false)
+                ]
+            }, new ClientContext(CreateStage(laps: 1, checkpoints: 2)));
+            client.Begin();
+            client.OnServerEvent(SerializeEvent(factory, "CountdownGoEvent").Span);
+
+            var bot = client.Players[1];
+            Assert.IsNotNull(bot.Car);
+            bot.Car.CurrentLap = 1;
+            client.GameTick();
+
+            Assert.IsTrue(client.HudState.Finished, "a bot finishing has to end the race");
+            Assert.IsTrue(client.HudState.ClientLost);
+            Assert.IsFalse(client.HudState.ClientWon);
+            StringAssert.Contains(client.HudState.StateText ?? "", "Classic finished first, race over!");
+            Assert.IsTrue(client.ClientPlayer.Car!.CarPhysics.Halted, "the client car stops with the race");
         }
         finally
         {
