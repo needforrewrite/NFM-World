@@ -35,15 +35,38 @@ public abstract class BaseStageRenderingPhase : BasePhase
     public string? StageName;
     
     // please don't pass null stage names except for stage select
-    protected BaseStageRenderingPhase(string? stageName = null)
+    protected BaseStageRenderingPhase(string? stageName = null, BaseStageRenderingPhase? stageSource = null)
     {
         StageName = stageName;
 
         // Stage loading happens once at construction time, not on every Enter().
         // This prevents phases from resetting when an overlay (e.g., Settings) is
         // pushed and popped over them.
-        if (StageName != null)
+        if (stageSource != null)
+            TakeStageFrom(stageSource);
+        else if (StageName != null)
             LoadStage(StageName);
+    }
+
+    internal void TakeStageFrom(BaseStageRenderingPhase source, bool takeMusic = true)
+    {
+        if (CurrentStage != null || source.CurrentStage == null || source.StageName != StageName)
+            throw new InvalidOperationException("Stage handoff requires an empty destination and the same loaded stage.");
+
+        CurrentStage = source.CurrentStage;
+        if (takeMusic)
+        {
+            _stageMusic = source._stageMusic;
+            source._stageMusic = null;
+        }
+        Camera = source.Camera;
+        Camera.Fov = PerspectiveCamera.DefaultFov;
+        LightCameras = source.LightCameras;
+        source.CurrentStage = null;
+
+        CurrentStage.SetCars(CarsInRace);
+        CurrentStage.FadeFromOverride = null;
+        CurrentStage.CarSoundsEnabled = true;
     }
 
     public override void Enter()
@@ -54,7 +77,7 @@ public abstract class BaseStageRenderingPhase : BasePhase
         Camera.Height = GameSparker.Game.Window.Height;
 
         // Resume stage music that was paused by Exit().
-        if (_stageMusic != null)
+        if (_stageMusic != null && !ReferenceEquals(GameSparker.CurrentMusic, _stageMusic))
             GameSparker.CurrentMusic = _stageMusic;
     }
 
@@ -67,7 +90,8 @@ public abstract class BaseStageRenderingPhase : BasePhase
 
         // Pause music while this phase is not displayed (buried in the stack).
         // Music is resumed in Enter() and unloaded in Dispose().
-        GameSparker.CurrentMusic = null;
+        if (_stageMusic != null && ReferenceEquals(GameSparker.CurrentMusic, _stageMusic))
+            GameSparker.CurrentMusic = null;
     }
 
     protected override void Dispose(bool disposing)

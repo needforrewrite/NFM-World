@@ -84,7 +84,11 @@ public static class Controls
             {
                 Styles = Sx.Styles(position: Position.Absolute, left: 0, right: 0, height: RowHeight,
                     overflow: Overflow.Hidden, paddingTop: 7, paddingBottom: 7, paddingLeft: 12, paddingRight: 12);
-                MousePressed = _ => onSelect(_index);
+                MousePressed = e =>
+                {
+                    e.StopPropagation();
+                    onSelect(_index);
+                };
                 MouseEntered = _ => { _hovered = true; UpdateColors(); };
                 MouseLeft = _ => { _hovered = false; UpdateColors(); };
                 AddChild(_text);
@@ -340,7 +344,9 @@ public static class Controls
         Func<IReadOnlyList<string>> options,
         Func<int> value,
         Action<int> onSelect,
-        string unselectedLabel = "")
+        string unselectedLabel = "",
+        float width = 240,
+        bool compact = false)
     {
         var open = new Signal<bool>(false);
         var opensAbove = new Signal<bool>(false);
@@ -399,6 +405,9 @@ public static class Controls
                     Overflow = Overflow.Hidden,
                     ZIndex = 1000,
                 },
+                // The popup can extend outside its modal card; a click here belongs to
+                // the dropdown, not to the backdrop underneath it.
+                onmousedown: e => e.StopPropagation(),
                 children: new DropdownListView(openOptions, () => cursor.Value,
                     index =>
                     {
@@ -412,7 +421,7 @@ public static class Controls
             {
                 Position = Position.Relative,
                 FlexDirection = FlexDirection.Column,
-                Width = 240,
+                Width = width,
                 MaxWidth = MeasurementWidthHeight.Percent(100),
             }
         };
@@ -420,10 +429,10 @@ public static class Controls
                 style: () => new Styles
                 {
                     Width = MeasurementWidthHeight.Percent(100),
-                    PaddingTop = 8,
-                    PaddingBottom = 8,
-                    PaddingLeft = 12,
-                    PaddingRight = 12,
+                    PaddingTop = compact ? 2 : 8,
+                    PaddingBottom = compact ? 2 : 8,
+                    PaddingLeft = compact ? 6 : 12,
+                    PaddingRight = compact ? 6 : 12,
                     BackgroundColor = new Color(22, 42, 80, 145),
                     BorderTop = 1,
                     BorderBottom = 1,
@@ -447,12 +456,16 @@ public static class Controls
                     Sx.Text(
                         style: () => new TextStyles
                         {
-                            FontSize = 13,
+                            FontSize = compact ? 10 : 13,
                             ForegroundColor = open.Value ? new Color(255, 255, 255) : new Color(255, 255, 255, 204),
                         },
                         text: () => SelectedLabel(options(), value(), unselectedLabel)),
                     Sx.Text(
-                        style: () => new TextStyles { FontSize = 12, ForegroundColor = new Color(255, 255, 255, 128) },
+                        style: () => new TextStyles
+                        {
+                            FontSize = compact ? 9 : 12,
+                            ForegroundColor = new Color(255, 255, 255, 128)
+                        },
                         text: () => "▾")
                 ]));
         root.AddChild(popup);

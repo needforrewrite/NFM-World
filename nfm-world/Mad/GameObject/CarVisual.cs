@@ -101,6 +101,9 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
 
     private void OnDistruct(object? sender, EventArgs e)
     {
+        // Damage keeps re-emitting Distruct until the fix finishes (FinishedFix zeroes DamagePoints),
+        // so a car fixed mid-animation would restart the wasted sequence it just cancelled.
+        if (_fixing) return;
         VisuallyWasted = true;
     }
 
@@ -185,7 +188,7 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
 
                 if ((_fixTimer == 1 || _fixTimer > 2) && _fixTimer != 9)
                 {
-                    FixFlare.SetFixFx(_fixTimer);
+                    FixFlare.SetFixFx();
                 }
                 else
                 {

@@ -241,6 +241,33 @@ public static class Sx
         return node;
     }
 
+    /// <summary>
+    /// A multiline text editor. <c>text</c> is the external value: changing a signal it
+    /// reads reloads the editor and moves the caret to the top. Typing updates the
+    /// caller through <c>onchange</c> and does not reload it.
+    /// </summary>
+    public static TextArea TextArea(
+        Func<Styles>? style = null,
+        Func<string?>? text = null,
+        Action<string>? onchange = null,
+        Func<TextStyles>? textStyle = null)
+    {
+        var node = new TextArea();
+        var defaults = node.Styles;
+
+        if (style is not null)
+            node.Bind(b => b.Bind(style, value => node.Styles = defaults.Over(value)));
+
+        if (textStyle is not null)
+            node.Bind(b => b.Bind(textStyle, value => node.TextStyles = value));
+
+        if (text is not null)
+            node.Bind(b => b.Bind(text, value => node.SetTextExternal(value ?? "")));
+
+        node.TextChanged = onchange;
+        return node;
+    }
+
     public static TextInput TextInput(
         Func<Styles>? style = null,
         Func<string?>? text = null,

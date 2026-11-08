@@ -20,7 +20,22 @@ public class GaragePhase : BaseStageRenderingPhase
     {
     }
 
-    public GaragePhase(Rad3d? currentCar, string? stageName = null) : base(stageName ?? MenuHistory.Stage)
+    internal GaragePhase(StageSelectPhase source) : this(null, source.StageName, source)
+    {
+        try
+        {
+            LoadStageMusic();
+        }
+        catch
+        {
+            source.TakeStageFrom(this);
+            source.CurrentStage!.FadeFromOverride = 9999999;
+            throw;
+        }
+    }
+
+    public GaragePhase(Rad3d? currentCar, string? stageName = null,
+        BaseStageRenderingPhase? stageSource = null) : base(stageName ?? MenuHistory.Stage, stageSource)
     {
         if (currentCar != null)
             CarsInRace.Add(new BackendCar(currentCar, 0, 0, 0, true));

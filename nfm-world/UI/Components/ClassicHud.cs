@@ -69,12 +69,14 @@ public sealed class ClassicHud(IHudData race) : Component
 
             if ((Race.IsPreview || SettingsMenu.HudOpponents) && !Race.TimeTrial && Race.Racers.Count > 1)
             {
-                var opponentScale = scale * 0.55f;
+                var opponentScale = scale * 0.62f;
                 var opponentRight = right - 8 * scale;
                 var y = top + 80 * scale;
                 foreach (var racer in Race.Racers)
                 {
-                    if (y + 24 * opponentScale > top + size.Y - 30 * scale) break;
+                    if (racer.Wasted) continue;
+                    // No partial rows: stop once the row plus its bar would not fit above the HUD's bottom margin.
+                    if (y + 29 * opponentScale > top + size.Y - 30 * scale) break;
                     if (racer.IsClient)
                     {
                         G.SetColor(Snap(new Color(90, 195, 255, 60)));
@@ -91,11 +93,11 @@ public sealed class ClassicHud(IHudData race) : Component
                     var barX = opponentRight - 102 * opponentScale;
                     var barY = y + 15 * opponentScale;
                     G.SetColor(new Color(0, 0, 0));
-                    G.FillRect((int)barX, (int)barY, (int)(82 * opponentScale), Math.Max(1, (int)(5 * opponentScale)));
+                    G.FillRect((int)barX, (int)barY, (int)(88 * opponentScale), Math.Max(1, (int)(7 * opponentScale)));
                     G.SetColor(Snap(190, 240, 245));
-                    G.FillRect((int)(barX + opponentScale), (int)(barY + opponentScale), (int)(80 * opponentScale), Math.Max(1, (int)(3 * opponentScale)));
-                    G.SetColor(Snap(244, 244, 11));
-                    G.FillRect((int)(barX + opponentScale), (int)(barY + opponentScale), (int)(80 * opponentScale * Clamp(racer.Damage)), Math.Max(1, (int)(3 * opponentScale)));
+                    G.FillRect((int)(barX + opponentScale), (int)(barY + opponentScale), (int)(86 * opponentScale), Math.Max(1, (int)(5 * opponentScale)));
+                    G.SetColor(DamageColor(racer.Damage, blink: false));
+                    G.FillRect((int)(barX + opponentScale), (int)(barY + opponentScale), (int)(86 * opponentScale * Clamp(racer.Damage)), Math.Max(1, (int)(5 * opponentScale)));
                     y += 29 * opponentScale;
                 }
             }
@@ -125,11 +127,11 @@ public sealed class ClassicHud(IHudData race) : Component
             G.DrawImage(image, (int)x, (int)y, (int)(width * scale), (int)(height * scale));
     }
 
-    private Color DamageColor(float damage)
+    private Color DamageColor(float damage, bool blink = true)
     {
         var amount = (int)(98 * damage);
         var green = amount > 33 ? (int)(244 - 233f * (amount - 33) / 65) : 244;
-        if (amount > 70 && SettingsMenu.HudFlash)
+        if (blink && amount > 70 && SettingsMenu.HudFlash)
         {
             var period = (168 - amount * 1.5f) / 30;
             var phase = _clock % period;

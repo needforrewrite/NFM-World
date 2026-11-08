@@ -290,6 +290,8 @@ public partial class CarPhysics
     [PluginVisible]
     internal fix64 py = 0;
 
+    internal int pieceRad = 27;     // used for regx/regy/regz to determine if a piece is in range of a wheel
+
     public event EventHandler<CrashSoundEvent>? SfxPlayCrash;
     public event EventHandler<(SurfaceType i, float f)>? SfxPlaySkid;
     public event EventHandler<(int i, int i2, int i3)>? SfxPlayScrape;
@@ -2832,7 +2834,7 @@ public partial class CarPhysics
             }
             Shakedam = (int)((fix64.Abs(f) + Shakedam) * fix64.Half);
             EmitCrashSound(i, (int)f, 0, conto);
-            for (var i111 = 0; i111 < 40; i111++)
+            for (var i111 = 0; i111 < pieceRad; i111++)
             {
                 fix64 f112 = 0;
                 for (var i113 = 0; i113 < 4; i113++)
@@ -2913,7 +2915,7 @@ public partial class CarPhysics
             EmitCrashSound(i, (int)f, i99 * i98, conto, soundSurface, soundPosition);
             if (i99 * i98 == 0 || Mtouch)
             {
-                for (var i102 = 0; i102 < 40; i102++)
+                for (var i102 = 0; i102 < pieceRad; i102++)
                 {
                     fix64 f103 = 0;
                     for (var i104 = 0; i104 < 4; i104++)
@@ -2933,7 +2935,7 @@ public partial class CarPhysics
                 {
                     var dividend = 0;
                     var divisor = 1;
-                    for (var i107 = 0; i107 < 40; i107++)
+                    for (var i107 = 0; i107 < pieceRad; i107++)
                     {
                         fix64 f108 = 0;
                         for (var i109 = 0; i109 < 4; i109++)
@@ -2994,7 +2996,7 @@ public partial class CarPhysics
             Shakedam = (int)((fix64.Abs(f) + Shakedam) * fix64.Half);
             
             EmitCrashSound(i, (int)f, 0, conto, soundSurface, soundPosition);
-            for (var i115 = 0; i115 < 40; i115++)
+            for (var i115 = 0; i115 < pieceRad; i115++)
             {
                 fix64 f116 = 0;
                 for (var i117 = 0; i117 < 4; i117++)

@@ -77,19 +77,29 @@ public readonly partial struct Keys : IEquatable<Keys>, IComparable<Keys>
     [PluginVisible] public bool Enter => GetKey((int)Key.Enter);
 
     /// <summary>
-    ///  The SHIFT key.
+    ///  The SHIFT key, either side.
     /// </summary>
-    [PluginVisible] public bool ShiftKey => GetKey((int)Key.ShiftKey);
+    /// <remarks>
+    /// SDL reports physical left/right scancodes, so the generic XNA modifier bit is never
+    /// set by that backend. Check both sides so Ctrl/Shift hotkeys work.
+    /// </remarks>
+    [PluginVisible] public bool ShiftKey => GetKey((int)Key.ShiftKey)
+                                            || GetKey((int)Key.LShiftKey)
+                                            || GetKey((int)Key.RShiftKey);
 
     /// <summary>
-    ///  The CTRL key.
+    ///  The CTRL key, either side.
     /// </summary>
-    [PluginVisible] public bool ControlKey => GetKey((int)Key.ControlKey);
+    [PluginVisible] public bool ControlKey => GetKey((int)Key.ControlKey)
+                                              || GetKey((int)Key.LControlKey)
+                                              || GetKey((int)Key.RControlKey);
 
     /// <summary>
-    ///  The ALT key.
+    ///  The ALT key, either side.
     /// </summary>
-    [PluginVisible] public bool Menu => GetKey((int)Key.Menu);
+    [PluginVisible] public bool Menu => GetKey((int)Key.Menu)
+                                        || GetKey((int)Key.LMenu)
+                                        || GetKey((int)Key.RMenu);
 
     /// <summary>
     ///  The PAUSE key.

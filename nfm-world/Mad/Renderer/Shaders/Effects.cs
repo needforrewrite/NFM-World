@@ -84,18 +84,16 @@ internal static class Effects
     /// instances Chips/Dust/FixFlare/Flames/FixHoop used to share (FNA3D has no BasicEffect
     /// equivalent - see <c>data/shaders/Particle.fx</c>'s doc comment). All five consumers share
     /// one shader module and one resolved <see cref="ParticleFullbrightParameters"/> (the uniform
-    /// slots don't depend on blend/depth state), but need three different fixed-function-state
+    /// slots don't depend on blend/depth state), but need two different fixed-function-state
     /// pipelines because the old per-consumer <c>GraphicsDevice.BlendState</c>/
     /// <c>DepthStencilState</c> overrides differed and the new model bakes that state into the
     /// pipeline rather than setting it per-draw: <see cref="ParticleOpaquePipeline"/> (Chips,
-    /// Flames - opaque, default depth), <see cref="ParticleDepthReadPipeline"/> (Dust -
-    /// non-premultiplied blend, depth-tested but not written), <see cref="ParticleNoDepthPipeline"/>
-    /// (FixFlare - non-premultiplied blend, no depth test/write).
+    /// Flames - opaque, default depth) and <see cref="ParticleDepthReadPipeline"/> (Dust, FixFlare -
+    /// non-premultiplied blend, depth-tested but not written, so world geometry occludes them).
     /// </summary>
     public static IShaderModule ParticleModule { get => CheckNotNull(field); private set; }
     public static IPipelineState ParticleOpaquePipeline { get => CheckNotNull(field); private set; }
     public static IPipelineState ParticleDepthReadPipeline { get => CheckNotNull(field); private set; }
-    public static IPipelineState ParticleNoDepthPipeline { get => CheckNotNull(field); private set; }
     public static ParticleFullbrightParameters ParticleParameters { get => CheckNotNull(field); private set; }
 
     /// <summary>
@@ -151,7 +149,7 @@ internal static class Effects
         nameof(SkyModule), nameof(SkyPipeline),
         nameof(PolyModule), nameof(PolyShadowModule), nameof(PolyPipeline), nameof(PolyShadowPipeline),
         nameof(PolyDepthReadPipeline), nameof(PolyNoDepthPipeline),
-        nameof(ParticleModule), nameof(ParticleOpaquePipeline), nameof(ParticleDepthReadPipeline), nameof(ParticleNoDepthPipeline),
+        nameof(ParticleModule), nameof(ParticleOpaquePipeline), nameof(ParticleDepthReadPipeline),
         nameof(DebugLinePipeline), nameof(DebugGhostFillPipeline),
         nameof(Immediate3DOpaquePipeline), nameof(Immediate3DAlphaPipeline), nameof(ShadowMapSampler))]
     public static void Initialize(IGraphicsDevice graphicsDevice)
@@ -295,13 +293,6 @@ internal static class Effects
             VertexLayouts: [PositionColorVertex.VertexLayout],
             BlendState: BlendStateDesc.NonPremultiplied,
             DepthStencilState: DepthStencilStateDesc.Default with { DepthWriteEnabled = false },
-            RasterizerState: ScissorRasterizer));
-        ParticleNoDepthPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
-            VertexShader: ParticleModule,
-            PixelShader: ParticleModule,
-            VertexLayouts: [PositionColorVertex.VertexLayout],
-            BlendState: BlendStateDesc.NonPremultiplied,
-            DepthStencilState: DepthStencilStateDesc.None,
             RasterizerState: ScissorRasterizer));
 
         DebugLinePipeline = graphicsDevice.CreatePipeline(new PipelineDesc(

@@ -14,8 +14,8 @@ namespace NFMWorld.UI.Hud;
 public sealed class RaceMessages : Component
 {
     /// <summary>Fraction of the viewport height each line starts at.</summary>
-    private const float StuntTop = 0.18f;
-    private const float StatusTop = 0.22f;
+    private const float StuntTop = 0.22f;
+    private const float StatusTop = 0.26f;
 
     /// <summary>Blink toggles per second, and how far the dark phase dims the colour.</summary>
     private const float BlinkHz = 20f;

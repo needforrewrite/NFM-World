@@ -63,6 +63,8 @@ public sealed class RaceAnnouncer
     private int _lastMissedTotalCheckpoint = -1;
     private readonly Dictionary<int, bool> _wasted = [];
 
+    private bool _badLandingActive;
+
     /// <summary>The status line, or null when nothing is showing.</summary>
     public HudMessage? Status => _status is { TicksLeft: > 0 } s ? new HudMessage(s.Text, s.Kind) : null;
 
@@ -79,6 +81,7 @@ public sealed class RaceAnnouncer
         _lastArrowLock = -1;
         _powerLowCooldown = 0;
         _wrongWayTicks = 0;
+        _badLandingActive = false;
         _approachedCheckpoint = false;
         _armedTotalCheckpoint = -1;
         _lastMissedTotalCheckpoint = -1;
@@ -123,6 +126,10 @@ public sealed class RaceAnnouncer
         if (client.TotalCheckpoint == _lastTotalCheckpoint) return;
         _lastTotalCheckpoint = client.TotalCheckpoint;
 
+        // The arrow is pointing at cars, so checkpoint progress is not what the player is
+        // watching; keep the total synced but say nothing.
+        if (client.Control.Arrace) return;
+
         var laps = gamemode.CurrentStage.Nlaps;
         if (client.CurrentCheckpoint == 0 && client.CurrentLap > 0)
         {
@@ -131,7 +138,7 @@ public sealed class RaceAnnouncer
             return;
         }
 
-        Show("Checkpoint!", HudMessageKind.Info);
+        Show("Checkpoint!", HudMessageKind.Info, 0.5f);
     }
 
     private void CheckOpponents(BaseClientGamemode gamemode)
@@ -184,10 +191,21 @@ public sealed class RaceAnnouncer
             Show("Car Fixed", HudMessageKind.Info);
         _lastNewcar = physics.Newcar;
 
-        if (physics.CapsizedCounter != 0)
+        // BadLanding covers a car tilted past vertical, which starts the moment it lands badly;
+        // CapsizedCounter only follows once every wheel has stopped, so it is the slower signal.
+        if (physics.CapsizedCounter != 0 || (physics.BadLanding && physics.Mtouch))
         {
             Show("Bad Landing!", HudMessageKind.Warning);
+            _badLandingActive = true;
             return;
+        }
+
+        // The warning belongs to the bad landing only: drop it as soon as the car is upright
+        // again instead of leaving it to expire on its timer.
+        if (_badLandingActive)
+        {
+            _badLandingActive = false;
+            if (_status?.Text == "Bad Landing!") _status = null;
         }
 
         if (physics.Power < 45 && physics.Mtouch && _powerLowCooldown == 0)
@@ -202,6 +220,15 @@ public sealed class RaceAnnouncer
 
     private void CheckWrongWay(BackendCar client, BaseClientGamemode gamemode)
     {
+        // The guidance arrow is what the warning is about; with it pointing at cars there is no
+        // track direction to be wrong about.
+        if (client.Control.Arrace)
+        {
+            _wrongWayTicks = 0;
+            if (_status?.Text == "Wrong Way!") _status = null;
+            return;
+        }
+
         if (IsWrongWay(client, gamemode))
         {
             if (++_wrongWayTicks == WrongWayTicks) Show("Wrong Way!", HudMessageKind.Danger);
@@ -229,6 +256,13 @@ public sealed class RaceAnnouncer
         {
             _armedTotalCheckpoint = client.TotalCheckpoint;
             _approachedCheckpoint = false;
+        }
+
+        // Same rule as the checkpoint line: with the arrow on cars, no track guidance.
+        if (client.Control.Arrace)
+        {
+            _approachedCheckpoint = false;
+            return;
         }
 
         var next = checkpoints[Math.Clamp((int)client.CurrentCheckpoint, 0, checkpoints.Count - 1)];

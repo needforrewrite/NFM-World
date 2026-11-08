@@ -10,7 +10,7 @@ namespace NFMWorld;
 /// <summary>
 /// Client-side representation of a stage. Composes a <see cref="BackendStage"/> for collision/AI data
 /// and adds rendering (stage geometry, cars, scene management). Owns camera and light setup.
-/// Fully self-contained — constructed once per phase; car visuals are synced lazily each tick.
+/// Stage resources can move between phases; car visuals are synced lazily each tick.
 /// </summary>
 public class ClientStage : IDisposable
 {
@@ -77,6 +77,7 @@ public class ClientStage : IDisposable
         _cars.CollectionChanged -= CarsOnCollectionChanged;
         _cars = cars;
         _cars.CollectionChanged += CarsOnCollectionChanged;
+        CarsOnCollectionChanged(cars, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
     }
 
     /// <summary>

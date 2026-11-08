@@ -30,6 +30,16 @@ public class CheckPointHelper
             {
                 var player2 = players[j];
                 if (player2.Car is not { } car2) continue;
+
+                // Dead cars rank behind every live one, so their progress cannot push a live car
+                // down the order in any HUD.
+                if (car1.Wasted != car2.Wasted)
+                {
+                    if (car1.Wasted) car1.Placement++;
+                    else car2.Placement++;
+                    continue;
+                }
+
                 if (car1.TotalCheckpoint != car2.TotalCheckpoint)
                 {
                     if (car1.TotalCheckpoint < car2.TotalCheckpoint)

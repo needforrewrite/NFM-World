@@ -21,7 +21,8 @@ public static class RaceHudView
             children:
             [
                 Sx.Switch(race.Skin, HudSkinRegistry.Branches(race), () => HudSkinRegistry.BuildDefault(race)),
-                new RaceOverlays(race, () => race.Skin.Value == "world"),
+                new RaceOverlays(race, () => race.Skin.Value == "world",
+                    () => HudSkinRegistry.UsesClassicSkin(race.Skin.Value), () => race.StageSnap.Value),
                 new RaceMessages(race),
                 Sx.Show(() => HudSkinRegistry.ShowDefaultMessages(race.Skin.Value) && race.Message.Length > 0,
                     () => new HudScaleHost(GlassCardUi.CenterText(() => race.Message, 24,

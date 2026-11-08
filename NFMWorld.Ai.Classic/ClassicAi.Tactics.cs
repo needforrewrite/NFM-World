@@ -276,6 +276,15 @@ public sealed partial class ClassicAi
                 if (Players[j].Car is not { } carB)
                     continue;
 
+                // Dead cars rank behind every live one, so their progress cannot push a live car
+                // down the order the HUD reads.
+                if (carA.Wasted != carB.Wasted)
+                {
+                    if (carA.Wasted) carA.Placement++;
+                    else carB.Placement++;
+                    continue;
+                }
+
                 if (carA.TotalCheckpoint != carB.TotalCheckpoint)
                 {
                     if (carA.TotalCheckpoint < carB.TotalCheckpoint)

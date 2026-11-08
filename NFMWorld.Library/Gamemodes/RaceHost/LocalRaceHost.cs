@@ -146,8 +146,11 @@ public sealed class LocalRaceHost : IRaceHost
         : IServerGamemodeContext
     {
         private readonly Dictionary<Guid, f64Vector3> _positions = new();
+        private BackendStage? _stage;
 
-        public BackendStage CurrentStage { get; } = stageData is { } data ? new BackendStage(stageName, data) : new BackendStage(stageName);
+        public BackendStage CurrentStage => _stage ??= stageData is { } data
+            ? new BackendStage(stageName, data)
+            : new BackendStage(stageName);
 
         public f64Vector3? GetPlayerPosition(Guid playerId)
             => _positions.TryGetValue(playerId, out var pos) ? pos : null;

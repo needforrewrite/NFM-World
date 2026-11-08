@@ -115,7 +115,11 @@ public class RaceAnnouncerTests
         announcer.Tick(car, gamemode);
         Assert.AreEqual("Checkpoint!", announcer.Status?.Text);
 
-        for (var i = 0; i < (int)(3 * Physics.TargetTps) + 1; i++) announcer.Tick(car, gamemode);
+        // The checkpoint flash is half a second, not the status line's default.
+        var ticks = (int)MathF.Ceiling(0.5f * Physics.TargetTps);
+        for (var i = 0; i < ticks - 1; i++) announcer.Tick(car, gamemode);
+        Assert.IsNotNull(announcer.Status);
+        announcer.Tick(car, gamemode);
         Assert.IsNull(announcer.Status);
     }
 
@@ -194,6 +198,68 @@ public class RaceAnnouncerTests
 
         for (var i = 0; i < (int)(2 * Physics.TargetTps); i++) announcer.Tick(car, gamemode);
         Assert.AreEqual("Wrong Way!", announcer.Status?.Text);
+    }
+
+    [TestMethod]
+    public void WrongWay_IsSuppressedWhileTheArrowTargetsCars()
+    {
+        var (announcer, gamemode, car) = Create(opponents: 0, checkpoints: true);
+        car.Control.Arrace = true;
+        car.CarPhysics.Cxz = 180;
+
+        for (var i = 0; i < (int)(2 * Physics.TargetTps); i++) announcer.Tick(car, gamemode);
+        Assert.AreNotEqual("Wrong Way!", announcer.Status?.Text);
+    }
+
+    [TestMethod]
+    public void CheckpointText_IsSuppressedWhileTheArrowTargetsCars()
+    {
+        var (announcer, gamemode, car) = Create(opponents: 0);
+        car.Control.Arrace = true;
+        announcer.Tick(car, gamemode);
+
+        car.TotalCheckpoint = 1;
+        announcer.Tick(car, gamemode);
+        Assert.AreNotEqual("Checkpoint!", announcer.Status?.Text);
+    }
+
+    [TestMethod]
+    public void MissedCheckpointText_IsSuppressedWhileTheArrowTargetsCars()
+    {
+        var (announcer, gamemode, car) = Create(opponents: 0, checkpoints: true);
+        var checkpoint = gamemode.CurrentStage.Checkpoints[0];
+        car.Control.Arrace = true;
+        announcer.Tick(car, gamemode);
+
+        car.CarPhysics.Mtouch = true;
+        car.Position = new f64Vector3(checkpoint.Position.X + 200, checkpoint.Position.Y, checkpoint.Position.Z);
+        announcer.Tick(car, gamemode);
+
+        car.Position = new f64Vector3(checkpoint.Position.X + 12_000, checkpoint.Position.Y, checkpoint.Position.Z);
+        announcer.Tick(car, gamemode);
+        Assert.AreNotEqual("Checkpoint Missed!", announcer.Status?.Text);
+    }
+
+    [TestMethod]
+    public void BadLanding_StartsOnImpactAndClearsWhenRighted()
+    {
+        var (announcer, gamemode, car) = Create(opponents: 0);
+        announcer.Tick(car, gamemode);
+
+        // Tilted mid-air is not a landing yet.
+        car.CarPhysics.BadLanding = true;
+        announcer.Tick(car, gamemode);
+        Assert.IsNull(announcer.Status);
+
+        car.CarPhysics.Mtouch = true;
+        announcer.Tick(car, gamemode);
+        Assert.AreEqual("Bad Landing!", announcer.Status?.Text);
+
+        // Back on its wheels: the warning goes on the same tick, not on the status timer.
+        car.CarPhysics.BadLanding = false;
+        car.CarPhysics.Mtouch = false;
+        announcer.Tick(car, gamemode);
+        Assert.IsNull(announcer.Status);
     }
 
     [TestMethod]

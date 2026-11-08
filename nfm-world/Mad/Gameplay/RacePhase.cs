@@ -52,12 +52,34 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         string stageName,
         BaseGamemodeFactory gamemode,
         IReadOnlyList<ClientSidePlayerInfo> players,
-        IRaceHost host) : base(stageName)
+        IRaceHost host,
+        BaseStageRenderingPhase? stageSource = null) : base(stageName, stageSource)
     {
         Gamemode = gamemode;
         Players = players;
         _host = host;
 
+        try
+        {
+            InitializeRace(host);
+        }
+        catch
+        {
+            _host.Dispose();
+            CurrentStage?.SetPlayers(null);
+            GamemodeInstance?.End();
+            GamemodeInstance = null;
+            if (stageSource != null)
+                stageSource.TakeStageFrom(this);
+            else
+                base.Dispose(true);
+            Gamemode.End();
+            throw;
+        }
+    }
+
+    private void InitializeRace(IRaceHost host)
+    {
         // Create the gamemode once at construction time. Enter/Exit only handle
         // display-level activation/deactivation; the gamemode survives across
         // push/pop cycles (e.g., opening Settings over a race).

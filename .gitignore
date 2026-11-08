@@ -38,6 +38,7 @@ replay_pid*
 /tools
 /nfm-world/GPUCache
 /nfm-world/DawnCache
+/NFMWorld.Library/data/models/user
 
 Generated
 # The exception: this binding's generated sources are the binding, not build output. Nothing in

@@ -136,6 +136,24 @@ public class PhaseManager
         } while (_stack[^1].Group == group);
     }
 
+    /// <summary>Replaces the top group without re-entering the phases underneath it.</summary>
+    public void ReplaceGroup(BasePhase phase, Group group)
+    {
+        if (_stack.Count > 0)
+            _stack[^1].Phase.Exit();
+
+        while (_stack.Count > 1 && _stack[^1].Group == group)
+        {
+            var popped = _stack[^1];
+            _stack.RemoveAt(_stack.Count - 1);
+            QueueDisposal(popped.Phase);
+        }
+
+        _stack.Add((phase, group));
+        phase.Enter();
+        Logging.Info($"PhaseManager: replaced group {group.FriendlyName} with {phase.GetType().Name} (depth {_stack.Count})");
+    }
+
     /// <summary>
     /// Pops all phases above the root, queuing each for deferred disposal.
     /// The root phase is re-entered.

@@ -25,6 +25,28 @@ public class UiRenderer : IDisposable
 
     public View? ActiveRoot { get; private set; }
 
+    /// <summary>
+    /// Whether the mounted tree has a focused control (a text field, a slider), i.e.
+    /// whether key input belongs to the UI rather than to the phase.
+    /// </summary>
+    public bool WantsKeyboard => FocusManager.FocusedNode is not null;
+
+    /// <summary>
+    /// Whether the mounted tree contains an element under this point. Phases use it to
+    /// keep viewport input (camera drags, picking) from firing through the UI.
+    /// </summary>
+    public bool WantsMouse(int x, int y)
+    {
+        if (ActiveRoot is not { } root)
+            return false;
+
+        var chain = FocusManager.HitTestChain(root, new Vector2(x, y));
+
+        // The root is the full-window host so its absolutely positioned panels can
+        // resolve against it; a hit on the root alone is empty viewport, not UI.
+        return chain.Count > 1 || (chain.Count == 1 && !ReferenceEquals(chain[0], root));
+    }
+
     public UiRenderer()
     {
         // Effects run once per frame rather than once per write.
