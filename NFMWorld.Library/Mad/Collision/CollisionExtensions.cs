@@ -7,7 +7,8 @@ public static class CollisionExtensions
 {
     extension(f64Vector3 vec)
     {
-        public f64Vector3 RotateZy(fix64 zy) {
+        public f64Vector3 RotateZy(fix64 zy)
+        {
             return new f64Vector3(
                 vec.X,
                 vec.Y * UMath.Cos(zy) + vec.Z * -UMath.Sin(zy),
@@ -15,7 +16,8 @@ public static class CollisionExtensions
             );
         }
 
-        public f64Vector3 RotateXz(fix64 xz) {
+        public f64Vector3 RotateXz(fix64 xz)
+        {
             var a = -xz;
             return new f64Vector3(
                 vec.X * UMath.Cos(a) + vec.Z * UMath.Sin(a),
@@ -24,7 +26,8 @@ public static class CollisionExtensions
             );
         }
 
-        public (fix64 x1, fix64 x2) Coefficients(f64Vector3 v1, f64Vector3 v2) {
+        public (fix64 x1, fix64 x2) Coefficients(f64Vector3 v1, f64Vector3 v2)
+        {
             // A^T A terms
             var a11 = f64Vector3.Dot(v1, v1);
             var a12 = f64Vector3.Dot(v1, v2);
@@ -41,7 +44,7 @@ public static class CollisionExtensions
                 return default;
             }
 
-            var x1 = ( a22 * b1 - a12 * b2) / det;
+            var x1 = (a22 * b1 - a12 * b2) / det;
             var x2 = (-a12 * b1 + a11 * b2) / det;
 
             return (x1, x2);
@@ -56,13 +59,13 @@ public static class CollisionExtensions
 
     extension(Vector2 vec)
     {
-        public Vector2 RotateXz(fix64 xz) {
+        public Vector2 RotateXz(fix64 xz)
+        {
             var a = -xz;
             return new Vector2(
                 (float)((fix64)vec.X * UMath.Cos(a) + (fix64)vec.Y * UMath.Sin(a)),
                 (float)((fix64)vec.X * -UMath.Sin(a) + (fix64)vec.Y * UMath.Cos(a))
             );
         }
-
     }
 }

@@ -42,7 +42,7 @@ public struct Euler(AngleSingle yaw, AngleSingle pitch, AngleSingle roll) : IEqu
     {
         return new Euler(WrapSinglePositive(Yaw), WrapSinglePositive(Pitch), WrapSinglePositive(Roll));
     }
-    
+
     /// <summary>
     /// Wraps this Maxine.Extensions.Mathematics.AngleSingle to be in the range [0, 2π).
     /// </summary>

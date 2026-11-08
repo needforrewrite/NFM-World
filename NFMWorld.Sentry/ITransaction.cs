@@ -68,7 +68,7 @@ public interface ITransaction : IDisposable
     /// Finish the transaction, recording its duration. Only enqueues for upload if sampled.
     /// </summary>
     void Finish(SpanStatus status = SpanStatus.Ok);
-    
+
     /// <summary>
     /// Duration of the transaction in seconds.
     /// </summary>

@@ -38,7 +38,7 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
     public ComplexTextMetrics.RichTextContainer? LaidOutComplexText;
 
     public override bool DebugIsContentfulNode => true;
-    
+
     public ComponentChildCollection Children { get; }
 
     IEnumerable<IRichTextElement> IRichTextContainer.Children => Children.OfType<IRichTextElement>();
@@ -50,7 +50,7 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
     public override void AddChild(Node child) => Children.Add(child);
     public override void InsertAt(int index, Node child) => Children.Insert(index, child);
     public override void RemoveAt(int index) => Children.RemoveAt(index);
-    
+
     Color? IRichTextElement.Background => Styles.BackgroundColor;
     private TextStyles ResolvedStyles => TextStyles.Resolved;
 
@@ -102,6 +102,7 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
                 {
                     RemoveAt(0);
                 }
+
                 AddChild(new TextNode { Text = value });
             }
         }
@@ -113,7 +114,13 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
         InvalidateText();
     }
 
-    private YogaSize Measure(YogaNode node, float availableWidth, YogaMeasureMode widthMode, float availableHeight, YogaMeasureMode heightMode)
+    private YogaSize Measure(
+        YogaNode node,
+        float availableWidth,
+        YogaMeasureMode widthMode,
+        float availableHeight,
+        YogaMeasureMode heightMode
+    )
     {
         RelayoutText(new Vector2(availableWidth, availableHeight), out var width, out var height);
         return new YogaSize(width, height);
@@ -123,18 +130,27 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
     protected void RelayoutText(Vector2 size, out float width, out float height)
     {
         var flattened = ComplexTextMetrics.FlattenText(Children.OfType<IRichTextElement>());
-        
+
         var resolved = ResolvedStyles;
         var font = new Font(resolved.FontFamily!.Value, resolved.FontStyle!.Value, resolved.FontSize!.Value);
-        if (resolved.OverflowBehavior is not OverflowBehavior.Stretch and not OverflowBehavior.None && resolved.BreakType is not BreakType.None)
+        if (resolved.OverflowBehavior is not OverflowBehavior.Stretch and not OverflowBehavior.None
+            && resolved.BreakType is not BreakType.None)
         {
-            flattened = ComplexTextMetrics.LayoutText(font, flattened, new Vector2(size.X, size.Y), resolved.BreakType!.Value, resolved.OverflowBehavior!.Value, G.Scale);
+            flattened = ComplexTextMetrics.LayoutText(
+                font,
+                flattened,
+                new Vector2(size.X, size.Y),
+                resolved.BreakType!.Value,
+                resolved.OverflowBehavior!.Value,
+                G.Scale
+            );
         }
+
         var measurements = ComplexTextMetrics.MeasureRichText(flattened, font, G.Scale);
 
         width = measurements.Size.X;
         height = measurements.Size.Y;
-        
+
         LaidOutComplexText = measurements;
 
         Invalidated = false;
@@ -153,7 +169,7 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
     protected override void OnScaleChanged()
     {
         base.OnScaleChanged();
-        
+
         OnInvalidated();
         RelayoutText(LayoutContentSize, out _, out _);
     }
@@ -161,14 +177,16 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
     protected override bool OnPostLayout()
     {
         base.OnPostLayout();
-        
+
         var resolved = ResolvedStyles;
-        if (HasNewLayout && resolved.OverflowBehavior is not Reactor.OverflowBehavior.Stretch and not Reactor.OverflowBehavior.None && resolved.BreakType is not Reactor.BreakType.None)
+        if (HasNewLayout
+            && resolved.OverflowBehavior is not Reactor.OverflowBehavior.Stretch and not Reactor.OverflowBehavior.None
+            && resolved.BreakType is not Reactor.BreakType.None)
         {
             Invalidated = true;
             HasNewLayout = false;
         }
-        
+
         if (Invalidated)
         {
             OnInvalidated();
@@ -193,7 +211,15 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
 
         var resolved = ResolvedStyles;
         var basePosition = (Vector2)position;
-        ComplexTextMetrics.AlignBounds(LaidOutComplexText.Value.Size, (int)size.X, (int)size.Y, resolved.HorizontalAlignment!.Value, resolved.VerticalAlignment!.Value, ref basePosition.X, ref basePosition.Y);
+        ComplexTextMetrics.AlignBounds(
+            LaidOutComplexText.Value.Size,
+            (int)size.X,
+            (int)size.Y,
+            resolved.HorizontalAlignment!.Value,
+            resolved.VerticalAlignment!.Value,
+            ref basePosition.X,
+            ref basePosition.Y
+        );
 
         foreach (var element in LaidOutComplexText.Value.Elements)
         {

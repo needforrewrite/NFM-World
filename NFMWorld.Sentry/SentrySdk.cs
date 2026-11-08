@@ -43,7 +43,9 @@ public static class SentrySdk
             _initialized = true;
 
             if (options.Debug)
-                Debug.WriteLine($"[Sentry] Initialized. DSN: {options.ParsedDsn?.EnvelopeUri}, Release: {options.Release ?? "none"}");
+                Debug.WriteLine(
+                    $"[Sentry] Initialized. DSN: {options.ParsedDsn?.EnvelopeUri}, Release: {options.Release ?? "none"}"
+                );
         }
     }
 
@@ -266,14 +268,14 @@ public static class SentrySdk
         {
             if (_noop)
                 return;
-            
+
             if (EndTimestamp.HasValue)
                 return; // Already finished
 
             EndTimestamp = DateTimeOffset.UtcNow;
             _elapsed = Stopwatch.GetElapsedTime(_startTime);
             Status = status;
-            
+
             // Only enqueue if still initialized (not disposed during shutdown)
             _uploader?.Enqueue(new TransactionItem(this));
         }

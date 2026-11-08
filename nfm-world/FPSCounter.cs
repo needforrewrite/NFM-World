@@ -21,13 +21,15 @@ public class FPSCounter
         elapsed = now - last;
         if (elapsed > msgFrequency)
         {
-            msg = $"Fps: {frames / elapsed:0.00}\nElapsed time: {elapsed:0.00}\nTick: {tickUs}us\nGTC: {asyncUs:0.00}us\nFrame (CPU): {frameMs}ms\nUpdates: {updates}\nFrames: {frames}";
+            msg =
+                $"Fps: {frames / elapsed:0.00}\nElapsed time: {elapsed:0.00}\nTick: {tickUs}us\nGTC: {asyncUs:0.00}us\nFrame (CPU): {frameMs}ms\nUpdates: {updates}\nFrames: {frames}";
             //Console.WriteLine(msg);
             elapsed = 0;
             frames = 0;
             updates = 0;
             last = now;
         }
+
         updates++;
     }
 

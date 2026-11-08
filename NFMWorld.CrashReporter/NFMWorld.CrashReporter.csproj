@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\NFMWorld.Sentry\NFMWorld.Sentry.csproj" />
+        <ProjectReference Include="..\NFMWorld.Sentry\NFMWorld.Sentry.csproj"/>
     </ItemGroup>
 
 </Project>

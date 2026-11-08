@@ -13,7 +13,6 @@
 // runs - which for a backend whose whole purpose is a fair comparison would defeat the exercise.
 
 extern alias SDL3New;
-
 using NFMWorld.Platform.SDL3;
 using SDL = SDL3New::SDL3.SDL;
 
@@ -58,10 +57,13 @@ internal sealed class GlHost : IDisposable
         // and 0x02 for OpenGL, where a hand-written 0x20 would be RESIZABLE and produce a window
         // that SDL_GL_CreateContext rejects with "isn't an OpenGL window".
         _window = SdlWindow.Create(
-            "NFM World DesktopGL smoke", width, height,
-            extraFlagsRaw: (ulong)(SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN |
-                                   SDL.SDL_WindowFlags.SDL_WINDOW_OPENGL),
-            resizable: false, highPixelDensity: false);
+            "NFM World DesktopGL smoke",
+            width,
+            height,
+            extraFlagsRaw: (ulong)(SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN | SDL.SDL_WindowFlags.SDL_WINDOW_OPENGL),
+            resizable: false,
+            highPixelDensity: false
+        );
 
         _context = SDL.SDL_GL_CreateContext(_window.Handle);
         if (_context == IntPtr.Zero)

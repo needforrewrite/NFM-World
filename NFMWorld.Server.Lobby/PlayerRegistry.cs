@@ -95,6 +95,7 @@ public class PlayerRegistry
         public uint ClientIndex { get; set; }
         public Guid Id { get; set; }
         public ClientState State { get; set; }
+
         /// <summary>Empty until the client authenticates or sends its identity.</summary>
         public string Name { get; set; } = "";
 
@@ -106,6 +107,7 @@ public class PlayerRegistry
 
         /// <summary>The last token presented, so a reconnect loop cannot re-verify it every tick.</summary>
         public string? PresentedToken { get; set; }
+
         public string Vehicle { get; set; } = "nfmm/radicalone";
         public Color3 Color { get; set; }
         public (byte PlayerIndex, uint SessionIndex)? InSession { get; set; }

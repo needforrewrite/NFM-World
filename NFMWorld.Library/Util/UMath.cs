@@ -103,12 +103,14 @@ public static class UMath
                 Rand[i] = (int)(10.0f * URandom.Single());
                 Diup[i] = URandom.Boolean();
             }
+
             _cntrn = 20;
         }
         else
         {
             _cntrn--;
         }
+
         for (var i = 0; i < 3; i++)
         {
             if (Diup[i])
@@ -134,6 +136,7 @@ public static class UMath
         {
             _trn = 0;
         }
+
         return Rand[_trn] / 10.0F;
     }
 
@@ -279,7 +282,7 @@ public static class UMath
         if (angle != 0)
         {
             FixedTrigLUT.SinCosDeg(angle, out var sin, out var cos);
-            
+
             for (var i = 0; i < len; i++)
             {
                 var pa = a[i];

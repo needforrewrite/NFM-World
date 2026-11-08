@@ -15,8 +15,16 @@ public class RaceRestartTests
 {
     private static ClientGamemodeParameters CreateParameters() => new()
     {
-        Players = [new ClientSidePlayerInfo("test", "nfmm/radicalone", new Color3(255, 0, 0),
-            isBot: false, isClientPlayer: true)]
+        Players =
+        [
+            new ClientSidePlayerInfo(
+                "test",
+                "nfmm/radicalone",
+                new Color3(255, 0, 0),
+                isBot: false,
+                isClientPlayer: true
+            )
+        ]
     };
 
     [TestMethod]
@@ -24,12 +32,14 @@ public class RaceRestartTests
     {
         var context = new ResetContext();
         var client = new TestGamemode(context);
-        client.SetServerResults(new RaceResults
-        {
-            GamemodeId = client.GamemodeId,
-            RaceDuration = TimeSpan.Zero,
-            Standings = []
-        });
+        client.SetServerResults(
+            new RaceResults
+            {
+                GamemodeId = client.GamemodeId,
+                RaceDuration = TimeSpan.Zero,
+                Standings = []
+            }
+        );
 
         client.Reset();
 
@@ -89,10 +99,22 @@ public class RaceRestartTests
             Resets++;
         }
 
-        public void ResetCheckpointGlow() { }
-        public void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish) { }
+        public void ResetCheckpointGlow()
+        {
+        }
+
+        public void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish)
+        {
+        }
+
         public IClientCarCallbacks GetClientCarCallbacks(BackendCar car) => throw new NotSupportedException();
-        public void SendServerEvent(ReadOnlySpan<byte> payload) { }
-        public void UpdatePlayers(IReadOnlyList<ClientSidePlayer> players) { }
+
+        public void SendServerEvent(ReadOnlySpan<byte> payload)
+        {
+        }
+
+        public void UpdatePlayers(IReadOnlyList<ClientSidePlayer> players)
+        {
+        }
     }
 }

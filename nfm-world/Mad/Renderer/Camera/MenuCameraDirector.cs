@@ -22,8 +22,10 @@ public sealed class MenuCameraDirector
     public MenuRoadSegment? CarActionRoad { get; private set; }
     public int ViewDistance => (int)Math.Clamp(_survey.Radius * 2, 15000, 45000);
 
-    public float Fade => Math.Max(Math.Clamp(1 - _age / 0.7f, 0, 1),
-        Math.Clamp((_age - _duration + 0.7f) / 0.7f, 0, 1));
+    public float Fade => Math.Max(
+        Math.Clamp(1 - _age / 0.7f, 0, 1),
+        Math.Clamp((_age - _duration + 0.7f) / 0.7f, 0, 1)
+    );
 
     public void Reset(PerspectiveCamera camera, BackendStage stage)
     {
@@ -32,6 +34,7 @@ public sealed class MenuCameraDirector
             _stage = stage;
             _survey = new MenuStageSurvey(stage);
         }
+
         _lastKind = -1;
         NextShot(camera, stage);
     }
@@ -42,7 +45,8 @@ public sealed class MenuCameraDirector
         CarActionRoad = null;
         _positions = new Vector3[65];
         _targets = new Vector3[65];
-        var kind = _lastKind < 0 ? 5 : _lastKind == 8 ? _random.Next(8)
+        var kind = _lastKind < 0 ? 5
+            : _lastKind == 8 ? _random.Next(8)
             : (_lastKind + _random.Next(1, 8)) % 8;
         if (_lastKind >= 0 && _lastKind != 8 && _random.NextSingle() < 0.12f && TryCarActionShot(stage))
             kind = 8;
@@ -55,7 +59,8 @@ public sealed class MenuCameraDirector
         var length = 0f;
         for (var i = 1; i < _positions.Length; i++)
             length += Vector3.Distance(_positions[i - 1], _positions[i]);
-        _duration = kind == 8 ? Math.Clamp(length / (900 + _random.NextSingle() * 600), 7, 12)
+        _duration = kind == 8
+            ? Math.Clamp(length / (900 + _random.NextSingle() * 600), 7, 12)
             : Math.Clamp(length / (350 + _random.NextSingle() * 1450), 6, 17);
         _pace = kind == 8 ? 1 : 0.85f + _random.NextSingle() * 0.35f;
         _age = 0;
@@ -70,7 +75,9 @@ public sealed class MenuCameraDirector
         var finalCheckpoint = stage.Nodes.IndexOf(stage.Checkpoints[stage.Checkpoints.Count - 1]);
         var roads = _survey.Roads.Concat(_survey.Cruises)
             .Where(road => road.Length is >= 4000 and <= 20000
-                && road.StartNode < finalCheckpoint && Math.Abs(road.Direction.Y) < 0.3f).ToArray();
+                           && road.StartNode < finalCheckpoint
+                           && Math.Abs(road.Direction.Y) < 0.3f
+            ).ToArray();
         if (roads.Length == 0) return false;
         for (var attempt = 0; attempt < 24; attempt++)
         {
@@ -81,9 +88,12 @@ public sealed class MenuCameraDirector
             for (var i = 0; i < _positions.Length; i++)
             {
                 var t = i / (float)(_positions.Length - 1);
-                _positions[i] = road.Start + road.Direction * (-1600 + t * road.Length * 0.85f)
-                    + side * (650 + 150 * MathF.Sin(t * MathF.PI)) + new Vector3(0, -height, 0);
+                _positions[i] = road.Start
+                                + road.Direction * (-1600 + t * road.Length * 0.85f)
+                                + side * (650 + 150 * MathF.Sin(t * MathF.PI))
+                                + new Vector3(0, -height, 0);
             }
+
             if (!IsPathClear()) continue;
             SetGaze(road.Direction, 10, 14, (_random.NextSingle() - 0.5f) * 4);
             CarActionRoad = road;
@@ -91,13 +101,15 @@ public sealed class MenuCameraDirector
             _endFov = 66;
             return true;
         }
+
         return false;
     }
 
     private bool TryRoadShot(int kind)
     {
         var roads = _survey.Cruises.Count == 0 || _random.Next(3) == 0 && _survey.Roads.Count > 0
-            ? _survey.Roads : _survey.Cruises;
+            ? _survey.Roads
+            : _survey.Cruises;
         if (roads.Count == 0) return false;
         for (var attempt = 0; attempt < 20; attempt++)
         {
@@ -115,15 +127,20 @@ public sealed class MenuCameraDirector
                     : kind == 3 ? offset * (1 - 1.5f * t) : offset;
                 _positions[i] = travel + side * lateral + new Vector3(0, -altitude - t * 180, 0);
             }
+
             if (_positions.Any(position => !_survey.InCourse(position)) || !IsPathClear()) continue;
-            SetGaze(kind == 1 ? -road.Direction : road.Direction,
-                4 + _random.NextSingle() * 9, 4 + _random.NextSingle() * 9,
-                (_random.NextSingle() - 0.5f) * 18);
+            SetGaze(
+                kind == 1 ? -road.Direction : road.Direction,
+                4 + _random.NextSingle() * 9,
+                4 + _random.NextSingle() * 9,
+                (_random.NextSingle() - 0.5f) * 18
+            );
             CurrentRoad = road;
             _startFov = 58 + _random.NextSingle() * 12;
             _endFov = Math.Clamp(_startFov + (_random.NextSingle() - 0.65f) * 20, 50, 72);
             return true;
         }
+
         return false;
     }
 
@@ -136,6 +153,7 @@ public sealed class MenuCameraDirector
             var closest = roads[_random.Next(roads.Count)];
             anchor = Vector3.Lerp(closest.Start, closest.End, 0.5f);
         }
+
         var angle = _random.NextSingle() * MathF.Tau;
         var direction = new Vector3(MathF.Cos(angle), 0, MathF.Sin(angle));
         var cross = new Vector3(-direction.Z, 0, direction.X);
@@ -151,9 +169,14 @@ public sealed class MenuCameraDirector
             var t = i / (float)(_positions.Length - 1);
             _positions[i] = Vector3.Lerp(Vector3.Lerp(start, bend, t), Vector3.Lerp(bend, end, t), t);
         }
+
         ClearPathHeight();
-        SetGaze(-direction, 5 + _random.NextSingle() * 9, 5 + _random.NextSingle() * 9,
-            (_random.NextSingle() - 0.5f) * 20);
+        SetGaze(
+            -direction,
+            5 + _random.NextSingle() * 9,
+            5 + _random.NextSingle() * 9,
+            (_random.NextSingle() - 0.5f) * 20
+        );
         _startFov = 62;
         _endFov = 58;
     }
@@ -176,9 +199,14 @@ public sealed class MenuCameraDirector
             var t = i / (float)(_positions.Length - 1);
             _positions[i] = Vector3.Lerp(Vector3.Lerp(start, bend, t), Vector3.Lerp(bend, end, t), t);
         }
+
         ClearPathHeight();
-        SetGaze(direction, skySweep ? -4 : 8, skySweep ? 7 : 14,
-            (skySweep ? 36 : 18) * (_random.Next(2) == 0 ? -1 : 1));
+        SetGaze(
+            direction,
+            skySweep ? -4 : 8,
+            skySweep ? 7 : 14,
+            (skySweep ? 36 : 18) * (_random.Next(2) == 0 ? -1 : 1)
+        );
         _startFov = skySweep ? 72 : 68;
         _endFov = skySweep ? 68 : 62;
     }
@@ -209,6 +237,7 @@ public sealed class MenuCameraDirector
             end = new Vector3(center.X + halfLength, 0, z);
             inward = edge == 2 ? Vector3.UnitZ : -Vector3.UnitZ;
         }
+
         if (_random.Next(2) == 0)
             (start, end) = (end, start);
         start.Y = _survey.Center.Y - 2200 - _random.NextSingle() * 2000;
@@ -225,8 +254,11 @@ public sealed class MenuCameraDirector
     {
         if (!IsPathClear())
         {
-            var localCeiling = _survey.LocalCeiling(_positions.Aggregate(Vector3.Min),
-                _positions.Aggregate(Vector3.Max), 250);
+            var localCeiling = _survey.LocalCeiling(
+                _positions.Aggregate(Vector3.Min),
+                _positions.Aggregate(Vector3.Max),
+                250
+            );
             for (var i = 0; i < _positions.Length; i++)
                 _positions[i].Y = localCeiling - 800;
         }
@@ -241,8 +273,11 @@ public sealed class MenuCameraDirector
             var t = i / (float)(_positions.Length - 1);
             var yaw = (t - 0.5f) * yawSweep * MathF.PI / 180;
             var pitch = (startPitch + (endPitch - startPitch) * t) * MathF.PI / 180;
-            var direction = new Vector3(forward.X * MathF.Cos(yaw) - forward.Z * MathF.Sin(yaw),
-                MathF.Tan(pitch), forward.X * MathF.Sin(yaw) + forward.Z * MathF.Cos(yaw));
+            var direction = new Vector3(
+                forward.X * MathF.Cos(yaw) - forward.Z * MathF.Sin(yaw),
+                MathF.Tan(pitch),
+                forward.X * MathF.Sin(yaw) + forward.Z * MathF.Cos(yaw)
+            );
             _targets[i] = _positions[i] + direction * 12000;
         }
     }
@@ -253,6 +288,7 @@ public sealed class MenuCameraDirector
         {
             if (!_survey.IsClear(_positions[i], _positions[Math.Max(0, i - 1)], 250)) return false;
         }
+
         return true;
     }
 
@@ -288,8 +324,15 @@ public sealed class MenuCameraDirector
         }
     }
 
-    public void ShowCar(PerspectiveCamera camera, BackendCar car, float seconds, bool cut = false, float garageBlend = 0,
-        float garageAngle = 0, float garageHeight = 0)
+    public void ShowCar(
+        PerspectiveCamera camera,
+        BackendCar car,
+        float seconds,
+        bool cut = false,
+        float garageBlend = 0,
+        float garageAngle = 0,
+        float garageHeight = 0
+    )
     {
         var target = ToVector(car.Position) + new Vector3(0, -120 + (car.GroundAt - 60) * garageBlend, 0);
         var menuAngle = MathF.PI - 0.65f;
@@ -312,16 +355,22 @@ public sealed class MenuCameraDirector
                     break;
                 }
             }
+
             var t = Math.Clamp(seconds / 4, 0, 1);
             var remaining = 1 - t * t * (3 - 2 * t);
             position = Vector3.Lerp(position, _arrivalStart, remaining * (1 - garageBlend));
         }
+
         var driftTime = Math.Max(0, seconds - 4);
         var settle = Math.Clamp(driftTime / 2, 0, 1);
         settle = settle * settle * (3 - 2 * settle);
-        position += new Vector3((1 - MathF.Cos(driftTime * 0.15f)) * 195,
-            MathF.Sin(driftTime * 0.075f) * 37, MathF.Sin(driftTime * 0.15f) * 285)
-            * settle * (1 - garageBlend);
+        position += new Vector3(
+                        (1 - MathF.Cos(driftTime * 0.15f)) * 195,
+                        MathF.Sin(driftTime * 0.075f) * 37,
+                        MathF.Sin(driftTime * 0.15f) * 285
+                    )
+                    * settle
+                    * (1 - garageBlend);
         // Keep the car on the right, clear of the menu.
         var framing = 335 - 55 * garageBlend;
         target += new Vector3(MathF.Sin(angle) * framing, 0, -MathF.Cos(angle) * framing);

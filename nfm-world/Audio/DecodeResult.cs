@@ -17,7 +17,8 @@ public enum AudioChannels
 /// <summary>
 /// Result of decoding a tracker module.
 /// </summary>
-public struct DecodeResult(DisposableArraySegment<byte> pcmData, int sampleRate, AudioChannels channels, bool pooled) : IDisposable
+public struct DecodeResult(DisposableArraySegment<byte> pcmData, int sampleRate, AudioChannels channels, bool pooled)
+    : IDisposable
 {
     public DisposableArraySegment<byte> PcmData = pcmData;
     public readonly int SampleRate = sampleRate;
@@ -25,7 +26,7 @@ public struct DecodeResult(DisposableArraySegment<byte> pcmData, int sampleRate,
 
     public void Dispose()
     {
-        if (pooled && PcmData.Array is {} arr)
+        if (pooled && PcmData.Array is { } arr)
         {
             PcmData.Dispose();
         }

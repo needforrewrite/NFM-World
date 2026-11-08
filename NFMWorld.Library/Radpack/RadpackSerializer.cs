@@ -15,18 +15,18 @@ public static class RadpackSerializer
         head[2] = (byte)'D';
         head[3] = (byte)asset.Metadata.Type;
         writer.Advance(4);
-        
+
         var body = MemoryPackSerializer.Serialize(asset, MemoryPackHelpers.Options);
         Deflate.Compress(body, writer);
     }
-    
+
     public static RadpackAsset Deserialize(ReadOnlySpan<byte> data)
     {
         if (data.Length < 4)
         {
             throw new InvalidDataException("Not a Radpack asset");
         }
-        
+
         if (data[0] != 'R' || data[1] != 'A' || data[2] != 'D')
         {
             throw new InvalidDataException("Not a Radpack asset");
@@ -37,16 +37,16 @@ public static class RadpackSerializer
         {
             throw new InvalidDataException("Not a Radpack asset");
         }
-        
+
         var decompData = Deflate.Decompress(data[4..]);
         var result = MemoryPackSerializer.Deserialize<RadpackAsset>(decompData);
         if (result == null)
         {
             throw new InvalidDataException("Not a Radpack asset");
         }
+
         result.Metadata.Type = (RadpackType)type;
         return result;
-        
     }
 
     /// <summary>
@@ -73,6 +73,7 @@ public static class RadpackSerializer
         {
             throw new InvalidDataException("Not a Radpack asset");
         }
+
         result.Metadata.Type = (RadpackType)type;
         return result;
     }
@@ -98,7 +99,7 @@ public partial class RadpackMetadata
     [MemoryPackOrder(0)] public required string Name { get; init; }
     [MemoryPackOrder(1)] public string? Description { get; init; }
     [MemoryPackOrder(2)] public required DateTimeOffset CreationDate { get; init; }
-    
+
     [MemoryPackIgnore] public RadpackType Type { get; set; }
 }
 
@@ -120,11 +121,9 @@ public partial class RadpackTexture : RadpackAsset
     // Was [BrotliFormatter], which is a native call and throws on the browser. Plain bytes instead:
     // an image is already compressed, so the outer deflate stream carries it at almost its own size
     // and the per-field layer was buying little over the format's own compression.
-    [MemoryPackOrder(1)]
-    public required byte[] RawData;
+    [MemoryPackOrder(1)] public required byte[] RawData;
 
-    [MemoryPackOrder(2)]
-    public RadTextureFormat TextureFormat;
+    [MemoryPackOrder(2)] public RadTextureFormat TextureFormat;
 }
 
 public enum LuaScriptKind : byte
@@ -137,7 +136,7 @@ public enum LuaScriptKind : byte
 public partial class RadpackLua : RadpackAsset
 {
     [MemoryPackOrder(1)] public required LuaScriptKind Kind;
-    
+
     /// <summary>
     /// The files, with path separator replaced with .
     /// </summary>

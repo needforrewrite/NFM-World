@@ -22,12 +22,12 @@ public static partial class FixedTrigLUT
         var delta = sinB - sinA;
         return sinA + (delta * frac);
     }
-    
+
     public static fix64 CosDeg(fix64 value)
     {
         return SinDeg(value + 90);
     }
-    
+
     public static void SinCosDeg(fix64 value, out fix64 sinValue, out fix64 cosValue)
     {
         // wrap to 0-360 degrees
@@ -45,7 +45,7 @@ public static partial class FixedTrigLUT
         var sinB = fix64.FromRaw(SinTable[nextIndex]);
         var deltaSin = sinB - sinA;
         sinValue = sinA + (deltaSin * frac);
-        
+
         var cosIndex = index + 9000;
         if (cosIndex >= 36000)
             cosIndex -= 36000;

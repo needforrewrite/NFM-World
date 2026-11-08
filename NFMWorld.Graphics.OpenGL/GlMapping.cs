@@ -6,6 +6,7 @@
 // own mapping table: the two vocabularies differ in both directions, so every entry here is an
 // explicit decision rather than a cast, and having them in one place is what stops a caller's
 // translation from drifting from the command buffer's.
+
 using Silk.NET.OpenGLES;
 using NFMWorld.Shaders;
 
@@ -46,8 +47,9 @@ internal static class GlMapping
         TextureFormat.Depth24Stencil8 => InternalFormat.Depth24Stencil8,
         TextureFormat.Dxt1 or TextureFormat.Dxt3 or TextureFormat.Dxt5 =>
             throw new NotSupportedException(
-                $"'{format}' is a block-compressed format, and ES 3.0 core has no compressed " +
-                "texture formats (they are extensions). This POC does not translate it."),
+                $"'{format}' is a block-compressed format, and ES 3.0 core has no compressed "
+                + "texture formats (they are extensions). This POC does not translate it."
+            ),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
     };
 
@@ -235,7 +237,9 @@ internal static class GlMapping
     {
         CullMode.Front => GLEnum.Front,
         CullMode.Back => GLEnum.Back,
-        CullMode.None => throw new InvalidOperationException("CullMode.None is expressed by disabling GL_CULL_FACE, not by a face mode."),
+        CullMode.None => throw new InvalidOperationException(
+            "CullMode.None is expressed by disabling GL_CULL_FACE, not by a face mode."
+        ),
         _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null),
     };
 
@@ -246,7 +250,8 @@ internal static class GlMapping
         // features with no ES equivalent. Rejected loudly so a wireframe request cannot silently
         // render solid and look like a scene bug.
         FillMode.Wireframe => throw new NotSupportedException(
-            "Wireframe fill has no ES 3.0 equivalent: glPolygonMode is desktop-GL only."),
+            "Wireframe fill has no ES 3.0 equivalent: glPolygonMode is desktop-GL only."
+        ),
         _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null),
     };
 
@@ -270,7 +275,9 @@ internal static class GlMapping
     /// same members, but only the former is what <c>glVertexAttribPointer</c> takes, and that is the
     /// only attribute-format call this backend can make on an ES 3.0 context - see GlPipelineState.
     /// </summary>
-    public static (int Components, VertexAttribPointerType Type, bool Normalized) ToAttribFormat(this VertexAttributeFormat format) => format switch
+    public static (int Components, VertexAttribPointerType Type, bool Normalized) ToAttribFormat(
+        this VertexAttributeFormat format
+    ) => format switch
     {
         VertexAttributeFormat.Float1 => (1, VertexAttribPointerType.Float, false),
         VertexAttributeFormat.Float2 => (2, VertexAttribPointerType.Float, false),

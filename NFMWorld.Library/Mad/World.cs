@@ -9,6 +9,7 @@ public static partial class World
     /// Adds extra collision radius and damage to compensate for lag.
     /// </summary>
     public static bool UseMultiplayerCollisionModifiers = true;
+
     public static float OutlineThickness = 1f;
     public static bool PixelOutlines;
     public static bool IsHyperglidingEnabled = true;
@@ -38,12 +39,12 @@ public static partial class World
                 : MathF.Log2(1e-6f);
         }
     }
+
     public static Vector3 LightDirection = new Vector3(0, 1, 0);
     public static int FadeFrom;
     public static float BlackPoint = 0.37f;
     public static float WhitePoint = 0.63f;
-    [PluginVisible]
-    public static int Ground = 250;
+    [PluginVisible] public static int Ground = 250;
     public static Color3 Snap;
     public static Color3 Fog;
     public static bool LightsOn;
@@ -57,9 +58,10 @@ public static partial class World
 
     // texture (without snap)
     public static int[] Texture = [0, 0, 0, 50];
-    
+
     // clouds (without sky applied)
     public static int[] Clouds = [210, 210, 210, 1, -1000];
+
     // clouds (with sky applied)
     public static Color3 CloudColor;
 
@@ -89,10 +91,11 @@ public static partial class World
     }
 
     private static int _tick = 0;
-    
+
     public static bool ChargedPolyBlink;
     public static float ChargeAmount;
     public static int ChargedBlinkCountdown;
+
     public static void GameTick()
     {
         if (++_tick == Physics.OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
@@ -127,27 +130,36 @@ public static partial class World
         // osky[0] = i;
         // osky[1] = i249;
         // osky[2] = i250;
-        for (int i251 = 0; i251 < 3; i251++) {
+        for (int i251 = 0; i251 < 3; i251++)
+        {
             CloudColor[i251] = (short)((Sky[i251] * Clouds[3] + Clouds[i251]) / (Clouds[3] + 1));
             // CloudColor[i251] = (short) (CloudColor[i251] + CloudColor[i251] * (Snap[i251] / 100.0F));
-            if (CloudColor[i251] > 255) {
+            if (CloudColor[i251] > 255)
+            {
                 CloudColor[i251] = 255;
             }
-            if (CloudColor[i251] < 0) {
+
+            if (CloudColor[i251] < 0)
+            {
                 CloudColor[i251] = 0;
             }
         }
     }
 
-    public static void SetGround(Color3 groundColor) {
+    public static void SetGround(Color3 groundColor)
+    {
         GroundColor = groundColor;
-        for (int i259 = 0; i259 < 3; i259++) {
+        for (int i259 = 0; i259 < 3; i259++)
+        {
             GroundPolysColor[i259] = (short)((GroundColor[i259] * Texture[3] + Texture[i259]) / (1 + Texture[3]));
             // GroundPolysColor[i259] = (int) (GroundPolysColor[i259] + GroundPolysColor[i259] * (Snap[i259] / 100.0F));
-            if (GroundPolysColor[i259] > 255) {
+            if (GroundPolysColor[i259] > 255)
+            {
                 GroundPolysColor[i259] = 255;
             }
-            if (GroundPolysColor[i259] < 0) {
+
+            if (GroundPolysColor[i259] < 0)
+            {
                 GroundPolysColor[i259] = 0;
             }
         }
@@ -163,15 +175,18 @@ public static partial class World
         texture[1] = inTexture[1];
         texture[2] = inTexture[2];
         texture[3] = inTexture[3];
-        
-        if (texture[3] < 20) {
+
+        if (texture[3] < 20)
+        {
             texture[3] = 20;
         }
-        if (texture[3] > 60) {
+
+        if (texture[3] > 60)
+        {
             texture[3] = 60;
         }
 
-        Texture = [..texture];
+        Texture = [.. texture];
 
         texture[0] = (GroundColor[0] * texture[3] + texture[0]) / (1 + texture[3]);
         texture[1] = (GroundColor[1] * texture[3] + texture[1]) / (1 + texture[3]);

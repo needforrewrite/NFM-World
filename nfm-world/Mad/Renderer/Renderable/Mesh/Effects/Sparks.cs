@@ -28,11 +28,15 @@ public class Sparks : IDisposable, IImmediateRenderElement
     private float[] _vry = new float[100];
     private float[] _vrz = new float[100];
 
-    private LineMesh.LineMeshVertexAttribute[] _lineVertices = new LineMesh.LineMeshVertexAttribute[100 * LineMeshHelpers.VerticesPerLine];
+    private LineMesh.LineMeshVertexAttribute[] _lineVertices =
+        new LineMesh.LineMeshVertexAttribute[100 * LineMeshHelpers.VerticesPerLine];
+
     private int[] _lineIndices = new int[100 * LineMeshHelpers.IndicesPerLine];
     private int _vertexCount;
     private int _triangleCount;
+
     private int _sparkCount;
+
     // Upload happens in Render() rather than GameTick(): ICommandBuffer.UpdateBuffer needs a live
     // command buffer, which only exists during the draw pass - GameTick() runs outside of it. The
     // CPU-side arrays above are still built during GameTick() as before; _dirty just defers the
@@ -54,12 +58,17 @@ public class Sparks : IDisposable, IImmediateRenderElement
         var maxVertexBytes = 100 * LineMeshHelpers.VerticesPerLine * LineMesh.LineMeshVertexAttribute.Stride;
         var maxIndexBytes = 100 * LineMeshHelpers.IndicesPerLine * sizeof(int);
         _vertexBuffer = graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxVertexBytes), new byte[maxVertexBytes]);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxVertexBytes),
+            new byte[maxVertexBytes]
+        );
         _indexBuffer = graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Index, BufferUsage.Dynamic, maxIndexBytes, IndexFormat.UInt32), new byte[maxIndexBytes]);
+            new BufferDesc(BufferKind.Index, BufferUsage.Dynamic, maxIndexBytes, IndexFormat.UInt32),
+            new byte[maxIndexBytes]
+        );
         _instanceBuffer = graphicsDevice.CreateBuffer(
             new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, InstanceData.Stride),
-            MemoryMarshal.AsBytes((ReadOnlySpan<InstanceData>)[new InstanceData(Matrix.Identity)]));
+            MemoryMarshal.AsBytes((ReadOnlySpan<InstanceData>)[new InstanceData(Matrix.Identity)])
+        );
     }
 
     ~Sparks()
@@ -72,7 +81,11 @@ public class Sparks : IDisposable, IImmediateRenderElement
         if (type != 1)
         {
             Srx = (wheelx - _sprkat * UMath.SinUnsafe((float)_visual.Rotation.Xz.Degrees));
-            Sry = (wheely - wheelGround - _sprkat * UMath.CosUnsafe((float)_visual.Rotation.Zy.Degrees) * UMath.CosUnsafe((float)_visual.Rotation.Xy.Degrees));
+            Sry = (wheely
+                   - wheelGround
+                   - _sprkat
+                   * UMath.CosUnsafe((float)_visual.Rotation.Zy.Degrees)
+                   * UMath.CosUnsafe((float)_visual.Rotation.Xy.Degrees));
             Srz = (wheelz + _sprkat * UMath.CosUnsafe((float)_visual.Rotation.Xz.Degrees));
             Sprk = 1;
         }
@@ -93,10 +106,12 @@ public class Sparks : IDisposable, IImmediateRenderElement
                 Srz = wheelz;
             }
         }
+
         if (type == 2)
         {
             Sprk = 6;
         }
+
         Rcx = scx;
         Rcy = scy;
         Rcz = scz;
@@ -108,13 +123,14 @@ public class Sparks : IDisposable, IImmediateRenderElement
         _triangleCount = 0;
         if (Sprk != 0)
         {
-            var i = (int) (Math.Sqrt(Rcx * Rcx + Rcy * Rcy + Rcz * Rcz) / 10.0);
+            var i = (int)(Math.Sqrt(Rcx * Rcx + Rcy * Rcy + Rcz * Rcz) / 10.0);
             if (i > 5)
             {
                 if (i > 33)
                 {
                     i = 33;
                 }
+
                 var i241 = 0;
                 for (var i242 = 0; i242 < 100; i242++)
                 {
@@ -124,6 +140,7 @@ public class Sparks : IDisposable, IImmediateRenderElement
                         i241++;
                         _sparkCount++;
                     }
+
                     if (i241 == i)
                     {
                         break;
@@ -138,7 +155,8 @@ public class Sparks : IDisposable, IImmediateRenderElement
             return;
         }
 
-        Span<LineMesh.LineMeshVertexAttribute> verts = stackalloc LineMesh.LineMeshVertexAttribute[LineMeshHelpers.VerticesPerLine];
+        Span<LineMesh.LineMeshVertexAttribute> verts =
+            stackalloc LineMesh.LineMeshVertexAttribute[LineMeshHelpers.VerticesPerLine];
         Span<int> inds = stackalloc int[LineMeshHelpers.IndicesPerLine];
 
         for (var i = 0; i < 100; i++)
@@ -171,6 +189,7 @@ public class Sparks : IDisposable, IImmediateRenderElement
                         _ry[i] = Sry - (URandom.Single() * 4.0F);
                         _rz[i] = Srz + 10 - (URandom.Single() * 20.0F);
                     }
+
                     var i243 = MathF.Sqrt(Rcx * Rcx + Rcy * Rcy + Rcz * Rcz);
                     if (float.IsNaN(i243) || float.IsInfinity(i243)) i243 = 1.0F;
                     i243 = Math.Clamp(i243, 1, 100); // prevent division by zero
@@ -184,29 +203,36 @@ public class Sparks : IDisposable, IImmediateRenderElement
                         {
                             f245 *= -1.0F;
                         }
+
                         _vrx[i] = -((Rcx + i243 * (1.0F - Rcx / i243) * f244 * f245) * f);
                     }
+
                     if (URandom.Boolean())
                     {
                         if (URandom.Boolean())
                         {
                             f245 *= -1.0F;
                         }
+
                         if (Sprk == 5)
                         {
                             f245 = 1.0F;
                         }
+
                         _vry[i] = -((Rcy + i243 * (1.0F - Rcy / i243) * f244 * f245) * f);
                     }
+
                     if (URandom.Boolean())
                     {
                         if (URandom.Boolean())
                         {
                             f245 *= -1.0F;
                         }
+
                         _vrz[i] = -((Rcz + i243 * (1.0F - Rcz / i243) * f244 * f245) * f);
                     }
                 }
+
                 _rx[i] = (_rx[i] + _vrx[i]);
                 _ry[i] = (_ry[i] + _vry[i]);
                 _rz[i] = (_rz[i] + _vrz[i]);
@@ -227,8 +253,8 @@ public class Sparks : IDisposable, IImmediateRenderElement
                 LineMeshHelpers.CreateLineMesh(start, end, _vertexCount, default, default, color, 0f, verts, inds);
 
                 // Bounds guard: prevent writing past pre-allocated arrays
-                if (_vertexCount + LineMeshHelpers.VerticesPerLine > _lineVertices.Length ||
-                    _triangleCount * 3 + LineMeshHelpers.IndicesPerLine > _lineIndices.Length)
+                if (_vertexCount + LineMeshHelpers.VerticesPerLine > _lineVertices.Length
+                    || _triangleCount * 3 + LineMeshHelpers.IndicesPerLine > _lineIndices.Length)
                 {
                     break;
                 }
@@ -237,10 +263,12 @@ public class Sparks : IDisposable, IImmediateRenderElement
                 {
                     _lineVertices[_vertexCount + v] = verts[v];
                 }
+
                 for (var t = 0; t < LineMeshHelpers.IndicesPerLine; t++)
                 {
                     _lineIndices[_triangleCount * 3 + t] = _vertexCount + inds[t];
                 }
+
                 _vertexCount += LineMeshHelpers.VerticesPerLine;
                 _triangleCount += LineMeshHelpers.IndicesPerLine / 3;
 
@@ -263,6 +291,7 @@ public class Sparks : IDisposable, IImmediateRenderElement
         {
             _dirty = true;
         }
+
         Sprk = 0;
     }
 
@@ -329,11 +358,13 @@ public class Sparks : IDisposable, IImmediateRenderElement
                     blackCount++;
                 }
             }
+
             if (blackCount > 0)
             {
                 SentrySdk.CaptureMessage(
                     $"Sparks.Render: {blackCount}/{_vertexCount} vertices have default (black) Color",
-                    SentryLevel.Warning);
+                    SentryLevel.Warning
+                );
             }
         }
 #endif

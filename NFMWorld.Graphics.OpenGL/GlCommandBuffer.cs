@@ -71,7 +71,11 @@ internal sealed class GlCommandBuffer : ICommandBuffer
 
     /// <summary>What one attribute was last pointed at. Everything the pointer and divisor calls derive.</summary>
     private readonly record struct CachedBinding(
-        GlBuffer? Buffer, int StrideBytes, int OffsetBytes, int InstanceStepRate);
+        GlBuffer? Buffer,
+        int StrideBytes,
+        int OffsetBytes,
+        int InstanceStepRate
+    );
 
     /// <summary>
     /// The abstraction allows as many vertex streams as the pipeline declares. The app's instanced
@@ -232,9 +236,11 @@ internal sealed class GlCommandBuffer : ICommandBuffer
         var pipeline = RequirePipeline();
         if (slot < 0 || slot + value.Length > _uniforms.Length)
         {
-            throw new ArgumentOutOfRangeException(nameof(slot),
-                $"Uniform write of {value.Length} byte(s) at offset {slot} does not fit the " +
-                $"{_uniforms.Length}-byte block '{pipeline.Desc.VertexShader.GetType().Name}' declares.");
+            throw new ArgumentOutOfRangeException(
+                nameof(slot),
+                $"Uniform write of {value.Length} byte(s) at offset {slot} does not fit the "
+                + $"{_uniforms.Length}-byte block '{pipeline.Desc.VertexShader.GetType().Name}' declares."
+            );
         }
 
         // The reflection decides, not the byte count: a 64-byte write is only a matrix because the
@@ -288,7 +294,10 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     public void SetVertexBuffer(int slot, IBuffer buffer, int strideBytes, int offsetBytes = 0)
     {
         if ((uint)slot >= MaxVertexStreams)
-            throw new ArgumentOutOfRangeException(nameof(slot), $"Vertex stream slot {slot} exceeds the {MaxVertexStreams} this backend tracks.");
+            throw new ArgumentOutOfRangeException(
+                nameof(slot),
+                $"Vertex stream slot {slot} exceeds the {MaxVertexStreams} this backend tracks."
+            );
 
         _vertexStreams[slot] = new GlVertexStream
         {
@@ -436,7 +445,6 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     /// The one draw path. Everything a draw needs - the VAO's bindings, the uniform block, and the
     /// element count - is assembled here so the three public entry points cannot drift.
     /// </summary>
-
     private void DrawInternal(int baseVertex, int firstIndex, int primitiveCount, int instanceCount, bool indexed)
     {
         var pipeline = RequirePipeline();
@@ -461,7 +469,9 @@ internal sealed class GlCommandBuffer : ICommandBuffer
         }
 
         var indexBuffer = _indexBuffer
-            ?? throw new InvalidOperationException($"DrawIndexed requires {nameof(SetIndexBuffer)} to have been called.");
+                          ?? throw new InvalidOperationException(
+                              $"DrawIndexed requires {nameof(SetIndexBuffer)} to have been called."
+                          );
 
         _gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, indexBuffer.Handle);
         var indexType = indexBuffer.IndexFormat.ToIndexType();
@@ -482,7 +492,7 @@ internal sealed class GlCommandBuffer : ICommandBuffer
                     _gl.DrawElements(mode, count, indexType, pointer);
                 else
                     _gl.DrawElementsInstanced(mode, count, indexType, pointer, (uint)instanceCount);
-                    return;
+                return;
             }
 
             // A non-zero base vertex needs GL_EXT_draw_elements_base_vertex, which is present on
@@ -495,10 +505,11 @@ internal sealed class GlCommandBuffer : ICommandBuffer
             if (!_baseVertexDraw.IsSupported)
             {
                 throw new NotSupportedException(
-                    $"baseVertex {baseVertex} was requested, but this context exposes neither " +
-                    "GL_EXT_draw_elements_base_vertex nor GL_OES_draw_elements_base_vertex, so the " +
-                    "offset cannot be honoured and ES 3.0 core has no base-vertex draw of its own. " +
-                    "Draw from a buffer whose indices are already relative to the intended base vertex.");
+                    $"baseVertex {baseVertex} was requested, but this context exposes neither "
+                    + "GL_EXT_draw_elements_base_vertex nor GL_OES_draw_elements_base_vertex, so the "
+                    + "offset cannot be honoured and ES 3.0 core has no base-vertex draw of its own. "
+                    + "Draw from a buffer whose indices are already relative to the intended base vertex."
+                );
             }
 
             if (instanceCount == 1)
@@ -506,7 +517,6 @@ internal sealed class GlCommandBuffer : ICommandBuffer
             else
                 _baseVertexDraw.DrawIndexedInstanced(mode, count, indexType, pointer, (uint)instanceCount, baseVertex);
         }
-
     }
 
     private static int IndexSize(IndexFormat format) => format switch
@@ -554,9 +564,10 @@ internal sealed class GlCommandBuffer : ICommandBuffer
             var attribute = pipeline.Attributes[i];
             var stream = _vertexStreams[attribute.VertexSlot];
             var buffer = stream.Buffer
-                ?? throw new InvalidOperationException(
-                    $"The pipeline declares vertex layout slot {attribute.VertexSlot} but " +
-                    $"{nameof(SetVertexBuffer)} was never called for it.");
+                         ?? throw new InvalidOperationException(
+                             $"The pipeline declares vertex layout slot {attribute.VertexSlot} but "
+                             + $"{nameof(SetVertexBuffer)} was never called for it."
+                         );
 
             var current = new CachedBinding(buffer, stream.StrideBytes, stream.OffsetBytes, attribute.InstanceStepRate);
             if (i < cache.Count && cache.Bindings[i] == current)
@@ -579,9 +590,13 @@ internal sealed class GlCommandBuffer : ICommandBuffer
             // than the raw-pointer one so this stays in safe code: nothing is dereferenced here,
             // the value is just carried to the driver as the start of the attribute's data.
             _gl.VertexAttribPointer(
-                attribute.Location, attribute.Components, attribute.Type, attribute.Normalized,
+                attribute.Location,
+                attribute.Components,
+                attribute.Type,
+                attribute.Normalized,
                 (uint)stream.StrideBytes,
-                (nint)(stream.OffsetBytes + attribute.OffsetInBytes));
+                (nint)(stream.OffsetBytes + attribute.OffsetInBytes)
+            );
             _gl.EnableVertexAttribArray(attribute.Location);
 
             cache.Bindings[i] = current;
@@ -618,7 +633,12 @@ internal sealed class GlCommandBuffer : ICommandBuffer
             _uniformBuffer = _gl.GenBuffer();
 
         _gl.BindBuffer(BufferTargetARB.UniformBuffer, _uniformBuffer);
-        _gl.BufferData(BufferTargetARB.UniformBuffer, (nuint)_uniforms.Length, ReadOnlySpan<byte>.Empty, BufferUsageARB.DynamicDraw);
+        _gl.BufferData(
+            BufferTargetARB.UniformBuffer,
+            (nuint)_uniforms.Length,
+            ReadOnlySpan<byte>.Empty,
+            BufferUsageARB.DynamicDraw
+        );
         _gl.BufferSubData(BufferTargetARB.UniformBuffer, 0, _uniforms);
         _gl.BindBufferBase(BufferTargetARB.UniformBuffer, block.Binding, _uniformBuffer);
 
@@ -665,6 +685,5 @@ internal sealed class GlCommandBuffer : ICommandBuffer
         _indexBuffer = null;
         _indexOffsetBytes = 0;
         Array.Clear(_vertexStreams);
-
     }
 }

@@ -47,7 +47,9 @@ try
         _ = Task.Run(() => HandleRequest(ctx, orchestrator, knownKeys));
     }
 }
-catch (OperationCanceledException) { }
+catch (OperationCanceledException)
+{
+}
 
 http.Stop();
 orchestrator.Stop();
@@ -58,8 +60,10 @@ return;
 // ── Request handler ─────────────────────────────────────────────────
 
 static void HandleRequest(
-    HttpListenerContext ctx, RaceOrchestrator orchestrator,
-    IReadOnlyDictionary<string, byte[]> knownKeys)
+    HttpListenerContext ctx,
+    RaceOrchestrator orchestrator,
+    IReadOnlyDictionary<string, byte[]> knownKeys
+)
 {
     var req = ctx.Request;
     var res = ctx.Response;

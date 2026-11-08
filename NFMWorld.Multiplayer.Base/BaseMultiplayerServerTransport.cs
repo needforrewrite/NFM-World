@@ -8,12 +8,12 @@ namespace NFMWorldLibrary.Multiplayer;
 public abstract class BaseMultiplayerServerTransport : IMultiplayerServerTransport
 {
     public abstract IReadOnlyCollection<uint> Connections { get; }
-    
+
     public event EventHandler<(uint ClientIndex, IPacketClientToServer Packet)>? PacketReceived;
     public abstract event EventHandler<uint>? ClientConnecting;
     public abstract event EventHandler<uint>? ClientConnected;
     public abstract event EventHandler<uint>? ClientDisconnected;
-    
+
     public abstract void SendRawPacketToClients(ReadOnlySpan<uint> clientIndices, ReadOnlySpan<byte> span, bool reliable);
 
     /// <summary>Closes one client's connection. Defaults to dropping it from the write path.</summary>
@@ -29,7 +29,8 @@ public abstract class BaseMultiplayerServerTransport : IMultiplayerServerTranspo
         SendRawPacketToClients([clientIndex], arrayWriter.WrittenSpan, reliable);
     }
 
-    public void SendPacketToClients<T>(ReadOnlySpan<uint> clientIndices, T packet, bool reliable = true) where T : IPacketServerToClient<T>
+    public void SendPacketToClients<T>(ReadOnlySpan<uint> clientIndices, T packet, bool reliable = true)
+        where T : IPacketServerToClient<T>
     {
         using var arrayWriter = new ArrayPoolBufferWriter<byte>();
         arrayWriter.Write(packet.Opcode);

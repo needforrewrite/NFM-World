@@ -14,5 +14,6 @@ public static class HudScaleSettings
 
     public static float Parse(string value)
         => float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var scale)
-            ? Normalize(scale) : Default;
+            ? Normalize(scale)
+            : Default;
 }

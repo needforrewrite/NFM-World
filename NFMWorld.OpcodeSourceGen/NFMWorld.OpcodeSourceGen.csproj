@@ -12,17 +12,17 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.5.0" />
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.5.0" PrivateAssets="all" />
+        <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.5.0"/>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.5.0" PrivateAssets="all"/>
         <PackageReference Include="Polyfill" Version="10.5.1">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="System.Memory" Version="4.6.3" />
+        <PackageReference Include="System.Memory" Version="4.6.3"/>
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="$(OutputPath)/$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+        <None Include="$(OutputPath)/$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
     </ItemGroup>
 
     <!--  <Import Project="../../../build/AnalyzerProject.targets" />-->
@@ -39,8 +39,8 @@
 
     <ItemGroup>
         <Compile Include="..\NFMWorld.ShaderSourceGen\IndentedStringBuilder.cs">
-          <LinkBase>Compiler/XamlX.IL.CSharp\</LinkBase>
-          <Link>IndentedStringBuilder.cs</Link>
+            <LinkBase>Compiler/XamlX.IL.CSharp\</LinkBase>
+            <Link>IndentedStringBuilder.cs</Link>
         </Compile>
     </ItemGroup>
 

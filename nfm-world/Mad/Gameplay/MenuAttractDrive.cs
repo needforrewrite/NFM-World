@@ -16,7 +16,8 @@ internal sealed class MenuAttractDrive : IDisposable
     public MenuAttractDrive(ClientStage stage, ObservableUnlimitedArray<BackendCar> sceneCars, MenuRoadSegment road)
     {
         _sceneCars = sceneCars;
-        if (stage.Backend.Nodes.Count < 2 || stage.Backend.Checkpoints.Count == 0
+        if (stage.Backend.Nodes.Count < 2
+            || stage.Backend.Checkpoints.Count == 0
             || !BackendGameSparker.cars.TryGetValue(Collection.NFMM, out var models)) return;
         var random = new System.Random();
         var selected = models.Where(model => model.Wheels.Length > 0)
@@ -24,12 +25,18 @@ internal sealed class MenuAttractDrive : IDisposable
         if (selected.Length < 2) return;
         var nextCheckpoint = 0;
         while (nextCheckpoint < stage.Backend.Checkpoints.Count - 1
-            && stage.Backend.Nodes.IndexOf(stage.Backend.Checkpoints[nextCheckpoint]) <= road.StartNode)
+               && stage.Backend.Nodes.IndexOf(stage.Backend.Checkpoints[nextCheckpoint]) <= road.StartNode)
             nextCheckpoint++;
         var side = Vector3.Normalize(new Vector3(road.Direction.Z, 0, -road.Direction.X));
         var heading = -MathF.Atan2(road.Direction.X, road.Direction.Z) * 180 / MathF.PI;
-        var players = selected.Select((model, i) => new ClientSidePlayerInfo($"Attract {i + 1}",
-            model.FileName, default, true, i == 0)).ToArray();
+        var players = selected.Select((model, i) => new ClientSidePlayerInfo(
+                $"Attract {i + 1}",
+                model.FileName,
+                default,
+                true,
+                i == 0
+            )
+        ).ToArray();
         _gamemode = new AttractGamemode(new ClientGamemodeParameters { Players = players }, new AttractContext(stage));
         try
         {
@@ -44,14 +51,18 @@ internal sealed class MenuAttractDrive : IDisposable
                 car.CurrentCheckpoint = (ushort)nextCheckpoint;
                 car.TotalCheckpoint = nextCheckpoint;
                 car.LastCheckpointNode = Math.Max(-1, road.StartNode - 1);
-                car.Rotation = new f64Euler(f64AngleSingle.FromDegrees((fix64)(heading + random.Next(-5, 6))),
-                    f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle);
+                car.Rotation = new f64Euler(
+                    f64AngleSingle.FromDegrees((fix64)(heading + random.Next(-5, 6))),
+                    f64AngleSingle.ZeroAngle,
+                    f64AngleSingle.ZeroAngle
+                );
                 car.LastCheckpointRotation = car.Rotation;
                 player.Car = car;
                 sceneCars.Add(car);
                 if (stage.GetCarVisual(car).Sfx is { } sfx)
                     sfx.Mute = true;
             }
+
             _gamemode.Begin();
             if (_gamemode.Players.All(player => player.Bot == null))
                 Dispose();
@@ -79,6 +90,7 @@ internal sealed class MenuAttractDrive : IDisposable
                 _sceneCars.Remove(car);
             player.Car = null;
         }
+
         gamemode.End();
         gamemode.Players.Clear();
     }
@@ -118,9 +130,21 @@ internal sealed class MenuAttractDrive : IDisposable
         public RaceState RaceState => NFMWorldLibrary.RaceState.InProgress;
         public IClientCallbacks ClientCallbacks => this;
         public IClientCarCallbacks GetClientCarCallbacks(BackendCar car) => stage.GetCarVisual(car);
-        public void ResetCheckpointGlow() { }
-        public void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish) { }
-        public void SendServerEvent(ReadOnlySpan<byte> payload) { }
-        public void UpdatePlayers(IReadOnlyList<ClientSidePlayer> players) { }
+
+        public void ResetCheckpointGlow()
+        {
+        }
+
+        public void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish)
+        {
+        }
+
+        public void SendServerEvent(ReadOnlySpan<byte> payload)
+        {
+        }
+
+        public void UpdatePlayers(IReadOnlyList<ClientSidePlayer> players)
+        {
+        }
     }
 }

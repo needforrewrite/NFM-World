@@ -19,7 +19,8 @@ public class LineMesh : IInstancedRenderElement, IDisposable
     public LineMesh(
         Mesh supermesh,
         IGraphicsDevice graphicsDevice,
-        IReadOnlyCollection<KeyValuePair<(Vector3 Point0, Vector3 Point1), (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)>> lines,
+        IReadOnlyCollection<KeyValuePair<(Vector3 Point0, Vector3 Point1), (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)>>
+            lines,
         LineType lineType
     )
     {
@@ -53,12 +54,16 @@ public class LineMesh : IInstancedRenderElement, IDisposable
 
         var vertexBytes = MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(data));
         var lineVertexBuffer = graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length), vertexBytes);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length),
+            vertexBytes
+        );
 
         // Indices are stored as List<int> (32-bit) - matches the old IndexElementSize.ThirtyTwoBits.
         var indexBytes = MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(indices));
         var lineIndexBuffer = graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indexBytes.Length, IndexFormat.UInt32), indexBytes);
+            new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indexBytes.Length, IndexFormat.UInt32),
+            indexBytes
+        );
 
         var lineVertexCount = data.Count;
         var lineTriangleCount = indices.Count / 3;
@@ -145,10 +150,10 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         else if (_supermesh.PolyFixState == 1)
         {
             const short r = 0;
-            short g = (short) (223F + 223F * (World.Snap[1] / 100F));
+            short g = (short)(223F + 223F * (World.Snap[1] / 100F));
             if (g > 255) g = 255;
             if (g < 0) g = 0;
-            short b = (short) (255F + 255F * (World.Snap[2] / 100F));
+            short b = (short)(255F + 255F * (World.Snap[2] / 100F));
             if (b > 255) b = 255;
             if (b < 0) b = 0;
 
@@ -159,10 +164,10 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         else if (_supermesh.PolyFixState == 3)
         {
             const short r = 0;
-            short g = (short) (255.0F + 255.0F * (World.Snap[1] / 100.0F));
+            short g = (short)(255.0F + 255.0F * (World.Snap[1] / 100.0F));
             if (g > 255) g = 255;
             if (g < 0) g = 0;
-            short b = (short) (223.0F + 223.0F * (World.Snap[2] / 100.0F));
+            short b = (short)(223.0F + 223.0F * (World.Snap[2] / 100.0F));
             if (b > 255) b = 255;
             if (b < 0) b = 0;
 
@@ -187,7 +192,7 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         float LinearFadeStartDistance,
         float LinearFadeStartThickness,
         float InverseLinearFadeLength
-    ) GetOutlineFalloffCutoffParameters()
+        ) GetOutlineFalloffCutoffParameters()
     {
         const float epsilon = 0.0001f;
         var outlineThickness = MathF.Max(World.OutlineThickness, 0f);
@@ -202,8 +207,7 @@ public class LineMesh : IInstancedRenderElement, IDisposable
             cutoffDistance - MathF.Max(World.OutlineLinearFadeDistance, 0f)
         );
         var linearFadeLength = MathF.Max(cutoffDistance - linearFadeStartDistance, epsilon);
-        var linearFadeStartThickness = outlineThickness *
-                                       MathF.Min(1f, falloffStartDistance / linearFadeStartDistance);
+        var linearFadeStartThickness = outlineThickness * MathF.Min(1f, falloffStartDistance / linearFadeStartDistance);
 
         return (
             cutoffDistance,
@@ -252,7 +256,8 @@ public class LineMesh : IInstancedRenderElement, IDisposable
                 new VertexAttributeDesc("POSITION", 2, 40, VertexAttributeFormat.Float3),
                 new VertexAttributeDesc("TEXCOORD", 1, 56, VertexAttributeFormat.Float1),
             ],
-            StrideInBytes: Stride);
+            StrideInBytes: Stride
+        );
     }
 
     private void ReleaseUnmanagedResources()
@@ -280,11 +285,17 @@ internal static class LineEffectDistantOutlineSettings
         var p = Effects.LineParameters;
 
         // Independent numeric switches keep the shader path branchless.
-        p.DistantOutlineDistanceFalloffWithCutoffMask.SetValue(cb,
-            behavior == DistantOutlineBehavior.DistanceFalloffWithCutoff ? 1f : 0f);
-        p.DistantOutlineClassicCutoffMask.SetValue(cb,
-            behavior == DistantOutlineBehavior.ClassicCutoff ? 1f : 0f);
-        p.DistantOutlineDistanceFalloffMask.SetValue(cb,
-            behavior == DistantOutlineBehavior.DistanceFalloff ? 1f : 0f);
+        p.DistantOutlineDistanceFalloffWithCutoffMask.SetValue(
+            cb,
+            behavior == DistantOutlineBehavior.DistanceFalloffWithCutoff ? 1f : 0f
+        );
+        p.DistantOutlineClassicCutoffMask.SetValue(
+            cb,
+            behavior == DistantOutlineBehavior.ClassicCutoff ? 1f : 0f
+        );
+        p.DistantOutlineDistanceFalloffMask.SetValue(
+            cb,
+            behavior == DistantOutlineBehavior.DistanceFalloff ? 1f : 0f
+        );
     }
 }

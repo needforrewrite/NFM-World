@@ -84,6 +84,7 @@ public sealed class NetworkRaceHost : IRaceHost
                     {
                         serverEvent.Dispose();
                     }
+
                     break;
                 case S2C_GameFinished gameFinished:
                     GameFinished?.Invoke(gameFinished.Results);
@@ -96,12 +97,15 @@ public sealed class NetworkRaceHost : IRaceHost
         => _transport.SendPacketToServer(new C2S_ClientEvent { Payload = payload.ToArray() }, reliable: true);
 
     public void SendPlayerState(PlayerState state, Guid? playerId = null)
-        => _transport.SendPacketToServer(new C2S_PlayerState
-        {
-            State = state,
-            // Null is the sender's own car; a bot the client simulates sends its own id.
-            PlayerId = playerId ?? Guid.Empty
-        }, false);
+        => _transport.SendPacketToServer(
+            new C2S_PlayerState
+            {
+                State = state,
+                // Null is the sender's own car; a bot the client simulates sends its own id.
+                PlayerId = playerId ?? Guid.Empty
+            },
+            false
+        );
 
     public void Dispose()
     {

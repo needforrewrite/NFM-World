@@ -16,6 +16,7 @@ public static class UnmanagedEntryPoints
     {
         [Description("Whether an error occurred")]
         bool HasError { get; set; }
+
         [Description("Error information if HasError is true")]
         NativeException Exception { get; set; }
     }
@@ -24,6 +25,7 @@ public static class UnmanagedEntryPoints
     public struct ErrorBuffer
     {
         public byte Data;
+
         public Span<byte> AsSpan()
         {
             unsafe
@@ -35,10 +37,12 @@ public static class UnmanagedEntryPoints
             }
         }
     }
+
     [InlineArray(1024)]
     public struct ErrorMessageBuffer
     {
         public byte Data;
+
         public Span<byte> AsSpan()
         {
             unsafe
@@ -50,14 +54,16 @@ public static class UnmanagedEntryPoints
             }
         }
     }
-        
+
     [StructLayout(LayoutKind.Sequential)]
     public struct NativeException
     {
         [Description("Type name of the exception (UTF-8 bytes, null-terminated)")]
         public ErrorMessageBuffer TypeName;
+
         [Description("Message of the exception (UTF-8 bytes, null-terminated)")]
         public ErrorMessageBuffer Message;
+
         [Description("Stack trace of the exception (UTF-8 bytes, null-terminated)")]
         public ErrorBuffer StackTrace;
 
@@ -71,7 +77,7 @@ public static class UnmanagedEntryPoints
             typeNameBytes.AsSpan(0, Math.Min(typeNameBytes.Length, 1024)).CopyTo(nativeEx.TypeName.AsSpan());
             messageBytes.AsSpan(0, Math.Min(messageBytes.Length, 1024)).CopyTo(nativeEx.Message.AsSpan());
             stackTraceBytes.AsSpan(0, Math.Min(stackTraceBytes.Length, 16384)).CopyTo(nativeEx.StackTrace.AsSpan());
-                
+
             return nativeEx;
         }
     }
@@ -96,15 +102,16 @@ public static class UnmanagedEntryPoints
     public static unsafe ValidateRadpackResult ValidateRadpack(ValidateRadpackArgs* args)
     {
         return ExecuteSafely(() =>
-        {
-            var span = new Span<byte>(args->RadpackData, args->RadpackDataLength);
-            var radpack = RadpackSerializer.Deserialize(span);
-
-            return new ValidateRadpackResult
             {
-                RadType = radpack.Metadata.Type
-            };
-        });
+                var span = new Span<byte>(args->RadpackData, args->RadpackDataLength);
+                var radpack = RadpackSerializer.Deserialize(span);
+
+                return new ValidateRadpackResult
+                {
+                    RadType = radpack.Metadata.Type
+                };
+            }
+        );
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -112,6 +119,7 @@ public static class UnmanagedEntryPoints
     {
         [Description("Pointer to radpack data")]
         public byte* RadpackData;
+
         [Description("Length of radpack data in bytes")]
         public int RadpackDataLength;
     }
@@ -123,6 +131,7 @@ public static class UnmanagedEntryPoints
 
         [Description("Whether an error occurred during ValidateRadpack")]
         public bool HasError { get; set; }
+
         [Description("Error information if HasError is true")]
         public NativeException Exception { get; set; }
     }
@@ -136,24 +145,25 @@ public static class UnmanagedEntryPoints
     public static unsafe GetTTInfoResult GetTTInfo(GetTTInfoArgs* args)
     {
         return ExecuteSafely(() =>
-        {
-            using var timeTrialMemory =
-                new UnmanagedMemoryManager<byte>(args->TimeTrialData, args->TimeTrialDataLength);
-            var timeTrial = SavedTimeTrial.Load(timeTrialMemory.Memory);
-            if (timeTrial == null)
             {
-                SentrySdk.CaptureMessage("Failed to load time trial data", SentryLevel.Error);
-                throw new InvalidOperationException("Failed to load time trial data");
-            }
+                using var timeTrialMemory =
+                    new UnmanagedMemoryManager<byte>(args->TimeTrialData, args->TimeTrialDataLength);
+                var timeTrial = SavedTimeTrial.Load(timeTrialMemory.Memory);
+                if (timeTrial == null)
+                {
+                    SentrySdk.CaptureMessage("Failed to load time trial data", SentryLevel.Error);
+                    throw new InvalidOperationException("Failed to load time trial data");
+                }
 
-            return new GetTTInfoResult
-            {
-                CheckpointCount = timeTrial.Splits.SplitTimes.Count,
-                ReplayVersion = timeTrial.Version ?? 0,
-                BackendVersion = SavedTimeTrial.CURRENT_VERSION,
-                TickCount = timeTrial.DemoData.Ticks.Count
-            };
-        });
+                return new GetTTInfoResult
+                {
+                    CheckpointCount = timeTrial.Splits.SplitTimes.Count,
+                    ReplayVersion = timeTrial.Version ?? 0,
+                    BackendVersion = SavedTimeTrial.CURRENT_VERSION,
+                    TickCount = timeTrial.DemoData.Ticks.Count
+                };
+            }
+        );
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -161,24 +171,28 @@ public static class UnmanagedEntryPoints
     {
         [Description("Pointer to time trial data")]
         public byte* TimeTrialData;
+
         [Description("Length of time trial data in bytes")]
         public int TimeTrialDataLength;
     }
-    
+
     [StructLayout(LayoutKind.Sequential)]
     public struct GetTTInfoResult : IUnmanagedResult
     {
         [Description("Number of checkpoints in the time trial")]
         public required int CheckpointCount;
+
         [Description("Number of ticks in the time trial")]
         public required int TickCount;
-        [Description("Version of the replay")]
-        public required int ReplayVersion;
+
+        [Description("Version of the replay")] public required int ReplayVersion;
+
         [Description("Version of the backend")]
         public required int BackendVersion;
 
         [Description("Whether an error occurred during GetTTInfo")]
         public bool HasError { get; set; }
+
         [Description("Error information if HasError is true")]
         public NativeException Exception { get; set; }
     }
@@ -188,6 +202,7 @@ public static class UnmanagedEntryPoints
     {
         [Description("Whether an error occurred during LoadUnmanaged")]
         public bool HasError { get; set; }
+
         [Description("Error information if HasError is true")]
         public NativeException Exception { get; set; }
     }
@@ -201,10 +216,11 @@ public static class UnmanagedEntryPoints
     public static LoadResult LoadUnmanaged()
     {
         return ExecuteSafely(() =>
-        {
-            BackendGameSparker.Load();
-            return new LoadResult();
-        });
+            {
+                BackendGameSparker.Load();
+                return new LoadResult();
+            }
+        );
     }
 
     [Description(
@@ -217,23 +233,28 @@ public static class UnmanagedEntryPoints
     public static unsafe SimulateTimeTrialResult SimulateTimeTrial(SimulateTimeTrialArgs* args)
     {
         return ExecuteSafely(() =>
-        {
-            using var timeTrialMemory =
-                new UnmanagedMemoryManager<byte>(args->TimeTrialData, args->TimeTrialDataLength);
-            var timeTrial = SavedTimeTrial.Load(timeTrialMemory.Memory)!;
-
-            var stageName = Encoding.UTF8.GetString(args->StageName);
-            var carName = Encoding.UTF8.GetString(args->Cars[0].CarName);
-
-            var elapsedTicks = TimeTrialSimulator.Run(
-                stageName, timeTrial, carName, timeTrial.DemoData.Ticks.Count + 500);
-
-            return new SimulateTimeTrialResult
             {
-                ElapsedTicks = elapsedTicks ?? -1,
-                ExpectedTicks = timeTrial.DemoData.Ticks.Count,
-            };
-        });
+                using var timeTrialMemory =
+                    new UnmanagedMemoryManager<byte>(args->TimeTrialData, args->TimeTrialDataLength);
+                var timeTrial = SavedTimeTrial.Load(timeTrialMemory.Memory)!;
+
+                var stageName = Encoding.UTF8.GetString(args->StageName);
+                var carName = Encoding.UTF8.GetString(args->Cars[0].CarName);
+
+                var elapsedTicks = TimeTrialSimulator.Run(
+                    stageName,
+                    timeTrial,
+                    carName,
+                    timeTrial.DemoData.Ticks.Count + 500
+                );
+
+                return new SimulateTimeTrialResult
+                {
+                    ElapsedTicks = elapsedTicks ?? -1,
+                    ExpectedTicks = timeTrial.DemoData.Ticks.Count,
+                };
+            }
+        );
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -241,13 +262,14 @@ public static class UnmanagedEntryPoints
     {
         [Description("The result code: number of ticks elapsed, or -1 on timeout or error")]
         public required int ElapsedTicks;
+
         [Description("Number of input ticks in the replay")]
         public required int ExpectedTicks;
 
         [Description("Whether an error occurred")]
         public bool HasError { get; set; }
-        [Description("Error information")]
-        public NativeException Exception { get; set; }
+
+        [Description("Error information")] public NativeException Exception { get; set; }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -262,14 +284,15 @@ public static class UnmanagedEntryPoints
 
         [Description("Pointer to UTF-8 encoded stage name, null-terminated")]
         public byte* StageName;
-        
+
         [Description("Pointer to array of CarInfoUnmanaged")]
         public CarInfoUnmanaged* Cars;
-        [Description("Number of cars")]
-        public int CarCount;
-        
+
+        [Description("Number of cars")] public int CarCount;
+
         [Description("Pointer to time trial data")]
         public byte* TimeTrialData;
+
         [Description("Length of time trial data")]
         public int TimeTrialDataLength;
     }

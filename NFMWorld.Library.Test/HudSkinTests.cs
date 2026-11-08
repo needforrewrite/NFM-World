@@ -73,14 +73,19 @@ public class HudSkinTests
     [TestMethod]
     public void DiscoverySkipsInvalidSkinsAndKeepsValidPackages()
     {
-        var fs = Files(new Dictionary<string, string>
-        {
-            ["data/hud/skins/good/skin.json"] = Manifest("good", """{"text":"{speed} km/h"}"""),
-            ["data/hud/skins/broken/skin.json"] = "{",
-            ["data/hud/skins/world/skin.json"] = Manifest("world", """{"text":"reserved"}"""),
-            ["data/hud/skins/wrong-folder/skin.json"] = Manifest("different-id", """{"text":"wrong"}"""),
-            ["data/hud/skins/missing-image/skin.json"] = Manifest("missing-image", """{"type":"image","source":"missing.svg"}""")
-        });
+        var fs = Files(
+            new Dictionary<string, string>
+            {
+                ["data/hud/skins/good/skin.json"] = Manifest("good", """{"text":"{speed} km/h"}"""),
+                ["data/hud/skins/broken/skin.json"] = "{",
+                ["data/hud/skins/world/skin.json"] = Manifest("world", """{"text":"reserved"}"""),
+                ["data/hud/skins/wrong-folder/skin.json"] = Manifest("different-id", """{"text":"wrong"}"""),
+                ["data/hud/skins/missing-image/skin.json"] = Manifest(
+                    "missing-image",
+                    """{"type":"image","source":"missing.svg"}"""
+                )
+            }
+        );
         var errors = new List<string>();
         var skins = HudSkinCatalog.Discover(fs, (path, _) => errors.Add(path));
         Assert.AreEqual(2, skins.Count);
@@ -92,11 +97,13 @@ public class HudSkinTests
     [TestMethod]
     public void ImagesResolveRelativeToThePackageInTheVfs()
     {
-        var fs = Files(new Dictionary<string, string>
-        {
-            ["data/hud/skins/custom/skin.json"] = Manifest("custom", """{"type":"image","source":"images/frame.svg"}"""),
-            ["data/hud/skins/custom/images/frame.svg"] = "<svg/>"
-        });
+        var fs = Files(
+            new Dictionary<string, string>
+            {
+                ["data/hud/skins/custom/skin.json"] = Manifest("custom", """{"type":"image","source":"images/frame.svg"}"""),
+                ["data/hud/skins/custom/images/frame.svg"] = "<svg/>"
+            }
+        );
         var skins = HudSkinCatalog.Discover(fs, (_, error) => Assert.Fail(error.Message));
         Assert.AreEqual("data/hud/skins/custom", skins.Single().Directory);
     }
@@ -128,7 +135,9 @@ public class HudSkinTests
     {
         Assert.ThrowsExactly<JsonException>(() => HudSkinDefinition.Parse(Manifest("custom", """{"fontSze":12}""")));
         Assert.ThrowsExactly<FormatException>(() => HudSkinDefinition.Parse(
-            Manifest("custom", """{"text":"hello"}""").Replace("\"version\":1", "\"version\":2")));
+                Manifest("custom", """{"text":"hello"}""").Replace("\"version\":1", "\"version\":2")
+            )
+        );
     }
 
     [TestMethod]
@@ -149,10 +158,19 @@ public class HudSkinTests
     [DataRow(true, 0, 2, false)]
     [DataRow(false, 3, 2, false)]
     [DataRow(true, 1, 0, false)]
-    public void PositionVisibilityUsesReportedStandingsRegardlessOfMode(bool timeTrial, int position, int totalRacers, bool visible)
+    public void PositionVisibilityUsesReportedStandingsRegardlessOfMode(
+        bool timeTrial,
+        int position,
+        int totalRacers,
+        bool visible
+    )
     {
-        var element = HudSkinDefinition.Parse(Manifest("custom",
-            """{"text":"{position}/{totalRacers}","visibleWhen":"hasPosition"}""")).Elements.Single();
+        var element = HudSkinDefinition.Parse(
+            Manifest(
+                "custom",
+                """{"text":"{position}/{totalRacers}","visibleWhen":"hasPosition"}"""
+            )
+        ).Elements.Single();
         IHudData data = new SampleHud { TimeTrial = timeTrial, Position = position, TotalRacers = totalRacers };
         Assert.AreEqual(visible, data.HasPosition);
         Assert.AreEqual(visible, element.IsVisible(data));
@@ -171,6 +189,7 @@ public class HudSkinTests
                 using var writer = new StreamWriter(archive.CreateEntry(path).Open());
                 writer.Write(text);
             }
+
         var fs = new VirtualFS();
         fs.MountZip(stream.ToArray());
         return fs;

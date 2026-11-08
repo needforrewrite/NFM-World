@@ -41,6 +41,7 @@ internal struct CloneCollection<T> : IDisposable
                     array[i++] = item;
                 }
             }
+
             this.array = array;
             this.length = count;
         }
@@ -54,6 +55,7 @@ internal struct CloneCollection<T> : IDisposable
                 TryEnsureCapacity(ref array, i);
                 array[i++] = item;
             }
+
             this.array = array;
             this.length = i;
         }
@@ -114,7 +116,7 @@ internal struct CloneCollection<T> : IDisposable
         public void Add(T item) => throw new NotSupportedException();
         public void Clear() => throw new NotSupportedException();
         public bool Contains(T item) => throw new NotSupportedException();
-        public void CopyTo(T[] dest, int destIndex) =>  Array.Copy(array, 0, dest, destIndex, count);
+        public void CopyTo(T[] dest, int destIndex) => Array.Copy(array, 0, dest, destIndex, count);
 
         public IEnumerator<T> GetEnumerator()
         {

@@ -32,6 +32,7 @@
 // the lookup is for `ShadowMap0` while the program declares `_1062`. The failure is silent: the
 // location comes back -1, the sampler keeps unit 0, and a draw reads whatever happens to be bound
 // there. CheckBundlePrograms is the assertion that this does not happen, per bundle, by name.
+
 using System.Runtime.InteropServices;
 using NFMWorld.Shaders;
 using NFMWorld.Shaders.Generated;
@@ -99,8 +100,10 @@ internal static class Program
         Console.WriteLine($"DEVICE: GL_RENDERER {glString(StringName.Renderer)}");
         Console.WriteLine($"DEVICE: GL_VERSION  {glString(StringName.Version)}");
         Console.WriteLine($"DEVICE: GLSL        {glString(StringName.ShadingLanguageVersion)}");
-        Console.WriteLine($"DEVICE: swapchain {device.Swapchain.Width}x{device.Swapchain.Height}, " +
-                          $"{device.Swapchain.MultiSampleCount}x MSAA");
+        Console.WriteLine(
+            $"DEVICE: swapchain {device.Swapchain.Width}x{device.Swapchain.Height}, "
+            + $"{device.Swapchain.MultiSampleCount}x MSAA"
+        );
         Console.WriteLine();
 
         // Silk.NET returns the raw byte*; the string is only valid until the next GL call, so it is
@@ -129,13 +132,16 @@ internal static class Program
     private static void CheckTextureRoundTrip(GlGraphicsDevice device)
     {
         const int w = 3, h = 2;
-        byte[] source = [200, 200, 200, 40, 40, 40];   // row 0 bright, row 1 dark
+        byte[] source = [200, 200, 200, 40, 40, 40]; // row 0 bright, row 1 dark
 
         using var texture = device.CreateTexture(new TextureDesc(w, h, TextureFormat.R8), source);
         var readBack = new byte[source.Length];
         device.ReadTexture(texture, 0, 0, w, h, readBack);
-        Report("TEXTURE", "R8 upload + readback round-trip preserves row order (odd width: no row padding)",
-            readBack.AsSpan().SequenceEqual(source));
+        Report(
+            "TEXTURE",
+            "R8 upload + readback round-trip preserves row order (odd width: no row padding)",
+            readBack.AsSpan().SequenceEqual(source)
+        );
         DrainGlErrors("texture round-trip");
 
         // A sub-rectangle update must leave everything else alone. With GL a wrong offset or a wrong
@@ -166,13 +172,23 @@ internal static class Program
         using var texture = device.CreateTexture(new TextureDesc(w, h, TextureFormat.Rgba8, MipMapped: true), source);
         var readBack = new byte[source.Length];
         device.ReadTexture(texture, 0, 0, w, h, readBack);
-        Report("TEXTURE", "mipmapped texture: level 0 round-trips, so the chain did not disturb it",
-            readBack.AsSpan().SequenceEqual(source));
+        Report(
+            "TEXTURE",
+            "mipmapped texture: level 0 round-trips, so the chain did not disturb it",
+            readBack.AsSpan().SequenceEqual(source)
+        );
 
         var refused = false;
         var cb = device.AcquireCommandBuffer();
-        try { cb.UpdateTexture(texture, 0, 0, 1, 1, [0, 0, 0, 0]); }
-        catch (NotSupportedException) { refused = true; }
+        try
+        {
+            cb.UpdateTexture(texture, 0, 0, 1, 1, [0, 0, 0, 0]);
+        }
+        catch (NotSupportedException)
+        {
+            refused = true;
+        }
+
         device.Submit(cb);
         Report("TEXTURE", "updating a mipmapped texture fails loudly rather than leaving levels stale", refused);
         DrainGlErrors("mipmapped texture");
@@ -186,8 +202,15 @@ internal static class Program
     private static void CheckCompressedRefusal(GlGraphicsDevice device)
     {
         var refused = false;
-        try { device.CreateTexture(new TextureDesc(4, 4, TextureFormat.Dxt1), new byte[8]); }
-        catch (NotSupportedException) { refused = true; }
+        try
+        {
+            device.CreateTexture(new TextureDesc(4, 4, TextureFormat.Dxt1), new byte[8]);
+        }
+        catch (NotSupportedException)
+        {
+            refused = true;
+        }
+
         Report("TEXTURE", "a block-compressed format is refused rather than misread as raw pixels", refused);
     }
 
@@ -219,7 +242,8 @@ internal static class Program
         Span<float> data = [1f, 2f, 3f, 4f];
         using var dynamic = device.CreateBuffer(
             new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, data.Length * sizeof(float)),
-            MemoryMarshal.AsBytes(data));
+            MemoryMarshal.AsBytes(data)
+        );
         Report("BUFFER", "dynamic buffer created with initial data", dynamic.Usage == BufferUsage.Dynamic);
 
         var cb = device.AcquireCommandBuffer();
@@ -242,11 +266,17 @@ internal static class Program
         // was asked to *and* that the mirror preserved its surroundings.
         var floats = MemoryMarshal.Cast<byte, float>((ReadOnlySpan<byte>)ReadBufferBytes(device, dynamic));
         var pattern = BitConverter.Int32BitsToSingle(unchecked((int)0xAAAAAAAA));
-        Report("BUFFER", $"a whole write then a 4-byte sub-range write read back as " +
-                         $"{floats[0]}f, {floats[1]}f, {floats[2]}f, {floats[3]}f, " +
-                         $"expected 5f, {pattern}f, 7f, 8f",
-            floats.Length == 4 && floats[0] == 5f && floats[1] == pattern
-                                && floats[2] == 7f && floats[3] == 8f);
+        Report(
+            "BUFFER",
+            $"a whole write then a 4-byte sub-range write read back as "
+            + $"{floats[0]}f, {floats[1]}f, {floats[2]}f, {floats[3]}f, "
+            + $"expected 5f, {pattern}f, 7f, 8f",
+            floats.Length == 4
+            && floats[0] == 5f
+            && floats[1] == pattern
+            && floats[2] == 7f
+            && floats[3] == 8f
+        );
 
         // The upload is deferred to the frame boundary, so a write that comes after the buffer is
         // bound still has to reach the GPU - that order is what a flush at bind time would lose.
@@ -256,33 +286,49 @@ internal static class Program
         cb3.UpdateBuffer(dynamic, MemoryMarshal.AsBytes((ReadOnlySpan<float>)[9f]), offsetBytes: 0);
         device.Submit(cb3);
         var afterBind = MemoryMarshal.Cast<byte, float>((ReadOnlySpan<byte>)ReadBufferBytes(device, dynamic));
-        Report("BUFFER", $"sub-range writes before and after the bind both land " +
-                         $"(read back {afterBind[0]}f, {afterBind[3]}f, expected 9f, 1f)",
-            afterBind[0] == 9f && afterBind[3] == 1f);
+        Report(
+            "BUFFER",
+            $"sub-range writes before and after the bind both land "
+            + $"(read back {afterBind[0]}f, {afterBind[3]}f, expected 9f, 1f)",
+            afterBind[0] == 9f && afterBind[3] == 1f
+        );
 
         // An update is sent even when nothing draws the buffer, which is the case a flush hooked to
         // the draw would lose. No pipeline is bound here, so if the only upload path ran at draw time
         // this buffer would still hold the zeros it was created with.
         using var undrawn = device.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, 4 * sizeof(float)), new byte[16]);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, 4 * sizeof(float)),
+            new byte[16]
+        );
         var cb4 = device.AcquireCommandBuffer();
         cb4.UpdateBuffer(undrawn, MemoryMarshal.AsBytes((ReadOnlySpan<float>)[2f, 3f, 4f, 5f]));
         device.Submit(cb4);
         var undrawnFloats = MemoryMarshal.Cast<byte, float>((ReadOnlySpan<byte>)ReadBufferBytes(device, undrawn));
-        Report("BUFFER", $"a write to a buffer the frame never draws is still uploaded " +
-                         $"(read back {undrawnFloats[0]}f, expected 2f)",
-            undrawnFloats[0] == 2f && undrawnFloats[3] == 5f);
+        Report(
+            "BUFFER",
+            $"a write to a buffer the frame never draws is still uploaded " + $"(read back {undrawnFloats[0]}f, expected 2f)",
+            undrawnFloats[0] == 2f && undrawnFloats[3] == 5f
+        );
         DrainGlErrors("buffer readback");
 
         // GL has no immutability concept for buffers - BufferUsage only picks a usage hint - so this
         // refusal is the backend's own, and it is what keeps a stale-content bug from looking like a
         // driver problem.
         using var immutable = device.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, 16), new byte[16]);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, 16),
+            new byte[16]
+        );
         var refused = false;
         var cb2 = device.AcquireCommandBuffer();
-        try { cb2.UpdateBuffer(immutable, [1, 2, 3, 4]); }
-        catch (NotSupportedException) { refused = true; }
+        try
+        {
+            cb2.UpdateBuffer(immutable, [1, 2, 3, 4]);
+        }
+        catch (NotSupportedException)
+        {
+            refused = true;
+        }
+
         device.Submit(cb2);
         Report("BUFFER", "updating an immutable buffer fails loudly", refused);
 
@@ -304,8 +350,15 @@ internal static class Program
     {
         var cb = device.AcquireCommandBuffer();
         var refused = false;
-        try { device.AcquireCommandBuffer(); }
-        catch (InvalidOperationException) { refused = true; }
+        try
+        {
+            device.AcquireCommandBuffer();
+        }
+        catch (InvalidOperationException)
+        {
+            refused = true;
+        }
+
         Report("COMMAND BUFFER", "a second live command buffer is refused", refused);
         device.Submit(cb);
 
@@ -315,8 +368,15 @@ internal static class Program
 
         var live = device.AcquireCommandBuffer();
         var staleRefused = false;
-        try { device.Submit(again); }
-        catch (InvalidOperationException) { staleRefused = true; }
+        try
+        {
+            device.Submit(again);
+        }
+        catch (InvalidOperationException)
+        {
+            staleRefused = true;
+        }
+
         Report("COMMAND BUFFER", "submitting an already-submitted command buffer is refused", staleRefused);
         device.Submit(live);
     }
@@ -333,9 +393,13 @@ internal static class Program
     {
         const int size = 32;
         using var target = device.CreateRenderTarget(
-            new RenderTargetDesc(size, size, TextureFormat.Rgba8, HasDepthStencil: true));
-        Report("RENDER TARGET", "colour + depth-stencil attachments, framebuffer complete",
-            target.ColorTexture is not null && target.DepthStencilTexture is not null);
+            new RenderTargetDesc(size, size, TextureFormat.Rgba8, HasDepthStencil: true)
+        );
+        Report(
+            "RENDER TARGET",
+            "colour + depth-stencil attachments, framebuffer complete",
+            target.ColorTexture is not null && target.DepthStencilTexture is not null
+        );
 
         var cb = device.AcquireCommandBuffer();
         cb.SetRenderTarget(target);
@@ -353,15 +417,25 @@ internal static class Program
 
         var centre = (size / 2 * size + size / 2) * 4;
         var expected = ((byte)Math.Round(0.1f * 255), (byte)Math.Round(0.7f * 255), (byte)Math.Round(0.3f * 255));
-        Report("RENDER TARGET", $"off-screen clear read back as ({pixels[centre]},{pixels[centre + 1]},{pixels[centre + 2]})",
-            Math.Abs(pixels[centre] - expected.Item1) <= 1 &&
-            Math.Abs(pixels[centre + 1] - expected.Item2) <= 1 &&
-            Math.Abs(pixels[centre + 2] - expected.Item3) <= 1);
+        Report(
+            "RENDER TARGET",
+            $"off-screen clear read back as ({pixels[centre]},{pixels[centre + 1]},{pixels[centre + 2]})",
+            Math.Abs(pixels[centre] - expected.Item1) <= 1
+            && Math.Abs(pixels[centre + 1] - expected.Item2) <= 1
+            && Math.Abs(pixels[centre + 2] - expected.Item3) <= 1
+        );
         DrainGlErrors("render target readback");
 
         var depthRefused = false;
-        try { device.ReadTexture(target.DepthStencilTexture!, 0, 0, size, size, pixels); }
-        catch (NotSupportedException) { depthRefused = true; }
+        try
+        {
+            device.ReadTexture(target.DepthStencilTexture!, 0, 0, size, size, pixels);
+        }
+        catch (NotSupportedException)
+        {
+            depthRefused = true;
+        }
+
         Report("RENDER TARGET", "reading the depth-stencil texture fails loudly", depthRefused);
     }
 
@@ -389,14 +463,17 @@ internal static class Program
     {
         foreach (var bundle in Bundles)
         {
-            using var pipeline = device.CreatePipeline(new PipelineDesc(
-                VertexShader: bundle.Module,
-                PixelShader: bundle.Module,
-                VertexLayouts: bundle.Layouts,
-                BlendState: BlendStateDesc.Opaque,
-                DepthStencilState: DepthStencilStateDesc.Default,
-                RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
-                Topology: PrimitiveTopology.TriangleList));
+            using var pipeline = device.CreatePipeline(
+                new PipelineDesc(
+                    VertexShader: bundle.Module,
+                    PixelShader: bundle.Module,
+                    VertexLayouts: bundle.Layouts,
+                    BlendState: BlendStateDesc.Opaque,
+                    DepthStencilState: DepthStencilStateDesc.Default,
+                    RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
+                    Topology: PrimitiveTopology.TriangleList
+                )
+            );
 
             var program = ((GlPipelineState)pipeline).Program;
             var reflection = bundle.Reflection;
@@ -440,10 +517,15 @@ internal static class Program
         if (program.SamplerUniformCount < reflection.Textures.Count)
         {
             var dropped = reflection.Textures.Count - program.SamplerUniformCount;
-            Report("BUNDLE", $"{name}: the linked program declares {program.SamplerUniformCount} sampler(s) " +
-                            $"for the reflection's {reflection.Textures.Count} ({names}) -> locations {locations}",
-                program.TextureLocations.Count(l => l >= 0) == program.SamplerUniformCount);
-            Console.WriteLine($"           {dropped} reflected texture(s) were optimised out - this entry point does not sample them;");
+            Report(
+                "BUNDLE",
+                $"{name}: the linked program declares {program.SamplerUniformCount} sampler(s) "
+                + $"for the reflection's {reflection.Textures.Count} ({names}) -> locations {locations}",
+                program.TextureLocations.Count(l => l >= 0) == program.SamplerUniformCount
+            );
+            Console.WriteLine(
+                $"           {dropped} reflected texture(s) were optimised out - this entry point does not sample them;"
+            );
             Console.WriteLine("           the resolve check below covers whatever the program does declare");
             return;
         }
@@ -455,12 +537,16 @@ internal static class Program
                 unresolved.Add(reflection.Textures[i].Name);
         }
 
-        Report("BUNDLE", $"{name}: all {reflection.Textures.Count} sampler uniform(s) resolve ({names}) " +
-                        $"-> locations {locations}",
-            unresolved.Count == 0);
+        Report(
+            "BUNDLE",
+            $"{name}: all {reflection.Textures.Count} sampler uniform(s) resolve ({names}) " + $"-> locations {locations}",
+            unresolved.Count == 0
+        );
 
         if (unresolved.Count > 0)
-            Console.WriteLine($"           unresolved: {string.Join(", ", unresolved)} - the ES combined sampler is not named after the texture");
+            Console.WriteLine(
+                $"           unresolved: {string.Join(", ", unresolved)} - the ES combined sampler is not named after the texture"
+            );
     }
 
     /// <summary>
@@ -480,7 +566,11 @@ internal static class Program
         var block = program.UniformBlock;
         if (block is null)
         {
-            Report("BUNDLE", $"{name}: reflection declares {reflection.Uniforms.Count} uniform(s) and the linked program has a _Global block", false);
+            Report(
+                "BUNDLE",
+                $"{name}: reflection declares {reflection.Uniforms.Count} uniform(s) and the linked program has a _Global block",
+                false
+            );
             return;
         }
 
@@ -492,9 +582,12 @@ internal static class Program
             end = Math.Max(end, uniform.Offset + uniform.SizeInBytes);
         var padded = (end + 15) & ~15;
 
-        Report("BUNDLE", $"{name}: std140 block size {block.DataSize} matches the reflection's {end}" +
-                        (padded != end ? $" (or its 16-byte-padded {padded})" : ""),
-            block.DataSize == end || block.DataSize == padded);
+        Report(
+            "BUNDLE",
+            $"{name}: std140 block size {block.DataSize} matches the reflection's {end}"
+            + (padded != end ? $" (or its 16-byte-padded {padded})" : ""),
+            block.DataSize == end || block.DataSize == padded
+        );
 
         var mismatched = new List<string>();
         var missing = new List<string>();
@@ -506,8 +599,11 @@ internal static class Program
                 mismatched.Add($"{uniform.Name}: reflection {uniform.Offset}, driver {offset}");
         }
 
-        Report("BUNDLE", $"{name}: all {reflection.Uniforms.Count} reflected uniform offsets match the driver's std140 layout",
-            mismatched.Count == 0 && missing.Count == 0);
+        Report(
+            "BUNDLE",
+            $"{name}: all {reflection.Uniforms.Count} reflected uniform offsets match the driver's std140 layout",
+            mismatched.Count == 0 && missing.Count == 0
+        );
 
         foreach (var mismatch in mismatched)
             Console.WriteLine($"           {mismatch}");
@@ -541,13 +637,18 @@ internal static class Program
 
         var unsupplied = spans.Where(location => location >= declared).OrderBy(location => location).ToList();
 
-        Report("BUNDLE", $"{name}: the layouts' {declared} attribute(s) cover every input the vertex stage declares " +
-                        $"({program.AttributeLocations.Count} input(s) over {spans.Count} location(s): " +
-                        $"{string.Join(", ", program.AttributeLocations.OrderBy(a => a.Key).Select(a => a.Value))})",
-            unsupplied.Count == 0);
+        Report(
+            "BUNDLE",
+            $"{name}: the layouts' {declared} attribute(s) cover every input the vertex stage declares "
+            + $"({program.AttributeLocations.Count} input(s) over {spans.Count} location(s): "
+            + $"{string.Join(", ", program.AttributeLocations.OrderBy(a => a.Key).Select(a => a.Value))})",
+            unsupplied.Count == 0
+        );
 
         if (unsupplied.Count > 0)
-            Console.WriteLine($"           locations {string.Join(", ", unsupplied)} are read by the shader but supplied by no layout attribute");
+            Console.WriteLine(
+                $"           locations {string.Join(", ", unsupplied)} are read by the shader but supplied by no layout attribute"
+            );
 
         // The other direction is legal and expected, so it is reported rather than failed on: a
         // layout may declare more attributes than the entry point uses, and BindVertexStreams' filter
@@ -559,7 +660,9 @@ internal static class Program
         // check asserted the converse - that the layout have no surplus at all - which only held
         // while every bundle was the one technique that uses all eleven.
         else if (declared > spans.Count)
-            Console.WriteLine($"           {declared - spans.Count} layout attribute(s) are dropped by BindVertexStreams - this entry point does not read them");
+            Console.WriteLine(
+                $"           {declared - spans.Count} layout attribute(s) are dropped by BindVertexStreams - this entry point does not read them"
+            );
     }
 
     /// <summary>
@@ -584,16 +687,20 @@ internal static class Program
         // disposes it from its own Dispose. That is the abstraction's model - see
         // GlGraphicsDevice.CreatePipeline.
         var module = GlGraphicsDevice.LoadProgram(program.Vertex, program.Pixel, program.Reflection);
-        using var pipeline = device.CreatePipeline(new PipelineDesc(
-            VertexShader: module,
-            PixelShader: module,
-            VertexLayouts: [ImGuiLayout],
-            BlendState: BlendStateDesc.Opaque,
-            DepthStencilState: DepthStencilStateDesc.None,
-            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
-            Topology: PrimitiveTopology.TriangleList));
+        using var pipeline = device.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: module,
+                PixelShader: module,
+                VertexLayouts: [ImGuiLayout],
+                BlendState: BlendStateDesc.Opaque,
+                DepthStencilState: DepthStencilStateDesc.None,
+                RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
+                Topology: PrimitiveTopology.TriangleList
+            )
+        );
 
-        using var target = device.CreateRenderTarget(new RenderTargetDesc(size, size, TextureFormat.Rgba8, HasDepthStencil: false));
+        using var target =
+            device.CreateRenderTarget(new RenderTargetDesc(size, size, TextureFormat.Rgba8, HasDepthStencil: false));
 
         // A full-screen quad in clip space with white vertex colours, so the fragment output is the
         // sampled texel exactly. The shader multiplies by a row-major projection matrix, so the
@@ -609,28 +716,48 @@ internal static class Program
         // The app's real ImGui vertex: float2 position, float2 uv, byte4-normalised colour. All the
         // colours are 255 so the shader's multiply is a no-op and the output is the sampled texel.
         byte[] vertices = ImGuiVertices(
-            -1f, -1f, 0f, 0f,
-             1f, -1f, 1f, 0f,
-             1f,  1f, 1f, 1f,
-            -1f,  1f, 0f, 1f);
+            -1f,
+            -1f,
+            0f,
+            0f,
+            1f,
+            -1f,
+            1f,
+            0f,
+            1f,
+            1f,
+            1f,
+            1f,
+            -1f,
+            1f,
+            0f,
+            1f
+        );
         Span<ushort> indices = [0, 1, 2, 0, 2, 3];
 
         using var vertexBuffer = device.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertices.Length), vertices);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertices.Length),
+            vertices
+        );
         using var indexBuffer = device.CreateBuffer(
             new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indices.Length * sizeof(ushort), IndexFormat.UInt16),
-            MemoryMarshal.AsBytes(indices));
+            MemoryMarshal.AsBytes(indices)
+        );
 
         // Magenta in the left column, yellow in the right. Both rows are identical, so the V axis
         // plays no part in the result: this says which *column* the sampler read, not how textures
         // are oriented.
-        using var texture = device.CreateTexture(new TextureDesc(2, 2, TextureFormat.Rgba8), [
-            255, 0, 255, 255,  255, 255, 0, 255,
-            255, 0, 255, 255,  255, 255, 0, 255,
-        ]);
+        using var texture = device.CreateTexture(
+            new TextureDesc(2, 2, TextureFormat.Rgba8),
+            [
+                255, 0, 255, 255, 255, 255, 0, 255,
+                255, 0, 255, 255, 255, 255, 0, 255,
+            ]
+        );
         // Point filtering, so the sampled texel is well defined rather than an average of the four.
         using var sampler = device.CreateSampler(
-            new SamplerDesc(TextureFilter.Point, TextureAddressMode.Clamp, TextureAddressMode.Clamp));
+            new SamplerDesc(TextureFilter.Point, TextureAddressMode.Clamp, TextureAddressMode.Clamp)
+        );
 
         var cb = device.AcquireCommandBuffer();
         cb.SetRenderTarget(target);
@@ -660,11 +787,19 @@ internal static class Program
         var left = PixelAt(pixels, size, size / 4, size / 2);
         var right = PixelAt(pixels, size, 3 * size / 4, size / 2);
 
-        Report("DRAW", $"textured quad: left half sampled ({left.R},{left.G},{left.B}), expected magenta (255,0,255)",
-            left.R > 200 && left.G < 60 && left.B > 200);
-        Report("DRAW", $"textured quad: right half sampled ({right.R},{right.G},{right.B}), expected yellow (255,255,0)",
-            right.R > 200 && right.G > 200 && right.B < 60);
-        Console.WriteLine("           the two halves differing is what proves the sampler is bound to the unit the texture is on;");
+        Report(
+            "DRAW",
+            $"textured quad: left half sampled ({left.R},{left.G},{left.B}), expected magenta (255,0,255)",
+            left.R > 200 && left.G < 60 && left.B > 200
+        );
+        Report(
+            "DRAW",
+            $"textured quad: right half sampled ({right.R},{right.G},{right.B}), expected yellow (255,255,0)",
+            right.R > 200 && right.G > 200 && right.B < 60
+        );
+        Console.WriteLine(
+            "           the two halves differing is what proves the sampler is bound to the unit the texture is on;"
+        );
         Console.WriteLine("           a black or uniformly wrong result is the -1 sampler location showing up as wrong pixels");
     }
 
@@ -690,14 +825,17 @@ internal static class Program
         var program = LineBasic.Create();
         // Not disposable for the same reason as the ImGui module above: the pipeline owns the program.
         var module = GlGraphicsDevice.LoadProgram(program.Vertex, program.Pixel, program.Reflection);
-        using var pipeline = device.CreatePipeline(new PipelineDesc(
-            VertexShader: module,
-            PixelShader: module,
-            VertexLayouts: [LineGeometryLayout, InstanceLayout],
-            BlendState: BlendStateDesc.Opaque,
-            DepthStencilState: DepthStencilStateDesc.Default,
-            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
-            Topology: PrimitiveTopology.TriangleList));
+        using var pipeline = device.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: module,
+                PixelShader: module,
+                VertexLayouts: [LineGeometryLayout, InstanceLayout],
+                BlendState: BlendStateDesc.Opaque,
+                DepthStencilState: DepthStencilStateDesc.Default,
+                RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
+                Topology: PrimitiveTopology.TriangleList
+            )
+        );
 
         // The shader's transforms are row-major and it does its own projection, so the identity
         // stands in for all three and leaves the geometry untransformed.
@@ -716,18 +854,27 @@ internal static class Program
         byte[] instance = InstanceDataBytes();
 
         using var geometryBuffer = device.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, geometry.Length), geometry);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, geometry.Length),
+            geometry
+        );
         using var instanceBuffer = device.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, instance.Length), instance);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, instance.Length),
+            instance
+        );
         using var indexBuffer = device.CreateBuffer(
             new BufferDesc(BufferKind.Index, BufferUsage.Immutable, 3 * sizeof(ushort), IndexFormat.UInt16),
-            MemoryMarshal.AsBytes((ReadOnlySpan<ushort>)[0, 1, 2]));
-        using var white = device.CreateTexture(new TextureDesc(2, 2, TextureFormat.Rgba8), [
-            255, 255, 255, 255, 255, 255, 255, 255,
-            255, 255, 255, 255, 255, 255, 255, 255,
-        ]);
+            MemoryMarshal.AsBytes((ReadOnlySpan<ushort>)[0, 1, 2])
+        );
+        using var white = device.CreateTexture(
+            new TextureDesc(2, 2, TextureFormat.Rgba8),
+            [
+                255, 255, 255, 255, 255, 255, 255, 255,
+                255, 255, 255, 255, 255, 255, 255, 255,
+            ]
+        );
         using var shadowSampler = device.CreateSampler(
-            new SamplerDesc(TextureFilter.Point, TextureAddressMode.Clamp, TextureAddressMode.Clamp));
+            new SamplerDesc(TextureFilter.Point, TextureAddressMode.Clamp, TextureAddressMode.Clamp)
+        );
 
         var cb = device.AcquireCommandBuffer();
         cb.SetRenderTarget(null);
@@ -762,9 +909,12 @@ internal static class Program
         device.Submit(cb);
         var after = DrainGlErrors("Line instanced draw");
 
-        Report("DRAW", $"Line instanced draw reached the driver with {after - before} GL error(s) " +
-                       $"({program.Reflection.Textures.Count} shadow maps bound, {program.Reflection.Uniforms.Count} uniforms set)",
-            after == before);
+        Report(
+            "DRAW",
+            $"Line instanced draw reached the driver with {after - before} GL error(s) "
+            + $"({program.Reflection.Textures.Count} shadow maps bound, {program.Reflection.Uniforms.Count} uniforms set)",
+            after == before
+        );
     }
 
     /// <summary>
@@ -808,19 +958,28 @@ internal static class Program
 
         var program = PolyCreateShadowMap.Create();
         var module = GlGraphicsDevice.LoadProgram(program.Vertex, program.Pixel, program.Reflection);
-        using var pipeline = device.CreatePipeline(new PipelineDesc(
-            VertexShader: module,
-            PixelShader: module,
-            VertexLayouts: [PolyLayout, InstanceLayout],
-            BlendState: BlendStateDesc.Opaque,
-            DepthStencilState: DepthStencilStateDesc.Default,
-            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None, ScissorTestEnabled = true },
-            Topology: PrimitiveTopology.TriangleList));
+        using var pipeline = device.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: module,
+                PixelShader: module,
+                VertexLayouts: [PolyLayout, InstanceLayout],
+                BlendState: BlendStateDesc.Opaque,
+                DepthStencilState: DepthStencilStateDesc.Default,
+                RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None, ScissorTestEnabled = true },
+                Topology: PrimitiveTopology.TriangleList
+            )
+        );
 
         // The app's own cascade target: R32F colour plus a depth-stencil attachment.
-        using var cascade = device.CreateRenderTarget(new RenderTargetDesc(
-            resolution, resolution, TextureFormat.Single,
-            HasDepthStencil: true, TextureFormat.Depth24Stencil8));
+        using var cascade = device.CreateRenderTarget(
+            new RenderTargetDesc(
+                resolution,
+                resolution,
+                TextureFormat.Single,
+                HasDepthStencil: true,
+                TextureFormat.Depth24Stencil8
+            )
+        );
 
         // The light camera, built as OrthoLightCamera does on top of the app's own values: a
         // 3000x3000 orthographic box (Near 50, Far 1e6), then the view matrix snapped to shadow-map
@@ -836,13 +995,15 @@ internal static class Program
         var lightView = System.Numerics.Matrix4x4.CreateLookAt(
             new System.Numerics.Vector3(0f, -5000f, 0f),
             new System.Numerics.Vector3(1f, 0f, 0f),
-            new System.Numerics.Vector3(0f, -1f, 0f));
+            new System.Numerics.Vector3(0f, -1f, 0f)
+        );
         var texelSize = orthoExtent / resolution;
         var originInView = System.Numerics.Vector3.Transform(System.Numerics.Vector3.Zero, lightView);
         lightView *= System.Numerics.Matrix4x4.CreateTranslation(
             MathF.Floor(originInView.X / texelSize) * texelSize - originInView.X,
             MathF.Floor(originInView.Y / texelSize) * texelSize - originInView.Y,
-            0f);
+            0f
+        );
 
         // An asymmetric patch: it reaches further along +X than -X, and further along +Z than -Z. The
         // asymmetry is the point - see the sampling check at the end, which is the one that can tell a
@@ -855,12 +1016,17 @@ internal static class Program
         byte[] instance = InstanceDataBytes();
 
         using var geometryBuffer = device.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, geometry.Length), geometry);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, geometry.Length),
+            geometry
+        );
         using var instanceBuffer = device.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, instance.Length), instance);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, instance.Length),
+            instance
+        );
         using var indexBuffer = device.CreateBuffer(
             new BufferDesc(BufferKind.Index, BufferUsage.Immutable, 6 * sizeof(ushort), IndexFormat.UInt16),
-            MemoryMarshal.AsBytes((ReadOnlySpan<ushort>)[0, 1, 2, 0, 2, 3]));
+            MemoryMarshal.AsBytes((ReadOnlySpan<ushort>)[0, 1, 2, 0, 2, 3])
+        );
 
         var cb = device.AcquireCommandBuffer();
         // Scene.cs's cascade setup, call for call.
@@ -898,13 +1064,18 @@ internal static class Program
         var centre = ShadowLookup(System.Numerics.Vector3.Zero, lightView * lightProjection, resolution);
         var centreDepth = depths[centre.Y * resolution + centre.X];
 
-        Report("SHADOW", "the shadow-map lookup is on-axis for the world origin, so a disagreement below " +
-                         "is a flip rather than an offset",
-            Match(centre, (resolution / 2, resolution / 2), 1));
+        Report(
+            "SHADOW",
+            "the shadow-map lookup is on-axis for the world origin, so a disagreement below " + "is a flip rather than an offset",
+            Match(centre, (resolution / 2, resolution / 2), 1)
+        );
 
-        Report("SHADOW", "the texel the patch's centre covers holds geometry depth " +
-                         $"({centreDepth:0.####} at {centre.X},{centre.Y}, expected ~0.005, not the 1.0 clear)",
-            centreDepth > 0.001f && centreDepth < 0.5f);
+        Report(
+            "SHADOW",
+            "the texel the patch's centre covers holds geometry depth "
+            + $"({centreDepth:0.####} at {centre.X},{centre.Y}, expected ~0.005, not the 1.0 clear)",
+            centreDepth > 0.001f && centreDepth < 0.5f
+        );
 
         // The check the rest of this file cannot make, and the one that pins the reported flip: the
         // shader's own lookup is replayed against a probe whose mirror image is *not* also geometry, so
@@ -919,9 +1090,12 @@ internal static class Program
         // C# correction silently becomes a bug; if someone removes the correction, every shadow in the
         // world shifts by a mirror. Pinning the two against each other is the only way this test can
         // catch either without the other.
-        Report("SHADOW", "the shader's lookup carries its own V flip, so on a bottom-left-origin " +
-                         $"framebuffer it reads the row-mirrored texel ({shaderDepth:0.####} at {shaderX},{shaderY} is the clear)",
-            shaderDepth >= 1f - 0.001f);
+        Report(
+            "SHADOW",
+            "the shader's lookup carries its own V flip, so on a bottom-left-origin "
+            + $"framebuffer it reads the row-mirrored texel ({shaderDepth:0.####} at {shaderX},{shaderY} is the clear)",
+            shaderDepth >= 1f - 0.001f
+        );
 
         // The correction, exactly as Lighting.Prepare applies it: negate the second *column* of
         // LightViewProj. Reading column 1 rather than row 1 is the convention the shaders fix
@@ -935,9 +1109,12 @@ internal static class Program
 
         var (fixedX, fixedY) = ShadowLookup(probe, corrected, resolution);
         var fixedDepth = depths[fixedY * resolution + fixedX];
-        Report("SHADOW", "negating LightViewProj's second column makes that same lookup land on the depth " +
-                         $"the map actually holds ({fixedDepth:0.####} at {fixedX},{fixedY}, expected ~0.005)",
-            fixedDepth > 0.001f && fixedDepth < 0.5f);
+        Report(
+            "SHADOW",
+            "negating LightViewProj's second column makes that same lookup land on the depth "
+            + $"the map actually holds ({fixedDepth:0.####} at {fixedX},{fixedY}, expected ~0.005)",
+            fixedDepth > 0.001f && fixedDepth < 0.5f
+        );
     }
 
     /// <summary>
@@ -951,7 +1128,12 @@ internal static class Program
     /// lookup would have addressed with the flip removed - the difference between the two is the
     /// only direct evidence of which one the data supports.
     /// </summary>
-    private static (int X, int Y) ShadowLookup(System.Numerics.Vector3 world, System.Numerics.Matrix4x4 lightViewProj, int resolution, bool flipY = true)
+    private static (int X, int Y) ShadowLookup(
+        System.Numerics.Vector3 world,
+        System.Numerics.Matrix4x4 lightViewProj,
+        int resolution,
+        bool flipY = true
+    )
     {
         var clip = System.Numerics.Vector4.Transform(new System.Numerics.Vector4(world, 1f), lightViewProj);
         var ndc = new System.Numerics.Vector2(clip.X / clip.W, clip.Y / clip.W);
@@ -959,7 +1141,7 @@ internal static class Program
         if (flipY) uv.Y = 1f - uv.Y;
 
         return (Math.Clamp((int)(uv.X * resolution), 0, resolution - 1),
-                Math.Clamp((int)(uv.Y * resolution), 0, resolution - 1));
+            Math.Clamp((int)(uv.Y * resolution), 0, resolution - 1));
     }
 
     private static bool Match((int X, int Y) got, (int X, int Y) expected, int tolerance) =>
@@ -981,11 +1163,14 @@ internal static class Program
         for (var v = 0; v < corners.Length; v++)
         {
             var at = v * PolyStride;
-            Write3(bytes, at + 0, corners[v].X, 0f, corners[v].Z);   // Position
-            Write3(bytes, at + 12, 0f, 1f, 0f);                      // Normal, straight up at the sun
-            Write3(bytes, at + 24, 0f, 0f, 0f);                      // Centroid
-            bytes[at + 36] = 255; bytes[at + 37] = 255; bytes[at + 38] = 255; bytes[at + 39] = 255;
-            BitConverter.TryWriteBytes(bytes.AsSpan(at + 40), 0f);    // DecalOffset
+            Write3(bytes, at + 0, corners[v].X, 0f, corners[v].Z); // Position
+            Write3(bytes, at + 12, 0f, 1f, 0f); // Normal, straight up at the sun
+            Write3(bytes, at + 24, 0f, 0f, 0f); // Centroid
+            bytes[at + 36] = 255;
+            bytes[at + 37] = 255;
+            bytes[at + 38] = 255;
+            bytes[at + 39] = 255;
+            BitConverter.TryWriteBytes(bytes.AsSpan(at + 40), 0f); // DecalOffset
         }
 
         return bytes;
@@ -1024,17 +1209,21 @@ internal static class Program
         const int size = 64;
         var program = ImGuiFullbright.Create();
         var module = GlGraphicsDevice.LoadProgram(program.Vertex, program.Pixel, program.Reflection);
-        using var pipeline = device.CreatePipeline(new PipelineDesc(
-            VertexShader: module,
-            PixelShader: module,
-            VertexLayouts: [ImGuiLayout],
-            BlendState: BlendStateDesc.Opaque,
-            DepthStencilState: DepthStencilStateDesc.None,
-            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
-            Topology: PrimitiveTopology.TriangleList));
+        using var pipeline = device.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: module,
+                PixelShader: module,
+                VertexLayouts: [ImGuiLayout],
+                BlendState: BlendStateDesc.Opaque,
+                DepthStencilState: DepthStencilStateDesc.None,
+                RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
+                Topology: PrimitiveTopology.TriangleList
+            )
+        );
 
         using var target = device.CreateRenderTarget(
-            new RenderTargetDesc(size, size, TextureFormat.Rgba8, HasDepthStencil: false));
+            new RenderTargetDesc(size, size, TextureFormat.Rgba8, HasDepthStencil: false)
+        );
 
         // Translate +0.5 in X and leave a clearly non-identity scale on the diagonal, so every
         // element that could be mistaken for another differs. Row 4 is the translation row, which is
@@ -1046,23 +1235,43 @@ internal static class Program
         // A quad covering only the left half of clip space, so a +0.5 shift lands it mid-screen and
         // an unshifted one leaves it hanging off the left edge. Positions are already in clip space.
         byte[] vertices = ImGuiVertices(
-            -1f, -1f, 0f, 0f,
-             0f, -1f, 1f, 0f,
-             0f,  1f, 1f, 1f,
-            -1f,  1f, 0f, 1f);
+            -1f,
+            -1f,
+            0f,
+            0f,
+            0f,
+            -1f,
+            1f,
+            0f,
+            0f,
+            1f,
+            1f,
+            1f,
+            -1f,
+            1f,
+            0f,
+            1f
+        );
         Span<ushort> indices = [0, 1, 2, 0, 2, 3];
 
         using var vertexBuffer = device.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertices.Length), vertices);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertices.Length),
+            vertices
+        );
         using var indexBuffer = device.CreateBuffer(
             new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indices.Length * sizeof(ushort), IndexFormat.UInt16),
-            MemoryMarshal.AsBytes(indices));
-        using var texture = device.CreateTexture(new TextureDesc(2, 2, TextureFormat.Rgba8), [
-            255, 0, 255, 255,  255, 0, 255, 255,
-            255, 0, 255, 255,  255, 0, 255, 255,
-        ]);
+            MemoryMarshal.AsBytes(indices)
+        );
+        using var texture = device.CreateTexture(
+            new TextureDesc(2, 2, TextureFormat.Rgba8),
+            [
+                255, 0, 255, 255, 255, 0, 255, 255,
+                255, 0, 255, 255, 255, 0, 255, 255,
+            ]
+        );
         using var sampler = device.CreateSampler(
-            new SamplerDesc(TextureFilter.Point, TextureAddressMode.Clamp, TextureAddressMode.Clamp));
+            new SamplerDesc(TextureFilter.Point, TextureAddressMode.Clamp, TextureAddressMode.Clamp)
+        );
 
         var cb = device.AcquireCommandBuffer();
         cb.SetRenderTarget(target);
@@ -1090,7 +1299,11 @@ internal static class Program
         {
             for (var y = 0; y < size; y++)
             {
-                if (PixelAt(pixels, size, x, y).R > 100) { lastDrawn = x; break; }
+                if (PixelAt(pixels, size, x, y).R > 100)
+                {
+                    lastDrawn = x;
+                    break;
+                }
             }
         }
 
@@ -1098,9 +1311,12 @@ internal static class Program
         // it landed in the wash. Measured against this backend both ways before being written down -
         // a row-major write gives 31 (dropped) and a transposed one 47 (correct), which is where the
         // tolerance comes from rather than from the geometry alone.
-        Report("DRAW", $"a translated matrix shifts the quad to mid-screen (rightmost drawn column " +
-                       $"{lastDrawn}, expected about {3 * size / 4})",
-            lastDrawn >= 3 * size / 4 - 3 && lastDrawn <= 3 * size / 4 + 2);
+        Report(
+            "DRAW",
+            $"a translated matrix shifts the quad to mid-screen (rightmost drawn column "
+            + $"{lastDrawn}, expected about {3 * size / 4})",
+            lastDrawn >= 3 * size / 4 - 3 && lastDrawn <= 3 * size / 4 + 2
+        );
         Console.WriteLine("           an identity matrix cannot catch this: it is symmetric, so a missing");
         Console.WriteLine("           transpose leaves it unchanged - which is how the bug reached the game");
     }
@@ -1133,17 +1349,21 @@ internal static class Program
         const int size = 64;
         var program = ImGuiFullbright.Create();
         var module = GlGraphicsDevice.LoadProgram(program.Vertex, program.Pixel, program.Reflection);
-        using var pipeline = device.CreatePipeline(new PipelineDesc(
-            VertexShader: module,
-            PixelShader: module,
-            VertexLayouts: [ImGuiLayout],
-            BlendState: BlendStateDesc.Opaque,
-            DepthStencilState: DepthStencilStateDesc.None,
-            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
-            Topology: PrimitiveTopology.TriangleList));
+        using var pipeline = device.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: module,
+                PixelShader: module,
+                VertexLayouts: [ImGuiLayout],
+                BlendState: BlendStateDesc.Opaque,
+                DepthStencilState: DepthStencilStateDesc.None,
+                RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
+                Topology: PrimitiveTopology.TriangleList
+            )
+        );
 
         using var target = device.CreateRenderTarget(
-            new RenderTargetDesc(size, size, TextureFormat.Rgba8, HasDepthStencil: false));
+            new RenderTargetDesc(size, size, TextureFormat.Rgba8, HasDepthStencil: false)
+        );
 
         float[] identity =
         [
@@ -1157,28 +1377,57 @@ internal static class Program
         // one. The U coordinates stay inside their half's texture column so the sampled colour is
         // unambiguous - magenta is column 0, yellow is column 1.
         byte[] vertices = ImGuiVertices(
-            -1f, -1f, 0.0f, 0.0f,
-             0f, -1f, 0.4f, 0.0f,
-             0f,  1f, 0.4f, 1.0f,
-             0f, -1f, 0.6f, 0.0f,
-             1f, -1f, 1.0f, 0.0f,
-             1f,  1f, 1.0f, 1.0f);
+            -1f,
+            -1f,
+            0.0f,
+            0.0f,
+            0f,
+            -1f,
+            0.4f,
+            0.0f,
+            0f,
+            1f,
+            0.4f,
+            1.0f,
+            0f,
+            -1f,
+            0.6f,
+            0.0f,
+            1f,
+            -1f,
+            1.0f,
+            0.0f,
+            1f,
+            1f,
+            1.0f,
+            1.0f
+        );
         Span<ushort> indices = [0, 1, 2];
 
         using var vertexBuffer = device.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertices.Length), vertices);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertices.Length),
+            vertices
+        );
         using var indexBuffer = device.CreateBuffer(
             new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indices.Length * sizeof(ushort), IndexFormat.UInt16),
-            MemoryMarshal.AsBytes(indices));
-        using var texture = device.CreateTexture(new TextureDesc(2, 2, TextureFormat.Rgba8), [
-            255, 0, 255, 255,  255, 255, 0, 255,
-            255, 0, 255, 255,  255, 255, 0, 255,
-        ]);
+            MemoryMarshal.AsBytes(indices)
+        );
+        using var texture = device.CreateTexture(
+            new TextureDesc(2, 2, TextureFormat.Rgba8),
+            [
+                255, 0, 255, 255, 255, 255, 0, 255,
+                255, 0, 255, 255, 255, 255, 0, 255,
+            ]
+        );
         using var sampler = device.CreateSampler(
-            new SamplerDesc(TextureFilter.Point, TextureAddressMode.Clamp, TextureAddressMode.Clamp));
+            new SamplerDesc(TextureFilter.Point, TextureAddressMode.Clamp, TextureAddressMode.Clamp)
+        );
 
-        Report("DRAW", "context reports base-vertex support (glDrawElementsBaseVertex is core 3.2)",
-            device.SupportsBaseVertex);
+        Report(
+            "DRAW",
+            "context reports base-vertex support (glDrawElementsBaseVertex is core 3.2)",
+            device.SupportsBaseVertex
+        );
 
         if (!device.SupportsBaseVertex)
         {
@@ -1192,8 +1441,15 @@ internal static class Program
             cb.SetPipeline(pipeline);
             cb.SetVertexBuffer(0, vertexBuffer, ImGuiStride);
             cb.SetIndexBuffer(indexBuffer);
-            try { cb.DrawIndexed(baseVertex: 1, startIndex: 0, primitiveCount: 1); }
-            catch (NotSupportedException) { refused = true; }
+            try
+            {
+                cb.DrawIndexed(baseVertex: 1, startIndex: 0, primitiveCount: 1);
+            }
+            catch (NotSupportedException)
+            {
+                refused = true;
+            }
+
             device.Submit(cb);
             Report("DRAW", "a non-zero baseVertex is refused on a context without the extension", refused);
             Console.WriteLine("           skipping the pixel assertions: this context cannot do the draw at all");
@@ -1227,11 +1483,14 @@ internal static class Program
         }
 
         // The non-instanced entry point, in isolation: baseVertex 0 then baseVertex 3.
-        var indexed = Pass("non-instanced base-vertex draw", cb =>
-        {
-            cb.DrawIndexed(baseVertex: 0, startIndex: 0, primitiveCount: 1);
-            cb.DrawIndexed(baseVertex: 3, startIndex: 0, primitiveCount: 1);
-        });
+        var indexed = Pass(
+            "non-instanced base-vertex draw",
+            cb =>
+            {
+                cb.DrawIndexed(baseVertex: 0, startIndex: 0, primitiveCount: 1);
+                cb.DrawIndexed(baseVertex: 3, startIndex: 0, primitiveCount: 1);
+            }
+        );
         ReportHalf("non-instanced", indexed);
 
         // The instanced entry point, in isolation. instanceCount 2 is deliberate: the porting layer
@@ -1239,23 +1498,38 @@ internal static class Program
         // not test this one at all. Both half-planes share baseVertex 3, so the right triangle is
         // drawn twice and then the left one - which is still enough to tell a honoured base vertex
         // from an ignored one.
-        var instanced = Pass("instanced base-vertex draw", cb =>
-            cb.DrawIndexedInstanced(baseVertex: 3, startIndex: 0, primitiveCount: 1, instanceCount: 2));
+        var instanced = Pass(
+            "instanced base-vertex draw",
+            cb =>
+                cb.DrawIndexedInstanced(baseVertex: 3, startIndex: 0, primitiveCount: 1, instanceCount: 2)
+        );
         var instRight = PixelAt(instanced, size, 3 * size / 4, size / 2);
         var instLeft = PixelAt(instanced, size, size / 4, size / 2);
-        Report("DRAW", $"instanced baseVertex 3 drew the right half ({instRight.R},{instRight.G},{instRight.B}), expected yellow (255,255,0)",
-            IsYellow(instRight));
-        Report("DRAW", $"instanced baseVertex 3 left the left half black ({instLeft.R},{instLeft.G},{instLeft.B})",
-            IsBlack(instLeft));
+        Report(
+            "DRAW",
+            $"instanced baseVertex 3 drew the right half ({instRight.R},{instRight.G},{instRight.B}), expected yellow (255,255,0)",
+            IsYellow(instRight)
+        );
+        Report(
+            "DRAW",
+            $"instanced baseVertex 3 left the left half black ({instLeft.R},{instLeft.G},{instLeft.B})",
+            IsBlack(instLeft)
+        );
 
         void ReportHalf(string what, byte[] pixels)
         {
             var left = PixelAt(pixels, size, size / 4, size / 2);
             var right = PixelAt(pixels, size, 3 * size / 4, size / 2);
-            Report("DRAW", $"{what} baseVertex 0 drew the left half ({left.R},{left.G},{left.B}), expected magenta (255,0,255)",
-                IsMagenta(left));
-            Report("DRAW", $"{what} baseVertex 3 drew the right half ({right.R},{right.G},{right.B}), expected yellow (255,255,0)",
-                IsYellow(right));
+            Report(
+                "DRAW",
+                $"{what} baseVertex 0 drew the left half ({left.R},{left.G},{left.B}), expected magenta (255,0,255)",
+                IsMagenta(left)
+            );
+            Report(
+                "DRAW",
+                $"{what} baseVertex 3 drew the right half ({right.R},{right.G},{right.B}), expected yellow (255,255,0)",
+                IsYellow(right)
+            );
             Console.WriteLine("           both draws used indices [0,1,2] and the same count, so only the base vertex");
             Console.WriteLine("           can have moved the second triangle - a black right half is baseVertex being ignored");
         }
@@ -1290,56 +1564,101 @@ internal static class Program
 
         // A: depth testing and depth writing off. B: both on, so it is the pipeline that has to
         // bring the depth test *back* after A's draw turned it off.
-        using var pipelineWithoutDepth = device.CreatePipeline(new PipelineDesc(
-            VertexShader: module,
-            PixelShader: module,
-            VertexLayouts: [ImGuiLayout],
-            BlendState: BlendStateDesc.Opaque,
-            DepthStencilState: DepthStencilStateDesc.None,
-            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
-            Topology: PrimitiveTopology.TriangleList));
+        using var pipelineWithoutDepth = device.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: module,
+                PixelShader: module,
+                VertexLayouts: [ImGuiLayout],
+                BlendState: BlendStateDesc.Opaque,
+                DepthStencilState: DepthStencilStateDesc.None,
+                RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
+                Topology: PrimitiveTopology.TriangleList
+            )
+        );
 
-        using var pipelineWithDepth = device.CreatePipeline(new PipelineDesc(
-            VertexShader: module,
-            PixelShader: module,
-            VertexLayouts: [ImGuiLayout],
-            BlendState: BlendStateDesc.Opaque,
-            DepthStencilState: new DepthStencilStateDesc(
-                DepthTestEnabled: true, DepthWriteEnabled: true, DepthCompare: CompareFunction.LessEqual),
-            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
-            Topology: PrimitiveTopology.TriangleList));
+        using var pipelineWithDepth = device.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: module,
+                PixelShader: module,
+                VertexLayouts: [ImGuiLayout],
+                BlendState: BlendStateDesc.Opaque,
+                DepthStencilState: new DepthStencilStateDesc(
+                    DepthTestEnabled: true,
+                    DepthWriteEnabled: true,
+                    DepthCompare: CompareFunction.LessEqual
+                ),
+                RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
+                Topology: PrimitiveTopology.TriangleList
+            )
+        );
 
         using var target = device.CreateRenderTarget(
-            new RenderTargetDesc(size, size, TextureFormat.Rgba8, HasDepthStencil: true));
+            new RenderTargetDesc(size, size, TextureFormat.Rgba8, HasDepthStencil: true)
+        );
 
         // Two quads that overlap in the middle column. The left one stops at clip x = +0.5, the right
         // one starts at -0.5, so x in [-0.5, +0.5] - the centre half of the target - is covered by
         // both. Both use a magenta texture, so occupancy is what the pixels show, not colour.
         byte[] leftQuad = ImGuiVertices(
-            -1f, -1f, 0f, 0f,
-             0.5f, -1f, 1f, 0f,
-             0.5f,  1f, 1f, 1f,
-            -1f,  1f, 0f, 1f);
+            -1f,
+            -1f,
+            0f,
+            0f,
+            0.5f,
+            -1f,
+            1f,
+            0f,
+            0.5f,
+            1f,
+            1f,
+            1f,
+            -1f,
+            1f,
+            0f,
+            1f
+        );
         byte[] rightQuad = ImGuiVertices(
-            -0.5f, -1f, 0f, 0f,
-             1f, -1f, 1f, 0f,
-             1f,  1f, 1f, 1f,
-            -0.5f,  1f, 0f, 1f);
+            -0.5f,
+            -1f,
+            0f,
+            0f,
+            1f,
+            -1f,
+            1f,
+            0f,
+            1f,
+            1f,
+            1f,
+            1f,
+            -0.5f,
+            1f,
+            0f,
+            1f
+        );
         Span<ushort> indices = [0, 1, 2, 0, 2, 3];
 
         using var leftVertices = device.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, leftQuad.Length), leftQuad);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, leftQuad.Length),
+            leftQuad
+        );
         using var rightVertices = device.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, rightQuad.Length), rightQuad);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, rightQuad.Length),
+            rightQuad
+        );
         using var indexBuffer = device.CreateBuffer(
             new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indices.Length * sizeof(ushort), IndexFormat.UInt16),
-            MemoryMarshal.AsBytes(indices));
-        using var texture = device.CreateTexture(new TextureDesc(2, 2, TextureFormat.Rgba8), [
-            255, 0, 255, 255,  255, 0, 255, 255,
-            255, 0, 255, 255,  255, 0, 255, 255,
-        ]);
+            MemoryMarshal.AsBytes(indices)
+        );
+        using var texture = device.CreateTexture(
+            new TextureDesc(2, 2, TextureFormat.Rgba8),
+            [
+                255, 0, 255, 255, 255, 0, 255, 255,
+                255, 0, 255, 255, 255, 0, 255, 255,
+            ]
+        );
         using var sampler = device.CreateSampler(
-            new SamplerDesc(TextureFilter.Point, TextureAddressMode.Clamp, TextureAddressMode.Clamp));
+            new SamplerDesc(TextureFilter.Point, TextureAddressMode.Clamp, TextureAddressMode.Clamp)
+        );
 
         var identity = System.Numerics.Matrix4x4.Identity;
 
@@ -1372,8 +1691,11 @@ internal static class Program
         // What separates the two is the *depth test being on at all*: sabotage B to not apply and the
         // centre is still magenta, so this pixel alone cannot carry the assertion. The load-bearing
         // check is the same draw against a pre-loaded depth buffer, below.
-        Report("DRAW", $"a pipeline switch still draws ({centre.R},{centre.G},{centre.B})",
-            centre.R > 200 && centre.B > 200);
+        Report(
+            "DRAW",
+            $"a pipeline switch still draws ({centre.R},{centre.G},{centre.B})",
+            centre.R > 200 && centre.B > 200
+        );
 
         // The decisive pass: the depth buffer is cleared to 0 (nearest) and nothing writes it, so
         // with B's depth test in force every fragment of both quads must fail. Unapplied state means
@@ -1399,10 +1721,14 @@ internal static class Program
         var covered = 0;
         for (var x = 0; x < size; x++)
         for (var y = 0; y < size; y++)
-            if (PixelAt(occluded, size, x, y).R > 200) covered++;
+            if (PixelAt(occluded, size, x, y).R > 200)
+                covered++;
 
-        Report("DRAW", $"a switched-to pipeline's depth state is in force (0 of {size * size} pixels drawn, " +
-                       $"found {covered})", covered == 0);
+        Report(
+            "DRAW",
+            $"a switched-to pipeline's depth state is in force (0 of {size * size} pixels drawn, " + $"found {covered})",
+            covered == 0
+        );
         Console.WriteLine("           a pipeline that is bound but never applied leaves no depth test, so");
         Console.WriteLine("           the quad paints over the depth clear and this count is the whole target");
     }
@@ -1432,10 +1758,10 @@ internal static class Program
             var at = v * ImGuiStride;
             for (var i = 0; i < 4; i++)
                 BitConverter.TryWriteBytes(bytes.AsSpan(at + i * sizeof(float)), positionsAndUvs[v * 4 + i]);
-            bytes[at + 16] = 255;   // R
-            bytes[at + 17] = 255;   // G
-            bytes[at + 18] = 255;   // B
-            bytes[at + 19] = 255;   // A
+            bytes[at + 16] = 255; // R
+            bytes[at + 17] = 255; // G
+            bytes[at + 18] = 255; // B
+            bytes[at + 19] = 255; // A
         }
 
         return bytes;
@@ -1451,13 +1777,16 @@ internal static class Program
             var at = v * stride;
             // PositionA at 0, PositionB at 12, Side at 24, Normal at 28, Centroid at 40,
             // colour (byte4) at 52, DecalOffset at 56.
-            Write3(bytes, at + 0, 0f, 0f, 0f);      // PositionA
-            Write3(bytes, at + 12, 0f, 0f, 0f);     // PositionB
-            BitConverter.TryWriteBytes(bytes.AsSpan(at + 24), v == 0 ? -1f : 1f);   // Side
-            Write3(bytes, at + 28, 0f, 1f, 0f);     // Normal
-            Write3(bytes, at + 40, 0f, 0f, 0f);     // Centroid
-            bytes[at + 52] = 255; bytes[at + 53] = 255; bytes[at + 54] = 255; bytes[at + 55] = 255;
-            BitConverter.TryWriteBytes(bytes.AsSpan(at + 56), 0f);                  // DecalOffset
+            Write3(bytes, at + 0, 0f, 0f, 0f); // PositionA
+            Write3(bytes, at + 12, 0f, 0f, 0f); // PositionB
+            BitConverter.TryWriteBytes(bytes.AsSpan(at + 24), v == 0 ? -1f : 1f); // Side
+            Write3(bytes, at + 28, 0f, 1f, 0f); // Normal
+            Write3(bytes, at + 40, 0f, 0f, 0f); // Centroid
+            bytes[at + 52] = 255;
+            bytes[at + 53] = 255;
+            bytes[at + 54] = 255;
+            bytes[at + 55] = 255;
+            BitConverter.TryWriteBytes(bytes.AsSpan(at + 56), 0f); // DecalOffset
         }
 
         return bytes;
@@ -1559,7 +1888,13 @@ internal static class Program
             yield return new Bundle("GroundFullbright", ground.Vertex, ground.Pixel, ground.Reflection, [PositionColorLayout]);
 
             var mountains = MountainsFullbright.Create();
-            yield return new Bundle("MountainsFullbright", mountains.Vertex, mountains.Pixel, mountains.Reflection, [PositionColorLayout]);
+            yield return new Bundle(
+                "MountainsFullbright",
+                mountains.Vertex,
+                mountains.Pixel,
+                mountains.Reflection,
+                [PositionColorLayout]
+            );
 
             var sky = SkyFullbright.Create();
             yield return new Bundle("SkyFullbright", sky.Vertex, sky.Pixel, sky.Reflection, [PositionColorLayout]);
@@ -1571,7 +1906,13 @@ internal static class Program
             yield return new Bundle("PolyBasic", poly.Vertex, poly.Pixel, poly.Reflection, [PolyLayout, InstanceLayout]);
 
             var polyShadow = PolyCreateShadowMap.Create();
-            yield return new Bundle("PolyCreateShadowMap", polyShadow.Vertex, polyShadow.Pixel, polyShadow.Reflection, [PolyLayout, InstanceLayout]);
+            yield return new Bundle(
+                "PolyCreateShadowMap",
+                polyShadow.Vertex,
+                polyShadow.Pixel,
+                polyShadow.Reflection,
+                [PolyLayout, InstanceLayout]
+            );
 
             // All four Nvg techniques: they share VSMain and differ only in the pixel entry point,
             // which is exactly the axis a sampler-name bug lives on - Simple samples nothing while
@@ -1580,16 +1921,40 @@ internal static class Program
             yield return new Bundle("NvgSimple", nvgSimple.Vertex, nvgSimple.Pixel, nvgSimple.Reflection, [NvgLayout]);
 
             var nvgFillGradient = NvgFillGradient.Create();
-            yield return new Bundle("NvgFillGradient", nvgFillGradient.Vertex, nvgFillGradient.Pixel, nvgFillGradient.Reflection, [NvgLayout]);
+            yield return new Bundle(
+                "NvgFillGradient",
+                nvgFillGradient.Vertex,
+                nvgFillGradient.Pixel,
+                nvgFillGradient.Reflection,
+                [NvgLayout]
+            );
 
             var nvgFillImage = NvgFillImage.Create();
-            yield return new Bundle("NvgFillImage", nvgFillImage.Vertex, nvgFillImage.Pixel, nvgFillImage.Reflection, [NvgLayout]);
+            yield return new Bundle(
+                "NvgFillImage",
+                nvgFillImage.Vertex,
+                nvgFillImage.Pixel,
+                nvgFillImage.Reflection,
+                [NvgLayout]
+            );
 
             var nvgTriangles = NvgTriangles.Create();
-            yield return new Bundle("NvgTriangles", nvgTriangles.Vertex, nvgTriangles.Pixel, nvgTriangles.Reflection, [NvgLayout]);
+            yield return new Bundle(
+                "NvgTriangles",
+                nvgTriangles.Vertex,
+                nvgTriangles.Pixel,
+                nvgTriangles.Reflection,
+                [NvgLayout]
+            );
 
             var particle = ParticleFullbright.Create();
-            yield return new Bundle("ParticleFullbright", particle.Vertex, particle.Pixel, particle.Reflection, [PositionColorLayout]);
+            yield return new Bundle(
+                "ParticleFullbright",
+                particle.Vertex,
+                particle.Pixel,
+                particle.Reflection,
+                [PositionColorLayout]
+            );
         }
     }
 
@@ -1598,7 +1963,8 @@ internal static class Program
         ShaderStageSources Vertex,
         ShaderStageSources Pixel,
         ShaderReflection Reflection,
-        IReadOnlyList<VertexLayoutDesc> Layouts)
+        IReadOnlyList<VertexLayoutDesc> Layouts
+    )
     {
         public IShaderModule Module { get; } = GlGraphicsDevice.LoadProgram(Vertex, Pixel, Reflection);
     }
@@ -1613,7 +1979,8 @@ internal static class Program
             new VertexAttributeDesc("TEXCOORD", 0, 8, VertexAttributeFormat.Float2),
             new VertexAttributeDesc("COLOR", 0, 16, VertexAttributeFormat.Byte4Normalized),
         ],
-        StrideInBytes: ImGuiStride);
+        StrideInBytes: ImGuiStride
+    );
 
     /// <summary>Bytes per Ground/Mountains/Sky vertex - PositionColorVertex.Stride: float3 position, packed byte4 colour.</summary>
     private const int PositionColorStride = 16;
@@ -1624,7 +1991,8 @@ internal static class Program
             new VertexAttributeDesc("POSITION", 0, 0, VertexAttributeFormat.Float3),
             new VertexAttributeDesc("COLOR", 0, 12, VertexAttributeFormat.Byte4Normalized),
         ],
-        StrideInBytes: PositionColorStride);
+        StrideInBytes: PositionColorStride
+    );
 
     /// <summary>
     /// Bytes per LineMeshVertexAttribute - the app's real Line geometry vertex. Its field order is
@@ -1636,15 +2004,16 @@ internal static class Program
     private static VertexLayoutDesc LineGeometryLayout => new(
         Attributes:
         [
-            new VertexAttributeDesc("POSITION", 0, 0, VertexAttributeFormat.Float3),      // location 0
-            new VertexAttributeDesc("POSITION", 1, 12, VertexAttributeFormat.Float3),     // location 1
-            new VertexAttributeDesc("TEXCOORD", 0, 24, VertexAttributeFormat.Float1),     // location 2
-            new VertexAttributeDesc("NORMAL", 0, 28, VertexAttributeFormat.Float3),       // location 3
-            new VertexAttributeDesc("POSITION", 2, 40, VertexAttributeFormat.Float3),     // location 4
+            new VertexAttributeDesc("POSITION", 0, 0, VertexAttributeFormat.Float3), // location 0
+            new VertexAttributeDesc("POSITION", 1, 12, VertexAttributeFormat.Float3), // location 1
+            new VertexAttributeDesc("TEXCOORD", 0, 24, VertexAttributeFormat.Float1), // location 2
+            new VertexAttributeDesc("NORMAL", 0, 28, VertexAttributeFormat.Float3), // location 3
+            new VertexAttributeDesc("POSITION", 2, 40, VertexAttributeFormat.Float3), // location 4
             new VertexAttributeDesc("COLOR", 0, 52, VertexAttributeFormat.Byte4Normalized), // location 5
-            new VertexAttributeDesc("TEXCOORD", 1, 56, VertexAttributeFormat.Float1),     // location 6
+            new VertexAttributeDesc("TEXCOORD", 1, 56, VertexAttributeFormat.Float1), // location 6
         ],
-        StrideInBytes: LineGeometryStride);
+        StrideInBytes: LineGeometryStride
+    );
 
     /// <summary>Bytes per Poly vertex - Mesh.VertexPositionNormalColorCentroid: three float3s, packed byte4 colour, float.</summary>
     private const int PolyStride = 44;
@@ -1652,13 +2021,14 @@ internal static class Program
     private static VertexLayoutDesc PolyLayout => new(
         Attributes:
         [
-            new VertexAttributeDesc("POSITION", 0, 0, VertexAttributeFormat.Float3),      // location 0
-            new VertexAttributeDesc("NORMAL", 0, 12, VertexAttributeFormat.Float3),       // location 1
-            new VertexAttributeDesc("POSITION", 1, 24, VertexAttributeFormat.Float3),     // location 2
+            new VertexAttributeDesc("POSITION", 0, 0, VertexAttributeFormat.Float3), // location 0
+            new VertexAttributeDesc("NORMAL", 0, 12, VertexAttributeFormat.Float3), // location 1
+            new VertexAttributeDesc("POSITION", 1, 24, VertexAttributeFormat.Float3), // location 2
             new VertexAttributeDesc("COLOR", 0, 36, VertexAttributeFormat.Byte4Normalized), // location 3
-            new VertexAttributeDesc("TEXCOORD", 0, 40, VertexAttributeFormat.Float1),     // location 4
+            new VertexAttributeDesc("TEXCOORD", 0, 40, VertexAttributeFormat.Float1), // location 4
         ],
-        StrideInBytes: PolyStride);
+        StrideInBytes: PolyStride
+    );
 
     /// <summary>Bytes per NanoVG vertex - AbstractionNvgRenderer.VertexStride: float2 position, float2 uv.</summary>
     private const int NvgStride = 16;
@@ -1669,7 +2039,8 @@ internal static class Program
             new VertexAttributeDesc("POSITION", 0, 0, VertexAttributeFormat.Float2),
             new VertexAttributeDesc("TEXCOORD", 0, 8, VertexAttributeFormat.Float2),
         ],
-        StrideInBytes: NvgStride);
+        StrideInBytes: NvgStride
+    );
 
     /// <summary>
     /// The per-instance stream: the app's real <c>InstanceData.VertexLayout</c>, six TEXCOORD
@@ -1691,5 +2062,6 @@ internal static class Program
             new VertexAttributeDesc("TEXCOORD", 8, 80, VertexAttributeFormat.Float4),
         ],
         StrideInBytes: InstanceStride,
-        InstanceStepRate: 1);
+        InstanceStepRate: 1
+    );
 }

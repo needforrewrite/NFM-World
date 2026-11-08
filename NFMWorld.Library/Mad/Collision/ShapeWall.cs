@@ -7,7 +7,8 @@ public readonly struct ShapeWall(
     fix64 trackersXz,
     f64Vector3 trackersPosition,
     fix64 contoXz,
-    f64Vector3 contoPosition)
+    f64Vector3 contoPosition
+)
 {
     public f64Vector3 GameObjectPosition => contoPosition;
     public f64Vector3 TrackersPosition => trackersPosition;
@@ -19,18 +20,25 @@ public readonly struct ShapeWall(
 
     public readonly struct Collision(f64Vector3 positionDelta, f64Vector3 impactComponent)
     {
-        public readonly f64Vector3 positionDelta = positionDelta; // how much we have to translate the wheels to push out from the box
+        public readonly f64Vector3
+            positionDelta = positionDelta; // how much we have to translate the wheels to push out from the box
+
         public readonly f64Vector3 impactComponent = impactComponent; // the component of velocity pointing directly into the box
     }
 
-    public Collision? ResolveCollision(in f64Vector3 position, in f64Vector3 velocity) {
+    public Collision? ResolveCollision(in f64Vector3 position, in f64Vector3 velocity)
+    {
         f64Vector3 localPosition = ((position + (contoPosition * -1)).RotateXz(-contoXz)
                                     + (trackersPosition * -1)).RotateXz(-trackersXz);
-        if (fix64.Abs(localPosition.X) > rad.X || fix64.Abs(localPosition.Y) > rad.Y || fix64.Abs(localPosition.Z) > rad.Z) { // Inside?
+        if (fix64.Abs(localPosition.X) > rad.X || fix64.Abs(localPosition.Y) > rad.Y || fix64.Abs(localPosition.Z) > rad.Z)
+        {
+            // Inside?
             return null;
         }
-        
-        if (f64Vector3.Dot(velocity, pushDir) >= 0) { // Moving into the wall?
+
+        if (f64Vector3.Dot(velocity, pushDir) >= 0)
+        {
+            // Moving into the wall?
             return null;
         }
 
@@ -39,6 +47,7 @@ public readonly struct ShapeWall(
         {
             ThrowInvalidOperationException(penetration);
         }
+
         f64Vector3 positionDelta = pushDir * penetration;
         f64Vector3 impactComponent = pushDir * (f64Vector3.Dot(pushDir, velocity));
         return new Collision(positionDelta, impactComponent);

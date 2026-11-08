@@ -58,7 +58,9 @@ public sealed class PcmWavReader : IWaveProvider
                     if (formatTag != 1)
                         throw new InvalidDataException($"Unsupported WAVE encoding {formatTag}; only PCM is handled.");
                     if (bitsPerSample != 8 && bitsPerSample != 16)
-                        throw new InvalidDataException($"Unsupported WAVE sample size {bitsPerSample}; only 8 and 16 bit are handled.");
+                        throw new InvalidDataException(
+                            $"Unsupported WAVE sample size {bitsPerSample}; only 8 and 16 bit are handled."
+                        );
 
                     _dataStart = stream.Position;
                     _dataLength = size;

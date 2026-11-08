@@ -10,15 +10,17 @@ var eventId = args[2];
 var errorInfo = args[3];
 
 SentrySdk.Init(options =>
-{
-    options.Dsn = dsn;
-    options.Debug = true;
-    options.TracesSampleRate = 0;
-    options.Release = release;
-});
+    {
+        options.Dsn = dsn;
+        options.Debug = true;
+        options.TracesSampleRate = 0;
+        options.Release = release;
+    }
+);
 
 var errorMessage = $"NFM World has encountered an unexpected error ({errorInfo}).";
-var errorDetails = "Please help us improve by submitting a crash report with details about what you were doing when the error occurred.";
+var errorDetails =
+    "Please help us improve by submitting a crash report with details about what you were doing when the error occurred.";
 
 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 {
@@ -29,13 +31,15 @@ if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 
     if (report.Submitted)
     {
-        SentrySdk.CaptureFeedback(new SentryFeedback
-        {
-            Comments = report.Description,
-            Email = report.Email,
-            Name = report.UserName,
-            EventId = SentryEventId.Parse(eventId)
-        });
+        SentrySdk.CaptureFeedback(
+            new SentryFeedback
+            {
+                Comments = report.Description,
+                Email = report.Email,
+                Name = report.UserName,
+                EventId = SentryEventId.Parse(eventId)
+            }
+        );
     }
 }
 else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -47,13 +51,15 @@ else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
 
     if (report.Submitted)
     {
-        SentrySdk.CaptureFeedback(new SentryFeedback
-        {
-            Comments = report.Description,
-            Email = report.Email,
-            Name = report.UserName,
-            EventId = SentryEventId.Parse(eventId)
-        });
+        SentrySdk.CaptureFeedback(
+            new SentryFeedback
+            {
+                Comments = report.Description,
+                Email = report.Email,
+                Name = report.UserName,
+                EventId = SentryEventId.Parse(eventId)
+            }
+        );
     }
 }
 else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
@@ -65,13 +71,15 @@ else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 
     if (report.Submitted)
     {
-        SentrySdk.CaptureFeedback(new SentryFeedback
-        {
-            Comments = report.Description,
-            Email = report.Email,
-            Name = report.UserName,
-            EventId = SentryEventId.Parse(eventId)
-        });
+        SentrySdk.CaptureFeedback(
+            new SentryFeedback
+            {
+                Comments = report.Description,
+                Email = report.Email,
+                Name = report.UserName,
+                EventId = SentryEventId.Parse(eventId)
+            }
+        );
     }
 }
 
@@ -93,15 +101,15 @@ namespace NFMWorld.CrashReporter
         public static async Task<CrashReportResult> ShowWindowsDialog(string errorMessage, string errorDetails)
         {
             var result = new CrashReportResult();
-            
+
             // Create a temporary PowerShell script for the dialog
             string script = CreateWindowsInputDialogScript(errorMessage, errorDetails);
             string scriptPath = Path.GetTempFileName() + ".ps1";
-            
+
             try
             {
                 File.WriteAllText(scriptPath, script, Encoding.UTF8);
-                
+
                 var psi = new ProcessStartInfo
                 {
                     FileName = "powershell.exe",
@@ -232,7 +240,7 @@ namespace NFMWorld.CrashReporter
             try
             {
                 // First ask if user wants to submit a report
-                string askScript = 
+                string askScript =
                     $$"""
                       tell application "System Events"
                           display dialog "{{EscapeAppleScript(errorMessage)}}" & return & return & "Would you like to submit a crash report?" buttons {"Cancel", "Submit Report"} default button "Submit Report" with icon caution with title "Application Error"
@@ -263,7 +271,7 @@ namespace NFMWorld.CrashReporter
                 result.UserName = await RunOsascript(nameScript);
 
                 // Get email
-                string emailScript = 
+                string emailScript =
                     """
                     tell application "System Events"
                         display dialog "Please enter your email address:" default answer "" with title "Crash Reporter"
@@ -274,7 +282,7 @@ namespace NFMWorld.CrashReporter
                 result.Email = await RunOsascript(emailScript);
 
                 // Get description
-                string descScript = 
+                string descScript =
                     """
                     tell application "System Events"
                         display dialog "What were you doing when the error occurred?" default answer "" with title "Crash Reporter"
@@ -297,7 +305,7 @@ namespace NFMWorld.CrashReporter
         public static async Task<CrashReportResult> ShowLinuxDialog(string errorMessage, string errorDetails)
         {
             var result = new CrashReportResult();
-            
+
             // Determine which dialog tool is available
             string? dialogTool = await FindLinuxDialogTool();
             if (string.IsNullOrEmpty(dialogTool))
@@ -318,12 +326,16 @@ namespace NFMWorld.CrashReporter
                        Would you like to submit a crash report?"
                        """;
 
-                var askProcess = Process.Start(new ProcessStartInfo
-                {
-                    FileName = dialogTool,
-                    Arguments = dialogTool == "zenity" ? askArgs : $"--yes-label \"Submit Report\" --no-label \"Cancel\" {askArgs}",
-                    UseShellExecute = false
-                });
+                var askProcess = Process.Start(
+                    new ProcessStartInfo
+                    {
+                        FileName = dialogTool,
+                        Arguments = dialogTool == "zenity"
+                            ? askArgs
+                            : $"--yes-label \"Submit Report\" --no-label \"Cancel\" {askArgs}",
+                        UseShellExecute = false
+                    }
+                );
 
                 if (askProcess == null)
                 {
@@ -340,13 +352,17 @@ namespace NFMWorld.CrashReporter
 
                 // Get user name
                 result.UserName = await RunLinuxInputDialog(dialogTool, "Please enter your name:", "Crash Reporter");
-                
+
                 // Get email
                 result.Email = await RunLinuxInputDialog(dialogTool, "Please enter your email address:", "Crash Reporter");
-                
+
                 // Get description
-                result.Description = await RunLinuxInputDialog(dialogTool, "What were you doing when the error occurred?", "Crash Reporter");
-                
+                result.Description = await RunLinuxInputDialog(
+                    dialogTool,
+                    "What were you doing when the error occurred?",
+                    "Crash Reporter"
+                );
+
                 result.Submitted = !string.IsNullOrWhiteSpace(result.Description);
                 return result;
             }
@@ -361,13 +377,15 @@ namespace NFMWorld.CrashReporter
         {
             try
             {
-                var zenityProcess = Process.Start(new ProcessStartInfo
-                {
-                    FileName = "which",
-                    Arguments = "zenity",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true
-                });
+                var zenityProcess = Process.Start(
+                    new ProcessStartInfo
+                    {
+                        FileName = "which",
+                        Arguments = "zenity",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true
+                    }
+                );
 
                 if (zenityProcess != null)
                 {
@@ -378,17 +396,21 @@ namespace NFMWorld.CrashReporter
                         return "zenity";
                 }
             }
-            catch { }
+            catch
+            {
+            }
 
             try
             {
-                var kdialogProcess = Process.Start(new ProcessStartInfo
-                {
-                    FileName = "which",
-                    Arguments = "kdialog",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true
-                });
+                var kdialogProcess = Process.Start(
+                    new ProcessStartInfo
+                    {
+                        FileName = "which",
+                        Arguments = "kdialog",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true
+                    }
+                );
 
                 if (kdialogProcess != null)
                 {
@@ -399,7 +421,9 @@ namespace NFMWorld.CrashReporter
                         return "kdialog";
                 }
             }
-            catch { }
+            catch
+            {
+            }
 
             return null;
         }
@@ -414,13 +438,15 @@ namespace NFMWorld.CrashReporter
                    --title "{title}" --inputbox "{prompt}"
                    """;
 
-            var process = Process.Start(new ProcessStartInfo
-            {
-                FileName = tool,
-                Arguments = args,
-                UseShellExecute = false,
-                RedirectStandardOutput = true
-            })!;
+            var process = Process.Start(
+                new ProcessStartInfo
+                {
+                    FileName = tool,
+                    Arguments = args,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true
+                }
+            )!;
             string output = (await process.StandardOutput.ReadToEndAsync()).Trim();
             await process.WaitForExitAsync();
 
@@ -437,14 +463,16 @@ namespace NFMWorld.CrashReporter
 
         private static async Task<string> RunOsascript(string script)
         {
-            var process = Process.Start(new ProcessStartInfo
-            {
-                FileName = "osascript",
-                Arguments = $"-e \"{script}\"",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            })!;
+            var process = Process.Start(
+                new ProcessStartInfo
+                {
+                    FileName = "osascript",
+                    Arguments = $"-e \"{script}\"",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                }
+            )!;
             string output = await process.StandardOutput.ReadToEndAsync();
             await process.WaitForExitAsync();
 
@@ -483,7 +511,7 @@ namespace NFMWorld.CrashReporter
                 return await ShowMacDialog(errorMessage, errorDetails);
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 return await ShowLinuxDialog(errorMessage, errorDetails);
-            
+
             return new CrashReportResult { Submitted = false };
         }
     }

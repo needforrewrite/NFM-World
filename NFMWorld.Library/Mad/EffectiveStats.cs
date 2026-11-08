@@ -15,8 +15,10 @@ public struct EffectiveStats
     public fix64 Lift;
     public fix64 Revpush;
     public fix64 Revlift;
+
     /// <summary><see cref="CarStats.Grip"/> scaled by the stage's <c>grip()</c> override.</summary>
     public fix64 Grip;
+
     /// <summary>Damage taken as a fraction of max health (0..1).</summary>
     public fix64 DamageFraction;
 
@@ -37,6 +39,7 @@ public struct EffectiveStats
             strength = fix64.One + damage * (rage - fix64.One);
             weakness = fix64.One + damage * (fix64.One / rage - fix64.One);
         }
+
         return new EffectiveStats
         {
             Moment = stats.Moment * strength,

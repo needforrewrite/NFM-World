@@ -1,12 +1,12 @@
 ﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemGroup>
-    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="SourceItemGroup"/>
-  </ItemGroup>
-
-  <!-- https://platform.uno/blog/using-msbuild-items-and-properties-in-c-9-source-generators/ -->
-  <Target Name="_InjectAdditionalFiles2" BeforeTargets="GenerateMSBuildEditorConfigFileShouldRun">
     <ItemGroup>
-      <AdditionalFiles Include="@(FnaEffect)" SourceItemGroup="FnaEffect" />
+        <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="SourceItemGroup"/>
     </ItemGroup>
-  </Target>
+
+    <!-- https://platform.uno/blog/using-msbuild-items-and-properties-in-c-9-source-generators/ -->
+    <Target Name="_InjectAdditionalFiles2" BeforeTargets="GenerateMSBuildEditorConfigFileShouldRun">
+        <ItemGroup>
+            <AdditionalFiles Include="@(FnaEffect)" SourceItemGroup="FnaEffect"/>
+        </ItemGroup>
+    </Target>
 </Project>

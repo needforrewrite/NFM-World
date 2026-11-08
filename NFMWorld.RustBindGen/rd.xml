@@ -1,5 +1,5 @@
 ﻿<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
     <Application>
-        <Assembly Name="NFMWorld.Library" Serialize="All" Browse="All" Activate="All" Dynamic="Required All"  />
+        <Assembly Name="NFMWorld.Library" Serialize="All" Browse="All" Activate="All" Dynamic="Required All"/>
     </Application>
 </Directives>

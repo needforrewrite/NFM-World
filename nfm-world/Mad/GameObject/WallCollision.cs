@@ -8,7 +8,7 @@ public class WallCollision : GameObject, ICollidable
     public WallCollision(Rad3dBoxDef[] boxes)
     {
         Boxes = boxes;
-        
+
         int maxRadius = 0;
         foreach (var box in Boxes)
         {
@@ -18,14 +18,15 @@ public class WallCollision : GameObject, ICollidable
                 maxRadius = boxMax;
             }
         }
+
         MaxRadius = maxRadius;
     }
 
     public IReadOnlyList<Rad3dBoxDef> Boxes { get; }
 
     public int MaxRadius { get; }
-    
+
     public Rad3dCollisionMesh? CollisionMesh => null;
-    
+
     public Rad3dCollisionHull? CollisionHull => null;
 }

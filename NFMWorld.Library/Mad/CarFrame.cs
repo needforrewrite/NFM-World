@@ -16,25 +16,110 @@ public partial struct CarFrame
     public partial struct BitFlags
     {
         public Nibble<uint> Values;
-        public bool Right { readonly get => Values[0]; set => Values[0] = value; }
-        public bool Left { readonly get => Values[1]; set => Values[1] = value; }
-        public bool Up { readonly get => Values[2]; set => Values[2] = value; }
-        public bool Down { readonly get => Values[3]; set => Values[3] = value; }
-        public bool Handb { readonly get => Values[4]; set => Values[4] = value; }
-        public bool Mtouch { readonly get => Values[5]; set => Values[5] = value; }
-        public bool Wtouch { readonly get => Values[6]; set => Values[6] = value; }
-        public bool Gtouch { readonly get => Values[7]; set => Values[7] = value; }
-        public bool Pu { readonly get => Values[8]; set => Values[8] = value; }
-        public bool Pd { readonly get => Values[9]; set => Values[9] = value; }
-        public bool Pl { readonly get => Values[10]; set => Values[10] = value; }
-        public bool Pr { readonly get => Values[11]; set => Values[11] = value; }
-        public bool Pushed { readonly get => Values[12]; set => Values[12] = value; }
-        public bool Newcar { readonly get => Values[13]; set => Values[13] = value; }
-        public bool BadLanding { readonly get => Values[14]; set => Values[14] = value; }
-        public bool Wasted { readonly get => Values[15]; set => Values[15] = value; }
-        public bool Surfer { readonly get => Values[16]; set => Values[16] = value; }
+
+        public bool Right
+        {
+            readonly get => Values[0];
+            set => Values[0] = value;
+        }
+
+        public bool Left
+        {
+            readonly get => Values[1];
+            set => Values[1] = value;
+        }
+
+        public bool Up
+        {
+            readonly get => Values[2];
+            set => Values[2] = value;
+        }
+
+        public bool Down
+        {
+            readonly get => Values[3];
+            set => Values[3] = value;
+        }
+
+        public bool Handb
+        {
+            readonly get => Values[4];
+            set => Values[4] = value;
+        }
+
+        public bool Mtouch
+        {
+            readonly get => Values[5];
+            set => Values[5] = value;
+        }
+
+        public bool Wtouch
+        {
+            readonly get => Values[6];
+            set => Values[6] = value;
+        }
+
+        public bool Gtouch
+        {
+            readonly get => Values[7];
+            set => Values[7] = value;
+        }
+
+        public bool Pu
+        {
+            readonly get => Values[8];
+            set => Values[8] = value;
+        }
+
+        public bool Pd
+        {
+            readonly get => Values[9];
+            set => Values[9] = value;
+        }
+
+        public bool Pl
+        {
+            readonly get => Values[10];
+            set => Values[10] = value;
+        }
+
+        public bool Pr
+        {
+            readonly get => Values[11];
+            set => Values[11] = value;
+        }
+
+        public bool Pushed
+        {
+            readonly get => Values[12];
+            set => Values[12] = value;
+        }
+
+        public bool Newcar
+        {
+            readonly get => Values[13];
+            set => Values[13] = value;
+        }
+
+        public bool BadLanding
+        {
+            readonly get => Values[14];
+            set => Values[14] = value;
+        }
+
+        public bool Wasted
+        {
+            readonly get => Values[15];
+            set => Values[15] = value;
+        }
+
+        public bool Surfer
+        {
+            readonly get => Values[16];
+            set => Values[16] = value;
+        }
     }
-    
+
     public (fix64 X, fix64 Y, fix64 Z) CarPosition;
     public (fix64 Xz, fix64 Pxy, fix64 Pzy) CarRotation;
     public (InlineArray4<fix64> Scx, InlineArray4<fix64> Scy, InlineArray4<fix64> Scz) WheelVelocities;
@@ -69,6 +154,7 @@ public partial struct CarFrame
             entry.WheelVelocities.Scy[i] = car.CarPhysics.Scy[i];
             entry.WheelVelocities.Scz[i] = car.CarPhysics.Scz[i];
         }
+
         entry.Power = car.CarPhysics.Power;
         entry.Damage = car.CarPhysics.DamagePoints;
         entry.AngularVelocities.Ucomp = car.CarPhysics.UpComponent;
@@ -112,7 +198,11 @@ public partial struct CarFrame
         f64Vector3 pos = new(CarPosition.X, CarPosition.Y, CarPosition.Z);
         car.Position = pos;
 
-        f64Euler rotation = new(f64AngleSingle.FromDegrees(CarRotation.Xz), f64AngleSingle.FromDegrees(CarRotation.Pzy), f64AngleSingle.FromDegrees(CarRotation.Pxy));
+        f64Euler rotation = new(
+            f64AngleSingle.FromDegrees(CarRotation.Xz),
+            f64AngleSingle.FromDegrees(CarRotation.Pzy),
+            f64AngleSingle.FromDegrees(CarRotation.Pxy)
+        );
         car.Rotation = rotation;
 
         car.CarPhysics.Pxy = CarRotation.Pxy;

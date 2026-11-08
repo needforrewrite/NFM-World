@@ -22,6 +22,7 @@
 // Reads and writes are best-effort throughout. A cache that cannot be read is a cache miss, and one
 // that cannot be written costs a recompile - neither is a reason to fail a launch, and a shader that
 // genuinely will not compile still throws from the compiler below with its own message.
+
 using System.Security.Cryptography;
 using System.Text;
 
@@ -153,8 +154,8 @@ internal sealed class D3D11ShaderCache
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or NotSupportedException)
         {
             GraphicsDiagnostics.Warning?.Invoke(
-                $"The shader cache at {_directory} could not be read ({e.GetType().Name}: {e.Message}); " +
-                "recompiling.");
+                $"The shader cache at {_directory} could not be read ({e.GetType().Name}: {e.Message}); " + "recompiling."
+            );
             return null;
         }
     }
@@ -190,8 +191,9 @@ internal sealed class D3D11ShaderCache
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or NotSupportedException)
         {
             GraphicsDiagnostics.Warning?.Invoke(
-                $"The shader cache at {_directory} could not be written ({e.GetType().Name}: {e.Message}); " +
-                "the shader will be recompiled next launch.");
+                $"The shader cache at {_directory} could not be written ({e.GetType().Name}: {e.Message}); "
+                + "the shader will be recompiled next launch."
+            );
         }
     }
 }

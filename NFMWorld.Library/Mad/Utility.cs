@@ -102,6 +102,7 @@ public static class Utility
                 return true;
             }
         }
+
         return false;
     }
 
@@ -120,6 +121,7 @@ public static class Utility
                 return false;
             }
         }
+
         return true;
     }
 
@@ -158,7 +160,7 @@ public static class Utility
 
     public static int PointDirection(int x, int y, int tX, int tY)
     {
-        var angle = (int) (Math.Atan2(tY - y, tX - x) * 0.0174532925199433D);
+        var angle = (int)(Math.Atan2(tY - y, tX - x) * 0.0174532925199433D);
 
         return angle < 0 ? angle + 360 : angle;
     }

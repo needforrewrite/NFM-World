@@ -9,6 +9,7 @@
 //   dotnet run --project NFMWorld.ShaderCompiler -- <shader.fx|directory> [output-dir]
 //
 // Files are written to the output directory when one is given, and printed to stdout otherwise.
+
 using NFMWorld.ShaderCompiler;
 
 var shaderPath = args.FirstOrDefault(a => !a.StartsWith("--", StringComparison.Ordinal));

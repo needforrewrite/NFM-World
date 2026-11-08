@@ -8,40 +8,45 @@ namespace NFMWorldLibrary;
 public readonly struct ContO
 {
     private readonly BackendCar _car;
-        
-    public fix64 X 
+
+    public fix64 X
     {
-        get => (fix64) _car.Position.X;
+        get => (fix64)_car.Position.X;
         set => _car.Position = _car.Position with { X = value };
     }
-    public fix64 Y 
+
+    public fix64 Y
     {
-        get => (fix64) _car.Position.Y;
+        get => (fix64)_car.Position.Y;
         set => _car.Position = _car.Position with { Y = value };
     }
-    public fix64 Z 
+
+    public fix64 Z
     {
-        get => (fix64) _car.Position.Z;
+        get => (fix64)_car.Position.Z;
         set => _car.Position = _car.Position with { Z = value };
     }
-    public fix64 Xz 
+
+    public fix64 Xz
     {
         get => _car.Rotation.Xz.Degrees;
         set => _car.Rotation = _car.Rotation with { Xz = f64AngleSingle.FromDegrees(value) };
     }
-    public fix64 Xy 
+
+    public fix64 Xy
     {
         get => _car.Rotation.Xy.Degrees;
         set => _car.Rotation = _car.Rotation with { Xy = f64AngleSingle.FromDegrees(value) };
     }
-    public fix64 Zy 
+
+    public fix64 Zy
     {
         get => _car.Rotation.Zy.Degrees;
         set => _car.Rotation = _car.Rotation with { Zy = f64AngleSingle.FromDegrees(value) };
     }
 
     public int Grat => _car.GroundAt;
-    
+
     // wheel rotation
     public fix64 Wzy
     {
@@ -58,7 +63,7 @@ public readonly struct ContO
         get => _car.TurningWheelAngle.Xz.Degrees;
         set => _car.TurningWheelAngle = _car.TurningWheelAngle with { Xz = f64AngleSingle.FromDegrees(value) };
     }
-    
+
     // wheel position
     public readonly InlineArray4<int> Keyx;
     public readonly InlineArray4<int> Keyz;
@@ -80,19 +85,32 @@ public readonly struct ContO
     {
         _car.DamageX(wheelnum, amount);
     }
+
     public void DamageY(int wheelnum, fix64 amount, bool mtouch, int nbsq, int squash)
     {
         _car.DamageY(wheelnum, amount, mtouch, nbsq, squash);
     }
+
     public void DamageZ(int wheelnum, fix64 amount)
     {
         _car.DamageZ(wheelnum, amount);
     }
 
-    public void Dust(int wheelidx, fix64 wheelx, fix64 wheely, fix64 wheelz, int scx, int scz, fix64 simag, int tilt, bool onRoof, int wheelGround)
+    public void Dust(
+        int wheelidx,
+        fix64 wheelx,
+        fix64 wheely,
+        fix64 wheelz,
+        int scx,
+        int scz,
+        fix64 simag,
+        int tilt,
+        bool onRoof,
+        int wheelGround
+    )
     {
         _car.AddDust(wheelidx, (float)wheelx, (float)wheely, (float)wheelz, scx, scz, (float)simag, tilt, onRoof, wheelGround);
-	}
+    }
 
     public void Spark(fix64 wheelx, fix64 wheely, fix64 wheelz, fix64 scx, fix64 scy, fix64 scz, int type, int wheelGround)
     {

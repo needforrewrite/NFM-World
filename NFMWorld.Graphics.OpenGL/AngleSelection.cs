@@ -17,6 +17,7 @@
 // Every token below is from ANGLE's own header, `include/EGL/eglext_angle.h`, and none of them are
 // in the Khronos EGL registry the Maxine.Silk.EGL bindings are generated from - so they are numbers
 // here for the same reason Egl.cs declares its copy of them by hand. See that file's header.
+
 namespace NFMWorld.Graphics.OpenGL;
 
 /// <summary>ANGLE's "platform type": which 3D API ANGLE renders through. <c>EGL_PLATFORM_ANGLE_TYPE_*_ANGLE</c>.</summary>
@@ -43,7 +44,7 @@ public enum AnglePlatformType
 
     /// <summary>Whatever ANGLE would pick on its own (<c>EGL_PLATFORM_ANGLE_TYPE_DEFAULT_ANGLE</c>).</summary>
     Default,
-    
+
     /// <summary>Metal (<c>EGL_PLATFORM_ANGLE_TYPE_METAL_ANGLE</c>).</summary>
     Metal
 }
@@ -121,8 +122,10 @@ public readonly record struct AngleSelection(AnglePlatformType Platform, AngleDe
     /// </summary>
     /// <exception cref="ArgumentException">On an unknown platform or device name.</exception>
     public static AngleSelection Parse(string[] args) =>
-        new(ParseEnum(args, BackendArgumentPrefix, AnglePlatformType.D3d11),
-            ParseEnum(args, DeviceArgumentPrefix, AngleDeviceType.Hardware));
+        new(
+            ParseEnum(args, BackendArgumentPrefix, AnglePlatformType.D3d11),
+            ParseEnum(args, DeviceArgumentPrefix, AngleDeviceType.Hardware)
+        );
 
     /// <summary>
     /// The <c>EGL_PLATFORM_ANGLE_TYPE_ANGLE</c> value for <see cref="Platform"/>.
@@ -139,8 +142,11 @@ public readonly record struct AngleSelection(AnglePlatformType Platform, AngleDe
         AnglePlatformType.Null => Egl.EglPlatformAngleTypeNull,
         AnglePlatformType.Default => Egl.EglPlatformAngleTypeDefault,
         AnglePlatformType.Metal => Egl.EglPlatformAngleTypeMetal,
-        _ => throw new ArgumentOutOfRangeException(nameof(Platform), Platform,
-            $"No EGL_PLATFORM_ANGLE_TYPE token is defined for this platform type, please update {nameof(AngleSelection)}"),
+        _ => throw new ArgumentOutOfRangeException(
+            nameof(Platform),
+            Platform,
+            $"No EGL_PLATFORM_ANGLE_TYPE token is defined for this platform type, please update {nameof(AngleSelection)}"
+        ),
     };
 
     /// <summary>
@@ -156,8 +162,11 @@ public readonly record struct AngleSelection(AnglePlatformType Platform, AngleDe
         AngleDeviceType.Reference => Egl.EglPlatformAngleDeviceTypeD3dReference,
         AngleDeviceType.SwiftShader => Egl.EglPlatformAngleDeviceTypeSwiftShader,
         AngleDeviceType.Null => Egl.EglPlatformAngleDeviceTypeNull,
-        _ => throw new ArgumentOutOfRangeException(nameof(Device), Device,
-            $"No EGL_PLATFORM_ANGLE_DEVICE_TYPE token is defined for this device type, please update {nameof(AngleSelection)}"),
+        _ => throw new ArgumentOutOfRangeException(
+            nameof(Device),
+            Device,
+            $"No EGL_PLATFORM_ANGLE_DEVICE_TYPE token is defined for this device type, please update {nameof(AngleSelection)}"
+        ),
     };
 
     /// <summary>
@@ -214,8 +223,9 @@ public readonly record struct AngleSelection(AnglePlatformType Platform, AngleDe
                 return parsed;
 
             throw new ArgumentException(
-                $"Unknown {prefix}{value}. Valid values: " +
-                $"{string.Join(", ", Enum.GetNames<TEnum>().Select(n => n.ToLowerInvariant()))}.");
+                $"Unknown {prefix}{value}. Valid values: "
+                + $"{string.Join(", ", Enum.GetNames<TEnum>().Select(n => n.ToLowerInvariant()))}."
+            );
         }
 
         return fallback;

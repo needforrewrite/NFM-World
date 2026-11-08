@@ -42,7 +42,8 @@ public class VirtualFS
     public IEnumerable<string> EnumerateFiles(
         string path,
         string searchPattern = "*.*",
-        SearchOption searchOption = SearchOption.TopDirectoryOnly)
+        SearchOption searchOption = SearchOption.TopDirectoryOnly
+    )
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -134,7 +135,8 @@ public class VirtualFS
     {
         if (_writeRoot is null)
             throw new InvalidOperationException(
-                "No write destination mounted. Call MountWriteDestination first.");
+                "No write destination mounted. Call MountWriteDestination first."
+            );
 
         Directory.CreateDirectory(Path.Combine(_writeRoot, path));
     }
@@ -161,7 +163,8 @@ public class VirtualFS
         }
 
         throw new FileNotFoundException(
-            $"File not found in any mounted filesystem: {path}");
+            $"File not found in any mounted filesystem: {path}"
+        );
     }
 
     /// <summary>
@@ -195,7 +198,8 @@ public class VirtualFS
     {
         if (_writeRoot is null)
             throw new InvalidOperationException(
-                "No write destination mounted. Call MountWriteDestination first.");
+                "No write destination mounted. Call MountWriteDestination first."
+            );
 
         var fullPath = Path.Combine(_writeRoot, path);
         var dir = Path.GetDirectoryName(fullPath);

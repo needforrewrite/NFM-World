@@ -13,7 +13,8 @@ public class SvgStylesTests
     [TestMethod]
     public void DesignerClassesResolveColorsOpacityAndStrokes()
     {
-        var document = XDocument.Parse("""
+        var document = XDocument.Parse(
+            """
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 733.17 409.6">
               <defs><style>
                 .cls-1{fill:#7da8ff;}
@@ -26,7 +27,8 @@ public class SvgStylesTests
               <path id="white" class="cls-7" d="M0 0L30 30"/>
               <path id="outline" class="cls-6" d="M0 0L40 40"/>
             </svg>
-            """);
+            """
+        );
 
         SvgStyles.Inline(document);
 
@@ -46,12 +48,14 @@ public class SvgStylesTests
     [TestMethod]
     public void StylesheetAndInlineRulesFollowSpecificityAndImportance()
     {
-        var document = XDocument.Parse("""
+        var document = XDocument.Parse(
+            """
             <svg><style>
               path{fill:red} .car{fill:blue} #body{fill:green}
               .car{fill:yellow} path.car{stroke:blue !important}
             </style><path id="body" class="car" fill="black" style="opacity:0.5;stroke:red;fill:white"/></svg>
-            """);
+            """
+        );
         SvgStyles.Inline(document);
         var style = (string)Shape(document, "body").Attribute("style")!;
         StringAssert.Contains(style, "fill:white");
@@ -63,10 +67,12 @@ public class SvgStylesTests
     [TestMethod]
     public void RulesApplyToGroupsAndMultipleClassTokens()
     {
-        var document = XDocument.Parse("""
+        var document = XDocument.Parse(
+            """
             <svg><style>.base{fill:blue}.base.light{opacity:0.2}</style>
             <g id="group" class="base light"><path d="M0 0L1 1"/></g></svg>
-            """);
+            """
+        );
         SvgStyles.Inline(document);
         var style = (string)Shape(document, "group").Attribute("style")!;
         StringAssert.Contains(style, "fill:blue");

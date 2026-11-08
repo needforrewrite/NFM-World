@@ -38,6 +38,7 @@ public class UiScaleTextTests
         {
             t.Styles = t.Styles with { Width = 100, Height = 20 };
         }
+
         t.TextStyles = t.TextStyles with { FontSize = 12f };
         t.TextContent = "hello";
         return t;
@@ -67,8 +68,12 @@ public class UiScaleTextTests
         IBackend.Backend.Graphics.Scale = 1f;
         root.LayoutAndRender(new Vector2(400, 400));
 
-        Assert.AreEqual(12f, LaidOutFontSize(text), 0.01f,
-            "the text must re-measure even though its available size never changed");
+        Assert.AreEqual(
+            12f,
+            LaidOutFontSize(text),
+            0.01f,
+            "the text must re-measure even though its available size never changed"
+        );
     }
 
     [TestMethod]

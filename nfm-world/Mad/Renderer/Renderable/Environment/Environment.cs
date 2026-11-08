@@ -14,14 +14,18 @@ public class Environment
 {
     public static GroundPolys MakePolys(
         BackendStage stage,
-        int sx, int ncx, int sz, int ncz, int stagePartCount // newpolys
+        int sx,
+        int ncx,
+        int sz,
+        int ncz,
+        int stagePartCount // newpolys
     )
     {
         var transaction = SentrySdk.StartTransaction("MakePolys", "stageGeneration");
-        
+
         var cpol = World.GroundPolysColor.Snap(World.Snap);
         var cgrnd = World.GroundColor.Snap(World.Snap);
-        
+
         #region newpolys
 
         var nrw = ncx / 1200 + 9;
@@ -38,7 +42,8 @@ public class Environment
         {
             var random =
                 new URandom(
-                    (stagePartCount + World.GroundColor[0] + World.GroundColor[1] + World.GroundColor[2]) * 1671);
+                    (stagePartCount + World.GroundColor[0] + World.GroundColor[1] + World.GroundColor[2]) * 1671
+                );
 
             var i39 = 0;
             var i40 = 0;
@@ -53,17 +58,15 @@ public class Environment
                     {
                         var x = boxRoad.GameObjectPosition.X + boxRoad.TrackersPosition.X;
                         var z = boxRoad.GameObjectPosition.Z + boxRoad.TrackersPosition.Z;
-                        
-                        if (boxRoad.Radius.X < boxRoad.Radius.Z &&
-                            fix64.Abs((fix64)cgpz[i41] - z) < boxRoad.Radius.Z)
+
+                        if (boxRoad.Radius.X < boxRoad.Radius.Z && fix64.Abs((fix64)cgpz[i41] - z) < boxRoad.Radius.Z)
                         {
                             while (fix64.Abs((fix64)cgpx[i41] - x) < boxRoad.Radius.X)
                             {
                                 cgpx[i41] += (int)((fix64)random.NextDouble() * boxRoad.Radius.X * 2 - boxRoad.Radius.X);
                             }
                         }
-                        else if (boxRoad.Radius.Z < boxRoad.Radius.X &&
-                                 fix64.Abs((fix64)cgpx[i41] - x) < boxRoad.Radius.X)
+                        else if (boxRoad.Radius.Z < boxRoad.Radius.X && fix64.Abs((fix64)cgpx[i41] - x) < boxRoad.Radius.X)
                         {
                             while (fix64.Abs((fix64)cgpz[i41] - z) < boxRoad.Radius.Z)
                             {
@@ -163,8 +166,16 @@ public class Environment
                 int py = 250;
                 points.Add(new Vector3(px, py, pz));
             }
-            
-            var poly = new Rad3dPoly(color, null, PolyType.Flat, null, 0.0f, points.ToArray(), ImmutableCollectionsMarshal.AsImmutableArray(tris));
+
+            var poly = new Rad3dPoly(
+                color,
+                null,
+                PolyType.Flat,
+                null,
+                0.0f,
+                points.ToArray(),
+                ImmutableCollectionsMarshal.AsImmutableArray(tris)
+            );
             verts.Add(poly);
         }
 
@@ -189,7 +200,15 @@ public class Environment
                 points.Add(new Vector3(px, py, pz));
             }
 
-            var poly = new Rad3dPoly(color, null, PolyType.Flat, null, 0.0f, points.ToArray(), ImmutableCollectionsMarshal.AsImmutableArray(tris));
+            var poly = new Rad3dPoly(
+                color,
+                null,
+                PolyType.Flat,
+                null,
+                0.0f,
+                points.ToArray(),
+                ImmutableCollectionsMarshal.AsImmutableArray(tris)
+            );
             verts.Add(poly);
         }
 
@@ -201,11 +220,14 @@ public class Environment
     }
 
     public static GroundPolys MakeClouds(
-        int maxl, int maxr, int maxb, int maxt // newclouds
+        int maxl,
+        int maxr,
+        int maxb,
+        int maxt // newclouds
     )
     {
         var transaction = SentrySdk.StartTransaction("MakeClouds", "stageGeneration");
-        
+
         var cldd = World.Clouds;
         var clds = World.CloudColor.Snap(World.Snap);
 
@@ -327,8 +349,9 @@ public class Environment
 
                 clay[i_91, 1, i_97] = ((clay[i_91, 1, i_98] + clay[i_91, 1, i_99]) / 2 + clay[i_91, 1, i_97]) / 2;
                 clay[i_91, 2, i_97] = ((clay[i_91, 2, i_98] + clay[i_91, 2, i_99]) / 2 + clay[i_91, 2, i_97]) / 2;
-                int i_100 = (int)MathF.Sqrt(clax[i_91, 2, i_97] * clax[i_91, 2, i_97] +
-                                            claz[i_91, 2, i_97] * claz[i_91, 2, i_97]);
+                int i_100 = (int)MathF.Sqrt(
+                    clax[i_91, 2, i_97] * clax[i_91, 2, i_97] + claz[i_91, 2, i_97] * claz[i_91, 2, i_97]
+                );
                 if (i_100 > cmx[i_91])
                 {
                     cmx[i_91] = i_100;
@@ -395,8 +418,11 @@ public class Environment
 
             for (int j = 0; j < 12; j++)
             {
-                var color = new Color3((short)clc[i, 1, j / 2, 0], (short)clc[i, 1, j / 2, 1],
-                    (short)clc[i, 1, j / 2, 2]);
+                var color = new Color3(
+                    (short)clc[i, 1, j / 2, 0],
+                    (short)clc[i, 1, j / 2, 1],
+                    (short)clc[i, 1, j / 2, 2]
+                );
 
                 points.Clear();
                 for (int k = 0; k < 6; k++)
@@ -462,8 +488,11 @@ public class Environment
 
             for (int j = 0; j < 12; j++)
             {
-                var color = new Color3((short)clc[i, 1, j / 2, 0], (short)clc[i, 1, j / 2, 1],
-                    (short)clc[i, 1, j / 2, 2]);
+                var color = new Color3(
+                    (short)clc[i, 1, j / 2, 0],
+                    (short)clc[i, 1, j / 2, 1],
+                    (short)clc[i, 1, j / 2, 2]
+                );
 
                 points.Clear();
                 for (int k = 0; k < 6; k++)
@@ -549,15 +578,18 @@ public class Environment
     }
 
     public static Mountains MakeMountains(
-        int maxl, int maxr, int maxb, int maxt // newmountains
+        int maxl,
+        int maxr,
+        int maxb,
+        int maxt // newmountains
     )
     {
         var transaction = SentrySdk.StartTransaction("MakeMountains", "stageGeneration");
-        
+
         #region newmountains
 
         var random = new URandom(World.MountainSeed);
-        var nmt = (int) (20.0 + 10.0 * random.NextDouble() * World.MountainCoverage);
+        var nmt = (int)(20.0 + 10.0 * random.NextDouble() * World.MountainCoverage);
         var i170 = (maxl + maxr) / 60;
         var i171 = (maxb + maxt) / 60;
         var i172 = Math.Max(maxr - maxl, maxt - maxb) / 60;
@@ -574,22 +606,23 @@ public class Environment
             int i175;
             float f;
             float f176;
-            ais[i174] = (int) (10000.0 + random.NextDouble() * 10000.0);
-            var i177 = (int) (random.NextDouble() * 360.0);
+            ais[i174] = (int)(10000.0 + random.NextDouble() * 10000.0);
+            var i177 = (int)(random.NextDouble() * 360.0);
             if (random.NextDouble() > random.NextDouble())
             {
-                f = (float) (0.2 + random.NextDouble() * 0.35);
-                f176 = (float) (0.2 + random.NextDouble() * 0.35);
-                nmv[i174] = (int) (f * (24.0 + 16.0 * random.NextDouble()));
-                i175 = (int) (85.0 + 10.0 * random.NextDouble());
+                f = (float)(0.2 + random.NextDouble() * 0.35);
+                f176 = (float)(0.2 + random.NextDouble() * 0.35);
+                nmv[i174] = (int)(f * (24.0 + 16.0 * random.NextDouble()));
+                i175 = (int)(85.0 + 10.0 * random.NextDouble());
             }
             else
             {
-                f = (float) (0.3 + random.NextDouble() * 1.1);
-                f176 = (float) (0.2 + random.NextDouble() * 0.35);
-                nmv[i174] = (int) (f * (12.0 + 8.0 * random.NextDouble()));
-                i175 = (int) (104.0 - 10.0 * random.NextDouble());
+                f = (float)(0.3 + random.NextDouble() * 1.1);
+                f176 = (float)(0.2 + random.NextDouble() * 0.35);
+                nmv[i174] = (int)(f * (12.0 + 8.0 * random.NextDouble()));
+                i175 = (int)(104.0 - 10.0 * random.NextDouble());
             }
+
             mtx[i174] = new int[nmv[i174] * 2];
             mty[i174] = new int[nmv[i174] * 2];
             mtz[i174] = new int[nmv[i174] * 2];
@@ -597,57 +630,67 @@ public class Environment
             for (var i178 = 0; i178 < nmv[i174]; i178++)
             {
                 mtx[i174][i178] =
-                    (int) ((i178 * 500 + (random.NextDouble() * 800.0 - 400.0) - 250 * (nmv[i174] - 1)) * f);
+                    (int)((i178 * 500 + (random.NextDouble() * 800.0 - 400.0) - 250 * (nmv[i174] - 1)) * f);
                 mtx[i174][i178 + nmv[i174]] =
-                    (int) ((i178 * 500 + (random.NextDouble() * 800.0 - 400.0) - 250 * (nmv[i174] - 1)) * f);
-                mtx[i174][nmv[i174]] = (int) (mtx[i174][0] - (100.0 + random.NextDouble() * 600.0) * f);
+                    (int)((i178 * 500 + (random.NextDouble() * 800.0 - 400.0) - 250 * (nmv[i174] - 1)) * f);
+                mtx[i174][nmv[i174]] = (int)(mtx[i174][0] - (100.0 + random.NextDouble() * 600.0) * f);
                 mtx[i174][nmv[i174] * 2 - 1] =
-                    (int) (mtx[i174][nmv[i174] - 1] + (100.0 + random.NextDouble() * 600.0) * f);
+                    (int)(mtx[i174][nmv[i174] - 1] + (100.0 + random.NextDouble() * 600.0) * f);
                 if (i178 == 0 || i178 == nmv[i174] - 1)
                 {
-                    mty[i174][i178] = (int) ((-400.0 - 1200.0 * random.NextDouble()) * f176 + World.Ground);
+                    mty[i174][i178] = (int)((-400.0 - 1200.0 * random.NextDouble()) * f176 + World.Ground);
                 }
+
                 if (i178 == 1 || i178 == nmv[i174] - 2)
                 {
-                    mty[i174][i178] = (int) ((-1000.0 - 1450.0 * random.NextDouble()) * f176 + World.Ground);
+                    mty[i174][i178] = (int)((-1000.0 - 1450.0 * random.NextDouble()) * f176 + World.Ground);
                 }
+
                 if (i178 > 1 && i178 < nmv[i174] - 2)
                 {
-                    mty[i174][i178] = (int) ((-1600.0 - 1700.0 * random.NextDouble()) * f176 + World.Ground);
+                    mty[i174][i178] = (int)((-1600.0 - 1700.0 * random.NextDouble()) * f176 + World.Ground);
                 }
+
                 mty[i174][i178 + nmv[i174]] = World.Ground - 70;
                 mtz[i174][i178] = i171 + i172 + ais[i174];
                 mtz[i174][i178 + nmv[i174]] = i171 + i172 + ais[i174];
-                var f179 = (float) (0.5 + random.NextDouble() * 0.5);
-                mtc[i174][i178][0] = (int) (170.0F * f179 + 170.0F * f179 * (World.Snap[0] / 100.0F));
+                var f179 = (float)(0.5 + random.NextDouble() * 0.5);
+                mtc[i174][i178][0] = (int)(170.0F * f179 + 170.0F * f179 * (World.Snap[0] / 100.0F));
                 if (mtc[i174][i178][0] > 255)
                 {
                     mtc[i174][i178][0] = 255;
                 }
+
                 if (mtc[i174][i178][0] < 0)
                 {
                     mtc[i174][i178][0] = 0;
                 }
-                mtc[i174][i178][1] = (int) (i175 * f179 + 85.0F * f179 * (World.Snap[1] / 100.0F));
+
+                mtc[i174][i178][1] = (int)(i175 * f179 + 85.0F * f179 * (World.Snap[1] / 100.0F));
                 if (mtc[i174][i178][1] > 255)
                 {
                     mtc[i174][i178][1] = 255;
                 }
+
                 if (mtc[i174][i178][1] < 1)
                 {
                     mtc[i174][i178][1] = 0;
                 }
+
                 mtc[i174][i178][2] = 0;
             }
+
             for (var i180 = 1; i180 < nmv[i174] - 1; i180++)
             {
                 var i181 = i180 - 1;
                 var i182 = i180 + 1;
                 mty[i174][i180] = ((mty[i174][i181] + mty[i174][i182]) / 2 + mty[i174][i180]) / 2;
             }
+
             UMath.Rot(mtx[i174], mtz[i174], i170, i171, i177, nmv[i174] * 2);
             is173[i174] = 0;
         }
+
         for (var i183 = 0; i183 < nmt; i183++)
         {
             for (var i184 = i183 + 1; i184 < nmt; i184++)
@@ -664,43 +707,49 @@ public class Environment
 
             mrd[is173[i183]] = i183;
         }
-        
+
         #endregion
 
         #region writeMountains
-        
+
         const int div = 30;
-        
+
         var polys = new List<Rad3dPoly>();
         var points = new List<Vector3>();
-        
+
         var cgrnd = World.GroundColor.Snap(World.Snap);
 
-        for (int i = 0; i < nmt; i++) {
+        for (int i = 0; i < nmt; i++)
+        {
             int[] mx = new int[nmv[mrd[i]] * 2];
             int[] my = new int[nmv[mrd[i]] * 2];
             int[] mz = new int[nmv[mrd[i]] * 2];
 
-            for (int j = 0; j < nmv[mrd[i]] * 2; j++) {
+            for (int j = 0; j < nmv[mrd[i]] * 2; j++)
+            {
                 mx[j] = mtx[mrd[i]][j] * div;
                 my[j] = (mty[mrd[i]][j] - 250 + 70) * div + 250;
                 mz[j] = mtz[mrd[i]][j] * div;
             }
 
-            for (int j = 0; j < nmv[mrd[i]] - 1; j++) {
+            for (int j = 0; j < nmv[mrd[i]] - 1; j++)
+            {
                 points.Clear();
                 int mr = (int)((mtc[mrd[i]][j][0] + cgrnd[0]) / 2.0F);
                 int mg = (int)((mtc[mrd[i]][j][1] + cgrnd[1]) / 2.0F);
                 int mb = (int)((mtc[mrd[i]][j][2] + cgrnd[2]) / 2.0F);
                 var color = new Color3((short)mr, (short)mg, (short)mb);
 
-                for (int k = 0; k < 4; k++) {
+                for (int k = 0; k < 4; k++)
+                {
                     int l = k + j;
-                    if (k == 2) {
+                    if (k == 2)
+                    {
                         l = j + nmv[mrd[i]] + 1;
                     }
 
-                    if (k == 3) {
+                    if (k == 3)
+                    {
                         l = j + nmv[mrd[i]];
                     }
 
@@ -712,7 +761,7 @@ public class Environment
         }
 
         #endregion
-        
+
         transaction.Finish();
 
         return new Mountains(GameSparker.GraphicsDevice, polys.ToArray());

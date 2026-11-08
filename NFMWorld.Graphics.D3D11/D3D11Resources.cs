@@ -10,6 +10,7 @@
 // wrong rather than throwing - has no D3D11 counterpart. What replaces it is D3D11Interop.Release,
 // which releases through a local and nulls it, so a second Dispose is a no-op instead of a
 // double-free.
+
 using NFMWorld.Shaders;
 using TerraFX.Interop.DirectX;
 
@@ -112,7 +113,8 @@ internal sealed unsafe class D3D11Buffer : IBuffer
             ID3D11Buffer* buffer = null;
             D3D11Interop.Check(
                 device.Device->CreateBuffer(&d3dDesc, hasInitial ? &initial : null, &buffer),
-                $"CreateBuffer ({desc.Kind}, {desc.Usage}, {desc.SizeInBytes} byte(s))");
+                $"CreateBuffer ({desc.Kind}, {desc.Usage}, {desc.SizeInBytes} byte(s))"
+            );
             Handle = buffer;
         }
     }
@@ -143,14 +145,17 @@ internal sealed unsafe class D3D11Buffer : IBuffer
         if (Usage != BufferUsage.Dynamic)
         {
             throw new NotSupportedException(
-                $"This buffer was created with {nameof(BufferUsage)}.{Usage}; only " +
-                $"{nameof(BufferUsage)}.{BufferUsage.Dynamic} buffers can be updated after creation.");
+                $"This buffer was created with {nameof(BufferUsage)}.{Usage}; only "
+                + $"{nameof(BufferUsage)}.{BufferUsage.Dynamic} buffers can be updated after creation."
+            );
         }
 
         if (offsetBytes < 0 || offsetBytes + data.Length > SizeInBytes)
         {
-            throw new ArgumentOutOfRangeException(nameof(data),
-                $"{data.Length} byte(s) at offset {offsetBytes} overruns the {SizeInBytes}-byte buffer.");
+            throw new ArgumentOutOfRangeException(
+                nameof(data),
+                $"{data.Length} byte(s) at offset {offsetBytes} overruns the {SizeInBytes}-byte buffer."
+            );
         }
 
         data.CopyTo(_mirror.AsSpan(offsetBytes));
@@ -158,7 +163,8 @@ internal sealed unsafe class D3D11Buffer : IBuffer
         D3D11_MAPPED_SUBRESOURCE mapped;
         D3D11Interop.Check(
             device.Context->Map((ID3D11Resource*)Handle, 0, D3D11_MAP.D3D11_MAP_WRITE_DISCARD, 0, &mapped),
-            "Map (buffer write)");
+            "Map (buffer write)"
+        );
 
         // pData for a non-structured buffer is one contiguous run covering the whole resource, so a
         // single copy is a complete upload.
@@ -232,9 +238,9 @@ internal sealed unsafe class D3D11Texture : ITexture
             SampleDesc = new DXGI_SAMPLE_DESC { Count = (uint)sampleCount, Quality = 0 },
             Usage = D3D11_USAGE.D3D11_USAGE_DEFAULT,
             BindFlags = D3D11Flags.BindShaderResource
-                | (desc.RenderTargetable
-                    ? (desc.Format.IsDepthFormat() ? D3D11Flags.BindDepthStencil : D3D11Flags.BindRenderTarget)
-                    : 0),
+                        | (desc.RenderTargetable
+                            ? (desc.Format.IsDepthFormat() ? D3D11Flags.BindDepthStencil : D3D11Flags.BindRenderTarget)
+                            : 0),
             // No CPU access: a default-usage resource is GPU-local. Readback goes through a separate
             // staging resource, which is what ReadTexture builds.
             CPUAccessFlags = 0,
@@ -258,7 +264,8 @@ internal sealed unsafe class D3D11Texture : ITexture
             ID3D11Texture2D* texture = null;
             D3D11Interop.Check(
                 device.Device->CreateTexture2D(&textureDesc, hasInitial ? &initial : null, &texture),
-                $"CreateTexture2D ({desc.Width}x{desc.Height} {desc.Format}, {sampleCount}x)");
+                $"CreateTexture2D ({desc.Width}x{desc.Height} {desc.Format}, {sampleCount}x)"
+            );
             Texture = texture;
         }
 
@@ -292,7 +299,8 @@ internal sealed unsafe class D3D11Texture : ITexture
             ID3D11ShaderResourceView* colorView = null;
             D3D11Interop.Check(
                 device.Device->CreateShaderResourceView((ID3D11Resource*)Texture, null, &colorView),
-                $"CreateShaderResourceView ({Width}x{Height} {Format})");
+                $"CreateShaderResourceView ({Width}x{Height} {Format})"
+            );
             return colorView;
         }
 
@@ -309,7 +317,8 @@ internal sealed unsafe class D3D11Texture : ITexture
         ID3D11ShaderResourceView* view = null;
         D3D11Interop.Check(
             device.Device->CreateShaderResourceView((ID3D11Resource*)Texture, &viewDesc, &view),
-            $"CreateShaderResourceView ({Width}x{Height} {Format})");
+            $"CreateShaderResourceView ({Width}x{Height} {Format})"
+        );
         return view;
     }
 
@@ -322,6 +331,7 @@ internal sealed unsafe class D3D11Texture : ITexture
             height = Math.Max(1, height >> 1);
             levels++;
         }
+
         return levels;
     }
 
@@ -342,16 +352,18 @@ internal sealed unsafe class D3D11Texture : ITexture
         if (MipMapped)
         {
             throw new NotSupportedException(
-                "Updating a mipmapped texture would leave every level past 0 stale, and regenerating " +
-                "the chain on every update is a cost this POC does not take on. Create it single-level.");
+                "Updating a mipmapped texture would leave every level past 0 stale, and regenerating "
+                + "the chain on every update is a cost this POC does not take on. Create it single-level."
+            );
         }
 
         if (x != 0 || width != Width)
         {
             throw new NotSupportedException(
-                $"UpdateSubresource cannot express a source row pitch, so a sub-rectangle is only " +
-                $"uploadable when it spans the texture's full width: got x={x}, width={width} of {Width}. " +
-                "Update the whole row range instead.");
+                $"UpdateSubresource cannot express a source row pitch, so a sub-rectangle is only "
+                + $"uploadable when it spans the texture's full width: got x={x}, width={width} of {Width}. "
+                + "Update the whole row range instead."
+            );
         }
 
         var box = new D3D11_BOX
@@ -412,7 +424,8 @@ internal sealed unsafe class D3D11Sampler : ISampler
         ID3D11SamplerState* sampler = null;
         D3D11Interop.Check(
             device.Device->CreateSamplerState(&d3dDesc, &sampler),
-            $"CreateSamplerState ({desc.Filter}, U {desc.AddressU}, V {desc.AddressV})");
+            $"CreateSamplerState ({desc.Filter}, U {desc.AddressU}, V {desc.AddressV})"
+        );
         Handle = sampler;
     }
 
@@ -441,7 +454,11 @@ internal sealed unsafe class D3D11RenderTarget : IRenderTarget
     internal D3D11RenderTarget(D3D11GraphicsDevice device, RenderTargetDesc desc, int sampleCount = 1)
     {
         ColorTexture = new D3D11Texture(
-            device, new TextureDesc(desc.Width, desc.Height, desc.ColorFormat, RenderTargetable: true), default, sampleCount);
+            device,
+            new TextureDesc(desc.Width, desc.Height, desc.ColorFormat, RenderTargetable: true),
+            default,
+            sampleCount
+        );
 
         // A null view desc means "the whole resource, in the resource's own format", which is only
         // valid against a typed resource - hence the mapping table's one typeless entry being the
@@ -449,14 +466,19 @@ internal sealed unsafe class D3D11RenderTarget : IRenderTarget
         ID3D11RenderTargetView* colorView = null;
         D3D11Interop.Check(
             device.Device->CreateRenderTargetView((ID3D11Resource*)ColorTexture.Texture, null, &colorView),
-            $"CreateRenderTargetView ({desc.Width}x{desc.Height} {desc.ColorFormat})");
+            $"CreateRenderTargetView ({desc.Width}x{desc.Height} {desc.ColorFormat})"
+        );
         ColorView = colorView;
 
         if (!desc.HasDepthStencil)
             return;
 
         DepthStencilTexture = new D3D11Texture(
-            device, new TextureDesc(desc.Width, desc.Height, desc.DepthStencilFormat, RenderTargetable: true), default, sampleCount);
+            device,
+            new TextureDesc(desc.Width, desc.Height, desc.DepthStencilFormat, RenderTargetable: true),
+            default,
+            sampleCount
+        );
 
         var depthViewDesc = new D3D11_DEPTH_STENCIL_VIEW_DESC
         {
@@ -473,7 +495,8 @@ internal sealed unsafe class D3D11RenderTarget : IRenderTarget
         ID3D11DepthStencilView* depthView = null;
         D3D11Interop.Check(
             device.Device->CreateDepthStencilView((ID3D11Resource*)DepthStencilTexture.Texture, &depthViewDesc, &depthView),
-            $"CreateDepthStencilView ({desc.Width}x{desc.Height} {desc.DepthStencilFormat}, {sampleCount}x)");
+            $"CreateDepthStencilView ({desc.Width}x{desc.Height} {desc.DepthStencilFormat}, {sampleCount}x)"
+        );
         DepthView = depthView;
     }
 
@@ -522,7 +545,12 @@ internal sealed unsafe class D3D11ShaderModule : IShaderModule, IDisposable
 
     public ReadOnlyMemory<byte> Bytecode => VertexBytecode;
 
-    internal D3D11ShaderModule(D3D11GraphicsDevice device, ShaderStageSources vertex, ShaderStageSources pixel, ShaderReflection reflection)
+    internal D3D11ShaderModule(
+        D3D11GraphicsDevice device,
+        ShaderStageSources vertex,
+        ShaderStageSources pixel,
+        ShaderReflection reflection
+    )
     {
         Reflection = reflection;
 
@@ -533,13 +561,15 @@ internal sealed unsafe class D3D11ShaderModule : IShaderModule, IDisposable
         fixed (byte* code = VertexBytecode)
             D3D11Interop.Check(
                 device.Device->CreateVertexShader(code, (nuint)VertexBytecode.Length, null, &vertexShader),
-                "CreateVertexShader");
+                "CreateVertexShader"
+            );
 
         ID3D11PixelShader* pixelShader = null;
         fixed (byte* code = pixelBytecode)
             D3D11Interop.Check(
                 device.Device->CreatePixelShader(code, (nuint)pixelBytecode.Length, null, &pixelShader),
-                "CreatePixelShader");
+                "CreatePixelShader"
+            );
 
         VertexShader = vertexShader;
         PixelShader = pixelShader;
@@ -606,8 +636,18 @@ internal static unsafe class D3D11ShaderCompiler
             ID3DBlob* errors = null;
 
             var hr = DirectX.D3DCompile(
-                source, (nuint)sourceBytes.Length, null, null, null,
-                (sbyte*)entryPointer, (sbyte*)profilePointer, CompileFlags, 0, &blob, &errors);
+                source,
+                (nuint)sourceBytes.Length,
+                null,
+                null,
+                null,
+                (sbyte*)entryPointer,
+                (sbyte*)profilePointer,
+                CompileFlags,
+                0,
+                &blob,
+                &errors
+            );
 
             if (hr < 0)
             {
@@ -616,7 +656,8 @@ internal static unsafe class D3D11ShaderCompiler
                 D3D11Interop.Release(ref blob);
 
                 throw new InvalidOperationException(
-                    $"{what} shader failed to compile (profile {profile}), 0x{hr.Value:X8}:{message}");
+                    $"{what} shader failed to compile (profile {profile}), 0x{hr.Value:X8}:{message}"
+                );
             }
 
             if (errors is not null)

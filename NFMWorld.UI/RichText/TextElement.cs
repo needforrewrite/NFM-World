@@ -28,11 +28,11 @@ public abstract class TextElement : IRichTextElement, IInline
     /// Gets or sets the font style.
     /// </summary>
     public FontStyle? FontStyle { get; set; }
-    
+
     /// <summary>
     /// Gets or sets a brush used to paint the text.
     /// </summary>
     public Color? Foreground { get; set; }
-    
+
     public Color? Stroke { get; set; }
 }

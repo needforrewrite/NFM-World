@@ -29,12 +29,12 @@
          put two Microsoft.Build.* in the load path, which is what DisableMSBuildAssemblyCopyCheck
          above is tolerating for the SDK's own check. -->
     <ItemGroup>
-        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.10.1" ExcludeAssets="runtime" />
-        <PackageReference Include="Microsoft.Build.Framework" Version="18.10.1" ExcludeAssets="runtime" />
+        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.10.1" ExcludeAssets="runtime"/>
+        <PackageReference Include="Microsoft.Build.Framework" Version="18.10.1" ExcludeAssets="runtime"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\NFMWorld.ShaderCompiler\NFMWorld.ShaderCompiler.csproj" />
+        <ProjectReference Include="..\NFMWorld.ShaderCompiler\NFMWorld.ShaderCompiler.csproj"/>
     </ItemGroup>
 
     <!-- The natives the compiler P/Invokes, copied flat next to the task assembly.
@@ -45,17 +45,17 @@
          still cannot. NativeLibraries loads these by absolute path from beside the task assembly
          instead, so the flat copy is the one that is actually used. -->
     <ItemGroup>
-        <PackageReference Include="Silk.NET.Shaderc.Native" Version="2.23.0" GeneratePathProperty="true" ExcludeAssets="all" PrivateAssets="all" />
-        <PackageReference Include="Silk.NET.SPIRV.Cross.Native" Version="2.23.0" GeneratePathProperty="true" ExcludeAssets="all" PrivateAssets="all" />
+        <PackageReference Include="Silk.NET.Shaderc.Native" Version="2.23.0" GeneratePathProperty="true" ExcludeAssets="all" PrivateAssets="all"/>
+        <PackageReference Include="Silk.NET.SPIRV.Cross.Native" Version="2.23.0" GeneratePathProperty="true" ExcludeAssets="all" PrivateAssets="all"/>
     </ItemGroup>
 
     <ItemGroup>
         <!-- Use the SDK host RID, not RuntimeIdentifier: this task executes in the build host
              process, which may differ from the RID being published. -->
         <None Include="$(PkgSilk_NET_Shaderc_Native)\runtimes\$(NETCoreSdkRuntimeIdentifier)\native\*"
-              Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+              Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/>
         <None Include="$(PkgSilk_NET_SPIRV_Cross_Native)\runtimes\$(NETCoreSdkRuntimeIdentifier)\native\*"
-              Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+              Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/>
     </ItemGroup>
 
 </Project>

@@ -22,10 +22,12 @@ public abstract class PluginAi(ClientSidePlayer player, string aiId, BaseClientG
     [PluginVisible] public string AiId { get; } = aiId;
 
     /// <summary>The player this bot drives.</summary>
-    [PluginVisible] public ClientSidePlayer Player { get; } = player;
+    [PluginVisible]
+    public ClientSidePlayer Player { get; } = player;
 
     /// <summary>The car this bot drives, or null before the gamemode creates it.</summary>
-    [PluginVisible] public BackendCar? Car => Player.Car;
+    [PluginVisible]
+    public BackendCar? Car => Player.Car;
 
     [PluginVisible] public IReadOnlyList<ClientSidePlayer> Players => gamemode.Players;
 

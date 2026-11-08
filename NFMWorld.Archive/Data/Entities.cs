@@ -208,6 +208,7 @@ public sealed class MatchParticipant
 
     /// <summary>Null when the reporter's player id does not map to a registered account.</summary>
     public int? UserId { get; set; }
+
     public User? User { get; set; }
 
     /// <summary>Zero-based finish position.</summary>

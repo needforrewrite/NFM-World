@@ -8,6 +8,7 @@
 // over it. The pipeline itself is unchanged: strip the effect-framework syntax, compile each
 // stage's entry point to SPIR-V, cross-compile that to every backend's source form, merge the two
 // stages' binding lists, and emit.
+
 using System.Text;
 
 namespace NFMWorld.ShaderCompiler;
@@ -63,6 +64,7 @@ public static class ShaderBuild
         // which is how fxc and the FNA pipeline find `./Mad.fxh`. Cached because Mad.fxh is included
         // by four of the eight sources and re-reading it per include is pure waste.
         var includeCache = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+
         string? ResolveInclude(string target)
         {
             string key;
@@ -113,15 +115,25 @@ public static class ShaderBuild
                 var (spirv, error) = spirvCompiler.Compile(stripped, path, stage, entry, defines);
                 if (spirv is null)
                     throw new InvalidOperationException(
-                        $"{path} [technique {technique.Name}]: {stage} stage HLSL->SPIR-V failed.\n{error}");
+                        $"{path} [technique {technique.Name}]: {stage} stage HLSL->SPIR-V failed.\n{error}"
+                    );
 
                 var result = collector.ReflectAndCross(spirv, stage, entry, declaredInputs);
-                sourcesByStage[stage] = new StageSources(spirv, result.Hlsl, result.Msl, result.GlslGl, result.GlslEs, result.Glsl330);
+                sourcesByStage[stage] = new StageSources(
+                    spirv,
+                    result.Hlsl,
+                    result.Msl,
+                    result.GlslGl,
+                    result.GlslEs,
+                    result.Glsl330
+                );
                 stages.Add(HlslBoolUniforms.Mark(result.Reflection, boolUniforms));
 
-                log?.Invoke($"    {technique.Name,-16} {stage,-8} SPIR-V {spirv.Length,7} B   " +
-                            $"HLSL {LineCount(result.Hlsl),5} ln   MSL {LineCount(result.Msl),5} ln   " +
-                            $"GLSL {LineCount(result.GlslGl),5} ln   GLSL(ES) {LineCount(result.GlslEs),5} ln");
+                log?.Invoke(
+                    $"    {technique.Name,-16} {stage,-8} SPIR-V {spirv.Length,7} B   "
+                    + $"HLSL {LineCount(result.Hlsl),5} ln   MSL {LineCount(result.Msl),5} ln   "
+                    + $"GLSL {LineCount(result.GlslGl),5} ln   GLSL(ES) {LineCount(result.GlslEs),5} ln"
+                );
             }
 
             // The VS and FS reflect their own texture/sampler lists independently, but a pipeline
@@ -131,12 +143,13 @@ public static class ShaderBuild
             // registers.
             var (textures, samplers) = BindingSlots.Assign(
                 stages.SelectMany(s => s.Textures).DistinctBy(t => t.Name).ToList(),
-                stages.SelectMany(s => s.Samplers).DistinctBy(s => s.Name).ToList());
+                stages.SelectMany(s => s.Samplers).DistinctBy(s => s.Name).ToList()
+            );
 
             var uniformBlocks = stages.SelectMany(s => s.UniformBlocks)
-                                      .GroupBy(b => b.Name)
-                                      .Select(g => g.First())
-                                      .ToList();
+                .GroupBy(b => b.Name)
+                .Select(g => g.First())
+                .ToList();
 
             // Uniform naming - `{Shader}{Technique}` - rather than a `{Shader}` special case for the
             // single-technique files, so a later technique added to one of them cannot collide with
@@ -164,7 +177,8 @@ public static class ShaderBuild
     public static IReadOnlyList<string> CompileDirectory(
         string directory,
         string outputDirectory,
-        Action<string>? log = null)
+        Action<string>? log = null
+    )
     {
         var written = new List<string>();
         var errors = new StringBuilder();

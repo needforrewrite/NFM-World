@@ -18,19 +18,20 @@
 
 <form method="post" enctype="multipart/form-data">
     <div class="row">
-        <label>File<br /><input type="file" asp-for="File" accept=".radpack,.rad" /></label>
-        <label>Name<br /><input asp-for="Name" /></label>
-        <label>Type<br />
+        <label>File<br/><input type="file" asp-for="File" accept=".radpack,.rad"/></label>
+        <label>Name<br/><input asp-for="Name"/></label>
+        <label>Type<br/>
             <select asp-for="Type">
-                @foreach (var type in Enum.GetNames<NFMWorld.Archive.Data.AssetType>())
+                @foreach (varin Enum.GetNames<>())
                 {
-                    <option value="@type">@type</option>
+                <value="@type">@</option>
                 }
             </select>
         </label>
     </div>
     <div class="row">
-        <label style="flex:1">Description<br /><textarea asp-for="Description" rows="3" style="width:100%"></textarea></label>
+        <label style="flex:1">Description<br/><textarea asp-for="Description" rows="3"
+                                                        style="width:100%"></textarea></label>
     </div>
     <button type="submit">Upload</button>
 </form>

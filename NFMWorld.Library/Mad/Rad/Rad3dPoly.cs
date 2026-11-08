@@ -13,7 +13,7 @@ namespace NFMWorldLibrary.Rad;
 public readonly partial record struct Rad3dPoly
 {
     public const int CurrentTriangulationVersion = 2;
-    
+
     [JsonPropertyName("c"), MemoryPackOrder(0), PluginVisible]
     public Color3 Color { get; init; }
 
@@ -43,9 +43,10 @@ public readonly partial record struct Rad3dPoly
 
     [JsonPropertyName("triVersion"), MemoryPackOrder(9)]
     public int TriangulationVersion { get; init; }
-    
+
     [JsonPropertyName("triAlgorithm"), MemoryPackOrder(10)]
-    public PolygonTriangulator.TriangulationAlgorithm TriangulationAlgorithm { get; init; } = PolygonTriangulator.TriangulationAlgorithm.Libtess;
+    public PolygonTriangulator.TriangulationAlgorithm TriangulationAlgorithm { get; init; } =
+        PolygonTriangulator.TriangulationAlgorithm.Libtess;
 
     private readonly int _hashCode;
 
@@ -64,7 +65,8 @@ public readonly partial record struct Rad3dPoly
         ImmutableArray<uint>? Triangles = null,
         Vector3? Centroid = null,
         Vector3? Normal = null,
-        PolygonTriangulator.TriangulationAlgorithm TriangulationAlgorithm = PolygonTriangulator.TriangulationAlgorithm.Libtess)
+        PolygonTriangulator.TriangulationAlgorithm TriangulationAlgorithm = PolygonTriangulator.TriangulationAlgorithm.Libtess
+    )
     {
         this.Color = Color;
         this.ColNum = ColNum;
@@ -90,14 +92,16 @@ public readonly partial record struct Rad3dPoly
         if (verts.Length == 3)
         {
             // Compute triangle normal
-            var normal = Vector3.Normalize(Vector3.Cross(
-                verts[1] - verts[0],
-                verts[2] - verts[0]
-            ));
+            var normal = Vector3.Normalize(
+                Vector3.Cross(
+                    verts[1] - verts[0],
+                    verts[2] - verts[0]
+                )
+            );
 
             return normal;
         }
-        
+
         return PolygonTriangulator.ComputeBestFitPlaneNormal(verts, centroid);
     }
 
@@ -107,14 +111,16 @@ public readonly partial record struct Rad3dPoly
         {
             return [];
         }
-        
+
         if (verts.Length <= 3)
         {
             return [0, 1, 2];
         }
 
         var transaction = SentrySdk.StartTransaction($"TriangulatePoly_{TriangulationAlgorithm}", "rad3dpoly.triangulation");
-        var arr = ImmutableCollectionsMarshal.AsImmutableArray(PolygonTriangulator.Triangulate(verts, TriangulationAlgorithm).Triangles);
+        var arr = ImmutableCollectionsMarshal.AsImmutableArray(
+            PolygonTriangulator.Triangulate(verts, TriangulationAlgorithm).Triangles
+        );
         transaction.Finish();
         return arr;
     }
@@ -129,7 +135,15 @@ public readonly partial record struct Rad3dPoly
         return Points.SequenceEqual(other.Points);
     }
 
-    private static int CalculateHashCode(Color3 color, int? colNum, PolyType polyType, LineType? lineType, float decalOffset, ReadOnlySpan<Vector3> points, ReadOnlySpan<uint> triangles)
+    private static int CalculateHashCode(
+        Color3 color,
+        int? colNum,
+        PolyType polyType,
+        LineType? lineType,
+        float decalOffset,
+        ReadOnlySpan<Vector3> points,
+        ReadOnlySpan<uint> triangles
+    )
     {
         var hashCode = new HashCode();
         hashCode.Add(color);
@@ -142,11 +156,13 @@ public readonly partial record struct Rad3dPoly
         {
             hashCode.Add(point);
         }
+
         hashCode.Add(triangles.Length);
         foreach (var triangle in triangles)
         {
             hashCode.Add(triangle);
         }
+
         return hashCode.ToHashCode();
     }
 
@@ -168,6 +184,6 @@ public readonly partial record struct Rad3dPoly
 
     public Rad3dPoly SafeClone()
     {
-        return this with { Points = [..Points] };
+        return this with { Points = [.. Points] };
     }
 }

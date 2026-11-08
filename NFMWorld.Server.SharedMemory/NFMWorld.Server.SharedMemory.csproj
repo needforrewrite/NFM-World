@@ -8,10 +8,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="SharedMemory" Version="2.3.2" />
-      <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
-        <ProjectReference Include="..\MemoryPack\src\MemoryPack\MemoryPack.csproj" />
-        <ProjectReference Include="..\MemoryPack\src\MemoryPack.Generator\MemoryPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+        <PackageReference Include="SharedMemory" Version="2.3.2"/>
+        <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj"/>
+        <ProjectReference Include="..\MemoryPack\src\MemoryPack\MemoryPack.csproj"/>
+        <ProjectReference Include="..\MemoryPack\src\MemoryPack.Generator\MemoryPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
 
     </ItemGroup>
 

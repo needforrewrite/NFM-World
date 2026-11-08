@@ -32,11 +32,16 @@ public class LobbyCreateTests
 
         var bots = SessionBots.Place([0, 1], count: 3, ownerId: creator.Id);
 
-        CollectionAssert.AreEquivalent(new byte[] { 2, 3, 4 }, bots.Keys.ToArray(),
-            "bots fill the first free slots and never displace a human");
+        CollectionAssert.AreEquivalent(
+            new byte[] { 2, 3, 4 },
+            bots.Keys.ToArray(),
+            "bots fill the first free slots and never displace a human"
+        );
         Assert.IsTrue(bots.Values.All(b => b.IsBot));
-        Assert.IsTrue(bots.Values.All(b => b.OwnerId == creator.Id),
-            "the client that fielded them simulates them");
+        Assert.IsTrue(
+            bots.Values.All(b => b.OwnerId == creator.Id),
+            "the client that fielded them simulates them"
+        );
     }
 
     [TestMethod]
@@ -61,7 +66,8 @@ public class LobbyCreateTests
         var constraint = properties.Single(p => p.Name == "constraint");
         CollectionAssert.AreEquivalent(
             new[] { "racing", "wasting", "both" },
-            constraint.Options.Select(o => o.Value).ToArray());
+            constraint.Options.Select(o => o.Value).ToArray()
+        );
     }
 
     [TestMethod]

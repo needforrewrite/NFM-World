@@ -39,8 +39,10 @@ public enum TextureFormat
 
     /// <summary>Block-compressed, 4 bits/pixel, no alpha (or 1-bit punch-through alpha).</summary>
     Dxt1,
+
     /// <summary>Block-compressed, 8 bits/pixel, sharp (non-interpolated) alpha.</summary>
     Dxt3,
+
     /// <summary>Block-compressed, 8 bits/pixel, interpolated alpha.</summary>
     Dxt5,
 

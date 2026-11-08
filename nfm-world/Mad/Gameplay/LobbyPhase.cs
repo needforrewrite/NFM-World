@@ -42,7 +42,8 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         SetStage: stage => Lobby.SelectedStage.Value = stage,
         SetMaxPlayers: count => Lobby.MaxPlayers.Value = count,
         SetBots: count => Lobby.BotCount.Value = count,
-        SetConfig: OnSetConfig);
+        SetConfig: OnSetConfig
+    );
 
     public override Node BuildUi() => LobbyView.Build(Actions);
 
@@ -95,10 +96,12 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
             // Presented before the identity packet: a signed-in player's name and account come
             // from the account, and the identity packet's name is ignored for them.
-            transport.SendPacketToServer(new C2S_Authenticate
-            {
-                Token = GameSparker.AccountManager.ActiveAccount?.Token ?? ""
-            });
+            transport.SendPacketToServer(
+                new C2S_Authenticate
+                {
+                    Token = GameSparker.AccountManager.ActiveAccount?.Token ?? ""
+                }
+            );
             SendUpdatePlayerIdentity();
         }
 
@@ -125,19 +128,24 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
                         GameSparker.AccountManager.LogOut();
                         transport.StopReconnecting();
                         GameSparker.PopPhase();
-                        GameSparker.MessageWindow.ShowMessage("Session refused",
+                        GameSparker.MessageWindow.ShowMessage(
+                            "Session refused",
                             authenticated.Error is { Length: > 0 }
                                 ? authenticated.Error
-                                : "Your session was rejected. Sign in again.");
+                                : "Your session was rejected. Sign in again."
+                        );
                     }
                     else if (authenticated.AccountId == 0 && GameSparker.AccountManager.LoggedIn)
                     {
                         // Admitted as a guest even though we presented a token: the lobby could
                         // not check it. Keep the token - it is not known to be bad.
-                        SetStatus(authenticated.Error is { Length: > 0 }
-                            ? authenticated.Error
-                            : "Playing as a guest.");
+                        SetStatus(
+                            authenticated.Error is { Length: > 0 }
+                                ? authenticated.Error
+                                : "Playing as a guest."
+                        );
                     }
+
                     break;
 
                 case S2C_LobbyState lobbyState:
@@ -170,6 +178,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             transport.Reconnected -= OnReconnected;
             transport.Stop();
         }
+
         base.Dispose(disposing);
     }
 
@@ -186,22 +195,24 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         // position and relayed state arrives in an order that has to agree with it.
         var players = session.InSlotOrder()
             .Select(c => new ClientSidePlayerInfo
-            {
-                CarName = c.CarName,
-                Color = c.Color,
-                PlayerName = c.PlayerName,
-                IsBot = c.IsBot,
-                IsClientPlayer = c.Id == _player.Id,
-                Id = c.Id,
-                OwnerId = c.OwnerId
-            })
+                {
+                    CarName = c.CarName,
+                    Color = c.Color,
+                    PlayerName = c.PlayerName,
+                    IsBot = c.IsBot,
+                    IsClientPlayer = c.Id == _player.Id,
+                    Id = c.Id,
+                    OwnerId = c.OwnerId
+                }
+            )
             .ToArray();
 
         var phase = new RacePhase(
             session.StageName,
             GetGameModeFactory(session),
             players,
-            new NetworkRaceHost(gameTransport, session, raceStarted.JoinInfo.JoinToken));
+            new NetworkRaceHost(gameTransport, session, raceStarted.JoinInfo.JoinToken)
+        );
 
         phase.Exited += (_, _) => GameSparker.PopGroup(PhaseManager.Groups.Event);
         GameSparker.PushPhase(phase, PhaseManager.Groups.Event);
@@ -218,21 +229,42 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         {
             if (!s.Players.Values.Contains(_player.Id))
                 continue;
-            current = new UiState.LobbySession(s.Id, s.CreatorName, s.StageName, s.PlayerCount,
-                s.MaxPlayers, s.State, IsMember: true, IsCreator: s.CreatorId == _player.Id);
+            current = new UiState.LobbySession(
+                s.Id,
+                s.CreatorName,
+                s.StageName,
+                s.PlayerCount,
+                s.MaxPlayers,
+                s.State,
+                IsMember: true,
+                IsCreator: s.CreatorId == _player.Id
+            );
             break;
         }
 
         Lobby.Players.Value = _players
             .Select(p => new UiState.LobbyPlayer(
-                p.Id, p.PlayerName, p.CarName, ToColor(p.Color), p.Id == _player.Id))
+                    p.Id,
+                    p.PlayerName,
+                    p.CarName,
+                    ToColor(p.Color),
+                    p.Id == _player.Id
+                )
+            )
             .ToArray();
 
         Lobby.Sessions.Value = _activeSessions
             .Select(s => new UiState.LobbySession(
-                s.Id, s.CreatorName, s.StageName, s.PlayerCount, s.MaxPlayers, s.State,
-                IsMember: s.Players.Values.Contains(_player.Id),
-                IsCreator: s.CreatorId == _player.Id))
+                    s.Id,
+                    s.CreatorName,
+                    s.StageName,
+                    s.PlayerCount,
+                    s.MaxPlayers,
+                    s.State,
+                    IsMember: s.Players.Values.Contains(_player.Id),
+                    IsCreator: s.CreatorId == _player.Id
+                )
+            )
             .ToArray();
 
         Lobby.CurrentSession.Value = current;
@@ -243,8 +275,11 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             Lobby.SelectedSessionId.Value = null;
 
         Lobby.MaxPlayers.Value = Math.Clamp(Lobby.MaxPlayers.Value, 2, MatchGameplayInfo.MaxPlayers);
-        Lobby.BotCount.Value = Math.Clamp(Lobby.BotCount.Value, 0,
-            MatchGameplayInfo.MaxPlayers - Lobby.MaxPlayers.Value);
+        Lobby.BotCount.Value = Math.Clamp(
+            Lobby.BotCount.Value,
+            0,
+            MatchGameplayInfo.MaxPlayers - Lobby.MaxPlayers.Value
+        );
         if (string.IsNullOrEmpty(Lobby.SelectedStage.Value))
             Lobby.SelectedStage.Value = GameSparker.GetAvailableStages().FirstOrDefault() ?? "";
     }
@@ -341,14 +376,16 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             return;
         }
 
-        transport.SendPacketToServer(new C2S_CreateSession
-        {
-            GameMode = DefaultGamemodes.PvP,
-            StageName = stage,
-            MaxPlayers = Lobby.MaxPlayers.Value,
-            GameModeParameters = new(Lobby.GamemodeConfig.Value),
-            Bots = Lobby.BotCount.Value
-        });
+        transport.SendPacketToServer(
+            new C2S_CreateSession
+            {
+                GameMode = DefaultGamemodes.PvP,
+                StageName = stage,
+                MaxPlayers = Lobby.MaxPlayers.Value,
+                GameModeParameters = new(Lobby.GamemodeConfig.Value),
+                Bots = Lobby.BotCount.Value
+            }
+        );
         Lobby.ShowCreateDialog.Value = false;
     }
 
@@ -385,12 +422,14 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
     private void SendUpdatePlayerIdentity()
     {
-        transport.SendPacketToServer(new C2S_PlayerIdentity
-        {
-            PlayerName = _player.Name,
-            SelectedVehicle = _player.Vehicle,
-            Color = _player.Color
-        });
+        transport.SendPacketToServer(
+            new C2S_PlayerIdentity
+            {
+                PlayerName = _player.Name,
+                SelectedVehicle = _player.Vehicle,
+                Color = _player.Color
+            }
+        );
     }
 
     private static BaseGamemodeFactory GetGameModeFactory(MatchGameplayInfo matchGameplayInfo)

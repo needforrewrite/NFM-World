@@ -16,7 +16,8 @@ public enum TextureAddressMode
 public readonly record struct SamplerDesc(
     TextureFilter Filter = TextureFilter.Linear,
     TextureAddressMode AddressU = TextureAddressMode.Wrap,
-    TextureAddressMode AddressV = TextureAddressMode.Wrap);
+    TextureAddressMode AddressV = TextureAddressMode.Wrap
+);
 
 public interface ISampler : IDisposable
 {

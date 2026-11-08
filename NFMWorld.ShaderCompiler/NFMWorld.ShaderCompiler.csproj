@@ -24,8 +24,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Silk.NET.Shaderc" Version="2.23.0" />
-        <PackageReference Include="Silk.NET.SPIRV.Cross" Version="2.23.0" />
+        <PackageReference Include="Silk.NET.Shaderc" Version="2.23.0"/>
+        <PackageReference Include="Silk.NET.SPIRV.Cross" Version="2.23.0"/>
     </ItemGroup>
 
 </Project>

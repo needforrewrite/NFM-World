@@ -19,7 +19,10 @@ public sealed class ValidatorRunner(ArchiveOptions options, ILogger<ValidatorRun
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     public async Task<ValidatorResult> RunAsync(
-        string command, IReadOnlyList<string> args, CancellationToken ct)
+        string command,
+        IReadOnlyList<string> args,
+        CancellationToken ct
+    )
     {
         if (!await _gate.WaitAsync(TimeSpan.FromSeconds(30), ct))
             return new ValidatorResult(false, null, "The validator is busy; try again shortly.");
@@ -35,7 +38,10 @@ public sealed class ValidatorRunner(ArchiveOptions options, ILogger<ValidatorRun
     }
 
     private async Task<ValidatorResult> RunCoreAsync(
-        string command, IReadOnlyList<string> args, CancellationToken ct)
+        string command,
+        IReadOnlyList<string> args,
+        CancellationToken ct
+    )
     {
         var executable = options.ValidatorPath;
         if (string.IsNullOrEmpty(executable) || !File.Exists(executable))
@@ -77,10 +83,16 @@ public sealed class ValidatorRunner(ArchiveOptions options, ILogger<ValidatorRun
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeout.CancelAfter(options.ValidationTimeout);
             using var registration = timeout.Token.Register(() =>
-            {
-                try { process.Kill(entireProcessTree: true); }
-                catch (InvalidOperationException) { }
-            });
+                {
+                    try
+                    {
+                        process.Kill(entireProcessTree: true);
+                    }
+                    catch (InvalidOperationException)
+                    {
+                    }
+                }
+            );
 
             await process.WaitForExitAsync(timeout.Token);
             var stdout = await stdoutTask;
@@ -90,9 +102,15 @@ public sealed class ValidatorRunner(ArchiveOptions options, ILogger<ValidatorRun
                 return new ValidatorResult(true, Parse(stdout), null);
 
             logger.LogInformation("Validator refused {Command} (exit {Code}): {Output}", command, process.ExitCode, stdout);
-            return new ValidatorResult(false, Parse(stdout), Parse(stdout)?.TryGetProperty("error", out var e) == true
-                ? e.GetString()
-                : string.IsNullOrWhiteSpace(stderr) ? "Validation failed." : Truncate(stderr));
+            return new ValidatorResult(
+                false,
+                Parse(stdout),
+                Parse(stdout)?.TryGetProperty("error", out var e) == true
+                    ? e.GetString()
+                    : string.IsNullOrWhiteSpace(stderr)
+                        ? "Validation failed."
+                        : Truncate(stderr)
+            );
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
@@ -112,8 +130,14 @@ public sealed class ValidatorRunner(ArchiveOptions options, ILogger<ValidatorRun
         var line = stdout.Trim().Split('\n').LastOrDefault()?.Trim();
         if (string.IsNullOrEmpty(line))
             return null;
-        try { return JsonDocument.Parse(line).RootElement.Clone(); }
-        catch (JsonException) { return null; }
+        try
+        {
+            return JsonDocument.Parse(line).RootElement.Clone();
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private static string Truncate(string value)

@@ -69,7 +69,7 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
 
         return this;
     }
-    
+
     /// <summary>
     ///     Appends the current indent and then the given string to the string being built.
     /// </summary>
@@ -268,7 +268,8 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
     /// <returns>This builder so that additional calls can be chained.</returns>
     public virtual IndentedStringBuilder AppendJoin(
         IEnumerable<string> values,
-        string separator = ", ")
+        string separator = ", "
+    )
     {
         DoIndent();
 
@@ -286,7 +287,8 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
     /// <returns>This builder so that additional calls can be chained.</returns>
     public virtual IndentedStringBuilder AppendJoin(
         IEnumerable<string> values,
-        char separator = ',')
+        char separator = ','
+    )
     {
         DoIndent();
 
@@ -323,7 +325,8 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
     /// <returns>This builder so that additional calls can be chained.</returns>
     public virtual IndentedStringBuilder AppendJoin(
         string separator,
-        params string[] values)
+        params string[] values
+    )
     {
         DoIndent();
 
@@ -336,13 +339,18 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
     /// <summary>Appends the specified interpolated string to this instance.</summary>
     /// <param name="handler">The interpolated string to append.</param>
     /// <returns>A reference to this instance after the append operation has completed.</returns>
-    public IndentedStringBuilder Append([InterpolatedStringHandlerArgument("")] ref AppendInterpolatedStringHandler handler) => this;
+    public IndentedStringBuilder Append([InterpolatedStringHandlerArgument("")] ref AppendInterpolatedStringHandler handler)
+        => this;
 
     /// <summary>Appends the specified interpolated string to this instance.</summary>
     /// <param name="provider">An object that supplies culture-specific formatting information.</param>
     /// <param name="handler">The interpolated string to append.</param>
     /// <returns>A reference to this instance after the append operation has completed.</returns>
-    public IndentedStringBuilder Append(IFormatProvider? provider, [InterpolatedStringHandlerArgument("", nameof(provider))] ref AppendInterpolatedStringHandler handler) => this;
+    public IndentedStringBuilder Append(
+        IFormatProvider? provider,
+        [InterpolatedStringHandlerArgument("", nameof(provider))]
+        ref AppendInterpolatedStringHandler handler
+    ) => this;
 
     /// <summary>Appends the specified interpolated string followed by the default line terminator to the end of the current StringBuilder object.</summary>
     /// <param name="handler">The interpolated string to append.</param>
@@ -360,7 +368,11 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
     /// <param name="provider">An object that supplies culture-specific formatting information.</param>
     /// <param name="handler">The interpolated string to append.</param>
     /// <returns>A reference to this instance after the append operation has completed.</returns>
-    public IndentedStringBuilder AppendLine(IFormatProvider? provider, [InterpolatedStringHandlerArgument("", nameof(provider))] ref AppendInterpolatedStringHandler handler)
+    public IndentedStringBuilder AppendLine(
+        IFormatProvider? provider,
+        [InterpolatedStringHandlerArgument("", nameof(provider))]
+        ref AppendInterpolatedStringHandler handler
+    )
     {
         _stringBuilder.AppendLine();
 
@@ -368,7 +380,7 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
 
         return this;
     }
-    
+
     /// <summary>Provides a handler used by the language compiler to append interpolated strings into <see cref="StringBuilder"/> instances.</summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
     [InterpolatedStringHandler]
@@ -381,8 +393,10 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
 
         /// <summary>The associated StringBuilder to which to append.</summary>
         internal readonly IndentedStringBuilder _stringBuilder;
+
         /// <summary>Optional provider to pass to IFormattable.ToString or ISpanFormattable.TryFormat calls.</summary>
         private readonly IFormatProvider? _provider;
+
         /// <summary>Whether <see cref="_provider"/> provides an ICustomFormatter.</summary>
         /// <remarks>
         /// Custom formatters are very rare.  We want to support them, but it's ok if we make them more expensive
@@ -403,7 +417,7 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
             _stringBuilder = stringBuilder;
             _provider = null;
             _hasCustomFormatter = false;
-            
+
             stringBuilder.DoIndent();
         }
 
@@ -413,23 +427,32 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
         /// <param name="stringBuilder">The associated StringBuilder to which to append.</param>
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <remarks>This is intended to be called only by compiler-generated code. Arguments are not validated as they'd otherwise be for members intended to be used directly.</remarks>
-        public AppendInterpolatedStringHandler(int literalLength, int formattedCount, IndentedStringBuilder stringBuilder, IFormatProvider? provider)
+        public AppendInterpolatedStringHandler(
+            int literalLength,
+            int formattedCount,
+            IndentedStringBuilder stringBuilder,
+            IFormatProvider? provider
+        )
         {
             _stringBuilder = stringBuilder;
             _provider = provider;
             _hasCustomFormatter = provider is not null && HasCustomFormatter(provider);
-            
+
             stringBuilder.DoIndent();
         }
-        
+
         /// <summary>Gets whether the provider provides a custom formatter.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // only used in a few hot path call sites
         internal static bool HasCustomFormatter(IFormatProvider provider)
         {
             Debug.Assert(provider is not null);
-            Debug.Assert(provider is not CultureInfo || provider.GetFormat(typeof(ICustomFormatter)) is null, "Expected CultureInfo to not provide a custom formatter");
+            Debug.Assert(
+                provider is not CultureInfo || provider.GetFormat(typeof(ICustomFormatter)) is null,
+                "Expected CultureInfo to not provide a custom formatter"
+            );
             return
-                provider.GetType() != typeof(CultureInfo) && // optimization to avoid GetFormat in the majority case
+                provider.GetType() != typeof(CultureInfo)
+                && // optimization to avoid GetFormat in the majority case
                 provider.GetFormat(typeof(ICustomFormatter)) != null;
         }
 
@@ -438,10 +461,12 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
         public void AppendLiteral(string value) => _stringBuilder.Append(value);
 
         #region AppendFormatted
+
         // Design note:
         // This provides the same set of overloads and semantics as DefaultInterpolatedStringHandler.
 
         #region AppendFormatted T
+
         /// <summary>Writes the specified value to the handler.</summary>
         /// <param name="value">The value to write.</param>
         /// <typeparam name="T">The type of the value to write.</typeparam>
@@ -485,7 +510,9 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
 #endif
                 else
                 {
-                    _stringBuilder.Append(((IFormattable)value).ToString(format: null, _provider)); // constrained call avoiding boxing for value types
+                    _stringBuilder.Append(
+                        ((IFormattable)value).ToString(format: null, _provider)
+                    ); // constrained call avoiding boxing for value types
                 }
             }
             else
@@ -534,7 +561,9 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
 #endif
                 else
                 {
-                    _stringBuilder.Append(((IFormattable)value).ToString(format, _provider)); // constrained call avoiding boxing for value types
+                    _stringBuilder.Append(
+                        ((IFormattable)value).ToString(format, _provider)
+                    ); // constrained call avoiding boxing for value types
                 }
             }
             else
@@ -597,9 +626,11 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
             // .NET 8.0 doesn't expose handler.Text, hacky workaround
             if (alignment == 0)
             {
-                _stringBuilder.Append(value is IFormattable formattable
-                    ? formattable.ToString(format, _provider) // constrained call avoiding boxing for value types
-                    : value?.ToString());
+                _stringBuilder.Append(
+                    value is IFormattable formattable
+                        ? formattable.ToString(format, _provider) // constrained call avoiding boxing for value types
+                        : value?.ToString()
+                );
             }
             else
             {
@@ -609,9 +640,11 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
             }
 #endif
         }
+
         #endregion
 
         #region AppendFormatted ReadOnlySpan<char>
+
         /// <summary>Writes the specified character span to the handler.</summary>
         /// <param name="value">The span to write.</param>
         public void AppendFormatted(ReadOnlySpan<char> value) => _stringBuilder.Append(value);
@@ -652,9 +685,11 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
                 }
             }
         }
+
         #endregion
 
         #region AppendFormatted string
+
         /// <summary>Writes the specified value to the handler.</summary>
         /// <param name="value">The value to write.</param>
         public void AppendFormatted(string? value)
@@ -678,9 +713,11 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
             // simply to disambiguate between ROS<char> and object, just in case someone does specify a format, as
             // string is implicitly convertible to both. Just delegate to the T-based implementation.
             AppendFormatted<string?>(value, alignment, format);
+
         #endregion
 
         #region AppendFormatted object
+
         /// <summary>Writes the specified value to the handler.</summary>
         /// <param name="value">The value to write.</param>
         /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
@@ -690,7 +727,9 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
             // formatted with both an alignment and a format, or b) the compiler is unable to target type to T. It
             // exists purely to help make cases from (b) compile. Just delegate to the T-based implementation.
             AppendFormatted<object?>(value, alignment, format);
+
         #endregion
+
         #endregion
 
         /// <summary>Formats the value using the custom formatter from the provider.</summary>
@@ -708,7 +747,10 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
             Debug.Assert(_provider != null);
 
             var formatter = (ICustomFormatter?)_provider.GetFormat(typeof(ICustomFormatter));
-            Debug.Assert(formatter != null, "An incorrectly written provider said it implemented ICustomFormatter, and then didn't");
+            Debug.Assert(
+                formatter != null,
+                "An incorrectly written provider said it implemented ICustomFormatter, and then didn't"
+            );
 
             if (formatter is not null)
             {

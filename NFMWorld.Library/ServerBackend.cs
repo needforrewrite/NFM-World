@@ -9,7 +9,8 @@ public class ServerBackend : IBackend
     public float Scale { get; set; } = 1f;
     public Vector2 Viewport { get; } = Vector2.Zero;
 
-    public IRadicalMusic LoadMusic(string file, double tempomul) => ClientServer.AccidentallyCalledClientMethodOnServer<IRadicalMusic>();
+    public IRadicalMusic LoadMusic(string file, double tempomul)
+        => ClientServer.AccidentallyCalledClientMethodOnServer<IRadicalMusic>();
 
     public IImage LoadImage(string file) => ClientServer.AccidentallyCalledClientMethodOnServer<IImage>();
 
@@ -24,8 +25,8 @@ public class ServerBackend : IBackend
     public IGraphics Graphics => ClientServer.AccidentallyCalledClientMethodOnServer<IGraphics>();
 
     public IGraphics3D Graphics3D => ClientServer.AccidentallyCalledClientMethodOnServer<IGraphics3D>();
-    
+
     public void SetAllVolumes(float vol) => ClientServer.AccidentallyCalledClientMethodOnServer();
-    
+
     public Key GetKeyFromScancode(Key key) => ClientServer.AccidentallyCalledClientMethodOnServer<Key>();
 }

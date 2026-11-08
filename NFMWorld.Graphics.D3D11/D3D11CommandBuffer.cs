@@ -52,6 +52,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
     /// are uploaded through. Both are reallocated when a pipeline with a different block size binds.
     /// </summary>
     private byte[] _uniforms = [];
+
     private ID3D11Buffer* _uniformBuffer;
 
     /// <summary>
@@ -72,6 +73,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
     /// target has to re-apply whatever was last asked for. See <see cref="ApplyViewportAndScissor"/>.
     /// </summary>
     private bool _hasViewport;
+
     private D3D11_VIEWPORT _viewport;
     private bool _hasScissor;
     private RECT _scissor;
@@ -82,6 +84,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
     /// the live command buffer after a resize.
     /// </summary>
     private int _targetWidth;
+
     private int _targetHeight;
 
     private readonly VertexStream[] _vertexStreams = new VertexStream[MaxVertexStreams];
@@ -99,6 +102,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
     /// than a leak.
     /// </summary>
     private readonly ID3D11ShaderResourceView*[] _resources = new ID3D11ShaderResourceView*[ResourceSlots];
+
     private readonly ID3D11SamplerState*[] _samplers = new ID3D11SamplerState*[ResourceSlots];
 
     /// <summary>
@@ -223,9 +227,11 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
 
         if (slot + value.Length > _uniforms.Length)
         {
-            throw new ArgumentOutOfRangeException(nameof(slot),
-                $"Uniform write of {value.Length} byte(s) at offset {slot} does not fit the " +
-                $"{_uniforms.Length}-byte block {pipeline.Desc.VertexShader.GetType().Name} declares.");
+            throw new ArgumentOutOfRangeException(
+                nameof(slot),
+                $"Uniform write of {value.Length} byte(s) at offset {slot} does not fit the "
+                + $"{_uniforms.Length}-byte block {pipeline.Desc.VertexShader.GetType().Name} declares."
+            );
         }
 
         if (IsMatrix4x4At(pipeline, slot))
@@ -273,8 +279,10 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
     {
         if ((uint)slot >= MaxVertexStreams)
         {
-            throw new ArgumentOutOfRangeException(nameof(slot),
-                $"Vertex stream slot {slot} exceeds the {MaxVertexStreams} this backend tracks.");
+            throw new ArgumentOutOfRangeException(
+                nameof(slot),
+                $"Vertex stream slot {slot} exceeds the {MaxVertexStreams} this backend tracks."
+            );
         }
 
         _vertexStreams[slot] = new VertexStream
@@ -304,10 +312,12 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
 
         if ((uint)slot >= ResourceSlots)
         {
-            throw new ArgumentOutOfRangeException(nameof(slot),
-                $"Texture slot {slot} exceeds the {ResourceSlots} this backend binds per draw. Raise " +
-                $"{nameof(ResourceSlots)} in D3D11CommandBuffer - the shader's bind point is what the " +
-                "slot is, so nothing else needs changing.");
+            throw new ArgumentOutOfRangeException(
+                nameof(slot),
+                $"Texture slot {slot} exceeds the {ResourceSlots} this backend binds per draw. Raise "
+                + $"{nameof(ResourceSlots)} in D3D11CommandBuffer - the shader's bind point is what the "
+                + "slot is, so nothing else needs changing."
+            );
         }
 
         var d3dTexture = (D3D11Texture)texture;
@@ -354,7 +364,8 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
             // The swapchain's constructor guarantees a back buffer view, so this is a belt-and-braces
             // check that turns a would-be null dereference into a sentence.
             throw new InvalidOperationException(
-                "No render target is bound and the swapchain has no back buffer view to fall back to.");
+                "No render target is bound and the swapchain has no back buffer view to fall back to."
+            );
         }
 
         var views = stackalloc ID3D11RenderTargetView*[1];
@@ -504,7 +515,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
         // rejects the stencil bit - so they are forwarded exactly as asked rather than both always
         // being sent. ORed as uints because the flag enum reaches the call as a plain uint.
         var flags = (wantsDepth ? (uint)D3D11_CLEAR_FLAG.D3D11_CLEAR_DEPTH : 0u)
-            | (wantsStencil ? (uint)D3D11_CLEAR_FLAG.D3D11_CLEAR_STENCIL : 0u);
+                    | (wantsStencil ? (uint)D3D11_CLEAR_FLAG.D3D11_CLEAR_STENCIL : 0u);
 
         if (!wantsDepth)
         {
@@ -555,7 +566,9 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
 
         ID3D11DepthStencilState* state = null;
         D3D11Interop.Check(
-            _device.Device->CreateDepthStencilState(&desc, &state), "CreateDepthStencilState (depth clear)");
+            _device.Device->CreateDepthStencilState(&desc, &state),
+            "CreateDepthStencilState (depth clear)"
+        );
         return state;
     }
 
@@ -618,7 +631,9 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
         }
 
         var indexBuffer = _indexBuffer
-            ?? throw new InvalidOperationException($"DrawIndexed requires {nameof(SetIndexBuffer)} to have been called.");
+                          ?? throw new InvalidOperationException(
+                              $"DrawIndexed requires {nameof(SetIndexBuffer)} to have been called."
+                          );
 
         // The index buffer is bound here rather than in SetIndexBuffer because its width is a
         // per-draw argument and D3D11 will not take one without the other. Rebinding per draw also
@@ -630,7 +645,8 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
         context->IASetIndexBuffer(
             indexBuffer.Handle,
             indexBuffer.IndexFormat.ToDxgiFormat(),
-            (uint)(_indexOffsetBytes + firstIndex * IndexSize(indexBuffer.IndexFormat)));
+            (uint)(_indexOffsetBytes + firstIndex * IndexSize(indexBuffer.IndexFormat))
+        );
 
         if (instanceCount == 1)
             context->DrawIndexed(count, 0, baseVertex);
@@ -666,7 +682,8 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
         if (slotCount > MaxVertexStreams)
         {
             throw new InvalidOperationException(
-                $"The pipeline declares {slotCount} vertex layout slots but this backend tracks {MaxVertexStreams}.");
+                $"The pipeline declares {slotCount} vertex layout slots but this backend tracks {MaxVertexStreams}."
+            );
         }
 
         var buffers = stackalloc ID3D11Buffer*[MaxVertexStreams];
@@ -677,9 +694,10 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
         {
             var stream = _vertexStreams[slot];
             var buffer = stream.Buffer
-                ?? throw new InvalidOperationException(
-                    $"The pipeline declares vertex layout slot {slot} but {nameof(SetVertexBuffer)} " +
-                    "was never called for it.");
+                         ?? throw new InvalidOperationException(
+                             $"The pipeline declares vertex layout slot {slot} but {nameof(SetVertexBuffer)} "
+                             + "was never called for it."
+                         );
 
             buffers[slot] = buffer.Handle;
             strides[slot] = (uint)stream.StrideBytes;
@@ -722,7 +740,8 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
             ID3D11Buffer* buffer = null;
             D3D11Interop.Check(
                 _device.Device->CreateBuffer(&desc, null, &buffer),
-                $"CreateBuffer (constant, {_uniforms.Length} byte(s))");
+                $"CreateBuffer (constant, {_uniforms.Length} byte(s))"
+            );
             _uniformBuffer = buffer;
         }
 

@@ -1,5 +1,4 @@
 ﻿using NFMWorldLibrary.Backend;
-
 using NFMWorldLibrary;
 using NFMWorldLibrary.Rad;
 using BoundingSphere = Maxine.Extensions.Mathematics.BoundingSphere;
@@ -12,11 +11,21 @@ public class StageObjectGameObject : MeshedGameObject, IDisposable
     private readonly CollisionDebugMesh? _collisionDebug;
     private readonly Mesh? _checkpointBounds;
 
-    private static readonly Rad3d CheckpointBoundsModel = new([
-        new Rad3dPoly(new Color3(31, 107, 255), null, PolyType.Flat, null, 0,
-            [new(-700, -800, 0), new(700, -800, 0), new(700, 100, 0), new(-700, 100, 0)],
-            [0, 1, 2, 0, 2, 3])
-    ], false, "checkpoint-trigger-bounds");
+    private static readonly Rad3d CheckpointBoundsModel = new(
+        [
+            new Rad3dPoly(
+                new Color3(31, 107, 255),
+                null,
+                PolyType.Flat,
+                null,
+                0,
+                [new(-700, -800, 0), new(700, -800, 0), new(700, 100, 0), new(-700, 100, 0)],
+                [0, 1, 2, 0, 2, 3]
+            )
+        ],
+        false,
+        "checkpoint-trigger-bounds"
+    );
 
     public StageObjectGameObject(Mesh mesh, StageObject obj) : base(mesh, obj.Position, obj.Rotation)
     {
@@ -41,10 +50,18 @@ public class StageObjectGameObject : MeshedGameObject, IDisposable
 
         if (!pass.IsShadow && Glow == true && _checkpointBounds is { } bounds)
         {
-            bounds.SubmitRenderables(queue, lighting, false,
+            bounds.SubmitRenderables(
+                queue,
+                lighting,
+                false,
                 new BoundingSphere(MatrixWorld.Translation, bounds.MaxRadius),
-                RenderBucket.CheckpointBounds, MatrixWorld, Layer ?? 0,
-                getsShadowed: false, alphaOverride: 0.25f, isFullbright: true);
+                RenderBucket.CheckpointBounds,
+                MatrixWorld,
+                Layer ?? 0,
+                getsShadowed: false,
+                alphaOverride: 0.25f,
+                isFullbright: true
+            );
         }
     }
 

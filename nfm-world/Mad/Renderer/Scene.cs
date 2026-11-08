@@ -18,12 +18,17 @@ public class Scene : IDisposable
         set => _camera = value;
     }
 
-    public Scene(IGraphicsDevice graphicsDevice, IEnumerable<GameObject> objects, Camera camera, IReadOnlyList<Camera> lightCameras)
+    public Scene(
+        IGraphicsDevice graphicsDevice,
+        IEnumerable<GameObject> objects,
+        Camera camera,
+        IReadOnlyList<Camera> lightCameras
+    )
     {
         _graphicsDevice = graphicsDevice;
         _camera = camera;
         _lightCameras = lightCameras;
-        Objects = [..objects];
+        Objects = [.. objects];
         _renderQueue = new RenderQueue(graphicsDevice);
     }
 
@@ -74,7 +79,10 @@ public class Scene : IDisposable
         }
 
         if (clearRenderBuffer)
-            cb.Clear(ClearOptions.Color | ClearOptions.Depth, new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f));
+            cb.Clear(
+                ClearOptions.Color | ClearOptions.Depth,
+                new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f)
+            );
 
         // TODO(Milestone 5 Stage B follow-up): the old code force-set all 16 sampler slots to
         // PointClamp here as a scene-wide default. ICommandBuffer has no equivalent global

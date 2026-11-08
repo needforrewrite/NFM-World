@@ -68,6 +68,7 @@ public static class HudText
     };
 
     private static string Number(int value) => value.ToString(CultureInfo.InvariantCulture);
+
     public static string FormatTime(int ms)
     {
         ms = Math.Max(0, ms);

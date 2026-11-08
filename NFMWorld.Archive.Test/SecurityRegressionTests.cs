@@ -55,8 +55,10 @@ public class SecurityRegressionTests
         using var factory = new TrustedArchiveAppFactory();
         using var client = factory.CreateClient();
 
-        var register = await client.PostAsJsonAsync("/auth/register",
-            new { Username = "alice", Password = "password123" });
+        var register = await client.PostAsJsonAsync(
+            "/auth/register",
+            new { Username = "alice", Password = "password123" }
+        );
         var token = (await register.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>())
             .GetProperty("token").GetString()!;
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
@@ -68,16 +70,18 @@ public class SecurityRegressionTests
         var storage = scope.ServiceProvider.GetRequiredService<NFMWorld.Archive.FileStorage>();
 
         var (hash, relative, _) = await storage.PutAsync((ReadOnlyMemory<byte>)shared, CancellationToken.None);
-        db.Assets.Add(new Asset
-        {
-            OwnerId = db.Users.Single(u => u.UsernameNormalized == "alice").Id,
-            Type = AssetType.Car,
-            Name = "existing",
-            ContentHash = hash,
-            StoragePath = relative,
-            SizeBytes = shared.Length,
-            IsPublic = true
-        });
+        db.Assets.Add(
+            new Asset
+            {
+                OwnerId = db.Users.Single(u => u.UsernameNormalized == "alice").Id,
+                Type = AssetType.Car,
+                Name = "existing",
+                ContentHash = hash,
+                StoragePath = relative,
+                SizeBytes = shared.Length,
+                IsPublic = true
+            }
+        );
         await db.SaveChangesAsync();
 
         // A second upload of the same bytes, which fails validation (no validator configured) —

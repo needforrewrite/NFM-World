@@ -11,7 +11,7 @@ public interface IGraphics
 
     // Length proportional to radius of a cubic bezier handle for 90deg arcs
     private const float NVG_KAPPA90 = 0.5522847493f;
-    
+
     IImage LoadImage(string file);
     IImage LoadSvgImage(string file, Vector3 rgbMultiplier, byte maximumChannel = 255);
     IImage LoadImage(ReadOnlyMemory<byte> file);
@@ -34,6 +34,7 @@ public interface IGraphics
         {
             LineTo(x[i], y[i]);
         }
+
         ClosePath();
         Fill();
     }
@@ -47,6 +48,7 @@ public interface IGraphics
         {
             LineTo(x[i], y[i]);
         }
+
         ClosePath();
         Stroke();
     }
@@ -67,16 +69,32 @@ public interface IGraphics
         ClosePath();
     }
 
-    void FillRoundedRect(int x, int y, int width, int height, float radTopLeft, float radTopRight,
-        float radBottomRight, float radBottomLeft)
+    void FillRoundedRect(
+        int x,
+        int y,
+        int width,
+        int height,
+        float radTopLeft,
+        float radTopRight,
+        float radBottomRight,
+        float radBottomLeft
+    )
     {
         BeginPath();
         RoundedRectVarying(x, y, width, height, radTopLeft, radTopRight, radBottomRight, radBottomLeft);
         Fill();
     }
 
-    void RoundedRectVarying(int x, int y, int width, int height, float radTopLeft, float radTopRight,
-        float radBottomRight, float radBottomLeft)
+    void RoundedRectVarying(
+        int x,
+        int y,
+        int width,
+        int height,
+        float radTopLeft,
+        float radTopRight,
+        float radBottomRight,
+        float radBottomLeft
+    )
     {
         if (radTopLeft < 0.1f && radTopRight < 0.1f && radBottomRight < 0.1f && radBottomLeft < 0.1f)
         {
@@ -99,7 +117,14 @@ public interface IGraphics
             LineTo(x, y + height - ryBL);
             BezierTo(x, y + height - ryBL * (1 - NVG_KAPPA90), x + rxBL * (1 - NVG_KAPPA90), y + height, x + rxBL, y + height);
             LineTo(x + width - rxBR, y + height);
-            BezierTo(x + width - rxBR * (1 - NVG_KAPPA90), y + height, x + width, y + height - ryBR * (1 - NVG_KAPPA90), x + width, y + height - ryBR);
+            BezierTo(
+                x + width - rxBR * (1 - NVG_KAPPA90),
+                y + height,
+                x + width,
+                y + height - ryBR * (1 - NVG_KAPPA90),
+                x + width,
+                y + height - ryBR
+            );
             LineTo(x + width, y + ryTR);
             BezierTo(x + width, y + ryTR * (1 - NVG_KAPPA90), x + width - rxTR * (1 - NVG_KAPPA90), y, x + width - rxTR, y);
             LineTo(x + rxTL, y);
@@ -115,6 +140,7 @@ public interface IGraphics
         LineTo(x2, y2);
         Stroke();
     }
+
     float Alpha { set; }
     float Scale { get; set; }
     void DrawImage(IImage image, int x, int y);
@@ -122,13 +148,47 @@ public interface IGraphics
     IFontMetrics GetFontMetrics();
     IFontMetrics GetFontMetrics(Font font);
     void DrawString(ReadOnlySpan<char> text, int x, int y);
-    void DrawStringAligned(ReadOnlySpan<char> text, int x, int y, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top);
-    void DrawStringOutlinedAligned(ReadOnlySpan<char> text, int x, int y, int areaWidth, int areaHeight, Color outline, float outlineWidth, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top);
 
-    void DrawStringAligned(ReadOnlySpan<char> text, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top)
+    void DrawStringAligned(
+        ReadOnlySpan<char> text,
+        int x,
+        int y,
+        int areaWidth,
+        int areaHeight,
+        TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left,
+        TextVerticalAlignment vAlign = TextVerticalAlignment.Top
+    );
+
+    void DrawStringOutlinedAligned(
+        ReadOnlySpan<char> text,
+        int x,
+        int y,
+        int areaWidth,
+        int areaHeight,
+        Color outline,
+        float outlineWidth,
+        TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left,
+        TextVerticalAlignment vAlign = TextVerticalAlignment.Top
+    );
+
+    void DrawStringAligned(
+        ReadOnlySpan<char> text,
+        int areaWidth,
+        int areaHeight,
+        TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left,
+        TextVerticalAlignment vAlign = TextVerticalAlignment.Top
+    )
         => DrawStringAligned(text, 0, 0, areaWidth, areaHeight, hAlign, vAlign);
 
-    void DrawStringOutlinedAligned(ReadOnlySpan<char> text, int areaWidth, int areaHeight, Color outline, float outlineWidth, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top)
+    void DrawStringOutlinedAligned(
+        ReadOnlySpan<char> text,
+        int areaWidth,
+        int areaHeight,
+        Color outline,
+        float outlineWidth,
+        TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left,
+        TextVerticalAlignment vAlign = TextVerticalAlignment.Top
+    )
         => DrawStringOutlinedAligned(text, 0, 0, areaWidth, areaHeight, outline, outlineWidth, hAlign, vAlign);
 
     /// <summary>
@@ -146,7 +206,7 @@ public interface IGraphics
         Ellipse(x + width / 2f, y + height / 2f, width / 2f, height / 2f);
         Fill();
     }
-    
+
     void Ellipse(float cx, float cy, float rx, float ry)
     {
         MoveTo(cx - rx, cy);
@@ -162,12 +222,20 @@ public interface IGraphics
     // arc's start with a straight line (same as Canvas2D); otherwise moves to it.
     // `hasCurrentPoint` — you track this yourself, same as canvas tracks
     // whether beginPath()/moveTo() has been called.
-    void Ellipse(float cx, float cy, float rx, float ry,
-        float rotation, float a0, float a1, bool ccw,
-        ref bool hasCurrentPoint)
+    void Ellipse(
+        float cx,
+        float cy,
+        float rx,
+        float ry,
+        float rotation,
+        float a0,
+        float a1,
+        bool ccw,
+        ref bool hasCurrentPoint
+    )
     {
         const float NVG_PI = 3.14159265358979323846f;
-        
+
         const float TWO_PI = NVG_PI * 2.0f;
 
         // Normalize sweep direction/length the way Canvas2D's ellipse() does.
@@ -176,7 +244,8 @@ public interface IGraphics
         {
             if (da > 0.0f) da -= TWO_PI;
             if (da < -TWO_PI) da = -TWO_PI;
-        } else
+        }
+        else
         {
             if (da < 0.0f) da += TWO_PI;
             if (da > TWO_PI) da = TWO_PI;
@@ -190,7 +259,18 @@ public interface IGraphics
         float cosr = MathF.Cos(rotation), sinr = MathF.Sin(rotation);
 
         // local (unit-circle) point -> world space, applying rx/ry scale + rotation
-        static void NVG_ELLIPSE_XF(float lx, float ly, out float ox, out float oy, float cx, float cy, float rx, float ry, float cosr, float sinr)
+        static void NVG_ELLIPSE_XF(
+            float lx,
+            float ly,
+            out float ox,
+            out float oy,
+            float cx,
+            float cy,
+            float rx,
+            float ry,
+            float cosr,
+            float sinr
+        )
         {
             (ox) = cx + ((lx) * rx * cosr - (ly) * ry * sinr);
             (oy) = cy + ((lx) * rx * sinr + (ly) * ry * cosr);
@@ -208,7 +288,8 @@ public interface IGraphics
             hasCurrentPoint = true;
         }
 
-        for (int i = 0; i < nsegs; i++) {
+        for (int i = 0; i < nsegs; i++)
+        {
             float @as = a0 + i * delta;
             float ae = @as + delta;
 
@@ -238,9 +319,17 @@ public interface IGraphics
         Ellipse(x + width / 2f, y + height / 2f, width / 2f, height / 2f);
         Stroke();
     }
-    
-    void DrawRoundedRect(int x, int y, int width, int height, float radTopLeft, float radTopRight,
-        float radBottomRight, float radBottomLeft)
+
+    void DrawRoundedRect(
+        int x,
+        int y,
+        int width,
+        int height,
+        float radTopLeft,
+        float radTopRight,
+        float radBottomRight,
+        float radBottomLeft
+    )
     {
         BeginPath();
         RoundedRectVarying(x, y, width, height, radTopLeft, radTopRight, radBottomRight, radBottomLeft);
@@ -291,7 +380,7 @@ public interface IGraphics
     public void Stroke();
 
     public void Fill();
-    
+
     void Arc(float cx, float cy, float arcRadius, float startAngleDeg, float endAngleDeg, bool clockWise);
 
     void LineCapButt();
@@ -310,16 +399,27 @@ public interface IGraphics
     void IntersectScissor(float x, float y, float w, float h, float cornerRadius = 0f);
 
     void ResetScissor();
-    
+
     private static CornerRadius ClampRadius(CornerRadius r, float w, float h)
     {
         return new CornerRadius(Math.Max(0, Math.Min(r.Rx, w / 2)), Math.Max(0, Math.Min(r.Ry, h / 2)));
     }
-    
-    private void RoundedRectPath(float x, float y, float w, float h, CornerRadius tl, CornerRadius tr, CornerRadius br, CornerRadius bl, bool reverse, bool hole = false)
+
+    private void RoundedRectPath(
+        float x,
+        float y,
+        float w,
+        float h,
+        CornerRadius tl,
+        CornerRadius tr,
+        CornerRadius br,
+        CornerRadius bl,
+        bool reverse,
+        bool hole = false
+    )
     {
         bool hasCurrentPoint = false;
-        
+
         tl = ClampRadius(tl, w, h);
         tr = ClampRadius(tr, w, h);
         br = ClampRadius(br, w, h);
@@ -331,7 +431,8 @@ public interface IGraphics
             else Ellipse(cx, cy, rx, ry, 0, a0, a1, ccw, ref hasCurrentPoint);
         }
 
-        if (!reverse) {
+        if (!reverse)
+        {
             MoveTo(x + tl.Rx, y);
             hasCurrentPoint = true;
             if (hole) MarkHole();
@@ -343,7 +444,9 @@ public interface IGraphics
             Corner(x + bl.Rx, y + h - bl.Ry, bl.Rx, bl.Ry, MathF.PI / 2, MathF.PI, false, ref hasCurrentPoint);
             LineTo(x, y + tl.Ry);
             Corner(x + tl.Rx, y + tl.Ry, tl.Rx, tl.Ry, MathF.PI, 1.5f * MathF.PI, false, ref hasCurrentPoint);
-        } else {
+        }
+        else
+        {
             MoveTo(x + tl.Rx, y);
             hasCurrentPoint = true;
             if (hole) MarkHole();
@@ -355,42 +458,77 @@ public interface IGraphics
             LineTo(x + w, y + tr.Ry);
             Corner(x + w - tr.Rx, y + tr.Ry, tr.Rx, tr.Ry, 0, -MathF.PI / 2, true, ref hasCurrentPoint);
         }
+
         ClosePath();
     }
 
-    void DrawVariableBorderRect(float x, float y, float width, float height, float top, float right, float bottom, float left, CornerRadius tl, CornerRadius tr, CornerRadius br, CornerRadius bl)
+    void DrawVariableBorderRect(
+        float x,
+        float y,
+        float width,
+        float height,
+        float top,
+        float right,
+        float bottom,
+        float left,
+        CornerRadius tl,
+        CornerRadius tr,
+        CornerRadius br,
+        CornerRadius bl
+    )
     {
-        var inner_tl = new CornerRadius(Math.Max(0, tl.Rx - left),  Math.Max(0, tl.Ry - top));
+        var inner_tl = new CornerRadius(Math.Max(0, tl.Rx - left), Math.Max(0, tl.Ry - top));
         var inner_tr = new CornerRadius(Math.Max(0, tr.Rx - right), Math.Max(0, tr.Ry - top));
         var inner_br = new CornerRadius(Math.Max(0, br.Rx - right), Math.Max(0, br.Ry - bottom));
-        var inner_bl = new CornerRadius(Math.Max(0, bl.Rx - left),  Math.Max(0, bl.Ry - bottom));
+        var inner_bl = new CornerRadius(Math.Max(0, bl.Rx - left), Math.Max(0, bl.Ry - bottom));
 
         BeginPath();
         RoundedRectPath(x, y, width, height, tl, tr, br, bl, false);
         RoundedRectPath(
-            x + left, y + top,
+            x + left,
+            y + top,
             Math.Max(0, width - left - right),
             Math.Max(0, height - top - bottom),
-            inner_tl, inner_tr, inner_br, inner_bl,
+            inner_tl,
+            inner_tr,
+            inner_br,
+            inner_bl,
             true,
             true
         );
         Fill();
     }
 
-    void FillVariableBorderRect(float x, float y, float width, float height, float top, float right, float bottom, float left, CornerRadius tl, CornerRadius tr, CornerRadius br, CornerRadius bl)
+    void FillVariableBorderRect(
+        float x,
+        float y,
+        float width,
+        float height,
+        float top,
+        float right,
+        float bottom,
+        float left,
+        CornerRadius tl,
+        CornerRadius tr,
+        CornerRadius br,
+        CornerRadius bl
+    )
     {
-        var inner_tl = new CornerRadius(Math.Max(0, tl.Rx - left),  Math.Max(0, tl.Ry - top));
+        var inner_tl = new CornerRadius(Math.Max(0, tl.Rx - left), Math.Max(0, tl.Ry - top));
         var inner_tr = new CornerRadius(Math.Max(0, tr.Rx - right), Math.Max(0, tr.Ry - top));
         var inner_br = new CornerRadius(Math.Max(0, br.Rx - right), Math.Max(0, br.Ry - bottom));
-        var inner_bl = new CornerRadius(Math.Max(0, bl.Rx - left),  Math.Max(0, bl.Ry - bottom));
+        var inner_bl = new CornerRadius(Math.Max(0, bl.Rx - left), Math.Max(0, bl.Ry - bottom));
 
         BeginPath();
         RoundedRectPath(
-            x + left, y + top,
+            x + left,
+            y + top,
             Math.Max(0, width - left - right),
             Math.Max(0, height - top - bottom),
-            inner_tl, inner_tr, inner_br, inner_bl,
+            inner_tl,
+            inner_tr,
+            inner_br,
+            inner_bl,
             false // NOT reversed — we want a normal filled shape, not a hole
         );
         Fill();

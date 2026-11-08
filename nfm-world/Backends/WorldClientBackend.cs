@@ -93,8 +93,10 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             if (images.Length == 0) return;
 
             // Replace the batch's retained texture before rebuilding a cache it may reference.
-            _svgCacheGuard ??= _graphicsDevice.CreateTexture(new TextureDesc(1, 1, TextureFormat.Rgba8),
-                new byte[] { 255, 255, 255, 255 });
+            _svgCacheGuard ??= _graphicsDevice.CreateTexture(
+                new TextureDesc(1, 1, TextureFormat.Rgba8),
+                new byte[] { 255, 255, 255, 255 }
+            );
             batch.Begin(cb);
             batch.Draw(_svgCacheGuard, new RectangleF(-2, -2, 1, 1));
             batch.End();
@@ -120,7 +122,6 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
         {
             set
             {
-                
                 _alpha = new Color(1f, 1f, 1f, value);
 
                 if (_colorOrig.Colors != null)
@@ -128,7 +129,10 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
                     _color = new Gradient(
                         _colorOrig.AXY,
                         _colorOrig.BXY,
-                        new ColorRamp(_colorOrig.Colors.Colors.Zip(_colorOrig.Colors.Positions).Select(c => (c.Second, c.First * _alpha)).ToArray()),
+                        new ColorRamp(
+                            _colorOrig.Colors.Colors.Zip(_colorOrig.Colors.Positions).Select(c => (c.Second, c.First * _alpha))
+                                .ToArray()
+                        ),
                         _color.S,
                         _color.RS,
                         _color.AOffset,
@@ -154,13 +158,15 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
         }
 
         private readonly ShapeBatch _sb;
+
         // Everything the per-frame counters and the debug overlay draw: digits, the punctuation
         // between them, and the labels' own letters. Baked at font load so no frame pays for a
         // cold glyph the first time a counter ticks over to it.
         private const string PerFrameChars =
-            "0123456789.-+%,:()/ " +
-            "FpsElapsedTimTickGTCFrme(CPU)UsUpdatLua callsTabstr-inshoicnrswzdm";
+            "0123456789.-+%,:()/ " + "FpsElapsedTimTickGTCFrme(CPU)UsUpdatLua callsTabstr-inshoicnrswzdm";
+
         private Dictionary<FontFamily, ShapeFont> _fonts = new();
+
         // Fonts that hold only symbols, stood behind every text font so an arrow or a triangle
         // draws instead of the missing glyph box. Loaded once and shared by all of them, so
         // they are deliberately left out of _fonts and out of the disposal pass.
@@ -170,7 +176,9 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
         private Gradient _colorOrig;
         private Gradient _color;
         private Font _font;
+
         private float _strokeWidth = 0.5f;
+
         // Canvas tracks whether a point is current for you; this interface doesn't hand one back,
         // so the path builder keeps its own for the Arc overload to join to.
         private bool _hasCurrentPoint;
@@ -182,7 +190,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
         {
             _graphicsDevice = graphicsDevice;
             _sb = sb;
-            
+
             LoadSymbolFonts();
 
             _fonts[FontFamily.DroidSans] = LoadFont("./data/fonts/DroidSans.ttf");
@@ -201,6 +209,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             {
                 font.AddFallback(symbols);
             }
+
             // The build bakes ASCII and Latin-1 into <font>.msdf; loading that is what keeps this
             // from spending seconds here, which on the browser was most of the launch. Taken before
             // any Prewarm call, since the file is only consulted for glyphs not baked yet.
@@ -212,6 +221,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             {
                 font.LoadPrewarmed(VFS.ReadAllBytes(cacheFile));
             }
+
             // Whatever the cache left out is baked here: anything outside ASCII/Latin-1 that the
             // counters and debug overlay draw, so no frame pays for a cold glyph on first tick.
             font.Prewarm(PerFrameChars);
@@ -222,9 +232,11 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
         // started, rather than the whole UI failing to load over a decorative character.
         private void LoadSymbolFonts()
         {
-            foreach (string file in (ReadOnlySpan<string>)[
+            foreach (string file in (ReadOnlySpan<string>)
+                     [
                          "./data/fonts/NotoSansSymbols-Regular.ttf",
-                         "./data/fonts/NotoSansSymbols2-Regular.ttf"])
+                         "./data/fonts/NotoSansSymbols2-Regular.ttf"
+                     ])
             {
                 if (VFS.FileExists(file))
                 {
@@ -244,6 +256,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
                 {
                     return new AposShapeSvg(stream);
                 }
+
                 if (Path.GetExtension(file) == ".dds")
                 {
                     return new TextureImage(DdsReader.LoadFromStream(_graphicsDevice, stream));
@@ -255,11 +268,14 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
 
         public IImage LoadSvgImage(string file, Vector3 rgbMultiplier, byte maximumChannel = 255)
         {
-            var image = _adjustedSvgImages.GetOrAdd(file, path =>
-            {
-                using var stream = VFS.OpenRead(path);
-                return new AposShapeSvg(stream, rgbMultiplier, maximumChannel);
-            });
+            var image = _adjustedSvgImages.GetOrAdd(
+                file,
+                path =>
+                {
+                    using var stream = VFS.OpenRead(path);
+                    return new AposShapeSvg(stream, rgbMultiplier, maximumChannel);
+                }
+            );
             image.SetColorAdjustment(rgbMultiplier, maximumChannel);
             return image;
         }
@@ -284,18 +300,35 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
                 if (colorPos == null)
                 {
                     _colorOrig = new Gradient(new Vector2(x, y), colors[0], new Vector2(x + width, y + height), colors[1]);
-                    _color = new Gradient(new Vector2(x, y), colors[0] * _alpha, new Vector2(x + width, y + height), colors[1] * _alpha);
+                    _color = new Gradient(
+                        new Vector2(x, y),
+                        colors[0] * _alpha,
+                        new Vector2(x + width, y + height),
+                        colors[1] * _alpha
+                    );
                 }
                 else
                 {
-                    _colorOrig = new Gradient(new Vector2(x, y), new Vector2(x + width, y + height), new ColorRamp([
-                        (colorPos[0], colors[0]),
-                        (colorPos[1], colors[2]),
-                    ]));
-                    _color = new Gradient(new Vector2(x, y), new Vector2(x + width, y + height), new ColorRamp([
-                        (colorPos[0], colors[0] * _alpha),
-                        (colorPos[1], colors[2] * _alpha),
-                    ]));
+                    _colorOrig = new Gradient(
+                        new Vector2(x, y),
+                        new Vector2(x + width, y + height),
+                        new ColorRamp(
+                            [
+                                (colorPos[0], colors[0]),
+                                (colorPos[1], colors[2]),
+                            ]
+                        )
+                    );
+                    _color = new Gradient(
+                        new Vector2(x, y),
+                        new Vector2(x + width, y + height),
+                        new ColorRamp(
+                            [
+                                (colorPos[0], colors[0] * _alpha),
+                                (colorPos[1], colors[2] * _alpha),
+                            ]
+                        )
+                    );
                 }
             }
             else
@@ -330,7 +363,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
                 shape.Draw(_sb, x, y, shape.Width, shape.Height, _alpha);
             }
         }
-        
+
         public void SetFont(Font font)
         {
             _font = font;
@@ -352,7 +385,15 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             _sb.DrawString(f, text, new Vector2(x, y - (f.LineHeight * _font.Size)), _font.Size, _color);
         }
 
-        public void DrawStringAligned(ReadOnlySpan<char> text, int x, int y, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top)
+        public void DrawStringAligned(
+            ReadOnlySpan<char> text,
+            int x,
+            int y,
+            int areaWidth,
+            int areaHeight,
+            TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left,
+            TextVerticalAlignment vAlign = TextVerticalAlignment.Top
+        )
         {
             float xFloat = x;
             float yFloat = y;
@@ -365,23 +406,57 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
         public void DrawStringOutlined(ReadOnlySpan<char> text, int x, int y, Color outline, float outlineWidth)
         {
             var f = _fonts[_font.FontFamily];
-            _sb.DrawString(f, text, new Vector2(x, y - (f.LineHeight * _font.Size)), _font.Size, _color, outline * _alpha, outlineWidth);
+            _sb.DrawString(
+                f,
+                text,
+                new Vector2(x, y - (f.LineHeight * _font.Size)),
+                _font.Size,
+                _color,
+                outline * _alpha,
+                outlineWidth
+            );
         }
 
-        public void DrawStringOutlinedAligned(ReadOnlySpan<char> text, int x, int y, int areaWidth, int areaHeight, Color outline, float outlineWidth, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top)
+        public void DrawStringOutlinedAligned(
+            ReadOnlySpan<char> text,
+            int x,
+            int y,
+            int areaWidth,
+            int areaHeight,
+            Color outline,
+            float outlineWidth,
+            TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left,
+            TextVerticalAlignment vAlign = TextVerticalAlignment.Top
+        )
         {
             float xFloat = x;
             float yFloat = y;
             AlignText(text, areaWidth, areaHeight, hAlign, vAlign, ref xFloat, ref yFloat);
 
             var f = _fonts[_font.FontFamily];
-            _sb.DrawString(f, text, new Vector2(xFloat, yFloat - (f.LineHeight * _font.Size)), _font.Size, _color, outline * _alpha, outlineWidth);
+            _sb.DrawString(
+                f,
+                text,
+                new Vector2(xFloat, yFloat - (f.LineHeight * _font.Size)),
+                _font.Size,
+                _color,
+                outline * _alpha,
+                outlineWidth
+            );
         }
 
-        private void AlignText(ReadOnlySpan<char> text, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign, TextVerticalAlignment vAlign, ref float x, ref float y)
+        private void AlignText(
+            ReadOnlySpan<char> text,
+            int areaWidth,
+            int areaHeight,
+            TextHorizontalAlignment hAlign,
+            TextVerticalAlignment vAlign,
+            ref float x,
+            ref float y
+        )
         {
             var font = _fonts[_font.FontFamily];
-            
+
             if (hAlign != TextHorizontalAlignment.Left)
             {
                 var sz = font.MeasureString(text, _font.Size);
@@ -396,7 +471,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
                     x -= sz.X;
                 }
             }
-            
+
             if (vAlign == TextVerticalAlignment.Center)
             {
                 y += areaHeight / 2f;
@@ -501,9 +576,12 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             // angle, which is the sense a y-down space gives it. Going the other way means going
             // round by the long way.
             float da = a1 - a0;
-            if (clockWise) {
+            if (clockWise)
+            {
                 while (da < 0f) da += 2f * MathF.PI;
-            } else {
+            }
+            else
+            {
                 while (da > 0f) da -= 2f * MathF.PI;
             }
 
@@ -517,10 +595,17 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             // would each be handed back the full turn's answer.
             int pieces = MathF.Abs(da) > MathF.Tau - 1e-4f ? 2 : 1;
             float step = da / pieces;
-            for (int i = 1; i <= pieces; i++) {
+            for (int i = 1; i <= pieces; i++)
+            {
                 float a = a0 + step * i;
-                _sb.ShapeArcTo(new Vector2(cx + arcRadius * MathF.Cos(a), cy + arcRadius * MathF.Sin(a)),
-                               arcRadius, arcRadius, 0f, MathF.Abs(step) > MathF.PI, clockWise);
+                _sb.ShapeArcTo(
+                    new Vector2(cx + arcRadius * MathF.Cos(a), cy + arcRadius * MathF.Sin(a)),
+                    arcRadius,
+                    arcRadius,
+                    0f,
+                    MathF.Abs(step) > MathF.PI,
+                    clockWise
+                );
             }
         }
 
@@ -550,9 +635,11 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             var requested = new RectangleF(x, y, w, h);
             // Rounding describes the rectangle just asked for. If an outer clip narrows it, the
             // result is that outer rectangle and the radius no longer describes its corners.
-            var narrowed = _clipRect is { } outer &&
-                (requested.X < outer.X || requested.Y < outer.Y ||
-                 requested.Right > outer.Right || requested.Bottom > outer.Bottom);
+            var narrowed = _clipRect is { } outer
+                           && (requested.X < outer.X
+                               || requested.Y < outer.Y
+                               || requested.Right > outer.Right
+                               || requested.Bottom > outer.Bottom);
             _clipRect = RectangleF.Intersect(_clipRect ?? new RectangleF(0, 0, float.MaxValue, float.MaxValue), requested);
             _clipRounding = narrowed ? 0f : cornerRadius;
             _sb.SetClipRect(_clipRect, _clipRounding, 0f, 1.5f);
@@ -572,29 +659,74 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
 
         public void DrawRect(int x1, int y1, int width, int height)
         {
-            _sb.DrawRectangle(new Vector2(x1, y1), new Vector2(width, height), Color.Transparent, _color, _strokeWidth, new CornerRadii());
+            _sb.DrawRectangle(
+                new Vector2(x1, y1),
+                new Vector2(width, height),
+                Color.Transparent,
+                _color,
+                _strokeWidth,
+                new CornerRadii()
+            );
         }
 
-        public void DrawVariableBorderRect(float x, float y, float width, float height, float top, float right, float bottom,
-            float left, CornerRadius tl, CornerRadius tr, CornerRadius br, CornerRadius bl)
+        public void DrawVariableBorderRect(
+            float x,
+            float y,
+            float width,
+            float height,
+            float top,
+            float right,
+            float bottom,
+            float left,
+            CornerRadius tl,
+            CornerRadius tr,
+            CornerRadius br,
+            CornerRadius bl
+        )
         {
-            _sb.DrawRectangle(new Vector2(x, y), new Vector2(width, height), Color.Transparent, _color, _strokeWidth, new CornerRadii
-                ((tl.Rx + tl.Ry) / 2,
-                (tr.Rx + tr.Ry) / 2,
-                (br.Rx + br.Ry) / 2,
-                (bl.Rx + bl.Ry) / 2
-            ));
+            _sb.DrawRectangle(
+                new Vector2(x, y),
+                new Vector2(width, height),
+                Color.Transparent,
+                _color,
+                _strokeWidth,
+                new CornerRadii(
+                    (tl.Rx + tl.Ry) / 2,
+                    (tr.Rx + tr.Ry) / 2,
+                    (br.Rx + br.Ry) / 2,
+                    (bl.Rx + bl.Ry) / 2
+                )
+            );
         }
 
-        public void FillVariableBorderRect(float x, float y, float width, float height, float top, float right, float bottom,
-            float left, CornerRadius tl, CornerRadius tr, CornerRadius br, CornerRadius bl)
+        public void FillVariableBorderRect(
+            float x,
+            float y,
+            float width,
+            float height,
+            float top,
+            float right,
+            float bottom,
+            float left,
+            CornerRadius tl,
+            CornerRadius tr,
+            CornerRadius br,
+            CornerRadius bl
+        )
         {
-            _sb.DrawRectangle(new Vector2(x, y), new Vector2(width, height), _color, Color.Transparent, 0, new CornerRadii
-            ((tl.Rx + tl.Ry) / 2,
-                (tr.Rx + tr.Ry) / 2,
-                (br.Rx + br.Ry) / 2,
-                (bl.Rx + bl.Ry) / 2
-            ));
+            _sb.DrawRectangle(
+                new Vector2(x, y),
+                new Vector2(width, height),
+                _color,
+                Color.Transparent,
+                0,
+                new CornerRadii(
+                    (tl.Rx + tl.Ry) / 2,
+                    (tr.Rx + tr.Ry) / 2,
+                    (br.Rx + br.Ry) / 2,
+                    (bl.Rx + bl.Ry) / 2
+                )
+            );
         }
 
         public void DrawLine(int x1, int y1, int x2, int y2)
@@ -602,18 +734,46 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             _sb.DrawLine(new Vector2(x1, y1), new Vector2(x2, y2), _strokeWidth, _color, _color);
         }
 
-        public void DrawRoundedRect(int x, int y, int width, int height, float radTopLeft, float radTopRight, float radBottomRight,
-            float radBottomLeft)
+        public void DrawRoundedRect(
+            int x,
+            int y,
+            int width,
+            int height,
+            float radTopLeft,
+            float radTopRight,
+            float radBottomRight,
+            float radBottomLeft
+        )
         {
-            _sb.DrawRectangle(new Vector2(x, y), new Vector2(width, height), Color.Transparent, _color, _strokeWidth,
-                new CornerRadii(radTopLeft, radTopRight, radBottomRight, radBottomLeft));
+            _sb.DrawRectangle(
+                new Vector2(x, y),
+                new Vector2(width, height),
+                Color.Transparent,
+                _color,
+                _strokeWidth,
+                new CornerRadii(radTopLeft, radTopRight, radBottomRight, radBottomLeft)
+            );
         }
 
-        public void FillRoundedRect(int x, int y, int width, int height, float radTopLeft, float radTopRight, float radBottomRight,
-            float radBottomLeft)
+        public void FillRoundedRect(
+            int x,
+            int y,
+            int width,
+            int height,
+            float radTopLeft,
+            float radTopRight,
+            float radBottomRight,
+            float radBottomLeft
+        )
         {
-            _sb.DrawRectangle(new Vector2(x, y), new Vector2(width, height), _color, Color.Transparent, 0,
-                new CornerRadii(radTopLeft, radTopRight, radBottomRight, radBottomLeft));
+            _sb.DrawRectangle(
+                new Vector2(x, y),
+                new Vector2(width, height),
+                _color,
+                Color.Transparent,
+                0,
+                new CornerRadii(radTopLeft, radTopRight, radBottomRight, radBottomLeft)
+            );
         }
 
         public void FillRect(int x, int y, int width, int height)
@@ -681,7 +841,9 @@ internal class AposShapeSvg : AposShape
         _markup = SvgStyles.ReadWithInlineStyles(stream);
         _rgbMultiplier = rgbMultiplier ?? Vector3.One;
         _maximumChannel = maximumChannel;
-        _shape = new ShapeSvg(rgbMultiplier is null ? _markup : SvgColorAdjustment.Apply(_markup, _rgbMultiplier, maximumChannel));
+        _shape = new ShapeSvg(
+            rgbMultiplier is null ? _markup : SvgColorAdjustment.Apply(_markup, _rgbMultiplier, maximumChannel)
+        );
     }
 
     public void SetColorAdjustment(Vector3 multiplier, byte maximumChannel)
@@ -694,9 +856,10 @@ internal class AposShapeSvg : AposShape
         _colorDirty = true;
     }
 
-    public bool NeedsCache(IGraphicsDevice device) => _colorDirty || _cache?.ColorTexture is not { } texture
-        || texture.Width != Math.Max(1, device.Swapchain.Width)
-        || texture.Height != Math.Max(1, device.Swapchain.Height);
+    public bool NeedsCache(IGraphicsDevice device) => _colorDirty
+                                                      || _cache?.ColorTexture is not { } texture
+                                                      || texture.Width != Math.Max(1, device.Swapchain.Width)
+                                                      || texture.Height != Math.Max(1, device.Swapchain.Height);
 
     public void Prepare(IGraphicsDevice device, ShapeBatch batch, ICommandBuffer cb)
     {
@@ -706,8 +869,14 @@ internal class AposShapeSvg : AposShape
         _contentHeight = Math.Max(1, Math.Min(height, (int)Math.Ceiling(_contentWidth * _shape.Height / _shape.Width)));
 
         ReleaseCache();
-        _cache = device.CreateRenderTarget(new RenderTargetDesc(width, height, TextureFormat.Rgba8,
-            HasDepthStencil: false));
+        _cache = device.CreateRenderTarget(
+            new RenderTargetDesc(
+                width,
+                height,
+                TextureFormat.Rgba8,
+                HasDepthStencil: false
+            )
+        );
         try
         {
             cb.SetRenderTarget(_cache);
@@ -735,8 +904,12 @@ internal class AposShapeSvg : AposShape
     public override void Draw(ShapeBatch sb, float x, float y, float width, float height, Color opacity)
     {
         if (_cache != null)
-            sb.Draw(_cache.ColorTexture, new RectangleF(x, y, width, height),
-                new RectangleF(0, 0, _contentWidth, _contentHeight), Color.White * (opacity.A / 255f));
+            sb.Draw(
+                _cache.ColorTexture,
+                new RectangleF(x, y, width, height),
+                new RectangleF(0, 0, _contentWidth, _contentHeight),
+                Color.White * (opacity.A / 255f)
+            );
     }
 
     public void ReleaseCache()
@@ -755,7 +928,7 @@ internal readonly struct AposFontMetrics(ShapeFont font, float size) : IFontMetr
     {
         return font.MeasureString(text, size);
     }
-    
+
     public float LineHeight => font.LineHeight * size;
 }
 

@@ -11,7 +11,7 @@ public class OrthoLightCamera : OrthoCamera
         var interpolatedLookAt = Interpolation.InterpolateCoord(LookAt, PreviousState.LookAt, alpha);
         var interpolatedUp = Interpolation.InterpolateCoord(Up, PreviousState.Up, alpha);
         ViewMatrix = Matrix.CreateLookAt(interpolatedPosition, interpolatedLookAt, interpolatedUp);
-        
+
         // Snap the light camera to shadow map texel boundaries to prevent
         // shadow "swimming" / shimmer when the main camera moves.
         // For an orthographic projection, each texel covers a fixed world-space size.

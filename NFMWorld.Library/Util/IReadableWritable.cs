@@ -4,7 +4,8 @@ using MemoryPack;
 
 namespace NFMWorldLibrary.Util;
 
-public interface IReadableWritable<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] out TSelf> where TSelf : IMemoryPackable<TSelf>
+public interface IReadableWritable<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] out TSelf>
+    where TSelf : IMemoryPackable<TSelf>
 {
     void Write<T>(T writer) where T : IBufferWriter<byte>
     {

@@ -7,21 +7,150 @@
   "referenceWidth": 960,
   "referenceHeight": 540,
   "elements": [
-    { "type": "text", "x": 16, "y": 8, "text": "LAP {lap} / {totalLaps}", "fontSize": 14 },
-    { "type": "text", "x": 16, "y": 30, "text": "TIME", "fontSize": 12 },
-    { "type": "text", "x": 16, "y": 46, "width": 240, "height": 36, "text": "{time}", "fontSize": 26 },
-    { "type": "text", "x": 16, "y": 96, "text": "WASTED {wasted} / {opponents}", "fontSize": 12, "visibleWhen": "freePlay" },
-    { "type": "text", "x": 16, "y": 116, "text": "POSITION {position} / {totalRacers}", "fontSize": 12, "visibleWhen": "hasPosition" },
-    { "type": "text", "anchor": "topRight", "x": -236, "y": 24, "text": "POWER {power}%", "fontSize": 12 },
-    { "type": "bar", "anchor": "topRight", "x": -234, "y": 46, "width": 216, "height": 14, "value": "power", "color": "#40D8F4" },
-    { "type": "image", "anchor": "topRight", "x": -236, "y": 44, "width": 220, "height": 18, "source": "meter-frame.svg" },
-    { "type": "text", "anchor": "topRight", "x": -236, "y": 70, "text": "DAMAGE {damage}%", "fontSize": 12 },
-    { "type": "bar", "anchor": "topRight", "x": -234, "y": 92, "width": 216, "height": 14, "value": "damage", "criticalDamage": true },
-    { "type": "image", "anchor": "topRight", "x": -236, "y": 90, "width": 220, "height": 18, "source": "meter-frame.svg" },
-    { "type": "text", "anchor": "bottomCenter", "x": -90, "y": -66, "width": 180, "height": 40, "text": "{speed}", "fontSize": 32, "align": "center" },
-    { "type": "text", "anchor": "bottomCenter", "x": -90, "y": -26, "width": 180, "text": "KM/H", "fontSize": 12, "align": "center" },
-    { "type": "arrow", "anchor": "topCenter", "x": -22, "y": 26, "width": 44, "height": 56, "visibleWhen": "hasTarget", "color": "#94CFFF" },
-    { "type": "text", "anchor": "topCenter", "x": -120, "y": 6, "width": 240, "text": "{target}", "fontSize": 12, "align": "center" },
-    { "type": "standings", "anchor": "topRight", "x": -236, "y": 140, "width": 220, "height": 300, "fontSize": 12, "font": "DroidSans", "visibleWhen": "freePlay" }
+    {
+      "type": "text",
+      "x": 16,
+      "y": 8,
+      "text": "LAP {lap} / {totalLaps}",
+      "fontSize": 14
+    },
+    {
+      "type": "text",
+      "x": 16,
+      "y": 30,
+      "text": "TIME",
+      "fontSize": 12
+    },
+    {
+      "type": "text",
+      "x": 16,
+      "y": 46,
+      "width": 240,
+      "height": 36,
+      "text": "{time}",
+      "fontSize": 26
+    },
+    {
+      "type": "text",
+      "x": 16,
+      "y": 96,
+      "text": "WASTED {wasted} / {opponents}",
+      "fontSize": 12,
+      "visibleWhen": "freePlay"
+    },
+    {
+      "type": "text",
+      "x": 16,
+      "y": 116,
+      "text": "POSITION {position} / {totalRacers}",
+      "fontSize": 12,
+      "visibleWhen": "hasPosition"
+    },
+    {
+      "type": "text",
+      "anchor": "topRight",
+      "x": -236,
+      "y": 24,
+      "text": "POWER {power}%",
+      "fontSize": 12
+    },
+    {
+      "type": "bar",
+      "anchor": "topRight",
+      "x": -234,
+      "y": 46,
+      "width": 216,
+      "height": 14,
+      "value": "power",
+      "color": "#40D8F4"
+    },
+    {
+      "type": "image",
+      "anchor": "topRight",
+      "x": -236,
+      "y": 44,
+      "width": 220,
+      "height": 18,
+      "source": "meter-frame.svg"
+    },
+    {
+      "type": "text",
+      "anchor": "topRight",
+      "x": -236,
+      "y": 70,
+      "text": "DAMAGE {damage}%",
+      "fontSize": 12
+    },
+    {
+      "type": "bar",
+      "anchor": "topRight",
+      "x": -234,
+      "y": 92,
+      "width": 216,
+      "height": 14,
+      "value": "damage",
+      "criticalDamage": true
+    },
+    {
+      "type": "image",
+      "anchor": "topRight",
+      "x": -236,
+      "y": 90,
+      "width": 220,
+      "height": 18,
+      "source": "meter-frame.svg"
+    },
+    {
+      "type": "text",
+      "anchor": "bottomCenter",
+      "x": -90,
+      "y": -66,
+      "width": 180,
+      "height": 40,
+      "text": "{speed}",
+      "fontSize": 32,
+      "align": "center"
+    },
+    {
+      "type": "text",
+      "anchor": "bottomCenter",
+      "x": -90,
+      "y": -26,
+      "width": 180,
+      "text": "KM/H",
+      "fontSize": 12,
+      "align": "center"
+    },
+    {
+      "type": "arrow",
+      "anchor": "topCenter",
+      "x": -22,
+      "y": 26,
+      "width": 44,
+      "height": 56,
+      "visibleWhen": "hasTarget",
+      "color": "#94CFFF"
+    },
+    {
+      "type": "text",
+      "anchor": "topCenter",
+      "x": -120,
+      "y": 6,
+      "width": 240,
+      "text": "{target}",
+      "fontSize": 12,
+      "align": "center"
+    },
+    {
+      "type": "standings",
+      "anchor": "topRight",
+      "x": -236,
+      "y": 140,
+      "width": 220,
+      "height": 300,
+      "fontSize": 12,
+      "font": "DroidSans",
+      "visibleWhen": "freePlay"
+    }
   ]
 }

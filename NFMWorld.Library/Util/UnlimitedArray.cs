@@ -52,10 +52,12 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
             {
                 Grow(index + 1);
             }
+
             if (index >= _size)
             {
                 _size = index + 1;
             }
+
             _items[index] = value;
 
             static void ThrowArgumentOutOfRange(int i)
@@ -64,7 +66,7 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
             }
         }
     }
-    
+
     public struct Enumerator(UnlimitedArray<T> array) : IEnumerator<T>
     {
         private int _index = -1;
@@ -109,7 +111,7 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
     public UnlimitedArray(int capacity)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(capacity, 0);
-        
+
         if (capacity <= 4)
         {
             _items = new T[4];
@@ -119,8 +121,8 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
             _items = new T[capacity];
         }
     }
-    
-    
+
+
     public UnlimitedArray(IEnumerable<T> items) : this(items.TryGetNonEnumeratedCount(out var count) ? count : 0)
     {
         foreach (var item in items)
@@ -147,7 +149,7 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
     {
         return GetEnumerator();
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int EnsureCapacity(int capacity)
     {
@@ -155,6 +157,7 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
         {
             throw new ArgumentOutOfRangeException(nameof(capacity), capacity, "Capacity cannot be less than zero.");
         }
+
         if (_items.Length < capacity)
         {
             Grow(capacity);
@@ -198,7 +201,7 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
         capacity = GetNewCapacity(capacity);
         Array.Resize(ref _items, capacity);
     }
-    
+
     internal void GrowForInsertion(int indexToInsert, int insertionCount = 1)
     {
         var requiredCapacity = checked(_size + insertionCount);
@@ -233,7 +236,7 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
 
         return newCapacity;
     }
-    
+
     public virtual void Clear()
     {
         if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
@@ -281,8 +284,13 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
         // Note that insertions at the end are legal.
         if ((uint)index > (uint)_size)
         {
-            throw new ArgumentOutOfRangeException(nameof(index), index, "Index cannot be greater than the size of the collection.");
+            throw new ArgumentOutOfRangeException(
+                nameof(index),
+                index,
+                "Index cannot be greater than the size of the collection."
+            );
         }
+
         if (_size == _items.Length)
         {
             GrowForInsertion(index, 1);
@@ -291,6 +299,7 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
         {
             Array.Copy(_items, index, _items, index + 1, _size - index);
         }
+
         _items[index] = item;
         _size++;
     }
@@ -301,11 +310,13 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
         {
             throw new ArgumentOutOfRangeException(nameof(index), index, "Index must be less than the size of the collection.");
         }
+
         _size--;
         if (index < _size)
         {
             Array.Copy(_items, index + 1, _items, index, _size - index);
         }
+
         if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
         {
             _items[_size] = default!;

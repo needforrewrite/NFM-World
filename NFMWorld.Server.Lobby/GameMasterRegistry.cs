@@ -45,7 +45,8 @@ public class GameMasterRegistry : IDisposable
     public GameMasterRegistry(
         IEnumerable<string> domains,
         int maxConsecutiveFailures = 3,
-        int refreshIntervalSeconds = 60)
+        int refreshIntervalSeconds = 60
+    )
     {
         _maxConsecutiveFailures = maxConsecutiveFailures;
 
@@ -54,17 +55,22 @@ public class GameMasterRegistry : IDisposable
 
         if (_masters.Count == 0)
             throw new InvalidOperationException(
-                "No Game Masters could be resolved. Check GAME_MASTER_DOMAINS configuration.");
+                "No Game Masters could be resolved. Check GAME_MASTER_DOMAINS configuration."
+            );
 
-        _refreshTimer = new Timer(_ => RefreshAll(), null,
+        _refreshTimer = new Timer(
+            _ => RefreshAll(),
+            null,
             TimeSpan.FromSeconds(refreshIntervalSeconds),
-            TimeSpan.FromSeconds(refreshIntervalSeconds));
+            TimeSpan.FromSeconds(refreshIntervalSeconds)
+        );
     }
 
     /// <summary>Creates a registry from the GAME_MASTER_DOMAINS env var.</summary>
     public static GameMasterRegistry FromEnvironment(
         int maxConsecutiveFailures = 3,
-        int refreshIntervalSeconds = 60)
+        int refreshIntervalSeconds = 60
+    )
     {
         var domainsStr = Environment.GetEnvironmentVariable("GAME_MASTER_DOMAINS")
                          ?? "localhost";
@@ -113,7 +119,10 @@ public class GameMasterRegistry : IDisposable
         var gm = ResolveDomain(domain);
         if (gm is not null)
         {
-            lock (_lock) { _masters.Add(gm); }
+            lock (_lock)
+            {
+                _masters.Add(gm);
+            }
         }
     }
 
@@ -228,7 +237,8 @@ public class GameMasterRegistry : IDisposable
             var ip = addresses[0];
 
             Console.WriteLine(
-                $"[GameMasterRegistry] Dev GM: {host} UDP:{udpPort} HTTP:{httpPort}");
+                $"[GameMasterRegistry] Dev GM: {host} UDP:{udpPort} HTTP:{httpPort}"
+            );
 
             return new ResolvedGameMaster
             {
@@ -236,7 +246,8 @@ public class GameMasterRegistry : IDisposable
                 HttpEndpoint = new Uri($"http://{host}:{httpPort}"),
                 GameAddress = new IpAndPort(
                     new CompactIpAddress(ip.GetAddressBytes()),
-                    udpPort),
+                    udpPort
+                ),
                 Domain = entry
             };
         }
@@ -262,7 +273,8 @@ public class GameMasterRegistry : IDisposable
                 HttpEndpoint = new Uri($"http://{ip}:80"),
                 GameAddress = new IpAndPort(
                     new CompactIpAddress(ip.GetAddressBytes()),
-                    (ushort)port),
+                    (ushort)port
+                ),
                 Domain = domain
             };
         }

@@ -1,4 +1,4 @@
-﻿﻿using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using NFMWorld.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Rad;
@@ -22,7 +22,8 @@ public class Submesh : IInstancedRenderElement, IDisposable
         Mesh supermesh,
         IGraphicsDevice graphicsDevice,
         ReadOnlySpan<Mesh.VertexPositionNormalColorCentroid> vertices,
-        ReadOnlySpan<uint> indices)
+        ReadOnlySpan<uint> indices
+    )
     {
         _supermesh = supermesh;
         _graphicsDevice = graphicsDevice;
@@ -30,11 +31,15 @@ public class Submesh : IInstancedRenderElement, IDisposable
 
         var vertexBytes = MemoryMarshal.AsBytes(vertices);
         _vertexBuffer = graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length), vertexBytes);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length),
+            vertexBytes
+        );
 
         var indexBytes = MemoryMarshal.AsBytes(indices);
         _indexBuffer = graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indexBytes.Length, IndexFormat.UInt32), indexBytes);
+            new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indexBytes.Length, IndexFormat.UInt32),
+            indexBytes
+        );
 
         _vertexCount = vertices.Length;
         _triangleCount = indices.Length / 3;

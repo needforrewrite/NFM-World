@@ -14,12 +14,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
-        <ProjectReference Include="..\NFMWorld.Graphics.OpenGL\NFMWorld.Graphics.OpenGL.csproj" />
-        <ProjectReference Include="..\NFMWorld.Shaders.Abstraction\NFMWorld.Shaders.Abstraction.csproj" />
+        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj"/>
+        <ProjectReference Include="..\NFMWorld.Graphics.OpenGL\NFMWorld.Graphics.OpenGL.csproj"/>
+        <ProjectReference Include="..\NFMWorld.Shaders.Abstraction\NFMWorld.Shaders.Abstraction.csproj"/>
         <!-- The one shader whose compile dominates startup, measured on the same path the game
              takes rather than on a hand-written stand-in. -->
-        <ProjectReference Include="..\Apos.Shapes\Source\Apos.Shapes.NFMW.csproj" />
+        <ProjectReference Include="..\Apos.Shapes\Source\Apos.Shapes.NFMW.csproj"/>
     </ItemGroup>
 
     <!-- The real generated bundles, produced here by the same build step the game uses, so the ES
@@ -38,13 +38,13 @@
         <NFMWorldShadersDirectory>$(MSBuildProjectDirectory)\..\nfm-world\data\shaders</NFMWorldShadersDirectory>
     </PropertyGroup>
 
-    <Import Project="..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.targets" />
+    <Import Project="..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.targets"/>
 
     <!-- A real font, so CheckOutlinedText draws a real glyph through the real glyph path. The
          batch it drives is Apos.Shapes' own, and the file is that project's test font. -->
     <ItemGroup>
         <None Include="..\Apos.Shapes\Example\Content\source-code-pro-medium.ttf"
-              CopyToOutputDirectory="PreserveNewest" Visible="false" />
+              CopyToOutputDirectory="PreserveNewest" Visible="false"/>
     </ItemGroup>
 
 </Project>

@@ -8,10 +8,10 @@ namespace WorldXaml.ObservableCollections;
 
 public class NonSynchronizedObservableCollection<T> : Collection<T>, INonSynchronizedObservableCollection<T>
 {
-    private SimpleMonitor? _monitor; // Lazily allocated only when a subclass calls BlockReentrancy() or during serialization. Do not rename (binary serialization)
+    private SimpleMonitor?
+        _monitor; // Lazily allocated only when a subclass calls BlockReentrancy() or during serialization. Do not rename (binary serialization)
 
-    [NonSerialized]
-    private int _blockReentrancyCount;
+    [NonSerialized] private int _blockReentrancyCount;
 
     /// <summary>
     /// Initializes a new instance of ObservableCollection that is empty and has default initial capacity.
@@ -31,7 +31,9 @@ public class NonSynchronizedObservableCollection<T> : Collection<T>, INonSynchro
     /// same order they are read by the enumerator of the collection.
     /// </remarks>
     /// <exception cref="ArgumentNullException"> collection is a null reference </exception>
-    public NonSynchronizedObservableCollection(IEnumerable<T> collection) : base(new List<T>(collection ?? throw new ArgumentNullException(nameof(collection))))
+    public NonSynchronizedObservableCollection(IEnumerable<T> collection) : base(
+        new List<T>(collection ?? throw new ArgumentNullException(nameof(collection)))
+    )
     {
     }
 
@@ -45,7 +47,9 @@ public class NonSynchronizedObservableCollection<T> : Collection<T>, INonSynchro
     /// same order they are read by the enumerator of the list.
     /// </remarks>
     /// <exception cref="ArgumentNullException"> list is a null reference </exception>
-    public NonSynchronizedObservableCollection(List<T> list) : base(new List<T>(list ?? throw new ArgumentNullException(nameof(list))))
+    public NonSynchronizedObservableCollection(List<T> list) : base(
+        new List<T>(list ?? throw new ArgumentNullException(nameof(list)))
+    )
     {
     }
 
@@ -208,7 +212,15 @@ public class NonSynchronizedObservableCollection<T> : Collection<T>, INonSynchro
     /// </summary>
     private void OnCollectionChanged(NotifyCollectionChangedAction action, T item, int index, int oldIndex)
     {
-        OnCollectionChanged(new NotifyCollectionChangedEventArgs<T>(action, true, newItem: item, newStartingIndex: index, oldStartingIndex: oldIndex));
+        OnCollectionChanged(
+            new NotifyCollectionChangedEventArgs<T>(
+                action,
+                true,
+                newItem: item,
+                newStartingIndex: index,
+                oldStartingIndex: oldIndex
+            )
+        );
     }
 
     /// <summary>
@@ -216,7 +228,16 @@ public class NonSynchronizedObservableCollection<T> : Collection<T>, INonSynchro
     /// </summary>
     private void OnCollectionChanged(NotifyCollectionChangedAction action, T oldItem, T newItem, int index)
     {
-        OnCollectionChanged(new NotifyCollectionChangedEventArgs<T>(action, true, newItem: newItem, oldItem: oldItem, newStartingIndex: index, oldStartingIndex: index));
+        OnCollectionChanged(
+            new NotifyCollectionChangedEventArgs<T>(
+                action,
+                true,
+                newItem: newItem,
+                oldItem: oldItem,
+                newStartingIndex: index,
+                oldStartingIndex: index
+            )
+        );
     }
 
     /// <summary>

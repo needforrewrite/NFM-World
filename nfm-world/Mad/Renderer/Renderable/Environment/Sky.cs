@@ -25,25 +25,32 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
 
         // Reach the terrain's fog color at the horizon with a flat slope at both ends.
         const int fogLayers = 32;
-        for (var i = 1; i <= fogLayers; ++i) {
+        for (var i = 1; i <= fogLayers; ++i)
+        {
             var t = i / (float)fogLayers;
             var blend = t * t * (3 - 2 * t);
-            layers.AddLast((new Vector3(0, -skyHeight * (1 - t), skyDistance),
-                Vector3.Lerp(skyColor, fogColor, blend)));
+            layers.AddLast(
+                (new Vector3(0, -skyHeight * (1 - t), skyDistance),
+                    Vector3.Lerp(skyColor, fogColor, blend))
+            );
         }
 
         var col = skyColor;
-        for (var i = 1; i < 20; ++i) {
+        for (var i = 1; i < 20; ++i)
+        {
             col = new Vector3(0.991f, 0.991f, 0.998f) * col;
             layers.AddFirst((new Vector3(0, -skyHeight - i * 70, skyDistance), col));
         }
+
         layers.AddLast((new Vector3(0, 10250, skyDistance), fogColor));
 
         var data = new List<PositionColorVertex>();
 
         var layersArr = layers.ToArray();
-        for (var i = 0; i + 1 < layers.Count; ++i) {
-            ReadOnlySpan<(Vector3 Position, Vector3 Color)> vertices = [
+        for (var i = 0; i + 1 < layers.Count; ++i)
+        {
+            ReadOnlySpan<(Vector3 Position, Vector3 Color)> vertices =
+            [
                 (new Vector3(-1e5f, -layersArr[i].Position.Y, -layersArr[i].Position.Z), layersArr[i].Color),
                 (new Vector3(1e5f, -layersArr[i].Position.Y, -layersArr[i].Position.Z), layersArr[i].Color),
                 (new Vector3(-1e5f, -layersArr[i + 1].Position.Y, -layersArr[i + 1].Position.Z), layersArr[i + 1].Color),
@@ -59,7 +66,9 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
 
         var vertexBytes = MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(data));
         _vertexBuffer = graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length), vertexBytes);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length),
+            vertexBytes
+        );
 
         _triangleCount = data.Count / 3;
     }
@@ -91,6 +100,7 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
         {
             horizontalDirection = Vector3.UnitZ;
         }
+
         var skyWorld = Matrix.CreateWorld(Vector3.Zero, Vector3.Normalize(horizontalDirection), -Vector3.UnitY);
         viewMatrix = skyWorld * viewMatrix;
 
@@ -103,6 +113,7 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
         {
             col = new Vector3(0.991f, 0.991f, 0.998f) * col;
         }
+
         cb.Clear(NFMWorld.Graphics.ClearOptions.Color, new ColorRgba(col.X, col.Y, col.Z));
 
         p.WorldViewProj.SetValue(cb, viewMatrix * camera.ProjectionMatrix);

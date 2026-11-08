@@ -11,7 +11,13 @@ public static class SkidSoundFilter
     public static bool HasDriftSlip(float velocityX, float velocityZ, float headingDegrees)
         => HasSlip(velocityX, velocityZ, headingDegrees, 25, 0.35f);
 
-    private static bool HasSlip(float velocityX, float velocityZ, float headingDegrees, float minimumLateralSpeed, float minimumSlipRatio)
+    private static bool HasSlip(
+        float velocityX,
+        float velocityZ,
+        float headingDegrees,
+        float minimumLateralSpeed,
+        float minimumSlipRatio
+    )
     {
         if (!float.IsFinite(velocityX) || !float.IsFinite(velocityZ) || !float.IsFinite(headingDegrees)) return false;
         var speed = MathF.Sqrt(velocityX * velocityX + velocityZ * velocityZ);

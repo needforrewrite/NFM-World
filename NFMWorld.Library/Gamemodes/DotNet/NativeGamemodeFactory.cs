@@ -32,7 +32,9 @@ public class NativeGamemodeFactory(GamemodePlugin plugin, Dictionary<string, obj
     /// holding on to it is exactly what would keep the assembly resident.
     /// </summary>
     public GamemodePlugin Plugin => _plugin
-        ?? throw new InvalidOperationException($"Gamemode plugin '{_gamemodeId}' has already been released.");
+                                    ?? throw new InvalidOperationException(
+                                        $"Gamemode plugin '{_gamemodeId}' has already been released."
+                                    );
 
     public override string GamemodeId => _gamemodeId;
 
@@ -40,12 +42,14 @@ public class NativeGamemodeFactory(GamemodePlugin plugin, Dictionary<string, obj
 
     public override IGamemode CreateGameMode(
         ClientGamemodeParameters parameters,
-        IGamemodeContext gamemodeContext)
+        IGamemodeContext gamemodeContext
+    )
         => Plugin.CreateClient(parameters, gamemodeContext, config);
 
     public override IServerGamemode CreateServerGamemode(
         ServerGamemodeParameters parameters,
-        IServerGamemodeContext context)
+        IServerGamemodeContext context
+    )
         => Plugin.CreateServer(parameters, context, config);
 
     /// <summary>

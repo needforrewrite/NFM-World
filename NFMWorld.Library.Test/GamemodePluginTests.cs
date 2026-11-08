@@ -89,7 +89,8 @@ public class GamemodePluginTests
 
         CollectionAssert.AreEqual(
             new[] { "racing", "wasting", "both" },
-            property.Options.Select(o => o.Value).ToArray());
+            property.Options.Select(o => o.Value).ToArray()
+        );
     }
 
     [TestMethod]
@@ -111,7 +112,9 @@ public class GamemodePluginTests
         Load("nfmm/pvp");
 
         var factory = NFMWorldLibrary.Multiplayer.GamemodeFactory.Create(
-            "nfmm/pvp", new Dictionary<string, object> { ["constraint"] = "both" });
+            "nfmm/pvp",
+            new Dictionary<string, object> { ["constraint"] = "both" }
+        );
 
         Assert.IsInstanceOfType<NativeGamemodeFactory>(factory);
     }
@@ -122,7 +125,9 @@ public class GamemodePluginTests
         Load("nfmm/pvp");
 
         var factory = (NativeGamemodeFactory)NFMWorldLibrary.Multiplayer.GamemodeFactory.Create(
-            "nfmm/pvp", new Dictionary<string, object> { ["constraint"] = "both" });
+            "nfmm/pvp",
+            new Dictionary<string, object> { ["constraint"] = "both" }
+        );
 
         Assert.IsNotNull(factory);
         Assert.AreEqual("nfmm/pvp", factory.GamemodeId);

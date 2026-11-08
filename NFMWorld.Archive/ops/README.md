@@ -7,16 +7,16 @@ intended deployment for the expected user count; everything below assumes that.
 
 Set through the `Archive__*` environment variables (double underscore nests).
 
-| Variable | Purpose |
-|---|---|
-| `Archive__Database` | SQLite connection string, e.g. `Data Source=/data/archive.db` |
-| `Archive__StorageRoot` | Directory for uploaded files |
-| `Archive__PublicBaseUrl` | Origin clients use; must be a **separate origin** from the website |
-| `Archive__TrustedServerKeys` | `id=base64secret` list the lobby signs results with |
-| `Archive__ValidatorPath` | Path to `NFMWorld.Archive.Validator`; time-trial validation is refused without it |
-| `Archive__ValidatorWorkingDirectory` | Directory holding the game `data/` tree the validator needs |
-| `Archive__DiscordClientId` / `DiscordClientSecret` / `DiscordRedirectUri` | Discord sign-in |
-| `Archive__ReadOnly` | Disables registration and uploads |
+| Variable                                                                  | Purpose                                                                           |
+|---------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| `Archive__Database`                                                       | SQLite connection string, e.g. `Data Source=/data/archive.db`                     |
+| `Archive__StorageRoot`                                                    | Directory for uploaded files                                                      |
+| `Archive__PublicBaseUrl`                                                  | Origin clients use; must be a **separate origin** from the website                |
+| `Archive__TrustedServerKeys`                                              | `id=base64secret` list the lobby signs results with                               |
+| `Archive__ValidatorPath`                                                  | Path to `NFMWorld.Archive.Validator`; time-trial validation is refused without it |
+| `Archive__ValidatorWorkingDirectory`                                      | Directory holding the game `data/` tree the validator needs                       |
+| `Archive__DiscordClientId` / `DiscordClientSecret` / `DiscordRedirectUri` | Discord sign-in                                                                   |
+| `Archive__ReadOnly`                                                       | Disables registration and uploads                                                 |
 
 ### Generating keys
 
@@ -34,17 +34,17 @@ ratings, and only the lobby should have it.
 
 **Archive ↔ lobby** (the key that signs `POST /results/match`):
 
-| Where | Variable |
-|---|---|
-| Lobby | `ARCHIVE_URL` (also enables token checks on join), `HMAC_KEY_ID`, `ARCHIVE_SECRET_KEY` |
-| Archive | `Archive__TrustedServerKeys=<keyId>=<secret>` |
+| Where   | Variable                                                                               |
+|---------|----------------------------------------------------------------------------------------|
+| Lobby   | `ARCHIVE_URL` (also enables token checks on join), `HMAC_KEY_ID`, `ARCHIVE_SECRET_KEY` |
+| Archive | `Archive__TrustedServerKeys=<keyId>=<secret>`                                          |
 
 **Lobby ↔ game master** (the key that signs `/create-race` and `/race-ended`):
 
-| Where | Variable |
-|---|---|
-| Lobby | `HMAC_KEY_ID`, `HMAC_SECRET_KEY` |
-| Game master | `GM_HMAC_KEYS=<keyId>=<secret>` |
+| Where       | Variable                         |
+|-------------|----------------------------------|
+| Lobby       | `HMAC_KEY_ID`, `HMAC_SECRET_KEY` |
+| Game master | `GM_HMAC_KEYS=<keyId>=<secret>`  |
 
 The same `HMAC_KEY_ID`/`HMAC_SECRET_KEY` pair may be reused for both trust levels if you keep it
 to one deployment, but never hand the archive key to a game master: the game master runs on

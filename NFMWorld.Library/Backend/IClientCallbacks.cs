@@ -8,7 +8,10 @@ namespace NFMWorldLibrary.Backend;
 [PluginVisible(Visible.IncludingAllMembersOfType)]
 public interface IClientCallbacks
 {
-    void RaceRestarted() { }
+    void RaceRestarted()
+    {
+    }
+
     void ResetCheckpointGlow();
     void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish);
     IClientCarCallbacks GetClientCarCallbacks(BackendCar car);

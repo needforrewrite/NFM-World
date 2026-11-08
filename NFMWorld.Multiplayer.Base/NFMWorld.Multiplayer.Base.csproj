@@ -7,15 +7,15 @@
         <RootNamespace>NFMWorld.Server.Base</RootNamespace>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
-    
+
     <ItemGroup>
         <PackageReference Include="ENet-CSharp" Version="2.4.8"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\NFMWorld.Library.Base\NFMWorld.Library.Base.csproj" />
+        <ProjectReference Include="..\NFMWorld.Library.Base\NFMWorld.Library.Base.csproj"/>
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj"/>
-        <ProjectReference Include="..\NFMWorld.ClientOnlyAnalyzer\NFMWorld.ClientOnlyAnalyzer.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+        <ProjectReference Include="..\NFMWorld.ClientOnlyAnalyzer\NFMWorld.ClientOnlyAnalyzer.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">

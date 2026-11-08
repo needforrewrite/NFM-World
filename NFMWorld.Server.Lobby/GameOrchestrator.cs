@@ -74,20 +74,27 @@ public class GameOrchestrator
             // A guest has a slot but no account: they take part and can be ranked in the result,
             // they just cannot be rated. Bots are distinguished from guests upstream (the client
             // marks them), so an accountless slot is a guest here rather than a bot.
-            players.Add(new ResultPlayer(
-                slot.Value.AccountId > 0 ? slot.Value.AccountId : null,
-                standing.FinishPosition,
-                standing.FinishTime?.Ticks,
-                IsBot: slot.Value.IsBot));
+            players.Add(
+                new ResultPlayer(
+                    slot.Value.AccountId > 0 ? slot.Value.AccountId : null,
+                    standing.FinishPosition,
+                    standing.FinishTime?.Ticks,
+                    IsBot: slot.Value.IsBot
+                )
+            );
         }
 
-        return await _archive.ReportMatchAsync(new MatchReport(
-            matchKey.ToString("N"),
-            pending.Info.Gamemode,
-            pending.Info.StageName,
-            StageHash: null,
-            results.RaceDuration.Ticks,
-            players), ct);
+        return await _archive.ReportMatchAsync(
+            new MatchReport(
+                matchKey.ToString("N"),
+                pending.Info.Gamemode,
+                pending.Info.StageName,
+                StageHash: null,
+                results.RaceDuration.Ticks,
+                players
+            ),
+            ct
+        );
     }
 
     public GameOrchestrator(IMultiplayerServerTransport transport)
@@ -101,15 +108,18 @@ public class GameOrchestrator
         _gmRegistry = GameMasterRegistry.FromEnvironment();
         _gmClient = new GameMasterHttpClient(
             Environment.GetEnvironmentVariable("HMAC_KEY_ID") ?? "primary",
-            Environment.GetEnvironmentVariable("HMAC_SECRET_KEY") ?? "");
+            Environment.GetEnvironmentVariable("HMAC_SECRET_KEY") ?? ""
+        );
 
         // The archive is optional: a lobby run without one still works, it just admits everyone
         // as a guest and reports no results.
         if (Environment.GetEnvironmentVariable("ARCHIVE_URL") is { Length: > 0 } archiveUrl)
         {
-            _archive = new ArchiveClient(archiveUrl,
+            _archive = new ArchiveClient(
+                archiveUrl,
                 Environment.GetEnvironmentVariable("HMAC_KEY_ID"),
-                Environment.GetEnvironmentVariable("ARCHIVE_SECRET_KEY"));
+                Environment.GetEnvironmentVariable("ARCHIVE_SECRET_KEY")
+            );
         }
 
         transport.PacketReceived += TransportOnPacketReceived;
@@ -150,7 +160,8 @@ public class GameOrchestrator
                         .Select(ci => ci!.Value)
                         .ToArray(),
                     new S2C_RaceFailedToStart(),
-                    false);
+                    false
+                );
             }
 
             Thread.Sleep(1000);
@@ -202,8 +213,10 @@ public class GameOrchestrator
 
     // ── Packet dispatch ──────────────────────────────────────────────
 
-    private void TransportOnPacketReceived(object? sender,
-        (uint ClientIndex, IPacketClientToServer Packet) e)
+    private void TransportOnPacketReceived(
+        object? sender,
+        (uint ClientIndex, IPacketClientToServer Packet) e
+    )
     {
         switch (e.Packet)
         {
@@ -240,8 +253,10 @@ public class GameOrchestrator
                 break;
 
             default:
-                throw new ArgumentOutOfRangeException(nameof(e.Packet),
-                    $"Unexpected packet type: {e.Packet.GetType().Name}");
+                throw new ArgumentOutOfRangeException(
+                    nameof(e.Packet),
+                    $"Unexpected packet type: {e.Packet.GetType().Name}"
+                );
         }
     }
 
@@ -287,11 +302,18 @@ public class GameOrchestrator
             case TokenVerification.Valid:
                 // One account, one seat: a second connection on the same account would let one
                 // player take two cars in a race and vote twice in every session.
-                if (account!.AccountId != 0 && _players.All.Any(p =>
-                        p.Key != clientIndex && p.Value.AccountId == account.AccountId))
+                if (account!.AccountId != 0
+                    && _players.All.Any(p =>
+                        p.Key != clientIndex && p.Value.AccountId == account.AccountId
+                    ))
                 {
-                    SendAuthenticated(clientIndex, false, "",
-                        "This account is already in the lobby on another connection.", accountId: 0);
+                    SendAuthenticated(
+                        clientIndex,
+                        false,
+                        "",
+                        "This account is already in the lobby on another connection.",
+                        accountId: 0
+                    );
                     _transport.DisconnectClient(clientIndex);
                     break;
                 }
@@ -307,8 +329,13 @@ public class GameOrchestrator
                 // The archive has spoken: the session is gone. Say so and evict: leaving the
                 // connection open let a refused client keep sitting in the lobby.
                 client.AccountId = 0;
-                SendAuthenticated(clientIndex, false, "", "Your session has expired. Sign in again.",
-                    accountId: 0);
+                SendAuthenticated(
+                    clientIndex,
+                    false,
+                    "",
+                    "Your session has expired. Sign in again.",
+                    accountId: 0
+                );
                 _transport.DisconnectClient(clientIndex);
                 break;
 
@@ -323,17 +350,25 @@ public class GameOrchestrator
         }
     }
 
-    private void SendAuthenticated(uint clientIndex, bool accepted, string username, string? error,
-        int? accountId = null)
+    private void SendAuthenticated(
+        uint clientIndex,
+        bool accepted,
+        string username,
+        string? error,
+        int? accountId = null
+    )
     {
         var client = _players.Get(clientIndex);
-        _transport.SendPacketToClient(clientIndex, new S2C_Authenticated
-        {
-            Accepted = accepted,
-            AccountId = accountId ?? client?.AccountId ?? 0,
-            Username = username,
-            Error = error
-        });
+        _transport.SendPacketToClient(
+            clientIndex,
+            new S2C_Authenticated
+            {
+                Accepted = accepted,
+                AccountId = accountId ?? client?.AccountId ?? 0,
+                Username = username,
+                Error = error
+            }
+        );
     }
 
     private void HandlePlayerIdentity(uint clientId, C2S_PlayerIdentity identity)
@@ -353,17 +388,22 @@ public class GameOrchestrator
         var player = _players.Get(clientId);
         if (player is null) return;
 
-        var session = _sessions.CreateSession(clientId, create.StageName,
+        var session = _sessions.CreateSession(
+            clientId,
+            create.StageName,
             (byte)Math.Clamp(create.MaxPlayers, 2, MatchGameplayInfo.MaxPlayers),
-            create.GameMode, create.GameModeParameters,
-            Math.Clamp(create.Bots, 0, MatchGameplayInfo.MaxPlayers - 1));
+            create.GameMode,
+            create.GameModeParameters,
+            Math.Clamp(create.Bots, 0, MatchGameplayInfo.MaxPlayers - 1)
+        );
 
         // The creator can be gone by the time this runs, and CreateSession reports that as null.
         if (session is null)
             return;
 
         _chat.BroadcastSystem(
-            $"{session.CreatorName} has started a session for {session.StageName}!");
+            $"{session.CreatorName} has started a session for {session.StageName}!"
+        );
         _broadcaster.BroadcastToAll();
     }
 
@@ -392,7 +432,8 @@ public class GameOrchestrator
         if (session is not null)
         {
             _chat.BroadcastSystem(
-                $"{player.Name} has left {session.CreatorName}'s session!");
+                $"{player.Name} has left {session.CreatorName}'s session!"
+            );
             _broadcaster.BroadcastToAll();
         }
     }
@@ -465,7 +506,8 @@ public class GameOrchestrator
             _pendingMatches[createRequest.MatchKey] = new PendingMatch(matchInfo, session.Id);
 
             _chat.BroadcastSystem(
-                $"{session.CreatorName} has started the race on {session.StageName}!");
+                $"{session.CreatorName} has started the race on {session.StageName}!"
+            );
 
             // Use the GM's SRV-resolved game address (Lobby already knows it)
             var gameAddress = gm.GameAddress;
@@ -477,16 +519,19 @@ public class GameOrchestrator
                     var player = _players.Get(id);
                     if (player != null)
                     {
-                        _transport.SendPacketToClient(player.ClientIndex, new S2C_RaceStarted
-                        {
-                            MatchGameplayInfo = matchInfo,
-                            State = session.State,
-                            JoinInfo = new S2C_RaceStarted.GameJoinInfo
+                        _transport.SendPacketToClient(
+                            player.ClientIndex,
+                            new S2C_RaceStarted
                             {
-                                RaceServerIpAddress = gameAddress,
-                                JoinToken = token
+                                MatchGameplayInfo = matchInfo,
+                                State = session.State,
+                                JoinInfo = new S2C_RaceStarted.GameJoinInfo
+                                {
+                                    RaceServerIpAddress = gameAddress,
+                                    JoinToken = token
+                                }
                             }
-                        });
+                        );
                     }
                 }
             }
@@ -511,7 +556,8 @@ public class GameOrchestrator
             }
 
             _chat.BroadcastSystem(
-                $"Failed to start race on {session.StageName}: {ex.Message}\n{ex.StackTrace}");
+                $"Failed to start race on {session.StageName}: {ex.Message}\n{ex.StackTrace}"
+            );
         }
     }
 }

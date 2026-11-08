@@ -4,12 +4,16 @@ public enum DistantOutlineBehavior
 {
     // Same perspective-like sizing as DistanceFalloff, with a short linear fade to zero at its final cutoff.
     DistanceFalloffWithCutoff = 0,
+
     // Perspective-like mode: outlines keep shrinking with distance, but never get hard-hidden by the minimum visible thickness.
     DistanceFalloff = 1,
+
     // Original NFM-style behavior render outlines at full width until a fixed distance, then hide them.
     ClassicCutoff = 2,
+
     // debug / simple mode, always render outlines
     AlwaysRender = 3,
+
     // Do not render outlines
     HideOutlines = 4
 }

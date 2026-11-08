@@ -23,13 +23,16 @@ public partial class BackendStage
     [PluginVisible] public string Name = "hogan rewish";
 
     [PluginVisible] public readonly string Path;
-    
+
     // left
     [PluginVisible] public int Sx;
+
     // top
     [PluginVisible] public int Sz;
+
     // width
     [PluginVisible] public int Ncx;
+
     // height
     [PluginVisible] public int Ncz;
 
@@ -79,7 +82,9 @@ public partial class BackendStage
         catch (StageLoadException exception)
         {
             SentrySdk.CaptureException(exception);
-            Logging.Error($"Error in stage: {stageName}\nAt line: {exception.Line} (number {exception.LineNumber})\n{exception.ToString()}");
+            Logging.Error(
+                $"Error in stage: {stageName}\nAt line: {exception.Line} (number {exception.LineNumber})\n{exception.ToString()}"
+            );
         }
         catch (Exception exception)
         {
@@ -160,11 +165,11 @@ public partial class BackendStage
         Nlaps = stageLoader.nlaps;
         Name = stageLoader.Name;
         Physics = stageLoader.Physics;
-            
+
         // stage walls
         if (stageLoader.walls.Count > 0)
         {
-            Pieces[StagePartCount] = new WallCollision([..stageLoader.walls]);
+            Pieces[StagePartCount] = new WallCollision([.. stageLoader.walls]);
         }
 
         SetBounds(stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb);
@@ -179,12 +184,13 @@ public partial class BackendStage
         {
             Ncx = 1;
         }
+
         Ncz = ncz;
         if (Ncz <= 0)
         {
             Ncz = 1;
         }
-        
+
         _collisionQuadTree = new QuadTree<CollisionShapeRef>(sx, sz, ncx, ncz);
         foreach (var piece in Pieces)
         {
@@ -193,6 +199,7 @@ public partial class BackendStage
                 AddToQuadTree(collidable);
             }
         }
+
         _collisionQuadTree.TrimExcess();
     }
 
@@ -217,8 +224,8 @@ public partial class BackendStage
 
         return mesh;
     }
-    
-    private QuadTree<CollisionShapeRef> _collisionQuadTree = new(0,0,0,0);
+
+    private QuadTree<CollisionShapeRef> _collisionQuadTree = new(0, 0, 0, 0);
     private int _quadTreeInsertionIndex = 0;
 
     private void AddToQuadTree(ICollidable mesh)
@@ -234,51 +241,57 @@ public partial class BackendStage
             z = transform.Position.Z;
             xz = transform.Rotation.Xz.Degrees;
         }
-        
+
         foreach (var box in mesh.Boxes)
         {
-            _collisionQuadTree.Insert(new CollisionShapeRef(
-                gameObjectX: x,
-                gameObjectY: y,
-                gameObjectZ: z,
-                gameObjectRotXz: xz,
-                box: box,
-                radius: 0, // bounds are now computed from world-space box position inside the constructor
-                index: _quadTreeInsertionIndex++
-            ));
+            _collisionQuadTree.Insert(
+                new CollisionShapeRef(
+                    gameObjectX: x,
+                    gameObjectY: y,
+                    gameObjectZ: z,
+                    gameObjectRotXz: xz,
+                    box: box,
+                    radius: 0, // bounds are now computed from world-space box position inside the constructor
+                    index: _quadTreeInsertionIndex++
+                )
+            );
         }
 
         if (mesh.CollisionMesh is { } colMesh)
         {
             var maxR = mesh.MaxRadius;
-            _collisionQuadTree.Insert(new CollisionShapeRef(
-                gameObjectX: x,
-                gameObjectY: y,
-                gameObjectZ: z,
-                gameObjectRotXz: xz,
-                colMesh: colMesh,
-                maxR,
-                index: _quadTreeInsertionIndex++
-            ));
+            _collisionQuadTree.Insert(
+                new CollisionShapeRef(
+                    gameObjectX: x,
+                    gameObjectY: y,
+                    gameObjectZ: z,
+                    gameObjectRotXz: xz,
+                    colMesh: colMesh,
+                    maxR,
+                    index: _quadTreeInsertionIndex++
+                )
+            );
         }
 
         if (mesh.CollisionHull is { } colHull)
         {
             var maxR = mesh.MaxRadius;
-            _collisionQuadTree.Insert(new CollisionShapeRef(
-                gameObjectX: x,
-                gameObjectY: y,
-                gameObjectZ: z,
-                gameObjectRotXz: xz,
-                colHull: colHull,
-                maxR,
-                index: _quadTreeInsertionIndex++
-            ));
+            _collisionQuadTree.Insert(
+                new CollisionShapeRef(
+                    gameObjectX: x,
+                    gameObjectY: y,
+                    gameObjectZ: z,
+                    gameObjectRotXz: xz,
+                    colHull: colHull,
+                    maxR,
+                    index: _quadTreeInsertionIndex++
+                )
+            );
         }
     }
-    
+
     private readonly List<CollisionShapeRef> _tempTrackers = new();
-    
+
     [PluginVisible]
     public ReadOnlySpan<CollisionShapeRef> RetrievePointCollidables(fix64 x, fix64 z)
     {
@@ -293,13 +306,11 @@ public partial class BackendStage
 [PluginVisible]
 public partial class WallCollision : BackendGameObject, ICollidable
 {
-    [PluginVisible]
-    public IReadOnlyList<Rad3dBoxDef> Boxes { get; }
-    
+    [PluginVisible] public IReadOnlyList<Rad3dBoxDef> Boxes { get; }
+
     IReadOnlyList<Rad3dBoxDef> ICollidable.Boxes => Boxes;
-    
-    [PluginVisible]
-    public int MaxRadius { get; }
+
+    [PluginVisible] public int MaxRadius { get; }
 
     public Rad3dCollisionMesh? CollisionMesh => null;
     public Rad3dCollisionHull? CollisionHull => null;
@@ -307,7 +318,7 @@ public partial class WallCollision : BackendGameObject, ICollidable
     public WallCollision(Rad3dBoxDef[] boxes)
     {
         Boxes = boxes;
-        
+
         int maxRadius = 0;
         foreach (var box in Boxes)
         {
@@ -317,6 +328,7 @@ public partial class WallCollision : BackendGameObject, ICollidable
                 maxRadius = boxMax;
             }
         }
+
         MaxRadius = maxRadius;
     }
 }
@@ -324,35 +336,25 @@ public partial class WallCollision : BackendGameObject, ICollidable
 [PluginVisible]
 public partial class StageObject(Rad3d rad) : BackendGameObject, IAiNode, ICollidable
 {
-    [PluginVisible]
-    public PiecePlacement OriginalPlacement { get; set; }
+    [PluginVisible] public PiecePlacement OriginalPlacement { get; set; }
 
-    [PluginVisible]
-    public Rad3d Rad { get; } = rad;
-    
-    [PluginVisible]
-    public AiNodeKind Kind { get; set; } = AiNodeKind.Auto;
-    
-    [PluginVisible]
-    public bool IsSpecial { get; set; }
-    
-    [PluginVisible]
-    public IReadOnlyList<Rad3dBoxDef> Boxes { get; } = rad.Boxes;
-    
-    [PluginVisible]
-    IReadOnlyList<Rad3dBoxDef> ICollidable.Boxes => Boxes;
-    
-    [PluginVisible]
-    public int MaxRadius { get; } = rad.MaxRadius;
-    
-    [PluginVisible]
-    public string FileName => Rad.FileName;
+    [PluginVisible] public Rad3d Rad { get; } = rad;
 
-    [PluginVisible]
-    public Rad3dCollisionMesh? CollisionMesh { get; set; } = rad.CollisionMesh;
-    
-    [PluginVisible]
-    public Rad3dCollisionHull? CollisionHull { get; set; } = rad.CollisionHull;
+    [PluginVisible] public AiNodeKind Kind { get; set; } = AiNodeKind.Auto;
+
+    [PluginVisible] public bool IsSpecial { get; set; }
+
+    [PluginVisible] public IReadOnlyList<Rad3dBoxDef> Boxes { get; } = rad.Boxes;
+
+    [PluginVisible] IReadOnlyList<Rad3dBoxDef> ICollidable.Boxes => Boxes;
+
+    [PluginVisible] public int MaxRadius { get; } = rad.MaxRadius;
+
+    [PluginVisible] public string FileName => Rad.FileName;
+
+    [PluginVisible] public Rad3dCollisionMesh? CollisionMesh { get; set; } = rad.CollisionMesh;
+
+    [PluginVisible] public Rad3dCollisionHull? CollisionHull { get; set; } = rad.CollisionHull;
 
     [PluginVisible]
     public StageObject(Rad3d rad, f64Vector3 position, f64Euler rotation, PiecePlacement originalPlacement) : this(rad)
@@ -363,8 +365,21 @@ public partial class StageObject(Rad3d rad) : BackendGameObject, IAiNode, IColli
     }
 
     [PluginVisible]
-    public static StageObject CreateDefaultObject(Rad3d rad, f64Vector3 position, f64Euler rotation, PiecePlacementType placementType = PiecePlacementType.CollisionObject, AiNodeKind? aiNodeKind = null, bool isSpecial = false, bool isWall = false)
+    public static StageObject CreateDefaultObject(
+        Rad3d rad,
+        f64Vector3 position,
+        f64Euler rotation,
+        PiecePlacementType placementType = PiecePlacementType.CollisionObject,
+        AiNodeKind? aiNodeKind = null,
+        bool isSpecial = false,
+        bool isWall = false
+    )
     {
-        return new StageObject(rad, position, rotation, new PiecePlacement(placementType, rad, position, rotation, aiNodeKind, isSpecial, isWall));
+        return new StageObject(
+            rad,
+            position,
+            rotation,
+            new PiecePlacement(placementType, rad, position, rotation, aiNodeKind, isSpecial, isWall)
+        );
     }
 }

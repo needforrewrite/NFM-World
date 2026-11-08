@@ -33,7 +33,15 @@ public sealed class YogaTestPhase : BasePhase
         _root.LayoutAndRender(G.Viewport);
     }
 
-    public override void MouseMoved(int x, int y, bool imguiWantsMouse, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public override void MouseMoved(
+        int x,
+        int y,
+        bool imguiWantsMouse,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         if (imguiWantsMouse)
             return;
@@ -44,11 +52,22 @@ public sealed class YogaTestPhase : BasePhase
 
         if (_dragButton is { } dragButton)
         {
-            _root.DispatchMouseDragged(new BaseMouseDragEvent(_mouseDownPos, pos, (byte)dragButton, buttons, ctrlKey, altKey, shiftKey));
+            _root.DispatchMouseDragged(
+                new BaseMouseDragEvent(_mouseDownPos, pos, (byte)dragButton, buttons, ctrlKey, altKey, shiftKey)
+            );
         }
     }
 
-    public override void MousePressed(int x, int y, bool imguiWantsMouse, MouseButton button, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public override void MousePressed(
+        int x,
+        int y,
+        bool imguiWantsMouse,
+        MouseButton button,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         if (imguiWantsMouse)
             return;
@@ -62,7 +81,16 @@ public sealed class YogaTestPhase : BasePhase
         _root.DispatchMousePressed(@event);
     }
 
-    public override void MouseReleased(int x, int y, bool imguiWantsMouse, MouseButton button, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public override void MouseReleased(
+        int x,
+        int y,
+        bool imguiWantsMouse,
+        MouseButton button,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         if (imguiWantsMouse)
             return;
@@ -75,7 +103,16 @@ public sealed class YogaTestPhase : BasePhase
         _root.DispatchMouseReleased(@event);
     }
 
-    public override void MouseScrolled(int x, int y, int delta, bool imguiWantsMouse, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public override void MouseScrolled(
+        int x,
+        int y,
+        int delta,
+        bool imguiWantsMouse,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         if (imguiWantsMouse)
             return;

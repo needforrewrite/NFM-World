@@ -39,10 +39,13 @@ public static class TimeTrialSimulator
             ]
         };
 
-        var factory = GamemodeFactory.Create("nfmm/timetrial", new Dictionary<string, object>
-        {
-            ["simulation"] = true
-        });
+        var factory = GamemodeFactory.Create(
+            "nfmm/timetrial",
+            new Dictionary<string, object>
+            {
+                ["simulation"] = true
+            }
+        );
 
         // Give the host the recorded stage too, not just the client: it builds its own
         // stage from the current files otherwise, so a stage edited since the recording

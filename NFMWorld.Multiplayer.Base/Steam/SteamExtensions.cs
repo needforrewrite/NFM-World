@@ -12,15 +12,14 @@ public static class SteamExtensions
             where T : unmanaged
         {
             fixed (T* ptr = data)
-                return connection.SendMessage((IntPtr) ptr, data.AsBytes().Length, sendType);
+                return connection.SendMessage((IntPtr)ptr, data.AsBytes().Length, sendType);
         }
 
         public unsafe Result SendMessage<T>(ReadOnlySpan<T> data, SendType sendType = SendType.Reliable)
             where T : unmanaged
         {
             fixed (T* ptr = data)
-                return connection.SendMessage((IntPtr) ptr, data.AsBytes().Length, sendType);
+                return connection.SendMessage((IntPtr)ptr, data.AsBytes().Length, sendType);
         }
     }
-
 }

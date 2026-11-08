@@ -15,6 +15,7 @@
 //     the sample count above one means rendering into a separate multisampled texture and resolving
 //     it into the back buffer at present time. That is the same structure FNA3D's D3D11 driver uses,
 //     and it is why MultiSampleCount here is a real, per-draw property rather than a window flag.
+
 using TerraFX.Interop.DirectX;
 using TerraFX.Interop.Windows;
 
@@ -47,6 +48,7 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
     /// presents, so caching the pair here is correct.
     /// </summary>
     private ID3D11Texture2D* _backBuffer;
+
     private ID3D11RenderTargetView* _backBufferView;
 
     /// <summary>
@@ -54,6 +56,7 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
     /// is above one, and the view over it. Null when it is one.
     /// </summary>
     private ID3D11Texture2D* _multisampledTexture;
+
     private ID3D11RenderTargetView* _multisampledView;
 
     private ID3D11Texture2D* _depthTexture;
@@ -111,8 +114,13 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
     internal ID3D11DepthStencilView* DepthView => _depthView;
 
     internal D3D11Swapchain(
-        D3D11GraphicsDevice device, nint windowHandle, int width, int height, int requestedMultiSampleCount,
-        TextureFormat depthFormat)
+        D3D11GraphicsDevice device,
+        nint windowHandle,
+        int width,
+        int height,
+        int requestedMultiSampleCount,
+        TextureFormat depthFormat
+    )
     {
         _device = device;
         _depthFormat = depthFormat;
@@ -157,13 +165,17 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
             // leaves a pointer into storage the compiler is free not to keep alive across the call.
             var dxgiDeviceIid = D3D11Interop.Iid<IDXGIDevice>();
             D3D11Interop.Check(
-                device->QueryInterface(&dxgiDeviceIid, (void**)&dxgiDevice), "ID3D11Device -> IDXGIDevice");
+                device->QueryInterface(&dxgiDeviceIid, (void**)&dxgiDevice),
+                "ID3D11Device -> IDXGIDevice"
+            );
 
             D3D11Interop.Check(dxgiDevice->GetAdapter(&adapter), "IDXGIDevice::GetAdapter");
 
             var factory1Iid = D3D11Interop.Iid<IDXGIFactory1>();
             D3D11Interop.Check(
-                adapter->GetParent(&factory1Iid, (void**)&factory1), "IDXGIAdapter -> IDXGIFactory1");
+                adapter->GetParent(&factory1Iid, (void**)&factory1),
+                "IDXGIAdapter -> IDXGIFactory1"
+            );
 
             // IDXGIFactory2 for CreateSwapChainForHwnd, which is the only entry point that can ask for
             // a flip-model swap effect. Every Windows 8 and later factory has it.
@@ -171,7 +183,8 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
             D3D11Interop.Check(
                 factory1->QueryInterface(&factory2Iid, (void**)&factory2),
                 "IDXGIFactory1 -> IDXGIFactory2",
-                "A factory without IDXGIFactory2 predates Windows 8, so no flip-model swapchain is available.");
+                "A factory without IDXGIFactory2 predates Windows 8, so no flip-model swapchain is available."
+            );
 
             return factory2;
         }
@@ -205,7 +218,11 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
 
             BOOL supported = false;
             if (factory5->CheckFeatureSupport(
-                    DXGI_FEATURE.DXGI_FEATURE_PRESENT_ALLOW_TEARING, &supported, (uint)sizeof(BOOL)) < 0)
+                    DXGI_FEATURE.DXGI_FEATURE_PRESENT_ALLOW_TEARING,
+                    &supported,
+                    (uint)sizeof(BOOL)
+                )
+                < 0)
             {
                 return false;
             }
@@ -257,7 +274,13 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
             };
 
             var hr = _factory->CreateSwapChainForHwnd(
-                (IUnknown*)_device.Device, hwnd, &desc, null, null, &swapChain1);
+                (IUnknown*)_device.Device,
+                hwnd,
+                &desc,
+                null,
+                null,
+                &swapChain1
+            );
 
             if (hr >= 0)
             {
@@ -293,9 +316,10 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
                 D3D11Interop.Check(
                     _factory->CreateSwapChain((IUnknown*)_device.Device, &fallback, &bltChain),
                     "IDXGIFactory1::CreateSwapChain (flip model rejected; blt model)",
-                    "The flip-model swapchain failed, which usually means the driver is too old for " +
-                    "DXGI_SWAP_EFFECT_FLIP_DISCARD. Tearing support and the low-latency present are " +
-                    "unavailable on the fallback.");
+                    "The flip-model swapchain failed, which usually means the driver is too old for "
+                    + "DXGI_SWAP_EFFECT_FLIP_DISCARD. Tearing support and the low-latency present are "
+                    + "unavailable on the fallback."
+                );
 
                 swapChain1 = (IDXGISwapChain1*)bltChain;
                 created = true;
@@ -305,9 +329,10 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
         if (!created)
         {
             throw new InvalidOperationException(
-                "No DXGI adapter could be reached from this device, so no swapchain can be created. " +
-                "This backend requires the device to have come from a real adapter - see " +
-                "D3D11Swapchain.GetFactoryFor.");
+                "No DXGI adapter could be reached from this device, so no swapchain can be created. "
+                + "This backend requires the device to have come from a real adapter - see "
+                + "D3D11Swapchain.GetFactoryFor."
+            );
         }
 
         _swapChain = (IDXGISwapChain*)swapChain1;
@@ -334,13 +359,16 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
         var backBufferIid = D3D11Interop.Iid<ID3D11Texture2D>();
         ID3D11Texture2D* backBuffer = null;
         D3D11Interop.Check(
-            _swapChain->GetBuffer(0, &backBufferIid, (void**)&backBuffer), "IDXGISwapChain::GetBuffer(0)");
+            _swapChain->GetBuffer(0, &backBufferIid, (void**)&backBuffer),
+            "IDXGISwapChain::GetBuffer(0)"
+        );
         _backBuffer = backBuffer;
 
         ID3D11RenderTargetView* backBufferView = null;
         D3D11Interop.Check(
             _device.Device->CreateRenderTargetView((ID3D11Resource*)backBuffer, null, &backBufferView),
-            "CreateRenderTargetView (back buffer)");
+            "CreateRenderTargetView (back buffer)"
+        );
         _backBufferView = backBufferView;
 
         if (MultiSampleCount > 1)
@@ -364,13 +392,15 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
             ID3D11Texture2D* multisampled = null;
             D3D11Interop.Check(
                 _device.Device->CreateTexture2D(&multisampledDesc, null, &multisampled),
-                $"CreateTexture2D (multisampled back buffer, {Width}x{Height}, {MultiSampleCount}x)");
+                $"CreateTexture2D (multisampled back buffer, {Width}x{Height}, {MultiSampleCount}x)"
+            );
             _multisampledTexture = multisampled;
 
             ID3D11RenderTargetView* multisampledView = null;
             D3D11Interop.Check(
                 _device.Device->CreateRenderTargetView((ID3D11Resource*)multisampled, null, &multisampledView),
-                "CreateRenderTargetView (multisampled back buffer)");
+                "CreateRenderTargetView (multisampled back buffer)"
+            );
             _multisampledView = multisampledView;
         }
 
@@ -397,7 +427,8 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
         ID3D11Texture2D* depth = null;
         D3D11Interop.Check(
             _device.Device->CreateTexture2D(&depthDesc, null, &depth),
-            $"CreateTexture2D (depth-stencil, {Width}x{Height}, {MultiSampleCount}x)");
+            $"CreateTexture2D (depth-stencil, {Width}x{Height}, {MultiSampleCount}x)"
+        );
         _depthTexture = depth;
 
         var depthViewDesc = new D3D11_DEPTH_STENCIL_VIEW_DESC
@@ -413,7 +444,8 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
         ID3D11DepthStencilView* depthView = null;
         D3D11Interop.Check(
             _device.Device->CreateDepthStencilView((ID3D11Resource*)depth, &depthViewDesc, &depthView),
-            "CreateDepthStencilView (swapchain depth buffer)");
+            "CreateDepthStencilView (swapchain depth buffer)"
+        );
         _depthView = depthView;
     }
 
@@ -459,9 +491,14 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
 
         D3D11Interop.Check(
             _swapChain->ResizeBuffers(
-                BufferCount, (uint)width, (uint)height, BackBufferFormat,
-                _tearingSupported ? D3D11Interop.SwapChainFlagAllowTearing : 0u),
-            $"IDXGISwapChain::ResizeBuffers({width}x{height})");
+                BufferCount,
+                (uint)width,
+                (uint)height,
+                BackBufferFormat,
+                _tearingSupported ? D3D11Interop.SwapChainFlagAllowTearing : 0u
+            ),
+            $"IDXGISwapChain::ResizeBuffers({width}x{height})"
+        );
 
         Width = width;
         Height = height;
@@ -515,7 +552,12 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
             // single-sampled resource and the source is multisampled - the two conditions the API
             // states, both satisfied above.
             context->ResolveSubresource(
-                (ID3D11Resource*)_backBuffer, 0, (ID3D11Resource*)_multisampledTexture, 0, BackBufferFormat);
+                (ID3D11Resource*)_backBuffer,
+                0,
+                (ID3D11Resource*)_multisampledTexture,
+                0,
+                BackBufferFormat
+            );
         }
 
         // The interval and the flag move together: ALLOW_TEARING is rejected outright with a non-zero

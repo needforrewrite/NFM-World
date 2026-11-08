@@ -37,7 +37,7 @@ public static class TempoStretcher
         using var processStream = new SoundTouchWaveStream(inputStream, processor);
         using var outputStream = new Wave32To16Stream(processStream);
         using var outputMemory = new RecyclableMemoryStream(MemoryManager.Manager, Guid.NewGuid(), "TempoStretcher Stream");
-        
+
         outputStream.CopyTo(outputMemory);
         var resultPool = SafeArrayPool<byte>.Shared.Rent((int)outputMemory.Length);
         outputMemory.GetReadOnlySequence().CopyTo(resultPool);

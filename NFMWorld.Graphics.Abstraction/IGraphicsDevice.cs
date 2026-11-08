@@ -84,8 +84,9 @@ public interface IGraphicsDevice : IDisposable
     /// </remarks>
     IShaderModule CreateShaderModule(ShaderStageSources vertex, ShaderStageSources pixel, ShaderReflection reflection) =>
         throw new NotSupportedException(
-            "This graphics backend does not create shader modules from source. Its pipeline model " +
-            "uses one precompiled program blob instead (see FNA3DGraphicsDevice.LoadEffectModule).");
+            "This graphics backend does not create shader modules from source. Its pipeline model "
+            + "uses one precompiled program blob instead (see FNA3DGraphicsDevice.LoadEffectModule)."
+        );
 
     /// <summary>
     /// Synchronous CPU readback of a texture's pixels into <paramref name="destination"/>, which

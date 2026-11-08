@@ -12,7 +12,7 @@ internal static class Helpers
             {
                 return string.Empty;
             }
-            
+
             fixed (char* ptr = span)
             {
                 return new string(ptr, 0, span.Length);

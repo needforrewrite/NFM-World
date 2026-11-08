@@ -47,7 +47,7 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
     {
         foreach (var (_, drawCall) in _draws)
         {
-            if (drawCall.InstancedDraws is {} instancedDraws)
+            if (drawCall.InstancedDraws is { } instancedDraws)
             {
                 _elementsToPrune.Clear();
                 foreach (var (element, group) in instancedDraws)
@@ -91,7 +91,8 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
                 return;
 
             // Apply distance culling
-            if (Vector3.DistanceSquared(_camera.Position, bsphereValue.Center) > CameraSettings.RenderDistanceSqr + (bsphereValue.Radius * bsphereValue.Radius))
+            if (Vector3.DistanceSquared(_camera.Position, bsphereValue.Center)
+                > CameraSettings.RenderDistanceSqr + (bsphereValue.Radius * bsphereValue.Radius))
                 return;
         }
 
@@ -178,13 +179,14 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
                         var instanceSpan = CollectionsMarshal.AsSpan(instances);
                         var instanceBytes = MemoryMarshal.AsBytes(instanceSpan);
 
-                        if (cachedGroup.VertexBuffer == null ||
-                            cachedGroup.VertexBuffer.SizeInBytes < instances.Count * InstanceStrideBytes)
+                        if (cachedGroup.VertexBuffer == null
+                            || cachedGroup.VertexBuffer.SizeInBytes < instances.Count * InstanceStrideBytes)
                         {
                             cachedGroup.VertexBuffer?.Dispose();
                             cachedGroup.VertexBuffer = graphicsDevice.CreateBuffer(
                                 new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, instances.Count * InstanceStrideBytes),
-                                instanceBytes);
+                                instanceBytes
+                            );
                         }
                         else
                         {
@@ -207,6 +209,7 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
         {
             ThrowNotBeganYet();
         }
+
         return;
 
         [DoesNotReturn]

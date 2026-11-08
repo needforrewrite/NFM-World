@@ -57,9 +57,15 @@ public class EnumYogaMappingTests
     public void FlexDirection_IsValueIdenticalTo_FlexDirection()
     {
         Assert.AreEqual((int)Microsoft.UI.Reactor.Layout.FlexDirection.Column, (int)NFMWorld.Reactor.FlexDirection.Column);
-        Assert.AreEqual((int)Microsoft.UI.Reactor.Layout.FlexDirection.ColumnReverse, (int)NFMWorld.Reactor.FlexDirection.ColumnReverse);
+        Assert.AreEqual(
+            (int)Microsoft.UI.Reactor.Layout.FlexDirection.ColumnReverse,
+            (int)NFMWorld.Reactor.FlexDirection.ColumnReverse
+        );
         Assert.AreEqual((int)Microsoft.UI.Reactor.Layout.FlexDirection.Row, (int)NFMWorld.Reactor.FlexDirection.Row);
-        Assert.AreEqual((int)Microsoft.UI.Reactor.Layout.FlexDirection.RowReverse, (int)NFMWorld.Reactor.FlexDirection.RowReverse);
+        Assert.AreEqual(
+            (int)Microsoft.UI.Reactor.Layout.FlexDirection.RowReverse,
+            (int)NFMWorld.Reactor.FlexDirection.RowReverse
+        );
     }
 
     [TestMethod]

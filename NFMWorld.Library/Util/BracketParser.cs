@@ -16,7 +16,7 @@ public static class BracketParser
     {
         return T.Parse(GetLineSlice(line), CultureInfo.InvariantCulture);
     }
-    
+
     public static Span<T> GetNumbers<T>(ReadOnlySpan<char> line, Span<T> n)
         where T : ISpanParsable<T>
     {
@@ -35,7 +35,7 @@ public static class BracketParser
 
         return n[..i];
     }
-    
+
     public static Span<short> GetShorts(ReadOnlySpan<char> line, Span<short> n)
     {
         // Logging.Info(line);
@@ -58,7 +58,7 @@ public static class BracketParser
     {
         return new string(GetLineSlice(line));
     }
-    
+
     public static Span<string> GetStrings(ReadOnlySpan<char> line, int? n = null)
     {
         var lineSlice = GetLineSlice(line);

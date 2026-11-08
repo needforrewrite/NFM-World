@@ -20,11 +20,11 @@
              is a function-pointer table plus structs, while this one is the SDK's vtables as C#
              interfaces, so a call here is written the way the C driver writes it - which is what
              makes FNA3D's driver a usable reference rather than a translation exercise. -->
-        <PackageReference Include="TerraFX.Interop.Windows" Version="10.0.26100.3" />
+        <PackageReference Include="TerraFX.Interop.Windows" Version="10.0.26100.3"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
+        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj"/>
     </ItemGroup>
 
     <!-- The smoke test is the only way to check the two things that make this backend possible at
@@ -34,7 +34,7 @@
          D3D11CommandBuffer.UniformBlockSize) and both are worth checking against the real generated
          bundles rather than a stand-in. -->
     <ItemGroup>
-        <InternalsVisibleTo Include="NFMWorld.Graphics.D3D11.Smoke" />
+        <InternalsVisibleTo Include="NFMWorld.Graphics.D3D11.Smoke"/>
     </ItemGroup>
 
 </Project>

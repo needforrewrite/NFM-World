@@ -47,7 +47,11 @@ public enum VertexAttributeFormat
 /// geometry in slot 0 plus a per-instance stream in slot 1 for hardware instancing, matching how
 /// FNA3D_VertexBufferBinding pairs a declaration with an instance step rate per stream.
 /// </summary>
-public readonly record struct VertexLayoutDesc(IReadOnlyList<VertexAttributeDesc> Attributes, int StrideInBytes, int InstanceStepRate = 0);
+public readonly record struct VertexLayoutDesc(
+    IReadOnlyList<VertexAttributeDesc> Attributes,
+    int StrideInBytes,
+    int InstanceStepRate = 0
+);
 
 /// <summary>
 /// Parsed once at shader build/import time - not re-derived from HLSL text at runtime - so
@@ -96,4 +100,5 @@ public sealed record ShaderStageSources(
     string Msl,
     string Glsl,
     string GlslEs,
-    string Glsl330);
+    string Glsl330
+);

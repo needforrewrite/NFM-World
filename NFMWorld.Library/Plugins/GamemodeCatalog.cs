@@ -25,8 +25,10 @@ public static class GamemodeCatalog
     {
         // The schema is the only thing wanted here, so the plugin is loaded and released at
         // once: a missing or broken plugin costs the dialog its options, not the menu.
-        var plugin = GamemodePlugin.Load(gamemodeId,
-            PluginPaths.For("gamemodes", gamemodeId, "gamemode.dll"));
+        var plugin = GamemodePlugin.Load(
+            gamemodeId,
+            PluginPaths.For("gamemodes", gamemodeId, "gamemode.dll")
+        );
         if (plugin is null)
             return [];
 

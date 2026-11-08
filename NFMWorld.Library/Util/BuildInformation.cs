@@ -9,7 +9,8 @@ public sealed record BuildInformation(
     string Commit,
     string Configuration,
     string TargetFramework,
-    string RuntimeIdentifier)
+    string RuntimeIdentifier
+)
 {
     public int? BuildNumber => BuiltAtUtc is { } timestamp ? CalculateBuildNumber(timestamp) : null;
 
@@ -19,12 +20,26 @@ public sealed record BuildInformation(
     public static BuildInformation Read(Assembly assembly)
     {
         var metadata = assembly.GetCustomAttributes<AssemblyMetadataAttribute>().ToArray();
+
         string Value(string key) => metadata.LastOrDefault(a => a.Key == key)?.Value is { Length: > 0 } value
-            ? value : "unknown";
-        var timestamp = DateTimeOffset.TryParse(Value("NfmwBuildUtc"), CultureInfo.InvariantCulture,
-            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed)
-            ? parsed : (DateTimeOffset?)null;
-        return new BuildInformation(timestamp, Value("NfmwBuildBranch"), Value("NfmwBuildCommit"),
-            Value("NfmwBuildConfiguration"), Value("NfmwTargetFramework"), Value("NfmwRuntimeIdentifier"));
+            ? value
+            : "unknown";
+
+        var timestamp = DateTimeOffset.TryParse(
+            Value("NfmwBuildUtc"),
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+            out var parsed
+        )
+            ? parsed
+            : (DateTimeOffset?)null;
+        return new BuildInformation(
+            timestamp,
+            Value("NfmwBuildBranch"),
+            Value("NfmwBuildCommit"),
+            Value("NfmwBuildConfiguration"),
+            Value("NfmwTargetFramework"),
+            Value("NfmwRuntimeIdentifier")
+        );
     }
 }

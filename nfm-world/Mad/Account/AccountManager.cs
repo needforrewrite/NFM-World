@@ -78,8 +78,10 @@ public sealed class AccountManager : IDisposable
     {
         try
         {
-            using var response = await _http.PostAsJsonAsync(new Uri(_baseUri, "auth/register"),
-                new { Username = username, Password = password });
+            using var response = await _http.PostAsJsonAsync(
+                new Uri(_baseUri, "auth/register"),
+                new { Username = username, Password = password }
+            );
             if (response.IsSuccessStatusCode)
                 return new RequestResult("Success", true);
 
@@ -95,8 +97,10 @@ public sealed class AccountManager : IDisposable
     {
         try
         {
-            using var response = await _http.PostAsJsonAsync(new Uri(_baseUri, "auth/login"),
-                new { Username = username, Password = password });
+            using var response = await _http.PostAsJsonAsync(
+                new Uri(_baseUri, "auth/login"),
+                new { Username = username, Password = password }
+            );
             if (!response.IsSuccessStatusCode)
                 return new RequestResult(await ReadErrorAsync(response), false);
 
@@ -148,7 +152,9 @@ public sealed class AccountManager : IDisposable
             if (body.TryGetProperty("error", out var error) && error.GetString() is { Length: > 0 } message)
                 return message;
         }
-        catch (JsonException) { }
+        catch (JsonException)
+        {
+        }
 
         return response.StatusCode switch
         {
@@ -162,5 +168,6 @@ public sealed class AccountManager : IDisposable
     public void Dispose() => _http.Dispose();
 
     private sealed record AccountResponse(string Username, bool IsAdmin, double Elo, int Wins, int Losses, int Matches);
+
     private sealed record LoginResponse(string Token, AccountResponse Account);
 }

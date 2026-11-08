@@ -55,7 +55,8 @@ public static unsafe class TrackerDecoder
                 mod = NativeMethods.module_create_from_memory(
                     pData,
                     (nuint)fileData.Length,
-                    null, null,  // no log callback
+                    null,
+                    null, // no log callback
                     null // no ctls
                 );
 
@@ -140,10 +141,10 @@ public static unsafe class TrackerDecoder
     {
         var ext = extension.TrimStart('.').ToLowerInvariant();
         return ext is "mod" or "xm" or "it" or "s3m" or "mptm" or "stm" or "nst"
-                    or "mtm" or "669" or "amf" or "ams" or "dbm" or "digi"
-                    or "dmf" or "dsm" or "far" or "gdm" or "ice" or "imf"
-                    or "j2b" or "m15" or "mdl" or "med" or "mo3" or "mt2"
-                    or "okt" or "plm" or "psm" or "pt36" or "ptm" or "sfx"
-                    or "sfx2" or "st26" or "ult" or "wow" or "dSm" or "symmod";
+            or "mtm" or "669" or "amf" or "ams" or "dbm" or "digi"
+            or "dmf" or "dsm" or "far" or "gdm" or "ice" or "imf"
+            or "j2b" or "m15" or "mdl" or "med" or "mo3" or "mt2"
+            or "okt" or "plm" or "psm" or "pt36" or "ptm" or "sfx"
+            or "sfx2" or "st26" or "ult" or "wow" or "dSm" or "symmod";
     }
 }

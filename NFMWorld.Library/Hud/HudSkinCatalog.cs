@@ -24,11 +24,13 @@ public static class HudSkinCatalog
                 packages.Add(new HudSkinPackage(folder, definition));
             }
             catch (Exception ex) when (ex is FormatException or System.Text.Json.JsonException or IOException
-                or ArgumentException or UnauthorizedAccessException or System.Security.SecurityException)
+                                           or ArgumentException or UnauthorizedAccessException
+                                           or System.Security.SecurityException)
             {
                 report(path, ex);
             }
         }
+
         return packages;
     }
 }

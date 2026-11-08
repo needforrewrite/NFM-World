@@ -31,7 +31,8 @@ public sealed unsafe class SpirvCompiler : IDisposable
         string fileName,
         ShaderStage stage,
         string entryPoint,
-        IReadOnlyDictionary<string, string>? defines = null)
+        IReadOnlyDictionary<string, string>? defines = null
+    )
     {
         // glslang does not fail on an entry point that does not exist: it compiles an empty
         // module and returns success, so a typo'd name silently produces a shader with no work
@@ -85,7 +86,14 @@ public sealed unsafe class SpirvCompiler : IDisposable
 
             var kind = stage == ShaderStage.Vertex ? ShaderKind.VertexShader : ShaderKind.FragmentShader;
             var result = _shaderc.CompileIntoSpv(
-                compiler, source, (UIntPtr)byteCount, kind, fileName, entryPoint, options);
+                compiler,
+                source,
+                (UIntPtr)byteCount,
+                kind,
+                fileName,
+                entryPoint,
+                options
+            );
 
             try
             {
@@ -127,6 +135,7 @@ public sealed unsafe class SpirvCompiler : IDisposable
             if (match.Groups[1].Value == entryPoint)
                 return true;
         }
+
         return false;
     }
 
@@ -134,13 +143,21 @@ public sealed unsafe class SpirvCompiler : IDisposable
     // list whose closing paren is followed by a body (allowing for the semantic/return-type
     // annotations that sit between the two, as in `): SV_TARGET\n{`).
     private static readonly Regex EntryPointRegex = new(
-        @"\b([A-Za-z_]\w*)\s*\([^;{)]*\)\s*(?::[^;{]*)?\{", RegexOptions.Compiled);
+        @"\b([A-Za-z_]\w*)\s*\([^;{)]*\)\s*(?::[^;{]*)?\{",
+        RegexOptions.Compiled
+    );
 
     /// <summary>
     /// Allocates a native <c>shaderc_include_result</c> describing the resolved include.
     /// The name and content buffers are unmanaged and are freed in <see cref="ReleaseInclude"/>.
     /// </summary>
-    private unsafe IncludeResult* ResolveInclude(void* userData, byte* requestedSource, int includeType, byte* requestingSource, nuint includeDepth)
+    private unsafe IncludeResult* ResolveInclude(
+        void* userData,
+        byte* requestedSource,
+        int includeType,
+        byte* requestingSource,
+        nuint includeDepth
+    )
     {
         var requested = Marshal.PtrToStringUTF8((nint)requestedSource) ?? "";
         var text = IncludeResolver(requested);
@@ -185,5 +202,7 @@ public sealed unsafe class SpirvCompiler : IDisposable
         NativeMemory.Free(result);
     }
 
-    public void Dispose() { }
+    public void Dispose()
+    {
+    }
 }

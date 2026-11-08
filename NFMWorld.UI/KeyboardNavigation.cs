@@ -31,8 +31,12 @@ public sealed class KeyboardNavigation
         return node;
     }
 
-    public static T Bind<T>(T control, Func<Key, bool> handleKey, Action<bool> focusChanged,
-        Func<bool>? preferred = null) where T : Component
+    public static T Bind<T>(
+        T control,
+        Func<Key, bool> handleKey,
+        Action<bool> focusChanged,
+        Func<bool>? preferred = null
+    ) where T : Component
     {
         control.IsFocusable = true;
         var options = Settings.GetOrCreateValue(control);
@@ -52,9 +56,14 @@ public sealed class KeyboardNavigation
         {
             _scope = scope;
             var saved = state.LastFocused;
-            Focus(controls.Contains(saved) ? saved : controls.FirstOrDefault(control =>
-                Settings.TryGetValue(control, out var options) && options.Preferred?.Invoke() == true)
-                ?? controls.FirstOrDefault());
+            Focus(
+                controls.Contains(saved)
+                    ? saved
+                    : controls.FirstOrDefault(control =>
+                          Settings.TryGetValue(control, out var options) && options.Preferred?.Invoke() == true
+                      )
+                      ?? controls.FirstOrDefault()
+            );
         }
         else if (!controls.Contains(FocusManager.FocusedNode) && controls.Length > 0)
             Focus(controls[Math.Clamp(state.LastFocusIndex, 0, controls.Length - 1)]);
@@ -119,6 +128,7 @@ public sealed class KeyboardNavigation
             if (!ReferenceEquals(nested, child) || Settings.TryGetValue(child, out var options) && options.Scope)
                 scope = nested;
         }
+
         return scope;
     }
 
@@ -127,14 +137,17 @@ public sealed class KeyboardNavigation
         if (root is Component { IsDisplayed: false }) yield break;
         if (root is Component { IsFocusable: true } control) yield return control;
         foreach (var child in root.VisualChildren)
-            foreach (var descendant in Controls(child))
-                yield return descendant;
+        foreach (var descendant in Controls(child))
+            yield return descendant;
     }
 
     private static Node FindRow(Component control, Node scope)
     {
-        for (var parent = control.VisualParent; parent is not null && !ReferenceEquals(parent, scope); parent = parent.VisualParent)
-            if (Settings.TryGetValue(parent, out var options) && options.Row) return parent;
+        for (var parent = control.VisualParent;
+             parent is not null && !ReferenceEquals(parent, scope);
+             parent = parent.VisualParent)
+            if (Settings.TryGetValue(parent, out var options) && options.Row)
+                return parent;
         return control;
     }
 }

@@ -24,8 +24,10 @@ public class CrashSoundQueueTests
         var registerDamage = typeof(CarPhysics).GetMethod("Regz", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
         // Reflection fills optional parameters with nothing, so every parameter is passed.
-        registerDamage.Invoke(car.CarPhysics,
-            [1, (Fixed64)750, new ContO(car), new DeterministicRandom(1), 12, position, -1]);
+        registerDamage.Invoke(
+            car.CarPhysics,
+            [1, (Fixed64)750, new ContO(car), new DeterministicRandom(1), 12, position, -1]
+        );
 
         Assert.AreEqual(1, played.Count);
         Assert.AreEqual(CrashSoundContact.Obstacle(6, 1, 12), played[0].Contact);
@@ -117,6 +119,7 @@ public class CrashSoundQueueTests
             queue.Flush((_, sound) => played.Add(sound));
             Assert.AreEqual(1, played.Count);
         }
+
         queue.Flush((_, sound) => played.Add(sound));
         Assert.AreEqual(2, played.Count);
         Assert.AreEqual(200f + CrashSpacingTicks - 1, played[1].Strength);
@@ -136,6 +139,7 @@ public class CrashSoundQueueTests
                 queue.Enqueue(source, new(CrashSoundContact.Cars(0, point / 4, 1, point % 4), Vector3.Zero, 100 + point, 0));
             queue.Flush((_, _) => count++);
         }
+
         Assert.AreEqual(2, count);
         for (var i = 0; i < 120; i++) queue.Flush((_, _) => count++);
         Assert.AreEqual(2, count);
@@ -161,6 +165,7 @@ public class CrashSoundQueueTests
             queue.Enqueue(source, second);
             queue.Flush((_, sound) => played.Add(sound));
         }
+
         for (var i = 0; i < CrashSpacingTicks; i++) queue.Flush((_, sound) => played.Add(sound));
         Assert.AreEqual(2, played.Count);
         Assert.AreEqual(second, played[1]);
@@ -195,6 +200,7 @@ public class CrashSoundQueueTests
             queue.Enqueue(player, new(CrashSoundContact.Obstacle(0, wheel, 10), new(wheel, 0, 0), 100 + wheel, 1));
             queue.Enqueue(otherCar, new(CrashSoundContact.Obstacle(1, wheel, 10), Vector3.One, 100, 1));
         }
+
         var played = new List<(object Source, CrashSoundEvent Sound)>();
 
         queue.Flush((source, sound) => played.Add((source, sound)));

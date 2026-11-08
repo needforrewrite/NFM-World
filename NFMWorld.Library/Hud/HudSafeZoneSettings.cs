@@ -13,7 +13,8 @@ public static class HudSafeZoneSettings
 
     public static float Parse(string value)
         => float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var ratio)
-            ? Normalize(ratio) : Default;
+            ? Normalize(ratio)
+            : Default;
 
     public static RectangleF Bounds(Vector2 position, Vector2 size, float horizontal, float vertical)
     {

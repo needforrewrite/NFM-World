@@ -41,7 +41,8 @@ public class WatchCamera
             position = new Vector3(
                 carX + 400f * sc.Cos - 5000f * sc.Sin,
                 carY - 300f - 1100f * System.Random.Shared.NextSingle(),
-                carZ + 400f * sc.Sin + 5000f * sc.Cos);
+                carZ + 400f * sc.Sin + 5000f * sc.Cos
+            );
             _lookY = carY;
             _relocate = false;
         }

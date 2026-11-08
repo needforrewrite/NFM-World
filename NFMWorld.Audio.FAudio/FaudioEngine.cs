@@ -90,7 +90,9 @@ public sealed class FaudioEngine : IDisposable
         }
         catch (EntryPointNotFoundException e)
         {
-            Logging.Warning($"The FAudio native library is missing an expected export - the game will run without sound. {e.Message}");
+            Logging.Warning(
+                $"The FAudio native library is missing an expected export - the game will run without sound. {e.Message}"
+            );
             return null;
         }
 
@@ -109,7 +111,9 @@ public sealed class FaudioEngine : IDisposable
                 FAudio.FAUDIO_DEFAULT_SAMPLERATE,
                 0,
                 0,
-                IntPtr.Zero) != 0)
+                IntPtr.Zero
+            )
+            != 0)
         {
             Logging.Warning("Could not create an FAudio mastering voice - the game will run without sound.");
             FAudio.FAudio_Release(audio);
@@ -151,14 +155,16 @@ public sealed class FaudioEngine : IDisposable
         };
 
         return FAudio.FAudio_CreateSourceVoice(
-            _audio,
-            out var voice,
-            ref format,
-            Flags: 0,
-            MaxFrequencyRatio: maxFrequencyRatio,
-            pCallback: IntPtr.Zero,
-            pSendList: IntPtr.Zero,
-            pEffectChain: IntPtr.Zero) != 0
+                   _audio,
+                   out var voice,
+                   ref format,
+                   Flags: 0,
+                   MaxFrequencyRatio: maxFrequencyRatio,
+                   pCallback: IntPtr.Zero,
+                   pSendList: IntPtr.Zero,
+                   pEffectChain: IntPtr.Zero
+               )
+               != 0
             ? IntPtr.Zero
             : voice;
     }
@@ -172,8 +178,13 @@ public sealed class FaudioEngine : IDisposable
             FAudio.FAudioVoice_DestroyVoice(voice);
     }
 
-    public unsafe void ApplySpatial(IntPtr voice, Vector3 listenerPosition, Vector3 listenerForward,
-        Vector3 listenerUp, Vector3 emitterPosition)
+    public unsafe void ApplySpatial(
+        IntPtr voice,
+        Vector3 listenerPosition,
+        Vector3 listenerForward,
+        Vector3 listenerUp,
+        Vector3 emitterPosition
+    )
     {
         if (_disposed || voice == IntPtr.Zero || _spatialUnavailable) return;
         try
@@ -181,7 +192,8 @@ public sealed class FaudioEngine : IDisposable
             if (_spatialHandle is null)
             {
                 FAudio.FAudioVoice_GetVoiceDetails(_masteringVoice, out var details);
-                if (FAudio.FAudio_GetDeviceDetails(_audio, 0, out var device) != 0 || details.InputChannels == 0
+                if (FAudio.FAudio_GetDeviceDetails(_audio, 0, out var device) != 0
+                    || details.InputChannels == 0
                     || BitOperations.PopCount(device.OutputFormat.dwChannelMask) != details.InputChannels)
                     throw new InvalidOperationException("Could not query the audio speaker layout.");
                 _spatialMatrix = new float[details.InputChannels];
@@ -260,18 +272,19 @@ public sealed class FaudioEngine : IDisposable
         }
 
         Task.Run(() =>
-        {
-            var clock = Stopwatch.StartNew();
-            double remaining;
-            while ((remaining = 1.0 - clock.Elapsed.TotalMilliseconds / FadeMilliseconds) > 0.0)
             {
-                FAudio.FAudioVoice_SetVolume(voice, volume * (float)remaining, 0);
-                Thread.Yield();
-            }
+                var clock = Stopwatch.StartNew();
+                double remaining;
+                while ((remaining = 1.0 - clock.Elapsed.TotalMilliseconds / FadeMilliseconds) > 0.0)
+                {
+                    FAudio.FAudioVoice_SetVolume(voice, volume * (float)remaining, 0);
+                    Thread.Yield();
+                }
 
-            DestroyVoice(voice);
-            afterDestroy?.Invoke();
-        });
+                DestroyVoice(voice);
+                afterDestroy?.Invoke();
+            }
+        );
     }
 
     /// <summary>

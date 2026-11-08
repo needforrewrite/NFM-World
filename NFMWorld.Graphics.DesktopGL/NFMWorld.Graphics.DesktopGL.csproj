@@ -19,11 +19,11 @@
              bundles' Glsl330 form. The four GLES extension packages the ANGLE backend needs
              (ANGLE/EXT/OES) are deliberately absent - they exist there for the base-vertex and
              compressed-texture extensions, and the desktop core covers both natively. -->
-        <PackageReference Include="Silk.NET.OpenGL" Version="2.23.0" />
+        <PackageReference Include="Silk.NET.OpenGL" Version="2.23.0"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
+        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj"/>
     </ItemGroup>
 
     <!-- Same reason as the ANGLE backend: the capability facts this backend's compiler work exists to
@@ -32,7 +32,7 @@
          (GlShaderProgram.TextureLocations, GlUniformBlock) and are checked through
          GlGraphicsDevice.Gl for entry points the abstraction does not expose. -->
     <ItemGroup>
-        <InternalsVisibleTo Include="NFMWorld.Graphics.DesktopGL.Smoke" />
+        <InternalsVisibleTo Include="NFMWorld.Graphics.DesktopGL.Smoke"/>
     </ItemGroup>
 
 </Project>

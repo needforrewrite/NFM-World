@@ -363,6 +363,7 @@ public partial class TextInput : Component
                         bestIdx = i;
                     }
                 }
+
                 return accumIdx + bestIdx;
             }
 
@@ -482,6 +483,7 @@ public partial class TextInput : Component
                 while (target < len && char.IsWhiteSpace(CurrentText[target]))
                     target++;
             }
+
             MoveCursorTo(target, shift);
         }
         else
@@ -676,8 +678,11 @@ public partial class TextInput : Component
 
                 G.SetColor(_owner.TextInputStyles.Resolved.SelectionColor!.Value);
                 G.FillRect(
-                    (int)(baseX + selStartX), (int)contentTop,
-                    (int)(selEndX - selStartX), (int)(contentBottom - contentTop));
+                    (int)(baseX + selStartX),
+                    (int)contentTop,
+                    (int)(selEndX - selStartX),
+                    (int)(contentBottom - contentTop)
+                );
             }
 
             // ── Draw cursor ─────────────────────────────────────
@@ -689,8 +694,11 @@ public partial class TextInput : Component
                 var cursorTop = contentTop;
                 var cursorBottom = contentBottom;
                 G.DrawLine(
-                    (int)(baseX + cursorX), (int)cursorTop,
-                    (int)(baseX + cursorX), (int)cursorBottom);
+                    (int)(baseX + cursorX),
+                    (int)cursorTop,
+                    (int)(baseX + cursorX),
+                    (int)cursorBottom
+                );
             }
         }
     }
@@ -723,7 +731,9 @@ public struct TextInputStyles() : IEquatable<TextInputStyles>
 
     public readonly bool Equals(TextInputStyles other)
     {
-        return Nullable.Equals(CursorColor, other.CursorColor) && Nullable.Equals(SelectionColor, other.SelectionColor) && Nullable.Equals(PlaceholderColor, other.PlaceholderColor);
+        return Nullable.Equals(CursorColor, other.CursorColor)
+               && Nullable.Equals(SelectionColor, other.SelectionColor)
+               && Nullable.Equals(PlaceholderColor, other.PlaceholderColor);
     }
 
     public override readonly bool Equals(object? obj)

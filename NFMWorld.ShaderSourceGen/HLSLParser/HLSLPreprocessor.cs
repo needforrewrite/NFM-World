@@ -32,7 +32,8 @@ public sealed class HLSLPreprocessor
     /// </param>
     public HLSLPreprocessor(
         IEnumerable<string>? predefined = null,
-        Func<string, string?>? includeResolver = null)
+        Func<string, string?>? includeResolver = null
+    )
     {
         _includeResolver = includeResolver;
         if (predefined != null)
@@ -44,7 +45,11 @@ public sealed class HLSLPreprocessor
     public void Define(string name, string value = "1") => _defines[name] = value;
 
     /// <summary>Whether to emit #line directives to map back to original sources. Default: true.</summary>
-    public bool EmitLineDirectives { get => _emitLineDirectives; set => _emitLineDirectives = value; }
+    public bool EmitLineDirectives
+    {
+        get => _emitLineDirectives;
+        set => _emitLineDirectives = value;
+    }
 
     /// <summary>Process source text through the preprocessor, returning the result.</summary>
     public string Process(string source, string? fileName = null)
@@ -180,8 +185,7 @@ public sealed class HLSLPreprocessor
     {
         // Strip quotes or angle brackets: "path" or <path>
         string path;
-        if (raw.Length >= 2 && ((raw[0] == '"' && raw[^1] == '"') ||
-                                (raw[0] == '<' && raw[^1] == '>')))
+        if (raw.Length >= 2 && ((raw[0] == '"' && raw[^1] == '"') || (raw[0] == '<' && raw[^1] == '>')))
             path = raw.Substring(1, raw.Length - 2);
         else
             path = raw;
@@ -226,7 +230,12 @@ public sealed class HLSLPreprocessor
             }
             else if (dir.Name == "endif")
             {
-                if (depth > 0) { depth--; continue; }
+                if (depth > 0)
+                {
+                    depth--;
+                    continue;
+                }
+
                 // Close last branch
                 branches.Add((currentCond, branchStart, i));
                 // Pick the first true branch and emit it
@@ -251,7 +260,12 @@ public sealed class HLSLPreprocessor
         return end;
     }
 
-    private void EmitFirstTrueBranch(string[] lines, List<(bool condition, int bodyStart, int bodyEnd)> branches, StringBuilder sb, string? fileName)
+    private void EmitFirstTrueBranch(
+        string[] lines,
+        List<(bool condition, int bodyStart, int bodyEnd)> branches,
+        StringBuilder sb,
+        string? fileName
+    )
     {
         foreach (var (cond, bodyStart, bodyEnd) in branches)
         {
@@ -296,6 +310,7 @@ public sealed class HLSLPreprocessor
             left = (left != 0 || right != 0) ? 1 : 0;
             SkipSpaces(s, ref pos);
         }
+
         return left;
     }
 
@@ -310,6 +325,7 @@ public sealed class HLSLPreprocessor
             left = (left != 0 && right != 0) ? 1 : 0;
             SkipSpaces(s, ref pos);
         }
+
         return left;
     }
 
@@ -322,6 +338,7 @@ public sealed class HLSLPreprocessor
             long val = ParseUnary(s, ref pos);
             return val == 0 ? 1 : 0;
         }
+
         return ParsePrimary(s, ref pos);
     }
 
@@ -344,8 +361,12 @@ public sealed class HLSLPreprocessor
         if (char.IsDigit(s[pos]))
         {
             int start = pos;
-            while (pos < s.Length && (char.IsDigit(s[pos]) || s[pos] == 'x' || s[pos] == 'X' ||
-                                      (s[pos] >= 'a' && s[pos] <= 'f') || (s[pos] >= 'A' && s[pos] <= 'F')))
+            while (pos < s.Length
+                   && (char.IsDigit(s[pos])
+                       || s[pos] == 'x'
+                       || s[pos] == 'X'
+                       || (s[pos] >= 'a' && s[pos] <= 'f')
+                       || (s[pos] >= 'A' && s[pos] <= 'F')))
                 pos++;
             var numStr = s.Substring(start, pos - start);
             if (numStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
@@ -431,6 +452,7 @@ public sealed class HLSLPreprocessor
                 i++;
             }
         }
+
         return sb.ToString();
     }
 
@@ -474,6 +496,7 @@ public sealed class HLSLPreprocessor
                 args.Add(line.Substring(argStart, pos - argStart).Trim());
                 argStart = pos + 1;
             }
+
             pos++;
         }
 
@@ -520,6 +543,7 @@ public sealed class HLSLPreprocessor
                 }
             }
         }
+
         return sb.ToString();
     }
 
@@ -556,7 +580,8 @@ public sealed class HLSLPreprocessor
     private static int IndexOfWhitespace(string s, int start = 0)
     {
         for (int i = start; i < s.Length; i++)
-            if (s[i] == ' ' || s[i] == '\t') return i;
+            if (s[i] == ' ' || s[i] == '\t')
+                return i;
         return -1;
     }
 

@@ -12,8 +12,10 @@ public class StagePhysicsTests
         var root = Path.Combine(Path.GetTempPath(), "NFMWorld-stage-physics", Guid.NewGuid().ToString("N"));
         var stages = Path.Combine(root, "data", "stages");
         Directory.CreateDirectory(stages);
-        File.WriteAllText(Path.Combine(stages, "props.txt"),
-            "gravity(2.5)\ngrip(1.5)\npowerloss(0.5)\ndam(2)\nlava(3)\nmaxhit(2)\nrecoil(1.5)\nrage(2)\nstats()\nnoarrow()");
+        File.WriteAllText(
+            Path.Combine(stages, "props.txt"),
+            "gravity(2.5)\ngrip(1.5)\npowerloss(0.5)\ndam(2)\nlava(3)\nmaxhit(2)\nrecoil(1.5)\nrage(2)\nstats()\nnoarrow()"
+        );
 
         try
         {

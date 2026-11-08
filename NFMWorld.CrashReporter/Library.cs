@@ -13,22 +13,24 @@ public static class CrashReportLibrary
             var ex = (Exception)args.ExceptionObject;
             var eventId = SentrySdk.CaptureException(ex);
 
-            using var process = Process.Start(new ProcessStartInfo
-            {
-                FileName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                    ? "NFMWorld.CrashReporter.exe"
-                    : "NFMWorld.CrashReporter",
-                ArgumentList =
+            using var process = Process.Start(
+                new ProcessStartInfo
                 {
-                    dsn,
-                    release,
-                    eventId.ToString(),
-                    ex.GetType().FullName ?? ex.GetType().Name
+                    FileName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                        ? "NFMWorld.CrashReporter.exe"
+                        : "NFMWorld.CrashReporter",
+                    ArgumentList =
+                    {
+                        dsn,
+                        release,
+                        eventId.ToString(),
+                        ex.GetType().FullName ?? ex.GetType().Name
+                    }
                 }
-            });
-            
+            );
+
             SentrySdk.Flush(TimeSpan.FromSeconds(60));
-            
+
             process?.WaitForExit();
         };
         TaskScheduler.UnobservedTaskException += (sender, args) =>
@@ -36,22 +38,24 @@ public static class CrashReportLibrary
             var ex = args.Exception;
             var eventId = SentrySdk.CaptureException(ex);
 
-            using var process = Process.Start(new ProcessStartInfo()
-            {
-                FileName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                    ? "NFMWorld.CrashReporter.exe"
-                    : "NFMWorld.CrashReporter",
-                ArgumentList =
+            using var process = Process.Start(
+                new ProcessStartInfo()
                 {
-                    dsn,
-                    release,
-                    eventId.ToString(),
-                    ex.GetType().FullName ?? ex.GetType().Name
+                    FileName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                        ? "NFMWorld.CrashReporter.exe"
+                        : "NFMWorld.CrashReporter",
+                    ArgumentList =
+                    {
+                        dsn,
+                        release,
+                        eventId.ToString(),
+                        ex.GetType().FullName ?? ex.GetType().Name
+                    }
                 }
-            });
+            );
 
             SentrySdk.Flush(TimeSpan.FromSeconds(60));
-            
+
             process?.WaitForExit();
         };
     }

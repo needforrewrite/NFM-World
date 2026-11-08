@@ -34,12 +34,22 @@ public static class Debug
         {
             _lineVertexBuffer?.Dispose();
             _lineVertexCapacity = (int)(vertexCount * 1.5f) + 16;
-            _lineVertexBuffer = device.CreateBuffer(new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, _lineVertexCapacity * PositionColorVertex.Stride));
+            _lineVertexBuffer = device.CreateBuffer(
+                new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, _lineVertexCapacity * PositionColorVertex.Stride)
+            );
         }
+
         return _lineVertexBuffer!;
     }
 
-    private static void DrawLines(ICommandBuffer cb, IGraphicsDevice device, ReadOnlySpan<PositionColorVertex> vertices, Matrix world, Matrix view, Matrix projection)
+    private static void DrawLines(
+        ICommandBuffer cb,
+        IGraphicsDevice device,
+        ReadOnlySpan<PositionColorVertex> vertices,
+        Matrix world,
+        Matrix view,
+        Matrix projection
+    )
     {
         if (vertices.Length == 0) return;
 
@@ -68,7 +78,8 @@ public static class Debug
         IGraphicsDevice device,
         ReadOnlySpan<(Vector3 Min, Vector3 Max)> boxes,
         Color color,
-        Camera activeCamera)
+        Camera activeCamera
+    )
     {
         if (boxes.Length == 0) return;
 
@@ -140,7 +151,12 @@ public static class Debug
         }
     }
 
-    public static void RenderHighlights(ICommandBuffer cb, IGraphicsDevice device, IEnumerable<StageObject> pieces, Camera activeCamera)
+    public static void RenderHighlights(
+        ICommandBuffer cb,
+        IGraphicsDevice device,
+        IEnumerable<StageObject> pieces,
+        Camera activeCamera
+    )
     {
         int neededVertices = 0;
         foreach (var piece in pieces)
@@ -163,14 +179,13 @@ public static class Debug
             var pitch = piece.Rotation.Pitch.Radians;
             var roll = piece.Rotation.Roll.Radians;
             var rotationMatrix =
-                Matrix.CreateRotationY((float)yaw) *
-                Matrix.CreateRotationX((float)pitch) *
-                Matrix.CreateRotationZ((float)roll);
+                Matrix.CreateRotationY((float)yaw) * Matrix.CreateRotationX((float)pitch) * Matrix.CreateRotationZ((float)roll);
 
             var position = new Vector3(
                 (float)piece.Position.X,
                 (float)piece.Position.Y,
-                (float)piece.Position.Z);
+                (float)piece.Position.Z
+            );
 
             var localOutline = GetOrCreateOutlineEdges(piece.Rad);
             for (int i = 0; i < localOutline.Length; i++)
@@ -183,8 +198,14 @@ public static class Debug
         if (cursor == 0)
             return;
 
-        DrawLines(cb, device, _selectionOutlineVertices.AsSpan(0, cursor),
-            Matrix.Identity, activeCamera.ViewMatrix, activeCamera.ProjectionMatrix);
+        DrawLines(
+            cb,
+            device,
+            _selectionOutlineVertices.AsSpan(0, cursor),
+            Matrix.Identity,
+            activeCamera.ViewMatrix,
+            activeCamera.ProjectionMatrix
+        );
     }
 
     private static Vector3[] GetOrCreateOutlineEdges(Rad3d rad)
@@ -245,7 +266,15 @@ public static class Debug
         return lines;
     }
 
-    public static void RenderGizmo(ICommandBuffer cb, IGraphicsDevice device, Vector3 gizmoPos, Camera activeCamera, ref GizmoAxis gizmoHovered, ref GizmoAxis gizmoDragging, Vector2 mousePos)
+    public static void RenderGizmo(
+        ICommandBuffer cb,
+        IGraphicsDevice device,
+        Vector3 gizmoPos,
+        Camera activeCamera,
+        ref GizmoAxis gizmoHovered,
+        ref GizmoAxis gizmoDragging,
+        Vector2 mousePos
+    )
     {
         var piecePos = gizmoPos;
         var gizmoMetrics = ComputeGizmoMetrics(piecePos, activeCamera);
@@ -269,9 +298,9 @@ public static class Debug
             : new Color(0.1f, 0.9f, 0.1f, 1f);
 
         // Arrowhead side fins and tip offsets for each axis
-        var xSide     = new Vector3(0, gizmoMetrics.ArrowThickness * 2, 0);
-        var ySide     = new Vector3(gizmoMetrics.ArrowThickness * 2, 0, 0);
-        var zSide     = new Vector3(gizmoMetrics.ArrowThickness * 2, 0, 0);
+        var xSide = new Vector3(0, gizmoMetrics.ArrowThickness * 2, 0);
+        var ySide = new Vector3(gizmoMetrics.ArrowThickness * 2, 0, 0);
+        var zSide = new Vector3(gizmoMetrics.ArrowThickness * 2, 0, 0);
         var xTipOffset = new Vector3(gizmoMetrics.ArrowLength * 0.15f, 0, 0);
         var yTipOffset = new Vector3(0, -gizmoMetrics.ArrowLength * 0.15f, 0); // negative = upward
         var zTipOffset = new Vector3(0, 0, gizmoMetrics.ArrowLength * 0.15f);
@@ -309,8 +338,18 @@ public static class Debug
         {
             float a0 = i / (float)ringSegs * (2f * MathF.PI);
             float a1 = (i + 1) / (float)ringSegs * (2f * MathF.PI);
-            verts.Add(new PositionColorVertex(piecePos + new Vector3(MathF.Cos(a0) * gizmoMetrics.RotRadius, 0, MathF.Sin(a0) * gizmoMetrics.RotRadius), colRot));
-            verts.Add(new PositionColorVertex(piecePos + new Vector3(MathF.Cos(a1) * gizmoMetrics.RotRadius, 0, MathF.Sin(a1) * gizmoMetrics.RotRadius), colRot));
+            verts.Add(
+                new PositionColorVertex(
+                    piecePos + new Vector3(MathF.Cos(a0) * gizmoMetrics.RotRadius, 0, MathF.Sin(a0) * gizmoMetrics.RotRadius),
+                    colRot
+                )
+            );
+            verts.Add(
+                new PositionColorVertex(
+                    piecePos + new Vector3(MathF.Cos(a1) * gizmoMetrics.RotRadius, 0, MathF.Sin(a1) * gizmoMetrics.RotRadius),
+                    colRot
+                )
+            );
         }
 
         var arr = verts.ToArray();
@@ -318,17 +357,19 @@ public static class Debug
         // Compute camera-relative perpendicular offsets so lines appear ~5px wide at any distance.
         // Camera right/up come from the columns of the view matrix (orthonormal rotation part).
         float dist = Vector3.Distance(activeCamera.Position, piecePos);
-        float halfFovRad = activeCamera is PerspectiveCamera perspectiveCamera ? perspectiveCamera.Fov * MathF.PI / 180f * 0.5f : 60f;
+        float halfFovRad = activeCamera is PerspectiveCamera perspectiveCamera
+            ? perspectiveCamera.Fov * MathF.PI / 180f * 0.5f
+            : 60f;
         // World units that map to 1 screen pixel at this distance
         float pixelSize = dist * MathF.Tan(halfFovRad) * 2f / GameSparker.Game.Window.Height;
         float s = pixelSize * 2f; // 2 px each side = ~5px total visual width
         var camRight = new Vector3(activeCamera.ViewMatrix.M11, activeCamera.ViewMatrix.M21, activeCamera.ViewMatrix.M31);
-        var camUp    = new Vector3(activeCamera.ViewMatrix.M12, activeCamera.ViewMatrix.M22, activeCamera.ViewMatrix.M32);
+        var camUp = new Vector3(activeCamera.ViewMatrix.M12, activeCamera.ViewMatrix.M22, activeCamera.ViewMatrix.M32);
         var thickOffsets = new[]
         {
             Vector3.Zero,
-            camRight *  s, camRight * -s,
-            camUp    *  s, camUp    * -s,
+            camRight * s, camRight * -s,
+            camUp * s, camUp * -s,
         };
 
         foreach (var offset in thickOffsets)
@@ -343,7 +384,14 @@ public static class Debug
         UpdateGizmoHover(piecePos, gizmoMetrics, ref gizmoDragging, ref gizmoHovered, activeCamera, mousePos);
     }
 
-    public static void UpdateGizmoHover(Vector3 piecePos, GizmoMetrics gizmoMetrics, ref GizmoAxis gizmoDragging, ref GizmoAxis gizmoHovered, Camera activeCamera, Vector2 mousePos)
+    public static void UpdateGizmoHover(
+        Vector3 piecePos,
+        GizmoMetrics gizmoMetrics,
+        ref GizmoAxis gizmoDragging,
+        ref GizmoAxis gizmoHovered,
+        Camera activeCamera,
+        Vector2 mousePos
+    )
     {
         if (gizmoDragging != GizmoAxis.None) return;
 
@@ -351,26 +399,41 @@ public static class Debug
         gizmoHovered = GizmoAxis.None;
 
         // Check X arrow
-        if (WorldToScreen(piecePos, out var ss0, activeCamera) &&
-            WorldToScreen(piecePos + new Vector3(gizmoMetrics.ArrowLength, 0, 0), out var ss1, activeCamera))
+        if (WorldToScreen(piecePos, out var ss0, activeCamera)
+            && WorldToScreen(piecePos + new Vector3(gizmoMetrics.ArrowLength, 0, 0), out var ss1, activeCamera))
         {
             float d = DistanceToSegment(mousePos, ss0, ss1);
-            if (d < closestDist) { closestDist = d; gizmoHovered = GizmoAxis.X; }
+            if (d < closestDist)
+            {
+                closestDist = d;
+                gizmoHovered = GizmoAxis.X;
+            }
         }
+
         // Check Y arrow (up)
-        if (WorldToScreen(piecePos, out ss0, activeCamera) &&
-            WorldToScreen(piecePos + new Vector3(0, -gizmoMetrics.ArrowLength, 0), out ss1, activeCamera))
+        if (WorldToScreen(piecePos, out ss0, activeCamera)
+            && WorldToScreen(piecePos + new Vector3(0, -gizmoMetrics.ArrowLength, 0), out ss1, activeCamera))
         {
             float d = DistanceToSegment(mousePos, ss0, ss1);
-            if (d < closestDist) { closestDist = d; gizmoHovered = GizmoAxis.Y; }
+            if (d < closestDist)
+            {
+                closestDist = d;
+                gizmoHovered = GizmoAxis.Y;
+            }
         }
+
         // Check Z arrow
-        if (WorldToScreen(piecePos, out ss0, activeCamera) &&
-            WorldToScreen(piecePos + new Vector3(0, 0, gizmoMetrics.ArrowLength), out ss1, activeCamera))
+        if (WorldToScreen(piecePos, out ss0, activeCamera)
+            && WorldToScreen(piecePos + new Vector3(0, 0, gizmoMetrics.ArrowLength), out ss1, activeCamera))
         {
             float d = DistanceToSegment(mousePos, ss0, ss1);
-            if (d < closestDist) { closestDist = d; gizmoHovered = GizmoAxis.Z; }
+            if (d < closestDist)
+            {
+                closestDist = d;
+                gizmoHovered = GizmoAxis.Z;
+            }
         }
+
         // Check rotation ring (test each segment)
         const int ringSegs = 32;
         for (int i = 0; i < ringSegs; i++)
@@ -382,7 +445,11 @@ public static class Debug
             if (WorldToScreen(p0, out ss0, activeCamera) && WorldToScreen(p1, out ss1, activeCamera))
             {
                 float d = DistanceToSegment(mousePos, ss0, ss1);
-                if (d < closestDist) { closestDist = d; gizmoHovered = GizmoAxis.RotY; }
+                if (d < closestDist)
+                {
+                    closestDist = d;
+                    gizmoHovered = GizmoAxis.RotY;
+                }
             }
         }
     }
@@ -407,7 +474,8 @@ public static class Debug
         var ndc = new Vector3(clip.X / clip.W, clip.Y / clip.W, clip.Z / clip.W);
         screenPos = new Vector2(
             (ndc.X + 1f) * 0.5f * width,
-            (1f - ndc.Y) * 0.5f * height);
+            (1f - ndc.Y) * 0.5f * height
+        );
         return true;
     }
 
@@ -416,6 +484,7 @@ public static class Debug
     private const float GIZMO_ROT_RADIUS = 400f;
     private const float GIZMO_TARGET_AXIS_PIXELS = 120f;
     private const float GIZMO_MAX_SCALE = 8f;
+
     public static GizmoMetrics ComputeGizmoMetrics(Vector3 piecePos, Camera activeCamera)
     {
         float scale = 1f;
@@ -429,10 +498,16 @@ public static class Debug
         return new GizmoMetrics(
             GIZMO_ARROW_LENGTH * scale,
             GIZMO_ARROW_THICKNESS * scale,
-            GIZMO_ROT_RADIUS * scale);
+            GIZMO_ROT_RADIUS * scale
+        );
     }
 
-    public static bool TryGetProjectedAxisLength(Vector3 piecePos, float axisLength, out float projectedAxisLength, Camera activeCamera)
+    public static bool TryGetProjectedAxisLength(
+        Vector3 piecePos,
+        float axisLength,
+        out float projectedAxisLength,
+        Camera activeCamera
+    )
     {
         projectedAxisLength = 0f;
 
@@ -449,7 +524,15 @@ public static class Debug
         return projectedAxisLength > 0f;
     }
 
-    public static void RenderGhost(ICommandBuffer cb, IGraphicsDevice device, Rad3d rad, Matrix world, Color fillColor, Color wireColor, Camera activeCamera)
+    public static void RenderGhost(
+        ICommandBuffer cb,
+        IGraphicsDevice device,
+        Rad3d rad,
+        Matrix world,
+        Color fillColor,
+        Color wireColor,
+        Camera activeCamera
+    )
     {
         var view = activeCamera.ViewMatrix;
         var projection = activeCamera.ProjectionMatrix;
@@ -483,16 +566,22 @@ public static class Debug
             {
                 _fillVertexBuffer?.Dispose();
                 _fillVertexCapacity = (int)(vertexArr.Length * 1.5f) + 16;
-                _fillVertexBuffer = device.CreateBuffer(new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, _fillVertexCapacity * PositionColorVertex.Stride));
+                _fillVertexBuffer = device.CreateBuffer(
+                    new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, _fillVertexCapacity * PositionColorVertex.Stride)
+                );
             }
+
             cb.UpdateBuffer(_fillVertexBuffer!, MemoryMarshal.AsBytes(vertexArr.AsSpan()));
 
             if (indexArr.Length > _fillIndexCapacity)
             {
                 _fillIndexBuffer?.Dispose();
                 _fillIndexCapacity = (int)(indexArr.Length * 1.5f) + 16;
-                _fillIndexBuffer = device.CreateBuffer(new BufferDesc(BufferKind.Index, BufferUsage.Dynamic, _fillIndexCapacity * sizeof(uint), IndexFormat.UInt32));
+                _fillIndexBuffer = device.CreateBuffer(
+                    new BufferDesc(BufferKind.Index, BufferUsage.Dynamic, _fillIndexCapacity * sizeof(uint), IndexFormat.UInt32)
+                );
             }
+
             cb.UpdateBuffer(_fillIndexBuffer!, MemoryMarshal.AsBytes(indexArr.AsSpan()));
 
             cb.SetPipeline(Effects.DebugGhostFillPipeline);
@@ -525,5 +614,13 @@ public static class Debug
     }
 }
 
-public enum GizmoAxis { None, X, Y, Z, RotY }
+public enum GizmoAxis
+{
+    None,
+    X,
+    Y,
+    Z,
+    RotY
+}
+
 public readonly record struct GizmoMetrics(float ArrowLength, float ArrowThickness, float RotRadius);

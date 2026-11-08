@@ -25,6 +25,7 @@ public static class FocusManager
                 cmp1.Focused?.Invoke();
         }
     }
+
     public static Node? ActiveNode { get; set; }
 
     /// <summary>Move focus to the next focusable element in Tab order.</summary>
@@ -110,8 +111,11 @@ public static class FocusManager
 
         // Check self
         var bounds = new RectangleF(
-            node.FocusOrigin.X, node.FocusOrigin.Y,
-            node.FocusSize.X, node.FocusSize.Y);
+            node.FocusOrigin.X,
+            node.FocusOrigin.Y,
+            node.FocusSize.X,
+            node.FocusSize.Y
+        );
 
         if (bounds.Contains(pos.X, pos.Y))
             return node;
@@ -190,18 +194,24 @@ public static class FocusManager
         }
 
         list.Sort((x, y) =>
-        {
-            int zx = Component.EscapeZ(x.c, zCache);
-            int zy = Component.EscapeZ(y.c, zCache);
-            if (zx != zy) return zy.CompareTo(zx);   // higher z first
-            return y.idx.CompareTo(x.idx);           // later sibling first on tie
-        });
+            {
+                int zx = Component.EscapeZ(x.c, zCache);
+                int zy = Component.EscapeZ(y.c, zCache);
+                if (zx != zy) return zy.CompareTo(zx); // higher z first
+                return y.idx.CompareTo(x.idx); // later sibling first on tie
+            }
+        );
 
         foreach (var (_, c) in list)
             yield return c;
     }
 
-    private static bool HitTestChainRecursive(Component node, Vector2 pos, List<Component> chain, Dictionary<Component, int> zCache)
+    private static bool HitTestChainRecursive(
+        Component node,
+        Vector2 pos,
+        List<Component> chain,
+        Dictionary<Component, int> zCache
+    )
     {
         if (node.Styles.PointerEvents is false)
             return false;
@@ -211,8 +221,11 @@ public static class FocusManager
             return false;
 
         var bounds = new RectangleF(
-            node.FocusOrigin.X, node.FocusOrigin.Y,
-            node.FocusSize.X, node.FocusSize.Y);
+            node.FocusOrigin.X,
+            node.FocusOrigin.Y,
+            node.FocusSize.X,
+            node.FocusSize.Y
+        );
 
         // A Contents node contributes no box, so it can never be "under" the cursor and
         // must not absorb the hit: flow hosts (Show/For/Switch) would otherwise swallow
@@ -238,7 +251,7 @@ public static class FocusManager
                 continue;
 
             if (HitTestChainRecursive(visual, pos, chain, zCache))
-                return true;           // deepest child hit — stop
+                return true; // deepest child hit — stop
         }
 
         if (selfHit) return true;

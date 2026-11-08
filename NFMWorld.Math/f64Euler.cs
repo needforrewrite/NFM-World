@@ -45,7 +45,7 @@ public struct f64Euler(f64AngleSingle yaw, f64AngleSingle pitch, f64AngleSingle 
     {
         return new f64Euler(WrapSinglePositive(Yaw), WrapSinglePositive(Pitch), WrapSinglePositive(Roll));
     }
-    
+
     /// <summary>
     /// Wraps this Stride.Core.Mathematics.AngleSingle to be in the range [0, 2π).
     /// </summary>
@@ -116,7 +116,11 @@ public struct f64Euler(f64AngleSingle yaw, f64AngleSingle pitch, f64AngleSingle 
     public bool Equals(f64Euler other) => Yaw.Equals(other.Yaw) && Pitch.Equals(other.Pitch) && Roll.Equals(other.Roll);
     public override bool Equals(object? obj) => obj is f64Euler other && Equals(other);
     public override int GetHashCode() => HashCode.Combine(Yaw, Pitch, Roll);
-    
+
     public static explicit operator Euler(f64Euler euler)
-        => new Euler(AngleSingle.FromRadians((float)euler.Yaw.Radians), AngleSingle.FromRadians((float)euler.Pitch.Radians), AngleSingle.FromRadians((float)euler.Roll.Radians));
+        => new Euler(
+            AngleSingle.FromRadians((float)euler.Yaw.Radians),
+            AngleSingle.FromRadians((float)euler.Pitch.Radians),
+            AngleSingle.FromRadians((float)euler.Roll.Radians)
+        );
 }

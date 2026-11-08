@@ -6,7 +6,8 @@ using System.Runtime.CompilerServices;
 
 namespace NFMWorldLibrary.Util;
 
-public readonly record struct SinCosFloat : IFloatingPointIeee754<SinCosFloat>, IComparisonOperators<SinCosFloat, float, bool>, IComparisonOperators<SinCosFloat, int, bool>
+public readonly record struct SinCosFloat : IFloatingPointIeee754<SinCosFloat>, IComparisonOperators<SinCosFloat, float, bool>,
+    IComparisonOperators<SinCosFloat, int, bool>
 {
     public readonly float Value;
     public readonly float Sin;
@@ -75,6 +76,7 @@ public readonly record struct SinCosFloat : IFloatingPointIeee754<SinCosFloat>, 
             result = value;
             return true;
         }
+
         result = default;
         return false;
     }
@@ -93,6 +95,7 @@ public readonly record struct SinCosFloat : IFloatingPointIeee754<SinCosFloat>, 
             result = value;
             return true;
         }
+
         result = default;
         return false;
     }
@@ -391,6 +394,7 @@ public readonly record struct SinCosFloat : IFloatingPointIeee754<SinCosFloat>, 
             return false;
         }
     }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryConvertFromChecked<TOther>(TOther value, out SinCosFloat result) where TOther : INumberBase<TOther>
     {
@@ -399,6 +403,7 @@ public readonly record struct SinCosFloat : IFloatingPointIeee754<SinCosFloat>, 
             result = floatResult;
             return true;
         }
+
         result = default;
         return false;
     }
@@ -411,6 +416,7 @@ public readonly record struct SinCosFloat : IFloatingPointIeee754<SinCosFloat>, 
             result = floatResult;
             return true;
         }
+
         result = default;
         return false;
     }
@@ -423,12 +429,14 @@ public readonly record struct SinCosFloat : IFloatingPointIeee754<SinCosFloat>, 
             result = floatResult;
             return true;
         }
+
         result = default;
         return false;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryConvertToChecked<TOther>(SinCosFloat value, [MaybeNullWhen(false)] out TOther result) where TOther : INumberBase<TOther>
+    public static bool TryConvertToChecked<TOther>(SinCosFloat value, [MaybeNullWhen(false)] out TOther result)
+        where TOther : INumberBase<TOther>
     {
         if (typeof(TOther) == typeof(byte))
         {
@@ -501,29 +509,29 @@ public readonly record struct SinCosFloat : IFloatingPointIeee754<SinCosFloat>, 
         if (typeof(TOther) == typeof(byte))
         {
             var actualResult = (value >= byte.MaxValue) ? byte.MaxValue :
-                               (value <= byte.MinValue) ? byte.MinValue : (byte)value;
+                (value <= byte.MinValue) ? byte.MinValue : (byte)value;
             result = (TOther)(object)actualResult;
             return true;
         }
         else if (typeof(TOther) == typeof(char))
         {
             char actualResult = (value >= char.MaxValue) ? char.MaxValue :
-                                (value <= char.MinValue) ? char.MinValue : (char)value;
+                (value <= char.MinValue) ? char.MinValue : (char)value;
             result = (TOther)(object)actualResult;
             return true;
         }
         else if (typeof(TOther) == typeof(decimal))
         {
             decimal actualResult = (value >= +79228162514264337593543950336.0f) ? decimal.MaxValue :
-                                   (value <= -79228162514264337593543950336.0f) ? decimal.MinValue :
-                                   IsNaN(value) ? 0.0m : (decimal)value;
+                (value <= -79228162514264337593543950336.0f) ? decimal.MinValue :
+                IsNaN(value) ? 0.0m : (decimal)value;
             result = (TOther)(object)actualResult;
             return true;
         }
         else if (typeof(TOther) == typeof(ushort))
         {
             ushort actualResult = (value >= ushort.MaxValue) ? ushort.MaxValue :
-                                  (value <= ushort.MinValue) ? ushort.MinValue : (ushort)value;
+                (value <= ushort.MinValue) ? ushort.MinValue : (ushort)value;
             result = (TOther)(object)actualResult;
             return true;
         }
@@ -580,13 +588,15 @@ public readonly record struct SinCosFloat : IFloatingPointIeee754<SinCosFloat>, 
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryConvertToSaturating<TOther>(SinCosFloat value, [MaybeNullWhen(false)] out TOther result) where TOther : INumberBase<TOther>
+    public static bool TryConvertToSaturating<TOther>(SinCosFloat value, [MaybeNullWhen(false)] out TOther result)
+        where TOther : INumberBase<TOther>
     {
         return TryConvertTo(value.Value, out result);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryConvertToTruncating<TOther>(SinCosFloat value, [MaybeNullWhen(false)] out TOther result) where TOther : INumberBase<TOther>
+    public static bool TryConvertToTruncating<TOther>(SinCosFloat value, [MaybeNullWhen(false)] out TOther result)
+        where TOther : INumberBase<TOther>
     {
         return TryConvertTo(value.Value, out result);
     }
@@ -599,18 +609,25 @@ public readonly record struct SinCosFloat : IFloatingPointIeee754<SinCosFloat>, 
             result = value;
             return true;
         }
+
         result = default;
         return false;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out SinCosFloat result)
+    public static bool TryParse(
+        [NotNullWhen(true)] string? s,
+        NumberStyles style,
+        IFormatProvider? provider,
+        out SinCosFloat result
+    )
     {
         if (float.TryParse(s, style, provider, out float value))
         {
             result = value;
             return true;
         }
+
         result = default;
         return false;
     }
@@ -726,18 +743,12 @@ public readonly record struct SinCosFloat : IFloatingPointIeee754<SinCosFloat>, 
 
     internal sbyte Exponent
     {
-        get
-        {
-            return (sbyte)(BiasedExponent - ExponentBias);
-        }
+        get { return (sbyte)(BiasedExponent - ExponentBias); }
     }
 
     internal uint Significand
     {
-        get
-        {
-            return TrailingSignificand | ((BiasedExponent != 0) ? (1U << BiasedExponentShift) : 0U);
-        }
+        get { return TrailingSignificand | ((BiasedExponent != 0) ? (1U << BiasedExponentShift) : 0U); }
     }
 
     internal uint TrailingSignificand
@@ -765,7 +776,7 @@ public readonly record struct SinCosFloat : IFloatingPointIeee754<SinCosFloat>, 
     {
         return bits & TrailingSignificandMask;
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
     {

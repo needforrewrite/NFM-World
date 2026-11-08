@@ -14,6 +14,7 @@ public readonly record struct MenuRoadSegment(Vector3 Start, Vector3 End, int St
 internal sealed class MenuStageSurvey
 {
     private readonly record struct Bounds(Vector3 Min, Vector3 Max);
+
     private readonly List<Bounds> _obstacles = [];
     public List<MenuRoadSegment> Roads { get; } = [];
     public List<MenuRoadSegment> Cruises { get; } = [];
@@ -38,35 +39,42 @@ internal sealed class MenuStageSurvey
                 local = new Bounds(points.Aggregate(Vector3.Min), points.Aggregate(Vector3.Max));
                 localBounds.Add(piece.Rad, local);
             }
+
             var rotation = Matrix.CreateFromEuler((Euler)piece.Rotation);
             var position = (Vector3)piece.Position;
             var low = new Vector3(float.MaxValue);
             var high = new Vector3(float.MinValue);
             for (var corner = 0; corner < 8; corner++)
             {
-                var point = new Vector3((corner & 1) == 0 ? local.Min.X : local.Max.X,
+                var point = new Vector3(
+                    (corner & 1) == 0 ? local.Min.X : local.Max.X,
                     (corner & 2) == 0 ? local.Min.Y : local.Max.Y,
-                    (corner & 4) == 0 ? local.Min.Z : local.Max.Z);
+                    (corner & 4) == 0 ? local.Min.Z : local.Max.Z
+                );
                 point = Vector3.Transform(point, rotation) + position;
                 low = Vector3.Min(low, point);
                 high = Vector3.Max(high, point);
             }
+
             _obstacles.Add(new Bounds(low, high));
             if (piece.OriginalPlacement.IsWall) continue;
             minimum = Vector3.Min(minimum, low);
             maximum = Vector3.Max(maximum, high);
         }
+
         if (minimum.X == float.MaxValue)
         {
             minimum = new Vector3(-3000, 0, -3000);
             maximum = new Vector3(3000, 250, 3000);
         }
+
         var nodes = stage.Nodes.Select(node => (Vector3)node.Position).ToArray();
         if (nodes.Length > 0)
         {
             minimum = nodes.Aggregate(Vector3.Min) - new Vector3(1000, 0, 1000);
             maximum = nodes.Aggregate(Vector3.Max) + new Vector3(1000, 0, 1000);
         }
+
         _courseMin = minimum;
         _courseMax = maximum;
         var loader = stage.StageLoader;
@@ -84,6 +92,7 @@ internal sealed class MenuStageSurvey
             if (segment.Length is >= 2500 and <= 25000 && horizontal.LengthSquared() >= 1000 * 1000)
                 Cruises.Add(segment);
         }
+
         for (var first = 0; first < nodes.Length - 1; first++)
         for (var last = first + 1; last < Math.Min(nodes.Length, first + 9); last++)
         {
@@ -99,14 +108,18 @@ internal sealed class MenuStageSurvey
                     straight = false;
                     break;
                 }
+
                 previous = along;
             }
+
             if (straight) Roads.Add(road);
         }
     }
 
-    public bool InCourse(Vector3 point) => point.X >= _courseMin.X - 2000 && point.X <= _courseMax.X + 2000
-        && point.Z >= _courseMin.Z - 2000 && point.Z <= _courseMax.Z + 2000;
+    public bool InCourse(Vector3 point) => point.X >= _courseMin.X - 2000
+                                           && point.X <= _courseMax.X + 2000
+                                           && point.Z >= _courseMin.Z - 2000
+                                           && point.Z <= _courseMax.Z + 2000;
 
     public float LocalCeiling(Vector3 from, Vector3 to, float padding)
     {
@@ -114,8 +127,10 @@ internal sealed class MenuStageSurvey
         var maximum = Vector3.Max(from, to) + new Vector3(padding);
         var ceiling = 250f;
         foreach (var obstacle in _obstacles)
-            if (obstacle.Max.X >= minimum.X && obstacle.Min.X <= maximum.X
-                && obstacle.Max.Z >= minimum.Z && obstacle.Min.Z <= maximum.Z)
+            if (obstacle.Max.X >= minimum.X
+                && obstacle.Min.X <= maximum.X
+                && obstacle.Max.Z >= minimum.Z
+                && obstacle.Min.Z <= maximum.Z)
                 ceiling = Math.Min(ceiling, obstacle.Min.Y);
         return ceiling;
     }
@@ -128,6 +143,7 @@ internal sealed class MenuStageSurvey
             var padding = new Vector3(clearance);
             if (Intersects(from, to, obstacle.Min - padding, obstacle.Max + padding)) return false;
         }
+
         return true;
     }
 
@@ -147,12 +163,14 @@ internal sealed class MenuStageSurvey
                 if (origin < low || origin > high) return false;
                 continue;
             }
+
             var a = (low - origin) / delta;
             var b = (high - origin) / delta;
             entry = Math.Max(entry, Math.Min(a, b));
             exit = Math.Min(exit, Math.Max(a, b));
             if (entry > exit) return false;
         }
+
         return true;
     }
 }

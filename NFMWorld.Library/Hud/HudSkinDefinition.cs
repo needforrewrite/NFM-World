@@ -30,12 +30,11 @@ public sealed class HudSkinDefinition
     public static HudSkinDefinition Parse(string json)
     {
         var skin = JsonSerializer.Deserialize<HudSkinDefinition>(json, JsonOptions)
-            ?? throw new FormatException("Empty skin manifest.");
+                   ?? throw new FormatException("Empty skin manifest.");
         if (skin.Version != 1) throw new FormatException("Unsupported HUD skin version.");
         if (!HudSkinId.IsValid(skin.Id) || skin.Id != HudSkinId.Normalize(skin.Id))
             throw new FormatException("Skin id must contain lowercase letters, digits, hyphens or underscores.");
-        if (string.IsNullOrWhiteSpace(skin.Name) || skin.Name.Length > 80 ||
-            skin.Author is null || skin.Description is null)
+        if (string.IsNullOrWhiteSpace(skin.Name) || skin.Name.Length > 80 || skin.Author is null || skin.Description is null)
             throw new FormatException("A skin needs a name, author and description strings.");
         if (!Positive(skin.ReferenceWidth) || !Positive(skin.ReferenceHeight))
             throw new FormatException("Invalid reference dimensions.");
@@ -46,6 +45,7 @@ public sealed class HudSkinDefinition
             if (element is null) throw new FormatException("An element cannot be null.");
             element.Validate();
         }
+
         return skin;
     }
 
@@ -82,13 +82,19 @@ public sealed class HudElement
             throw new FormatException($"Unknown anchor '{Anchor}'.");
         if (VisibleWhen is not ("always" or "timeTrial" or "freePlay" or "hasTarget" or "hasPosition"))
             throw new FormatException($"Unknown visibility '{VisibleWhen}'.");
-        if (!float.IsFinite(X) || !float.IsFinite(Y) || MathF.Abs(X) > 16384 || MathF.Abs(Y) > 16384 ||
-            !HudSkinDefinition.Positive(Width) || !HudSkinDefinition.Positive(Height) ||
-            !HudSkinDefinition.Positive(FontSize) || FontSize > 256 ||
-            !float.IsFinite(OutlineWidth) || OutlineWidth is < 0 or > 16)
+        if (!float.IsFinite(X)
+            || !float.IsFinite(Y)
+            || MathF.Abs(X) > 16384
+            || MathF.Abs(Y) > 16384
+            || !HudSkinDefinition.Positive(Width)
+            || !HudSkinDefinition.Positive(Height)
+            || !HudSkinDefinition.Positive(FontSize)
+            || FontSize > 256
+            || !float.IsFinite(OutlineWidth)
+            || OutlineWidth is < 0 or > 16)
             throw new FormatException("Invalid element dimensions.");
-        if (Font is not ("Adventure" or "AdventureHollow" or "DroidSans" or "NotoSans" or "RobotoMono") ||
-            Align is not ("left" or "center" or "right"))
+        if (Font is not ("Adventure" or "AdventureHollow" or "DroidSans" or "NotoSans" or "RobotoMono")
+            || Align is not ("left" or "center" or "right"))
             throw new FormatException("Unknown font or text alignment.");
         if (!IsColor(Color) || !IsColor(Background) || !IsColor(Outline))
             throw new FormatException("Colors must be #RRGGBB or #RRGGBBAA.");
@@ -109,19 +115,28 @@ public sealed class HudElement
         _ => true
     };
 
-    private static bool IsColor(string? color) => color is { Length: 7 or 9 } && color[0] == '#'
-        && color.AsSpan(1).IndexOfAnyExcept("0123456789abcdefABCDEF") < 0;
+    private static bool IsColor(string? color) => color is { Length: 7 or 9 }
+                                                  && color[0] == '#'
+                                                  && color.AsSpan(1).IndexOfAnyExcept("0123456789abcdefABCDEF") < 0;
 
     public static bool IsAssetPath(string? path) => !string.IsNullOrWhiteSpace(path)
-        && !path.Any(char.IsControl) && !path.Contains(':') && !path.Contains('\\')
-        && path.Split('/').All(part => part.Length > 0 && part is not "." and not "..")
-        && Path.GetExtension(path).ToLowerInvariant() is ".svg" or ".png" or ".jpg" or ".jpeg" or ".dds";
+                                                    && !path.Any(char.IsControl)
+                                                    && !path.Contains(':')
+                                                    && !path.Contains('\\')
+                                                    && path.Split('/').All(part => part.Length > 0 && part is not "." and not ".."
+                                                    )
+                                                    && Path.GetExtension(path).ToLowerInvariant() is ".svg" or ".png" or ".jpg"
+                                                        or ".jpeg" or ".dds";
 }
 
 public static class HudSkinId
 {
     public const string Default = "classic";
+
     public static bool IsValid(string? id) => id is { Length: > 0 and <= 64 }
-        && id.All(c => c is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '-' or '_');
+                                              && id.All(c => c is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9'
+                                                  or '-' or '_'
+                                              );
+
     public static string Normalize(string? id) => IsValid(id) ? id!.ToLowerInvariant() : Default;
 }

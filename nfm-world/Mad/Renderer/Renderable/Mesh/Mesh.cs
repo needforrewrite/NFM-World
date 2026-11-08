@@ -89,7 +89,7 @@ public class Mesh : IDisposable
                 submesh?.Dispose();
             }
         }
-        
+
         if (LineMeshes != null)
         {
             foreach (var lineMesh in LineMeshes)
@@ -97,17 +97,17 @@ public class Mesh : IDisposable
                 lineMesh?.Dispose();
             }
         }
-        
+
         var submeshes = new (
             List<VertexPositionNormalColorCentroid> Data,
             List<uint> Indices
-        )[(int)(PolyType.MaxValue + 1)];
+            )[(int)(PolyType.MaxValue + 1)];
 
         for (var i = 0; i < submeshes.Length; i++)
         {
             submeshes[i] = ([], []);
         }
-        
+
         var lines = new OrderedDictionary<
             (Vector3 point0, Vector3 point1),
             (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)
@@ -119,13 +119,13 @@ public class Mesh : IDisposable
                 (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)
             >(LineEqualityComparer.Instance);
         }
-        
+
         for (var i = 0; i < Polys.Length; i++)
         {
             var poly = Polys[i];
 
             var (data, indices) = submeshes[(int)poly.PolyType];
-            
+
             var baseIndex = (uint)data.Count;
             float decalOffset = poly.DecalOffset; // Use the decal offset value from polygon
             foreach (var point in poly.Points)
@@ -159,10 +159,16 @@ public class Mesh : IDisposable
         {
             var (data, indices) = submeshes[i];
             var type = (PolyType)i;
-            
+
             if (data.Count == 0 || indices.Count == 0) continue;
 
-            Submeshes[i] = new Submesh(type, this, GameSparker.GraphicsDevice, CollectionsMarshal.AsSpan(data), CollectionsMarshal.AsSpan(indices));
+            Submeshes[i] = new Submesh(
+                type,
+                this,
+                GameSparker.GraphicsDevice,
+                CollectionsMarshal.AsSpan(data),
+                CollectionsMarshal.AsSpan(indices)
+            );
         }
 
         LineMeshes = new LineMesh[lines.Length];
@@ -183,8 +189,7 @@ public class Mesh : IDisposable
 
         public bool Equals((Vector3 Point0, Vector3 Point1) x, (Vector3 Point0, Vector3 Point1) y)
         {
-            return (x.Point0 == y.Point0 && x.Point1 == y.Point1) ||
-                   (x.Point0 == y.Point1 && x.Point1 == y.Point0);
+            return (x.Point0 == y.Point0 && x.Point1 == y.Point1) || (x.Point0 == y.Point1 && x.Point1 == y.Point0);
         }
 
         public int GetHashCode((Vector3 Point0, Vector3 Point1) obj)
@@ -199,7 +204,8 @@ public class Mesh : IDisposable
         Vector3 Normal,
         Vector3 Centroid,
         Color Color,
-        float DecalOffset)
+        float DecalOffset
+    )
     {
         /// <summary>
         /// Position/Normal/Centroid float3s, Color as a packed byte4 despite HLSL's
@@ -229,7 +235,8 @@ public class Mesh : IDisposable
                 new VertexAttributeDesc("POSITION", 1, 24, VertexAttributeFormat.Float3),
                 new VertexAttributeDesc("TEXCOORD", 0, 40, VertexAttributeFormat.Float1),
             ],
-            StrideInBytes: 44);
+            StrideInBytes: 44
+        );
     }
 
     public void RebuildMesh()
@@ -237,7 +244,19 @@ public class Mesh : IDisposable
         BuildMesh();
     }
 
-    public void SubmitRenderables(RenderQueue queue, Lighting? lighting, bool finish, BoundingSphere boundingSphere, RenderBucket renderBucket, Matrix matrixWorld, long layer = 0, bool getsShadowed = false, float alphaOverride = 1.0f, bool isFullbright = false, bool glow = false)
+    public void SubmitRenderables(
+        RenderQueue queue,
+        Lighting? lighting,
+        bool finish,
+        BoundingSphere boundingSphere,
+        RenderBucket renderBucket,
+        Matrix matrixWorld,
+        long layer = 0,
+        bool getsShadowed = false,
+        float alphaOverride = 1.0f,
+        bool isFullbright = false,
+        bool glow = false
+    )
     {
         var instanceData = new InstanceData(matrixWorld, layer, getsShadowed, alphaOverride, isFullbright, glow);
 
@@ -250,15 +269,16 @@ public class Mesh : IDisposable
                     submesh,
                     instanceData,
                     SortKey.Create(renderBucket, (ushort)(alphaOverride < 1f || submesh.PolyType == PolyType.Glass ? 1 : 0)),
-                    boundingSphere);
+                    boundingSphere
+                );
             }
         }
 
         // HideOutlines is handled on the CPU by not submitting line meshes. Other distance
         // behavior remains in the shader because it depends on each line's centroid.
-        if (lighting?.IsCreateShadowMap != true &&
-            World.DistantOutlineBehavior != DistantOutlineBehavior.HideOutlines &&
-            LineMeshes != null)
+        if (lighting?.IsCreateShadowMap != true
+            && World.DistantOutlineBehavior != DistantOutlineBehavior.HideOutlines
+            && LineMeshes != null)
         {
             foreach (var lineMesh in LineMeshes)
             {
@@ -268,7 +288,8 @@ public class Mesh : IDisposable
                         lineMesh,
                         instanceData,
                         SortKey.Create(renderBucket, (ushort)(alphaOverride < 1f ? 1 : 0)),
-                        boundingSphere);
+                        boundingSphere
+                    );
                 }
             }
         }
@@ -287,7 +308,7 @@ public class Mesh : IDisposable
             {
                 submesh?.Dispose();
             }
-        
+
             if (LineMeshes != null)
             {
                 foreach (var lineMesh in LineMeshes)

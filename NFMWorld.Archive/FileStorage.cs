@@ -17,7 +17,10 @@ public sealed class FileStorage(string root)
 
     /// <summary>Copies a submitted stream into storage and returns its hash and relative path.</summary>
     public async Task<(string Hash, string RelativePath, long Size)> PutAsync(
-        Stream source, long maxBytes, CancellationToken ct)
+        Stream source,
+        long maxBytes,
+        CancellationToken ct
+    )
     {
         var incoming = Path.Combine(_root, "incoming");
         Directory.CreateDirectory(incoming);
@@ -70,7 +73,9 @@ public sealed class FileStorage(string root)
 
     /// <summary>Copies stored bytes in, for content the server produced itself.</summary>
     public async Task<(string Hash, string RelativePath, long Size)> PutAsync(
-        ReadOnlyMemory<byte> data, CancellationToken ct)
+        ReadOnlyMemory<byte> data,
+        CancellationToken ct
+    )
     {
         using var stream = new MemoryStream(data.ToArray(), writable: false);
         return await PutAsync(stream, data.Length, ct);
@@ -97,7 +102,10 @@ public sealed class FileStorage(string root)
     /// take the file out from under every other row pointing at it.
     /// </summary>
     public async Task DeleteIfUnreferencedAsync(
-        string relativePath, ArchiveDbContext db, CancellationToken ct)
+        string relativePath,
+        ArchiveDbContext db,
+        CancellationToken ct
+    )
     {
         var referenced = await db.TimeTrials.AnyAsync(t => t.StoragePath == relativePath, ct)
                          || await db.Assets.AnyAsync(a => a.StoragePath == relativePath, ct);

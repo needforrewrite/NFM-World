@@ -9,6 +9,7 @@
 // The blocks reach this file already run through the preprocessor, so every one of them is
 // live: the dialect guards in the `.fx` sources sit inside the shader bodies, never around a
 // technique.
+
 using System.Text.RegularExpressions;
 
 namespace NFMWorld.ShaderCompiler;
@@ -35,13 +36,16 @@ public static class TechniqueParser
     // `technique Name` - the brace may follow on the same line or the next, so it is matched
     // separately rather than as part of this.
     private static readonly Regex TechniqueHeader = new(
-        @"^\s*technique\s+([A-Za-z_]\w*)", RegexOptions.Compiled);
+        @"^\s*technique\s+([A-Za-z_]\w*)",
+        RegexOptions.Compiled
+    );
 
     // `VertexShader = compile vs_3_0 MainVS();` - the shader model is matched but not captured,
     // because it is a D3D9 detail with no bearing on what the entry point compiles to here.
     private static readonly Regex StageAssignment = new(
         @"^\s*(VertexShader|PixelShader)\s*=\s*compile\s+[A-Za-z_]\w*\s+([A-Za-z_]\w*)\s*\(",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled
+    );
 
     /// <summary>
     /// The techniques declared in <paramref name="source"/>, in declaration order.
@@ -94,10 +98,12 @@ public static class TechniqueParser
 
             if (vertexEntry is null)
                 throw new InvalidOperationException(
-                    $"{fileName}: technique '{name}' declares no VertexShader entry point.");
+                    $"{fileName}: technique '{name}' declares no VertexShader entry point."
+                );
             if (pixelEntry is null)
                 throw new InvalidOperationException(
-                    $"{fileName}: technique '{name}' declares no PixelShader entry point.");
+                    $"{fileName}: technique '{name}' declares no PixelShader entry point."
+                );
 
             techniques.Add(new Technique(name, vertexEntry, pixelEntry));
             name = null;
@@ -105,7 +111,8 @@ public static class TechniqueParser
 
         if (name is not null)
             throw new InvalidOperationException(
-                $"{fileName}: technique '{name}' has no closing brace - the source is truncated.");
+                $"{fileName}: technique '{name}' has no closing brace - the source is truncated."
+            );
 
         return techniques;
     }

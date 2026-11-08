@@ -39,6 +39,7 @@ internal sealed class WorldArrow : Component
             var step = DegreesPerSecond * (now - _lastTicks) / 1000f;
             _shown += Math.Clamp(target - _shown, -step, step);
         }
+
         _lastTicks = now;
 
         var radians = _shown * MathF.PI / 180;

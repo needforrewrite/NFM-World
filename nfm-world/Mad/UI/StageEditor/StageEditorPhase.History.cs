@@ -33,13 +33,12 @@ public partial class StageEditorPhase
     {
         if (ActiveTab?.Stage == null) return;
 
-        var currentObjs  = new HashSet<StageObject?>(ActiveTab.ScenePieces.Select(p => p.Obj));
+        var currentObjs = new HashSet<StageObject?>(ActiveTab.ScenePieces.Select(p => p.Obj));
         var snapshotObjs = new HashSet<StageObject?>(snapshot.Pieces.Select(p => p.Obj));
         bool needsRebuild = !currentObjs.SetEquals(snapshotObjs);
 
         var currentWalls = ActiveTab.StageWalls.Select(CreateWallSnapshot).ToList();
-        bool wallsChanged = currentWalls.Count != snapshot.Walls.Count ||
-                            !currentWalls.SequenceEqual(snapshot.Walls);
+        bool wallsChanged = currentWalls.Count != snapshot.Walls.Count || !currentWalls.SequenceEqual(snapshot.Walls);
 
         // Rebuild Stage.pieces to match snapshot order (for Save correctness)
         if (needsRebuild)
@@ -51,21 +50,23 @@ public partial class StageEditorPhase
 
         // Rebuild ScenePieces list
         var newPieces = snapshot.Pieces.Select(s =>
-        {
-            var existing = ActiveTab.ScenePieces.FirstOrDefault(p => p.Obj == s.Obj);
-            if (existing != null)
             {
-                existing.Position = s.Piece.Position;
-                existing.Rotation = s.Piece.Rotation;
-                return existing;
+                var existing = ActiveTab.ScenePieces.FirstOrDefault(p => p.Obj == s.Obj);
+                if (existing != null)
+                {
+                    existing.Position = s.Piece.Position;
+                    existing.Rotation = s.Piece.Rotation;
+                    return existing;
+                }
+
+                // Piece was deleted — resurrect it
+                var inst = new StagePieceInstance(s.Obj, s.Id)
+                {
+                    PiecePlacement = s.Piece,
+                };
+                return inst;
             }
-            // Piece was deleted — resurrect it
-            var inst = new StagePieceInstance(s.Obj, s.Id)
-            {
-                PiecePlacement = s.Piece,
-            };
-            return inst;
-        });
+        );
 
         ActiveTab.ScenePieces.Clear();
         ActiveTab.ScenePieces.AddRange(newPieces);
@@ -77,7 +78,7 @@ public partial class StageEditorPhase
                 rebuiltWalls.Add(new EditorStageWall(wall.Direction, wall.Count, wall.Position, wall.Offset, wall.Id));
             ActiveTab.StageWalls = rebuiltWalls;
         }
-        
+
         ActiveTab.ActivePieceId = -1;
         ActiveTab.SelectedWallId = -1;
         ActiveTab.SelectedPieceIds.Clear();
@@ -104,5 +105,4 @@ public partial class StageEditorPhase
     }
 
     // ── Hierarchy reordering ─────────────────────────────────────────────────
-
 }

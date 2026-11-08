@@ -125,8 +125,10 @@ public class LobbyPacketTests
             }
         };
 
-        Assert.AreEqual("alice,bob,carol",
-            string.Join(",", info.InSlotOrder().Select(p => p.PlayerName)));
+        Assert.AreEqual(
+            "alice,bob,carol",
+            string.Join(",", info.InSlotOrder().Select(p => p.PlayerName))
+        );
 
         static ServerSidePlayerInfo Player(string name) => new()
         {

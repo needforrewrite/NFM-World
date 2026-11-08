@@ -128,7 +128,8 @@ try
         Check(
             "the mixer is consuming samples",
             playing.SamplesPlayed > 0,
-            $"{playing.SamplesPlayed} samples played, {playing.BuffersQueued} buffer(s) queued");
+            $"{playing.SamplesPlayed} samples played, {playing.BuffersQueued} buffer(s) queued"
+        );
 
         // This is exactly what IRadicalMusic.SetPaused relies on: Stop and Start on a voice whose
         // buffer is still queued must pause and resume it in place, without resubmitting.
@@ -140,7 +141,8 @@ try
         Check(
             "a stopped voice stops consuming",
             stillStopped.SamplesPlayed == stopped.SamplesPlayed,
-            $"{stopped.SamplesPlayed} -> {stillStopped.SamplesPlayed}");
+            $"{stopped.SamplesPlayed} -> {stillStopped.SamplesPlayed}"
+        );
 
         FAudio.FAudioSourceVoice_Start(voice, 0, 0);
         Thread.Sleep(200);
@@ -148,7 +150,8 @@ try
         Check(
             "a restarted voice consumes again",
             resumed.SamplesPlayed > stillStopped.SamplesPlayed,
-            $"{stillStopped.SamplesPlayed} -> {resumed.SamplesPlayed}");
+            $"{stillStopped.SamplesPlayed} -> {resumed.SamplesPlayed}"
+        );
 
         FAudio.FAudioSourceVoice_Stop(voice, 0, 0);
     }

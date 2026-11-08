@@ -11,7 +11,10 @@ public static class SessionBots
     /// simulates them.
     /// </summary>
     public static Dictionary<byte, ServerSidePlayerInfo> Place(
-        IEnumerable<byte> occupied, int count, Guid ownerId)
+        IEnumerable<byte> occupied,
+        int count,
+        Guid ownerId
+    )
     {
         var taken = occupied.ToHashSet();
         var bots = new Dictionary<byte, ServerSidePlayerInfo>();

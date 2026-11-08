@@ -16,6 +16,7 @@ public sealed class FaudioSoundClip : ISoundClip
     /// Must be accessed from the main/game thread only (no locking).
     /// </summary>
     private static readonly List<FaudioSoundClip> Pool = [];
+
     private static bool _paused;
 
     /// <summary>
@@ -183,8 +184,13 @@ public sealed class FaudioSoundClip : ISoundClip
         if (_voice == IntPtr.Zero) return;
         var position = _loop || _followPosition ? _position : _playPosition;
         if (_spatial)
-            FaudioEngine.Instance?.ApplySpatial(_voice, SpatialAudio.ListenerPosition,
-                SpatialAudio.ListenerForward, SpatialAudio.ListenerUp, position);
+            FaudioEngine.Instance?.ApplySpatial(
+                _voice,
+                SpatialAudio.ListenerPosition,
+                SpatialAudio.ListenerForward,
+                SpatialAudio.ListenerUp,
+                position
+            );
         FAudio.FAudioVoice_SetVolume(_voice, (volume ?? SoundEffects.Volume) * (_spatial ? SpatialAudio.Gain(position) : 1), 0);
     }
 
@@ -210,6 +216,7 @@ public sealed class FaudioSoundClip : ISoundClip
         {
             clip.Stop();
         }
+
         _paused = false;
     }
 

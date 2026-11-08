@@ -8,19 +8,19 @@ public enum RenderBucket : byte
     Ground,
     GroundPolys,
     Mountains,
-    
+
     StagePieces,
-    
+
     Flames,
     Dust,
     Chips,
     Sparks,
     FixHoopElectricity,
-    
+
     FixFlare,
-    
+
     Cars,
-    
+
     CheckpointBounds,
 
     CollisionDebugMesh

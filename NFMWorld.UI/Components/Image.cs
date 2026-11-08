@@ -14,7 +14,13 @@ public partial class Image : Component
         NodeInternal.MeasureFunction += Measure;
     }
 
-    private YogaSize Measure(YogaNode node, float availableWidth, YogaMeasureMode widthMode, float availableHeight, YogaMeasureMode heightMode)
+    private YogaSize Measure(
+        YogaNode node,
+        float availableWidth,
+        YogaMeasureMode widthMode,
+        float availableHeight,
+        YogaMeasureMode heightMode
+    )
     {
         return new YogaSize(Scale * ImageData?.Width ?? availableWidth, Scale * ImageData?.Height ?? availableHeight);
     }

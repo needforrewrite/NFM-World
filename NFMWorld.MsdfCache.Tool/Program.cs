@@ -18,33 +18,40 @@ using Apos.Shapes;
 // before - this is an accelerator, not a requirement.
 var ranges = new (int From, int To)[] { (0x20, 0x7E), (0xA0, 0xFF) };
 
-if (args.Length == 0) {
+if (args.Length == 0)
+{
     Console.Error.WriteLine("usage: NFMWorld.MsdfCache.Tool <fonts directory> [--check]");
     return 2;
 }
 
 string directory = args[0];
 bool check = args.Contains("--check");
-if (!Directory.Exists(directory)) {
+if (!Directory.Exists(directory))
+{
     Console.Error.WriteLine($"no such directory: {directory}");
     return 2;
 }
 
 var codePoints = new List<int>();
-foreach ((int from, int to) in ranges) {
+foreach ((int from, int to) in ranges)
+{
     for (int cp = from; cp <= to; cp++) codePoints.Add(cp);
 }
+
 string text = string.Concat(codePoints.Select(cp => char.ConvertFromUtf32(cp)));
 
 int written = 0, skipped = 0, failed = 0;
 foreach (string fontPath in Directory.EnumerateFiles(directory)
-                                      .Where(p => p.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase)
-                                               || p.EndsWith(".otf", StringComparison.OrdinalIgnoreCase))
-                                      .OrderBy(p => p, StringComparer.Ordinal)) {
+             .Where(p => p.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase)
+                         || p.EndsWith(".otf", StringComparison.OrdinalIgnoreCase)
+             )
+             .OrderBy(p => p, StringComparer.Ordinal))
+{
     string cachePath = Path.ChangeExtension(fontPath, ".msdf");
     byte[] fontBytes = File.ReadAllBytes(fontPath);
 
-    if (!ShapeFont.TryLoad(fontBytes, out ShapeFont? font)) {
+    if (!ShapeFont.TryLoad(fontBytes, out ShapeFont? font))
+    {
         // A CFF font cannot be drawn at all here, so it has no fields to bake and the game will
         // report the same thing when it loads it.
         Console.WriteLine($"skip  {Path.GetFileName(fontPath)} (not drawable by this baker)");
@@ -52,27 +59,31 @@ foreach (string fontPath in Directory.EnumerateFiles(directory)
         continue;
     }
 
-    using (font) {
+    using (font)
+    {
         font.Prewarm(text);
         byte[] cache = font.SavePrewarmed();
 
         // Rebuilds are compared by content rather than by timestamp: baking is slow, and an
         // unchanged font must not rewrite the file and wake everything that copies it.
-        if (File.Exists(cachePath) && File.ReadAllBytes(cachePath).AsSpan().SequenceEqual(cache)) {
+        if (File.Exists(cachePath) && File.ReadAllBytes(cachePath).AsSpan().SequenceEqual(cache))
+        {
             Console.WriteLine($"same  {Path.GetFileName(cachePath)} ({cache.Length / 1024} KiB)");
             skipped++;
             continue;
         }
 
-        if (check) {
+        if (check)
+        {
             Console.WriteLine($"stale {Path.GetFileName(cachePath)}");
             failed++;
             continue;
         }
 
         File.WriteAllBytes(cachePath, cache);
-        Console.WriteLine($"write {Path.GetFileName(cachePath)} ({cache.Length / 1024} KiB, " +
-                          $"{font.PrewarmedFieldCount} glyphs)");
+        Console.WriteLine(
+            $"write {Path.GetFileName(cachePath)} ({cache.Length / 1024} KiB, " + $"{font.PrewarmedFieldCount} glyphs)"
+        );
         written++;
     }
 }

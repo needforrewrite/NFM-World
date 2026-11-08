@@ -24,7 +24,9 @@ public partial class BackendCar : BackendGameObject
     [PluginVisible] public int LastCheckpointNode { get; set; } = -1; // resets on new lap
 
     /// <summary>Car angles at the moment the last checkpoint was crossed.</summary>
-    [PluginVisible] public f64Euler LastCheckpointRotation { get; set; } = f64Euler.Identity;
+    [PluginVisible]
+    public f64Euler LastCheckpointRotation { get; set; } = f64Euler.Identity;
+
     [PluginVisible] public fix64 LastCheckpointPxy { get; set; }
     [PluginVisible] public fix64 LastCheckpointPzy { get; set; }
 
@@ -41,11 +43,11 @@ public partial class BackendCar : BackendGameObject
     public event Action? Fixed;
 
     [PluginVisible] public ClientSidePlayerInfo Player { get; }
-    
+
     private bool _fixing;
     private byte _fixTimer;
     private int _fixTick = 0;
-    
+
     [PluginVisible]
     public BackendCar(
         BackendCar other,
@@ -62,7 +64,13 @@ public partial class BackendCar : BackendGameObject
     }
 
     [PluginVisible]
-    public BackendCar(ClientSidePlayerInfo player, int im, fix64 x, fix64 z) : this(BackendGameSparker.GetCar(player.CarName).Rad!, im, x, z, player.IsClientPlayer)
+    public BackendCar(ClientSidePlayerInfo player, int im, fix64 x, fix64 z) : this(
+        BackendGameSparker.GetCar(player.CarName).Rad!,
+        im,
+        x,
+        z,
+        player.IsClientPlayer
+    )
     {
         Player = player;
     }
@@ -75,15 +83,15 @@ public partial class BackendCar : BackendGameObject
         GroundAt = rad.Wheels.FirstOrDefault().Ground;
         MaxRadius = rad.MaxRadius;
         Wheels = rad.Wheels;
-        
+
         CarPhysics = new CarPhysics(Stats, im, isClientPlayer);
         CarPhysics.Car = this;
         CarPhysics.Reseto(CarPhysics.Im, this);
         Control = new Control();
-        
+
         Position = new f64Vector3(x, World.Ground - GroundAt, z);
         Rotation = f64Euler.Identity;
-        
+
         Player = new ClientSidePlayerInfo
         {
             CarName = rad.FileName,
@@ -164,8 +172,18 @@ public partial class BackendCar : BackendGameObject
     /// <param name="tilt"></param>
     /// <param name="onRoof"></param>
     /// <param name="wheelGround"></param>
-    public void AddDust(int wheelidx, float x, float y, float z, int scx, int scz, float simag, int tilt,
-        bool onRoof, int wheelGround)
+    public void AddDust(
+        int wheelidx,
+        float x,
+        float y,
+        float z,
+        int scx,
+        int scz,
+        float simag,
+        int tilt,
+        bool onRoof,
+        int wheelGround
+    )
     {
         Dusted?.Invoke(wheelidx, x, y, z, scx, scz, simag, tilt, onRoof, wheelGround);
     }
@@ -218,11 +236,34 @@ public partial class BackendCar : BackendGameObject
     {
         DamagedZ?.Invoke(Stats, wheelnum, amount);
     }
-    
+
     public static implicit operator ContO(BackendCar car) => new(car);
 }
 
 public delegate void DamageFunc(CarStats stat, int wheelnum, fix64 amount);
+
 public delegate void RoofDamageFunc(CarStats stat, int wheelnum, fix64 amount, bool mtouch, int nbsq, int squash);
-public delegate void SparkFunc(float wheelx, float wheely, float wheelz, float scx, float scy, float scz, int type, int wheelGround);
-public delegate void DustFunc(int wheelidx, float wheelx, float wheely, float wheelz, int scx, int scz, float simag, int tilt, bool onRoof, int wheelGround);
+
+public delegate void SparkFunc(
+    float wheelx,
+    float wheely,
+    float wheelz,
+    float scx,
+    float scy,
+    float scz,
+    int type,
+    int wheelGround
+);
+
+public delegate void DustFunc(
+    int wheelidx,
+    float wheelx,
+    float wheely,
+    float wheelz,
+    int scx,
+    int scz,
+    float simag,
+    int tilt,
+    bool onRoof,
+    int wheelGround
+);

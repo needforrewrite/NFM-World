@@ -15,7 +15,8 @@ namespace NFMWorld.Util
                 float vMin,
                 float vMax,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -30,7 +31,8 @@ namespace NFMWorld.Util
                 float vSpeed,
                 float vMin,
                 float vMax,
-                byte* format)
+                byte* format
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -44,7 +46,8 @@ namespace NFMWorld.Util
                 ref Vector3 v,
                 float vSpeed,
                 float vMin,
-                float vMax)
+                float vMax
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -85,7 +88,8 @@ namespace NFMWorld.Util
                 ref Vector3 v,
                 float vSpeed,
                 float vMin,
-                byte* format)
+                byte* format
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -118,7 +122,8 @@ namespace NFMWorld.Util
                 float vSpeed,
                 float vMin,
                 float vMax,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -132,7 +137,8 @@ namespace NFMWorld.Util
                 ref Vector3 v,
                 float vSpeed,
                 float vMin,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -145,7 +151,8 @@ namespace NFMWorld.Util
                 byte* label,
                 ref Vector3 v,
                 float vSpeed,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -169,7 +176,8 @@ namespace NFMWorld.Util
                 float vSpeed,
                 float vMin,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -183,7 +191,8 @@ namespace NFMWorld.Util
                 ref Vector3 v,
                 float vSpeed,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -196,7 +205,8 @@ namespace NFMWorld.Util
                 byte* label,
                 ref Vector3 v,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -212,7 +222,8 @@ namespace NFMWorld.Util
                 float vMin,
                 float vMax,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -227,7 +238,8 @@ namespace NFMWorld.Util
                 float vSpeed,
                 float vMin,
                 float vMax,
-                byte* format)
+                byte* format
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -241,7 +253,8 @@ namespace NFMWorld.Util
                 ref Vector3 v,
                 float vSpeed,
                 float vMin,
-                float vMax)
+                float vMax
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -282,7 +295,8 @@ namespace NFMWorld.Util
                 ref Vector3 v,
                 float vSpeed,
                 float vMin,
-                byte* format)
+                byte* format
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -315,7 +329,8 @@ namespace NFMWorld.Util
                 float vSpeed,
                 float vMin,
                 float vMax,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -329,7 +344,8 @@ namespace NFMWorld.Util
                 ref Vector3 v,
                 float vSpeed,
                 float vMin,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -342,7 +358,8 @@ namespace NFMWorld.Util
                 string label,
                 ref Vector3 v,
                 float vSpeed,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -366,7 +383,8 @@ namespace NFMWorld.Util
                 float vSpeed,
                 float vMin,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -380,7 +398,8 @@ namespace NFMWorld.Util
                 ref Vector3 v,
                 float vSpeed,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -393,7 +412,8 @@ namespace NFMWorld.Util
                 string label,
                 ref Vector3 v,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref v))
                 {
@@ -409,7 +429,8 @@ namespace NFMWorld.Util
                 float vMin,
                 float vMax,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -424,7 +445,8 @@ namespace NFMWorld.Util
                 float vSpeed,
                 float vMin,
                 float vMax,
-                byte* format)
+                byte* format
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -438,7 +460,8 @@ namespace NFMWorld.Util
                 ref Vector4 v,
                 float vSpeed,
                 float vMin,
-                float vMax)
+                float vMax
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -479,7 +502,8 @@ namespace NFMWorld.Util
                 ref Vector4 v,
                 float vSpeed,
                 float vMin,
-                byte* format)
+                byte* format
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -512,7 +536,8 @@ namespace NFMWorld.Util
                 float vSpeed,
                 float vMin,
                 float vMax,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -526,7 +551,8 @@ namespace NFMWorld.Util
                 ref Vector4 v,
                 float vSpeed,
                 float vMin,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -539,7 +565,8 @@ namespace NFMWorld.Util
                 byte* label,
                 ref Vector4 v,
                 float vSpeed,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -563,7 +590,8 @@ namespace NFMWorld.Util
                 float vSpeed,
                 float vMin,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -577,7 +605,8 @@ namespace NFMWorld.Util
                 ref Vector4 v,
                 float vSpeed,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -590,7 +619,8 @@ namespace NFMWorld.Util
                 byte* label,
                 ref Vector4 v,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -606,7 +636,8 @@ namespace NFMWorld.Util
                 float vMin,
                 float vMax,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -621,7 +652,8 @@ namespace NFMWorld.Util
                 float vSpeed,
                 float vMin,
                 float vMax,
-                byte* format)
+                byte* format
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -635,7 +667,8 @@ namespace NFMWorld.Util
                 ref Vector4 v,
                 float vSpeed,
                 float vMin,
-                float vMax)
+                float vMax
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -676,7 +709,8 @@ namespace NFMWorld.Util
                 ref Vector4 v,
                 float vSpeed,
                 float vMin,
-                byte* format)
+                byte* format
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -709,7 +743,8 @@ namespace NFMWorld.Util
                 float vSpeed,
                 float vMin,
                 float vMax,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -723,7 +758,8 @@ namespace NFMWorld.Util
                 ref Vector4 v,
                 float vSpeed,
                 float vMin,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -736,7 +772,8 @@ namespace NFMWorld.Util
                 string label,
                 ref Vector4 v,
                 float vSpeed,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -760,7 +797,8 @@ namespace NFMWorld.Util
                 float vSpeed,
                 float vMin,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -774,7 +812,8 @@ namespace NFMWorld.Util
                 ref Vector4 v,
                 float vSpeed,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -787,7 +826,8 @@ namespace NFMWorld.Util
                 string label,
                 ref Vector4 v,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref v))
                 {
@@ -803,7 +843,8 @@ namespace NFMWorld.Util
                 float vMin,
                 float vMax,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {
@@ -818,7 +859,8 @@ namespace NFMWorld.Util
                 float vSpeed,
                 float vMin,
                 float vMax,
-                byte* format)
+                byte* format
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {
@@ -832,7 +874,8 @@ namespace NFMWorld.Util
                 ref Vector2 v,
                 float vSpeed,
                 float vMin,
-                float vMax)
+                float vMax
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {
@@ -873,7 +916,8 @@ namespace NFMWorld.Util
                 ref Vector2 v,
                 float vSpeed,
                 float vMin,
-                byte* format)
+                byte* format
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {
@@ -906,7 +950,8 @@ namespace NFMWorld.Util
                 float vSpeed,
                 float vMin,
                 float vMax,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {
@@ -920,7 +965,8 @@ namespace NFMWorld.Util
                 ref Vector2 v,
                 float vSpeed,
                 float vMin,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {
@@ -933,7 +979,8 @@ namespace NFMWorld.Util
                 byte* label,
                 ref Vector2 v,
                 float vSpeed,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {
@@ -957,7 +1004,8 @@ namespace NFMWorld.Util
                 float vSpeed,
                 float vMin,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {
@@ -971,7 +1019,8 @@ namespace NFMWorld.Util
                 ref Vector2 v,
                 float vSpeed,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {
@@ -984,7 +1033,8 @@ namespace NFMWorld.Util
                 byte* label,
                 ref Vector2 v,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {
@@ -1000,7 +1050,8 @@ namespace NFMWorld.Util
                 float vMin,
                 float vMax,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {
@@ -1015,7 +1066,8 @@ namespace NFMWorld.Util
                 float vSpeed,
                 float vMin,
                 float vMax,
-                byte* format)
+                byte* format
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {
@@ -1029,7 +1081,8 @@ namespace NFMWorld.Util
                 ref Vector2 v,
                 float vSpeed,
                 float vMin,
-                float vMax)
+                float vMax
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {
@@ -1070,7 +1123,8 @@ namespace NFMWorld.Util
                 ref Vector2 v,
                 float vSpeed,
                 float vMin,
-                byte* format)
+                byte* format
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {
@@ -1103,7 +1157,8 @@ namespace NFMWorld.Util
                 float vSpeed,
                 float vMin,
                 float vMax,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {
@@ -1117,7 +1172,8 @@ namespace NFMWorld.Util
                 ref Vector2 v,
                 float vSpeed,
                 float vMin,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {
@@ -1130,7 +1186,8 @@ namespace NFMWorld.Util
                 string label,
                 ref Vector2 v,
                 float vSpeed,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {
@@ -1154,7 +1211,8 @@ namespace NFMWorld.Util
                 float vSpeed,
                 float vMin,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {
@@ -1168,7 +1226,8 @@ namespace NFMWorld.Util
                 ref Vector2 v,
                 float vSpeed,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {
@@ -1181,7 +1240,8 @@ namespace NFMWorld.Util
                 string label,
                 ref Vector2 v,
                 byte* format,
-                ImGuiSliderFlags flags)
+                ImGuiSliderFlags flags
+            )
             {
                 fixed (float* v1 = &Unsafe.As<Vector2, float>(ref v))
                 {

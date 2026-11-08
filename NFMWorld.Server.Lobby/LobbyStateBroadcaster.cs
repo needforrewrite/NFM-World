@@ -9,7 +9,8 @@ namespace NFMWorldLibrary.Multiplayer;
 public class LobbyStateBroadcaster(
     IMultiplayerServerTransport transport,
     PlayerRegistry players,
-    SessionManager sessions)
+    SessionManager sessions
+)
 {
     /// <summary>Broadcasts a full lobby state snapshot to every connected client.</summary>
     public void BroadcastToAll()
@@ -34,13 +35,15 @@ public class LobbyStateBroadcaster(
             if (!client.IsAuthenticated)
                 continue;
 
-            playerList.Add(new ServerSidePlayerInfo
-            {
-                Id = client.Id,
-                PlayerName = client.Name,
-                CarName = client.Vehicle,
-                Color = client.Color
-            });
+            playerList.Add(
+                new ServerSidePlayerInfo
+                {
+                    Id = client.Id,
+                    PlayerName = client.Name,
+                    CarName = client.Vehicle,
+                    Color = client.Color
+                }
+            );
         }
 
         foreach (var (_, session) in sessions.All)
@@ -49,16 +52,18 @@ public class LobbyStateBroadcaster(
             // while joins and leaves mutate it.
             var players = new ConcurrentDictionary<byte, Guid>(session.Players);
 
-            sessionList.Add(new S2C_LobbyState.GameSession
-            {
-                Id = session.Id,
-                CreatorId = session.CreatorId,
-                CreatorName = session.CreatorName,
-                StageName = session.StageName,
-                MaxPlayers = session.MaxPlayers,
-                Players = players,
-                State = session.State
-            });
+            sessionList.Add(
+                new S2C_LobbyState.GameSession
+                {
+                    Id = session.Id,
+                    CreatorId = session.CreatorId,
+                    CreatorName = session.CreatorName,
+                    StageName = session.StageName,
+                    MaxPlayers = session.MaxPlayers,
+                    Players = players,
+                    State = session.State
+                }
+            );
         }
 
         return new S2C_LobbyState

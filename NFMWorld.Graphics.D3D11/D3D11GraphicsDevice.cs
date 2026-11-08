@@ -12,6 +12,7 @@
 // whatever D3D11 the host already has (FNA3D's driver, sokol's D3D11 backend, SDL's ImGui renderer) -
 // two devices on one window would each have their own swapchain and neither would see the other's
 // frames. See D3D11DeviceDescription.
+
 using NFMWorld.Shaders;
 using TerraFX.Interop.DirectX;
 using TerraFX.Interop.Windows;
@@ -54,7 +55,8 @@ public readonly record struct D3D11DeviceDescription(
     int MultiSampleCount = 0,
     bool EnableDebugLayer = false,
     TextureFormat DepthStencilFormat = TextureFormat.Depth24Stencil8,
-    bool EnableShaderCache = true);
+    bool EnableShaderCache = true
+);
 
 /// <summary>
 /// A Direct3D 11 rendering device over a single <c>HWND</c>-owned swapchain.
@@ -109,9 +111,16 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
     internal D3D_FEATURE_LEVEL FeatureLevel { get; }
 
     private D3D11GraphicsDevice(
-        ID3D11Device* device, ID3D11DeviceContext* context, D3D_FEATURE_LEVEL featureLevel,
-        nint windowHandle, int width, int height, int multiSampleCount, TextureFormat depthStencilFormat,
-        bool enableShaderCache)
+        ID3D11Device* device,
+        ID3D11DeviceContext* context,
+        D3D_FEATURE_LEVEL featureLevel,
+        nint windowHandle,
+        int width,
+        int height,
+        int multiSampleCount,
+        TextureFormat depthStencilFormat,
+        bool enableShaderCache
+    )
     {
         Device = device;
         Context = context;
@@ -151,15 +160,19 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         if (description.WindowHandle == 0)
         {
             throw new ArgumentException(
-                "A zero window handle cannot host a DXGI swapchain. On the SDL path this is " +
-                "SdlWindow.NativeWindowHandle, which is zero only when SDL did not create the window " +
-                "through the Win32 video driver.", nameof(description));
+                "A zero window handle cannot host a DXGI swapchain. On the SDL path this is "
+                + "SdlWindow.NativeWindowHandle, which is zero only when SDL did not create the window "
+                + "through the Win32 video driver.",
+                nameof(description)
+            );
         }
 
         if (description.Width <= 0 || description.Height <= 0)
         {
             throw new ArgumentOutOfRangeException(
-                nameof(description), $"A {description.Width}x{description.Height} back buffer cannot be created.");
+                nameof(description),
+                $"A {description.Width}x{description.Height} back buffer cannot be created."
+            );
         }
 
         if (!OperatingSystem.IsWindows())
@@ -168,7 +181,8 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
             // is P/Invoking user32 and d3d11 directly. Failing here with that sentence beats an
             // EntryPointNotFoundException from inside the loader.
             throw new PlatformNotSupportedException(
-                "This backend binds Direct3D 11 and DXGI through TerraFX.Interop.Windows and only runs on Windows.");
+                "This backend binds Direct3D 11 and DXGI through TerraFX.Interop.Windows and only runs on Windows."
+            );
         }
 
         var flags = description.EnableDebugLayer ? (uint)D3D11_CREATE_DEVICE_FLAG.D3D11_CREATE_DEVICE_DEBUG : 0u;
@@ -202,21 +216,30 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
                 D3D11Interop.SdkVersion,
                 &device,
                 &level,
-                &context),
+                &context
+            ),
             description.EnableDebugLayer
                 ? "D3D11CreateDevice (hardware, 11.1-10.0, debug layer)"
                 : "D3D11CreateDevice (hardware, 11.1-10.0)",
             description.EnableDebugLayer
-                ? "The debug layer requires the Graphics Tools optional Windows feature; install it or " +
-                  "create the device with EnableDebugLayer: false."
-                : null);
+                ? "The debug layer requires the Graphics Tools optional Windows feature; install it or "
+                  + "create the device with EnableDebugLayer: false."
+                : null
+        );
 
         try
         {
             var result = new D3D11GraphicsDevice(
-                device, context, level, description.WindowHandle,
-                description.Width, description.Height, description.MultiSampleCount, description.DepthStencilFormat,
-                description.EnableShaderCache);
+                device,
+                context,
+                level,
+                description.WindowHandle,
+                description.Width,
+                description.Height,
+                description.MultiSampleCount,
+                description.DepthStencilFormat,
+                description.EnableShaderCache
+            );
             return result;
         }
         catch
@@ -241,8 +264,9 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         if (_activeCommandBuffer is not null)
         {
             throw new InvalidOperationException(
-                $"{nameof(AcquireCommandBuffer)} was called again before the previous command buffer " +
-                "was submitted - only one command buffer may be live at a time.");
+                $"{nameof(AcquireCommandBuffer)} was called again before the previous command buffer "
+                + "was submitted - only one command buffer may be live at a time."
+            );
         }
 
         var commandBuffer = _commandBuffer ??= new D3D11CommandBuffer(this);
@@ -268,13 +292,16 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         if (commandBuffer is not D3D11CommandBuffer d3dCommandBuffer)
         {
             throw new ArgumentException(
-                $"{nameof(Submit)} needs a command buffer this backend created.", nameof(commandBuffer));
+                $"{nameof(Submit)} needs a command buffer this backend created.",
+                nameof(commandBuffer)
+            );
         }
 
         if (!ReferenceEquals(d3dCommandBuffer, _activeCommandBuffer))
         {
             throw new InvalidOperationException(
-                "This command buffer is not the live one - it was either already submitted or never acquired.");
+                "This command buffer is not the live one - it was either already submitted or never acquired."
+            );
         }
 
         d3dCommandBuffer.Reset();
@@ -290,7 +317,8 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         {
             throw new ArgumentException(
                 $"Initial data holds {initialData.Length} bytes but the buffer is {desc.SizeInBytes} bytes.",
-                nameof(initialData));
+                nameof(initialData)
+            );
         }
 
         // A dynamic buffer is written through Map(WRITE_DISCARD), which is only legal on a
@@ -309,9 +337,10 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         if (desc.MipMapped && !initialData.IsEmpty)
         {
             throw new NotSupportedException(
-                "A mipmapped texture cannot be created with initial data: D3D11 has no mip-chain " +
-                "initialiser, so every level past 0 would be undefined. Create it single-level, or " +
-                "create it empty and fill it through the command buffer.");
+                "A mipmapped texture cannot be created with initial data: D3D11 has no mip-chain "
+                + "initialiser, so every level past 0 would be undefined. Create it single-level, or "
+                + "create it empty and fill it through the command buffer."
+            );
         }
 
         return new D3D11Texture(this, desc, initialData);
@@ -320,7 +349,10 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
     public IRenderTarget CreateRenderTarget(RenderTargetDesc desc)
     {
         if (desc.Width <= 0 || desc.Height <= 0)
-            throw new ArgumentOutOfRangeException(nameof(desc), $"A {desc.Width}x{desc.Height} render target cannot be allocated.");
+            throw new ArgumentOutOfRangeException(
+                nameof(desc),
+                $"A {desc.Width}x{desc.Height} render target cannot be allocated."
+            );
 
         return new D3D11RenderTarget(this, desc);
     }
@@ -348,14 +380,20 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         if (module is not D3D11ShaderModule d3dModule)
         {
             throw new ArgumentException(
-                $"{name} must be a shader module this backend created - see {nameof(LoadShaderModule)}.", nameof(module));
+                $"{name} must be a shader module this backend created - see {nameof(LoadShaderModule)}.",
+                nameof(module)
+            );
         }
 
         return d3dModule;
     }
 
     /// <inheritdoc cref="IGraphicsDevice.CreateShaderModule"/>
-    IShaderModule IGraphicsDevice.CreateShaderModule(ShaderStageSources vertex, ShaderStageSources pixel, ShaderReflection reflection) =>
+    IShaderModule IGraphicsDevice.CreateShaderModule(
+        ShaderStageSources vertex,
+        ShaderStageSources pixel,
+        ShaderReflection reflection
+    ) =>
         LoadShaderModule(this, vertex, pixel, reflection);
 
     /// <summary>
@@ -367,7 +405,11 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
     /// <see cref="D3D11PipelineState"/> is a property of these bundles rather than of this backend.
     /// </summary>
     public static IShaderModule LoadShaderModule(
-        D3D11GraphicsDevice device, ShaderStageSources vertex, ShaderStageSources pixel, ShaderReflection reflection)
+        D3D11GraphicsDevice device,
+        ShaderStageSources vertex,
+        ShaderStageSources pixel,
+        ShaderReflection reflection
+    )
     {
         ArgumentNullException.ThrowIfNull(vertex);
         ArgumentNullException.ThrowIfNull(pixel);
@@ -376,9 +418,10 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         if (string.IsNullOrWhiteSpace(vertex.Hlsl) || string.IsNullOrWhiteSpace(pixel.Hlsl))
         {
             throw new ArgumentException(
-                "The bundle carries no HLSL for one or both stages. This backend compiles " +
-                "ShaderStageSources.Hlsl; a bundle generated before that field existed cannot be used.",
-                nameof(vertex));
+                "The bundle carries no HLSL for one or both stages. This backend compiles "
+                + "ShaderStageSources.Hlsl; a bundle generated before that field existed cannot be used.",
+                nameof(vertex)
+            );
         }
 
         return new D3D11ShaderModule(device, vertex, pixel, reflection);
@@ -412,22 +455,25 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         if (d3dTexture.Format.IsDepthFormat())
         {
             throw new NotSupportedException(
-                $"{d3dTexture.Format} has no colour storage to read back. Read the render target's " +
-                $"{nameof(IRenderTarget.ColorTexture)} instead - that is what the abstraction documents.");
+                $"{d3dTexture.Format} has no colour storage to read back. Read the render target's "
+                + $"{nameof(IRenderTarget.ColorTexture)} instead - that is what the abstraction documents."
+            );
         }
 
         if (d3dTexture.SampleCount > 1)
         {
             throw new NotSupportedException(
-                $"A {d3dTexture.SampleCount}x multisampled texture cannot be copied into a single-sampled " +
-                "staging resource. Resolve it into a single-sampled target first.");
+                $"A {d3dTexture.SampleCount}x multisampled texture cannot be copied into a single-sampled "
+                + "staging resource. Resolve it into a single-sampled target first."
+            );
         }
 
         if (d3dTexture.MipMapped)
         {
             throw new NotSupportedException(
-                "This backend allocates its mip chain but only ever reads level 0, and the staging " +
-                "resource below is sized for a single level. Read a single-level texture.");
+                "This backend allocates its mip chain but only ever reads level 0, and the staging "
+                + "resource below is sized for a single level. Read a single-level texture."
+            );
         }
 
         if (level != 0)
@@ -435,8 +481,10 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
 
         if (x < 0 || y < 0 || width <= 0 || height <= 0 || x + width > d3dTexture.Width || y + height > d3dTexture.Height)
         {
-            throw new ArgumentOutOfRangeException(nameof(x),
-                $"The {width}x{height} region at ({x}, {y}) does not fit the {d3dTexture.Width}x{d3dTexture.Height} texture.");
+            throw new ArgumentOutOfRangeException(
+                nameof(x),
+                $"The {width}x{height} region at ({x}, {y}) does not fit the {d3dTexture.Width}x{d3dTexture.Height} texture."
+            );
         }
 
         var rowBytes = width * BytesPerPixel(d3dTexture.Format);
@@ -444,8 +492,10 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         if (destination.Length < required)
         {
             throw new ArgumentException(
-                $"Destination holds {destination.Length} bytes; {required} are required for {width}x{height} " +
-                $"of {d3dTexture.Format}.", nameof(destination));
+                $"Destination holds {destination.Length} bytes; {required} are required for {width}x{height} "
+                + $"of {d3dTexture.Format}.",
+                nameof(destination)
+            );
         }
 
         var stagingDesc = new D3D11_TEXTURE2D_DESC
@@ -465,7 +515,8 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         ID3D11Texture2D* staging = null;
         D3D11Interop.Check(
             Device->CreateTexture2D(&stagingDesc, null, &staging),
-            $"CreateTexture2D (staging, {width}x{height} {d3dTexture.Format})");
+            $"CreateTexture2D (staging, {width}x{height} {d3dTexture.Format})"
+        );
 
         try
         {
@@ -482,12 +533,21 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
             };
 
             Context->CopySubresourceRegion(
-                (ID3D11Resource*)staging, 0, 0, 0, 0, (ID3D11Resource*)d3dTexture.Texture, 0, &box);
+                (ID3D11Resource*)staging,
+                0,
+                0,
+                0,
+                0,
+                (ID3D11Resource*)d3dTexture.Texture,
+                0,
+                &box
+            );
 
             D3D11_MAPPED_SUBRESOURCE mapped;
             D3D11Interop.Check(
                 Context->Map((ID3D11Resource*)staging, 0, D3D11_MAP.D3D11_MAP_READ, 0, &mapped),
-                "Map (texture readback)");
+                "Map (texture readback)"
+            );
 
             try
             {
@@ -519,9 +579,10 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         if (format.IsBlockCompressed())
         {
             throw new NotSupportedException(
-                $"{format} is block-compressed, so its rows are measured in 4x4 blocks rather than " +
-                "texels and the tightly packed readback contract has no meaning for it. Decompress it " +
-                "through a draw instead.");
+                $"{format} is block-compressed, so its rows are measured in 4x4 blocks rather than "
+                + "texels and the tightly packed readback contract has no meaning for it. Decompress it "
+                + "through a draw instead."
+            );
         }
 
         return format switch

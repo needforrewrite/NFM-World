@@ -7,17 +7,17 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="NSwag.MSBuild" Version="14.7.1">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
+        <PackageReference Include="NSwag.MSBuild" Version="14.7.1">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
     </ItemGroup>
 
-<!--    <Target Name="NSwag" BeforeTargets="Build">-->
-<!--        <PropertyGroup>-->
-<!--            <NSwagConfiguration>nswag.json</NSwagConfiguration>-->
-<!--            <GeneratedOutput>Client.g.cs</GeneratedOutput>-->
-<!--        </PropertyGroup>-->
-<!--        <Exec Command="$(NSwagExe_Net80) run $(NSwagConfiguration) /variables:GeneratedOutput=$(GeneratedOutput)" />-->
-<!--    </Target>-->
+    <!--    <Target Name="NSwag" BeforeTargets="Build">-->
+    <!--        <PropertyGroup>-->
+    <!--            <NSwagConfiguration>nswag.json</NSwagConfiguration>-->
+    <!--            <GeneratedOutput>Client.g.cs</GeneratedOutput>-->
+    <!--        </PropertyGroup>-->
+    <!--        <Exec Command="$(NSwagExe_Net80) run $(NSwagConfiguration) /variables:GeneratedOutput=$(GeneratedOutput)" />-->
+    <!--    </Target>-->
 </Project>

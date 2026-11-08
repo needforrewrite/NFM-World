@@ -11,6 +11,7 @@
 //
 // This is the problem HlslSemantics already solves for vertex input semantics, and the same
 // answer applies: read it back out of the source text, which is the only place left that says it.
+
 using System.Text.RegularExpressions;
 
 namespace NFMWorld.ShaderCompiler;
@@ -25,10 +26,14 @@ public static class HlslBoolUniforms
     // uniforms. The `#if`/`#else`/`#endif` lines around them are not braces, so they do not
     // disturb the depth.
     private static readonly Regex GlobalBool = new(
-        @"^\s*bool\s+([A-Za-z_]\w*)\s*;", RegexOptions.Compiled);
+        @"^\s*bool\s+([A-Za-z_]\w*)\s*;",
+        RegexOptions.Compiled
+    );
 
     private static readonly Regex IncludeDirective = new(
-        @"^\s*#\s*include\s+""([^""]+)""", RegexOptions.Compiled);
+        @"^\s*#\s*include\s+""([^""]+)""",
+        RegexOptions.Compiled
+    );
 
     /// <summary>
     /// The names declared <c>bool</c> at global scope in <paramref name="source"/> and in every
@@ -62,13 +67,15 @@ public static class HlslBoolUniforms
         return reflection with
         {
             UniformBlocks = reflection.UniformBlocks.Select(block => block with
-            {
-                Members = block.Members
-                    .Select(member => member.Type == BaseType.Uint && boolNames.Contains(member.Name)
-                        ? member with { Type = BaseType.Bool }
-                        : member)
-                    .ToList(),
-            }).ToList(),
+                {
+                    Members = block.Members
+                        .Select(member => member.Type == BaseType.Uint && boolNames.Contains(member.Name)
+                            ? member with { Type = BaseType.Bool }
+                            : member
+                        )
+                        .ToList(),
+                }
+            ).ToList(),
         };
     }
 
@@ -76,7 +83,8 @@ public static class HlslBoolUniforms
         string text,
         Func<string, string?>? resolveInclude,
         HashSet<string> names,
-        HashSet<string> visitedIncludes)
+        HashSet<string> visitedIncludes
+    )
     {
         var depth = 0;
         foreach (var line in text.Split('\n'))

@@ -27,10 +27,10 @@ public class ComponentChildCollectionTests
         var anchor2 = new TextNode { Text = "" };
 
         parent.AddChild(anchor1); // index 0 (TextNode, not in YogaNode)
-        parent.AddChild(a);       // index 1
-        parent.AddChild(b);       // index 2
-        parent.AddChild(c);       // index 3
-        parent.AddChild(d);       // index 4
+        parent.AddChild(a); // index 1
+        parent.AddChild(b); // index 2
+        parent.AddChild(c); // index 3
+        parent.AddChild(d); // index 4
         parent.AddChild(anchor2); // index 5 (TextNode, not in YogaNode) -> 4 Components before it
 
         // Insert a Component before anchor2. VisualChildren.IndexOf(anchor2) == 5, but the
@@ -50,7 +50,7 @@ public class ComponentChildCollectionTests
         var anchor = new TextNode { Text = "" };
         var a = new View { Name = "a" };
         parent.AddChild(anchor); // index 0
-        parent.AddChild(a);      // index 1
+        parent.AddChild(a); // index 1
 
         var x = new View { Name = "x" };
         parent.InsertAt(parent.VisualChildren.IndexOf(anchor), x);

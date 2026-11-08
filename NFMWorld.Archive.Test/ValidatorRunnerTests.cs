@@ -9,7 +9,8 @@ public class ValidatorRunnerTests
 {
     private static ValidatorRunner Runner(string? path, TimeSpan? timeout = null) => new(
         new ArchiveOptions { ValidatorPath = path, ValidationTimeout = timeout ?? TimeSpan.FromSeconds(5) },
-        NullLogger<ValidatorRunner>.Instance);
+        NullLogger<ValidatorRunner>.Instance
+    );
 
     [TestMethod]
     public async Task Run_WithoutAConfiguredPath_Refuses()
@@ -30,7 +31,8 @@ public class ValidatorRunnerTests
 
         var runner = new ValidatorRunner(
             new ArchiveOptions { ValidatorPath = exe, ValidationTimeout = TimeSpan.FromSeconds(5) },
-            NullLogger<ValidatorRunner>.Instance);
+            NullLogger<ValidatorRunner>.Instance
+        );
 
         var result = await runner.RunAsync("radpack", ["C:\\" + "exit /b 1"], CancellationToken.None);
         Assert.IsFalse(result.Ok);
@@ -49,7 +51,8 @@ public class ValidatorRunnerTests
                 ValidatorPath = Path.Combine(Environment.SystemDirectory, "ping.exe"),
                 ValidationTimeout = TimeSpan.FromMilliseconds(300)
             },
-            NullLogger<ValidatorRunner>.Instance);
+            NullLogger<ValidatorRunner>.Instance
+        );
 
         var result = await runner.RunAsync("radpack", ["-n", "60", "127.0.0.1"], CancellationToken.None);
 

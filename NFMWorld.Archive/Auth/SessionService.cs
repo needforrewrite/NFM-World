@@ -16,17 +16,19 @@ public sealed class SessionService(ArchiveDbContext db, ArchiveOptions options)
         var (selector, verifierHash) = Tokens.Split(token);
         var now = DateTimeOffset.UtcNow;
 
-        db.Sessions.Add(new Session
-        {
-            UserId = user.Id,
-            TokenHash = $"{selector}.{verifierHash}",
-            SecurityStamp = user.SecurityStamp,
-            ExpiresAt = now + options.SessionLifetime,
-            CreatedAt = now,
-            LastUsedAt = now,
-            UserAgent = Truncate(userAgent, 256),
-            IpAddress = Truncate(ipAddress, 64)
-        });
+        db.Sessions.Add(
+            new Session
+            {
+                UserId = user.Id,
+                TokenHash = $"{selector}.{verifierHash}",
+                SecurityStamp = user.SecurityStamp,
+                ExpiresAt = now + options.SessionLifetime,
+                CreatedAt = now,
+                LastUsedAt = now,
+                UserAgent = Truncate(userAgent, 256),
+                IpAddress = Truncate(ipAddress, 64)
+            }
+        );
         user.LastSeenAt = now;
         await db.SaveChangesAsync(ct);
 

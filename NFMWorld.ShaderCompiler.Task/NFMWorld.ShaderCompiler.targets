@@ -30,7 +30,7 @@
     <UsingTask TaskName="NFMWorld.ShaderCompiler.Task.ShaderCompileTask"
                AssemblyFile="$(NFMWorldShaderTaskAssembly)"
                TaskFactory="TaskHostFactory"
-               Runtime="NET" />
+               Runtime="NET"/>
 
     <!--
       Builds the task assembly before anything tries to load it.
@@ -64,10 +64,10 @@
              and is never published, so neither applies. -->
         <MSBuild Projects="$(MSBuildThisFileDirectory)..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.Task.csproj"
                  Targets="Restore"
-                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=;PublishReadyToRun=false;ExcludeRestorePackageImports=true" />
+                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=;PublishReadyToRun=false;ExcludeRestorePackageImports=true"/>
         <MSBuild Projects="$(MSBuildThisFileDirectory)..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.Task.csproj"
                  Targets="Build"
-                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=;PublishReadyToRun=false" />
+                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=;PublishReadyToRun=false"/>
     </Target>
 
     <!-- Property defaults, so a consumer only has to name its shader directory. -->
@@ -105,8 +105,8 @@
          build but produce no bundle. Mad.fxh in particular is included by four shaders, and editing
          it has to re-run all four. -->
     <ItemGroup>
-        <NFMWorldShaderSource Include="$(NFMWorldShadersDirectory)\*.fx" />
-        <NFMWorldShaderHeader Include="$(NFMWorldShadersDirectory)\*.fxh" />
+        <NFMWorldShaderSource Include="$(NFMWorldShadersDirectory)\*.fx"/>
+        <NFMWorldShaderHeader Include="$(NFMWorldShadersDirectory)\*.fxh"/>
     </ItemGroup>
 
     <!--
@@ -137,7 +137,7 @@
              up to date, which is exactly the kind of bug that survives a naive re-run.) -->
         <ShaderCompileTask Shaders="@(NFMWorldShaderSource)"
                            OutputDirectory="$(NFMWorldShadersOutputDirectory)"
-                           StampFile="$(NFMWorldShadersOutputDirectory)shaders.stamp" />
+                           StampFile="$(NFMWorldShadersOutputDirectory)shaders.stamp"/>
 
         <!-- The stamp is registered here and only here - it is written by this target alone, so this
              is the only place that knows it exists. The bundles are *not* registered here: they are
@@ -145,7 +145,7 @@
              happens when this target runs is what makes IncrementalClean delete them on the next
              build. See the comment there. -->
         <ItemGroup>
-            <FileWrites Include="$(NFMWorldShadersOutputDirectory)shaders.stamp" />
+            <FileWrites Include="$(NFMWorldShadersOutputDirectory)shaders.stamp"/>
         </ItemGroup>
     </Target>
 
@@ -174,9 +174,9 @@
             DependsOnTargets="CompileShaders"
             Condition="'$(MSBuildRuntimeType)' == 'Core'">
         <ItemGroup>
-            <NFMWorldShaderBundle Include="$(NFMWorldShadersOutputDirectory)*.g.cs" />
-            <Compile Include="@(NFMWorldShaderBundle)" />
-            <FileWrites Include="@(NFMWorldShaderBundle)" />
+            <NFMWorldShaderBundle Include="$(NFMWorldShadersOutputDirectory)*.g.cs"/>
+            <Compile Include="@(NFMWorldShaderBundle)"/>
+            <FileWrites Include="@(NFMWorldShaderBundle)"/>
         </ItemGroup>
     </Target>
 

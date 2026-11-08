@@ -46,8 +46,8 @@ public class MousePressOcclusionTests
     public void DispatchMousePressed_HighZPopup_DoesNotTriggerOccludedSibling()
     {
         var root = MakeRoot();
-        var popup = MakeBox("popup", 1000, 0, 0, 100, 100);     // z-indexed (e.g. dropdown popup)
-        var occluded = MakeBox("occluded", 0, 0, 0, 100, 100);  // later sibling, drawn beneath
+        var popup = MakeBox("popup", 1000, 0, 0, 100, 100); // z-indexed (e.g. dropdown popup)
+        var occluded = MakeBox("occluded", 0, 0, 0, 100, 100); // later sibling, drawn beneath
         root.AddChild(occluded);
         root.AddChild(popup);
 

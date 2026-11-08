@@ -13,11 +13,11 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
     private readonly ConcurrentQueue<(uint Peer, Packet Packet)> _sendPacketQueue = [];
 
     public override IReadOnlyCollection<uint> Connections { get; }
-    
+
     public override event EventHandler<uint>? ClientConnecting;
     public override event EventHandler<uint>? ClientConnected;
     public override event EventHandler<uint>? ClientDisconnected;
-    
+
     private class ConnectionsList(ENetMultiplayerServerTransport parent) : IReadOnlyCollection<uint>
     {
         public IEnumerator<uint> GetEnumerator()
@@ -35,16 +35,16 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
 
         public int Count => parent._connectedClients.Count;
     }
-    
+
     public ENetMultiplayerServerTransport(ushort port = 7000)
     {
         Connections = new ConnectionsList(this);
-        
+
         _server = new Host();
-        
+
         var address = new Address();
         address.Port = port;
-        
+
         _server.Create(address, 255);
     }
 
@@ -54,8 +54,10 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
         {
             bool polled = false;
 
-            while (!polled) {
-                if (_server.CheckEvents(out var netEvent) <= 0) {
+            while (!polled)
+            {
+                if (_server.CheckEvents(out var netEvent) <= 0)
+                {
                     if (_server.Service(15, out netEvent) <= 0)
                         break;
 

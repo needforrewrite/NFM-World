@@ -23,6 +23,7 @@ public sealed class StageMinimap : IDisposable
 {
     /// <summary>Baked image resolution bounds. Sized to the stage, within these.</summary>
     private const int MinResolution = 512;
+
     /// <summary>
     /// 2048 is 16 MB of RGBA8 - still sharper than the radar's ~12 000-unit window needs. The
     /// old 4096 cap meant a 64 MB target allocated and rendered in one frame on stage load.
@@ -131,15 +132,18 @@ public sealed class StageMinimap : IDisposable
         var scale = half * 2 / resolution;
 
         _target = GameSparker.GraphicsDevice.CreateRenderTarget(
-            new RenderTargetDesc(resolution, resolution, TextureFormat.Rgba8));
+            new RenderTargetDesc(resolution, resolution, TextureFormat.Rgba8)
+        );
 
         cb.SetRenderTarget(_target);
         cb.SetViewport(new Viewport(0, 0, resolution, resolution));
         cb.SetScissorRect(new ScissorRect(0, 0, resolution, resolution));
         // Transparent, not the stage ground colour: the radar sits over the HUD, so alpha 0 lets
         // the gaps between pieces show what is behind it instead of an opaque rectangle.
-        cb.Clear(ClearOptions.Color | ClearOptions.Depth,
-            new ColorRgba(0f, 0f, 0f, 0f));
+        cb.Clear(
+            ClearOptions.Color | ClearOptions.Depth,
+            new ColorRgba(0f, 0f, 0f, 0f)
+        );
 
         var camera = new OrthoCamera { Width = resolution, Height = resolution, OrthoScale = scale };
         // Below the stage looking up, with +Z as screen up - the only pairing of position and up
@@ -177,9 +181,16 @@ public sealed class StageMinimap : IDisposable
                 var mesh = GameSparker.GetStagePartMesh(piece.Rad);
                 var position = (Vector3)piece.Position;
                 var world = Matrix.CreateFromEuler((Euler)piece.Rotation) * Matrix.CreateTranslation(position);
-                mesh.SubmitRenderables(queue, lighting, false,
+                mesh.SubmitRenderables(
+                    queue,
+                    lighting,
+                    false,
                     new Maxine.Extensions.Mathematics.BoundingSphere(position, mesh.MaxRadius),
-                    RenderBucket.StagePieces, world, 0, getsShadowed: false);
+                    RenderBucket.StagePieces,
+                    world,
+                    0,
+                    getsShadowed: false
+                );
             }
 
             queue.Flush(cb);

@@ -7,7 +7,7 @@ public partial class StageEditorPhase
     private void RecreateScene()
     {
         if (ActiveTab?.Stage == null || ActiveTab?.StageRenderer == null) return;
-        
+
         // Create scene with the stage renderer and all current wall meshes
         var sceneObjects = new List<GameObject> { ActiveTab.StageRenderer };
         sceneObjects.AddRange(ActiveTab.WallMeshes);
@@ -18,7 +18,7 @@ public partial class StageEditorPhase
             [] // No shadow cameras for now
         );
     }
-    
+
     /// <summary>
     /// Rebuilds the ClientStageRenderer from scratch using the current Stage.pieces,
     /// then re-applies the tab's World settings and recreates the Scene + walls.
@@ -32,7 +32,7 @@ public partial class StageEditorPhase
             ActiveTab.StageRenderer = new ClientStageRenderer(ActiveTab.Stage);
         else
             ActiveTab.StageRenderer.DetectChanges(true);
-        
+
         // ClientStageRenderer.ctor calls World.ResetValues(), re-apply our tab settings
         ApplyTabWorldValuesToWorld();
         RecreateEnvironment();
@@ -43,7 +43,7 @@ public partial class StageEditorPhase
         else
             RebuildAllWalls();
     }
-    
+
     private void ApplyTabWorldValuesToWorld()
     {
         if (ActiveTab == null) return;
@@ -59,15 +59,20 @@ public partial class StageEditorPhase
         World.DrawClouds = ActiveTab.CloudsEnabled;
         if (ActiveTab.CloudsEnabled)
         {
-            World.Clouds = [ActiveTab.CloudsColor.R, ActiveTab.CloudsColor.G, ActiveTab.CloudsColor.B, ActiveTab.CloudsParam4, ActiveTab.CloudsHeight];
+            World.Clouds =
+            [
+                ActiveTab.CloudsColor.R, ActiveTab.CloudsColor.G, ActiveTab.CloudsColor.B, ActiveTab.CloudsParam4,
+                ActiveTab.CloudsHeight
+            ];
             World.CloudCoverage = ActiveTab.CloudCoverage;
         }
+
         World.DrawMountains = ActiveTab.MountainsEnabled;
         if (ActiveTab.MountainsEnabled)
             World.MountainSeed = ActiveTab.MountainsSeed;
         World.Snap = new Color3((short)ActiveTab.SnapA, (short)ActiveTab.SnapB, (short)ActiveTab.SnapC);
     }
-    
+
     private void RecreateEnvironment()
     {
         if (ActiveTab?.StageRenderer == null) return;
@@ -76,12 +81,20 @@ public partial class StageEditorPhase
         if (ActiveTab.PolysEnabled && ActiveTab.Stage != null)
         {
             if (_autoGeneratePolys)
-                ActiveTab.StageRenderer.polys = Environment.MakePolys(ActiveTab.Stage, -10000, 20000, -10000, 20000, ActiveTab.ScenePieces.Count);
+                ActiveTab.StageRenderer.polys = Environment.MakePolys(
+                    ActiveTab.Stage,
+                    -10000,
+                    20000,
+                    -10000,
+                    20000,
+                    ActiveTab.ScenePieces.Count
+                );
             // else: preserve existing polys (don't touch) so manually-generated polys from the
             //        Properties dialog survive across piece placements when auto-generate is off.
         }
         else
             ActiveTab.StageRenderer.polys = null;
+
         if (ActiveTab.CloudsEnabled)
             ActiveTab.StageRenderer.clouds = Environment.MakeClouds(-10000, 10000, -10000, 10000);
         else
@@ -91,17 +104,17 @@ public partial class StageEditorPhase
         else
             ActiveTab.StageRenderer.mountains = null;
     }
-    
+
     private void UpdateCameraPosition()
     {
         if (ActiveTab == null) return;
-        
+
         if (ActiveTab.ViewMode == StageEditorTab.ViewModeEnum.Scene)
         {
             // First-person flying camera
             float yaw = ActiveTab.CameraYaw * (float)Math.PI / 180f;
             float pitch = ActiveTab.CameraPitch * (float)Math.PI / 180f;
-            
+
             // Calculate look direction
             var lookDirection = new Vector3(
                 (float)(Math.Cos(pitch) * Math.Sin(yaw)),
@@ -125,8 +138,16 @@ public partial class StageEditorPhase
             activeCamera.Near = MathF.Max(1f, ActiveTab.TopDownHeight * 0.001f);
             activeCamera.Far = MathF.Max(1_000_000f, ActiveTab.TopDownHeight * 8f + 1_000_000f);
             if (ActiveTab.Scene != null) ActiveTab.Scene.ActiveCamera = activeCamera;
-            activeCamera.PositionWithoutInterpolation = new Vector3(ActiveTab.TopDownPanPosition.X, -ActiveTab.TopDownHeight, ActiveTab.TopDownPanPosition.Z);
-            activeCamera.LookAtWithoutInterpolation = new Vector3(ActiveTab.TopDownPanPosition.X, 0, ActiveTab.TopDownPanPosition.Z);
+            activeCamera.PositionWithoutInterpolation = new Vector3(
+                ActiveTab.TopDownPanPosition.X,
+                -ActiveTab.TopDownHeight,
+                ActiveTab.TopDownPanPosition.Z
+            );
+            activeCamera.LookAtWithoutInterpolation = new Vector3(
+                ActiveTab.TopDownPanPosition.X,
+                0,
+                ActiveTab.TopDownPanPosition.Z
+            );
             activeCamera.UpWithoutInterpolation = Vector3.UnitZ;
             if (ActiveTab.TopDownOrtho)
             {
@@ -137,5 +158,4 @@ public partial class StageEditorPhase
             }
         }
     }
-    
 }

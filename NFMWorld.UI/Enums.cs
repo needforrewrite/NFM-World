@@ -113,7 +113,10 @@ public static class Conversions
 {
     public static FlexLayoutDirection ToYogaDirection(this Direction d) => (FlexLayoutDirection)d;
     public static Direction ToNfmDirection(this FlexLayoutDirection d) => (Direction)d;
-    public static Microsoft.UI.Reactor.Layout.FlexDirection ToYogaFlexDirection(this FlexDirection d) => (Microsoft.UI.Reactor.Layout.FlexDirection)d;
+
+    public static Microsoft.UI.Reactor.Layout.FlexDirection ToYogaFlexDirection(this FlexDirection d)
+        => (Microsoft.UI.Reactor.Layout.FlexDirection)d;
+
     public static FlexDirection ToNfmFlexDirection(this Microsoft.UI.Reactor.Layout.FlexDirection d) => (FlexDirection)d;
     public static FlexJustify ToYogaJustify(this Justify j) => (FlexJustify)j;
     public static Justify ToNfmJustify(this FlexJustify j) => (Justify)j;

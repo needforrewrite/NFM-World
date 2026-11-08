@@ -91,9 +91,12 @@ internal sealed class WorldRadar : Component
         Span<int> py = stackalloc int[3];
         var cx = x + center;
         var cy = y + center;
-        px[0] = (int)cx; py[0] = (int)(cy - 7 * scale);
-        px[1] = (int)(cx - 5 * scale); py[1] = (int)(cy + 5 * scale);
-        px[2] = (int)(cx + 5 * scale); py[2] = (int)(cy + 5 * scale);
+        px[0] = (int)cx;
+        py[0] = (int)(cy - 7 * scale);
+        px[1] = (int)(cx - 5 * scale);
+        py[1] = (int)(cy + 5 * scale);
+        px[2] = (int)(cx + 5 * scale);
+        py[2] = (int)(cy + 5 * scale);
         G.SetColor(Theme.MenuBlue);
         G.FillPolygon(px, py, 3);
         G.SetColor(Theme.TextPrimary);
@@ -109,7 +112,9 @@ internal sealed class WorldRadar : Component
 
         var placement = RadarMap.ToUnitSquare(
             RadarMap.Place(minX, maxZ, unitsPerPixel, clientX, clientZ, _race.ClientHeading, x, y, size, Range),
-            image.Width, image.Height);
+            image.Width,
+            image.Height
+        );
         G.DrawImageTransformed(image, placement.Origin, placement.AxisX, placement.AxisY, new Color(255, 255, 255, 200));
         return true;
     }

@@ -1,8 +1,16 @@
 namespace NFMWorld.PluginSystem;
 
 [AttributeUsage(
-    AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Interface |
-    AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Constructor, Inherited = false)]
+    AttributeTargets.Class
+    | AttributeTargets.Struct
+    | AttributeTargets.Enum
+    | AttributeTargets.Interface
+    | AttributeTargets.Method
+    | AttributeTargets.Property
+    | AttributeTargets.Field
+    | AttributeTargets.Constructor,
+    Inherited = false
+)]
 public class PluginVisibleAttribute(Visible visible = Visible.Self) : Attribute
 {
     public Visible Visible { get; set; } = visible;
@@ -48,12 +56,12 @@ public enum Visible
     /// own. Everything else stays hidden.
     /// </summary>
     IncludingAllMembersOfType,
-    
+
     /// <summary>
     /// When applied on an open generic type, make any generic instantiation of the type visible to the plugin system.
     /// </summary>
     IncludingAnyGenericInstantiation,
-    
+
     /// <summary>
     /// When applied on an open generic type, make any generic instantiation of the type, and all members of those
     /// instantiations, visible to the plugin system.

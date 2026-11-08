@@ -63,7 +63,7 @@ public struct f64AngleSingle : IComparable, IComparable<f64AngleSingle>, IEquata
     {
         return new f64AngleSingle(radians * fix64.RadToDeg);
     }
-    
+
     public static f64AngleSingle FromDegrees(fix64 degrees)
     {
         return new f64AngleSingle(degrees);
@@ -578,7 +578,11 @@ public struct f64AngleSingle : IComparable, IComparable<f64AngleSingle>, IEquata
     /// <returns>
     /// A <see cref="string"/> that represents this instance.
     /// </returns>
-    public readonly string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
+    public readonly string ToString(
+        [StringSyntax(StringSyntaxAttribute.NumericFormat)]
+        string? format,
+        IFormatProvider? formatProvider
+    )
     {
         var handler = new DefaultInterpolatedStringHandler(1, 1, formatProvider);
         handler.AppendFormatted(Radians * fix64.RadToDeg, format ?? "0.##");
@@ -586,7 +590,12 @@ public struct f64AngleSingle : IComparable, IComparable<f64AngleSingle>, IEquata
         return handler.ToStringAndClear();
     }
 
-    bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+    bool ISpanFormattable.TryFormat(
+        Span<char> destination,
+        out int charsWritten,
+        ReadOnlySpan<char> format,
+        IFormatProvider? provider
+    )
     {
         var format1 = format.Length > 0 ? format.ToString() : "0.##";
         var handler = new MemoryExtensions.TryWriteInterpolatedStringHandler(1, 1, destination, provider, out _);

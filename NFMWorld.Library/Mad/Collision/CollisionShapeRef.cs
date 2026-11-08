@@ -120,6 +120,7 @@ public class CollisionShapeUnion : IUnion
 }
 
 public readonly record struct ShapeMesh(f64Vector3 GameObjectPosition, fix64 GameObjectXz, Rad3dCollisionMesh CollisionMesh);
+
 public readonly record struct ShapeHull(f64Vector3 GameObjectPosition, fix64 GameObjectXz, Rad3dCollisionHull CollisionHull);
 
 public readonly struct CollisionShapeRef : IQuadObject
@@ -133,7 +134,7 @@ public readonly struct CollisionShapeRef : IQuadObject
     public readonly Color3 DustColor;
 
     public readonly CollisionShapeUnion Box;
-    
+
     public f64Bounds Bounds { get; }
 
     public CollisionShapeRef(
@@ -143,12 +144,15 @@ public readonly struct CollisionShapeRef : IQuadObject
         fix64 gameObjectRotXz,
         Rad3dCollisionMesh colMesh,
         fix64 radius,
-        int index)
+        int index
+    )
     {
         Index = index;
-        
-        Box = new CollisionShapeUnion(new ShapeMesh(new f64Vector3(gameObjectX, gameObjectY, gameObjectZ), gameObjectRotXz, colMesh));
-        
+
+        Box = new CollisionShapeUnion(
+            new ShapeMesh(new f64Vector3(gameObjectX, gameObjectY, gameObjectZ), gameObjectRotXz, colMesh)
+        );
+
         Bounds = new f64Bounds(
             gameObjectX - radius,
             gameObjectZ - radius,
@@ -164,12 +168,15 @@ public readonly struct CollisionShapeRef : IQuadObject
         fix64 gameObjectRotXz,
         Rad3dCollisionHull colHull,
         fix64 radius,
-        int index)
+        int index
+    )
     {
         Index = index;
-        
-        Box = new CollisionShapeUnion(new ShapeHull(new f64Vector3(gameObjectX, gameObjectY, gameObjectZ), gameObjectRotXz, colHull));
-        
+
+        Box = new CollisionShapeUnion(
+            new ShapeHull(new f64Vector3(gameObjectX, gameObjectY, gameObjectZ), gameObjectRotXz, colHull)
+        );
+
         Bounds = new f64Bounds(
             gameObjectX - radius,
             gameObjectZ - radius,
@@ -185,7 +192,8 @@ public readonly struct CollisionShapeRef : IQuadObject
         fix64 gameObjectRotXz,
         Rad3dBoxDef box,
         fix64 radius,
-        int index)
+        int index
+    )
     {
         Index = index;
         var gameObjectPosition = new f64Vector3(gameObjectX, gameObjectY, gameObjectZ);
@@ -212,7 +220,9 @@ public readonly struct CollisionShapeRef : IQuadObject
             }
             else if (box.Xy == 90)
             {
-                Box = new CollisionShapeUnion(new ShapeWall(radFlipped, 90, trackersPosition, gameObjectRotXz, gameObjectPosition));
+                Box = new CollisionShapeUnion(
+                    new ShapeWall(radFlipped, 90, trackersPosition, gameObjectRotXz, gameObjectPosition)
+                );
             }
             else if (box.Zy == 90)
             {
@@ -220,18 +230,24 @@ public readonly struct CollisionShapeRef : IQuadObject
             }
             else
             {
-                Box = new CollisionShapeUnion(new ShapeWall(radFlipped, -90, trackersPosition, gameObjectRotXz, gameObjectPosition));
+                Box = new CollisionShapeUnion(
+                    new ShapeWall(radFlipped, -90, trackersPosition, gameObjectRotXz, gameObjectPosition)
+                );
             }
         }
         else if ((box.Zy != 0 && box.Zy != 90 && box.Zy != -90) || (box.Xy != 0 && box.Xy != 90 && box.Xy != -90))
         {
             if (box.Zy != 0)
             {
-                Box = new CollisionShapeUnion(new ShapeRamp(rad, box.Zy, 0, trackersPosition, gameObjectRotXz, gameObjectPosition));
+                Box = new CollisionShapeUnion(
+                    new ShapeRamp(rad, box.Zy, 0, trackersPosition, gameObjectRotXz, gameObjectPosition)
+                );
             }
             else
             {
-                Box = new CollisionShapeUnion(new ShapeRamp(radFlipped, box.Xy, -90, trackersPosition, gameObjectRotXz, gameObjectPosition));
+                Box = new CollisionShapeUnion(
+                    new ShapeRamp(radFlipped, box.Xy, -90, trackersPosition, gameObjectRotXz, gameObjectPosition)
+                );
             }
         }
 

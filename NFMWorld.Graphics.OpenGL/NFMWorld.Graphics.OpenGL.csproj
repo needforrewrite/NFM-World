@@ -15,10 +15,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Silk.NET.OpenGLES" Version="2.23.0" />
-        <PackageReference Include="Silk.NET.OpenGLES.Extensions.ANGLE" Version="2.23.0" />
-        <PackageReference Include="Silk.NET.OpenGLES.Extensions.EXT" Version="2.23.0" />
-        <PackageReference Include="Silk.NET.OpenGLES.Extensions.OES" Version="2.23.0" />
+        <PackageReference Include="Silk.NET.OpenGLES" Version="2.23.0"/>
+        <PackageReference Include="Silk.NET.OpenGLES.Extensions.ANGLE" Version="2.23.0"/>
+        <PackageReference Include="Silk.NET.OpenGLES.Extensions.EXT" Version="2.23.0"/>
+        <PackageReference Include="Silk.NET.OpenGLES.Extensions.OES" Version="2.23.0"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -31,13 +31,13 @@
              invent - the RID, or the host when no RID was named - and setting it only here keeps
              the mapping itself in one place. -->
         <ProjectReference Include="..\Maxine.Silk.EGL\native\Maxine.Silk.OpenGLES.ANGLE.Native\Maxine.Silk.OpenGLES.ANGLE.Native.csproj"
-                          AdditionalProperties="AngleNativeRid=$(RuntimeIdentifier)" />
-        <ProjectReference Include="..\Maxine.Silk.EGL\src\Extensions\Maxine.EGL.Extensions.EXT\Maxine.EGL.Extensions.EXT.csproj" />
-        <ProjectReference Include="..\Maxine.Silk.EGL\src\Maxine.EGL\Maxine.EGL.csproj" />
+                          AdditionalProperties="AngleNativeRid=$(RuntimeIdentifier)"/>
+        <ProjectReference Include="..\Maxine.Silk.EGL\src\Extensions\Maxine.EGL.Extensions.EXT\Maxine.EGL.Extensions.EXT.csproj"/>
+        <ProjectReference Include="..\Maxine.Silk.EGL\src\Maxine.EGL\Maxine.EGL.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
+        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj"/>
     </ItemGroup>
 
     <!-- The smoke test is the only way to verify the two things this backend's compiler work is
@@ -48,7 +48,7 @@
          and glGetError. Widening the public surface - or reaching these through reflection - would
          be worse than telling the compiler who the friend is, which is what this is for. -->
     <ItemGroup>
-        <InternalsVisibleTo Include="NFMWorld.Graphics.OpenGL.Smoke" />
+        <InternalsVisibleTo Include="NFMWorld.Graphics.OpenGL.Smoke"/>
     </ItemGroup>
 
 </Project>

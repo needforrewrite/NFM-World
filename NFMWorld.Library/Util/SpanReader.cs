@@ -8,7 +8,7 @@ public ref struct SpanReader(ReadOnlySpan<byte> span)
 {
     public readonly ReadOnlySpan<byte> Span = span;
     public int Index { get; private set; } = 0;
-    
+
     public byte ReadByte()
     {
         return Span[Index++];
@@ -82,7 +82,7 @@ public ref struct SpanReader(ReadOnlySpan<byte> span)
         Index += length * 2;
         return result;
     }
-    
+
     public ReadOnlySpan<char> ReadStringSpan()
     {
         int length = ReadInt32();

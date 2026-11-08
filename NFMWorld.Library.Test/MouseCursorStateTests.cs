@@ -56,6 +56,7 @@ public class MouseCursorStateTests
             Assert.IsFalse(state.Locked);
             Assert.IsNull(inactive.WarpTo);
         }
+
         var active = state.Update(false, true, new Vector2(1200, 700), Viewport);
         Assert.IsFalse(active.Visible);
         Assert.IsTrue(state.Locked);

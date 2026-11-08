@@ -13,22 +13,26 @@ public class ChatManager(IMultiplayerServerTransport transport, PlayerRegistry p
         var sender = players.Get(senderId);
         if (sender is null) return;
 
-        transport.BroadcastPacket(new S2C_LobbyChatMessage
-        {
-            SenderId = senderId,
-            Sender = sender.Name,
-            Message = message
-        });
+        transport.BroadcastPacket(
+            new S2C_LobbyChatMessage
+            {
+                SenderId = senderId,
+                Sender = sender.Name,
+                Message = message
+            }
+        );
     }
 
     /// <summary>Broadcasts a system message (e.g., join/leave announcements).</summary>
     public void BroadcastSystem(string message)
     {
-        transport.BroadcastPacket(new S2C_LobbyChatMessage
-        {
-            SenderId = Guid.Empty,
-            Message = message,
-            Sender = "<System>"
-        });
+        transport.BroadcastPacket(
+            new S2C_LobbyChatMessage
+            {
+                SenderId = Guid.Empty,
+                Message = message,
+                Sender = "<System>"
+            }
+        );
     }
 }

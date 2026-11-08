@@ -214,7 +214,8 @@ public partial class WorldGame : IDisposable, IGameHost
                 $"Unknown {RendererArgumentPrefix}{value}. Valid renderers: sokol, desktopgl, d3d11"
                 +
 #if ANGLE
-                ", angle" +
+                ", angle"
+                +
 #endif
                 "."
             );
@@ -363,12 +364,13 @@ public partial class WorldGame : IDisposable, IGameHost
             return;
 
         Logging.Warning(
-            $"Asked for the {_angleSelection.Describe()} ANGLE backend, but " +
-            $"{AngleVulkanLoader.ExpectedPath} does not exist. ANGLE loads its Vulkan loader from its " +
-            "own directory rather than from the system path, so the Vulkan backend will fail to " +
-            "initialize even when Vulkan itself works on this machine - and it reports that as " +
-            "'Internal Vulkan error (-3) ... vk_renderer.cpp', which names the driver rather than the " +
-            "missing file. If it does fail, this is why.");
+            $"Asked for the {_angleSelection.Describe()} ANGLE backend, but "
+            + $"{AngleVulkanLoader.ExpectedPath} does not exist. ANGLE loads its Vulkan loader from its "
+            + "own directory rather than from the system path, so the Vulkan backend will fail to "
+            + "initialize even when Vulkan itself works on this machine - and it reports that as "
+            + "'Internal Vulkan error (-3) ... vk_renderer.cpp', which names the driver rather than the "
+            + "missing file. If it does fail, this is why."
+        );
     }
 
     private static unsafe void ReportGlRenderer(AngleSelection selection)
@@ -398,11 +400,12 @@ public partial class WorldGame : IDisposable, IGameHost
         }
 
         Logging.Info(
-            $"GL renderer: requested {selection.Describe()}, got '{Read(glRenderer)}' " +
-            $"(vendor '{Read(glVendor)}', version '{Read(glVersion)}')");
+            $"GL renderer: requested {selection.Describe()}, got '{Read(glRenderer)}' "
+            + $"(vendor '{Read(glVendor)}', version '{Read(glVersion)}')"
+        );
         Logging.Info(
-            $"GL multisampling: requested {RequestedMultiSampleCount()}x, granted " +
-            $"{_glGrantedMultiSampleCount}x");
+            $"GL multisampling: requested {RequestedMultiSampleCount()}x, granted " + $"{_glGrantedMultiSampleCount}x"
+        );
     }
 #endif
 
@@ -569,9 +572,12 @@ public partial class WorldGame : IDisposable, IGameHost
                 ReportMissingVulkanLoader();
 
                 var (angleContext, angleWindow) = CreateGlContext(
-                    profileMask: EsProfile, major: 3, minor: 0,
+                    profileMask: EsProfile,
+                    major: 3,
+                    minor: 0,
                     // Forces SDL down its EGL path rather than WGL, so the context is ANGLE's.
-                    hint: (SDL.SDL_HINT_OPENGL_ES_DRIVER, "1"));
+                    hint: (SDL.SDL_HINT_OPENGL_ES_DRIVER, "1")
+                );
 
                 _glContext = angleContext;
                 Window = angleWindow;
@@ -587,9 +593,12 @@ public partial class WorldGame : IDisposable, IGameHost
                 _setSwapInterval = interval => SDL.SDL_GL_SetSwapInterval(interval);
 
                 _device = GlGraphicsDevice.Create(
-                    SDL.SDL_GL_GetProcAddress, angleWindow.Width, angleWindow.Height,
+                    SDL.SDL_GL_GetProcAddress,
+                    angleWindow.Width,
+                    angleWindow.Height,
                     () => SDL.SDL_GL_SwapWindow(angleWindow.Handle),
-                    _glGrantedMultiSampleCount);
+                    _glGrantedMultiSampleCount
+                );
                 ReportGlRenderer(_angleSelection);
                 break;
             }

@@ -29,7 +29,8 @@ public sealed class SdlImGuiRenderer : IDisposable
             new VertexAttributeDesc("TEXCOORD", 0, 8, VertexAttributeFormat.Float2),
             new VertexAttributeDesc("COLOR", 0, 16, VertexAttributeFormat.Byte4Normalized),
         ],
-        StrideInBytes: VertexStride);
+        StrideInBytes: VertexStride
+    );
 
     // See WorldGame.AllKeys's identical Distinct() call for why - Key has aliased members
     // sharing one underlying value (e.g. Oem3 == Oemtilde).
@@ -77,17 +78,25 @@ public sealed class SdlImGuiRenderer : IDisposable
 
         var program = ImGuiFullbright.Create();
         _module = graphicsDevice.CreateShaderModule(program.Vertex, program.Pixel, program.Reflection);
-        _pipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
-            VertexShader: _module,
-            PixelShader: _module,
-            VertexLayouts: [VertexLayout],
-            BlendState: BlendStateDesc.NonPremultiplied,
-            // Depth test must stay off so ImGui always paints on top of 3D/Yoga UI content.
-            DepthStencilState: DepthStencilStateDesc.None,
-            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None, ScissorTestEnabled = true }));
+        _pipeline = graphicsDevice.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: _module,
+                PixelShader: _module,
+                VertexLayouts: [VertexLayout],
+                BlendState: BlendStateDesc.NonPremultiplied,
+                // Depth test must stay off so ImGui always paints on top of 3D/Yoga UI content.
+                DepthStencilState: DepthStencilStateDesc.None,
+                RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None, ScissorTestEnabled = true }
+            )
+        );
         _parameters = program.Bind();
-        _sampler = graphicsDevice.CreateSampler(new SamplerDesc(
-            Filter: TextureFilter.Linear, AddressU: TextureAddressMode.Clamp, AddressV: TextureAddressMode.Clamp));
+        _sampler = graphicsDevice.CreateSampler(
+            new SamplerDesc(
+                Filter: TextureFilter.Linear,
+                AddressU: TextureAddressMode.Clamp,
+                AddressV: TextureAddressMode.Clamp
+            )
+        );
 
         window.TextInput += c =>
         {
@@ -160,7 +169,11 @@ public sealed class SdlImGuiRenderer : IDisposable
 
     private static bool TryMapKey(Key key, out ImGuiKey imguiKey)
     {
-        if (key == Key.None) { imguiKey = ImGuiKey.None; return true; }
+        if (key == Key.None)
+        {
+            imguiKey = ImGuiKey.None;
+            return true;
+        }
 
         imguiKey = key switch
         {
@@ -256,7 +269,10 @@ public sealed class SdlImGuiRenderer : IDisposable
             var initialData = textureData.Pixels != null
                 ? new ReadOnlySpan<byte>(textureData.Pixels, textureData.Width * textureData.Height * bytesPerPixel)
                 : default;
-            info.Texture = _graphicsDevice.CreateTexture(new TextureDesc(textureData.Width, textureData.Height, format), initialData);
+            info.Texture = _graphicsDevice.CreateTexture(
+                new TextureDesc(textureData.Width, textureData.Height, format),
+                initialData
+            );
         }
         else if (textureData.Pixels != null)
         {
@@ -295,7 +311,9 @@ public sealed class SdlImGuiRenderer : IDisposable
         {
             _vertexBuffer?.Dispose();
             _vertexBufferSize = (int)(drawData.TotalVtxCount * 1.5f);
-            _vertexBuffer = _graphicsDevice.CreateBuffer(new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, _vertexBufferSize * VertexStride));
+            _vertexBuffer = _graphicsDevice.CreateBuffer(
+                new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, _vertexBufferSize * VertexStride)
+            );
             _vertexData = new byte[_vertexBufferSize * VertexStride];
         }
 
@@ -303,7 +321,9 @@ public sealed class SdlImGuiRenderer : IDisposable
         {
             _indexBuffer?.Dispose();
             _indexBufferSize = (int)(drawData.TotalIdxCount * 1.5f);
-            _indexBuffer = _graphicsDevice.CreateBuffer(new BufferDesc(BufferKind.Index, BufferUsage.Dynamic, _indexBufferSize * sizeof(ushort), IndexFormat.UInt16));
+            _indexBuffer = _graphicsDevice.CreateBuffer(
+                new BufferDesc(BufferKind.Index, BufferUsage.Dynamic, _indexBufferSize * sizeof(ushort), IndexFormat.UInt16)
+            );
             _indexData = new byte[_indexBufferSize * sizeof(ushort)];
         }
 
@@ -314,8 +334,18 @@ public sealed class SdlImGuiRenderer : IDisposable
             fixed (void* vtxDst = &_vertexData![vtxOffset * VertexStride])
             fixed (void* idxDst = &_indexData![idxOffset * sizeof(ushort)])
             {
-                Buffer.MemoryCopy((void*)cmdList.VtxBuffer.Data, vtxDst, _vertexData.Length - vtxOffset * VertexStride, cmdList.VtxBuffer.Size * VertexStride);
-                Buffer.MemoryCopy((void*)cmdList.IdxBuffer.Data, idxDst, _indexData.Length - idxOffset * sizeof(ushort), cmdList.IdxBuffer.Size * sizeof(ushort));
+                Buffer.MemoryCopy(
+                    (void*)cmdList.VtxBuffer.Data,
+                    vtxDst,
+                    _vertexData.Length - vtxOffset * VertexStride,
+                    cmdList.VtxBuffer.Size * VertexStride
+                );
+                Buffer.MemoryCopy(
+                    (void*)cmdList.IdxBuffer.Data,
+                    idxDst,
+                    _indexData.Length - idxOffset * sizeof(ushort),
+                    cmdList.IdxBuffer.Size * sizeof(ushort)
+                );
             }
 
             // A backend with no base-vertex draw (WebGL2) gets the offsets folded into the indices
@@ -330,12 +360,14 @@ public sealed class SdlImGuiRenderer : IDisposable
 
                     var start = idxOffset + (int)drawCmd.IdxOffset;
                     var indices = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, ushort>(
-                        _indexData.AsSpan(start * sizeof(ushort), (int)(drawCmd.ElemCount * sizeof(ushort))));
+                        _indexData.AsSpan(start * sizeof(ushort), (int)(drawCmd.ElemCount * sizeof(ushort)))
+                    );
                     var add = (ushort)(vtxOffset + (int)drawCmd.VtxOffset);
                     for (var i = 0; i < indices.Length; i++)
                         indices[i] += add;
                 }
             }
+
             vtxOffset += cmdList.VtxBuffer.Size;
             idxOffset += cmdList.IdxBuffer.Size;
         }
@@ -369,10 +401,14 @@ public sealed class SdlImGuiRenderer : IDisposable
                 if (!_textures.TryGetValue(texId, out var info) || info.Texture == null)
                     continue;
 
-                cb.SetScissorRect(new ScissorRect(
-                    (int)drawCmd.ClipRect.X, (int)drawCmd.ClipRect.Y,
-                    (int)(drawCmd.ClipRect.Z - drawCmd.ClipRect.X),
-                    (int)(drawCmd.ClipRect.W - drawCmd.ClipRect.Y)));
+                cb.SetScissorRect(
+                    new ScissorRect(
+                        (int)drawCmd.ClipRect.X,
+                        (int)drawCmd.ClipRect.Y,
+                        (int)(drawCmd.ClipRect.Z - drawCmd.ClipRect.X),
+                        (int)(drawCmd.ClipRect.W - drawCmd.ClipRect.Y)
+                    )
+                );
 
                 _parameters.Texture.SetValue(cb, info.Texture, _sampler);
 
@@ -380,8 +416,10 @@ public sealed class SdlImGuiRenderer : IDisposable
                     // Folded into the indices above on a backend with no base-vertex draw.
                     baseVertex: _graphicsDevice.SupportsBaseVertexDraw ? (int)drawCmd.VtxOffset + vtxOffset : 0,
                     startIndex: (int)drawCmd.IdxOffset + idxOffset,
-                    primitiveCount: (int)drawCmd.ElemCount / 3);
+                    primitiveCount: (int)drawCmd.ElemCount / 3
+                );
             }
+
             vtxOffset += cmdList.VtxBuffer.Size;
             idxOffset += cmdList.IdxBuffer.Size;
         }
@@ -397,6 +435,7 @@ public sealed class SdlImGuiRenderer : IDisposable
         {
             if (t.IsManaged) t.Texture?.Dispose();
         }
+
         _textures.Clear();
         ImGui.DestroyContext();
     }

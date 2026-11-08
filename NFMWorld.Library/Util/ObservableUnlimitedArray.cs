@@ -139,8 +139,13 @@ public class ObservableUnlimitedArray<T> : UnlimitedArray<T>,
 
         base.RemoveAt(index);
 
-        OnCollectionChanged(new NotifyCollectionChangedEventArgs(
-            NotifyCollectionChangedAction.Remove, oldItem, index));
+        OnCollectionChanged(
+            new NotifyCollectionChangedEventArgs(
+                NotifyCollectionChangedAction.Remove,
+                oldItem,
+                index
+            )
+        );
         OnPropertyChanged(s_countChangedArgs);
         OnPropertyChanged(s_itemIndexChangedArgs);
     }
@@ -168,8 +173,11 @@ public class ObservableUnlimitedArray<T> : UnlimitedArray<T>,
         set
         {
             if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), index,
-                    "Index must be non-negative.");
+                throw new ArgumentOutOfRangeException(
+                    nameof(index),
+                    index,
+                    "Index must be non-negative."
+                );
 
             var isReplace = index < Count;
 
@@ -181,8 +189,14 @@ public class ObservableUnlimitedArray<T> : UnlimitedArray<T>,
 
                 base[index] = value;
 
-                OnCollectionChanged(new NotifyCollectionChangedEventArgs(
-                    NotifyCollectionChangedAction.Replace, value, oldItem, index));
+                OnCollectionChanged(
+                    new NotifyCollectionChangedEventArgs(
+                        NotifyCollectionChangedAction.Replace,
+                        value,
+                        oldItem,
+                        index
+                    )
+                );
             }
             else
             {
@@ -191,8 +205,13 @@ public class ObservableUnlimitedArray<T> : UnlimitedArray<T>,
 
                 base[index] = value;
 
-                OnCollectionChanged(new NotifyCollectionChangedEventArgs(
-                    NotifyCollectionChangedAction.Add, value, index));
+                OnCollectionChanged(
+                    new NotifyCollectionChangedEventArgs(
+                        NotifyCollectionChangedAction.Add,
+                        value,
+                        index
+                    )
+                );
                 OnPropertyChanged(s_countChangedArgs);
             }
 

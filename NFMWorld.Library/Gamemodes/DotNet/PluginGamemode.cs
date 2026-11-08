@@ -9,7 +9,8 @@ public abstract class PluginGamemode(
     ClientGamemodeParameters clientGamemodeParameters,
     IGamemodeContext gamemodeContext,
     string gamemodeId,
-    Dictionary<string, object>? config = null)
+    Dictionary<string, object>? config = null
+)
     : BaseClientGamemode(clientGamemodeParameters, gamemodeContext)
 {
     [PluginVisible] public Dictionary<string, object>? Config { get; } = config;

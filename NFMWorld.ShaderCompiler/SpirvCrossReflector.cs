@@ -1,4 +1,5 @@
 // LLM maintained.
+
 using System.Runtime.InteropServices;
 using System.Text;
 // ExecutionModel exists in both namespaces with different underlying values; the one
@@ -99,7 +100,8 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
         byte[] spirv,
         ShaderStage stage,
         string entryPoint,
-        IReadOnlyList<HlslSemantics.DeclaredInput>? declaredInputs = null)
+        IReadOnlyList<HlslSemantics.DeclaredInput>? declaredInputs = null
+    )
     {
         Context* context = null;
         Check(_cross.ContextCreate(&context), context, "context create");
@@ -117,12 +119,19 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
             // GLSL is the canonical backend for reflection: Vulkan-flavoured GLSL is the
             // only flavour carrying the separate texture2D/sampler declarations sokol-shdc
             // requires (it rejects combined image samplers outright).
-            var glslCompiler = MakeCompiler(context, ir, model, entryPoint, Backend.Glsl, options =>
-            {
-                _cross.CompilerOptionsSetBool(options, CompilerOption.GlslVulkanSemantics, 1);
-                _cross.CompilerOptionsSetBool(options, CompilerOption.RelaxNanChecks, 1);
-                _cross.CompilerOptionsSetUint(options, CompilerOption.GlslVersion, 450);
-            });
+            var glslCompiler = MakeCompiler(
+                context,
+                ir,
+                model,
+                entryPoint,
+                Backend.Glsl,
+                options =>
+                {
+                    _cross.CompilerOptionsSetBool(options, CompilerOption.GlslVulkanSemantics, 1);
+                    _cross.CompilerOptionsSetBool(options, CompilerOption.RelaxNanChecks, 1);
+                    _cross.CompilerOptionsSetUint(options, CompilerOption.GlslVersion, 450);
+                }
+            );
             var glsl = Compile(glslCompiler, context, "GLSL");
 
             // A second GLSL pass for the GL backend. It cannot reuse the compiler above: that
@@ -133,14 +142,21 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
             // sokol's GL backend resolves each uniform by name through glGetUniformLocation
             // (sokol_gfx.h:11696) using the names in desc.uniform_blocks[].glsl_uniforms - so the
             // GLSL has to declare them as loose uniforms for those lookups to find anything.
-            var glslGlCompiler = MakeCompiler(context, ir, model, entryPoint, Backend.Glsl, options =>
-            {
-                _cross.CompilerOptionsSetBool(options, CompilerOption.GlslEmitUniformBufferAsPlainUniforms, 1);
-                _cross.CompilerOptionsSetBool(options, CompilerOption.RelaxNanChecks, 1);
-                // 410 is the floor sokol documents for the desktop GL backend, and the lowest
-                // version that supports the layout qualifiers the generated code uses.
-                _cross.CompilerOptionsSetUint(options, CompilerOption.GlslVersion, 410);
-            });
+            var glslGlCompiler = MakeCompiler(
+                context,
+                ir,
+                model,
+                entryPoint,
+                Backend.Glsl,
+                options =>
+                {
+                    _cross.CompilerOptionsSetBool(options, CompilerOption.GlslEmitUniformBufferAsPlainUniforms, 1);
+                    _cross.CompilerOptionsSetBool(options, CompilerOption.RelaxNanChecks, 1);
+                    // 410 is the floor sokol documents for the desktop GL backend, and the lowest
+                    // version that supports the layout qualifiers the generated code uses.
+                    _cross.CompilerOptionsSetUint(options, CompilerOption.GlslVersion, 410);
+                }
+            );
             // GL has one combined sampler object where Vulkan has separate image and sampler, so
             // the separate declarations have to be folded into combined sampler uniforms before
             // compilation. This is the step that makes the Vulkan-flavoured pass above unusable
@@ -161,16 +177,23 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
             // Like the desktop GL pass this needs combined samplers, and it deliberately does not
             // set GlslVulkanSemantics - an ES driver has no more use for separate texture2D and
             // sampler objects than a desktop one does.
-            var glslEsCompiler = MakeCompiler(context, ir, model, entryPoint, Backend.Glsl, options =>
-            {
-                _cross.CompilerOptionsSetBool(options, CompilerOption.GlslES, 1);
-                // Highp rather than the default mediump: it matches what the D3D path already gets,
-                // and the game's shadow-map and outline maths depends on the extra range.
-                _cross.CompilerOptionsSetBool(options, CompilerOption.GlslESDefaultFloatPrecisionHighp, 1);
-                _cross.CompilerOptionsSetBool(options, CompilerOption.GlslESDefaultIntPrecisionHighp, 1);
-                _cross.CompilerOptionsSetBool(options, CompilerOption.RelaxNanChecks, 1);
-                _cross.CompilerOptionsSetUint(options, CompilerOption.GlslVersion, 300);
-            });
+            var glslEsCompiler = MakeCompiler(
+                context,
+                ir,
+                model,
+                entryPoint,
+                Backend.Glsl,
+                options =>
+                {
+                    _cross.CompilerOptionsSetBool(options, CompilerOption.GlslES, 1);
+                    // Highp rather than the default mediump: it matches what the D3D path already gets,
+                    // and the game's shadow-map and outline maths depends on the extra range.
+                    _cross.CompilerOptionsSetBool(options, CompilerOption.GlslESDefaultFloatPrecisionHighp, 1);
+                    _cross.CompilerOptionsSetBool(options, CompilerOption.GlslESDefaultIntPrecisionHighp, 1);
+                    _cross.CompilerOptionsSetBool(options, CompilerOption.RelaxNanChecks, 1);
+                    _cross.CompilerOptionsSetUint(options, CompilerOption.GlslVersion, 300);
+                }
+            );
             Check(_cross.CompilerBuildCombinedImageSamplers(glslEsCompiler), context, "build combined samplers (ES)");
             // The varying names have to be made to agree across the two stages before compiling,
             // which is a step the HLSL and desktop GLSL targets do not need. See the method.
@@ -190,27 +213,34 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
             // because 330 links them by name. GlslEmitUniformBufferAsPlainUniforms stays off - the
             // consumer binds a real UBO and resolves the block by index, never by member name, so
             // loose uniforms would only cost layout quality (and the uint uniform problem with it).
-            var glsl330Compiler = MakeCompiler(context, ir, model, entryPoint, Backend.Glsl, options =>
-            {
-                // Off, though spirv-cross defaults it on. The option governs both the
-                // `#ifdef GL_ARB_shading_language_420pack` prologue and the `binding = N` qualifier
-                // it guards, and that qualifier is the one construct in this whole form that 3.3
-                // does not have: `layout(binding=)` on a uniform block is core only from GLSL 4.2
-                // (`ARB_shading_language_420pack`). Measured at `#version 330 core`, as it comes out
-                // otherwise: 24/24 stages pass *with* the guard and 0/24 pass with the guard removed
-                // (`'binding' : not supported for this version or the enabled extensions`), so the
-                // form is 3.3-clean only by leaning on an extension a conformant 3.3 driver is free
-                // not to expose.
-                //
-                // Dropping it costs nothing: the consumer assigns block bindings itself with
-                // glUniformBlockBinding after resolving the block through glGetUniformBlockIndex,
-                // so it never reads the qualifier. That is also why the form can be strictly 3.3
-                // despite spirv-cross's default - the default assumes the binding must travel in
-                // the source.
-                _cross.CompilerOptionsSetBool(options, CompilerOption.GlslEnable420PackExtension, 0);
-                _cross.CompilerOptionsSetBool(options, CompilerOption.RelaxNanChecks, 1);
-                _cross.CompilerOptionsSetUint(options, CompilerOption.GlslVersion, 330);
-            });
+            var glsl330Compiler = MakeCompiler(
+                context,
+                ir,
+                model,
+                entryPoint,
+                Backend.Glsl,
+                options =>
+                {
+                    // Off, though spirv-cross defaults it on. The option governs both the
+                    // `#ifdef GL_ARB_shading_language_420pack` prologue and the `binding = N` qualifier
+                    // it guards, and that qualifier is the one construct in this whole form that 3.3
+                    // does not have: `layout(binding=)` on a uniform block is core only from GLSL 4.2
+                    // (`ARB_shading_language_420pack`). Measured at `#version 330 core`, as it comes out
+                    // otherwise: 24/24 stages pass *with* the guard and 0/24 pass with the guard removed
+                    // (`'binding' : not supported for this version or the enabled extensions`), so the
+                    // form is 3.3-clean only by leaning on an extension a conformant 3.3 driver is free
+                    // not to expose.
+                    //
+                    // Dropping it costs nothing: the consumer assigns block bindings itself with
+                    // glUniformBlockBinding after resolving the block through glGetUniformBlockIndex,
+                    // so it never reads the qualifier. That is also why the form can be strictly 3.3
+                    // despite spirv-cross's default - the default assumes the binding must travel in
+                    // the source.
+                    _cross.CompilerOptionsSetBool(options, CompilerOption.GlslEnable420PackExtension, 0);
+                    _cross.CompilerOptionsSetBool(options, CompilerOption.RelaxNanChecks, 1);
+                    _cross.CompilerOptionsSetUint(options, CompilerOption.GlslVersion, 330);
+                }
+            );
             Check(_cross.CompilerBuildCombinedImageSamplers(glsl330Compiler), context, "build combined samplers (330)");
             HarmonizeVaryingNames(glsl330Compiler, model);
             NameCombinedSamplers(glsl330Compiler, context);
@@ -221,17 +251,31 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
             Check(_cross.CompilerCreateShaderResources(glslCompiler, &resources), context, "shader resources");
             reflection = ReflectStage(glslCompiler, resources, stage, entryPoint);
 
-            var mslCompiler = MakeCompiler(context, ir, model, entryPoint, Backend.Msl, options =>
-                _cross.CompilerOptionsSetUint(options, CompilerOption.MslVersion, 20100));
+            var mslCompiler = MakeCompiler(
+                context,
+                ir,
+                model,
+                entryPoint,
+                Backend.Msl,
+                options =>
+                    _cross.CompilerOptionsSetUint(options, CompilerOption.MslVersion, 20100)
+            );
             var msl = Compile(mslCompiler, context, "MSL");
 
-            var hlslCompiler = MakeCompiler(context, ir, model, entryPoint, Backend.Hlsl, options =>
-                _cross.CompilerOptionsSetUint(options, CompilerOption.HlslShaderModel, 50),
+            var hlslCompiler = MakeCompiler(
+                context,
+                ir,
+                model,
+                entryPoint,
+                Backend.Hlsl,
+                options =>
+                    _cross.CompilerOptionsSetUint(options, CompilerOption.HlslShaderModel, 50),
                 // Only the vertex stage has input semantics to restore, and only when the
                 // caller could read them back out of the source.
                 remap: stage == ShaderStage.Vertex && declaredInputs is { Count: > 0 }
                     ? compiler => ApplySemanticRemap(compiler, declaredInputs)
-                    : null);
+                    : null
+            );
             var hlsl = Compile(hlslCompiler, context, "HLSL");
             if (stage == ShaderStage.Vertex && declaredInputs is { Count: > 0 })
                 hlsl = FixMatrixColumnSemantics(hlsl, declaredInputs);
@@ -261,7 +305,8 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
         string entryPoint,
         Backend backend,
         OptionConfigurator configure,
-        Remapper? remap = null)
+        Remapper? remap = null
+    )
     {
         Compiler* compiler = null;
         // Copy, not TakeOwnership: TakeOwnership *moves* the parsed IR into the compiler,
@@ -334,11 +379,13 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
                 {
                     var handle = GCHandle.Alloc(Encoding.ASCII.GetBytes(declared.Semantic + "\0"), GCHandleType.Pinned);
                     pinned.Add(handle);
-                    table.Add(new HlslVertexAttributeRemap
-                    {
-                        Location = (uint)location,
-                        Semantic = (byte*)handle.AddrOfPinnedObject(),
-                    });
+                    table.Add(
+                        new HlslVertexAttributeRemap
+                        {
+                            Location = (uint)location,
+                            Semantic = (byte*)handle.AddrOfPinnedObject(),
+                        }
+                    );
                     covered.Add(location);
 
                     // A matrix input occupies one location per column, and the remap names the
@@ -355,11 +402,12 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
             var uncovered = reflected.Where(r => !covered.Contains(r.Location)).ToList();
             if (uncovered.Count > 0)
                 throw new InvalidOperationException(
-                    $"The vertex shader declares semantics at locations " +
-                    $"[{string.Join(", ", declaredInputs.Select((d, i) => i))}] but the SPIR-V has " +
-                    $"inputs at [{string.Join(", ", uncovered.Select(u => u.Location))}] " +
-                    $"({string.Join(", ", uncovered.Select(u => u.Name))}) that no declared parameter " +
-                    "accounts for; the two cannot be paired.");
+                    $"The vertex shader declares semantics at locations "
+                    + $"[{string.Join(", ", declaredInputs.Select((d, i) => i))}] but the SPIR-V has "
+                    + $"inputs at [{string.Join(", ", uncovered.Select(u => u.Location))}] "
+                    + $"({string.Join(", ", uncovered.Select(u => u.Name))}) that no declared parameter "
+                    + "accounts for; the two cannot be paired."
+                );
 
             fixed (HlslVertexAttributeRemap* entries = table.ToArray())
                 _cross.CompilerHlslAddVertexAttributeRemap(compiler, entries, (UIntPtr)table.Count);
@@ -394,6 +442,7 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
             for (var column = 0; column < declared.Registers; column++)
                 hlsl = hlsl.Replace($": {declared.Semantic}_{column};", $": {baseName}{baseIndex + column};");
         }
+
         return hlsl;
     }
 
@@ -512,11 +561,15 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
         {
             var id = list[i].Id;
             var type = _cross.CompilerGetTypeHandle(compiler, list[i].TypeId);
-            inputs.Add(new ReflectedInput(
-                _cross.CompilerGetNameS(compiler, id) ?? $"input{i}",
-                (int)_cross.CompilerGetDecoration(compiler, id, Decoration.Location),
-                type is null ? 1 : Math.Max(1, (int)_cross.TypeGetColumns(type))));
+            inputs.Add(
+                new ReflectedInput(
+                    _cross.CompilerGetNameS(compiler, id) ?? $"input{i}",
+                    (int)_cross.CompilerGetDecoration(compiler, id, Decoration.Location),
+                    type is null ? 1 : Math.Max(1, (int)_cross.TypeGetColumns(type))
+                )
+            );
         }
+
         inputs.Sort((a, b) => a.Location.CompareTo(b.Location));
         return inputs;
     }
@@ -541,6 +594,7 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
             if (entries[i].ExecutionModel != model) continue;
             if (!string.IsNullOrEmpty(name)) return name;
         }
+
         return null;
     }
 
@@ -597,14 +651,18 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
         }
 
         var blocks = new List<UniformBlock>();
-        Check(_cross.ResourcesGetResourceListForType(resources, ResourceType.UniformBuffer, &list, &count), null, "uniform buffers");
+        Check(
+            _cross.ResourcesGetResourceListForType(resources, ResourceType.UniformBuffer, &list, &count),
+            null,
+            "uniform buffers"
+        );
         for (nuint i = 0; i < (nuint)count; i++)
         {
             // For a uniform buffer, BaseTypeId is the block's struct type (the thing with
             // the members) and Id is the variable that carries the Binding decoration.
             var id = list[i].Id;
             var name = _cross.CompilerGetNameS(compiler, list[i].BaseTypeId)
-                    ?? _cross.CompilerGetNameS(compiler, id) ?? $"ub{i}";
+                       ?? _cross.CompilerGetNameS(compiler, id) ?? $"ub{i}";
             var binding = _cross.CompilerGetDecoration(compiler, id, Decoration.Binding);
             blocks.Add(ReflectBlock(compiler, id, list[i].BaseTypeId, binding, name));
         }
@@ -668,5 +726,7 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
         }
     }
 
-    public void Dispose() { }
+    public void Dispose()
+    {
+    }
 }

@@ -11,7 +11,16 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
 {
     // ── Data tables ─────────────────────────────────────────────────────────
 
-    private enum NumericType { Float, Half, Bool, Int, Uint, Count, NaN }
+    private enum NumericType
+    {
+        Float,
+        Half,
+        Bool,
+        Int,
+        Uint,
+        Count,
+        NaN
+    }
 
     private readonly record struct BaseTypeDescription(
         string TypeName,
@@ -19,13 +28,19 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
         int NumComponents,
         int NumDimensions,
         int Height,
-        int BinaryOpRank);
+        int BinaryOpRank
+    );
 
     private readonly record struct EffectStateValue(string? Name, int Value);
 
     private readonly record struct EffectState(string Name, int D3drs, EffectStateValue[]? Values);
 
-    private enum CompareFunctionsResult : byte { FunctionsEqual, Function1Better, Function2Better }
+    private enum CompareFunctionsResult : byte
+    {
+        FunctionsEqual,
+        Function1Better,
+        Function2Better
+    }
 
     // ── Intrinsics ──────────────────────────────────────────────────────────
 
@@ -43,6 +58,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                 Arguments[i] = new HLSLArgument { Type = new HLSLType(argTypes[i]) { Flags = (int)HLSLTypeFlags.Const } };
                 if (i > 0) Arguments[i - 1].NextArgument = Arguments[i];
             }
+
             if (argTypes.Length > 0) Function.Argument = Arguments[0];
         }
     }
@@ -96,14 +112,14 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
         Float2("atan2");
         Float3("clamp");
         Float1("cos");
-        
+
         Float3("lerp");
         Float3("smoothstep");
-        
+
         Float1("floor");
         Float1("ceil");
         Float1("frac");
-        
+
         Float2("fmod");
 
         Intrinsic("clip", HLSLBaseType.Void, HLSLBaseType.Float);
@@ -123,7 +139,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
         Intrinsic("dot", HLSLBaseType.Half, HLSLBaseType.Half2, HLSLBaseType.Half2);
         Intrinsic("dot", HLSLBaseType.Half, HLSLBaseType.Half3, HLSLBaseType.Half3);
         Intrinsic("dot", HLSLBaseType.Half, HLSLBaseType.Half4, HLSLBaseType.Half4);
-        
+
         Intrinsic("cross", HLSLBaseType.Float3, HLSLBaseType.Float3, HLSLBaseType.Float3);
 
         Intrinsic("length", HLSLBaseType.Float, HLSLBaseType.Float);
@@ -137,7 +153,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
 
         Float2("max");
         Float2("min");
-        
+
         Float2("mul");
         Intrinsic("mul", HLSLBaseType.Float3, HLSLBaseType.Float3, HLSLBaseType.Float3x3);
         Intrinsic("mul", HLSLBaseType.Float4, HLSLBaseType.Float4, HLSLBaseType.Float4x4);
@@ -154,7 +170,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
         Float1("rcp");
         Float1("ddx");
         Float1("ddy");
-        
+
         Float1("sign");
         Float2("step");
         Float2("reflect");
@@ -176,7 +192,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
         Intrinsic("sincos", HLSLBaseType.Void, HLSLBaseType.Half4, HLSLBaseType.Half4, HLSLBaseType.Half4);
 
         Float1("exp2");
-        
+
         return list.ToArray();
     }
 
@@ -240,6 +256,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
         new("Linear", 2),
         new("Anisotropic", 3)
     ];
+
     private static readonly EffectStateValue[] TextureAddressingValues =
     [
         new("Wrap", 1),
@@ -255,7 +272,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
         new("CW", 2),
         new("CCW", 3)
     ];
-        
+
     private static readonly EffectStateValue[] CmpValues =
     [
         new("Never", 1),
@@ -304,7 +321,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
         new("Wireframe", 2),
         new("Solid", 3)
     ];
-    
+
     private static readonly EffectStateValue[] StencilOpValues =
     [
         new("Keep", 1),
@@ -316,7 +333,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
         new("Incr", 7),
         new("Decr", 8)
     ];
-    
+
     private static readonly EffectStateValue[] ColorMaskValues =
     [
         new("False", 0),
@@ -393,13 +410,15 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
         new("Back", 1),
         new("Front", 2)
     ];
-    
-    private static readonly EffectStateValue[] WitnessFillModeValues = [
+
+    private static readonly EffectStateValue[] WitnessFillModeValues =
+    [
         new("Solid", 0),
         new("Wireframe", 1)
     ];
-    
-    private static readonly EffectStateValue[] WitnessBlendModeValues = [
+
+    private static readonly EffectStateValue[] WitnessBlendModeValues =
+    [
         new("Disabled", 0),
         new("AlphaBlend", 1),
         new("Add", 2),
@@ -407,16 +426,18 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
         new("Multiply", 4),
         new("Multiply2", 5)
     ];
-    
-    private static readonly EffectStateValue[] WitnessDepthFuncValues = [
+
+    private static readonly EffectStateValue[] WitnessDepthFuncValues =
+    [
         new("LessEqual", 0),
         new("Less", 1),
         new("Equal", 2),
         new("Greater", 3),
         new("Always", 4)
     ];
-    
-    private static readonly EffectStateValue[] WitnessStencilModeValues = [
+
+    private static readonly EffectStateValue[] WitnessStencilModeValues =
+    [
         new("Disabled", 0),
         new("Set", 1),
         new("Test", 2)
@@ -425,9 +446,12 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
     private static readonly EffectState[] PipelineStates =
     [
         new("VertexShader", 0, null), new("PixelShader", 0, null),
-        new("DepthWrite", 0, BooleanValues), new("DepthEnable", 0, BooleanValues), new("DepthFunc", 0, WitnessDepthFuncValues), new("StencilMode", 0, WitnessStencilModeValues),
-        new("CullMode", 0, WitnessCullModeValues), new("FillMode", 0, WitnessFillModeValues), new("MultisampleEnable", 0, BooleanValues), new("PolygonOffset", 0, BooleanValues),
-        new("BlendMode", 0, WitnessBlendModeValues), new("ColorWrite", 0, BooleanValues), new("AlphaWrite", 0, BooleanValues), new("AlphaTest", 0, BooleanValues)
+        new("DepthWrite", 0, BooleanValues), new("DepthEnable", 0, BooleanValues), new("DepthFunc", 0, WitnessDepthFuncValues),
+        new("StencilMode", 0, WitnessStencilModeValues),
+        new("CullMode", 0, WitnessCullModeValues), new("FillMode", 0, WitnessFillModeValues),
+        new("MultisampleEnable", 0, BooleanValues), new("PolygonOffset", 0, BooleanValues),
+        new("BlendMode", 0, WitnessBlendModeValues), new("ColorWrite", 0, BooleanValues), new("AlphaWrite", 0, BooleanValues),
+        new("AlphaTest", 0, BooleanValues)
     ];
 
     // ── Instance state ──────────────────────────────────────────────────────
@@ -449,7 +473,9 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
     // ── Constructor ─────────────────────────────────────────────────────────
 
     public HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buffer)
-        : this(fileName, buffer, buffer.Length) { }
+        : this(fileName, buffer, buffer.Length)
+    {
+    }
 
     // ── Public API ──────────────────────────────────────────────────────────
 
@@ -471,6 +497,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                 while (lastStatement.NextStatement != null) lastStatement = lastStatement.NextStatement;
             }
         }
+
         return true;
     }
 
@@ -478,14 +505,23 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
 
     private bool Accept(int token)
     {
-        if (_tokenizer.Token == token) { _tokenizer.Next(); return true; }
+        if (_tokenizer.Token == token)
+        {
+            _tokenizer.Next();
+            return true;
+        }
+
         return false;
     }
 
     private bool Accept(string token)
     {
         if (_tokenizer.Token == (int)HLSLToken.Identifier && _tokenizer.Identifier == token)
-        { _tokenizer.Next(); return true; }
+        {
+            _tokenizer.Next();
+            return true;
+        }
+
         return false;
     }
 
@@ -497,6 +533,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             var near = _tokenizer.TokenName;
             return _tokenizer.Error($"Syntax error: expected '{want}' near '{near}'");
         }
+
         return true;
     }
 
@@ -507,6 +544,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             var near = _tokenizer.TokenName;
             return _tokenizer.Error($"Syntax error: expected '{token}' near '{near}'");
         }
+
         return true;
     }
 
@@ -519,6 +557,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             _tokenizer.Next();
             return true;
         }
+
         return false;
     }
 
@@ -530,13 +569,49 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             identifier = "";
             return _tokenizer.Error($"Syntax error: expected identifier near '{near}'");
         }
+
         identifier = id!;
         return true;
     }
 
-    private bool AcceptFloat(out float value) { value = 0; if (_tokenizer.Token == (int)HLSLToken.FloatLiteral) { value = _tokenizer.Float; _tokenizer.Next(); return true; } return false; }
-    private bool AcceptHalf(out float value) { value = 0; if (_tokenizer.Token == (int)HLSLToken.HalfLiteral) { value = _tokenizer.Float; _tokenizer.Next(); return true; } return false; }
-    private bool AcceptInt(out int value) { value = 0; if (_tokenizer.Token == (int)HLSLToken.IntLiteral) { value = _tokenizer.Int; _tokenizer.Next(); return true; } return false; }
+    private bool AcceptFloat(out float value)
+    {
+        value = 0;
+        if (_tokenizer.Token == (int)HLSLToken.FloatLiteral)
+        {
+            value = _tokenizer.Float;
+            _tokenizer.Next();
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool AcceptHalf(out float value)
+    {
+        value = 0;
+        if (_tokenizer.Token == (int)HLSLToken.HalfLiteral)
+        {
+            value = _tokenizer.Float;
+            _tokenizer.Next();
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool AcceptInt(out int value)
+    {
+        value = 0;
+        if (_tokenizer.Token == (int)HLSLToken.IntLiteral)
+        {
+            value = _tokenizer.Int;
+            _tokenizer.Next();
+            return true;
+        }
+
+        return false;
+    }
 
     private string FileName => string.FromSpan(_tokenizer.FileName);
     private int LineNumber => _tokenizer.LineNumber;
@@ -545,8 +620,18 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
 
     private bool AcceptTypeModifier(ref int flags)
     {
-        if (Accept((int)HLSLToken.Const)) { flags |= (int)HLSLTypeFlags.Const; return true; }
-        if (Accept((int)HLSLToken.Static)) { flags |= (int)HLSLTypeFlags.Static; return true; }
+        if (Accept((int)HLSLToken.Const))
+        {
+            flags |= (int)HLSLTypeFlags.Const;
+            return true;
+        }
+
+        if (Accept((int)HLSLToken.Static))
+        {
+            flags |= (int)HLSLTypeFlags.Static;
+            return true;
+        }
+
         if (Accept((int)HLSLToken.Uniform)) return true;
         if (Accept((int)HLSLToken.Inline)) return true;
         return false;
@@ -554,18 +639,45 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
 
     private bool AcceptInterpolationModifier(ref int flags)
     {
-        if (Accept("linear")) { flags |= (int)HLSLTypeFlags.Linear; return true; }
-        if (Accept("centroid")) { flags |= (int)HLSLTypeFlags.Centroid; return true; }
-        if (Accept("nointerpolation")) { flags |= (int)HLSLTypeFlags.NoInterpolation; return true; }
-        if (Accept("noperspective")) { flags |= (int)HLSLTypeFlags.NoPerspective; return true; }
-        if (Accept("sample")) { flags |= (int)HLSLTypeFlags.Sample; return true; }
+        if (Accept("linear"))
+        {
+            flags |= (int)HLSLTypeFlags.Linear;
+            return true;
+        }
+
+        if (Accept("centroid"))
+        {
+            flags |= (int)HLSLTypeFlags.Centroid;
+            return true;
+        }
+
+        if (Accept("nointerpolation"))
+        {
+            flags |= (int)HLSLTypeFlags.NoInterpolation;
+            return true;
+        }
+
+        if (Accept("noperspective"))
+        {
+            flags |= (int)HLSLTypeFlags.NoPerspective;
+            return true;
+        }
+
+        if (Accept("sample"))
+        {
+            flags |= (int)HLSLTypeFlags.Sample;
+            return true;
+        }
+
         return false;
     }
 
     private bool AcceptType(bool allowVoid, HLSLType type)
     {
         type.Flags = 0;
-        while (AcceptTypeModifier(ref type.Flags) || AcceptInterpolationModifier(ref type.Flags)) { }
+        while (AcceptTypeModifier(ref type.Flags) || AcceptInterpolationModifier(ref type.Flags))
+        {
+        }
 
         var token = _tokenizer.Token;
         type.BaseType = HLSLBaseType.Void;
@@ -615,9 +727,16 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                     if (!Expect('>')) return false;
                 }
             }
+
             return true;
         }
-        if (allowVoid && Accept((int)HLSLToken.Void)) { type.BaseType = HLSLBaseType.Void; return true; }
+
+        if (allowVoid && Accept((int)HLSLToken.Void))
+        {
+            type.BaseType = HLSLBaseType.Void;
+            return true;
+        }
+
         if (token == (int)HLSLToken.Identifier)
         {
             var identifier = string.FromSpan(_tokenizer.Identifier);
@@ -629,12 +748,18 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                 return true;
             }
         }
+
         return false;
     }
 
     private bool ExpectType(bool allowVoid, HLSLType type)
     {
-        if (!AcceptType(allowVoid, type)) { _tokenizer.Error("Expected type"); return false; }
+        if (!AcceptType(allowVoid, type))
+        {
+            _tokenizer.Error("Expected type");
+            return false;
+        }
+
         return true;
     }
 
@@ -651,13 +776,18 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             if (!ParseExpression(ref arraySize) || !Expect(']')) return false;
             type.ArraySize = arraySize;
         }
+
         return true;
     }
 
     private bool ExpectDeclaration(bool allowUnsizedArray, HLSLType type, out string name)
     {
         if (!AcceptDeclaration(allowUnsizedArray, type, out name))
-        { _tokenizer.Error("Expected declaration"); return false; }
+        {
+            _tokenizer.Error("Expected declaration");
+            return false;
+        }
+
         return true;
     }
 
@@ -676,7 +806,12 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
         if (Accept((int)HLSLToken.Struct))
         {
             if (!ExpectIdentifier(out var structName)) return false;
-            if (FindUserDefinedType(structName) != null) { _tokenizer.Error($"struct {structName} already defined"); return false; }
+            if (FindUserDefinedType(structName) != null)
+            {
+                _tokenizer.Error($"struct {structName} already defined");
+                return false;
+            }
+
             if (!Expect('{')) return false;
 
             var structure = HLSLTree.AddNode<HLSLStruct>(fileName, line);
@@ -693,6 +828,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                 else lastField!.NextField = field;
                 lastField = field;
             }
+
             statement = structure;
         }
         else if (Accept((int)HLSLToken.CBuffer) || Accept((int)HLSLToken.TBuffer))
@@ -703,9 +839,13 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
 
             if (Accept(':'))
             {
-                if (!Expect((int)HLSLToken.Register) || !Expect('(') || !ExpectIdentifier(out var regName) || !Expect(')')) return false;
+                if (!Expect((int)HLSLToken.Register)
+                    || !Expect('(')
+                    || !ExpectIdentifier(out var regName)
+                    || !Expect(')')) return false;
                 buffer.RegisterName = regName;
             }
+
             if (!Expect('{')) return false;
 
             HLSLDeclaration? lastField = null;
@@ -713,7 +853,12 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             {
                 if (CheckForUnexpectedEndOfStream('}')) return false;
                 HLSLDeclaration? field = null;
-                if (!ParseDeclaration(ref field)) { _tokenizer.Error("Expected variable declaration"); return false; }
+                if (!ParseDeclaration(ref field))
+                {
+                    _tokenizer.Error("Expected variable declaration");
+                    return false;
+                }
+
                 DeclareVariable(field!.Name!, field.Type);
                 field.Buffer = buffer;
                 if (buffer.Field == null) buffer.Field = field;
@@ -721,6 +866,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                 lastField = field;
                 if (!Expect(';')) return false;
             }
+
             statement = buffer;
         }
         else if (AcceptType(true, type))
@@ -742,16 +888,23 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
 
                 if (Accept(';'))
                 {
-                    if (declaration == null) { _functions.Add(function); statement = function; }
+                    if (declaration == null)
+                    {
+                        _functions.Add(function);
+                        statement = function;
+                    }
+
                     EndScope();
                     return true;
                 }
+
                 if (Accept(':') && !ExpectIdentifier(out var sem)) return false;
                 else if (_tokenizer.Token != '{') function.Semantic = string.FromSpan(_tokenizer.Identifier);
 
                 if (declaration != null)
                 {
-                    if (declaration.Forward != null || declaration.Statement != null) return _tokenizer.Error("Duplicate function definition");
+                    if (declaration.Forward != null || declaration.Statement != null)
+                        return _tokenizer.Error("Duplicate function definition");
                     declaration.Forward = function;
                 }
                 else _functions.Add(function);
@@ -775,14 +928,20 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                         if (!ParseExpression(ref arrSize) || !Expect(']')) return false;
                         decl.Type.ArraySize = arrSize;
                     }
+
                     decl.Type.Array = true;
                 }
+
                 if (Accept(':'))
                 {
                     if (AcceptIdentifier(out var semOrReg)) decl.Semantic = semOrReg;
-                    else if (!Expect((int)HLSLToken.Register) || !Expect('(') || !ExpectIdentifier(out var regN) || !Expect(')')) return false;
+                    else if (!Expect((int)HLSLToken.Register)
+                             || !Expect('(')
+                             || !ExpectIdentifier(out var regN)
+                             || !Expect(')')) return false;
                     else decl.RegisterName = regN;
                 }
+
                 DeclareVariable(globalName, decl.Type);
                 if (!ParseDeclarationAssignment(decl)) return false;
                 statement = decl;
@@ -801,8 +960,15 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
     private bool ParseStatementOrBlock(ref HLSLStatement? firstStatement, HLSLType returnType, bool scoped = true)
     {
         if (scoped) BeginScope();
-        if (Accept('{')) { if (!ParseBlock(ref firstStatement, returnType)) return false; }
-        else { if (!ParseStatement(ref firstStatement, returnType)) return false; }
+        if (Accept('{'))
+        {
+            if (!ParseBlock(ref firstStatement, returnType)) return false;
+        }
+        else
+        {
+            if (!ParseStatement(ref firstStatement, returnType)) return false;
+        }
+
         if (scoped) EndScope();
         return true;
     }
@@ -823,6 +989,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                 while (lastStatement.NextStatement != null) lastStatement = lastStatement.NextStatement;
             }
         }
+
         return true;
     }
 
@@ -848,6 +1015,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             if (Accept((int)HLSLToken.Else)) return ParseStatementOrBlock(ref ifSt.ElseStatement, returnType);
             return true;
         }
+
         if (Accept((int)HLSLToken.For))
         {
             var forSt = HLSLTree.AddNode<HLSLForStatement>(fileName, line);
@@ -871,6 +1039,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             EndScope();
             return true;
         }
+
         if (Accept('{'))
         {
             var block = HLSLTree.AddNode<HLSLBlockStatement>(fileName, line);
@@ -880,9 +1049,25 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             EndScope();
             return ok;
         }
-        if (Accept((int)HLSLToken.Discard)) { statement = HLSLTree.AddNode<HLSLDiscardStatement>(fileName, line); return Expect(';'); }
-        if (Accept((int)HLSLToken.Break)) { statement = HLSLTree.AddNode<HLSLBreakStatement>(fileName, line); return Expect(';'); }
-        if (Accept((int)HLSLToken.Continue)) { statement = HLSLTree.AddNode<HLSLContinueStatement>(fileName, line); return Expect(';'); }
+
+        if (Accept((int)HLSLToken.Discard))
+        {
+            statement = HLSLTree.AddNode<HLSLDiscardStatement>(fileName, line);
+            return Expect(';');
+        }
+
+        if (Accept((int)HLSLToken.Break))
+        {
+            statement = HLSLTree.AddNode<HLSLBreakStatement>(fileName, line);
+            return Expect(';');
+        }
+
+        if (Accept((int)HLSLToken.Continue))
+        {
+            statement = HLSLTree.AddNode<HLSLContinueStatement>(fileName, line);
+            return Expect(';');
+        }
+
         if (Accept((int)HLSLToken.Return))
         {
             var ret = HLSLTree.AddNode<HLSLReturnStatement>(fileName, line);
@@ -907,6 +1092,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             exprSt.Expression = expression;
             statement = exprSt;
         }
+
         return Expect(';');
     }
 
@@ -929,6 +1115,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                 if (!ParseExpression(ref arrSize) || !Expect(']')) return false;
                 type.ArraySize = arrSize;
             }
+
             var decl = HLSLTree.AddNode<HLSLDeclaration>(fileName, line);
             decl.Type = type;
             decl.Name = name;
@@ -967,6 +1154,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                 declaration.Assignment = expr;
             }
         }
+
         return true;
     }
 
@@ -975,7 +1163,12 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
         field = HLSLTree.AddNode<HLSLStructField>(FileName, LineNumber);
         if (!ExpectDeclaration(false, field.Type, out var name)) return false;
         field.Name = name;
-        if (Accept(':')) { if (!ExpectIdentifier(out var sem)) return false; field.Semantic = sem; }
+        if (Accept(':'))
+        {
+            if (!ExpectIdentifier(out var sem)) return false;
+            field.Semantic = sem;
+        }
+
         return Expect(';');
     }
 
@@ -997,6 +1190,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             if (!CheckTypeCast(expr2!.ExpressionType, expression.ExpressionType)) return false;
             expression = bin;
         }
+
         return true;
     }
 
@@ -1016,7 +1210,12 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             _ => (HLSLBinaryOp)(-1),
         };
         if ((int)binaryOp == -1) return false;
-        if (_binaryOpPriority[(int)binaryOp] > priority) { _tokenizer.Next(); return true; }
+        if (_binaryOpPriority[(int)binaryOp] > priority)
+        {
+            _tokenizer.Next();
+            return true;
+        }
+
         return false;
     }
 
@@ -1067,9 +1266,13 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                 bin.Expression2 = expr2;
                 if (!GetBinaryOpResultType(binaryOp, expression!.ExpressionType, expr2!.ExpressionType, bin.ExpressionType))
                 {
-                    return _tokenizer.Error($"binary '{GetBinaryOpName(binaryOp)}' : no global operator found which takes types '{GetTypeName(expression.ExpressionType)}' and '{GetTypeName(expr2.ExpressionType)}'");
+                    return _tokenizer.Error(
+                        $"binary '{GetBinaryOpName(binaryOp)}' : no global operator found which takes types '{GetTypeName(expression.ExpressionType)}' and '{GetTypeName(expr2.ExpressionType)}'"
+                    );
                 }
-                bin.ExpressionType.Flags = (expression.ExpressionType.Flags | expr2.ExpressionType.Flags) & (int)HLSLTypeFlags.Const;
+
+                bin.ExpressionType.Flags =
+                    (expression.ExpressionType.Flags | expr2.ExpressionType.Flags) & (int)HLSLTypeFlags.Const;
                 expression = bin;
             }
             else if (ConditionalOpPriority > priority && Accept('?'))
@@ -1077,23 +1280,35 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                 var cond = HLSLTree.AddNode<HLSLConditionalExpression>(fileName, line);
                 cond.Condition = expression;
                 HLSLExpression? e1 = null, e2 = null;
-                if (!ParseBinaryExpression(ConditionalOpPriority, ref e1) || !Expect(':') || !ParseBinaryExpression(ConditionalOpPriority, ref e2)) return false;
-                if (GetTypeCastRank(_tree, e1!.ExpressionType, e2!.ExpressionType) == -1) return _tokenizer.Error("':' no possible conversion");
-                cond.TrueExpression = e1; cond.FalseExpression = e2; cond.ExpressionType = e1.ExpressionType;
+                if (!ParseBinaryExpression(ConditionalOpPriority, ref e1)
+                    || !Expect(':')
+                    || !ParseBinaryExpression(ConditionalOpPriority, ref e2)) return false;
+                if (GetTypeCastRank(_tree, e1!.ExpressionType, e2!.ExpressionType) == -1)
+                    return _tokenizer.Error("':' no possible conversion");
+                cond.TrueExpression = e1;
+                cond.FalseExpression = e2;
+                cond.ExpressionType = e1.ExpressionType;
                 expression = cond;
             }
             else break;
 
-            if (needsEndParen) { if (!Expect(')')) return false; needsEndParen = false; }
+            if (needsEndParen)
+            {
+                if (!Expect(')')) return false;
+                needsEndParen = false;
+            }
         }
+
         return !needsEndParen || Expect(')');
     }
 
     private bool ParsePartialConstructor(ref HLSLExpression? expression, HLSLBaseType type, string? typeName)
     {
-        var fileName = FileName; var line = LineNumber;
+        var fileName = FileName;
+        var line = LineNumber;
         var ctor = HLSLTree.AddNode<HLSLConstructorExpression>(fileName, line);
-        ctor.Type.BaseType = type; ctor.Type.TypeName = typeName;
+        ctor.Type.BaseType = type;
+        ctor.Type.TypeName = typeName;
         var numArgs = 0;
         HLSLExpression? args = null;
         if (!ParseExpressionList(')', false, ref args, out numArgs)) return false;
@@ -1106,7 +1321,8 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
 
     private bool ParseTerminalExpression(ref HLSLExpression? expression, ref bool needsEndParen)
     {
-        var fileName = FileName; var line = LineNumber;
+        var fileName = FileName;
+        var line = LineNumber;
         needsEndParen = false;
 
         if (AcceptUnaryOperator(true, out var unaryOp))
@@ -1122,6 +1338,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                 un.ExpressionType.Flags = inner!.ExpressionType.Flags & (int)HLSLTypeFlags.Const;
             }
             else un.ExpressionType = inner!.ExpressionType;
+
             expression = un;
             return true;
         }
@@ -1131,7 +1348,12 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             HLSLType castType = new();
             if (AcceptType(false, castType))
             {
-                if (Accept('(')) { needsEndParen = true; return ParsePartialConstructor(ref expression, castType.BaseType, castType.TypeName); }
+                if (Accept('('))
+                {
+                    needsEndParen = true;
+                    return ParsePartialConstructor(ref expression, castType.BaseType, castType.TypeName);
+                }
+
                 var cast = HLSLTree.AddNode<HLSLCastingExpression>(fileName, line);
                 cast.Type = castType;
                 cast.ExpressionType = castType;
@@ -1141,6 +1363,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                 expression = cast;
                 return true;
             }
+
             if (!ParseExpression(ref expression) || !Expect(')')) return false;
         }
         else
@@ -1148,37 +1371,51 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             if (AcceptFloat(out var fv))
             {
                 var lit = HLSLTree.AddNode<HLSLLiteralExpression>(fileName, line);
-                lit.Type = HLSLBaseType.Float; lit.FValue = fv;
+                lit.Type = HLSLBaseType.Float;
+                lit.FValue = fv;
                 lit.ExpressionType = new HLSLType(HLSLBaseType.Float) { Flags = (int)HLSLTypeFlags.Const };
-                expression = lit; return true;
+                expression = lit;
+                return true;
             }
+
             if (AcceptHalf(out var hv))
             {
                 var lit = HLSLTree.AddNode<HLSLLiteralExpression>(fileName, line);
-                lit.Type = HLSLBaseType.Half; lit.FValue = hv;
+                lit.Type = HLSLBaseType.Half;
+                lit.FValue = hv;
                 lit.ExpressionType = new HLSLType(HLSLBaseType.Half) { Flags = (int)HLSLTypeFlags.Const };
-                expression = lit; return true;
+                expression = lit;
+                return true;
             }
+
             if (AcceptInt(out var iv))
             {
                 var lit = HLSLTree.AddNode<HLSLLiteralExpression>(fileName, line);
-                lit.Type = HLSLBaseType.Int; lit.IValue = iv;
+                lit.Type = HLSLBaseType.Int;
+                lit.IValue = iv;
                 lit.ExpressionType = new HLSLType(HLSLBaseType.Int) { Flags = (int)HLSLTypeFlags.Const };
-                expression = lit; return true;
+                expression = lit;
+                return true;
             }
+
             if (Accept((int)HLSLToken.True))
             {
                 var lit = HLSLTree.AddNode<HLSLLiteralExpression>(fileName, line);
-                lit.Type = HLSLBaseType.Bool; lit.BValue = true;
+                lit.Type = HLSLBaseType.Bool;
+                lit.BValue = true;
                 lit.ExpressionType = new HLSLType(HLSLBaseType.Bool) { Flags = (int)HLSLTypeFlags.Const };
-                expression = lit; return true;
+                expression = lit;
+                return true;
             }
+
             if (Accept((int)HLSLToken.False))
             {
                 var lit = HLSLTree.AddNode<HLSLLiteralExpression>(fileName, line);
-                lit.Type = HLSLBaseType.Bool; lit.BValue = false;
+                lit.Type = HLSLBaseType.Bool;
+                lit.BValue = false;
                 lit.ExpressionType = new HLSLType(HLSLBaseType.Bool) { Flags = (int)HLSLTypeFlags.Const };
-                expression = lit; return true;
+                expression = lit;
+                return true;
             }
 
             HLSLType ctorType = new();
@@ -1194,17 +1431,23 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                 ident.Name = idName;
 
                 var identType = FindVariable(ident.Name, out var isGlobal);
-                if (identType != null) { ident.ExpressionType = identType; ident.Global = isGlobal; }
+                if (identType != null)
+                {
+                    ident.ExpressionType = identType;
+                    ident.Global = isGlobal;
+                }
                 else if (GetIsFunction(ident.Name)) ident.Global = true;
                 else if (_allowUndeclaredIdentifiers)
                 {
                     var lit = HLSLTree.AddNode<HLSLLiteralExpression>(fileName, line);
-                    lit.BValue = false; lit.Type = HLSLBaseType.Bool;
+                    lit.BValue = false;
+                    lit.Type = HLSLBaseType.Bool;
                     lit.ExpressionType = new HLSLType(HLSLBaseType.Bool) { Flags = (int)HLSLTypeFlags.Const };
                     expression = lit;
                     return true;
                 }
                 else return _tokenizer.Error($"Undeclared identifier '{ident.Name}'");
+
                 expression = ident;
             }
         }
@@ -1216,9 +1459,13 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             while (AcceptUnaryOperator(false, out var postOp))
             {
                 var un = HLSLTree.AddNode<HLSLUnaryExpression>(fileName, line);
-                un.UnaryOp = postOp; un.Expression = expression; un.ExpressionType = expression!.ExpressionType;
-                expression = un; done = false;
+                un.UnaryOp = postOp;
+                un.Expression = expression;
+                un.ExpressionType = expression!.ExpressionType;
+                expression = un;
+                done = false;
             }
+
             while (Accept('.'))
             {
                 var ma = HLSLTree.AddNode<HLSLMemberAccess>(fileName, line);
@@ -1226,8 +1473,10 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                 if (!ExpectIdentifier(out var fld)) return false;
                 ma.Field = fld;
                 if (!GetMemberType(expression!.ExpressionType, ma)) return _tokenizer.Error($"Couldn't access '{fld}'");
-                expression = ma; done = false;
+                expression = ma;
+                done = false;
             }
+
             while (Accept('['))
             {
                 var aa = HLSLTree.AddNode<HLSLArrayAccess>(fileName, line);
@@ -1238,7 +1487,8 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                 if (expression!.ExpressionType.Array)
                 {
                     aa.ExpressionType = expression.ExpressionType.Clone();
-                    aa.ExpressionType.Array = false; aa.ExpressionType.ArraySize = null;
+                    aa.ExpressionType.Array = false;
+                    aa.ExpressionType.ArraySize = null;
                 }
                 else
                 {
@@ -1254,24 +1504,32 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                         HLSLBaseType.Uint2 or HLSLBaseType.Uint3 or HLSLBaseType.Uint4 => HLSLBaseType.Uint,
                         _ => HLSLBaseType.Unknown,
                     };
-                    if (aa.ExpressionType.BaseType == HLSLBaseType.Unknown) return _tokenizer.Error("array, matrix, vector, or indexable object type expected");
+                    if (aa.ExpressionType.BaseType == HLSLBaseType.Unknown)
+                        return _tokenizer.Error("array, matrix, vector, or indexable object type expected");
                 }
-                expression = aa; done = false;
+
+                expression = aa;
+                done = false;
             }
+
             if (Accept('('))
             {
                 var fc = HLSLTree.AddNode<HLSLFunctionCall>(fileName, line);
                 HLSLExpression? args = null;
                 if (!ParseExpressionList(')', false, ref args, out fc.NumArguments)) return false;
                 fc.Argument = args;
-                if (expression!.NodeType != HLSLNodeType.IdentifierExpression) return _tokenizer.Error("Expected function identifier");
+                if (expression!.NodeType != HLSLNodeType.IdentifierExpression)
+                    return _tokenizer.Error("Expected function identifier");
                 var identExpr = (HLSLIdentifierExpression)expression;
                 var fn = MatchFunctionCall(fc, identExpr.Name!);
                 if (fn == null) return false;
-                fc.Function = fn; fc.ExpressionType = fn.ReturnType;
-                expression = fc; done = false;
+                fc.Function = fn;
+                fc.ExpressionType = fn.ReturnType;
+                expression = fc;
+                done = false;
             }
         }
+
         return true;
     }
 
@@ -1288,14 +1546,17 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             if (!ParseExpression(ref expr)) return false;
             if (first == null) first = expr;
             else last!.NextExpression = expr;
-            last = expr; numExpressions++;
+            last = expr;
+            numExpressions++;
         }
+
         return true;
     }
 
     private bool ParseArgumentList(HLSLFunction function)
     {
-        var fileName = FileName; var line = LineNumber;
+        var fileName = FileName;
+        var line = LineNumber;
         HLSLArgument? lastArg = null;
         function.NumArguments = 0;
         function.NumOutputArguments = 0;
@@ -1330,6 +1591,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             function.NumArguments++;
             if (arg.Modifier is HLSLArgumentModifier.Out or HLSLArgumentModifier.Inout) function.NumOutputArguments++;
         }
+
         return true;
     }
 
@@ -1338,7 +1600,8 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
     private bool ParseSamplerState(ref HLSLExpression? expression)
     {
         if (!Expect((int)HLSLToken.SamplerState)) return false;
-        var fileName = FileName; var line = LineNumber;
+        var fileName = FileName;
+        var line = LineNumber;
         var ss = HLSLTree.AddNode<HLSLSamplerState>(fileName, line);
         if (!Expect('{')) return false;
         HLSLStateAssignment? last = null;
@@ -1347,9 +1610,12 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             if (CheckForUnexpectedEndOfStream('}')) return false;
             HLSLStateAssignment? sa = null;
             if (!ParseStateAssignment(ref sa, true, false)) return false;
-            if (last == null) ss.StateAssignments = sa; else last.NextStateAssignment = sa;
-            last = sa; ss.NumStateAssignments++;
+            if (last == null) ss.StateAssignments = sa;
+            else last.NextStateAssignment = sa;
+            last = sa;
+            ss.NumStateAssignments++;
         }
+
         expression = ss;
         return true;
     }
@@ -1367,9 +1633,12 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             if (CheckForUnexpectedEndOfStream('}')) return false;
             HLSLPass? pass = null;
             if (!ParsePass(ref pass)) return false;
-            if (lastPass == null) tech.Passes = pass; else lastPass.NextPass = pass;
-            lastPass = pass; tech.NumPasses++;
+            if (lastPass == null) tech.Passes = pass;
+            else lastPass.NextPass = pass;
+            lastPass = pass;
+            tech.NumPasses++;
         }
+
         statement = tech;
         return true;
     }
@@ -1379,7 +1648,8 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
         if (!Accept((int)HLSLToken.Pass)) return false;
         AcceptIdentifier(out var passName);
         if (!Expect('{')) return false;
-        var fileName = FileName; var line = LineNumber;
+        var fileName = FileName;
+        var line = LineNumber;
         pass = HLSLTree.AddNode<HLSLPass>(fileName, line);
         pass.Name = passName;
         HLSLStateAssignment? last = null;
@@ -1388,9 +1658,12 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             if (CheckForUnexpectedEndOfStream('}')) return false;
             HLSLStateAssignment? sa = null;
             if (!ParseStateAssignment(ref sa, false, false)) return false;
-            if (last == null) pass.StateAssignments = sa; else last.NextStateAssignment = sa;
-            last = sa; pass.NumStateAssignments++;
+            if (last == null) pass.StateAssignments = sa;
+            else last.NextStateAssignment = sa;
+            last = sa;
+            pass.NumStateAssignments++;
         }
+
         return true;
     }
 
@@ -1407,9 +1680,12 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             if (CheckForUnexpectedEndOfStream('}')) return false;
             HLSLStateAssignment? sa = null;
             if (!ParseStateAssignment(ref sa, false, true)) return false;
-            if (last == null) pipeline.StateAssignments = sa; else last.NextStateAssignment = sa;
-            last = sa; pipeline.NumStateAssignments++;
+            if (last == null) pipeline.StateAssignments = sa;
+            else last.NextStateAssignment = sa;
+            last = sa;
+            pipeline.NumStateAssignments++;
         }
+
         statement = pipeline;
         return true;
     }
@@ -1431,7 +1707,8 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
 
     private bool ParseStateAssignment(ref HLSLStateAssignment? stateAssignment, bool isSamplerState, bool isPipeline)
     {
-        var fileName = FileName; var line = LineNumber;
+        var fileName = FileName;
+        var line = LineNumber;
         stateAssignment = HLSLTree.AddNode<HLSLStateAssignment>(fileName, line);
         if (!ParseStateName(isSamplerState, isPipeline, out var stateName, out var state)) return false;
         stateAssignment.StateName = state.Name;
@@ -1443,7 +1720,8 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
 
     private bool ParseStateName(bool isSamplerState, bool isPipeline, out string name, out EffectState state)
     {
-        name = ""; state = default;
+        name = "";
+        state = default;
         // State names may coincide with reserved words (e.g. "Texture" is both a keyword and a sampler state)
         ReadOnlySpan<char> ident;
         if (_tokenizer.Token == (int)HLSLToken.Identifier)
@@ -1452,8 +1730,14 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             ident = "texture";
         else return _tokenizer.Error("Syntax error: expected identifier");
         var found = GetEffectState(ident, isSamplerState, isPipeline);
-        if (found == null) { _tokenizer.Error($"Syntax error: unexpected identifier '{ident}'"); return false; }
-        state = found.Value; name = state.Name;
+        if (found == null)
+        {
+            _tokenizer.Error($"Syntax error: unexpected identifier '{ident}'");
+            return false;
+        }
+
+        state = found.Value;
+        name = state.Name;
         _tokenizer.Next();
         return true;
     }
@@ -1471,19 +1755,70 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             while (_tokenizer.Token != ';') _tokenizer.Next();
             return true;
         }
-        if (isInteger) { if (!AcceptInt(out var v)) { _tokenizer.Error("Expected integer"); return false; } sa.IValue = v; return true; }
-        if (isFloat) { if (!AcceptFloat(out var v)) { _tokenizer.Error("Expected float"); return false; } sa.FValue = v; return true; }
+
+        if (isInteger)
+        {
+            if (!AcceptInt(out var v))
+            {
+                _tokenizer.Error("Expected integer");
+                return false;
+            }
+
+            sa.IValue = v;
+            return true;
+        }
+
+        if (isFloat)
+        {
+            if (!AcceptFloat(out var v))
+            {
+                _tokenizer.Error("Expected float");
+                return false;
+            }
+
+            sa.FValue = v;
+            return true;
+        }
+
         if (isBool)
         {
             var sv = GetStateValue(_tokenizer.Identifier, state.Values);
-            if (sv != null) { sa.IValue = sv.Value.Value; _tokenizer.Next(); return true; }
-            if (AcceptInt(out var v)) { sa.IValue = v != 0 ? 1 : 0; return true; }
-            _tokenizer.Error("Expected bool"); return false;
+            if (sv != null)
+            {
+                sa.IValue = sv.Value.Value;
+                _tokenizer.Next();
+                return true;
+            }
+
+            if (AcceptInt(out var v))
+            {
+                sa.IValue = v != 0 ? 1 : 0;
+                return true;
+            }
+
+            _tokenizer.Error("Expected bool");
+            return false;
         }
-        if (isColorMask) { if (!ParseColorMask(out var mask)) { _tokenizer.Error("Expected color mask"); return false; } sa.IValue = mask; return true; }
+
+        if (isColorMask)
+        {
+            if (!ParseColorMask(out var mask))
+            {
+                _tokenizer.Error("Expected color mask");
+                return false;
+            }
+
+            sa.IValue = mask;
+            return true;
+        }
 
         var stateVal = GetStateValue(_tokenizer.Identifier, state.Values);
-        if (stateVal == null) { _tokenizer.Error($"Unexpected value '{_tokenizer.Identifier}' for state '{state.Name}'"); return false; }
+        if (stateVal == null)
+        {
+            _tokenizer.Error($"Unexpected value '{_tokenizer.Identifier}' for state '{state.Name}'");
+            return false;
+        }
+
         sa.IValue = stateVal.Value.Value;
         _tokenizer.Next();
         return true;
@@ -1497,17 +1832,27 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             if (_tokenizer.Token == (int)HLSLToken.IntLiteral) mask |= _tokenizer.Int;
             else if (_tokenizer.Token == (int)HLSLToken.Identifier)
             {
-                foreach (var sv in ColorMaskValues) { if (sv.Name != null && sv.Name.Equals(_tokenizer.Identifier, StringComparison.OrdinalIgnoreCase)) { mask |= sv.Value; break; } }
+                foreach (var sv in ColorMaskValues)
+                {
+                    if (sv.Name != null && sv.Name.Equals(_tokenizer.Identifier, StringComparison.OrdinalIgnoreCase))
+                    {
+                        mask |= sv.Value;
+                        break;
+                    }
+                }
             }
             else return false;
+
             _tokenizer.Next();
         } while (Accept('|'));
+
         return true;
     }
 
     private bool ParseAttributeList(ref HLSLAttribute? firstAttribute)
     {
-        var fileName = FileName; var line = LineNumber;
+        var fileName = FileName;
+        var line = LineNumber;
         var last = firstAttribute;
         do
         {
@@ -1521,6 +1866,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             else last!.NextAttribute = attr;
             last = attr;
         } while (Accept(','));
+
         return true;
     }
 
@@ -1540,7 +1886,11 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
     private void EndScope()
     {
         var i = _variables.Count - 1;
-        while (_variables[i].Name != null) { i--; }
+        while (_variables[i].Name != null)
+        {
+            i--;
+        }
+
         _variables.RemoveRange(i, _variables.Count - i);
     }
 
@@ -1555,14 +1905,21 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
         global = false;
         for (var i = _variables.Count - 1; i >= 0; i--)
         {
-            if (_variables[i].Name == name) { global = i < _numGlobals; return _variables[i].Type; }
+            if (_variables[i].Name == name)
+            {
+                global = i < _numGlobals;
+                return _variables[i].Type;
+            }
         }
+
         return null;
     }
 
     private HLSLFunction? FindFunction(string name)
     {
-        foreach (var fn in _functions) if (fn.Name == name) return fn;
+        foreach (var fn in _functions)
+            if (fn.Name == name)
+                return fn;
         return null;
     }
 
@@ -1570,22 +1927,31 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
     {
         foreach (var fn in _functions)
         {
-            if (fn.Name == fun.Name && AreTypesEqual(fn.ReturnType, fun.ReturnType) && AreArgumentListsEqual(fn.Argument, fun.Argument))
+            if (fn.Name == fun.Name
+                && AreTypesEqual(fn.ReturnType, fun.ReturnType)
+                && AreArgumentListsEqual(fn.Argument, fun.Argument))
                 return fn;
         }
+
         return null;
     }
 
     private HLSLStruct? FindUserDefinedType(string name)
     {
-        foreach (var t in _userTypes) if (t.Name == name) return t;
+        foreach (var t in _userTypes)
+            if (t.Name == name)
+                return t;
         return null;
     }
 
     private bool GetIsFunction(string name)
     {
-        foreach (var fn in _functions) if (fn.Name == name) return true;
-        foreach (var intr in _intrinsics) if (intr.Function.Name == name) return true;
+        foreach (var fn in _functions)
+            if (fn.Name == name)
+                return true;
+        foreach (var intr in _intrinsics)
+            if (intr.Function.Name == name)
+                return true;
         return false;
     }
 
@@ -1596,6 +1962,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             _tokenizer.Error($"Unexpected end of file while looking for '{HLSLTokenizer.GetTokenName(endToken)}'");
             return true;
         }
+
         return false;
     }
 
@@ -1606,13 +1973,16 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             _tokenizer.Error($"Cannot implicitly convert from '{GetTypeName(srcType)}' to '{GetTypeName(dstType)}'");
             return false;
         }
+
         return true;
     }
 
     // ── Type ranking / matching ─────────────────────────────────────────────
 
     private static string GetTypeName(HLSLType type) =>
-        type.BaseType == HLSLBaseType.UserDefined ? type.TypeName ?? "user defined" : _baseTypeDescriptions[(int)type.BaseType].TypeName;
+        type.BaseType == HLSLBaseType.UserDefined
+            ? type.TypeName ?? "user defined"
+            : _baseTypeDescriptions[(int)type.BaseType].TypeName;
 
     private static string GetBinaryOpName(HLSLBinaryOp op) => op switch
     {
@@ -1635,6 +2005,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             tree.GetExpressionValue(dstType.ArraySize, out var dstSize);
             if (srcSize != dstSize) return -1;
         }
+
         if (srcType.BaseType == HLSLBaseType.UserDefined && dstType.BaseType == HLSLBaseType.UserDefined)
             return srcType.TypeName == dstType.TypeName ? 0 : -1;
         if (srcType.BaseType == dstType.BaseType)
@@ -1649,9 +2020,12 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
 
         var result = _numberTypeRank[(int)srcDesc.NumericType, (int)dstDesc.NumericType] << 1;
         if (srcDesc.NumDimensions == 0 && dstDesc.NumDimensions > 0) result |= 1;
-        else if ((srcDesc.NumDimensions == dstDesc.NumDimensions && (srcDesc.NumComponents > dstDesc.NumComponents || srcDesc.Height > dstDesc.Height)) ||
-                 (srcDesc.NumDimensions > 0 && dstDesc.NumDimensions == 0)) result |= (1 << 4);
-        else if (srcDesc.NumDimensions != dstDesc.NumDimensions || srcDesc.NumComponents != dstDesc.NumComponents || srcDesc.Height != dstDesc.Height) return -1;
+        else if ((srcDesc.NumDimensions == dstDesc.NumDimensions
+                  && (srcDesc.NumComponents > dstDesc.NumComponents || srcDesc.Height > dstDesc.Height))
+                 || (srcDesc.NumDimensions > 0 && dstDesc.NumDimensions == 0)) result |= (1 << 4);
+        else if (srcDesc.NumDimensions != dstDesc.NumDimensions
+                 || srcDesc.NumComponents != dstDesc.NumComponents
+                 || srcDesc.Height != dstDesc.Height) return -1;
         return result;
     }
 
@@ -1667,25 +2041,41 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
         while (a != null && b != null)
         {
             if (!AreTypesEqual(a.Type, b.Type) || a.Modifier != b.Modifier) return false;
-            a = a.NextArgument; b = b.NextArgument;
+            a = a.NextArgument;
+            b = b.NextArgument;
         }
+
         return a == null && b == null;
     }
 
     private static bool GetBinaryOpResultType(HLSLBinaryOp op, HLSLType type1, HLSLType type2, HLSLType result)
     {
-        if (type1.BaseType < HLSLBaseType_Ext.FirstNumeric || type1.BaseType > HLSLBaseType_Ext.LastNumeric || type1.Array ||
-            type2.BaseType < HLSLBaseType_Ext.FirstNumeric || type2.BaseType > HLSLBaseType_Ext.LastNumeric || type2.Array)
+        if (type1.BaseType < HLSLBaseType_Ext.FirstNumeric
+            || type1.BaseType > HLSLBaseType_Ext.LastNumeric
+            || type1.Array
+            || type2.BaseType < HLSLBaseType_Ext.FirstNumeric
+            || type2.BaseType > HLSLBaseType_Ext.LastNumeric
+            || type2.Array)
             return false;
 
         if (op is HLSLBinaryOp.BitAnd or HLSLBinaryOp.BitOr or HLSLBinaryOp.BitXor)
-            if (type1.BaseType < HLSLBaseType_Ext.FirstInteger || type1.BaseType > HLSLBaseType_Ext.LastInteger) return false;
+            if (type1.BaseType < HLSLBaseType_Ext.FirstInteger || type1.BaseType > HLSLBaseType_Ext.LastInteger)
+                return false;
 
         switch (op)
         {
-            case HLSLBinaryOp.And: case HLSLBinaryOp.Or: case HLSLBinaryOp.Less: case HLSLBinaryOp.Greater:
-            case HLSLBinaryOp.LessEqual: case HLSLBinaryOp.GreaterEqual: case HLSLBinaryOp.Equal: case HLSLBinaryOp.NotEqual:
-                var numComp = Math.Max(_baseTypeDescriptions[(int)type1.BaseType].NumComponents, _baseTypeDescriptions[(int)type2.BaseType].NumComponents);
+            case HLSLBinaryOp.And:
+            case HLSLBinaryOp.Or:
+            case HLSLBinaryOp.Less:
+            case HLSLBinaryOp.Greater:
+            case HLSLBinaryOp.LessEqual:
+            case HLSLBinaryOp.GreaterEqual:
+            case HLSLBinaryOp.Equal:
+            case HLSLBinaryOp.NotEqual:
+                var numComp = Math.Max(
+                    _baseTypeDescriptions[(int)type1.BaseType].NumComponents,
+                    _baseTypeDescriptions[(int)type2.BaseType].NumComponents
+                );
                 result.BaseType = (HLSLBaseType)((int)HLSLBaseType.Bool + numComp - 1);
                 break;
             default:
@@ -1693,7 +2083,10 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                 result.BaseType = type1.BaseType >= type2.BaseType ? type1.BaseType : type2.BaseType;
                 break;
         }
-        result.TypeName = null; result.Array = false; result.ArraySize = null;
+
+        result.TypeName = null;
+        result.Array = false;
+        result.ArraySize = null;
         result.Flags = (type1.Flags & type2.Flags) & (int)HLSLTypeFlags.Const;
         return result.BaseType != HLSLBaseType.Unknown;
     }
@@ -1701,19 +2094,23 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
     private static bool GetFunctionCallCastRanks(HLSLTree tree, HLSLFunctionCall call, HLSLFunction function, int[] rankBuffer)
     {
         if (function.NumArguments < call.NumArguments) return false;
-        var expr = call.Argument; var arg = function.Argument;
+        var expr = call.Argument;
+        var arg = function.Argument;
         for (var i = 0; i < call.NumArguments; i++)
         {
             var rank = GetTypeCastRank(tree, expr!.ExpressionType, arg!.Type);
             if (rank == -1) return false;
             rankBuffer[i] = rank;
-            arg = arg.NextArgument; expr = expr.NextExpression;
+            arg = arg.NextArgument;
+            expr = expr.NextExpression;
         }
+
         for (var i = call.NumArguments; i < function.NumArguments; i++)
         {
             if (arg?.DefaultValue == null) return false;
             arg = arg?.NextArgument;
         }
+
         return true;
     }
 
@@ -1723,24 +2120,50 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
         var numMatched = 0;
         var nameMatches = false;
 
-        foreach (var fn in _functions) MatchFunctionCall_TryMatch(call, fn, fn.Name == name, ref nameMatches, ref matched, ref numMatched);
-        foreach (var intr in _intrinsics) MatchFunctionCall_TryMatch(call, intr.Function, intr.Function.Name == name, ref nameMatches, ref matched, ref numMatched);
+        foreach (var fn in _functions)
+            MatchFunctionCall_TryMatch(call, fn, fn.Name == name, ref nameMatches, ref matched, ref numMatched);
+        foreach (var intr in _intrinsics)
+            MatchFunctionCall_TryMatch(
+                call,
+                intr.Function,
+                intr.Function.Name == name,
+                ref nameMatches,
+                ref matched,
+                ref numMatched
+            );
 
-        if (matched != null && numMatched > 1) { _tokenizer.Error($"'{name}' {numMatched} overloads have similar conversions"); return null; }
+        if (matched != null && numMatched > 1)
+        {
+            _tokenizer.Error($"'{name}' {numMatched} overloads have similar conversions");
+            return null;
+        }
+
         if (matched == null)
         {
             if (nameMatches) _tokenizer.Error($"'{name}' no overloaded function matched all arguments");
             else _tokenizer.Error($"Undeclared identifier '{name}'");
         }
+
         return matched;
     }
 
-    private void MatchFunctionCall_TryMatch(HLSLFunctionCall call, HLSLFunction fn, bool nameEqual, ref bool nameMatches, ref HLSLFunction? matched, ref int numMatched)
+    private void MatchFunctionCall_TryMatch(
+        HLSLFunctionCall call,
+        HLSLFunction fn,
+        bool nameEqual,
+        ref bool nameMatches,
+        ref HLSLFunction? matched,
+        ref int numMatched
+    )
     {
         if (!nameEqual) return;
         nameMatches = true;
         var result = CompareFunctions(call, fn, matched);
-        if (result == CompareFunctionsResult.Function1Better) { matched = fn; numMatched = 1; }
+        if (result == CompareFunctionsResult.Function1Better)
+        {
+            matched = fn;
+            numMatched = 1;
+        }
         else if (result == CompareFunctionsResult.FunctionsEqual) numMatched++;
     }
 
@@ -1749,14 +2172,23 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
         int[] r1 = new int[call.NumArguments], r2 = new int[call.NumArguments];
         var v1 = GetFunctionCallCastRanks(_tree, call, fn1, r1);
         var v2 = fn2 != null && GetFunctionCallCastRanks(_tree, call, fn2, r2);
-        if (!(v1 && v2)) { if (v1) return CompareFunctionsResult.Function1Better; if (v2) return CompareFunctionsResult.Function2Better; return CompareFunctionsResult.FunctionsEqual; }
-        Array.Sort(r1); Array.Reverse(r1);
-        Array.Sort(r2); Array.Reverse(r2);
+        if (!(v1 && v2))
+        {
+            if (v1) return CompareFunctionsResult.Function1Better;
+            if (v2) return CompareFunctionsResult.Function2Better;
+            return CompareFunctionsResult.FunctionsEqual;
+        }
+
+        Array.Sort(r1);
+        Array.Reverse(r1);
+        Array.Sort(r2);
+        Array.Reverse(r2);
         for (var i = 0; i < call.NumArguments; i++)
         {
             if (r1[i] < r2[i]) return CompareFunctionsResult.Function1Better;
             if (r2[i] < r1[i]) return CompareFunctionsResult.Function2Better;
         }
+
         return CompareFunctionsResult.FunctionsEqual;
     }
 
@@ -1769,7 +2201,17 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             var structure = FindUserDefinedType(objectType.TypeName!);
             if (structure == null) return false;
             var f = structure.Field;
-            while (f != null) { if (f.Name == field) { memberAccess.ExpressionType = f.Type; return true; } f = f.NextField; }
+            while (f != null)
+            {
+                if (f.Name == field)
+                {
+                    memberAccess.ExpressionType = f.Type;
+                    return true;
+                }
+
+                f = f.NextField;
+            }
+
             return false;
         }
 
@@ -1786,6 +2228,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
                     _tokenizer.Error($"Invalid swizzle '{field}'");
                     return false;
                 }
+
                 swizzleLength++;
             }
         }
@@ -1796,14 +2239,22 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             {
                 n++;
                 var b = 1;
-                if (n < field.Length && field[n] == 'm') { b = 0; n++; }
+                if (n < field.Length && field[n] == 'm')
+                {
+                    b = 0;
+                    n++;
+                }
+
                 if (n + 1 >= field.Length || !char.IsDigit(field[n]) || !char.IsDigit(field[n + 1])) return false;
                 int r = (field[n] - '0') - b, c1 = (field[n + 1] - '0') - b;
                 if (r >= desc.Height || c1 >= desc.NumComponents) return false;
-                swizzleLength++; n += 2;
+                swizzleLength++;
+                n += 2;
             }
+
             if (n != field.Length) return false;
         }
+
         if (swizzleLength is 0 or > 4) return _tokenizer.Error($"Invalid swizzle '{field}'");
 
         ReadOnlySpan<HLSLBaseType> types = desc.NumericType switch
@@ -1824,7 +2275,8 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
     {
         var states = isPipeline ? PipelineStates : isSamplerState ? SamplerStates : EffectStates;
         foreach (var s in states)
-            if (s.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) return s;
+            if (s.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                return s;
         return null;
     }
 
@@ -1835,6 +2287,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
             if (v.Name == null) break;
             if (v.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) return v;
         }
+
         return null;
     }
 }

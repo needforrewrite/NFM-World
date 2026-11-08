@@ -6,6 +6,7 @@
 // Kept apart from the mapping table (D3D11Mapping.cs) and from every resource type because all three
 // layers need these, and because the two things in here are each a trap worth having exactly one
 // copy of.
+
 using System.Runtime.InteropServices;
 using System.Text;
 using TerraFX.Interop.Windows;

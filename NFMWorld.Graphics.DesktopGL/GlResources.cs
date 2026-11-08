@@ -103,14 +103,17 @@ internal sealed class GlBuffer : IBuffer
         if (Usage != BufferUsage.Dynamic)
         {
             throw new NotSupportedException(
-                $"This buffer was created with {nameof(BufferUsage)}.{Usage}; only " +
-                $"{nameof(BufferUsage)}.{nameof(BufferUsage.Dynamic)} buffers can be updated after creation.");
+                $"This buffer was created with {nameof(BufferUsage)}.{Usage}; only "
+                + $"{nameof(BufferUsage)}.{nameof(BufferUsage.Dynamic)} buffers can be updated after creation."
+            );
         }
 
         if (offsetBytes < 0 || offsetBytes + data.Length > SizeInBytes)
         {
-            throw new ArgumentOutOfRangeException(nameof(data),
-                $"{data.Length} bytes at offset {offsetBytes} overruns the {SizeInBytes}-byte buffer.");
+            throw new ArgumentOutOfRangeException(
+                nameof(data),
+                $"{data.Length} bytes at offset {offsetBytes} overruns the {SizeInBytes}-byte buffer."
+            );
         }
 
         data.CopyTo(_mirror.AsSpan(offsetBytes));
@@ -189,9 +192,17 @@ internal sealed class GlTexture : ITexture
         var levels = desc.MipMapped ? MipLevels(desc.Width, desc.Height) : 1;
         // A texture with a mip chain is filled by GenerateMips once level 0 is present; allocating
         // and uploading level 0 only is what makes that possible.
-        _gl.TexImage2D(TextureTarget.Texture2D, 0, desc.Format.ToInternalFormat(),
-            (uint)desc.Width, (uint)desc.Height, 0,
-            desc.Format.ToUploadFormat(), desc.Format.ToUploadType(), initialData);
+        _gl.TexImage2D(
+            TextureTarget.Texture2D,
+            0,
+            desc.Format.ToInternalFormat(),
+            (uint)desc.Width,
+            (uint)desc.Height,
+            0,
+            desc.Format.ToUploadFormat(),
+            desc.Format.ToUploadType(),
+            initialData
+        );
 
         // The remaining levels are allocated empty so the texture is mip-complete: a sampler set to
         // a mipmapping min filter reads an incomplete texture as transparent black, which is the
@@ -202,8 +213,17 @@ internal sealed class GlTexture : ITexture
             {
                 var w = Math.Max(1, desc.Width >> level);
                 var h = Math.Max(1, desc.Height >> level);
-                _gl.TexImage2D(TextureTarget.Texture2D, level, desc.Format.ToInternalFormat(),
-                    (uint)w, (uint)h, 0, desc.Format.ToUploadFormat(), desc.Format.ToUploadType(), ReadOnlySpan<byte>.Empty);
+                _gl.TexImage2D(
+                    TextureTarget.Texture2D,
+                    level,
+                    desc.Format.ToInternalFormat(),
+                    (uint)w,
+                    (uint)h,
+                    0,
+                    desc.Format.ToUploadFormat(),
+                    desc.Format.ToUploadType(),
+                    ReadOnlySpan<byte>.Empty
+                );
             }
         }
 
@@ -224,6 +244,7 @@ internal sealed class GlTexture : ITexture
             height = Math.Max(1, height >> 1);
             levels++;
         }
+
         return levels;
     }
 
@@ -233,14 +254,24 @@ internal sealed class GlTexture : ITexture
         if (MipMapped)
         {
             throw new NotSupportedException(
-                "Updating a mipmapped texture would leave every level past 0 stale, and regenerating " +
-                "the chain on every update is a cost this POC does not take on. Create it single-level.");
+                "Updating a mipmapped texture would leave every level past 0 stale, and regenerating "
+                + "the chain on every update is a cost this POC does not take on. Create it single-level."
+            );
         }
 
         gl.BindTexture(TextureTarget.Texture2D, Handle);
         gl.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
-        gl.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, (uint)width, (uint)height,
-            Format.ToUploadFormat(), Format.ToUploadType(), data);
+        gl.TexSubImage2D(
+            TextureTarget.Texture2D,
+            0,
+            x,
+            y,
+            (uint)width,
+            (uint)height,
+            Format.ToUploadFormat(),
+            Format.ToUploadType(),
+            data
+        );
         gl.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
     }
 
@@ -310,18 +341,38 @@ internal sealed class GlRenderTarget : IRenderTarget
     {
         _gl = gl;
         _deletions = deletions;
-        ColorTexture = new GlTexture(gl, deletions, new TextureDesc(desc.Width, desc.Height, desc.ColorFormat, RenderTargetable: true), default);
+        ColorTexture = new GlTexture(
+            gl,
+            deletions,
+            new TextureDesc(desc.Width, desc.Height, desc.ColorFormat, RenderTargetable: true),
+            default
+        );
         if (desc.HasDepthStencil)
-            DepthStencilTexture = new GlTexture(gl, deletions, new TextureDesc(desc.Width, desc.Height, desc.DepthStencilFormat, RenderTargetable: true), default);
+            DepthStencilTexture = new GlTexture(
+                gl,
+                deletions,
+                new TextureDesc(desc.Width, desc.Height, desc.DepthStencilFormat, RenderTargetable: true),
+                default
+            );
 
         Handle = _gl.GenFramebuffer();
         _gl.BindFramebuffer(FramebufferTarget.Framebuffer, Handle);
 
-        _gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0,
-            TextureTarget.Texture2D, ColorTexture.Handle, 0);
+        _gl.FramebufferTexture2D(
+            FramebufferTarget.Framebuffer,
+            FramebufferAttachment.ColorAttachment0,
+            TextureTarget.Texture2D,
+            ColorTexture.Handle,
+            0
+        );
         if (DepthStencilTexture is not null)
-            _gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthStencilAttachment,
-                TextureTarget.Texture2D, DepthStencilTexture.Handle, 0);
+            _gl.FramebufferTexture2D(
+                FramebufferTarget.Framebuffer,
+                FramebufferAttachment.DepthStencilAttachment,
+                TextureTarget.Texture2D,
+                DepthStencilTexture.Handle,
+                0
+            );
 
         // Checked here rather than at first draw: an FBO that is incomplete fails every draw
         // against it with GL_INVALID_FRAMEBUFFER_OPERATION, which is a state error far from its
@@ -330,8 +381,9 @@ internal sealed class GlRenderTarget : IRenderTarget
         if (status != GLEnum.FramebufferComplete)
         {
             throw new InvalidOperationException(
-                $"Render target {desc.Width}x{desc.Height} ({desc.ColorFormat}" +
-                $"{(desc.HasDepthStencil ? $" + {desc.DepthStencilFormat}" : "")}) is incomplete: {status}.");
+                $"Render target {desc.Width}x{desc.Height} ({desc.ColorFormat}"
+                + $"{(desc.HasDepthStencil ? $" + {desc.DepthStencilFormat}" : "")}) is incomplete: {status}."
+            );
         }
     }
 

@@ -9,11 +9,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\NFMWorld.Multiplayer.Base\NFMWorld.Multiplayer.Base.csproj" />
-      <ProjectReference Include="..\NFMWorld.Server.SharedMemory\NFMWorld.Server.SharedMemory.csproj" />
+        <ProjectReference Include="..\NFMWorld.Multiplayer.Base\NFMWorld.Multiplayer.Base.csproj"/>
+        <ProjectReference Include="..\NFMWorld.Server.SharedMemory\NFMWorld.Server.SharedMemory.csproj"/>
     </ItemGroup>
 
     <!-- Runs the gamemodes server-side too, so it needs them in its own output. -->
-    <Import Project="..\Plugin.Plugins.targets" />
+    <Import Project="..\Plugin.Plugins.targets"/>
 
 </Project>

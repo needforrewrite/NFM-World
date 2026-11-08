@@ -28,9 +28,17 @@ public static class RadarMap
     /// <param name="radarSize">Radar square's side, in screen pixels.</param>
     /// <param name="radarRange">World units from the car to the radar's edge.</param>
     public static RadarMapPlacement Place(
-        float minX, float maxZ, float unitsPerPixel,
-        float clientX, float clientZ, float heading,
-        float radarX, float radarY, float radarSize, float radarRange)
+        float minX,
+        float maxZ,
+        float unitsPerPixel,
+        float clientX,
+        float clientZ,
+        float heading,
+        float radarX,
+        float radarY,
+        float radarSize,
+        float radarRange
+    )
     {
         var sin = MathF.Sin(heading);
         var cos = MathF.Cos(heading);
@@ -41,8 +49,18 @@ public static class RadarMap
         var step = k * unitsPerPixel;
 
         // The image's top-left pixel is (minX, maxZ), so that is the corner the placement starts at.
-        var origin = ToRadar(minX, maxZ, clientX, clientZ, sin, cos,
-            radarX + radarSize * 0.5f, radarY + radarSize * 0.5f, radarSize, radarRange);
+        var origin = ToRadar(
+            minX,
+            maxZ,
+            clientX,
+            clientZ,
+            sin,
+            cos,
+            radarX + radarSize * 0.5f,
+            radarY + radarSize * 0.5f,
+            radarSize,
+            radarRange
+        );
 
         // The image's own axes are +X for u and -Z for v (StageMinimap.Bounds), and the radar
         // screen is the car's frame: right is (cos, sin) and forward is (-sin, cos), drawn upward
@@ -50,7 +68,8 @@ public static class RadarMap
         return new RadarMapPlacement(
             origin,
             new Vector2(step * cos, step * sin),
-            new Vector2(-step * sin, step * cos));
+            new Vector2(-step * sin, step * cos)
+        );
     }
 
     /// <summary>The screen point a pixel of the placed image draws at.</summary>
@@ -67,8 +86,18 @@ public static class RadarMap
         => new(placement.Origin, placement.AxisX * width, placement.AxisY * height);
 
     /// <summary>The blip transform: world XZ to radar pixels, rotated so the car faces up.</summary>
-    public static Vector2 ToRadar(float x, float z, float clientX, float clientZ,
-        float sin, float cos, float centerX, float centerY, float size, float radarRange)
+    public static Vector2 ToRadar(
+        float x,
+        float z,
+        float clientX,
+        float clientZ,
+        float sin,
+        float cos,
+        float centerX,
+        float centerY,
+        float size,
+        float radarRange
+    )
     {
         // Rotate into the car's frame: car right is (cos, sin) and car forward is (-sin, cos).
         // Screen Y grows downward, so forward comes out as a negative Y step and draws up the

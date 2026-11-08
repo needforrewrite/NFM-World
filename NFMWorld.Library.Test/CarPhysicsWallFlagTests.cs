@@ -15,10 +15,11 @@ public class CarPhysicsWallFlagTests
         try
         {
             SentrySdk.Init(options =>
-            {
-                options.Dsn = "https://public@localhost/1";
-                options.TracesSampleRate = 0;
-            });
+                {
+                    options.Dsn = "https://public@localhost/1";
+                    options.TracesSampleRate = 0;
+                }
+            );
         }
         catch (InvalidOperationException)
         {

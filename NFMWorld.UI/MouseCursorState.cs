@@ -9,8 +9,12 @@ public sealed class MouseCursorState
 
     public bool Locked { get; private set; }
 
-    public (bool Visible, Vector2? WarpTo) Update(bool menuVisible, bool windowFocused,
-        Vector2 position, Vector2 viewport)
+    public (bool Visible, Vector2? WarpTo) Update(
+        bool menuVisible,
+        bool windowFocused,
+        Vector2 position,
+        Vector2 viewport
+    )
     {
         Locked = windowFocused && !menuVisible;
         if (!windowFocused) return (true, null);
@@ -22,6 +26,7 @@ public sealed class MouseCursorState
                 _menuPosition = position;
                 _hidden = true;
             }
+
             var center = new Vector2(MathF.Floor(viewport.X / 2), MathF.Floor(viewport.Y / 2));
             return (false, position == center ? null : center);
         }

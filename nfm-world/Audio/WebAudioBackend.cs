@@ -26,16 +26,55 @@ public static partial class WebAudioBackend
     internal static int CreateBuffer(ReadOnlySpan<byte> pcm16, int sampleRate, int channels) => 0;
     internal static int StartBuffer(int buffer, double volume, double rate, bool loop) => 0;
     internal static int StartBufferAt(int buffer, double volume, double rate, bool loop, double offset) => 0;
-    internal static void StopSource(int source) { }
-    internal static void SetSourceVolume(int source, double volume) { }
-    internal static void SetSourceRate(int source, double rate) { }
-    internal static void SetSourcePosition(int source, double x, double y, double z) { }
-    internal static void SetListener(double x, double y, double z, double fx, double fy, double fz, double ux, double uy, double uz) { }
+
+    internal static void StopSource(int source)
+    {
+    }
+
+    internal static void SetSourceVolume(int source, double volume)
+    {
+    }
+
+    internal static void SetSourceRate(int source, double rate)
+    {
+    }
+
+    internal static void SetSourcePosition(int source, double x, double y, double z)
+    {
+    }
+
+    internal static void SetListener(
+        double x,
+        double y,
+        double z,
+        double fx,
+        double fy,
+        double fz,
+        double ux,
+        double uy,
+        double uz
+    )
+    {
+    }
+
     internal static bool IsSourceActive(int source) => false;
-    internal static void SetSourcePaused(int source, bool paused) { }
-    internal static void ReleaseBuffer(int buffer) { }
-    internal static void StopAll() { }
-    public static void SetAllVolumes(float volume) { }
+
+    internal static void SetSourcePaused(int source, bool paused)
+    {
+    }
+
+    internal static void ReleaseBuffer(int buffer)
+    {
+    }
+
+    internal static void StopAll()
+    {
+    }
+
+    public static void SetAllVolumes(float volume)
+    {
+    }
+
     public static void StopAllSounds() => WebAudioSoundClip.StopAll();
 }
 #else
@@ -142,6 +181,7 @@ public sealed class WebAudioSoundClip : ISoundClip
 
     /// <summary>Clips started and not yet stopped, for the bulk volume/stop operations.</summary>
     internal static readonly List<WebAudioSoundClip> Active = [];
+
     private static bool _paused;
 
     private readonly Sample _sample;
@@ -162,9 +202,17 @@ public sealed class WebAudioSoundClip : ISoundClip
         using var decoded = AudioDecoder.Decode(stream, extension);
 
         var buffer = WebAudioBackend.CreateBuffer(
-            decoded.PcmData.AsSpan(0, decoded.PcmData.Count), decoded.SampleRate, (int)decoded.Channels);
-        var monoBuffer = (int)decoded.Channels == 1 ? buffer : WebAudioBackend.CreateBuffer(
-            SpatialAudio.ToMono(decoded.PcmData.AsSpan(0, decoded.PcmData.Count), (int)decoded.Channels), decoded.SampleRate, 1);
+            decoded.PcmData.AsSpan(0, decoded.PcmData.Count),
+            decoded.SampleRate,
+            (int)decoded.Channels
+        );
+        var monoBuffer = (int)decoded.Channels == 1
+            ? buffer
+            : WebAudioBackend.CreateBuffer(
+                SpatialAudio.ToMono(decoded.PcmData.AsSpan(0, decoded.PcmData.Count), (int)decoded.Channels),
+                decoded.SampleRate,
+                1
+            );
         _sample = new Sample(buffer, monoBuffer);
     }
 
@@ -247,8 +295,11 @@ public sealed class WebAudioSoundClip : ISoundClip
 
     internal void ApplyVolume(double volume)
     {
-        if (_source != 0) WebAudioBackend.SetSourceVolume(_source,
-            volume * (_spatial ? SpatialAudio.Gain(_loop || _followPosition ? _position : _playPosition) : 1));
+        if (_source != 0)
+            WebAudioBackend.SetSourceVolume(
+                _source,
+                volume * (_spatial ? SpatialAudio.Gain(_loop || _followPosition ? _position : _playPosition) : 1)
+            );
     }
 
     private void Start(bool loop)
@@ -296,7 +347,10 @@ public sealed class WebAudioMusic : IRadicalMusic
         _rate = tempomul;
 
         _buffer = WebAudioBackend.CreateBuffer(
-            decoded.PcmData.AsSpan(0, decoded.PcmData.Count), decoded.SampleRate, (int)decoded.Channels);
+            decoded.PcmData.AsSpan(0, decoded.PcmData.Count),
+            decoded.SampleRate,
+            (int)decoded.Channels
+        );
     }
 
     /// <summary>An unplayable instance, for a track that could not be loaded - every call is a

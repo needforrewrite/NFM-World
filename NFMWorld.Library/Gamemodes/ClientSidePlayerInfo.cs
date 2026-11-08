@@ -12,25 +12,31 @@ public partial class ClientSidePlayerInfo
     [PluginVisible] public required string PlayerName { get; init; } = "Player";
     [PluginVisible] public required string CarName { get; init; } = "nfmm/radicalone";
     [PluginVisible] public required Color3 Color { get; init; } = new Color3(255, 0, 0);
+
     /// <summary>
     /// If true, player is controlled by AI.
     /// </summary>
-    [PluginVisible] public required bool IsBot { get; init; } = false;
+    [PluginVisible]
+    public required bool IsBot { get; init; } = false;
+
     /// <summary>
     /// Whether the player is the client player, i.e. the player that hosts the client gamemode.
     /// </summary>
-    [PluginVisible] public required bool IsClientPlayer { get; init; } = false;
+    [PluginVisible]
+    public required bool IsClientPlayer { get; init; } = false;
 
     /// <summary>
     /// This player's id in the match, which is what a relayed car state is addressed by.
     /// </summary>
-    [PluginVisible] public Guid Id { get; init; }
+    [PluginVisible]
+    public Guid Id { get; init; }
 
     /// <summary>
     /// The player whose client simulates this one, for a bot. Bots have no connection of their
     /// own, so the client that owns them simulates them and relays their state.
     /// </summary>
-    [PluginVisible] public Guid OwnerId { get; init; }
+    [PluginVisible]
+    public Guid OwnerId { get; init; }
 
     public ClientSidePlayerInfo()
     {

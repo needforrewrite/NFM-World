@@ -20,26 +20,36 @@ public abstract class BaseServerGamemode : IServerGamemode
     public abstract string GamemodeId { get; }
 
     /// <summary>Called once when the race session is created.</summary>
-    public virtual void Begin() { }
+    public virtual void Begin()
+    {
+    }
 
     /// <summary>
     /// Called when all players have loaded and the race is about to start.
     /// Fires at the same moment <see cref="S2C_RaceCanStart"/> is broadcast,
     /// so the server countdown is synchronized with client countdowns.
     /// </summary>
-    public virtual void StartRace() { }
+    public virtual void StartRace()
+    {
+    }
 
     /// <summary>Called when the race session is disposed.</summary>
-    public virtual void End() { }
+    public virtual void End()
+    {
+    }
 
     /// <summary>Called every server tick (~20 TPS) to advance game state.</summary>
-    public virtual void GameTick() { }
+    public virtual void GameTick()
+    {
+    }
 
     /// <summary>
     /// Called when a <see cref="C2S_ClientEvent"/> is received from a client.
     /// The payload is a MemoryPack-serialized gamemode-specific event.
     /// </summary>
-    public virtual void OnClientEvent(Guid clientId, ReadOnlySpan<byte> payload) { }
+    public virtual void OnClientEvent(Guid clientId, ReadOnlySpan<byte> payload)
+    {
+    }
 
     /// <summary>
     /// Returns the current authoritative game state for broadcasting to clients.

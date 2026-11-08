@@ -19,8 +19,10 @@ public sealed class TrustedArchiveAppFactory : ArchiveAppFactory
     protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
     {
         base.ConfigureWebHost(builder);
-        builder.UseSetting("Archive:TrustedServerKeys",
-            $"{KeyId}={Convert.ToBase64String(Secret)}");
+        builder.UseSetting(
+            "Archive:TrustedServerKeys",
+            $"{KeyId}={Convert.ToBase64String(Secret)}"
+        );
     }
 }
 
@@ -28,8 +30,14 @@ public sealed class TrustedArchiveAppFactory : ArchiveAppFactory
 public class ResultEndpointTests
 {
     private static string Sign(string json, string nonce) =>
-        HmacAuth.SignWithNonce("POST", "/results/match", Encoding.UTF8.GetBytes(json), TrustedArchiveAppFactory.KeyId,
-            TrustedArchiveAppFactory.Secret, nonce);
+        HmacAuth.SignWithNonce(
+            "POST",
+            "/results/match",
+            Encoding.UTF8.GetBytes(json),
+            TrustedArchiveAppFactory.KeyId,
+            TrustedArchiveAppFactory.Secret,
+            nonce
+        );
 
     private static HttpRequestMessage Request(string json, string? authHeader)
     {
@@ -45,6 +53,7 @@ public class ResultEndpointTests
     private static async Task<(int AliceId, int BobId)> RegisterTwo(ArchiveAppFactory factory)
     {
         using var client = factory.CreateClient();
+
         async Task<int> Register(string name)
         {
             var response = await client.PostAsJsonAsync("/auth/register", new { Username = name, Password = "password123" });
@@ -65,7 +74,9 @@ public class ResultEndpointTests
         using var factory = new TrustedArchiveAppFactory();
         using var client = factory.CreateClient();
 
-        var response = await client.SendAsync(Request("""{"matchKey":"m1","gamemode":"nfmm/pvp","stageName":"s","durationTicks":1,"players":[]}""", null));
+        var response = await client.SendAsync(
+            Request("""{"matchKey":"m1","gamemode":"nfmm/pvp","stageName":"s","durationTicks":1,"players":[]}""", null)
+        );
         Assert.AreEqual(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
@@ -77,10 +88,10 @@ public class ResultEndpointTests
         var (alice, bob) = await RegisterTwo(factory);
 
         var json = $$"""
-            {"matchKey":"m1","gamemode":"nfmm/pvp","stageName":"s","durationTicks":1,
-             "players":[{"accountId":{{alice}},"finishPosition":0,"finishTimeTicks":null,"isBot":false},
-                        {"accountId":{{bob}},"finishPosition":1,"finishTimeTicks":null,"isBot":false}]}
-            """;
+                     {"matchKey":"m1","gamemode":"nfmm/pvp","stageName":"s","durationTicks":1,
+                      "players":[{"accountId":{{alice}},"finishPosition":0,"finishTimeTicks":null,"isBot":false},
+                                 {"accountId":{{bob}},"finishPosition":1,"finishTimeTicks":null,"isBot":false}]}
+                     """;
         var auth = Sign(json, "fixed-nonce");
 
         Assert.AreEqual(HttpStatusCode.OK, (await client.SendAsync(Request(json, auth))).StatusCode);
@@ -95,10 +106,10 @@ public class ResultEndpointTests
         var (alice, bob) = await RegisterTwo(factory);
 
         var json = $$"""
-            {"matchKey":"m1","gamemode":"nfmm/pvp","stageName":"s","durationTicks":1,
-             "players":[{"accountId":{{alice}},"finishPosition":0,"finishTimeTicks":null,"isBot":false},
-                        {"accountId":{{bob}},"finishPosition":1,"finishTimeTicks":null,"isBot":false}]}
-            """;
+                     {"matchKey":"m1","gamemode":"nfmm/pvp","stageName":"s","durationTicks":1,
+                      "players":[{"accountId":{{alice}},"finishPosition":0,"finishTimeTicks":null,"isBot":false},
+                                 {"accountId":{{bob}},"finishPosition":1,"finishTimeTicks":null,"isBot":false}]}
+                     """;
 
         Assert.AreEqual(HttpStatusCode.OK, (await client.SendAsync(Request(json, Sign(json, "n1")))).StatusCode);
         // Same match, fresh nonce: accepted but not rated twice.
@@ -124,10 +135,10 @@ public class ResultEndpointTests
         var (alice, _) = await RegisterTwo(factory);
 
         var json = $$"""
-            {"matchKey":"m2","gamemode":"nfmm/pvp","stageName":"s","durationTicks":1,
-             "players":[{"accountId":{{alice}},"finishPosition":0,"finishTimeTicks":null,"isBot":false},
-                        {"accountId":null,"finishPosition":1,"finishTimeTicks":null,"isBot":true}]}
-            """;
+                     {"matchKey":"m2","gamemode":"nfmm/pvp","stageName":"s","durationTicks":1,
+                      "players":[{"accountId":{{alice}},"finishPosition":0,"finishTimeTicks":null,"isBot":false},
+                                 {"accountId":null,"finishPosition":1,"finishTimeTicks":null,"isBot":true}]}
+                     """;
 
         Assert.AreEqual(HttpStatusCode.OK, (await client.SendAsync(Request(json, Sign(json, "n3")))).StatusCode);
 

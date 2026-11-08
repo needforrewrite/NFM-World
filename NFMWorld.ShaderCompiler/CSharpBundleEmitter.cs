@@ -32,7 +32,12 @@ public static class CSharpBundleEmitter
 
         public void Line(string text = "")
         {
-            if (text.Length == 0) { _sb.Append('\n'); return; }
+            if (text.Length == 0)
+            {
+                _sb.Append('\n');
+                return;
+            }
+
             _sb.Append(' ', _indent * 4).Append(text).Append('\n');
         }
 
@@ -75,6 +80,7 @@ public static class CSharpBundleEmitter
             EmitSources(sb, program.Stages, sourcesByStage);
             EmitCreate(sb, name, program);
         }
+
         sb.Line("}");
         sb.Line();
 
@@ -100,7 +106,8 @@ public static class CSharpBundleEmitter
     private static void EmitSources(
         IndentedStringBuilder sb,
         IReadOnlyList<StageReflection> stages,
-        IReadOnlyDictionary<ShaderStage, StageSources> sourcesByStage)
+        IReadOnlyDictionary<ShaderStage, StageSources> sourcesByStage
+    )
     {
         foreach (var stage in stages)
         {
@@ -110,7 +117,12 @@ public static class CSharpBundleEmitter
             var member = MemberName(stage.Stage);
             EmitSource(sb, $"{member}Hlsl", "HLSL, compiled by the D3D11 backend", sources.Hlsl);
             EmitSource(sb, $"{member}GlslEs", "OpenGL ES 3.0 GLSL, compiled by a GLES3 context or ANGLE", sources.GlslEs);
-            EmitSource(sb, $"{member}Glsl330", "Desktop GLSL 3.30, compiled by a core-profile desktop GL context", sources.Glsl330);
+            EmitSource(
+                sb,
+                $"{member}Glsl330",
+                "Desktop GLSL 3.30, compiled by a core-profile desktop GL context",
+                sources.Glsl330
+            );
         }
     }
 
@@ -141,6 +153,7 @@ public static class CSharpBundleEmitter
             for (var i = 0; i < compressed.Length; i += 16)
                 sb.Line(string.Join(", ", compressed.Skip(i).Take(16).Select(b => "0x" + b.ToString("x2"))) + ",");
         }
+
         sb.Line("};");
         sb.Line();
     }
@@ -178,8 +191,10 @@ public static class CSharpBundleEmitter
                     sb.Line($"{member}Glsl330),");
                 }
             }
+
             EmitReflection(sb, program);
         }
+
         sb.Line(");");
     }
 
@@ -194,9 +209,12 @@ public static class CSharpBundleEmitter
             using (sb.Indent())
             {
                 foreach (var block in program.UniformBlocks)
-                    foreach (var member in block.Members)
-                        sb.Line($"new(\"{member.Name}\", {member.Offset}, {member.SizeBytes}, UniformType.{MapUniformType(member)}),");
+                foreach (var member in block.Members)
+                    sb.Line(
+                        $"new(\"{member.Name}\", {member.Offset}, {member.SizeBytes}, UniformType.{MapUniformType(member)}),"
+                    );
             }
+
             sb.Line("},");
 
             sb.Line("Textures = new ResourceBinding[]");
@@ -206,6 +224,7 @@ public static class CSharpBundleEmitter
                 foreach (var t in program.Textures)
                     sb.Line($"new(\"{t.Name}\", {t.Slot}),");
             }
+
             sb.Line("},");
 
             sb.Line("Samplers = new ResourceBinding[]");
@@ -215,8 +234,10 @@ public static class CSharpBundleEmitter
                 foreach (var s in program.Samplers)
                     sb.Line($"new(\"{s.Name}\", {s.Slot}),");
             }
+
             sb.Line("},");
         }
+
         // No trailing comma: this closes the last argument of Create()'s constructor call.
         sb.Line("}");
     }
@@ -281,20 +302,21 @@ public static class CSharpBundleEmitter
             using (sb.Indent())
             {
                 foreach (var block in program.UniformBlocks)
-                    foreach (var member in block.Members)
-                        sb.Line($"{member.Name} = new {WrapperType(member)}(SlotOf(reflection, \"{member.Name}\"));");
+                foreach (var member in block.Members)
+                    sb.Line($"{member.Name} = new {WrapperType(member)}(SlotOf(reflection, \"{member.Name}\"));");
 
                 // Textures resolve against reflection.Textures, which is its own slot space -
                 // matching what GlCommandBuffer.SetShaderResource indexes with.
                 foreach (var texture in program.Textures)
                     sb.Line($"{texture.Name} = new TextureEffectParameter(TextureSlotOf(reflection, \"{texture.Name}\"));");
             }
+
             sb.Line("}");
             sb.Line();
 
             foreach (var block in program.UniformBlocks)
-                foreach (var member in block.Members)
-                    sb.Line($"public {WrapperType(member)} {member.Name} {{ get; }}");
+            foreach (var member in block.Members)
+                sb.Line($"public {WrapperType(member)} {member.Name} {{ get; }}");
 
             foreach (var texture in program.Textures)
                 sb.Line($"public TextureEffectParameter {texture.Name} {{ get; }}");
@@ -313,6 +335,7 @@ public static class CSharpBundleEmitter
                 sb.Line("}");
                 sb.Line("return -1;");
             }
+
             sb.Line("}");
             sb.Line();
             sb.Line("private static int TextureSlotOf(ShaderReflection reflection, string name)");
@@ -325,8 +348,10 @@ public static class CSharpBundleEmitter
                 sb.Line("}");
                 sb.Line("return -1;");
             }
+
             sb.Line("}");
         }
+
         sb.Line("}");
         sb.Line();
         sb.Line($"internal sealed record {name}Program(");
@@ -336,6 +361,7 @@ public static class CSharpBundleEmitter
                 sb.Line($"ShaderStageSources {MemberName(stage.Stage)},");
             sb.Line("ShaderReflection Reflection)");
         }
+
         sb.Line("{");
         using (sb.Indent())
         {
@@ -344,6 +370,7 @@ public static class CSharpBundleEmitter
             sb.Line();
             sb.Line($"public {name}Parameters Bind() => new(Reflection);");
         }
+
         sb.Line("}");
     }
 }

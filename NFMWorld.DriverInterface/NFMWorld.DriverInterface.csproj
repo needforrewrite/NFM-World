@@ -12,8 +12,8 @@
         <CompilerVisibleProperty Include="LuaVisibleGenerator_StubsOutputDirectory"/>
     </ItemGroup>
     <ItemGroup>
-      <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.Mathematics\Maxine.Extensions.Mathematics.csproj" />
-      <ProjectReference Include="..\NFMWorld.PluginSystem\NFMWorld.PluginSystem.csproj" />
+        <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.Mathematics\Maxine.Extensions.Mathematics.csproj"/>
+        <ProjectReference Include="..\NFMWorld.PluginSystem\NFMWorld.PluginSystem.csproj"/>
     </ItemGroup>
     <PropertyGroup>
         <LuaSourceGenerator_LuaCATSOutputDirectory>$(MSBuildProjectDirectory)\..\NFMWorld.Library\data\library\declarations</LuaSourceGenerator_LuaCATSOutputDirectory>

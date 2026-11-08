@@ -11,15 +11,15 @@ public static class MeshDamage
     public static void NewCar(BackendCar car, CarVisual visual)
     {
         visual.Mesh.Polys = visual.Mesh.OriginalPolys.Select(static poly => poly.SafeClone()).ToArray();
-        
+
         for (var i = 0; i < visual.Mesh.Polys.Length; i++)
         {
             visual.Bfase[i] = 0.0f;
         }
-        
+
         visual.Mesh.RebuildMesh();
     }
-    
+
     public static void DamageX(
         CarStats stat,
         BackendCar car,
@@ -53,13 +53,16 @@ public static class MeshDamage
                             visual.Mesh.Polys[i].Points[j].X, // x
                             (float)wheel.Position.Z,
                             visual.Mesh.Polys[i].Points[j].Z // z
-                        ) < stat.Clrad)
+                        )
+                        < stat.Clrad)
                     {
                         breakFactor = damageFactor / 20.0f * Random.Single();
-                        visual.Mesh.Polys[i].Points[j].Z -= (breakFactor * UMath.SinUnsafe((float)visual.Rotation.Xz.Degrees) *
-                                                     UMath.CosUnsafe((float)visual.Rotation.Zy.Degrees)); // z
-                        visual.Mesh.Polys[i].Points[j].X += (breakFactor * UMath.CosUnsafe((float)visual.Rotation.Xz.Degrees) *
-                                                     UMath.CosUnsafe((float)visual.Rotation.Xy.Degrees)); // x
+                        visual.Mesh.Polys[i].Points[j].Z -= (breakFactor
+                                                             * UMath.SinUnsafe((float)visual.Rotation.Xz.Degrees)
+                                                             * UMath.CosUnsafe((float)visual.Rotation.Zy.Degrees)); // z
+                        visual.Mesh.Polys[i].Points[j].X += (breakFactor
+                                                             * UMath.CosUnsafe((float)visual.Rotation.Xz.Degrees)
+                                                             * UMath.CosUnsafe((float)visual.Rotation.Xy.Degrees)); // x
                     }
                 }
 
@@ -196,7 +199,8 @@ public static class MeshDamage
                                 visual.Mesh.Polys[i].Points[j].X, // x
                                 (float)wheel.Position.Z,
                                 visual.Mesh.Polys[i].Points[j].Z // z
-                            ) < stat.Clrad)
+                            )
+                            < stat.Clrad)
                         {
                             breakFactor = damageFactor / 20.0f * Random.Single();
                             visual.Mesh.Polys[i].Points[j].Z += breakFactor * UMath.SinUnsafe((float)zy); // z
@@ -250,7 +254,10 @@ public static class MeshDamage
                             }
 
                             visual.Bfase[i] += Math.Abs(breakFactor);
-                            visual.Mesh.Polys[i] = visual.Mesh.Polys[i] with { Color = Color3.FromHSB(hue, saturation, brightness) };
+                            visual.Mesh.Polys[i] = visual.Mesh.Polys[i] with
+                            {
+                                Color = Color3.FromHSB(hue, saturation, brightness)
+                            };
                         }
                     }
                 }
@@ -269,10 +276,10 @@ public static class MeshDamage
                         {
                             polyDmg = damageFactor / 15.0f * Random.Single();
                             if ((
-                                    Math.Abs(visual.Mesh.Polys[i].Points[j].Y /* y */ - stat.Flipy - squash) <
-                                    stat.Msquash * 3 ||
-                                    visual.Mesh.Polys[i].Points[j].Y /* y */ < stat.Flipy + squash
-                                ) && squash < stat.Msquash)
+                                    Math.Abs(visual.Mesh.Polys[i].Points[j].Y /* y */ - stat.Flipy - squash) < stat.Msquash * 3
+                                    || visual.Mesh.Polys[i].Points[j].Y /* y */ < stat.Flipy + squash
+                                )
+                                && squash < stat.Msquash)
                             {
                                 visual.Mesh.Polys[i].Points[j].Y /* y */ += polyDmg;
                                 totalDmg += polyDmg;
@@ -337,13 +344,16 @@ public static class MeshDamage
                             visual.Mesh.Polys[i].Points[j].X, // x
                             (float)wheel.Position.Z,
                             visual.Mesh.Polys[i].Points[j].Z // z
-                        ) < stat.Clrad)
+                        )
+                        < stat.Clrad)
                     {
                         breakFactor = damageFactor / 20.0f * Random.Single();
-                        visual.Mesh.Polys[i].Points[j].Z += breakFactor * UMath.CosUnsafe((float)visual.Rotation.Xz.Degrees) *
-                                                     UMath.CosUnsafe((float)visual.Rotation.Zy.Degrees); // z
-                        visual.Mesh.Polys[i].Points[j].X += breakFactor * UMath.SinUnsafe((float)visual.Rotation.Xz.Degrees) *
-                                                     UMath.CosUnsafe((float)visual.Rotation.Xy.Degrees); // x
+                        visual.Mesh.Polys[i].Points[j].Z += breakFactor
+                                                            * UMath.CosUnsafe((float)visual.Rotation.Xz.Degrees)
+                                                            * UMath.CosUnsafe((float)visual.Rotation.Zy.Degrees); // z
+                        visual.Mesh.Polys[i].Points[j].X += breakFactor
+                                                            * UMath.SinUnsafe((float)visual.Rotation.Xz.Degrees)
+                                                            * UMath.CosUnsafe((float)visual.Rotation.Xy.Degrees); // x
                     }
                 }
 

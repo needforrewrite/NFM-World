@@ -12,7 +12,7 @@ public class WheelMeshBuilder
     private readonly int[] _rc = [120, 120, 120];
 
     private float _size = 2.0F;
-    
+
     private List<Rad3dPoly> _planes = new(19);
 
     public WheelMeshBuilder(Rad3dWheelDef wheelDef, Rad3dRimsDef? rimsN)
@@ -73,12 +73,14 @@ public class WheelMeshBuilder
         {
             offcx = (cx + 4.0F * w10);
         }
+
         // Sparkat = (int) (h10 * 24.0F);
         // Ground = (int) (cy + 13.0F * h10);
         for (var i = 0; i < 20; i++)
         {
             x[i] = (cx - 4.0F * w10);
         }
+
         y[0] = (cy - 9.1923F * h10);
         z[0] = (cz + 9.1923F * h10);
         y[1] = (cy - 12.557F * h10);
@@ -120,7 +122,18 @@ public class WheelMeshBuilder
         y[19] = (cy - 3.3646F * h10);
         z[19] = (cz + 12.557F * h10);
 
-        AddPoly(x, z, y, 20, color, [0, 12, 11, 0, 17, 12, 1, 17, 0, 2, 17, 1, 2, 16, 17, 3, 16, 2, 3, 15, 16, 15, 3, 4, 12, 10, 11, 12, 9, 10, 13, 9, 12, 13, 8, 9, 13, 7, 8, 14, 7, 13, 14, 6, 7, 15, 6, 14, 4, 6, 15, 6, 4, 5], true);
+        AddPoly(
+            x,
+            z,
+            y,
+            20,
+            color,
+            [
+                0, 12, 11, 0, 17, 12, 1, 17, 0, 2, 17, 1, 2, 16, 17, 3, 16, 2, 3, 15, 16, 15, 3, 4, 12, 10, 11, 12, 9, 10, 13, 9,
+                12, 13, 8, 9, 13, 7, 8, 14, 7, 13, 14, 6, 7, 15, 6, 14, 4, 6, 15, 6, 4, 5
+            ],
+            true
+        );
         x[2] = (cx - _depth * w10);
         y[2] = cy;
         z[2] = cz;
@@ -310,25 +323,36 @@ public class WheelMeshBuilder
         y[3] = (cy - 9.1923F * h10);
         z[3] = (cz + 9.1923F * h10);
         AddPoly(x, z, y, 4, color, [0, 1, 2, 0, 2, 3]);
-        
+
         return;
 
-        void AddPoly(Span<float> x, Span<float> z, Span<float> y, int n, Span<int> c, ImmutableArray<uint> tri, bool noOutline = false)
+        void AddPoly(
+            Span<float> x,
+            Span<float> z,
+            Span<float> y,
+            int n,
+            Span<int> c,
+            ImmutableArray<uint> tri,
+            bool noOutline = false
+        )
         {
             var verts = new Vector3[n];
             for (var vi = 0; vi < n; vi++)
             {
                 verts[vi] = new Vector3(x[vi], y[vi], z[vi]);
             }
-            planes.Add(new Rad3dPoly(
-                new Color3((short)c[0], (short)c[1], (short)c[2]),
-                null,
-                PolyType.Flat,
-                noOutline ? null : LineType.Flat,
-                0.0f,
-                verts,
-                tri
-            ));
+
+            planes.Add(
+                new Rad3dPoly(
+                    new Color3((short)c[0], (short)c[1], (short)c[2]),
+                    null,
+                    PolyType.Flat,
+                    noOutline ? null : LineType.Flat,
+                    0.0f,
+                    verts,
+                    tri
+                )
+            );
         }
     }
 }

@@ -19,6 +19,7 @@ public static class ArrayExt
         {
             arr[j] = arr2[i, j];
         }
+
         return arr;
     }
 
@@ -29,6 +30,7 @@ public static class ArrayExt
         {
             arr[i] = new T[l1];
         }
+
         return arr;
     }
 
@@ -43,6 +45,7 @@ public static class ArrayExt
                 arr[i][j] = new T[l2];
             }
         }
+
         return arr;
     }
 
@@ -55,6 +58,7 @@ public static class ArrayExt
             var k = Rng.Next(n + 1);
             (list[k], list[n]) = (list[n], list[k]);
         }
+
         return list;
     }
 
@@ -94,6 +98,7 @@ public static class ArrayExt
 
             retVal++;
         }
+
         return -1;
     }
 
@@ -118,6 +123,7 @@ public static class ArrayExt
 
             retVal++;
         }
+
         return -1;
     }
 }

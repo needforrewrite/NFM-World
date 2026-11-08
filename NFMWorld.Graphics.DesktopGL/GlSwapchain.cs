@@ -6,6 +6,7 @@
 // up its own EGL pbuffer and so genuinely reallocate the drawable on Resize; desktop GL has no such
 // ownerless surface, so the host always owns the window and this only tracks its size. That is the
 // same shape the sokol backend has (SokolSwapchain cannot reallocate under sokol_app).
+
 namespace NFMWorld.Graphics.DesktopGL;
 
 /// <summary>

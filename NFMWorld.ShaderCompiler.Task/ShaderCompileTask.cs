@@ -12,6 +12,7 @@
 // context are per-file state, so batching would be safe here, but a batched task also loses the
 // whole batch on the first failure. Looping keeps one error report listing every shader that
 // failed, which is what an author fixing a header that four shaders include actually wants.
+
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -98,7 +99,8 @@ public sealed class ShaderCompileTask : Microsoft.Build.Utilities.Task
         {
             var writtenPaths = new HashSet<string>(
                 written.Select(item => Path.GetFullPath(item.ItemSpec)),
-                StringComparer.OrdinalIgnoreCase);
+                StringComparer.OrdinalIgnoreCase
+            );
 
             foreach (var stale in Directory.EnumerateFiles(OutputDirectory, "*.g.cs"))
             {
@@ -126,8 +128,10 @@ public sealed class ShaderCompileTask : Microsoft.Build.Utilities.Task
             File.WriteAllText(StampFile, $"{DateTime.UtcNow:O}\n");
         }
 
-        Log.LogMessage(MessageImportance.Normal,
-            $"Compiled {Shaders.Length} shader source(s) into {GeneratedFiles.Length} bundle(s).");
+        Log.LogMessage(
+            MessageImportance.Normal,
+            $"Compiled {Shaders.Length} shader source(s) into {GeneratedFiles.Length} bundle(s)."
+        );
         return true;
     }
 }

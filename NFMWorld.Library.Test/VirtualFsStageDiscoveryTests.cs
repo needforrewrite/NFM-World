@@ -32,8 +32,10 @@ public class VirtualFsStageDiscoveryTests
         var collections = fs.EnumerateDirectories("data/stages")
             .Where(dir => fs.EnumerateFiles(dir, "*.txt").Any()).ToArray();
         CollectionAssert.AreEqual(new[] { "data/stages/nfm1" }, collections);
-        CollectionAssert.AreEqual(new[] { "data/stages/nfm1/1_introductory.txt" },
-            fs.EnumerateFiles(collections[0], "*.txt").ToArray());
+        CollectionAssert.AreEqual(
+            new[] { "data/stages/nfm1/1_introductory.txt" },
+            fs.EnumerateFiles(collections[0], "*.txt").ToArray()
+        );
     }
 
     [TestMethod]

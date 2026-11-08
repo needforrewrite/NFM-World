@@ -24,6 +24,7 @@
 // So this is not "ANGLE has a bug and desktop GL does not". Desktop GL's loader refuses, loudly, on
 // the finalizer thread and takes the process down; ANGLE's loader accepts and does something
 // unspecified. Neither is correct, and the same queue is the fix for both.
+
 using System.Collections.Concurrent;
 using Silk.NET.OpenGLES;
 
@@ -114,7 +115,10 @@ internal sealed class GlDeletionQueue
             case GlObjectKind.Program: gl.DeleteProgram(deletion.Handle); break;
             default:
                 throw new ArgumentOutOfRangeException(
-                    nameof(deletion), deletion.Kind, "No delete entry point is mapped for this object kind.");
+                    nameof(deletion),
+                    deletion.Kind,
+                    "No delete entry point is mapped for this object kind."
+                );
         }
     }
 }

@@ -20,5 +20,6 @@ public readonly record struct PositionColorVertex(Vector3 Position, Color Color)
             new VertexAttributeDesc("POSITION", 0, 0, VertexAttributeFormat.Float3),
             new VertexAttributeDesc("COLOR", 0, 12, VertexAttributeFormat.Byte4Normalized),
         ],
-        StrideInBytes: Stride);
+        StrideInBytes: Stride
+    );
 }

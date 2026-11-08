@@ -88,8 +88,12 @@ public class WebSocketMultiplayerClientTransport : BaseMultiplayerClientTranspor
                 }
             }
         }
-        catch (OperationCanceledException) { }
-        catch (WebSocketException) { }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (WebSocketException)
+        {
+        }
 
         // Only the live socket may change the state: an older loop finishing after a
         // reconnect must not report the new connection as dropped.

@@ -25,14 +25,16 @@ v2: Worker project handles replay-based cheat validation (code in repo, not acti
 ## Service Descriptions
 
 ### Lobby (`NFMWorld.Server.Lobby`)
+
 **Role:** Matchmaking, chat, and session management.
 
-| Protocol | Port | Purpose |
-|---|---|---|
-| WebSocket | `LOBBY_PORT` (default 7000) | Client connections (System.Net.HttpListener) |
-| HTTP | `LOBBY_HTTP_ENDPOINT` (default 7001) | Race results from Game Masters |
+| Protocol  | Port                                 | Purpose                                      |
+|-----------|--------------------------------------|----------------------------------------------|
+| WebSocket | `LOBBY_PORT` (default 7000)          | Client connections (System.Net.HttpListener) |
+| HTTP      | `LOBBY_HTTP_ENDPOINT` (default 7001) | Race results from Game Masters               |
 
 **Key classes:**
+
 - `GameOrchestrator` — coordinator delegating to managers
 - `SessionManager` — create/join/leave sessions, timeouts
 - `ChatManager` — chat messages and system broadcasts
@@ -42,32 +44,38 @@ v2: Worker project handles replay-based cheat validation (code in repo, not acti
 - `GameMasterHttpClient` — HMAC-signed HTTP to Game Masters
 
 ### Game Master (`NFMWorld.Server.Game`)
+
 **Role:** Race session relay — validates join tokens, relays packets between clients.
 
-| Protocol | Port | Purpose |
-|---|---|---|
-| ENet UDP | `GM_GAME_PORT` (default 7002) | Client in-game connections |
-| HTTP | `GM_HTTP_ENDPOINT` (default 7003) | Lobby API (`/create-race`) |
+| Protocol | Port                              | Purpose                    |
+|----------|-----------------------------------|----------------------------|
+| ENet UDP | `GM_GAME_PORT` (default 7002)     | Client in-game connections |
+| HTTP     | `GM_HTTP_ENDPOINT` (default 7003) | Lobby API (`/create-race`) |
 
 **Key classes:**
-- `RaceOrchestrator` — validates join tokens, relays `C2S_PlayerState` → `S2C_PlayerState` to other clients, handles `C2S_GameFinished` (first-come first-served)
+
+- `RaceOrchestrator` — validates join tokens, relays `C2S_PlayerState` → `S2C_PlayerState` to other clients, handles
+  `C2S_GameFinished` (first-come first-served)
 - `WorkerManager` — kept in repo for v2 replay validation; not used in active v1 path
 
 ### Worker (`NFMWorld.Server.Game.Worker`)
+
 **Role:** Per-race replay validation (v2). Not active in v1 relay path.
 
-Code kept in repo for future use: `RaceWorker` wraps `RaceGamemode` for headless simulation. The Worker project and `WorkerManager` are compiled but not instantiated by the v1 relay.
+Code kept in repo for future use: `RaceWorker` wraps `RaceGamemode` for headless simulation. The Worker project and
+`WorkerManager` are compiled but not instantiated by the v1 relay.
 
 ## Player Identity
 
 Players are identified by two IDs:
 
-| ID | Type | Scope | Assigned by |
-|---|---|---|---|
-| Client index | `uint` | Transport-level (ENet/WebSocket connection) | Transport |
-| Player ID | `Guid` | Application-level (lobby, packets, sessions) | Lobby (`PlayerRegistry`) |
+| ID           | Type   | Scope                                        | Assigned by              |
+|--------------|--------|----------------------------------------------|--------------------------|
+| Client index | `uint` | Transport-level (ENet/WebSocket connection)  | Transport                |
+| Player ID    | `Guid` | Application-level (lobby, packets, sessions) | Lobby (`PlayerRegistry`) |
 
-The `PlayerRegistry` maps between them. All packets use `Guid` player IDs for addressing. `S2C_PlayerState.PlayerId` is a `Guid`. `S2C_LobbyState.PlayerInfo` carries both the transport index and the GUID.
+The `PlayerRegistry` maps between them. All packets use `Guid` player IDs for addressing. `S2C_PlayerState.PlayerId` is
+a `Guid`. `S2C_LobbyState.PlayerInfo` carries both the transport index and the GUID.
 
 ---
 
@@ -78,45 +86,47 @@ The `PlayerRegistry` maps between them. All packets use `Guid` player IDs for ad
 `WebSocketMultiplayerClientTransport` (System.Net.WebSockets.ClientWebSocket) connects to `ws://host:port/game`.
 Server side: `WebSocketMultiplayerServerTransport` (System.Net.HttpListener + HttpListenerWebSocketContext).
 
-| Packet | Opcode | Direction | Purpose |
-|---|---|---|---|
-| `C2S_PlayerIdentity` | 6 | C→S | Set name, vehicle, color |
-| `C2S_CreateSession` | 1 | C→S | Create a game session |
-| `C2S_JoinSession` | 2 | C→S | Join existing session |
-| `C2S_LeaveSession` | 3 | C→S | Leave current session |
-| `C2S_LobbyChatMessage` | 4 | C→S | Send chat message |
-| `C2S_LobbyStartRace` | 5 | C→S | Start the race |
-| `C2S_LobbyPlayerReadyState` | 9 | C→S | Toggle ready state |
-| `S2C_LobbyState` | -2 | S→C | Full lobby snapshot (1s interval) |
-| `S2C_LobbyChatMessage` | -1 | S→C | Chat broadcast |
-| `S2C_RaceStarted` | -6 | S→C | Race starting — contains GM address + join token |
+| Packet                      | Opcode | Direction | Purpose                                          |
+|-----------------------------|--------|-----------|--------------------------------------------------|
+| `C2S_PlayerIdentity`        | 6      | C→S       | Set name, vehicle, color                         |
+| `C2S_CreateSession`         | 1      | C→S       | Create a game session                            |
+| `C2S_JoinSession`           | 2      | C→S       | Join existing session                            |
+| `C2S_LeaveSession`          | 3      | C→S       | Leave current session                            |
+| `C2S_LobbyChatMessage`      | 4      | C→S       | Send chat message                                |
+| `C2S_LobbyStartRace`        | 5      | C→S       | Start the race                                   |
+| `C2S_LobbyPlayerReadyState` | 9      | C→S       | Toggle ready state                               |
+| `S2C_LobbyState`            | -2     | S→C       | Full lobby snapshot (1s interval)                |
+| `S2C_LobbyChatMessage`      | -1     | S→C       | Chat broadcast                                   |
+| `S2C_RaceStarted`           | -6     | S→C       | Race starting — contains GM address + join token |
 
 ### Client ↔ Game Master (ENet UDP)
 
-The client creates a new `ENetMultiplayerClientTransport` from the `S2C_RaceStarted.JoinInfo`. The lobby WebSocket stays alive.
+The client creates a new `ENetMultiplayerClientTransport` from the `S2C_RaceStarted.JoinInfo`. The lobby WebSocket stays
+alive.
 
-| Packet | Opcode | Direction | Purpose |
-|---|---|---|---|
-| `C2S_RaceLoaded` | 8 | C→S | Client loaded, contains join token |
-| `C2S_PlayerState` | 7 | C→S | Player position/input (63 TPS) |
-| `C2S_GameFinished` | 10 | C→S | Client reports race finish |
-| `S2C_RaceCanStart` | -4 | S→C | All players loaded, race begins |
-| `S2C_RaceFailedToStart` | -5 | S→C | Load timeout |
-| `S2C_PlayerState` | -3 | S→C | Other players' state |
-| `S2C_GameFinished` | -7 | S→C | Race results |
+| Packet                  | Opcode | Direction | Purpose                            |
+|-------------------------|--------|-----------|------------------------------------|
+| `C2S_RaceLoaded`        | 8      | C→S       | Client loaded, contains join token |
+| `C2S_PlayerState`       | 7      | C→S       | Player position/input (63 TPS)     |
+| `C2S_GameFinished`      | 10     | C→S       | Client reports race finish         |
+| `S2C_RaceCanStart`      | -4     | S→C       | All players loaded, race begins    |
+| `S2C_RaceFailedToStart` | -5     | S→C       | Load timeout                       |
+| `S2C_PlayerState`       | -3     | S→C       | Other players' state               |
+| `S2C_GameFinished`      | -7     | S→C       | Race results                       |
 
 ### Lobby ↔ Game Master (HMAC HTTP)
 
 Authenticated with HMAC-SHA256. See [HMAC Authentication](#hmac-authentication).
 
-| Endpoint | Direction | Body | Response |
-|---|---|---|---|
-| `POST /create-race` | Lobby → GM | `Lobby2RaceServer_CreateRace` (MemoryPack) | `Lobby2RaceServer_CreateRaceResponse` (join tokens) |
-| `POST /race-ended` | GM → Lobby | `RaceServer2Lobby_RaceResults` (MemoryPack) | 200 OK |
+| Endpoint            | Direction  | Body                                        | Response                                            |
+|---------------------|------------|---------------------------------------------|-----------------------------------------------------|
+| `POST /create-race` | Lobby → GM | `Lobby2RaceServer_CreateRace` (MemoryPack)  | `Lobby2RaceServer_CreateRaceResponse` (join tokens) |
+| `POST /race-ended`  | GM → Lobby | `RaceServer2Lobby_RaceResults` (MemoryPack) | 200 OK                                              |
 
 ### Game Master ↔ Worker (SharedMemory RPC) — v2 only
 
-Not active in v1 relay. Uses `SharedMemory` NuGet (`RpcBuffer`) for lock-free Controller↔Worker communication. `RpcBridge` wraps it with typed MemoryPack messages.
+Not active in v1 relay. Uses `SharedMemory` NuGet (`RpcBuffer`) for lock-free Controller↔Worker communication.
+`RpcBridge` wraps it with typed MemoryPack messages.
 
 Types in `NFMWorld.Server.SharedMemory/`: `RpcBridge`, `RpcMessage`, `PlayerInputBatch`, `GameStateSnapshot`.
 
@@ -174,7 +184,8 @@ Format: `host:udpPort+httpPort`. The `+` character triggers dev-mode parsing.
 GAME_MASTER_DOMAINS=gm1.nfmw.example.com,gm2.nfmw.example.com
 ```
 
-Each domain is resolved via A/AAAA records (SRV support planned via `DnsClient`). HTTP is on standard port 80/443; game UDP is on port 7000 (configurable via SRV in the future).
+Each domain is resolved via A/AAAA records (SRV support planned via `DnsClient`). HTTP is on standard port 80/443; game
+UDP is on port 7000 (configurable via SRV in the future).
 
 ### Mixed
 
@@ -196,8 +207,10 @@ GAME_MASTER_DOMAINS=localhost:7002+7003,gm1.nfmw.example.com
 8. Client creates new ENet UDP transport → Game Master
 9. Client sends `C2S_RaceLoaded` with join token
 10. When all loaded → Game Master sends `S2C_RaceCanStart`
-11. During race: client sends `C2S_PlayerState` at 63 TPS → Game Master relays directly as `S2C_PlayerState` to other clients
-12. Race ends: first client to send `C2S_GameFinished` wins (v1 first-come first-served) → Game Master broadcasts `S2C_GameFinished`
+11. During race: client sends `C2S_PlayerState` at 63 TPS → Game Master relays directly as `S2C_PlayerState` to other
+    clients
+12. Race ends: first client to send `C2S_GameFinished` wins (v1 first-come first-served) → Game Master broadcasts
+    `S2C_GameFinished`
 13. Client transitions back to LobbyPhase (WebSocket transport kept alive)
 
 ---
@@ -246,6 +259,7 @@ dotnet run --project NFMWorld.Server.Game
 ```
 
 Or set env vars externally and:
+
 ```bash
 dotnet run --project NFMWorld.Server.Game
 ```
@@ -269,6 +283,7 @@ same listener that takes race results.
 
 The menu's PLAY > MULTIPLAYER item uses the endpoint baked into the build (a Debug build defaults
 to `localhost:7001`). To reach a different lobby, use the dev console:
+
 ```
 connect localhost 7001
 ```
@@ -277,15 +292,15 @@ connect localhost 7001
 
 #### Lobby
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `LOBBY_HTTP_ENDPOINT` | `http://localhost:7001/` | HTTP endpoint for race results **and** the client WebSocket (`/game`) |
-| `GAME_MASTER_DOMAINS` | `localhost` | GM addresses (dev or SRV format) |
-| `GM_HMAC_KEYS` | *(required)* | `keyId=base64secret,...` the game masters sign with (verifies `/race-ended`) |
-| `HMAC_KEY_ID` | `primary` | Key ID this lobby signs `/create-race` with |
-| `HMAC_SECRET_KEY` | *(required)* | Base64 secret for `HMAC_KEY_ID` |
-| `ARCHIVE_URL` | *(unset)* | Archive base URL. Set, the lobby verifies player tokens on join and can report results |
-| `ARCHIVE_SECRET_KEY` | *(unset)* | Archive server key; **never** give this to a game master |
+| Variable              | Default                  | Purpose                                                                                |
+|-----------------------|--------------------------|----------------------------------------------------------------------------------------|
+| `LOBBY_HTTP_ENDPOINT` | `http://localhost:7001/` | HTTP endpoint for race results **and** the client WebSocket (`/game`)                  |
+| `GAME_MASTER_DOMAINS` | `localhost`              | GM addresses (dev or SRV format)                                                       |
+| `GM_HMAC_KEYS`        | *(required)*             | `keyId=base64secret,...` the game masters sign with (verifies `/race-ended`)           |
+| `HMAC_KEY_ID`         | `primary`                | Key ID this lobby signs `/create-race` with                                            |
+| `HMAC_SECRET_KEY`     | *(required)*             | Base64 secret for `HMAC_KEY_ID`                                                        |
+| `ARCHIVE_URL`         | *(unset)*                | Archive base URL. Set, the lobby verifies player tokens on join and can report results |
+| `ARCHIVE_SECRET_KEY`  | *(unset)*                | Archive server key; **never** give this to a game master                               |
 
 Generate any of these secrets with `dotnet run --project NFMWorld.GenerateHmacKey [keyId]`. The
 lobby's WebSocket and the race-results endpoint share `LOBBY_HTTP_ENDPOINT`; a public lobby needs
@@ -293,13 +308,13 @@ a TLS terminator in front of it, because the client presents its session token o
 
 #### Game Master
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `GM_GAME_PORT` | `7002` | ENet UDP port for players |
-| `GM_HTTP_ENDPOINT` | `http://localhost:7003/` | HTTP endpoint for Lobby API |
-| `GM_HMAC_KEYS` | *(required)* | `keyId=base64secret,...` pairs |
-| `LOBBY_RESULTS_URL` | *(unset)* | Where the GM posts a finished race (the lobby's `http://host:7001/race-ended`) |
-| `WORKER_BINARY_PATH` | `dotnet` | Path to Worker binary, or `dotnet` for dev |
+| Variable             | Default                  | Purpose                                                                        |
+|----------------------|--------------------------|--------------------------------------------------------------------------------|
+| `GM_GAME_PORT`       | `7002`                   | ENet UDP port for players                                                      |
+| `GM_HTTP_ENDPOINT`   | `http://localhost:7003/` | HTTP endpoint for Lobby API                                                    |
+| `GM_HMAC_KEYS`       | *(required)*             | `keyId=base64secret,...` pairs                                                 |
+| `LOBBY_RESULTS_URL`  | *(unset)*                | Where the GM posts a finished race (the lobby's `http://host:7001/race-ended`) |
+| `WORKER_BINARY_PATH` | `dotnet`                 | Path to Worker binary, or `dotnet` for dev                                     |
 
 #### Worker (v2 only — receives config via CLI args)
 
@@ -353,28 +368,31 @@ NFMWorld.GenerateHmacKey/       HMAC key generation tool
 ## Known Limitations & Future Work
 
 - **v1 relay only**: Game Master is a dumb UDP relay. Clients are fully trusted. Cheat protection is v2.
-- **v2 replay validation**: Worker infrastructure (`WorkerManager`, `RaceWorker`, `SharedMemory`) is built and ready for replay-based cheat validation.
+- **v2 replay validation**: Worker infrastructure (`WorkerManager`, `RaceWorker`, `SharedMemory`) is built and ready for
+  replay-based cheat validation.
 - **SRV records**: Currently uses A/AAAA lookup. Planned: `DnsClient` NuGet for full SRV support.
 - **Login/Archive**: Out of scope. `C2S_PlayerIdentity` is accepted without validation.
 - **Race results to Lobby**: `POST /race-ended` endpoint exists but Game Master doesn't send results yet.
-- **Players addressed by Guid**: Application-level player IDs are Guids, mapped from transport-level `uint` indices by `PlayerRegistry`.
+- **Players addressed by Guid**: Application-level player IDs are Guids, mapped from transport-level `uint` indices by
+  `PlayerRegistry`.
 
-NFMWorld.Server.Game.Worker/     Worker (per-race simulation)
-  RaceWorker.cs                   Simulation loop wrapping RaceGamemode
-  Program.cs                      Entry point, RPC handler, 63 TPS loop
+NFMWorld.Server.Game.Worker/ Worker (per-race simulation)
+RaceWorker.cs Simulation loop wrapping RaceGamemode
+Program.cs Entry point, RPC handler, 63 TPS loop
 
-NFMWorld.Server.SharedMemory/    Shared RPC types
-  RpcBridge.cs                    Wrapper around SharedMemory.RpcBuffer
-  RpcMessage.cs                   Message envelope + opcodes
-  RpcMessages.cs                  PlayerInputBatch, GameStateSnapshot
+NFMWorld.Server.SharedMemory/ Shared RPC types
+RpcBridge.cs Wrapper around SharedMemory.RpcBuffer
+RpcMessage.cs Message envelope + opcodes
+RpcMessages.cs PlayerInputBatch, GameStateSnapshot
 
-NFMWorld.Library/                Shared types
-  Mad/Multiplayer/HmacAuth.cs     HMAC signing + verification
-  Mad/Multiplayer/Packets/        All packet definitions (C2S, S2C)
-  Mad/Multiplayer/HttpMessages/   HTTP message types
+NFMWorld.Library/ Shared types
+Mad/Multiplayer/HmacAuth.cs HMAC signing + verification
+Mad/Multiplayer/Packets/ All packet definitions (C2S, S2C)
+Mad/Multiplayer/HttpMessages/ HTTP message types
 
-NFMWorld.Multiplayer.Base/      Transport abstractions (unchanged)
-NFMWorld.GenerateHmacKey/       HMAC key generation tool
+NFMWorld.Multiplayer.Base/ Transport abstractions (unchanged)
+NFMWorld.GenerateHmacKey/ HMAC key generation tool
+
 ```
 
 ---

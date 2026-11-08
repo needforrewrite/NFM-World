@@ -11,11 +11,17 @@ public class MenuPreferencesTests
     public void StageChoicesIncludeNestedAndPackedStagesWithoutDuplicates()
     {
         var fs = CreateFileSystem(
-            "data/stages/custom/nested/track.txt", "data/stages/nfm1/10_stage.txt",
-            "data/stages/nfm1/2_stage.txt", "data/stages/nfm1/2_stage.radpack", "data/stages/readme.json");
+            "data/stages/custom/nested/track.txt",
+            "data/stages/nfm1/10_stage.txt",
+            "data/stages/nfm1/2_stage.txt",
+            "data/stages/nfm1/2_stage.radpack",
+            "data/stages/readme.json"
+        );
 
-        CollectionAssert.AreEqual(new[] { "custom/nested/track", "nfm1/2_stage", "nfm1/10_stage" },
-            MenuPreferences.GetStages(fs));
+        CollectionAssert.AreEqual(
+            new[] { "custom/nested/track", "nfm1/2_stage", "nfm1/10_stage" },
+            MenuPreferences.GetStages(fs)
+        );
     }
 
     [TestMethod]
@@ -30,8 +36,12 @@ public class MenuPreferencesTests
     [TestMethod]
     public void InterfaceMusicChoicesExcludeOtherFoldersAndNonAudioFiles()
     {
-        var fs = CreateFileSystem("data/music/interface/shift.mp3", "data/music/interface/custom/theme.mod",
-            "data/music/interface/notes.txt", "data/music/nfm1/stage.mp3");
+        var fs = CreateFileSystem(
+            "data/music/interface/shift.mp3",
+            "data/music/interface/custom/theme.mod",
+            "data/music/interface/notes.txt",
+            "data/music/nfm1/stage.mp3"
+        );
         CollectionAssert.AreEqual(new[] { "custom/theme.mod", "shift.mp3" }, MenuPreferences.GetMusic(fs));
         Assert.AreEqual("data/music/interface/shift.mp3", MenuPreferences.ResolveMusic(fs, "shift.mp3"));
         Assert.IsNull(MenuPreferences.ResolveMusic(fs, MenuPreferences.StageSoundtrack));
@@ -59,16 +69,30 @@ public class MenuPreferencesTests
         var reads = 0;
         var listings = 0;
         var fs = new VirtualFS();
-        fs.Mount(new FetchFileSystem(_ => { reads++; return null; }, listPaths: () =>
-        {
-            listings++;
-            return ["data/music/interface/shift.mp3", "data/music/interface/nested/theme.mod", "data/music/nfm1/stage.mp3"];
-        }));
+        fs.Mount(
+            new FetchFileSystem(
+                _ =>
+                {
+                    reads++;
+                    return null;
+                },
+                listPaths: () =>
+                {
+                    listings++;
+                    return
+                    [
+                        "data/music/interface/shift.mp3", "data/music/interface/nested/theme.mod", "data/music/nfm1/stage.mp3"
+                    ];
+                }
+            )
+        );
 
         Assert.AreEqual("data/music/interface/shift.mp3", MenuPreferences.ResolveMusic(fs, "shift.mp3"));
         CollectionAssert.AreEqual(new[] { "nested/theme.mod", "shift.mp3" }, MenuPreferences.GetMusic(fs));
-        CollectionAssert.AreEqual(new[] { "data/music/interface/shift.mp3" },
-            fs.EnumerateFiles("data/music/interface", "*.mp3").ToArray());
+        CollectionAssert.AreEqual(
+            new[] { "data/music/interface/shift.mp3" },
+            fs.EnumerateFiles("data/music/interface", "*.mp3").ToArray()
+        );
         Assert.AreEqual(1, listings);
         Assert.AreEqual(0, reads);
     }
@@ -77,7 +101,8 @@ public class MenuPreferencesTests
     {
         using var stream = new MemoryStream();
         using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
-            foreach (var file in files) archive.CreateEntry(file);
+            foreach (var file in files)
+                archive.CreateEntry(file);
         var fs = new VirtualFS();
         fs.MountZip(stream.ToArray());
         return fs;

@@ -13,9 +13,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
-        <ProjectReference Include="..\NFMWorld.Graphics.DesktopGL\NFMWorld.Graphics.DesktopGL.csproj" />
-        <ProjectReference Include="..\NFMWorld.Shaders.Abstraction\NFMWorld.Shaders.Abstraction.csproj" />
+        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj"/>
+        <ProjectReference Include="..\NFMWorld.Graphics.DesktopGL\NFMWorld.Graphics.DesktopGL.csproj"/>
+        <ProjectReference Include="..\NFMWorld.Shaders.Abstraction\NFMWorld.Shaders.Abstraction.csproj"/>
         <!-- For the SDL context. This test is the game's context path rather than its own, which is
              the point: the driver it measures has to be the one the game runs on.
 
@@ -23,8 +23,8 @@
              transitive project references do not carry NFMWorld.Platform.SDL3's own Aliases through,
              so a project that reads SDL directly has to alias it again or the two copies of the
              SDL3.SDL type collide. -->
-        <ProjectReference Include="..\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
-        <ProjectReference Include="..\NFMWorld.Platform.SDL3\NFMWorld.Platform.SDL3.csproj" />
+        <ProjectReference Include="..\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New"/>
+        <ProjectReference Include="..\NFMWorld.Platform.SDL3\NFMWorld.Platform.SDL3.csproj"/>
     </ItemGroup>
 
     <!-- SDL3 at the output root, matching NFMWorld.Graphics.FNA3D.Smoke's shape. The game finds it
@@ -32,7 +32,7 @@
          has no such resolver, so the DLL sits next to the executable where default probing finds it.
          opengl32.dll needs no entry here - it is a system library. -->
     <ItemGroup>
-        <None Include="..\NFMWorld.NativeLibs\libs\x64\SDL3.dll" Link="SDL3.dll" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="..\NFMWorld.NativeLibs\libs\x64\SDL3.dll" Link="SDL3.dll" CopyToOutputDirectory="PreserveNewest"/>
     </ItemGroup>
 
     <!-- The real generated bundles, produced here by the same build step the game uses, so the GLSL
@@ -44,6 +44,6 @@
         <NFMWorldShadersDirectory>$(MSBuildProjectDirectory)\..\nfm-world\data\shaders</NFMWorldShadersDirectory>
     </PropertyGroup>
 
-    <Import Project="..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.targets" />
+    <Import Project="..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.targets"/>
 
 </Project>

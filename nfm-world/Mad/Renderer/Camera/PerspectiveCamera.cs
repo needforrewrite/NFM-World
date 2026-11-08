@@ -7,7 +7,7 @@ public class PerspectiveCamera : Camera
 {
     public const float DefaultFov = 58.715516388168026651329f;
     public float Fov { get; set; } = DefaultFov;
-    
+
     public override void OnBeforeRender(float alpha)
     {
         // Guard against uninitialised viewport: Width or Height of zero produces

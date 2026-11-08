@@ -8,9 +8,12 @@ namespace NFMWorldLibrary.Util;
 
 [MemoryPackable, PluginVisible]
 public partial record struct Color3(
-    [property: JsonPropertyName("r"), PluginVisible] short R,
-    [property: JsonPropertyName("g"), PluginVisible] short G,
-    [property: JsonPropertyName("b"), PluginVisible] short B
+    [property: JsonPropertyName("r"), PluginVisible]
+    short R,
+    [property: JsonPropertyName("g"), PluginVisible]
+    short G,
+    [property: JsonPropertyName("b"), PluginVisible]
+    short B
 )
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -38,10 +41,12 @@ public partial record struct Color3(
 
             static short ThrowIndexOutOfRangeException(int index)
             {
-                throw new IndexOutOfRangeException($"Index was out of range. Must be between 0 and 2, inclusive. Received: {index}");
+                throw new IndexOutOfRangeException(
+                    $"Index was out of range. Must be between 0 and 2, inclusive. Received: {index}"
+                );
             }
         }
-        set 
+        set
         {
             switch (index)
             {
@@ -61,7 +66,9 @@ public partial record struct Color3(
 
             static void ThrowIndexOutOfRangeException(int index)
             {
-                throw new IndexOutOfRangeException($"Index was out of range. Must be between 0 and 2, inclusive. Received: {index}");
+                throw new IndexOutOfRangeException(
+                    $"Index was out of range. Must be between 0 and 2, inclusive. Received: {index}"
+                );
             }
         }
     }
@@ -72,30 +79,34 @@ public partial record struct Color3(
     public static implicit operator ColorBGRA(Color3 color) => new(color.R, color.G, color.B, 255);
     public static explicit operator Color3(Color color) => new(color.R, color.G, color.B);
     public static explicit operator Color3(ColorBGRA color) => new(color.R, color.G, color.B);
+
     public static implicit operator Color(Color3 color) => new(
         (byte)Math.Clamp(color.R, (short)0, (short)255),
         (byte)Math.Clamp(color.G, (short)0, (short)255),
         (byte)Math.Clamp(color.B, (short)0, (short)255)
     );
-    
+
     public static Color3 operator +(Color3 a, Color3 b)
         => new(
             (short)(a.R + b.R),
             (short)(a.G + b.G),
             (short)(a.B + b.B)
         );
+
     public static Color3 operator *(Color3 a, float b)
         => new(
             (short)(a.R * b),
             (short)(a.G * b),
             (short)(a.B * b)
         );
+
     public static Color3 operator /(Color3 a, float b)
         => new(
             (short)(a.R / b),
             (short)(a.G / b),
             (short)(a.B / b)
         );
+
     public static Color3 operator -(Color3 a, Color3 b)
         => new(
             (short)(a.R - b.R),
@@ -115,14 +126,16 @@ public partial record struct Color3(
     }
 
     private const double Factor = 0.7;
+
     public Color3 Darker()
     {
         return new Color3(
-            (short) Math.Max((int) (R * Factor), 0),
-            (short) Math.Max((int) (G * Factor), 0),
-            (short) Math.Max((int) (B * Factor), 0)
+            (short)Math.Max((int)(R * Factor), 0),
+            (short)Math.Max((int)(G * Factor), 0),
+            (short)Math.Max((int)(B * Factor), 0)
         );
     }
+
     public Color3 Brighter()
     {
         var r = R;
@@ -134,11 +147,12 @@ public partial record struct Color3(
          * 2. applying brighter to blue will always return blue, brighter
          * 3. non pure color (non zero rgb) will eventually return white
          */
-        const int i = (int) (1.0 / (1.0 - Factor));
+        const int i = (int)(1.0 / (1.0 - Factor));
         if (r == 0 && g == 0 && b == 0)
         {
             return new Color3(i, i, i);
         }
+
         if (r is > 0 and < i)
         {
             r = i;
@@ -155,9 +169,9 @@ public partial record struct Color3(
         }
 
         return new Color3(
-            (short) Math.Min((int) (r / Factor), 255),
-            (short) Math.Min((int) (g / Factor), 255),
-            (short) Math.Min((int) (b / Factor), 255)
+            (short)Math.Min((int)(r / Factor), 255),
+            (short)Math.Min((int)(g / Factor), 255),
+            (short)Math.Min((int)(b / Factor), 255)
         );
     }
 

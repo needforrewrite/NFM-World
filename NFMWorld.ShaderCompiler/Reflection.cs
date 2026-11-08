@@ -5,10 +5,23 @@ namespace NFMWorld.ShaderCompiler;
 /// Kept deliberately close to the C++ shape so the emitter written against it can
 /// stay a line-for-line translation of <c>generators/sokolc.cc</c>.
 /// </summary>
-public enum ShaderStage { Invalid = -1, Vertex, Fragment, Compute }
+public enum ShaderStage
+{
+    Invalid = -1,
+    Vertex,
+    Fragment,
+    Compute
+}
 
 /// <summary>Scalar/vector/matrix base type, matching spirv-cross's <c>Basetype</c> subset we care about.</summary>
-public enum BaseType { Unknown, Bool, Int, Uint, Float }
+public enum BaseType
+{
+    Unknown,
+    Bool,
+    Int,
+    Uint,
+    Float
+}
 
 /// <summary>One reflected struct member (a uniform block field).</summary>
 public sealed record UniformMember(string Name, int Offset, int SizeBytes, BaseType Type, int VectorSize, int Columns);
@@ -38,14 +51,21 @@ public sealed record StageReflection(
     ShaderStage Stage,
     string EntryPoint,
     IReadOnlyList<StageAttr> Inputs,
-    IReadOnlyList<UniformBlock> UniformBlocks)
+    IReadOnlyList<UniformBlock> UniformBlocks
+)
 {
     public IReadOnlyList<TextureBinding> Textures { get; init; } = Array.Empty<TextureBinding>();
     public IReadOnlyList<SamplerBinding> Samplers { get; init; } = Array.Empty<SamplerBinding>();
 }
 
 /// <summary>A uniform block as declared in one stage.</summary>
-public sealed record UniformBlock(string Name, string InstanceName, int SizeBytes, IReadOnlyList<UniformMember> Members, int Binding = -1);
+public sealed record UniformBlock(
+    string Name,
+    string InstanceName,
+    int SizeBytes,
+    IReadOnlyList<UniformMember> Members,
+    int Binding = -1
+);
 
 /// <summary>Everything reflected out of one <c>@program</c>, after slot merging.</summary>
 public sealed record ProgramReflection(
@@ -53,7 +73,8 @@ public sealed record ProgramReflection(
     IReadOnlyList<StageReflection> Stages,
     IReadOnlyList<UniformBlock> UniformBlocks,
     IReadOnlyList<TextureBinding> Textures,
-    IReadOnlyList<SamplerBinding> Samplers);
+    IReadOnlyList<SamplerBinding> Samplers
+);
 
 /// <summary>
 /// One stage's cross-compiled forms, one per backend sokol can be built against.

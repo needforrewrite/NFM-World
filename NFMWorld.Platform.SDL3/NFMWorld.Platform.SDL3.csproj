@@ -9,8 +9,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
-        <ProjectReference Include="..\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
+        <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj"/>
+        <ProjectReference Include="..\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New"/>
     </ItemGroup>
 
 </Project>

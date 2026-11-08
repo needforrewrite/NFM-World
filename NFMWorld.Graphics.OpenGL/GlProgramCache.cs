@@ -90,10 +90,12 @@ internal sealed class GlProgramCache
     /// GL_VERSION is in here alongside the renderer string because it is the one that changes on a
     /// driver update, which is the event the OES spec names as invalidating a binary.
     /// </summary>
-    private static string DriverIdentity(GL gl) => string.Join('|',
+    private static string DriverIdentity(GL gl) => string.Join(
+        '|',
         String(gl, StringName.Vendor),
         String(gl, StringName.Renderer),
-        String(gl, StringName.Version));
+        String(gl, StringName.Version)
+    );
 
     private static unsafe string String(GL gl, StringName name)
     {
@@ -112,8 +114,11 @@ internal sealed class GlProgramCache
         if (!IsEnabled)
             return null;
 
-        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(
-            $"{_prefix}\n--vertex--\n{vertex.GlslEs}\n--pixel--\n{pixel.GlslEs}\n"));
+        var hash = SHA256.HashData(
+            Encoding.UTF8.GetBytes(
+                $"{_prefix}\n--vertex--\n{vertex.GlslEs}\n--pixel--\n{pixel.GlslEs}\n"
+            )
+        );
 
         return Path.Combine(_directory, $"{Convert.ToHexString(hash)}.bin");
     }
@@ -183,7 +188,7 @@ internal sealed class GlProgramCache
 
         var blob = new byte[length];
         uint written = 0;
-        var format = default(OES);   // overwritten by the call
+        var format = default(OES); // overwritten by the call
         _ext.GetProgramBinary(program, &written, &format, blob.AsSpan());
         if (written == 0)
             return;

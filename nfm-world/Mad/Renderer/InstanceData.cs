@@ -3,7 +3,14 @@ using NFMWorld.Shaders;
 
 namespace NFMWorld;
 
-public struct InstanceData(Matrix world, long layer = 0, bool getsShadowed = false, float alphaOverride = 1.0f, bool isFullbright = false, bool glow = false) : IEquatable<InstanceData>
+public struct InstanceData(
+    Matrix world,
+    long layer = 0,
+    bool getsShadowed = false,
+    float alphaOverride = 1.0f,
+    bool isFullbright = false,
+    bool glow = false
+) : IEquatable<InstanceData>
 {
     /// <summary>This struct's managed size in bytes: a Matrix4x4 (64) plus two Vector4s (16 each).</summary>
     public const int Stride = 96;
@@ -24,7 +31,8 @@ public struct InstanceData(Matrix world, long layer = 0, bool getsShadowed = fal
             new VertexAttributeDesc("TEXCOORD", 8, 80, VertexAttributeFormat.Float4),
         ],
         StrideInBytes: 96,
-        InstanceStepRate: 1);
+        InstanceStepRate: 1
+    );
 
     /// <summary>
     /// The per-instance world matrix, stored <em>untransposed</em>.
@@ -54,9 +62,17 @@ public struct InstanceData(Matrix world, long layer = 0, bool getsShadowed = fal
     /// would have to be in how that backend binds the four registers.
     /// </summary>
     public Matrix World = world;
-    public Vector4 AdditionalData = new(getsShadowed ? 1.0f : 0.0f, alphaOverride, isFullbright ? 1.0f : 0.0f, glow ? 1.0f : 0.0f); // x: GetsShadowed (1.0 or 0.0), y: AlphaOverride, z: IsFullbright (1.0 or 0.0), w: Glow (1.0 or 0.0)
+
+    public Vector4
+        AdditionalData = new(
+            getsShadowed ? 1.0f : 0.0f,
+            alphaOverride,
+            isFullbright ? 1.0f : 0.0f,
+            glow ? 1.0f : 0.0f
+        ); // x: GetsShadowed (1.0 or 0.0), y: AlphaOverride, z: IsFullbright (1.0 or 0.0), w: Glow (1.0 or 0.0)
+
     public Vector4 AdditionalData2 = new(layer, 0, 0, 0); // x: Layer
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool Equals(InstanceData other) =>
         World.Equals(other.World) && AdditionalData.Equals(other.AdditionalData) && AdditionalData2.Equals(other.AdditionalData2);

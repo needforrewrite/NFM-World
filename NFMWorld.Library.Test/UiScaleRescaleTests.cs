@@ -59,8 +59,12 @@ public class UiScaleRescaleTests
 
         Assert.AreEqual(200f, root.LayoutWidth, 0.01f);
         Assert.AreEqual(100f, child.LayoutWidth, 0.01f, "child must rescale with the root");
-        Assert.AreEqual(50f, grandchild.LayoutWidth, 0.01f,
-            "the walk must descend through the child to reach the grandchild");
+        Assert.AreEqual(
+            50f,
+            grandchild.LayoutWidth,
+            0.01f,
+            "the walk must descend through the child to reach the grandchild"
+        );
     }
 
     [TestMethod]

@@ -85,11 +85,13 @@ public class EditorStageWall(WallDirection direction, int count, int position, i
         get => wallDef.Count;
         set => wallDef = wallDef with { Count = value };
     }
+
     public int Position
     {
         get => wallDef.Position;
         set => wallDef = wallDef with { Position = value };
     }
+
     public int Offset
     {
         get => wallDef.Offset;
@@ -124,18 +126,29 @@ public class HierarchyGroup
 public class StageEditorTab
 {
     public string TabName { get; set; } = "Stage";
-    public KeyedCollection<int, StagePieceInstance> ScenePieces { get; set; } = KeyedCollection.From<int, StagePieceInstance>(p => p.Id);
+
+    public KeyedCollection<int, StagePieceInstance> ScenePieces { get; set; } =
+        KeyedCollection.From<int, StagePieceInstance>(p => p.Id);
+
     public KeyedCollection<int, EditorStageWall> StageWalls { get; set; } = KeyedCollection.From<int, EditorStageWall>(p => p.Id);
     public List<MeshedGameObject> WallMeshes { get; set; } = []; // Visual representation of walls
+
     public List<string> UnknownParameters { get; set; } = []; // Unknown/unhandled stage parameters to preserve
+
     // Known directives the editor does not currently expose; keep raw lines for round-trip safety.
     public List<string> PreservedDirectives { get; set; } = [];
+
     // Editor-only groups for hierarchy organisation (saved as metadata comments in stage file)
-    public KeyedCollection<int,HierarchyGroup> HierarchyGroups { get; set; } = KeyedCollection.From<int, HierarchyGroup>(g => g.Id);
+    public KeyedCollection<int, HierarchyGroup> HierarchyGroups { get; set; } =
+        KeyedCollection.From<int, HierarchyGroup>(g => g.Id);
+
     private int _nextGroupId = 0;
+
     public int GetNextGroupId() => _nextGroupId++;
+
     // Where the "Ungrouped" section appears relative to the group list (-1 = after all groups)
     public int UngroupedOrderIndex { get; set; } = -1;
+
     // Camera/view controls
     public Vector3 CameraPosition { get; set; } = new Vector3(0, -300, -1500);
     public float CameraYaw { get; set; } = 0f;
@@ -158,7 +171,12 @@ public class StageEditorTab
     public HashSet<int> SelectedPieceIds { get; set; } = new(); // multi-selection set
 
     // View mode
-    public enum ViewModeEnum { Scene, TopDown }
+    public enum ViewModeEnum
+    {
+        Scene,
+        TopDown
+    }
+
     public ViewModeEnum ViewMode { get; set; } = ViewModeEnum.Scene;
 
     // Associated stage and scene
@@ -194,11 +212,13 @@ public class StageEditorTab
             if (piece.Id > maxId)
                 maxId = piece.Id;
         }
+
         foreach (var wall in StageWalls)
         {
             if (wall.Id > maxId)
                 maxId = wall.Id;
         }
+
         return maxId + 1;
     }
 }
@@ -257,7 +277,7 @@ public partial class StageEditorPhase : BasePhase
     private int _pendingPlacementPartIndex = -1; // index into _availableParts; -1 = not in placement mode
     private f64Vector3 _pendingPlacementPos = f64Vector3.Zero;
     private bool _hasValidPlacementPos = false;
-    private float _pendingPlacementYaw = 0f;  // degrees, modified by Q/E while in placement mode
+    private float _pendingPlacementYaw = 0f; // degrees, modified by Q/E while in placement mode
     private int _pendingPlacementYOff = 0;
 
     // Auto-update stage walls when pieces are placed/moved
@@ -271,7 +291,9 @@ public partial class StageEditorPhase : BasePhase
 
     // Grid Snapping
     private bool _gridSnapEnabled = false;
+
     private float _gridSnapSize = 100f; // world units; standard road spacing is 5600
+
     // Preset snap sizes (shown as labels in the UI)
     private static readonly float[] SnapPresets = [50f, 100f, 200f, 400f, 560f, 1000f, 2800f, 5600f];
     private int _snapPresetIndex = 0;
@@ -280,6 +302,7 @@ public partial class StageEditorPhase : BasePhase
     private bool _showNewStageDialog = false;
     private string _newStageName = "";
     private int _newStageStartPartIndex = 0; // index into _newStageStartPartOptions
+
     private static readonly string[] _newStageStartPartOptions =
     {
         "(none)",
@@ -319,6 +342,7 @@ public partial class StageEditorPhase : BasePhase
 
     // Export top-down image
     private bool _showExportDialog = false;
+
     // Export asked for from an ImGui callback, performed at the top of the next Render(cb, ...)
     // - binding a render target needs the frame's command buffer, and ImGui handling runs inside it.
     private bool _exportRequested;
@@ -351,9 +375,12 @@ public partial class StageEditorPhase : BasePhase
     private float _gizmoDragStartPosX;
     private float _gizmoDragStartPosY;
     private float _gizmoDragStartPosZ;
+
     private float _gizmoDragStartRotY;
+
     // Centroid of the selection at drag start (used for rotation pivot and axis projection)
     private float _gizmoCentroidX, _gizmoCentroidY, _gizmoCentroidZ;
+
     // Start positions of ALL selected pieces at gizmo drag start (id -> position/rotY)
     private Dictionary<int, f64Vector3> _gizmoDragStartPositions = new();
     private Dictionary<int, float> _gizmoDragStartRotations = new();
@@ -364,8 +391,11 @@ public partial class StageEditorPhase : BasePhase
 
     // Undo / Redo
     private readonly record struct PieceSnapshot(PiecePlacement Piece, StageObject Obj, int Id);
+
     private readonly record struct WallSnapshot(int Id, WallDirection Direction, int Count, int Position, int Offset);
+
     private readonly record struct EditorSnapshot(List<PieceSnapshot> Pieces, List<WallSnapshot> Walls);
+
     private readonly Stack<EditorSnapshot> _undoStack = new();
     private readonly Stack<EditorSnapshot> _redoStack = new();
     private bool _isCtrlPressed = false;
@@ -415,7 +445,8 @@ public partial class StageEditorPhase : BasePhase
         f64Euler Rotation,
         PiecePlacementType PlacementType,
         AiNodeKind? AiNodeKind,
-        bool IsSpecial);
+        bool IsSpecial
+    );
 
     private List<ClipboardPiece> _clipboard = new();
 
@@ -494,11 +525,15 @@ public partial class StageEditorPhase : BasePhase
         {
             if (shadowTarget is null) continue;
             cascadeCb.SetRenderTarget(shadowTarget);
-            cascadeCb.SetViewport(new NFMWorld.Graphics.Viewport(0, 0, GameSparker.ShadowResolution, GameSparker.ShadowResolution));
+            cascadeCb.SetViewport(
+                new NFMWorld.Graphics.Viewport(0, 0, GameSparker.ShadowResolution, GameSparker.ShadowResolution)
+            );
             cascadeCb.Clear(
                 NFMWorld.Graphics.ClearOptions.Color | NFMWorld.Graphics.ClearOptions.Depth,
-                new NFMWorld.Graphics.ColorRgba(1f, 1f, 1f, 1f));
+                new NFMWorld.Graphics.ColorRgba(1f, 1f, 1f, 1f)
+            );
         }
+
         cascadeCb.SetRenderTarget(null);
         _graphicsDevice.Submit(cascadeCb);
 
@@ -560,15 +595,27 @@ public partial class StageEditorPhase : BasePhase
                                     break;
                                 case WallDirection.Left:
                                     position = new f64Vector3(o, World.Ground, q * 4800 + p);
-                                    rotation = new f64Euler(f64AngleSingle.FromDegrees(180), f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle);
+                                    rotation = new f64Euler(
+                                        f64AngleSingle.FromDegrees(180),
+                                        f64AngleSingle.ZeroAngle,
+                                        f64AngleSingle.ZeroAngle
+                                    );
                                     break;
                                 case WallDirection.Top:
                                     position = new f64Vector3(q * 4800 + p, World.Ground, o);
-                                    rotation = new f64Euler(f64AngleSingle.FromDegrees(90), f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle);
+                                    rotation = new f64Euler(
+                                        f64AngleSingle.FromDegrees(90),
+                                        f64AngleSingle.ZeroAngle,
+                                        f64AngleSingle.ZeroAngle
+                                    );
                                     break;
                                 case WallDirection.Bottom:
                                     position = new f64Vector3(q * 4800 + p, World.Ground, o);
-                                    rotation = new f64Euler(f64AngleSingle.FromDegrees(-90), f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle);
+                                    rotation = new f64Euler(
+                                        f64AngleSingle.FromDegrees(-90),
+                                        f64AngleSingle.ZeroAngle,
+                                        f64AngleSingle.ZeroAngle
+                                    );
                                     break;
                                 default:
                                     position = f64Vector3.Zero;
@@ -627,5 +674,4 @@ public partial class StageEditorPhase : BasePhase
 
         _partPreviews.Clear();
     }
-
 }

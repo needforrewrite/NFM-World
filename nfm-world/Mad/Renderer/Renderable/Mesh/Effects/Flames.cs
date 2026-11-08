@@ -22,7 +22,9 @@ public class Flames : IDisposable, IImmediateRenderElement
 
     private PositionColorVertex[] _triangles;
     private readonly Vector3[] _sparkPoints;
+
     private int _vertexCount;
+
     // Upload happens in Render() rather than GameTick() - see Sparks.cs's identical pattern for why.
     private bool _dirty;
     private readonly IBuffer _vertexBuffer;
@@ -31,7 +33,9 @@ public class Flames : IDisposable, IImmediateRenderElement
 
     public CarDestructionStage DestructionStage => !_car.VisuallyWasted || _embos == 0
         ? CarDestructionStage.None
-        : _embos < 16 ? CarDestructionStage.WhiteSparks : CarDestructionStage.Fire;
+        : _embos < 16
+            ? CarDestructionStage.WhiteSparks
+            : CarDestructionStage.Fire;
 
     public void Reset()
     {
@@ -58,11 +62,14 @@ public class Flames : IDisposable, IImmediateRenderElement
             sparkVertexCount += poly.Triangles.Length;
             maxPoints = Math.Max(maxPoints, poly.Points.Length);
         }
+
         _sparkPoints = new Vector3[maxPoints];
         _triangles = new PositionColorVertex[Math.Max(9 * car.Mesh.Polys.Length, sparkVertexCount)];
         var maxBytes = _triangles.Length * PositionColorVertex.Stride;
         _vertexBuffer = graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxBytes), new byte[maxBytes]);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxBytes),
+            new byte[maxBytes]
+        );
     }
 
     public void GameTick()
@@ -127,7 +134,7 @@ public class Flames : IDisposable, IImmediateRenderElement
                 }
 
                 _tick = 0;
-                
+
                 if (_embos >= 16)
                 {
                     var outerX = new InlineArray3<float>();
@@ -139,35 +146,38 @@ public class Flames : IDisposable, IImmediateRenderElement
                     for (var i = 0; i < _car.Mesh.Polys.Length; i++)
                     {
                         var poly = _car.Mesh.Polys[i];
-                        
+
                         var i45 = 1;
                         var i46 = 1;
                         int i47;
                         for (i47 = (int)Math.Abs((float)_car.Rotation.Zy.Degrees); i47 > 270; i47 -= 360)
                         {
                         }
+
                         i47 = Math.Abs(i47);
                         if (i47 > 90)
                         {
                             i45 = -1;
                         }
+
                         int i48;
                         for (i48 = (int)Math.Abs((float)_car.Rotation.Xy.Degrees); i48 > 270; i48 -= 360)
                         {
                         }
+
                         i48 = Math.Abs(i48);
                         if (i48 > 90)
                         {
                             i46 = -1;
                         }
-                        
+
                         outerX[0] = poly.Points[_pa[i]].X;
                         outerY[0] = poly.Points[_pa[i]].Y;
                         outerZ[0] = poly.Points[_pa[i]].Z;
                         outerX[1] = poly.Points[_pb[i]].X;
                         outerY[1] = poly.Points[_pb[i]].Y;
                         outerZ[1] = poly.Points[_pb[i]].Z;
-                        
+
                         while (Math.Abs(outerX[0] - outerX[1]) > 100)
                         {
                             if (outerX[1] > outerX[0])
@@ -191,47 +201,54 @@ public class Flames : IDisposable, IImmediateRenderElement
                                 outerZ[1] += 30;
                             }
                         }
-                        
-                        var i51 = (int) (Math.Abs(outerX[0] - outerX[1]) / 3 * (0.5 - URandom.Single()));
-                        var i52 = (int) (Math.Abs(outerZ[0] - outerZ[1]) / 3 * (0.5 - URandom.Single()));
+
+                        var i51 = (int)(Math.Abs(outerX[0] - outerX[1]) / 3 * (0.5 - URandom.Single()));
+                        var i52 = (int)(Math.Abs(outerZ[0] - outerZ[1]) / 3 * (0.5 - URandom.Single()));
                         outerX[2] = (outerX[0] + outerX[1]) / 2 + i51;
                         outerZ[2] = (outerZ[0] + outerZ[1]) / 2 + i52;
-                        var i53 = (int) ((Math.Abs(outerX[0] - outerX[1]) + Math.Abs(outerZ[0] - outerZ[1])) / 1.5 * (URandom.Single() / 2.0F + 0.5));
+                        var i53 = (int)((Math.Abs(outerX[0] - outerX[1]) + Math.Abs(outerZ[0] - outerZ[1]))
+                                        / 1.5
+                                        * (URandom.Single() / 2.0F + 0.5));
                         outerY[2] = (outerY[0] + outerY[1]) / 2 - i45 * i46 * i53;
-                        
-                        
-                        var r = (int) (255.0F + 255.0F * (World.Snap[0] / 400.0F));
+
+
+                        var r = (int)(255.0F + 255.0F * (World.Snap[0] / 400.0F));
                         if (r > 255)
                         {
                             r = 255;
                         }
+
                         if (r < 0)
                         {
                             r = 0;
                         }
-                        var g = (int) (169.0F + 169.0F * (World.Snap[1] / 300.0F));
+
+                        var g = (int)(169.0F + 169.0F * (World.Snap[1] / 300.0F));
                         if (g > 255)
                         {
                             g = 255;
                         }
+
                         if (g < 0)
                         {
                             g = 0;
                         }
-                        var b = (int) (89.0F + 89.0F * (World.Snap[2] / 200.0F));
+
+                        var b = (int)(89.0F + 89.0F * (World.Snap[2] / 200.0F));
                         if (b > 255)
                         {
                             b = 255;
                         }
+
                         if (b < 0)
                         {
                             b = 0;
                         }
 
                         var outerColor = (Color)new Color3((short)r, (short)g, (short)b);
-                        
+
                         // inner flame
-                        
+
                         innerX[0] = poly.Points[_pa[i]].X;
                         innerY[0] = poly.Points[_pa[i]].Y;
                         innerZ[0] = poly.Points[_pa[i]].Z;
@@ -264,37 +281,42 @@ public class Flames : IDisposable, IImmediateRenderElement
 
                         innerX[2] = (innerX[0] + innerX[1]) / 2 + i51;
                         innerZ[2] = (innerZ[0] + innerZ[1]) / 2 + i52;
-                        i53 = (int) (i53 * 0.8);
+                        i53 = (int)(i53 * 0.8);
                         innerY[2] = (innerY[0] + innerY[1]) / 2 - i45 * i46 * i53;
-                        
-                        r = (int) (255.0F + 255.0F * (World.Snap[0] / 400.0F));
+
+                        r = (int)(255.0F + 255.0F * (World.Snap[0] / 400.0F));
                         if (r > 255)
                         {
                             r = 255;
                         }
+
                         if (r < 0)
                         {
                             r = 0;
                         }
-                        g = (int) (207.0F + 207.0F * (World.Snap[1] / 300.0F));
+
+                        g = (int)(207.0F + 207.0F * (World.Snap[1] / 300.0F));
                         if (g > 255)
                         {
                             g = 255;
                         }
+
                         if (g < 0)
                         {
                             g = 0;
                         }
-                        b = (int) (136.0F + 136.0F * (World.Snap[2] / 200.0F));
+
+                        b = (int)(136.0F + 136.0F * (World.Snap[2] / 200.0F));
                         if (b > 255)
                         {
                             b = 255;
                         }
+
                         if (b < 0)
                         {
                             b = 0;
                         }
-                        
+
                         var innerColor = (Color)new Color3((short)r, (short)g, (short)b);
 
                         // We build the outer flame out of two triangles, so that it doesn't overlap with the inner flame.
@@ -315,7 +337,7 @@ public class Flames : IDisposable, IImmediateRenderElement
                         _triangles[triBase + 4] = new PositionColorVertex(outer2, outerColor);
                         _triangles[triBase + 5] = new PositionColorVertex(inner2, outerColor);
 
-                         // inner flame
+                        // inner flame
                         _triangles[triBase + 6] = new PositionColorVertex(inner0, innerColor);
                         _triangles[triBase + 7] = new PositionColorVertex(inner1, innerColor);
                         _triangles[triBase + 8] = new PositionColorVertex(inner2, innerColor);
@@ -335,13 +357,16 @@ public class Flames : IDisposable, IImmediateRenderElement
         {
             if (poly.PolyType == PolyType.Glass || !URandom.Boolean()) continue;
             for (var i = 0; i < poly.Points.Length; i++)
-                _sparkPoints[i] = poly.Points[i] + new Vector3(
-                    15 - URandom.Single() * 30,
-                    15 - URandom.Single() * 30,
-                    15 - URandom.Single() * 30);
+                _sparkPoints[i] = poly.Points[i]
+                                  + new Vector3(
+                                      15 - URandom.Single() * 30,
+                                      15 - URandom.Single() * 30,
+                                      15 - URandom.Single() * 30
+                                  );
             foreach (var index in poly.Triangles)
                 _triangles[_vertexCount++] = new PositionColorVertex(_sparkPoints[index], color);
         }
+
         _dirty = _vertexCount > 0;
     }
 

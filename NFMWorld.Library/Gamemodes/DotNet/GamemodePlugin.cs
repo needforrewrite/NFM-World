@@ -96,14 +96,16 @@ public sealed class GamemodePlugin
     public PluginGamemode CreateClient(
         ClientGamemodeParameters parameters,
         IGamemodeContext context,
-        Dictionary<string, object>? config = null)
+        Dictionary<string, object>? config = null
+    )
         => (PluginGamemode)ClientConstructor.Invoke([parameters, context, Id, config]);
 
     /// <summary>Creates the server-side gamemode instance.</summary>
     public PluginServerGamemode CreateServer(
         ServerGamemodeParameters parameters,
         IServerGamemodeContext context,
-        Dictionary<string, object>? config = null)
+        Dictionary<string, object>? config = null
+    )
         => _serverConstructor is null
             ? throw new InvalidOperationException($"Gamemode '{Id}' has no server-side implementation.")
             : (PluginServerGamemode)_serverConstructor.Invoke([parameters, context, Id, config]);
@@ -135,24 +137,28 @@ public sealed class GamemodePlugin
 
         foreach (var attribute in assembly.GetCustomAttributes<GamemodeConfigPropertyAttribute>())
         {
-            properties.Add(new GamemodeConfigProperty
-            {
-                Name = attribute.Name,
-                Type = attribute.Type,
-                Label = attribute.Label,
-                Description = attribute.Description
-            });
+            properties.Add(
+                new GamemodeConfigProperty
+                {
+                    Name = attribute.Name,
+                    Type = attribute.Type,
+                    Label = attribute.Label,
+                    Description = attribute.Description
+                }
+            );
         }
 
         foreach (var option in assembly.GetCustomAttributes<GamemodeConfigPropertyOptionAttribute>())
         {
             if (properties.FirstOrDefault(p => p.Name == option.Property) is { } property)
             {
-                property.Options.Add(new GamemodeConfigPropertyOption
-                {
-                    Label = option.Label,
-                    Value = option.Value
-                });
+                property.Options.Add(
+                    new GamemodeConfigPropertyOption
+                    {
+                        Label = option.Label,
+                        Value = option.Value
+                    }
+                );
             }
         }
 

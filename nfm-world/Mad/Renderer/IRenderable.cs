@@ -11,7 +11,9 @@ public interface IRenderable
     /// Called once per frame before <see cref="SubmitDraws"/> to interpolate transforms
     /// and perform any pre-render setup.
     /// </summary>
-    void OnBeforeRender(float alpha) { }
+    void OnBeforeRender(float alpha)
+    {
+    }
 
     /// <summary>
     /// Submit all draws for this object to the queue. Called once per object per render pass

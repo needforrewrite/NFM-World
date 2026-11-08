@@ -12,6 +12,7 @@ public static class MenuHistory
     private const string SavePath = "data/cfg/menu-history.json";
 
     public sealed record Selection(string Stage = DefaultStage, string Car = DefaultCar);
+
     public static Selection LastPlayed { get; private set; } = new();
 
     public static void Load()
@@ -29,12 +30,13 @@ public static class MenuHistory
     }
 
     public static string Stage => !string.IsNullOrWhiteSpace(LastPlayed.Stage)
-        && (TheVFS.VFS.FileExists($"data/stages/{LastPlayed.Stage}.txt")
-            || TheVFS.VFS.FileExists($"data/stages/{LastPlayed.Stage}.radpack"))
-        ? LastPlayed.Stage : DefaultStage;
+                                  && (TheVFS.VFS.FileExists($"data/stages/{LastPlayed.Stage}.txt")
+                                      || TheVFS.VFS.FileExists($"data/stages/{LastPlayed.Stage}.radpack"))
+        ? LastPlayed.Stage
+        : DefaultStage;
 
     public static Rad3d? Car => BackendGameSparker.GetCar(LastPlayed.Car ?? DefaultCar).Rad
-        ?? BackendGameSparker.GetCar(DefaultCar).Rad;
+                                ?? BackendGameSparker.GetCar(DefaultCar).Rad;
 
     public static void Remember(string? stage = null, string? car = null)
     {

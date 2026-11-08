@@ -8,6 +8,7 @@
 // whole of Main behind OperatingSystem.IsWindows. Without the attribute every one of those calls
 // raises CA1416, so the warnings would be a hundred lines of noise in a project whose entire output
 // is a pass/fail report.
+
 using System.Runtime.Versioning;
 
 [assembly: SupportedOSPlatform("windows")]

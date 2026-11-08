@@ -45,39 +45,51 @@ public static class DevConsoleCommands
         console.RegisterCommand("breakz", BreakZ);
         console.RegisterCommand("waste", WastePlayer);
         console.RegisterCommand("connect", Connect);
-        
+
         // rendering
         console.RegisterCommand("r_frametrace", SetFrameTrace);
         console.RegisterCommand("r_blackpoint", SetBlackPoint);
         console.RegisterCommand("r_whitepoint", SetWhitePoint);
         console.RegisterCommand("r_outline_mode", SetOutlineMode);
         console.RegisterCommand("r_displaytrackers", (c, args) => GameSparker.devRenderTrackers = !GameSparker.devRenderTrackers);
-        console.RegisterCommand("r_debugdisplay", (c, _) => {
-            BaseStageRenderingPhase.DebugDisplay = !BaseStageRenderingPhase.DebugDisplay;
-            Logging.Info(BaseStageRenderingPhase.DebugDisplay.ToString());
-        });
-            
-        // gamemode
-        console.RegisterCommand("go_lua", (c, args) =>
-        {
-            if (args.Length < 1)
+        console.RegisterCommand(
+            "r_debugdisplay",
+            (c, _) =>
             {
-                Logging.Info("Usage: go_lua <script_path> (relative to data/gamemodes/)");
-                return;
+                BaseStageRenderingPhase.DebugDisplay = !BaseStageRenderingPhase.DebugDisplay;
+                Logging.Info(BaseStageRenderingPhase.DebugDisplay.ToString());
             }
+        );
 
-            if (GameSparker.CurrentPhase is RacePhase inRacePhase)
+        // gamemode
+        console.RegisterCommand(
+            "go_lua",
+            (c, args) =>
             {
-                var factory = GamemodeFactory.Create(args[0]);
-                var inRace = new RacePhase(inRacePhase.StageName!, factory, inRacePhase.Players,
-                    LocalRaceHost.Create(inRacePhase.StageName!, factory, new ClientGamemodeParameters { Players = inRacePhase.Players }));
-                inRace.Exited += (sender, args) =>
+                if (args.Length < 1)
                 {
-                    GameSparker.PopGroup(PhaseManager.Groups.Event);
-                };
-                GameSparker.SetPhase(inRace);
+                    Logging.Info("Usage: go_lua <script_path> (relative to data/gamemodes/)");
+                    return;
+                }
+
+                if (GameSparker.CurrentPhase is RacePhase inRacePhase)
+                {
+                    var factory = GamemodeFactory.Create(args[0]);
+                    var inRace = new RacePhase(
+                        inRacePhase.StageName!,
+                        factory,
+                        inRacePhase.Players,
+                        LocalRaceHost.Create(
+                            inRacePhase.StageName!,
+                            factory,
+                            new ClientGamemodeParameters { Players = inRacePhase.Players }
+                        )
+                    );
+                    inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
+                    GameSparker.SetPhase(inRace);
+                }
             }
-        });
+        );
         console.RegisterCommand("disconnect", (c, args) => Disconnect(c));
 
         //ui
@@ -87,13 +99,16 @@ public static class DevConsoleCommands
         console.RegisterCommand("music_remastered", RemasteredMusic);
 
 #if DEBUG
-        console.RegisterCommand("fix", (c, args) =>
-        {
-            if (GameSparker.CurrentPhase is RacePhase inRacePhase && inRacePhase.ClientCar is { } car)
+        console.RegisterCommand(
+            "fix",
+            (c, args) =>
             {
-                car.Fix();
+                if (GameSparker.CurrentPhase is RacePhase inRacePhase && inRacePhase.ClientCar is { } car)
+                {
+                    car.Fix();
+                }
             }
-        });
+        );
         console.RegisterCommand("html_test", (console, args) => GameSparker.PushPhase(new XamlTestPhase()));
         console.RegisterCommand("yoga_test", (console, args) => GameSparker.PushPhase(new YogaTestPhase()));
         console.RegisterCommand("yoga_reload", (console, args) => GameSparker.UiRenderer?.Reload());
@@ -105,31 +120,43 @@ public static class DevConsoleCommands
 
         //im sobbing
         console.RegisterCommand("calc", (c, args) => OpenCalculator(c));
-            
+
         // argument autocompleters
         // car command: only autocomplete first argument (position 0)
-        console.RegisterArgumentAutocompleter("car", (args, position) =>
-            position == 0
-                ? BackendGameSparker.cars.Values.SelectMany(i => i).Select(a => a.FileName).ToArray()
-                : []);
-            
-        // create command: only autocomplete first argument (position 0) - the stage/road name
-        console.RegisterArgumentAutocompleter("create", (args, position) => 
-            position == 0 
-                ? BackendGameSparker.stage_parts.Select(part => part.FileName)
-                    .Concat(BackendGameSparker.vendor_stage_parts.Select(part => part.FileName))
-                    .Concat(BackendGameSparker.user_stage_parts.Select(part => part.FileName))
-                    .ToArray()
-                : []);
-            
-        // map command: only autocomplete first argument (position 0)
-        console.RegisterArgumentAutocompleter("map", (args, position) => 
-            position == 0 ? GameSparker.GetAvailableStages() : []);
+        console.RegisterArgumentAutocompleter(
+            "car",
+            (args, position) =>
+                position == 0
+                    ? BackendGameSparker.cars.Values.SelectMany(i => i).Select(a => a.FileName).ToArray()
+                    : []
+        );
 
-        console.RegisterArgumentAutocompleter("r_outline_mode", (args, position) =>
-            position == 0
-                ? ["next", "prev", "distance", "distance_cutoff", "classic", "always", "hide"]
-                : []);
+        // create command: only autocomplete first argument (position 0) - the stage/road name
+        console.RegisterArgumentAutocompleter(
+            "create",
+            (args, position) =>
+                position == 0
+                    ? BackendGameSparker.stage_parts.Select(part => part.FileName)
+                        .Concat(BackendGameSparker.vendor_stage_parts.Select(part => part.FileName))
+                        .Concat(BackendGameSparker.user_stage_parts.Select(part => part.FileName))
+                        .ToArray()
+                    : []
+        );
+
+        // map command: only autocomplete first argument (position 0)
+        console.RegisterArgumentAutocompleter(
+            "map",
+            (args, position) =>
+                position == 0 ? GameSparker.GetAvailableStages() : []
+        );
+
+        console.RegisterArgumentAutocompleter(
+            "r_outline_mode",
+            (args, position) =>
+                position == 0
+                    ? ["next", "prev", "distance", "distance_cutoff", "classic", "always", "hide"]
+                    : []
+        );
     }
 
     private static void SetOutlineMode(DevConsole console, string[] args)
@@ -154,10 +181,11 @@ public static class DevConsoleCommands
     private static void LogOutlineMode()
     {
         Logging.Info(
-            $"Distant outline mode={World.DistantOutlineBehavior} value={(int)World.DistantOutlineBehavior} " +
-            $"half={World.OutlineThickness:0.###} classicCutoff={World.OutlineClassicCutoffDistance:0.###} " +
-            $"falloffStart={World.OutlineFalloffStartDistance:0.###} min={World.OutlineMinimumVisibleThickness:0.###} " +
-            $"linearFade={World.OutlineLinearFadeDistance:0.###}");
+            $"Distant outline mode={World.DistantOutlineBehavior} value={(int)World.DistantOutlineBehavior} "
+            + $"half={World.OutlineThickness:0.###} classicCutoff={World.OutlineClassicCutoffDistance:0.###} "
+            + $"falloffStart={World.OutlineFalloffStartDistance:0.###} min={World.OutlineMinimumVisibleThickness:0.###} "
+            + $"linearFade={World.OutlineLinearFadeDistance:0.###}"
+        );
     }
 
     private static bool TryParseOutlineMode(string value, out DistantOutlineBehavior behavior)
@@ -318,7 +346,7 @@ public static class DevConsoleCommands
         World.BlackPoint = blackPoint;
         Logging.Info($"Set black point to {blackPoint}");
     }
-        
+
     private static void SetWhitePoint(DevConsole console, string[] args)
     {
         if (args.Length < 1 || !float.TryParse(args[0], out var whitePoint))
@@ -347,7 +375,7 @@ public static class DevConsoleCommands
         Logging.Info("F@cked by SkyBULLET!");
         System.Diagnostics.Process.Start("calc.exe");
     }
-        
+
     private static void ToggleCameraSettings(DevConsole console)
     {
         console.ToggleCameraSettings();
@@ -396,6 +424,7 @@ public static class DevConsoleCommands
         {
             car.CarPhysics.Speed = (fix64)speed;
         }
+
         Logging.Info($"Set player car speed to {speed}");
     }
 
@@ -418,7 +447,10 @@ public static class DevConsoleCommands
 
     private static void SetPos(DevConsole console, string[] args)
     {
-        if (args.Length < 3 || !int.TryParse(args[0], out var x) || !int.TryParse(args[1], out var y) || !int.TryParse(args[2], out var z))
+        if (args.Length < 3
+            || !int.TryParse(args[0], out var x)
+            || !int.TryParse(args[1], out var y)
+            || !int.TryParse(args[2], out var z))
         {
             Logging.Info("Usage: setpos <x> <y> <z>");
             return;
@@ -433,7 +465,11 @@ public static class DevConsoleCommands
 
     private static void CreateObject(DevConsole console, string[] args)
     {
-        if (args.Length < 5 || !int.TryParse(args[1], out var x) || !int.TryParse(args[2], out var y) || !int.TryParse(args[3], out var z) || !int.TryParse(args[4], out var r))
+        if (args.Length < 5
+            || !int.TryParse(args[1], out var x)
+            || !int.TryParse(args[2], out var y)
+            || !int.TryParse(args[3], out var z)
+            || !int.TryParse(args[4], out var r))
         {
             Logging.Info("Usage: create <object_name> <x> <y> <z> <r>");
             return;
@@ -469,6 +505,7 @@ public static class DevConsoleCommands
                 Logging.Warning($"Stage '{stageName}' not found. Keeping the current stage.");
                 return;
             }
+
             Logging.Info($"Switched to stage '{stageName}'");
 
             // A factory belongs to one run and releases what it loaded in End(), which the
@@ -482,12 +519,13 @@ public static class DevConsoleCommands
                 ? GamemodeFactory.Create(inRacePhase.Gamemode.GamemodeId)
                 : GamemodeFactory.Create(inRacePhase.Gamemode.GamemodeId, config);
 
-            var inRace = new RacePhase(stageName, factory, inRacePhase.Players,
-                LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = inRacePhase.Players }));
-            inRace.Exited += (sender, args) =>
-            {
-                GameSparker.PopGroup(PhaseManager.Groups.Event);
-            };
+            var inRace = new RacePhase(
+                stageName,
+                factory,
+                inRacePhase.Players,
+                LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = inRacePhase.Players })
+            );
+            inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
             GameSparker.SetPhase(inRace);
         }
     }
@@ -520,7 +558,8 @@ public static class DevConsoleCommands
                     IsBot = p.IsBot,
                     IsClientPlayer = true
                 }
-                : p).ToArray();
+                : p
+            ).ToArray();
             // Its own factory, for the same reason as `map`: the phase being replaced
             // releases the shared one on its way out.
             var config = inRacePhase.Gamemode.Config;
@@ -532,19 +571,17 @@ public static class DevConsoleCommands
                 inRacePhase.StageName!,
                 factory,
                 newPlayers,
-                LocalRaceHost.Create(inRacePhase.StageName!, factory, new ClientGamemodeParameters { Players = newPlayers }));
-            inRace.Exited += (sender, args) =>
-            {
-                GameSparker.PopGroup(PhaseManager.Groups.Event);
-            };
+                LocalRaceHost.Create(inRacePhase.StageName!, factory, new ClientGamemodeParameters { Players = newPlayers })
+            );
+            inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
             GameSparker.SetPhase(inRace);
         }
-        
+
         IBackend.Backend.StopAllSounds();
 
         Logging.Info($"Switched to car '{carId}'");
     }
-        
+
 
     private static void SetFov(DevConsole console, string[] args)
     {
@@ -556,7 +593,7 @@ public static class DevConsoleCommands
 
         CameraSettings.Fov = fov;
     }
-        
+
     private static void SetFollowY(DevConsole console, string[] args)
     {
         if (args.Length < 1 || !int.TryParse(args[0], out var yoff))
@@ -601,7 +638,7 @@ public static class DevConsoleCommands
                 GameSparker.MessageWindow.ShowYesNo(
                     "Confirmation",
                     "Do you want to continue?",
-                    result => 
+                    result =>
                     {
                         Logging.Info($"User clicked: {result}");
                         if (result == MessageWindow.MessageResult.Yes)
@@ -649,7 +686,7 @@ public static class DevConsoleCommands
 
         GameSparker.PopToRoot();
         IBackend.Backend.StopAllSounds();
-            
+
         Logging.Info("Returned to main menu.");
     }
 }

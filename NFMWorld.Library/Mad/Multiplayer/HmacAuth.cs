@@ -25,7 +25,8 @@ public static class HmacAuth
         string path,
         ReadOnlySpan<byte> body,
         string keyId,
-        ReadOnlySpan<byte> secretKey)
+        ReadOnlySpan<byte> secretKey
+    )
     {
         var ts = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var bodyHash = SHA256.HashData(body);
@@ -34,7 +35,8 @@ public static class HmacAuth
 
         var signature = HMACSHA256.HashData(
             secretKey,
-            Encoding.UTF8.GetBytes(stringToSign));
+            Encoding.UTF8.GetBytes(stringToSign)
+        );
 
         return $"{Scheme} keyId={keyId},ts={ts},sig={Convert.ToHexStringLower(signature)}";
     }
@@ -51,7 +53,8 @@ public static class HmacAuth
         ReadOnlySpan<byte> body,
         string keyId,
         ReadOnlySpan<byte> secretKey,
-        string nonce)
+        string nonce
+    )
     {
         var ts = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var bodyHash = SHA256.HashData(body);
@@ -73,7 +76,8 @@ public static class HmacAuth
         ReadOnlySpan<byte> body,
         string? authHeader,
         IReadOnlyDictionary<string, byte[]> knownKeys,
-        int maxClockSkewSec = 30)
+        int maxClockSkewSec = 30
+    )
         => Verify(method, path, body, authHeader, knownKeys, out _, out _, maxClockSkewSec);
 
     /// <summary>
@@ -88,7 +92,8 @@ public static class HmacAuth
         IReadOnlyDictionary<string, byte[]> knownKeys,
         out string? keyIdOut,
         out string nonce,
-        int maxClockSkewSec = 30)
+        int maxClockSkewSec = 30
+    )
     {
         keyIdOut = null;
         nonce = "";
@@ -141,12 +146,14 @@ public static class HmacAuth
 
         var expectedSig = HMACSHA256.HashData(
             secretKey,
-            Encoding.UTF8.GetBytes(stringToSign));
+            Encoding.UTF8.GetBytes(stringToSign)
+        );
         var expectedHex = Convert.ToHexStringLower(expectedSig);
 
         if (!CryptographicOperations.FixedTimeEquals(
                 Encoding.UTF8.GetBytes(expectedHex),
-                Encoding.UTF8.GetBytes(sig)))
+                Encoding.UTF8.GetBytes(sig)
+            ))
             return "Signature mismatch";
 
         keyIdOut = keyId;

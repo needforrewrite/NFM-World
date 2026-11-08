@@ -8,9 +8,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\FixedMathSharp\src\FixedMathSharp\FixedMathSharp.csproj" />
-      <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.Mathematics\Maxine.Extensions.Mathematics.csproj" />
-      <ProjectReference Include="..\NFMWorld.PluginSystem\NFMWorld.PluginSystem.csproj" />
+        <ProjectReference Include="..\FixedMathSharp\src\FixedMathSharp\FixedMathSharp.csproj"/>
+        <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.Mathematics\Maxine.Extensions.Mathematics.csproj"/>
+        <ProjectReference Include="..\NFMWorld.PluginSystem\NFMWorld.PluginSystem.csproj"/>
     </ItemGroup>
 
 </Project>

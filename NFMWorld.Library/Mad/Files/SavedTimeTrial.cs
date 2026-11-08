@@ -144,9 +144,10 @@ public partial class SavedTimeTrial
     [PluginVisible]
     public (bool Up, bool Down, bool Left, bool Right, bool Handb)? GetTick(int tick)
     {
-        if(tick >= DemoData.Ticks.Count) return null;
+        if (tick >= DemoData.Ticks.Count) return null;
         var tickData = DemoData.GetEntry(tick);
-        return (tickData.TheBitFlags.Up, tickData.TheBitFlags.Down, tickData.TheBitFlags.Left, tickData.TheBitFlags.Right, tickData.TheBitFlags.Handb);
+        return (tickData.TheBitFlags.Up, tickData.TheBitFlags.Down, tickData.TheBitFlags.Left, tickData.TheBitFlags.Right,
+            tickData.TheBitFlags.Handb);
     }
 
     [PluginVisible]

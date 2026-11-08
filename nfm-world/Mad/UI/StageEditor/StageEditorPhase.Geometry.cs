@@ -13,14 +13,13 @@ public partial class StageEditorPhase
 {
     private bool IsMouseInViewport(int x, int y)
     {
-        return x >= _viewportMin.X && x <= _viewportMax.X &&
-               y >= _viewportMin.Y && y <= _viewportMax.Y;
+        return x >= _viewportMin.X && x <= _viewportMax.X && y >= _viewportMin.Y && y <= _viewportMax.Y;
     }
-    
+
     private void RebuildAllWalls()
     {
         if (ActiveTab?.Stage == null) return;
-        
+
         // Get the wall mesh from GameSparker
         var wallPart = BackendGameSparker.GetStagePart("nfmm/thewall");
         if (wallPart.Rad == null)
@@ -29,26 +28,26 @@ public partial class StageEditorPhase
             Logging.Error("Wall mesh not found!");
             return;
         }
-        
+
         // Clear the wall meshes list
         ActiveTab.WallMeshes.Clear();
-        
+
         Logging.Info($"Rebuilding walls: {ActiveTab.StageWalls.Count} wall groups");
-        
+
         // Generate wall meshes based on StageWalls definitions
         foreach (var wall in ActiveTab.StageWalls)
         {
             var n = wall.Count;
             var o = wall.Position;
             var p = wall.Offset;
-            
+
             Logging.Debug($"Creating wall: {wall.Direction}, count={n}, pos={o}, offset={p}");
-            
+
             for (int q = 0; q < n; q++)
             {
                 f64Vector3 position;
                 f64Euler rotation;
-                
+
                 switch (wall.Direction)
                 {
                     case WallDirection.Right:
@@ -57,28 +56,40 @@ public partial class StageEditorPhase
                         break;
                     case WallDirection.Left:
                         position = new f64Vector3(o, World.Ground, q * 4800 + p);
-                        rotation = new f64Euler(f64AngleSingle.FromDegrees(180), f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle);
+                        rotation = new f64Euler(
+                            f64AngleSingle.FromDegrees(180),
+                            f64AngleSingle.ZeroAngle,
+                            f64AngleSingle.ZeroAngle
+                        );
                         break;
                     case WallDirection.Top:
                         position = new f64Vector3(q * 4800 + p, World.Ground, o);
-                        rotation = new f64Euler(f64AngleSingle.FromDegrees(90), f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle);
+                        rotation = new f64Euler(
+                            f64AngleSingle.FromDegrees(90),
+                            f64AngleSingle.ZeroAngle,
+                            f64AngleSingle.ZeroAngle
+                        );
                         break;
                     case WallDirection.Bottom:
                         position = new f64Vector3(q * 4800 + p, World.Ground, o);
-                        rotation = new f64Euler(f64AngleSingle.FromDegrees(-90), f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle);
+                        rotation = new f64Euler(
+                            f64AngleSingle.FromDegrees(-90),
+                            f64AngleSingle.ZeroAngle,
+                            f64AngleSingle.ZeroAngle
+                        );
                         break;
                     default:
                         position = f64Vector3.Zero;
                         rotation = f64Euler.Identity;
                         break;
                 }
-                
+
                 ActiveTab.WallMeshes.Add(new MeshedGameObject(new Mesh(wallPart.Rad), position, rotation));
             }
         }
-        
+
         Logging.Debug($"Total wall meshes created: {ActiveTab.WallMeshes.Count}");
-        
+
         // Rebuild scene so new wall meshes are included in instanced rendering
         RecreateScene();
     }
@@ -153,10 +164,10 @@ public partial class StageEditorPhase
 
         // Per Java: maxl={countZ, minXa, offsetZ}  maxr={countZ, maxXa, offsetZ}
         //           maxb={countX, minZa, offsetX}  maxt={countX, maxZa, offsetX}
-        var leftWall   = new EditorStageWall(WallDirection.Left,   countZ, minXa, offsetZ, nextWallId++);
-        var rightWall  = new EditorStageWall(WallDirection.Right,  countZ, maxXa, offsetZ, nextWallId++);
+        var leftWall = new EditorStageWall(WallDirection.Left, countZ, minXa, offsetZ, nextWallId++);
+        var rightWall = new EditorStageWall(WallDirection.Right, countZ, maxXa, offsetZ, nextWallId++);
         var bottomWall = new EditorStageWall(WallDirection.Bottom, countX, minZa, offsetX, nextWallId++);
-        var topWall    = new EditorStageWall(WallDirection.Top,    countX, maxZa, offsetX, nextWallId++);
+        var topWall = new EditorStageWall(WallDirection.Top, countX, maxZa, offsetX, nextWallId++);
 
         rebuiltWalls.Add(leftWall);
         rebuiltWalls.Add(rightWall);
@@ -193,7 +204,7 @@ public partial class StageEditorPhase
                 ImGui.SetTooltip("Add at least one non-wall stage piece before generating borders.");
         }
     }
-    
+
     private static void RenderSelectionHighlights(NFMWorld.Graphics.ICommandBuffer cb, StageEditorTab tab)
     {
         if (tab.SelectedPieceIds.Count == 0)
@@ -209,12 +220,16 @@ public partial class StageEditorPhase
         if (neededVertices == 0)
             return;
 
-        Debug.RenderHighlights(cb, GameSparker.GraphicsDevice, tab.SelectedPieceIds
-            .Select(id => tab.ScenePieces.GetValueOrDefault(id)?.Obj!)
-            .Where(obj => obj != null!),
-            activeCamera);
+        Debug.RenderHighlights(
+            cb,
+            GameSparker.GraphicsDevice,
+            tab.SelectedPieceIds
+                .Select(id => tab.ScenePieces.GetValueOrDefault(id)?.Obj!)
+                .Where(obj => obj != null!),
+            activeCamera
+        );
     }
-    
+
     /// <summary>
     /// Renders a translucent ghost preview of the pending placement part at _pendingPlacementPos.
     /// Shows semi-transparent filled polygons plus a bright wireframe outline.
@@ -223,19 +238,23 @@ public partial class StageEditorPhase
     {
         if (_pendingPlacementPartIndex < 0 || _pendingPlacementPartIndex >= _availableParts.Count) return;
         var part = _availableParts[_pendingPlacementPartIndex];
-        
-        var pos = new Vector3((float)_pendingPlacementPos.X, (float)_pendingPlacementPos.Y + _pendingPlacementYOff, (float)_pendingPlacementPos.Z);
+
+        var pos = new Vector3(
+            (float)_pendingPlacementPos.X,
+            (float)_pendingPlacementPos.Y + _pendingPlacementYOff,
+            (float)_pendingPlacementPos.Z
+        );
         float yawRad = -_pendingPlacementYaw * (float)Math.PI / 180f; // negate to match engine convention
         var rotMatrix = Matrix.CreateRotationY(yawRad);
-        
+
         var worldMatrix = rotMatrix * Matrix.CreateTranslation(pos);
-        
+
         var fillColor = new Color(0.3f, 0.8f, 1.0f, 0.35f);
         var wireColor = new Color(0.1f, 0.9f, 1.0f, 1.0f);
-        
+
         Debug.RenderGhost(cb, GameSparker.GraphicsDevice, part, worldMatrix, fillColor, wireColor, activeCamera);
     }
-    
+
     private Vector3 ComputeSelectionCentroid()
     {
         if (ActiveTab == null) return Vector3.Zero;
@@ -245,7 +264,8 @@ public partial class StageEditorPhase
         return new Vector3(
             (float)pieces.Average(p => (double)p.Position.X),
             (float)pieces.Average(p => (double)p.Position.Y),
-            (float)pieces.Average(p => (double)p.Position.Z));
+            (float)pieces.Average(p => (double)p.Position.Z)
+        );
     }
 
     private void ProcessOnePreviewThumbnail(NFMWorld.Graphics.ICommandBuffer cb)
@@ -258,14 +278,16 @@ public partial class StageEditorPhase
         float maxR = rad.MaxRadius > 0 ? rad.MaxRadius : 300;
 
         var rt = GameSparker.GraphicsDevice.CreateRenderTarget(
-            new NFMWorld.Graphics.RenderTargetDesc(PreviewSize, PreviewSize, NFMWorld.Graphics.TextureFormat.Rgba8));
+            new NFMWorld.Graphics.RenderTargetDesc(PreviewSize, PreviewSize, NFMWorld.Graphics.TextureFormat.Rgba8)
+        );
 
         cb.SetRenderTarget(rt);
         cb.SetViewport(new NFMWorld.Graphics.Viewport(0, 0, PreviewSize, PreviewSize));
         cb.SetScissorRect(new NFMWorld.Graphics.ScissorRect(0, 0, PreviewSize, PreviewSize));
         cb.Clear(
             NFMWorld.Graphics.ClearOptions.Color | NFMWorld.Graphics.ClearOptions.Depth,
-            new NFMWorld.Graphics.ColorRgba(45 / 255f, 45 / 255f, 48 / 255f, 1f));
+            new NFMWorld.Graphics.ColorRgba(45 / 255f, 45 / 255f, 48 / 255f, 1f)
+        );
 
         // Set up a simple isometric-ish view camera for the preview
         float camDist = maxR * 3f;
@@ -301,7 +323,7 @@ public partial class StageEditorPhase
         if (!_partPreviews.ContainsKey(name))
             _previewQueue.Enqueue((name, rad));
     }
-    
+
     /// <summary>
     /// Constructs a pick ray from screen coordinates, handling both perspective and orthographic cameras.
     /// For perspective, the ray originates at the camera position and goes through the near plane.
@@ -314,12 +336,12 @@ public partial class StageEditorPhase
         // these dimensions only; screenX/screenY arrive in window pixels).
         float ndcX = (2.0f * screenX) / GameSparker.Game.Window.Width - 1.0f;
         float ndcY = 1.0f - (2.0f * screenY) / GameSparker.Game.Window.Height;
-        
+
         var projMatrix = activeCamera.ProjectionMatrix;
         Matrix.Invert(projMatrix, out var invProj);
         var viewMatrix = activeCamera.ViewMatrix;
         Matrix.Invert(viewMatrix, out var invView);
-        
+
         if (activeCamera is OrthoCamera)
         {
             // Orthographic: all rays are parallel in the camera's forward direction.
@@ -350,52 +372,50 @@ public partial class StageEditorPhase
     private bool TryGetGroundPositionAtMouse(int screenX, int screenY, out Vector3 result)
     {
         result = default;
-        
+
         var (rayOrigin, rayDirection) = GetPickRay(screenX, screenY);
-        
+
         const float groundY = 250f;
         if (Math.Abs(rayDirection.Y) < 0.0001f) return false;
         float t = (groundY - rayOrigin.Y) / rayDirection.Y;
         if (t <= 0) return false;
-        
+
         result = rayOrigin + rayDirection * t;
         return true;
     }
-    
+
     private int PerformRayPicking(int screenX, int screenY)
     {
         if (ActiveTab.ScenePieces.Count == 0) return -1;
-        
+
         var (rayOrigin, rayDirection) = GetPickRay(screenX, screenY);
-        
+
         // Find closest intersected piece using proper ray-triangle intersection
         float closestDistance = float.MaxValue;
         int closestPieceId = -1;
-        
+
         foreach (var piece in ActiveTab.ScenePieces)
         {
             if (piece.Obj == null) continue;
-            
+
             var mesh = piece.Obj;
-            
+
             // Create rotation matrix matching the game engine's order
             // Rotation is stored as (Pitch, Yaw, Roll) in degrees
             // Negate yaw to match game engine's coordinate system  
             var yaw = -piece.Rotation.Yaw.Radians;
             var pitch = piece.Rotation.Pitch.Radians;
             var roll = piece.Rotation.Roll.Radians;
-            
+
             // Create individual rotation matrices and combine them
-            var rotationMatrix = 
-                Matrix.CreateRotationY((float)yaw) *
-                Matrix.CreateRotationX((float)pitch) *
-                Matrix.CreateRotationZ((float)roll);
-            
+            var rotationMatrix =
+                Matrix.CreateRotationY((float)yaw) * Matrix.CreateRotationX((float)pitch) * Matrix.CreateRotationZ((float)roll);
+
             // Test each polygon
             foreach (var poly in mesh.Rad.Polys)
             {
                 if (poly.Points.Length < 3) continue;
-                
+
                 // Transform all vertices to world space
                 var worldVerts = new Vector3[poly.Points.Length];
                 for (int i = 0; i < poly.Points.Length; i++)
@@ -405,7 +425,7 @@ public partial class StageEditorPhase
                         poly.Points[i].Y,
                         poly.Points[i].Z
                     );
-                    
+
                     // Apply rotation then translation
                     var rotated = Vector3.Transform(localVert, rotationMatrix);
                     worldVerts[i] = new Vector3(
@@ -418,9 +438,9 @@ public partial class StageEditorPhase
                 for (var i = 0; i < poly.Triangles.Length; i += 3)
                 {
                     var v0 = worldVerts[poly.Triangles[i]];
-                     var v1 = worldVerts[poly.Triangles[i + 1]];
-                     var v2 = worldVerts[poly.Triangles[i + 2]];
-                    
+                    var v1 = worldVerts[poly.Triangles[i + 1]];
+                    var v2 = worldVerts[poly.Triangles[i + 2]];
+
                     // Try both winding orders
                     if (RayIntersectsTriangle(rayOrigin, rayDirection, v0, v1, v2, out float dist))
                     {
@@ -441,7 +461,7 @@ public partial class StageEditorPhase
                 }
             }
         }
-        
+
         return closestPieceId;
     }
 
@@ -537,61 +557,62 @@ public partial class StageEditorPhase
         Vector3 v0,
         Vector3 v1,
         Vector3 v2,
-        out float distance)
+        out float distance
+    )
     {
         const float EPSILON = 0.001f; // Increased for better tolerance
         distance = 0;
-        
+
         var edge1 = v1 - v0;
         var edge2 = v2 - v0;
-        
+
         // Check for degenerate triangle
         var edgeLen1 = edge1.Length();
         var edgeLen2 = edge2.Length();
         if (edgeLen1 < EPSILON || edgeLen2 < EPSILON)
             return false;
-        
+
         var h = Vector3.Cross(rayDirection, edge2);
         var a = Vector3.Dot(edge1, h);
-        
+
         // More lenient parallel check
         if (Math.Abs(a) < EPSILON)
             return false;
-        
+
         var f = 1.0f / a;
         var s = rayOrigin - v0;
         var u = f * Vector3.Dot(s, h);
-        
+
         // More lenient bounds checking
         if (u < -EPSILON || u > 1.0f + EPSILON)
             return false;
-        
+
         var q = Vector3.Cross(s, edge1);
         var v = f * Vector3.Dot(rayDirection, q);
-        
+
         // More lenient bounds checking
         if (v < -EPSILON || u + v > 1.0f + EPSILON)
             return false;
-        
+
         var t = f * Vector3.Dot(edge2, q);
-        
+
         // Accept slightly negative distances for near-miss cases
         if (t > -EPSILON)
         {
             distance = Math.Max(t, 0); // Clamp to non-negative
             return true;
         }
-        
+
         return false;
     }
-    
+
     private bool RayIntersectsBox(Vector3 rayOrigin, Vector3 rayDirection, Vector3 boxMin, Vector3 boxMax, out float distance)
     {
         // Slab method for ray-AABB intersection
         distance = 0;
         float tmin = float.MinValue;
         float tmax = float.MaxValue;
-        
+
         // Check X slab
         if (Math.Abs(rayDirection.X) > 0.0001f)
         {
@@ -604,7 +625,7 @@ public partial class StageEditorPhase
         {
             return false;
         }
-        
+
         // Check Y slab
         if (Math.Abs(rayDirection.Y) > 0.0001f)
         {
@@ -617,7 +638,7 @@ public partial class StageEditorPhase
         {
             return false;
         }
-        
+
         // Check Z slab
         if (Math.Abs(rayDirection.Z) > 0.0001f)
         {
@@ -630,14 +651,13 @@ public partial class StageEditorPhase
         {
             return false;
         }
-        
+
         if (tmax >= tmin && tmax >= 0)
         {
             distance = Math.Max(tmin, 0); // Return entry point distance
             return true;
         }
-        
+
         return false;
     }
-
 }

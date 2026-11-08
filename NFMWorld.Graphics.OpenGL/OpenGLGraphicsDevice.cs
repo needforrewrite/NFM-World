@@ -22,9 +22,8 @@ public class OpenGLGraphicsDevice : IGraphicsDevice
     public static OpenGLGraphicsDevice Create(Func<string, nint> getProcAddress, int backBufferWidth, int backBufferHeight)
     {
         return new OpenGLGraphicsDevice(GL.GetApi(getProcAddress), backBufferWidth, backBufferHeight);
-        
     }
-    
+
     public ICommandBuffer AcquireCommandBuffer()
     {
         throw new NotImplementedException();

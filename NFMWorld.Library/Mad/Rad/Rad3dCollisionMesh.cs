@@ -6,7 +6,10 @@ namespace NFMWorldLibrary.Rad;
 
 [MemoryPackable(GenerateType.VersionTolerant), PluginVisible(Visible.IncludingAllMembersOfType)]
 [method: MemoryPackConstructor]
-public readonly partial record struct Rad3dCollisionMesh([property: MemoryPackOrder(0)] f64Vector3[] Vertices, [property: MemoryPackOrder(1)] ushort[] Indices)
+public readonly partial record struct Rad3dCollisionMesh(
+    [property: MemoryPackOrder(0)] f64Vector3[] Vertices,
+    [property: MemoryPackOrder(1)] ushort[] Indices
+)
 {
     [MemoryPackIgnore] public (f64Vector3 min, f64Vector3 max)[] Aabb { get; } = CalculateAabb(Vertices, Indices);
 
@@ -28,7 +31,10 @@ public readonly partial record struct Rad3dCollisionMesh([property: MemoryPackOr
         return hashCode.ToHashCode();
     }
 
-    private static (f64Vector3 min, f64Vector3 max)[] CalculateAabb(ReadOnlySpan<f64Vector3> vertices, ReadOnlySpan<ushort> indices)
+    private static (f64Vector3 min, f64Vector3 max)[] CalculateAabb(
+        ReadOnlySpan<f64Vector3> vertices,
+        ReadOnlySpan<ushort> indices
+    )
     {
         var aabbs = new (f64Vector3 min, f64Vector3 max)[indices.Length / 3];
         for (var i = 0; i < indices.Length; i += 3)
@@ -53,7 +59,7 @@ public readonly partial record struct Rad3dCollisionMesh([property: MemoryPackOr
         if (!Vertices.SequenceEqual(other.Vertices)) return false;
         return Indices.SequenceEqual(other.Indices);
     }
-    
+
     public bool Equals(Rad3dCollisionMesh? other)
     {
         if (other is null) return false;

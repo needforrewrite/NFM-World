@@ -46,13 +46,18 @@ public sealed class ImmediateBatch3D(IGraphicsDevice device) : IGraphics3D, IDis
             {
                 _vertexBuffer?.Dispose();
                 _vertexBufferCapacity = Vertices.Length;
-                _vertexBuffer = device.CreateBuffer(new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, _vertexBufferCapacity * Stride));
+                _vertexBuffer = device.CreateBuffer(
+                    new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, _vertexBufferCapacity * Stride)
+                );
             }
+
             if (IndexCount > _indexBufferCapacity)
             {
                 _indexBuffer?.Dispose();
                 _indexBufferCapacity = Indices.Length;
-                _indexBuffer = device.CreateBuffer(new BufferDesc(BufferKind.Index, BufferUsage.Dynamic, _indexBufferCapacity * sizeof(uint), IndexFormat.UInt32));
+                _indexBuffer = device.CreateBuffer(
+                    new BufferDesc(BufferKind.Index, BufferUsage.Dynamic, _indexBufferCapacity * sizeof(uint), IndexFormat.UInt32)
+                );
             }
 
             cb.UpdateBuffer(_vertexBuffer!, MemoryMarshal.AsBytes(Vertices.AsSpan(0, VertexCount)));
@@ -145,6 +150,7 @@ public sealed class ImmediateBatch3D(IGraphicsDevice device) : IGraphics3D, IDis
             _lines.Indices[ii++] = @base + 2;
             vi += LineMeshHelpers.VerticesPerLine;
         }
+
         _lines.VertexCount = vi;
         _lines.IndexCount = ii;
     }
@@ -165,7 +171,10 @@ public sealed class ImmediateBatch3D(IGraphicsDevice device) : IGraphics3D, IDis
         foreach (var index in indices)
         {
             if ((uint)index >= (uint)vertexCount)
-                throw new ArgumentOutOfRangeException(nameof(indices), $"Index {index} is out of range for {vertexCount} vertices.");
+                throw new ArgumentOutOfRangeException(
+                    nameof(indices),
+                    $"Index {index} is out of range for {vertexCount} vertices."
+                );
         }
     }
 
@@ -216,7 +225,8 @@ public sealed class ImmediateBatch3D(IGraphicsDevice device) : IGraphics3D, IDis
 
         _identityInstance ??= device.CreateBuffer(
             new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, InstanceData.Stride),
-            MemoryMarshal.AsBytes([new InstanceData(Matrix.Identity)]));
+            MemoryMarshal.AsBytes([new InstanceData(Matrix.Identity)])
+        );
 
         _lines.Upload(cb, device);
         cb.SetPipeline(Effects.LinePipeline);

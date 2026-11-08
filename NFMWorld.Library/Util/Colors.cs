@@ -19,7 +19,7 @@ public class Colors
         brightness = cmax / 255.0f;
         if (cmax != 0)
         {
-            saturation = (cmax - cmin) / ((float) cmax);
+            saturation = (cmax - cmin) / ((float)cmax);
         }
         else
         {
@@ -32,9 +32,9 @@ public class Colors
         }
         else
         {
-            var redc = (cmax - r) / ((float) (cmax - cmin));
-            var greenc = (cmax - g) / ((float) (cmax - cmin));
-            var bluec = (cmax - b) / ((float) (cmax - cmin));
+            var redc = (cmax - r) / ((float)(cmax - cmin));
+            var greenc = (cmax - g) / ((float)(cmax - cmin));
+            var bluec = (cmax - b) / ((float)(cmax - cmin));
             if (r == cmax)
             {
                 hue = bluec - greenc;
@@ -67,7 +67,7 @@ public class Colors
         byte r = 0, g = 0, b = 0;
         if (saturation == 0)
         {
-            r = g = b = (byte) (brightness * 255.0f + 0.5f);
+            r = g = b = (byte)(brightness * 255.0f + 0.5f);
         }
         else
         {
@@ -76,40 +76,41 @@ public class Colors
             var p = brightness * (1.0f - saturation);
             var q = brightness * (1.0f - saturation * f);
             var t = brightness * (1.0f - (saturation * (1.0f - f)));
-            switch ((int) h)
+            switch ((int)h)
             {
                 case 0:
-                    r = (byte) (brightness * 255.0f + 0.5f);
-                    g = (byte) (t * 255.0f + 0.5f);
-                    b = (byte) (p * 255.0f + 0.5f);
+                    r = (byte)(brightness * 255.0f + 0.5f);
+                    g = (byte)(t * 255.0f + 0.5f);
+                    b = (byte)(p * 255.0f + 0.5f);
                     break;
                 case 1:
-                    r = (byte) (q * 255.0f + 0.5f);
-                    g = (byte) (brightness * 255.0f + 0.5f);
-                    b = (byte) (p * 255.0f + 0.5f);
+                    r = (byte)(q * 255.0f + 0.5f);
+                    g = (byte)(brightness * 255.0f + 0.5f);
+                    b = (byte)(p * 255.0f + 0.5f);
                     break;
                 case 2:
-                    r = (byte) (p * 255.0f + 0.5f);
-                    g = (byte) (brightness * 255.0f + 0.5f);
-                    b = (byte) (t * 255.0f + 0.5f);
+                    r = (byte)(p * 255.0f + 0.5f);
+                    g = (byte)(brightness * 255.0f + 0.5f);
+                    b = (byte)(t * 255.0f + 0.5f);
                     break;
                 case 3:
-                    r = (byte) (p * 255.0f + 0.5f);
-                    g = (byte) (q * 255.0f + 0.5f);
-                    b = (byte) (brightness * 255.0f + 0.5f);
+                    r = (byte)(p * 255.0f + 0.5f);
+                    g = (byte)(q * 255.0f + 0.5f);
+                    b = (byte)(brightness * 255.0f + 0.5f);
                     break;
                 case 4:
-                    r = (byte) (t * 255.0f + 0.5f);
-                    g = (byte) (p * 255.0f + 0.5f);
-                    b = (byte) (brightness * 255.0f + 0.5f);
+                    r = (byte)(t * 255.0f + 0.5f);
+                    g = (byte)(p * 255.0f + 0.5f);
+                    b = (byte)(brightness * 255.0f + 0.5f);
                     break;
                 case 5:
-                    r = (byte) (brightness * 255.0f + 0.5f);
-                    g = (byte) (p * 255.0f + 0.5f);
-                    b = (byte) (q * 255.0f + 0.5f);
+                    r = (byte)(brightness * 255.0f + 0.5f);
+                    g = (byte)(p * 255.0f + 0.5f);
+                    b = (byte)(q * 255.0f + 0.5f);
                     break;
             }
         }
+
         return (r, g, b);
     }
 }

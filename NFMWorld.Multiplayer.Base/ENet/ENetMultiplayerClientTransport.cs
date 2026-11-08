@@ -13,7 +13,9 @@ public class ENetMultiplayerClientTransport : BaseMultiplayerClientTransport
     private readonly Address _address;
     private readonly Thread _receiveThread;
     private Peer _peer;
+
     private volatile bool _isRunning = true;
+
     // Set when the next Connect is the result of a reconnect rather than the initial dial.
     private volatile bool _reconnectAttempted;
     private readonly ConcurrentQueue<Packet> _sendPacketQueue = new();
@@ -78,6 +80,7 @@ public class ENetMultiplayerClientTransport : BaseMultiplayerClientTransport
                             // The caller re-sends its handshake (join token, loaded state) here.
                             RaiseReconnected();
                         }
+
                         break;
 
                     case EventType.Disconnect:
@@ -91,11 +94,13 @@ public class ENetMultiplayerClientTransport : BaseMultiplayerClientTransport
                             _reconnectAttempted = true;
                             BeginReconnect();
                         }
+
                         break;
 
                     case EventType.Receive:
                         Logging.Info(
-                            $"Packet received from server - Channel ID: {netEvent.ChannelID}, Data length: {netEvent.Packet.Length}");
+                            $"Packet received from server - Channel ID: {netEvent.ChannelID}, Data length: {netEvent.Packet.Length}"
+                        );
                         try
                         {
                             using var messageData = netEvent.Packet.AsMemory();

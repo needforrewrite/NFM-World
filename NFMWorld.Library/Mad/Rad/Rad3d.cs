@@ -67,7 +67,20 @@ public sealed partial class Rad3d(
     [JsonPropertyName("atLines"), MemoryPackOrder(11), PluginVisible]
     public IReadOnlyList<Rad3dAttachmentLine>? AtLines { get; set; } = atLines;
 
-    private readonly int _hashCode = CalculateHashCode(colors, stats, wheels, rims, boxes, polys, castsShadow, atp, collisionMesh, collisionHull, atLines);
+    private readonly int _hashCode = CalculateHashCode(
+        colors,
+        stats,
+        wheels,
+        rims,
+        boxes,
+        polys,
+        castsShadow,
+        atp,
+        collisionMesh,
+        collisionHull,
+        atLines
+    );
+
     private readonly int _visualHashCode = CalculateVisualHashCode(colors, wheels, rims, polys, castsShadow);
 
     private static int CalculateMaxRadius(Rad3dPoly[] polys)
@@ -76,7 +89,7 @@ public sealed partial class Rad3d(
         foreach (var poly in polys)
         foreach (var point in poly.Points)
         {
-            var rad = (int) float.Sqrt(point.X * point.X + point.Y * point.Y + point.Z * point.Z);
+            var rad = (int)float.Sqrt(point.X * point.X + point.Y * point.Y + point.Z * point.Z);
             if (rad > maxR)
             {
                 maxR = rad;
@@ -133,23 +146,27 @@ public sealed partial class Rad3d(
         {
             hashCode.Add(color);
         }
+
         hashCode.Add(stats);
         hashCode.Add(wheels.Length);
         foreach (var wheel in wheels)
         {
             hashCode.Add(wheel);
         }
+
         hashCode.Add(rims);
         hashCode.Add(boxes.Length);
         foreach (var box in boxes)
         {
             hashCode.Add(box);
         }
+
         hashCode.Add(polys.Length);
         foreach (var poly in polys)
         {
             hashCode.Add(poly);
         }
+
         hashCode.Add(castsShadow);
         hashCode.Add(atp.Length);
         foreach (var at in atp)
@@ -161,10 +178,12 @@ public sealed partial class Rad3d(
         {
             hashCode.Add(colMesh);
         }
+
         if (colHull != null)
         {
             hashCode.Add(colHull);
         }
+
         if (atLines != null)
         {
             hashCode.Add(atLines.Length);
@@ -173,10 +192,17 @@ public sealed partial class Rad3d(
                 hashCode.Add(atLine);
             }
         }
+
         return hashCode.ToHashCode();
     }
-    
-    private static int CalculateVisualHashCode(Color3[] colors, Rad3dWheelDef[] wheels, Rad3dRimsDef? rims, Rad3dPoly[] polys, bool castsShadow)
+
+    private static int CalculateVisualHashCode(
+        Color3[] colors,
+        Rad3dWheelDef[] wheels,
+        Rad3dRimsDef? rims,
+        Rad3dPoly[] polys,
+        bool castsShadow
+    )
     {
         var hashCode = new HashCode();
         hashCode.Add(colors.Length);
@@ -184,17 +210,20 @@ public sealed partial class Rad3d(
         {
             hashCode.Add(color);
         }
+
         hashCode.Add(wheels.Length);
         foreach (var wheel in wheels)
         {
             hashCode.Add(wheel);
         }
+
         hashCode.Add(rims);
         hashCode.Add(polys.Length);
         foreach (var poly in polys)
         {
             hashCode.Add(poly);
         }
+
         hashCode.Add(castsShadow);
         return hashCode.ToHashCode();
     }
@@ -206,16 +235,25 @@ public sealed partial class Rad3d(
     }
 
     [PluginVisible]
-    public Rad3d(Rad3dPoly[] polys, bool castsShadow, string fileName) : this([], new CarStats(), [], null, [], polys, castsShadow, [], fileName)
+    public Rad3d(Rad3dPoly[] polys, bool castsShadow, string fileName) : this(
+        [],
+        new CarStats(),
+        [],
+        null,
+        [],
+        polys,
+        castsShadow,
+        [],
+        fileName
+    )
     {
     }
 
     [PluginVisible]
     public class VisualEqualityComparer : IEqualityComparer<Rad3d>
     {
-        [PluginVisible]
-        public static VisualEqualityComparer Instance { get; } = new();
-        
+        [PluginVisible] public static VisualEqualityComparer Instance { get; } = new();
+
         [PluginVisible]
         public bool Equals(Rad3d? x, Rad3d? y)
         {

@@ -7,7 +7,10 @@ namespace NFMWorldLibrary.Rad;
 
 [MemoryPackable(GenerateType.VersionTolerant), PluginVisible(Visible.IncludingAllMembersOfType)]
 [method: MemoryPackConstructor]
-public readonly partial record struct Rad3dCollisionHull([property: MemoryPackOrder(0)] f64Vector3[] Vertices, [property: MemoryPackOrder(1)] ushort[] Indices)
+public readonly partial record struct Rad3dCollisionHull(
+    [property: MemoryPackOrder(0)] f64Vector3[] Vertices,
+    [property: MemoryPackOrder(1)] ushort[] Indices
+)
 {
     private readonly int _hashCode = CalculateHashCode(Vertices, Indices);
 
@@ -37,7 +40,7 @@ public readonly partial record struct Rad3dCollisionHull([property: MemoryPackOr
         if (!Vertices.SequenceEqual(other.Vertices)) return false;
         return Indices.SequenceEqual(other.Indices);
     }
-    
+
     public bool Equals(Rad3dCollisionHull? other)
     {
         if (other is null) return false;
@@ -45,7 +48,10 @@ public readonly partial record struct Rad3dCollisionHull([property: MemoryPackOr
     }
 
     // ReSharper disable once ConditionalTernaryEqualBranch
-    public Rad3dCollisionHull(ReadOnlySpan<f64Vector3> hullVerts) : this(Parse(hullVerts) is var v ? v.Vertices : v.Vertices, v.Indices)
+    public Rad3dCollisionHull(ReadOnlySpan<f64Vector3> hullVerts) : this(
+        Parse(hullVerts) is var v ? v.Vertices : v.Vertices,
+        v.Indices
+    )
     {
     }
 
@@ -57,9 +63,11 @@ public readonly partial record struct Rad3dCollisionHull([property: MemoryPackOr
         // Per hull, not shared: hulls are generated in parallel by the model loader and
         // the calculator keeps its working state on the instance.
         new ConvexHullCalculator().GenerateHull(hullVerts, false, verts, indices, null);
-        
-        Logging.Debug($"Convex hull generated with {verts.Count} vertices and {indices.Count / 3} triangles in {stopwatch.Elapsed.TotalSeconds:F2} seconds");
-        
+
+        Logging.Debug(
+            $"Convex hull generated with {verts.Count} vertices and {indices.Count / 3} triangles in {stopwatch.Elapsed.TotalSeconds:F2} seconds"
+        );
+
         return (verts.ToArray(), indices.ToArray());
     }
 }

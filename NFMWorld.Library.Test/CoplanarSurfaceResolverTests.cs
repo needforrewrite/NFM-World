@@ -7,6 +7,7 @@ namespace NFMWorld.Library.Test;
 public class CoplanarSurfaceResolverTests
 {
     private static readonly uint[] Quad = [0, 1, 2, 0, 2, 3];
+
     private static Vector3[] Rectangle(float x, float y, float width, float height, float z = 0)
         => [new(x, y, z), new(x + width, y, z), new(x + width, y + height, z), new(x, y + height, z)];
 
@@ -21,6 +22,7 @@ public class CoplanarSurfaceResolverTests
             var c = surface.Points[surface.Triangles[i + 2]];
             area += Vector3.Cross(b - a, c - a).Length() * 0.5;
         }
+
         return area;
     }
 

@@ -19,7 +19,7 @@
         <!-- The same baker the game uses, so a prebaked field is the field the runtime would have
              made. It deliberately does not reference the game: that would pull in the whole
              renderer for one method. -->
-        <ProjectReference Include="..\Apos.Shapes\Source\Apos.Shapes.NFMW.csproj" />
+        <ProjectReference Include="..\Apos.Shapes\Source\Apos.Shapes.NFMW.csproj"/>
     </ItemGroup>
 
 </Project>

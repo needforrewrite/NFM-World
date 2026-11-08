@@ -41,14 +41,17 @@ public static class Renderer
     {
         var scope = new RenderScope();
 
-        var root = RunInScope(scope, () =>
-        {
-            var node = build();
+        var root = RunInScope(
+            scope,
+            () =>
+            {
+                var node = build();
 
-            // Anything the root created before it had a mounting scope belongs to this one.
-            node.AdoptPendingScope(scope);
-            return node;
-        });
+                // Anything the root created before it had a mounting scope belongs to this one.
+                node.AdoptPendingScope(scope);
+                return node;
+            }
+        );
 
         return new MountedUi(root, scope);
     }

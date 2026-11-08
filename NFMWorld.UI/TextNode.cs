@@ -10,8 +10,7 @@ namespace NFMWorld.Reactor;
 [PluginVisible]
 public partial class TextNode : Node, IReceivesTextInvalidation, IRichTextLeaf
 {
-    [PluginVisible]
-    public override IReadOnlyList<Node> VisualChildren => Array.Empty<Node>();
+    [PluginVisible] public override IReadOnlyList<Node> VisualChildren => Array.Empty<Node>();
 
     [PluginVisible]
     public string? Text

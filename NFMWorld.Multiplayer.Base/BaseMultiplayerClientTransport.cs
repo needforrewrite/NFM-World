@@ -58,7 +58,8 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
     /// </summary>
     protected void BeginReconnect()
     {
-        if (ReconnectDisabled || _reconnectLoop is { IsCompleted: false }
+        if (ReconnectDisabled
+            || _reconnectLoop is { IsCompleted: false }
             || _reconnectCts.IsCancellationRequested)
             return;
 
@@ -128,6 +129,7 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
         {
             packets.Add(packet);
         }
+
         return packets.Count > 0 ? packets.ToArray() : [];
     }
 
@@ -166,7 +168,7 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
     public void SendPacketToServer<T>(T packet, bool reliable = true) where T : IPacketClientToServer<T>
     {
         Logging.Debug($"Sending packet to server: {packet.GetType().Name}");
-        
+
         using var arr = new ArrayPoolBufferWriter<byte>();
         arr.Write(packet.Opcode);
         packet.Write(arr);

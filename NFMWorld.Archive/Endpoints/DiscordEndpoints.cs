@@ -22,154 +22,183 @@ public static class DiscordEndpoints
     private const string UserUrl = "https://discord.com/api/users/@me";
 
     private sealed record DiscordTokenResponse(string? AccessToken, string? TokenType);
+
     private sealed record DiscordUser(string? Id, string? Username);
 
     public static void MapDiscordEndpoints(this WebApplication app)
     {
-        app.MapGet("/auth/discord/start", async (
-            ArchiveOptions options, ArchiveDbContext db, IHttpClientFactory clients, HttpContext http,
-            CancellationToken ct) =>
-        {
-            if (string.IsNullOrEmpty(options.DiscordClientId) || string.IsNullOrEmpty(options.DiscordRedirectUri))
-                return Results.NotFound();
-
-            var state = Tokens.Create();
-            var verifier = Tokens.Create();
-            var challenge = Tokens.Base64UrlEncode(SHA256.HashData(System.Text.Encoding.ASCII.GetBytes(verifier)));
-
-            db.OauthPending.Add(new OauthPending
+        app.MapGet(
+            "/auth/discord/start",
+            async (
+                ArchiveOptions options, ArchiveDbContext db, IHttpClientFactory clients, HttpContext http,
+                CancellationToken ct
+            ) =>
             {
-                StateHash = Tokens.Hash(state),
-                CodeVerifier = verifier,
-                ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(10)
-            });
-            await db.SaveChangesAsync(ct);
+                if (string.IsNullOrEmpty(options.DiscordClientId) || string.IsNullOrEmpty(options.DiscordRedirectUri))
+                    return Results.NotFound();
 
-            // Bind the state to this browser. Without it anyone could start a login as
-            // themselves and send the callback URL to a victim, silently signing them into the
-            // attacker's account (login CSRF).
-            http.Response.Cookies.Append("nfmw_oauth_state", state, new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = http.Request.IsHttps,
-                SameSite = SameSiteMode.Lax,
-                Expires = DateTimeOffset.UtcNow.AddMinutes(10)
-            });
+                var state = Tokens.Create();
+                var verifier = Tokens.Create();
+                var challenge = Tokens.Base64UrlEncode(SHA256.HashData(System.Text.Encoding.ASCII.GetBytes(verifier)));
 
-            var url = $"{AuthorizeUrl}?client_id={Uri.EscapeDataString(options.DiscordClientId)}"
-                      + $"&redirect_uri={Uri.EscapeDataString(options.DiscordRedirectUri)}"
-                      + "&response_type=code&scope=identify"
-                      + $"&state={Uri.EscapeDataString(state)}"
-                      + $"&code_challenge={Uri.EscapeDataString(challenge)}&code_challenge_method=S256";
-
-            return Results.Redirect(url);
-        });
-
-        app.MapGet("/auth/discord/callback", async (
-            string? code, string? state, ArchiveOptions options, ArchiveDbContext db,
-            SessionService sessions, IHttpClientFactory clients, HttpContext http, CancellationToken ct) =>
-        {
-            if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state))
-                return Results.BadRequest(new { error = "Missing code or state." });
-
-            // The state must be the one this browser started with, not merely a live one: a
-            // state handed to a victim would otherwise sign them into the attacker's account.
-            if (http.Request.Cookies["nfmw_oauth_state"] is not { Length: > 0 } browserState
-                || !System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
-                    System.Text.Encoding.UTF8.GetBytes(browserState), System.Text.Encoding.UTF8.GetBytes(state)))
-                return Results.BadRequest(new { error = "This login attempt was started in a different browser." });
-
-            http.Response.Cookies.Delete("nfmw_oauth_state");
-
-            var stateHash = Tokens.Hash(state);
-            var pending = await db.OauthPending.FirstOrDefaultAsync(p => p.StateHash == stateHash, ct);
-            if (pending is null)
-                return Results.BadRequest(new { error = "Unknown or already-used login attempt." });
-
-            // Consume it whether or not the exchange succeeds: a state is valid for exactly one attempt.
-            db.OauthPending.Remove(pending);
-            await db.SaveChangesAsync(ct);
-
-            if (pending.ExpiresAt <= DateTimeOffset.UtcNow)
-                return Results.BadRequest(new { error = "Login attempt expired." });
-
-            var client = clients.CreateClient("discord");
-            using var tokenResponse = await client.PostAsync(TokenUrl, new FormUrlEncodedContent(new Dictionary<string, string>
-            {
-                ["client_id"] = options.DiscordClientId,
-                ["client_secret"] = options.DiscordClientSecret,
-                ["grant_type"] = "authorization_code",
-                ["code"] = code,
-                ["redirect_uri"] = options.DiscordRedirectUri,
-                ["code_verifier"] = pending.CodeVerifier
-            }), ct);
-
-            if (!tokenResponse.IsSuccessStatusCode)
-                return Results.BadRequest(new { error = "Discord rejected the authorization code." });
-
-            var token = await tokenResponse.Content.ReadFromJsonAsync<DiscordTokenResponse>(ct);
-            if (string.IsNullOrEmpty(token?.AccessToken))
-                return Results.BadRequest(new { error = "Discord returned no access token." });
-
-            using var userRequest = new HttpRequestMessage(HttpMethod.Get, UserUrl);
-            userRequest.Headers.Authorization = new("Bearer", token.AccessToken);
-            using var userResponse = await client.SendAsync(userRequest, ct);
-            if (!userResponse.IsSuccessStatusCode)
-                return Results.BadRequest(new { error = "Could not read the Discord profile." });
-
-            var discordUser = await userResponse.Content.ReadFromJsonAsync<DiscordUser>(ct);
-            if (string.IsNullOrEmpty(discordUser?.Id))
-                return Results.BadRequest(new { error = "Discord returned no user id." });
-
-            var login = await db.ExternalLogins
-                .Include(l => l.User)
-                .FirstOrDefaultAsync(l => l.Provider == "discord" && l.ProviderUserId == discordUser.Id, ct);
-
-            User user;
-            if (login is not null)
-            {
-                user = login.User;
-            }
-            else
-            {
-                var baseName = SanitizeUsername(discordUser.Username) ?? $"discord{discordUser.Id}";
-                user = new User
-                {
-                    Username = baseName,
-                    UsernameNormalized = UsernamePolicy.Normalize(baseName)
-                };
-
-                // Discord names collide freely, so append a suffix until the folded name is free.
-                var suffix = 0;
-                while (await db.Users.AnyAsync(u => u.UsernameNormalized == user.UsernameNormalized, ct))
-                    user.UsernameNormalized = UsernamePolicy.Normalize($"{baseName}#{++suffix}");
-
-                db.Users.Add(user);
+                db.OauthPending.Add(
+                    new OauthPending
+                    {
+                        StateHash = Tokens.Hash(state),
+                        CodeVerifier = verifier,
+                        ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(10)
+                    }
+                );
                 await db.SaveChangesAsync(ct);
-                db.ExternalLogins.Add(new ExternalLogin
-                {
-                    UserId = user.Id,
-                    Provider = "discord",
-                    ProviderUserId = discordUser.Id
-                });
-                await db.SaveChangesAsync(ct);
-                AuthEndpoints.Audit(db, user.Id, "register_discord", null, http);
+
+                // Bind the state to this browser. Without it anyone could start a login as
+                // themselves and send the callback URL to a victim, silently signing them into the
+                // attacker's account (login CSRF).
+                http.Response.Cookies.Append(
+                    "nfmw_oauth_state",
+                    state,
+                    new CookieOptions
+                    {
+                        HttpOnly = true,
+                        Secure = http.Request.IsHttps,
+                        SameSite = SameSiteMode.Lax,
+                        Expires = DateTimeOffset.UtcNow.AddMinutes(10)
+                    }
+                );
+
+                var url = $"{AuthorizeUrl}?client_id={Uri.EscapeDataString(options.DiscordClientId)}"
+                          + $"&redirect_uri={Uri.EscapeDataString(options.DiscordRedirectUri)}"
+                          + "&response_type=code&scope=identify"
+                          + $"&state={Uri.EscapeDataString(state)}"
+                          + $"&code_challenge={Uri.EscapeDataString(challenge)}&code_challenge_method=S256";
+
+                return Results.Redirect(url);
             }
+        );
 
-            var sessionToken = await sessions.CreateAsync(user, null, http.Connection.RemoteIpAddress?.ToString(), ct);
-
-            // Handing the token back through a redirect URL would put it in browser history and
-            // referrer headers, so it is set as an HttpOnly cookie instead.
-            http.Response.Cookies.Append("nfmw_session", sessionToken, new CookieOptions
+        app.MapGet(
+            "/auth/discord/callback",
+            async (
+                string? code, string? state, ArchiveOptions options, ArchiveDbContext db,
+                SessionService sessions, IHttpClientFactory clients, HttpContext http, CancellationToken ct
+            ) =>
             {
-                HttpOnly = true,
-                Secure = http.Request.IsHttps,
-                SameSite = SameSiteMode.Lax,
-                Expires = DateTimeOffset.UtcNow + options.SessionLifetime
-            });
+                if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state))
+                    return Results.BadRequest(new { error = "Missing code or state." });
 
-            return Results.Redirect("/");
-        });
+                // The state must be the one this browser started with, not merely a live one: a
+                // state handed to a victim would otherwise sign them into the attacker's account.
+                if (http.Request.Cookies["nfmw_oauth_state"] is not { Length: > 0 } browserState
+                    || !System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
+                        System.Text.Encoding.UTF8.GetBytes(browserState),
+                        System.Text.Encoding.UTF8.GetBytes(state)
+                    ))
+                    return Results.BadRequest(new { error = "This login attempt was started in a different browser." });
+
+                http.Response.Cookies.Delete("nfmw_oauth_state");
+
+                var stateHash = Tokens.Hash(state);
+                var pending = await db.OauthPending.FirstOrDefaultAsync(p => p.StateHash == stateHash, ct);
+                if (pending is null)
+                    return Results.BadRequest(new { error = "Unknown or already-used login attempt." });
+
+                // Consume it whether or not the exchange succeeds: a state is valid for exactly one attempt.
+                db.OauthPending.Remove(pending);
+                await db.SaveChangesAsync(ct);
+
+                if (pending.ExpiresAt <= DateTimeOffset.UtcNow)
+                    return Results.BadRequest(new { error = "Login attempt expired." });
+
+                var client = clients.CreateClient("discord");
+                using var tokenResponse = await client.PostAsync(
+                    TokenUrl,
+                    new FormUrlEncodedContent(
+                        new Dictionary<string, string>
+                        {
+                            ["client_id"] = options.DiscordClientId,
+                            ["client_secret"] = options.DiscordClientSecret,
+                            ["grant_type"] = "authorization_code",
+                            ["code"] = code,
+                            ["redirect_uri"] = options.DiscordRedirectUri,
+                            ["code_verifier"] = pending.CodeVerifier
+                        }
+                    ),
+                    ct
+                );
+
+                if (!tokenResponse.IsSuccessStatusCode)
+                    return Results.BadRequest(new { error = "Discord rejected the authorization code." });
+
+                var token = await tokenResponse.Content.ReadFromJsonAsync<DiscordTokenResponse>(ct);
+                if (string.IsNullOrEmpty(token?.AccessToken))
+                    return Results.BadRequest(new { error = "Discord returned no access token." });
+
+                using var userRequest = new HttpRequestMessage(HttpMethod.Get, UserUrl);
+                userRequest.Headers.Authorization = new("Bearer", token.AccessToken);
+                using var userResponse = await client.SendAsync(userRequest, ct);
+                if (!userResponse.IsSuccessStatusCode)
+                    return Results.BadRequest(new { error = "Could not read the Discord profile." });
+
+                var discordUser = await userResponse.Content.ReadFromJsonAsync<DiscordUser>(ct);
+                if (string.IsNullOrEmpty(discordUser?.Id))
+                    return Results.BadRequest(new { error = "Discord returned no user id." });
+
+                var login = await db.ExternalLogins
+                    .Include(l => l.User)
+                    .FirstOrDefaultAsync(l => l.Provider == "discord" && l.ProviderUserId == discordUser.Id, ct);
+
+                User user;
+                if (login is not null)
+                {
+                    user = login.User;
+                }
+                else
+                {
+                    var baseName = SanitizeUsername(discordUser.Username) ?? $"discord{discordUser.Id}";
+                    user = new User
+                    {
+                        Username = baseName,
+                        UsernameNormalized = UsernamePolicy.Normalize(baseName)
+                    };
+
+                    // Discord names collide freely, so append a suffix until the folded name is free.
+                    var suffix = 0;
+                    while (await db.Users.AnyAsync(u => u.UsernameNormalized == user.UsernameNormalized, ct))
+                        user.UsernameNormalized = UsernamePolicy.Normalize($"{baseName}#{++suffix}");
+
+                    db.Users.Add(user);
+                    await db.SaveChangesAsync(ct);
+                    db.ExternalLogins.Add(
+                        new ExternalLogin
+                        {
+                            UserId = user.Id,
+                            Provider = "discord",
+                            ProviderUserId = discordUser.Id
+                        }
+                    );
+                    await db.SaveChangesAsync(ct);
+                    AuthEndpoints.Audit(db, user.Id, "register_discord", null, http);
+                }
+
+                var sessionToken = await sessions.CreateAsync(user, null, http.Connection.RemoteIpAddress?.ToString(), ct);
+
+                // Handing the token back through a redirect URL would put it in browser history and
+                // referrer headers, so it is set as an HttpOnly cookie instead.
+                http.Response.Cookies.Append(
+                    "nfmw_session",
+                    sessionToken,
+                    new CookieOptions
+                    {
+                        HttpOnly = true,
+                        Secure = http.Request.IsHttps,
+                        SameSite = SameSiteMode.Lax,
+                        Expires = DateTimeOffset.UtcNow + options.SessionLifetime
+                    }
+                );
+
+                return Results.Redirect("/");
+            }
+        );
     }
 
     /// <summary>Discord names allow spaces and symbols; keep only what our username policy admits.</summary>
@@ -178,9 +207,11 @@ public static class DiscordEndpoints
         if (string.IsNullOrWhiteSpace(discordUsername))
             return null;
 
-        var cleaned = new string(discordUsername
-            .Where(c => !char.IsControl(c) && !char.IsWhiteSpace(c))
-            .ToArray());
+        var cleaned = new string(
+            discordUsername
+                .Where(c => !char.IsControl(c) && !char.IsWhiteSpace(c))
+                .ToArray()
+        );
         if (cleaned.Length > UsernamePolicy.MaxLength)
             cleaned = cleaned[..UsernamePolicy.MaxLength];
         return UsernamePolicy.TryValidate(cleaned, out _) ? cleaned : null;

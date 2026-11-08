@@ -12,8 +12,11 @@ public static class SpatialAudio
     public static void UpdateListener(Vector3 position, Vector3 forward, Vector3 up)
     {
         var forwardLength = forward.LengthSquared();
-        if (!Finite(position) || !Finite(forward) || !Finite(up)
-            || !float.IsFinite(forwardLength) || forwardLength < 0.0001f) return;
+        if (!Finite(position)
+            || !Finite(forward)
+            || !Finite(up)
+            || !float.IsFinite(forwardLength)
+            || forwardLength < 0.0001f) return;
         forward = Vector3.Normalize(forward);
         up -= forward * Vector3.Dot(up, forward);
         var upLength = up.LengthSquared();
@@ -23,8 +26,17 @@ public static class SpatialAudio
         ListenerUp = Vector3.Normalize(up);
         if (OperatingSystem.IsBrowser())
         {
-            WebAudioBackend.SetListener(position.X, position.Y, position.Z,
-                forward.X, forward.Y, forward.Z, ListenerUp.X, ListenerUp.Y, ListenerUp.Z);
+            WebAudioBackend.SetListener(
+                position.X,
+                position.Y,
+                position.Z,
+                forward.X,
+                forward.Y,
+                forward.Z,
+                ListenerUp.X,
+                ListenerUp.Y,
+                ListenerUp.Z
+            );
             WebAudioSoundClip.UpdateSpatialSounds();
         }
         else
@@ -44,9 +56,12 @@ public static class SpatialAudio
         {
             var sum = 0L;
             for (var channel = 0; channel < channels; channel++)
-                sum += BinaryPrimitives.ReadInt16LittleEndian(pcm.Slice((frame * channels + channel) * sizeof(short), sizeof(short)));
+                sum += BinaryPrimitives.ReadInt16LittleEndian(
+                    pcm.Slice((frame * channels + channel) * sizeof(short), sizeof(short))
+                );
             BinaryPrimitives.WriteInt16LittleEndian(mono.AsSpan(frame * sizeof(short), sizeof(short)), (short)(sum / channels));
         }
+
         return mono;
     }
 }

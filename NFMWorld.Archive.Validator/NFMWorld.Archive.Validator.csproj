@@ -13,10 +13,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
+        <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj"/>
     </ItemGroup>
 
     <!-- The validator loads gamemode plugins from data/gamemodes, so its output needs them. -->
-    <Import Project="..\Plugin.Plugins.targets" />
+    <Import Project="..\Plugin.Plugins.targets"/>
 
 </Project>

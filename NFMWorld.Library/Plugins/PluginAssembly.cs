@@ -120,7 +120,8 @@ public sealed class PluginAssembly
     public ConstructorInfo FindConstructor<T>(Type[] parameters)
         => Find<T>(parameters)
            ?? throw new InvalidOperationException(
-               $"Plugin assembly '{Assembly.GetName().Name}' must declare exactly one {typeof(T).Name} subtype.");
+               $"Plugin assembly '{Assembly.GetName().Name}' must declare exactly one {typeof(T).Name} subtype."
+           );
 
     /// <summary>
     /// As <see cref="FindConstructor{T}"/>, but for a contract the plugin may legitimately
@@ -142,13 +143,20 @@ public sealed class PluginAssembly
         if (types.Length > 1)
         {
             throw new InvalidOperationException(
-                $"Plugin assembly '{Assembly.GetName().Name}' must declare at most one {typeof(T).Name} " +
-                $"subtype, but declares {types.Length}.");
+                $"Plugin assembly '{Assembly.GetName().Name}' must declare at most one {typeof(T).Name} "
+                + $"subtype, but declares {types.Length}."
+            );
         }
 
-        return types[0].GetConstructor(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly, null, parameters, null)
+        return types[0].GetConstructor(
+                   BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly,
+                   null,
+                   parameters,
+                   null
+               )
                ?? throw new InvalidOperationException(
-                   $"Plugin '{Id}': {types[0].FullName} does not have the expected constructor.");
+                   $"Plugin '{Id}': {types[0].FullName} does not have the expected constructor."
+               );
     }
 
     /// <summary>

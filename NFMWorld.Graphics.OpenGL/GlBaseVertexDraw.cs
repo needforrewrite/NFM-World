@@ -75,9 +75,29 @@ internal sealed class GlBaseVertexDraw
 
     /// <summary>Issues the instanced indexed draw. Only legal when <see cref="IsSupported"/>.</summary>
     internal unsafe void DrawIndexedInstanced(
-        PrimitiveType mode, uint count, DrawElementsType type, void* indices, uint instanceCount, int baseVertex) =>
+        PrimitiveType mode,
+        uint count,
+        DrawElementsType type,
+        void* indices,
+        uint instanceCount,
+        int baseVertex
+    ) =>
         _drawIndexedInstanced!(mode, count, type, indices, instanceCount, baseVertex);
 
-    private unsafe delegate void DrawElementsBaseVertex(PrimitiveType mode, uint count, DrawElementsType type, void* indices, int baseVertex);
-    private unsafe delegate void DrawElementsInstancedBaseVertex(PrimitiveType mode, uint count, DrawElementsType type, void* indices, uint instanceCount, int baseVertex);
+    private unsafe delegate void DrawElementsBaseVertex(
+        PrimitiveType mode,
+        uint count,
+        DrawElementsType type,
+        void* indices,
+        int baseVertex
+    );
+
+    private unsafe delegate void DrawElementsInstancedBaseVertex(
+        PrimitiveType mode,
+        uint count,
+        DrawElementsType type,
+        void* indices,
+        uint instanceCount,
+        int baseVertex
+    );
 }

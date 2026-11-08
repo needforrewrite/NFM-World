@@ -8,14 +8,12 @@ public class ENetMultiplayer
     }
 
     private static bool _init = false;
+
     public static void Init()
     {
         if (_init) return;
         _init = true;
         ENet.Library.Initialize();
-        AppDomain.CurrentDomain.ProcessExit += (s, e) =>
-        {
-            ENet.Library.Deinitialize();
-        };
+        AppDomain.CurrentDomain.ProcessExit += (s, e) => { ENet.Library.Deinitialize(); };
     }
 }

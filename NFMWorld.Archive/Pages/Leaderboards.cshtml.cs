@@ -22,12 +22,13 @@ public sealed class LeaderboardsModel(ArchiveDbContext db) : ArchivePageModel(db
         Boards = (await Db.TimeTrials.Where(t => t.IsValid)
                 .GroupBy(t => new { t.StageHash, t.CarHash })
                 .Select(g => new
-                {
-                    g.Key.StageHash,
-                    g.Key.CarHash,
-                    StageName = g.Min(t => t.StageName),
-                    CarName = g.Min(t => t.CarName)
-                })
+                    {
+                        g.Key.StageHash,
+                        g.Key.CarHash,
+                        StageName = g.Min(t => t.StageName),
+                        CarName = g.Min(t => t.CarName)
+                    }
+                )
                 .OrderBy(b => b.StageName)
                 .Take(200)
                 .ToListAsync())

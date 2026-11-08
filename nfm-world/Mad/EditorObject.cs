@@ -71,6 +71,7 @@ public class EditorObject : StaticMeshObject, IDisposable
         {
             wheel.Mesh.Dispose();
         }
+
         GC.SuppressFinalize(this);
     }
 }

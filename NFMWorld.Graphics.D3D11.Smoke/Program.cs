@@ -22,6 +22,7 @@
 // has to be off-screen because a smoke test that puts a window on the user's desktop is a smoke test
 // that interrupts them. Nothing about the code below depends on the window being visible - flip-model
 // presents work into an unshown window, they just have nowhere to be seen.
+
 using System.Numerics;
 using System.Runtime.InteropServices;
 using NFMWorld.Shaders;
@@ -49,15 +50,18 @@ internal static unsafe class Program
 
 
         using var window = SmokeWindow.Create(Width, Height);
-        using var device = D3D11GraphicsDevice.Create(new D3D11DeviceDescription(
-            WindowHandle: window.Handle,
-            Width: Width,
-            Height: Height,
-            MultiSampleCount: 0,
-            // Deliberately off. The cache exists to skip D3DCompile, and this test's job is to run it:
-            // a hit would make the bundle checks below read a previous run's blob and report on the
-            // compiler's output from some other day or source revision.
-            EnableShaderCache: false));
+        using var device = D3D11GraphicsDevice.Create(
+            new D3D11DeviceDescription(
+                WindowHandle: window.Handle,
+                Width: Width,
+                Height: Height,
+                MultiSampleCount: 0,
+                // Deliberately off. The cache exists to skip D3DCompile, and this test's job is to run it:
+                // a hit would make the bundle checks below read a previous run's blob and report on the
+                // compiler's output from some other day or source revision.
+                EnableShaderCache: false
+            )
+        );
 
         ReportInterface(device);
         CheckTextureRoundTrip(device);
@@ -88,9 +92,11 @@ internal static unsafe class Program
         var swapchain = device.D3d11Swapchain;
 
         Console.WriteLine($"DEVICE: feature level {device.FeatureLevel}");
-        Console.WriteLine($"DEVICE: swapchain {swapchain.Width}x{swapchain.Height}, " +
-                          $"{swapchain.MultiSampleCount}x MSAA, tearing " +
-                          $"{(swapchain.AllowsTearing ? "allowed" : "not allowed")}");
+        Console.WriteLine(
+            $"DEVICE: swapchain {swapchain.Width}x{swapchain.Height}, "
+            + $"{swapchain.MultiSampleCount}x MSAA, tearing "
+            + $"{(swapchain.AllowsTearing ? "allowed" : "not allowed")}"
+        );
         Console.WriteLine($"DEVICE: multisample change requires restart: {swapchain.MultiSampleChangeRequiresRestart}");
         Console.WriteLine($"DEVICE: bottom-left framebuffer origin: {device.HasBottomLeftFramebufferOrigin}");
         Console.WriteLine();
@@ -114,14 +120,17 @@ internal static unsafe class Program
     private static void CheckTextureRoundTrip(D3D11GraphicsDevice device)
     {
         const int w = 3, h = 2;
-        byte[] source = [200, 200, 200, 40, 40, 40];   // row 0 bright, row 1 dark
+        byte[] source = [200, 200, 200, 40, 40, 40]; // row 0 bright, row 1 dark
 
         using var texture = device.CreateTexture(new TextureDesc(w, h, TextureFormat.R8), source);
         var readBack = new byte[source.Length];
         device.ReadTexture(texture, 0, 0, w, h, readBack);
 
-        Report("TEXTURE", "R8 upload + readback round-trip preserves row order (odd width: no row padding)",
-            readBack.AsSpan().SequenceEqual(source));
+        Report(
+            "TEXTURE",
+            "R8 upload + readback round-trip preserves row order (odd width: no row padding)",
+            readBack.AsSpan().SequenceEqual(source)
+        );
 
         if (!readBack.AsSpan().SequenceEqual(source))
             Console.WriteLine($"           source [{string.Join(", ", source)}] read back as [{string.Join(", ", readBack)}]");
@@ -160,8 +169,12 @@ internal static unsafe class Program
 
         device.Submit(commandBuffer);
 
-        Report("TEXTURE", "a sub-rectangle update is refused rather than silently sheared " +
-                         "(UpdateSubresource cannot express a source row pitch)", refused);
+        Report(
+            "TEXTURE",
+            "a sub-rectangle update is refused rather than silently sheared "
+            + "(UpdateSubresource cannot express a source row pitch)",
+            refused
+        );
     }
 
     // ── buffers ─────────────────────────────────────────────────────────────────────────────────
@@ -180,7 +193,9 @@ internal static unsafe class Program
     {
         const int size = 64;
         using var dynamic = device.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, size), new byte[size]);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, size),
+            new byte[size]
+        );
 
         var commandBuffer = device.AcquireCommandBuffer();
 
@@ -193,7 +208,9 @@ internal static unsafe class Program
         Report("BUFFER", "a dynamic buffer accepts a sub-range update", true);
 
         using var staticBuffer = device.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, size), new byte[size]);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, size),
+            new byte[size]
+        );
 
         var cb2 = device.AcquireCommandBuffer();
         var refused = false;
@@ -280,9 +297,12 @@ internal static unsafe class Program
         var pixel = new byte[4];
         device.ReadTexture(target.ColorTexture, 0, 0, 1, 1, pixel);
 
-        Report("TARGET", $"a cleared off-screen target reads back its clear colour (got " +
-                         $"{pixel[0]},{pixel[1]},{pixel[2]},{pixel[3]}, want 255,0,255,255)",
-            pixel[0] == 255 && pixel[1] == 0 && pixel[2] == 255 && pixel[3] == 255);
+        Report(
+            "TARGET",
+            $"a cleared off-screen target reads back its clear colour (got "
+            + $"{pixel[0]},{pixel[1]},{pixel[2]},{pixel[3]}, want 255,0,255,255)",
+            pixel[0] == 255 && pixel[1] == 0 && pixel[2] == 255 && pixel[3] == 255
+        );
 
         Report("TARGET", "the target reports a depth-stencil attachment", target.DepthStencilTexture is not null);
 
@@ -317,26 +337,39 @@ internal static unsafe class Program
             // runs to completion and would not be in the game.
             var module = D3D11GraphicsDevice.LoadShaderModule(device, bundle.Vertex, bundle.Pixel, bundle.Reflection);
 
-            using var pipeline = device.CreatePipeline(new PipelineDesc(
-                VertexShader: module,
-                PixelShader: module,
-                VertexLayouts: bundle.Layouts,
-                BlendState: BlendStateDesc.Opaque,
-                DepthStencilState: DepthStencilStateDesc.Default,
-                RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
-                Topology: PrimitiveTopology.TriangleList));
+            using var pipeline = device.CreatePipeline(
+                new PipelineDesc(
+                    VertexShader: module,
+                    PixelShader: module,
+                    VertexLayouts: bundle.Layouts,
+                    BlendState: BlendStateDesc.Opaque,
+                    DepthStencilState: DepthStencilStateDesc.Default,
+                    RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
+                    Topology: PrimitiveTopology.TriangleList
+                )
+            );
 
             var elements = ((D3D11PipelineState)pipeline).Elements;
 
-            Report("BUNDLE", $"{bundle.Name}: input layout built against the shader's own signature " +
-                             $"({elements.Count} element(s))", elements.Count > 0);
+            Report(
+                "BUNDLE",
+                $"{bundle.Name}: input layout built against the shader's own signature " + $"({elements.Count} element(s))",
+                elements.Count > 0
+            );
 
             // Printed rather than only counted, because the element list *is* the semantic contract:
             // a wrong SemanticIndex or a wrong per-stream slot is invisible in a rendered frame and
             // obvious in this table. The GL smoke test prints the analogous attribute locations.
-            Console.WriteLine("           " + string.Join(", ", elements.Select(e =>
-                $"{e.Semantic}{e.SemanticIndex}@{e.InputSlot}+{e.AlignedByteOffset}" +
-                (e.PerInstance ? $"/inst{e.InstanceStepRate}" : ""))));
+            Console.WriteLine(
+                "           "
+                + string.Join(
+                    ", ",
+                    elements.Select(e =>
+                        $"{e.Semantic}{e.SemanticIndex}@{e.InputSlot}+{e.AlignedByteOffset}"
+                        + (e.PerInstance ? $"/inst{e.InstanceStepRate}" : "")
+                    )
+                )
+            );
 
             CheckUniformBlock(bundle.Name, (D3D11PipelineState)pipeline);
         }
@@ -377,9 +410,12 @@ internal static unsafe class Program
             end = Math.Max(end, uniform.Offset + uniform.SizeInBytes);
         var padded = (end + 15) & ~15;
 
-        Report("BUNDLE", $"{name}: compiled cbuffer size {compiled.Size} matches the reflection's {end}" +
-                         (padded != end ? $" (or its 16-byte-padded {padded})" : ""),
-            compiled.Size == end || compiled.Size == padded);
+        Report(
+            "BUNDLE",
+            $"{name}: compiled cbuffer size {compiled.Size} matches the reflection's {end}"
+            + (padded != end ? $" (or its 16-byte-padded {padded})" : ""),
+            compiled.Size == end || compiled.Size == padded
+        );
 
         var mismatched = new List<string>();
         var missing = new List<string>();
@@ -391,8 +427,11 @@ internal static unsafe class Program
                 mismatched.Add($"{uniform.Name}: reflection {uniform.Offset}, compiled {offset}");
         }
 
-        Report("BUNDLE", $"{name}: all {reflection.Uniforms.Count} reflected uniform offset(s) match the " +
-                         "compiled cbuffer's packoffsets", mismatched.Count == 0 && missing.Count == 0);
+        Report(
+            "BUNDLE",
+            $"{name}: all {reflection.Uniforms.Count} reflected uniform offset(s) match the " + "compiled cbuffer's packoffsets",
+            mismatched.Count == 0 && missing.Count == 0
+        );
 
         foreach (var mismatch in mismatched)
             Console.WriteLine($"           {mismatch}");
@@ -423,19 +462,22 @@ internal static unsafe class Program
     private static void CheckTexturedDraw(D3D11GraphicsDevice device)
     {
         const int size = 64;
-        const int stride = 20;   // float2 position, float2 uv, packed byte4 colour
+        const int stride = 20; // float2 position, float2 uv, packed byte4 colour
 
         var bundle = ImGuiFullbright.Create();
         var module = D3D11GraphicsDevice.LoadShaderModule(device, bundle.Vertex, bundle.Pixel, bundle.Reflection);
 
-        using var pipeline = device.CreatePipeline(new PipelineDesc(
-            VertexShader: module,
-            PixelShader: module,
-            VertexLayouts: [ImGuiLayout],
-            BlendState: BlendStateDesc.Opaque,
-            DepthStencilState: DepthStencilStateDesc.None,
-            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
-            Topology: PrimitiveTopology.TriangleList));
+        using var pipeline = device.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: module,
+                PixelShader: module,
+                VertexLayouts: [ImGuiLayout],
+                BlendState: BlendStateDesc.Opaque,
+                DepthStencilState: DepthStencilStateDesc.None,
+                RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
+                Topology: PrimitiveTopology.TriangleList
+            )
+        );
 
         // A full-target quad in normalised device coordinates: floats already in [-1, 1], so there is
         // no projection matrix to get wrong and the only uniform in play is the one this check is
@@ -453,17 +495,21 @@ internal static unsafe class Program
         // must therefore differ, which is what makes a wrong-orientation result unmistakable.
         byte[] texels =
         [
-            255, 0, 255, 255,   255, 255, 0, 255,
-            255, 0, 255, 255,   255, 255, 0, 255,
+            255, 0, 255, 255, 255, 255, 0, 255,
+            255, 0, 255, 255, 255, 255, 0, 255,
         ];
 
         using var texture = device.CreateTexture(
-            new TextureDesc(2, 2, TextureFormat.Rgba8), texels);
+            new TextureDesc(2, 2, TextureFormat.Rgba8),
+            texels
+        );
         using var sampler = device.CreateSampler(new SamplerDesc());
         using var target = device.CreateRenderTarget(new RenderTargetDesc(size, size, TextureFormat.Rgba8));
 
         using var vertexBuffer = device.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertices.Length), vertices);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertices.Length),
+            vertices
+        );
 
         var commandBuffer = device.AcquireCommandBuffer();
         commandBuffer.SetRenderTarget(target);
@@ -495,10 +541,12 @@ internal static unsafe class Program
 
         // Magenta (255,0,255) on the left half, yellow (255,255,0) on the right: the texture's two
         // columns, in the order they were uploaded.
-        Report("DRAW", $"a textured quad samples its texture's two columns in order " +
-                       $"(left {left[0]},{left[1]},{left[2]}, right {right[0]},{right[1]},{right[2]})",
-            left[0] == 255 && left[1] == 0 && left[2] == 255 &&
-            right[0] == 255 && right[1] == 255 && right[2] == 0);
+        Report(
+            "DRAW",
+            $"a textured quad samples its texture's two columns in order "
+            + $"(left {left[0]},{left[1]},{left[2]}, right {right[0]},{right[1]},{right[2]})",
+            left[0] == 255 && left[1] == 0 && left[2] == 255 && right[0] == 255 && right[1] == 255 && right[2] == 0
+        );
 
         Drain(device, "textured draw");
     }
@@ -529,14 +577,17 @@ internal static unsafe class Program
         var bundle = ImGuiFullbright.Create();
         var module = D3D11GraphicsDevice.LoadShaderModule(device, bundle.Vertex, bundle.Pixel, bundle.Reflection);
 
-        using var pipeline = device.CreatePipeline(new PipelineDesc(
-            VertexShader: module,
-            PixelShader: module,
-            VertexLayouts: [ImGuiLayout],
-            BlendState: BlendStateDesc.Opaque,
-            DepthStencilState: DepthStencilStateDesc.None,
-            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
-            Topology: PrimitiveTopology.TriangleList));
+        using var pipeline = device.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: module,
+                PixelShader: module,
+                VertexLayouts: [ImGuiLayout],
+                BlendState: BlendStateDesc.Opaque,
+                DepthStencilState: DepthStencilStateDesc.None,
+                RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
+                Topology: PrimitiveTopology.TriangleList
+            )
+        );
 
         // A quad covering only the right half of NDC space, x in [0, 1].
         var vertices = new byte[6 * stride];
@@ -549,15 +600,17 @@ internal static unsafe class Program
 
         byte[] grey =
         [
-            128, 128, 128, 255,   128, 128, 128, 255,
-            128, 128, 128, 255,   128, 128, 128, 255,
+            128, 128, 128, 255, 128, 128, 128, 255,
+            128, 128, 128, 255, 128, 128, 128, 255,
         ];
 
         using var texture = device.CreateTexture(new TextureDesc(2, 2, TextureFormat.Rgba8), grey);
         using var sampler = device.CreateSampler(new SamplerDesc());
         using var target = device.CreateRenderTarget(new RenderTargetDesc(size, size, TextureFormat.Rgba8));
         using var vertexBuffer = device.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertices.Length), vertices);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertices.Length),
+            vertices
+        );
 
         // Right half of NDC shifted right by another half: the visible half becomes x in [0.5, 1.5],
         // so the covered quarter of the target is the right one.
@@ -580,9 +633,12 @@ internal static unsafe class Program
         device.ReadTexture(target.ColorTexture, size / 8, size / 2, 1, 1, left);
         device.ReadTexture(target.ColorTexture, size * 7 / 8, size / 2, 1, 1, right);
 
-        Report("DRAW", $"a +0.5 X translation moves the quad right rather than doubling it " +
-                       $"(left quarter {left[0]}, right quarter {right[0]} - expected 0 then 128)",
-            left[0] == 0 && right[0] == 128);
+        Report(
+            "DRAW",
+            $"a +0.5 X translation moves the quad right rather than doubling it "
+            + $"(left quarter {left[0]}, right quarter {right[0]} - expected 0 then 128)",
+            left[0] == 0 && right[0] == 128
+        );
 
         if (left[0] != 0 || right[0] != 128)
             Console.WriteLine("           an untransposed write puts the translation in the fourth row, where it acts as w");
@@ -607,21 +663,24 @@ internal static unsafe class Program
     private static void CheckDepthClearUnderWriteDisabledPipeline(D3D11GraphicsDevice device)
     {
         const int size = 32;
-        const int stride = 12;   // float3 position
+        const int stride = 12; // float3 position
 
         var bundle = GroundFullbright.Create();
         var module = D3D11GraphicsDevice.LoadShaderModule(device, bundle.Vertex, bundle.Pixel, bundle.Reflection);
 
         // Depth writes off, which is the state that makes a depth clear a no-op if it is not worked
         // around. Culling off so the winding of a deliberately simple quad cannot matter.
-        using var noDepthWrite = device.CreatePipeline(new PipelineDesc(
-            VertexShader: module,
-            PixelShader: module,
-            VertexLayouts: [PositionColorLayout],
-            BlendState: BlendStateDesc.Opaque,
-            DepthStencilState: DepthStencilStateDesc.Default with { DepthWriteEnabled = false },
-            RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
-            Topology: PrimitiveTopology.TriangleList));
+        using var noDepthWrite = device.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: module,
+                PixelShader: module,
+                VertexLayouts: [PositionColorLayout],
+                BlendState: BlendStateDesc.Opaque,
+                DepthStencilState: DepthStencilStateDesc.Default with { DepthWriteEnabled = false },
+                RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
+                Topology: PrimitiveTopology.TriangleList
+            )
+        );
 
         // NDC-space quad covering the whole target, so there is no projection uniform to get wrong.
         var vertices = new byte[6 * stride];
@@ -634,7 +693,9 @@ internal static unsafe class Program
 
         using var target = device.CreateRenderTarget(new RenderTargetDesc(size, size, TextureFormat.Rgba8));
         using var vertexBuffer = device.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertices.Length), vertices);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertices.Length),
+            vertices
+        );
 
         var commandBuffer = device.AcquireCommandBuffer();
         commandBuffer.SetRenderTarget(target);
@@ -654,9 +715,12 @@ internal static unsafe class Program
 
         // After the clear and the draw, the state must still be the pipeline's: the draw is the last
         // thing that happened, and the pipeline is what the depth writes belong to.
-        Report("DEPTH", $"a depth clear through a depth-write-disabled pipeline still clears " +
-                        $"(centre pixel {pixel[0]},{pixel[1]},{pixel[2]},{pixel[3]})",
-            pixel[3] == 255);
+        Report(
+            "DEPTH",
+            $"a depth clear through a depth-write-disabled pipeline still clears "
+            + $"(centre pixel {pixel[0]},{pixel[1]},{pixel[2]},{pixel[3]})",
+            pixel[3] == 255
+        );
 
         Drain(device, "depth clear");
     }
@@ -699,9 +763,12 @@ internal static unsafe class Program
         var pixel = ReadBackBufferPixel(device, swapchain.BackBuffer);
         if (pixel is not null)
         {
-            Report("PRESENT", $"a cleared frame reaches the swapchain (got " +
-                              $"{pixel[0]},{pixel[1]},{pixel[2]},{pixel[3]}, want 255,0,255,255)",
-                pixel[0] == 255 && pixel[1] == 0 && pixel[2] == 255 && pixel[3] == 255);
+            Report(
+                "PRESENT",
+                $"a cleared frame reaches the swapchain (got "
+                + $"{pixel[0]},{pixel[1]},{pixel[2]},{pixel[3]}, want 255,0,255,255)",
+                pixel[0] == 255 && pixel[1] == 0 && pixel[2] == 255 && pixel[3] == 255
+            );
         }
 
         var presented = true;
@@ -718,8 +785,11 @@ internal static unsafe class Program
         Report("PRESENT", "Present succeeds on the swapchain", presented);
 
         swapchain.Resize(Width, Height);
-        Report("PRESENT", $"Resize rebuilt the buffers at {swapchain.Width}x{swapchain.Height}",
-            swapchain.Width == Width && swapchain.Height == Height);
+        Report(
+            "PRESENT",
+            $"Resize rebuilt the buffers at {swapchain.Width}x{swapchain.Height}",
+            swapchain.Width == Width && swapchain.Height == Height
+        );
 
         var afterResize = device.AcquireCommandBuffer();
         afterResize.Clear(ClearOptions.Color | ClearOptions.Depth, new ColorRgba(0f, 0f, 0f));
@@ -736,8 +806,11 @@ internal static unsafe class Program
             Console.WriteLine($"           {e.Message}");
         }
 
-        Report("PRESENT", "Present succeeds again after a resize (the back buffer view was rebuilt)",
-            presentedAgain);
+        Report(
+            "PRESENT",
+            "Present succeeds again after a resize (the back buffer view was rebuilt)",
+            presentedAgain
+        );
     }
 
     // ── helpers ─────────────────────────────────────────────────────────────────────────────────
@@ -776,16 +849,27 @@ internal static unsafe class Program
         try
         {
             D3D11Interop.Check(
-                device.Device->CreateTexture2D(&stagingDesc, null, &staging), "CreateTexture2D (back buffer staging)");
+                device.Device->CreateTexture2D(&stagingDesc, null, &staging),
+                "CreateTexture2D (back buffer staging)"
+            );
 
             var box = new D3D11_BOX { left = 0, top = 0, front = 0, right = 1, bottom = 1, back = 1 };
             device.Context->CopySubresourceRegion(
-                (ID3D11Resource*)staging, 0, 0, 0, 0, (ID3D11Resource*)source, 0, &box);
+                (ID3D11Resource*)staging,
+                0,
+                0,
+                0,
+                0,
+                (ID3D11Resource*)source,
+                0,
+                &box
+            );
 
             D3D11_MAPPED_SUBRESOURCE mapped;
             D3D11Interop.Check(
                 device.Context->Map((ID3D11Resource*)staging, 0, D3D11_MAP.D3D11_MAP_READ, 0, &mapped),
-                "Map (back buffer readback)");
+                "Map (back buffer readback)"
+            );
 
             try
             {
@@ -825,13 +909,23 @@ internal static unsafe class Program
         }
 
         throw new InvalidOperationException(
-            $"No uniform named '{name}' in the reflection - names are " +
-            $"[{string.Join(", ", pipeline.Reflection.Uniforms.Select(u => u.Name))}].");
+            $"No uniform named '{name}' in the reflection - names are "
+            + $"[{string.Join(", ", pipeline.Reflection.Uniforms.Select(u => u.Name))}]."
+        );
     }
 
     private static void WriteVertex(
-        byte[] destination, int index, float x, float y, float u, float v,
-        byte r, byte g, byte b, byte a)
+        byte[] destination,
+        int index,
+        float x,
+        float y,
+        float u,
+        float v,
+        byte r,
+        byte g,
+        byte b,
+        byte a
+    )
     {
         const int stride = 20;
         var at = index * stride;
@@ -909,7 +1003,13 @@ internal static unsafe class Program
             yield return new Bundle("GroundFullbright", ground.Vertex, ground.Pixel, ground.Reflection, [PositionColorLayout]);
 
             var mountains = MountainsFullbright.Create();
-            yield return new Bundle("MountainsFullbright", mountains.Vertex, mountains.Pixel, mountains.Reflection, [PositionColorLayout]);
+            yield return new Bundle(
+                "MountainsFullbright",
+                mountains.Vertex,
+                mountains.Pixel,
+                mountains.Reflection,
+                [PositionColorLayout]
+            );
 
             var sky = SkyFullbright.Create();
             yield return new Bundle("SkyFullbright", sky.Vertex, sky.Pixel, sky.Reflection, [PositionColorLayout]);
@@ -918,13 +1018,25 @@ internal static unsafe class Program
             yield return new Bundle("PolyBasic", poly.Vertex, poly.Pixel, poly.Reflection, [PolyLayout, InstanceLayout]);
 
             var polyShadow = PolyCreateShadowMap.Create();
-            yield return new Bundle("PolyCreateShadowMap", polyShadow.Vertex, polyShadow.Pixel, polyShadow.Reflection, [PolyLayout, InstanceLayout]);
+            yield return new Bundle(
+                "PolyCreateShadowMap",
+                polyShadow.Vertex,
+                polyShadow.Pixel,
+                polyShadow.Reflection,
+                [PolyLayout, InstanceLayout]
+            );
 
             var nvgSimple = NvgSimple.Create();
             yield return new Bundle("NvgSimple", nvgSimple.Vertex, nvgSimple.Pixel, nvgSimple.Reflection, [NvgLayout]);
 
             var particle = ParticleFullbright.Create();
-            yield return new Bundle("ParticleFullbright", particle.Vertex, particle.Pixel, particle.Reflection, [PositionColorLayout]);
+            yield return new Bundle(
+                "ParticleFullbright",
+                particle.Vertex,
+                particle.Pixel,
+                particle.Reflection,
+                [PositionColorLayout]
+            );
         }
     }
 
@@ -933,7 +1045,8 @@ internal static unsafe class Program
         ShaderStageSources Vertex,
         ShaderStageSources Pixel,
         ShaderReflection Reflection,
-        IReadOnlyList<VertexLayoutDesc> Layouts);
+        IReadOnlyList<VertexLayoutDesc> Layouts
+    );
 
     // ── the app's real layouts, copied from the GL smoke test so the two agree ───────────────────
 
@@ -947,7 +1060,8 @@ internal static unsafe class Program
             new VertexAttributeDesc("TEXCOORD", 0, 8, VertexAttributeFormat.Float2),
             new VertexAttributeDesc("COLOR", 0, 16, VertexAttributeFormat.Byte4Normalized),
         ],
-        StrideInBytes: ImGuiStride);
+        StrideInBytes: ImGuiStride
+    );
 
     /// <summary>Bytes per Ground/Mountains/Sky vertex - PositionColorVertex.Stride: float3 position, packed byte4 colour.</summary>
     private const int PositionColorStride = 16;
@@ -958,7 +1072,8 @@ internal static unsafe class Program
             new VertexAttributeDesc("POSITION", 0, 0, VertexAttributeFormat.Float3),
             new VertexAttributeDesc("COLOR", 0, 12, VertexAttributeFormat.Byte4Normalized),
         ],
-        StrideInBytes: PositionColorStride);
+        StrideInBytes: PositionColorStride
+    );
 
     /// <summary>
     /// Bytes per LineMeshVertexAttribute - the app's real Line geometry vertex. Its field order is
@@ -979,7 +1094,8 @@ internal static unsafe class Program
             new VertexAttributeDesc("COLOR", 0, 52, VertexAttributeFormat.Byte4Normalized),
             new VertexAttributeDesc("TEXCOORD", 1, 56, VertexAttributeFormat.Float1),
         ],
-        StrideInBytes: LineGeometryStride);
+        StrideInBytes: LineGeometryStride
+    );
 
     /// <summary>Bytes per Poly vertex - Mesh.VertexPositionNormalColorCentroid: three float3s, packed byte4 colour, float.</summary>
     private const int PolyStride = 44;
@@ -993,7 +1109,8 @@ internal static unsafe class Program
             new VertexAttributeDesc("COLOR", 0, 36, VertexAttributeFormat.Byte4Normalized),
             new VertexAttributeDesc("TEXCOORD", 0, 40, VertexAttributeFormat.Float1),
         ],
-        StrideInBytes: PolyStride);
+        StrideInBytes: PolyStride
+    );
 
     /// <summary>Bytes per NanoVG vertex - AbstractionNvgRenderer.VertexStride: float2 position, float2 uv.</summary>
     private const int NvgStride = 16;
@@ -1004,7 +1121,8 @@ internal static unsafe class Program
             new VertexAttributeDesc("POSITION", 0, 0, VertexAttributeFormat.Float2),
             new VertexAttributeDesc("TEXCOORD", 0, 8, VertexAttributeFormat.Float2),
         ],
-        StrideInBytes: NvgStride);
+        StrideInBytes: NvgStride
+    );
 
     /// <summary>
     /// The per-instance stream: the app's real <c>InstanceData.VertexLayout</c>, six TEXCOORD
@@ -1025,7 +1143,8 @@ internal static unsafe class Program
             new VertexAttributeDesc("TEXCOORD", 8, 80, VertexAttributeFormat.Float4),
         ],
         StrideInBytes: InstanceStride,
-        InstanceStepRate: 1);
+        InstanceStepRate: 1
+    );
 
     /// <summary>
     /// The game's debug counter, drawn exactly as <c>FPSCounter.Render</c> draws it: a black outlined
@@ -1057,8 +1176,8 @@ internal static unsafe class Program
 
         // The counter's own font and size, and the same lines it draws.
         const float fontSize = 16f;
-        string text = "Fps: 240.11\nElapsed time: 0.05\nTick: 1200us\nGTC: 0.30us\nFrame (CPU): 4ms\n" +
-                      "Updates: 13\nFrames: 13\nLua calls: 0 (0.00ms)\nTables: 0, str-ins: 0 (0.00ms), resize: 0";
+        string text = "Fps: 240.11\nElapsed time: 0.05\nTick: 1200us\nGTC: 0.30us\nFrame (CPU): 4ms\n"
+                      + "Updates: 13\nFrames: 13\nLua calls: 0 (0.00ms)\nTables: 0, str-ins: 0 (0.00ms), resize: 0";
 
         string traced = text;
 
@@ -1069,8 +1188,16 @@ internal static unsafe class Program
         // Mid grey so the background is a value of its own, and the outline a third one.
         var background = new ColorRgba(0.5f, 0.5f, 0.5f, 1f);
 
-        byte[] Render(bool outlined, float emSize, bool fill = true, float penX = 10, float aaSize = 1.5f,
-            float outlineWidth = 1f, bool msaa = false, ColorRgba? back = null)
+        byte[] Render(
+            bool outlined,
+            float emSize,
+            bool fill = true,
+            float penX = 10,
+            float aaSize = 1.5f,
+            float outlineWidth = 1f,
+            bool msaa = false,
+            ColorRgba? back = null
+        )
         {
             var pen = new Vector2(penX, 3.208f);
             var cb = device.AcquireCommandBuffer();
@@ -1078,7 +1205,12 @@ internal static unsafe class Program
             cb.SetViewport(new Viewport(0, 0, size, size));
             cb.Clear(ClearOptions.Color, back ?? background);
             batch.Begin(cb, null, projection);
-            var white = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(255, 255, 255), Vector2.One, new AposColor(255, 255, 255));
+            var white = new Apos.Shapes.Gradient(
+                Vector2.Zero,
+                new AposColor(255, 255, 255),
+                Vector2.One,
+                new AposColor(255, 255, 255)
+            );
             var black = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(0, 0, 0), Vector2.One, new AposColor(0, 0, 0));
             // One draw carrying the fill and the band together, which is what DrawStringOutlined
             // does. The fill-only arm is the plain DrawString the ink bound is checked against.
@@ -1090,6 +1222,7 @@ internal static unsafe class Program
             {
                 batch.DrawString(font, traced, pen, emSize, white, aaSize: aaSize);
             }
+
             batch.End();
             cb.SetRenderTarget(null);
             device.Submit(cb);
@@ -1099,9 +1232,12 @@ internal static unsafe class Program
                 unsafe
                 {
                     device.Context->ResolveSubresource(
-                        (ID3D11Resource*)((D3D11Texture)target.ColorTexture!).Texture, 0,
-                        (ID3D11Resource*)multisampled.ColorTexture.Texture, 0,
-                        DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM);
+                        (ID3D11Resource*)((D3D11Texture)target.ColorTexture!).Texture,
+                        0,
+                        (ID3D11Resource*)multisampled.ColorTexture.Texture,
+                        0,
+                        DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM
+                    );
                 }
             }
 
@@ -1123,8 +1259,11 @@ internal static unsafe class Program
         // every fade collapses to a hard step - a glyph is byte-identical there whatever the band.
         int plainInk = Ink(Render(false, fontSize));
         Report("MSDF", $"the counter's text drew something ({plainInk} lit pixels)", plainInk > 800);
-        Report("MSDF", $"the counter's own text keeps its weight ({plainInk} lit pixels, under {InkBound})",
-            plainInk < InkBound);
+        Report(
+            "MSDF",
+            $"the counter's own text keeps its weight ({plainInk} lit pixels, under {InkBound})",
+            plainInk < InkBound
+        );
 
         if (plainInk >= InkBound)
         {
@@ -1163,17 +1302,27 @@ internal static unsafe class Program
                     if (Value(ringed, size, x, y) >= 110) continue;
                     bool nearInk = false;
                     for (int dy = -2; dy <= 2 && !nearInk; dy++)
-                        for (int dx = -2; dx <= 2 && !nearInk; dx++)
-                        {
-                            int nx = x + dx, ny = y + dy;
-                            if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
-                            if (Value(inkOnly, size, nx, ny) > 140) nearInk = true;
-                        }
-                    if (!nearInk) { strays++; if (strayAt.Count < 8) strayAt.Add((x, y)); }
+                    for (int dx = -2; dx <= 2 && !nearInk; dx++)
+                    {
+                        int nx = x + dx, ny = y + dy;
+                        if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
+                        if (Value(inkOnly, size, nx, ny) > 140) nearInk = true;
+                    }
+
+                    if (!nearInk)
+                    {
+                        strays++;
+                        if (strayAt.Count < 8) strayAt.Add((x, y));
+                    }
                 }
             }
-            Report("MSDF", $"the outline leaves no ink standing away from the glyph{(msaa ? " under 8x MSAA" : "")} " +
-                           $"({strays} stray pixels{(strays > 0 ? " at " + string.Join(" ", strayAt) : "")})", strays == 0);
+
+            Report(
+                "MSDF",
+                $"the outline leaves no ink standing away from the glyph{(msaa ? " under 8x MSAA" : "")} "
+                + $"({strays} stray pixels{(strays > 0 ? " at " + string.Join(" ", strayAt) : "")})",
+                strays == 0
+            );
         }
 
         var blue = new ColorRgba(0f, 0f, 1f, 1f);
@@ -1195,9 +1344,13 @@ internal static unsafe class Program
                 if (Math.Abs(Value(outlined, size, x, y) - coverage * 255f) > 30f) stepped++;
             }
         }
-        Report("MSDF", $"the letter's edge stays antialiased against its outline " +
-                       $"({stepped} of {edges} half-covered edge pixels off the letter-over-band value)",
-            edges > 0 && stepped * 10 <= edges);
+
+        Report(
+            "MSDF",
+            $"the letter's edge stays antialiased against its outline "
+            + $"({stepped} of {edges} half-covered edge pixels off the letter-over-band value)",
+            edges > 0 && stepped * 10 <= edges
+        );
 
         // The outline is a stroke of the width the caller named, and the game's is one pixel. It
         // must lay that pixel down as ink: faded by the letter's own coverage, which is already
@@ -1206,10 +1359,13 @@ internal static unsafe class Program
         // holds is the band's, and it only reaches black if the band is drawn at full weight.
         int darkest = 255;
         for (int y = 0; y < size; y++)
-            for (int x = 0; x < size; x++)
-                darkest = Math.Min(darkest, Value(outlined, size, x, y));
-        Report("MSDF", $"the counter's outline is drawn opaquely, not as a translucent smear " +
-                       $"(darkest pixel {darkest})", darkest < 40);
+        for (int x = 0; x < size; x++)
+            darkest = Math.Min(darkest, Value(outlined, size, x, y));
+        Report(
+            "MSDF",
+            $"the counter's outline is drawn opaquely, not as a translucent smear " + $"(darkest pixel {darkest})",
+            darkest < 40
+        );
     }
 
     /// <summary>
@@ -1261,18 +1417,21 @@ internal static unsafe class Program
         // reads as a translucent letter however sharp its edge is.
         int solid = 0, deepest = 0;
         for (int y = 0; y < size; y++)
-            for (int x = 0; x < size; x++)
-            {
-                int v = Value(pixels, size, x, y);
-                if (v >= 250) solid++;
-                deepest = Math.Max(deepest, v);
-            }
+        for (int x = 0; x < size; x++)
+        {
+            int v = Value(pixels, size, x, y);
+            if (v >= 250) solid++;
+            deepest = Math.Max(deepest, v);
+        }
 
         Console.WriteLine($"           {partial} edge pixels average {mean:0.0} of 255, {solid} solid, peak {deepest}");
-        Report("MSDF", $"a glyph's edge fades under the fill's own profile, not a smoothstep " +
-                       $"({partial} edge pixels average {mean:0.0}, not 128) " +
-                       $"and its body is solid ({solid} pixels, peak {deepest})",
-            partial > 40 && Math.Abs(mean - 128) > 12 && solid > 1000 && deepest == 255);
+        Report(
+            "MSDF",
+            $"a glyph's edge fades under the fill's own profile, not a smoothstep "
+            + $"({partial} edge pixels average {mean:0.0}, not 128) "
+            + $"and its body is solid ({solid} pixels, peak {deepest})",
+            partial > 40 && Math.Abs(mean - 128) > 12 && solid > 1000 && deepest == 255
+        );
     }
 
     private static void CheckOutlineCoverage(Func<float, byte[]> renderOnBlue, int size)
@@ -1286,9 +1445,12 @@ internal static unsafe class Program
             first.AddRange(found.Take(4 - Math.Min(4, first.Count)));
         }
 
-        Report("MSDF", $"the counter's outline meets its fill with no seam between them " +
-                       $"({gaps} seam pixels over four subpixel pens{(gaps > 0 ? ", at " + string.Join(" ", first) : "")})",
-            gaps == 0);
+        Report(
+            "MSDF",
+            $"the counter's outline meets its fill with no seam between them "
+            + $"({gaps} seam pixels over four subpixel pens{(gaps > 0 ? ", at " + string.Join(" ", first) : "")})",
+            gaps == 0
+        );
     }
 
     /// <summary>
@@ -1309,11 +1471,14 @@ internal static unsafe class Program
             for (int x = 1; x < size - 1; x++)
             {
                 if (Background(x, y) < 77) continue;
-                if ((Band(x - 1, y) && Letter(x + 1, y)) || (Letter(x - 1, y) && Band(x + 1, y)) ||
-                    (Band(x, y - 1) && Letter(x, y + 1)) || (Letter(x, y - 1) && Band(x, y + 1)))
+                if ((Band(x - 1, y) && Letter(x + 1, y))
+                    || (Letter(x - 1, y) && Band(x + 1, y))
+                    || (Band(x, y - 1) && Letter(x, y + 1))
+                    || (Letter(x, y - 1) && Band(x, y + 1)))
                     found.Add((x, y));
             }
         }
+
         return found;
     }
 
@@ -1325,8 +1490,11 @@ internal static unsafe class Program
     /// The quad is padded to hold the band and its fade, so the far corner is always outside the
     /// band however narrow it is drawn.
     /// </summary>
-    private static void CheckBandIsBounded(Func<bool, float, bool, float, float, float, byte[]> render,
-        float fontSize, int size)
+    private static void CheckBandIsBounded(
+        Func<bool, float, bool, float, float, float, byte[]> render,
+        float fontSize,
+        int size
+    )
     {
         var pixels = render(true, fontSize, true, 9f, 1.5f, 1f);
 
@@ -1337,8 +1505,10 @@ internal static unsafe class Program
             for (int x = 0; x < size; x++)
             {
                 if (Math.Abs(Value(pixels, size, x, y) - 128) <= 24) continue;
-                minX = Math.Min(minX, x); maxX = Math.Max(maxX, x);
-                minY = Math.Min(minY, y); maxY = Math.Max(maxY, y);
+                minX = Math.Min(minX, x);
+                maxX = Math.Max(maxX, x);
+                minY = Math.Min(minY, y);
+                maxY = Math.Max(maxY, y);
             }
         }
 
@@ -1346,12 +1516,18 @@ internal static unsafe class Program
         // the left column or the bottom of the frame.
         bool leftClear = true, bottomClear = true;
         for (int y = 0; y < size; y++)
-            if (Value(pixels, size, 0, y) < 100) leftClear = false;
+            if (Value(pixels, size, 0, y) < 100)
+                leftClear = false;
         for (int x = 0; x < size; x++)
-            if (Value(pixels, size, x, size - 1) < 100) bottomClear = false;
+            if (Value(pixels, size, x, size - 1) < 100)
+                bottomClear = false;
 
-        Report("MSDF", "the outline band stops at its own width rather than covering the whole quad " +
-                       $"(left column and bottom row stay background)", leftClear && bottomClear);
+        Report(
+            "MSDF",
+            "the outline band stops at its own width rather than covering the whole quad "
+            + $"(left column and bottom row stay background)",
+            leftClear && bottomClear
+        );
         Console.WriteLine($"           ink spans x {minX}..{maxX}, y {minY}..{maxY} of {size}");
     }
 
@@ -1368,8 +1544,11 @@ internal static unsafe class Program
     /// The comparison is per phase against the SAME pen, because a half-pixel shift moves a stem's
     /// own coverage far more than the band does and would read as the band thinning every letter.
     /// </summary>
-    private static void CheckLetterKeepsItsWeight(Func<bool, float, bool, float, float, float, byte[]> render,
-        float fontSize, int size)
+    private static void CheckLetterKeepsItsWeight(
+        Func<bool, float, bool, float, float, float, byte[]> render,
+        float fontSize,
+        int size
+    )
     {
         int worst = 0, worstAt = -1, over = 0, body = 0;
         for (int phase = 0; phase < 4; phase++)
@@ -1385,15 +1564,24 @@ internal static unsafe class Program
                     body++;
                     int drop = alone - Value(drawn, size, x, y);
                     if (drop > 20) over++;
-                    if (drop > worst) { worst = drop; worstAt = y * size + x; }
+                    if (drop > worst)
+                    {
+                        worst = drop;
+                        worstAt = y * size + x;
+                    }
                 }
             }
         }
 
-        Console.WriteLine($"           {over} of {body} body pixels drop past 20, worst {worst} " +
-                          $"at ({worstAt % size},{worstAt / size}) over four subpixel pens");
-        Report("MSDF", $"an outline leaves the letter's body as the fill drew it " +
-                       $"({over} of {body} move by more than 20)", over == 0 && body > 0);
+        Console.WriteLine(
+            $"           {over} of {body} body pixels drop past 20, worst {worst} "
+            + $"at ({worstAt % size},{worstAt / size}) over four subpixel pens"
+        );
+        Report(
+            "MSDF",
+            $"an outline leaves the letter's body as the fill drew it " + $"({over} of {body} move by more than 20)",
+            over == 0 && body > 0
+        );
     }
 
     /// <summary>
@@ -1406,12 +1594,13 @@ internal static unsafe class Program
     private static bool NearFade(byte[] pixels, int size, int x, int y)
     {
         for (int dy = -1; dy <= 1; dy++)
-            for (int dx = -1; dx <= 1; dx++)
-            {
-                int nx = x + dx, ny = y + dy;
-                if (nx < 0 || ny < 0 || nx >= size || ny >= size) return true;
-                if (Value(pixels, size, nx, ny) < 245) return true;
-            }
+        for (int dx = -1; dx <= 1; dx++)
+        {
+            int nx = x + dx, ny = y + dy;
+            if (nx < 0 || ny < 0 || nx >= size || ny >= size) return true;
+            if (Value(pixels, size, nx, ny) < 245) return true;
+        }
+
         return false;
     }
 
@@ -1427,7 +1616,8 @@ internal static unsafe class Program
     {
         int lit = 0;
         for (int i = 0; i < pixels.Length; i += 4)
-            if (Math.Max(pixels[i], Math.Max(pixels[i + 1], pixels[i + 2])) > 200) lit++;
+            if (Math.Max(pixels[i], Math.Max(pixels[i + 1], pixels[i + 2])) > 200)
+                lit++;
         return lit;
     }
 }
@@ -1493,7 +1683,9 @@ internal sealed unsafe class SmokeWindow : IDisposable
         // entry points - so a byte-per-character ASCII string would be read as half a string with
         // every other character NUL.
         _classNamePin = GCHandle.Alloc(
-            System.Text.Encoding.Unicode.GetBytes(ClassName + "\0"), GCHandleType.Pinned);
+            System.Text.Encoding.Unicode.GetBytes(ClassName + "\0"),
+            GCHandleType.Pinned
+        );
         var className = (char*)_classNamePin.AddrOfPinnedObject();
 
         var windowClass = new WNDCLASSEXW
@@ -1517,8 +1709,9 @@ internal sealed unsafe class SmokeWindow : IDisposable
         {
             _classNamePin.Free();
             throw new InvalidOperationException(
-                $"RegisterClassExW failed with {Marshal.GetLastWin32Error()}; the class name " +
-                $"'{ClassName}' may already be registered in this process.");
+                $"RegisterClassExW failed with {Marshal.GetLastWin32Error()}; the class name "
+                + $"'{ClassName}' may already be registered in this process."
+            );
         }
 
         var handle = Windows.CreateWindowExW(
@@ -1526,8 +1719,15 @@ internal sealed unsafe class SmokeWindow : IDisposable
             className,
             className,
             (uint)WS.WS_POPUP,
-            0, 0, width, height,
-            HWND.NULL, HMENU.NULL, instance, null);
+            0,
+            0,
+            width,
+            height,
+            HWND.NULL,
+            HMENU.NULL,
+            instance,
+            null
+        );
 
         if (handle == HWND.NULL)
         {

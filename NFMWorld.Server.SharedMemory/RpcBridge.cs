@@ -46,7 +46,8 @@ public sealed class RpcBridge : IDisposable
         string channelName,
         Func<RpcMessage, RpcMessage> handler,
         int bufferCapacity = 50000,
-        int bufferNodeCount = 10)
+        int bufferNodeCount = 10
+    )
     {
         _rpcBuffer = new RpcBuffer(
             channelName,
@@ -58,7 +59,8 @@ public sealed class RpcBridge : IDisposable
             },
             bufferCapacity,
             RpcProtocol.V1,
-            bufferNodeCount);
+            bufferNodeCount
+        );
 
         // The RpcBuffer auto-detects Controller/Worker via a named Mutex.
         // For Phase 1, we don't actually need IsMaster — both sides use SendAsync the same way.
@@ -77,7 +79,8 @@ public sealed class RpcBridge : IDisposable
     public async Task<RpcMessage> SendAsync(
         RpcMessage message,
         int timeoutMs = 30000,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         ThrowIfDisposed();
 
@@ -85,12 +88,14 @@ public sealed class RpcBridge : IDisposable
         var response = await _rpcBuffer.RemoteRequestAsync(
             requestBytes,
             timeoutMs,
-            cancellationToken);
+            cancellationToken
+        );
 
         if (!response.Success)
             throw new TimeoutException(
-                $"RPC request of type {message.Type} timed out after {timeoutMs}ms. " +
-                "The remote side may have crashed or be unresponsive.");
+                $"RPC request of type {message.Type} timed out after {timeoutMs}ms. "
+                + "The remote side may have crashed or be unresponsive."
+            );
 
         return MemoryPackSerializer.Deserialize<RpcMessage>(response.Data!);
     }
@@ -102,7 +107,8 @@ public sealed class RpcBridge : IDisposable
     public RpcMessage Send(
         RpcMessage message,
         int timeoutMs = 30000,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         ThrowIfDisposed();
 
@@ -110,11 +116,13 @@ public sealed class RpcBridge : IDisposable
         var response = _rpcBuffer.RemoteRequest(
             requestBytes,
             timeoutMs,
-            cancellationToken);
+            cancellationToken
+        );
 
         if (!response.Success)
             throw new TimeoutException(
-                $"RPC request of type {message.Type} timed out after {timeoutMs}ms.");
+                $"RPC request of type {message.Type} timed out after {timeoutMs}ms."
+            );
 
         return MemoryPackSerializer.Deserialize<RpcMessage>(response.Data!);
     }

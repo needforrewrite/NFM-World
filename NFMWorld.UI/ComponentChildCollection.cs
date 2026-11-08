@@ -95,6 +95,7 @@ public class ComponentChildCollection(Component parent) : NonSynchronizedObserva
         {
             if (Items[i] is Component) count++;
         }
+
         return count;
     }
 
@@ -115,6 +116,7 @@ public class ComponentChildCollection(Component parent) : NonSynchronizedObserva
         {
             parent.NodeInternal.RemoveChild(cmp1.Contents);
         }
+
         item.VisualParent = parent;
         SetDisposed(item, false);
         base.SetItem(index, item);
@@ -128,6 +130,7 @@ public class ComponentChildCollection(Component parent) : NonSynchronizedObserva
             SetDisposed(item, true);
             item.Disposing?.Invoke();
         }
+
         parent.NodeInternal.ClearChildren();
         base.ClearItems();
     }

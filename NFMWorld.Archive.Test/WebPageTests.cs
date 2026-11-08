@@ -12,11 +12,13 @@ public class WebPageTests
 {
     private static HttpClient Browser(ArchiveAppFactory factory)
     {
-        var client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
-        {
-            HandleCookies = true,
-            AllowAutoRedirect = false
-        });
+        var client = factory.CreateClient(
+            new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+            {
+                HandleCookies = true,
+                AllowAutoRedirect = false
+            }
+        );
         return client;
     }
 
@@ -40,12 +42,14 @@ public class WebPageTests
         var page = await client.GetAsync("/account/login");
         var token = ExtractAntiforgery(await page.Content.ReadAsStringAsync());
 
-        var form = new FormUrlEncodedContent(new Dictionary<string, string>
-        {
-            ["Username"] = "websiteuser",
-            ["RegisterPassword"] = "password123",
-            ["__RequestVerificationToken"] = token
-        });
+        var form = new FormUrlEncodedContent(
+            new Dictionary<string, string>
+            {
+                ["Username"] = "websiteuser",
+                ["RegisterPassword"] = "password123",
+                ["__RequestVerificationToken"] = token
+            }
+        );
 
         var register = await client.PostAsync("/account/login?handler=Register", form);
         Assert.AreEqual(HttpStatusCode.Redirect, register.StatusCode);
@@ -66,19 +70,29 @@ public class WebPageTests
         var page = await client.GetAsync("/account/login");
         var token = ExtractAntiforgery(await page.Content.ReadAsStringAsync());
 
-        await client.PostAsync("/account/login?handler=Register", new FormUrlEncodedContent(new Dictionary<string, string>
-        {
-            ["Username"] = "someone", ["RegisterPassword"] = "password123", ["__RequestVerificationToken"] = token
-        }));
+        await client.PostAsync(
+            "/account/login?handler=Register",
+            new FormUrlEncodedContent(
+                new Dictionary<string, string>
+                {
+                    ["Username"] = "someone", ["RegisterPassword"] = "password123", ["__RequestVerificationToken"] = token
+                }
+            )
+        );
 
         using var other = Browser(factory);
         var loginPage = await other.GetAsync("/account/login");
         var loginToken = ExtractAntiforgery(await loginPage.Content.ReadAsStringAsync());
 
-        var login = await other.PostAsync("/account/login?handler=SignIn", new FormUrlEncodedContent(new Dictionary<string, string>
-        {
-            ["Username"] = "someone", ["Password"] = "wrong", ["__RequestVerificationToken"] = loginToken
-        }));
+        var login = await other.PostAsync(
+            "/account/login?handler=SignIn",
+            new FormUrlEncodedContent(
+                new Dictionary<string, string>
+                {
+                    ["Username"] = "someone", ["Password"] = "wrong", ["__RequestVerificationToken"] = loginToken
+                }
+            )
+        );
 
         Assert.AreEqual(HttpStatusCode.OK, login.StatusCode);
         StringAssert.Contains(await login.Content.ReadAsStringAsync(), "Wrong username or password");
@@ -96,22 +110,32 @@ public class WebPageTests
         var page = await client.GetAsync("/account/login");
         var token = ExtractAntiforgery(await page.Content.ReadAsStringAsync());
 
-        await client.PostAsync("/account/login?handler=Register", new FormUrlEncodedContent(new Dictionary<string, string>
-        {
-            ["Username"] = "redirector", ["RegisterPassword"] = "password123", ["__RequestVerificationToken"] = token
-        }));
+        await client.PostAsync(
+            "/account/login?handler=Register",
+            new FormUrlEncodedContent(
+                new Dictionary<string, string>
+                {
+                    ["Username"] = "redirector", ["RegisterPassword"] = "password123", ["__RequestVerificationToken"] = token
+                }
+            )
+        );
 
         using var other = Browser(factory);
         var loginPage = await other.GetAsync("/account/login");
         var loginToken = ExtractAntiforgery(await loginPage.Content.ReadAsStringAsync());
 
-        var login = await other.PostAsync("/account/login?handler=SignIn", new FormUrlEncodedContent(new Dictionary<string, string>
-        {
-            ["Username"] = "redirector",
-            ["Password"] = "password123",
-            ["ReturnUrl"] = "https://evil.example/",
-            ["__RequestVerificationToken"] = loginToken
-        }));
+        var login = await other.PostAsync(
+            "/account/login?handler=SignIn",
+            new FormUrlEncodedContent(
+                new Dictionary<string, string>
+                {
+                    ["Username"] = "redirector",
+                    ["Password"] = "password123",
+                    ["ReturnUrl"] = "https://evil.example/",
+                    ["__RequestVerificationToken"] = loginToken
+                }
+            )
+        );
 
         Assert.AreEqual(HttpStatusCode.Redirect, login.StatusCode);
         Assert.AreEqual("/", login.Headers.Location!.ToString());
@@ -139,14 +163,22 @@ public class WebPageTests
 
         var page = await client.GetAsync("/account/login");
         var token = ExtractAntiforgery(await page.Content.ReadAsStringAsync());
-        await client.PostAsync("/account/login?handler=Register", new FormUrlEncodedContent(new Dictionary<string, string>
-        {
-            ["Username"] = "browser", ["RegisterPassword"] = "password123", ["__RequestVerificationToken"] = token
-        }));
+        await client.PostAsync(
+            "/account/login?handler=Register",
+            new FormUrlEncodedContent(
+                new Dictionary<string, string>
+                {
+                    ["Username"] = "browser", ["RegisterPassword"] = "password123", ["__RequestVerificationToken"] = token
+                }
+            )
+        );
 
         var browse = await client.GetAsync("/browse");
-        Assert.AreEqual(HttpStatusCode.OK, browse.StatusCode,
-            await browse.Content.ReadAsStringAsync());
+        Assert.AreEqual(
+            HttpStatusCode.OK,
+            browse.StatusCode,
+            await browse.Content.ReadAsStringAsync()
+        );
     }
 
     private static string ExtractAntiforgery(string html)

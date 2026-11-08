@@ -16,17 +16,27 @@ public static class TriangleMesh
     private static readonly fix64 MaxGroundSnapDistance = (fix64)100;
 
     // Max penetration into a wall triangle to resolve
-    private static readonly fix64 MaxWallPenetration = (fix64)50; // increasing this prevents phasing through walls at high speed, but may lead to being shot out the side of a ramp
+    private static readonly fix64
+        MaxWallPenetration =
+            (fix64)50; // increasing this prevents phasing through walls at high speed, but may lead to being shot out the side of a ramp
 
-    private static readonly fix64 MaxWallSnapDistance = (fix64)30; // when resolving wall collisions, push the wheel this far past the surface to prevent sticking (also allows a small margin for error in the collision test)
-    
-    private static readonly fix64 MaxGroundPenetration = (fix64)5; // wheel can be up to this far below the surface and still snap up onto it (prevents hovering above ramps)
-    
+    private static readonly fix64
+        MaxWallSnapDistance =
+            (fix64)30; // when resolving wall collisions, push the wheel this far past the surface to prevent sticking (also allows a small margin for error in the collision test)
+
+    private static readonly fix64
+        MaxGroundPenetration =
+            (fix64)5; // wheel can be up to this far below the surface and still snap up onto it (prevents hovering above ramps)
+
     private static readonly fix64 WallQueryRadius = MaxWallPenetration + MaxWallSnapDistance;
 
     public readonly ref struct TriangleData(
-        in f64Vector3 edge1, in f64Vector3 edge2, in f64Vector3 normalizedNormal,
-        fix64 groundness, in f64Vector3 toPoint)
+        in f64Vector3 edge1,
+        in f64Vector3 edge2,
+        in f64Vector3 normalizedNormal,
+        fix64 groundness,
+        in f64Vector3 toPoint
+    )
     {
         public readonly ref f64Vector3 Edge1 = ref Unsafe.AsRef(in edge1);
         public readonly ref f64Vector3 Edge2 = ref Unsafe.AsRef(in edge2);
@@ -52,8 +62,12 @@ public static class TriangleMesh
     /// Returns a ground snap or wall push, depending on face normal steepness.
     /// </summary>
     public static GroundCollision? ResolveGround(
-        in f64Vector3 p0, in f64Vector3 p1, in f64Vector3 p2,
-        in f64Vector3 position, in TriangleData tri)
+        in f64Vector3 p0,
+        in f64Vector3 p1,
+        in f64Vector3 p2,
+        in f64Vector3 position,
+        in TriangleData tri
+    )
     {
         if (fix64.Abs(tri.NormalizedNormal.Y) < (fix64)1e-6) return null; // nearly vertical triangle
 
@@ -62,7 +76,9 @@ public static class TriangleMesh
 
         // Compute the Y height on the triangle plane at the wheel's XZ position
         // Plane equation: n . (P - p0) = 0  =>  y = p0.Y - (n.X*(x-p0.X) + n.Z*(z-p0.Z)) / n.Y
-        var surfaceY = p0.Y - (tri.NormalizedNormal.X * (position.X - p0.X) + tri.NormalizedNormal.Z * (position.Z - p0.Z)) / tri.NormalizedNormal.Y;
+        var surfaceY = p0.Y
+                       - (tri.NormalizedNormal.X * (position.X - p0.X) + tri.NormalizedNormal.Z * (position.Z - p0.Z))
+                       / tri.NormalizedNormal.Y;
 
         // In Y-down: smaller Y = higher up. The surface should be at or above the wheel.
         // surfaceY <= position.Y means the surface is at or above the wheel (snap up onto it).
@@ -78,8 +94,13 @@ public static class TriangleMesh
     /// Returns a push-back delta and velocity impact component if the wheel is inside the triangle's volume.
     /// </summary>
     public static WallCollision? ResolveWall(
-        in f64Vector3 p0, in f64Vector3 p1, in f64Vector3 p2,
-        in f64Vector3 position, in f64Vector3 velocity, in TriangleData tri)
+        in f64Vector3 p0,
+        in f64Vector3 p1,
+        in f64Vector3 p2,
+        in f64Vector3 position,
+        in f64Vector3 velocity,
+        in TriangleData tri
+    )
     {
         // Signed distance from point to triangle plane
         var distToPlane = f64Vector3.Dot(tri.NormalizedNormal, tri.ToPoint);
@@ -114,14 +135,14 @@ public static class TriangleMesh
 
         return new WallCollision(positionDelta, impactComponent);
     }
-    
+
     private static (f64Vector3 min, f64Vector3 max) ComputeGroundAABB(
         in f64Vector3 p0,
         in f64Vector3 p1,
         in f64Vector3 p2,
-        fix64 edgeExpand)
+        fix64 edgeExpand
+    )
     {
-        
         var minX = fix64.Min(p0.X, fix64.Min(p1.X, p2.X));
         var maxX = fix64.Max(p0.X, fix64.Max(p1.X, p2.X));
         var minY = fix64.Min(p0.Y, fix64.Min(p1.Y, p2.Y));
@@ -144,7 +165,8 @@ public static class TriangleMesh
         in f64Vector3 p0,
         in f64Vector3 p1,
         in f64Vector3 p2,
-        fix64 edgeExpand)
+        fix64 edgeExpand
+    )
     {
         var minX = fix64.Min(p0.X, fix64.Min(p1.X, p2.X));
         var maxX = fix64.Max(p0.X, fix64.Max(p1.X, p2.X));
@@ -165,7 +187,9 @@ public static class TriangleMesh
     }
 
     public static (f64Vector3 min, f64Vector3 max) ComputeAABB(
-        in f64Vector3 p0, in f64Vector3 p1, in f64Vector3 p2
+        in f64Vector3 p0,
+        in f64Vector3 p1,
+        in f64Vector3 p2
     )
     {
         // The barycentric edge tolerance lets a point sit at u=-tol, v=-tol simultaneously.
@@ -176,24 +200,27 @@ public static class TriangleMesh
         var edgeExpand = fix64.Abs((fix64)EdgeTolerance) * (edge1Len + edge2Len);
 
         var (min, max) = ComputeGroundAABB(p0, p1, p2, edgeExpand);
-        
+
         var (minWall, maxWall) = ComputeWallAABB(p0, p1, p2, edgeExpand);
         min = f64Vector3.Min(min, minWall);
         max = f64Vector3.Max(max, maxWall);
-        
+
         return (min, max);
     }
 
     public static bool PointInTriangleAABB(in (f64Vector3 min, f64Vector3 max) aabb, in f64Vector3 point)
     {
-        var isInAabb = point.X >= aabb.min.X && point.X <= aabb.max.X &&
-                       point.Y >= aabb.min.Y && point.Y <= aabb.max.Y &&
-                       point.Z >= aabb.min.Z && point.Z <= aabb.max.Z;
+        var isInAabb = point.X >= aabb.min.X
+                       && point.X <= aabb.max.X
+                       && point.Y >= aabb.min.Y
+                       && point.Y <= aabb.max.Y
+                       && point.Z >= aabb.min.Z
+                       && point.Z <= aabb.max.Z;
 
         return isInAabb;
     }
-    
-    
+
+
     /// <summary>
     /// Barycentric point-in-triangle test using float to avoid fix64 overflow.
     /// Edge vectors of ~2000 units produce dot products of ~4M; their products (~16T) overflow fix64.
@@ -212,7 +239,7 @@ public static class TriangleMesh
         // Equivalent to:
         var u = (d22 * d1p - d12 * d2p) / denom;
         var v = (d11 * d2p - d12 * d1p) / denom;
-        
+
         var inside = u >= EdgeTolerance && v >= EdgeTolerance && (u + v) <= 1 - EdgeTolerance;
         return inside;
     }
@@ -231,7 +258,7 @@ public static class TriangleMesh
         // Equivalent to:
         var u = (d22 * d1p - d12 * d2p) / denom;
         var v = (d11 * d2p - d12 * d1p) / denom;
-        
+
         var inside = u >= EdgeTolerance && v >= EdgeTolerance && (u + v) <= 1 - EdgeTolerance;
         return $"{inside} u={u:F3} v={v:F3}";
     }

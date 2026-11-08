@@ -1,10 +1,12 @@
 #region License
+
 /* FNA - XNA4 Reimplementation for Desktop Platforms
  * Copyright 2009-2024 Ethan Lee and the MonoGame Team
  *
  * Released under the Microsoft Public License.
  * See LICENSE for details.
  */
+
 #endregion
 
 #region Using Statements
@@ -19,1200 +21,1218 @@ using NFMWorld.FNA3D.Vertices;
 
 namespace NFMWorld.FNA3D
 {
-	#region Native Structures
+    #region Native Structures
 
-	[StructLayout(LayoutKind.Sequential)]
-	public struct FNA3D_Viewport
-	{
-		public int x;
-		public int y;
-		public int w;
-		public int h;
-		public float minDepth;
-		public float maxDepth;
-	}
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FNA3D_Viewport
+    {
+        public int x;
+        public int y;
+        public int w;
+        public int h;
+        public float minDepth;
+        public float maxDepth;
+    }
 
-	[StructLayout(LayoutKind.Sequential)]
-	public struct FNA3D_BlendState
-	{
-		public Blend colorSourceBlend;
-		public Blend colorDestinationBlend;
-		public BlendFunction colorBlendFunction;
-		public Blend alphaSourceBlend;
-		public Blend alphaDestinationBlend;
-		public BlendFunction alphaBlendFunction;
-		public ColorWriteChannels colorWriteEnable;
-		public ColorWriteChannels colorWriteEnable1;
-		public ColorWriteChannels colorWriteEnable2;
-		public ColorWriteChannels colorWriteEnable3;
-		public Color blendFactor;
-		public int multiSampleMask;
-	}
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FNA3D_BlendState
+    {
+        public Blend colorSourceBlend;
+        public Blend colorDestinationBlend;
+        public BlendFunction colorBlendFunction;
+        public Blend alphaSourceBlend;
+        public Blend alphaDestinationBlend;
+        public BlendFunction alphaBlendFunction;
+        public ColorWriteChannels colorWriteEnable;
+        public ColorWriteChannels colorWriteEnable1;
+        public ColorWriteChannels colorWriteEnable2;
+        public ColorWriteChannels colorWriteEnable3;
+        public Color blendFactor;
+        public int multiSampleMask;
+    }
 
-	[StructLayout(LayoutKind.Sequential)]
-	public struct FNA3D_DepthStencilState
-	{
-		public byte depthBufferEnable;
-		public byte depthBufferWriteEnable;
-		public CompareFunction depthBufferFunction;
-		public byte stencilEnable;
-		public int stencilMask;
-		public int stencilWriteMask;
-		public byte twoSidedStencilMode;
-		public StencilOperation stencilFail;
-		public StencilOperation stencilDepthBufferFail;
-		public StencilOperation stencilPass;
-		public CompareFunction stencilFunction;
-		public StencilOperation ccwStencilFail;
-		public StencilOperation ccwStencilDepthBufferFail;
-		public StencilOperation ccwStencilPass;
-		public CompareFunction ccwStencilFunction;
-		public int referenceStencil;
-	}
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FNA3D_DepthStencilState
+    {
+        public byte depthBufferEnable;
+        public byte depthBufferWriteEnable;
+        public CompareFunction depthBufferFunction;
+        public byte stencilEnable;
+        public int stencilMask;
+        public int stencilWriteMask;
+        public byte twoSidedStencilMode;
+        public StencilOperation stencilFail;
+        public StencilOperation stencilDepthBufferFail;
+        public StencilOperation stencilPass;
+        public CompareFunction stencilFunction;
+        public StencilOperation ccwStencilFail;
+        public StencilOperation ccwStencilDepthBufferFail;
+        public StencilOperation ccwStencilPass;
+        public CompareFunction ccwStencilFunction;
+        public int referenceStencil;
+    }
 
-	[StructLayout(LayoutKind.Sequential)]
-	public struct FNA3D_RasterizerState
-	{
-		public FillMode fillMode;
-		public CullMode cullMode;
-		public float depthBias;
-		public float slopeScaleDepthBias;
-		public byte scissorTestEnable;
-		public byte multiSampleAntiAlias;
-	}
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FNA3D_RasterizerState
+    {
+        public FillMode fillMode;
+        public CullMode cullMode;
+        public float depthBias;
+        public float slopeScaleDepthBias;
+        public byte scissorTestEnable;
+        public byte multiSampleAntiAlias;
+    }
 
-	[StructLayout(LayoutKind.Sequential)]
-	public struct FNA3D_SamplerState
-	{
-		public TextureFilter filter;
-		public TextureAddressMode addressU;
-		public TextureAddressMode addressV;
-		public TextureAddressMode addressW;
-		public float mipMapLevelOfDetailBias;
-		public int maxAnisotropy;
-		public int maxMipLevel;
-	}
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FNA3D_SamplerState
+    {
+        public TextureFilter filter;
+        public TextureAddressMode addressU;
+        public TextureAddressMode addressV;
+        public TextureAddressMode addressW;
+        public float mipMapLevelOfDetailBias;
+        public int maxAnisotropy;
+        public int maxMipLevel;
+    }
 
-	[StructLayout(LayoutKind.Sequential)]
-	public struct FNA3D_VertexDeclaration
-	{
-		public int vertexStride;
-		public int elementCount;
-		public IntPtr elements; /* FNA3D_VertexElement* */
-	}
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FNA3D_VertexDeclaration
+    {
+        public int vertexStride;
+        public int elementCount;
+        public IntPtr elements; /* FNA3D_VertexElement* */
+    }
 
-	[StructLayout(LayoutKind.Sequential)]
-	public struct FNA3D_VertexBufferBinding
-	{
-		public IntPtr vertexBuffer; /* FNA3D_Buffer* */
-		public FNA3D_VertexDeclaration vertexDeclaration;
-		public int vertexOffset;
-		public int instanceFrequency;
-	}
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FNA3D_VertexBufferBinding
+    {
+        public IntPtr vertexBuffer; /* FNA3D_Buffer* */
+        public FNA3D_VertexDeclaration vertexDeclaration;
+        public int vertexOffset;
+        public int instanceFrequency;
+    }
 
-	[StructLayout(LayoutKind.Sequential)]
-	public struct FNA3D_RenderTargetBinding
-	{
-		public byte type;
-		public int data1; /* width for 2D, size for Cube */
-		public int data2; /* height for 2D, face for Cube */
-		public int levelCount;
-		public int multiSampleCount;
-		public IntPtr texture;
-		public IntPtr colorBuffer;
-	}
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FNA3D_RenderTargetBinding
+    {
+        public byte type;
+        public int data1; /* width for 2D, size for Cube */
+        public int data2; /* height for 2D, face for Cube */
+        public int levelCount;
+        public int multiSampleCount;
+        public IntPtr texture;
+        public IntPtr colorBuffer;
+    }
 
-	[StructLayout(LayoutKind.Sequential)]
-	public struct FNA3D_PresentationParameters
-	{
-		public int backBufferWidth;
-		public int backBufferHeight;
-		public SurfaceFormat backBufferFormat;
-		public int multiSampleCount;
-		public IntPtr deviceWindowHandle;
-		public byte isFullScreen;
-		public DepthFormat depthStencilFormat;
-		public PresentInterval presentationInterval;
-		public DisplayOrientation displayOrientation;
-		public RenderTargetUsage renderTargetUsage;
-	}
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FNA3D_PresentationParameters
+    {
+        public int backBufferWidth;
+        public int backBufferHeight;
+        public SurfaceFormat backBufferFormat;
+        public int multiSampleCount;
+        public IntPtr deviceWindowHandle;
+        public byte isFullScreen;
+        public DepthFormat depthStencilFormat;
+        public PresentInterval presentationInterval;
+        public DisplayOrientation displayOrientation;
+        public RenderTargetUsage renderTargetUsage;
+    }
 
-	#endregion
-	
-	[System.Security.SuppressUnmanagedCodeSecurity]
-	public static partial class FNA3D
-	{
-		#region Private Constants
+    #endregion
 
-		private const string nativeLibName = "FNA3D";
+    [System.Security.SuppressUnmanagedCodeSecurity]
+    public static partial class FNA3D
+    {
+        #region Private Constants
 
-		#endregion
+        private const string nativeLibName = "FNA3D";
 
-		#region Versioning
+        #endregion
 
-		[LibraryImport(nativeLibName)]
+        #region Versioning
+
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial uint FNA3D_LinkedVersion();
 
-		#endregion
+        #endregion
 
-		#region Logging
+        #region Logging
 
-		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-		public delegate void FNA3D_LogFunc(IntPtr msg);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void FNA3D_LogFunc(IntPtr msg);
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_HookLogFunctions(
-			FNA3D_LogFunc info,
-			FNA3D_LogFunc warn,
-			FNA3D_LogFunc error
-		);
+            FNA3D_LogFunc info,
+            FNA3D_LogFunc warn,
+            FNA3D_LogFunc error
+        );
 
-		#endregion
+        #endregion
 
-		#region Driver Functions
+        #region Driver Functions
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial uint FNA3D_PrepareWindowAttributes();
-		
-		[LibraryImport(nativeLibName)]
+
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_GetDrawableSize(
-			IntPtr window,
-			out int w,
-			out int h
-		);
+            IntPtr window,
+            out int w,
+            out int h
+        );
 
-		#endregion
+        #endregion
 
-		#region Init/Quit
+        #region Init/Quit
 
-		/* IntPtr refers to an FNA3D_Device* */
-		[LibraryImport(nativeLibName)]
+        /* IntPtr refers to an FNA3D_Device* */
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial IntPtr FNA3D_CreateDevice(
-			ref FNA3D_PresentationParameters presentationParameters,
-			byte debugMode
-		);
+            ref FNA3D_PresentationParameters presentationParameters,
+            byte debugMode
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_DestroyDevice(IntPtr device);
 
-		#endregion
+        #endregion
 
-		#region Presentation
+        #region Presentation
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_SwapBuffers(
-			IntPtr device,
-			ref Rectangle sourceRectangle,
-			ref Rectangle destinationRectangle,
-			IntPtr overrideWindowHandle
-		);
+            IntPtr device,
+            ref Rectangle sourceRectangle,
+            ref Rectangle destinationRectangle,
+            IntPtr overrideWindowHandle
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_SwapBuffers(
-			IntPtr device,
-			IntPtr sourceRectangle, /* null Rectangle */
-			IntPtr destinationRectangle, /* null Rectangle */
-			IntPtr overrideWindowHandle
-		);
+            IntPtr device,
+            IntPtr sourceRectangle, /* null Rectangle */
+            IntPtr destinationRectangle, /* null Rectangle */
+            IntPtr overrideWindowHandle
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_SwapBuffers(
-			IntPtr device,
-			ref Rectangle sourceRectangle,
-			IntPtr destinationRectangle, /* null Rectangle */
-			IntPtr overrideWindowHandle
-		);
+            IntPtr device,
+            ref Rectangle sourceRectangle,
+            IntPtr destinationRectangle, /* null Rectangle */
+            IntPtr overrideWindowHandle
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_SwapBuffers(
-			IntPtr device,
-			IntPtr sourceRectangle, /* null Rectangle */
-			ref Rectangle destinationRectangle,
-			IntPtr overrideWindowHandle
-		);
+            IntPtr device,
+            IntPtr sourceRectangle, /* null Rectangle */
+            ref Rectangle destinationRectangle,
+            IntPtr overrideWindowHandle
+        );
 
-		#endregion
+        #endregion
 
-		#region Drawing
+        #region Drawing
 
-		[DllImport(nativeLibName, CallingConvention = CallingConvention.Cdecl)]
-		public static extern void FNA3D_Clear(
-			IntPtr device,
-			ClearOptions options,
-			ref Vector4 color,
-			float depth,
-			int stencil
-		);
+        [DllImport(nativeLibName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void FNA3D_Clear(
+            IntPtr device,
+            ClearOptions options,
+            ref Vector4 color,
+            float depth,
+            int stencil
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_DrawIndexedPrimitives(
-			IntPtr device,
-			PrimitiveType primitiveType,
-			int baseVertex,
-			int minVertexIndex,
-			int numVertices,
-			int startIndex,
-			int primitiveCount,
-			IntPtr indices, /* FNA3D_Buffer* */
-			IndexElementSize indexElementSize
-		);
+            IntPtr device,
+            PrimitiveType primitiveType,
+            int baseVertex,
+            int minVertexIndex,
+            int numVertices,
+            int startIndex,
+            int primitiveCount,
+            IntPtr indices, /* FNA3D_Buffer* */
+            IndexElementSize indexElementSize
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_DrawInstancedPrimitives(
-			IntPtr device,
-			PrimitiveType primitiveType,
-			int baseVertex,
-			int minVertexIndex,
-			int numVertices,
-			int startIndex,
-			int primitiveCount,
-			int instanceCount,
-			IntPtr indices, /* FNA3D_Buffer* */
-			IndexElementSize indexElementSize
-		);
+            IntPtr device,
+            PrimitiveType primitiveType,
+            int baseVertex,
+            int minVertexIndex,
+            int numVertices,
+            int startIndex,
+            int primitiveCount,
+            int instanceCount,
+            IntPtr indices, /* FNA3D_Buffer* */
+            IndexElementSize indexElementSize
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_DrawPrimitives(
-			IntPtr device,
-			PrimitiveType primitiveType,
-			int vertexStart,
-			int primitiveCount
-		);
+            IntPtr device,
+            PrimitiveType primitiveType,
+            int vertexStart,
+            int primitiveCount
+        );
 
-		#endregion
+        #endregion
 
-		#region Mutable Render States
+        #region Mutable Render States
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_SetViewport(
-			IntPtr device,
-			ref FNA3D_Viewport viewport
-		);
+            IntPtr device,
+            ref FNA3D_Viewport viewport
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_SetScissorRect(
-			IntPtr device,
-			ref Rectangle scissor
-		);
+            IntPtr device,
+            ref Rectangle scissor
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_GetBlendFactor(
-			IntPtr device,
-			out Color blendFactor
-		);
+            IntPtr device,
+            out Color blendFactor
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_SetBlendFactor(
-			IntPtr device,
-			ref Color blendFactor
-		);
+            IntPtr device,
+            ref Color blendFactor
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial int FNA3D_GetMultiSampleMask(IntPtr device);
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_SetMultiSampleMask(
-			IntPtr device,
-			int mask
-		);
+            IntPtr device,
+            int mask
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial int FNA3D_GetReferenceStencil(IntPtr device);
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_SetReferenceStencil(
-			IntPtr device,
-			int reference
-		);
+            IntPtr device,
+            int reference
+        );
 
-		#endregion
+        #endregion
 
-		#region Immutable Render States
+        #region Immutable Render States
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_SetBlendState(
-			IntPtr device,
-			ref FNA3D_BlendState blendState
-		);
+            IntPtr device,
+            ref FNA3D_BlendState blendState
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_SetDepthStencilState(
-			IntPtr device,
-			ref FNA3D_DepthStencilState depthStencilState
-		);
+            IntPtr device,
+            ref FNA3D_DepthStencilState depthStencilState
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_ApplyRasterizerState(
-			IntPtr device,
-			ref FNA3D_RasterizerState rasterizerState
-		);
+            IntPtr device,
+            ref FNA3D_RasterizerState rasterizerState
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_VerifySampler(
-			IntPtr device,
-			int index,
-			IntPtr texture, /* FNA3D_Texture* */
-			ref FNA3D_SamplerState sampler
-		);
+            IntPtr device,
+            int index,
+            IntPtr texture, /* FNA3D_Texture* */
+            ref FNA3D_SamplerState sampler
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_VerifyVertexSampler(
-			IntPtr device,
-			int index,
-			IntPtr texture, /* FNA3D_Texture* */
-			ref FNA3D_SamplerState sampler
-		);
+            IntPtr device,
+            int index,
+            IntPtr texture, /* FNA3D_Texture* */
+            ref FNA3D_SamplerState sampler
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static unsafe partial void FNA3D_ApplyVertexBufferBindings(
-			IntPtr device,
-			FNA3D_VertexBufferBinding* bindings,
-			int numBindings,
-			byte bindingsUpdated,
-			int baseVertex
-		);
+            IntPtr device,
+            FNA3D_VertexBufferBinding* bindings,
+            int numBindings,
+            byte bindingsUpdated,
+            int baseVertex
+        );
 
-		#endregion
+        #endregion
 
-		#region Render Targets
+        #region Render Targets
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_SetRenderTargets(
-			IntPtr device,
-			IntPtr renderTargets, /* FNA3D_RenderTargetBinding* */
-			int numRenderTargets,
-			IntPtr depthStencilBuffer, /* FNA3D_Renderbuffer */
-			DepthFormat depthFormat,
-			byte preserveDepthStencilContents
-		);
+            IntPtr device,
+            IntPtr renderTargets, /* FNA3D_RenderTargetBinding* */
+            int numRenderTargets,
+            IntPtr depthStencilBuffer, /* FNA3D_Renderbuffer */
+            DepthFormat depthFormat,
+            byte preserveDepthStencilContents
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static unsafe partial void FNA3D_SetRenderTargets(
-			IntPtr device,
-			FNA3D_RenderTargetBinding* renderTargets,
-			int numRenderTargets,
-			IntPtr depthStencilBuffer, /* FNA3D_Renderbuffer */
-			DepthFormat depthFormat,
-			byte preserveDepthStencilContents
-		);
+            IntPtr device,
+            FNA3D_RenderTargetBinding* renderTargets,
+            int numRenderTargets,
+            IntPtr depthStencilBuffer, /* FNA3D_Renderbuffer */
+            DepthFormat depthFormat,
+            byte preserveDepthStencilContents
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_ResolveTarget(
-			IntPtr device,
-			ref FNA3D_RenderTargetBinding target
-		);
+            IntPtr device,
+            ref FNA3D_RenderTargetBinding target
+        );
 
-		#endregion
+        #endregion
 
-		#region Backbuffer Functions
+        #region Backbuffer Functions
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_ResetBackbuffer(
-			IntPtr device,
-			ref FNA3D_PresentationParameters presentationParameters
-		);
+            IntPtr device,
+            ref FNA3D_PresentationParameters presentationParameters
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_ReadBackbuffer(
-			IntPtr device,
-			int x,
-			int y,
-			int w,
-			int h,
-			IntPtr data,
-			int dataLen
-		);
+            IntPtr device,
+            int x,
+            int y,
+            int w,
+            int h,
+            IntPtr data,
+            int dataLen
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_GetBackbufferSize(
-			IntPtr device,
-			out int w,
-			out int h
-		);
+            IntPtr device,
+            out int w,
+            out int h
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial SurfaceFormat FNA3D_GetBackbufferSurfaceFormat(
-			IntPtr device
-		);
+            IntPtr device
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial DepthFormat FNA3D_GetBackbufferDepthFormat(
-			IntPtr device
-		);
+            IntPtr device
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial int FNA3D_GetBackbufferMultiSampleCount(
-			IntPtr device
-		);
+            IntPtr device
+        );
 
-		#endregion
+        #endregion
 
-		#region Textures
+        #region Textures
 
-		/* IntPtr refers to an FNA3D_Texture* */
-		[LibraryImport(nativeLibName)]
+        /* IntPtr refers to an FNA3D_Texture* */
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial IntPtr FNA3D_CreateTexture2D(
-			IntPtr device,
-			SurfaceFormat format,
-			int width,
-			int height,
-			int levelCount,
-			byte isRenderTarget
-		);
+            IntPtr device,
+            SurfaceFormat format,
+            int width,
+            int height,
+            int levelCount,
+            byte isRenderTarget
+        );
 
-		/* IntPtr refers to an FNA3D_Texture* */
-		[LibraryImport(nativeLibName)]
+        /* IntPtr refers to an FNA3D_Texture* */
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial IntPtr FNA3D_CreateTexture3D(
-			IntPtr device,
-			SurfaceFormat format,
-			int width,
-			int height,
-			int depth,
-			int levelCount
-		);
+            IntPtr device,
+            SurfaceFormat format,
+            int width,
+            int height,
+            int depth,
+            int levelCount
+        );
 
-		/* IntPtr refers to an FNA3D_Texture* */
-		[LibraryImport(nativeLibName)]
+        /* IntPtr refers to an FNA3D_Texture* */
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial IntPtr FNA3D_CreateTextureCube(
-			IntPtr device,
-			SurfaceFormat format,
-			int size,
-			int levelCount,
-			byte isRenderTarget
-		);
+            IntPtr device,
+            SurfaceFormat format,
+            int size,
+            int levelCount,
+            byte isRenderTarget
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_AddDisposeTexture(
-			IntPtr device,
-			IntPtr texture /* FNA3D_Texture* */
-		);
+            IntPtr device,
+            IntPtr texture /* FNA3D_Texture* */
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_SetTextureData2D(
-			IntPtr device,
-			IntPtr texture,
-			int x,
-			int y,
-			int w,
-			int h,
-			int level,
-			IntPtr data,
-			int dataLength
-		);
+            IntPtr device,
+            IntPtr texture,
+            int x,
+            int y,
+            int w,
+            int h,
+            int level,
+            IntPtr data,
+            int dataLength
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_SetTextureData3D(
-			IntPtr device,
-			IntPtr texture,
-			int x,
-			int y,
-			int z,
-			int w,
-			int h,
-			int d,
-			int level,
-			IntPtr data,
-			int dataLength
-		);
+            IntPtr device,
+            IntPtr texture,
+            int x,
+            int y,
+            int z,
+            int w,
+            int h,
+            int d,
+            int level,
+            IntPtr data,
+            int dataLength
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_SetTextureDataCube(
-			IntPtr device,
-			IntPtr texture,
-			int x,
-			int y,
-			int w,
-			int h,
-			CubeMapFace cubeMapFace,
-			int level,
-			IntPtr data,
-			int dataLength
-		);
+            IntPtr device,
+            IntPtr texture,
+            int x,
+            int y,
+            int w,
+            int h,
+            CubeMapFace cubeMapFace,
+            int level,
+            IntPtr data,
+            int dataLength
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_SetTextureDataYUV(
-			IntPtr device,
-			IntPtr y,
-			IntPtr u,
-			IntPtr v,
-			int yWidth,
-			int yHeight,
-			int uvWidth,
-			int uvHeight,
-			IntPtr data,
-			int dataLength
-		);
+            IntPtr device,
+            IntPtr y,
+            IntPtr u,
+            IntPtr v,
+            int yWidth,
+            int yHeight,
+            int uvWidth,
+            int uvHeight,
+            IntPtr data,
+            int dataLength
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_GetTextureData2D(
-			IntPtr device,
-			IntPtr texture,
-			int x,
-			int y,
-			int w,
-			int h,
-			int level,
-			IntPtr data,
-			int dataLength
-		);
+            IntPtr device,
+            IntPtr texture,
+            int x,
+            int y,
+            int w,
+            int h,
+            int level,
+            IntPtr data,
+            int dataLength
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_GetTextureData3D(
-			IntPtr device,
-			IntPtr texture,
-			int x,
-			int y,
-			int z,
-			int w,
-			int h,
-			int d,
-			int level,
-			IntPtr data,
-			int dataLength
-		);
+            IntPtr device,
+            IntPtr texture,
+            int x,
+            int y,
+            int z,
+            int w,
+            int h,
+            int d,
+            int level,
+            IntPtr data,
+            int dataLength
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_GetTextureDataCube(
-			IntPtr device,
-			IntPtr texture,
-			int x,
-			int y,
-			int w,
-			int h,
-			CubeMapFace cubeMapFace,
-			int level,
-			IntPtr data,
-			int dataLength
-		);
+            IntPtr device,
+            IntPtr texture,
+            int x,
+            int y,
+            int w,
+            int h,
+            CubeMapFace cubeMapFace,
+            int level,
+            IntPtr data,
+            int dataLength
+        );
 
-		#endregion
+        #endregion
 
-		#region Renderbuffers
+        #region Renderbuffers
 
-		/* IntPtr refers to an FNA3D_Renderbuffer* */
-		[LibraryImport(nativeLibName)]
+        /* IntPtr refers to an FNA3D_Renderbuffer* */
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial IntPtr FNA3D_GenColorRenderbuffer(
-			IntPtr device,
-			int width,
-			int height,
-			SurfaceFormat format,
-			int multiSampleCount,
-			IntPtr texture /* FNA3D_Texture* */
-		);
+            IntPtr device,
+            int width,
+            int height,
+            SurfaceFormat format,
+            int multiSampleCount,
+            IntPtr texture /* FNA3D_Texture* */
+        );
 
-		/* IntPtr refers to an FNA3D_Renderbuffer* */
-		[LibraryImport(nativeLibName)]
+        /* IntPtr refers to an FNA3D_Renderbuffer* */
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial IntPtr FNA3D_GenDepthStencilRenderbuffer(
-			IntPtr device,
-			int width,
-			int height,
-			DepthFormat format,
-			int multiSampleCount
-		);
+            IntPtr device,
+            int width,
+            int height,
+            DepthFormat format,
+            int multiSampleCount
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_AddDisposeRenderbuffer(
-			IntPtr device,
-			IntPtr renderbuffer
-		);
+            IntPtr device,
+            IntPtr renderbuffer
+        );
 
-		#endregion
+        #endregion
 
-		#region Vertex Buffers
+        #region Vertex Buffers
 
-		/* IntPtr refers to an FNA3D_Buffer* */
-		[LibraryImport(nativeLibName)]
+        /* IntPtr refers to an FNA3D_Buffer* */
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial IntPtr FNA3D_GenVertexBuffer(
-			IntPtr device,
-			byte dynamic,
-			BufferUsage usage,
-			int sizeInBytes
-		);
+            IntPtr device,
+            byte dynamic,
+            BufferUsage usage,
+            int sizeInBytes
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_AddDisposeVertexBuffer(
-			IntPtr device,
-			IntPtr buffer
-		);
+            IntPtr device,
+            IntPtr buffer
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_SetVertexBufferData(
-			IntPtr device,
-			IntPtr buffer,
-			int offsetInBytes,
-			IntPtr data,
-			int elementCount,
-			int elementSizeInBytes,
-			int vertexStride,
-			SetDataOptions options
-		);
+            IntPtr device,
+            IntPtr buffer,
+            int offsetInBytes,
+            IntPtr data,
+            int elementCount,
+            int elementSizeInBytes,
+            int vertexStride,
+            SetDataOptions options
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_GetVertexBufferData(
-			IntPtr device,
-			IntPtr buffer,
-			int offsetInBytes,
-			IntPtr data,
-			int elementCount,
-			int elementSizeInBytes,
-			int vertexStride
-		);
+            IntPtr device,
+            IntPtr buffer,
+            int offsetInBytes,
+            IntPtr data,
+            int elementCount,
+            int elementSizeInBytes,
+            int vertexStride
+        );
 
-		#endregion
+        #endregion
 
-		#region Index Buffers
+        #region Index Buffers
 
-		/* IntPtr refers to an FNA3D_Buffer* */
-		[LibraryImport(nativeLibName)]
+        /* IntPtr refers to an FNA3D_Buffer* */
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial IntPtr FNA3D_GenIndexBuffer(
-			IntPtr device,
-			byte dynamic,
-			BufferUsage usage,
-			int sizeInBytes
-		);
+            IntPtr device,
+            byte dynamic,
+            BufferUsage usage,
+            int sizeInBytes
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_AddDisposeIndexBuffer(
-			IntPtr device,
-			IntPtr buffer
-		);
+            IntPtr device,
+            IntPtr buffer
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_SetIndexBufferData(
-			IntPtr device,
-			IntPtr buffer,
-			int offsetInBytes,
-			IntPtr data,
-			int dataLength,
-			SetDataOptions options
-		);
+            IntPtr device,
+            IntPtr buffer,
+            int offsetInBytes,
+            IntPtr data,
+            int dataLength,
+            SetDataOptions options
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_GetIndexBufferData(
-			IntPtr device,
-			IntPtr buffer,
-			int offsetInBytes,
-			IntPtr data,
-			int dataLength
-		);
+            IntPtr device,
+            IntPtr buffer,
+            int offsetInBytes,
+            IntPtr data,
+            int dataLength
+        );
 
-		#endregion
+        #endregion
 
-		#region Effects
+        #region Effects
 
-		/* IntPtr refers to an FNA3D_Effect* */
-		[LibraryImport(nativeLibName)]
+        /* IntPtr refers to an FNA3D_Effect* */
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_CreateEffect(
-			IntPtr device,
-			byte[] effectCode,
-			int length,
-			out IntPtr effect,
-			out IntPtr effectData
-		);
+            IntPtr device,
+            byte[] effectCode,
+            int length,
+            out IntPtr effect,
+            out IntPtr effectData
+        );
 
-		/* IntPtr refers to an FNA3D_Effect* */
-		[LibraryImport(nativeLibName)]
+        /* IntPtr refers to an FNA3D_Effect* */
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_CloneEffect(
-			IntPtr device,
-			IntPtr cloneSource,
-			out IntPtr effect,
-			out IntPtr effectData
-		);
+            IntPtr device,
+            IntPtr cloneSource,
+            out IntPtr effect,
+            out IntPtr effectData
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_AddDisposeEffect(
-			IntPtr device,
-			IntPtr effect
-		);
+            IntPtr device,
+            IntPtr effect
+        );
 
-		/* effect refers to a MOJOSHADER_effect*, technique to a MOJOSHADER_effectTechnique* */
-		[LibraryImport(nativeLibName)]
+        /* effect refers to a MOJOSHADER_effect*, technique to a MOJOSHADER_effectTechnique* */
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_SetEffectTechnique(
-			IntPtr device,
-			IntPtr effect,
-			IntPtr technique
-		);
+            IntPtr device,
+            IntPtr effect,
+            IntPtr technique
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_ApplyEffect(
-			IntPtr device,
-			IntPtr effect,
-			uint pass,
-			IntPtr stateChanges /* MOJOSHADER_effectStateChanges* */
-		);
+            IntPtr device,
+            IntPtr effect,
+            uint pass,
+            IntPtr stateChanges /* MOJOSHADER_effectStateChanges* */
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_BeginPassRestore(
-			IntPtr device,
-			IntPtr effect,
-			IntPtr stateChanges /* MOJOSHADER_effectStateChanges* */
-		);
+            IntPtr device,
+            IntPtr effect,
+            IntPtr stateChanges /* MOJOSHADER_effectStateChanges* */
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_EndPassRestore(
-			IntPtr device,
-			IntPtr effect
-		);
+            IntPtr device,
+            IntPtr effect
+        );
 
-		#endregion
+        #endregion
 
-		#region Queries
+        #region Queries
 
-		/* IntPtr refers to an FNA3D_Query* */
-		[LibraryImport(nativeLibName)]
+        /* IntPtr refers to an FNA3D_Query* */
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial IntPtr FNA3D_CreateQuery(IntPtr device);
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_AddDisposeQuery(
-			IntPtr device,
-			IntPtr query
-		);
+            IntPtr device,
+            IntPtr query
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_QueryBegin(
-			IntPtr device,
-			IntPtr query
-		);
+            IntPtr device,
+            IntPtr query
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_QueryEnd(
-			IntPtr device,
-			IntPtr query
-		);
+            IntPtr device,
+            IntPtr query
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial byte FNA3D_QueryComplete(
-			IntPtr device,
-			IntPtr query
-		);
+            IntPtr device,
+            IntPtr query
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial int FNA3D_QueryPixelCount(
-			IntPtr device,
-			IntPtr query
-		);
+            IntPtr device,
+            IntPtr query
+        );
 
-		#endregion
+        #endregion
 
-		#region Feature Queries
+        #region Feature Queries
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial byte FNA3D_SupportsDXT1(IntPtr device);
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial byte FNA3D_SupportsS3TC(IntPtr device);
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial byte FNA3D_SupportsBC7(IntPtr device);
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial byte FNA3D_SupportsHardwareInstancing(
-			IntPtr device
-		);
+            IntPtr device
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial byte FNA3D_SupportsNoOverwrite(IntPtr device);
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial byte FNA3D_SupportsSRGBRenderTargets(IntPtr device);
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_GetMaxTextureSlots(
-			IntPtr device,
-			out int textures,
-			out int vertexTextures
-		);
+            IntPtr device,
+            out int textures,
+            out int vertexTextures
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial int FNA3D_GetMaxMultiSampleCount(
-			IntPtr device,
-			SurfaceFormat format,
-			int preferredMultiSampleCount
-		);
+            IntPtr device,
+            SurfaceFormat format,
+            int preferredMultiSampleCount
+        );
 
-		#endregion
+        #endregion
 
-		#region Debugging
+        #region Debugging
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         private static unsafe partial void FNA3D_SetStringMarker(
-			IntPtr device,
-			byte* text
-		);
-		
-		/* Used for stack allocated string marshaling. */
-		internal static int Utf8Size(string? str)
-		{
-			if (str == null)
-			{
-				return 0;
-			}
-			return (str.Length * 4) + 1;
-		}
+            IntPtr device,
+            byte* text
+        );
 
-		/* Used for heap allocated string marshaling.
-		 * Returned byte* must be free'd with FreeHGlobal.
-		 */
-		internal static unsafe byte* Utf8EncodeHeap(string? str)
-		{
-			if (str == null)
-			{
-				return (byte*) 0;
-			}
+        /* Used for stack allocated string marshaling. */
+        internal static int Utf8Size(string? str)
+        {
+            if (str == null)
+            {
+                return 0;
+            }
 
-			int bufferSize = Utf8Size(str);
-			byte* buffer = (byte*) Marshal.AllocHGlobal(bufferSize);
-			fixed (char* strPtr = str)
-			{
-				Encoding.UTF8.GetBytes(strPtr, str.Length + 1, buffer, bufferSize);
-			}
-			return buffer;
-		}
+            return (str.Length * 4) + 1;
+        }
 
-		public static unsafe void FNA3D_SetStringMarker(
-			IntPtr device,
-			string text
-		) {
-			byte* utf8Text = Utf8EncodeHeap(text);
-			FNA3D_SetStringMarker(device, utf8Text);
-			Marshal.FreeHGlobal((IntPtr) utf8Text);
-		}
-		
-		[LibraryImport(nativeLibName)]
+        /* Used for heap allocated string marshaling.
+         * Returned byte* must be free'd with FreeHGlobal.
+         */
+        internal static unsafe byte* Utf8EncodeHeap(string? str)
+        {
+            if (str == null)
+            {
+                return (byte*)0;
+            }
+
+            int bufferSize = Utf8Size(str);
+            byte* buffer = (byte*)Marshal.AllocHGlobal(bufferSize);
+            fixed (char* strPtr = str)
+            {
+                Encoding.UTF8.GetBytes(strPtr, str.Length + 1, buffer, bufferSize);
+            }
+
+            return buffer;
+        }
+
+        public static unsafe void FNA3D_SetStringMarker(
+            IntPtr device,
+            string text
+        )
+        {
+            byte* utf8Text = Utf8EncodeHeap(text);
+            FNA3D_SetStringMarker(device, utf8Text);
+            Marshal.FreeHGlobal((IntPtr)utf8Text);
+        }
+
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         private static unsafe partial void FNA3D_SetTextureName(
-			IntPtr device,
-			IntPtr texture,
-			byte* text
-		);
+            IntPtr device,
+            IntPtr texture,
+            byte* text
+        );
 
-		public static unsafe void FNA3D_SetTextureName(
-			IntPtr device,
-			IntPtr texture,
-			string text 
-		) {
-			byte* utf8Text = Utf8EncodeHeap(text);
-			FNA3D_SetTextureName(device, texture, utf8Text);
-			Marshal.FreeHGlobal((IntPtr) utf8Text);
-		}
+        public static unsafe void FNA3D_SetTextureName(
+            IntPtr device,
+            IntPtr texture,
+            string text
+        )
+        {
+            byte* utf8Text = Utf8EncodeHeap(text);
+            FNA3D_SetTextureName(device, texture, utf8Text);
+            Marshal.FreeHGlobal((IntPtr)utf8Text);
+        }
 
-		#endregion
+        #endregion
 
-		#region Image Read API
+        #region Image Read API
 
-		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-		private delegate int FNA3D_Image_ReadFunc(
-			IntPtr context,
-			IntPtr data,
-			int size
-		);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        private delegate int FNA3D_Image_ReadFunc(
+            IntPtr context,
+            IntPtr data,
+            int size
+        );
 
-		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-		private delegate void FNA3D_Image_SkipFunc(
-			IntPtr context,
-			int n
-		);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        private delegate void FNA3D_Image_SkipFunc(
+            IntPtr context,
+            int n
+        );
 
-		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-		private delegate int FNA3D_Image_EOFFunc(IntPtr context);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        private delegate int FNA3D_Image_EOFFunc(IntPtr context);
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         private static partial IntPtr FNA3D_Image_Load(
-			FNA3D_Image_ReadFunc readFunc,
-			FNA3D_Image_SkipFunc skipFunc,
-			FNA3D_Image_EOFFunc eofFunc,
-			IntPtr context,
-			out int width,
-			out int height,
-			out int len,
-			int forceW,
-			int forceH,
-			byte zoom
-		);
+            FNA3D_Image_ReadFunc readFunc,
+            FNA3D_Image_SkipFunc skipFunc,
+            FNA3D_Image_EOFFunc eofFunc,
+            IntPtr context,
+            out int width,
+            out int height,
+            out int len,
+            int forceW,
+            int forceH,
+            byte zoom
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         public static partial void FNA3D_Image_Free(IntPtr mem);
 
-		[MonoPInvokeCallback(typeof(FNA3D_Image_ReadFunc))]
-		private static int INTERNAL_Read(
-			IntPtr context,
-			IntPtr data,
-			int size
-		) {
-			Stream stream;
-			lock (readStreams)
-			{
-				stream = readStreams[context];
-			}
-			byte[] buf = new byte[size]; // FIXME: Preallocate!
-			int result = stream.Read(buf, 0, size);
-			Marshal.Copy(buf, 0, data, result);
-			return result;
-		}
+        [MonoPInvokeCallback(typeof(FNA3D_Image_ReadFunc))]
+        private static int INTERNAL_Read(
+            IntPtr context,
+            IntPtr data,
+            int size
+        )
+        {
+            Stream stream;
+            lock (readStreams)
+            {
+                stream = readStreams[context];
+            }
 
-		[MonoPInvokeCallback(typeof(FNA3D_Image_SkipFunc))]
-		private static void INTERNAL_Skip(IntPtr context, int n)
-		{
-			Stream stream;
-			lock (readStreams)
-			{
-				stream = readStreams[context];
-			}
-			stream.Seek(n, SeekOrigin.Current);
-		}
+            byte[] buf = new byte[size]; // FIXME: Preallocate!
+            int result = stream.Read(buf, 0, size);
+            Marshal.Copy(buf, 0, data, result);
+            return result;
+        }
 
-		[MonoPInvokeCallback(typeof(FNA3D_Image_EOFFunc))]
-		private static int INTERNAL_EOF(IntPtr context)
-		{
-			Stream stream;
-			lock (readStreams)
-			{
-				stream = readStreams[context];
-			}
-			return (stream.Position == stream.Length) ? 1 : 0;
-		}
+        [MonoPInvokeCallback(typeof(FNA3D_Image_SkipFunc))]
+        private static void INTERNAL_Skip(IntPtr context, int n)
+        {
+            Stream stream;
+            lock (readStreams)
+            {
+                stream = readStreams[context];
+            }
 
-		private static FNA3D_Image_ReadFunc readFunc = INTERNAL_Read;
-		private static FNA3D_Image_SkipFunc skipFunc = INTERNAL_Skip;
-		private static FNA3D_Image_EOFFunc eofFunc = INTERNAL_EOF;
+            stream.Seek(n, SeekOrigin.Current);
+        }
 
-		private static int readGlobal = 0;
-		private static Dictionary<IntPtr, Stream> readStreams =
-			new Dictionary<IntPtr, Stream>();
+        [MonoPInvokeCallback(typeof(FNA3D_Image_EOFFunc))]
+        private static int INTERNAL_EOF(IntPtr context)
+        {
+            Stream stream;
+            lock (readStreams)
+            {
+                stream = readStreams[context];
+            }
 
-		public static IntPtr ReadImageStream(
-			Stream stream,
-			out int width,
-			out int height,
-			out int len,
-			int forceW = -1,
-			int forceH = -1,
-			bool zoom = false
-		) {
-			IntPtr context;
-			lock (readStreams)
-			{
-				context = (IntPtr) readGlobal++;
-				readStreams.Add(context, stream);
-			}
-			IntPtr pixels = FNA3D_Image_Load(
-				readFunc,
-				skipFunc,
-				eofFunc,
-				context,
-				out width,
-				out height,
-				out len,
-				forceW,
-				forceH,
-				(byte) (zoom ? 1 : 0)
-			);
-			lock (readStreams)
-			{
-				readStreams.Remove(context);
-			}
-			return pixels;
-		}
+            return (stream.Position == stream.Length) ? 1 : 0;
+        }
 
-		#endregion
+        private static FNA3D_Image_ReadFunc readFunc = INTERNAL_Read;
+        private static FNA3D_Image_SkipFunc skipFunc = INTERNAL_Skip;
+        private static FNA3D_Image_EOFFunc eofFunc = INTERNAL_EOF;
 
-		#region Image Write API
+        private static int readGlobal = 0;
 
-		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-		private delegate void FNA3D_Image_WriteFunc(
-			IntPtr context,
-			IntPtr data,
-			int size
-		);
+        private static Dictionary<IntPtr, Stream> readStreams =
+            new Dictionary<IntPtr, Stream>();
 
-		[LibraryImport(nativeLibName)]
+        public static IntPtr ReadImageStream(
+            Stream stream,
+            out int width,
+            out int height,
+            out int len,
+            int forceW = -1,
+            int forceH = -1,
+            bool zoom = false
+        )
+        {
+            IntPtr context;
+            lock (readStreams)
+            {
+                context = (IntPtr)readGlobal++;
+                readStreams.Add(context, stream);
+            }
+
+            IntPtr pixels = FNA3D_Image_Load(
+                readFunc,
+                skipFunc,
+                eofFunc,
+                context,
+                out width,
+                out height,
+                out len,
+                forceW,
+                forceH,
+                (byte)(zoom ? 1 : 0)
+            );
+            lock (readStreams)
+            {
+                readStreams.Remove(context);
+            }
+
+            return pixels;
+        }
+
+        #endregion
+
+        #region Image Write API
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        private delegate void FNA3D_Image_WriteFunc(
+            IntPtr context,
+            IntPtr data,
+            int size
+        );
+
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         private static partial void FNA3D_Image_SavePNG(
-			FNA3D_Image_WriteFunc writeFunc,
-			IntPtr context,
-			int srcW,
-			int srcH,
-			int dstW,
-			int dstH,
-			IntPtr data
-		);
+            FNA3D_Image_WriteFunc writeFunc,
+            IntPtr context,
+            int srcW,
+            int srcH,
+            int dstW,
+            int dstH,
+            IntPtr data
+        );
 
-		[LibraryImport(nativeLibName)]
+        [LibraryImport(nativeLibName)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         private static partial void FNA3D_Image_SaveJPG(
-			FNA3D_Image_WriteFunc writeFunc,
-			IntPtr context,
-			int srcW,
-			int srcH,
-			int dstW,
-			int dstH,
-			IntPtr data,
-			int quality
-		);
+            FNA3D_Image_WriteFunc writeFunc,
+            IntPtr context,
+            int srcW,
+            int srcH,
+            int dstW,
+            int dstH,
+            IntPtr data,
+            int quality
+        );
 
-		[MonoPInvokeCallback(typeof(FNA3D_Image_WriteFunc))]
-		private static void INTERNAL_Write(
-			IntPtr context,
-			IntPtr data,
-			int size
-		) {
-			Stream stream;
-			lock (writeStreams)
-			{
-				stream = writeStreams[context];
-			}
-			byte[] buf = new byte[size]; // FIXME: Preallocate!
-			Marshal.Copy(data, buf, 0, size);
-			stream.Write(buf, 0, size);
-		}
+        [MonoPInvokeCallback(typeof(FNA3D_Image_WriteFunc))]
+        private static void INTERNAL_Write(
+            IntPtr context,
+            IntPtr data,
+            int size
+        )
+        {
+            Stream stream;
+            lock (writeStreams)
+            {
+                stream = writeStreams[context];
+            }
 
-		private static FNA3D_Image_WriteFunc writeFunc = INTERNAL_Write;
+            byte[] buf = new byte[size]; // FIXME: Preallocate!
+            Marshal.Copy(data, buf, 0, size);
+            stream.Write(buf, 0, size);
+        }
 
-		private static int writeGlobal = 0;
-		private static Dictionary<IntPtr, Stream> writeStreams = new();
+        private static FNA3D_Image_WriteFunc writeFunc = INTERNAL_Write;
 
-		public static void WritePNGStream(
-			Stream stream,
-			int srcW,
-			int srcH,
-			int dstW,
-			int dstH,
-			IntPtr data
-		) {
-			IntPtr context;
-			lock (writeStreams)
-			{
-				context = (IntPtr) writeGlobal++;
-				writeStreams.Add(context, stream);
-			}
-			FNA3D_Image_SavePNG(
-				writeFunc,
-				context,
-				srcW,
-				srcH,
-				dstW,
-				dstH,
-				data
-			);
-			lock (writeStreams)
-			{
-				writeStreams.Remove(context);
-			}
-		}
+        private static int writeGlobal = 0;
+        private static Dictionary<IntPtr, Stream> writeStreams = new();
 
-		public static void WriteJPGStream(
-			Stream stream,
-			int srcW,
-			int srcH,
-			int dstW,
-			int dstH,
-			IntPtr data,
-			int quality
-		) {
-			IntPtr context;
-			lock (writeStreams)
-			{
-				context = (IntPtr) writeGlobal++;
-				writeStreams.Add(context, stream);
-			}
-			FNA3D_Image_SaveJPG(
-				writeFunc,
-				context,
-				srcW,
-				srcH,
-				dstW,
-				dstH,
-				data,
-				quality
-			);
-			lock (writeStreams)
-			{
-				writeStreams.Remove(context);
-			}
-		}
+        public static void WritePNGStream(
+            Stream stream,
+            int srcW,
+            int srcH,
+            int dstW,
+            int dstH,
+            IntPtr data
+        )
+        {
+            IntPtr context;
+            lock (writeStreams)
+            {
+                context = (IntPtr)writeGlobal++;
+                writeStreams.Add(context, stream);
+            }
 
-		#endregion
-	}
+            FNA3D_Image_SavePNG(
+                writeFunc,
+                context,
+                srcW,
+                srcH,
+                dstW,
+                dstH,
+                data
+            );
+            lock (writeStreams)
+            {
+                writeStreams.Remove(context);
+            }
+        }
+
+        public static void WriteJPGStream(
+            Stream stream,
+            int srcW,
+            int srcH,
+            int dstW,
+            int dstH,
+            IntPtr data,
+            int quality
+        )
+        {
+            IntPtr context;
+            lock (writeStreams)
+            {
+                context = (IntPtr)writeGlobal++;
+                writeStreams.Add(context, stream);
+            }
+
+            FNA3D_Image_SaveJPG(
+                writeFunc,
+                context,
+                srcW,
+                srcH,
+                dstW,
+                dstH,
+                data,
+                quality
+            );
+            lock (writeStreams)
+            {
+                writeStreams.Remove(context);
+            }
+        }
+
+        #endregion
+    }
 }

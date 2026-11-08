@@ -1,4 +1,3 @@
-
 namespace NFMWorld.UI;
 
 /// <summary>

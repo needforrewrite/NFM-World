@@ -13,10 +13,13 @@ public sealed class RaceCameraDirector
         Follow,
         FollowStatic,
         Around,
+
         /// <summary>Behind the car, aimed at whatever the guidance arrow points to.</summary>
         CarCam,
+
         /// <summary>Stationary trackside camera that turns to watch the car pass.</summary>
         Watch,
+
         /// <summary>Free-flying camera, steered with the driving keys.</summary>
         Freelook
     }
@@ -51,8 +54,15 @@ public sealed class RaceCameraDirector
             // No arrow target (stage finished, nothing to aim at): the plain follow view is the
             // same seat, just looking down the car instead of at the objective.
             case ViewMode.CarCam when ArrowTarget is { } target:
-                _playerFollowCamera.FollowTarget(camera, car, (float)car.CarPhysics.Cxz,
-                    (float)car.CarPhysics.Speed, car.Stats.Swits[2], target, interpolate: true);
+                _playerFollowCamera.FollowTarget(
+                    camera,
+                    car,
+                    (float)car.CarPhysics.Cxz,
+                    (float)car.CarPhysics.Speed,
+                    car.Stats.Swits[2],
+                    target,
+                    interpolate: true
+                );
                 break;
             case ViewMode.CarCam:
             case ViewMode.Follow:
@@ -62,7 +72,8 @@ public sealed class RaceCameraDirector
                     (float)car.CarPhysics.Cxz,
                     car.Control.Lookback,
                     (float)car.CarPhysics.Speed,
-                    car.Stats.Swits[2]);
+                    car.Stats.Swits[2]
+                );
                 break;
             case ViewMode.FollowStatic:
                 _playerFollowCamera.Follow(
@@ -71,7 +82,8 @@ public sealed class RaceCameraDirector
                     (float)car.CarPhysics.StaticCameraXz,
                     car.Control.Lookback,
                     (float)car.CarPhysics.Speed,
-                    car.Stats.Swits[2]);
+                    car.Stats.Swits[2]
+                );
                 break;
             case ViewMode.Around:
                 _playerAroundCamera.Around(camera, car);

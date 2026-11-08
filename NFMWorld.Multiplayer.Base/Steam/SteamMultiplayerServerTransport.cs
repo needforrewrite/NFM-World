@@ -1,4 +1,4 @@
-﻿﻿﻿using System.Collections;
+﻿using System.Collections;
 using System.Collections.Concurrent;
 using Maxine.Extensions;
 using Steamworks;
@@ -74,7 +74,15 @@ public class SteamMultiplayerServerTransport : BaseMultiplayerServerTransport, I
         Logging.Info($"{info.Identity} has left the game");
     }
 
-    public unsafe void OnMessage(Connection connection, NetIdentity identity, IntPtr data, int size, long messageNum, long recvTime, int channel)
+    public unsafe void OnMessage(
+        Connection connection,
+        NetIdentity identity,
+        IntPtr data,
+        int size,
+        long messageNum,
+        long recvTime,
+        int channel
+    )
     {
         using var messageData = new UnmanagedMemoryManager<byte>((byte*)data, size);
         ReceivePacket(connection.Id, messageData.Memory);

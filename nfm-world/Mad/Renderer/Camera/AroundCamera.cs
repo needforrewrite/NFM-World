@@ -13,7 +13,7 @@ public class AroundCamera
     public float CurrentXz = 0f;
     public float Distance = 1000f;
     public float Height = 500f;
-    
+
 
     // On each tick change camera position to be around the object
     public void AroundConstantHeight(PerspectiveCamera camera, Transform obj, float xzspeed = 1f)
@@ -40,7 +40,7 @@ public class AroundCamera
         {
             CurrentXz -= 360;
         }
-        
+
         if (_rising)
         {
             Height += yspeed * Physics.PHYSICS_MULTIPLIER;

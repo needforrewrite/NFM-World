@@ -39,14 +39,16 @@ public class StageDirectivePrefixTests
     public void CataclysmicCascadeStyleFurniture_StillLoads()
     {
         // The directives of the user stage that failed, minus the ones that only exist upstream.
-        var loader = Load("""
+        var loader = Load(
+            """
             grndburn()
             firevfx(39,209,0)
             lavavents()
             ambience(6)
             lava(10)
             name(Cataclysmic Cascade)
-            """);
+            """
+        );
         Assert.AreEqual("Cataclysmic Cascade", loader.Name);
         Assert.AreEqual(10f, loader.Physics.Lava);
     }
@@ -54,7 +56,8 @@ public class StageDirectivePrefixTests
     [TestMethod]
     public void PhysicsDirectives_StillParseTheirArguments()
     {
-        var physics = Load("""
+        var physics = Load(
+            """
             gravity(2.5)
             grip(1.5)
             powerloss(0.5)
@@ -63,7 +66,8 @@ public class StageDirectivePrefixTests
             maxhit(2)
             recoil(1.5)
             rage(2)
-            """).Physics;
+            """
+        ).Physics;
 
         Assert.AreEqual(2.5f, physics.Gravity);
         Assert.AreEqual(1.5f, physics.Grip);

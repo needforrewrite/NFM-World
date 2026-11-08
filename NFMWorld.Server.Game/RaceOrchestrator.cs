@@ -59,20 +59,21 @@ public class RaceOrchestrator : IDisposable
     {
         _tickCts = new CancellationTokenSource();
         _tickThread = new Thread(() =>
-        {
-            while (!_tickCts.Token.IsCancellationRequested)
             {
-                try
+                while (!_tickCts.Token.IsCancellationRequested)
                 {
-                    TickServerGamemodes();
-                    Thread.Sleep(50); // 20 TPS
-                }
-                catch (Exception ex)
-                {
-                    Logging.Error($"[GM] Server tick error: {ex}");
+                    try
+                    {
+                        TickServerGamemodes();
+                        Thread.Sleep(50); // 20 TPS
+                    }
+                    catch (Exception ex)
+                    {
+                        Logging.Error($"[GM] Server tick error: {ex}");
+                    }
                 }
             }
-        })
+        )
         {
             IsBackground = true,
             Name = "GMServerTick"
@@ -108,7 +109,8 @@ public class RaceOrchestrator : IDisposable
                 _transport.SendPacketToClients(
                     session.Clients.Keys.ToArray(),
                     new S2C_GameFinished { Results = results },
-                    reliable: true);
+                    reliable: true
+                );
 
                 ReportToLobby(session, results);
 
@@ -141,36 +143,39 @@ public class RaceOrchestrator : IDisposable
             return;
         }
 
-        var body = MemoryPackSerializer.Serialize(new RaceServer2Lobby_RaceResults
-        {
-            MatchKey = session.MatchKey.ToString(),
-            Results = results
-        });
+        var body = MemoryPackSerializer.Serialize(
+            new RaceServer2Lobby_RaceResults
+            {
+                MatchKey = session.MatchKey.ToString(),
+                Results = results
+            }
+        );
 
         var keyId = Environment.GetEnvironmentVariable("HMAC_KEY_ID") ?? "primary";
         var secret = Convert.FromBase64String(Environment.GetEnvironmentVariable("HMAC_SECRET_KEY") ?? "");
         var auth = HmacAuth.SignWithNonce("POST", "/race-ended", body, keyId, secret, Guid.NewGuid().ToString("N"));
 
         _ = Task.Run(async () =>
-        {
-            try
             {
-                using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-                using var request = new HttpRequestMessage(HttpMethod.Post, lobby)
+                try
                 {
-                    Content = new ByteArrayContent(body)
-                };
-                request.Headers.Authorization = System.Net.Http.Headers.AuthenticationHeaderValue.Parse(auth);
+                    using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+                    using var request = new HttpRequestMessage(HttpMethod.Post, lobby)
+                    {
+                        Content = new ByteArrayContent(body)
+                    };
+                    request.Headers.Authorization = System.Net.Http.Headers.AuthenticationHeaderValue.Parse(auth);
 
-                using var response = await client.SendAsync(request);
-                if (!response.IsSuccessStatusCode)
-                    Logging.Warning($"[GM] Lobby rejected the result report: {(int)response.StatusCode}");
+                    using var response = await client.SendAsync(request);
+                    if (!response.IsSuccessStatusCode)
+                        Logging.Warning($"[GM] Lobby rejected the result report: {(int)response.StatusCode}");
+                }
+                catch (Exception ex)
+                {
+                    Logging.Warning($"[GM] Could not report the race result to the lobby: {ex.Message}");
+                }
             }
-            catch (Exception ex)
-            {
-                Logging.Warning($"[GM] Could not report the race result to the lobby: {ex.Message}");
-            }
-        });
+        );
     }
 
     // ── Transport events ─────────────────────────────────────────────
@@ -189,8 +194,10 @@ public class RaceOrchestrator : IDisposable
 
     // ── Packet dispatch ──────────────────────────────────────────────
 
-    private void TransportOnPacketReceived(object? sender,
-        (uint ClientIndex, IPacketClientToServer Packet) e)
+    private void TransportOnPacketReceived(
+        object? sender,
+        (uint ClientIndex, IPacketClientToServer Packet) e
+    )
     {
         switch (e.Packet)
         {
@@ -258,8 +265,10 @@ public class RaceOrchestrator : IDisposable
             Logging.Info($"[GM] Client {clientId} re-attached");
             // Everything it needs to rejoin the race as it was.
             if (session.ResultsBroadcasted)
-                _transport.SendPacketToClient(clientIndex,
-                    new S2C_GameFinished { Results = session.LastResults });
+                _transport.SendPacketToClient(
+                    clientIndex,
+                    new S2C_GameFinished { Results = session.LastResults }
+                );
             else if (session.LoadedCount >= session.PlayerCount)
                 _transport.SendPacketToClient(clientIndex, new S2C_RaceCanStart());
             return;
@@ -269,7 +278,8 @@ public class RaceOrchestrator : IDisposable
         session.LoadedCount++;
 
         Logging.Info(
-            $"[GM] Client {clientId} loaded ({session.LoadedCount}/{session.PlayerCount})");
+            $"[GM] Client {clientId} loaded ({session.LoadedCount}/{session.PlayerCount})"
+        );
 
         if (session.LoadedCount >= session.PlayerCount)
         {
@@ -320,12 +330,16 @@ public class RaceOrchestrator : IDisposable
         var others = session.Clients.Keys.Where(idx => idx != clientIndex).ToArray();
         if (others.Length > 0)
         {
-            _transport.SendPacketToClients(others, new S2C_PlayerState
-            {
-                PlayerId = reportedId,
-                State = playerState.State,
-                CurrentServerTime = DateTimeOffset.UtcNow
-            }, false);
+            _transport.SendPacketToClients(
+                others,
+                new S2C_PlayerState
+                {
+                    PlayerId = reportedId,
+                    State = playerState.State,
+                    CurrentServerTime = DateTimeOffset.UtcNow
+                },
+                false
+            );
         }
     }
 
@@ -342,10 +356,14 @@ public class RaceOrchestrator : IDisposable
         var rotation = state.CarFrame.CarRotation;
         var speed = (double)state.CarFrame.Speed;
 
-        return double.IsFinite((double)rotation.Xz) && Math.Abs((double)rotation.Xz) <= maxAngle
-               && double.IsFinite((double)rotation.Pzy) && Math.Abs((double)rotation.Pzy) <= maxAngle
-               && double.IsFinite((double)rotation.Pxy) && Math.Abs((double)rotation.Pxy) <= maxAngle
-               && double.IsFinite(speed) && Math.Abs(speed) <= maxSpeed;
+        return double.IsFinite((double)rotation.Xz)
+               && Math.Abs((double)rotation.Xz) <= maxAngle
+               && double.IsFinite((double)rotation.Pzy)
+               && Math.Abs((double)rotation.Pzy) <= maxAngle
+               && double.IsFinite((double)rotation.Pxy)
+               && Math.Abs((double)rotation.Pxy) <= maxAngle
+               && double.IsFinite(speed)
+               && Math.Abs(speed) <= maxSpeed;
     }
 
     // ── HTTP handler ─────────────────────────────────────────────────
@@ -386,23 +404,29 @@ public class RaceOrchestrator : IDisposable
             payload => _transport.SendPacketToClients(
                 session.Clients.Keys.ToArray(),
                 new S2C_ServerEvent { Payload = payload },
-                reliable: true));
+                reliable: true
+            )
+        );
 
         // TODO this is a bit janky and could probably be improved
-        var gm = factory.CreateServerGamemode(new ServerGamemodeParameters()
-        {
-            Players = raceParams.MatchGameplayInfo.Players.Values.ToArray()
-        }, context);
-        
+        var gm = factory.CreateServerGamemode(
+            new ServerGamemodeParameters()
+            {
+                Players = raceParams.MatchGameplayInfo.Players.Values.ToArray()
+            },
+            context
+        );
+
         session.ServerGamemode = gm;
         session.Factory = factory;
-        
+
         gm.Begin();
 
         _sessions.TryAdd(sessionId, session);
 
         Logging.Info(
-            $"[GM] Race created: {raceParams.MatchKey}, {joinTokens.Count} players");
+            $"[GM] Race created: {raceParams.MatchKey}, {joinTokens.Count} players"
+        );
 
         return new Lobby2RaceServer_CreateRaceResponse
         {
@@ -468,10 +492,12 @@ public class RaceOrchestrator : IDisposable
 
         /// <summary>Owns the gamemode's plugin load context; released alongside it.</summary>
         public BaseGamemodeFactory? Factory { get; set; }
+
         public ConcurrentDictionary<Guid, f64Vector3> PlayerPositions { get; set; } = [];
 
         /// <summary>Last relayed wasted flag per player; absent until their first state.</summary>
         public ConcurrentDictionary<Guid, bool> PlayerWasted { get; set; } = [];
+
         public IDictionary<byte, ServerSidePlayerInfo> PlayerInfos { get; set; } = new Dictionary<byte, ServerSidePlayerInfo>();
         public bool ResultsBroadcasted { get; set; }
 
@@ -486,7 +512,8 @@ public class RaceOrchestrator : IDisposable
     private class OrchestratorServerContext(
         RaceSession session,
         string stageName,
-        Action<ReadOnlyMemory<byte>> broadcast) : IServerGamemodeContext
+        Action<ReadOnlyMemory<byte>> broadcast
+    ) : IServerGamemodeContext
     {
         public BackendStage CurrentStage { get; } = new(stageName);
 

@@ -12,6 +12,7 @@
 // Everything here is advisory: a message means a caller passed something the wrapper declined to
 // write, never that the process is in a bad state. A host that wants the detail sets the sink; a
 // host that does not still gets correct rendering.
+
 namespace NFMWorld.Graphics;
 
 public static class GraphicsDiagnostics

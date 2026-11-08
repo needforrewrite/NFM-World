@@ -22,6 +22,7 @@ public sealed class ArchiveOptions
 
     /// <summary>Discord application credentials. Registration is disabled when either is empty.</summary>
     public string DiscordClientId { get; set; } = "";
+
     public string DiscordClientSecret { get; set; } = "";
 
     /// <summary>Origin the Discord OAuth flow returns to; must match the redirect URI registered with Discord.</summary>

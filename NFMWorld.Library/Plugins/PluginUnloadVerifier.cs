@@ -78,8 +78,9 @@ public static class PluginUnloadVerifier
             if (pending.Assembly.IsAlive)
             {
                 throw new InvalidOperationException(
-                    $"Plugin '{pending.PluginId}' was released but its assembly is still resident: " +
-                    "something the run left behind still references it, so its load context can never unload.");
+                    $"Plugin '{pending.PluginId}' was released but its assembly is still resident: "
+                    + "something the run left behind still references it, so its load context can never unload."
+                );
             }
         }
     }

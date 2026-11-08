@@ -30,8 +30,11 @@ public class PvpStandingsTests
     private static StageObject CreateCheckpoint(fix64 x)
         => StageObject.CreateDefaultObject(
             new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], "standings-test"),
-            new f64Vector3(x, World.Ground, 0), f64Euler.Identity,
-            PiecePlacementType.CheckPoint, AiNodeKind.CheckPoint);
+            new f64Vector3(x, World.Ground, 0),
+            f64Euler.Identity,
+            PiecePlacementType.CheckPoint,
+            AiNodeKind.CheckPoint
+        );
 
     private static BackendStage CreateStage(ushort laps, int checkpoints)
     {
@@ -46,26 +49,36 @@ public class PvpStandingsTests
         public BackendStage CurrentStage { get; } = stage;
         public Dictionary<Guid, bool?> Wasted { get; } = [];
         public Dictionary<Guid, f64Vector3> Positions { get; } = [];
+
         public f64Vector3? GetPlayerPosition(Guid playerId)
             => Positions.TryGetValue(playerId, out var p) ? p : null;
+
         public bool? IsPlayerWasted(Guid playerId)
             => Wasted.TryGetValue(playerId, out var w) ? w : null;
-        public void BroadcastEvent(ReadOnlyMemory<byte> payload) { }
+
+        public void BroadcastEvent(ReadOnlyMemory<byte> payload)
+        {
+        }
     }
 
     private static (BaseGamemodeFactory Factory, IServerGamemode Server, ServerContext Context) CreateRace(
-        params Guid[] players)
+        params Guid[] players
+    )
     {
         NFMWorldLibrary.TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
         var factory = GamemodeFactory.Create("nfmm/pvp", new Dictionary<string, object> { ["constraint"] = "racing" });
         var context = new ServerContext(CreateStage(laps: 3, checkpoints: 2));
-        var server = factory.CreateServerGamemode(new ServerGamemodeParameters
-        {
-            Players = players.Select(id => new ServerSidePlayerInfo
+        var server = factory.CreateServerGamemode(
+            new ServerGamemodeParameters
             {
-                Id = id, PlayerName = id.ToString()[..4], CarName = "test", Color = default
-            }).ToList()
-        }, context)!;
+                Players = players.Select(id => new ServerSidePlayerInfo
+                    {
+                        Id = id, PlayerName = id.ToString()[..4], CarName = "test", Color = default
+                    }
+                ).ToList()
+            },
+            context
+        )!;
         server.Begin();
         server.StartRace();
         return (factory, server, context);
@@ -110,8 +123,14 @@ public class PvpStandingsTests
     /// Takes the player round every checkpoint of every lap so the race ends legitimately: the
     /// server rejects a claim that skips a checkpoint, so a single finish-line jump is refused.
     /// </summary>
-    private static void DriveToFinish(BaseGamemodeFactory factory, IServerGamemode server,
-        ServerContext context, Guid player, int laps, int checkpoints)
+    private static void DriveToFinish(
+        BaseGamemodeFactory factory,
+        IServerGamemode server,
+        ServerContext context,
+        Guid player,
+        int laps,
+        int checkpoints
+    )
     {
         // The event carries the checkpoint being headed for next, which wraps to 0 when a lap
         // completes, plus the lap just completed - the same convention the client sends.
@@ -122,8 +141,17 @@ public class PvpStandingsTests
             var lap = (total + 1) / checkpoints;
             // The server corroborates each claim against the claimant's relayed position.
             context.Positions[player] = context.CurrentStage.Checkpoints[crossed].Position;
-            server.OnClientEvent(player, SerializeEvent(factory, "CheckpointEvent",
-                (ushort)((crossed + 1) % checkpoints), (byte)lap, 0, 0).Span);
+            server.OnClientEvent(
+                player,
+                SerializeEvent(
+                    factory,
+                    "CheckpointEvent",
+                    (ushort)((crossed + 1) % checkpoints),
+                    (byte)lap,
+                    0,
+                    0
+                ).Span
+            );
         }
     }
 
@@ -185,12 +213,27 @@ public class PvpStandingsTests
     }
 
     /// <summary>Claims one checkpoint, at the position the server checks the claim against.</summary>
-    private static void OneCheckpoint(BaseGamemodeFactory factory, IServerGamemode server,
-        ServerContext context, Guid player, ushort checkpoint = 0, byte lap = 0)
+    private static void OneCheckpoint(
+        BaseGamemodeFactory factory,
+        IServerGamemode server,
+        ServerContext context,
+        Guid player,
+        ushort checkpoint = 0,
+        byte lap = 0
+    )
     {
         context.Positions[player] = context.CurrentStage.Checkpoints[checkpoint].Position;
-        server.OnClientEvent(player, SerializeEvent(factory, "CheckpointEvent",
-            (ushort)((checkpoint + 1) % Checkpoints), lap, 0, 0).Span);
+        server.OnClientEvent(
+            player,
+            SerializeEvent(
+                factory,
+                "CheckpointEvent",
+                (ushort)((checkpoint + 1) % Checkpoints),
+                lap,
+                0,
+                0
+            ).Span
+        );
     }
 
     /// <summary>
@@ -237,7 +280,11 @@ public class PvpStandingsTests
         {
             var car = new BackendCar(
                 new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], "test"),
-                0, 0, 0, player.Info.IsClientPlayer);
+                0,
+                0,
+                0,
+                player.Info.IsClientPlayer
+            );
             car.TotalCheckpoint = (short)total;
             player.Car = car;
         }

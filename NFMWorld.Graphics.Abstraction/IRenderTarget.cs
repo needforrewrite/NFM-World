@@ -5,7 +5,8 @@ public readonly record struct RenderTargetDesc(
     int Height,
     TextureFormat ColorFormat,
     bool HasDepthStencil = true,
-    TextureFormat DepthStencilFormat = TextureFormat.Depth24Stencil8);
+    TextureFormat DepthStencilFormat = TextureFormat.Depth24Stencil8
+);
 
 public interface IRenderTarget : IDisposable
 {

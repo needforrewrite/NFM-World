@@ -9,8 +9,7 @@ namespace NFMWorldLibrary.Multiplayer.Packets.S2C;
 [PacketServerToClient(-8)]
 public partial struct S2C_ServerEvent : IPacketServerToClient<S2C_ServerEvent>, IDisposable
 {
-    [MemoryPackOrder(0)]
-    [ReadOnlyMemoryPoolFormatterAttribute<byte>]
+    [MemoryPackOrder(0)] [ReadOnlyMemoryPoolFormatterAttribute<byte>]
     public required ReadOnlyMemory<byte> Payload;
 
     private bool _usePool;
@@ -25,7 +24,8 @@ public partial struct S2C_ServerEvent : IPacketServerToClient<S2C_ServerEvent>, 
     {
         if (!_usePool) return;
 
-        Return(Payload); Payload = default;
+        Return(Payload);
+        Payload = default;
     }
 
     private static void Return<T>(Memory<T> memory) => Return((ReadOnlyMemory<T>)memory);

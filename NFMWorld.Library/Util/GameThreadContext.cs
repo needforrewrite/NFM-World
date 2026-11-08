@@ -45,12 +45,12 @@ public class GameThreadContext : SynchronizationContext
 
         public override int MaximumConcurrencyLevel => 1;
     }
-    
+
     private readonly ConcurrentQueue<(SendOrPostCallback d, object? state)> _tasks = new();
     private readonly Thread _gameThread;
 
     private SynchronizationContextTaskScheduler Scheduler { get; }
-    
+
     public new static GameThreadContext Current
     {
         get
@@ -75,18 +75,23 @@ public class GameThreadContext : SynchronizationContext
         var context = new GameThreadContext(Thread.CurrentThread);
         SetSynchronizationContext(context);
     }
-    
+
     public void Run(Func<Task> action, Action callback)
     {
         AssertOnGameThread();
 
         var task = Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.DenyChildAttach, Scheduler).Unwrap();
-        task.ContinueWith(t =>
-        {
-            AssertOnGameThread();
+        task.ContinueWith(
+            t =>
+            {
+                AssertOnGameThread();
 
-            callback();
-        }, CancellationToken.None, TaskContinuationOptions.DenyChildAttach, Scheduler);
+                callback();
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.DenyChildAttach,
+            Scheduler
+        );
     }
 
     public void Run<T>(Func<Task<T>> action, Action<T> callback)
@@ -94,14 +99,19 @@ public class GameThreadContext : SynchronizationContext
         AssertOnGameThread();
 
         var task = Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.DenyChildAttach, Scheduler).Unwrap();
-        task.ContinueWith(t =>
-        {
-            AssertOnGameThread();
+        task.ContinueWith(
+            t =>
+            {
+                AssertOnGameThread();
 
-            callback(t.Result);
-        }, CancellationToken.None, TaskContinuationOptions.DenyChildAttach, Scheduler);
+                callback(t.Result);
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.DenyChildAttach,
+            Scheduler
+        );
     }
-    
+
     public override void Post(SendOrPostCallback d, object? state)
     {
         _tasks.Enqueue((d, state));

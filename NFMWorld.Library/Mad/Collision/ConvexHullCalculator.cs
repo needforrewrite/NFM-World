@@ -235,7 +235,8 @@ namespace NFMWorldLibrary.Collision
             bool splitVerts,
             List<f64Vector3> verts,
             List<ushort> tris,
-            List<f64Vector3>? normals)
+            List<f64Vector3>? normals
+        )
         {
             if (points.Length < 4)
             {
@@ -509,7 +510,8 @@ namespace NFMWorldLibrary.Collision
                 points,
                 points[openSet[farthestPoint].Point],
                 openSet[farthestPoint].Face,
-                faces![openSet[farthestPoint].Face]);
+                faces![openSet[farthestPoint].Face]
+            );
 
             VerifyHorizon();
 
@@ -560,16 +562,19 @@ namespace NFMWorldLibrary.Collision
                 var dist = PointFaceDistance(
                     point,
                     points[oppositeFace.Vertex0],
-                    oppositeFace);
+                    oppositeFace
+                );
 
                 if (dist <= fix64.Zero)
                 {
-                    horizon.Add(new HorizonEdge
-                    {
-                        Face = face.Opposite0,
-                        Edge0 = face.Vertex1,
-                        Edge1 = face.Vertex2,
-                    });
+                    horizon.Add(
+                        new HorizonEdge
+                        {
+                            Face = face.Opposite0,
+                            Edge0 = face.Vertex1,
+                            Edge1 = face.Vertex2,
+                        }
+                    );
                 }
                 else
                 {
@@ -584,16 +589,19 @@ namespace NFMWorldLibrary.Collision
                 var dist = PointFaceDistance(
                     point,
                     points[oppositeFace.Vertex0],
-                    oppositeFace);
+                    oppositeFace
+                );
 
                 if (dist <= fix64.Zero)
                 {
-                    horizon.Add(new HorizonEdge
-                    {
-                        Face = face.Opposite1,
-                        Edge0 = face.Vertex2,
-                        Edge1 = face.Vertex0,
-                    });
+                    horizon.Add(
+                        new HorizonEdge
+                        {
+                            Face = face.Opposite1,
+                            Edge0 = face.Vertex2,
+                            Edge1 = face.Vertex0,
+                        }
+                    );
                 }
                 else
                 {
@@ -608,16 +616,19 @@ namespace NFMWorldLibrary.Collision
                 var dist = PointFaceDistance(
                     point,
                     points[oppositeFace.Vertex0],
-                    oppositeFace);
+                    oppositeFace
+                );
 
                 if (dist <= fix64.Zero)
                 {
-                    horizon.Add(new HorizonEdge
-                    {
-                        Face = face.Opposite2,
-                        Edge0 = face.Vertex0,
-                        Edge1 = face.Vertex1,
-                    });
+                    horizon.Add(
+                        new HorizonEdge
+                        {
+                            Face = face.Opposite2,
+                            Edge0 = face.Vertex0,
+                            Edge1 = face.Vertex1,
+                        }
+                    );
                 }
                 else
                 {
@@ -685,16 +696,19 @@ namespace NFMWorldLibrary.Collision
                 var dist = PointFaceDistance(
                     point,
                     points[oppositeFace.Vertex0],
-                    oppositeFace);
+                    oppositeFace
+                );
 
                 if (dist <= fix64.Zero)
                 {
-                    horizon!.Add(new HorizonEdge
-                    {
-                        Face = nextFaceIndex0,
-                        Edge0 = edge0,
-                        Edge1 = edge1,
-                    });
+                    horizon!.Add(
+                        new HorizonEdge
+                        {
+                            Face = nextFaceIndex0,
+                            Edge0 = edge0,
+                            Edge1 = edge1,
+                        }
+                    );
                 }
                 else
                 {
@@ -709,16 +723,19 @@ namespace NFMWorldLibrary.Collision
                 var dist = PointFaceDistance(
                     point,
                     points[oppositeFace.Vertex0],
-                    oppositeFace);
+                    oppositeFace
+                );
 
                 if (dist <= fix64.Zero)
                 {
-                    horizon!.Add(new HorizonEdge
-                    {
-                        Face = nextFaceIndex1,
-                        Edge0 = edge1,
-                        Edge1 = edge2,
-                    });
+                    horizon!.Add(
+                        new HorizonEdge
+                        {
+                            Face = nextFaceIndex1,
+                            Edge0 = edge1,
+                            Edge1 = edge2,
+                        }
+                    );
                 }
                 else
                 {
@@ -767,9 +784,14 @@ namespace NFMWorldLibrary.Collision
                 var fi = faceCount++;
 
                 faces![fi] = new Face(
-                    v0, v1, v2,
-                    o0, o1, o2,
-                    Normal(points[v0], points[v1], points[v2]));
+                    v0,
+                    v1,
+                    v2,
+                    o0,
+                    o1,
+                    o2,
+                    Normal(points[v0], points[v1], points[v2])
+                );
 
                 var horizonFace = faces[horizon[i].Face];
 
@@ -830,7 +852,8 @@ namespace NFMWorldLibrary.Collision
                         var dist = PointFaceDistance(
                             point,
                             points[face.Vertex0],
-                            face);
+                            face
+                        );
 
                         if (dist > EPSILON)
                         {
@@ -873,7 +896,8 @@ namespace NFMWorldLibrary.Collision
             bool splitVerts,
             List<f64Vector3> verts,
             List<ushort> tris,
-            List<f64Vector3>? normals)
+            List<f64Vector3>? normals
+        )
         {
             foreach (var face in faces!.Values)
             {
@@ -981,7 +1005,8 @@ namespace NFMWorldLibrary.Collision
             return new f64Vector3(
                 a.Y * b.X - a.Z * b.Y,
                 a.Z * b.X - a.X * b.Z,
-                a.X * b.Y - a.Y * b.X);
+                a.X * b.Y - a.Y * b.X
+            );
         }
 
         /// <summary>
@@ -1016,9 +1041,11 @@ namespace NFMWorldLibrary.Collision
 
             return m1 <= EPSILON
                    || m2 <= EPSILON
-                   || AreCollinear(f64Vector3.Zero,
+                   || AreCollinear(
+                       f64Vector3.Zero,
                        (fix64.One / m1) * n1,
-                       (fix64.One / m2) * n2);
+                       (fix64.One / m2) * n2
+                   );
         }
 
         /// <summary>
@@ -1040,10 +1067,14 @@ namespace NFMWorldLibrary.Collision
                     Debug.Assert(openSet[i].Face != INSIDE);
                     Debug.Assert(openSet[i].Face != UNASSIGNED);
 
-                    Debug.Assert(PointFaceDistance(
-                        points[openSet[i].Point],
-                        points[faces![openSet[i].Face].Vertex0],
-                        faces[openSet[i].Face]) > fix64.Zero);
+                    Debug.Assert(
+                        PointFaceDistance(
+                            points[openSet[i].Point],
+                            points[faces![openSet[i].Face].Vertex0],
+                            faces[openSet[i].Face]
+                        )
+                        > fix64.Zero
+                    );
                 }
             }
         }
@@ -1091,7 +1122,9 @@ namespace NFMWorldLibrary.Collision
                 Debug.Assert(HasEdge(faces[face.Opposite1], face.Vertex0, face.Vertex2));
                 Debug.Assert(HasEdge(faces[face.Opposite2], face.Vertex1, face.Vertex0));
 
-                Debug.Assert((face.Normal - Normal(points[face.Vertex0], points[face.Vertex1], points[face.Vertex2])).Length() < EPSILON);
+                Debug.Assert(
+                    (face.Normal - Normal(points[face.Vertex0], points[face.Vertex1], points[face.Vertex2])).Length() < EPSILON
+                );
             }
         }
 

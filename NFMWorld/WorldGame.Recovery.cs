@@ -1,5 +1,4 @@
 extern alias SDL3New;
-
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -50,12 +49,13 @@ public partial class WorldGame
         arg != GraphicsRecoveryArgument
         && !arg.StartsWith(RendererArgumentPrefix, StringComparison.OrdinalIgnoreCase)
         && !arg.StartsWith("--angle-backend=", StringComparison.OrdinalIgnoreCase)
-        && !arg.StartsWith("--angle-device=", StringComparison.OrdinalIgnoreCase)).ToArray();
+        && !arg.StartsWith("--angle-device=", StringComparison.OrdinalIgnoreCase)
+    ).ToArray();
 
     private static void Relaunch(IEnumerable<string> args)
     {
         var executable = System.Environment.ProcessPath
-            ?? throw new InvalidOperationException("Cannot determine the game executable for restart.");
+                         ?? throw new InvalidOperationException("Cannot determine the game executable for restart.");
         var start = new ProcessStartInfo(executable)
         {
             UseShellExecute = false,
@@ -65,15 +65,22 @@ public partial class WorldGame
             start.ArgumentList.Add(Assembly.GetEntryAssembly()!.Location);
         foreach (var argument in args) start.ArgumentList.Add(argument);
         using var restarted = Process.Start(start)
-            ?? throw new InvalidOperationException("Failed to restart the game.");
+                              ?? throw new InvalidOperationException("Failed to restart the game.");
     }
 
     private static void RecoverFailedStartup(WorldGame? program, string[] args, Exception error)
     {
         Logging.Error($"Game startup failed: {error}");
         WriteStartupStatus(error.ToString());
-        try { program?.Dispose(); }
-        catch (Exception ex) { Logging.Warning($"Startup cleanup failed: {ex.Message}"); }
+        try
+        {
+            program?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logging.Warning($"Startup cleanup failed: {ex.Message}");
+        }
+
         Relaunch([.. RecoveryRetryArguments(args), GraphicsRecoveryArgument]);
     }
 
@@ -89,6 +96,7 @@ public partial class WorldGame
             using var backup = new StreamWriter(TheVFS.VFS.OpenWrite(backupPath));
             backup.Write(original);
         }
+
         var updated = GraphicsRecoveryConfig.SelectRenderer(original, renderer, reset);
         using (var writer = new StreamWriter(TheVFS.VFS.OpenWrite(configPath)))
             writer.Write(updated);
@@ -105,6 +113,7 @@ public partial class WorldGame
             RunNativeGraphicsRecovery(args, error[RecoveryUiPrefix.Length..]);
             return;
         }
+
         var selected = Math.Max(0, Array.IndexOf(SettingsMenu.Renderers, SettingsMenu.SelectedRendererName));
         var retry = false;
         var resetConfirmation = false;
@@ -132,18 +141,27 @@ public partial class WorldGame
                 previous = now;
                 ImGui.SetNextWindowPos(Vector2.Zero);
                 ImGui.SetNextWindowSize(new Vector2(recovery.Window.Width, recovery.Window.Height));
-                if (ImGui.Begin("Graphics recovery", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove
-                    | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings))
+                if (ImGui.Begin(
+                        "Graphics recovery",
+                        ImGuiWindowFlags.NoResize
+                        | ImGuiWindowFlags.NoMove
+                        | ImGuiWindowFlags.NoCollapse
+                        | ImGuiWindowFlags.NoSavedSettings
+                    ))
                 {
                     ImGui.TextUnformatted("NFM World could not finish starting.");
-                    ImGui.TextWrapped("Choose a renderer to retry, or reset settings to defaults. A copy of your original configuration is kept as config.before-recovery.cfg.");
+                    ImGui.TextWrapped(
+                        "Choose a renderer to retry, or reset settings to defaults. A copy of your original configuration is kept as config.before-recovery.cfg."
+                    );
                     ImGui.Separator();
                     if (ImGui.BeginCombo("Renderer", SettingsMenu.Renderers[selected]))
                     {
                         for (var i = 0; i < SettingsMenu.Renderers.Length; i++)
-                            if (ImGui.Selectable(SettingsMenu.Renderers[i], selected == i)) selected = i;
+                            if (ImGui.Selectable(SettingsMenu.Renderers[i], selected == i))
+                                selected = i;
                         ImGui.EndCombo();
                     }
+
                     if (resetConfirmation)
                     {
                         ImGui.TextWrapped("Reset all settings to defaults and retry with Auto?");
@@ -159,12 +177,14 @@ public partial class WorldGame
                         ImGui.SameLine();
                         if (ImGui.Button("Exit")) recovery.Window.RequestClose();
                     }
+
                     ImGui.Separator();
                     ImGui.TextUnformatted("Startup error:");
                     if (ImGui.BeginChild("##startup-error", new Vector2(0, 0), ImGuiChildFlags.None))
                         ImGui.TextWrapped(string.IsNullOrWhiteSpace(error) ? "Recovery opened manually." : error);
                     ImGui.EndChild();
                 }
+
                 ImGui.End();
                 var cb = recovery._device.AcquireCommandBuffer();
                 cb.Clear(ClearOptions.Color, new ColorRgba(0.025f, 0.04f, 0.08f));
@@ -176,6 +196,7 @@ public partial class WorldGame
                     if (!retry) WriteStartupStatus(error);
                     firstFrame = false;
                 }
+
                 Thread.Sleep(16);
             }
 
@@ -187,7 +208,10 @@ public partial class WorldGame
                     retry = true;
                     recovery.Window.RequestClose();
                 }
-                catch (Exception ex) { error = $"Could not save recovery settings: {ex.Message}"; }
+                catch (Exception ex)
+                {
+                    error = $"Could not save recovery settings: {ex.Message}";
+                }
             }
         }
         catch (Exception ex)
@@ -206,9 +230,13 @@ public partial class WorldGame
                     SDL.SDL_GL_DestroyContext(recovery._glContext);
                     recovery.Window.Dispose();
                 }
-                catch (Exception ex) { Logging.Warning($"Recovery cleanup failed: {ex.Message}"); }
+                catch (Exception ex)
+                {
+                    Logging.Warning($"Recovery cleanup failed: {ex.Message}");
+                }
             }
         }
+
         if (retry) Relaunch(RecoveryRetryArguments(args));
     }
 
@@ -217,12 +245,20 @@ public partial class WorldGame
         var labels = SettingsMenu.Renderers.Concat(["Reset defaults", "Exit"]).ToArray();
         while (true)
         {
-            var choice = NativeRecoveryChoice("NFM World - Graphics recovery",
-                "Choose a renderer to retry.\n\n" + error[..Math.Min(error.Length, 1200)], labels);
+            var choice = NativeRecoveryChoice(
+                "NFM World - Graphics recovery",
+                "Choose a renderer to retry.\n\n" + error[..Math.Min(error.Length, 1200)],
+                labels
+            );
             if (choice < 0 || choice >= labels.Length - 1) return;
             var reset = choice == SettingsMenu.Renderers.Length;
-            if (reset && NativeRecoveryChoice("Reset settings?",
-                    "Reset all settings and retry with Auto? The original config will be backed up.", ["Reset", "Cancel"]) != 0)
+            if (reset
+                && NativeRecoveryChoice(
+                    "Reset settings?",
+                    "Reset all settings and retry with Auto? The original config will be backed up.",
+                    ["Reset", "Cancel"]
+                )
+                != 0)
                 continue;
             try
             {
@@ -230,19 +266,24 @@ public partial class WorldGame
                 Relaunch(RecoveryRetryArguments(args));
                 return;
             }
-            catch (Exception ex) { error = ex.Message; }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+            }
         }
     }
 
     private static unsafe int NativeRecoveryChoice(string title, string message, string[] labels)
     {
         var strings = new List<nint>();
+
         byte* Utf8(string text)
         {
             var pointer = Marshal.StringToCoTaskMemUTF8(text);
             strings.Add(pointer);
             return (byte*)pointer;
         }
+
         try
         {
             SDL.SDL_MessageBoxButtonData* buttons = stackalloc SDL.SDL_MessageBoxButtonData[labels.Length];

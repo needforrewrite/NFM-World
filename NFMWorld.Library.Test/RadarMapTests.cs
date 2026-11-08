@@ -27,8 +27,18 @@ public class RadarMapTests
     private static Vector2 Blip(float worldX, float worldZ, float clientX, float clientZ, float heading)
     {
         var (sin, cos) = Heading(heading);
-        return RadarMap.ToRadar(worldX, worldZ, clientX, clientZ, sin, cos,
-            RadarX + RadarSize / 2, RadarY + RadarSize / 2, RadarSize, RadarRange);
+        return RadarMap.ToRadar(
+            worldX,
+            worldZ,
+            clientX,
+            clientZ,
+            sin,
+            cos,
+            RadarX + RadarSize / 2,
+            RadarY + RadarSize / 2,
+            RadarSize,
+            RadarRange
+        );
     }
 
     /// <summary>
@@ -36,8 +46,18 @@ public class RadarMapTests
     /// </summary>
     private static (Vector2 Image, Vector2 Blip) Sample(float u, float v, float clientX, float clientZ, float heading)
     {
-        var placement = RadarMap.Place(MinX, MaxZ, UnitsPerPixel, clientX, clientZ, heading,
-            RadarX, RadarY, RadarSize, RadarRange);
+        var placement = RadarMap.Place(
+            MinX,
+            MaxZ,
+            UnitsPerPixel,
+            clientX,
+            clientZ,
+            heading,
+            RadarX,
+            RadarY,
+            RadarSize,
+            RadarRange
+        );
 
         // v runs down the image, which its bake lays along -Z.
         var image = RadarMap.PixelToScreen(placement, u, v);
@@ -63,8 +83,18 @@ public class RadarMapTests
     {
         // Heading 0 faces +Z, which draws UP the radar. u runs right along +X; v runs down the
         // image, which is -Z, so it draws down the screen (a positive Y step).
-        var placement = RadarMap.Place(MinX, MaxZ, UnitsPerPixel, 0f, 0f, 0f,
-            RadarX, RadarY, RadarSize, RadarRange);
+        var placement = RadarMap.Place(
+            MinX,
+            MaxZ,
+            UnitsPerPixel,
+            0f,
+            0f,
+            0f,
+            RadarX,
+            RadarY,
+            RadarSize,
+            RadarRange
+        );
 
         Assert.AreEqual(0f, placement.AxisX.Y, 1e-4f);
         Assert.IsGreaterThan(0f, placement.AxisX.X);
@@ -107,15 +137,55 @@ public class RadarMapTests
         // together: the radar must put the car's forward direction at the TOP. At heading 0 the
         // car faces +Z (FollowCamera sits behind it at -Z), so +Z has to draw above the centre -
         // phy's radarstat subtracts dz for exactly this reason. A car to the right (+X) draws right.
-        var placement = RadarMap.Place(MinX, MaxZ, UnitsPerPixel, 0f, 0f, 0f,
-            RadarX, RadarY, RadarSize, RadarRange);
-        var center = RadarMap.ToRadar(0f, 0f, 0f, 0f, 0f, 1f,
-            RadarX + RadarSize / 2, RadarY + RadarSize / 2, RadarSize, RadarRange);
+        var placement = RadarMap.Place(
+            MinX,
+            MaxZ,
+            UnitsPerPixel,
+            0f,
+            0f,
+            0f,
+            RadarX,
+            RadarY,
+            RadarSize,
+            RadarRange
+        );
+        var center = RadarMap.ToRadar(
+            0f,
+            0f,
+            0f,
+            0f,
+            0f,
+            1f,
+            RadarX + RadarSize / 2,
+            RadarY + RadarSize / 2,
+            RadarSize,
+            RadarRange
+        );
 
-        var ahead = RadarMap.ToRadar(0f, 1_000f, 0f, 0f, 0f, 1f,
-            RadarX + RadarSize / 2, RadarY + RadarSize / 2, RadarSize, RadarRange);
-        var right = RadarMap.ToRadar(1_000f, 0f, 0f, 0f, 0f, 1f,
-            RadarX + RadarSize / 2, RadarY + RadarSize / 2, RadarSize, RadarRange);
+        var ahead = RadarMap.ToRadar(
+            0f,
+            1_000f,
+            0f,
+            0f,
+            0f,
+            1f,
+            RadarX + RadarSize / 2,
+            RadarY + RadarSize / 2,
+            RadarSize,
+            RadarRange
+        );
+        var right = RadarMap.ToRadar(
+            1_000f,
+            0f,
+            0f,
+            0f,
+            0f,
+            1f,
+            RadarX + RadarSize / 2,
+            RadarY + RadarSize / 2,
+            RadarSize,
+            RadarRange
+        );
 
         Assert.IsLessThan(center.Y, ahead.Y, "a point ahead (+Z) must draw above the car");
         Assert.AreEqual(center.X, ahead.X, 0.01f, "a point straight ahead stays on the car's axis");
@@ -123,12 +193,42 @@ public class RadarMapTests
 
         // Forward is (-sin, cos), so a quarter turn points the car along -X: -X draws straight
         // ahead (up, on the car's axis) and +Z draws to its right.
-        var center2 = RadarMap.ToRadar(0f, 0f, 0f, 0f, 1f, 0f,
-            RadarX + RadarSize / 2, RadarY + RadarSize / 2, RadarSize, RadarRange);
-        var ahead2 = RadarMap.ToRadar(-1_000f, 0f, 0f, 0f, 1f, 0f,
-            RadarX + RadarSize / 2, RadarY + RadarSize / 2, RadarSize, RadarRange);
-        var right2 = RadarMap.ToRadar(0f, 1_000f, 0f, 0f, 1f, 0f,
-            RadarX + RadarSize / 2, RadarY + RadarSize / 2, RadarSize, RadarRange);
+        var center2 = RadarMap.ToRadar(
+            0f,
+            0f,
+            0f,
+            0f,
+            1f,
+            0f,
+            RadarX + RadarSize / 2,
+            RadarY + RadarSize / 2,
+            RadarSize,
+            RadarRange
+        );
+        var ahead2 = RadarMap.ToRadar(
+            -1_000f,
+            0f,
+            0f,
+            0f,
+            1f,
+            0f,
+            RadarX + RadarSize / 2,
+            RadarY + RadarSize / 2,
+            RadarSize,
+            RadarRange
+        );
+        var right2 = RadarMap.ToRadar(
+            0f,
+            1_000f,
+            0f,
+            0f,
+            1f,
+            0f,
+            RadarX + RadarSize / 2,
+            RadarY + RadarSize / 2,
+            RadarSize,
+            RadarRange
+        );
         Assert.IsLessThan(center2.Y, ahead2.Y, "facing -X, -X draws ahead (up)");
         Assert.AreEqual(center2.X, ahead2.X, 0.01f, "facing -X, -X stays on the car's axis");
         Assert.IsGreaterThan(center2.X, right2.X, "facing -X, +Z draws to the right");
@@ -149,8 +249,18 @@ public class RadarMapTests
     {
         // Rendering the image at the wrong scale would show a course smaller or larger than the
         // one the blips sit on, so one pixel must be worth exactly unitsPerPixel world units.
-        var placement = RadarMap.Place(MinX, MaxZ, UnitsPerPixel, 0f, 0f, 0f,
-            RadarX, RadarY, RadarSize, RadarRange);
+        var placement = RadarMap.Place(
+            MinX,
+            MaxZ,
+            UnitsPerPixel,
+            0f,
+            0f,
+            0f,
+            RadarX,
+            RadarY,
+            RadarSize,
+            RadarRange
+        );
 
         var expected = UnitsPerPixel * RadarSize * 0.5f / RadarRange;
         Assert.AreEqual(expected, placement.AxisX.Length(), 1e-3f);
@@ -163,8 +273,18 @@ public class RadarMapTests
         // The renderer maps the unit square, but Place works in image pixels. Drawing the raw
         // placement therefore puts the 512 px image into a 2.4 px quad - invisible. Converting
         // must keep every corner on the spot its own pixel draws at.
-        var placement = RadarMap.Place(MinX, MaxZ, UnitsPerPixel, 0f, 0f, 0.7f,
-            RadarX, RadarY, RadarSize, RadarRange);
+        var placement = RadarMap.Place(
+            MinX,
+            MaxZ,
+            UnitsPerPixel,
+            0f,
+            0f,
+            0.7f,
+            RadarX,
+            RadarY,
+            RadarSize,
+            RadarRange
+        );
         var unit = RadarMap.ToUnitSquare(placement, ImageSize, ImageSize);
 
         foreach (var (u, v) in new[] { (0f, 0f), (1f, 0f), (0f, 1f), (1f, 1f) })

@@ -8,17 +8,22 @@ namespace NFMWorldLibrary.Util;
 public static partial class SvgStyles
 {
     private sealed record Declaration(string Name, string Value, bool Important);
+
     private sealed record Rule(string Selector, int Specificity, Declaration[] Declarations);
+
     private sealed record Value(string Text, bool Important, int Specificity);
 
     public static string ReadWithInlineStyles(Stream stream)
     {
-        using var reader = XmlReader.Create(stream, new XmlReaderSettings
-        {
-            DtdProcessing = DtdProcessing.Ignore,
-            XmlResolver = null,
-            CloseInput = false
-        });
+        using var reader = XmlReader.Create(
+            stream,
+            new XmlReaderSettings
+            {
+                DtdProcessing = DtdProcessing.Ignore,
+                XmlResolver = null,
+                CloseInput = false
+            }
+        );
         var document = XDocument.Load(reader, LoadOptions.PreserveWhitespace);
         Inline(document);
         return document.ToString(SaveOptions.DisableFormatting);
@@ -50,6 +55,7 @@ public static partial class SvgStyles
         {
             if (element.Name.LocalName == "style") continue;
             var values = new Dictionary<string, Value>(StringComparer.OrdinalIgnoreCase);
+
             void Apply(Declaration declaration, int specificity)
             {
                 if (values.TryGetValue(declaration.Name, out var previous))
@@ -57,6 +63,7 @@ public static partial class SvgStyles
                     if (previous.Important && !declaration.Important) return;
                     if (previous.Important == declaration.Important && previous.Specificity > specificity) return;
                 }
+
                 values[declaration.Name] = new Value(declaration.Value, declaration.Important, specificity);
             }
 
@@ -87,6 +94,7 @@ public static partial class SvgStyles
             if (name.Length > 0 && value.Length > 0)
                 result.Add(new Declaration(name, value, important));
         }
+
         return result.ToArray();
     }
 
@@ -106,17 +114,22 @@ public static partial class SvgStyles
             }
             else if (!classes.Contains(name, StringComparer.Ordinal)) return false;
         }
+
         return true;
     }
 
     [GeneratedRegex(@"/\*[\s\S]*?\*/")]
     private static partial Regex Comments();
+
     [GeneratedRegex(@"([^{}]+)\{([^{}]*)\}")]
     private static partial Regex Rules();
+
     [GeneratedRegex(@"^(?:[a-zA-Z_][\w-]*|\*)?(?:[.#][a-zA-Z_][\w-]*)*$")]
     private static partial Regex Selector();
+
     [GeneratedRegex(@"([.#])([a-zA-Z_][\w-]*)")]
     private static partial Regex SelectorParts();
+
     [GeneratedRegex(@"!\s*important\s*$", RegexOptions.IgnoreCase)]
     private static partial Regex Important();
 }

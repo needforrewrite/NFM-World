@@ -5,7 +5,10 @@ namespace NFMWorldLibrary.Rad;
 [PluginVisible]
 public enum LineType
 {
-    Flat, Charged, Colored, BrightColored,
+    Flat,
+    Charged,
+    Colored,
+    BrightColored,
 
     MaxValue = BrightColored
 }

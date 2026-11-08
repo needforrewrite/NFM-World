@@ -54,7 +54,15 @@ public struct TextStyles() : IEquatable<TextStyles>
 
     public readonly bool Equals(TextStyles other)
     {
-        return Nullable.Equals(ForegroundColor, other.ForegroundColor) && Nullable.Equals(StrokeColor, other.StrokeColor) && FontFamily == other.FontFamily && Nullable.Equals(FontSize, other.FontSize) && FontStyle == other.FontStyle && BreakType == other.BreakType && OverflowBehavior == other.OverflowBehavior && HorizontalAlignment == other.HorizontalAlignment && VerticalAlignment == other.VerticalAlignment;
+        return Nullable.Equals(ForegroundColor, other.ForegroundColor)
+               && Nullable.Equals(StrokeColor, other.StrokeColor)
+               && FontFamily == other.FontFamily
+               && Nullable.Equals(FontSize, other.FontSize)
+               && FontStyle == other.FontStyle
+               && BreakType == other.BreakType
+               && OverflowBehavior == other.OverflowBehavior
+               && HorizontalAlignment == other.HorizontalAlignment
+               && VerticalAlignment == other.VerticalAlignment;
     }
 
     public override readonly bool Equals(object? obj)

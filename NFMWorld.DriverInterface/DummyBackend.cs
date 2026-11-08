@@ -25,10 +25,21 @@ public sealed class DummyBackend : IBackend
 
     private sealed class DummyGraphics3D : IGraphics3D
     {
-        public void DrawTriangles(ReadOnlySpan<Vector3> positions, ReadOnlySpan<int> indices, Color color) { }
-        public void DrawTriangles(ReadOnlySpan<Vector3> positions, ReadOnlySpan<Color> colors, ReadOnlySpan<int> indices) { }
-        public void DrawLines(ReadOnlySpan<Vector3> positions, ReadOnlySpan<int> indices, Color color) { }
-        public void DrawLines(ReadOnlySpan<Vector3> positions, ReadOnlySpan<Color> colors, ReadOnlySpan<int> indices) { }
+        public void DrawTriangles(ReadOnlySpan<Vector3> positions, ReadOnlySpan<int> indices, Color color)
+        {
+        }
+
+        public void DrawTriangles(ReadOnlySpan<Vector3> positions, ReadOnlySpan<Color> colors, ReadOnlySpan<int> indices)
+        {
+        }
+
+        public void DrawLines(ReadOnlySpan<Vector3> positions, ReadOnlySpan<int> indices, Color color)
+        {
+        }
+
+        public void DrawLines(ReadOnlySpan<Vector3> positions, ReadOnlySpan<Color> colors, ReadOnlySpan<int> indices)
+        {
+        }
     }
 
     public sealed class DummyGraphics : IGraphics
@@ -83,7 +94,16 @@ public sealed class DummyBackend : IBackend
         public void DrawString(ReadOnlySpan<char> text, int x, int y)
         {
         }
-        public void DrawStringAligned(ReadOnlySpan<char> text, int x, int y, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top)
+
+        public void DrawStringAligned(
+            ReadOnlySpan<char> text,
+            int x,
+            int y,
+            int areaWidth,
+            int areaHeight,
+            TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left,
+            TextVerticalAlignment vAlign = TextVerticalAlignment.Top
+        )
         {
         }
 
@@ -91,7 +111,17 @@ public sealed class DummyBackend : IBackend
         {
         }
 
-        public void DrawStringOutlinedAligned(ReadOnlySpan<char> text, int x, int y, int areaWidth, int areaHeight, Color outline, float outlineWidth, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top)
+        public void DrawStringOutlinedAligned(
+            ReadOnlySpan<char> text,
+            int x,
+            int y,
+            int areaWidth,
+            int areaHeight,
+            Color outline,
+            float outlineWidth,
+            TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left,
+            TextVerticalAlignment vAlign = TextVerticalAlignment.Top
+        )
         {
         }
 
@@ -212,8 +242,14 @@ file sealed class DummySoundClip : ISoundClip
 {
     public bool IsActive => false;
     public ISoundClip CreateSpatialInstance(bool followPosition = false) => new DummySoundClip();
-    public void SetPosition(Vector3 position) { }
-    public void Dispose() { }
+
+    public void SetPosition(Vector3 position)
+    {
+    }
+
+    public void Dispose()
+    {
+    }
 
     public void Play()
     {

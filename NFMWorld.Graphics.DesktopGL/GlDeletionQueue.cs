@@ -28,6 +28,7 @@
 // why this problem only appears now, and it does not make the ANGLE path correct - an
 // eglMakeCurrent on one thread with a context owned by another is undefined by spec and merely
 // happens to work through ANGLE's emulation. The queue below is the right fix for both.
+
 using System.Collections.Concurrent;
 using Silk.NET.OpenGL;
 
@@ -116,7 +117,10 @@ internal sealed class GlDeletionQueue
             case GlObjectKind.Program: gl.DeleteProgram(deletion.Handle); break;
             default:
                 throw new ArgumentOutOfRangeException(
-                    nameof(deletion), deletion.Kind, "No delete entry point is mapped for this object kind.");
+                    nameof(deletion),
+                    deletion.Kind,
+                    "No delete entry point is mapped for this object kind."
+                );
         }
     }
 }

@@ -17,6 +17,7 @@ public static class GraphicsRecoveryConfig
                 if (key != "video_renderer3") lines.Add(line);
             }
         }
+
         lines.Add($"video_renderer3 {renderer}");
         return string.Join(System.Environment.NewLine, lines) + System.Environment.NewLine;
     }

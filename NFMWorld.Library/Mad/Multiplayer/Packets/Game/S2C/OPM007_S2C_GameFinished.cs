@@ -11,5 +11,6 @@ namespace NFMWorldLibrary.Multiplayer.Packets.S2C;
 public readonly partial struct S2C_GameFinished : IPacketServerToClient<S2C_GameFinished>
 {
     /// <summary>Full race results with standings, times, and gamemode info (v2).</summary>
-    [MemoryPackOrder(0)] public required RaceResults Results { get; init; }
+    [MemoryPackOrder(0)]
+    public required RaceResults Results { get; init; }
 }

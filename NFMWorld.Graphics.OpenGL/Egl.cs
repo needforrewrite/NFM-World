@@ -26,6 +26,7 @@
 // the registry rather than of the bindings: EGL_PLATFORM_ANGLE_* is defined in ANGLE's own
 // eglext_angle.h and appears nowhere in the Khronos EGL registry the bindings generate from, so no
 // amount of regeneration can produce these constants. They are declared below, with their values.
+
 using Maxine.EGL;
 using Silk.NET.Core.Contexts;
 
@@ -49,6 +50,7 @@ internal static class Egl
     /// <see cref="EglPlatformAngleTypeNull"/> - ANGLE's null renderer.
     /// </summary>
     internal const int EglPlatformAngleAngle = 0x3202;
+
     internal const int EglPlatformAngleTypeAngle = 0x3203;
     internal const int EglPlatformAngleTypeDefault = 0x3206;
     internal const int EglPlatformAngleTypeD3d11 = 0x3208;
@@ -125,9 +127,9 @@ internal static class Egl
                 foreach (System.Diagnostics.ProcessModule module in modules)
                 {
                     var name = module.FileName;
-                    if (name.EndsWith("libEGL.dll", StringComparison.OrdinalIgnoreCase) ||
-                        name.EndsWith("libEGL.so", StringComparison.OrdinalIgnoreCase) ||
-                        name.EndsWith("libEGL.dylib", StringComparison.OrdinalIgnoreCase))
+                    if (name.EndsWith("libEGL.dll", StringComparison.OrdinalIgnoreCase)
+                        || name.EndsWith("libEGL.so", StringComparison.OrdinalIgnoreCase)
+                        || name.EndsWith("libEGL.dylib", StringComparison.OrdinalIgnoreCase))
                     {
                         return name;
                     }
@@ -179,16 +181,18 @@ internal static class Egl
                 display = GetAngleDisplay(egl, selection);
                 if (display == 0)
                     throw new InvalidOperationException(
-                        $"eglGetPlatformDisplay returned no display for {selection.Describe()} " +
-                        $"(EGL error {ErrorText(egl)}).");
+                        $"eglGetPlatformDisplay returned no display for {selection.Describe()} "
+                        + $"(EGL error {ErrorText(egl)})."
+                    );
 
                 if (!egl.Initialize(display, out var major, out var minor))
                     throw new InvalidOperationException(
-                        $"eglInitialize failed for {selection.Describe()} (EGL error {ErrorText(egl)}). " +
-                        "This is what an unavailable backend looks like: ANGLE's Vulkan platform needs " +
-                        "its own ICD, and its OpenGL/GLES platform needs a display to attach to, so a " +
-                        "selection that does not exist on this machine fails here rather than falling " +
-                        "back to one that does.");
+                        $"eglInitialize failed for {selection.Describe()} (EGL error {ErrorText(egl)}). "
+                        + "This is what an unavailable backend looks like: ANGLE's Vulkan platform needs "
+                        + "its own ICD, and its OpenGL/GLES platform needs a display to attach to, so a "
+                        + "selection that does not exist on this machine fails here rather than falling "
+                        + "back to one that does."
+                    );
 
                 // The ES3 config. A pbuffer is requested because this context is headless: there is
                 // no window for a window surface to attach to.
@@ -214,7 +218,11 @@ internal static class Egl
                 if (context == 0)
                     throw new InvalidOperationException($"eglCreateContext failed (EGL error {ErrorText(egl)}).");
 
-                surface = egl.CreatePbufferSurface(display, config, [(int)EGLEnum.Width, width, (int)EGLEnum.Height, height, (int)EGLEnum.None]);
+                surface = egl.CreatePbufferSurface(
+                    display,
+                    config,
+                    [(int)EGLEnum.Width, width, (int)EGLEnum.Height, height, (int)EGLEnum.None]
+                );
                 if (surface == 0)
                     throw new InvalidOperationException($"eglCreatePbufferSurface failed (EGL error {ErrorText(egl)}).");
 
@@ -311,12 +319,16 @@ internal static class Egl
             if (Surface != 0)
                 _egl.DestroySurface(Display, Surface);
 
-            var surface = _egl.CreatePbufferSurface(Display, Config,
-            [(int)EGLEnum.Width, width, (int)EGLEnum.Height, height, (int)EGLEnum.None]);
+            var surface = _egl.CreatePbufferSurface(
+                Display,
+                Config,
+                [(int)EGLEnum.Width, width, (int)EGLEnum.Height, height, (int)EGLEnum.None]
+            );
 
             if (surface == 0)
                 throw new InvalidOperationException(
-                    $"eglCreatePbufferSurface failed for {width}x{height} (EGL error {ErrorText(_egl)}).");
+                    $"eglCreatePbufferSurface failed for {width}x{height} (EGL error {ErrorText(_egl)})."
+                );
 
             Surface = surface;
             MakeCurrent();

@@ -1,5 +1,4 @@
 using Hexa.NET.ImGui;
-
 using NFMWorldLibrary.Util;
 
 namespace NFMWorld.UI;
@@ -16,7 +15,7 @@ public class DebugCameraWindow
     public void Toggle()
     {
         _isOpen = !_isOpen;
-            
+
         if (_isOpen)
         {
             // init values from Medium
@@ -31,42 +30,49 @@ public class DebugCameraWindow
         if (!_isOpen) return;
 
         ImGui.SetNextWindowSize(new Vector2(300, 205), ImGuiCond.Always);
-            
+
         bool isOpen = _isOpen;
-        if (ImGui.Begin("Debug Camera Settings", ref isOpen, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoNavInputs | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
+        if (ImGui.Begin(
+                "Debug Camera Settings",
+                ref isOpen,
+                ImGuiWindowFlags.NoResize
+                | ImGuiWindowFlags.NoNavInputs
+                | ImGuiWindowFlags.NoScrollbar
+                | ImGuiWindowFlags.NoScrollWithMouse
+            ))
         {
             ImGui.Spacing();
-                
+
             ImGui.Text("Field of View:");
             if (ImGui.SliderFloat("##FOV", ref _fov, CameraPreset.MinFov, CameraPreset.MaxFov, "%.1f°"))
             {
                 CameraSettings.Fov = _fov;
             }
-                
+
             ImGui.Spacing();
             ImGui.Separator();
             ImGui.Spacing();
-                
+
             // Follow Y Offset
             ImGui.Text("Follow Y Offset:");
             if (ImGui.SliderInt("##FollowY", ref _followY, CameraPreset.MinFollowY, CameraPreset.MaxFollowY))
             {
                 FollowCamera.FollowYOffset = _followY;
             }
-                
+
             ImGui.Spacing();
-                
+
             // Follow Z Offset
             ImGui.Text("Follow Z Offset:");
             if (ImGui.SliderInt("##FollowZ", ref _followZ, CameraPreset.MinFollowZ, CameraPreset.MaxFollowZ))
             {
                 FollowCamera.FollowZOffset = _followZ;
             }
-                
+
             ImGui.Spacing();
             ImGui.Separator();
             ImGui.Spacing();
-                
+
             // Reset button
             if (ImGui.Button("Reset to Defaults", new Vector2(-1, 0)))
             {
@@ -78,8 +84,9 @@ public class DebugCameraWindow
                 FollowCamera.FollowZOffset = _followZ;
             }
         }
+
         ImGui.End();
-            
+
         _isOpen = isOpen;
     }
 }

@@ -36,7 +36,8 @@ public class GamemodePluginUnloadTests
     /// garbage collector.
     /// </summary>
     private static (WeakReference Assembly, object[] Retained) RunRaceAndTearItDown(
-        Action<GamemodePlugin>? whileLoaded = null)
+        Action<GamemodePlugin>? whileLoaded = null
+    )
     {
         MountOutput();
 
@@ -44,11 +45,23 @@ public class GamemodePluginUnloadTests
         var plugin = ((NativeGamemodeFactory)factory).Plugin;
 
         // "empty" is the one stage in the test output that needs no car or geometry assets.
-        var host = LocalRaceHost.Create("empty", factory, new ClientGamemodeParameters
-        {
-            Players = [new ClientSidePlayerInfo("test", "nfmm/radicalone", new Color3(255, 0, 0),
-                isBot: false, isClientPlayer: true)]
-        });
+        var host = LocalRaceHost.Create(
+            "empty",
+            factory,
+            new ClientGamemodeParameters
+            {
+                Players =
+                [
+                    new ClientSidePlayerInfo(
+                        "test",
+                        "nfmm/radicalone",
+                        new Color3(255, 0, 0),
+                        isBot: false,
+                        isClientPlayer: true
+                    )
+                ]
+            }
+        );
 
         var assembly = new WeakReference(plugin.Assembly);
 
@@ -76,8 +89,10 @@ public class GamemodePluginUnloadTests
 
         ForceCollect();
 
-        Assert.IsFalse(assembly.IsAlive,
-            "the plugin's assembly should be collectible once the race is over and the factory ended");
+        Assert.IsFalse(
+            assembly.IsAlive,
+            "the plugin's assembly should be collectible once the race is over and the factory ended"
+        );
 
         GC.KeepAlive(retained);
     }
@@ -92,19 +107,22 @@ public class GamemodePluginUnloadTests
     public void End_ReleasesTheAssembly_AfterItsTypesWereSerialized()
     {
         var (assembly, retained) = RunRaceAndTearItDown(plugin =>
-        {
-            var eventType = plugin.Assembly.GetExportedTypes()
-                .First(t => t.Name == "CountdownGoEvent");
+            {
+                var eventType = plugin.Assembly.GetExportedTypes()
+                    .First(t => t.Name == "CountdownGoEvent");
 
-            // Mirrors how the gamemode sends an event: the union base is what goes on
-            // the wire, and serializing it is what registers the plugin's formatters.
-            MemoryPack.MemoryPackSerializer.Serialize(eventType.BaseType!, Activator.CreateInstance(eventType));
-        });
+                // Mirrors how the gamemode sends an event: the union base is what goes on
+                // the wire, and serializing it is what registers the plugin's formatters.
+                MemoryPack.MemoryPackSerializer.Serialize(eventType.BaseType!, Activator.CreateInstance(eventType));
+            }
+        );
 
         ForceCollect();
 
-        Assert.IsFalse(assembly.IsAlive,
-            "the plugin's assembly was still resident after the race, so MemoryPack is still holding its types");
+        Assert.IsFalse(
+            assembly.IsAlive,
+            "the plugin's assembly was still resident after the race, so MemoryPack is still holding its types"
+        );
 
         GC.KeepAlive(retained);
     }
@@ -184,12 +202,14 @@ public class GamemodePluginUnloadTests
         var (outgoingAssembly, incoming, incomingHost) = StartAndReplace();
 
         PluginUnloadVerifier.Verify(); // same frame: withholds, the stack still roots it
-        VerifyOnAFreshFrame();         // clean release, so no leak is reported
+        VerifyOnAFreshFrame(); // clean release, so no leak is reported
 
         ForceCollect();
 
-        Assert.IsFalse(outgoingAssembly.IsAlive,
-            "the replaced race's plugin should still unload even though a second race of the same gamemode is running");
+        Assert.IsFalse(
+            outgoingAssembly.IsAlive,
+            "the replaced race's plugin should still unload even though a second race of the same gamemode is running"
+        );
 
         // Still usable, because it was never the one released.
         Assert.IsTrue(((NativeGamemodeFactory)incoming).Plugin.IsAlive);
@@ -206,8 +226,16 @@ public class GamemodePluginUnloadTests
 
         var parameters = new ClientGamemodeParameters
         {
-            Players = [new ClientSidePlayerInfo("test", "nfmm/radicalone", new Color3(255, 0, 0),
-                isBot: false, isClientPlayer: true)]
+            Players =
+            [
+                new ClientSidePlayerInfo(
+                    "test",
+                    "nfmm/radicalone",
+                    new Color3(255, 0, 0),
+                    isBot: false,
+                    isClientPlayer: true
+                )
+            ]
         };
 
         var outgoing = GamemodeFactory.Create("nfmm/pvp", new Dictionary<string, object> { ["constraint"] = "both" });

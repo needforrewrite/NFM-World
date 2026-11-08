@@ -11,20 +11,22 @@ public class FixHoopHelper
     [PluginVisible]
     public static bool HandleFixHoops(
         BackendStage currentStage,
-        BackendCar car)
+        BackendCar car
+    )
     {
         for (var i = 0; i < currentStage.FixHoops.Count; i++)
         {
             var fixhoop = currentStage.FixHoops[i];
             if (fixhoop.Rotation.Xz.Degrees == 0)
             {
-                if (fix64.Abs(car.Position.Z - fixhoop.Position.Z) < 200 &&
-                    UMath.Py(
+                if (fix64.Abs(car.Position.Z - fixhoop.Position.Z) < 200
+                    && UMath.Py(
                         car.Position.X / 100,
-                        fixhoop.Position.X / 100, 
-                        car.Position.Y / 100, 
+                        fixhoop.Position.X / 100,
+                        car.Position.Y / 100,
                         fixhoop.Position.Y / 100
-                    ) < 30)
+                    )
+                    < 30)
                 {
                     car.Fix();
                     return true;
@@ -35,13 +37,14 @@ public class FixHoopHelper
                     // conto.Fix = true;
                 }
             }
-            else if (fix64.Abs(car.Position.X - fixhoop.Position.X) < 200 &&
-                     UMath.Py(
+            else if (fix64.Abs(car.Position.X - fixhoop.Position.X) < 200
+                     && UMath.Py(
                          car.Position.Z / 100,
-                         fixhoop.Position.Z  / 100,
-                         car.Position.Y / 100, 
+                         fixhoop.Position.Z / 100,
+                         car.Position.Y / 100,
                          fixhoop.Position.Y / 100
-                    ) < 30)
+                     )
+                     < 30)
             {
                 car.Fix();
                 return true;

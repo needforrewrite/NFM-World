@@ -8,12 +8,16 @@ public static class ClientServer
     [DoesNotReturn]
     public static void AccidentallyCalledClientMethodOnServer([CallerMemberName] string? methodName = null)
     {
-        throw new NotSupportedException($"Accidentally called a client method {methodName} on the server. This is not supported.");
+        throw new NotSupportedException(
+            $"Accidentally called a client method {methodName} on the server. This is not supported."
+        );
     }
 
     [DoesNotReturn]
     public static T AccidentallyCalledClientMethodOnServer<T>([CallerMemberName] string? methodName = null)
     {
-        throw new NotSupportedException($"Accidentally called a client method {methodName} on the server. This is not supported.");
+        throw new NotSupportedException(
+            $"Accidentally called a client method {methodName} on the server. This is not supported."
+        );
     }
 }

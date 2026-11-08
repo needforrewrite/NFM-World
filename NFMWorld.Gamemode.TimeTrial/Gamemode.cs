@@ -52,7 +52,8 @@ public class TimeTrialGamemode : PluginGamemode
         ClientGamemodeParameters clientGamemodeParameters,
         IGamemodeContext gamemodeContext,
         string gamemodeId,
-        Dictionary<string, object>? config = null)
+        Dictionary<string, object>? config = null
+    )
         : base(clientGamemodeParameters, gamemodeContext, gamemodeId, config)
     {
         _simulation = Config is not null && Config.TryGetValue("simulation", out var value) && value is true;
@@ -276,8 +277,10 @@ public class TimeTrialGamemode : PluginGamemode
     {
         HudState.Position = 1;
         HudState.TotalRacers = 1;
-        if (Players[PlayerCarIndex].Car is not { } car || _ghostIndex is not { } index || index >= Players.Count ||
-            Players[index].Car is not { } ghost) return;
+        if (Players[PlayerCarIndex].Car is not { } car
+            || _ghostIndex is not { } index
+            || index >= Players.Count
+            || Players[index].Car is not { } ghost) return;
         HudState.TotalRacers = 2;
         if (_ghostFinishTick is { } finished)
             HudState.Position = car.CurrentLap >= CurrentStage.Nlaps && finished == _tick ? 1 : 2;
@@ -295,6 +298,7 @@ public class TimeTrialGamemode : PluginGamemode
                 HudState.Position = dx * dx + dz * dz <= ghostDx * ghostDx + ghostDz * ghostDz ? 1 : 2;
             }
         }
+
         car.Placement = HudState.Position - 1;
         ghost.Placement = 1 - car.Placement;
     }
@@ -341,7 +345,8 @@ public class TimeTrialServerGamemode(
     ServerGamemodeParameters parameters,
     IServerGamemodeContext context,
     string gamemodeId,
-    Dictionary<string, object>? config = null)
+    Dictionary<string, object>? config = null
+)
     : PluginServerGamemode(parameters, context, gamemodeId, config)
 {
     public override void StartRace()
@@ -357,14 +362,17 @@ public class TimeTrialServerGamemode(
         if (MemoryPackSerializer.Deserialize<ClientToServerEvent>(payload) is not FinishedEvent)
             return;
 
-        FinishRace(TimeSpan.Zero, [
-            new RaceStanding
-            {
-                PlayerId = clientId,
-                FinishPosition = 0,
-                FinishTime = TimeSpan.Zero
-            }
-        ]);
+        FinishRace(
+            TimeSpan.Zero,
+            [
+                new RaceStanding
+                {
+                    PlayerId = clientId,
+                    FinishPosition = 0,
+                    FinishTime = TimeSpan.Zero
+                }
+            ]
+        );
     }
 }
 

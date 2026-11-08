@@ -5,7 +5,8 @@ public readonly record struct TextureDesc(
     int Height,
     TextureFormat Format,
     bool RenderTargetable = false,
-    bool MipMapped = false);
+    bool MipMapped = false
+);
 
 public interface ITexture : IDisposable
 {

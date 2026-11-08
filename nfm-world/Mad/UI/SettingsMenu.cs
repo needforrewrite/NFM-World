@@ -51,6 +51,7 @@ public class SettingsMenu()
         /// Slot 9 is 0 and slot 10 is the OemMinus key, as in the original game's number row.
         /// </summary>
         public Key LockSlot1 { get; set; } = Key.D1;
+
         public Key LockSlot2 { get; set; } = Key.D2;
         public Key LockSlot3 { get; set; } = Key.D3;
         public Key LockSlot4 { get; set; } = Key.D4;
@@ -62,8 +63,11 @@ public class SettingsMenu()
         public Key LockSlot10 { get; set; } = Key.D0;
 
         /// <summary>The ten lock keys, in slot order.</summary>
-        public Key[] LockSlots => [LockSlot1, LockSlot2, LockSlot3, LockSlot4, LockSlot5,
-            LockSlot6, LockSlot7, LockSlot8, LockSlot9, LockSlot10];
+        public Key[] LockSlots =>
+        [
+            LockSlot1, LockSlot2, LockSlot3, LockSlot4, LockSlot5,
+            LockSlot6, LockSlot7, LockSlot8, LockSlot9, LockSlot10
+        ];
     }
 
     public static KeyBindings Bindings = new KeyBindings();
@@ -78,10 +82,13 @@ public class SettingsMenu()
         // picking one could only fail to start.
         _ when OperatingSystem.IsBrowser() => ["OpenGL ES"],
         // windows doesn't do metal or gles, linux doesn't do metal
-        _ when RuntimeInformation.IsOSPlatform(OSPlatform.OSX) => ["Auto", "Metal via ANGLE", "OpenGL", "Vulkan via ANGLE", "OpenGL via ANGLE", "OpenGL ES via ANGLE"],
-        _ when RuntimeInformation.IsOSPlatform(OSPlatform.Windows) => ["Auto", "DirectX 11", "OpenGL", "Vulkan via ANGLE", "DirectX 11 via ANGLE", "OpenGL via ANGLE"],
+        _ when RuntimeInformation.IsOSPlatform(OSPlatform.OSX) =>
+            ["Auto", "Metal via ANGLE", "OpenGL", "Vulkan via ANGLE", "OpenGL via ANGLE", "OpenGL ES via ANGLE"],
+        _ when RuntimeInformation.IsOSPlatform(OSPlatform.Windows) =>
+            ["Auto", "DirectX 11", "OpenGL", "Vulkan via ANGLE", "DirectX 11 via ANGLE", "OpenGL via ANGLE"],
         _ => ["Auto", "OpenGL", "Vulkan via ANGLE", "OpenGL via ANGLE", "OpenGL ES via ANGLE"]
     };
+
     private static int _selectedRenderer = 0;
     public static string SelectedRendererName => Renderers[_selectedRenderer];
     public static void PrepareStartupRecovery() => _antialias = 0;
@@ -101,22 +108,30 @@ public class SettingsMenu()
     /// about.
     /// </summary>
     private static readonly int[] AntialiasSampleCounts = [0, 1, 2, 4, 8];
+
     private static int AntialiasToSampleCount(int index) =>
         index >= 0 && index < AntialiasSampleCounts.Length ? AntialiasSampleCounts[index] : 0;
+
     private static int SampleCountToAntialias(int sampleCount) =>
         Array.IndexOf(AntialiasSampleCounts, sampleCount) is var i and >= 0 ? i : 0;
+
     private static int _antialias = 4; // 8x
     private static int _shadowCascadeLevel = 3;
     public static readonly string[] ShadowCascadeLevelNames = ["Off", "Close", "Far", "Further"];
     private static int _shadowResolution = 2; // 2048x
-    public static readonly string[] ShadowResolutionNames = ["512", "1024", "2048", "4096", "8192"]; // must be powers of 2 starting at 2^9
+
+    public static readonly string[]
+        ShadowResolutionNames = ["512", "1024", "2048", "4096", "8192"]; // must be powers of 2 starting at 2^9
+
     private static int _fpsLimit = 63;
     private static float _lineWidth = 1;
     private static readonly DistantOutlineBehavior[] DistantOutlineBehaviors = Enum.GetValues<DistantOutlineBehavior>();
     private static DistantOutlineBehavior _distantOutlineBehavior = DistantOutlineBehavior.DistanceFalloffWithCutoff;
     private static bool _lowLatency = false;
     private static bool _pixelOutlines = false;
+
     public static readonly string[] RenderDistanceNames = ["Tiny", "Short", "Medium", "Far", "Very Far", "Unlimited"];
+
     // Squared by ApplySettings before being stored, so the "Unlimited" entry has to be the
     // float sentinel - int.MaxValue would square into a real ~46 341-unit cut-off. See
     // CameraSettings.RenderDistanceSqr.
@@ -149,8 +164,10 @@ public class SettingsMenu()
     public static bool HudRadar { get; private set; } = true;
     public static bool HudOpponents { get; private set; } = true;
     public static bool HudNameTags { get; private set; } = true;
+
     /// <summary>Blinking HUD text and warning flashes; off for motion/photosensitivity safety.</summary>
     public static bool HudFlash { get; private set; } = true;
+
     public static string MenuStage { get; private set; } = MenuPreferences.LastPlayedStage;
     public static string MenuMusic { get; private set; } = MenuPreferences.StageSoundtrack;
 
@@ -164,11 +181,12 @@ public class SettingsMenu()
 
     private static string[] GetSupportedResolutions(IntPtr window = default)
     {
-        if (OperatingSystem.IsBrowser()) return
-        [
-            "640 x 480", "800 x 600", "1024 x 768", "1280 x 720", "1280 x 1024", "1920 x 1080", "2560 x 1440",
-            "3840 x 2160"
-        ];
+        if (OperatingSystem.IsBrowser())
+            return
+            [
+                "640 x 480", "800 x 600", "1024 x 768", "1280 x 720", "1280 x 1024", "1920 x 1080", "2560 x 1440",
+                "3840 x 2160"
+            ];
         var resolutions = SdlWindow.GetFullscreenDisplayModes(window)
             .OrderBy(mode => (long)mode.Width * mode.Height)
             .ThenBy(mode => mode.Width)
@@ -189,6 +207,7 @@ public class SettingsMenu()
             var current = $"{window.Width} x {window.Height}";
             if (!resolutions.Contains(current)) resolutions = [.. resolutions, current];
         }
+
         if (_resolutions.SequenceEqual(resolutions)) return;
         _resolutions = resolutions;
         _selectedResolution = Array.IndexOf(resolutions, selected);
@@ -217,13 +236,14 @@ public class SettingsMenu()
         // Add and sort by total pixels
         var list = new List<string>(_resolutions) { res };
         list.Sort((a, b) =>
-        {
-            var aParts = a.Split('x', StringSplitOptions.TrimEntries).Select(int.Parse).ToArray();
-            var bParts = b.Split('x', StringSplitOptions.TrimEntries).Select(int.Parse).ToArray();
-            var aPixels = aParts[0] * aParts[1];
-            var bPixels = bParts[0] * bParts[1];
-            return aPixels.CompareTo(bPixels);
-        });
+            {
+                var aParts = a.Split('x', StringSplitOptions.TrimEntries).Select(int.Parse).ToArray();
+                var bParts = b.Split('x', StringSplitOptions.TrimEntries).Select(int.Parse).ToArray();
+                var aPixels = aParts[0] * aParts[1];
+                var bPixels = bParts[0] * bParts[1];
+                return aPixels.CompareTo(bPixels);
+            }
+        );
         _resolutions = list.ToArray();
         _selectedResolution = Array.IndexOf(_resolutions, res);
         ResolutionsChanged?.Invoke();
@@ -309,9 +329,12 @@ public class SettingsMenu()
             {
                 _settingMessage = "";
             }
+
             ImGui.Spacing();
-            ImGui.TextColored(new Vector4(1.0f, 0.7f, 0.2f, 1.0f),
-                "Press any key to bind, or ESC to cancel...");
+            ImGui.TextColored(
+                new Vector4(1.0f, 0.7f, 0.2f, 1.0f),
+                "Press any key to bind, or ESC to cancel..."
+            );
         }
 
         // Show message if settings were applied
@@ -432,7 +455,8 @@ public class SettingsMenu()
                 graphicsChanged = true;
             }
 
-            if (game.Window.IsBorderlessEXT) {
+            if (game.Window.IsBorderlessEXT)
+            {
                 game.Window.IsBorderlessEXT = false;
                 graphicsChanged = true;
             }
@@ -468,7 +492,8 @@ public class SettingsMenu()
             }
         }
 
-        if (GameSparker.NumCascades != _shadowCascadeLevel || GameSparker.ShadowResolution != (int)MathF.Round(MathF.Pow(2, _shadowResolution + 9)))
+        if (GameSparker.NumCascades != _shadowCascadeLevel
+            || GameSparker.ShadowResolution != (int)MathF.Round(MathF.Pow(2, _shadowResolution + 9)))
         {
             GameSparker.NumCascades = _shadowCascadeLevel;
             GameSparker.ShadowResolution = (int)MathF.Round(MathF.Pow(2, _shadowResolution + 9));
@@ -598,7 +623,9 @@ public class SettingsMenu()
         sw.WriteLine($"camera_smooth_fov {(_smoothFov ? 1 : 0)}");
         sw.WriteLine($"camera_preset_name {_cameraPresetName}");
         sw.WriteLine($"camera_presets {CameraPresetConfig.WritePresets(_cameraPresets)}");
-        sw.WriteLine($"camera_modified_preset {CameraPresetConfig.WritePresets(_modifiedCameraPreset is { } modified ? [modified] : [])}");
+        sw.WriteLine(
+            $"camera_modified_preset {CameraPresetConfig.WritePresets(_modifiedCameraPreset is { } modified ? [modified] : [])}"
+        );
         sw.WriteLine();
         sw.WriteLine("// Menu");
         sw.WriteLine($"hud_skin {HudSkin}");
@@ -667,6 +694,7 @@ public class SettingsMenu()
 
             ParseConfigLine(parts[0], parts[1]);
         }
+
         ApplySettings(out _);
     }
 
@@ -844,7 +872,10 @@ public class SettingsMenu()
                 case "key_lockslot10": Bindings.LockSlot10 = (Key)int.Parse(value, CultureInfo.InvariantCulture); break;
             }
         }
-        catch { /* skip malformed lines */ }
+        catch
+        {
+            /* skip malformed lines */
+        }
     }
 
     public static bool TrySelectRenderer(ref Renderer renderer, ref AngleSelection angleSelection)
@@ -953,7 +984,8 @@ public class SettingsMenu()
 
     private static DistantOutlineBehavior ParseDistantOutlineBehavior(
         string value,
-        DistantOutlineBehavior fallback)
+        DistantOutlineBehavior fallback
+    )
     {
         return value.ToLowerInvariant() switch
         {
@@ -1036,7 +1068,6 @@ public class SettingsMenu()
                 var key = parts[0];
                 var value = parts[1];
                 ParseConfigLine(key, value);
-
             }
 
             Logging.Debug($"Config loaded from {configPath}");
@@ -1232,6 +1263,7 @@ public class SettingsMenu()
                     _selectedDisplayMode = displayMode;
                     RefreshSupportedResolutions();
                 }
+
                 break;
             case "vsync":
                 if (value is bool vsync)
@@ -1303,10 +1335,12 @@ public class SettingsMenu()
                 if (AsFloat(value) is { } hudScale) HudScale = HudScaleSettings.Normalize(hudScale);
                 break;
             case "hudSafeZoneHorizontal":
-                if (AsFloat(value) is { } hudSafeZoneHorizontal) HudSafeZoneHorizontal = HudSafeZoneSettings.Normalize(hudSafeZoneHorizontal);
+                if (AsFloat(value) is { } hudSafeZoneHorizontal)
+                    HudSafeZoneHorizontal = HudSafeZoneSettings.Normalize(hudSafeZoneHorizontal);
                 break;
             case "hudSafeZoneVertical":
-                if (AsFloat(value) is { } hudSafeZoneVertical) HudSafeZoneVertical = HudSafeZoneSettings.Normalize(hudSafeZoneVertical);
+                if (AsFloat(value) is { } hudSafeZoneVertical)
+                    HudSafeZoneVertical = HudSafeZoneSettings.Normalize(hudSafeZoneVertical);
                 break;
             case "hudClassicMeters":
                 if (value is bool classicMeters) HudClassicMeters = classicMeters;
@@ -1463,6 +1497,7 @@ public class SettingsMenu()
             if (index < 0) throw new ArgumentException("Choose a custom preset to update.");
             _cameraPresets[index] = preset;
         }
+
         _cameraPresetName = name;
         if (_modifiedCameraPreset?.Matches(preset) == true)
             _modifiedCameraPreset = null;

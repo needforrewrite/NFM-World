@@ -14,12 +14,12 @@
         <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj"/>
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj"/>
         <ProjectReference Include="..\NFMWorld.Platform.SDL3\NFMWorld.Platform.SDL3.csproj"/>
-        <ProjectReference Include="..\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
+        <ProjectReference Include="..\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New"/>
     </ItemGroup>
 
     <!-- The playable exe, so the gamemode plugins this imports land beside it in
          data/gamemodes/ - the game loads them relative to its own binary, which is here
          and not the referenced library's output. -->
-    <Import Project="..\Plugin.Plugins.targets" />
-    <Import Project="..\BuildMetadata.targets" />
+    <Import Project="..\Plugin.Plugins.targets"/>
+    <Import Project="..\BuildMetadata.targets"/>
 </Project>

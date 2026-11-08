@@ -27,6 +27,7 @@
 // reject a run that works. So the two outcomes are ordered by what a wrong answer costs. Guessing
 // "missing" on a working setup would refuse a valid run, which is the worse mistake, so absence only
 // warns and the attempt is still made; if it then fails, the reader has the explanation next to it.
+
 namespace NFMWorld.Graphics.OpenGL;
 
 /// <summary>Whether ANGLE's private Vulkan loader is present, for the one selection that needs it.</summary>
@@ -43,8 +44,8 @@ public static class AngleVulkanLoader
     private static readonly string LibraryName =
         OperatingSystem.IsWindows() ? "vulkan-1.dll"
         : OperatingSystem.IsLinux() ? "libvulkan.so.1"
-        // macOS links the loader statically - angle_shared_libvulkan is !is_mac - so nothing is
-        // loaded at run time and there is no file whose absence could matter.
+            // macOS links the loader statically - angle_shared_libvulkan is !is_mac - so nothing is
+            // loaded at run time and there is no file whose absence could matter.
         : "";
 
     /// <summary>Whether <paramref name="selection"/> needs a loader that is not beside the running executable.</summary>

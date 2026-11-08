@@ -8,6 +8,7 @@
 // vertex-array object that goes with it, because the VAO is genuinely per-pipeline (it stores the
 // attribute format, not the buffer) and is the one piece of GL state that has to be rebuilt
 // whenever the layout changes.
+
 using NFMWorld.Shaders;
 using Silk.NET.OpenGL;
 
@@ -86,7 +87,8 @@ internal sealed class GlPipelineState : IPipelineState
         int Components,
         VertexAttribPointerType Type,
         bool Normalized,
-        int OffsetInBytes);
+        int OffsetInBytes
+    );
 
     /// <summary>
     /// Numbers the pipeline's attributes by <em>position</em>: the attributes of
@@ -122,9 +124,17 @@ internal sealed class GlPipelineState : IPipelineState
                 // one entry occupying several locations - see GlShaderProgram.AttributeLocationSpans.
                 if (program.AttributeLocationSpans.Contains((int)location))
                 {
-                    bindings.Add(new GlAttributeBinding(
-                        location, slot, layout.InstanceStepRate, components, type, normalized,
-                        attribute.OffsetInBytes));
+                    bindings.Add(
+                        new GlAttributeBinding(
+                            location,
+                            slot,
+                            layout.InstanceStepRate,
+                            components,
+                            type,
+                            normalized,
+                            attribute.OffsetInBytes
+                        )
+                    );
                 }
 
                 location++;
@@ -165,8 +175,11 @@ internal sealed class GlPipelineState : IPipelineState
             // AlphaBlend is premultiplied on the colour channels but not necessarily on alpha, and
             // collapsing the two into glBlendFunc would silently change it.
             gl.BlendFuncSeparate(
-                blend.SourceColor.ToBlendFactor(), blend.DestinationColor.ToBlendFactor(),
-                blend.SourceAlpha.ToBlendFactor(), blend.DestinationAlpha.ToBlendFactor());
+                blend.SourceColor.ToBlendFactor(),
+                blend.DestinationColor.ToBlendFactor(),
+                blend.SourceAlpha.ToBlendFactor(),
+                blend.DestinationAlpha.ToBlendFactor()
+            );
             gl.BlendEquationSeparate(blend.ColorOperation.ToBlendEquation(), blend.AlphaOperation.ToBlendEquation());
         }
         else
@@ -182,7 +195,8 @@ internal sealed class GlPipelineState : IPipelineState
     {
         var ds = Desc.DepthStencilState;
 
-        if (ds.DepthTestEnabled) gl.Enable(GLEnum.DepthTest); else gl.Disable(GLEnum.DepthTest);
+        if (ds.DepthTestEnabled) gl.Enable(GLEnum.DepthTest);
+        else gl.Disable(GLEnum.DepthTest);
         gl.DepthMask(ds.DepthWriteEnabled);
         gl.DepthFunc(ds.DepthCompare.ToDepthFunction());
 
@@ -195,26 +209,50 @@ internal sealed class GlPipelineState : IPipelineState
             // FNA3D_DepthStencilState's two-sided layout. GL has no "two-sided" toggle - the two
             // faces always have their own state - so TwoSidedStencil only decides whether the back
             // face is configured from the ccw fields or mirrors the front.
-            gl.StencilFuncSeparate(GLEnum.Front, ds.StencilFunction.ToStencilFunction(),
-                ds.ReferenceStencil, (uint)ds.StencilReadMask);
-            gl.StencilOpSeparate(GLEnum.Front, ds.StencilFail.ToStencilOp(),
-                ds.StencilDepthFail.ToStencilOp(), ds.StencilPass.ToStencilOp());
+            gl.StencilFuncSeparate(
+                GLEnum.Front,
+                ds.StencilFunction.ToStencilFunction(),
+                ds.ReferenceStencil,
+                (uint)ds.StencilReadMask
+            );
+            gl.StencilOpSeparate(
+                GLEnum.Front,
+                ds.StencilFail.ToStencilOp(),
+                ds.StencilDepthFail.ToStencilOp(),
+                ds.StencilPass.ToStencilOp()
+            );
 
             if (ds.TwoSidedStencil)
             {
-                gl.StencilFuncSeparate(GLEnum.Back, ds.CcwStencilFunction.ToStencilFunction(),
-                    ds.ReferenceStencil, (uint)ds.StencilReadMask);
-                gl.StencilOpSeparate(GLEnum.Back, ds.CcwStencilFail.ToStencilOp(),
-                    ds.CcwStencilDepthFail.ToStencilOp(), ds.CcwStencilPass.ToStencilOp());
+                gl.StencilFuncSeparate(
+                    GLEnum.Back,
+                    ds.CcwStencilFunction.ToStencilFunction(),
+                    ds.ReferenceStencil,
+                    (uint)ds.StencilReadMask
+                );
+                gl.StencilOpSeparate(
+                    GLEnum.Back,
+                    ds.CcwStencilFail.ToStencilOp(),
+                    ds.CcwStencilDepthFail.ToStencilOp(),
+                    ds.CcwStencilPass.ToStencilOp()
+                );
             }
             else
             {
                 // Back faces drawn with the same rules as front faces, which is what FNA does when
                 // two-sided stencil is off.
-                gl.StencilFuncSeparate(GLEnum.Back, ds.StencilFunction.ToStencilFunction(),
-                    ds.ReferenceStencil, (uint)ds.StencilReadMask);
-                gl.StencilOpSeparate(GLEnum.Back, ds.StencilFail.ToStencilOp(),
-                    ds.StencilDepthFail.ToStencilOp(), ds.StencilPass.ToStencilOp());
+                gl.StencilFuncSeparate(
+                    GLEnum.Back,
+                    ds.StencilFunction.ToStencilFunction(),
+                    ds.ReferenceStencil,
+                    (uint)ds.StencilReadMask
+                );
+                gl.StencilOpSeparate(
+                    GLEnum.Back,
+                    ds.StencilFail.ToStencilOp(),
+                    ds.StencilDepthFail.ToStencilOp(),
+                    ds.StencilPass.ToStencilOp()
+                );
             }
         }
         else
@@ -246,7 +284,8 @@ internal sealed class GlPipelineState : IPipelineState
         // on - ES 3.0 has no glPolygonMode at all.
         _ = raster.FillMode.ToPolygonMode();
 
-        if (raster.ScissorTestEnabled) gl.Enable(GLEnum.ScissorTest); else gl.Disable(GLEnum.ScissorTest);
+        if (raster.ScissorTestEnabled) gl.Enable(GLEnum.ScissorTest);
+        else gl.Disable(GLEnum.ScissorTest);
     }
 
     public void Dispose()

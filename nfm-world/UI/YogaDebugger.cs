@@ -21,7 +21,7 @@ public static class YogaDebugger
             RenderPage2();
         else if (page == 2)
             RenderPage3();
-        
+
         // draw two lines intersecting the mouse position
         G.SetColor(Color.Magenta);
         G.DrawLine(0, (int)_mousePosition.Y, (int)G.Viewport.X, (int)_mousePosition.Y);
@@ -93,7 +93,7 @@ public static class YogaDebugger
                 y += 24 * (1 + (child is View childBox ? GetChildCount(childBox) : 0));
             }
         }
-        
+
         static int GetChildCount(View child)
         {
             var count = child.Children.Count;
@@ -102,6 +102,7 @@ public static class YogaDebugger
                 if (grandChild is View box)
                     count += GetChildCount(box);
             }
+
             return count;
         }
     }
@@ -126,7 +127,7 @@ public static class YogaDebugger
                 return childMax;
             }
         }
-        
+
         foreach (var root in YogaRootsThisFrame)
         {
             DrawNodeAndChildren(root, 0);
@@ -149,7 +150,13 @@ public static class YogaDebugger
                     G.SetFont(new Font(FontFamily.RobotoMono, FontStyle.Plain, 24));
                     var info = $"{node.Name ?? ""}[{node.GetType().Name}]";
                     G.SetColor(color);
-                    G.DrawStringOutlined(info, (int)node.LayoutBorderPosition.X, (int)node.LayoutBorderPosition.Y - 12, Color.White, 1f);
+                    G.DrawStringOutlined(
+                        info,
+                        (int)node.LayoutBorderPosition.X,
+                        (int)node.LayoutBorderPosition.Y - 12,
+                        Color.White,
+                        1f
+                    );
                 }
 
                 foreach (var child in visual.VisualChildren)
@@ -178,16 +185,17 @@ public static class YogaDebugger
                     (int)node.LayoutBorderSize.X,
                     (int)node.LayoutBorderSize.Y
                 );
-                
+
                 G.SetFont(new Font(FontFamily.RobotoMono, FontStyle.Plain, 20));
                 var debugInfo = NodeDebugger.GetDebugInfo(node);
-                var info = $"Component: {node.Name ?? ""}[{node.GetType().Name}] from {(debugInfo.CtorCallerFilePath != "" ? Path.GetRelativePath(slnDir, debugInfo.CtorCallerFilePath) : "")}:{debugInfo.CtorCallerMemberName}:{debugInfo.CtorCallerLineNumber}";
+                var info =
+                    $"Component: {node.Name ?? ""}[{node.GetType().Name}] from {(debugInfo.CtorCallerFilePath != "" ? Path.GetRelativePath(slnDir, debugInfo.CtorCallerFilePath) : "")}:{debugInfo.CtorCallerMemberName}:{debugInfo.CtorCallerLineNumber}";
                 var prefix = new string(' ', i * 2);
-                
+
                 G.SetColor(color);
                 G.DrawStringOutlined(prefix + info, 12, 24 + (i * 24), Color.White, 1f);
             }
-            
+
             var lastEntry = mouseOverNodeTree[^1];
             G.SetFont(new Font(FontFamily.RobotoMono, FontStyle.Plain, 16));
             var layoutInfo = $"""
@@ -199,7 +207,7 @@ public static class YogaDebugger
                               """;
             G.SetColor(Color.Cyan);
             G.DrawStringOutlined(layoutInfo, 12, 24 + (mouseOverNodeTree.Length * 24), Color.White, 1f);
-            
+
             // draw margin, padding, border, content
             G.SetColor(Color.Gray with { A = 128 });
             FillRectExceptForRect(
@@ -253,7 +261,7 @@ public static class YogaDebugger
                 (int)lastEntry.LayoutContentSize.X,
                 (int)lastEntry.LayoutContentSize.Y
             );
-            
+
             // draw layout box in the corner with labels
             const int scale = 48;
             var margin = new RectangleF(
@@ -280,11 +288,12 @@ public static class YogaDebugger
                 padding.Width - (scale * 2),
                 padding.Height - (scale * 2)
             );
-            
+
             DrawBoxWithLabels(
                 Color.Gray with { A = 128 },
                 "margin",
-                margin, border,
+                margin,
+                border,
                 lastEntry.LayoutMarginTop,
                 lastEntry.LayoutMarginRight,
                 lastEntry.LayoutMarginBottom,
@@ -293,7 +302,8 @@ public static class YogaDebugger
             DrawBoxWithLabels(
                 Color.Yellow with { A = 128 },
                 "border",
-                border, padding,
+                border,
+                padding,
                 lastEntry.LayoutBorderTop,
                 lastEntry.LayoutBorderRight,
                 lastEntry.LayoutBorderBottom,
@@ -302,17 +312,18 @@ public static class YogaDebugger
             DrawBoxWithLabels(
                 Color.Green with { A = 128 },
                 "padding",
-                padding, content,
+                padding,
+                content,
                 lastEntry.LayoutPaddingTop,
                 lastEntry.LayoutPaddingRight,
                 lastEntry.LayoutPaddingBottom,
                 lastEntry.LayoutPaddingLeft
             );
-            
+
             // draw centred widthxheight in middle box
             G.SetColor(Color.Blue with { A = 128 });
             G.FillRect((int)content.X, (int)content.Y, (int)content.Width, (int)content.Height);
-            
+
             G.SetFont(new Font(FontFamily.RobotoMono, FontStyle.Plain, 16));
             G.SetColor(Color.White);
             G.DrawStringOutlined("content", (int)content.X, (int)content.Y + 16, Color.Black, 1f);
@@ -334,10 +345,19 @@ public static class YogaDebugger
         }
     }
 
-    private static void DrawBoxWithLabels(Color color, string label, RectangleF area, RectangleF? inner, float top, float right, float bottom, float left)
+    private static void DrawBoxWithLabels(
+        Color color,
+        string label,
+        RectangleF area,
+        RectangleF? inner,
+        float top,
+        float right,
+        float bottom,
+        float left
+    )
     {
         G.SetColor(color);
-        if (inner is {} innerRect)
+        if (inner is { } innerRect)
         {
             FillRectExceptForRect(area, innerRect);
         }
@@ -345,22 +365,61 @@ public static class YogaDebugger
         {
             G.FillRect((int)area.X, (int)area.Y, (int)area.Width, (int)area.Height);
         }
-        
+
         G.SetFont(new Font(FontFamily.RobotoMono, FontStyle.Plain, 16));
         G.SetColor(Color.White);
         G.DrawStringOutlined(label, (int)area.X, (int)area.Y + 16, Color.Black, 1f);
 
         // Top
-        G.DrawStringOutlinedAligned($"{top:0.00}px", (int)area.X, (int)area.Y, (int)area.Width, (int)area.Height, Color.Black, 1f, TextHorizontalAlignment.Center);
+        G.DrawStringOutlinedAligned(
+            $"{top:0.00}px",
+            (int)area.X,
+            (int)area.Y,
+            (int)area.Width,
+            (int)area.Height,
+            Color.Black,
+            1f,
+            TextHorizontalAlignment.Center
+        );
 
         // Right
-        G.DrawStringOutlinedAligned($"{right:0.00}px", (int)area.X, (int)area.Y, (int)area.Width, (int)area.Height, Color.Black, 1f, TextHorizontalAlignment.Right, TextVerticalAlignment.Center);
+        G.DrawStringOutlinedAligned(
+            $"{right:0.00}px",
+            (int)area.X,
+            (int)area.Y,
+            (int)area.Width,
+            (int)area.Height,
+            Color.Black,
+            1f,
+            TextHorizontalAlignment.Right,
+            TextVerticalAlignment.Center
+        );
 
         // Bottom
-        G.DrawStringOutlinedAligned($"{bottom:0.00}px", (int)area.X, (int)area.Y, (int)area.Width, (int)area.Height, Color.Black, 1f, TextHorizontalAlignment.Center, TextVerticalAlignment.Bottom);
+        G.DrawStringOutlinedAligned(
+            $"{bottom:0.00}px",
+            (int)area.X,
+            (int)area.Y,
+            (int)area.Width,
+            (int)area.Height,
+            Color.Black,
+            1f,
+            TextHorizontalAlignment.Center,
+            TextVerticalAlignment.Bottom
+        );
 
         // Left
-        G.DrawStringOutlinedAligned($"{left:0.00}px", (int)area.X, (int)area.Y, (int)area.Width, (int)area.Height, Color.Black, 1f, TextHorizontalAlignment.Left, TextVerticalAlignment.Center);
+        G.DrawStringOutlinedAligned(
+            $"{left:0.00}px",
+            (int)area.X,
+            (int)area.Y,
+            (int)area.Width,
+            (int)area.Height,
+            Color.Black,
+            1f,
+            TextHorizontalAlignment.Left,
+            TextVerticalAlignment.Center
+        );
     }
 
     private static void FillRectExceptForRect(RectangleF outer, RectangleF inner)
@@ -413,7 +472,7 @@ public static class YogaDebugger
                     var childResult = FindMouseOverNodeTree(child);
                     if (childResult.Length > 0)
                     {
-                        return [node, ..childResult];
+                        return [node, .. childResult];
                     }
                 }
 

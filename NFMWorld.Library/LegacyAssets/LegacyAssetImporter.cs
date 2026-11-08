@@ -22,10 +22,12 @@ public static class LegacyAssetImporter
 {
     /// <summary>The original download host. NFMW ships from its own archive first.</summary>
     public const string CarsHost = "http://multiplayer.needformadness.com/cars/";
+
     public const string TracksHost = "http://multiplayer.needformadness.com/tracks/";
 
     /// <summary>phy-addons' model source: plain <c>.rad</c> text.</summary>
     private const string PhyModelHost = "https://raw.githubusercontent.com/JaroPaska/phy-addons-data/master/models/";
+
     /// <summary>Dragshot's model mirror: a zip of one <c>.rad</c>.</summary>
     private const string DsModelHost = "http://ds-serv.tk/nfm-models/";
 
@@ -146,27 +148,30 @@ public static class LegacyAssetImporter
             return null;
         }
 
-        return Cache.GetOrAdd(url, static u =>
-        {
-            try
+        return Cache.GetOrAdd(
+            url,
+            static u =>
             {
-                // Sync from the caller's perspective (stages load synchronously), but the stage
-                // loading thread is not the UI thread, so this cannot block a frame.
-                using var response = Http.GetAsync(u).GetAwaiter().GetResult();
-                if (!response.IsSuccessStatusCode)
+                try
                 {
-                    Logging.Info($"Legacy asset {u} answered {(int)response.StatusCode}.");
+                    // Sync from the caller's perspective (stages load synchronously), but the stage
+                    // loading thread is not the UI thread, so this cannot block a frame.
+                    using var response = Http.GetAsync(u).GetAwaiter().GetResult();
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        Logging.Info($"Legacy asset {u} answered {(int)response.StatusCode}.");
+                        return null;
+                    }
+
+                    return ReadCapped(response.Content, MaxAssetBytes, u);
+                }
+                catch (Exception ex)
+                {
+                    Logging.Info($"Could not download legacy asset '{u}': {ex.Message}");
                     return null;
                 }
-
-                return ReadCapped(response.Content, MaxAssetBytes, u);
             }
-            catch (Exception ex)
-            {
-                Logging.Info($"Could not download legacy asset '{u}': {ex.Message}");
-                return null;
-            }
-        });
+        );
     }
 
     /// <summary>The largest asset accepted, so an allowlisted host cannot exhaust memory.</summary>
@@ -212,8 +217,8 @@ public static class LegacyAssetImporter
         using var input = new MemoryStream(payload, writable: false);
         var header = new byte[2];
         var wrapped = input.Read(header) == 2
-            && (header[0] & 0x0F) == 8
-            && ((header[0] << 8) | header[1]) % 31 == 0;
+                      && (header[0] & 0x0F) == 8
+                      && ((header[0] << 8) | header[1]) % 31 == 0;
         if (!wrapped) input.Position = 0;
 
         using var inflate = new DeflateStream(input, CompressionMode.Decompress);

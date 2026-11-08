@@ -16,60 +16,60 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <InternalsVisibleTo Include="NFMWorld.Library.Test" />
+        <InternalsVisibleTo Include="NFMWorld.Library.Test"/>
     </ItemGroup>
 
     <ItemGroup>
         <!-- Exclude emitted source-generator files from implicit *.cs glob to prevent double compilation -->
-        <Compile Remove="Generated/**" />
+        <Compile Remove="Generated/**"/>
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.0" />
-        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-        <PackageReference Include="ENet-CSharp" Version="2.4.8" />
-        <PackageReference Include="JetBrains.Profiler.Api" Version="1.4.13" />
-        <PackageReference Include="LuzFaltex.Core.Collections" Version="0.1.0" />
-        <PackageReference Include="MessagePack" Version="3.1.8" />
-        <PackageReference Include="MessagePack.Experimental" Version="3.1.8" />
-        <PackageReference Include="Microsoft.Extensions.Logging" Version="11.0.0-preview.5.26302.115" />
-        <None Include="data\**\*" CopyToOutputDirectory="Always" />
-        <ProjectReference Include="..\CasCore\CasCore\CasCore.csproj" />
-        <ProjectReference Include="..\HoleyDiver\HoleyDiver.csproj" />
-        <ProjectReference Include="..\MemoryPack\src\MemoryPack\MemoryPack.csproj" />
-        <ProjectReference Include="..\MemoryPack\src\MemoryPack.Generator\MemoryPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
-        <ProjectReference Include="..\Microsoft.UI.Reactor.Yoga\Microsoft.UI.Reactor.Yoga.csproj" />
-        <ProjectReference Include="..\NFMWorld.CrashReporter\NFMWorld.CrashReporter.csproj" />
-        <ProjectReference Include="..\NFMWorld.DriverInterface\NFMWorld.DriverInterface.csproj" />
-        <ProjectReference Include="..\NFMWorld.Library.Base\NFMWorld.Library.Base.csproj" />
-        <ProjectReference Include="..\NFMWorld.Math\NFMWorld.Math.csproj" />
-        <ProjectReference Include="..\NFMWorld.OpcodeSourceGen\NFMWorld.OpcodeSourceGen.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
-        <ProjectReference Include="..\NFMWorld.ClientOnlyAnalyzer\NFMWorld.ClientOnlyAnalyzer.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
-        <ProjectReference Include="..\NFMWorld.PhysicsFS\NFMWorld.PhysicsFS.csproj" />
-        <ProjectReference Include="..\NFMWorld.PluginSystem\NFMWorld.PluginSystem.csproj" />
-        <ProjectReference Include="..\NFMWorld.Reactor.ObservableCollections\NFMWorld.Reactor.ObservableCollections.csproj" />
-        <ProjectReference Include="..\NFMWorld.Sentry\NFMWorld.Sentry.csproj" />
-        <ProjectReference Include="..\NFMWorld.UI\NFMWorld.UI.csproj" />
+        <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.0"/>
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2"/>
+        <PackageReference Include="ENet-CSharp" Version="2.4.8"/>
+        <PackageReference Include="JetBrains.Profiler.Api" Version="1.4.13"/>
+        <PackageReference Include="LuzFaltex.Core.Collections" Version="0.1.0"/>
+        <PackageReference Include="MessagePack" Version="3.1.8"/>
+        <PackageReference Include="MessagePack.Experimental" Version="3.1.8"/>
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="11.0.0-preview.5.26302.115"/>
+        <None Include="data\**\*" CopyToOutputDirectory="Always"/>
+        <ProjectReference Include="..\CasCore\CasCore\CasCore.csproj"/>
+        <ProjectReference Include="..\HoleyDiver\HoleyDiver.csproj"/>
+        <ProjectReference Include="..\MemoryPack\src\MemoryPack\MemoryPack.csproj"/>
+        <ProjectReference Include="..\MemoryPack\src\MemoryPack.Generator\MemoryPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
+        <ProjectReference Include="..\Microsoft.UI.Reactor.Yoga\Microsoft.UI.Reactor.Yoga.csproj"/>
+        <ProjectReference Include="..\NFMWorld.CrashReporter\NFMWorld.CrashReporter.csproj"/>
+        <ProjectReference Include="..\NFMWorld.DriverInterface\NFMWorld.DriverInterface.csproj"/>
+        <ProjectReference Include="..\NFMWorld.Library.Base\NFMWorld.Library.Base.csproj"/>
+        <ProjectReference Include="..\NFMWorld.Math\NFMWorld.Math.csproj"/>
+        <ProjectReference Include="..\NFMWorld.OpcodeSourceGen\NFMWorld.OpcodeSourceGen.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
+        <ProjectReference Include="..\NFMWorld.ClientOnlyAnalyzer\NFMWorld.ClientOnlyAnalyzer.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
+        <ProjectReference Include="..\NFMWorld.PhysicsFS\NFMWorld.PhysicsFS.csproj"/>
+        <ProjectReference Include="..\NFMWorld.PluginSystem\NFMWorld.PluginSystem.csproj"/>
+        <ProjectReference Include="..\NFMWorld.Reactor.ObservableCollections\NFMWorld.Reactor.ObservableCollections.csproj"/>
+        <ProjectReference Include="..\NFMWorld.Sentry\NFMWorld.Sentry.csproj"/>
+        <ProjectReference Include="..\NFMWorld.UI\NFMWorld.UI.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\FixedMathSharp\src\FixedMathSharp\FixedMathSharp.csproj" />
-      <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.MessagePack\Maxine.Extensions.MessagePack.csproj" />
-      <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj" />
-      <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.Mathematics\Maxine.Extensions.Mathematics.csproj" />
-      <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.UnionGen\Maxine.Extensions.UnionGen.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
-      <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.UnionGen.Base\Maxine.Extensions.UnionGen.Base.csproj" />
+        <ProjectReference Include="..\FixedMathSharp\src\FixedMathSharp\FixedMathSharp.csproj"/>
+        <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.MessagePack\Maxine.Extensions.MessagePack.csproj"/>
+        <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj"/>
+        <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.Mathematics\Maxine.Extensions.Mathematics.csproj"/>
+        <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.UnionGen\Maxine.Extensions.UnionGen.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
+        <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.UnionGen.Base\Maxine.Extensions.UnionGen.Base.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Mad\Multiplayer\Packets\Lobby\" />
+        <Folder Include="Mad\Multiplayer\Packets\Lobby\"/>
     </ItemGroup>
 
     <ItemGroup>
-        <CompilerVisibleProperty Include="MemoryPackGenerator_TypeScriptOutputDirectory" />
-        <CompilerVisibleProperty Include="MemoryPackGenerator_TypeScriptImportExtension" />
-        <CompilerVisibleProperty Include="MemoryPackGenerator_TypeScriptConvertPropertyName" />
-        <CompilerVisibleProperty Include="MemoryPackGenerator_TypeScriptEnableNullableTypes" />
+        <CompilerVisibleProperty Include="MemoryPackGenerator_TypeScriptOutputDirectory"/>
+        <CompilerVisibleProperty Include="MemoryPackGenerator_TypeScriptImportExtension"/>
+        <CompilerVisibleProperty Include="MemoryPackGenerator_TypeScriptConvertPropertyName"/>
+        <CompilerVisibleProperty Include="MemoryPackGenerator_TypeScriptEnableNullableTypes"/>
     </ItemGroup>
     <PropertyGroup>
         <MemoryPackGenerator_TypeScriptOutputDirectory>$(MSBuildProjectDirectory)\..\nfm-world\data\html\src\shared\memorypack</MemoryPackGenerator_TypeScriptOutputDirectory>
@@ -79,8 +79,8 @@
 
     <!-- LuaCATS definition file output -->
     <ItemGroup>
-        <CompilerVisibleProperty Include="LuaSourceGenerator_LuaCATSOutputDirectory" />
-        <CompilerVisibleProperty Include="LuaVisibleGenerator_StubsOutputDirectory" />
+        <CompilerVisibleProperty Include="LuaSourceGenerator_LuaCATSOutputDirectory"/>
+        <CompilerVisibleProperty Include="LuaVisibleGenerator_StubsOutputDirectory"/>
     </ItemGroup>
     <PropertyGroup>
         <LuaSourceGenerator_LuaCATSOutputDirectory>$(MSBuildProjectDirectory)\data\library\declarations</LuaSourceGenerator_LuaCATSOutputDirectory>

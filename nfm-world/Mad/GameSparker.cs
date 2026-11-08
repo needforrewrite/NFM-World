@@ -8,7 +8,6 @@ using NFMWorld.Graphics;
 using NFMWorld.Reactor;
 using NFMWorld.Sfx;
 using NFMWorld.UI;
-
 using NFMWorldLibrary;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
@@ -43,13 +42,22 @@ public static partial class GameSparker
         {
             target?.Dispose();
         }
+
         ShadowRenderTargets.Clear();
 
         for (var i = 0; i < NumCascades; i++)
         {
-            ShadowRenderTargets.Add(GraphicsDevice.CreateRenderTarget(new RenderTargetDesc(
-                ShadowResolution, ShadowResolution, TextureFormat.Single,
-                HasDepthStencil: true, TextureFormat.Depth24Stencil8)));
+            ShadowRenderTargets.Add(
+                GraphicsDevice.CreateRenderTarget(
+                    new RenderTargetDesc(
+                        ShadowResolution,
+                        ShadowResolution,
+                        TextureFormat.Single,
+                        HasDepthStencil: true,
+                        TextureFormat.Depth24Stencil8
+                    )
+                )
+            );
         }
     }
 
@@ -71,8 +79,10 @@ public static partial class GameSparker
                     return string.Join("-", parts);
                 }
             }
+
             return version;
         }
+
         return "NFM-World dev";
     }
 
@@ -150,6 +160,7 @@ public static partial class GameSparker
             }
         }
     }
+
     /// <summary>
     /// Use remastered music (soundtrackremaster in stage files) where available.
     /// </summary>
@@ -159,9 +170,9 @@ public static partial class GameSparker
 
     public static Dictionary<Rad3d, Mesh> stage_part_meshes = new(Rad3d.VisualEqualityComparer.Instance);
     public static Mesh error_mesh = null!;
-    
+
     public static bool devRenderTrackers = false;
-    
+
     public static DevConsole devConsole = new();
 
     public static SettingsMenu SettingsMenu;
@@ -199,9 +210,10 @@ public static partial class GameSparker
                 DebugKeyStates[heldKey] = false;
                 phase.KeyReleased(heldKey, true, default);
             }
+
             return;
         }
-        
+
         if (!imguiWantsKeyboard)
         {
             UiRenderer?.HandleKeyPressed(key, keys);
@@ -214,7 +226,8 @@ public static partial class GameSparker
     public static void KeyRepeated(Key key, Keys keys, bool imguiWantsKeyboard)
     {
         if (key is not (Key.Up or Key.Down or Key.Left or Key.Right)
-            || imguiWantsKeyboard || devConsole.IsOpen()) return;
+            || imguiWantsKeyboard
+            || devConsole.IsOpen()) return;
         if (NFMWorld.UI.Components.SettingsView.HandleKeyRepeated(UiRenderer?.ActiveRoot, key, keys)) return;
         if (CurrentPhase is MainMenuPhase menu) menu.NavigationKeyRepeated(key);
     }
@@ -236,7 +249,7 @@ public static partial class GameSparker
     {
         var stages = new List<string>();
         var stagesPath = "data/stages";
-        
+
         if (VFS.DirectoryExists(stagesPath))
         {
             // recursive search
@@ -247,49 +260,53 @@ public static partial class GameSparker
                 stages.Add(pathWithoutExtension.Replace('\\', '/'));
             }
         }
-        
-        // sort numbers properly
-        stages.Sort((a, b) => {
-            var aSegments = a.Split('/');
-            var bSegments = b.Split('/');
-            
-            for (int seg = 0; seg < Math.Min(aSegments.Length, bSegments.Length); seg++)
-            {
-                var aParts = DigitSplit.Split(aSegments[seg])
-                    .Where(s => !string.IsNullOrEmpty(s))
-                    .ToArray();
-                var bParts = DigitSplit.Split(bSegments[seg])
-                    .Where(s => !string.IsNullOrEmpty(s))
-                    .ToArray();
 
-                for (int i = 0; i < Math.Min(aParts.Length, bParts.Length); i++)
+        // sort numbers properly
+        stages.Sort((a, b) =>
+            {
+                var aSegments = a.Split('/');
+                var bSegments = b.Split('/');
+
+                for (int seg = 0; seg < Math.Min(aSegments.Length, bSegments.Length); seg++)
                 {
-                    if (int.TryParse(aParts[i], out var aNum) && int.TryParse(bParts[i], out var bNum))
+                    var aParts = DigitSplit.Split(aSegments[seg])
+                        .Where(s => !string.IsNullOrEmpty(s))
+                        .ToArray();
+                    var bParts = DigitSplit.Split(bSegments[seg])
+                        .Where(s => !string.IsNullOrEmpty(s))
+                        .ToArray();
+
+                    for (int i = 0; i < Math.Min(aParts.Length, bParts.Length); i++)
                     {
-                        int numCompare = aNum.CompareTo(bNum);
-                        if (numCompare != 0) return numCompare;
+                        if (int.TryParse(aParts[i], out var aNum) && int.TryParse(bParts[i], out var bNum))
+                        {
+                            int numCompare = aNum.CompareTo(bNum);
+                            if (numCompare != 0) return numCompare;
+                        }
+                        else
+                        {
+                            int strCompare = string.Compare(aParts[i], bParts[i], StringComparison.OrdinalIgnoreCase);
+                            if (strCompare != 0) return strCompare;
+                        }
                     }
-                    else
-                    {
-                        int strCompare = string.Compare(aParts[i], bParts[i], StringComparison.OrdinalIgnoreCase);
-                        if (strCompare != 0) return strCompare;
-                    }
+
+                    if (aParts.Length != bParts.Length)
+                        return aParts.Length.CompareTo(bParts.Length);
                 }
-                
-                if (aParts.Length != bParts.Length)
-                    return aParts.Length.CompareTo(bParts.Length);
+
+                return aSegments.Length.CompareTo(bSegments.Length);
             }
-            
-            return aSegments.Length.CompareTo(bSegments.Length);
-        });
-        
+        );
+
         return stages;
     }
+
     public static void Load(IGameHost game)
     {
         Game = game;
 
-        foreach (var stageParts in (Span<UnlimitedArray<Rad3d>>)[BackendGameSparker.stage_parts, BackendGameSparker.vendor_stage_parts, BackendGameSparker.user_stage_parts])
+        foreach (var stageParts in (Span<UnlimitedArray<Rad3d>>)
+                 [BackendGameSparker.stage_parts, BackendGameSparker.vendor_stage_parts, BackendGameSparker.user_stage_parts])
         foreach (var stagePart in stageParts)
         {
             try
@@ -380,7 +397,16 @@ public static partial class GameSparker
     [System.Text.RegularExpressions.GeneratedRegex(@"(\d+)")]
     private static partial System.Text.RegularExpressions.Regex DigitSplit { get; }
 
-    public static void MousePressed(int mouseX, int mouseY, bool wantCaptureMouse, MouseButton nfmButton, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public static void MousePressed(
+        int mouseX,
+        int mouseY,
+        bool wantCaptureMouse,
+        MouseButton nfmButton,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         if (devConsole.IsOpen()) return;
         if (!wantCaptureMouse)
@@ -391,7 +417,16 @@ public static partial class GameSparker
         CurrentPhase.MousePressed(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
     }
 
-    public static void MouseReleased(int mouseX, int mouseY, bool wantCaptureMouse, MouseButton nfmButton, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public static void MouseReleased(
+        int mouseX,
+        int mouseY,
+        bool wantCaptureMouse,
+        MouseButton nfmButton,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         if (devConsole.IsOpen()) return;
         if (!wantCaptureMouse)
@@ -402,7 +437,15 @@ public static partial class GameSparker
         CurrentPhase.MouseReleased(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
     }
 
-    public static void MouseMoved(int mouseX, int mouseY, bool wantCaptureMouse, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public static void MouseMoved(
+        int mouseX,
+        int mouseY,
+        bool wantCaptureMouse,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         if (devConsole.IsOpen()) return;
         if (!wantCaptureMouse)
@@ -420,13 +463,42 @@ public static partial class GameSparker
         CurrentPhase.MouseMoved(mouseX, mouseY, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);
     }
 
-    public static void MouseDragged(int mouseX, int mouseY, int mouseDragStartX, int mouseDragStartY, MouseButton button, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public static void MouseDragged(
+        int mouseX,
+        int mouseY,
+        int mouseDragStartX,
+        int mouseDragStartY,
+        MouseButton button,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         if (devConsole.IsOpen()) return;
-        UiRenderer?.HandleMouseDragged(mouseX, mouseY, mouseDragStartX, mouseDragStartY, button, buttons, ctrlKey, shiftKey, altKey);
+        UiRenderer?.HandleMouseDragged(
+            mouseX,
+            mouseY,
+            mouseDragStartX,
+            mouseDragStartY,
+            button,
+            buttons,
+            ctrlKey,
+            shiftKey,
+            altKey
+        );
     }
 
-    public static void MouseScrolled(int mouseX, int mouseY, int delta, bool wantCaptureMouse, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public static void MouseScrolled(
+        int mouseX,
+        int mouseY,
+        int delta,
+        bool wantCaptureMouse,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         if (devConsole.IsOpen()) return;
         if (!wantCaptureMouse)

@@ -51,16 +51,20 @@ public static class Program
         if (replay is null)
             return Fail("replay could not be read");
 
-        Console.WriteLine(JsonSerializer.Serialize(new
-        {
-            ok = true,
-            tickCount = replay.DemoData.Ticks.Count,
-            checkpointCount = replay.Splits.SplitTimes.Count,
-            replayVersion = replay.Version ?? 0,
-            backendVersion = SavedTimeTrial.CURRENT_VERSION,
-            stageName = replay.StageName,
-            carName = replay.CarName
-        }));
+        Console.WriteLine(
+            JsonSerializer.Serialize(
+                new
+                {
+                    ok = true,
+                    tickCount = replay.DemoData.Ticks.Count,
+                    checkpointCount = replay.Splits.SplitTimes.Count,
+                    replayVersion = replay.Version ?? 0,
+                    backendVersion = SavedTimeTrial.CURRENT_VERSION,
+                    stageName = replay.StageName,
+                    carName = replay.CarName
+                }
+            )
+        );
 
         // A replay recorded by a different backend is refused before it is simulated: its ticks
         // mean different physics, so the result would not be comparable.
@@ -76,7 +80,9 @@ public static class Program
         // Refused before simulating, for the same reason tt-info refuses it: another backend's
         // ticks are different physics, so the result is not comparable with the leaderboard's.
         if ((replay.Version ?? 0) != SavedTimeTrial.CURRENT_VERSION)
-            return Fail($"The replay is version {replay.Version ?? 0}, this backend is version {SavedTimeTrial.CURRENT_VERSION}.");
+            return Fail(
+                $"The replay is version {replay.Version ?? 0}, this backend is version {SavedTimeTrial.CURRENT_VERSION}."
+            );
 
         // The stage must come from the archive's own stored asset, never from the replay. A
         // replay carries its own StageData and the simulator prefers it, which made the tick
@@ -85,7 +91,9 @@ public static class Program
             return Fail("No stage asset was supplied to simulate against.");
 
         var stageAsset = RadpackSerializer.Deserialize(
-            File.ReadAllBytes(stageRadpackPath), RadpackLimits.MaxDecompressedBytes);
+            File.ReadAllBytes(stageRadpackPath),
+            RadpackLimits.MaxDecompressedBytes
+        );
         if (stageAsset is not RadpackTrack track)
             return Fail("The stage asset is not a track.");
 
@@ -95,13 +103,17 @@ public static class Program
             return Fail("simulation did not finish within the tick limit");
 
         var ok = elapsed == expectedTicks;
-        Console.WriteLine(JsonSerializer.Serialize(new
-        {
-            ok,
-            elapsedTicks = elapsed.Value,
-            expectedTicks,
-            replayVersion = replay.Version ?? 0
-        }));
+        Console.WriteLine(
+            JsonSerializer.Serialize(
+                new
+                {
+                    ok,
+                    elapsedTicks = elapsed.Value,
+                    expectedTicks,
+                    replayVersion = replay.Version ?? 0
+                }
+            )
+        );
 
         return ok ? 0 : 3;
     }
@@ -113,12 +125,16 @@ public static class Program
             return Fail("radpack exceeds the compressed size limit");
 
         var asset = RadpackSerializer.Deserialize(data, RadpackLimits.MaxDecompressedBytes);
-        Console.WriteLine(JsonSerializer.Serialize(new
-        {
-            ok = true,
-            type = asset.Metadata.Type.ToString(),
-            name = asset.Metadata.Name
-        }));
+        Console.WriteLine(
+            JsonSerializer.Serialize(
+                new
+                {
+                    ok = true,
+                    type = asset.Metadata.Type.ToString(),
+                    name = asset.Metadata.Name
+                }
+            )
+        );
 
         return 0;
     }

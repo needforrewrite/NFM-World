@@ -96,7 +96,10 @@ namespace NFMWorld.PhysicsFS
         }
 
         public IEnumerable<string> EnumerateFiles(
-            string path, string searchPattern, SearchOption searchOption)
+            string path,
+            string searchPattern,
+            SearchOption searchOption
+        )
         {
             var prefix = Normalize(path).TrimEnd('/');
             if (prefix.Length > 0) prefix += "/";
@@ -116,8 +119,8 @@ namespace NFMWorld.PhysicsFS
 
                 // Match the filename portion against the search pattern
                 var fileName = searchOption == SearchOption.AllDirectories
-                    ? Path.GetFileName(entry)   // final segment
-                    : relative;                 // already just the filename
+                    ? Path.GetFileName(entry) // final segment
+                    : relative; // already just the filename
 
                 if (regex.IsMatch(fileName))
                     yield return entry;

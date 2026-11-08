@@ -21,7 +21,7 @@ public interface IServerGamemodeContext
     /// first state arrives. Wasted comes from the car's owner, the same relay as its position.
     /// </summary>
     bool? IsPlayerWasted(Guid playerId);
-    
+
     /// <summary>
     /// Broadcast a payload to all clients.
     /// </summary>

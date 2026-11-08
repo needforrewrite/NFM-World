@@ -28,10 +28,12 @@ public abstract class BaseClientGamemode : IGamemode
     /// <summary>
     /// Returns the race results if the race has finished, or null otherwise.
     /// </summary>
-    [PluginVisible] public RaceResults? Results { get; protected internal set; }
+    [PluginVisible]
+    public RaceResults? Results { get; protected internal set; }
 
     /// <summary>Per-frame HUD state for the client player.</summary>
-    [PluginVisible] public HudStateData HudState { get; protected internal set; } = new();
+    [PluginVisible]
+    public HudStateData HudState { get; protected internal set; } = new();
 
     [PluginVisible] public ClientSidePlayer ClientPlayer { get; }
     private readonly IClientCallbacks _clientCallbacks;
@@ -51,12 +53,16 @@ public abstract class BaseClientGamemode : IGamemode
     /// Called when an event is received from the server.
     /// The payload is a MemoryPack-serialized gamemode-specific event.
     /// </summary>
-    public virtual void OnServerEvent(ReadOnlySpan<byte> payload) { }
+    public virtual void OnServerEvent(ReadOnlySpan<byte> payload)
+    {
+    }
 
     /// <summary>
     /// Called when the race is finished server-side.
     /// </summary>
-    public virtual void OnServerRaceFinished(RaceResults results) { }
+    public virtual void OnServerRaceFinished(RaceResults results)
+    {
+    }
 
     /// <inheritdoc />
     public virtual void SetServerResults(RaceResults results)
@@ -90,7 +96,6 @@ public abstract class BaseClientGamemode : IGamemode
     /// </summary>
     public virtual void Begin()
     {
-
     }
 
     /// <summary>
@@ -171,7 +176,15 @@ public abstract class BaseClientGamemode : IGamemode
     /// <param name="ctrlKey">Whether the Control key is being held.</param>
     /// <param name="shiftKey">Whether the Shift key is being held.</param>
     /// <param name="altKey">Whether the Alt key is being held.</param>
-    public virtual void MousePressed(int x, int y, MouseButton button, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public virtual void MousePressed(
+        int x,
+        int y,
+        MouseButton button,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
     }
 
@@ -185,7 +198,15 @@ public abstract class BaseClientGamemode : IGamemode
     /// <param name="ctrlKey">Whether the Control key is being held.</param>
     /// <param name="shiftKey">Whether the Shift key is being held.</param>
     /// <param name="altKey">Whether the Alt key is being held.</param>
-    public virtual void MouseReleased(int x, int y, MouseButton button, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public virtual void MouseReleased(
+        int x,
+        int y,
+        MouseButton button,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
     }
 
@@ -224,7 +245,8 @@ public abstract class BaseClientGamemode : IGamemode
     /// Rendering callbacks for client cars, such as ghost opacity and
     /// checkpoint glow.
     /// </summary>
-    [PluginVisible] protected IClientCallbacks ClientCallbacks => _clientCallbacks;
+    [PluginVisible]
+    protected IClientCallbacks ClientCallbacks => _clientCallbacks;
 
     // One entry per attached AI: its plugin (which owns the load context) and the
     // instances it created, so End() can drop both in the right order.
@@ -318,14 +340,14 @@ public abstract class BaseClientGamemode : IGamemode
     protected internal void UpdateHudAndSounds(BackendCar car)
     {
         var diffx = (float)(car.Position.X - _lcarx);
-        var diffz  = (float)(car.Position.Z - _lcarz);
+        var diffz = (float)(car.Position.Z - _lcarz);
         _lcarx = car.Position.X;
         _lcarz = car.Position.Z;
 
         HudState.Speed = MathF.Sqrt(diffx * diffx + diffz * diffz);
         HudState.Damage = (float)car.CarPhysics.DamagePoints / ClientPlayer.Car?.Stats.Maxmag ?? 100;
         HudState.Power = (float)car.CarPhysics.Power / 100f;
-        
+
         if (car.CurrentCheckpoint != _lastClientCheckpoint)
         {
             _lastClientCheckpoint = car.CurrentCheckpoint;

@@ -56,8 +56,13 @@ internal static class ShadowMapDebugView
             _readbackScratch = new byte[byteCount];
 
         GameSparker.GraphicsDevice.ReadTexture(
-            target.ColorTexture, 0, 0, resolution, resolution,
-            _readbackScratch.AsSpan(0, byteCount));
+            target.ColorTexture,
+            0,
+            0,
+            resolution,
+            resolution,
+            _readbackScratch.AsSpan(0, byteCount)
+        );
 
         // Nearest-neighbour downsample, float depth -> grey. Unwritten texels hold the cascades'
         // white clear (depth 1.0), so "lit" reads as white and geometry shows as a grey silhouette.
@@ -92,13 +97,20 @@ internal static class ShadowMapDebugView
         ImGui.SetNextWindowSize(windowSize, ImGuiCond.Once);
         if (ImGui.Begin("Shadow cascades"))
         {
-            ImGui.TextDisabled($"cascade {_shownCascade} of {GameSparker.ShadowRenderTargets.Count}, " +
-                               $"{GameSparker.ShadowResolution}x{GameSparker.ShadowResolution} {TextureFormat.Single}");
+            ImGui.TextDisabled(
+                $"cascade {_shownCascade} of {GameSparker.ShadowRenderTargets.Count}, "
+                + $"{GameSparker.ShadowResolution}x{GameSparker.ShadowResolution} {TextureFormat.Single}"
+            );
             // Flip V: cascade render targets are stored bottom-up, same as the stage editor's part
             // thumbnails (see StageEditorPhase.Panels.cs).
-            ImGui.Image(_previewRef, new Vector2(PreviewSize, PreviewSize),
-                new Vector2(0, 1), new Vector2(1, 0));
+            ImGui.Image(
+                _previewRef,
+                new Vector2(PreviewSize, PreviewSize),
+                new Vector2(0, 1),
+                new Vector2(1, 0)
+            );
         }
+
         ImGui.End();
     }
 
@@ -107,7 +119,9 @@ internal static class ShadowMapDebugView
         if (_previewTexture is not null) return;
 
         _previewTexture = GameSparker.GraphicsDevice.CreateTexture(
-            new TextureDesc(PreviewSize, PreviewSize, TextureFormat.Rgba8), PreviewPixels);
+            new TextureDesc(PreviewSize, PreviewSize, TextureFormat.Rgba8),
+            PreviewPixels
+        );
         if (GameSparker.Game.ImguiRenderer is { } imgui)
         {
             _previewRef = imgui.BindTexture(_previewTexture);

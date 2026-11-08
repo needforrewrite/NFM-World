@@ -38,7 +38,9 @@ internal sealed class SettingsCameraPreview
         camera.Position = Vector3.Lerp(camera.Position, _target.Position, t);
         var rotation = Quaternion.Slerp(
             Quaternion.CreateFromRotationMatrix(Matrix.CreateWorld(Vector3.Zero, normalDirection, camera.Up)),
-            Quaternion.CreateFromRotationMatrix(Matrix.CreateWorld(Vector3.Zero, followDirection, -Vector3.UnitY)), t);
+            Quaternion.CreateFromRotationMatrix(Matrix.CreateWorld(Vector3.Zero, followDirection, -Vector3.UnitY)),
+            t
+        );
         camera.LookAt = camera.Position + Vector3.Transform(-Vector3.UnitZ, rotation) * 100;
         camera.Up = Vector3.Transform(Vector3.UnitY, rotation);
         camera.Fov = _normalFov + (_target.Fov - _normalFov) * t;

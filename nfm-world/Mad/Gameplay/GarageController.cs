@@ -11,7 +11,6 @@ namespace NFMWorld.Gameplay;
 
 internal sealed class GarageController
 {
-
     /// <summary>
     /// This should be hooked onto by the calling phase, so that the calling phase can be restored upon car selection.
     /// Returns the car that was selected.
@@ -76,10 +75,13 @@ internal sealed class GarageController
     }
 
     /// <summary>The garage view, wired straight to this phase.</summary>
-    public Node BuildUi() => GarageView.Build(new GarageView.Actions(
-        CarSelected: SelectCar,
-        CollectionSelected: SelectCollection,
-        Back: SelectionCancelled));
+    public Node BuildUi() => GarageView.Build(
+        new GarageView.Actions(
+            CarSelected: SelectCar,
+            CollectionSelected: SelectCollection,
+            Back: SelectionCancelled
+        )
+    );
 
     /// <summary>
     /// Browses to a car without committing it: the panel and the 3D preview show it, and
@@ -120,14 +122,26 @@ internal sealed class GarageController
         var collections = BackendGameSparker.cars
             .Where(kv => kv.Value.Count > 0)
             .Select(kv => new CarCollectionViewModel(
-                kv.Key.ToString(),
-                kv.Value
-                    .Select(c => new CarStatsViewModel(
-                        c.FileName,
-                        c.Stats.Name,
-                        kv.Key.ToString(),
-                        0, 0, 0, 0, 0, 0, 0, 0, 0))
-                    .ToArray()))
+                    kv.Key.ToString(),
+                    kv.Value
+                        .Select(c => new CarStatsViewModel(
+                                c.FileName,
+                                c.Stats.Name,
+                                kv.Key.ToString(),
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0
+                            )
+                        )
+                        .ToArray()
+                )
+            )
             .ToArray();
 
         UiState.Garage.Collections.Value = collections;
@@ -142,8 +156,13 @@ internal sealed class GarageController
         if (_backendCar?.Rad != rad)
         {
             var previous = _backendCar;
-            _backendCar = new BackendCar(rad, 0, previous?.Position.X ?? fix64.Zero,
-                previous?.Position.Z ?? fix64.Zero, true);
+            _backendCar = new BackendCar(
+                rad,
+                0,
+                previous?.Position.X ?? fix64.Zero,
+                previous?.Position.Z ?? fix64.Zero,
+                true
+            );
             if (previous != null)
                 _backendCar.Rotation = previous.Rotation;
             _sceneCars[0] = _backendCar;
@@ -159,7 +178,11 @@ internal sealed class GarageController
         float switsLevel = (_backendCar.Stats.Swits[2] - 220) / 90f;
         switsLevel = Math.Max(0.05f, switsLevel);
 
-        float accel = (float)(_backendCar.Stats.Acelf.X * _backendCar.Stats.Acelf.Y * _backendCar.Stats.Acelf.Z * _backendCar.Stats.Grip / 7700);
+        float accel = (float)(_backendCar.Stats.Acelf.X
+                              * _backendCar.Stats.Acelf.Y
+                              * _backendCar.Stats.Acelf.Z
+                              * _backendCar.Stats.Grip
+                              / 7700);
 
         float powerloss = _backendCar.Stats.Powerloss / 5500000f;
 
@@ -167,9 +190,11 @@ internal sealed class GarageController
 
         float health = (float)_backendCar.Stats.Outdam / 1.05f + _backendCar.Stats.Maxmag / 100000f;
 
-        float airs = (_backendCar.Stats.Airc * 2 * ((float)_backendCar.Stats.Airs * 0.5f) * (float)_backendCar.Stats.Bounce + 28f) / 100f;
+        float airs = (_backendCar.Stats.Airc * 2 * ((float)_backendCar.Stats.Airs * 0.5f) * (float)_backendCar.Stats.Bounce + 28f)
+                     / 100f;
 
-        float hglide = ((Math.Abs(_backendCar.Stats.Flipy) + Math.Abs(_backendCar.GroundAt)) / 2f / 70f) + (float)_backendCar.Stats.Airs / 230f;
+        float hglide = ((Math.Abs(_backendCar.Stats.Flipy) + Math.Abs(_backendCar.GroundAt)) / 2f / 70f)
+                       + (float)_backendCar.Stats.Airs / 230f;
 
         float ab = _backendCar.Stats.Airc / 75f;
 
@@ -185,7 +210,8 @@ internal sealed class GarageController
             health,
             airs,
             hglide,
-            ab);
+            ab
+        );
 
         // Highlights the active collection in the sidebar.
         UiState.Garage.CurrentCollection.Value = _currentCollection.ToString();
@@ -203,14 +229,16 @@ internal sealed class GarageController
 
     private void SelectedCar()
     {
-        if (CarSelected == null) throw new ArgumentNullException(nameof(CarSelected), "Attempted to invoke CarSelected, but it was null.");
+        if (CarSelected == null)
+            throw new ArgumentNullException(nameof(CarSelected), "Attempted to invoke CarSelected, but it was null.");
         MenuHistory.Remember(car: _backendCar!.Rad.FileName);
         CarSelected.Invoke(this, _backendCar!.Rad);
     }
 
     private void SelectionCancelled()
     {
-        if (CarSelectionCancelled == null) throw new ArgumentNullException(nameof(CarSelected), "Attempted to invoke CarSelectionCancelled, but it was null.");
+        if (CarSelectionCancelled == null)
+            throw new ArgumentNullException(nameof(CarSelected), "Attempted to invoke CarSelectionCancelled, but it was null.");
         CarSelectionCancelled.Invoke(this, EventArgs.Empty);
     }
 
@@ -229,5 +257,4 @@ internal sealed class GarageController
         if (_selectedCarIdx < 0) _selectedCarIdx = _cars.Count - 1;
         SetupCurrentCar();
     }
-
 }

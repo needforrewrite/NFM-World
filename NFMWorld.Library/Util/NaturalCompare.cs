@@ -9,7 +9,12 @@ public static class NaturalCompare
         return CompareNatural(strA, strB, CultureInfo.InvariantCulture, CompareOptions.IgnoreCase);
     }
 
-    public static int CompareNatural(ReadOnlySpan<char> strA, ReadOnlySpan<char> strB, CultureInfo culture, CompareOptions options)
+    public static int CompareNatural(
+        ReadOnlySpan<char> strA,
+        ReadOnlySpan<char> strB,
+        CultureInfo culture,
+        CompareOptions options
+    )
     {
         var cmp = culture.CompareInfo;
         var iA = 0;
@@ -38,8 +43,8 @@ public static class NaturalCompare
                     // comparison if no other differences follow
                     var sectionA = strA.Slice(iA, jA - iA);
                     var sectionB = strB.Slice(iB, jB - iB);
-                    if (cmp.Compare([..sectionA, '1'], [..sectionB, '2'], options) ==
-                        cmp.Compare([..sectionA, '2'], [..sectionB, '1'], options))
+                    if (cmp.Compare([.. sectionA, '1'], [.. sectionB, '2'], options)
+                        == cmp.Compare([.. sectionA, '2'], [.. sectionB, '1'], options))
                     {
                         return cmp.Compare(strA[iA..], strB[iB..], options);
                     }
@@ -49,6 +54,7 @@ public static class NaturalCompare
                         softResultWeight = 1;
                     }
                 }
+
                 iA = jA;
                 iB = jB;
             }
@@ -75,11 +81,12 @@ public static class NaturalCompare
                         {
                             resultIfSameLength = numA < numB ? -1 : 1;
                         }
+
                         jA++;
                         jB++;
                     }
-                }
-                while (isDigitA && isDigitB);
+                } while (isDigitA && isDigitB);
+
                 if (isDigitA != isDigitB)
                 {
                     // One number has more digits than the other (ignoring leading zeros) - the longer
@@ -92,6 +99,7 @@ public static class NaturalCompare
                     // the digits differed - the first difference determines the result
                     return resultIfSameLength;
                 }
+
                 var lA = jA - iA;
                 var lB = jB - iB;
                 if (lA != lB)
@@ -104,10 +112,12 @@ public static class NaturalCompare
                     softResult = cmp.Compare(strA.Slice(iA, 1), strB.Slice(iB, 1), options);
                     softResultWeight = 2;
                 }
+
                 iA = jA;
                 iB = jB;
             }
         }
+
         if (iA < strA.Length || iB < strB.Length)
         {
             return iA < strA.Length ? 1 : -1;
@@ -116,6 +126,7 @@ public static class NaturalCompare
         {
             return softResult;
         }
+
         return 0;
     }
 }

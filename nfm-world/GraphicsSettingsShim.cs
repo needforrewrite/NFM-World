@@ -28,7 +28,9 @@ namespace NFMWorld;
 public sealed class GraphicsSettingsShim(SdlWindow window, ISwapchain swapchain, int? startupMultiSampleRequest = null)
 {
     private readonly int _startupMultiSampleRequest = (startupMultiSampleRequest ?? swapchain.MultiSampleCount) <= 1
-        ? 0 : startupMultiSampleRequest ?? swapchain.MultiSampleCount;
+        ? 0
+        : startupMultiSampleRequest ?? swapchain.MultiSampleCount;
+
     public bool SynchronizeWithVerticalRetrace { get; set; } = true;
     public bool PreferMultiSampling { get; set; }
 
@@ -99,11 +101,13 @@ public sealed class GraphicsSettingsShim(SdlWindow window, ISwapchain swapchain,
             window.RefreshBorderlessDesktop();
             return;
         }
+
         if (window.RequestedFullscreen && !OperatingSystem.IsBrowser())
         {
             window.SetFullscreenResolution(PreferredBackBufferWidth, PreferredBackBufferHeight);
             return;
         }
+
         if (window.Width != PreferredBackBufferWidth || window.Height != PreferredBackBufferHeight)
             window.SetSize(PreferredBackBufferWidth, PreferredBackBufferHeight);
     }

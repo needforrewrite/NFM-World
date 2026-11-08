@@ -38,7 +38,9 @@ public class Chips : IDisposable, IImmediateRenderElement
         _triangles = new PositionColorVertex[3 * _car.Mesh.Polys.Length];
         var maxBytes = _triangles.Length * PositionColorVertex.Stride;
         _triangleBuffer = graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxBytes), new byte[maxBytes]);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxBytes),
+            new byte[maxBytes]
+        );
     }
 
     public void GameTick()
@@ -119,6 +121,7 @@ public class Chips : IDisposable, IImmediateRenderElement
                     {
                         brightness = _car.Mesh.Darken;
                     }
+
                     chip.Color = Color3.FromHSB(hue, saturation, brightness);
                 }
 

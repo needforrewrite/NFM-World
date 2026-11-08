@@ -36,7 +36,7 @@ public static class BackendGameSparker
         "thewall", "checkpoint", "fixpoint", "offcheckpoint", "sideoff", "bsideoff", "uprise", //45
         "riseroad", "sroad", "soffroad", "tside", "launchpad", "thenet", "speedramp", "offhill", "slider", "uphill",
         "roll1", "roll2", "roll3", "roll4", "roll5", "roll6", "opile1", "opile2", "aircheckpoint",
-        "tree1", "tree2", "tree3", "tree4",  "tree5", "tree6", "tree7", "tree8", "cac1", "cac2", "cac3",
+        "tree1", "tree2", "tree3", "tree4", "tree5", "tree6", "tree7", "tree8", "cac1", "cac2", "cac3",
         "8sroad", "8soffroad"
     ];
 
@@ -49,32 +49,33 @@ public static class BackendGameSparker
         _loaded = true;
 
         IBackend.Backend = new ServerBackend();
-        
+
         SentrySdk.Init(options =>
-        {
-            options.Dsn = Logging.SentryDsn;
-            options.Debug = false;
-            options.TracesSampleRate = 0.05;
-            options.Release = Logging.Release;
-        });
+            {
+                options.Dsn = Logging.SentryDsn;
+                options.Debug = false;
+                options.TracesSampleRate = 0.05;
+                options.Release = Logging.Release;
+            }
+        );
         SentrySdk.CaptureMessage("Hello world", SentryLevel.Debug);
 
 #if !DEBUG
-                        if (!isHeadless && !System.Diagnostics.Debugger.IsAttached)
-                        {
-                            CrashReportLibrary.Hook(Logging.SentryDsn, Logging.Release);
-                        }
-                #endif
+        if (!isHeadless && !System.Diagnostics.Debugger.IsAttached)
+        {
+            CrashReportLibrary.Hook(Logging.SentryDsn, Logging.Release);
+        }
+#endif
 
 #if DEBUG
-            // mount live project path for debug
-            if (ProjectUtils.TryGetProjectDirectory() is {} projectDirectory)
-            {
-                VFS.MountDirectory(projectDirectory);
-                VFS.MountDirectory(Path.GetFullPath(Path.Combine(projectDirectory, "..", "NFMWorld.Library")));
-            }
-    #endif
-        
+        // mount live project path for debug
+        if (ProjectUtils.TryGetProjectDirectory() is { } projectDirectory)
+        {
+            VFS.MountDirectory(projectDirectory);
+            VFS.MountDirectory(Path.GetFullPath(Path.Combine(projectDirectory, "..", "NFMWorld.Library")));
+        }
+#endif
+
         // The browser has no install directory and no writable one: the head mounts the asset
         // archive and a MEMFS write root before calling this, and every path below resolves
         // through those. See NFMWorld.Platform.BrowserBoot in the game project.
@@ -88,7 +89,9 @@ public static class BackendGameSparker
                 if (string.IsNullOrWhiteSpace(applicationData))
                     applicationData = Path.Combine(
                         System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile),
-                        "Library", "Application Support");
+                        "Library",
+                        "Application Support"
+                    );
                 var userDirectory = Path.Combine(applicationData, "NFMWorld");
                 VFS.MountWriteDestination(userDirectory);
                 VFS.MountDirectory(userDirectory, prepend: true);
@@ -113,14 +116,14 @@ public static class BackendGameSparker
             "./data/models/nfmm/cars",
             CarRads,
             (ais, fileName) => RadParser.ParseRad(Encoding.UTF8.GetString(ais), "nfmm/" + fileName),
-            (id, result) => cars[Collection.NFMM][id] = result  
+            (id, result) => cars[Collection.NFMM][id] = result
         );
-        
+
         FileUtil.LoadFiles(
             "./data/models/nfmm/stage",
             StageRads,
             (ais, fileName) => RadParser.ParseRad(Encoding.UTF8.GetString(ais), "nfmm/" + fileName),
-            (id, result) => stage_parts[id] = result  
+            (id, result) => stage_parts[id] = result
         );
 
         cars.Add(Collection.World, []);
@@ -149,7 +152,7 @@ public static class BackendGameSparker
             (ais, fileName) => RadParser.ParseRad(Encoding.UTF8.GetString(ais), "world/" + fileName),
             result => vendor_stage_parts.Add(result)
         );
-        
+
         FileUtil.LoadFiles(
             "./data/models/football/stage",
             (ais, fileName) => RadParser.ParseRad(Encoding.UTF8.GetString(ais), "football/" + fileName),
@@ -167,10 +170,12 @@ public static class BackendGameSparker
                 }
                 catch (Exception ex)
                 {
-                    SentrySdk.CaptureEvent(new SentryEvent(ex)
-                    {
-                        Message = $"Error loading user car part '{fileName}'"
-                    });
+                    SentrySdk.CaptureEvent(
+                        new SentryEvent(ex)
+                        {
+                            Message = $"Error loading user car part '{fileName}'"
+                        }
+                    );
                     Logging.Info($"Error loading user car '{fileName}': {ex.Message}\n{ex.StackTrace}");
                     return null;
                 }
@@ -192,10 +197,12 @@ public static class BackendGameSparker
                 }
                 catch (Exception ex)
                 {
-                    SentrySdk.CaptureEvent(new SentryEvent(ex)
-                    {
-                        Message = $"Error loading user stage part '{fileName}'"
-                    });
+                    SentrySdk.CaptureEvent(
+                        new SentryEvent(ex)
+                        {
+                            Message = $"Error loading user stage part '{fileName}'"
+                        }
+                    );
                     Logging.Info($"Error loading user car '{fileName}': {ex.Message}\n{ex.StackTrace}");
                     return null;
                 }
@@ -208,17 +215,27 @@ public static class BackendGameSparker
         );
 
         error_mesh = RadParser.ParseRad(Encoding.UTF8.GetString(VFS.ReadAllBytes("./data/models/error.rad")), "error.rad");
-        
-        for (var i = 0; i < StageRads.Length; i++) {
-            if (stage_parts[i] == null) {
-                SentrySdk.CaptureMessage("No valid ContO (Stage Part) has been assigned to ID " + i + " (" + StageRads[i] + ")", SentryLevel.Error);
+
+        for (var i = 0; i < StageRads.Length; i++)
+        {
+            if (stage_parts[i] == null)
+            {
+                SentrySdk.CaptureMessage(
+                    "No valid ContO (Stage Part) has been assigned to ID " + i + " (" + StageRads[i] + ")",
+                    SentryLevel.Error
+                );
                 throw new Exception("No valid ContO (Stage Part) has been assigned to ID " + i + " (" + StageRads[i] + ")");
             }
         }
-        for (var i = 0; i < CarRads.Length; i++) {
+
+        for (var i = 0; i < CarRads.Length; i++)
+        {
             if (cars[Collection.NFMM][i] == null)
             {
-                SentrySdk.CaptureMessage("No valid ContO (Vehicle) has been assigned to ID " + i + " (" + StageRads[i] + ")", SentryLevel.Error);
+                SentrySdk.CaptureMessage(
+                    "No valid ContO (Vehicle) has been assigned to ID " + i + " (" + StageRads[i] + ")",
+                    SentryLevel.Error
+                );
                 throw new Exception("No valid ContO (Vehicle) has been assigned to ID " + i + " (" + StageRads[i] + ")");
             }
         }
@@ -235,7 +252,7 @@ public static class BackendGameSparker
 
             if (OperatingSystem.IsMacOS())
             {
-                return  "osx";
+                return "osx";
             }
 
             if (OperatingSystem.IsLinux())
@@ -265,7 +282,7 @@ public static class BackendGameSparker
         string os = GetPlatformName();
         string cpu = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
         string wordsize = (IntPtr.Size * 8).ToString();
-        
+
 #if DEBUG
         string debugLibrarySuffix = "d";
 #else
@@ -284,10 +301,12 @@ public static class BackendGameSparker
                 "windows" => $"{libraryName}.dll",
                 "osx" => $"lib{libraryName}.dylib",
                 "linux" or "freebsd" or "netbsd" => $"lib{libraryName}.so",
-                _ => throw new PlatformNotSupportedException($"Unsupported platform: {os}, please update {nameof(ImportResolver)}")
+                _ => throw new PlatformNotSupportedException(
+                    $"Unsupported platform: {os}, please update {nameof(ImportResolver)}"
+                )
             }
         };
-        
+
         var dir = os switch
         {
             "windows" => cpu switch
@@ -295,7 +314,9 @@ public static class BackendGameSparker
                 "arm64" or "armv8" or "armv8-a" or "aarch64" or "arm64-v8a" => "arm64",
                 "x64" or "x86_64" or "amd64" => "x64",
                 "x86" or "x86_32" or "i386" => "x86",
-                _ => throw new PlatformNotSupportedException($"Unsupported CPU architecture: {cpu}, please update {nameof(ImportResolver)}")
+                _ => throw new PlatformNotSupportedException(
+                    $"Unsupported CPU architecture: {cpu}, please update {nameof(ImportResolver)}"
+                )
             },
             "osx" => "osx",
             "linux" or "freebsd" or "netbsd" => cpu switch
@@ -304,7 +325,9 @@ public static class BackendGameSparker
                 "arm64" or "armv8" or "armv8-a" or "aarch64" or "arm64-v8a" => "libaarch64",
                 "x64" or "x86_64" or "amd64" => "lib64",
                 "x86" or "x86_32" or "i386" => "lib32",
-                _ => throw new PlatformNotSupportedException($"Unsupported CPU architecture: {cpu}, please update {nameof(ImportResolver)}")
+                _ => throw new PlatformNotSupportedException(
+                    $"Unsupported CPU architecture: {cpu}, please update {nameof(ImportResolver)}"
+                )
             },
             "android" => cpu switch
             {
@@ -312,11 +335,13 @@ public static class BackendGameSparker
                 "arm64" or "armv8" or "armv8-a" or "aarch64" or "arm64-v8a" => "android-arm64-v8a",
                 "x64" or "x86_64" or "amd64" => "android-x86_64",
                 "x86" or "x86_32" or "i386" => "android-x86",
-                _ => throw new PlatformNotSupportedException($"Unsupported CPU architecture: {cpu}, please update {nameof(ImportResolver)}")
+                _ => throw new PlatformNotSupportedException(
+                    $"Unsupported CPU architecture: {cpu}, please update {nameof(ImportResolver)}"
+                )
             },
             _ => throw new PlatformNotSupportedException($"Unsupported platform: {os}, please update {nameof(ImportResolver)}")
         };
-        
+
         return NativeLibrary.Load($"libs/{dir}/{newLibraryName}");
     }
 
@@ -341,7 +366,7 @@ public static class BackendGameSparker
         {
             return dynRad;
         }
-        
+
         var radpackPath = $"data/models/{name}.radpack";
         if (VFS.FileExists(radpackPath))
         {
@@ -353,14 +378,17 @@ public static class BackendGameSparker
                 {
                     throw new InvalidOperationException("Radpack does not contain a Rad3d Model");
                 }
+
                 return dynamic_models[name] = (total, rad.Rad);
             }
             catch (Exception ex)
             {
-                SentrySdk.CaptureEvent(new SentryEvent(ex)
-                {
-                    Message = $"Error loading dynamic model '{name}'"
-                });
+                SentrySdk.CaptureEvent(
+                    new SentryEvent(ex)
+                    {
+                        Message = $"Error loading dynamic model '{name}'"
+                    }
+                );
                 Logging.Info($"Error loading dynamic model '{name}': {ex.Message}\n{ex.StackTrace}");
             }
         }
@@ -376,10 +404,12 @@ public static class BackendGameSparker
             }
             catch (Exception ex)
             {
-                SentrySdk.CaptureEvent(new SentryEvent(ex)
-                {
-                    Message = $"Error loading dynamic model '{name}'"
-                });
+                SentrySdk.CaptureEvent(
+                    new SentryEvent(ex)
+                    {
+                        Message = $"Error loading dynamic model '{name}'"
+                    }
+                );
                 Logging.Info($"Error loading dynamic model '{name}': {ex.Message}\n{ex.StackTrace}");
             }
         }
@@ -387,7 +417,7 @@ public static class BackendGameSparker
         // Read-only legacy import: a .radq the user dropped in data/legacy/cars first, then the
         // original download host.
         if ((LegacyAssets.LegacyAssetImporter.TryReadLocal("cars", name)
-                ?? LegacyAssets.LegacyAssetImporter.TryFetch("cars", name)) is { } legacyRad)
+             ?? LegacyAssets.LegacyAssetImporter.TryFetch("cars", name)) is { } legacyRad)
         {
             try
             {
@@ -436,14 +466,17 @@ public static class BackendGameSparker
                 {
                     throw new InvalidOperationException("Radpack does not contain a Rad3d Model");
                 }
+
                 return dynamic_models[name] = (total, rad.Rad);
             }
             catch (Exception ex)
             {
-                SentrySdk.CaptureEvent(new SentryEvent(ex)
-                {
-                    Message = $"Error loading dynamic model '{name}'"
-                });
+                SentrySdk.CaptureEvent(
+                    new SentryEvent(ex)
+                    {
+                        Message = $"Error loading dynamic model '{name}'"
+                    }
+                );
                 Logging.Info($"Error loading dynamic model '{name}': {ex.Message}\n{ex.StackTrace}");
             }
         }
@@ -459,10 +492,12 @@ public static class BackendGameSparker
             }
             catch (Exception ex)
             {
-                SentrySdk.CaptureEvent(new SentryEvent(ex)
-                {
-                    Message = $"Error loading dynamic model '{name}'"
-                });
+                SentrySdk.CaptureEvent(
+                    new SentryEvent(ex)
+                    {
+                        Message = $"Error loading dynamic model '{name}'"
+                    }
+                );
                 Logging.Info($"Error loading dynamic model '{name}': {ex.Message}\n{ex.StackTrace}");
             }
         }
@@ -470,7 +505,7 @@ public static class BackendGameSparker
         // Read-only legacy import, same on-demand path as GetCar. Only a phy:/ds:/nfm: label
         // names a download; a bare part name has no source outside the shipped archive.
         if ((LegacyAssets.LegacyAssetImporter.TryReadLocal("stage", name)
-                ?? LegacyAssets.LegacyAssetImporter.TryFetchModel(name)) is { } legacyPart)
+             ?? LegacyAssets.LegacyAssetImporter.TryFetchModel(name)) is { } legacyPart)
         {
             try
             {
@@ -489,16 +524,16 @@ public static class BackendGameSparker
         Logging.Info("No results for GetStagePart: " + name);
         return (-1, null!);
     }
-    
+
     public static string GetModelName(int index, bool forCar = false)
     {
         var models = forCar ? CarRads : StageRads;
-        
+
         if (index >= 0 && index < models.Length)
         {
             return models[index];
         }
-        
+
         return "";
     }
 }

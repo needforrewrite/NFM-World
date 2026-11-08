@@ -22,7 +22,8 @@ builder.Services.AddHttpClient();
 // Pages carry a form that signs someone in, so the antiforgery token is validated, not just
 // rendered. The JSON endpoints are not covered by it (they are token/bearer based).
 builder.Services.AddRazorPages(options =>
-    options.Conventions.ConfigureFilter(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute()));
+    options.Conventions.ConfigureFilter(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute())
+);
 
 var app = builder.Build();
 
@@ -47,14 +48,17 @@ using (var scope = app.Services.CreateScope())
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 
 // Form logout for the website, which has no JavaScript to call the JSON endpoint.
-app.MapPost("/logout", async (SessionService sessions, HttpContext http, CancellationToken ct) =>
-{
-    if (http.Request.Cookies["nfmw_session"] is { Length: > 0 } cookie)
-        await sessions.RevokeAsync(cookie, ct);
+app.MapPost(
+    "/logout",
+    async (SessionService sessions, HttpContext http, CancellationToken ct) =>
+    {
+        if (http.Request.Cookies["nfmw_session"] is { Length: > 0 } cookie)
+            await sessions.RevokeAsync(cookie, ct);
 
-    http.Response.Cookies.Delete("nfmw_session");
-    return Results.Redirect("/account/login");
-});
+        http.Response.Cookies.Delete("nfmw_session");
+        return Results.Redirect("/account/login");
+    }
+);
 app.MapAuthEndpoints();
 app.MapDiscordEndpoints();
 app.MapResultEndpoints();
@@ -71,17 +75,18 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Use(async (context, next) =>
-{
-    var headers = context.Response.Headers;
-    // Assets are meant to be downloaded, and a same-origin HTML/SVG payload would otherwise
-    // run as script; nosniff keeps a browser from second-guessing the declared type.
-    headers.XContentTypeOptions = "nosniff";
-    headers.XFrameOptions = "DENY";
-    headers["Referrer-Policy"] = "no-referrer";
-    headers["Content-Security-Policy"] =
-        "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'";
-    await next();
-});
+    {
+        var headers = context.Response.Headers;
+        // Assets are meant to be downloaded, and a same-origin HTML/SVG payload would otherwise
+        // run as script; nosniff keeps a browser from second-guessing the declared type.
+        headers.XContentTypeOptions = "nosniff";
+        headers.XFrameOptions = "DENY";
+        headers["Referrer-Policy"] = "no-referrer";
+        headers["Content-Security-Policy"] =
+            "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'";
+        await next();
+    }
+);
 
 app.Run();
 

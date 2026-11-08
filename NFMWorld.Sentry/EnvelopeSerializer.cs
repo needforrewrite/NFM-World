@@ -147,6 +147,7 @@ public static class EnvelopeSerializer
                 first = false;
                 AppendJsonString(sb, key, value);
             }
+
             sb.Append('}');
         }
 
@@ -161,6 +162,7 @@ public static class EnvelopeSerializer
                 first = false;
                 SerializeBreadcrumb(sb, bc);
             }
+
             sb.Append("]}");
         }
 
@@ -297,6 +299,7 @@ public static class EnvelopeSerializer
                 first = false;
                 AppendJsonString(sb, key, value);
             }
+
             sb.Append('}');
         }
 
@@ -362,6 +365,7 @@ public static class EnvelopeSerializer
                 sb.Append(",\"module\":");
                 AppendJsonString(sb, module);
             }
+
             sb.Append(",\"lineno\":");
             sb.Append(lineno);
             sb.Append('}');
@@ -412,6 +416,7 @@ public static class EnvelopeSerializer
                     break;
             }
         }
+
         return sb.ToString();
     }
 }

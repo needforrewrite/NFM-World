@@ -1,6 +1,7 @@
 // Adds the task assembly directory to Silk.NET's native-library search paths. Under TaskHostFactory,
 // AppContext.BaseDirectory points to the SDK rather than this assembly, so its native assets are not
 // found by Silk.NET's default resolver.
+
 using Silk.NET.Core.Loader;
 
 namespace NFMWorld.ShaderCompiler.Task;
@@ -29,10 +30,13 @@ internal static class NativeLibraries
             if (PathResolver.Default is not DefaultPathResolver resolver)
                 throw new InvalidOperationException("Silk.NET's default native library resolver is not configurable.");
 
-            resolver.Resolvers.Insert(0, name =>
-                Libraries
-                    .Where(library => library.Name == name)
-                    .Select(library => Path.Combine(directory, library.FileName)));
+            resolver.Resolvers.Insert(
+                0,
+                name =>
+                    Libraries
+                        .Where(library => library.Name == name)
+                        .Select(library => Path.Combine(directory, library.FileName))
+            );
             _done = true;
         }
     }
@@ -41,7 +45,11 @@ internal static class NativeLibraries
     {
         var extension = OperatingSystem.IsWindows()
             ? ".dll"
-            : OperatingSystem.IsMacOS() ? ".dylib" : OperatingSystem.IsLinux() ? ".so" : null;
+            : OperatingSystem.IsMacOS()
+                ? ".dylib"
+                : OperatingSystem.IsLinux()
+                    ? ".so"
+                    : null;
         if (extension is null)
             throw new PlatformNotSupportedException("The shader compiler native libraries are not available on this platform.");
 

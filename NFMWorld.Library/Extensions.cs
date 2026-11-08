@@ -195,10 +195,12 @@ public static class Extensions2
                 b = i;
             }
 
-            return new Color(Math.Min((int)(r / Factor), 255),
+            return new Color(
+                Math.Min((int)(r / Factor), 255),
                 Math.Min((int)(g / Factor), 255),
                 Math.Min((int)(b / Factor), 255),
-                alpha);
+                alpha
+            );
         }
 
         public int GetRGB()
@@ -218,8 +220,12 @@ public static class Extensions2
         /// <param name="min">The minimum value.</param>
         /// <param name="max">The maximum value.</param>
         /// <param name="result">When the method completes, contains the clamped value.</param>
-        public static void Clamp(ref readonly Color value, ref readonly Color min, ref readonly Color max,
-            out Color result)
+        public static void Clamp(
+            ref readonly Color value,
+            ref readonly Color min,
+            ref readonly Color max,
+            out Color result
+        )
         {
             byte alpha = value.A;
             alpha = (alpha > max.A) ? max.A : alpha;
@@ -323,7 +329,7 @@ public static class Extensions2
             A = color.A;
         }
     }
-    
+
     extension(Encoding encoding)
     {
         public unsafe string GetString(byte* bytes)

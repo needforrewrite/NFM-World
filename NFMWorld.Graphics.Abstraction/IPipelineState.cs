@@ -2,11 +2,35 @@ using NFMWorld.Shaders;
 
 namespace NFMWorld.Graphics;
 
-public enum BlendFactor { Zero, One, SourceAlpha, InverseSourceAlpha, DestinationAlpha, InverseDestinationAlpha }
-public enum BlendOperation { Add, Subtract, ReverseSubtract, Min, Max }
+public enum BlendFactor
+{
+    Zero,
+    One,
+    SourceAlpha,
+    InverseSourceAlpha,
+    DestinationAlpha,
+    InverseDestinationAlpha
+}
+
+public enum BlendOperation
+{
+    Add,
+    Subtract,
+    ReverseSubtract,
+    Min,
+    Max
+}
 
 [Flags]
-public enum ColorWriteMask { None = 0, Red = 1, Green = 2, Blue = 4, Alpha = 8, All = Red | Green | Blue | Alpha }
+public enum ColorWriteMask
+{
+    None = 0,
+    Red = 1,
+    Green = 2,
+    Blue = 4,
+    Alpha = 8,
+    All = Red | Green | Blue | Alpha
+}
 
 public readonly record struct BlendStateDesc(
     bool Enabled,
@@ -16,21 +40,52 @@ public readonly record struct BlendStateDesc(
     BlendFactor SourceAlpha = BlendFactor.One,
     BlendFactor DestinationAlpha = BlendFactor.Zero,
     BlendOperation AlphaOperation = BlendOperation.Add,
-    ColorWriteMask ColorWriteMask = ColorWriteMask.All)
+    ColorWriteMask ColorWriteMask = ColorWriteMask.All
+)
 {
     public static readonly BlendStateDesc Opaque = new(Enabled: false);
-    public static readonly BlendStateDesc AlphaBlend = new(Enabled: true, SourceColor: BlendFactor.One, DestinationColor: BlendFactor.InverseSourceAlpha);
+
+    public static readonly BlendStateDesc AlphaBlend = new(
+        Enabled: true,
+        SourceColor: BlendFactor.One,
+        DestinationColor: BlendFactor.InverseSourceAlpha
+    );
 
     /// <summary>Matches XNA's <c>BlendState.NonPremultiplied</c> - for straight (non-premultiplied) alpha, as opposed to <see cref="AlphaBlend"/>'s premultiplied-alpha assumption.</summary>
-    public static readonly BlendStateDesc NonPremultiplied = new(Enabled: true,
-        SourceColor: BlendFactor.SourceAlpha, DestinationColor: BlendFactor.InverseSourceAlpha,
-        SourceAlpha: BlendFactor.SourceAlpha, DestinationAlpha: BlendFactor.InverseSourceAlpha);
+    public static readonly BlendStateDesc NonPremultiplied = new(
+        Enabled: true,
+        SourceColor: BlendFactor.SourceAlpha,
+        DestinationColor: BlendFactor.InverseSourceAlpha,
+        SourceAlpha: BlendFactor.SourceAlpha,
+        DestinationAlpha: BlendFactor.InverseSourceAlpha
+    );
 
     public static readonly BlendStateDesc ColorWriteNone = new(Enabled: false, ColorWriteMask: ColorWriteMask.None);
 }
 
-public enum CompareFunction { Always, Never, Less, LessEqual, Equal, NotEqual, GreaterEqual, Greater }
-public enum StencilOperation { Keep, Zero, Replace, Increment, Decrement, IncrementSaturate, DecrementSaturate, Invert }
+public enum CompareFunction
+{
+    Always,
+    Never,
+    Less,
+    LessEqual,
+    Equal,
+    NotEqual,
+    GreaterEqual,
+    Greater
+}
+
+public enum StencilOperation
+{
+    Keep,
+    Zero,
+    Replace,
+    Increment,
+    Decrement,
+    IncrementSaturate,
+    DecrementSaturate,
+    Invert
+}
 
 public readonly record struct DepthStencilStateDesc(
     bool DepthTestEnabled = true,
@@ -48,25 +103,42 @@ public readonly record struct DepthStencilStateDesc(
     CompareFunction CcwStencilFunction = CompareFunction.Always,
     StencilOperation CcwStencilFail = StencilOperation.Keep,
     StencilOperation CcwStencilDepthFail = StencilOperation.Keep,
-    StencilOperation CcwStencilPass = StencilOperation.Keep)
+    StencilOperation CcwStencilPass = StencilOperation.Keep
+)
 {
     // new() here = the default struct, not the constructor
     public static readonly DepthStencilStateDesc Default = new(
-        DepthTestEnabled: true);
+        DepthTestEnabled: true
+    );
 
     public static readonly DepthStencilStateDesc None = new(DepthTestEnabled: false, DepthWriteEnabled: false);
 }
 
-public enum CullMode { None, Front, Back }
-public enum FillMode { Solid, Wireframe }
+public enum CullMode
+{
+    None,
+    Front,
+    Back
+}
+
+public enum FillMode
+{
+    Solid,
+    Wireframe
+}
 
 public readonly record struct RasterizerStateDesc(
     CullMode CullMode = CullMode.Back,
     FillMode FillMode = FillMode.Solid,
-    bool ScissorTestEnabled = false)
+    bool ScissorTestEnabled = false
+)
 {
     /// <summary>XNA's <c>RasterizerState.CullCounterClockwise</c> - see <see cref="DepthStencilStateDesc.Default"/> for why the arguments are spelled out instead of <c>new()</c>.</summary>
-    public static readonly RasterizerStateDesc Default = new(CullMode: CullMode.Back, FillMode: FillMode.Solid, ScissorTestEnabled: false);
+    public static readonly RasterizerStateDesc Default = new(
+        CullMode: CullMode.Back,
+        FillMode: FillMode.Solid,
+        ScissorTestEnabled: false
+    );
 }
 
 /// <summary>An integer scissor rectangle in render-target pixel coordinates, set via <see cref="ICommandBuffer.SetScissorRect"/> when a pipeline's <see cref="RasterizerStateDesc.ScissorTestEnabled"/> is true.</summary>
@@ -98,7 +170,8 @@ public readonly record struct PipelineDesc(
     DepthStencilStateDesc DepthStencilState,
     RasterizerStateDesc RasterizerState,
     PrimitiveTopology Topology = PrimitiveTopology.TriangleList,
-    string? TechniqueName = null);
+    string? TechniqueName = null
+);
 
 public interface IPipelineState : IDisposable
 {

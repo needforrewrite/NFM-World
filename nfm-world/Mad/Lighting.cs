@@ -58,7 +58,8 @@ public class Lighting
             shadowMaps,
             isCreateShadowMap
                 ? NFMWorld.RenderPass.Shadow(numCascade, totalCascades)
-                : NFMWorld.RenderPass.Main(totalCascades))
+                : NFMWorld.RenderPass.Main(totalCascades)
+        )
     {
     }
 
@@ -77,6 +78,7 @@ public class Lighting
             {
                 if (uniform.Name == name) return uniform.Offset;
             }
+
             return -1;
         }
 
@@ -86,6 +88,7 @@ public class Lighting
             {
                 if (texture.Name == name) return texture.Slot;
             }
+
             return -1;
         }
 

@@ -48,8 +48,12 @@ public sealed class LoginModel(ArchiveDbContext db, SessionService sessions, Arc
             return Page();
         }
 
-        var token = await sessions.CreateAsync(user!, Request.Headers.UserAgent.ToString(),
-            HttpContext.Connection.RemoteIpAddress?.ToString(), HttpContext.RequestAborted);
+        var token = await sessions.CreateAsync(
+            user!,
+            Request.Headers.UserAgent.ToString(),
+            HttpContext.Connection.RemoteIpAddress?.ToString(),
+            HttpContext.RequestAborted
+        );
         AuthEndpoints.Audit(Db, user!.Id, "web_login", null, HttpContext);
         await Db.SaveChangesAsync();
         AuthEndpoints.SetSessionCookie(HttpContext, token, options);
@@ -100,8 +104,12 @@ public sealed class LoginModel(ArchiveDbContext db, SessionService sessions, Arc
         Db.Users.Add(user);
         await Db.SaveChangesAsync();
 
-        var token = await sessions.CreateAsync(user, Request.Headers.UserAgent.ToString(),
-            HttpContext.Connection.RemoteIpAddress?.ToString(), HttpContext.RequestAborted);
+        var token = await sessions.CreateAsync(
+            user,
+            Request.Headers.UserAgent.ToString(),
+            HttpContext.Connection.RemoteIpAddress?.ToString(),
+            HttpContext.RequestAborted
+        );
         throttle.RecordFailure(ipKey);
         AuthEndpoints.Audit(Db, user.Id, "web_register", null, HttpContext);
         await Db.SaveChangesAsync();

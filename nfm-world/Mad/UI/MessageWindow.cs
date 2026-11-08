@@ -126,9 +126,7 @@ public class MessageWindow
         ImGui.SetNextWindowPos(center, ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
         ImGui.SetNextWindowSize(new Vector2(400, 0), ImGuiCond.Appearing);
 
-        ImGuiWindowFlags flags = ImGuiWindowFlags.NoCollapse | 
-                                 ImGuiWindowFlags.NoResize | 
-                                 ImGuiWindowFlags.AlwaysAutoResize;
+        ImGuiWindowFlags flags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.AlwaysAutoResize;
 
         if (ImGui.Begin(_title, ref _isOpen, flags))
         {
@@ -158,61 +156,64 @@ public class MessageWindow
         float buttonWidth = 100f;
         float spacing = 8f;
         float totalWidth;
-        
+
         switch (_buttonType)
         {
             case ButtonType.OK:
                 totalWidth = buttonWidth;
                 ImGui.SetCursorPosX((ImGui.GetWindowWidth() - totalWidth) * 0.5f);
-                
+
                 if (ImGui.Button("OK", new Vector2(buttonWidth, 0)))
                 {
                     _result = MessageResult.OK;
                     _isOpen = false;
                     InvokeCallback();
                 }
+
                 break;
 
             case ButtonType.YesNo:
                 totalWidth = buttonWidth * 2 + spacing;
                 ImGui.SetCursorPosX((ImGui.GetWindowWidth() - totalWidth) * 0.5f);
-                
+
                 if (ImGui.Button("Yes", new Vector2(buttonWidth, 0)))
                 {
                     _result = MessageResult.Yes;
                     _isOpen = false;
                     InvokeCallback();
                 }
-                
+
                 ImGui.SameLine(0, spacing);
-                
+
                 if (ImGui.Button("No", new Vector2(buttonWidth, 0)))
                 {
                     _result = MessageResult.No;
                     _isOpen = false;
                     InvokeCallback();
                 }
+
                 break;
 
             case ButtonType.OKCancel:
                 totalWidth = buttonWidth * 2 + spacing;
                 ImGui.SetCursorPosX((ImGui.GetWindowWidth() - totalWidth) * 0.5f);
-                
+
                 if (ImGui.Button("OK", new Vector2(buttonWidth, 0)))
                 {
                     _result = MessageResult.OK;
                     _isOpen = false;
                     InvokeCallback();
                 }
-                
+
                 ImGui.SameLine(0, spacing);
-                
+
                 if (ImGui.Button("Cancel", new Vector2(buttonWidth, 0)))
                 {
                     _result = MessageResult.Cancel;
                     _isOpen = false;
                     InvokeCallback();
                 }
+
                 break;
 
             case ButtonType.Custom:
@@ -242,6 +243,7 @@ public class MessageWindow
                         }
                     }
                 }
+
                 break;
         }
     }

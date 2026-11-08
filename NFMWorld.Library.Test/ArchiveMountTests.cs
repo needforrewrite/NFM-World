@@ -42,6 +42,7 @@ public class ArchiveMountTests
 
         CollectionAssert.AreEquivalent(
             new[] { "archive/Car/a", "archive/Stage/b" },
-            fs.EnumerateFiles("archive", "*", SearchOption.AllDirectories).ToArray());
+            fs.EnumerateFiles("archive", "*", SearchOption.AllDirectories).ToArray()
+        );
     }
 }

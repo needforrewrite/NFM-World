@@ -6,64 +6,47 @@ namespace NFMWorldLibrary;
 [PluginVisible]
 public partial class Control
 {
-    [PluginVisible]
-    public bool Arrace;
+    [PluginVisible] public bool Arrace;
 
     /// <summary>
     /// The <see cref="Gamemodes.ClientSidePlayer.Index"/> of the opponent the arrow is locked onto,
     /// or -1 to auto-pick the nearest. An identity, not a sidebar slot, so the lock survives other
     /// cars being wasted and reordering the list. Only meaningful while <see cref="Arrace"/> is on.
     /// </summary>
-    [PluginVisible]
-    public int ArrowLock = -1;
+    [PluginVisible] public int ArrowLock = -1;
 
-    [PluginVisible]
-    public int Chatup;
-    
-    [PluginVisible]
-    public bool Down;
-    
-    [PluginVisible]
-    public bool Enter;
-    
-    [PluginVisible]
-    public bool Exit;
-    
-    [PluginVisible]
-    public bool Handb;
-    
-    [PluginVisible]
-    public int Multion;
-    
-    [PluginVisible]
-    public bool Mutem;
-    
-    [PluginVisible]
-    public bool Mutes;
-    
-    [PluginVisible]
-    public bool Radar;
-    
-    [PluginVisible]
-    public bool Right;
-    
-    [PluginVisible]
-    public bool Up;
-    
-    [PluginVisible]
-    public bool Left;
-    
-    [PluginVisible]
-    public int Lookback;
-    
-    [PluginVisible]
-    public int Wall = -1;
+    [PluginVisible] public int Chatup;
+
+    [PluginVisible] public bool Down;
+
+    [PluginVisible] public bool Enter;
+
+    [PluginVisible] public bool Exit;
+
+    [PluginVisible] public bool Handb;
+
+    [PluginVisible] public int Multion;
+
+    [PluginVisible] public bool Mutem;
+
+    [PluginVisible] public bool Mutes;
+
+    [PluginVisible] public bool Radar;
+
+    [PluginVisible] public bool Right;
+
+    [PluginVisible] public bool Up;
+
+    [PluginVisible] public bool Left;
+
+    [PluginVisible] public int Lookback;
+
+    [PluginVisible] public int Wall = -1;
 
     /// <summary>
     /// Inverts the ZY angle. It is true if the AI axis is flipped.
     /// </summary>
-    [PluginVisible]
-    public bool Zyinv = false;
+    [PluginVisible] public bool Zyinv = false;
 
     internal void Falseo(int i)
     {
@@ -88,6 +71,7 @@ public partial class Control
         {
             Multion = 0;
         }
+
         if (i == 3)
         {
             return;

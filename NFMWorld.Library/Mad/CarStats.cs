@@ -11,37 +11,95 @@ namespace NFMWorldLibrary;
 [PluginVisible]
 public partial record struct CarStats
 {
-    [JsonPropertyName("swits"), PluginVisible, MemoryPackOrder(0)] public Int3 Swits { get; init; }
-    [JsonPropertyName("acelf"), PluginVisible, MemoryPackOrder(1)] public f64Vector3 Acelf { get; init; }
-    [JsonPropertyName("handb"), PluginVisible, MemoryPackOrder(2)] public int Handb { get; init; }
-    [JsonPropertyName("airs"), PluginVisible, MemoryPackOrder(3)] public fix64 Airs { get; init; }
-    [JsonPropertyName("airc"), PluginVisible, MemoryPackOrder(4)] public int Airc { get; init; }
+    [JsonPropertyName("swits"), PluginVisible, MemoryPackOrder(0)]
+    public Int3 Swits { get; init; }
+
+    [JsonPropertyName("acelf"), PluginVisible, MemoryPackOrder(1)]
+    public f64Vector3 Acelf { get; init; }
+
+    [JsonPropertyName("handb"), PluginVisible, MemoryPackOrder(2)]
+    public int Handb { get; init; }
+
+    [JsonPropertyName("airs"), PluginVisible, MemoryPackOrder(3)]
+    public fix64 Airs { get; init; }
+
+    [JsonPropertyName("airc"), PluginVisible, MemoryPackOrder(4)]
+    public int Airc { get; init; }
+
     // ReSharper disable once InconsistentNaming
     [JsonIgnore, MemoryPackOrder(5)] public int _deprecated_Turn { get; init; }
-    [JsonPropertyName("grip"), PluginVisible, MemoryPackOrder(6)] public fix64 Grip { get; init; }
-    [JsonPropertyName("bounce"), PluginVisible, MemoryPackOrder(7)] public fix64 Bounce { get; init; }
-    [JsonPropertyName("simag"), PluginVisible, MemoryPackOrder(8)] public fix64 Simag { get; init; }
-    [JsonPropertyName("moment"), PluginVisible, MemoryPackOrder(9)] public fix64 Moment { get; init; }
-    [JsonPropertyName("comprad"), PluginVisible, MemoryPackOrder(10)] public fix64 Comprad { get; init; }
-    [JsonPropertyName("push"), PluginVisible, MemoryPackOrder(11)] public fix64 Push { get; init; }
-    [JsonPropertyName("revpush"), PluginVisible, MemoryPackOrder(12)] public fix64 Revpush { get; init; }
-    [JsonPropertyName("lift"), PluginVisible, MemoryPackOrder(13)] public int Lift { get; init; }
-    [JsonPropertyName("revlift"), PluginVisible, MemoryPackOrder(14)] public int Revlift { get; init; }
-    [JsonPropertyName("powerloss"), PluginVisible, MemoryPackOrder(15)] public int Powerloss { get; init; }
-    [JsonPropertyName("flipy"), PluginVisible, MemoryPackOrder(16)] public int Flipy { get; init; }
-    [JsonPropertyName("msquash"), PluginVisible, MemoryPackOrder(17)] public int Msquash { get; init; }
-    [JsonPropertyName("clrad"), PluginVisible, MemoryPackOrder(18)] public int Clrad { get; init; } 
-    [JsonPropertyName("dammult"), PluginVisible, MemoryPackOrder(19)] public fix64 Dammult { get; init; }
-    [JsonPropertyName("maxmag"), PluginVisible, MemoryPackOrder(20)] public int Maxmag { get; init; }
-    [JsonPropertyName("dishandle"), PluginVisible, MemoryPackOrder(21)] public fix64 Dishandle { get; init; }
-    [JsonPropertyName("outdam"), PluginVisible, MemoryPackOrder(22)] public fix64 Outdam { get; init; }
-    [JsonPropertyName("name"), PluginVisible, MemoryPackOrder(23)] public string Name { get; init; }
-    [JsonPropertyName("enginsignature"), PluginVisible, MemoryPackOrder(24)] public sbyte Enginsignature { get; init; }
-    [JsonPropertyName("turnradius"), PluginVisible, MemoryPackOrder(25)] public int TurnRadius { get; set; }
-    [JsonPropertyName("roadgrip"), PluginVisible, MemoryPackOrder(26)] public fix64? RoadGrip { get; set; }
-    [JsonPropertyName("offroadgrip"), PluginVisible, MemoryPackOrder(27)] public fix64? OffRoadGrip { get; set; }
-    [JsonPropertyName("offtrackgrip"), PluginVisible, MemoryPackOrder(28)] public fix64? OffTrackGrip { get; set; }
-    [JsonPropertyName("turn"), PluginVisible, MemoryPackOrder(29)] public fix64 Turn { get; init; }
+
+    [JsonPropertyName("grip"), PluginVisible, MemoryPackOrder(6)]
+    public fix64 Grip { get; init; }
+
+    [JsonPropertyName("bounce"), PluginVisible, MemoryPackOrder(7)]
+    public fix64 Bounce { get; init; }
+
+    [JsonPropertyName("simag"), PluginVisible, MemoryPackOrder(8)]
+    public fix64 Simag { get; init; }
+
+    [JsonPropertyName("moment"), PluginVisible, MemoryPackOrder(9)]
+    public fix64 Moment { get; init; }
+
+    [JsonPropertyName("comprad"), PluginVisible, MemoryPackOrder(10)]
+    public fix64 Comprad { get; init; }
+
+    [JsonPropertyName("push"), PluginVisible, MemoryPackOrder(11)]
+    public fix64 Push { get; init; }
+
+    [JsonPropertyName("revpush"), PluginVisible, MemoryPackOrder(12)]
+    public fix64 Revpush { get; init; }
+
+    [JsonPropertyName("lift"), PluginVisible, MemoryPackOrder(13)]
+    public int Lift { get; init; }
+
+    [JsonPropertyName("revlift"), PluginVisible, MemoryPackOrder(14)]
+    public int Revlift { get; init; }
+
+    [JsonPropertyName("powerloss"), PluginVisible, MemoryPackOrder(15)]
+    public int Powerloss { get; init; }
+
+    [JsonPropertyName("flipy"), PluginVisible, MemoryPackOrder(16)]
+    public int Flipy { get; init; }
+
+    [JsonPropertyName("msquash"), PluginVisible, MemoryPackOrder(17)]
+    public int Msquash { get; init; }
+
+    [JsonPropertyName("clrad"), PluginVisible, MemoryPackOrder(18)]
+    public int Clrad { get; init; }
+
+    [JsonPropertyName("dammult"), PluginVisible, MemoryPackOrder(19)]
+    public fix64 Dammult { get; init; }
+
+    [JsonPropertyName("maxmag"), PluginVisible, MemoryPackOrder(20)]
+    public int Maxmag { get; init; }
+
+    [JsonPropertyName("dishandle"), PluginVisible, MemoryPackOrder(21)]
+    public fix64 Dishandle { get; init; }
+
+    [JsonPropertyName("outdam"), PluginVisible, MemoryPackOrder(22)]
+    public fix64 Outdam { get; init; }
+
+    [JsonPropertyName("name"), PluginVisible, MemoryPackOrder(23)]
+    public string Name { get; init; }
+
+    [JsonPropertyName("enginsignature"), PluginVisible, MemoryPackOrder(24)]
+    public sbyte Enginsignature { get; init; }
+
+    [JsonPropertyName("turnradius"), PluginVisible, MemoryPackOrder(25)]
+    public int TurnRadius { get; set; }
+
+    [JsonPropertyName("roadgrip"), PluginVisible, MemoryPackOrder(26)]
+    public fix64? RoadGrip { get; set; }
+
+    [JsonPropertyName("offroadgrip"), PluginVisible, MemoryPackOrder(27)]
+    public fix64? OffRoadGrip { get; set; }
+
+    [JsonPropertyName("offtrackgrip"), PluginVisible, MemoryPackOrder(28)]
+    public fix64? OffTrackGrip { get; set; }
+
+    [JsonPropertyName("turn"), PluginVisible, MemoryPackOrder(29)]
+    public fix64 Turn { get; init; }
 
     /// <summary>
     /// Tornado Shark stats, used as a fallback if a car has incomplete or invalid stats in the rad file.
@@ -76,7 +134,7 @@ public partial record struct CarStats
     public CarStats() : this(null)
     {
     }
-    
+
     [MemoryPackConstructor]
     public CarStats(
         Int3? Swits = null,
@@ -107,7 +165,8 @@ public partial record struct CarStats
         int TurnRadius = 36,
         fix64? RoadGrip = null,
         fix64? OffRoadGrip = null,
-        fix64? OffTrackGrip = null)
+        fix64? OffTrackGrip = null
+    )
     {
         this.Swits = Swits ?? new Int3(int.MinValue, int.MinValue, int.MinValue);
         this.Acelf = Acelf ?? new f64Vector3(fix64.MinValue, fix64.MinValue, fix64.MinValue);
@@ -146,32 +205,32 @@ public partial record struct CarStats
     /// <returns>the first invalid property name if any, or null if all are valid</returns>
     public string? Validate(string fileName)
     {
-        if(Swits[0] == int.MinValue) return ValidateFail(nameof(Swits));
-        else if(Acelf.AsSpan()[0] == fix64.MinValue) return ValidateFail(nameof(Acelf));
-        else if(Handb == int.MinValue) return ValidateFail(nameof(Handb));
-        else if(Airs == fix64.MinValue) return ValidateFail(nameof(Airs));
-        else if(Airc == int.MinValue) return ValidateFail(nameof(Airc));
-        else if(Turn == fix64.MinValue) return ValidateFail(nameof(Turn));
-        else if(Grip == fix64.MinValue) return ValidateFail(nameof(Grip));
-        else if(Bounce == fix64.MinValue) return ValidateFail(nameof(Bounce));
+        if (Swits[0] == int.MinValue) return ValidateFail(nameof(Swits));
+        else if (Acelf.AsSpan()[0] == fix64.MinValue) return ValidateFail(nameof(Acelf));
+        else if (Handb == int.MinValue) return ValidateFail(nameof(Handb));
+        else if (Airs == fix64.MinValue) return ValidateFail(nameof(Airs));
+        else if (Airc == int.MinValue) return ValidateFail(nameof(Airc));
+        else if (Turn == fix64.MinValue) return ValidateFail(nameof(Turn));
+        else if (Grip == fix64.MinValue) return ValidateFail(nameof(Grip));
+        else if (Bounce == fix64.MinValue) return ValidateFail(nameof(Bounce));
         //else if(Simag == fix64.MinValue) return ValidateFail(nameof(Simag));
-        else if(Moment == fix64.MinValue) return ValidateFail(nameof(Moment));
-        else if(Comprad == fix64.MinValue) return ValidateFail(nameof(Comprad));
-        else if(Push == fix64.MinValue) return ValidateFail(nameof(Push));
-        else if(Revpush == fix64.MinValue) return ValidateFail(nameof(Revpush));
-        else if(Lift == int.MinValue) return ValidateFail(nameof(Lift));
-        else if(Revlift == int.MinValue) return ValidateFail(nameof(Revlift));
-        else if(Powerloss == int.MinValue) return ValidateFail(nameof(Powerloss));
-        else if(Clrad == int.MinValue) return ValidateFail(nameof(Clrad));
-        else if(Dammult == fix64.MinValue) return ValidateFail(nameof(Dammult));
-        else if(Maxmag == int.MinValue) return ValidateFail(nameof(Maxmag));
-        else if(Outdam == fix64.MinValue) return ValidateFail(nameof(Outdam));
-        else if(TurnRadius == int.MinValue) return ValidateFail(nameof(TurnRadius));
+        else if (Moment == fix64.MinValue) return ValidateFail(nameof(Moment));
+        else if (Comprad == fix64.MinValue) return ValidateFail(nameof(Comprad));
+        else if (Push == fix64.MinValue) return ValidateFail(nameof(Push));
+        else if (Revpush == fix64.MinValue) return ValidateFail(nameof(Revpush));
+        else if (Lift == int.MinValue) return ValidateFail(nameof(Lift));
+        else if (Revlift == int.MinValue) return ValidateFail(nameof(Revlift));
+        else if (Powerloss == int.MinValue) return ValidateFail(nameof(Powerloss));
+        else if (Clrad == int.MinValue) return ValidateFail(nameof(Clrad));
+        else if (Dammult == fix64.MinValue) return ValidateFail(nameof(Dammult));
+        else if (Maxmag == int.MinValue) return ValidateFail(nameof(Maxmag));
+        else if (Outdam == fix64.MinValue) return ValidateFail(nameof(Outdam));
+        else if (TurnRadius == int.MinValue) return ValidateFail(nameof(TurnRadius));
         // Divisors: a zero here throws DivideByZeroException on the first drive tick.
-        else if(Simag <= fix64.Zero) return ValidateFail(nameof(Simag));
-        else if(Powerloss == 0) return ValidateFail(nameof(Powerloss));
-        else if(Swits[2] == 0) return ValidateFail(nameof(Swits));
-        else if(Name == "hogan rewish") return ValidateFailName(fileName);
+        else if (Simag <= fix64.Zero) return ValidateFail(nameof(Simag));
+        else if (Powerloss == 0) return ValidateFail(nameof(Powerloss));
+        else if (Swits[2] == 0) return ValidateFail(nameof(Swits));
+        else if (Name == "hogan rewish") return ValidateFailName(fileName);
 
         return null;
     }
@@ -185,8 +244,12 @@ public partial record struct CarStats
 
     private string ValidateFail(string property)
     {
-        SentrySdk.CaptureMessage($"Car stat {property} for car '{Name}' was invalid or undefined. Falling back to Tornado Shark stats for all stats.");
-        Logging.Error($"Car stat {property} for car '{Name}' was invalid or undefined. Falling back to Tornado Shark stats for all stats.");
+        SentrySdk.CaptureMessage(
+            $"Car stat {property} for car '{Name}' was invalid or undefined. Falling back to Tornado Shark stats for all stats."
+        );
+        Logging.Error(
+            $"Car stat {property} for car '{Name}' was invalid or undefined. Falling back to Tornado Shark stats for all stats."
+        );
         return property;
     }
 
@@ -196,7 +259,7 @@ public partial record struct CarStats
         if (invalidStat != null)
         {
             stats = Default;
-            if(invalidStat == nameof(Name) || string.IsNullOrEmpty(stats.Name))
+            if (invalidStat == nameof(Name) || string.IsNullOrEmpty(stats.Name))
             {
                 stats = stats with { Name = fileName };
             }
@@ -205,7 +268,6 @@ public partial record struct CarStats
         return stats;
     }
 }
-
 
 /// <summary>
 /// Represents a three dimensional mathematical vector.
@@ -242,17 +304,20 @@ public partial struct Int3 : IEquatable<Int3>
     /// <summary>
     /// The X component of the vector.
     /// </summary>
-    [JsonPropertyName("x")] [PluginVisible] public int X;
+    [JsonPropertyName("x")] [PluginVisible]
+    public int X;
 
     /// <summary>
     /// The Y component of the vector.
     /// </summary>
-    [JsonPropertyName("y")] [PluginVisible] public int Y;
+    [JsonPropertyName("y")] [PluginVisible]
+    public int Y;
 
     /// <summary>
     /// The Z component of the vector.
     /// </summary>
-    [JsonPropertyName("z")] [PluginVisible] public int Z;
+    [JsonPropertyName("z")] [PluginVisible]
+    public int Z;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Int3"/> struct.
@@ -277,7 +342,7 @@ public partial struct Int3 : IEquatable<Int3>
         Y = y;
         Z = z;
     }
-    
+
     /// <summary>
     /// Tests for equality between two objects.
     /// </summary>
@@ -299,7 +364,7 @@ public partial struct Int3 : IEquatable<Int3>
     {
         return !left.Equals(right);
     }
-    
+
     /// <summary>
     /// Returns a hash code for this instance.
     /// </summary>

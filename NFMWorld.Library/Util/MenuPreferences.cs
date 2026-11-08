@@ -12,20 +12,26 @@ public static class MenuPreferences
     public static string NormalizeMusic(string selection) => IsRelativeAsset(selection) ? selection : StageSoundtrack;
 
     public static string ResolveStage(VirtualFS fs, string selection, string lastPlayed)
-        => selection != LastPlayedStage && IsRelativeAsset(selection)
-            && (fs.FileExists($"data/stages/{selection}.txt") || fs.FileExists($"data/stages/{selection}.radpack"))
-            ? selection : lastPlayed;
+        => selection != LastPlayedStage
+           && IsRelativeAsset(selection)
+           && (fs.FileExists($"data/stages/{selection}.txt") || fs.FileExists($"data/stages/{selection}.radpack"))
+            ? selection
+            : lastPlayed;
 
     public static string? ResolveMusic(VirtualFS fs, string selection)
-        => selection != StageSoundtrack && IsRelativeAsset(selection)
-            && IsMusicFile(selection) && (fs.FileExists(MusicDirectory + selection)
-                || fs.EnumerateFiles(MusicDirectory, "*", SearchOption.AllDirectories)
-                    .Contains(MusicDirectory + selection, StringComparer.OrdinalIgnoreCase))
-            ? MusicDirectory + selection : null;
+        => selection != StageSoundtrack
+           && IsRelativeAsset(selection)
+           && IsMusicFile(selection)
+           && (fs.FileExists(MusicDirectory + selection)
+               || fs.EnumerateFiles(MusicDirectory, "*", SearchOption.AllDirectories)
+                   .Contains(MusicDirectory + selection, StringComparer.OrdinalIgnoreCase))
+            ? MusicDirectory + selection
+            : null;
 
     public static string[] GetStages(VirtualFS fs) => fs.EnumerateFiles("data/stages", "*", SearchOption.AllDirectories)
         .Where(path => path.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)
-            || path.EndsWith(".radpack", StringComparison.OrdinalIgnoreCase))
+                       || path.EndsWith(".radpack", StringComparison.OrdinalIgnoreCase)
+        )
         .Select(path => path["data/stages/".Length..path.LastIndexOf('.')])
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .Order(Comparer<string>.Create(NaturalCompare.CompareNatural))
@@ -41,6 +47,10 @@ public static class MenuPreferences
         is ".mp3" or ".ogg" or ".wav" or ".flac" or ".mod" or ".xm" or ".s3m" or ".it";
 
     private static bool IsRelativeAsset(string selection) => !string.IsNullOrWhiteSpace(selection)
-        && !selection.Any(char.IsControl) && !selection.Contains(':') && !selection.Contains('\\')
-        && selection.Split('/').All(part => part.Length > 0 && part is not "." and not "..");
+                                                             && !selection.Any(char.IsControl)
+                                                             && !selection.Contains(':')
+                                                             && !selection.Contains('\\')
+                                                             && selection.Split('/').All(part
+                                                                 => part.Length > 0 && part is not "." and not ".."
+                                                             );
 }

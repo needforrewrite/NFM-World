@@ -9,9 +9,9 @@ namespace NFMWorld;
 public abstract class Transform : ITransform
 {
     public readonly record struct TransformState(f64Vector3 Position, f64Euler Rotation);
-    
+
     public TransformState PreviousState { get; private set; }
-    
+
     public abstract IReadOnlyList<ITransform> ChildTransforms { get; }
 
     public f64Vector3 Position { get; set; } = f64Vector3.Zero;
@@ -55,6 +55,7 @@ public abstract class Transform : ITransform
         {
             ownMatrixWorld = ownMatrixWorld * Parent.MatrixWorld;
         }
+
         MatrixWorld = ownMatrixWorld;
     }
 }

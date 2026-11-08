@@ -3,7 +3,7 @@
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
     </PropertyGroup>
-    
+
     <ItemGroup>
         <!-- PreserveNewest, not Always: Always rewrote every native DLL into each
              dependent project's output on every build, which fails against a running
@@ -14,7 +14,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="libs\" />
+        <Folder Include="libs\"/>
     </ItemGroup>
 
 </Project>

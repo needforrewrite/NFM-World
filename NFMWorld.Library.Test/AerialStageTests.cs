@@ -20,10 +20,11 @@ public class AerialStageTests
         try
         {
             SentrySdk.Init(options =>
-            {
-                options.Dsn = "https://public@localhost/1";
-                options.TracesSampleRate = 0;
-            });
+                {
+                    options.Dsn = "https://public@localhost/1";
+                    options.TracesSampleRate = 0;
+                }
+            );
         }
         catch (InvalidOperationException)
         {
@@ -42,11 +43,16 @@ public class AerialStageTests
             new f64Vector3(x, y, z),
             rotation,
             PiecePlacementType.CheckPoint,
-            AiNodeKind.CheckPoint);
+            AiNodeKind.CheckPoint
+        );
     }
 
     private static (BackendStage Stage, BackendCar Car, StageObject LastCheckpoint) CreateSetup(
-        bool aerial, fix64 lastCheckpointY, fix64 nextCheckpointY, int currentCheckpoint = 1) 
+        bool aerial,
+        fix64 lastCheckpointY,
+        fix64 nextCheckpointY,
+        int currentCheckpoint = 1
+    )
     {
         var stage = new BackendStage("aerial-test", new StageLoader { Aerial = aerial });
         var lastCheckpoint = CreateCheckpoint(100, lastCheckpointY, 200, 90);
@@ -70,7 +76,8 @@ public class AerialStageTests
         var crossingRotation = new f64Euler(
             f64AngleSingle.FromDegrees(45),
             f64AngleSingle.FromDegrees(10),
-            f64AngleSingle.FromDegrees(20));
+            f64AngleSingle.FromDegrees(20)
+        );
         car.LastCheckpointRotation = crossingRotation;
         car.LastCheckpointPxy = 33;
         car.LastCheckpointPzy = 44;
@@ -115,7 +122,11 @@ public class AerialStageTests
     public void HandleAerialFall_NoCheckpointTaken_DoesNotTeleport()
     {
         var (stage, car, _) = CreateSetup(
-            aerial: true, lastCheckpointY: -1000, nextCheckpointY: -2000, currentCheckpoint: 0);
+            aerial: true,
+            lastCheckpointY: -1000,
+            nextCheckpointY: -2000,
+            currentCheckpoint: 0
+        );
 
         var teleported = CheckPointHelper.HandleAerialFall(stage, car);
 
@@ -144,7 +155,8 @@ public class AerialStageTests
         car.Rotation = new f64Euler(
             f64AngleSingle.FromDegrees(45),
             f64AngleSingle.FromDegrees(10),
-            f64AngleSingle.FromDegrees(20));
+            f64AngleSingle.FromDegrees(20)
+        );
         car.CarPhysics.Pxy = 33;
         car.CarPhysics.Pzy = 44;
 

@@ -14,4 +14,5 @@ public class PacketAttribute(PacketDirection direction, sbyte opcode) : Attribut
 }
 
 public class PacketClientToServerAttribute(sbyte opcode) : PacketAttribute(PacketDirection.ClientToServer, opcode);
+
 public class PacketServerToClientAttribute(sbyte opcode) : PacketAttribute(PacketDirection.ServerToClient, opcode);

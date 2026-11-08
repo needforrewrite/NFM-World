@@ -14,6 +14,7 @@ public class FollowCamera
 
     private float _bcxz;
     private Euler _angle;
+
     public static int FollowZOffset
     {
         get;
@@ -39,8 +40,15 @@ public class FollowCamera
     /// Sits behind the car like <see cref="Follow"/>, but aims at <paramref name="target"/> instead
     /// of straight down the car's nose: the camera looks where the guidance arrow points.
     /// </summary>
-    public void FollowTarget(PerspectiveCamera camera, ITransform obj, float cxz, float speed, float topSpeed,
-        Vector3 target, bool interpolate)
+    public void FollowTarget(
+        PerspectiveCamera camera,
+        ITransform obj,
+        float cxz,
+        float speed,
+        float topSpeed,
+        Vector3 target,
+        bool interpolate
+    )
     {
         var followDistance = 800 + FollowZOffset;
         if (CameraSettings.SmoothFov)
@@ -105,7 +113,8 @@ public class FollowCamera
         var position = new Vector3(
             carX - dirX * followDistance,
             carY - 250 - FollowYOffset - 200,
-            carZ - dirZ * followDistance);
+            carZ - dirZ * followDistance
+        );
         var lookAt = new Vector3(carX + dirX * 300f, carY, carZ + dirZ * 300f);
 
         if (interpolate)
@@ -141,33 +150,42 @@ public class FollowCamera
 
         if (lookback != 0)
         {
-            if (lookback == 2)   //look right
+            if (lookback == 2) //look right
             {
-                if (_bcxz > -90) {
+                if (_bcxz > -90)
+                {
                     //_bcxz -= i28;
                     _bcxz = -90;
                 }
-                if (_bcxz < -90) {
+
+                if (_bcxz < -90)
+                {
                     _bcxz = -90;
                 }
             }
-            if (lookback == 3)   //look left
+
+            if (lookback == 3) //look left
             {
-                if (_bcxz < 90) {
+                if (_bcxz < 90)
+                {
                     //_bcxz += i28;
                     _bcxz = 90;
                 }
-                if (_bcxz > 90) {
+
+                if (_bcxz > 90)
+                {
                     _bcxz = 90;
                 }
             }
-            if (lookback == -1)  // look back
+
+            if (lookback == -1) // look back
             {
                 if (_bcxz > -180)
                 {
                     //_bcxz -= i28;
                     _bcxz = -180;
                 }
+
                 if (_bcxz < -180)
                 {
                     _bcxz = -180;
@@ -191,6 +209,7 @@ public class FollowCamera
         {
             _bcxz = 0;
         }
+
         cxz += _bcxz;
         _angle.Yaw = AngleSingle.FromDegrees(-cxz);
 
@@ -214,12 +233,12 @@ public class FollowCamera
                 Z = (float)(obj.Position.Z - (followDistance * UMath.Cos(cxz))),
                 Y = (float)(obj.Position.Y - 250 - FollowYOffset),
             };
-            
+
             // Calculate the look direction by rotating the forward vector
             var lookDirection = (_angle * Vector3.UnitZ) * 100;
             // LookAt should be a target point, not a direction - add direction to position
             var lookAtPoint = camera.Position + lookDirection;
-            
+
             camera.LookAt = lookAtPoint;
         }
         else
@@ -230,7 +249,7 @@ public class FollowCamera
                 Z = (float)(obj.Position.Z - (followDistance * UMath.Cos(cxz))),
                 Y = (float)(obj.Position.Y - 250 - FollowYOffset),
             };
-            
+
             // Calculate the look direction by rotating the forward vector
             var lookDirection = (_angle * Vector3.UnitZ) * 100;
             // LookAt should be a target point, not a direction - add direction to position

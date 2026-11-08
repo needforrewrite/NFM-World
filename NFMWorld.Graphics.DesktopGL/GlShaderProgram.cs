@@ -111,7 +111,13 @@ internal sealed class GlShaderProgram : IDisposable
     /// <summary>The uniform block's member offsets as the reflection declares them, for the smoke test to compare against the driver's.</summary>
     internal ShaderReflection Reflection { get; }
 
-    internal GlShaderProgram(GL gl, GlDeletionQueue deletions, ShaderStageSources vertex, ShaderStageSources pixel, ShaderReflection reflection)
+    internal GlShaderProgram(
+        GL gl,
+        GlDeletionQueue deletions,
+        ShaderStageSources vertex,
+        ShaderStageSources pixel,
+        ShaderReflection reflection
+    )
     {
         _gl = gl;
         _deletions = deletions;
@@ -200,8 +206,9 @@ internal sealed class GlShaderProgram : IDisposable
         if (index == InvalidIndex)
         {
             throw new InvalidOperationException(
-                $"The reflection declares {reflection.Uniforms.Count} uniform(s) but the linked program " +
-                $"has no uniform block named '{blockName}'. The reflection and the compiled GLSL disagree.");
+                $"The reflection declares {reflection.Uniforms.Count} uniform(s) but the linked program "
+                + $"has no uniform block named '{blockName}'. The reflection and the compiled GLSL disagree."
+            );
         }
 
         // Binding 0 is free here because this program owns its own block; the command buffer
@@ -282,8 +289,7 @@ internal sealed class GlShaderProgram : IDisposable
         {
             _gl.GetActiveUniform(Handle, i, out _, out var type);
 
-            if (type >= Silk.NET.OpenGL.UniformType.Sampler1D &&
-                type <= Silk.NET.OpenGL.UniformType.SamplerCubeShadow)
+            if (type >= Silk.NET.OpenGL.UniformType.Sampler1D && type <= Silk.NET.OpenGL.UniformType.SamplerCubeShadow)
             {
                 count++;
             }

@@ -8,8 +8,15 @@ namespace NFMWorld.UI.Hud;
 
 internal sealed class CustomHud : Component
 {
-    private sealed record Element(HudElement Layout, Color Color, Color Background, Color Outline,
-        FontFamily Font, Func<IHudData, string> Text, IImage? Image);
+    private sealed record Element(
+        HudElement Layout,
+        Color Color,
+        Color Background,
+        Color Outline,
+        FontFamily Font,
+        Func<IHudData, string> Text,
+        IImage? Image
+    );
 
     private readonly HudSkinDefinition _skin;
     private readonly IHudData _data;
@@ -21,9 +28,16 @@ internal sealed class CustomHud : Component
     {
         _skin = package.Definition;
         _data = data;
-        _elements = _skin.Elements.Select(e => new Element(e, ParseColor(e.Color), ParseColor(e.Background),
-            ParseColor(e.Outline), Enum.Parse<FontFamily>(e.Font), HudText.Compile(e.Text),
-            e.Type == "image" ? HudImages.TryLoad($"{package.Directory}/{e.Source}") : null)).ToArray();
+        _elements = _skin.Elements.Select(e => new Element(
+                e,
+                ParseColor(e.Color),
+                ParseColor(e.Background),
+                ParseColor(e.Outline),
+                Enum.Parse<FontFamily>(e.Font),
+                HudText.Compile(e.Text),
+                e.Type == "image" ? HudImages.TryLoad($"{package.Directory}/{e.Source}") : null
+            )
+        ).ToArray();
     }
 
     protected override void RenderContent(Vector2 position, Vector2 size)
@@ -89,6 +103,7 @@ internal sealed class CustomHud : Component
             if (amount > 70f / 98 && (int)(_clock * 6) % 2 == 0) green = 170;
             color = new Color(244, (byte)green, 11);
         }
+
         G.SetColor(color);
         if (amount <= 0) return;
         if (layout.Vertical)
@@ -112,6 +127,7 @@ internal sealed class CustomHud : Component
             px[i] = (int)(x + width / 2 + (xs[i] * cos - ys[i] * sin) * width);
             py[i] = (int)(y + height / 2 + (xs[i] * sin + ys[i] * cos) * height);
         }
+
         G.SetColor(element.Color);
         G.FillPolygon(px, py, 7);
         if (element.Layout.OutlineWidth <= 0) return;
@@ -133,6 +149,7 @@ internal sealed class CustomHud : Component
                 G.SetColor(element.Background);
                 G.FillRect((int)x, (int)y, (int)width, (int)rowHeight);
             }
+
             DrawText($"{racer.Position}. {racer.Name}", element, x, y, width, scale);
             y += rowHeight;
         }
@@ -148,20 +165,25 @@ internal sealed class CustomHud : Component
         G.DrawStringOutlined(text, (int)x, (int)(y + metrics.LineHeight), element.Outline, element.Layout.OutlineWidth * scale);
     }
 
-    private static Vector2 Anchor(string anchor, Vector2 position, Vector2 size) => position + (anchor switch
-    {
-        "topCenter" => new Vector2(size.X / 2, 0),
-        "topRight" => new Vector2(size.X, 0),
-        "center" => size / 2,
-        "bottomLeft" => new Vector2(0, size.Y),
-        "bottomCenter" => new Vector2(size.X / 2, size.Y),
-        "bottomRight" => size,
-        _ => Vector2.Zero
-    });
+    private static Vector2 Anchor(string anchor, Vector2 position, Vector2 size) => position
+                                                                                    + (anchor switch
+                                                                                    {
+                                                                                        "topCenter" => new Vector2(size.X / 2, 0),
+                                                                                        "topRight" => new Vector2(size.X, 0),
+                                                                                        "center" => size / 2,
+                                                                                        "bottomLeft" => new Vector2(0, size.Y),
+                                                                                        "bottomCenter" => new Vector2(
+                                                                                            size.X / 2,
+                                                                                            size.Y
+                                                                                        ),
+                                                                                        "bottomRight" => size,
+                                                                                        _ => Vector2.Zero
+                                                                                    });
 
     private static Color ParseColor(string color) => new(
         byte.Parse(color.AsSpan(1, 2), NumberStyles.HexNumber),
         byte.Parse(color.AsSpan(3, 2), NumberStyles.HexNumber),
         byte.Parse(color.AsSpan(5, 2), NumberStyles.HexNumber),
-        color.Length == 9 ? byte.Parse(color.AsSpan(7, 2), NumberStyles.HexNumber) : (byte)255);
+        color.Length == 9 ? byte.Parse(color.AsSpan(7, 2), NumberStyles.HexNumber) : (byte)255
+    );
 }

@@ -36,9 +36,11 @@ var seenNonces = new NonceCache();
 ArchiveClient? archive = null;
 if (Environment.GetEnvironmentVariable("ARCHIVE_URL") is { Length: > 0 } archiveUrl)
 {
-    archive = new ArchiveClient(archiveUrl,
+    archive = new ArchiveClient(
+        archiveUrl,
         Environment.GetEnvironmentVariable("HMAC_KEY_ID"),
-        Environment.GetEnvironmentVariable("ARCHIVE_SECRET_KEY"));
+        Environment.GetEnvironmentVariable("ARCHIVE_SECRET_KEY")
+    );
     if (!archive.CanReportResults)
         Logging.Warning("[Lobby] ARCHIVE_URL is set but no ARCHIVE_SECRET_KEY, so results will not be reported.");
 }
@@ -53,30 +55,33 @@ Console.CancelKeyPress += (_, _) =>
 Console.WriteLine($"[Lobby] Accepting connections on {httpEndpoint}");
 Console.WriteLine("[Lobby] Press Ctrl+C to stop.");
 
-_ = Task.Run(async () =>
-{
-    while (!cts.IsCancellationRequested)
+_ = Task.Run(
+    async () =>
     {
-        try
+        while (!cts.IsCancellationRequested)
         {
-            var ctx = await http.GetContextAsync().WaitAsync(cts.Token);
-            if (ctx.Request.IsWebSocketRequest)
-                _ = transport.AcceptWebSocketRequest(ctx, cts.Token);
-            else
-                _ = Task.Run(() => HandleHttpRequest(ctx, knownKeys, MaxBodyBytes, orchestrator, seenNonces));
+            try
+            {
+                var ctx = await http.GetContextAsync().WaitAsync(cts.Token);
+                if (ctx.Request.IsWebSocketRequest)
+                    _ = transport.AcceptWebSocketRequest(ctx, cts.Token);
+                else
+                    _ = Task.Run(() => HandleHttpRequest(ctx, knownKeys, MaxBodyBytes, orchestrator, seenNonces));
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                // A request that throws must not end the accept loop, or no client could
+                // join again for the life of the process.
+                Logging.Error($"[Lobby] Error accepting a request: {ex}");
+            }
         }
-        catch (OperationCanceledException)
-        {
-            break;
-        }
-        catch (Exception ex)
-        {
-            // A request that throws must not end the accept loop, or no client could
-            // join again for the life of the process.
-            Logging.Error($"[Lobby] Error accepting a request: {ex}");
-        }
-    }
-}, cts.Token);
+    },
+    cts.Token
+);
 
 try
 {
@@ -95,7 +100,8 @@ static async Task HandleHttpRequest(
     IReadOnlyDictionary<string, byte[]> knownKeys,
     int maxBodyBytes,
     GameOrchestrator orchestrator,
-    NonceCache seenNonces)
+    NonceCache seenNonces
+)
 {
     var req = ctx.Request;
     var res = ctx.Response;
@@ -129,8 +135,15 @@ static async Task HandleHttpRequest(
         var body = System.Buffers.BuffersExtensions.ToArray(seq.Sequence);
 
         // The body is what the signature covers, so it has to be read before verifying.
-        var authError = HmacAuth.Verify(req.HttpMethod, req.Url!.LocalPath, body, req.Headers["Authorization"], knownKeys,
-            out var keyId, out var nonce);
+        var authError = HmacAuth.Verify(
+            req.HttpMethod,
+            req.Url!.LocalPath,
+            body,
+            req.Headers["Authorization"],
+            knownKeys,
+            out var keyId,
+            out var nonce
+        );
         if (authError is not null || !seenNonces.TryUse(keyId ?? "", nonce))
         {
             Logging.Warning($"[Lobby] /race-ended rejected: {authError ?? "nonce is missing or was already used"}");

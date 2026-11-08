@@ -23,7 +23,8 @@ public class GameMasterHttpClient
 
     public async Task<Lobby2RaceServer_CreateRaceResponse> CreateRaceAsync(
         ResolvedGameMaster master,
-        Lobby2RaceServer_CreateRace request)
+        Lobby2RaceServer_CreateRace request
+    )
     {
         var body = MemoryPackSerializer.Serialize(request);
         var authHeader = HmacAuth.Sign("POST", "/create-race", body, _keyId, _secretKey);
@@ -48,14 +49,16 @@ public class GameMasterHttpClient
 
     public async Task NotifyRaceEndedAsync(
         ResolvedGameMaster master,
-        RaceServer2Lobby_RaceResults results)
+        RaceServer2Lobby_RaceResults results
+    )
     {
         var body = MemoryPackSerializer.Serialize(results);
         var authHeader = HmacAuth.Sign("POST", "/race-ended", body, _keyId, _secretKey);
 
         using var httpRequest = new HttpRequestMessage(
             HttpMethod.Post,
-            new Uri(master.HttpEndpoint, "/race-ended"))
+            new Uri(master.HttpEndpoint, "/race-ended")
+        )
         {
             Content = new ByteArrayContent(body)
         };

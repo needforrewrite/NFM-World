@@ -11,7 +11,7 @@ public partial class StageEditorPhase
     {
         if (ActiveTab == null || draggedId == targetId) return;
         int draggedIndex = ActiveTab.ScenePieces.FindIndex(p => p.Id == draggedId);
-        int targetIndex  = ActiveTab.ScenePieces.FindIndex(p => p.Id == targetId);
+        int targetIndex = ActiveTab.ScenePieces.FindIndex(p => p.Id == targetId);
         if (draggedIndex < 0 || targetIndex < 0) return;
 
         var dragged = ActiveTab.ScenePieces.ByIndex(draggedIndex);
@@ -28,6 +28,7 @@ public partial class StageEditorPhase
         {
             ActiveTab.ScenePieces.Remove(dragged.Id);
         }
+
         ActiveTab.ScenePieces.Insert(insertAt, dragged);
 
         // ── Sync group membership when dragging across groups ──────────────────
@@ -72,21 +73,21 @@ public partial class StageEditorPhase
             ImGui.Text("No stage loaded");
             return;
         }
-        
+
         ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.6f, 0.6f, 0.6f, 1f));
         ImGui.Text($"Hierarchy — {ActiveTab.TabName}");
         ImGui.PopStyleColor();
         ImGui.Separator();
-        
+
         // Hierarchy search filter
         ImGui.SetNextItemWidth(-1);
         ImGui.InputText("##hiersearch", ref _hierarchySearch, 128);
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Filter by name");
         ImGui.Spacing();
-        
+
         bool hasFilter = !string.IsNullOrWhiteSpace(_hierarchySearch);
-        
+
         // Stage Borders section
         bool bordersOpen = ImGui.TreeNodeEx("Stage Borders", ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.SpanFullWidth);
         if (bordersOpen)
@@ -96,7 +97,9 @@ public partial class StageEditorPhase
             if (ImGui.Checkbox("Auto-update when pieces placed", ref autoWalls))
                 _autoUpdateWalls = autoWalls;
             if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("When enabled, stage borders are automatically recalculated from placed pieces using the makeWalls algorithm.");
+                ImGui.SetTooltip(
+                    "When enabled, stage borders are automatically recalculated from placed pieces using the makeWalls algorithm."
+                );
 
             ImGui.Spacing();
             RenderAutoGenerateBordersButton("_hierarchy");
@@ -124,25 +127,27 @@ public partial class StageEditorPhase
                 if (isSelected)
                     ImGui.PopStyleColor();
             }
+
             ImGui.TreePop();
         }
+
         ImGui.Spacing();
-        
+
         // All non-wall pieces
         var allPieces = ActiveTab.ScenePieces.Where(p => !p.PiecePlacement.IsWall).ToArray();
         var groupedIds = new HashSet<int>(ActiveTab.HierarchyGroups.SelectMany(g => g.PieceIds));
         var ungrouped = allPieces.Where(p => !groupedIds.Contains(p.Id)).ToArray();
         string ungroupedLabel = ActiveTab.HierarchyGroups.Count > 0 ? "Ungrouped" : "Pieces";
-        
+
         int ungroupedSlot = ActiveTab.UngroupedOrderIndex >= 0
             ? Math.Clamp(ActiveTab.UngroupedOrderIndex, 0, ActiveTab.HierarchyGroups.Count)
             : ActiveTab.HierarchyGroups.Count;
-        
+
         // Deferred mutations — applied AFTER the render loop to avoid mid-loop ImGui stack corruption
         int pendingDeleteGrpId = -1;
         int pendingReorderFrom = -1;
         int pendingReorderInsertBefore = -1; // insert dragged group BEFORE this slot index
-        
+
         // Render slots 0..Count inclusive; each slot has a drop-zone then optional content
         for (int ri = 0; ri <= ActiveTab.HierarchyGroups.Count; ri++)
         {
@@ -161,14 +166,16 @@ public partial class StageEditorPhase
                         pendingReorderInsertBefore = ri;
                     }
                 }
+
                 ImGui.EndDragDropTarget();
             }
+
             ImGui.PopID();
-            
+
             // ── Ungrouped block at this slot ──
             if (ri == ungroupedSlot)
                 RenderHierarchyGroupFlat(ungroupedLabel, ungrouped, hasFilter);
-            
+
             // ── Named group at slot ri ──
             if (ri < ActiveTab.HierarchyGroups.Count)
             {
@@ -177,22 +184,30 @@ public partial class StageEditorPhase
                     .Select(id => allPieces.FirstOrDefault(p => p.Id == id)!)
                     .Where(p => p != null!)
                     .ToArray();
-                
+
                 ImGui.PushID($"grp{group.Id}");
-                
+
                 // ≡ drag handle — drag source for group reordering
                 ImGui.SmallButton("=");
                 if (ImGui.BeginDragDropSource(ImGuiDragDropFlags.None))
                 {
-                    unsafe { int giv = ri; ImGui.SetDragDropPayload("HIER_GROUP", &giv, (nuint)sizeof(int)); }
+                    unsafe
+                    {
+                        int giv = ri;
+                        ImGui.SetDragDropPayload("HIER_GROUP", &giv, (nuint)sizeof(int));
+                    }
+
                     ImGui.Text($"Moving: {group.Name}");
                     ImGui.EndDragDropSource();
                 }
+
                 ImGui.SameLine();
-                
-                bool open = ImGui.TreeNodeEx($"[G] {group.Name} ({gpPieces.Length})##grp{group.Id}",
-                    ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.SpanFullWidth);
-                
+
+                bool open = ImGui.TreeNodeEx(
+                    $"[G] {group.Name} ({gpPieces.Length})##grp{group.Id}",
+                    ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.SpanFullWidth
+                );
+
                 // Accept piece drops onto this group header (right after TreeNodeEx so the target is on that item)
                 if (ImGui.BeginDragDropTarget())
                 {
@@ -207,9 +222,10 @@ public partial class StageEditorPhase
                             ActiveTab.HasUnsavedChanges = true;
                         }
                     }
+
                     ImGui.EndDragDropTarget();
                 }
-                
+
                 // Right-click context menu — after drag target so it doesn't steal the item
                 if (ImGui.BeginPopupContextItem($"##grpctx{group.Id}"))
                 {
@@ -222,6 +238,7 @@ public partial class StageEditorPhase
                         _showRenameGroupDialog = true;
                         ImGui.CloseCurrentPopup();
                     }
+
                     if (ImGui.MenuItem("Select All in Group"))
                     {
                         ActiveTab.SelectedPieceIds.Clear();
@@ -230,26 +247,28 @@ public partial class StageEditorPhase
                         else ActiveTab.ActivePieceId = -1;
                         ImGui.CloseCurrentPopup();
                     }
+
                     ImGui.Separator();
                     if (ImGui.MenuItem("Delete Group (keep pieces)"))
                     {
                         pendingDeleteGrpId = group.Id; // deferred — not safe to remove here
                         ImGui.CloseCurrentPopup();
                     }
+
                     ImGui.EndPopup();
                 }
-                
+
                 // Render children — ALWAYS call TreePop when open==true
                 if (open)
                 {
                     RenderHierarchyGroup(gpPieces, hasFilter, group);
                     ImGui.TreePop();
                 }
-                
+
                 ImGui.PopID();
             }
         }
-        
+
         // ── Apply deferred mutations (safe: loop is finished, no ImGui stack mid-state) ──
         if (pendingDeleteGrpId >= 0)
         {
@@ -258,9 +277,11 @@ public partial class StageEditorPhase
                 ActiveTab.UngroupedOrderIndex = Math.Clamp(ActiveTab.UngroupedOrderIndex, 0, ActiveTab.HierarchyGroups.Count);
             ActiveTab.HasUnsavedChanges = true;
         }
-        if (pendingReorderFrom >= 0 && pendingReorderInsertBefore >= 0 &&
-            pendingReorderFrom != pendingReorderInsertBefore &&
-            pendingReorderFrom != pendingReorderInsertBefore - 1) // not a no-op (insert right after itself)
+
+        if (pendingReorderFrom >= 0
+            && pendingReorderInsertBefore >= 0
+            && pendingReorderFrom != pendingReorderInsertBefore
+            && pendingReorderFrom != pendingReorderInsertBefore - 1) // not a no-op (insert right after itself)
         {
             var grp = ActiveTab.HierarchyGroups[pendingReorderFrom];
             ActiveTab.HierarchyGroups.RemoveAt(pendingReorderFrom);
@@ -276,14 +297,19 @@ public partial class StageEditorPhase
             ReorderScenePiecesForGroupOrder();
             ActiveTab.HasUnsavedChanges = true;
         }
-        
+
         // Rename group dialog (modal)
         if (_showRenameGroupDialog)
         {
             ImGui.SetNextWindowSize(new Vector2(300, 90), ImGuiCond.Always);
             ImGui.OpenPopup("##renamegroup");
         }
-        if (ImGui.BeginPopupModal("##renamegroup", ref _showRenameGroupDialog, ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize))
+
+        if (ImGui.BeginPopupModal(
+                "##renamegroup",
+                ref _showRenameGroupDialog,
+                ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize
+            ))
         {
             ImGui.Text("Rename Group:");
             ImGui.SetNextItemWidth(-1);
@@ -292,15 +318,26 @@ public partial class StageEditorPhase
             if (ImGui.Button("OK", new Vector2(130, 0)))
             {
                 var g = ActiveTab.HierarchyGroups.GetValueOrDefault(_groupContextMenuGroupId);
-                if (g != null) { g.Name = _renameGroupBuffer; ActiveTab.HasUnsavedChanges = true; }
+                if (g != null)
+                {
+                    g.Name = _renameGroupBuffer;
+                    ActiveTab.HasUnsavedChanges = true;
+                }
+
                 _showRenameGroupDialog = false;
                 ImGui.CloseCurrentPopup();
             }
+
             ImGui.SameLine();
-            if (ImGui.Button("Cancel", new Vector2(-1, 0))) { _showRenameGroupDialog = false; ImGui.CloseCurrentPopup(); }
+            if (ImGui.Button("Cancel", new Vector2(-1, 0)))
+            {
+                _showRenameGroupDialog = false;
+                ImGui.CloseCurrentPopup();
+            }
+
             ImGui.EndPopup();
         }
-        
+
         // "+ New Group" button
         ImGui.Spacing();
         ImGui.SetNextItemWidth(-1);
@@ -313,6 +350,7 @@ public partial class StageEditorPhase
                 foreach (var g in ActiveTab.HierarchyGroups) g.PieceIds.Remove(sid);
                 newGroup.PieceIds.Add(sid);
             }
+
             ActiveTab.HierarchyGroups.Add(newGroup);
             ActiveTab.HasUnsavedChanges = true;
             // Open rename immediately
@@ -321,7 +359,7 @@ public partial class StageEditorPhase
             _showRenameGroupDialog = true;
         }
     }
-    
+
     // Reorders ScenePieces so pieces appear in group order (grouped first, then ungrouped).
     // Call after any group reorder so the save file reflects the visual hierarchy.
     private void ReorderScenePiecesForGroupOrder()
@@ -341,13 +379,14 @@ public partial class StageEditorPhase
             var piece = nonWalls.Find(p => p.Id == id);
             if (piece != null) grouped.Add(piece);
         }
+
         var ungroupedPieces = nonWalls.Where(p => !allGroupedIds.Contains(p.Id)).ToList();
         ActiveTab.ScenePieces.Clear();
         ActiveTab.ScenePieces.AddRange(walls);
         ActiveTab.ScenePieces.AddRange(grouped);
         ActiveTab.ScenePieces.AddRange(ungroupedPieces);
     }
-    
+
     // Renders a list of pieces with Ctrl+click multi-select, drag-drop reorder, and right-click group context menu
     private void RenderHierarchyGroup(StagePieceInstance[] pieces, bool hasFilter, HierarchyGroup? owningGroup = null)
     {
@@ -363,15 +402,15 @@ public partial class StageEditorPhase
             string displayName = $"{piece.Name}{typeTag} (ID: {piece.Id})";
             if (hasFilter && !displayName.Contains(_hierarchySearch, StringComparison.OrdinalIgnoreCase))
                 continue;
-            
+
             bool isSelected = ActiveTab!.SelectedPieceIds.Contains(piece.Id);
             if (isSelected)
                 ImGui.PushStyleColor(ImGuiCol.Header, new Vector4(0.26f, 0.59f, 0.98f, 0.45f));
-            
+
             string rowLabel = _hierDragSourceId == piece.Id
                 ? $"\u2195 {displayName}##piece{piece.Id}"
                 : $"  {displayName}##piece{piece.Id}";
-            
+
             if (ImGui.Selectable(rowLabel, isSelected, ImGuiSelectableFlags.SpanAllColumns))
             {
                 if (_isCtrlPressed)
@@ -388,9 +427,9 @@ public partial class StageEditorPhase
                 ActiveTab.ActivePieceId = piece.Id;
                 ActiveTab.SelectedWallId = -1;
             }
-            
+
             if (isSelected) ImGui.PopStyleColor();
-            
+
             // Right-click: group management
             if (ImGui.BeginPopupContextItem($"##piecectx{piece.Id}"))
             {
@@ -403,6 +442,7 @@ public partial class StageEditorPhase
                     ImGui.EndPopup();
                     continue;
                 }
+
                 if (ActiveTab!.HierarchyGroups.Count > 0 && ImGui.BeginMenu("Move to Group"))
                 {
                     foreach (var g in ActiveTab.HierarchyGroups)
@@ -415,11 +455,13 @@ public partial class StageEditorPhase
                             ActiveTab.HasUnsavedChanges = true;
                         }
                     }
+
                     ImGui.EndMenu();
                 }
+
                 ImGui.EndPopup();
             }
-            
+
             // Drag source
             if (ImGui.BeginDragDropSource(ImGuiDragDropFlags.None))
             {
@@ -429,10 +471,11 @@ public partial class StageEditorPhase
                     int dragId = piece.Id;
                     ImGui.SetDragDropPayload("HIER_PIECE", &dragId, sizeof(int));
                 }
+
                 ImGui.TextUnformatted($"\u2195 Move: {displayName}");
                 ImGui.EndDragDropSource();
             }
-            
+
             // Drop target: reorder
             if (ImGui.BeginDragDropTarget())
             {
@@ -449,17 +492,21 @@ public partial class StageEditorPhase
                         }
                     }
                 }
+
                 _hierDragSourceId = -1;
                 ImGui.EndDragDropTarget();
             }
         }
     }
-    
+
     // Wrapper: renders under a collapsible TreeNode header (for "Pieces" / "Ungrouped")
     private void RenderHierarchyGroupFlat(string label, StagePieceInstance[] pieces, bool hasFilter)
     {
         if (pieces.Length == 0 && !hasFilter) return;
-        bool open = ImGui.TreeNodeEx($"{label} ({pieces.Length})", ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.SpanFullWidth);
+        bool open = ImGui.TreeNodeEx(
+            $"{label} ({pieces.Length})",
+            ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.SpanFullWidth
+        );
         // The tree-node item itself is a drop target: dropping a piece here removes it from any group
         if (ImGui.BeginDragDropTarget())
         {
@@ -473,8 +520,10 @@ public partial class StageEditorPhase
                     ActiveTab!.HasUnsavedChanges = true;
                 }
             }
+
             ImGui.EndDragDropTarget();
         }
+
         if (open)
         {
             RenderHierarchyGroup(pieces, hasFilter, null);

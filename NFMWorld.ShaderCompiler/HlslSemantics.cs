@@ -1,4 +1,5 @@
 // LLM maintained.
+
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -39,16 +40,21 @@ public static class HlslSemantics
     public sealed record DeclaredInput(string Field, string Semantic, int Registers = 1);
 
     private static readonly Regex StructRegex = new(
-        @"\bstruct\s+(\w+)\s*\{(?<body>[^{}]*)\}", RegexOptions.Compiled);
+        @"\bstruct\s+(\w+)\s*\{(?<body>[^{}]*)\}",
+        RegexOptions.Compiled
+    );
 
     private static readonly Regex StructFieldRegex = new(
-        @"([A-Za-z_]\w*)\s+([A-Za-z_]\w*)\s*:\s*([A-Za-z_]\w*)", RegexOptions.Compiled);
+        @"([A-Za-z_]\w*)\s+([A-Za-z_]\w*)\s*:\s*([A-Za-z_]\w*)",
+        RegexOptions.Compiled
+    );
 
     // A parameter, with or without a semantic, with optional direction/modifier keywords.
     private static readonly Regex ParameterRegex = new(
-        @"^(?:(?:in|out|inout|const|uniform|precise|linear|centroid|nointerpolation|noperspective)\s+)*" +
-        @"([A-Za-z_]\w*)\s+([A-Za-z_]\w*)\s*(?::\s*([A-Za-z_]\w*))?$",
-        RegexOptions.Compiled);
+        @"^(?:(?:in|out|inout|const|uniform|precise|linear|centroid|nointerpolation|noperspective)\s+)*"
+        + @"([A-Za-z_]\w*)\s+([A-Za-z_]\w*)\s*(?::\s*([A-Za-z_]\w*))?$",
+        RegexOptions.Compiled
+    );
 
     /// <summary>
     /// The vertex inputs declared by <paramref name="entryPoint"/>'s signature, in declaration
@@ -98,7 +104,9 @@ public static class HlslSemantics
     // first so the digits sit at the end of the string, which distinguishes a matrix from the
     // scalar/vector types whose only digits are the component count (float4, half2).
     private static readonly Regex MatrixTypeRegex = new(
-        @"^(?:(?:row_major|column_major)\s+)?[A-Za-z_]\w*?(\d+)x(\d+)$", RegexOptions.Compiled);
+        @"^(?:(?:row_major|column_major)\s+)?[A-Za-z_]\w*?(\d+)x(\d+)$",
+        RegexOptions.Compiled
+    );
 
     /// <summary>
     /// How many registers a parameter type covers: the row count for a matrix type
@@ -129,8 +137,10 @@ public static class HlslSemantics
                 if (!IsSystemValue(semantic))
                     fields.Add(new DeclaredInput(field.Groups[2].Value, semantic, MatrixRows(field.Groups[1].Value)));
             }
+
             structs[match.Groups[1].Value] = fields;
         }
+
         return structs;
     }
 
@@ -155,6 +165,7 @@ public static class HlslSemantics
             if (brace >= 0 && (terminator < 0 || brace < terminator))
                 return text[(open + 1)..close];
         }
+
         return null;
     }
 
@@ -166,6 +177,7 @@ public static class HlslSemantics
             if (text[i] == openChar) depth++;
             else if (text[i] == closeChar && --depth == 0) return i;
         }
+
         return -1;
     }
 
@@ -186,6 +198,7 @@ public static class HlslSemantics
                     break;
             }
         }
+
         if (start < text.Length)
             yield return text[start..];
     }
@@ -216,6 +229,7 @@ public static class HlslSemantics
                 sb.Append(text[i++]);
             }
         }
+
         return sb.ToString();
     }
 }

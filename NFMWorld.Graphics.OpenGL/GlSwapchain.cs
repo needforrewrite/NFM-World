@@ -9,6 +9,7 @@
 // size. That is the same split the sokol backend has (SokolSwapchain cannot reallocate under
 // sokol_app), except that here the owning case is the general one and the tracking case is the
 // fallback.
+
 namespace NFMWorld.Graphics.OpenGL;
 
 /// <summary>
@@ -82,8 +83,14 @@ internal sealed class GlSwapchain : ISwapchain
     /// </summary>
     private int _requestedMultiSampleCount;
 
-    internal GlSwapchain(Egl.Context? context, int width, int height, Action? present = null, int multiSampleCount = 0,
-                         Action<int, int>? resizeDrawable = null)
+    internal GlSwapchain(
+        Egl.Context? context,
+        int width,
+        int height,
+        Action? present = null,
+        int multiSampleCount = 0,
+        Action<int, int>? resizeDrawable = null
+    )
     {
         _context = context;
         _present = present;

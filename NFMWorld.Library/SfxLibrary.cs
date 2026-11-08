@@ -12,7 +12,7 @@ public static class SfxLibrary
     public static ISoundClip[] scrape = new ISoundClip[4];
     public static ISoundClip[] air = new ISoundClip[6];
 
-    public static ISoundClip[,] engs = new ISoundClip[7,5]; // [engine, level]
+    public static ISoundClip[,] engs = new ISoundClip[7, 5]; // [engine, level]
 
     public static ISoundClip? wastd;
     public static ISoundClip? firewasted;
@@ -76,7 +76,7 @@ public static class SfxLibrary
         countdown[3] = IBackend.Backend.GetSound("data/sound/count/three.wav");
 
         checkpoint = IBackend.Backend.GetSound("data/sound/checkpoint.wav");
-        
+
         powerup = IBackend.Backend.GetSound("data/sound/powerup.wav");
         carfixed = IBackend.Backend.GetSound("data/sound/carfixed.wav");
     }

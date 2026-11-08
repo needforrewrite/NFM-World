@@ -25,17 +25,37 @@ public sealed class PluginClientCallbacks(IClientCallbacks callbacks) : IClientC
 public sealed class PluginCarCallbacks(IClientCarCallbacks callbacks) : IClientCarCallbacks
 {
     [PluginVisible]
-    public bool CastsShadow { get => callbacks.CastsShadow; set => callbacks.CastsShadow = value; }
+    public bool CastsShadow
+    {
+        get => callbacks.CastsShadow;
+        set => callbacks.CastsShadow = value;
+    }
 
     [PluginVisible]
-    public bool? GetsShadowed { get => callbacks.GetsShadowed; set => callbacks.GetsShadowed = value; }
+    public bool? GetsShadowed
+    {
+        get => callbacks.GetsShadowed;
+        set => callbacks.GetsShadowed = value;
+    }
 
     [PluginVisible]
-    public float? AlphaOverride { get => callbacks.AlphaOverride; set => callbacks.AlphaOverride = value; }
+    public float? AlphaOverride
+    {
+        get => callbacks.AlphaOverride;
+        set => callbacks.AlphaOverride = value;
+    }
 
     [PluginVisible]
-    public bool? Glow { get => callbacks.Glow; set => callbacks.Glow = value; }
+    public bool? Glow
+    {
+        get => callbacks.Glow;
+        set => callbacks.Glow = value;
+    }
 
     [PluginVisible]
-    public bool? Finish { get => callbacks.Finish; set => callbacks.Finish = value; }
+    public bool? Finish
+    {
+        get => callbacks.Finish;
+        set => callbacks.Finish = value;
+    }
 }

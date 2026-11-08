@@ -91,13 +91,23 @@ public struct Styles() : IEquatable<Styles>
         Right = overlay.Right.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.Right : Right,
         Bottom = overlay.Bottom.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.Bottom : Bottom,
         MarginTop = overlay.MarginTop.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.MarginTop : MarginTop,
-        MarginBottom = overlay.MarginBottom.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.MarginBottom : MarginBottom,
+        MarginBottom = overlay.MarginBottom.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined
+            ? overlay.MarginBottom
+            : MarginBottom,
         MarginLeft = overlay.MarginLeft.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.MarginLeft : MarginLeft,
-        MarginRight = overlay.MarginRight.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.MarginRight : MarginRight,
+        MarginRight = overlay.MarginRight.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined
+            ? overlay.MarginRight
+            : MarginRight,
         PaddingTop = overlay.PaddingTop.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.PaddingTop : PaddingTop,
-        PaddingBottom = overlay.PaddingBottom.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.PaddingBottom : PaddingBottom,
-        PaddingLeft = overlay.PaddingLeft.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.PaddingLeft : PaddingLeft,
-        PaddingRight = overlay.PaddingRight.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined ? overlay.PaddingRight : PaddingRight,
+        PaddingBottom = overlay.PaddingBottom.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined
+            ? overlay.PaddingBottom
+            : PaddingBottom,
+        PaddingLeft = overlay.PaddingLeft.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined
+            ? overlay.PaddingLeft
+            : PaddingLeft,
+        PaddingRight = overlay.PaddingRight.Unit != Microsoft.UI.Reactor.Layout.YogaUnit.Undefined
+            ? overlay.PaddingRight
+            : PaddingRight,
         BorderTop = overlay.BorderTop ?? BorderTop,
         BorderBottom = overlay.BorderBottom ?? BorderBottom,
         BorderLeft = overlay.BorderLeft ?? BorderLeft,
@@ -362,7 +372,56 @@ public struct Styles() : IEquatable<Styles>
 
     public bool Equals(Styles other)
     {
-        return Visibility == other.Visibility && Opacity.Equals(other.Opacity) && Direction == other.Direction && FlexDirection == other.FlexDirection && JustifyContent == other.JustifyContent && AlignItems == other.AlignItems && AlignSelf == other.AlignSelf && AlignContent == other.AlignContent && Position == other.Position && FlexWrap == other.FlexWrap && Overflow == other.Overflow && Display == other.Display && BoxSizing == other.BoxSizing && Nullable.Equals(Flex, other.Flex) && Nullable.Equals(FlexGrow, other.FlexGrow) && Nullable.Equals(FlexShrink, other.FlexShrink) && FlexBasis.Equals(other.FlexBasis) && Left.Equals(other.Left) && Top.Equals(other.Top) && Right.Equals(other.Right) && Bottom.Equals(other.Bottom) && MarginTop.Equals(other.MarginTop) && MarginBottom.Equals(other.MarginBottom) && MarginLeft.Equals(other.MarginLeft) && MarginRight.Equals(other.MarginRight) && PaddingTop.Equals(other.PaddingTop) && PaddingBottom.Equals(other.PaddingBottom) && PaddingLeft.Equals(other.PaddingLeft) && PaddingRight.Equals(other.PaddingRight) && Nullable.Equals(BorderTop, other.BorderTop) && Nullable.Equals(BorderBottom, other.BorderBottom) && Nullable.Equals(BorderLeft, other.BorderLeft) && Nullable.Equals(BorderRight, other.BorderRight) && GapColumn.Equals(other.GapColumn) && GapRow.Equals(other.GapRow) && Width.Equals(other.Width) && Height.Equals(other.Height) && MinWidth.Equals(other.MinWidth) && MinHeight.Equals(other.MinHeight) && MaxWidth.Equals(other.MaxWidth) && MaxHeight.Equals(other.MaxHeight) && Nullable.Equals(AspectRatio, other.AspectRatio) && Nullable.Equals(BorderColor, other.BorderColor) && Nullable.Equals(BackgroundColor, other.BackgroundColor) && BorderTopLeftRadius.Equals(other.BorderTopLeftRadius) && BorderTopRightRadius.Equals(other.BorderTopRightRadius) && BorderBottomLeftRadius.Equals(other.BorderBottomLeftRadius) && BorderBottomRightRadius.Equals(other.BorderBottomRightRadius) && PointerEvents == other.PointerEvents && ZIndex == other.ZIndex;
+        return Visibility == other.Visibility
+               && Opacity.Equals(other.Opacity)
+               && Direction == other.Direction
+               && FlexDirection == other.FlexDirection
+               && JustifyContent == other.JustifyContent
+               && AlignItems == other.AlignItems
+               && AlignSelf == other.AlignSelf
+               && AlignContent == other.AlignContent
+               && Position == other.Position
+               && FlexWrap == other.FlexWrap
+               && Overflow == other.Overflow
+               && Display == other.Display
+               && BoxSizing == other.BoxSizing
+               && Nullable.Equals(Flex, other.Flex)
+               && Nullable.Equals(FlexGrow, other.FlexGrow)
+               && Nullable.Equals(FlexShrink, other.FlexShrink)
+               && FlexBasis.Equals(other.FlexBasis)
+               && Left.Equals(other.Left)
+               && Top.Equals(other.Top)
+               && Right.Equals(other.Right)
+               && Bottom.Equals(other.Bottom)
+               && MarginTop.Equals(other.MarginTop)
+               && MarginBottom.Equals(other.MarginBottom)
+               && MarginLeft.Equals(other.MarginLeft)
+               && MarginRight.Equals(other.MarginRight)
+               && PaddingTop.Equals(other.PaddingTop)
+               && PaddingBottom.Equals(other.PaddingBottom)
+               && PaddingLeft.Equals(other.PaddingLeft)
+               && PaddingRight.Equals(other.PaddingRight)
+               && Nullable.Equals(BorderTop, other.BorderTop)
+               && Nullable.Equals(BorderBottom, other.BorderBottom)
+               && Nullable.Equals(BorderLeft, other.BorderLeft)
+               && Nullable.Equals(BorderRight, other.BorderRight)
+               && GapColumn.Equals(other.GapColumn)
+               && GapRow.Equals(other.GapRow)
+               && Width.Equals(other.Width)
+               && Height.Equals(other.Height)
+               && MinWidth.Equals(other.MinWidth)
+               && MinHeight.Equals(other.MinHeight)
+               && MaxWidth.Equals(other.MaxWidth)
+               && MaxHeight.Equals(other.MaxHeight)
+               && Nullable.Equals(AspectRatio, other.AspectRatio)
+               && Nullable.Equals(BorderColor, other.BorderColor)
+               && Nullable.Equals(BackgroundColor, other.BackgroundColor)
+               && BorderTopLeftRadius.Equals(other.BorderTopLeftRadius)
+               && BorderTopRightRadius.Equals(other.BorderTopRightRadius)
+               && BorderBottomLeftRadius.Equals(other.BorderBottomLeftRadius)
+               && BorderBottomRightRadius.Equals(other.BorderBottomRightRadius)
+               && PointerEvents == other.PointerEvents
+               && ZIndex == other.ZIndex;
     }
 
     public override bool Equals(object? obj)

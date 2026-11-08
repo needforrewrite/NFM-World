@@ -12,7 +12,8 @@ public class PluginServerGamemode(
     ServerGamemodeParameters parameters,
     IServerGamemodeContext context,
     string gamemodeId,
-    Dictionary<string, object>? config = null)
+    Dictionary<string, object>? config = null
+)
     : BaseServerGamemode
 {
     internal GameStateSnapshot? _snapshot;
@@ -26,7 +27,8 @@ public class PluginServerGamemode(
     [PluginVisible] public IReadOnlyList<ServerSidePlayerInfo> Players => Parameters.Players;
 
     /// <summary>The stage being raced on (checkpoints, lap count, geometry).</summary>
-    [PluginVisible] public BackendStage CurrentStage => context.CurrentStage;
+    [PluginVisible]
+    public BackendStage CurrentStage => context.CurrentStage;
 
     public override void Begin()
     {

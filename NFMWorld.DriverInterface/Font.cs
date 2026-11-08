@@ -16,10 +16,11 @@ public readonly record struct Font(FontFamily FontFamily, FontStyle Style, float
             {
                 sizeStr = sizeStr[..^2].Trim();
             }
+
             var size = float.Parse(sizeStr, CultureInfo.InvariantCulture);
             return new Font(fontFamily, flags, size);
         }
-        
+
         parts = str.Split(' ');
         if (parts.Length >= 2)
         {
@@ -34,15 +35,18 @@ public readonly record struct Font(FontFamily FontFamily, FontStyle Style, float
                 else
                     throw new FormatException($"Invalid font style: {part} in '{str}'. Expected 'bold' or 'italic'.");
             }
+
             var sizeStr = parts[^2].AsSpan().Trim();
             if (sizeStr.EndsWith("px", StringComparison.OrdinalIgnoreCase))
             {
                 sizeStr = sizeStr[..^2].Trim();
             }
+
             var size = float.Parse(sizeStr, CultureInfo.InvariantCulture);
             var fontFamily = Enum.Parse<FontFamily>(parts[^1].AsSpan().Trim(), ignoreCase: true);
             return new Font(fontFamily, flags, size);
         }
+
         throw new FormatException($"Invalid font format: {str}. Expected '[style*] <size> <family>' or 'FontFamily,Style,Size'.");
     }
 }

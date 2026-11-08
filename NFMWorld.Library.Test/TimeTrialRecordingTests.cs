@@ -38,8 +38,12 @@ public class TimeTrialRecordingTests
 
     private static SavedTimeTrial Recording(int ticks)
     {
-        var recording = new SavedTimeTrial("test/car", "test/stage", new StageLoader(),
-            new Rad3d([], castsShadow: false, fileName: "test/car"));
+        var recording = new SavedTimeTrial(
+            "test/car",
+            "test/stage",
+            new StageLoader(),
+            new Rad3d([], castsShadow: false, fileName: "test/car")
+        );
         for (var i = 0; i < ticks; i++)
             recording.DemoData.Ticks.Add(default);
         return recording;

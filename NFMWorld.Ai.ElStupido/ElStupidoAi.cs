@@ -34,6 +34,7 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
 
     /// <summary>Obstacle avoidance state.</summary>
     private int _stuckCounter;
+
     private fix64 _avoidanceAngle;
     private int _avoidanceTimer;
     private bool _smallTurn;
@@ -194,7 +195,9 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
             targetNodeIndex = 1;
 
         // Skip ahead to any node we are already close to, which handles ramps and shortcuts.
-        var nextCheckpointNodeIndex = checkpointCount > 0 ? IndexOf(nodes, checkpoints[Math.Min(car.CurrentCheckpoint, checkpointCount - 1)]) : -1;
+        var nextCheckpointNodeIndex = checkpointCount > 0
+            ? IndexOf(nodes, checkpoints[Math.Min(car.CurrentCheckpoint, checkpointCount - 1)])
+            : -1;
         for (var i = targetNodeIndex + 1; i <= nextCheckpointNodeIndex; i++)
         {
             var nodeIndex = i;
@@ -230,13 +233,19 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
                 targetNode = nodes[targetNodeIndex];
                 var kind = targetNode.Kind;
 
-                if (kind is not (AiNodeKind.Road or AiNodeKind.CheckPoint or AiNodeKind.Ramp or AiNodeKind.Halfpipe or AiNodeKind.Auto))
+                if (kind is not (AiNodeKind.Road or AiNodeKind.CheckPoint or AiNodeKind.Ramp or AiNodeKind.Halfpipe
+                    or AiNodeKind.Auto))
                 {
                     targetNodeIndex = NextNode(targetNodeIndex, numNodes) - 1;
                     continue;
                 }
 
-                var distanceToTargetSquared = DistanceSquared(car.Position.X, targetNode.Position.X, car.Position.Z, targetNode.Position.Z);
+                var distanceToTargetSquared = DistanceSquared(
+                    car.Position.X,
+                    targetNode.Position.X,
+                    car.Position.Z,
+                    targetNode.Position.Z
+                );
                 var threshold = (fix64)100 * (mad.Speed * mad.Speed);
                 if (distanceToTargetSquared >= threshold)
                     break;
@@ -293,7 +302,13 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
     /// Starts a sequence when the target lands on one, or when the car wants a fix road.
     /// Returns the node to drive toward.
     /// </summary>
-    private int TryStartSequence(int targetNodeIndex, int numNodes, CarPhysics mad, fix64 rubberbandingFactor, ref DeterministicRandom random)
+    private int TryStartSequence(
+        int targetNodeIndex,
+        int numNodes,
+        CarPhysics mad,
+        fix64 rubberbandingFactor,
+        ref DeterministicRandom random
+    )
     {
         var nodes = CurrentStage.Nodes;
 

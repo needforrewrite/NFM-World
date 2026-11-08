@@ -150,11 +150,15 @@ public ref struct HLSLTokenizer
     }
 
     public HLSLTokenizer(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buffer)
-        : this(fileName, buffer, buffer.Length) { }
+        : this(fileName, buffer, buffer.Length)
+    {
+    }
 
     public void Next()
     {
-        while (SkipWhitespace() || SkipComment() || ScanLineDirective() || SkipPragmaDirective()) { }
+        while (SkipWhitespace() || SkipComment() || ScanLineDirective() || SkipPragmaDirective())
+        {
+        }
 
         _tokenLineNumber = _lineNumber;
 
@@ -168,16 +172,75 @@ public ref struct HLSLTokenizer
         var c1 = _pos + 1 < _length ? _buffer[_pos + 1] : '\0';
 
         // Two-character operators
-        if (c0 == '+' && c1 == '=') { _token = (ushort)HLSLToken.PlusEqual; _pos += 2; return; }
-        if (c0 == '-' && c1 == '=') { _token = (ushort)HLSLToken.MinusEqual; _pos += 2; return; }
-        if (c0 == '*' && c1 == '=') { _token = (ushort)HLSLToken.TimesEqual; _pos += 2; return; }
-        if (c0 == '/' && c1 == '=') { _token = (ushort)HLSLToken.DivideEqual; _pos += 2; return; }
-        if (c0 == '=' && c1 == '=') { _token = (ushort)HLSLToken.EqualEqual; _pos += 2; return; }
-        if (c0 == '!' && c1 == '=') { _token = (ushort)HLSLToken.NotEqual; _pos += 2; return; }
-        if (c0 == '<' && c1 == '=') { _token = (ushort)HLSLToken.LessEqual; _pos += 2; return; }
-        if (c0 == '>' && c1 == '=') { _token = (ushort)HLSLToken.GreaterEqual; _pos += 2; return; }
-        if (c0 == '&' && c1 == '&') { _token = (ushort)HLSLToken.AndAnd; _pos += 2; return; }
-        if (c0 == '|' && c1 == '|') { _token = (ushort)HLSLToken.BarBar; _pos += 2; return; }
+        if (c0 == '+' && c1 == '=')
+        {
+            _token = (ushort)HLSLToken.PlusEqual;
+            _pos += 2;
+            return;
+        }
+
+        if (c0 == '-' && c1 == '=')
+        {
+            _token = (ushort)HLSLToken.MinusEqual;
+            _pos += 2;
+            return;
+        }
+
+        if (c0 == '*' && c1 == '=')
+        {
+            _token = (ushort)HLSLToken.TimesEqual;
+            _pos += 2;
+            return;
+        }
+
+        if (c0 == '/' && c1 == '=')
+        {
+            _token = (ushort)HLSLToken.DivideEqual;
+            _pos += 2;
+            return;
+        }
+
+        if (c0 == '=' && c1 == '=')
+        {
+            _token = (ushort)HLSLToken.EqualEqual;
+            _pos += 2;
+            return;
+        }
+
+        if (c0 == '!' && c1 == '=')
+        {
+            _token = (ushort)HLSLToken.NotEqual;
+            _pos += 2;
+            return;
+        }
+
+        if (c0 == '<' && c1 == '=')
+        {
+            _token = (ushort)HLSLToken.LessEqual;
+            _pos += 2;
+            return;
+        }
+
+        if (c0 == '>' && c1 == '=')
+        {
+            _token = (ushort)HLSLToken.GreaterEqual;
+            _pos += 2;
+            return;
+        }
+
+        if (c0 == '&' && c1 == '&')
+        {
+            _token = (ushort)HLSLToken.AndAnd;
+            _pos += 2;
+            return;
+        }
+
+        if (c0 == '|' && c1 == '|')
+        {
+            _token = (ushort)HLSLToken.BarBar;
+            _pos += 2;
+            return;
+        }
 
         // ++, --
         if (c0 is '+' or '-' && c1 == c0)
@@ -302,6 +365,7 @@ public ref struct HLSLTokenizer
             if (_buffer[_pos] == '\n') _lineNumber++;
             _pos++;
         }
+
         return result;
     }
 
@@ -312,20 +376,36 @@ public ref struct HLSLTokenizer
         if (next == '/')
         {
             _pos += 2;
-            while (_pos < _length) { if (_buffer[_pos++] == '\n') { _lineNumber++; break; } }
+            while (_pos < _length)
+            {
+                if (_buffer[_pos++] == '\n')
+                {
+                    _lineNumber++;
+                    break;
+                }
+            }
+
             return true;
         }
+
         if (next == '*')
         {
             _pos += 2;
             while (_pos < _length)
             {
                 if (_buffer[_pos] == '\n') _lineNumber++;
-                if (_buffer[_pos] == '*' && CharAt(_pos + 1) == '/') { _pos += 2; break; }
+                if (_buffer[_pos] == '*' && CharAt(_pos + 1) == '/')
+                {
+                    _pos += 2;
+                    break;
+                }
+
                 _pos++;
             }
+
             return true;
         }
+
         return false;
     }
 
@@ -334,12 +414,23 @@ public ref struct HLSLTokenizer
         if (_pos >= _length || _buffer[_pos] != '#') return false;
         var ptr = _pos + 1;
         while (ptr < _length && char.IsWhiteSpace(_buffer[ptr]) && _buffer[ptr] != '\n') ptr++;
-        if (ptr + 6 <= _length && _buffer.Slice(ptr, 6) is "pragma" && (ptr + 6 >= _length || char.IsWhiteSpace(_buffer[ptr + 6])))
+        if (ptr + 6 <= _length
+            && _buffer.Slice(ptr, 6) is "pragma"
+            && (ptr + 6 >= _length || char.IsWhiteSpace(_buffer[ptr + 6])))
         {
             _pos = ptr + 6;
-            while (_pos < _length) { if (_buffer[_pos++] == '\n') { _lineNumber++; break; } }
+            while (_pos < _length)
+            {
+                if (_buffer[_pos++] == '\n')
+                {
+                    _lineNumber++;
+                    break;
+                }
+            }
+
             return true;
         }
+
         return false;
     }
 
@@ -367,9 +458,24 @@ public ref struct HLSLTokenizer
         var fEnd = _pos;
         var hasDot = false;
         var hasDigit = false;
-        while (fEnd < _length && char.IsDigit(_buffer[fEnd])) { fEnd++; hasDigit = true; }
-        if (fEnd < _length && _buffer[fEnd] == '.') { hasDot = true; fEnd++; }
-        while (fEnd < _length && char.IsDigit(_buffer[fEnd])) { fEnd++; hasDigit = true; }
+        while (fEnd < _length && char.IsDigit(_buffer[fEnd]))
+        {
+            fEnd++;
+            hasDigit = true;
+        }
+
+        if (fEnd < _length && _buffer[fEnd] == '.')
+        {
+            hasDot = true;
+            fEnd++;
+        }
+
+        while (fEnd < _length && char.IsDigit(_buffer[fEnd]))
+        {
+            fEnd++;
+            hasDigit = true;
+        }
+
         // Exponent
         if (fEnd < _length && (_buffer[fEnd] == 'e' || _buffer[fEnd] == 'E'))
         {
@@ -425,7 +531,12 @@ public ref struct HLSLTokenizer
         _pos += 5;
         while (_pos < _length && char.IsWhiteSpace(_buffer[_pos]))
         {
-            if (_buffer[_pos] == '\n') { Error("Syntax error: expected line number after #line"); return false; }
+            if (_buffer[_pos] == '\n')
+            {
+                Error("Syntax error: expected line number after #line");
+                return false;
+            }
+
             _pos++;
         }
 
@@ -436,33 +547,66 @@ public ref struct HLSLTokenizer
             Error("Syntax error: expected line number after #line");
             return false;
         }
+
         var lineNumber = int.Parse(_buffer.Slice(numStart, _pos - numStart), CultureInfo.InvariantCulture);
 
         while (_pos < _length && char.IsWhiteSpace(_buffer[_pos]))
         {
-            var ch = _buffer[_pos]; _pos++;
-            if (ch == '\n') { _lineNumber = lineNumber; return true; }
+            var ch = _buffer[_pos];
+            _pos++;
+            if (ch == '\n')
+            {
+                _lineNumber = lineNumber;
+                return true;
+            }
         }
-        if (_pos >= _length) { _lineNumber = lineNumber; return true; }
 
-        if (_buffer[_pos] != '"') { Error("Syntax error: expected '\"' after line number near #line"); return false; }
+        if (_pos >= _length)
+        {
+            _lineNumber = lineNumber;
+            return true;
+        }
+
+        if (_buffer[_pos] != '"')
+        {
+            Error("Syntax error: expected '\"' after line number near #line");
+            return false;
+        }
+
         _pos++;
 
         var fnStart = _pos;
         while (_pos < _length && _buffer[_pos] != '"')
         {
-            if (_buffer[_pos] == '\n') { Error("Syntax error: expected '\"' before end of line near #line"); return false; }
+            if (_buffer[_pos] == '\n')
+            {
+                Error("Syntax error: expected '\"' before end of line near #line");
+                return false;
+            }
+
             _pos++;
         }
-        if (_pos >= _length) { Error("Syntax error: expected '\"' before end of file near #line"); return false; }
+
+        if (_pos >= _length)
+        {
+            Error("Syntax error: expected '\"' before end of file near #line");
+            return false;
+        }
+
         _lineDirectiveFileName = _buffer.Slice(fnStart, _pos - fnStart);
         _pos++; // skip closing quote
 
         while (_pos < _length && _buffer[_pos] != '\n')
         {
-            if (!char.IsWhiteSpace(_buffer[_pos])) { Error("Syntax error: unexpected input after file name near #line"); return false; }
+            if (!char.IsWhiteSpace(_buffer[_pos]))
+            {
+                Error("Syntax error: unexpected input after file name near #line");
+                return false;
+            }
+
             _pos++;
         }
+
         _pos++; // skip newline
 
         _lineNumber = lineNumber;

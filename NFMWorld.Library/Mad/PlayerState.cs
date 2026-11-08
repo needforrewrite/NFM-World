@@ -18,12 +18,12 @@ public struct PlayerState
         readonly get => DateTimeOffset.FromUnixTimeMilliseconds((long)_currentTimeInMs);
         set => _currentTimeInMs = (ulong)value.ToUnixTimeMilliseconds();
     }
-    
+
     public static void ApplyTo(PlayerState state, BackendCar c)
     {
         state.CarFrame.ApplyToCar(c);
     }
-    
+
     public static PlayerState CreateFrom(uint ticks, BackendCar car)
     {
         return new PlayerState

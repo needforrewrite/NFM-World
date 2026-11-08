@@ -24,14 +24,16 @@ public static class BindingSlots
     /// <summary>Renumbers both lists into disjoint, gap-free slot spaces.</summary>
     public static (IReadOnlyList<TextureBinding> Textures, IReadOnlyList<SamplerBinding> Samplers) Assign(
         IReadOnlyList<TextureBinding> textures,
-        IReadOnlyList<SamplerBinding> samplers)
+        IReadOnlyList<SamplerBinding> samplers
+    )
         => (Renumber(textures, t => t.Slot, (t, s) => t with { Slot = s }),
             Renumber(samplers, s => s.Slot, (s, n) => s with { Slot = n }));
 
     private static IReadOnlyList<T> Renumber<T>(
         IReadOnlyList<T> bindings,
         Func<T, int> slotOf,
-        Func<T, int, T> withSlot)
+        Func<T, int, T> withSlot
+    )
     {
         var taken = new HashSet<int>();
         var result = new List<T>(bindings.Count);
@@ -43,6 +45,7 @@ public static class BindingSlots
             var slot = declared >= 0 && taken.Add(declared) ? declared : TakeNext(taken, ref next);
             result.Add(withSlot(binding, slot));
         }
+
         return result;
     }
 

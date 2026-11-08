@@ -11,7 +11,7 @@ public partial class StageEditorPhase
     {
         if (imguiWantsKeyboard) return;
         if (!_isOpen) return;
-        
+
         // In placement mode
         if (_pendingPlacementPartIndex >= 0)
         {
@@ -21,11 +21,13 @@ public partial class StageEditorPhase
                 _pendingPlacementYaw = (_pendingPlacementYaw + 45f) % 360f;
                 return;
             }
+
             if (key == Key.Q)
             {
                 _pendingPlacementYaw = ((_pendingPlacementYaw - 45f) % 360f + 360f) % 360f;
                 return;
             }
+
             if (key == Key.R)
             {
                 // Reset rotation
@@ -39,7 +41,7 @@ public partial class StageEditorPhase
                 return;
             }
         }
-        
+
         // Camera movement
         switch (key)
         {
@@ -70,13 +72,13 @@ public partial class StageEditorPhase
                 _isCtrlPressed = true;
                 break;
         }
-        
+
         // Handle keyboard shortcuts here
         if (key == Key.Delete)
         {
             // Build the set of IDs to delete (multi-selection or single)
-            int[] idsToDelete = [..ActiveTab.SelectedPieceIds];
-            
+            int[] idsToDelete = [.. ActiveTab.SelectedPieceIds];
+
             if (idsToDelete.Length > 0)
             {
                 PushUndoSnapshot();
@@ -86,22 +88,28 @@ public partial class StageEditorPhase
                     if (piece == null) continue;
                     if (ActiveTab.Stage != null)
                         for (int i = 0; i < ActiveTab.Stage.Pieces.Count; i++)
-                            if (ActiveTab.Stage.Pieces[i] == piece.Obj) { ActiveTab.Stage.Pieces.RemoveAt(i); break; }
+                            if (ActiveTab.Stage.Pieces[i] == piece.Obj)
+                            {
+                                ActiveTab.Stage.Pieces.RemoveAt(i);
+                                break;
+                            }
+
                     ActiveTab.ScenePieces.Remove(piece);
                     foreach (var grp in ActiveTab.HierarchyGroups) grp.PieceIds.Remove(piece.Id);
                 }
+
                 ActiveTab.SelectedPieceIds.Clear();
                 ActiveTab.ActivePieceId = -1;
                 ActiveTab.HasUnsavedChanges = true;
                 RebuildClientRenderer();
             }
         }
-        
+
         if (key == Key.S && _isCtrlPressed)
         {
             if (ActiveTab?.Stage != null) SaveStage();
         }
-        
+
         if (key == Key.C && _isCtrlPressed && ActiveTab != null)
         {
             // Copy all selected pieces (or primary if no multi-selection)
@@ -113,18 +121,20 @@ public partial class StageEditorPhase
                 var centroid = new f64Vector3(
                     (fix64)(pieces.Average(p => (double)p.Position.X)),
                     (fix64)(pieces.Average(p => (double)p.Position.Y)),
-                    (fix64)(pieces.Average(p => (double)p.Position.Z)));
+                    (fix64)(pieces.Average(p => (double)p.Position.Z))
+                );
                 _clipboard = pieces.Select(p => new ClipboardPiece(
-                    p.Rad,
-                    new f64Vector3(p.Position.X - centroid.X, p.Position.Y - centroid.Y, p.Position.Z - centroid.Z),
-                    p.Rotation,
-                    p.PiecePlacement.Type,
-                    p.PiecePlacement.NodeKind,
-                    p.PiecePlacement.IsSpecial
-                )).ToList();
+                        p.Rad,
+                        new f64Vector3(p.Position.X - centroid.X, p.Position.Y - centroid.Y, p.Position.Z - centroid.Z),
+                        p.Rotation,
+                        p.PiecePlacement.Type,
+                        p.PiecePlacement.NodeKind,
+                        p.PiecePlacement.IsSpecial
+                    )
+                ).ToList();
             }
         }
-        
+
         if (key == Key.V && _isCtrlPressed && ActiveTab?.Stage != null && _clipboard.Count > 0)
         {
             PushUndoSnapshot();
@@ -142,12 +152,14 @@ public partial class StageEditorPhase
                     ox = MathF.Round(ox / _gridSnapSize) * _gridSnapSize;
                     oz = MathF.Round(oz / _gridSnapSize) * _gridSnapSize;
                 }
+
                 pasteOrigin = new f64Vector3((fix64)ox, primaryPiece.Position.Y, (fix64)oz);
             }
             else
             {
                 pasteOrigin = f64Vector3.Zero;
             }
+
             int lastId = -1;
             foreach (var clip in _clipboard)
             {
@@ -159,8 +171,21 @@ public partial class StageEditorPhase
                     wx = MathF.Round(wx / _gridSnapSize) * _gridSnapSize;
                     wz = MathF.Round(wz / _gridSnapSize) * _gridSnapSize;
                 }
+
                 var worldPos = new f64Vector3((fix64)wx, (fix64)wy, (fix64)wz);
-                var mesh = new StageObject(clip.Rad, worldPos, clip.Rotation, new PiecePlacement(clip.PlacementType, clip.Rad, worldPos, clip.Rotation, clip.AiNodeKind, IsSpecial: clip.IsSpecial));
+                var mesh = new StageObject(
+                    clip.Rad,
+                    worldPos,
+                    clip.Rotation,
+                    new PiecePlacement(
+                        clip.PlacementType,
+                        clip.Rad,
+                        worldPos,
+                        clip.Rotation,
+                        clip.AiNodeKind,
+                        IsSpecial: clip.IsSpecial
+                    )
+                );
                 ActiveTab.Stage.Pieces[ActiveTab.Stage.StagePartCount] = mesh;
                 var instance = new StagePieceInstance(mesh, ActiveTab.GetNextPieceId())
                 {
@@ -171,21 +196,22 @@ public partial class StageEditorPhase
                 ActiveTab.SelectedPieceIds.Add(instance.Id);
                 lastId = instance.Id;
             }
+
             if (lastId >= 0) ActiveTab.ActivePieceId = lastId;
             ActiveTab.HasUnsavedChanges = true;
             RebuildClientRenderer();
         }
-        
+
         if (key == Key.Z && _isCtrlPressed)
         {
             PerformUndo();
         }
-        
+
         if ((key == Key.Y && _isCtrlPressed) || (key == Key.Z && _isCtrlPressed && _isShiftPressed))
         {
             PerformRedo();
         }
-        
+
         if (key == Key.Escape)
         {
             // Cancel placement mode, swap mode, and rect selection
@@ -195,12 +221,12 @@ public partial class StageEditorPhase
             _isRectSelecting = false;
         }
     }
-    
+
     public override void KeyReleased(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
         if (imguiWantsKeyboard) return;
         if (!_isOpen) return;
-        
+
         // Camera movement
         switch (key)
         {
@@ -232,5 +258,4 @@ public partial class StageEditorPhase
                 break;
         }
     }
-    
 }

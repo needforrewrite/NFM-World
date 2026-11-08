@@ -44,8 +44,11 @@ public class PluginSandboxTests
 
         var exception = Assert.ThrowsExactly<TargetInvocationException>(() => target.Invoke(null, args));
 
-        Assert.IsInstanceOfType(exception.InnerException, typeof(SecurityException),
-            $"{method} reached something the policy should have blocked");
+        Assert.IsInstanceOfType(
+            exception.InnerException,
+            typeof(SecurityException),
+            $"{method} reached something the policy should have blocked"
+        );
     }
 
     [TestMethod]
@@ -107,14 +110,20 @@ public class PluginSandboxTests
         var callbacks = new RenderingCallbacks();
         var target = _hostile.GetType("NFMWorld.Gamemode.Hostile.HostileGamemode", throwOnError: true)!
             .GetMethod("CallRenderingCallbacks", BindingFlags.Public | BindingFlags.Instance)!;
-        var client = _plugin!.CreateClient(new ClientGamemodeParameters
-        {
-            Players = [new ClientSidePlayerInfo
+        var client = _plugin!.CreateClient(
+            new ClientGamemodeParameters
             {
-                PlayerName = "test", CarName = "nfmm/radicalone", Color = default,
-                IsBot = false, IsClientPlayer = true
-            }]
-        }, new RenderingContext(callbacks));
+                Players =
+                [
+                    new ClientSidePlayerInfo
+                    {
+                        PlayerName = "test", CarName = "nfmm/radicalone", Color = default,
+                        IsBot = false, IsClientPlayer = true
+                    }
+                ]
+            },
+            new RenderingContext(callbacks)
+        );
 
         target.Invoke(client, null);
         client.End();
@@ -137,11 +146,13 @@ public class PluginSandboxTests
         public CarCallbacks Car { get; } = new();
 
         public void ResetCheckpointGlow() => GlowResets++;
+
         public void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish)
         {
             Checkpoint = currentCheckpoint;
             IsFinish = isFinish;
         }
+
         public IClientCarCallbacks GetClientCarCallbacks(BackendCar car) => Car;
     }
 
@@ -150,8 +161,14 @@ public class PluginSandboxTests
         public BackendStage CurrentStage => throw new NotSupportedException();
         public RaceState RaceState => RaceState.InProgress;
         public IClientCallbacks ClientCallbacks => callbacks;
-        public void SendServerEvent(ReadOnlySpan<byte> payload) { }
-        public void UpdatePlayers(IReadOnlyList<ClientSidePlayer> players) { }
+
+        public void SendServerEvent(ReadOnlySpan<byte> payload)
+        {
+        }
+
+        public void UpdatePlayers(IReadOnlyList<ClientSidePlayer> players)
+        {
+        }
     }
 
     private sealed class CarCallbacks : IClientCarCallbacks
@@ -162,5 +179,4 @@ public class PluginSandboxTests
         public bool? Glow { get; set; }
         public bool? Finish { get; set; }
     }
-
 }

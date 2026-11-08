@@ -11,6 +11,7 @@
 // The input layout is the interesting half. It is built by matching the caller's declared
 // VertexLayoutDesc entries against the input signature D3DReflect reports for the compiled vertex
 // shader, in the shader's declaration order, using the element count the shader declares.
+
 using NFMWorld.Shaders;
 using TerraFX.Interop.DirectX;
 
@@ -47,8 +48,14 @@ internal sealed unsafe class D3D11PipelineState : IPipelineState
     /// A record of one input element as it was resolved against the shader's signature.
     /// </summary>
     internal readonly record struct ResolvedElement(
-        string Semantic, int SemanticIndex, DXGI_FORMAT Format, int InputSlot,
-        int AlignedByteOffset, bool PerInstance, int InstanceStepRate);
+        string Semantic,
+        int SemanticIndex,
+        DXGI_FORMAT Format,
+        int InputSlot,
+        int AlignedByteOffset,
+        bool PerInstance,
+        int InstanceStepRate
+    );
 
     internal D3D11PipelineState(D3D11GraphicsDevice device, D3D11ShaderModule vertex, D3D11ShaderModule pixel, PipelineDesc desc)
     {
@@ -134,15 +141,19 @@ internal sealed unsafe class D3D11PipelineState : IPipelineState
     /// OpenGL backend's positional location numbering ignores it.
     /// </remarks>
     private static List<ResolvedElement> BuildInputLayout(
-        D3D11GraphicsDevice device, byte[] vertexBytecode, IReadOnlyList<VertexLayoutDesc> layouts,
-        out ID3D11InputLayout* layoutObjectReturn)
+        D3D11GraphicsDevice device,
+        byte[] vertexBytecode,
+        IReadOnlyList<VertexLayoutDesc> layouts,
+        out ID3D11InputLayout* layoutObjectReturn
+    )
     {
         var signature = D3D11Reflector.ReadInputSignature(vertexBytecode);
         if (signature.Count == 0)
         {
             throw new InvalidOperationException(
-                "The compiled vertex shader declares no input parameters, so there is nothing to build " +
-                "an input layout from. Every bundle in this tree declares at least one.");
+                "The compiled vertex shader declares no input parameters, so there is nothing to build "
+                + "an input layout from. Every bundle in this tree declares at least one."
+            );
         }
 
         var descriptors = new D3D11_INPUT_ELEMENT_DESC[signature.Count];
@@ -159,7 +170,8 @@ internal sealed unsafe class D3D11PipelineState : IPipelineState
                 if (layout.StrideInBytes <= 0)
                 {
                     throw new InvalidOperationException(
-                        $"Vertex layout slot {slot} declares a stride of {layout.StrideInBytes}.");
+                        $"Vertex layout slot {slot} declares a stride of {layout.StrideInBytes}."
+                    );
                 }
 
                 var name = D3D11Interop.PinAscii(attribute.Semantic);
@@ -181,9 +193,17 @@ internal sealed unsafe class D3D11PipelineState : IPipelineState
                     InstanceDataStepRate = layout.InstanceStepRate > 0 ? (uint)layout.InstanceStepRate : 0,
                 };
 
-                resolved.Add(new ResolvedElement(
-                    attribute.Semantic, attribute.Slot, descriptors[i].Format, slot,
-                    attribute.OffsetInBytes, layout.InstanceStepRate > 0, layout.InstanceStepRate));
+                resolved.Add(
+                    new ResolvedElement(
+                        attribute.Semantic,
+                        attribute.Slot,
+                        descriptors[i].Format,
+                        slot,
+                        attribute.OffsetInBytes,
+                        layout.InstanceStepRate > 0,
+                        layout.InstanceStepRate
+                    )
+                );
             }
 
             ID3D11InputLayout* layoutObject = null;
@@ -191,8 +211,14 @@ internal sealed unsafe class D3D11PipelineState : IPipelineState
             fixed (byte* bytecode = vertexBytecode)
                 D3D11Interop.Check(
                     device.Device->CreateInputLayout(
-                        elementDescs, (uint)descriptors.Length, bytecode, (nuint)vertexBytecode.Length, &layoutObject),
-                    $"CreateInputLayout ({descriptors.Length} element(s))");
+                        elementDescs,
+                        (uint)descriptors.Length,
+                        bytecode,
+                        (nuint)vertexBytecode.Length,
+                        &layoutObject
+                    ),
+                    $"CreateInputLayout ({descriptors.Length} element(s))"
+                );
 
             layoutObjectReturn = layoutObject;
             return resolved;
@@ -218,14 +244,16 @@ internal sealed unsafe class D3D11PipelineState : IPipelineState
     /// convention change would produce, and it produces it identically for every bundle.
     /// </summary>
     private static (int Slot, VertexAttributeDesc Attribute) Find(
-        IReadOnlyList<VertexLayoutDesc> layouts, D3D11Reflector.SignatureEntry entry, int position)
+        IReadOnlyList<VertexLayoutDesc> layouts,
+        D3D11Reflector.SignatureEntry entry,
+        int position
+    )
     {
         for (var slot = 0; slot < layouts.Count; slot++)
         {
             foreach (var attribute in layouts[slot].Attributes)
             {
-                if (attribute.Slot == entry.SemanticIndex &&
-                    attribute.Semantic.Equals(entry.Semantic, StringComparison.Ordinal))
+                if (attribute.Slot == entry.SemanticIndex && attribute.Semantic.Equals(entry.Semantic, StringComparison.Ordinal))
                 {
                     return (slot, attribute);
                 }
@@ -233,9 +261,10 @@ internal sealed unsafe class D3D11PipelineState : IPipelineState
         }
 
         throw new InvalidOperationException(
-            $"The compiled vertex shader's input {position} is '{entry.Semantic}{entry.SemanticIndex}', " +
-            "which none of the pipeline's vertex layouts declares. The shader and the layout disagree " +
-            "about the semantic contract - see D3D11PipelineState.BuildInputLayout.");
+            $"The compiled vertex shader's input {position} is '{entry.Semantic}{entry.SemanticIndex}', "
+            + "which none of the pipeline's vertex layouts declares. The shader and the layout disagree "
+            + "about the semantic contract - see D3D11PipelineState.BuildInputLayout."
+        );
     }
 
     // ── baked state objects ─────────────────────────────────────────────────────────────────────
@@ -269,8 +298,9 @@ internal sealed unsafe class D3D11PipelineState : IPipelineState
         ID3D11BlendState* state = null;
         D3D11Interop.Check(
             _device.Device->CreateBlendState(&desc, &state),
-            $"CreateBlendState ({blend.Enabled}, colour {blend.SourceColor}/{blend.DestinationColor} {blend.ColorOperation}, " +
-            $"alpha {blend.SourceAlpha}/{blend.DestinationAlpha} {blend.AlphaOperation}, mask {blend.ColorWriteMask})");
+            $"CreateBlendState ({blend.Enabled}, colour {blend.SourceColor}/{blend.DestinationColor} {blend.ColorOperation}, "
+            + $"alpha {blend.SourceAlpha}/{blend.DestinationAlpha} {blend.AlphaOperation}, mask {blend.ColorWriteMask})"
+        );
         _blendState = state;
     }
 
@@ -324,8 +354,9 @@ internal sealed unsafe class D3D11PipelineState : IPipelineState
         ID3D11DepthStencilState* state = null;
         D3D11Interop.Check(
             _device.Device->CreateDepthStencilState(&desc, &state),
-            $"CreateDepthStencilState (depth {ds.DepthTestEnabled}/{ds.DepthWriteEnabled} {ds.DepthCompare}, " +
-            $"stencil {ds.StencilTestEnabled} two-sided {ds.TwoSidedStencil})");
+            $"CreateDepthStencilState (depth {ds.DepthTestEnabled}/{ds.DepthWriteEnabled} {ds.DepthCompare}, "
+            + $"stencil {ds.StencilTestEnabled} two-sided {ds.TwoSidedStencil})"
+        );
         _depthStencilState = state;
     }
 
@@ -368,7 +399,8 @@ internal sealed unsafe class D3D11PipelineState : IPipelineState
         ID3D11RasterizerState* state = null;
         D3D11Interop.Check(
             _device.Device->CreateRasterizerState(&desc, &state),
-            $"CreateRasterizerState ({raster.CullMode}, {raster.FillMode}, scissor {raster.ScissorTestEnabled})");
+            $"CreateRasterizerState ({raster.CullMode}, {raster.FillMode}, scissor {raster.ScissorTestEnabled})"
+        );
         _rasterizerState = state;
     }
 
@@ -410,7 +442,8 @@ internal static unsafe class D3D11Reflector
         {
             D3D11Interop.Check(
                 DirectX.D3DReflect(bytecode, (nuint)vertexBytecode.Length, &iid, (void**)&reflection),
-                "D3DReflect (vertex shader)");
+                "D3DReflect (vertex shader)"
+            );
         }
 
         try
@@ -424,11 +457,15 @@ internal static unsafe class D3D11Reflector
                 D3D11_SIGNATURE_PARAMETER_DESC parameter;
                 D3D11Interop.Check(
                     reflection->GetInputParameterDesc(i, &parameter),
-                    $"ID3D11ShaderReflection::GetInputParameterDesc({i})");
+                    $"ID3D11ShaderReflection::GetInputParameterDesc({i})"
+                );
 
-                entries.Add(new SignatureEntry(
-                    Ascii(parameter.SemanticName),
-                    (int)parameter.SemanticIndex));
+                entries.Add(
+                    new SignatureEntry(
+                        Ascii(parameter.SemanticName),
+                        (int)parameter.SemanticIndex
+                    )
+                );
             }
 
             return entries;
@@ -466,7 +503,8 @@ internal static unsafe class D3D11Reflector
         {
             D3D11Interop.Check(
                 DirectX.D3DReflect(bytecode, (nuint)vertexBytecode.Length, &iid, (void**)&reflection),
-                "D3DReflect (vertex shader)");
+                "D3DReflect (vertex shader)"
+            );
         }
 
         var name = D3D11Interop.PinAscii("_Global");
@@ -487,7 +525,8 @@ internal static unsafe class D3D11Reflector
                 D3D11_SHADER_VARIABLE_DESC variableDesc;
                 D3D11Interop.Check(
                     variable->GetDesc(&variableDesc),
-                    $"ID3D11ShaderReflectionVariable::GetDesc({i})");
+                    $"ID3D11ShaderReflectionVariable::GetDesc({i})"
+                );
 
                 members[MemberName(Ascii(variableDesc.Name))] = (int)variableDesc.StartOffset;
             }

@@ -55,7 +55,7 @@ public class ZIndexHitTestTests
     public void HitTest_HigherZIndex_EarlierSiblingWinsOcclusion()
     {
         var root = MakeRoot();
-        var back = MakeBox("back", 5, 0, 0, 100, 100);   // earlier, higher z
+        var back = MakeBox("back", 5, 0, 0, 100, 100); // earlier, higher z
         var front = MakeBox("front", 0, 0, 0, 100, 100); // later, lower z
         root.AddChild(back);
         root.AddChild(front);
@@ -70,7 +70,7 @@ public class ZIndexHitTestTests
     public void HitTest_HigherZIndex_DoesNotOccludeOutsideOwnBounds()
     {
         var root = MakeRoot();
-        var back = MakeBox("back", 5, 0, 0, 50, 50);       // high z, small, top-left
+        var back = MakeBox("back", 5, 0, 0, 50, 50); // high z, small, top-left
         var front = MakeBox("front", 0, 60, 60, 100, 100); // later, lower-right
         root.AddChild(back);
         root.AddChild(front);

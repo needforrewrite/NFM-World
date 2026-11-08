@@ -16,8 +16,10 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
     private readonly int[] _edr = new int[CntLines];
     private readonly int[] _elc = new int[CntLines];
 
-    private PositionColorVertex[] _vertices = new PositionColorVertex[8*CntLines];
-    private ushort[] _indices = new ushort[18*CntLines];
+    private PositionColorVertex[] _vertices = new PositionColorVertex[8 * CntLines];
+
+    private ushort[] _indices = new ushort[18 * CntLines];
+
     // Upload happens in Render() rather than MakeElectrifiedMesh() - see Sparks.cs's identical
     // pattern for why.
     private bool _dirty;
@@ -34,9 +36,13 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
         var maxVertexBytes = _vertices.Length * PositionColorVertex.Stride;
         var maxIndexBytes = _indices.Length * sizeof(ushort);
         _vertexBuffer = _graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxVertexBytes), new byte[maxVertexBytes]);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxVertexBytes),
+            new byte[maxVertexBytes]
+        );
         _indexBuffer = _graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Index, BufferUsage.Dynamic, maxIndexBytes, IndexFormat.UInt16), new byte[maxIndexBytes]);
+            new BufferDesc(BufferKind.Index, BufferUsage.Dynamic, maxIndexBytes, IndexFormat.UInt16),
+            new byte[maxIndexBytes]
+        );
 
         MakeElectrifiedMesh();
     }
@@ -64,8 +70,7 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
         cb.SetVertexBuffer(0, _vertexBuffer, PositionColorVertex.Stride);
         cb.SetIndexBuffer(_indexBuffer);
 
-        p.World.SetValue(cb, Matrix.CreateRotationY((float)Rotation.Xz.Radians) *
-                              Matrix.CreateTranslation((Vector3)Position));
+        p.World.SetValue(cb, Matrix.CreateRotationY((float)Rotation.Xz.Radians) * Matrix.CreateTranslation((Vector3)Position));
         p.View.SetValue(cb, camera.ViewMatrix);
         p.Projection.SetValue(cb, camera.ProjectionMatrix);
 
@@ -110,36 +115,42 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
         x[7] = -504;
         y[7] = -_edl[idx] + 5 + URandom.Int(0, 5);
 
-        var r = (int) (160.0F + 160.0F * (World.Snap[0] / 500.0F));
+        var r = (int)(160.0F + 160.0F * (World.Snap[0] / 500.0F));
         if (r > 255)
         {
             r = 255;
         }
+
         if (r < 0)
         {
             r = 0;
         }
-        var g = (int) (238.0F + 238.0F * (World.Snap[1] / 500.0F));
+
+        var g = (int)(238.0F + 238.0F * (World.Snap[1] / 500.0F));
         if (g > 255)
         {
             g = 255;
         }
+
         if (g < 0)
         {
             g = 0;
         }
-        var b = (int) (255.0F + 255.0F * (World.Snap[2] / 500.0F));
+
+        var b = (int)(255.0F + 255.0F * (World.Snap[2] / 500.0F));
         if (b > 255)
         {
             b = 255;
         }
+
         if (b < 0)
         {
             b = 0;
         }
+
         r = (r * 2 + 214 * (_elc[idx] - 1)) / (_elc[idx] + 1);
         g = (g * 2 + 236 * (_elc[idx] - 1)) / (_elc[idx] + 1);
-        var color = (Color)new Color3((short)r,(short) g, (short)b);
+        var color = (Color)new Color3((short)r, (short)g, (short)b);
 
         int startVertIdx = idx * 8;
         _vertices[startVertIdx + 0] = new PositionColorVertex(new Vector3(x[0], y[0], z[0]), color);
@@ -207,6 +218,7 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
         {
             _rotAccumulator -= 360;
         }
+
         Rotation = Rotation with { Xy = f64AngleSingle.FromDegrees(Rotation.Xy.Degrees + _rotAccumulator) };
 
         if (++_tick == Physics.OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
@@ -223,6 +235,7 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
         {
             PrepareLine(i);
         }
+
         _dirty = true;
     }
 }

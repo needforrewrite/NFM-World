@@ -10,7 +10,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\NFMWorld.Audio.FAudio\NFMWorld.Audio.FAudio.csproj" />
+        <ProjectReference Include="..\NFMWorld.Audio.FAudio\NFMWorld.Audio.FAudio.csproj"/>
     </ItemGroup>
 
     <!--
@@ -23,8 +23,8 @@
         FaudioEngine can only report as "no audio device".
     -->
     <ItemGroup>
-        <None Include="..\NFMWorld.NativeLibs\libs\x64\FAudio.dll" Link="libs\x64\FAudio.dll" CopyToOutputDirectory="PreserveNewest" />
-        <None Include="..\NFMWorld.NativeLibs\libs\x64\SDL3.dll" Link="libs\x64\SDL3.dll" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="..\NFMWorld.NativeLibs\libs\x64\FAudio.dll" Link="libs\x64\FAudio.dll" CopyToOutputDirectory="PreserveNewest"/>
+        <None Include="..\NFMWorld.NativeLibs\libs\x64\SDL3.dll" Link="libs\x64\SDL3.dll" CopyToOutputDirectory="PreserveNewest"/>
     </ItemGroup>
 
 </Project>

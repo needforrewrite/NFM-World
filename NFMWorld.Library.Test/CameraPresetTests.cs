@@ -26,7 +26,8 @@ public class CameraPresetTests
     public void ExistingCustomizedCameraIsPreservedExactly()
     {
         var camera = CameraPresetConfig.ReadCamera(
-            "video_antialias 4\ncamera_fov 93.25\ncamera_follow_y -86\ncamera_follow_z -160\ncamera_smooth_fov 1\n");
+            "video_antialias 4\ncamera_fov 93.25\ncamera_follow_y -86\ncamera_follow_z -160\ncamera_smooth_fov 1\n"
+        );
         Assert.AreEqual(93.25f, camera.Fov);
         Assert.AreEqual(-86, camera.FollowY);
         Assert.AreEqual(-160, camera.FollowZ);
@@ -46,8 +47,10 @@ public class CameraPresetTests
     [TestMethod]
     public void PresetMetadataNeverOverridesSavedCameraValues()
     {
-        var camera = CameraPresetConfig.ReadCamera("camera_preset_name NFMW\ncamera_presets []\n"
-            + "camera_fov 101.5\ncamera_follow_y -25\ncamera_follow_z -190\ncamera_smooth_fov 0\n");
+        var camera = CameraPresetConfig.ReadCamera(
+            "camera_preset_name NFMW\ncamera_presets []\n"
+            + "camera_fov 101.5\ncamera_follow_y -25\ncamera_follow_z -190\ncamera_smooth_fov 0\n"
+        );
         Assert.AreEqual(101.5f, camera.Fov);
         Assert.AreEqual(-25, camera.FollowY);
         Assert.AreEqual(-190, camera.FollowZ);
@@ -77,7 +80,8 @@ public class CameraPresetTests
     [TestMethod]
     public void BuiltInNamesAndLineBreaksCannotBeUsedForCustomPresets()
     {
-        foreach (var name in new[] { CameraPreset.NFMW.Name, "wOrLd", "classic", " ", "Name\nAnother setting", new string('x', 41) })
+        foreach (var name in new[]
+                     { CameraPreset.NFMW.Name, "wOrLd", "classic", " ", "Name\nAnother setting", new string('x', 41) })
             Assert.ThrowsExactly<ArgumentException>(() => CameraPreset.ValidateCustomName(name));
     }
 
@@ -85,12 +89,13 @@ public class CameraPresetTests
     public void InvalidAndDuplicatePresetsDoNotDiscardValidPresets()
     {
         var saved = CameraPresetConfig.WritePresets(
-        [
-            new(CameraPreset.NFMW.Name, 80, 0, 0, false),
-            new("Valid", 80, -98, -200, true),
-            new("valid", 90, 0, 0, false),
-            new("Invalid FOV", 200, 0, 0, false)
-        ]);
+            [
+                new(CameraPreset.NFMW.Name, 80, 0, 0, false),
+                new("Valid", 80, -98, -200, true),
+                new("valid", 90, 0, 0, false),
+                new("Invalid FOV", 200, 0, 0, false)
+            ]
+        );
         var presets = CameraPresetConfig.ReadPresets(saved);
         Assert.AreEqual(1, presets.Count);
         Assert.AreEqual("Valid", presets[0].Name);
@@ -111,10 +116,12 @@ public class CameraPresetTests
     [TestMethod]
     public void SavedPresetsClampCameraLimits()
     {
-        var json = CameraPresetConfig.WritePresets([
-            new CameraPreset("Low", 1, int.MinValue, int.MinValue, false),
-            new CameraPreset("High", 179, int.MaxValue, int.MaxValue, true)
-        ]);
+        var json = CameraPresetConfig.WritePresets(
+            [
+                new CameraPreset("Low", 1, int.MinValue, int.MinValue, false),
+                new CameraPreset("High", 179, int.MaxValue, int.MaxValue, true)
+            ]
+        );
         var presets = CameraPresetConfig.ReadPresets(json);
         Assert.AreEqual(2, presets.Count);
         Assert.AreEqual(CameraPreset.MinFov, presets[0].Fov, 0.001f);

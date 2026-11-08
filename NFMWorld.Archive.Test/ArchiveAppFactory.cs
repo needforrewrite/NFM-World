@@ -26,14 +26,17 @@ public class ArchiveAppFactory : WebApplicationFactory<Program>
         builder.UseSetting("Archive:StorageRoot", Path.Combine(_root, "storage"));
 
         builder.ConfigureAppConfiguration((_, config) =>
-        {
-            config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Archive:Database"] = $"Data Source={Path.Combine(_root, "test.db")}",
-                ["Archive:StorageRoot"] = Path.Combine(_root, "storage"),
-                ["Archive:ReadOnly"] = "false"
-            });
-        });
+                config.AddInMemoryCollection(
+                    new Dictionary<string, string?>
+                    {
+                        ["Archive:Database"] = $"Data Source={Path.Combine(_root, "test.db")}",
+                        ["Archive:StorageRoot"] = Path.Combine(_root, "storage"),
+                        ["Archive:ReadOnly"] = "false"
+                    }
+                );
+            }
+        );
     }
 
     protected override void Dispose(bool disposing)
@@ -41,8 +44,13 @@ public class ArchiveAppFactory : WebApplicationFactory<Program>
         base.Dispose(disposing);
         if (disposing && Directory.Exists(_root))
         {
-            try { Directory.Delete(_root, recursive: true); }
-            catch (IOException) { }
+            try
+            {
+                Directory.Delete(_root, recursive: true);
+            }
+            catch (IOException)
+            {
+            }
         }
     }
 }

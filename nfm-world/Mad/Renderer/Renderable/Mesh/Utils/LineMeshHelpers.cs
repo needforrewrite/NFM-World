@@ -7,7 +7,7 @@ public class LineMeshHelpers
 {
     public const int VerticesPerLine = 4;
     public const int IndicesPerLine = 6;
-    
+
     // vertices must contain 4 elements
     // indices must contain 6 elements
     //
@@ -29,17 +29,17 @@ public class LineMeshHelpers
     )
     {
         var lineDir = Vector3.Normalize(p1 - p0);
-        
+
         if (lineDir == Vector3.Zero)
         {
             SentrySdk.CaptureMessage("Degenerate line in LineMeshHelpers.CreateLineMesh", SentryLevel.Error);
             Logging.Error($"Degenerate line!!!!\n{System.Environment.StackTrace}");
         }
-        
+
         outVerts[0] = new LineMesh.LineMeshVertexAttribute(p0, p1, -1f, normal, centroid, color, decalOffset);
-        outVerts[1] = new LineMesh.LineMeshVertexAttribute(p0, p1,  1f, normal, centroid, color, decalOffset);
+        outVerts[1] = new LineMesh.LineMeshVertexAttribute(p0, p1, 1f, normal, centroid, color, decalOffset);
         outVerts[2] = new LineMesh.LineMeshVertexAttribute(p0, p1, -2f, normal, centroid, color, decalOffset);
-        outVerts[3] = new LineMesh.LineMeshVertexAttribute(p0, p1,  2f, normal, centroid, color, decalOffset);
+        outVerts[3] = new LineMesh.LineMeshVertexAttribute(p0, p1, 2f, normal, centroid, color, decalOffset);
         // One quad (two triangles)
         ReadOnlySpan<int> indices =
         [

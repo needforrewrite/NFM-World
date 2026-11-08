@@ -30,6 +30,7 @@ public class TextInputKeyTests
         {
             input.DispatchKeyTyped(new KeyboardTypingEvent(c));
         }
+
         return input;
     }
 

@@ -12,10 +12,10 @@
 }
 
 <form method="post" asp-page-handler="SignIn">
-    <input type="hidden" asp-for="ReturnUrl" />
+    <input type="hidden" asp-for="ReturnUrl"/>
     <div class="row">
-        <label>Username<br /><input asp-for="Username" autocomplete="username" /></label>
-        <label>Password<br /><input asp-for="Password" type="password" autocomplete="current-password" /></label>
+        <label>Username<br/><input asp-for="Username" autocomplete="username"/></label>
+        <label>Password<br/><input asp-for="Password" type="password" autocomplete="current-password"/></label>
         <button type="submit">Sign in</button>
     </div>
 </form>
@@ -23,10 +23,9 @@
 <h2>Create an account</h2>
 <form method="post" asp-page-handler="Register">
     <div class="row">
-        <label>Username<br /><input asp-for="Username" autocomplete="username" /></label>
-        <label>Password<br /><input asp-for="RegisterPassword" type="password" autocomplete="new-password" /></label>
+        <label>Username<br/><input asp-for="Username" autocomplete="username"/></label>
+        <label>Password<br/><input asp-for="RegisterPassword" type="password" autocomplete="new-password"/></label>
         <button type="submit">Register</button>
     </div>
 </form>
-
 <p><a href="/auth/discord/start">Sign in with Discord</a></p>

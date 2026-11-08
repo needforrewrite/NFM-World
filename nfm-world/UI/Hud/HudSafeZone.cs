@@ -5,8 +5,12 @@ namespace NFMWorld.UI.Hud;
 
 internal static class HudSafeZone
 {
-    public static RectangleF Bounds(Vector2 position, Vector2 size) => HudSafeZoneSettings.Bounds(position, size,
-        SettingsMenu.HudSafeZoneHorizontal, SettingsMenu.HudSafeZoneVertical);
+    public static RectangleF Bounds(Vector2 position, Vector2 size) => HudSafeZoneSettings.Bounds(
+        position,
+        size,
+        SettingsMenu.HudSafeZoneHorizontal,
+        SettingsMenu.HudSafeZoneVertical
+    );
 }
 
 internal sealed class HudSafeZoneGuide : Component

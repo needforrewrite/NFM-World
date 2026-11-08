@@ -23,14 +23,18 @@ public sealed class FetchFileSystem : IVirtualFileSystem
     /// <param name="fetch">Returns the file's bytes, or null when the path is not in this mount.</param>
     /// <param name="paths">Every path this mount serves, used for the synchronous existence checks.</param>
     /// <param name="listPaths">Lists archive entries without fetching their contents.</param>
-    public FetchFileSystem(Func<string, byte[]?> fetch, IEnumerable<string>? paths = null,
-        Func<IEnumerable<string>>? listPaths = null)
+    public FetchFileSystem(
+        Func<string, byte[]?> fetch,
+        IEnumerable<string>? paths = null,
+        Func<IEnumerable<string>>? listPaths = null
+    )
     {
         _fetch = fetch;
         _listPaths = listPaths;
         _known = new ConcurrentDictionary<string, byte>(
             (paths ?? []).Select(p => new KeyValuePair<string, byte>(Normalize(p), 0)),
-            StringComparer.OrdinalIgnoreCase);
+            StringComparer.OrdinalIgnoreCase
+        );
     }
 
     /// <summary>A path the mount has actually fetched. Registering on first read also lets a mount
@@ -69,9 +73,13 @@ public sealed class FetchFileSystem : IVirtualFileSystem
         var prefix = Normalize(path).TrimEnd('/');
         if (prefix.Length > 0) prefix += "/";
         return _known.Keys.Where(key => key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
-            && (searchOption == SearchOption.AllDirectories || !key[prefix.Length..].Contains('/'))
-            && System.IO.Enumeration.FileSystemName.MatchesSimpleExpression(
-                searchPattern, key[(key.LastIndexOf('/') + 1)..], ignoreCase: true));
+                                        && (searchOption == SearchOption.AllDirectories || !key[prefix.Length..].Contains('/'))
+                                        && System.IO.Enumeration.FileSystemName.MatchesSimpleExpression(
+                                            searchPattern,
+                                            key[(key.LastIndexOf('/') + 1)..],
+                                            ignoreCase: true
+                                        )
+        );
     }
 
     private void LoadPaths()

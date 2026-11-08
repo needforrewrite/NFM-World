@@ -18,5 +18,6 @@ public partial struct C2S_Authenticate : IPacketClientToServer<C2S_Authenticate>
     /// <summary>
     /// Compact account token issued by the archive. Empty for a guest.
     /// </summary>
-    [MemoryPackOrder(0)] public required string Token { get; set; }
+    [MemoryPackOrder(0)]
+    public required string Token { get; set; }
 }

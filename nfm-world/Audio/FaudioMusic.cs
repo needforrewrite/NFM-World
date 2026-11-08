@@ -34,6 +34,7 @@ public sealed class FaudioMusic : IRadicalMusic
     /// this class owns. When empty, <see cref="_decoded"/>'s own PCM is played instead.
     /// </summary>
     private DisposableArraySegment<byte> _stretchedPcm;
+
     private readonly bool _hasStretchedPcm;
 
     private IntPtr _voice;

@@ -19,7 +19,8 @@ public class SentryHttpTransport : IDisposable
             Timeout = options.RequestTimeout
         };
         _httpClient.DefaultRequestHeaders.UserAgent.Add(
-            new ProductInfoHeaderValue("NFMWorld.Sentry", "1.0.0"));
+            new ProductInfoHeaderValue("NFMWorld.Sentry", "1.0.0")
+        );
     }
 
     /// <summary>
@@ -29,7 +30,8 @@ public class SentryHttpTransport : IDisposable
     public async Task<string?> SendEnvelopeAsync(
         byte[] envelopeBytes,
         DsnInfo dsn,
-        CancellationToken ct = default)
+        CancellationToken ct = default
+    )
     {
         try
         {

@@ -10,14 +10,14 @@ public class DevConsole
     private bool _focusInput;
     private string _currentInput = string.Empty;
     private readonly Dictionary<string, Action<DevConsole, string[]>> _commands = new();
-        
+
     // UI Windows
     private readonly DebugCameraWindow _cameraSettings = new();
 
     private readonly List<string> _commandHistory = new();
     private int _historyIndex = -1;
     private string? _pendingInput = null;
-        
+
     // Autocomplete state
     private List<string> _autocompleteMatches = new();
     private int _autocompleteIndex = -1;
@@ -39,7 +39,7 @@ public class DevConsole
     {
         return _isOpen;
     }
-        
+
     public void ToggleCameraSettings()
     {
         _cameraSettings.Toggle();
@@ -90,11 +90,11 @@ public class DevConsole
         {
             RenderConsole();
         }
-            
+
         // temp, render UI windows independently (they manage their own visibility)
         _cameraSettings.Render();
     }
-        
+
     private void RenderConsole()
     {
         // windows size
@@ -107,10 +107,22 @@ public class DevConsole
         Vector2 consoleSize = default;
 
         bool isOpen = _isOpen;
-        if (ImGui.Begin("Console", ref isOpen, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoNavInputs | ImGuiWindowFlags.NoNavFocus))
+        if (ImGui.Begin(
+                "Console",
+                ref isOpen,
+                ImGuiWindowFlags.NoScrollbar
+                | ImGuiWindowFlags.NoScrollWithMouse
+                | ImGuiWindowFlags.NoNavInputs
+                | ImGuiWindowFlags.NoNavFocus
+            ))
         {
             // output log
-            if (ImGui.BeginChild("ScrollingRegion", new Vector2(0, -ImGui.GetFrameHeightWithSpacing()), ImGuiChildFlags.None, ImGuiWindowFlags.None))
+            if (ImGui.BeginChild(
+                    "ScrollingRegion",
+                    new Vector2(0, -ImGui.GetFrameHeightWithSpacing()),
+                    ImGuiChildFlags.None,
+                    ImGuiWindowFlags.None
+                ))
             {
                 foreach (var (message, level) in NfmwLoggerProvider.GetLogs())
                 {
@@ -137,16 +149,17 @@ public class DevConsole
                     ImGui.TextUnformatted(message);
                     ImGui.PopStyleColor();
                 }
-                    
+
                 // auto-scroll to bottom
                 if (ImGui.GetScrollY() >= ImGui.GetScrollMaxY())
                     ImGui.SetScrollHereY(1.0f);
             }
+
             ImGui.EndChild();
 
             ImGui.Separator();
             ImGui.Spacing();
-                
+
             // focus input when console opens
             if (_focusInput || ImGui.IsWindowAppearing())
             {
@@ -167,7 +180,7 @@ public class DevConsole
             }
 
             ImGui.PushItemWidth(-1);
-                
+
             // Apply any pending input from previous frame's history navigation
             if (_pendingInput != null)
             {
@@ -175,26 +188,26 @@ public class DevConsole
                 _pendingInput = null;
                 Logging.Debug($"Applied pending input: {_currentInput}");
             }
-                
+
             // Store previous input to detect changes
             string previousInput = _currentInput;
-                
+
             // input field
             ImGui.InputText("##Command", ref _currentInput, 256);
-                
+
             // Check for keys while input has focus
             bool upPressed = ImGui.IsKeyPressed(ImGuiKey.UpArrow);
             bool downPressed = ImGui.IsKeyPressed(ImGuiKey.DownArrow);
             bool tabPressed = ImGui.IsKeyPressed(ImGuiKey.Tab);
             bool enterPressed = ImGui.IsKeyPressed(ImGuiKey.Enter);
 
-                
+
             // Update autocomplete matches when input changes
             if (_currentInput != previousInput)
             {
                 UpdateAutocomplete();
             }
-                
+
             // Handle autocomplete first (higher priority)
             if (_autocompleteMatches.Count > 0)
             {
@@ -209,7 +222,7 @@ public class DevConsole
                 else if (downPressed || upPressed)
                 {
                     ImGui.SetNextWindowFocus();
-                        
+
                     if (downPressed)
                     {
                         _autocompleteIndex = (_autocompleteIndex + 1) % _autocompleteMatches.Count;
@@ -235,6 +248,7 @@ public class DevConsole
                         _historyIndex--;
                         _currentInput = _commandHistory[_historyIndex];
                     }
+
                     ImGui.SetKeyboardFocusHere(-1);
                 }
                 else if (downPressed)
@@ -250,25 +264,27 @@ public class DevConsole
                         _historyIndex = _commandHistory.Count;
                         _currentInput = string.Empty;
                     }
+
                     ImGui.SetKeyboardFocusHere(-1);
                 }
             }
-                
+
             // command execution
             if (enterPressed)
             {
                 if (!string.IsNullOrWhiteSpace(_currentInput))
                 {
                     Logging.Info($"> {_currentInput}"); // Show command in log
-                        
+
                     // Add to history BEFORE executing
                     if (_commandHistory.Count == 0 || _commandHistory[^1] != _currentInput)
                     {
                         _commandHistory.Add(_currentInput);
                         if (_commandHistory.Count > 50) _commandHistory.RemoveAt(0);
                     }
+
                     _historyIndex = _commandHistory.Count;
-                        
+
                     ExecuteCommand(_currentInput);
                     _currentInput = string.Empty;
                     _autocompleteMatches.Clear();
@@ -278,36 +294,45 @@ public class DevConsole
                     //_shouldRefocusInput = true;
                 }
             }
-                
+
             // Capture console window position BEFORE ending it
             consolePos = ImGui.GetWindowPos();
             consoleSize = ImGui.GetWindowSize();
         }
+
         ImGui.End();
 
         _isOpen = isOpen; // Update open state if user closed window
-            
+
         // Render autocomplete popup as separate window
         if (_autocompleteMatches.Count > 0 && !string.IsNullOrWhiteSpace(_currentInput) && _isOpen)
         {
             // Position popup below the console input field using captured position
             var popupPos = new Vector2(consolePos.X, consolePos.Y + consoleSize.Y + 5);
-                
+
             ImGui.SetNextWindowPos(popupPos, ImGuiCond.Always);
             ImGui.SetNextWindowSize(new Vector2(400, Math.Min(_autocompleteMatches.Count * 25 + 10, 200)));
-                
+
             ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 4.0f);
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(8, 8));
             ImGui.PushStyleColor(ImGuiCol.WindowBg, ImGui.GetStyle().Colors[(int)ImGuiCol.PopupBg]);
-                
-            if (ImGui.Begin("##Autocomplete", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoInputs))
+
+            if (ImGui.Begin(
+                    "##Autocomplete",
+                    ImGuiWindowFlags.NoTitleBar
+                    | ImGuiWindowFlags.NoResize
+                    | ImGuiWindowFlags.NoMove
+                    | ImGuiWindowFlags.NoSavedSettings
+                    | ImGuiWindowFlags.NoFocusOnAppearing
+                    | ImGuiWindowFlags.NoInputs
+                ))
             {
                 if (ImGui.BeginChild("##AutocompleteScroll", new Vector2(0, 0), ImGuiChildFlags.None, ImGuiWindowFlags.None))
                 {
                     for (int i = 0; i < _autocompleteMatches.Count; i++)
                     {
                         bool isSelected = i == _autocompleteIndex;
-                            
+
                         if (isSelected)
                         {
                             // Draw selection background
@@ -320,9 +345,9 @@ public class DevConsole
                                 ImGui.GetColorU32(ImGuiCol.HeaderHovered)
                             );
                         }
-                            
+
                         ImGui.Text(_autocompleteMatches[i]);
-                            
+
                         // Auto-scroll to selected item
                         if (isSelected)
                         {
@@ -330,32 +355,34 @@ public class DevConsole
                         }
                     }
                 }
+
                 ImGui.EndChild();
             }
+
             ImGui.End();
-                
+
             ImGui.PopStyleColor();
             ImGui.PopStyleVar(2);
         }
     }
-        
+
     private void UpdateAutocomplete()
     {
         _autocompleteMatches.Clear();
         _autocompleteIndex = -1;
-            
+
         if (string.IsNullOrWhiteSpace(_currentInput))
             return;
-            
+
         // Split input into parts
         var parts = _currentInput.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var firstSpace = _currentInput.IndexOf(' ');
-            
+
         // If no space yet, autocomplete command names
         if (firstSpace < 0)
         {
             var prefix = parts.Length > 0 ? parts[0] : string.Empty;
-                
+
             // Find all matching commands
             foreach (var cmd in _commands.Keys)
             {
@@ -364,7 +391,7 @@ public class DevConsole
                     _autocompleteMatches.Add(cmd);
                 }
             }
-                
+
             // Sort command matches alphabetically
             _autocompleteMatches.Sort();
         }
@@ -374,28 +401,28 @@ public class DevConsole
             var command = parts[0];
             var args = parts.Length > 1 ? parts[1..] : [];
             var currentArg = _currentInput.EndsWith(' ') ? string.Empty : (args.Length > 0 ? args[^1] : string.Empty);
-                
+
             // Determine which argument position we're on (0-based)
             int argPosition = _currentInput.EndsWith(' ') ? args.Length : Math.Max(0, args.Length - 1);
-                
+
             // Check if this command has an argument autocompleter
             if (_argumentAutocompleters.TryGetValue(command, out var autocompleter))
             {
                 var suggestions = autocompleter(args, argPosition);
-                    
+
                 // If no suggestions returned, don't show autocomplete for this position
                 if (suggestions == null || suggestions.Count == 0)
                 {
                     return;
                 }
-                    
+
                 foreach (var suggestion in suggestions)
                 {
                     // partial matching
-                    bool matches = string.IsNullOrEmpty(currentArg) ||
-                                   suggestion.StartsWith(currentArg, StringComparison.OrdinalIgnoreCase) ||
-                                   suggestion.Contains(currentArg, StringComparison.OrdinalIgnoreCase);
-                        
+                    bool matches = string.IsNullOrEmpty(currentArg)
+                                   || suggestion.StartsWith(currentArg, StringComparison.OrdinalIgnoreCase)
+                                   || suggestion.Contains(currentArg, StringComparison.OrdinalIgnoreCase);
+
                     if (matches)
                     {
                         // Build the full command with this suggestion
@@ -405,11 +432,11 @@ public class DevConsole
                         _autocompleteMatches.Add(fullCommand + suggestion);
                     }
                 }
-                    
+
                 // Don't sort - argument completers may have custom sorting (e.g., natural sort for numbers)
             }
         }
-            
+
         // Set initial selection to first match
         if (_autocompleteMatches.Count > 0)
         {

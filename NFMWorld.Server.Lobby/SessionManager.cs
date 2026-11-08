@@ -27,8 +27,14 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
     /// Bots to place in the empty slots when the race starts. They are filled then, not now, so
     /// a human joining before the start takes one of those slots instead.
     /// </param>
-    public GameSession? CreateSession(uint creatorclientIndex, string stageName, byte maxPlayers, string gamemode,
-        Dictionary<string, string>? gamemodeParameters = null, int bots = 0)
+    public GameSession? CreateSession(
+        uint creatorclientIndex,
+        string stageName,
+        byte maxPlayers,
+        string gamemode,
+        Dictionary<string, string>? gamemodeParameters = null,
+        int bots = 0
+    )
     {
         var creator = players.Get(creatorclientIndex);
         if (creator is null)
@@ -51,7 +57,7 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
 
         if (!_sessions.TryAdd(session.Id, session))
             return null;
-        
+
         return session;
     }
 
@@ -70,8 +76,7 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
             GameSession? leftSession = null;
 
             // Leave current session if in one
-            if (player.InSession is { } current &&
-                _sessions.TryGetValue(current.SessionIndex, out var leaving))
+            if (player.InSession is { } current && _sessions.TryGetValue(current.SessionIndex, out var leaving))
             {
                 leaving.Players.TryRemove(KeyValuePair.Create(current.PlayerIndex, player.Id));
                 player.InSession = null;
@@ -79,8 +84,7 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
             }
 
             // Join new session
-            if (_sessions.TryGetValue(sessionId, out var target) &&
-                target.Players.Count < target.MaxPlayers)
+            if (_sessions.TryGetValue(sessionId, out var target) && target.Players.Count < target.MaxPlayers)
             {
                 byte playerIndex = 0;
                 while (target.Players.ContainsKey(playerIndex))
@@ -99,9 +103,9 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
     public GameSession? LeaveSession(uint clientIndex, uint sessionId)
     {
         var player = players.Get(clientIndex);
-        if (player?.InSession is { } current &&
-            current.SessionIndex == sessionId &&
-            _sessions.TryGetValue(sessionId, out var session))
+        if (player?.InSession is { } current
+            && current.SessionIndex == sessionId
+            && _sessions.TryGetValue(sessionId, out var session))
         {
             session.Players.TryRemove(KeyValuePair.Create(current.PlayerIndex, player.Id));
             player.InSession = null;
@@ -122,9 +126,9 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         // packets both pass it and two races are created for one session.
         lock (_lock)
         {
-            if (_sessions.TryGetValue(sessionId, out var session) &&
-                session.Players.Any(e => e.Value == player.Id) &&
-                session.State == SessionState.NotStarted)
+            if (_sessions.TryGetValue(sessionId, out var session)
+                && session.Players.Any(e => e.Value == player.Id)
+                && session.State == SessionState.NotStarted)
             {
                 session.State = SessionState.WaitingToLoad;
                 session.StartTime = DateTimeOffset.UtcNow.AddSeconds(20);
@@ -161,9 +165,9 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         var timedOut = new List<GameSession>();
         foreach (var (_, session) in _sessions)
         {
-            if (session.State == SessionState.WaitingToLoad &&
-                session.StartTime is { } startTime &&
-                DateTimeOffset.UtcNow >= startTime)
+            if (session.State == SessionState.WaitingToLoad
+                && session.StartTime is { } startTime
+                && DateTimeOffset.UtcNow >= startTime)
             {
                 session.State = SessionState.Finished;
                 timedOut.Add(session);
@@ -202,10 +206,10 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
     public bool SetPlayerReady(uint clientIndex, uint sessionId, bool isReady)
     {
         var player = players.Get(clientIndex);
-        if (player?.InSession is { } current &&
-            current.SessionIndex == sessionId &&
-            _sessions.TryGetValue(sessionId, out var session) &&
-            session.State == SessionState.NotStarted)
+        if (player?.InSession is { } current
+            && current.SessionIndex == sessionId
+            && _sessions.TryGetValue(sessionId, out var session)
+            && session.State == SessionState.NotStarted)
         {
             // Readiness is tracked implicitly — all players must be ready before start.
             // For v1 we just validate that the player is in the session.

@@ -26,11 +26,13 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
 
         var data = new List<LineMesh.LineMeshVertexAttribute>(LineMeshHelpers.VerticesPerLine * linesPerPolygon * boxes.Count);
         var indices = new List<int>(LineMeshHelpers.IndicesPerLine * linesPerPolygon * boxes.Count);
+
         void AddLine(Vector3 p0, Vector3 p1, Color3 color, float mult = 1)
         {
             // Create two quads for each line segment to give it some thickness
 
-            Span<LineMesh.LineMeshVertexAttribute> verts = stackalloc LineMesh.LineMeshVertexAttribute[LineMeshHelpers.VerticesPerLine];
+            Span<LineMesh.LineMeshVertexAttribute> verts =
+                stackalloc LineMesh.LineMeshVertexAttribute[LineMeshHelpers.VerticesPerLine];
             Span<int> inds = stackalloc int[LineMeshHelpers.IndicesPerLine];
 
             LineMeshHelpers.CreateLineMesh(p0, p1, data.Count, Vector3.UnitY, (p0 + p1) * 0.5f, color, 0f, in verts, in inds);
@@ -54,7 +56,7 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
                 new(center.X - radius.X, center.Y - radius.Y, center.Z + radius.Z), // 4: left-bottom-front
                 new(center.X + radius.X, center.Y - radius.Y, center.Z + radius.Z), // 5: right-bottom-front
                 new(center.X + radius.X, center.Y + radius.Y, center.Z + radius.Z), // 6: right-top-front
-                new(center.X - radius.X, center.Y + radius.Y, center.Z + radius.Z)  // 7: left-top-front
+                new(center.X - radius.X, center.Y + radius.Y, center.Z + radius.Z) // 7: left-top-front
             ];
 
             // Define the 12 edges as pairs of corner indices
@@ -118,7 +120,11 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
                     var flatP0 = new Vector3(p0.X, center.Y, p0.Z);
                     var flatP1 = new Vector3(p1.X, center.Y, p1.Z);
 
-                    var angle = new Euler(AngleSingle.ZeroAngle, AngleSingle.FromDegrees(180 - box.Zy), AngleSingle.FromDegrees(180 - box.Xy));
+                    var angle = new Euler(
+                        AngleSingle.ZeroAngle,
+                        AngleSingle.FromDegrees(180 - box.Zy),
+                        AngleSingle.FromDegrees(180 - box.Xy)
+                    );
 
                     // Rotate around center
                     var rotationMatrix = Matrix.CreateFromEuler(angle);
@@ -136,18 +142,23 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
 
         var vertexBytes = MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(data));
         lineVertexBuffer = GameSparker.GraphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length), vertexBytes);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length),
+            vertexBytes
+        );
 
         var indexBytes = MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(indices));
         lineIndexBuffer = GameSparker.GraphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indexBytes.Length, IndexFormat.UInt32), indexBytes);
+            new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indexBytes.Length, IndexFormat.UInt32),
+            indexBytes
+        );
 
         lineTriangleCount = indices.Count / 3;
         lineVertexCount = data.Count;
 
         lineInstanceBuffer = GameSparker.GraphicsDevice.CreateBuffer(
             new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, InstanceData.Stride),
-            MemoryMarshal.AsBytes((ReadOnlySpan<InstanceData>)[new InstanceData(MatrixWorld)]));
+            MemoryMarshal.AsBytes((ReadOnlySpan<InstanceData>)[new InstanceData(MatrixWorld)])
+        );
 
         #endregion
     }
@@ -182,9 +193,13 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
         p.HalfThickness.SetValue(cb, World.OutlineThickness);
         p.PixelOutlineMask.SetValue(cb, World.PixelOutlines ? 1f : 0f);
         p.PixelOriginBottomLeft.SetValue(cb, GameSparker.GraphicsDevice.HasBottomLeftFramebufferOrigin ? 1f : 0f);
-        p.Resolution.SetValue(cb, new Vector2(
-            Math.Max(1, GameSparker.GraphicsDevice.Swapchain.Width),
-            Math.Max(1, GameSparker.GraphicsDevice.Swapchain.Height)));
+        p.Resolution.SetValue(
+            cb,
+            new Vector2(
+                Math.Max(1, GameSparker.GraphicsDevice.Swapchain.Width),
+                Math.Max(1, GameSparker.GraphicsDevice.Swapchain.Height)
+            )
+        );
 
         // Collision debug lines are editor/debug overlays, so gameplay outline modes must not hide them.
         LineEffectDistantOutlineSettings.Apply(cb, DistantOutlineBehavior.AlwaysRender);

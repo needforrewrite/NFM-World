@@ -21,19 +21,22 @@ public partial class StageEditorPhase
                     ActiveTab.ViewMode = StageEditorTab.ViewModeEnum.Scene;
                     UpdateCameraPosition();
                 }
-                
+
                 ImGui.Text("3D Scene View");
                 if (ActiveTab != null)
                 {
-                    ImGui.Text($"Camera: Yaw={ActiveTab.CameraYaw:F1}° Pitch={ActiveTab.CameraPitch:F1}° Dist={ActiveTab.CameraDistance:F0}");
+                    ImGui.Text(
+                        $"Camera: Yaw={ActiveTab.CameraYaw:F1}° Pitch={ActiveTab.CameraPitch:F1}° Dist={ActiveTab.CameraDistance:F0}"
+                    );
                 }
+
                 ImGui.Text($"Pieces in scene: {ActiveTab.ScenePieces.Count}");
-                
+
                 // The actual 3D rendering happens in Render3D()
-                
+
                 ImGui.EndTabItem();
             }
-            
+
             if (ImGui.BeginTabItem("Top Down"))
             {
                 if (ActiveTab != null && ActiveTab.ViewMode != StageEditorTab.ViewModeEnum.TopDown)
@@ -41,26 +44,26 @@ public partial class StageEditorPhase
                     ActiveTab.ViewMode = StageEditorTab.ViewModeEnum.TopDown;
                     UpdateCameraPosition();
                 }
-                
+
                 ImGui.Text("Top Down View");
                 ImGui.Text($"Pieces in scene: {ActiveTab.ScenePieces.Count}");
-                
+
                 ImGui.EndTabItem();
             }
-            
+
             ImGui.EndTabBar();
         }
     }
-    
+
     private void RenderInspector()
     {
         ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.6f, 0.6f, 0.6f, 1f));
         ImGui.Text("Inspector");
         ImGui.PopStyleColor();
         ImGui.Separator();
-        
+
         if (ActiveTab == null) return;
-        
+
         // Wall selected
         if (ActiveTab.SelectedWallId >= 0)
         {
@@ -69,7 +72,7 @@ public partial class StageEditorPhase
             {
                 ImGui.TextColored(new Vector4(0.7f, 0.7f, 1f, 1f), wall.GetDisplayName());
                 ImGui.Spacing();
-                
+
                 if (ImGui.CollapsingHeader("Border Settings", ImGuiTreeNodeFlags.DefaultOpen))
                 {
                     ImGui.Spacing();
@@ -81,10 +84,17 @@ public partial class StageEditorPhase
                         _inspectorWallDragging = true;
                         PushUndoSnapshot();
                     }
+
                     if (countChanged)
                     {
-                        if (wall.Count != count) { wall.Count = count; ActiveTab.HasUnsavedChanges = true; RebuildAllWalls(); }
+                        if (wall.Count != count)
+                        {
+                            wall.Count = count;
+                            ActiveTab.HasUnsavedChanges = true;
+                            RebuildAllWalls();
+                        }
                     }
+
                     if (ImGui.IsItemDeactivated())
                         _inspectorWallDragging = false;
 
@@ -96,10 +106,17 @@ public partial class StageEditorPhase
                         _inspectorWallDragging = true;
                         PushUndoSnapshot();
                     }
+
                     if (posChanged)
                     {
-                        if (wall.Position != pos) { wall.Position = pos; ActiveTab.HasUnsavedChanges = true; RebuildAllWalls(); }
+                        if (wall.Position != pos)
+                        {
+                            wall.Position = pos;
+                            ActiveTab.HasUnsavedChanges = true;
+                            RebuildAllWalls();
+                        }
                     }
+
                     if (ImGui.IsItemDeactivated())
                         _inspectorWallDragging = false;
 
@@ -111,10 +128,17 @@ public partial class StageEditorPhase
                         _inspectorWallDragging = true;
                         PushUndoSnapshot();
                     }
+
                     if (offsetChanged)
                     {
-                        if (wall.Offset != offset) { wall.Offset = offset; ActiveTab.HasUnsavedChanges = true; RebuildAllWalls(); }
+                        if (wall.Offset != offset)
+                        {
+                            wall.Offset = offset;
+                            ActiveTab.HasUnsavedChanges = true;
+                            RebuildAllWalls();
+                        }
                     }
+
                     if (ImGui.IsItemDeactivated())
                         _inspectorWallDragging = false;
 
@@ -122,7 +146,7 @@ public partial class StageEditorPhase
                     RenderAutoGenerateBordersButton("_selectedwall");
                     ImGui.Spacing();
                 }
-                
+
                 ImGui.Spacing();
                 ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.6f, 0.15f, 0.15f, 1f));
                 if (ImGui.Button("Delete Border", new Vector2(-1, 0)))
@@ -133,11 +157,13 @@ public partial class StageEditorPhase
                     ActiveTab.HasUnsavedChanges = true;
                     RebuildAllWalls();
                 }
+
                 ImGui.PopStyleColor();
             }
+
             return;
         }
-        
+
         // Piece selected
         if (ActiveTab.ActivePieceId >= 0)
         {
@@ -151,29 +177,36 @@ public partial class StageEditorPhase
                 if (ImGui.Button("Delete All Selected", new Vector2(-1, 0)))
                 {
                     PushUndoSnapshot();
-                    int[] toDelete = [..ActiveTab.SelectedPieceIds];
+                    int[] toDelete = [.. ActiveTab.SelectedPieceIds];
                     foreach (var did in toDelete)
                     {
                         var dp = ActiveTab.ScenePieces.GetValueOrDefault(did);
                         if (dp == null) continue;
                         if (ActiveTab.Stage != null)
                             for (int si = 0; si < ActiveTab.Stage.Pieces.Count; si++)
-                                if (ActiveTab.Stage.Pieces[si] == dp.Obj) { ActiveTab.Stage.Pieces.RemoveAt(si); break; }
+                                if (ActiveTab.Stage.Pieces[si] == dp.Obj)
+                                {
+                                    ActiveTab.Stage.Pieces.RemoveAt(si);
+                                    break;
+                                }
+
                         ActiveTab.ScenePieces.Remove(dp);
                         foreach (var grp in ActiveTab.HierarchyGroups) grp.PieceIds.Remove(dp.Id);
                     }
+
                     ActiveTab.SelectedPieceIds.Clear();
                     ActiveTab.ActivePieceId = -1;
                     ActiveTab.HasUnsavedChanges = true;
                     RebuildClientRenderer();
                 }
+
                 ImGui.PopStyleColor();
                 ImGui.Spacing();
                 ImGui.TextDisabled("(showing primary piece below)");
                 ImGui.Separator();
                 ImGui.Spacing();
             }
-            
+
             var piece = ActiveTab.ScenePieces.GetValueOrDefault(ActiveTab.ActivePieceId);
             if (piece != null)
             {
@@ -181,7 +214,7 @@ public partial class StageEditorPhase
                 ImGui.TextColored(new Vector4(0.7f, 1f, 0.7f, 1f), shortName);
                 ImGui.TextDisabled(piece.Name);
                 ImGui.Spacing();
-                
+
                 // Transform section
                 if (ImGui.CollapsingHeader("Transform", ImGuiTreeNodeFlags.DefaultOpen))
                 {
@@ -197,6 +230,7 @@ public partial class StageEditorPhase
                         _inspectorPosDragging = true;
                         PushUndoSnapshot();
                     }
+
                     if (posDragging)
                     {
                         var newPos = new f64Vector3((fix64)displayPos.X, (fix64)(displayPos.Y + 250), (fix64)displayPos.Z);
@@ -211,14 +245,16 @@ public partial class StageEditorPhase
                             var sp = ActiveTab.ScenePieces.GetValueOrDefault(selId);
                             sp?.Position = new f64Vector3(sp.Position.X + deltaX, sp.Position.Y + deltaY, sp.Position.Z + deltaZ);
                         }
+
                         ActiveTab.HasUnsavedChanges = true;
                     }
+
                     // Clear flag when drag ends
                     if (ImGui.IsItemDeactivated())
                         _inspectorPosDragging = false;
                     if (ImGui.IsItemHovered())
                         ImGui.SetTooltip("Y=0 is ground level (internal Y=250).");
-                    
+
                     ImGui.Text("Rotation (Yaw)");
                     float rotY = (float)piece.Rotation.Yaw.Degrees;
                     ImGui.SetNextItemWidth(-1);
@@ -229,10 +265,11 @@ public partial class StageEditorPhase
                         _inspectorRotDragging = true;
                         PushUndoSnapshot();
                     }
+
                     if (rotDragging)
                     {
                         float rotDelta = rotY - (float)piece.Rotation.Yaw.Degrees;
-                        
+
                         // For grouped pieces, rotate positions around the centroid (same as gizmo)
                         if (ActiveTab.SelectedPieceIds.Count > 1)
                         {
@@ -247,14 +284,15 @@ public partial class StageEditorPhase
                                     centroidZ += (float)sp.Position.Z;
                                 }
                             }
+
                             centroidX /= ActiveTab.SelectedPieceIds.Count;
                             centroidZ /= ActiveTab.SelectedPieceIds.Count;
-                            
+
                             // Rotate ALL pieces (including active) around centroid
                             float radians = rotDelta * MathF.PI / 180f;
                             float cosA = MathF.Cos(radians);
                             float sinA = MathF.Sin(radians);
-                            
+
                             foreach (var selId in ActiveTab.SelectedPieceIds)
                             {
                                 var sp = ActiveTab.ScenePieces.GetValueOrDefault(selId);
@@ -267,24 +305,35 @@ public partial class StageEditorPhase
                                     sp.Position = new f64Vector3(
                                         (fix64)(centroidX + newRelX),
                                         sp.Position.Y,
-                                        (fix64)(centroidZ + newRelZ));
-                                    sp.Rotation = new f64Euler(f64AngleSingle.FromDegrees((fix64)(((float)sp.Rotation.Yaw.Degrees + rotDelta) % 360f)), sp.Rotation.Pitch, sp.Rotation.Roll);
+                                        (fix64)(centroidZ + newRelZ)
+                                    );
+                                    sp.Rotation = new f64Euler(
+                                        f64AngleSingle.FromDegrees((fix64)(((float)sp.Rotation.Yaw.Degrees + rotDelta) % 360f)),
+                                        sp.Rotation.Pitch,
+                                        sp.Rotation.Roll
+                                    );
                                 }
                             }
                         }
                         else
                         {
                             // Single piece: just update rotation without position change
-                            piece.Rotation = new f64Euler(f64AngleSingle.FromDegrees((fix64)rotY), piece.Rotation.Pitch, piece.Rotation.Roll);
+                            piece.Rotation = new f64Euler(
+                                f64AngleSingle.FromDegrees((fix64)rotY),
+                                piece.Rotation.Pitch,
+                                piece.Rotation.Roll
+                            );
                         }
+
                         ActiveTab.HasUnsavedChanges = true;
                     }
+
                     // Clear flag when drag ends
                     if (ImGui.IsItemDeactivated())
                         _inspectorRotDragging = false;
                     ImGui.Spacing();
                 }
-                
+
                 // Piece settings section
                 if (ImGui.CollapsingHeader("Piece Settings", ImGuiTreeNodeFlags.DefaultOpen))
                 {
@@ -298,12 +347,13 @@ public partial class StageEditorPhase
                         piece.PiecePlacement = piece.PiecePlacement with { Type = (PiecePlacementType)pieceType };
                         ActiveTab.HasUnsavedChanges = true;
                     }
-                    
+
                     ImGui.Text("AI Tags");
                     ImGui.SetNextItemWidth(-1);
 
-                    int nodeType = piece.PiecePlacement.NodeKind is not {} value ? 0 : (int)(value + 1);
-                    string[] nodeTypeNames = [
+                    int nodeType = piece.PiecePlacement.NodeKind is not { } value ? 0 : (int)(value + 1);
+                    string[] nodeTypeNames =
+                    [
                         "None (Ignore)",
                         "Fake CheckPoint",
                         "Road",
@@ -323,10 +373,13 @@ public partial class StageEditorPhase
                     ImGui.SetNextItemWidth(-1);
                     if (ImGui.Combo("##aitype", ref nodeType, nodeTypeNames, nodeTypeNames.Length))
                     {
-                        piece.PiecePlacement = piece.PiecePlacement with { NodeKind = pieceType == 0 ? null : (AiNodeKind)(pieceType - 1) };
+                        piece.PiecePlacement = piece.PiecePlacement with
+                        {
+                            NodeKind = pieceType == 0 ? null : (AiNodeKind)(pieceType - 1)
+                        };
                         ActiveTab.HasUnsavedChanges = true;
                     }
-                    
+
                     if (ImGui.IsItemHovered())
                         ImGui.SetTooltip(
                             """
@@ -342,9 +395,10 @@ public partial class StageEditorPhase
                             fixroadend -> same thing but can hit it in the opposite direction (backwards)
                             avoid -> AI will try to dodge this node if it is nearby it
                             reset -> i forgor lol
-                            """);
+                            """
+                        );
                     ImGui.Spacing();
-                    
+
                     if (!_isSwapMode)
                     {
                         // Only allow swap when all selected pieces share the same model
@@ -356,12 +410,14 @@ public partial class StageEditorPhase
                             var firstName = allSelected.Count > 0 ? allSelected[0].Name : piece.Name;
                             swapAllowed = allSelected.All(p => p.Name == firstName);
                         }
+
                         if (!swapAllowed) ImGui.BeginDisabled();
                         if (ImGui.Button("Swap Piece...", new Vector2(-1, 0)))
                         {
                             _isSwapMode = true;
                             _pendingPlacementPartIndex = -1;
                         }
+
                         if (!swapAllowed)
                         {
                             ImGui.EndDisabled();
@@ -376,9 +432,10 @@ public partial class StageEditorPhase
                             _isSwapMode = false;
                         ImGui.PopStyleColor();
                     }
+
                     ImGui.Spacing();
                 }
-                
+
                 ImGui.Spacing();
                 ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.6f, 0.15f, 0.15f, 1f));
                 if (ImGui.Button("Delete Piece", new Vector2(-1, 0)))
@@ -394,17 +451,19 @@ public partial class StageEditorPhase
                             }
                         }
                     }
+
                     ActiveTab.ScenePieces.Remove(piece);
                     ActiveTab.SelectedPieceIds.Remove(piece.Id);
                     ActiveTab.ActivePieceId = -1;
                     ActiveTab.HasUnsavedChanges = true;
                     RebuildClientRenderer();
                 }
+
                 ImGui.PopStyleColor();
                 return;
             }
         }
-        
+
         // Nothing selected
         ImGui.Spacing();
         if (ImGui.CollapsingHeader("Borders", ImGuiTreeNodeFlags.DefaultOpen))
@@ -412,11 +471,12 @@ public partial class StageEditorPhase
             RenderAutoGenerateBordersButton("_noselection");
             ImGui.Spacing();
         }
+
         ImGui.TextDisabled("No piece selected.");
         ImGui.TextDisabled("Click a piece in the viewport");
         ImGui.TextDisabled("or select from the Hierarchy.");
     }
-    
+
     private void RenderPartsLibrary()
     {
         // Header row: title + counts
@@ -436,8 +496,9 @@ public partial class StageEditorPhase
             ImGui.SameLine();
             ImGui.TextDisabled($"({_availableParts.Count} parts)");
         }
+
         ImGui.Separator();
-        
+
         // Search bar
         float searchWidth = ImGui.GetContentRegionAvail().X - 4;
         ImGui.SetNextItemWidth(searchWidth);
@@ -445,7 +506,7 @@ public partial class StageEditorPhase
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Search parts by name");
         ImGui.Spacing();
-        
+
         // Category filter tabs
         string[] catLabels = ["All", "NFMM", "Vendor", "User"];
         for (int c = 0; c < catLabels.Length; c++)
@@ -459,12 +520,12 @@ public partial class StageEditorPhase
             if (active)
                 ImGui.PopStyleColor();
         }
-        
+
         // Snap + rotation controls (right-aligned in same row)
         ImGui.SameLine();
         ImGui.Spacing();
         ImGui.SameLine();
-        
+
         bool snapOn = _snapEnabled;
         if (snapOn) ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.2f, 0.65f, 0.2f, 0.8f));
         if (ImGui.SmallButton(_snapEnabled ? "Snap ON" : "Snap OFF"))
@@ -478,8 +539,9 @@ public partial class StageEditorPhase
         if (ImGui.SmallButton(_gridSnapEnabled ? $"[G] Grid ON: {_gridSnapSize:F0}" : "[G] Grid OFF"))
             _gridSnapEnabled = !_gridSnapEnabled;
         if (gridSnapOn) ImGui.PopStyleColor();
-        if (ImGui.IsItemHovered()) ImGui.SetTooltip("Toggle grid snapping (G).\nScroll wheel cycles snap size when in placement mode.");
-        
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Toggle grid snapping (G).\nScroll wheel cycles snap size when in placement mode.");
+
         if (_gridSnapEnabled)
         {
             ImGui.SameLine();
@@ -494,13 +556,16 @@ public partial class StageEditorPhase
                         _snapPresetIndex = si;
                         _gridSnapSize = SnapPresets[si];
                     }
+
                     if (sel) ImGui.SetItemDefaultFocus();
                 }
+
                 ImGui.EndCombo();
             }
+
             if (ImGui.IsItemHovered()) ImGui.SetTooltip("Grid snap size in world units.\nRoad spacing = 5600.");
         }
-        
+
         if (_pendingPlacementPartIndex >= 0)
         {
             ImGui.SameLine();
@@ -515,30 +580,30 @@ public partial class StageEditorPhase
             ImGui.SameLine();
             if (ImGui.SmallButton("Reset##rot")) _pendingPlacementYaw = 0f;
         }
-        
+
         ImGui.Separator();
-        
+
         // Build filtered list
         bool hasSearchFilter = !string.IsNullOrWhiteSpace(_partsSearch);
-        
+
         ImGui.BeginChild("##partsgrid", new Vector2(0, 0), ImGuiChildFlags.None);
-        
-        const float tileImgSize = 56f;  // image / button area height
-        const float tileLabelH  = 16f;  // label height below image
-        const float tileW       = 64f;  // total tile width
-        const float tileH       = tileImgSize + tileLabelH + 4f;
-        const float tilePad     = 6f;
-        
+
+        const float tileImgSize = 56f; // image / button area height
+        const float tileLabelH = 16f; // label height below image
+        const float tileW = 64f; // total tile width
+        const float tileH = tileImgSize + tileLabelH + 4f;
+        const float tilePad = 6f;
+
         float regionW = ImGui.GetContentRegionAvail().X;
-        int   cols    = Math.Max(1, (int)(regionW / (tileW + tilePad)));
-        int   col     = 0;
-        
+        int cols = Math.Max(1, (int)(regionW / (tileW + tilePad)));
+        int col = 0;
+
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(tilePad, tilePad));
-        
+
         for (int i = 0; i < _availableParts.Count; i++)
         {
             var part = _availableParts[i];
-            
+
             // Category filter
             bool inCategory = _partsCategory switch
             {
@@ -548,20 +613,20 @@ public partial class StageEditorPhase
                 _ => true
             };
             if (!inCategory) continue;
-            
+
             // Name search
             if (hasSearchFilter && !part.FileName.Contains(_partsSearch, StringComparison.OrdinalIgnoreCase))
                 continue;
-            
+
             // Queue preview generation if not yet done
             QueuePartPreview(part.FileName, part);
-            
+
             if (col > 0)
                 ImGui.SameLine(0, tilePad);
-            
+
             var groupTopLeft = ImGui.GetCursorScreenPos();
             bool isPendingPlacement = i == _pendingPlacementPartIndex;
-            
+
             // In swap mode, determine if this tile is the current piece
             bool isCurrentSwapPiece = false;
             if (_isSwapMode && ActiveTab != null && ActiveTab.ActivePieceId >= 0)
@@ -569,16 +634,21 @@ public partial class StageEditorPhase
                 var sp = ActiveTab.ScenePieces.GetValueOrDefault(ActiveTab.ActivePieceId);
                 isCurrentSwapPiece = sp != null && sp.Name == part.FileName;
             }
+
             ImGui.PushID(i);
             ImGui.BeginGroup();
-            
+
             bool clicked;
             if (_partPreviews.TryGetValue(part.FileName, out var preview))
             {
                 // Show 3D thumbnail
                 // Flip UVs vertically — FNA (OpenGL) render targets are stored bottom-up
-                ImGui.Image(preview.Ref, new Vector2(tileW, tileImgSize),
-                    new Vector2(0, 1), new Vector2(1, 0));
+                ImGui.Image(
+                    preview.Ref,
+                    new Vector2(tileW, tileImgSize),
+                    new Vector2(0, 1),
+                    new Vector2(1, 0)
+                );
                 clicked = ImGui.IsItemClicked();
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip(part.FileName);
@@ -588,29 +658,35 @@ public partial class StageEditorPhase
                 // Fallback: colored button while preview is loading
                 var tileColor = GetPartTileColor(part.FileName);
                 ImGui.PushStyleColor(ImGuiCol.Button, tileColor);
-                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(
-                    Math.Min(tileColor.X + 0.15f, 1f),
-                    Math.Min(tileColor.Y + 0.15f, 1f),
-                    Math.Min(tileColor.Z + 0.15f, 1f),
-                    tileColor.W));
+                ImGui.PushStyleColor(
+                    ImGuiCol.ButtonHovered,
+                    new Vector4(
+                        Math.Min(tileColor.X + 0.15f, 1f),
+                        Math.Min(tileColor.Y + 0.15f, 1f),
+                        Math.Min(tileColor.Z + 0.15f, 1f),
+                        tileColor.W
+                    )
+                );
                 ImGui.PushStyleColor(ImGuiCol.ButtonActive, new Vector4(0.26f, 0.59f, 0.98f, 0.9f));
                 clicked = ImGui.Button("##tile", new Vector2(tileW, tileImgSize));
                 ImGui.PopStyleColor(3);
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip(part.FileName);
             }
-            
+
             // Label centered under thumbnail
-            string shortName = part.FileName.Contains('/') ? part.FileName[(part.FileName.LastIndexOf('/') + 1)..] : part.FileName;
+            string shortName = part.FileName.Contains('/')
+                ? part.FileName[(part.FileName.LastIndexOf('/') + 1)..]
+                : part.FileName;
             var textSize = ImGui.CalcTextSize(shortName, false, tileW);
             float textOffX = Math.Max(0, (tileW - textSize.X) * 0.5f);
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + textOffX);
             ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + textSize.X);
             ImGui.TextUnformatted(shortName);
             ImGui.PopTextWrapPos();
-            
+
             ImGui.EndGroup();
-            
+
             // Highlight border when this part is selected for placement
             if (isPendingPlacement)
             {
@@ -619,10 +695,13 @@ public partial class StageEditorPhase
                 drawList.AddRect(
                     groupTopLeft,
                     new Vector2(groupTopLeft.X + tileW, groupTopLeft.Y + tileH),
-                    borderColor, 2f, ImDrawFlags.None, 2.5f
+                    borderColor,
+                    2f,
+                    ImDrawFlags.None,
+                    2.5f
                 );
             }
-            
+
             // Highlight the current piece when in swap mode
             if (isCurrentSwapPiece)
             {
@@ -631,12 +710,15 @@ public partial class StageEditorPhase
                 drawList.AddRect(
                     groupTopLeft,
                     new Vector2(groupTopLeft.X + tileW, groupTopLeft.Y + tileH),
-                    borderColor, 2f, ImDrawFlags.None, 2.5f
+                    borderColor,
+                    2f,
+                    ImDrawFlags.None,
+                    2.5f
                 );
             }
-            
+
             ImGui.PopID();
-            
+
             if (clicked)
             {
                 if (_isSwapMode && ActiveTab != null && ActiveTab.ActivePieceId >= 0)
@@ -646,7 +728,7 @@ public partial class StageEditorPhase
                     if (swapPieceIdx != -1)
                     {
                         var swapPiece = ActiveTab.ScenePieces.ByIndex(swapPieceIdx);
-                        
+
                         if (part != swapPiece.Rad)
                         {
                             PushUndoSnapshot();
@@ -669,6 +751,7 @@ public partial class StageEditorPhase
                             RebuildClientRenderer();
                         }
                     }
+
                     _isSwapMode = false;
                 }
                 else
@@ -678,15 +761,15 @@ public partial class StageEditorPhase
                     _hasValidPlacementPos = false;
                 }
             }
-            
+
             col++;
             if (col >= cols) col = 0;
         }
-        
+
         ImGui.PopStyleVar(); // ItemSpacing
         ImGui.EndChild();
     }
-    
+
     private static Vector4 GetPartTileColor(string name)
     {
         if (name.Contains("checkpoint") || name.Contains("chk"))

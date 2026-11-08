@@ -10,12 +10,19 @@ namespace NFMWorld.UI;
 
 public partial class StageEditorPhase
 {
-    public override void MouseMoved(int x, int y, bool imguiWantsMouse, MouseButtons buttons, bool ctrlKey,
-        bool shiftKey, bool altKey)
+    public override void MouseMoved(
+        int x,
+        int y,
+        bool imguiWantsMouse,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         if (!GameSparker.Game.IsActive) return;
         if (!_isOpen) return;
-        
+
         // Handle gizmo dragging before anything else
         if (_gizmoDragging != GizmoAxis.None && ActiveTab != null)
         {
@@ -24,13 +31,14 @@ public partial class StageEditorPhase
             {
                 int dx = x - _gizmoDragStartX;
                 int dy = y - _gizmoDragStartY;
-                
+
                 if (_gizmoDragging == GizmoAxis.X)
                 {
                     // Project the gizmo arrow from the centroid to get pixels-per-world-unit ratio
                     var piecePos = new Vector3(_gizmoCentroidX, _gizmoCentroidY, _gizmoCentroidZ);
                     var gizmoMetrics = Debug.ComputeGizmoMetrics(piecePos, activeCamera);
-                    if (Debug.WorldToScreen(piecePos, out var ss0, activeCamera) && Debug.WorldToScreen(piecePos + new Vector3(gizmoMetrics.ArrowLength, 0, 0), out var ss1, activeCamera))
+                    if (Debug.WorldToScreen(piecePos, out var ss0, activeCamera)
+                        && Debug.WorldToScreen(piecePos + new Vector3(gizmoMetrics.ArrowLength, 0, 0), out var ss1, activeCamera))
                     {
                         var screenArrow = ss1 - ss0;
                         float screenLen = screenArrow.Length();
@@ -49,6 +57,7 @@ public partial class StageEditorPhase
                                     newX = MathF.Round(newX / _gridSnapSize) * _gridSnapSize;
                                 sp.Position = new f64Vector3((fix64)newX, spos.Y, spos.Z);
                             }
+
                             ActiveTab.HasUnsavedChanges = true;
                         }
                     }
@@ -58,7 +67,12 @@ public partial class StageEditorPhase
                     // Y axis: project the upward arrow (world -Y direction) to screen
                     var piecePos = new Vector3(_gizmoCentroidX, _gizmoCentroidY, _gizmoCentroidZ);
                     var gizmoMetrics = Debug.ComputeGizmoMetrics(piecePos, activeCamera);
-                    if (Debug.WorldToScreen(piecePos, out var ss0, activeCamera) && Debug.WorldToScreen(piecePos + new Vector3(0, -gizmoMetrics.ArrowLength, 0), out var ss1, activeCamera))
+                    if (Debug.WorldToScreen(piecePos, out var ss0, activeCamera)
+                        && Debug.WorldToScreen(
+                            piecePos + new Vector3(0, -gizmoMetrics.ArrowLength, 0),
+                            out var ss1,
+                            activeCamera
+                        ))
                     {
                         var screenArrow = ss1 - ss0;
                         float screenLen = screenArrow.Length();
@@ -77,6 +91,7 @@ public partial class StageEditorPhase
                                     newY = MathF.Round(newY / _gridSnapSize) * _gridSnapSize;
                                 sp.Position = new f64Vector3(spos.X, (fix64)newY, spos.Z);
                             }
+
                             ActiveTab.HasUnsavedChanges = true;
                         }
                     }
@@ -85,7 +100,8 @@ public partial class StageEditorPhase
                 {
                     var piecePos = new Vector3(_gizmoCentroidX, _gizmoCentroidY, _gizmoCentroidZ);
                     var gizmoMetrics = Debug.ComputeGizmoMetrics(piecePos, activeCamera);
-                    if (Debug.WorldToScreen(piecePos, out var ss0, activeCamera) && Debug.WorldToScreen(piecePos + new Vector3(0, 0, gizmoMetrics.ArrowLength), out var ss1, activeCamera))
+                    if (Debug.WorldToScreen(piecePos, out var ss0, activeCamera)
+                        && Debug.WorldToScreen(piecePos + new Vector3(0, 0, gizmoMetrics.ArrowLength), out var ss1, activeCamera))
                     {
                         var screenArrow = ss1 - ss0;
                         float screenLen = screenArrow.Length();
@@ -103,6 +119,7 @@ public partial class StageEditorPhase
                                     newZ = MathF.Round(newZ / _gridSnapSize) * _gridSnapSize;
                                 sp.Position = new f64Vector3(spos.X, spos.Y, (fix64)newZ);
                             }
+
                             ActiveTab.HasUnsavedChanges = true;
                         }
                     }
@@ -126,7 +143,8 @@ public partial class StageEditorPhase
                         sp.Position = new f64Vector3(
                             (fix64)(_gizmoCentroidX + newRelX),
                             startPos.Y,
-                            (fix64)(_gizmoCentroidZ + newRelZ));
+                            (fix64)(_gizmoCentroidZ + newRelZ)
+                        );
                         float startRot = _gizmoDragStartRotations.TryGetValue(sid, out var r) ? r : 0f;
 
                         fix64 rot = (fix64)((startRot + angleDelta) % 360f);
@@ -135,26 +153,29 @@ public partial class StageEditorPhase
                             // snap to 15deg
                             rot = fix64.Round(rot / 15) * 15;
                         }
-                        
+
                         sp.Rotation = new f64Euler(f64AngleSingle.FromDegrees(rot), sp.Rotation.Pitch, sp.Rotation.Roll);
                     }
+
                     ActiveTab.HasUnsavedChanges = true;
                 }
             }
-            _mouseX = x; _mouseY = y;
+
+            _mouseX = x;
+            _mouseY = y;
             return;
         }
-        
+
         _mouseX = x;
         _mouseY = y;
-        
+
         // Update rect selection end while LMB is held
         if (_isRectSelecting)
         {
             _rectSelectEndX = x;
             _rectSelectEndY = y;
         }
-        
+
         // Update placement preview position while hovering over the viewport
         if (_pendingPlacementPartIndex >= 0)
         {
@@ -185,7 +206,8 @@ public partial class StageEditorPhase
                                         : new Vector2(0, 1).RotateXz(piece.Rotation.Xz.Degrees);
                                     var linePoint = new Vector2(
                                         (float)piece.Position.X + (lineDir.X == 0 ? 0 : (float)offset),
-                                        (float)piece.Position.Z + (lineDir.Y == 0 ? 0 : (float)offset));
+                                        (float)piece.Position.Z + (lineDir.Y == 0 ? 0 : (float)offset)
+                                    );
                                     var toPoint = new Vector2(gx, gz) - linePoint;
                                     float projLen = Vector2.Dot(toPoint, lineDir);
                                     var closestPoint = linePoint + lineDir * projLen;
@@ -194,7 +216,7 @@ public partial class StageEditorPhase
                                     {
                                         gx = closestPoint.X;
                                         gz = closestPoint.Y;
-                                        
+
                                         if (_gridSnapEnabled && _gridSnapSize > 0f)
                                         {
                                             gx = MathF.Round(gx / _gridSnapSize) * _gridSnapSize;
@@ -203,7 +225,7 @@ public partial class StageEditorPhase
                                     }
                                 }
                             }
-                            
+
                             foreach (var atp in piece.Rad.Atp)
                             {
                                 // Check if the hitbox is close enough to snap to
@@ -222,8 +244,11 @@ public partial class StageEditorPhase
                                 {
                                     // try to attach the two points together
 
-                                    var ownHbCenter = new Vector2(gx, gz) + new Vector2((float)ownAtp.X, (float)ownAtp.Y).RotateXz((fix64)_pendingPlacementYaw);
-                                    
+                                    var ownHbCenter = new Vector2(gx, gz)
+                                                      + new Vector2((float)ownAtp.X, (float)ownAtp.Y).RotateXz(
+                                                          (fix64)_pendingPlacementYaw
+                                                      );
+
                                     dist = Vector2.Distance(ownHbCenter, hbCenter);
                                     if (dist < 500) // snap threshold in world units
                                     {
@@ -233,11 +258,11 @@ public partial class StageEditorPhase
                                     }
                                 }
                             }
-                            
+
                             snapped: ;
                         }
                     }
-                    
+
                     _pendingPlacementPos = new f64Vector3((fix64)gx, (fix64)groundPos.Y + _pendingPlacementYOff, (fix64)gz);
                 }
             }
@@ -246,13 +271,16 @@ public partial class StageEditorPhase
                 _hasValidPlacementPos = false;
             }
         }
-        
+
         // Check if right mouse button is currently held down
         var (mouseButtons, _, _) = SdlWindow.GetMouseState();
         bool isRightButtonHeld = mouseButtons.HasFlag(MouseButtons.Secondary);
-        
+
         // Start dragging if right button is held, we're in viewport, in Scene view, and not already dragging
-        if (isRightButtonHeld && IsMouseInViewport(x, y) && ActiveTab.ViewMode == StageEditorTab.ViewModeEnum.Scene && !_isRightDragging)
+        if (isRightButtonHeld
+            && IsMouseInViewport(x, y)
+            && ActiveTab.ViewMode == StageEditorTab.ViewModeEnum.Scene
+            && !_isRightDragging)
         {
             _isRightDragging = true;
             _rightDragStartX = x;
@@ -260,47 +288,54 @@ public partial class StageEditorPhase
             _rightDragStartYaw = ActiveTab.CameraYaw;
             _rightDragStartPitch = ActiveTab.CameraPitch;
         }
-        
+
         // Handle right-click drag for camera rotation (only in Scene view)
         if (_isRightDragging && isRightButtonHeld && !imguiWantsMouse && ActiveTab.ViewMode == StageEditorTab.ViewModeEnum.Scene)
         {
             int deltaX = x - _rightDragStartX;
             int deltaY = y - _rightDragStartY;
-            
+
             ActiveTab.CameraYaw = _rightDragStartYaw + deltaX * 0.5f;
             ActiveTab.CameraPitch = Math.Clamp(_rightDragStartPitch + deltaY * 0.5f, -89f, 89f); // Inverted pitch
-            
+
             UpdateCameraPosition();
         }
-        
+
         // Stop dragging if right button is released
         if (!isRightButtonHeld && _isRightDragging)
         {
             _isRightDragging = false;
         }
     }
-    
-    public override void MousePressed(int x, int y, bool imguiWantsMouse, MouseButton button, MouseButtons buttons,
+
+    public override void MousePressed(
+        int x,
+        int y,
+        bool imguiWantsMouse,
+        MouseButton button,
+        MouseButtons buttons,
         bool ctrlKey,
-        bool shiftKey, bool altKey)
+        bool shiftKey,
+        bool altKey
+    )
     {
         base.MousePressed(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
-        
+
         if (imguiWantsMouse) return;
         if (!GameSparker.Game.IsActive) return;
         if (!_isOpen) return;
-        
+
         _mouseX = x;
         _mouseY = y;
-        
+
         // Check if it's right mouse button via the SDL mouse state
         var (mouseButtons, _, _) = SdlWindow.GetMouseState();
-        
+
         if (mouseButtons.HasFlag(MouseButtons.Secondary))
         {
             // Right-click for camera rotation (only in Scene view)
             _isRightButtonDown = true;
-            
+
             if (IsMouseInViewport(x, y) && !_isRightDragging && ActiveTab?.ViewMode == StageEditorTab.ViewModeEnum.Scene)
             {
                 _isRightDragging = true;
@@ -310,12 +345,12 @@ public partial class StageEditorPhase
                 _rightDragStartPitch = ActiveTab.CameraPitch;
             }
         }
-        
+
         if (mouseButtons.HasFlag(MouseButtons.Primary))
         {
             // Left-click
             _isLeftButtonDown = true;
-            
+
             // Check if clicking a gizmo handle first
             if (_gizmoHovered != GizmoAxis.None && ActiveTab != null && ActiveTab.ActivePieceId >= 0)
             {
@@ -359,7 +394,7 @@ public partial class StageEditorPhase
                 _rectSelectEndY = y;
             }
         }
-        
+
         if (mouseButtons.HasFlag(MouseButtons.Middle))
         {
             // In placement mode
@@ -369,16 +404,24 @@ public partial class StageEditorPhase
             }
         }
     }
-    
-    public override void MouseScrolled(int x, int y, int delta, bool imguiWantsMouse, MouseButtons buttons,
-        bool ctrlKey, bool shiftKey, bool altKey)
+
+    public override void MouseScrolled(
+        int x,
+        int y,
+        int delta,
+        bool imguiWantsMouse,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         base.MouseScrolled(x, y, delta, imguiWantsMouse, buttons, ctrlKey, shiftKey, altKey);
 
         if (imguiWantsMouse) return;
         if (!GameSparker.Game.IsActive) return;
         if (!_isOpen) return;
-        
+
         // In placement mode
         if (_pendingPlacementPartIndex >= 0)
         {
@@ -412,19 +455,27 @@ public partial class StageEditorPhase
             }
         }
     }
-    
-    public override void MouseReleased(int x, int y, bool imguiWantsMouse, MouseButton button, MouseButtons buttons,
-        bool ctrlKey, bool shiftKey, bool altKey)
+
+    public override void MouseReleased(
+        int x,
+        int y,
+        bool imguiWantsMouse,
+        MouseButton button,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         base.MouseReleased(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
-        
+
         // Check if it's right mouse button
         var (mouseButtons, _, _) = SdlWindow.GetMouseState();
-        
+
         if (!mouseButtons.HasFlag(MouseButtons.Secondary) && _isRightButtonDown)
         {
             _isRightButtonDown = false;
-            
+
             if (_isRightDragging)
             {
                 _isRightDragging = false;
@@ -439,14 +490,14 @@ public partial class StageEditorPhase
         else if (!mouseButtons.HasFlag(MouseButtons.Primary) && _isLeftButtonDown)
         {
             _isLeftButtonDown = false;
-            
+
             // If we were dragging gizmo, stop and skip ray picking
             if (_gizmoDragging != GizmoAxis.None)
             {
                 _gizmoDragging = GizmoAxis.None;
                 return;
             }
-        
+
             // Finalise rect selection if active
             if (_isRectSelecting)
             {
@@ -454,14 +505,14 @@ public partial class StageEditorPhase
                 int rw = Math.Abs(_rectSelectEndX - _rectSelectStartX);
                 int rh = Math.Abs(_rectSelectEndY - _rectSelectStartY);
                 bool isRectDrag = rw > 5 || rh > 5;
-                
+
                 if (isRectDrag && ActiveTab != null && !imguiWantsMouse)
                 {
                     int minX = Math.Min(_rectSelectStartX, _rectSelectEndX);
                     int maxX = Math.Max(_rectSelectStartX, _rectSelectEndX);
                     int minY = Math.Min(_rectSelectStartY, _rectSelectEndY);
                     int maxY = Math.Max(_rectSelectStartY, _rectSelectEndY);
-                    
+
                     if (!_isShiftPressed) ActiveTab.SelectedPieceIds.Clear();
                     int lastId = -1;
                     foreach (var piece in ActiveTab.ScenePieces)
@@ -477,16 +528,18 @@ public partial class StageEditorPhase
                             }
                         }
                     }
+
                     if (lastId >= 0)
                     {
                         ActiveTab.ActivePieceId = lastId;
                         ActiveTab.SelectedWallId = -1;
                     }
+
                     return;
                 }
                 // else fall through to normal single click logic
             }
-        
+
             // Handle piece selection on left click
             if (!imguiWantsMouse && IsMouseInViewport(x, y))
             {
@@ -499,8 +552,13 @@ public partial class StageEditorPhase
                         var placementRot = new f64Euler(
                             f64AngleSingle.FromDegrees((fix64)_pendingPlacementYaw),
                             f64AngleSingle.ZeroAngle,
-                            f64AngleSingle.ZeroAngle);
-                        var newMesh = StageObject.CreateDefaultObject(pendingPart, _pendingPlacementPos + new f64Vector3(0, _pendingPlacementYOff, 0), placementRot);
+                            f64AngleSingle.ZeroAngle
+                        );
+                        var newMesh = StageObject.CreateDefaultObject(
+                            pendingPart,
+                            _pendingPlacementPos + new f64Vector3(0, _pendingPlacementYOff, 0),
+                            placementRot
+                        );
                         var instance = new StagePieceInstance(newMesh, ActiveTab.GetNextPieceId());
                         PushUndoSnapshot();
                         ActiveTab.ScenePieces.Add(instance);
@@ -512,6 +570,7 @@ public partial class StageEditorPhase
                         RebuildClientRenderer();
                         // Stay in placement mode so the user can keep placing the same part
                     }
+
                     return; // Don't do ray picking while in placement mode
                 }
 
@@ -554,5 +613,4 @@ public partial class StageEditorPhase
             }
         }
     }
-    
 }

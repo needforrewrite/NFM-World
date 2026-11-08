@@ -128,14 +128,14 @@ public enum HLSLBinaryOp : sbyte
 
 public enum HLSLUnaryOp : byte
 {
-    Negative,       // -x
-    Positive,       // +x
-    Not,            // !x
-    PreIncrement,   // ++x
-    PreDecrement,   // --x
-    PostIncrement,  // x++
-    PostDecrement,  // x--
-    BitNot,         // ~x
+    Negative, // -x
+    Positive, // +x
+    Not, // !x
+    PreIncrement, // ++x
+    PreDecrement, // --x
+    PostIncrement, // x++
+    PostDecrement, // x--
+    BitNot, // ~x
 }
 
 public enum HLSLArgumentModifier : byte
@@ -151,17 +151,17 @@ public enum HLSLArgumentModifier : byte
 [Flags]
 public enum HLSLTypeFlags
 {
-    None             = 0,
-    Const            = 0x01,
-    Static           = 0x02,
-    Input            = 0x100,
-    Output           = 0x200,
-    Linear           = 0x10000,
-    Centroid         = 0x20000,
-    NoInterpolation  = 0x40000,
-    NoPerspective    = 0x80000,
-    Sample           = 0x100000,
-    NoPromote        = 0x200000,
+    None = 0,
+    Const = 0x01,
+    Static = 0x02,
+    Input = 0x100,
+    Output = 0x200,
+    Linear = 0x10000,
+    Centroid = 0x20000,
+    NoInterpolation = 0x40000,
+    NoPerspective = 0x80000,
+    Sample = 0x100000,
+    NoPromote = 0x200000,
 }
 
 public enum HLSLAttributeType : byte
@@ -191,7 +191,7 @@ public static class HLSLTypeHelpers
         public bool IsSamplerType() =>
             baseType is HLSLBaseType.Sampler or HLSLBaseType.Sampler2D
                 or HLSLBaseType.SamplerCube;
-        
+
         public bool IsMatrixType() =>
             baseType is HLSLBaseType.Float3x3 or HLSLBaseType.Float4x4 or
                 HLSLBaseType.Half3x3 or HLSLBaseType.Half4x4;
@@ -243,8 +243,14 @@ public class HLSLType
     public int Flags;
     public HLSLAddressSpace AddressSpace = HLSLAddressSpace.Undefined;
 
-    public HLSLType() { }
-    public HLSLType(HLSLBaseType baseType) { BaseType = baseType; }
+    public HLSLType()
+    {
+    }
+
+    public HLSLType(HLSLBaseType baseType)
+    {
+        BaseType = baseType;
+    }
 
     public HLSLType Clone()
     {
@@ -619,7 +625,7 @@ public class HLSLTree
             node.NodeType = nodeInfo.Type;
             return (T)node;
         }
-        
+
         throw new InvalidOperationException($"Type {typeof(T)} is not a valid {nameof(HLSLNode)} type.");
     }
 
@@ -632,6 +638,7 @@ public class HLSLTree
                 return fn;
             statement = statement.NextStatement;
         }
+
         return null;
     }
 
@@ -653,11 +660,14 @@ public class HLSLTree
                         bufferOut = buffer;
                         return field;
                     }
+
                     field = field.NextStatement as HLSLDeclaration;
                 }
             }
+
             statement = statement.NextStatement;
         }
+
         return null;
     }
 
@@ -675,6 +685,7 @@ public class HLSLTree
                 return s;
             statement = statement.NextStatement;
         }
+
         return null;
     }
 
@@ -687,6 +698,7 @@ public class HLSLTree
                 return t;
             statement = statement.NextStatement;
         }
+
         return null;
     }
 
@@ -701,6 +713,7 @@ public class HLSLTree
                 return p;
             statement = statement.NextStatement;
         }
+
         return null;
     }
 
@@ -713,6 +726,7 @@ public class HLSLTree
                 return p;
             statement = statement.NextStatement;
         }
+
         return null;
     }
 
@@ -725,6 +739,7 @@ public class HLSLTree
                 return b;
             statement = statement.NextStatement;
         }
+
         return null;
     }
 
@@ -735,8 +750,7 @@ public class HLSLTree
 
         if ((expression.ExpressionType.Flags & (int)HLSLTypeFlags.Const) == 0)
             return false;
-        if (expression.ExpressionType.BaseType != HLSLBaseType.Int &&
-            expression.ExpressionType.BaseType != HLSLBaseType.Bool)
+        if (expression.ExpressionType.BaseType != HLSLBaseType.Int && expression.ExpressionType.BaseType != HLSLBaseType.Bool)
             return false;
         if (expression.ExpressionType.Array)
             return false;
@@ -747,37 +761,75 @@ public class HLSLTree
                 return false;
             switch (bin.BinaryOp)
             {
-                case HLSLBinaryOp.And: value = (v1 != 0 && v2 != 0) ? 1 : 0; return true;
-                case HLSLBinaryOp.Or: value = (v1 != 0 || v2 != 0) ? 1 : 0; return true;
-                case HLSLBinaryOp.Add: value = v1 + v2; return true;
-                case HLSLBinaryOp.Sub: value = v1 - v2; return true;
-                case HLSLBinaryOp.Mul: value = v1 * v2; return true;
-                case HLSLBinaryOp.Div: value = v1 / v2; return true;
-                case HLSLBinaryOp.Less: value = v1 < v2 ? 1 : 0; return true;
-                case HLSLBinaryOp.Greater: value = v1 > v2 ? 1 : 0; return true;
-                case HLSLBinaryOp.LessEqual: value = v1 <= v2 ? 1 : 0; return true;
-                case HLSLBinaryOp.GreaterEqual: value = v1 >= v2 ? 1 : 0; return true;
-                case HLSLBinaryOp.Equal: value = v1 == v2 ? 1 : 0; return true;
-                case HLSLBinaryOp.NotEqual: value = v1 != v2 ? 1 : 0; return true;
-                case HLSLBinaryOp.BitAnd: value = v1 & v2; return true;
-                case HLSLBinaryOp.BitOr: value = v1 | v2; return true;
-                case HLSLBinaryOp.BitXor: value = v1 ^ v2; return true;
+                case HLSLBinaryOp.And:
+                    value = (v1 != 0 && v2 != 0) ? 1 : 0;
+                    return true;
+                case HLSLBinaryOp.Or:
+                    value = (v1 != 0 || v2 != 0) ? 1 : 0;
+                    return true;
+                case HLSLBinaryOp.Add:
+                    value = v1 + v2;
+                    return true;
+                case HLSLBinaryOp.Sub:
+                    value = v1 - v2;
+                    return true;
+                case HLSLBinaryOp.Mul:
+                    value = v1 * v2;
+                    return true;
+                case HLSLBinaryOp.Div:
+                    value = v1 / v2;
+                    return true;
+                case HLSLBinaryOp.Less:
+                    value = v1 < v2 ? 1 : 0;
+                    return true;
+                case HLSLBinaryOp.Greater:
+                    value = v1 > v2 ? 1 : 0;
+                    return true;
+                case HLSLBinaryOp.LessEqual:
+                    value = v1 <= v2 ? 1 : 0;
+                    return true;
+                case HLSLBinaryOp.GreaterEqual:
+                    value = v1 >= v2 ? 1 : 0;
+                    return true;
+                case HLSLBinaryOp.Equal:
+                    value = v1 == v2 ? 1 : 0;
+                    return true;
+                case HLSLBinaryOp.NotEqual:
+                    value = v1 != v2 ? 1 : 0;
+                    return true;
+                case HLSLBinaryOp.BitAnd:
+                    value = v1 & v2;
+                    return true;
+                case HLSLBinaryOp.BitOr:
+                    value = v1 | v2;
+                    return true;
+                case HLSLBinaryOp.BitXor:
+                    value = v1 ^ v2;
+                    return true;
                 default: return false;
             }
         }
+
         if (expression.NodeType == HLSLNodeType.UnaryExpression && expression is HLSLUnaryExpression un)
         {
             if (!GetExpressionValue(un.Expression, out value))
                 return false;
             switch (un.UnaryOp)
             {
-                case HLSLUnaryOp.Negative: value = -value; return true;
+                case HLSLUnaryOp.Negative:
+                    value = -value;
+                    return true;
                 case HLSLUnaryOp.Positive: return true;
-                case HLSLUnaryOp.Not: value = value == 0 ? 1 : 0; return true;
-                case HLSLUnaryOp.BitNot: value = ~value; return true;
+                case HLSLUnaryOp.Not:
+                    value = value == 0 ? 1 : 0;
+                    return true;
+                case HLSLUnaryOp.BitNot:
+                    value = ~value;
+                    return true;
                 default: return false;
             }
         }
+
         if (expression.NodeType == HLSLNodeType.IdentifierExpression && expression is HLSLIdentifierExpression id)
         {
             var decl = FindGlobalDeclaration(id.Name!);
@@ -785,11 +837,22 @@ public class HLSLTree
                 return false;
             return GetExpressionValue(decl.Assignment, out value);
         }
+
         if (expression.NodeType == HLSLNodeType.LiteralExpression && expression is HLSLLiteralExpression lit)
         {
-            if (lit.ExpressionType.BaseType == HLSLBaseType.Int) { value = lit.IValue; return true; }
-            if (lit.ExpressionType.BaseType == HLSLBaseType.Bool) { value = lit.BValue ? 1 : 0; return true; }
+            if (lit.ExpressionType.BaseType == HLSLBaseType.Int)
+            {
+                value = lit.IValue;
+                return true;
+            }
+
+            if (lit.ExpressionType.BaseType == HLSLBaseType.Bool)
+            {
+                value = lit.BValue ? 1 : 0;
+                return true;
+            }
         }
+
         return false;
     }
 
@@ -824,70 +887,70 @@ public static class HLSLTypeTables
 {
     public static readonly HLSLTypeDimension[] BaseTypeDimension = new HLSLTypeDimension[(int)HLSLBaseType_Ext.Count]
     {
-        HLSLTypeDimension.None,     // Unknown
-        HLSLTypeDimension.None,     // Void
-        HLSLTypeDimension.Scalar,   // Float
-        HLSLTypeDimension.Vector2,  // Float2
-        HLSLTypeDimension.Vector3,  // Float3
-        HLSLTypeDimension.Vector4,  // Float4
-        HLSLTypeDimension.Matrix3x3,// Float3x3
-        HLSLTypeDimension.Matrix4x4,// Float4x4
-        HLSLTypeDimension.Scalar,   // Half
-        HLSLTypeDimension.Vector2,  // Half2
-        HLSLTypeDimension.Vector3,  // Half3
-        HLSLTypeDimension.Vector4,  // Half4
-        HLSLTypeDimension.Matrix3x3,// Half3x3
-        HLSLTypeDimension.Matrix4x4,// Half4x4
-        HLSLTypeDimension.Scalar,   // Bool
-        HLSLTypeDimension.Scalar,   // Int
-        HLSLTypeDimension.Vector2,  // Int2
-        HLSLTypeDimension.Vector3,  // Int3
-        HLSLTypeDimension.Vector4,  // Int4
-        HLSLTypeDimension.Scalar,   // Uint
-        HLSLTypeDimension.Vector2,  // Uint2
-        HLSLTypeDimension.Vector3,  // Uint3
-        HLSLTypeDimension.Vector4,  // Uint4
-        HLSLTypeDimension.None,     // Texture
-        HLSLTypeDimension.None,     // Sampler
-        HLSLTypeDimension.None,     // Sampler2D
-        HLSLTypeDimension.None,     // Sampler3D
-        HLSLTypeDimension.None,     // SamplerCube
-        HLSLTypeDimension.None,     // UserDefined
-        HLSLTypeDimension.None,     // Auto
+        HLSLTypeDimension.None, // Unknown
+        HLSLTypeDimension.None, // Void
+        HLSLTypeDimension.Scalar, // Float
+        HLSLTypeDimension.Vector2, // Float2
+        HLSLTypeDimension.Vector3, // Float3
+        HLSLTypeDimension.Vector4, // Float4
+        HLSLTypeDimension.Matrix3x3, // Float3x3
+        HLSLTypeDimension.Matrix4x4, // Float4x4
+        HLSLTypeDimension.Scalar, // Half
+        HLSLTypeDimension.Vector2, // Half2
+        HLSLTypeDimension.Vector3, // Half3
+        HLSLTypeDimension.Vector4, // Half4
+        HLSLTypeDimension.Matrix3x3, // Half3x3
+        HLSLTypeDimension.Matrix4x4, // Half4x4
+        HLSLTypeDimension.Scalar, // Bool
+        HLSLTypeDimension.Scalar, // Int
+        HLSLTypeDimension.Vector2, // Int2
+        HLSLTypeDimension.Vector3, // Int3
+        HLSLTypeDimension.Vector4, // Int4
+        HLSLTypeDimension.Scalar, // Uint
+        HLSLTypeDimension.Vector2, // Uint2
+        HLSLTypeDimension.Vector3, // Uint3
+        HLSLTypeDimension.Vector4, // Uint4
+        HLSLTypeDimension.None, // Texture
+        HLSLTypeDimension.None, // Sampler
+        HLSLTypeDimension.None, // Sampler2D
+        HLSLTypeDimension.None, // Sampler3D
+        HLSLTypeDimension.None, // SamplerCube
+        HLSLTypeDimension.None, // UserDefined
+        HLSLTypeDimension.None, // Auto
     };
 
     public static readonly HLSLBaseType[] ScalarBaseType = new HLSLBaseType[(int)HLSLBaseType_Ext.Count]
     {
-        HLSLBaseType.Unknown,     // Unknown
-        HLSLBaseType.Void,     // Void
-        HLSLBaseType.Float,   // Float
-        HLSLBaseType.Float,  // Float2
-        HLSLBaseType.Float,  // Float3
-        HLSLBaseType.Float,  // Float4
-        HLSLBaseType.Float,  // Float3x3
-        HLSLBaseType.Float,  // Float4x4
-        HLSLBaseType.Half,   // Half
-        HLSLBaseType.Half,   // Half2
-        HLSLBaseType.Half,   // Half3
-        HLSLBaseType.Half,   // Half4
-        HLSLBaseType.Half,   // Half3x3
-        HLSLBaseType.Half,   // Half4x4
-        HLSLBaseType.Bool,   // Bool
-        HLSLBaseType.Int,   // Int
-        HLSLBaseType.Int,  // Int2
-        HLSLBaseType.Int,  // Int3
-        HLSLBaseType.Int,  // Int4
-        HLSLBaseType.Uint,   // Uint
-        HLSLBaseType.Uint,  // Uint2
-        HLSLBaseType.Uint,  // Uint3
-        HLSLBaseType.Uint,  // Uint4
-        HLSLBaseType.Unknown,     // Texture
-        HLSLBaseType.Unknown,     // Sampler
-        HLSLBaseType.Unknown,     // Sampler2D
-        HLSLBaseType.Unknown,     // Sampler3D
-        HLSLBaseType.Unknown,     // SamplerCube
-        HLSLBaseType.Unknown,     // UserDefined
-        HLSLBaseType.Unknown,     // Auto
+        HLSLBaseType.Unknown, // Unknown
+        HLSLBaseType.Void, // Void
+        HLSLBaseType.Float, // Float
+        HLSLBaseType.Float, // Float2
+        HLSLBaseType.Float, // Float3
+        HLSLBaseType.Float, // Float4
+        HLSLBaseType.Float, // Float3x3
+        HLSLBaseType.Float, // Float4x4
+        HLSLBaseType.Half, // Half
+        HLSLBaseType.Half, // Half2
+        HLSLBaseType.Half, // Half3
+        HLSLBaseType.Half, // Half4
+        HLSLBaseType.Half, // Half3x3
+        HLSLBaseType.Half, // Half4x4
+        HLSLBaseType.Bool, // Bool
+        HLSLBaseType.Int, // Int
+        HLSLBaseType.Int, // Int2
+        HLSLBaseType.Int, // Int3
+        HLSLBaseType.Int, // Int4
+        HLSLBaseType.Uint, // Uint
+        HLSLBaseType.Uint, // Uint2
+        HLSLBaseType.Uint, // Uint3
+        HLSLBaseType.Uint, // Uint4
+        HLSLBaseType.Unknown, // Texture
+        HLSLBaseType.Unknown, // Sampler
+        HLSLBaseType.Unknown, // Sampler2D
+        HLSLBaseType.Unknown, // Sampler3D
+        HLSLBaseType.Unknown, // SamplerCube
+        HLSLBaseType.Unknown, // UserDefined
+        HLSLBaseType.Unknown, // Auto
     };
 }
 
@@ -895,7 +958,9 @@ public static class HLSLTypeTables
 
 public class HLSLTreeVisitor
 {
-    public virtual void VisitType(HLSLType type) { }
+    public virtual void VisitType(HLSLType type)
+    {
+    }
 
     public virtual void VisitRoot(HLSLRoot root)
     {
@@ -955,7 +1020,11 @@ public class HLSLTreeVisitor
     public virtual void VisitStruct(HLSLStruct node)
     {
         var field = node.Field;
-        while (field != null) { VisitStructField(field); field = field.NextField; }
+        while (field != null)
+        {
+            VisitStructField(field);
+            field = field.NextField;
+        }
     }
 
     public virtual void VisitStructField(HLSLStructField node) => VisitType(node.Type);
@@ -974,7 +1043,12 @@ public class HLSLTreeVisitor
     {
         VisitType(node.ReturnType);
         var arg = node.Argument;
-        while (arg != null) { VisitArgument(arg); arg = arg.NextArgument; }
+        while (arg != null)
+        {
+            VisitArgument(arg);
+            arg = arg.NextArgument;
+        }
+
         VisitStatements(node.Statement);
     }
 
@@ -1012,9 +1086,18 @@ public class HLSLTreeVisitor
     {
         if (node.Expression != null) VisitExpression(node.Expression);
     }
-    public virtual void VisitDiscardStatement(HLSLDiscardStatement node) { }
-    public virtual void VisitBreakStatement(HLSLBreakStatement node) { }
-    public virtual void VisitContinueStatement(HLSLContinueStatement node) { }
+
+    public virtual void VisitDiscardStatement(HLSLDiscardStatement node)
+    {
+    }
+
+    public virtual void VisitBreakStatement(HLSLBreakStatement node)
+    {
+    }
+
+    public virtual void VisitContinueStatement(HLSLContinueStatement node)
+    {
+    }
 
     public virtual void VisitIfStatement(HLSLIfStatement node)
     {
@@ -1037,70 +1120,121 @@ public class HLSLTreeVisitor
     {
         if (node.Expression != null) VisitExpression(node.Expression);
     }
+
     public virtual void VisitBinaryExpression(HLSLBinaryExpression node)
     {
         if (node.Expression1 != null) VisitExpression(node.Expression1);
         if (node.Expression2 != null) VisitExpression(node.Expression2);
     }
+
     public virtual void VisitConditionalExpression(HLSLConditionalExpression node)
     {
         if (node.Condition != null) VisitExpression(node.Condition);
         if (node.FalseExpression != null) VisitExpression(node.FalseExpression);
         if (node.TrueExpression != null) VisitExpression(node.TrueExpression);
     }
+
     public virtual void VisitCastingExpression(HLSLCastingExpression node)
     {
         VisitType(node.Type);
         if (node.Expression != null) VisitExpression(node.Expression);
     }
-    public virtual void VisitLiteralExpression(HLSLLiteralExpression node) { }
-    public virtual void VisitIdentifierExpression(HLSLIdentifierExpression node) { }
+
+    public virtual void VisitLiteralExpression(HLSLLiteralExpression node)
+    {
+    }
+
+    public virtual void VisitIdentifierExpression(HLSLIdentifierExpression node)
+    {
+    }
+
     public virtual void VisitConstructorExpression(HLSLConstructorExpression node)
     {
         var arg = node.Argument;
-        while (arg != null) { VisitExpression(arg); arg = arg.NextExpression; }
+        while (arg != null)
+        {
+            VisitExpression(arg);
+            arg = arg.NextExpression;
+        }
     }
+
     public virtual void VisitMemberAccess(HLSLMemberAccess node)
     {
         if (node.Object != null) VisitExpression(node.Object);
     }
+
     public virtual void VisitArrayAccess(HLSLArrayAccess node)
     {
         if (node.Array != null) VisitExpression(node.Array);
         if (node.Index != null) VisitExpression(node.Index);
     }
+
     public virtual void VisitFunctionCall(HLSLFunctionCall node)
     {
         var arg = node.Argument;
-        while (arg != null) { VisitExpression(arg); arg = arg.NextExpression; }
+        while (arg != null)
+        {
+            VisitExpression(arg);
+            arg = arg.NextExpression;
+        }
     }
-    public virtual void VisitStateAssignment(HLSLStateAssignment node) { }
+
+    public virtual void VisitStateAssignment(HLSLStateAssignment node)
+    {
+    }
+
     public virtual void VisitSamplerState(HLSLSamplerState node)
     {
         var sa = node.StateAssignments;
-        while (sa != null) { VisitStateAssignment(sa); sa = sa.NextStateAssignment; }
+        while (sa != null)
+        {
+            VisitStateAssignment(sa);
+            sa = sa.NextStateAssignment;
+        }
     }
+
     public virtual void VisitPass(HLSLPass node)
     {
         var sa = node.StateAssignments;
-        while (sa != null) { VisitStateAssignment(sa); sa = sa.NextStateAssignment; }
+        while (sa != null)
+        {
+            VisitStateAssignment(sa);
+            sa = sa.NextStateAssignment;
+        }
     }
+
     public virtual void VisitTechnique(HLSLTechnique node)
     {
         var pass = node.Passes;
-        while (pass != null) { VisitPass(pass); pass = pass.NextPass; }
+        while (pass != null)
+        {
+            VisitPass(pass);
+            pass = pass.NextPass;
+        }
     }
-    public virtual void VisitPipeline(HLSLPipeline node) { }
+
+    public virtual void VisitPipeline(HLSLPipeline node)
+    {
+    }
 
     public virtual void VisitFunctions(HLSLRoot root)
     {
         var st = root.Statement;
-        while (st != null) { if (st.NodeType == HLSLNodeType.Function) VisitFunction((HLSLFunction)st); st = st.NextStatement; }
+        while (st != null)
+        {
+            if (st.NodeType == HLSLNodeType.Function) VisitFunction((HLSLFunction)st);
+            st = st.NextStatement;
+        }
     }
+
     public virtual void VisitParameters(HLSLRoot root)
     {
         var st = root.Statement;
-        while (st != null) { if (st.NodeType == HLSLNodeType.Declaration) VisitDeclaration((HLSLDeclaration)st); st = st.NextStatement; }
+        while (st != null)
+        {
+            if (st.NodeType == HLSLNodeType.Declaration) VisitDeclaration((HLSLDeclaration)st);
+            st = st.NextStatement;
+        }
     }
 }
 
@@ -1131,10 +1265,16 @@ public static class HLSLTreeOperations
                 var field = buffer.Field;
                 while (field != null)
                 {
-                    if (!field.Hidden) { buffer.Hidden = false; break; }
+                    if (!field.Hidden)
+                    {
+                        buffer.Hidden = false;
+                        break;
+                    }
+
                     field = field.NextStatement as HLSLDeclaration;
                 }
             }
+
             statement = statement.NextStatement;
         }
     }
@@ -1162,7 +1302,8 @@ public static class HLSLTreeOperations
             }
             else if (statement.NodeType is HLSLNodeType.Declaration or HLSLNodeType.Buffer)
             {
-                if (statement.NodeType == HLSLNodeType.Declaration && (((HLSLDeclaration)statement).Type.Flags & (int)HLSLTypeFlags.Const) != 0)
+                if (statement.NodeType == HLSLNodeType.Declaration
+                    && (((HLSLDeclaration)statement).Type.Flags & (int)HLSLTypeFlags.Const) != 0)
                 {
                     constDecls ??= statement;
                     lastConstDecl?.NextStatement = statement;
@@ -1187,10 +1328,12 @@ public static class HLSLTreeOperations
                 lastOther?.NextStatement = statement;
                 lastOther = statement;
             }
+
             statement = next;
         }
 
         HLSLStatement? first = structs, last = lastStruct;
+
         void Chain(HLSLStatement? head, HLSLStatement? tail)
         {
             if (head == null) return;
@@ -1199,6 +1342,7 @@ public static class HLSLTreeOperations
 
             last = tail;
         }
+
         Chain(constDecls, lastConstDecl);
         Chain(decls, lastDecl);
         Chain(functions, lastFunc);
@@ -1214,6 +1358,7 @@ public static class HLSLTreeOperations
             statement.Hidden = true;
             if (statement.NodeType == HLSLNodeType.Buffer) VisitBuffer((HLSLBuffer)statement);
         }
+
         public override void VisitDeclaration(HLSLDeclaration node) => node.Hidden = true;
         public override void VisitArgument(HLSLArgument node) => node.Hidden = false;
     }
@@ -1253,7 +1398,11 @@ public static class HLSLTreeOperations
             if (type.BaseType == HLSLBaseType.UserDefined)
             {
                 var s = tree.FindGlobalStruct(type.TypeName!);
-                if (s != null) { s.Hidden = false; VisitStruct(s); }
+                if (s != null)
+                {
+                    s.Hidden = false;
+                    VisitStruct(s);
+                }
             }
         }
     }

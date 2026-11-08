@@ -68,15 +68,18 @@ public sealed class RenderScope : IDisposable
         apply(initial);
 
         var current = initial;
-        return Own(new Effect(() =>
-        {
-            var next = compute();
-            if (EqualityComparer<T>.Default.Equals(next, current))
-                return;
+        return Own(
+            new Effect(() =>
+                {
+                    var next = compute();
+                    if (EqualityComparer<T>.Default.Equals(next, current))
+                        return;
 
-            current = next;
-            apply(next);
-        }));
+                    current = next;
+                    apply(next);
+                }
+            )
+        );
     }
 
     public void Dispose()

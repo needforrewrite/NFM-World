@@ -11,7 +11,7 @@ public class Interpolation
         if (current == prev) return current;
         return current * alpha + prev * (1.0f - alpha);
     }
-    
+
     public static f64Vector3 InterpolateCoord(f64Vector3 current, f64Vector3 prev, fix64 alpha)
     {
         return current * alpha + prev * (fix64.One - alpha);
@@ -38,7 +38,8 @@ public class Interpolation
     public static float InterpolateAngle(float current, float prev, float alpha)
     {
         var d = ((current - prev) % (MathF.PI * 2) + MathF.PI * 2) % (MathF.PI * 2);
-        if (d > MathF.PI) d -= MathF.PI * 2;;
+        if (d > MathF.PI) d -= MathF.PI * 2;
+        ;
         return prev + d * alpha;
     }
 

@@ -13,13 +13,13 @@
     <!-- Copies the build output into the host that builds this project as
          data/ais/classic/ai.dll. See the props file for why the rename happens
          at copy time. -->
-    <Import Project="..\Plugin.props" />
+    <Import Project="..\Plugin.props"/>
 
     <ItemGroup>
-        <ProjectReference Include="..\FixedMathSharp\src\FixedMathSharp\FixedMathSharp.csproj" Private="false" ExcludeAssets="runtime" />
-        <ProjectReference Include="..\NFMWorld.DriverInterface\NFMWorld.DriverInterface.csproj" Private="false" ExcludeAssets="runtime" />
-        <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" Private="false" ExcludeAssets="runtime" />
-        <ProjectReference Include="..\NFMWorld.Math\NFMWorld.Math.csproj" Private="false" ExcludeAssets="runtime" />
+        <ProjectReference Include="..\FixedMathSharp\src\FixedMathSharp\FixedMathSharp.csproj" Private="false" ExcludeAssets="runtime"/>
+        <ProjectReference Include="..\NFMWorld.DriverInterface\NFMWorld.DriverInterface.csproj" Private="false" ExcludeAssets="runtime"/>
+        <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" Private="false" ExcludeAssets="runtime"/>
+        <ProjectReference Include="..\NFMWorld.Math\NFMWorld.Math.csproj" Private="false" ExcludeAssets="runtime"/>
     </ItemGroup>
 
 </Project>

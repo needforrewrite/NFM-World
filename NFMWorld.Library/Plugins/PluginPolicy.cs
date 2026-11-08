@@ -111,7 +111,7 @@ internal static class PluginPolicy
             {
                 Allow(builder, attribute.GetGenericArguments()[0], VisibilityOf(marker));
             }
-            
+
             if (marker.AttributeType == typeof(VendorPluginVisibleAttribute))
             {
                 var type = (Type)marker.ConstructorArguments[0].Value!;
@@ -144,7 +144,6 @@ internal static class PluginPolicy
                 if (member.GetCustomAttributesData().Any(IsPluginVisible))
                     AllowMember(builder, member);
             }
-
         }
     }
 
@@ -193,23 +192,25 @@ internal static class PluginPolicy
         // generated code calls are the only ones reachable.
         foreach (var method in typeof(MemoryPack.MemoryPackReader).GetMethods(AllMembers)
                      .Where(m => m.Name is nameof(MemoryPack.MemoryPackReader.ReadPackable)
-                         or nameof(MemoryPack.MemoryPackReader.ReadValue)
-                         or nameof(MemoryPack.MemoryPackReader.TryReadObjectHeader)
-                         or nameof(MemoryPack.MemoryPackReader.TryReadUnionHeader)
-                         || m.Name.StartsWith("ReadUnmanaged", StringComparison.Ordinal)))
+                                     or nameof(MemoryPack.MemoryPackReader.ReadValue)
+                                     or nameof(MemoryPack.MemoryPackReader.TryReadObjectHeader)
+                                     or nameof(MemoryPack.MemoryPackReader.TryReadUnionHeader)
+                                 || m.Name.StartsWith("ReadUnmanaged", StringComparison.Ordinal)
+                     ))
             builder.Allow(method);
 
         foreach (var method in typeof(MemoryPack.MemoryPackWriter<>).GetMethods(AllMembers)
                      .Where(m => m.Name is nameof(MemoryPack.MemoryPackWriter<>.WriteNullObjectHeader)
-                         or nameof(MemoryPack.MemoryPackWriter<>.WriteNullUnionHeader)
-                         or nameof(MemoryPack.MemoryPackWriter<>.WriteObjectHeader)
-                         or nameof(MemoryPack.MemoryPackWriter<>.WriteUnionHeader)
-                         or nameof(MemoryPack.MemoryPackWriter<>.WritePackable)
-                         or nameof(MemoryPack.MemoryPackWriter<>.WriteValue)
-                         // Unmanaged blobs: the generator emits these for plain fields, and
-                         // they take the size from Unsafe.SizeOf internally, then hand it to
-                         // GetSpanReference, which checks it against the buffer.
-                         || m.Name.StartsWith("WriteUnmanaged", StringComparison.Ordinal)))
+                                     or nameof(MemoryPack.MemoryPackWriter<>.WriteNullUnionHeader)
+                                     or nameof(MemoryPack.MemoryPackWriter<>.WriteObjectHeader)
+                                     or nameof(MemoryPack.MemoryPackWriter<>.WriteUnionHeader)
+                                     or nameof(MemoryPack.MemoryPackWriter<>.WritePackable)
+                                     or nameof(MemoryPack.MemoryPackWriter<>.WriteValue)
+                                 // Unmanaged blobs: the generator emits these for plain fields, and
+                                 // they take the size from Unsafe.SizeOf internally, then hand it to
+                                 // GetSpanReference, which checks it against the buffer.
+                                 || m.Name.StartsWith("WriteUnmanaged", StringComparison.Ordinal)
+                     ))
             builder.Allow(method);
 
         // The Unsafe.SizeOf replacement generated code uses.

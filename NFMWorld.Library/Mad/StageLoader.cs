@@ -10,13 +10,20 @@ namespace NFMWorldLibrary;
 
 [MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
 public readonly partial record struct PiecePlacement(
-    [property: MemoryPackOrder(0), PluginVisible] PiecePlacementType Type,
-    [property: MemoryPackOrder(1), PluginVisible] Rad3d Object,
-    [property: MemoryPackOrder(2), PluginVisible] f64Vector3 Position,
-    [property: MemoryPackOrder(3), PluginVisible] f64Euler Rotation,
-    [property: MemoryPackOrder(4), PluginVisible] AiNodeKind? NodeKind = null,
-    [property: MemoryPackOrder(5), PluginVisible] bool IsSpecial = false,
-    [property: MemoryPackOrder(6), PluginVisible] bool IsWall = false
+    [property: MemoryPackOrder(0), PluginVisible]
+    PiecePlacementType Type,
+    [property: MemoryPackOrder(1), PluginVisible]
+    Rad3d Object,
+    [property: MemoryPackOrder(2), PluginVisible]
+    f64Vector3 Position,
+    [property: MemoryPackOrder(3), PluginVisible]
+    f64Euler Rotation,
+    [property: MemoryPackOrder(4), PluginVisible]
+    AiNodeKind? NodeKind = null,
+    [property: MemoryPackOrder(5), PluginVisible]
+    bool IsSpecial = false,
+    [property: MemoryPackOrder(6), PluginVisible]
+    bool IsWall = false
 );
 
 [PluginVisible]
@@ -32,10 +39,14 @@ public enum PiecePlacementType : byte
 // offset = p parameter
 [MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
 public partial record StageWall(
-    [property: MemoryPackOrder(0), PluginVisible] WallDirection Direction,
-    [property: MemoryPackOrder(1), PluginVisible] int Count,
-    [property: MemoryPackOrder(2), PluginVisible] int Position,
-    [property: MemoryPackOrder(3), PluginVisible] int Offset
+    [property: MemoryPackOrder(0), PluginVisible]
+    WallDirection Direction,
+    [property: MemoryPackOrder(1), PluginVisible]
+    int Count,
+    [property: MemoryPackOrder(2), PluginVisible]
+    int Position,
+    [property: MemoryPackOrder(3), PluginVisible]
+    int Offset
 );
 
 [PluginVisible]
@@ -49,10 +60,13 @@ public enum WallDirection : byte
 
 [MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
 public readonly partial record struct HierarchyGroup(
-    [property: MemoryPackOrder(0), PluginVisible] string Name,
-    [property: MemoryPackOrder(1), PluginVisible] UnlimitedArray<PiecePlacement> Pieces,
+    [property: MemoryPackOrder(0), PluginVisible]
+    string Name,
+    [property: MemoryPackOrder(1), PluginVisible]
+    UnlimitedArray<PiecePlacement> Pieces,
     // Old group format: #editor_group(Name,x:z,...)
-    [property: MemoryPackOrder(2), PluginVisible] UnlimitedArray<string> CoordinateKeys
+    [property: MemoryPackOrder(2), PluginVisible]
+    UnlimitedArray<string> CoordinateKeys
 );
 
 // colors have to be processed in order, so we provide a list of instructions in order
@@ -66,13 +80,55 @@ public readonly partial record struct HierarchyGroup(
 [MemoryPackUnion(6, typeof(PolysInstruction))]
 [PluginVisible]
 public abstract partial record EnvironmentInstruction;
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible] [method: MemoryPackConstructor] public partial record SnapInstruction([property: MemoryPackOrder(0), PluginVisible] Color3 Color) : EnvironmentInstruction;
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible] [method: MemoryPackConstructor] public partial record SkyInstruction([property: MemoryPackOrder(0), PluginVisible] Color3 Color) : EnvironmentInstruction;
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible] [method: MemoryPackConstructor] public partial record FogInstruction([property: MemoryPackOrder(0), PluginVisible] Color3 Color) : EnvironmentInstruction;
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible] [method: MemoryPackConstructor] public partial record CloudsInstruction([property: MemoryPackOrder(0), PluginVisible] IReadOnlyList<int> Clouds) : EnvironmentInstruction;
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible] [method: MemoryPackConstructor] public partial record GroundInstruction([property: MemoryPackOrder(0), PluginVisible] Color3 Color) : EnvironmentInstruction;
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible] [method: MemoryPackConstructor] public partial record TextureInstruction([property: MemoryPackOrder(0), PluginVisible] IReadOnlyList<int> Texture) : EnvironmentInstruction;
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible] [method: MemoryPackConstructor] public partial record PolysInstruction([property: MemoryPackOrder(0), PluginVisible] Color3 Color) : EnvironmentInstruction;
+
+[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
+[method: MemoryPackConstructor]
+public partial record SnapInstruction(
+    [property: MemoryPackOrder(0), PluginVisible]
+    Color3 Color
+) : EnvironmentInstruction;
+
+[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
+[method: MemoryPackConstructor]
+public partial record SkyInstruction(
+    [property: MemoryPackOrder(0), PluginVisible]
+    Color3 Color
+) : EnvironmentInstruction;
+
+[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
+[method: MemoryPackConstructor]
+public partial record FogInstruction(
+    [property: MemoryPackOrder(0), PluginVisible]
+    Color3 Color
+) : EnvironmentInstruction;
+
+[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
+[method: MemoryPackConstructor]
+public partial record CloudsInstruction(
+    [property: MemoryPackOrder(0), PluginVisible]
+    IReadOnlyList<int> Clouds
+) : EnvironmentInstruction;
+
+[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
+[method: MemoryPackConstructor]
+public partial record GroundInstruction(
+    [property: MemoryPackOrder(0), PluginVisible]
+    Color3 Color
+) : EnvironmentInstruction;
+
+[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
+[method: MemoryPackConstructor]
+public partial record TextureInstruction(
+    [property: MemoryPackOrder(0), PluginVisible]
+    IReadOnlyList<int> Texture
+) : EnvironmentInstruction;
+
+[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
+[method: MemoryPackConstructor]
+public partial record PolysInstruction(
+    [property: MemoryPackOrder(0), PluginVisible]
+    Color3 Color
+) : EnvironmentInstruction;
 
 [MemoryPackable(GenerateType.CircularReference), PluginVisible]
 public partial class StageLoader
@@ -131,7 +187,8 @@ public partial class StageLoader
     [MemoryPackOrder(38), PluginVisible] public bool Aerial;
 
     /// <summary>Per-stage physics overrides (phy-addons stage properties).</summary>
-    [MemoryPackOrder(39), PluginVisible] public StagePhysics Physics { get; set; } = new StagePhysics();
+    [MemoryPackOrder(39), PluginVisible]
+    public StagePhysics Physics { get; set; } = new StagePhysics();
 
     [MemoryPackOrder(40), PluginVisible] public UnlimitedArray<StageWall> wallDefs = [];
 
@@ -165,12 +222,13 @@ public partial class StageLoader
 
         // Read-only legacy fallback: a tracks .radq the user put in data/legacy/tracks, then the
         // original track host.
-        var stageLines = providedLines ?? (VFS.FileExists($"data/stages/{stageName}.txt")
-            ? VFS.ReadAllLines($"data/stages/{stageName}.txt")
-            : (LegacyAssets.LegacyAssetImporter.TryReadLocal("tracks", stageName)
-                ?? LegacyAssets.LegacyAssetImporter.TryFetch("tracks", stageName)) is { } legacy
-                ? legacy.Split('\n').Select(l => l.TrimEnd('\r'))
-                : []);
+        var stageLines = providedLines
+                         ?? (VFS.FileExists($"data/stages/{stageName}.txt")
+                             ? VFS.ReadAllLines($"data/stages/{stageName}.txt")
+                             : (LegacyAssets.LegacyAssetImporter.TryReadLocal("tracks", stageName)
+                                ?? LegacyAssets.LegacyAssetImporter.TryFetch("tracks", stageName)) is { } legacy
+                                 ? legacy.Split('\n').Select(l => l.TrimEnd('\r'))
+                                 : []);
 
         var line = "";
         int lineNumber = 0;
@@ -222,10 +280,10 @@ public partial class StageLoader
                         if (gparts.Length >= 1)
                         {
                             var keys = gparts.Skip(1).Select(s => s.Trim());
-                            group = group with { CoordinateKeys = [..keys] };
+                            group = group with { CoordinateKeys = [.. keys] };
                         }
                     }
-                    
+
                     groups.Add(group);
                     currentGroup = group;
                 }
@@ -234,32 +292,44 @@ public partial class StageLoader
                 {
                     UngroupedOrderIndex = Utility.GetInt("#editor_ungrouped_order", line, 0);
                 }
-                
+
                 else if (line.StartsWith("snap"))
                 {
-                    EnvironmentInstructions.Add(new SnapInstruction(new Color3(
-                        (short)Utility.GetInt("snap", line, 0),
-                        (short)Utility.GetInt("snap", line, 1),
-                        (short)Utility.GetInt("snap", line, 2)
-                    )));
+                    EnvironmentInstructions.Add(
+                        new SnapInstruction(
+                            new Color3(
+                                (short)Utility.GetInt("snap", line, 0),
+                                (short)Utility.GetInt("snap", line, 1),
+                                (short)Utility.GetInt("snap", line, 2)
+                            )
+                        )
+                    );
                 }
 
                 else if (line.StartsWith("sky"))
                 {
-                    EnvironmentInstructions.Add(new SkyInstruction(new Color3(
-                        (short)Utility.GetInt("sky", line, 0),
-                        (short)Utility.GetInt("sky", line, 1),
-                        (short)Utility.GetInt("sky", line, 2)
-                    )));
+                    EnvironmentInstructions.Add(
+                        new SkyInstruction(
+                            new Color3(
+                                (short)Utility.GetInt("sky", line, 0),
+                                (short)Utility.GetInt("sky", line, 1),
+                                (short)Utility.GetInt("sky", line, 2)
+                            )
+                        )
+                    );
                 }
 
                 else if (line.StartsWith("ground"))
                 {
-                    EnvironmentInstructions.Add(new GroundInstruction(new Color3(
-                        (short)Utility.GetInt("ground", line, 0),
-                        (short)Utility.GetInt("ground", line, 1),
-                        (short)Utility.GetInt("ground", line, 2)
-                    )));
+                    EnvironmentInstructions.Add(
+                        new GroundInstruction(
+                            new Color3(
+                                (short)Utility.GetInt("ground", line, 0),
+                                (short)Utility.GetInt("ground", line, 1),
+                                (short)Utility.GetInt("ground", line, 2)
+                            )
+                        )
+                    );
                 }
 
                 else if (line.StartsWith("polys"))
@@ -270,21 +340,29 @@ public partial class StageLoader
                     }
                     else
                     {
-                        EnvironmentInstructions.Add(new PolysInstruction(new Color3(
-                            (short)Utility.GetInt("polys", line, 0),
-                            (short)Utility.GetInt("polys", line, 1),
-                            (short)Utility.GetInt("polys", line, 2)
-                        )));
+                        EnvironmentInstructions.Add(
+                            new PolysInstruction(
+                                new Color3(
+                                    (short)Utility.GetInt("polys", line, 0),
+                                    (short)Utility.GetInt("polys", line, 1),
+                                    (short)Utility.GetInt("polys", line, 2)
+                                )
+                            )
+                        );
                     }
                 }
 
                 else if (line.StartsWith("fog"))
                 {
-                    EnvironmentInstructions.Add(new FogInstruction(new Color3(
-                        (short)Utility.GetInt("fog", line, 0),
-                        (short)Utility.GetInt("fog", line, 1),
-                        (short)Utility.GetInt("fog", line, 2)
-                    )));
+                    EnvironmentInstructions.Add(
+                        new FogInstruction(
+                            new Color3(
+                                (short)Utility.GetInt("fog", line, 0),
+                                (short)Utility.GetInt("fog", line, 1),
+                                (short)Utility.GetInt("fog", line, 2)
+                            )
+                        )
+                    );
                 }
 
                 else if (line.StartsWith("texture"))
@@ -340,6 +418,7 @@ public partial class StageLoader
                     {
                         FogDensity = 1;
                     }
+
                     if (FogDensity > 30)
                     {
                         FogDensity = 30;
@@ -410,11 +489,11 @@ public partial class StageLoader
                     var setheight = World.Ground;
 
                     var ymult = -1;
-                    
+
                     var hasCustomY = line.Split(',').Length >= 5;
                     if (hasCustomY)
                     {
-                        if(swapYandRot)
+                        if (swapYandRot)
                         {
                             setheight = Utility.GetInt("set", line, 3);
                         }
@@ -435,8 +514,13 @@ public partial class StageLoader
                         PiecePlacementType.CollisionObject,
                         set,
                         new f64Vector3(Utility.GetInt("set", line, 1), setheight, Utility.GetInt("set", line, 2)),
-                        new f64Euler(f64AngleSingle.FromDegrees(Utility.GetInt("set", line, rotPlace)), f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle));
-                    if (line.Contains(")p"))     //AI tags
+                        new f64Euler(
+                            f64AngleSingle.FromDegrees(Utility.GetInt("set", line, rotPlace)),
+                            f64AngleSingle.ZeroAngle,
+                            f64AngleSingle.ZeroAngle
+                        )
+                    );
+                    if (line.Contains(")p")) //AI tags
                     {
                         obj = obj with { NodeKind = AiNodeKind.Road };
                         if (line.Contains(")pt"))
@@ -470,6 +554,7 @@ public partial class StageLoader
                     else if (line.Contains(")nfmw_FixRoadEnd")) obj = obj with { NodeKind = AiNodeKind.FixRoadEnd };
                     else if (line.Contains(")nfmw_Avoid")) obj = obj with { NodeKind = AiNodeKind.Avoid };
                     else if (line.Contains(")nfmw_Reset")) obj = obj with { NodeKind = AiNodeKind.Reset };
+
                     pieces.Add(obj);
                     // if (Medium.Loadnew)
                     // {
@@ -482,7 +567,7 @@ public partial class StageLoader
                 {
                     var ymult = -1;
                     var isAirCheckpoint = false;
-                    
+
                     if (!TryGetPieceToPlace(Utility.GetString("chk", line, 0), out var mesh)) continue;
 
                     if (mesh.FileName == "nfmm/aircheckpoint")
@@ -511,8 +596,7 @@ public partial class StageLoader
 
                     if (hasCustomY)
                     {
-
-                        if(swapYandRot)
+                        if (swapYandRot)
                         {
                             chkheight = Utility.GetInt("chk", line, 3) * ymult * -1;
                         }
@@ -530,7 +614,7 @@ public partial class StageLoader
                         AiNodeKind.CheckPoint
                     );
                     pieces.Add(obj);
-                    
+
                     // CheckPoints.X[CheckPoints.N] = Utility.GetInt("chk", astring, 1);
                     // CheckPoints.Z[CheckPoints.N] = Utility.GetInt("chk", astring, 2);
                     // CheckPoints.Y[CheckPoints.N] = chkheight;
@@ -546,7 +630,7 @@ public partial class StageLoader
                     // CheckPoints.N++;
                     //stage_parts[stagePartCount].Checkpoint = CheckPoints.Nsp + 1;
                     //CheckPoints.Nsp++;
-                    
+
                     currentGroup.Pieces.Add(obj);
                 }
                 else if (line.StartsWith("fix"))
@@ -556,17 +640,26 @@ public partial class StageLoader
                     var fix = new PiecePlacement(
                         PiecePlacementType.FixHoop,
                         mesh,
-                        new f64Vector3(Utility.GetInt("fix", line, 1), Utility.GetInt("fix", line, 3), Utility.GetInt("fix", line, 2)),
-                        new f64Euler(f64AngleSingle.FromDegrees(Utility.GetInt("fix", line, 4)), f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle),
+                        new f64Vector3(
+                            Utility.GetInt("fix", line, 1),
+                            Utility.GetInt("fix", line, 3),
+                            Utility.GetInt("fix", line, 2)
+                        ),
+                        new f64Euler(
+                            f64AngleSingle.FromDegrees(Utility.GetInt("fix", line, 4)),
+                            f64AngleSingle.ZeroAngle,
+                            f64AngleSingle.ZeroAngle
+                        ),
                         AiNodeKind.FixHoop
                     );
-                    
+
                     if (line.EndsWith(")s"))
                     {
                         fix = fix with { IsSpecial = true };
                     }
+
                     pieces.Add(fix);
-                    
+
                     currentGroup.Pieces.Add(fix);
                 }
                 // oteek: FUCK PILES IM NGL
@@ -662,11 +755,14 @@ public partial class StageLoader
                         new f64Vector3(
                             Utility.GetInt("model", line, 1),
                             World.Ground - Utility.GetInt("model", line, 2),
-                            Utility.GetInt("model", line, 3)),
+                            Utility.GetInt("model", line, 3)
+                        ),
                         new f64Euler(
                             f64AngleSingle.FromDegrees(Utility.GetInt("model", line, 5)),
                             f64AngleSingle.FromDegrees(Utility.GetInt("model", line, 6)),
-                            f64AngleSingle.FromDegrees(Utility.GetInt("model", line, 4))));
+                            f64AngleSingle.FromDegrees(Utility.GetInt("model", line, 4))
+                        )
+                    );
                     pieces.Add(obj);
                     currentGroup.Pieces.Add(obj);
                 }
@@ -683,7 +779,7 @@ public partial class StageLoader
                     string folder = Utility.GetString("soundtrack", line, 0);
                     string fileName = Utility.GetString("soundtrack", line, 1);
 
-                    if(folder.Contains(".") || folder.Contains("/") || fileName.Contains("..") || fileName.Contains("/"))
+                    if (folder.Contains(".") || folder.Contains("/") || fileName.Contains("..") || fileName.Contains("/"))
                     {
                         Logging.Error("Invalid folder or file name in soundtrack() directive");
                     }
@@ -692,22 +788,22 @@ public partial class StageLoader
                         musicPath = $"{folder}/{fileName}";
                     }
                 }
-                else if(line.StartsWith("soundtrackfreqmul"))
+                else if (line.StartsWith("soundtrackfreqmul"))
                 {
                     float mul = Utility.GetFloat("soundtrackfreqmul", line, 0);
                     musicFreqMul = mul;
                 }
-                else if(line.StartsWith("soundtracktempomul"))
+                else if (line.StartsWith("soundtracktempomul"))
                 {
                     float mul = Utility.GetFloat("soundtracktempomul", line, 0);
                     musicTempoMul = mul;
                 }
-                else if(line.StartsWith("soundtrackremaster"))
+                else if (line.StartsWith("soundtrackremaster"))
                 {
                     string folder = Utility.GetString("soundtrackremaster", line, 0);
                     string fileName = Utility.GetString("soundtrackremaster", line, 1);
 
-                    if(folder.Contains(".") || folder.Contains("/") || fileName.Contains("..") || fileName.Contains("/"))
+                    if (folder.Contains(".") || folder.Contains("/") || fileName.Contains("..") || fileName.Contains("/"))
                     {
                         Logging.Error("Invalid folder or file name in soundtrackremaster() directive");
                     }
@@ -729,26 +825,30 @@ public partial class StageLoader
 
                     for (var q = 0; q < n; q++)
                     {
-                        pieces.Add(new PiecePlacement(
-                            PiecePlacementType.CollisionObject,
-                            wall,
-                            new f64Vector3(o, World.Ground, q * 4800 + p),
-                            f64Euler.Identity,
-                            IsWall: true
-                        ));
+                        pieces.Add(
+                            new PiecePlacement(
+                                PiecePlacementType.CollisionObject,
+                                wall,
+                                new f64Vector3(o, World.Ground, q * 4800 + p),
+                                f64Euler.Identity,
+                                IsWall: true
+                            )
+                        );
                     }
 
-                    walls.Add(new Rad3dBoxDef(
-                        Translation: new f64Vector3(o + 500, -5000, (long)n * 4800 / 2 + p - 2400),
-                        Radius: new f64Vector3(600, 7100, (long)n * 4800 / 2),
-                        Xy: 90,
-                        Zy: 0,
-                        SurfaceType: 0,
-                        NotWall: false,
-                        Color: new Color3(),
-                        Damage: 1
-                    ));
-                    
+                    walls.Add(
+                        new Rad3dBoxDef(
+                            Translation: new f64Vector3(o + 500, -5000, (long)n * 4800 / 2 + p - 2400),
+                            Radius: new f64Vector3(600, 7100, (long)n * 4800 / 2),
+                            Xy: 90,
+                            Zy: 0,
+                            SurfaceType: 0,
+                            NotWall: false,
+                            Color: new Color3(),
+                            Damage: 1
+                        )
+                    );
+
                     wallDefs.Add(new StageWall(WallDirection.Right, n, o, p));
                 }
                 else if (line.StartsWith("maxl"))
@@ -762,26 +862,30 @@ public partial class StageLoader
 
                     for (var q = 0; q < n; q++)
                     {
-                        pieces.Add(new PiecePlacement(
-                            PiecePlacementType.CollisionObject,
-                            wall,
-                            new f64Vector3(o, World.Ground, q * 4800 + p),
-                            new f64Euler(f64AngleSingle.FromDegrees(180), f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle),
-                            IsWall: true
-                        ));
+                        pieces.Add(
+                            new PiecePlacement(
+                                PiecePlacementType.CollisionObject,
+                                wall,
+                                new f64Vector3(o, World.Ground, q * 4800 + p),
+                                new f64Euler(f64AngleSingle.FromDegrees(180), f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle),
+                                IsWall: true
+                            )
+                        );
                     }
 
-                    walls.Add(new Rad3dBoxDef(
-                        Translation: new f64Vector3(o - 500, -5000, (long)n * 4800 / 2 + p - 2400),
-                        Radius: new f64Vector3(600, 7100, (long)n * 4800 / 2),
-                        Xy: -90,
-                        Zy: 0,
-                        SurfaceType: 0,
-                        NotWall: false,
-                        Color: new Color3(),
-                        Damage: 1
-                    ));
-                    
+                    walls.Add(
+                        new Rad3dBoxDef(
+                            Translation: new f64Vector3(o - 500, -5000, (long)n * 4800 / 2 + p - 2400),
+                            Radius: new f64Vector3(600, 7100, (long)n * 4800 / 2),
+                            Xy: -90,
+                            Zy: 0,
+                            SurfaceType: 0,
+                            NotWall: false,
+                            Color: new Color3(),
+                            Damage: 1
+                        )
+                    );
+
                     wallDefs.Add(new StageWall(WallDirection.Left, n, o, p));
                 }
                 else if (line.StartsWith("maxt"))
@@ -792,29 +896,33 @@ public partial class StageLoader
                     var o = Utility.GetInt("maxt", line, 1);
                     maxt = o;
                     var p = Utility.GetInt("maxt", line, 2);
-                    
+
                     for (var q = 0; q < n; q++)
                     {
-                        pieces.Add(new PiecePlacement(
-                            PiecePlacementType.CollisionObject,
-                            wall,
-                            new f64Vector3(q * 4800 + p, World.Ground, o),
-                            new f64Euler(f64AngleSingle.FromDegrees(90), f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle),
-                            IsWall: true
-                        ));
+                        pieces.Add(
+                            new PiecePlacement(
+                                PiecePlacementType.CollisionObject,
+                                wall,
+                                new f64Vector3(q * 4800 + p, World.Ground, o),
+                                new f64Euler(f64AngleSingle.FromDegrees(90), f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle),
+                                IsWall: true
+                            )
+                        );
                     }
 
-                    walls.Add(new Rad3dBoxDef(
-                        Translation: new f64Vector3((long)n * 4800 / 2 + p - 2400, -5000, o + 500),
-                        Radius: new f64Vector3((long)n * 4800 / 2, 7100, 600),
-                        Xy: 0,
-                        Zy: 90,
-                        SurfaceType: 0,
-                        NotWall: false,
-                        Color: new Color3(),
-                        Damage: 1
-                    ));
-                    
+                    walls.Add(
+                        new Rad3dBoxDef(
+                            Translation: new f64Vector3((long)n * 4800 / 2 + p - 2400, -5000, o + 500),
+                            Radius: new f64Vector3((long)n * 4800 / 2, 7100, 600),
+                            Xy: 0,
+                            Zy: 90,
+                            SurfaceType: 0,
+                            NotWall: false,
+                            Color: new Color3(),
+                            Damage: 1
+                        )
+                    );
+
                     wallDefs.Add(new StageWall(WallDirection.Top, n, o, p));
                 }
                 else if (line.StartsWith("maxb"))
@@ -828,26 +936,30 @@ public partial class StageLoader
 
                     for (var q = 0; q < n; q++)
                     {
-                        pieces.Add(new PiecePlacement(
-                            PiecePlacementType.CollisionObject,
-                            wall,
-                            new f64Vector3(q * 4800 + p, World.Ground, o),
-                            new f64Euler(f64AngleSingle.FromDegrees(-90), f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle),
-                            IsWall: true
-                        ));
+                        pieces.Add(
+                            new PiecePlacement(
+                                PiecePlacementType.CollisionObject,
+                                wall,
+                                new f64Vector3(q * 4800 + p, World.Ground, o),
+                                new f64Euler(f64AngleSingle.FromDegrees(-90), f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle),
+                                IsWall: true
+                            )
+                        );
                     }
 
-                    walls.Add(new Rad3dBoxDef(
-                        Translation: new f64Vector3((long)n * 4800 / 2 + p - 2400, -5000, o - 500),
-                        Radius: new f64Vector3((long)n * 4800 / 2, 7100, 600),
-                        Xy: 180,
-                        Zy: -90,
-                        SurfaceType: 0,
-                        NotWall: false,
-                        Color: new Color3(),
-                        Damage: 1
-                    ));
-                    
+                    walls.Add(
+                        new Rad3dBoxDef(
+                            Translation: new f64Vector3((long)n * 4800 / 2 + p - 2400, -5000, o - 500),
+                            Radius: new f64Vector3((long)n * 4800 / 2, 7100, 600),
+                            Xy: 180,
+                            Zy: -90,
+                            SurfaceType: 0,
+                            NotWall: false,
+                            Color: new Color3(),
+                            Damage: 1
+                        )
+                    );
+
                     wallDefs.Add(new StageWall(WallDirection.Bottom, n, o, p));
                 }
                 else
@@ -913,6 +1025,7 @@ public partial class StageLoader
                 Logging.Error($"Stage part '{setstring}' not found.");
                 mesh = BackendGameSparker.error_mesh;
             }
+
             return true;
         }
         else
@@ -933,6 +1046,7 @@ public partial class StageLoader
                 mesh = BackendGameSparker.error_mesh;
                 return true;
             }
+
             mesh = stagePart.Rad;
             return true;
         }

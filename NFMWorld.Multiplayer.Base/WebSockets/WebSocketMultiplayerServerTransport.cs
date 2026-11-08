@@ -34,7 +34,7 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
     public async Task AcceptWebSocketRequest(HttpListenerContext ctx, CancellationToken ct)
     {
         using var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(ct, _cts?.Token ?? CancellationToken.None);
-        
+
         HttpListenerWebSocketContext? wsCtx = null;
         try
         {

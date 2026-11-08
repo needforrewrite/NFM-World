@@ -8,7 +8,11 @@ using NFMWorldLibrary.Radpack;
 namespace NFMWorld.Archive.Pages;
 
 public sealed class UploadModel(
-    ArchiveDbContext db, FileStorage storage, ValidatorRunner validator, ArchiveOptions options)
+    ArchiveDbContext db,
+    FileStorage storage,
+    ValidatorRunner validator,
+    ArchiveOptions options
+)
     : ArchivePageModel(db)
 {
     [BindProperty] public IFormFile? File { get; set; }
@@ -47,8 +51,11 @@ public sealed class UploadModel(
         await using var source = File.OpenReadStream();
         var (hash, relative, size) = await storage.PutAsync(source, RadpackLimits.MaxCompressedBytes, HttpContext.RequestAborted);
 
-        var validation = await validator.RunAsync("radpack",
-            [Path.Combine(storage.Root, relative)], HttpContext.RequestAborted);
+        var validation = await validator.RunAsync(
+            "radpack",
+            [Path.Combine(storage.Root, relative)],
+            HttpContext.RequestAborted
+        );
         if (!validation.Ok)
         {
             if (!await Db.Assets.AnyAsync(a => a.ContentHash == hash))
@@ -69,17 +76,19 @@ public sealed class UploadModel(
 
         if (!await Db.Assets.AnyAsync(a => a.ContentHash == hash && a.Name == Name))
         {
-            Db.Assets.Add(new Asset
-            {
-                OwnerId = Account!.Id,
-                Type = type,
-                Name = Name!,
-                Description = Description,
-                ContentHash = hash,
-                StoragePath = relative,
-                SizeBytes = size,
-                IsPublic = true
-            });
+            Db.Assets.Add(
+                new Asset
+                {
+                    OwnerId = Account!.Id,
+                    Type = type,
+                    Name = Name!,
+                    Description = Description,
+                    ContentHash = hash,
+                    StoragePath = relative,
+                    SizeBytes = size,
+                    IsPublic = true
+                }
+            );
             await Db.SaveChangesAsync();
         }
 

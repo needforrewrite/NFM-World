@@ -45,7 +45,10 @@
         }
 
         public IEnumerable<string> EnumerateFiles(
-            string path, string searchPattern, SearchOption searchOption)
+            string path,
+            string searchPattern,
+            SearchOption searchOption
+        )
         {
             var fullPath = Resolve(path);
             if (fullPath is null || !Directory.Exists(fullPath))

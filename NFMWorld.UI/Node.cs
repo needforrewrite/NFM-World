@@ -1,6 +1,5 @@
 using NFMWorld.PluginSystem;
 using NFMWorld.Reactor.Sx;
-
 using Renderer = NFMWorld.Reactor.Sx.Renderer;
 
 namespace NFMWorld.Reactor;
@@ -10,12 +9,7 @@ public abstract partial class Node
 {
     #region Parent/child tree
 
-    [PluginVisible]
-    public Node? VisualParent
-    {
-        get;
-        set;
-    }
+    [PluginVisible] public Node? VisualParent { get; set; }
 
     /// <summary>
     /// True once this node (or an ancestor) has been removed from the visual tree.

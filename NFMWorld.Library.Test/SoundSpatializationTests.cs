@@ -26,6 +26,7 @@ public class SoundSpatializationTests
             Assert.IsTrue(gain >= 0 && gain <= previous);
             previous = gain;
         }
+
         Assert.AreEqual(0f, SoundSpatialization.DistanceGain(float.NaN));
         Assert.AreEqual(0f, SoundSpatialization.DistanceGain(float.PositiveInfinity));
     }

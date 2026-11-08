@@ -11,7 +11,8 @@ public interface IBackend
             IBackend ThrowNotInitialized()
             {
                 throw new InvalidOperationException(
-                    $"{nameof(IBackend)}.{nameof(Backend)} needs to be set before it can be used.");
+                    $"{nameof(IBackend)}.{nameof(Backend)} needs to be set before it can be used."
+                );
             }
         }
         set;
@@ -19,18 +20,16 @@ public interface IBackend
 
     [ClientOnly]
     IRadicalMusic LoadMusic(string file, double tempomul = 1);
-    
-    [ClientOnly]
-    void StopAllSounds();
-    
-    [ClientOnly]
-    ISoundClip GetSound(string filePath);
-    
-    [ClientOnly]
-    IGraphics Graphics { get; }
 
     [ClientOnly]
-    IGraphics3D Graphics3D { get; }
+    void StopAllSounds();
+
+    [ClientOnly]
+    ISoundClip GetSound(string filePath);
+
+    [ClientOnly] IGraphics Graphics { get; }
+
+    [ClientOnly] IGraphics3D Graphics3D { get; }
 
     [ClientOnly]
     void SetAllVolumes(float vol);

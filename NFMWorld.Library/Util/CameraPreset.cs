@@ -26,7 +26,9 @@ public sealed record CameraPreset(string Name, float Fov, int FollowY, int Follo
     };
 
     public bool Matches(CameraPreset other) => Math.Abs(Fov - other.Fov) < 0.051f
-        && FollowY == other.FollowY && FollowZ == other.FollowZ && SmoothFov == other.SmoothFov;
+                                               && FollowY == other.FollowY
+                                               && FollowZ == other.FollowZ
+                                               && SmoothFov == other.SmoothFov;
 
     public static string ValidateCustomName(string name)
     {
@@ -62,6 +64,7 @@ public static class CameraPresetConfig
                     camera = camera with { SmoothFov = smooth != 0 }; break;
             }
         }
+
         return camera.Clamp();
     }
 
@@ -78,8 +81,11 @@ public static class CameraPresetConfig
                 var name = CameraPreset.ValidateCustomName(preset.Name);
                 if (names.Add(name)) result.Add((preset with { Name = name }).Clamp());
             }
-            catch (ArgumentException) { }
+            catch (ArgumentException)
+            {
+            }
         }
+
         return result;
     }
 

@@ -17,6 +17,7 @@
 // lifetime, the reflection-to-program bridge (GlShaderProgram), and a single command buffer, because
 // the abstraction's one-live-buffer rule exists precisely so an immediate-mode backend can implement
 // it directly.
+
 using NFMWorld.Shaders;
 using Silk.NET.OpenGL;
 
@@ -111,12 +112,21 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     /// also have to run on a context this backend does not own.
     /// </param>
     public static GlGraphicsDevice Create(
-        Func<string, nint> getProcAddress, int backBufferWidth, int backBufferHeight, Action? present = null,
-        int multiSampleCount = 0)
+        Func<string, nint> getProcAddress,
+        int backBufferWidth,
+        int backBufferHeight,
+        Action? present = null,
+        int multiSampleCount = 0
+    )
     {
         ArgumentNullException.ThrowIfNull(getProcAddress);
         return new GlGraphicsDevice(
-            GL.GetApi(getProcAddress), backBufferWidth, backBufferHeight, present, multiSampleCount);
+            GL.GetApi(getProcAddress),
+            backBufferWidth,
+            backBufferHeight,
+            present,
+            multiSampleCount
+        );
     }
 
     public ICommandBuffer AcquireCommandBuffer()
@@ -124,8 +134,9 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         if (_activeCommandBuffer is not null)
         {
             throw new InvalidOperationException(
-                $"{nameof(AcquireCommandBuffer)} was called again before the previous command buffer " +
-                "was submitted - only one command buffer may be live at a time.");
+                $"{nameof(AcquireCommandBuffer)} was called again before the previous command buffer "
+                + "was submitted - only one command buffer may be live at a time."
+            );
         }
 
         // Reused rather than allocated per frame: the buffer owns a uniform GL buffer, and
@@ -165,13 +176,16 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         if (commandBuffer is not GlCommandBuffer glCommandBuffer)
         {
             throw new ArgumentException(
-                $"{nameof(Submit)} needs a command buffer this backend created.", nameof(commandBuffer));
+                $"{nameof(Submit)} needs a command buffer this backend created.",
+                nameof(commandBuffer)
+            );
         }
 
         if (!ReferenceEquals(glCommandBuffer, _activeCommandBuffer))
         {
             throw new InvalidOperationException(
-                "This command buffer is not the live one - it was either already submitted or never acquired.");
+                "This command buffer is not the live one - it was either already submitted or never acquired."
+            );
         }
 
         glCommandBuffer.Reset();
@@ -192,7 +206,8 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         {
             throw new ArgumentException(
                 $"Initial data holds {initialData.Length} bytes but the buffer is {desc.SizeInBytes} bytes.",
-                nameof(initialData));
+                nameof(initialData)
+            );
         }
 
         return new GlBuffer(_gl, _deletions, desc, initialData);
@@ -210,7 +225,10 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     public IRenderTarget CreateRenderTarget(RenderTargetDesc desc)
     {
         if (desc.Width <= 0 || desc.Height <= 0)
-            throw new ArgumentOutOfRangeException(nameof(desc), $"A {desc.Width}x{desc.Height} render target cannot be allocated.");
+            throw new ArgumentOutOfRangeException(
+                nameof(desc),
+                $"A {desc.Width}x{desc.Height} render target cannot be allocated."
+            );
 
         return new GlRenderTarget(_gl, _deletions, desc);
     }
@@ -245,9 +263,11 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         if (!ReferenceEquals(vertex, pixel))
         {
             throw new ArgumentException(
-                "Both shader stages must come from the same LoadProgram module. The reflection describes " +
-                "the linked program rather than a single stage, so a vertex module and a pixel module " +
-                "built separately cannot be paired here.", nameof(desc));
+                "Both shader stages must come from the same LoadProgram module. The reflection describes "
+                + "the linked program rather than a single stage, so a vertex module and a pixel module "
+                + "built separately cannot be paired here.",
+                nameof(desc)
+            );
         }
 
         var program = new GlShaderProgram(_gl, _deletions, vertex.Vertex, vertex.Pixel, vertex.Reflection);
@@ -270,7 +290,9 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         if (module is not GlShaderModule glModule)
         {
             throw new ArgumentException(
-                $"{name} must be a shader module this backend created - see {nameof(LoadProgram)}.", nameof(module));
+                $"{name} must be a shader module this backend created - see {nameof(LoadProgram)}.",
+                nameof(module)
+            );
         }
 
         return glModule;
@@ -289,7 +311,11 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     /// SpirvCrossReflector.NameCombinedSamplers and GlShaderProgram.TextureLocations.
     /// </summary>
     /// <inheritdoc cref="IGraphicsDevice.CreateShaderModule"/>
-    IShaderModule IGraphicsDevice.CreateShaderModule(ShaderStageSources vertex, ShaderStageSources pixel, ShaderReflection reflection) =>
+    IShaderModule IGraphicsDevice.CreateShaderModule(
+        ShaderStageSources vertex,
+        ShaderStageSources pixel,
+        ShaderReflection reflection
+    ) =>
         LoadProgram(vertex, pixel, reflection);
 
     /// <inheritdoc cref="LoadProgram(ShaderStageSources,ShaderStageSources,ShaderReflection)"/>
@@ -302,9 +328,10 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         if (string.IsNullOrWhiteSpace(vertex.Glsl330) || string.IsNullOrWhiteSpace(pixel.Glsl330))
         {
             throw new ArgumentException(
-                "The bundle carries no desktop GLSL for one or both stages. This backend compiles " +
-                "ShaderStageSources.Glsl330; a bundle generated before that field existed cannot be used.",
-                nameof(vertex));
+                "The bundle carries no desktop GLSL for one or both stages. This backend compiles "
+                + "ShaderStageSources.Glsl330; a bundle generated before that field existed cannot be used.",
+                nameof(vertex)
+            );
         }
 
         return new GlShaderModule(vertex, pixel, reflection);
@@ -341,8 +368,9 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         if (glTexture.Format.IsDepthFormat())
         {
             throw new NotSupportedException(
-                $"{glTexture.Format} has no colour storage to read back. Read the render target's " +
-                $"{nameof(IRenderTarget.ColorTexture)} instead - that is what the abstraction documents.");
+                $"{glTexture.Format} has no colour storage to read back. Read the render target's "
+                + $"{nameof(IRenderTarget.ColorTexture)} instead - that is what the abstraction documents."
+            );
         }
 
         if (level < 0 || level >= (glTexture.MipMapped ? MipLevels(glTexture.Width, glTexture.Height) : 1))
@@ -350,8 +378,10 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
 
         if (x < 0 || y < 0 || width <= 0 || height <= 0 || x + width > glTexture.Width || y + height > glTexture.Height)
         {
-            throw new ArgumentOutOfRangeException(nameof(x),
-                $"The {width}x{height} region at ({x}, {y}) does not fit the {glTexture.Width}x{glTexture.Height} texture.");
+            throw new ArgumentOutOfRangeException(
+                nameof(x),
+                $"The {width}x{height} region at ({x}, {y}) does not fit the {glTexture.Width}x{glTexture.Height} texture."
+            );
         }
 
         var bytesPerPixel = glTexture.Format.BytesPerPixel();
@@ -359,8 +389,10 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         if (destination.Length < required)
         {
             throw new ArgumentException(
-                $"Destination holds {destination.Length} bytes; {required} are required for {width}x{height} " +
-                $"of {glTexture.Format}.", nameof(destination));
+                $"Destination holds {destination.Length} bytes; {required} are required for {width}x{height} "
+                + $"of {glTexture.Format}.",
+                nameof(destination)
+            );
         }
 
         ReadFromFramebuffer(glTexture, x, y, width, height, bytesPerPixel, level, destination[..required]);
@@ -377,8 +409,16 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     /// scratch buffer exists only because the pack alignment has to be forced to 1, and that is
     /// global state.
     /// </summary>
-    private void ReadFromFramebuffer(GlTexture texture, int x, int y, int width, int height,
-        int bytesPerPixel, int level, Span<byte> destination)
+    private void ReadFromFramebuffer(
+        GlTexture texture,
+        int x,
+        int y,
+        int width,
+        int height,
+        int bytesPerPixel,
+        int level,
+        Span<byte> destination
+    )
     {
         var rowBytes = width * bytesPerPixel;
 
@@ -393,8 +433,13 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         try
         {
             _gl.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
-            _gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0,
-                TextureTarget.Texture2D, texture.Handle, level);
+            _gl.FramebufferTexture2D(
+                FramebufferTarget.Framebuffer,
+                FramebufferAttachment.ColorAttachment0,
+                TextureTarget.Texture2D,
+                texture.Handle,
+                level
+            );
 
             // Reading attachment 0 requires it to be the read buffer; an FBO's default read buffer
             // is COLOR_ATTACHMENT0, but it is set explicitly so a texture attached at a different
@@ -405,8 +450,9 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
             if (status != GLEnum.FramebufferComplete)
             {
                 throw new InvalidOperationException(
-                    $"Cannot read {texture.Format} back: the scratch framebuffer is {status}. A " +
-                    "texture whose level 0 is read this way must be colour-renderable.");
+                    $"Cannot read {texture.Format} back: the scratch framebuffer is {status}. A "
+                    + "texture whose level 0 is read this way must be colour-renderable."
+                );
             }
 
             // The rows are packed to their exact width. GL's default pack alignment is 4, which
@@ -415,8 +461,15 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
             // otherwise come back sheared.
             _gl.PixelStore(PixelStoreParameter.PackAlignment, 1);
 
-            _gl.ReadPixels(x, y, (uint)width, (uint)height, texture.Format.ToUploadFormat(),
-                texture.Format.ToUploadType(), destination);
+            _gl.ReadPixels(
+                x,
+                y,
+                (uint)width,
+                (uint)height,
+                texture.Format.ToUploadFormat(),
+                texture.Format.ToUploadType(),
+                destination
+            );
 
             _gl.PixelStore(PixelStoreParameter.PackAlignment, 4);
         }
@@ -442,6 +495,7 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
             height = Math.Max(1, height >> 1);
             levels++;
         }
+
         return levels;
     }
 
@@ -483,6 +537,7 @@ internal sealed class GlShaderModule : IShaderModule
     /// the fragment one, and GL links the pair.
     /// </summary>
     internal ShaderStageSources Vertex { get; }
+
     internal ShaderStageSources Pixel { get; }
 
     /// <summary>The linked program's reflection - see <see cref="GlShaderProgram"/>.</summary>

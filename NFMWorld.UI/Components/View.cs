@@ -32,7 +32,9 @@ public partial class View : Component
     public override string DebugToString()
     {
         var sb = new StringBuilder();
-        sb.Append($"View(Name={Name}, LayoutX={LayoutX}, LayoutY={LayoutY}, LayoutWidth={LayoutWidth}, LayoutHeight={LayoutHeight})");
+        sb.Append(
+            $"View(Name={Name}, LayoutX={LayoutX}, LayoutY={LayoutY}, LayoutWidth={LayoutWidth}, LayoutHeight={LayoutHeight})"
+        );
         foreach (var child in Children)
         {
             sb.AppendLine();
@@ -40,6 +42,7 @@ public partial class View : Component
             sb.Append((child is Component node ? node.DebugToString() : child.ToString() ?? "").Replace("\n", "\n  "));
             sb.Append('}');
         }
+
         return sb.ToString();
     }
 }

@@ -25,7 +25,8 @@ public sealed record MatchReport(
     string StageName,
     string? StageHash,
     long DurationTicks,
-    IReadOnlyList<ResultPlayer> Players);
+    IReadOnlyList<ResultPlayer> Players
+);
 
 /// <summary>
 /// Client for the archive server.
@@ -60,7 +61,9 @@ public sealed class ArchiveClient
     /// which the lobby treats as a guest, not as a reason to sign the player out.
     /// </summary>
     public async Task<(TokenVerification Status, ArchiveAccount? Account)> ValidateTokenAsync(
-        string token, CancellationToken ct)
+        string token,
+        CancellationToken ct
+    )
     {
         try
         {

@@ -20,5 +20,4 @@ public static class Extensions
         public static AngleSingle FromDegrees(fix64 degrees)
             => Unsafe.BitCast<float, AngleSingle>((float)(degrees * fix64.DegToRad));
     }
-
 }

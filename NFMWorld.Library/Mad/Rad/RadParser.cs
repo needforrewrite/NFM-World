@@ -50,39 +50,42 @@ public partial class RadParser
 
             return Polys
                 .Select(poly =>
-                {
-                    var scaledPoints = poly.Points.Select(point =>
                     {
-                        var x = point.X;
-                        var y = point.Y;
-                        var z = point.Z;
-
-                        if (trueRadius > 0)
-                        {
-                            if (x == trueDepth) // LOOKS INCORRECT BECAUSE FLOAT COMPARISON BETWEEN DIV AND NON-DIV VALUE, BUT IS ACTUALLY CORRECT BECAUSE PHYSHOT WHEELS DO NOT SCALE BY DIV!!!!
+                        var scaledPoints = poly.Points.Select(point =>
                             {
-                                x = flipX ? -wheelWidth : wheelWidth;
+                                var x = point.X;
+                                var y = point.Y;
+                                var z = point.Z;
+
+                                if (trueRadius > 0)
+                                {
+                                    if (x
+                                        == trueDepth) // LOOKS INCORRECT BECAUSE FLOAT COMPARISON BETWEEN DIV AND NON-DIV VALUE, BUT IS ACTUALLY CORRECT BECAUSE PHYSHOT WHEELS DO NOT SCALE BY DIV!!!!
+                                    {
+                                        x = flipX ? -wheelWidth : wheelWidth;
+                                    }
+                                    else
+                                    {
+                                        x = x * (wheelHeight / (trueRadius * 0.77f));
+                                    }
+
+                                    y = y * (wheelHeight / (trueRadius * 0.77f));
+                                    z = z * (wheelHeight / (trueRadius * 0.77f));
+
+                                    x -= wheelHeight / 2;
+                                }
+
+                                if (flipX)
+                                {
+                                    x = -x;
+                                }
+
+                                return new Vector3(x, y, z);
                             }
-                            else
-                            {
-                                x = x * (wheelHeight / (trueRadius * 0.77f));
-                            }
-
-                            y = y * (wheelHeight / (trueRadius * 0.77f));
-                            z = z * (wheelHeight / (trueRadius * 0.77f));
-
-                            x -= wheelHeight / 2;
-                        }
-
-                        if (flipX)
-                        {
-                            x = -x;
-                        }
-
-                        return new Vector3(x, y, z);
-                    }).ToArray();
-                    return poly.WithPoints(scaledPoints, poly.Triangles);
-                })
+                        ).ToArray();
+                        return poly.WithPoints(scaledPoints, poly.Triangles);
+                    }
+                )
                 .ToArray();
         }
     }
@@ -92,7 +95,9 @@ public partial class RadParser
     private fix64 idiv = (fix64)1f, iwid = (fix64)1f, scaleX = (fix64)1f, scaleY = (fix64)1f, scaleZ = (fix64)1f;
 
     private Dictionary<Color3, int> _colors = new();
+
     private CarStats _stats = new();
+
     // Starts as a copy of _stats; the second stat set updates it in place.
     private CarStats? _rechargedStats;
     private List<Rad3dWheelDef> _wheels = [];
@@ -138,7 +143,10 @@ public partial class RadParser
         _fileName = fileName;
     }
 
-    [GeneratedRegex("""<wheel(?: radius="(?<radius>\d+)")?(?: depth="(?<depth>\d+)")?(?: target="[\d,]+")?>""", RegexOptions.Compiled)]
+    [GeneratedRegex(
+        """<wheel(?: radius="(?<radius>\d+)")?(?: depth="(?<depth>\d+)")?(?: target="[\d,]+")?>""",
+        RegexOptions.Compiled
+    )]
     private static partial Regex PhyShotWheelDef { get; }
 
     public static Rad3d ParseRad(string radFile, string fileName = "hogan rewish")
@@ -172,31 +180,38 @@ public partial class RadParser
                 // Wheels without specific meshes use the shared generic mesh, which is
                 // modeled for the right side and must be mirrored for left-side wheels.
                 var shouldMirrorX = parser._wheels[i].Position.X < 0
-                    && !parser._wheelsWithSpecificPolys.Contains(i);
+                                    && !parser._wheelsWithSpecificPolys.Contains(i);
                 parser._wheels[i] = parser._wheels[i] with
                 {
                     Polys = shouldMirrorX
-                        ? wheelMesh.Select(poly => poly.WithPoints(poly.Points.Select(p => p with { X = -p.X }).ToArray(), null)).ToArray()
+                        ? wheelMesh.Select(poly => poly.WithPoints(poly.Points.Select(p => p with { X = -p.X }).ToArray(), null))
+                            .ToArray()
                         : wheelMesh.ToArray()
                 };
             }
         }
 
-        var result = RepositionCar(new Rad3d(
-            colors: parser._colors.Keys.ToArray(),
-            stats: parser._stats,
-            rechargedStats: parser._rechargedStats,
-            wheels: parser._wheels.ToArray(),
-            rims: parser._rims,
-            boxes: parser._boxes.ToArray(),
-            polys: parser._mainCarPolys.ToArray(),
-            castsShadow: parser._castsShadow,
-            atp: parser._atp.ToArray(),
-            atLines: parser._atLines.Count > 0 ? parser._atLines.ToArray() : null,
-            collisionMesh: parser._meshCollisionVerts.Count > 0 ? new Rad3dCollisionMesh(parser._meshCollisionVerts.ToArray(), parser._meshCollisionIndices.ToArray()) : null,
-            collisionHull: parser._hullVerts.Count > 0 ? new Rad3dCollisionHull(CollectionsMarshal.AsSpan(parser._hullVerts)) : null,
-            fileName: fileName
-        ));
+        var result = RepositionCar(
+            new Rad3d(
+                colors: parser._colors.Keys.ToArray(),
+                stats: parser._stats,
+                rechargedStats: parser._rechargedStats,
+                wheels: parser._wheels.ToArray(),
+                rims: parser._rims,
+                boxes: parser._boxes.ToArray(),
+                polys: parser._mainCarPolys.ToArray(),
+                castsShadow: parser._castsShadow,
+                atp: parser._atp.ToArray(),
+                atLines: parser._atLines.Count > 0 ? parser._atLines.ToArray() : null,
+                collisionMesh: parser._meshCollisionVerts.Count > 0
+                    ? new Rad3dCollisionMesh(parser._meshCollisionVerts.ToArray(), parser._meshCollisionIndices.ToArray())
+                    : null,
+                collisionHull: parser._hullVerts.Count > 0
+                    ? new Rad3dCollisionHull(CollectionsMarshal.AsSpan(parser._hullVerts))
+                    : null,
+                fileName: fileName
+            )
+        );
         transaction.Finish();
         return result;
     }
@@ -239,7 +254,7 @@ public partial class RadParser
             {
                 Position = new f64Vector3(
                     wheel.Position.X - (wheelXTranslation),
-                    wheel.Position.Y,// - (groundTranslation),
+                    wheel.Position.Y, // - (groundTranslation),
                     wheel.Position.Z - (wheelZTranslation)
                 )
             };
@@ -253,7 +268,7 @@ public partial class RadParser
                 var point = poly.Points[j];
                 poly.Points[j] = new Vector3(
                     point.X - (float)(wheelXTranslation),
-                    point.Y,// - (float)(groundTranslation),
+                    point.Y, // - (float)(groundTranslation),
                     point.Z - (float)(wheelZTranslation)
                 );
             }
@@ -296,9 +311,15 @@ public partial class RadParser
 
         // A second `stats(` block replaces the base stat definitions with the car's recharged
         // set (phy-addons). The first block keeps filling _stats as usual.
-        else if (line.StartsWith("stats(")) { _rechargedStats = _stats; _stats = new CarStats(); }
-        else if (line.StartsWith("swits(")) _stats = _stats with { Swits = Int3.FromSpan(BracketParser.GetNumbers(line, stackalloc int[3])) };
-        else if (line.StartsWith("acelf(")) _stats = _stats with { Acelf = f64Vector3.FromSpan(BracketParser.GetNumbers(line, stackalloc fix64[3])) };
+        else if (line.StartsWith("stats("))
+        {
+            _rechargedStats = _stats;
+            _stats = new CarStats();
+        }
+        else if (line.StartsWith("swits("))
+            _stats = _stats with { Swits = Int3.FromSpan(BracketParser.GetNumbers(line, stackalloc int[3])) };
+        else if (line.StartsWith("acelf("))
+            _stats = _stats with { Acelf = f64Vector3.FromSpan(BracketParser.GetNumbers(line, stackalloc fix64[3])) };
         else if (line.StartsWith("handb(")) _stats = _stats with { Handb = BracketParser.GetNumber<int>(line) };
         else if (line.StartsWith("airs(")) _stats = _stats with { Airs = BracketParser.GetNumber<fix64>(line) };
         else if (line.StartsWith("airc(")) _stats = _stats with { Airc = BracketParser.GetNumber<int>(line) };
@@ -319,10 +340,12 @@ public partial class RadParser
         else if (line.StartsWith("dammult(")) _stats = _stats with { Dammult = BracketParser.GetNumber<fix64>(line) };
         else if (line.StartsWith("maxmag(")) _stats = _stats with { Maxmag = BracketParser.GetNumber<int>(line) };
         else if (line.StartsWith("dishandle(")) _stats = _stats with { Dishandle = BracketParser.GetNumber<fix64>(line) };
-        else if (line.StartsWith("handling(")) /* physhot */ _stats = _stats with { Dishandle = BracketParser.GetNumber<fix64>(line) / (fix64)200f };
+        else if (line.StartsWith("handling(")) /* physhot */
+            _stats = _stats with { Dishandle = BracketParser.GetNumber<fix64>(line) / (fix64)200f };
         else if (line.StartsWith("outdam(")) _stats = _stats with { Outdam = BracketParser.GetNumber<fix64>(line) };
         else if (line.StartsWith("name(")) _stats = _stats with { Name = BracketParser.GetString(line) };
-        else if (line.StartsWith("enginsignature(")) _stats = _stats with { Enginsignature = BracketParser.GetNumber<sbyte>(line) };
+        else if (line.StartsWith("enginsignature("))
+            _stats = _stats with { Enginsignature = BracketParser.GetNumber<sbyte>(line) };
         else if (line.StartsWith("turnradius(")) _stats = _stats with { TurnRadius = BracketParser.GetNumber<int>(line) };
         else if (line.StartsWith("roadgrip(")) _stats = _stats with { RoadGrip = BracketParser.GetNumber<fix64>(line) };
         else if (line.StartsWith("offroadgrip(")) _stats = _stats with { OffRoadGrip = BracketParser.GetNumber<fix64>(line) };
@@ -331,24 +354,30 @@ public partial class RadParser
         else if (line.StartsWith("w("))
         {
             var (cx, (cy, (cz, (rotates, (width, (height, _)))))) = BracketParser.GetNumbers(line, stackalloc int[6]);
-            _wheels.Add(new Rad3dWheelDef(
-                Position: new f64Vector3(
-                    cx * idiv * iwid * scaleX,
-                    cy * idiv * scaleY,
-                    cz * idiv * scaleZ
-                ),
-                Rotates: rotates,
-                Width: width * idiv * iwid,
-                Height: height * idiv,
-                Polys:
+            _wheels.Add(
+                new Rad3dWheelDef(
+                    Position: new f64Vector3(
+                        cx * idiv * iwid * scaleX,
+                        cy * idiv * scaleY,
+                        cz * idiv * scaleZ
+                    ),
+                    Rotates: rotates,
+                    Width: width * idiv * iwid,
+                    Height: height * idiv,
+                    Polys:
                     // physhot custom wheels
                     TryGetTargetWheelMesh(_wheels.Count, out var wheelMesh)
-                        ? wheelMesh.GetScaledPolys(wheelWidth: width * (float)idiv * (float)iwid, wheelHeight: height * (float)idiv, flipX: width < 0)
+                        ? wheelMesh.GetScaledPolys(
+                            wheelWidth: width * (float)idiv * (float)iwid,
+                            wheelHeight: height * (float)idiv,
+                            flipX: width < 0
+                        )
                         // SRC custom wheels
                         : _wheelMeshes.Count > _wheels.Count
                             ? _wheelMeshes[_wheels.Count].Polys.ToArray()
                             : null
-            ));
+                )
+            );
 
             // phy-addons custom wheels
             if (line.EndsWith(")c"))
@@ -379,27 +408,31 @@ public partial class RadParser
 
         else if (line.StartsWith("<track>"))
         {
-            _boxes.Add(new Rad3dBoxDef(
-                Xy: 0,
-                Zy: 0,
-                Radius: new f64Vector3(),
-                Translation: new f64Vector3(),
-                SurfaceType: SurfaceType.Road,
-                Damage: 0,
-                NotWall: false,
-                Color: new Color3()
-            ));
+            _boxes.Add(
+                new Rad3dBoxDef(
+                    Xy: 0,
+                    Zy: 0,
+                    Radius: new f64Vector3(),
+                    Translation: new f64Vector3(),
+                    SurfaceType: SurfaceType.Road,
+                    Damage: 0,
+                    NotWall: false,
+                    Color: new Color3()
+                )
+            );
         }
 
         // SRC extension
         else if (line.StartsWith("mv("))
         {
             var vec = f64Vector3.FromSpan(BracketParser.GetNumbers(line, stackalloc fix64[3]));
-            _meshCollisionVerts.Add(new f64Vector3(
-                vec.X * idiv * iwid * scaleX,
-                vec.Y * idiv * scaleY,
-                vec.Z * idiv * scaleZ
-            ));
+            _meshCollisionVerts.Add(
+                new f64Vector3(
+                    vec.X * idiv * iwid * scaleX,
+                    vec.Y * idiv * scaleY,
+                    vec.Z * idiv * scaleZ
+                )
+            );
         }
 
         // SRC extension
@@ -416,11 +449,13 @@ public partial class RadParser
         else if (line.StartsWith("hullv("))
         {
             var vec = f64Vector3.FromSpan(BracketParser.GetNumbers(line, stackalloc fix64[3]));
-            _hullVerts.Add(new f64Vector3(
-                vec.X * idiv * iwid * scaleX,
-                vec.Y * idiv * scaleY,
-                vec.Z * idiv * scaleZ
-            ));
+            _hullVerts.Add(
+                new f64Vector3(
+                    vec.X * idiv * iwid * scaleX,
+                    vec.Y * idiv * scaleY,
+                    vec.Z * idiv * scaleZ
+                )
+            );
         }
 
         // NFMW extension
@@ -523,12 +558,14 @@ public partial class RadParser
         {
             var radius = int.Parse(wheelMatch.Groups["radius"].ValueSpan);
             var depth = int.Parse(wheelMatch.Groups["depth"].ValueSpan);
-            _wheelMeshes.Add(new WheelMesh
-            {
-                Polys = _currentPolys = [],
-                Radius = radius,
-                Depth = depth
-            });
+            _wheelMeshes.Add(
+                new WheelMesh
+                {
+                    Polys = _currentPolys = [],
+                    Radius = radius,
+                    Depth = depth
+                }
+            );
             _inPhyshotWheel = true;
             _physhotWheelTargets[_wheelMeshes.Count - 1] = !wheelMatch.Groups["target"].ValueSpan.IsEmpty
                 ? wheelMatch.Groups["target"].ValueSpan.ToString().Split(',').Select(int.Parse).ToArray()
@@ -566,14 +603,23 @@ public partial class RadParser
                 }
             }
 
-            else if (line.StartsWith("phyangulation")) _currentPoly = _currentPoly with { TriangulationAlgorithm = PolygonTriangulator.TriangulationAlgorithm.Phyrexian };
-            else if (line.StartsWith("libtess")) _currentPoly = _currentPoly with { TriangulationAlgorithm = PolygonTriangulator.TriangulationAlgorithm.Libtess };
+            else if (line.StartsWith("phyangulation"))
+                _currentPoly = _currentPoly with
+                {
+                    TriangulationAlgorithm = PolygonTriangulator.TriangulationAlgorithm.Phyrexian
+                };
+            else if (line.StartsWith("libtess"))
+                _currentPoly = _currentPoly with { TriangulationAlgorithm = PolygonTriangulator.TriangulationAlgorithm.Libtess };
             else if (line.StartsWith("glass")) _currentPoly = _currentPoly with { PolyType = PolyType.Glass };
             // confusing: NFMM allows you to have a polygon be BOTH glass and light, which doesn't make any sense in NFMW. so we just ignore the light part if it's non flat.
-            else if (line.StartsWith("lightBrake") && _currentPoly.PolyType == PolyType.Flat) _currentPoly = _currentPoly with { PolyType = PolyType.BrakeLight };
-            else if (line.StartsWith("lightB") && _currentPoly.PolyType == PolyType.Flat) _currentPoly = _currentPoly with { PolyType = PolyType.Light };
-            else if (line.StartsWith("lightR") && _currentPoly.PolyType == PolyType.Flat) _currentPoly = _currentPoly with { PolyType = PolyType.ReverseLight };
-            else if (line.StartsWith("light") && _currentPoly.PolyType == PolyType.Flat) _currentPoly = _currentPoly with { PolyType = PolyType.Light };
+            else if (line.StartsWith("lightBrake") && _currentPoly.PolyType == PolyType.Flat)
+                _currentPoly = _currentPoly with { PolyType = PolyType.BrakeLight };
+            else if (line.StartsWith("lightB") && _currentPoly.PolyType == PolyType.Flat)
+                _currentPoly = _currentPoly with { PolyType = PolyType.Light };
+            else if (line.StartsWith("lightR") && _currentPoly.PolyType == PolyType.Flat)
+                _currentPoly = _currentPoly with { PolyType = PolyType.ReverseLight };
+            else if (line.StartsWith("light") && _currentPoly.PolyType == PolyType.Flat)
+                _currentPoly = _currentPoly with { PolyType = PolyType.Light };
             else if (line.StartsWith("gr(-10)")) _currentPoly = _currentPoly with { LineType = LineType.BrightColored };
             else if (line.StartsWith("gr(-18)")) _currentPoly = _currentPoly with { LineType = LineType.Charged };
             else if (line.StartsWith("gr(-13)")) _currentPoly = _currentPoly with { PolyType = PolyType.Finish };
@@ -588,6 +634,7 @@ public partial class RadParser
                 {
                     decalValue = BracketParser.GetNumber<float>(line);
                 }
+
                 _currentPoly = _currentPoly with { DecalOffset = decalValue };
             }
             else if (line.StartsWith("p("))

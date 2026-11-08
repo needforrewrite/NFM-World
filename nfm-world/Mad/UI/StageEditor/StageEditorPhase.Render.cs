@@ -16,7 +16,7 @@ public partial class StageEditorPhase
             _exportRequested = false;
             ExportTopDownImage(cb);
         }
-        
+
         // Clear with appropriate background color based on view mode
         if (ActiveTab.ViewMode == StageEditorTab.ViewModeEnum.TopDown)
         {
@@ -28,7 +28,7 @@ public partial class StageEditorPhase
             // Sky blue background for 3D scene view
             cb.Clear(NFMWorld.Graphics.ClearOptions.Color, new NFMWorld.Graphics.ColorRgba(135 / 255f, 206 / 255f, 235 / 255f));
         }
-        
+
         // Clip the 3D view to the ImGui viewport rect the panels computed, so scene geometry doesn't
         // bleed under/over the editor's panels. Every game pipeline has scissor testing enabled
         // (Effects.ScissorRasterizer), so setting the rect is all this needs; CullMode needs no
@@ -37,17 +37,20 @@ public partial class StageEditorPhase
         // binds a target or viewport follows (see WorldGame.SetFullScreenScissor).
         if (_viewportMax.X > _viewportMin.X && _viewportMax.Y > _viewportMin.Y)
         {
-            cb.SetScissorRect(new NFMWorld.Graphics.ScissorRect(
-                (int)_viewportMin.X,
-                (int)_viewportMin.Y,
-                (int)(_viewportMax.X - _viewportMin.X),
-                (int)(_viewportMax.Y - _viewportMin.Y)));
+            cb.SetScissorRect(
+                new NFMWorld.Graphics.ScissorRect(
+                    (int)_viewportMin.X,
+                    (int)_viewportMin.Y,
+                    (int)(_viewportMax.X - _viewportMin.X),
+                    (int)(_viewportMax.Y - _viewportMin.Y)
+                )
+            );
         }
         else
         {
             GameSparker.Game.SetFullScreenScissor(cb);
         }
-        
+
         // Render the 3D scene
         if (ActiveTab?.Scene != null && ActiveTab?.Stage != null && ActiveTab?.StageRenderer != null)
         {
@@ -64,7 +67,7 @@ public partial class StageEditorPhase
                 int topDownFadeFrom = requestedFade >= int.MaxValue
                     ? int.MaxValue
                     : Math.Max(10_000, (int)MathF.Ceiling(requestedFade));
-                
+
                 // Temporarily remove environment elements and suppress fog
                 ActiveTab?.StageRenderer.ground = null!;
                 ActiveTab?.StageRenderer.sky = null!;
@@ -72,10 +75,10 @@ public partial class StageEditorPhase
                 ActiveTab?.StageRenderer.clouds = null;
                 ActiveTab?.StageRenderer.mountains = null;
                 World.FadeFrom = Math.Max(oldFadeFrom, topDownFadeFrom);
-                
+
                 // Render with lighting preserved
                 ActiveTab?.Scene.Render(cb, alpha, false);
-                
+
                 // Restore environment elements
                 ActiveTab?.StageRenderer.ground = oldGround;
                 ActiveTab?.StageRenderer.sky = oldSky;
@@ -90,14 +93,14 @@ public partial class StageEditorPhase
                 ActiveTab?.Scene.Render(cb, alpha, false);
             }
         }
-        
+
         // Render wall meshes separately (editor-only visualization) - BEFORE restoring scissor state
         if (ActiveTab != null)
-        // Wall meshes are now part of the Scene (added in RecreateScene), no separate render needed
-        
-        // Highlights, gizmo and the placement ghost are drawn outside the viewport rect on purpose -
-        // matching the pre-migration order, which restored the scissor before them.
-        GameSparker.Game.SetFullScreenScissor(cb);
+            // Wall meshes are now part of the Scene (added in RecreateScene), no separate render needed
+
+            // Highlights, gizmo and the placement ghost are drawn outside the viewport rect on purpose -
+            // matching the pre-migration order, which restored the scissor before them.
+            GameSparker.Game.SetFullScreenScissor(cb);
 
         // Render selection highlight for all selected pieces, gizmo on primary
         RenderSelectionHighlights(cb, ActiveTab);
@@ -106,21 +109,28 @@ public partial class StageEditorPhase
         {
             var selectedPiece = ActiveTab.ScenePieces.GetValueOrDefault(ActiveTab.ActivePieceId);
             if (selectedPiece?.Obj != null)
-                Debug.RenderGizmo(cb, GameSparker.GraphicsDevice, ComputeSelectionCentroid(), activeCamera, ref _gizmoHovered, ref _gizmoDragging, new Vector2(_mouseX, _mouseY));
+                Debug.RenderGizmo(
+                    cb,
+                    GameSparker.GraphicsDevice,
+                    ComputeSelectionCentroid(),
+                    activeCamera,
+                    ref _gizmoHovered,
+                    ref _gizmoDragging,
+                    new Vector2(_mouseX, _mouseY)
+                );
         }
-        
+
         // Process pending preview thumbnails
-        while (_previewQueue.Count > 0) 
+        while (_previewQueue.Count > 0)
             ProcessOnePreviewThumbnail(cb);
-        
+
         // Render placement ghost if in placement mode and mouse is over viewport
         if (_pendingPlacementPartIndex >= 0 && _hasValidPlacementPos)
             RenderPlacementPreview(cb);
-        
+
         // Clear the depth buffer so ImGui always renders on top of the 3D scene.
         // Without this, geometry close to the camera writes near-zero depth values and
         // ImGui pixels (rendered later with DepthRead) fail the depth test at those positions.
         cb.Clear(NFMWorld.Graphics.ClearOptions.Depth, default, 1f, 0);
     }
-    
 }

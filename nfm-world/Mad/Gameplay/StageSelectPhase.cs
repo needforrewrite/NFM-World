@@ -34,8 +34,11 @@ public class StageSelectPhase : BaseStageRenderingPhase
 
             _stageCollections.Add(Path.GetFileName(dir));
         }
+
         if (_stageCollections.Count == 0)
-            throw new DirectoryNotFoundException("No playable stages were found in data/stages. Check that the game assets are installed.");
+            throw new DirectoryNotFoundException(
+                "No playable stages were found in data/stages. Check that the game assets are installed."
+            );
         // randomly select collection
         _selectedCollection = _stageCollections[new System.Random().Next(0, _stageCollections.Count)];
         LoadStagesInCollection(_selectedCollection);
@@ -65,6 +68,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
             var stageFilename = Path.GetFileName(entry).Replace(".txt", "");
             _stagesInCollection.Add(stageFilename);
         }
+
         if (_stagesInCollection.Count == 0)
             throw new DirectoryNotFoundException($"No playable stages were found in {dirPath}.");
     }
@@ -107,7 +111,16 @@ public class StageSelectPhase : BaseStageRenderingPhase
 
         G.SetFont(new Font(FontFamily.NotoSans, FontStyle.Bold, 48));
         G.SetColor(new Color(255, 255, 255));
-        G.DrawStringOutlinedAligned(CurrentStage.Backend.Name, 0, 60, GameSparker.Game.Window.Width, GameSparker.Game.Window.Height, new Color(0, 0, 0), 1f, TextHorizontalAlignment.Center);
+        G.DrawStringOutlinedAligned(
+            CurrentStage.Backend.Name,
+            0,
+            60,
+            GameSparker.Game.Window.Width,
+            GameSparker.Game.Window.Height,
+            new Color(0, 0, 0),
+            1f,
+            TextHorizontalAlignment.Center
+        );
     }
 
     public override void RenderImgui()
@@ -139,7 +152,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
                 {
                     ImGui.CloseCurrentPopup();
                 }
-                
+
 
                 ImGui.EndMenu();
             }
@@ -165,13 +178,15 @@ public class StageSelectPhase : BaseStageRenderingPhase
                     _openSearchPopup = false;
                     open = false;
                     ImGui.CloseCurrentPopup();
-                };
+                }
+
+                ;
 
                 ImGui.End();
             }
 
             _openSearchPopup = open;
-            if(!_openSearchPopup)
+            if (!_openSearchPopup)
             {
                 _searchQuery = "";
             }
@@ -180,7 +195,12 @@ public class StageSelectPhase : BaseStageRenderingPhase
 
     private bool HandleSearch()
     {
-        if (ImGui.InputText($"Search {_selectedCollection}", ref _searchQuery, 256, ImGuiInputTextFlags.EscapeClearsAll | ImGuiInputTextFlags.EnterReturnsTrue))
+        if (ImGui.InputText(
+                $"Search {_selectedCollection}",
+                ref _searchQuery,
+                256,
+                ImGuiInputTextFlags.EscapeClearsAll | ImGuiInputTextFlags.EnterReturnsTrue
+            ))
         {
             if (_autocompleteMatches.Length > 0)
             {
@@ -202,21 +222,31 @@ public class StageSelectPhase : BaseStageRenderingPhase
         }
         else
         {
-            _autocompleteMatches = _stagesInCollection.ToList().FindAll(x => x.ToLower().StartsWith(_searchQuery.ToLower())).ToArray();
+            _autocompleteMatches = _stagesInCollection.ToList().FindAll(x => x.ToLower().StartsWith(_searchQuery.ToLower()))
+                .ToArray();
         }
+
         string[] _autocompleteMatchedNames = _autocompleteMatches.ToArray();
 
 
         if (_autocompleteMatches.Length > 0)
         {
             _inAutocomplete = true;
-            if(ImGui.ListBox("##AutocompleteEntries", ref _autocompleteIndex, _autocompleteMatchedNames, _autocompleteMatches.Length, _autocompleteMatches.Length))
+            if (ImGui.ListBox(
+                    "##AutocompleteEntries",
+                    ref _autocompleteIndex,
+                    _autocompleteMatchedNames,
+                    _autocompleteMatches.Length,
+                    _autocompleteMatches.Length
+                ))
             {
                 _selectedStageIndex = _stagesInCollection.ToList().FindIndex(c => c == _autocompleteMatches[_autocompleteIndex]);
                 LoadStageInCollection();
                 _searchQuery = "";
                 return true;
-            };
+            }
+
+            ;
         }
 
         return false;

@@ -94,7 +94,8 @@ public readonly partial record struct MouseEvent(
     [property: PluginVisible] bool MetaKey,
     [property: PluginVisible] bool ShiftKey,
     [property: PluginVisible] Vector2 RelativePosition,
-    [property: PluginVisible] MouseEventDispatch? Dispatch = null)
+    [property: PluginVisible] MouseEventDispatch? Dispatch = null
+)
 {
     /// <summary>
     /// Stops this event bubbling to ancestor nodes. Inside a handler, a press that the

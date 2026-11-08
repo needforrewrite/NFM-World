@@ -18,7 +18,7 @@ public static partial class FrameTrace
     {
         stringBuilder.AppendLine(message);
     }
-    
+
     public static void AddMessage(ref AppendInterpolatedStringHandler message)
     {
         stringBuilder.AppendLine();
@@ -52,11 +52,14 @@ public ref struct AppendInterpolatedStringHandler(int literalLength, int formatt
 
     public void AppendFormatted(ReadOnlySpan<char> value) => handler.AppendFormatted(value);
 
-    public void AppendFormatted(ReadOnlySpan<char> value, int alignment = 0, string? format = null) => handler.AppendFormatted(value, alignment, format);
+    public void AppendFormatted(ReadOnlySpan<char> value, int alignment = 0, string? format = null)
+        => handler.AppendFormatted(value, alignment, format);
 
     public void AppendFormatted(string? value) => handler.AppendFormatted(value);
 
-    public void AppendFormatted(string? value, int alignment = 0, string? format = null) => handler.AppendFormatted(value, alignment, format);
+    public void AppendFormatted(string? value, int alignment = 0, string? format = null)
+        => handler.AppendFormatted(value, alignment, format);
 
-    public void AppendFormatted(object? value, int alignment = 0, string? format = null) => handler.AppendFormatted(value, alignment, format);
+    public void AppendFormatted(object? value, int alignment = 0, string? format = null)
+        => handler.AppendFormatted(value, alignment, format);
 }

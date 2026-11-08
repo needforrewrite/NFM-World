@@ -32,11 +32,14 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
     private static readonly DiagnosticDescriptor Rule = new(
         id: DiagnosticId,
         title: "Client-only member accessed outside NFMWorld or RunIfOnClient",
-        messageFormat: "'{0}' is marked [ClientOnly] and can only be accessed from the NFMWorld assembly or via ClientServer.RunIfOnClient",
+        messageFormat:
+        "'{0}' is marked [ClientOnly] and can only be accessed from the NFMWorld assembly or via ClientServer.RunIfOnClient",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        description: "Members annotated with [ClientOnly] (or belonging to a [ClientOnly] type) must only be accessed from within the NFMWorld project or passed as a delegate to ClientServer.RunIfOnClient.");
+        description:
+        "Members annotated with [ClientOnly] (or belonging to a [ClientOnly] type) must only be accessed from within the NFMWorld project or passed as a delegate to ClientServer.RunIfOnClient."
+    );
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Rule);
 
@@ -65,7 +68,8 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
     private static bool ShouldReport(
         ISymbol symbol,
         SyntaxNode node,
-        SyntaxNodeAnalysisContext context)
+        SyntaxNodeAnalysisContext context
+    )
     {
         if (!IsClientOnly(symbol))
             return false;
@@ -362,7 +366,8 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
     private static bool IsInsideClientOnlyChain(
         SyntaxNode node,
         SemanticModel semanticModel,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         SyntaxNode? current = node.Parent;
         while (current is not null)
@@ -395,7 +400,8 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
     private static ISymbol? GetMemberSymbol(
         SyntaxNode node,
         SemanticModel semanticModel,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         switch (node)
         {
@@ -437,7 +443,8 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
     private static bool IsInsideRunIfOnClientArgument(
         SyntaxNode node,
         SemanticModel semanticModel,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         SyntaxNode? current = node.Parent;
 
@@ -473,7 +480,8 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
     private static bool IsRunIfOnClientInvocation(
         InvocationExpressionSyntax invocation,
         SemanticModel semanticModel,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         if (semanticModel.GetSymbolInfo(invocation, cancellationToken).Symbol
             is not IMethodSymbol methodSymbol)
@@ -509,6 +517,7 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
                 {
                     list.Add(ns.ToDisplayString());
                 }
+
                 list.Add(t.Name);
             }
         }

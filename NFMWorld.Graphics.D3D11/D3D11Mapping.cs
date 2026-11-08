@@ -10,6 +10,7 @@
 // Two of the tables are not one-to-one and are worth reading before trusting any single line:
 // D3D11_COMPARISON_FUNC runs in the opposite numeric order to the abstraction's, and the stencil
 // ops' "saturating" and "wrapping" names are swapped relative to GL's.
+
 using NFMWorld.Shaders;
 using TerraFX.Interop.DirectX;
 
@@ -208,10 +209,10 @@ internal static class D3D11Mapping
     };
 
     public static byte ToWriteMask(this ColorWriteMask mask) => (byte)(
-        (mask.HasFlag(ColorWriteMask.Red) ? D3D11_COLOR_WRITE_ENABLE.D3D11_COLOR_WRITE_ENABLE_RED : 0) |
-        (mask.HasFlag(ColorWriteMask.Green) ? D3D11_COLOR_WRITE_ENABLE.D3D11_COLOR_WRITE_ENABLE_GREEN : 0) |
-        (mask.HasFlag(ColorWriteMask.Blue) ? D3D11_COLOR_WRITE_ENABLE.D3D11_COLOR_WRITE_ENABLE_BLUE : 0) |
-        (mask.HasFlag(ColorWriteMask.Alpha) ? D3D11_COLOR_WRITE_ENABLE.D3D11_COLOR_WRITE_ENABLE_ALPHA : 0));
+        (mask.HasFlag(ColorWriteMask.Red) ? D3D11_COLOR_WRITE_ENABLE.D3D11_COLOR_WRITE_ENABLE_RED : 0)
+        | (mask.HasFlag(ColorWriteMask.Green) ? D3D11_COLOR_WRITE_ENABLE.D3D11_COLOR_WRITE_ENABLE_GREEN : 0)
+        | (mask.HasFlag(ColorWriteMask.Blue) ? D3D11_COLOR_WRITE_ENABLE.D3D11_COLOR_WRITE_ENABLE_BLUE : 0)
+        | (mask.HasFlag(ColorWriteMask.Alpha) ? D3D11_COLOR_WRITE_ENABLE.D3D11_COLOR_WRITE_ENABLE_ALPHA : 0));
 
     /// <summary>
     /// The sampler's filter.

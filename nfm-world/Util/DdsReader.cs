@@ -89,7 +89,9 @@ public static class DdsReader
             FourCcDxt1 => TextureFormat.Dxt1,
             FourCcDxt3 => TextureFormat.Dxt3,
             FourCcDxt5 => TextureFormat.Dxt5,
-            _ => throw new NotSupportedException($"Unsupported DDS FourCC 0x{formatFourCc:X8} (only DXT1/DXT3/DXT5 are supported)."),
+            _ => throw new NotSupportedException(
+                $"Unsupported DDS FourCC 0x{formatFourCc:X8} (only DXT1/DXT3/DXT5 are supported)."
+            ),
         };
 
         var levelSize = CalculateLevelSize(width, height, format);

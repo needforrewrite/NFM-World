@@ -22,15 +22,16 @@ public class fix64Converter : JsonConverter<fix64>
             {
                 span = reader.ValueSpan;
             }
-            
+
             var str = Encoding.UTF8.GetString(span);
             if (fix64.TryParse(str, CultureInfo.InvariantCulture, out var result))
             {
                 return result;
             }
-            
+
             throw new JsonException($"Failed to parse fix64 value: {str}");
         }
+
         throw new JsonException("Invalid JSON value for fix64.");
     }
 

@@ -31,7 +31,8 @@ public sealed class SentryUploader : IDisposable
             {
                 SingleWriter = false,
                 SingleReader = true
-            });
+            }
+        );
         _cts = new CancellationTokenSource();
 
         // The browser cannot start threads at all (Thread.Start throws), and there would be nothing
@@ -64,7 +65,7 @@ public sealed class SentryUploader : IDisposable
             if (_debounceState.TryGetValue(item.ItemType, out var existing))
             {
                 _debounceState.TryUpdate(item.ItemType, (now, item), existing);
-                
+
                 if (now - existing.Time < _options.DebounceWindow)
                 {
                     if (_options.Debug)
@@ -222,7 +223,11 @@ public sealed class SentryUploader : IDisposable
             }
 
             var envelopeBytes = EnvelopeSerializer.Serialize(
-                batch, dsn, DateTimeOffset.UtcNow, _options.Release);
+                batch,
+                dsn,
+                DateTimeOffset.UtcNow,
+                _options.Release
+            );
 
             var error = _transport.SendEnvelopeAsync(envelopeBytes, dsn, ct)
                 .GetAwaiter().GetResult();

@@ -26,8 +26,8 @@ public class RadpackLimitsTests
         payload[3] = (byte)RadpackType.Car;
         compressed.CopyTo(payload, 4);
 
-        Assert.ThrowsExactly<InvalidDataException>(
-            () => RadpackSerializer.Deserialize(payload, maxDecompressedBytes: 1024 * 1024));
+        Assert.ThrowsExactly<InvalidDataException>(() => RadpackSerializer.Deserialize(payload, maxDecompressedBytes: 1024 * 1024)
+        );
     }
 
     [TestMethod]
@@ -35,7 +35,6 @@ public class RadpackLimitsTests
     {
         var payload = new byte[] { (byte)'R', (byte)'A', (byte)'D', (byte)RadpackType.Max + 1 };
 
-        Assert.ThrowsExactly<InvalidDataException>(
-            () => RadpackSerializer.Deserialize(payload, maxDecompressedBytes: 1024));
+        Assert.ThrowsExactly<InvalidDataException>(() => RadpackSerializer.Deserialize(payload, maxDecompressedBytes: 1024));
     }
 }

@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="11.0.0-preview.3.26207.106" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="11.0.0-preview.3.26207.106"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="11.0.0-preview.3.26207.106">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -17,7 +17,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
+        <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj"/>
     </ItemGroup>
 
     <!-- Pages were being picked up as plain Content and served verbatim as static files
@@ -27,8 +27,8 @@
         <EnableDefaultRazorComponentItems>true</EnableDefaultRazorComponentItems>
     </PropertyGroup>
     <ItemGroup>
-        <Content Remove="Pages\**\*.cshtml" />
-        <RazorGenerate Include="Pages\**\*.cshtml" />
+        <Content Remove="Pages\**\*.cshtml"/>
+        <RazorGenerate Include="Pages\**\*.cshtml"/>
     </ItemGroup>
 
 </Project>

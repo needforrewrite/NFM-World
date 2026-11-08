@@ -45,11 +45,15 @@ public class GroundPolys : Transform, IRenderable, IImmediateRenderElement, IDis
 
         var vertexBytes = MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(data));
         _vertexBuffer = graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length), vertexBytes);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length),
+            vertexBytes
+        );
 
         var indexBytes = MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(indices));
         _indexBuffer = graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indexBytes.Length, IndexFormat.UInt32), indexBytes);
+            new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indexBytes.Length, IndexFormat.UInt32),
+            indexBytes
+        );
 
         _triangleCount = indices.Count / 3;
         _vertexCount = data.Count;

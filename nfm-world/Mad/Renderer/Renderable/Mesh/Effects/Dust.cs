@@ -26,7 +26,9 @@ public class Dust : IDisposable, IImmediateRenderElement
     private PositionColorVertex[] _verts = new PositionColorVertex[20 * 8];
     private int _vertexCount;
     private ushort[] _indices = new ushort[20 * 8 * 3];
+
     private int _indexCount;
+
     // Upload happens in Render() rather than GameTick() - see Sparks.cs's identical pattern for why.
     private bool _dirty;
     private readonly IBuffer _vertexBuffer;
@@ -40,27 +42,45 @@ public class Dust : IDisposable, IImmediateRenderElement
         var maxVertexBytes = _verts.Length * PositionColorVertex.Stride;
         var maxIndexBytes = _indices.Length * sizeof(ushort);
         _vertexBuffer = graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxVertexBytes), new byte[maxVertexBytes]);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxVertexBytes),
+            new byte[maxVertexBytes]
+        );
         _indexBuffer = graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Index, BufferUsage.Dynamic, maxIndexBytes, IndexFormat.UInt16), new byte[maxIndexBytes]);
+            new BufferDesc(BufferKind.Index, BufferUsage.Dynamic, maxIndexBytes, IndexFormat.UInt16),
+            new byte[maxIndexBytes]
+        );
     }
 
-    public void AddDust(int wheelidx, float wheelx, float wheely, float wheelz, int scx, int scz, float simag, int tilt, bool onRoof, int wheelGround)
+    public void AddDust(
+        int wheelidx,
+        float wheelx,
+        float wheely,
+        float wheelz,
+        int scx,
+        int scz,
+        float simag,
+        int tilt,
+        bool onRoof,
+        int wheelGround
+    )
     {
         var noDust = false;
         if (tilt > 5 && wheelidx is 0 or 2)
         {
             noDust = true;
         }
+
         if (tilt < -5 && wheelidx is 1 or 3)
         {
             noDust = true;
         }
-        var dist = (float) ((Math.Sqrt(scx * scx + scz * scz) - 40.0) / 160.0);
+
+        var dist = (float)((Math.Sqrt(scx * scx + scz * scz) - 40.0) / 160.0);
         if (dist > 1.0F)
         {
             dist = 1.0F;
         }
+
         if (dist > 0.2 && !noDust)
         {
             _ust++;
@@ -68,6 +88,7 @@ public class Dust : IDisposable, IImmediateRenderElement
             {
                 _ust = 0;
             }
+
             if (!onRoof)
             {
                 var rand = URandom.Single();
@@ -81,10 +102,12 @@ public class Dust : IDisposable, IImmediateRenderElement
                 Sz[_ust] = ((wheelz + ((float)_car.Position.Z + scz)) / 2.0F);
                 Sy[_ust] = wheely;
             }
+
             if (Sy[_ust] > 250)
             {
                 Sy[_ust] = 250;
             }
+
             Osmag[_ust] = simag * dist;
             Scx[_ust] = scx;
             Scz[_ust] = scz;
@@ -119,16 +142,18 @@ public class Dust : IDisposable, IImmediateRenderElement
             var trackersColor = false;
             for (var i = 0; i < 3; i++)
             {
-                baseColor[i] = (int) (255.0F + 255.0F * (World.Snap[i] / 100.0F));
+                baseColor[i] = (int)(255.0F + 255.0F * (World.Snap[i] / 100.0F));
                 if (baseColor[i] > 255)
                 {
                     baseColor[i] = 255;
                 }
+
                 if (baseColor[i] < 0)
                 {
                     baseColor[i] = 0;
                 }
             }
+
             if (stage != null)
             {
                 var sx = (fix64)Sx[dust];
@@ -139,8 +164,7 @@ public class Dust : IDisposable, IImmediateRenderElement
                     {
                         var x = boxRoad.GameObjectPosition.X + boxRoad.TrackersPosition.X;
                         var z = boxRoad.GameObjectPosition.Z + boxRoad.TrackersPosition.Z;
-                        if (fix64.Abs(sx - x) < boxRoad.Radius.X &&
-                            fix64.Abs(sz - z) < boxRoad.Radius.Z)
+                        if (fix64.Abs(sx - x) < boxRoad.Radius.X && fix64.Abs(sz - z) < boxRoad.Radius.Z)
                         {
                             _sbln[dust] = tracker.SurfaceType switch
                             {
@@ -170,17 +194,20 @@ public class Dust : IDisposable, IImmediateRenderElement
                     _srgb[dust, i215] = (World.GroundColor.Snap(World.Snap)[i215] + baseColor[i215]) / 2;
                 }
             }
+
             var f = 0.1f + URandom.Single();
             if (f > 1.0F)
             {
                 f = 1.0F;
             }
+
             Scx[dust] = (Scx[dust] * f);
             Scz[dust] = (Scz[dust] * f);
             for (var i216 = 0; i216 < 8; i216++)
             {
                 _smag[dust, i216] = Osmag[dust] * URandom.Single() * 50.0F;
             }
+
             for (var vert = 0; vert < 8; vert++)
             {
                 var lastVert = vert - 1;
@@ -188,13 +215,16 @@ public class Dust : IDisposable, IImmediateRenderElement
                 {
                     lastVert = 7;
                 }
+
                 var nextVert = vert + 1;
                 if (nextVert == 8)
                 {
                     nextVert = 0;
                 }
+
                 _smag[dust, vert] = ((_smag[dust, lastVert] + _smag[dust, nextVert]) / 2.0F + _smag[dust, vert]) / 2.0F;
             }
+
             _smag[dust, 6] = _smag[dust, 7];
         }
 
@@ -215,67 +245,91 @@ public class Dust : IDisposable, IImmediateRenderElement
 
         // ais[0] = Xs((int) (i220 + _smag[i, 0] * 0.9238F * 1.5F), i221);
         // is223[0] = Ys((int) (i222 + _smag[i, 0] * 0.3826F * 1.5F), i221);
-        _verts[_vertexCount++] = (new PositionColorVertex(new Vector3(
-            Sx[dust] + _smag[dust, 0] * 0.9238F * 1.5F,
-            Sy[dust] - _smag[dust, 7],
-            Sz[dust] + _smag[dust, 0] * 0.3826F * 1.5F
-        ), vertexColor));
+        _verts[_vertexCount++] = (new PositionColorVertex(
+            new Vector3(
+                Sx[dust] + _smag[dust, 0] * 0.9238F * 1.5F,
+                Sy[dust] - _smag[dust, 7],
+                Sz[dust] + _smag[dust, 0] * 0.3826F * 1.5F
+            ),
+            vertexColor
+        ));
 
         // ais[1] = Xs((int) (i220 + _smag[i, 1] * 0.9238F * 1.5F), i221);
         // is223[1] = Ys((int) (i222 - _smag[i, 1] * 0.3826F * 1.5F), i221);
-        _verts[_vertexCount++] = (new PositionColorVertex(new Vector3(
-            Sx[dust] + _smag[dust, 1] * 0.9238F * 1.5F,
-            Sy[dust] - _smag[dust, 7],
-            Sz[dust] - _smag[dust, 1] * 0.3826F * 1.5F
-        ), vertexColor));
+        _verts[_vertexCount++] = (new PositionColorVertex(
+            new Vector3(
+                Sx[dust] + _smag[dust, 1] * 0.9238F * 1.5F,
+                Sy[dust] - _smag[dust, 7],
+                Sz[dust] - _smag[dust, 1] * 0.3826F * 1.5F
+            ),
+            vertexColor
+        ));
 
         // ais[2] = Xs((int) (i220 + _smag[i, 2] * 0.3826F), i221);
         // is223[2] = Ys((int) (i222 - _smag[i, 2] * 0.9238F), i221);
-        _verts[_vertexCount++] = (new PositionColorVertex(new Vector3(
-            Sx[dust] + _smag[dust, 2] * 0.3826F,
-            Sy[dust] - _smag[dust, 7],
-            Sz[dust] - _smag[dust, 2] * 0.9238F
-        ), vertexColor));
+        _verts[_vertexCount++] = (new PositionColorVertex(
+            new Vector3(
+                Sx[dust] + _smag[dust, 2] * 0.3826F,
+                Sy[dust] - _smag[dust, 7],
+                Sz[dust] - _smag[dust, 2] * 0.9238F
+            ),
+            vertexColor
+        ));
 
         // ais[3] = Xs((int) (i220 - _smag[i, 3] * 0.3826F), i221);
         // is223[3] = Ys((int) (i222 - _smag[i, 3] * 0.9238F), i221);
-        _verts[_vertexCount++] = (new PositionColorVertex(new Vector3(
-            Sx[dust] - _smag[dust, 3] * 0.3826F,
-            Sy[dust] - _smag[dust, 7],
-            Sz[dust] - _smag[dust, 3] * 0.9238F
-        ), vertexColor));
+        _verts[_vertexCount++] = (new PositionColorVertex(
+            new Vector3(
+                Sx[dust] - _smag[dust, 3] * 0.3826F,
+                Sy[dust] - _smag[dust, 7],
+                Sz[dust] - _smag[dust, 3] * 0.9238F
+            ),
+            vertexColor
+        ));
 
         // ais[4] = Xs((int) (i220 - _smag[i, 4] * 0.9238F * 1.5F), i221);
         // is223[4] = Ys((int) (i222 - _smag[i, 4] * 0.3826F * 1.5F), i221);
-        _verts[_vertexCount++] = (new PositionColorVertex(new Vector3(
-            Sx[dust] - _smag[dust, 4] * 0.9238F * 1.5F,
-            Sy[dust] - _smag[dust, 7],
-            Sz[dust] - _smag[dust, 4] * 0.3826F * 1.5F
-        ), vertexColor));
+        _verts[_vertexCount++] = (new PositionColorVertex(
+            new Vector3(
+                Sx[dust] - _smag[dust, 4] * 0.9238F * 1.5F,
+                Sy[dust] - _smag[dust, 7],
+                Sz[dust] - _smag[dust, 4] * 0.3826F * 1.5F
+            ),
+            vertexColor
+        ));
 
         // ais[5] = Xs((int) (i220 - _smag[i, 5] * 0.9238F * 1.5F), i221);
         // is223[5] = Ys((int) (i222 + _smag[i, 5] * 0.3826F * 1.5F), i221);
-        _verts[_vertexCount++] = (new PositionColorVertex(new Vector3(
-            Sx[dust] - _smag[dust, 5] * 0.9238F * 1.5F,
-            Sy[dust] - _smag[dust, 7],
-            Sz[dust] + _smag[dust, 5] * 0.3826F * 1.5F
-        ), vertexColor));
+        _verts[_vertexCount++] = (new PositionColorVertex(
+            new Vector3(
+                Sx[dust] - _smag[dust, 5] * 0.9238F * 1.5F,
+                Sy[dust] - _smag[dust, 7],
+                Sz[dust] + _smag[dust, 5] * 0.3826F * 1.5F
+            ),
+            vertexColor
+        ));
 
         // ais[6] = Xs((int) (i220 - _smag[i, 6] * 0.3826F * 1.7F), i221);
         // is223[6] = Ys((int) (i222 + _smag[i, 6] * 0.9238F), i221);
-        _verts[_vertexCount++] = (new PositionColorVertex(new Vector3(
-            Sx[dust] - _smag[dust, 6] * 0.3826F * 1.7F,
-            Sy[dust] - _smag[dust, 7],
-            Sz[dust] + _smag[dust, 6] * 0.9238F
-        ), vertexColor));
+        _verts[_vertexCount++] = (new PositionColorVertex(
+            new Vector3(
+                Sx[dust] - _smag[dust, 6] * 0.3826F * 1.7F,
+                Sy[dust] - _smag[dust, 7],
+                Sz[dust] + _smag[dust, 6] * 0.9238F
+            ),
+            vertexColor
+        ));
 
         // ais[7] = Xs((int) (i220 + _smag[i, 7] * 0.3826F * 1.7F), i221);
         // is223[7] = Ys((int) (i222 + _smag[i, 7] * 0.9238F), i221);
-        _verts[_vertexCount++] = (new PositionColorVertex(new Vector3(
-            Sx[dust] + _smag[dust, 7] * 0.3826F * 1.7F,
-            Sy[dust] - _smag[dust, 7],
-            Sz[dust] + _smag[dust, 7] * 0.9238F
-        ), vertexColor));
+        _verts[_vertexCount++] = (new PositionColorVertex(
+            new Vector3(
+                Sx[dust] + _smag[dust, 7] * 0.3826F * 1.7F,
+                Sy[dust] - _smag[dust, 7],
+                Sz[dust] + _smag[dust, 7] * 0.9238F
+            ),
+            vertexColor
+        ));
 
         // make indices of polygon
         _indices[_indexCount++] = (ushort)(baseIndex + 0);
@@ -303,6 +357,7 @@ public class Dust : IDisposable, IImmediateRenderElement
         {
             _smag[dust, vert] += 5.0F + URandom.Single() * 15.0F;
         }
+
         _smag[dust, 7] = _smag[dust, 6];
 
         if (Stg[dust] == 7)

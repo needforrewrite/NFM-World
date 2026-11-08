@@ -1,5 +1,4 @@
-﻿
-namespace NFMWorld;
+﻿namespace NFMWorld;
 
 public class TimeStep(float targetDeltaTime)
 {

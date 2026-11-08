@@ -30,7 +30,9 @@ public class Ground : Transform, IRenderable, IImmediateRenderElement, IDisposab
 
         var vertexBytes = MemoryMarshal.AsBytes(data);
         _vertexBuffer = graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length), vertexBytes);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length),
+            vertexBytes
+        );
         _triangleCount = data.Length / 3;
     }
 

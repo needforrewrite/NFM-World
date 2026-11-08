@@ -1,5 +1,4 @@
 extern alias SDL3New;
-
 using NFMWorld.DriverInterface;
 using SDL3New::SDL3;
 

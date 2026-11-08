@@ -53,8 +53,14 @@ public class BackendGamemodeContext : IGamemodeContext
     {
         public static readonly NoOpClientCallbacks Instance = new();
 
-        public void ResetCheckpointGlow() { }
-        public void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish) { }
+        public void ResetCheckpointGlow()
+        {
+        }
+
+        public void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish)
+        {
+        }
+
         public IClientCarCallbacks GetClientCarCallbacks(BackendCar car) => NoOpClientCarCallbacks.Instance;
     }
 

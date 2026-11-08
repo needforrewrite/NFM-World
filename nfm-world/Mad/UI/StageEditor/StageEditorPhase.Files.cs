@@ -18,7 +18,7 @@ public partial class StageEditorPhase
         tab.StageFileName = ConvertStageNameToFilename(stageName);
         tab.Stage = new EditorStage();
         tab.StageRenderer = new ClientStageRenderer(tab.Stage);
-        
+
         // Set default values for properties in the tab
         tab.SkyColor = new Color3(135, 206, 235);
         tab.FogColor = new Color3(135, 206, 235);
@@ -36,7 +36,7 @@ public partial class StageEditorPhase
         tab.SnapB = 0;
         tab.SnapC = 0;
         tab.FadeFrom = 10000;
-        
+
         // Also update World for immediate effect
         World.Sky = tab.SkyColor;
         World.Fog = tab.FogColor;
@@ -48,10 +48,10 @@ public partial class StageEditorPhase
         World.DrawClouds = false;
         World.DrawMountains = false;
         World.Snap = new Color3(0, 0, 0);
-        
+
         _tabs.Add(tab);
         _activeTabIndex = _tabs.Count - 1;
-        
+
         // Place start piece at origin if specified
         if (!string.IsNullOrEmpty(startPartName))
         {
@@ -73,19 +73,19 @@ public partial class StageEditorPhase
                 Logging.Warning($"Start piece '{startPartName}' could not be loaded (GetStagePart returned null Rad).");
             }
         }
-        
+
         RebuildClientRenderer();
         SaveStage(); // Automatically save the new stage
-        
+
         Logging.Info($"Created new stage: {stageName} (filename: {tab.StageFileName})");
     }
-    
+
     private string ConvertStageNameToFilename(string stageName)
     {
         // Convert to lowercase and replace spaces with underscores
         return stageName.ToLower().Replace(' ', '_');
     }
-    
+
     private void SaveStage()
     {
         if (ActiveTab == null || ActiveTab.Stage == null || string.IsNullOrWhiteSpace(ActiveTab.StageFileName))
@@ -93,47 +93,53 @@ public partial class StageEditorPhase
             Logging.Info("Cannot save: no stage loaded");
             return;
         }
-        
+
         // Ensure the user stages directory exists
         var userStagesDir = "data/stages/user";
         Directory.CreateDirectory(userStagesDir);
-        
+
         var filePath = $"{userStagesDir}/{ActiveTab.StageFileName}.txt";
-        
+
         try
         {
             using var writer = new StreamWriter(filePath);
-            
+
             // Write stage parameters from active tab's stored values
             writer.WriteLine($"name({ActiveTab.TabName})");
             writer.WriteLine($"sky({(int)ActiveTab.SkyColor.R},{(int)ActiveTab.SkyColor.G},{(int)ActiveTab.SkyColor.B})");
             writer.WriteLine($"fog({(int)ActiveTab.FogColor.R},{(int)ActiveTab.FogColor.G},{(int)ActiveTab.FogColor.B})");
-            writer.WriteLine($"ground({(int)ActiveTab.GroundColor.R},{(int)ActiveTab.GroundColor.G},{(int)ActiveTab.GroundColor.B})");
-            
+            writer.WriteLine(
+                $"ground({(int)ActiveTab.GroundColor.R},{(int)ActiveTab.GroundColor.G},{(int)ActiveTab.GroundColor.B})"
+            );
+
             // Write polys parameter
             if (ActiveTab.PolysEnabled)
             {
-                writer.WriteLine($"polys({(int)ActiveTab.PolysColor.R},{(int)ActiveTab.PolysColor.G},{(int)ActiveTab.PolysColor.B})");
+                writer.WriteLine(
+                    $"polys({(int)ActiveTab.PolysColor.R},{(int)ActiveTab.PolysColor.G},{(int)ActiveTab.PolysColor.B})"
+                );
             }
             else
             {
                 writer.WriteLine("polys(false)");
             }
-            
+
             // Write snap parameter
             writer.WriteLine($"snap({ActiveTab.SnapA},{ActiveTab.SnapB},{ActiveTab.SnapC})");
-            
+
             // Write clouds parameter
             if (ActiveTab.CloudsEnabled)
             {
-                writer.WriteLine($"clouds({(int)ActiveTab.CloudsColor.R},{(int)ActiveTab.CloudsColor.G},{(int)ActiveTab.CloudsColor.B},{ActiveTab.CloudsParam4},{ActiveTab.CloudsHeight})");
+                writer.WriteLine(
+                    $"clouds({(int)ActiveTab.CloudsColor.R},{(int)ActiveTab.CloudsColor.G},{(int)ActiveTab.CloudsColor.B},{ActiveTab.CloudsParam4},{ActiveTab.CloudsHeight})"
+                );
                 writer.WriteLine($"cloudcoverage({ActiveTab.CloudCoverage})");
             }
             else
             {
                 writer.WriteLine("clouds(false)");
             }
-            
+
             // Write mountains parameter
             if (ActiveTab.MountainsEnabled)
             {
@@ -143,9 +149,9 @@ public partial class StageEditorPhase
             {
                 writer.WriteLine("mountains(false)");
             }
-            
+
             writer.WriteLine($"fadefrom({ActiveTab.FadeFrom})");
-            
+
             // Write unknown parameters
             foreach (var param in ActiveTab.UnknownParameters)
             {
@@ -157,9 +163,9 @@ public partial class StageEditorPhase
             {
                 writer.WriteLine(directive);
             }
-            
+
             writer.WriteLine();
-            
+
             // ── Build piece lists ──────────────────────────────────────────────────
             var allNonWall = ActiveTab.ScenePieces
                 .Where(p => !p.PiecePlacement.IsWall)
@@ -169,7 +175,7 @@ public partial class StageEditorPhase
             int ungroupedSlotSave = ActiveTab.UngroupedOrderIndex >= 0
                 ? Math.Clamp(ActiveTab.UngroupedOrderIndex, 0, ActiveTab.HierarchyGroups.Count)
                 : ActiveTab.HierarchyGroups.Count; // default: after all groups
-            
+
             // Local helper: serialise one piece as set/chk/fix
             void WritePiece(StagePieceInstance piece)
             {
@@ -192,7 +198,7 @@ public partial class StageEditorPhase
                     pieceId = piece.Name;
                 }
                 int yCoord = (int)pos.Y;
-                int rotX   = (int)rot.Xz.Degrees;
+                int rotX = (int)rot.Xz.Degrees;
                 if (piece.PiecePlacement.Type == PiecePlacementType.FixHoop)
                 {
                     writer.WriteLine($"fix({pieceId},{(int)pos.X},{(int)pos.Z},{yCoord},{rotX})");
@@ -201,7 +207,11 @@ public partial class StageEditorPhase
                 {
                     bool isAir = piece.Name.Contains("nfmm/aircheckpoint");
                     if (yCoord == 250) writer.WriteLine($"chk({pieceId},{(int)pos.X},{(int)pos.Z},{rotX})");
-                    else { int fileY = isAir ? yCoord : 250 - yCoord; writer.WriteLine($"chk({pieceId},{(int)pos.X},{(int)pos.Z},{rotX},{fileY})"); }
+                    else
+                    {
+                        int fileY = isAir ? yCoord : 250 - yCoord;
+                        writer.WriteLine($"chk({pieceId},{(int)pos.X},{(int)pos.Z},{rotX},{fileY})");
+                    }
                 }
                 else
                 {
@@ -209,7 +219,7 @@ public partial class StageEditorPhase
                     else writer.WriteLine($"set({pieceId},{(int)pos.X},{(int)pos.Z},{rotX},{250 - yCoord})");
                 }
             }
-            
+
             // ── Write pieces in visual order ────────────────────────────────────────
             // New format: each group is preceded by  #editor_group(Name)
             // and its pieces appear immediately below.  Ungrouped pieces appear at
@@ -222,6 +232,7 @@ public partial class StageEditorPhase
                         WritePiece(piece);
                     writer.WriteLine();
                 }
+
                 if (slot < ActiveTab.HierarchyGroups.Count)
                 {
                     var group = ActiveTab.HierarchyGroups[slot];
@@ -234,7 +245,7 @@ public partial class StageEditorPhase
                     writer.WriteLine();
                 }
             }
-            
+
             // ── Stage walls ─────────────────────────────────────────────────────────
             if (ActiveTab.StageWalls.Count > 0)
             {
@@ -242,21 +253,22 @@ public partial class StageEditorPhase
                 {
                     string command = wall.Direction switch
                     {
-                        WallDirection.Right  => "maxr",
-                        WallDirection.Left   => "maxl",
-                        WallDirection.Top    => "maxt",
+                        WallDirection.Right => "maxr",
+                        WallDirection.Left => "maxl",
+                        WallDirection.Top => "maxt",
                         WallDirection.Bottom => "maxb",
-                        _                              => "maxr"
+                        _ => "maxr"
                     };
                     writer.WriteLine($"{command}({wall.Count},{wall.Position},{wall.Offset})");
                 }
+
                 writer.WriteLine();
             }
-            
+
             // ── Editor metadata (non-default ungrouped order) ────────────────────────
             if (ActiveTab.UngroupedOrderIndex >= 0)
                 writer.WriteLine($"#editor_ungrouped_order({ActiveTab.UngroupedOrderIndex})");
-            
+
             Logging.Info($"Stage saved to: {filePath}");
             ActiveTab.HasUnsavedChanges = false;
         }
@@ -266,7 +278,7 @@ public partial class StageEditorPhase
             Logging.Error($"Error saving stage: {ex.Message}");
         }
     }
-    
+
     /// <summary>
     /// Renders the stage top-down into an off-screen target, keys the background out on the CPU and
     /// writes a PNG next to the stage file. Takes the caller's command buffer because binding a
@@ -297,10 +309,18 @@ public partial class StageEditorPhase
             maxZ = Math.Max(maxZ, z + r);
         }
 
-        if (minX > maxX) { minX = -1000; maxX = 1000; minZ = -1000; maxZ = 1000; }
+        if (minX > maxX)
+        {
+            minX = -1000;
+            maxX = 1000;
+            minZ = -1000;
+            maxZ = 1000;
+        }
 
-        minX -= _exportPadding; maxX += _exportPadding;
-        minZ -= _exportPadding; maxZ += _exportPadding;
+        minX -= _exportPadding;
+        maxX += _exportPadding;
+        minZ -= _exportPadding;
+        maxZ += _exportPadding;
 
         float stageWidth = maxX - minX;
         float stageDepth = maxZ - minZ;
@@ -309,7 +329,8 @@ public partial class StageEditorPhase
 
         // Create export render target
         var rt = _graphicsDevice.CreateRenderTarget(
-            new NFMWorld.Graphics.RenderTargetDesc(_exportWidth, _exportHeight, NFMWorld.Graphics.TextureFormat.Rgba8));
+            new NFMWorld.Graphics.RenderTargetDesc(_exportWidth, _exportHeight, NFMWorld.Graphics.TextureFormat.Rgba8)
+        );
 
         try
         {
@@ -320,7 +341,8 @@ public partial class StageEditorPhase
             // clear matches what the pre-migration export did before Scene.Render's own clear.
             cb.Clear(
                 NFMWorld.Graphics.ClearOptions.Color | NFMWorld.Graphics.ClearOptions.Depth,
-                new NFMWorld.Graphics.ColorRgba(0f, 0f, 0f, 0f));
+                new NFMWorld.Graphics.ColorRgba(0f, 0f, 0f, 0f)
+            );
 
             // Build a dedicated ortho camera sized to cover the whole stage
             var exportCam = new OrthoCamera
@@ -331,8 +353,8 @@ public partial class StageEditorPhase
             // OrthoScale = world units per pixel — choose the larger axis so nothing is clipped
             exportCam.OrthoScale = Math.Max(stageWidth / _exportWidth, stageDepth / _exportHeight);
             exportCam.PositionWithoutInterpolation = new Vector3(centerX, -50000f, centerZ);
-            exportCam.LookAtWithoutInterpolation  = new Vector3(centerX, 0f, centerZ);
-            exportCam.UpWithoutInterpolation      = Vector3.UnitZ;
+            exportCam.LookAtWithoutInterpolation = new Vector3(centerX, 0f, centerZ);
+            exportCam.UpWithoutInterpolation = Vector3.UnitZ;
             exportCam.OnBeforeRender(1f);
 
             // Swap the scene's active camera
@@ -341,18 +363,18 @@ public partial class StageEditorPhase
             ActiveTab.Scene.ActiveCamera = exportCam;
 
             // Suppress environment and fog for a clean top-down render
-            var prevFadeFrom  = World.FadeFrom;
-            var prevGround    = ActiveTab.StageRenderer.ground;
-            var prevSky       = ActiveTab.StageRenderer.sky;
-            var prevPolys     = ActiveTab.StageRenderer.polys;
-            var prevClouds    = ActiveTab.StageRenderer.clouds;
+            var prevFadeFrom = World.FadeFrom;
+            var prevGround = ActiveTab.StageRenderer.ground;
+            var prevSky = ActiveTab.StageRenderer.sky;
+            var prevPolys = ActiveTab.StageRenderer.polys;
+            var prevClouds = ActiveTab.StageRenderer.clouds;
             var prevMountains = ActiveTab.StageRenderer.mountains;
 
             World.FadeFrom = 9999999;
-            ActiveTab.StageRenderer.ground    = null!;
-            ActiveTab.StageRenderer.sky       = null!;
-            ActiveTab.StageRenderer.polys     = null;
-            ActiveTab.StageRenderer.clouds    = null;
+            ActiveTab.StageRenderer.ground = null!;
+            ActiveTab.StageRenderer.sky = null!;
+            ActiveTab.StageRenderer.polys = null;
+            ActiveTab.StageRenderer.clouds = null;
             ActiveTab.StageRenderer.mountains = null;
             // Use pure magenta as a chroma-key background — it can't appear in stage geometry
             var prevSkyWorld = World.Sky;
@@ -367,14 +389,14 @@ public partial class StageEditorPhase
             }
             finally
             {
-                ActiveTab.StageRenderer.ground    = prevGround;
-                ActiveTab.StageRenderer.sky       = prevSky;
-                ActiveTab.StageRenderer.polys     = prevPolys;
-                ActiveTab.StageRenderer.clouds    = prevClouds;
+                ActiveTab.StageRenderer.ground = prevGround;
+                ActiveTab.StageRenderer.sky = prevSky;
+                ActiveTab.StageRenderer.polys = prevPolys;
+                ActiveTab.StageRenderer.clouds = prevClouds;
                 ActiveTab.StageRenderer.mountains = prevMountains;
-                World.FadeFrom  = prevFadeFrom;
-                World.Sky       = prevSkyWorld;
-                activeCamera    = prevCamera;
+                World.FadeFrom = prevFadeFrom;
+                World.Sky = prevSkyWorld;
+                activeCamera = prevCamera;
                 ActiveTab.Scene.ActiveCamera = prevCamera;
             }
         }
@@ -403,9 +425,9 @@ public partial class StageEditorPhase
 
         bool IsNearMatte(Color c, Color matte, int tolerance)
         {
-            return Math.Abs(c.R - matte.R) <= tolerance &&
-                   Math.Abs(c.G - matte.G) <= tolerance &&
-                   Math.Abs(c.B - matte.B) <= tolerance;
+            return Math.Abs(c.R - matte.R) <= tolerance
+                   && Math.Abs(c.G - matte.G) <= tolerance
+                   && Math.Abs(c.B - matte.B) <= tolerance;
         }
 
         var borderCounts = new Dictionary<int, int>();
@@ -454,7 +476,8 @@ public partial class StageEditorPhase
             (byte)(matteSample.SumR / Math.Max(1, matteSample.Count)),
             (byte)(matteSample.SumG / Math.Max(1, matteSample.Count)),
             (byte)(matteSample.SumB / Math.Max(1, matteSample.Count)),
-            255);
+            255
+        );
 
         const int matteTolerance = 40;
         var visited = new bool[pixels.Length];
@@ -517,11 +540,13 @@ public partial class StageEditorPhase
             }
         }
 
-        Logging.Info($"Top-down export matte key: R={matteColor.R},G={matteColor.G},B={matteColor.B}, edgeRemoved={transparentCount}, enclosedRemoved={enclosedTransparentCount}");
+        Logging.Info(
+            $"Top-down export matte key: R={matteColor.R},G={matteColor.G},B={matteColor.B}, edgeRemoved={transparentCount}, enclosedRemoved={enclosedTransparentCount}"
+        );
 
 
         // Save PNG next to the stage file
-        var exportDir  = "data/stages/user";
+        var exportDir = "data/stages/user";
         Directory.CreateDirectory(exportDir);
         var filePath = $"{exportDir}/{ActiveTab.StageFileName}_topdown.png";
 
@@ -547,23 +572,23 @@ public partial class StageEditorPhase
     private void RefreshAvailableStages()
     {
         _availableStages.Clear();
-        
+
         var userStagesDir = "data/stages/user";
         if (!Directory.Exists(userStagesDir))
         {
             return;
         }
-        
+
         var files = Directory.GetFiles(userStagesDir, "*.txt");
         foreach (var file in files)
         {
             var fileName = Path.GetFileNameWithoutExtension(file);
             _availableStages.Add(fileName);
         }
-        
+
         _availableStages.Sort();
     }
-    
+
     private void LoadStage(string stageFileName)
     {
         // Check if this stage is already open in a tab
@@ -581,37 +606,40 @@ public partial class StageEditorPhase
                         break;
                     }
                 }
+
                 Logging.Info($"Stage '{stageFileName}' is already open, switched to that tab.");
                 return;
             }
         }
-        
+
         try
         {
             // Create a new tab
             var tab = new StageEditorTab();
             tab.StageFileName = stageFileName;
-            
+
             // Load the stage using the Stage class (it expects filename without extension)
             tab.Stage = new BackendStage($"user/{stageFileName}");
             tab.TabName = tab.Stage.Name;
-            
+
             // Remove all wall pieces from the stage BEFORE creating the ClientStageRenderer
             // so it never includes them as children
             int removedCount = 0;
             for (int i = tab.Stage.Pieces.Count - 1; i >= 0; i--)
             {
                 var piece = tab.Stage.Pieces[i];
-                if (piece is StageObject collisionObject && (collisionObject.FileName == "thewall" || collisionObject.FileName.Contains("wall")))
+                if (piece is StageObject collisionObject
+                    && (collisionObject.FileName == "thewall" || collisionObject.FileName.Contains("wall")))
                 {
                     tab.Stage.Pieces.RemoveAt(i);
                     removedCount++;
                 }
             }
+
             Logging.Info($"Removed {removedCount} wall pieces from stage");
-            
+
             tab.StageRenderer = new ClientStageRenderer(tab.Stage);
-            
+
             var stageLoader = tab.Stage.StageLoader;
 
             tab.UngroupedOrderIndex = stageLoader.UngroupedOrderIndex;
@@ -620,24 +648,26 @@ public partial class StageEditorPhase
 
             foreach (var wallDef in stageLoader.wallDefs)
             {
-                tab.StageWalls.Add(new EditorStageWall(wallDef.Direction, wallDef.Count, wallDef.Position, wallDef.Offset, tab.GetNextPieceId()));
+                tab.StageWalls.Add(
+                    new EditorStageWall(wallDef.Direction, wallDef.Count, wallDef.Position, wallDef.Offset, tab.GetNextPieceId())
+                );
             }
-            
+
             // Populate editor pieces from loaded stage
             foreach (var piece in tab.Stage.Pieces)
             {
                 if (piece is not StageObject collisionObject)
                     continue;
-                
+
                 // Skip wall pieces - they're handled as EditorStageWalls
                 if (collisionObject.OriginalPlacement.IsWall)
                     continue;
 
                 var instance = new StagePieceInstance(collisionObject, tab.GetNextPieceId());
-                
+
                 tab.ScenePieces.Add(instance);
             }
-            
+
             // ── Resolve group membership ────────────────────────────────────────────
             foreach (var group in stageLoader.groups)
             {
@@ -652,23 +682,21 @@ public partial class StageEditorPhase
                         .ToList()
                 };
                 tab.HierarchyGroups.Add(hierarchyGroup);
-                
+
                 // Old format group: #editor_group(Name,x:z,...)
                 {
-                    var keys  = group.CoordinateKeys;
+                    var keys = group.CoordinateKeys;
                     var resolved = new List<int>();
                     foreach (var key in keys)
                     {
                         if (key.Contains(':'))
                         {
                             var kparts = key.Split(':');
-                            if (kparts.Length == 2 &&
-                                int.TryParse(kparts[0], out int kx) &&
-                                int.TryParse(kparts[1], out int kz))
+                            if (kparts.Length == 2 && int.TryParse(kparts[0], out int kx) && int.TryParse(kparts[1], out int kz))
                             {
                                 var match = tab.ScenePieces.FirstOrDefault(p =>
-                                    Math.Abs((int)p.Position.X - kx) <= 1 &&
-                                    Math.Abs((int)p.Position.Z - kz) <= 1);
+                                    Math.Abs((int)p.Position.X - kx) <= 1 && Math.Abs((int)p.Position.Z - kz) <= 1
+                                );
                                 if (match != null && !resolved.Contains(match.Id))
                                     resolved.Add(match.Id);
                             }
@@ -680,6 +708,7 @@ public partial class StageEditorPhase
                                 resolved.Add(legacyPiece.Id);
                         }
                     }
+
                     hierarchyGroup.PieceIds.AddRange(resolved);
                 }
             }
@@ -703,6 +732,7 @@ public partial class StageEditorPhase
                     (short)Math.Max(0, World.GroundColor.B - 10)
                 );
             }
+
             tab.CloudsEnabled = World.HasClouds;
             if (World.HasClouds)
             {
@@ -711,23 +741,24 @@ public partial class StageEditorPhase
                 tab.CloudsHeight = World.Clouds[4];
                 tab.CloudCoverage = World.CloudCoverage;
             }
+
             tab.MountainsEnabled = World.DrawMountains;
             tab.MountainsSeed = World.MountainSeed;
             tab.SnapA = World.Snap.R;
             tab.SnapB = World.Snap.G;
             tab.SnapC = World.Snap.B;
             tab.FadeFrom = World.FadeFrom;
-            
+
             // Add tab and activate it
             _tabs.Add(tab);
             _activeTabIndex = _tabs.Count - 1;
-            
+
             // Recreate scene at the very end to ensure it has the final clean pieces array
             RecreateScene();
-            
+
             // Rebuild walls AFTER recreating scene
             RebuildAllWalls();
-            
+
             Logging.Info($"Loaded stage: {tab.Stage.Name}");
         }
         catch (Exception ex)
@@ -782,5 +813,4 @@ public partial class StageEditorPhase
             Logging.Warning($"Failed to load preserved directives from '{filePath}': {ex.Message}");
         }
     }
-    
 }

@@ -49,7 +49,12 @@ public static class PasswordHasher
         }
 
         var actual = Rfc2898DeriveBytes.Pbkdf2(
-            Encoding.UTF8.GetBytes(password), salt, iterations, HashAlgorithmName.SHA512, expected.Length);
+            Encoding.UTF8.GetBytes(password),
+            salt,
+            iterations,
+            HashAlgorithmName.SHA512,
+            expected.Length
+        );
         return CryptographicOperations.FixedTimeEquals(actual, expected);
     }
 

@@ -9,7 +9,8 @@ public readonly record struct BufferDesc(
     BufferKind Kind,
     BufferUsage Usage,
     int SizeInBytes,
-    IndexFormat IndexFormat = IndexFormat.UInt16);
+    IndexFormat IndexFormat = IndexFormat.UInt16
+);
 
 public interface IBuffer : IDisposable
 {

@@ -1,4 +1,4 @@
-﻿﻿using System.Buffers.Binary;
+﻿using System.Buffers.Binary;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -11,9 +11,9 @@ public readonly partial struct CompactIpAddress
 {
     // ipv6: address
     private readonly InlineArray8<ushort> _addressBytes;
-    
+
     private readonly bool _isv6;
- 
+
     // ipv4: address. ipv4: scope id
     private readonly uint _addressOrScopeId;
 
@@ -41,7 +41,7 @@ public readonly partial struct CompactIpAddress
         _isv6 = true;
         _addressOrScopeId = (uint)scopeid;
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void ReadUInt16NumbersFromBytes(ReadOnlySpan<byte> address, ref InlineArray8<ushort> addressBytes)
     {
@@ -70,6 +70,7 @@ public readonly partial struct CompactIpAddress
             {
                 BinaryPrimitives.WriteUInt16BigEndian(bytes.Slice(i * 2), address._addressBytes[i]);
             }
+
             return new IPAddress(bytes, (long)address._addressOrScopeId);
         }
         else
