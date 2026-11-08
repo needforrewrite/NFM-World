@@ -49,6 +49,7 @@ public sealed class ClassicHud(IHudData race) : Component
             {
                 Text($"WASTED: {Race.Wasted} / {Race.Opponents}", left + 128 * scale, top + 5 * scale, scale, adventure: true);
             }
+
             if (Race.HasPosition) PositionReadout(left + 30 * scale, top + 18 * scale, scale);
             var timerY = top + (Race.HasPosition ? 49 : 30) * scale;
             Text(Race.TimeTrial ? "TIME TRIAL" : "TIME", left + 14 * scale, timerY, scale, adventure: true);
@@ -65,20 +66,28 @@ public sealed class ClassicHud(IHudData race) : Component
                 Meter(_damage, right - 166 * scale, top + 5 * scale, scale, Race.DamageFraction, true);
                 Meter(_power, right - 166 * scale, top + 24 * scale, scale, Race.PowerFraction, false);
             }
+
             Arrow(position, size, scale, Race.Paused ? 0 : dt);
 
             if ((Race.IsPreview || SettingsMenu.HudOpponents) && !Race.TimeTrial && Race.Racers.Count > 1)
             {
-                var opponentScale = scale * 0.55f;
+                var opponentScale = scale * 0.62f;
                 var opponentRight = right - 8 * scale;
                 var y = top + 80 * scale;
                 foreach (var racer in Race.Racers)
                 {
-                    if (y + 24 * opponentScale > top + size.Y - 30 * scale) break;
+                    if (racer.Wasted) continue;
+                    // No partial rows: stop once the row plus its bar would not fit above the HUD's bottom margin.
+                    if (y + 29 * opponentScale > top + size.Y - 30 * scale) break;
                     if (racer.IsClient)
                     {
                         G.SetColor(Snap(new Color(90, 195, 255, 60)));
-                        G.FillRect((int)(opponentRight - 136 * opponentScale), (int)y, (int)(136 * opponentScale), (int)(24 * opponentScale));
+                        G.FillRect(
+                            (int)(opponentRight - 136 * opponentScale),
+                            (int)y,
+                            (int)(136 * opponentScale),
+                            (int)(24 * opponentScale)
+                        );
                     }
 
                     // The digit comes from the phase, which numbered opponents in the same order
@@ -86,16 +95,32 @@ public sealed class ClassicHud(IHudData race) : Component
                     // tenth opponent there is no key, so show nothing rather than repeat a digit.
                     var key = racer.LockSlot is > 0 and <= 10 ? $"{racer.LockSlot % 10}" : "";
                     Text(key, opponentRight - 134 * opponentScale, y, opponentScale, color: new Color(20, 20, 120));
-                    Text(Ordinal(racer.Position), opponentRight - 124 * opponentScale, y + 5 * opponentScale, opponentScale, color: new Color(20, 20, 120));
+                    Text(
+                        Ordinal(racer.Position),
+                        opponentRight - 124 * opponentScale,
+                        y + 5 * opponentScale,
+                        opponentScale,
+                        color: new Color(20, 20, 120)
+                    );
                     Text(racer.Name, opponentRight - 96 * opponentScale, y, opponentScale);
                     var barX = opponentRight - 102 * opponentScale;
                     var barY = y + 15 * opponentScale;
                     G.SetColor(new Color(0, 0, 0));
-                    G.FillRect((int)barX, (int)barY, (int)(82 * opponentScale), Math.Max(1, (int)(5 * opponentScale)));
+                    G.FillRect((int)barX, (int)barY, (int)(88 * opponentScale), Math.Max(1, (int)(7 * opponentScale)));
                     G.SetColor(Snap(190, 240, 245));
-                    G.FillRect((int)(barX + opponentScale), (int)(barY + opponentScale), (int)(80 * opponentScale), Math.Max(1, (int)(3 * opponentScale)));
-                    G.SetColor(Snap(244, 244, 11));
-                    G.FillRect((int)(barX + opponentScale), (int)(barY + opponentScale), (int)(80 * opponentScale * Clamp(racer.Damage)), Math.Max(1, (int)(3 * opponentScale)));
+                    G.FillRect(
+                        (int)(barX + opponentScale),
+                        (int)(barY + opponentScale),
+                        (int)(86 * opponentScale),
+                        Math.Max(1, (int)(5 * opponentScale))
+                    );
+                    G.SetColor(DamageColor(racer.Damage, blink: false));
+                    G.FillRect(
+                        (int)(barX + opponentScale),
+                        (int)(barY + opponentScale),
+                        (int)(86 * opponentScale * Clamp(racer.Damage)),
+                        Math.Max(1, (int)(5 * opponentScale))
+                    );
                     y += 29 * opponentScale;
                 }
             }
@@ -125,16 +150,17 @@ public sealed class ClassicHud(IHudData race) : Component
             G.DrawImage(image, (int)x, (int)y, (int)(width * scale), (int)(height * scale));
     }
 
-    private Color DamageColor(float damage)
+    private Color DamageColor(float damage, bool blink = true)
     {
         var amount = (int)(98 * damage);
         var green = amount > 33 ? (int)(244 - 233f * (amount - 33) / 65) : 244;
-        if (amount > 70 && SettingsMenu.HudFlash)
+        if (blink && amount > 70 && SettingsMenu.HudFlash)
         {
             var period = (168 - amount * 1.5f) / 30;
             var phase = _clock % period;
             if (phase < 10f / 30 && (int)(phase * 30) % 2 == 0) green = 170;
         }
+
         return Snap(244, green, 11);
     }
 
@@ -146,14 +172,21 @@ public sealed class ClassicHud(IHudData race) : Component
             _hadArrow = false;
             return;
         }
+
         if (!_hadArrow) _arrowAngle = target;
         _hadArrow = true;
         _arrowAngle += Math.Clamp(target - _arrowAngle, -300 * dt, 300 * dt);
         var center = position.X + size.X / 2;
         var top = position.Y;
         if (Race.ArrowAtCars)
-            Text(Race.ArrowLocked ? $"< {Race.ArrowTarget} >" : $"[ {Race.ArrowTarget} ]",
-                center, top + 3 * scale, scale, center: true, color: new Color(20, 20, 120));
+            Text(
+                Race.ArrowLocked ? $"< {Race.ArrowTarget} >" : $"[ {Race.ArrowTarget} ]",
+                center,
+                top + 3 * scale,
+                scale,
+                center: true,
+                color: new Color(20, 20, 120)
+            );
         if (!Race.IsPreview && !Race.ArrowAtCars && MathF.Abs(_arrowAngle) <= 7) return;
 
         // xtGraphics.arrow: rotate its seven X/Z vertices, then project at y=-90.
@@ -171,12 +204,16 @@ public sealed class ClassicHud(IHudData race) : Component
             px[i] = (int)(center + x * 400 / z * scale);
             py[i] = (int)(top + (200 - 290 * 400 / z) * scale);
         }
+
         var turn = MathF.Abs(_arrowAngle);
         // A locked arrow takes the palette of the car it is following (phy's alocked), so you can
         // tell at a glance that it is no longer picking for itself.
         var locked = Race.ArrowLocked;
-        G.SetColor(locked ? Snap(255, 128, 0) : Race.ArrowAtCars ? Snap(159, 207, 255) :
-            Snap((int)(190 + 65 * Math.Clamp((turn - 90) / 50, 0, 1)), 255, 0));
+        G.SetColor(
+            locked ? Snap(255, 128, 0) :
+            Race.ArrowAtCars ? Snap(159, 207, 255) :
+            Snap((int)(190 + 65 * Math.Clamp((turn - 90) / 50, 0, 1)), 255, 0)
+        );
         G.FillPolygon(px, py, 7);
         G.SetColor(locked ? Snap(160, 70, 0) : Race.ArrowAtCars ? Snap(120, 114, 255) : Snap(115, 170, 0));
         G.SetStrokeWidth(MathF.Max(1, scale));
@@ -197,12 +234,22 @@ public sealed class ClassicHud(IHudData race) : Component
         var numberX = x + labelWidth + 6 * scale;
         var numberWidth = G.GetFontMetrics().MeasureText(number).X;
         G.SetColor(Snap(25, 35, 145));
-        G.DrawStringOutlined(number, (int)numberX, (int)(baseline + 8 * scale),
-            Snap(new Color(220, 245, 255, 170)), 0.5f * scale);
+        G.DrawStringOutlined(
+            number,
+            (int)numberX,
+            (int)(baseline + 8 * scale),
+            Snap(new Color(220, 245, 255, 170)),
+            0.5f * scale
+        );
         G.SetFont(new Font(FontFamily.Adventure, FontStyle.Bold, 9 * scale));
         G.SetColor(new Color(0, 0, 0));
-        G.DrawStringOutlined(OrdinalSuffix(Race.Position), (int)(numberX + numberWidth + 6 * scale),
-            (int)(baseline - 5 * scale), Snap(new Color(220, 245, 255, 170)), 0.5f * scale);
+        G.DrawStringOutlined(
+            OrdinalSuffix(Race.Position),
+            (int)(numberX + numberWidth + 6 * scale),
+            (int)(baseline - 5 * scale),
+            Snap(new Color(220, 245, 255, 170)),
+            0.5f * scale
+        );
     }
 
     private static Vector3 SnapMultiplier() => new(1 + World.Snap.R / 100f, 1 + World.Snap.G / 100f, 1 + World.Snap.B / 100f);
@@ -211,8 +258,15 @@ public sealed class ClassicHud(IHudData race) : Component
 
     private static Color Snap(int r, int g, int b) => Snap(new Color(r, g, b));
 
-    private static void Text(string text, float x, float y, float scale, bool adventure = false,
-        bool center = false, Color? color = null)
+    private static void Text(
+        string text,
+        float x,
+        float y,
+        float scale,
+        bool adventure = false,
+        bool center = false,
+        Color? color = null
+    )
     {
         G.SetFont(new Font(adventure ? FontFamily.Adventure : FontFamily.DroidSans, FontStyle.Bold, 11 * scale));
         G.SetColor(Snap(color ?? new Color(0, 0, 0)));
@@ -232,6 +286,8 @@ public sealed class ClassicHud(IHudData race) : Component
 
     private static float Clamp(float value) => float.IsFinite(value) ? Math.Clamp(value, 0, 1) : 0;
     private static string Ordinal(int value) => $"{value}{OrdinalSuffix(value)}";
-    private static string OrdinalSuffix(int value) => value % 100 is 11 or 12 or 13 ? "th"
+
+    private static string OrdinalSuffix(int value) => value % 100 is 11 or 12 or 13
+        ? "th"
         : (value % 10) switch { 1 => "st", 2 => "nd", 3 => "rd", _ => "th" };
 }

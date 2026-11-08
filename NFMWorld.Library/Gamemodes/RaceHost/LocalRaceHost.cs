@@ -27,7 +27,12 @@ public sealed class LocalRaceHost : IRaceHost
     public event Action<ReadOnlyMemory<byte>>? ServerEventReceived;
     public event Action<RaceResults>? GameFinished;
 
-    private LocalRaceHost(string stageName, ClientGamemodeParameters parameters, ServerSidePlayerInfo serverSidePlayerInfo, StageLoader? stageData)
+    private LocalRaceHost(
+        string stageName,
+        ClientGamemodeParameters parameters,
+        ServerSidePlayerInfo serverSidePlayerInfo,
+        StageLoader? stageData
+    )
     {
         _context = new LocalServerContext(stageName, stageData, BroadcastToClient);
         _localPlayerId = serverSidePlayerInfo.Id;
@@ -35,7 +40,7 @@ public sealed class LocalRaceHost : IRaceHost
 
     /// <summary>
     /// Creates a local host for the given factory. If the factory has no
-    /// server gamemode (e.g., time trial), the host runs client-only.
+    /// server gamemode, the host runs client-only.
     /// </summary>
     /// <param name="stageData">
     /// The stage to use instead of reading the current stage files, for replay
@@ -45,20 +50,23 @@ public sealed class LocalRaceHost : IRaceHost
         string stageName,
         BaseGamemodeFactory factory,
         ClientGamemodeParameters parameters,
-        StageLoader? stageData = null)
+        StageLoader? stageData = null
+    )
     {
         var ids = new List<ServerSidePlayerInfo>(parameters.Players.Count);
         for (var i = 0; i < parameters.Players.Count; i++)
         {
             var player = parameters.Players[i];
             var id = Guid.NewGuid();
-            ids.Add(new ServerSidePlayerInfo
-            {
-                Id = id,
-                PlayerName = player.PlayerName,
-                CarName = player.CarName,
-                Color = player.Color
-            });
+            ids.Add(
+                new ServerSidePlayerInfo
+                {
+                    Id = id,
+                    PlayerName = player.PlayerName,
+                    CarName = player.CarName,
+                    Color = player.Color
+                }
+            );
         }
 
         var clientPlayerIndex = parameters.Players.FindIndex(e => e.IsClientPlayer);
@@ -68,10 +76,13 @@ public sealed class LocalRaceHost : IRaceHost
         var host = new LocalRaceHost(stageName, parameters, ids[clientPlayerIndex], stageData);
 
         // TODO this is a bit janky and could probably be improved
-        var serverGamemode = factory.CreateServerGamemode(new ServerGamemodeParameters
-        {
-            Players = ids
-        }, host._context);
+        var serverGamemode = factory.CreateServerGamemode(
+            new ServerGamemodeParameters
+            {
+                Players = ids
+            },
+            host._context
+        );
         host._serverGamemode = serverGamemode;
         serverGamemode?.Begin();
 
@@ -125,7 +136,8 @@ public sealed class LocalRaceHost : IRaceHost
             state.CarFrame.CarPosition.X,
             state.CarFrame.CarPosition.Y,
             state.CarFrame.CarPosition.Z,
-            state.CarFrame.TheBitFlags.Wasted);
+            state.CarFrame.TheBitFlags.Wasted
+        );
 
     public void Dispose()
     {
@@ -148,8 +160,11 @@ public sealed class LocalRaceHost : IRaceHost
     {
         private readonly Dictionary<Guid, f64Vector3> _positions = new();
         private readonly Dictionary<Guid, bool> _wasted = new();
+        private BackendStage? _stage;
 
-        public BackendStage CurrentStage { get; } = stageData is { } data ? new BackendStage(stageName, data) : new BackendStage(stageName);
+        public BackendStage CurrentStage => _stage ??= stageData is { } data
+            ? new BackendStage(stageName, data)
+            : new BackendStage(stageName);
 
         public f64Vector3? GetPlayerPosition(Guid playerId)
             => _positions.TryGetValue(playerId, out var pos) ? pos : null;

@@ -27,8 +27,10 @@ public static class UiState
     public sealed class RaceState : IHudData
     {
         public Signal<string> Skin { get; } = new(HudSkinId.Default);
+
         /// <summary>Bumped once the plain-list presentation data (<see cref="Racers"/> etc.) has been rewritten for the frame.</summary>
         public Signal<int> PresentationRevision { get; } = new(0);
+
         public Signal<Color3> StageSnap { get; } = new(default(Color3));
         public bool TimeTrial { get; set; }
         public bool IsPreview { get; set; }
@@ -45,10 +47,13 @@ public static class UiState
         public (float X, float Z) TrackCenter { get; set; }
         public (float X, float Z)? TargetCheckpoint { get; set; }
         public List<(float X, float Z)> Checkpoints { get; } = [];
+
         /// <summary>Live camera view-projection, for projecting name tags onto the screen.</summary>
         public Matrix ViewProjection { get; set; } = Matrix.Identity;
+
         /// <summary>The baked top-down stage image, once <see cref="NFMWorld.StageMinimap"/> has one.</summary>
         public NFMWorld.DriverInterface.DriverInterface.IImage? MapImage { get; set; }
+
         public (float MinX, float MaxZ, float UnitsPerPixel) MapFrame { get; set; }
         public Signal<float> Speed { get; } = new(0);
         public Signal<float> Power { get; } = new(1);
@@ -63,10 +68,15 @@ public static class UiState
         public HudMessage? StuntMessage { get; set; }
         public Signal<string?> StateText { get; } = new(null);
         public Signal<DateTime?> StateTextEndsAt { get; } = new(null);
+        public Signal<bool> Finished { get; } = new(false);
+        public Signal<bool> ClientWon { get; } = new(false);
+        public Signal<bool> ClientLost { get; } = new(false);
         public Signal<bool> Paused { get; } = new(false);
 
         public int SpeedKmh => float.IsFinite(Speed.Value)
-            ? Math.Max(0, (int)Math.Floor(Speed.Value * 1.4 * 21 * 3600 / 100000 + 0.5)) : 0;
+            ? Math.Max(0, (int)Math.Floor(Speed.Value * 1.4 * 21 * 3600 / 100000 + 0.5))
+            : 0;
+
         public float PowerFraction => Fraction(Power.Value / 0.98f);
         public float DamageFraction => Fraction(Damage.Value);
         int IHudData.Lap => Lap.Value;
@@ -87,6 +97,7 @@ public static class UiState
         Matrix IHudData.ViewProjection => ViewProjection;
         object? IHudData.MapImage => MapImage;
         (float MinX, float MaxZ, float UnitsPerPixel) IHudData.MapFrame => MapFrame;
+
         public string Message
         {
             get
@@ -94,7 +105,8 @@ public static class UiState
                 _ = LapTimeMs.Value;
                 if (CountdownTimer.Value > 0) return $"Starting in {CountdownTimer.Value}";
                 return StateTextEndsAt.Value is { } endsAt && DateTime.UtcNow >= endsAt
-                    ? "" : StateText.Value ?? "";
+                    ? ""
+                    : StateText.Value ?? "";
             }
         }
 
@@ -104,23 +116,27 @@ public static class UiState
         public void Update(HudStateData hud, bool paused)
         {
             Signal.Batch(() =>
-            {
-                StageSnap.Value = World.Snap;
-                Speed.Value = hud.Speed;
-                Power.Value = hud.Power;
-                Damage.Value = hud.Damage;
-                Lap.Value = hud.Lap;
-                TotalLaps.Value = hud.TotalLaps;
-                LapTimeMs.Value = hud.LapTime;
-                Position.Value = hud.Position;
-                TotalRacers.Value = hud.TotalRacers;
-                CountdownTimer.Value = hud.CountdownTimer;
-                StateText.Value = hud.StateText;
-                StateTextEndsAt.Value = hud.StateTextEndsAt;
-                StatusMessage = hud.StatusMessage;
-                StuntMessage = hud.StuntMessage;
-                Paused.Value = paused;
-            });
+                {
+                    StageSnap.Value = World.Snap;
+                    Speed.Value = hud.Speed;
+                    Power.Value = hud.Power;
+                    Damage.Value = hud.Damage;
+                    Lap.Value = hud.Lap;
+                    TotalLaps.Value = hud.TotalLaps;
+                    LapTimeMs.Value = hud.LapTime;
+                    Position.Value = hud.Position;
+                    TotalRacers.Value = hud.TotalRacers;
+                    CountdownTimer.Value = hud.CountdownTimer;
+                    StateText.Value = hud.StateText;
+                    StateTextEndsAt.Value = hud.StateTextEndsAt;
+                    Finished.Value = hud.Finished;
+                    ClientWon.Value = hud.ClientWon;
+                    ClientLost.Value = hud.ClientLost;
+                    StatusMessage = hud.StatusMessage;
+                    StuntMessage = hud.StuntMessage;
+                    Paused.Value = paused;
+                }
+            );
         }
     }
 
@@ -152,8 +168,10 @@ public static class UiState
     public sealed class LobbyState
     {
         public Signal<bool> Connected { get; } = new(false);
+
         /// <summary>Reconnection has given up; only leaving the lobby will help.</summary>
         public Signal<bool> Disconnected { get; } = new(false);
+
         public Signal<string> Status { get; } = new("");
         public Signal<IReadOnlyList<LobbyPlayer>> Players { get; } = new([]);
         public Signal<IReadOnlyList<LobbySession>> Sessions { get; } = new([]);
@@ -194,8 +212,15 @@ public static class UiState
     public sealed record LobbyPlayer(Guid Id, string Name, string Car, Color Color, bool IsSelf);
 
     public sealed record LobbySession(
-        uint Id, string CreatorName, string StageName, int PlayerCount, int MaxPlayers,
-        SessionState State, bool IsMember, bool IsCreator);
+        uint Id,
+        string CreatorName,
+        string StageName,
+        int PlayerCount,
+        int MaxPlayers,
+        SessionState State,
+        bool IsMember,
+        bool IsCreator
+    );
 
     /// <summary>Id keys the row: two identical lines from one sender are still two lines.</summary>
     public sealed record LobbyChatLine(long Id, string Sender, string Message, Color Color, bool IsSystem);
@@ -208,7 +233,6 @@ public static class UiState
         public Signal<CarStatsViewModel?> CurrentCar { get; } = new(null);
     }
 }
-
 
 /// <summary>Car stats shown in the garage.</summary>
 public sealed record CarStatsViewModel(
@@ -223,7 +247,8 @@ public sealed record CarStatsViewModel(
     double MaxHealth,
     double Stunting,
     double Hypergliding,
-    double Abing);
+    double Abing
+);
 
 /// <summary>A named group of cars in the garage.</summary>
 public sealed record CarCollectionViewModel(string Id, IReadOnlyList<CarStatsViewModel> Cars);

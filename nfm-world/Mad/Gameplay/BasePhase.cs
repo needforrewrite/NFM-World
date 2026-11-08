@@ -1,7 +1,6 @@
 using NFMWorld.DriverInterface;
 
 
-
 namespace NFMWorld.Gameplay;
 
 public abstract class BasePhase : IDisposable
@@ -23,7 +22,7 @@ public abstract class BasePhase : IDisposable
     /// Whether the mouse was pressed this game tick. Reset at the end of a game tick.
     /// </summary>
     protected bool MouseDownThisFrame { get; private set; }
-    
+
     /// <summary>
     /// Invoked each frame by the game loop. Override to write this frame's state into
     /// the UI's signals (e.g. HUD telemetry).
@@ -120,6 +119,21 @@ public abstract class BasePhase : IDisposable
     }
 
     /// <summary>
+    /// Invoked every frame with the physical key state, between press/release events.
+    /// </summary>
+    /// <remarks>
+    /// Edge-triggered input alone loses a held key whenever its state is not recomputed: a
+    /// dropped release, a pause/reset that clears the phase's pressed set, or a frame where
+    /// ImGui captured the keydown. Re-applying physical state each frame makes held keys
+    /// authoritative.
+    /// </remarks>
+    /// <param name="imguiWantsKeyboard">If Imgui wants the keyboard.</param>
+    /// <param name="keys">The state of all keys.</param>
+    public virtual void KeyHeld(bool imguiWantsKeyboard, in Keys keys)
+    {
+    }
+
+    /// <summary>
     /// Invoked when a key is released.
     /// </summary>
     /// <param name="key">The key.</param>
@@ -139,8 +153,15 @@ public abstract class BasePhase : IDisposable
     /// <param name="ctrlKey">Whether the Control key is being held.</param>
     /// <param name="shiftKey">Whether the Shift key is being held.</param>
     /// <param name="altKey">Whether the Alt key is being held.</param>
-    public virtual void MouseMoved(int x, int y, bool imguiWantsMouse, MouseButtons buttons, bool ctrlKey,
-        bool shiftKey, bool altKey)
+    public virtual void MouseMoved(
+        int x,
+        int y,
+        bool imguiWantsMouse,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
     }
 
@@ -155,9 +176,21 @@ public abstract class BasePhase : IDisposable
     /// <param name="ctrlKey">Whether the Control key is being held.</param>
     /// <param name="shiftKey">Whether the Shift key is being held.</param>
     /// <param name="altKey">Whether the Alt key is being held.</param>
-    public virtual void MousePressed(int x, int y, bool imguiWantsMouse, MouseButton button, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public virtual void MousePressed(
+        int x,
+        int y,
+        bool imguiWantsMouse,
+        MouseButton button,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
-        if (!imguiWantsMouse) { MouseDownThisFrame = true; }
+        if (!imguiWantsMouse)
+        {
+            MouseDownThisFrame = true;
+        }
     }
 
     /// <summary>
@@ -171,7 +204,16 @@ public abstract class BasePhase : IDisposable
     /// <param name="ctrlKey">Whether the Control key is being held.</param>
     /// <param name="shiftKey">Whether the Shift key is being held.</param>
     /// <param name="altKey">Whether the Alt key is being held.</param>
-    public virtual void MouseReleased(int x, int y, bool imguiWantsMouse, MouseButton button, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public virtual void MouseReleased(
+        int x,
+        int y,
+        bool imguiWantsMouse,
+        MouseButton button,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
     }
 
@@ -186,8 +228,16 @@ public abstract class BasePhase : IDisposable
     /// <param name="ctrlKey">Whether the Control key is being held.</param>
     /// <param name="shiftKey">Whether the Shift key is being held.</param>
     /// <param name="altKey">Whether the Alt key is being held.</param>
-    public virtual void MouseScrolled(int x, int y, int delta, bool imguiWantsMouse, MouseButtons buttons, bool ctrlKey,
-        bool shiftKey, bool altKey)
+    public virtual void MouseScrolled(
+        int x,
+        int y,
+        int delta,
+        bool imguiWantsMouse,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
     }
 

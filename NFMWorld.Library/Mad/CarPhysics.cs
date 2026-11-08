@@ -19,7 +19,7 @@ using NFMWorldLibrary.Util;
  *
  *************************************
  *
-**************************************/
+ **************************************/
 
 namespace NFMWorldLibrary;
 
@@ -46,195 +46,138 @@ public partial class CarPhysics
 {
     private static readonly fix64 _tickRate = Physics.PHYSICS_MULTIPLIER_F64;
     private static readonly fix64 _oneOverTickRate = 1 / _tickRate;
-    
-    [PluginVisible]
-    public bool Halted = false;
 
-    [PluginVisible]
-    public bool BackwardsTabletop;
-    
-    [PluginVisible]
-    public int CapsizedCounter;
-    
-    [PluginVisible]
-    public bool BadLanding;
-    
-    [PluginVisible]
-    public readonly UnlimitedArray<bool> _caught = [];
-    
-    [PluginVisible]
-    public CarStats Stat;
+    [PluginVisible] public bool Halted = false;
+
+    [PluginVisible] public bool BackwardsTabletop;
+
+    [PluginVisible] public int CapsizedCounter;
+
+    [PluginVisible] public bool BadLanding;
+
+    [PluginVisible] public readonly UnlimitedArray<bool> _caught = [];
+
+    [PluginVisible] public CarStats Stat;
+
     /// <summary>Set once the car is attached to a stage; used to pick its recharged stat set.</summary>
     public BackendCar? Car;
 
-    [PluginVisible]
-    public int Cn;
-    
-    [PluginVisible]
-    public int Cntdest;
-    
-    [PluginVisible]
-    public int _cntouch;
-    
+    [PluginVisible] public int Cn;
+
+    [PluginVisible] public int Cntdest;
+
+    [PluginVisible] public int _cntouch;
+
     /// <summary>
     /// Is colliding with the client player car
     /// </summary>
-    [PluginVisible]
-    public bool _collidingWithClientPlayer;
-    
-    [PluginVisible]
-    public readonly Array2D<int> _crank = new(4, 4);
-    
-    [PluginVisible]
-    public readonly Array2D<int> _lcrank = new(4, 4);
-    
-    [PluginVisible]
-    public fix64 Cxz;
-    
-    [PluginVisible]
-    public fix64 StaticCameraXz;
-    
-    [PluginVisible]
-    public int _dcnt;
-    
-    [PluginVisible]
-    public fix64 DownComponent;
-    
-    [PluginVisible]
-    public fix64 LeftComponent;
-    
-    [PluginVisible]
-    public bool Wasted;
-    
-    [PluginVisible]
-    public readonly UnlimitedArray<bool> _dominate = [];
-    
-    [PluginVisible]
-    public readonly fix64 _drag = fix64.Half;
-    
-    [PluginVisible]
-    public int _fixes = -1;
-    
-    [PluginVisible]
-    public fix64 _forca;
-    
-    [PluginVisible]
-    public bool ForwardTabletop;
-    
-    [PluginVisible]
-    public fix64 _turnXz;
-    
-    [PluginVisible]
-    public bool Gtouch;
+    [PluginVisible] public bool _collidingWithClientPlayer;
+
+    [PluginVisible] public readonly Array2D<int> _crank = new(4, 4);
+
+    [PluginVisible] public readonly Array2D<int> _lcrank = new(4, 4);
+
+    [PluginVisible] public fix64 Cxz;
+
+    [PluginVisible] public fix64 StaticCameraXz;
+
+    [PluginVisible] public int _dcnt;
+
+    [PluginVisible] public fix64 DownComponent;
+
+    [PluginVisible] public fix64 LeftComponent;
+
+    [PluginVisible] public bool Wasted;
+
+    [PluginVisible] public readonly UnlimitedArray<bool> _dominate = [];
+
+    [PluginVisible] public readonly fix64 _drag = fix64.Half;
+
+    [PluginVisible] public int _fixes = -1;
+
+    [PluginVisible] public fix64 _forca;
+
+    [PluginVisible] public bool ForwardTabletop;
+
+    [PluginVisible] public fix64 _turnXz;
+
+    [PluginVisible] public bool Gtouch;
 
     /// <summary>Any wheel touched the world ground plane this tick (as opposed to a track piece).</summary>
-    [PluginVisible]
-    public bool OnGroundPlane;
-    
-    [PluginVisible]
-    public int DamagePoints;
-    
-    [PluginVisible]
-    public int Im;
-    
-    [PluginVisible]
-    public int Lastcolido;
+    [PluginVisible] public bool OnGroundPlane;
+
+    [PluginVisible] public int DamagePoints;
+
+    [PluginVisible] public int Im;
+
+    [PluginVisible] public int Lastcolido;
 
     /// <summary>
     /// Index of the car whose contact last damaged this one, or -1 for a stage hit.
     /// Display only, so it is not part of the rollback frame.
     /// </summary>
-    [PluginVisible]
-    public int LastDamageFrom = -1;
+    [PluginVisible] public int LastDamageFrom = -1;
 
-    [PluginVisible]
-    public sbyte StuntState;
-    
-    [PluginVisible]
-    public fix64 _lxz;
-    
-    [PluginVisible]
-    public bool Mtouch;
-    
-    [PluginVisible]
-    public fix64 Mxz;
-    
-    [PluginVisible]
-    public int _numRoofDamage;
-    
-    [PluginVisible]
-    public bool Newcar;
-    
-    [PluginVisible]
-    public int Newedcar;
-    
-    [PluginVisible]
-    public int _nmlt = 1;
-    
-    [PluginVisible]
-    public bool Nofocus;
-    
-    [PluginVisible]
-    public int Outshakedam = 0;
-    
-    [PluginVisible]
-    public bool PressDown;
-    
-    [PluginVisible]
-    public bool PressLeft;
-    
-    [PluginVisible]
-    public int _pmlt = 1;
-    
-    [PluginVisible]
-    public int Point;
-    
-    [PluginVisible]
-    public fix64 Power = 98;
-    
-    [PluginVisible]
-    public fix64 Powerup;
-    
-    [PluginVisible]
-    public bool PressRight;
-    
-    [PluginVisible]
-    public bool PressUp;
-    
-    [PluginVisible]
-    public bool Pushed;
+    [PluginVisible] public sbyte StuntState;
 
-    [PluginVisible]
-    public fix64 Pxy;
+    [PluginVisible] public fix64 _lxz;
+
+    [PluginVisible] public bool Mtouch;
+
+    [PluginVisible] public fix64 Mxz;
+
+    [PluginVisible] public int _numRoofDamage;
+
+    [PluginVisible] public bool Newcar;
+
+    [PluginVisible] public int Newedcar;
+
+    [PluginVisible] public int _nmlt = 1;
+
+    [PluginVisible] public bool Nofocus;
+
+    [PluginVisible] public int Outshakedam = 0;
+
+    [PluginVisible] public bool PressDown;
+
+    [PluginVisible] public bool PressLeft;
+
+    [PluginVisible] public int _pmlt = 1;
+
+    [PluginVisible] public int Point;
+
+    [PluginVisible] public fix64 Power = 98;
+
+    [PluginVisible] public fix64 Powerup;
+
+    [PluginVisible] public bool PressRight;
+
+    [PluginVisible] public bool PressUp;
+
+    [PluginVisible] public bool Pushed;
+
+    [PluginVisible] public fix64 Pxy;
+
     // DEBUG: orientation jump detector, remove once the mid-air flip is found
     private fix64 _dbgPxy, _dbgPzy, _dbgXz;
-    
-    [PluginVisible]
-    public fix64 Pzy;
-    
-    [PluginVisible]
-    public fix64 RightComponent;
-    
-    [PluginVisible]
-    public bool RightTabletop;
-    
-    [PluginVisible]
-    public SafeInlineArray4<fix64> Scx;
-    
-    [PluginVisible]
-    public SafeInlineArray4<fix64> Scy;
-    
-    [PluginVisible]
-    public SafeInlineArray4<fix64> Scz;
-    
-    [PluginVisible]
-    public int Shakedam;
-    
-    [PluginVisible]
-    public sbyte Skid;
-    
-    [PluginVisible]
-    public fix64 Speed;
+
+    [PluginVisible] public fix64 Pzy;
+
+    [PluginVisible] public fix64 RightComponent;
+
+    [PluginVisible] public bool RightTabletop;
+
+    [PluginVisible] public SafeInlineArray4<fix64> Scx;
+
+    [PluginVisible] public SafeInlineArray4<fix64> Scy;
+
+    [PluginVisible] public SafeInlineArray4<fix64> Scz;
+
+    [PluginVisible] public int Shakedam;
+
+    [PluginVisible] public sbyte Skid;
+
+    [PluginVisible] public fix64 Speed;
 
     /// <summary>
     /// Summed wheel velocity (X, Y, Z) of the four wheels.
@@ -243,52 +186,40 @@ public partial class CarPhysics
     public f64Vector3 SummedWheelVelocity => new(
         Scx[0] + Scx[1] + Scx[2] + Scx[3],
         Scy[0] + Scy[1] + Scy[2] + Scy[3],
-        Scz[0] + Scz[1] + Scz[2] + Scz[3]);
-    
-    [PluginVisible]
-    public int RoofDamage;
-    
-    [PluginVisible]
-    public int _surfCount;
-    
-    [PluginVisible]
-    public bool Surfing;
-    
-    [PluginVisible]
-    public fix64 _tilt;
-    
-    [PluginVisible]
-    public fix64 TotalStuntXy;
-    
-    [PluginVisible]
-    public fix64 TotalStuntXz;
-    
-    [PluginVisible]
-    public fix64 TotalStuntZy;
-    
-    [PluginVisible]
-    public int TabletopCounter;
-    
-    [PluginVisible]
-    public fix64 Txz;
-    
-    [PluginVisible]
-    public fix64 UpComponent;
-    
-    [PluginVisible]
-    public bool Wtouch;
-    
-    [PluginVisible]
-    public int _xtpower;
+        Scz[0] + Scz[1] + Scz[2] + Scz[3]
+    );
 
-    [PluginVisible]
-    internal bool IsClientPlayer;
-    
-    [PluginVisible]
-    internal int Mtcount = 0;
-    
-    [PluginVisible]
-    internal fix64 py = 0;
+    [PluginVisible] public int RoofDamage;
+
+    [PluginVisible] public int _surfCount;
+
+    [PluginVisible] public bool Surfing;
+
+    [PluginVisible] public fix64 _tilt;
+
+    [PluginVisible] public fix64 TotalStuntXy;
+
+    [PluginVisible] public fix64 TotalStuntXz;
+
+    [PluginVisible] public fix64 TotalStuntZy;
+
+    [PluginVisible] public int TabletopCounter;
+
+    [PluginVisible] public fix64 Txz;
+
+    [PluginVisible] public fix64 UpComponent;
+
+    [PluginVisible] public bool Wtouch;
+
+    [PluginVisible] public int _xtpower;
+
+    [PluginVisible] internal bool IsClientPlayer;
+
+    [PluginVisible] internal int Mtcount = 0;
+
+    [PluginVisible] internal fix64 py = 0;
+
+    internal int pieceRad = 27; // used for regx/regy/regz to determine if a piece is in range of a wheel
 
     public event EventHandler<CrashSoundEvent>? SfxPlayCrash;
     public event EventHandler<(SurfaceType i, float f)>? SfxPlaySkid;
@@ -297,6 +228,7 @@ public partial class CarPhysics
     public event EventHandler<float>? PowerUp;
 
     private readonly record struct CrashContactContext(int OtherCar, int OtherPoint, Vector3 Position);
+
     private CrashContactContext? _crashContact;
 
     private readonly struct CrashContactScope : IDisposable
@@ -336,7 +268,12 @@ public partial class CarPhysics
     [PluginVisible] private static f64Vector3 Forward => new(0, 0, 1);
     [PluginVisible] private static f64Vector3 Right => new(1, 0, 0);
 
-    internal static (fix64 Pxy, fix64 Pzy, bool GimbalLocked) FitTerrainAngles(f64Vector3 normal, fix64 yaw, fix64 currentPxy, fix64 currentPzy)
+    internal static (fix64 Pxy, fix64 Pzy, bool GimbalLocked) FitTerrainAngles(
+        f64Vector3 normal,
+        fix64 yaw,
+        fix64 currentPxy,
+        fix64 currentPzy
+    )
     {
         static fix64 Unwrap(fix64 angle, fix64 reference)
         {
@@ -401,16 +338,23 @@ public partial class CarPhysics
     {
         ContO conto = new ContO(self);
         ContO otherconto = new ContO(other);
-        
-        var random = new DeterministicRandom((ulong)(conto.X.rawValue ^ otherconto.X.rawValue ^ conto.Z.rawValue ^ otherconto.Z.rawValue ^ conto.Y.rawValue ^ otherconto.Y.rawValue));
-        
+
+        var random = new DeterministicRandom(
+            (ulong)(conto.X.rawValue
+                    ^ otherconto.X.rawValue
+                    ^ conto.Z.rawValue
+                    ^ otherconto.Z.rawValue
+                    ^ conto.Y.rawValue
+                    ^ otherconto.Y.rawValue)
+        );
+
         var wheelx = new InlineArray4<fix64>();
         var wheely = new InlineArray4<fix64>();
         var wheelz = new InlineArray4<fix64>();
         var otherwheelx = new InlineArray4<fix64>();
         var otherwheely = new InlineArray4<fix64>();
         var otherwheelz = new InlineArray4<fix64>();
-        
+
         // No hypergliding fixes are needed here because this is only called during collisions
         // however we need this code or else sparks will come out of the wrong place
         var bottomy = GetBottomY(this, conto);
@@ -441,8 +385,8 @@ public partial class CarPhysics
         UMath.Rot(otherwheelx, otherwheely, otherconto.X, otherconto.Y, otherconto.Xy, 4);
         UMath.Rot(otherwheely, otherwheelz, otherconto.Y, otherconto.Z, otherconto.Zy, 4);
         UMath.Rot(otherwheelx, otherwheelz, otherconto.X, otherconto.Z, otherconto.Xz, 4);
-        if (UMath.Rpy(conto.X, otherconto.X, conto.Y, otherconto.Y, conto.Z, otherconto.Z) <
-            (conto.MaxR * conto.MaxR + otherconto.MaxR * otherconto.MaxR) * (fix64)1.5f)
+        if (UMath.Rpy(conto.X, otherconto.X, conto.Y, otherconto.Y, conto.Z, otherconto.Z)
+            < (conto.MaxR * conto.MaxR + otherconto.MaxR * otherconto.MaxR) * (fix64)1.5f)
         {
             if (!_caught[othermad.Im] && (Speed != 0 || othermad.Speed != 0))
             {
@@ -464,13 +408,14 @@ public partial class CarPhysics
         {
             _caught[othermad.Im] = false;
         }
+
         var totalOtherDamage = 0;
         var totalOwnDamage = 0;
         if (_dominate[othermad.Im])
         {
             var a = (Scz[0] - othermad.Scz[0] + Scz[1] - othermad.Scz[1] + Scz[2] - othermad.Scz[2] + Scz[3] - othermad.Scz[3]);
             var b = (Scx[0] - othermad.Scx[0] + Scx[1] - othermad.Scx[1] + Scx[2] - othermad.Scx[2] + Scx[3] - othermad.Scx[3]);
-            var impactMagnitude = (int) ((a * a + b * b) / 16);
+            var impactMagnitude = (int)((a * a + b * b) / 16);
             var impactExtraRdius = 7000;
             fix64 damageMult = 1;
             if (World.UseMultiplayerCollisionModifiers)
@@ -478,18 +423,33 @@ public partial class CarPhysics
                 impactExtraRdius = 28000;
                 damageMult = (fix64)1.27F;
             }
+
             for (var wheel = 0; wheel < 4; wheel++)
             {
                 for (var otherwheel = 0; otherwheel < 4; otherwheel++)
                 {
-                    if (UMath.Rpy(wheelx[wheel], otherwheelx[otherwheel], wheely[wheel], otherwheely[otherwheel], wheelz[wheel], otherwheelz[otherwheel]) <
-                        (impactMagnitude + impactExtraRdius) * (othermad.Stat.Comprad + Stat.Comprad))
+                    if (UMath.Rpy(
+                            wheelx[wheel],
+                            otherwheelx[otherwheel],
+                            wheely[wheel],
+                            otherwheely[otherwheel],
+                            wheelz[wheel],
+                            otherwheelz[otherwheel]
+                        )
+                        < (impactMagnitude + impactExtraRdius) * (othermad.Stat.Comprad + Stat.Comprad))
                     {
                         // Both cars and damage axes report the same contact to the audio queue.
-                        using var soundContact = new CrashContactScope(this, wheel, othermad, otherwheel,
-                            new Vector3(((float)wheelx[wheel] + (float)otherwheelx[otherwheel]) * 0.5f,
+                        using var soundContact = new CrashContactScope(
+                            this,
+                            wheel,
+                            othermad,
+                            otherwheel,
+                            new Vector3(
+                                ((float)wheelx[wheel] + (float)otherwheelx[otherwheel]) * 0.5f,
                                 ((float)wheely[wheel] + (float)otherwheely[otherwheel]) * 0.5f,
-                                ((float)wheelz[wheel] + (float)otherwheelz[otherwheel]) * 0.5f));
+                                ((float)wheelz[wheel] + (float)otherwheelz[otherwheel]) * 0.5f
+                            )
+                        );
                         if (fix64.Abs(Scx[wheel] * ownStats.Moment) > fix64.Abs(othermad.Scx[otherwheel] * otherStats.Moment))
                         {
                             var f130 = othermad.Scx[otherwheel] * ownStats.Revpush * recoil;
@@ -497,30 +457,41 @@ public partial class CarPhysics
                             {
                                 f130 = maxHit;
                             }
+
                             if (f130 < -maxHit)
                             {
                                 f130 = -maxHit;
                             }
+
                             var f131 = Scx[wheel] * ownStats.Push;
                             if (f131 > maxHit)
                             {
                                 f131 = maxHit;
                             }
+
                             if (f131 < -maxHit)
                             {
                                 f131 = -maxHit;
                             }
+
                             othermad.Scx[otherwheel] += f131;
                             if (IsClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = true;
                             }
-                            totalOtherDamage += othermad.Regx(otherwheel, f131 * ownStats.Moment * damageMult, otherconto,
-                                random, Im);
+
+                            totalOtherDamage += othermad.Regx(
+                                otherwheel,
+                                f131 * ownStats.Moment * damageMult,
+                                otherconto,
+                                random,
+                                Im
+                            );
                             if (othermad._collidingWithClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = false;
                             }
+
                             Scx[wheel] -= f130;
                             totalOwnDamage += Regx(wheel, -f130 * ownStats.Moment * damageMult, conto, random);
                             Scy[wheel] -= ownStats.Revlift * recoil;
@@ -528,18 +499,25 @@ public partial class CarPhysics
                             {
                                 othermad._collidingWithClientPlayer = true;
                             }
-                            totalOtherDamage += othermad.Regy(otherwheel, ownStats.Revlift * 7 * recoil, otherconto, random,
-                                sourceCar: Im);
+
+                            totalOtherDamage += othermad.Regy(
+                                otherwheel,
+                                ownStats.Revlift * 7 * recoil,
+                                otherconto,
+                                random,
+                                sourceCar: Im
+                            );
                             if (othermad._collidingWithClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = false;
                             }
+
                             if (random.Next(2) == 0)
                             {
                                 otherconto.Spark(
-                                    (wheelx[wheel] + otherwheelx[otherwheel]) * fix64.Half, 
+                                    (wheelx[wheel] + otherwheelx[otherwheel]) * fix64.Half,
                                     (wheely[wheel] + otherwheely[otherwheel]) * fix64.Half,
-                                    (wheelz[wheel] + otherwheelz[otherwheel]) * fix64.Half, 
+                                    (wheelz[wheel] + otherwheelz[otherwheel]) * fix64.Half,
                                     (othermad.Scx[otherwheel] + Scx[wheel]) * fix64.Quarter,
                                     (othermad.Scy[otherwheel] + Scy[wheel]) * fix64.Quarter,
                                     (othermad.Scz[otherwheel] + Scz[wheel]) * fix64.Quarter,
@@ -548,6 +526,7 @@ public partial class CarPhysics
                                 );
                             }
                         }
+
                         if (fix64.Abs(Scz[wheel] * ownStats.Moment) > fix64.Abs(othermad.Scz[otherwheel] * otherStats.Moment))
                         {
                             var f132 = othermad.Scz[otherwheel] * ownStats.Revpush * recoil;
@@ -555,30 +534,43 @@ public partial class CarPhysics
                             {
                                 f132 = maxHit;
                             }
+
                             if (f132 < -maxHit)
                             {
                                 f132 = -maxHit;
                             }
+
                             var f133 = Scz[wheel] * ownStats.Push;
                             if (f133 > maxHit)
                             {
                                 f133 = maxHit;
                             }
+
                             if (f133 < -maxHit)
                             {
                                 f133 = -maxHit;
                             }
+
                             othermad.Scz[otherwheel] += f133;
                             if (IsClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = true;
                             }
-                            totalOtherDamage += othermad.Regz(otherwheel, f133 * ownStats.Moment * damageMult, otherconto,
-                                random, -1, null, Im);
+
+                            totalOtherDamage += othermad.Regz(
+                                otherwheel,
+                                f133 * ownStats.Moment * damageMult,
+                                otherconto,
+                                random,
+                                -1,
+                                null,
+                                Im
+                            );
                             if (othermad._collidingWithClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = false;
                             }
+
                             Scz[wheel] -= f132;
                             totalOwnDamage += Regz(wheel, -f132 * ownStats.Moment * damageMult, conto, random);
                             Scy[wheel] -= ownStats.Revlift * recoil;
@@ -586,33 +578,44 @@ public partial class CarPhysics
                             {
                                 othermad._collidingWithClientPlayer = true;
                             }
-                            totalOtherDamage += othermad.Regy(otherwheel, ownStats.Revlift * 7 * recoil, otherconto, random,
-                                sourceCar: Im);
+
+                            totalOtherDamage += othermad.Regy(
+                                otherwheel,
+                                ownStats.Revlift * 7 * recoil,
+                                otherconto,
+                                random,
+                                sourceCar: Im
+                            );
                             if (othermad._collidingWithClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = false;
                             }
+
                             if (random.Next(2) == 0)
                             {
                                 otherconto.Spark(
-                                    (wheelx[wheel] + otherwheelx[otherwheel]) * fix64.Half, 
+                                    (wheelx[wheel] + otherwheelx[otherwheel]) * fix64.Half,
                                     (wheely[wheel] + otherwheely[otherwheel]) * fix64.Half,
                                     (wheelz[wheel] + otherwheelz[otherwheel]) * fix64.Half,
                                     (othermad.Scx[otherwheel] + Scx[wheel]) * fix64.Quarter,
-                                    (othermad.Scy[otherwheel] + Scy[wheel]) * fix64.Quarter, 
+                                    (othermad.Scy[otherwheel] + Scy[wheel]) * fix64.Quarter,
                                     (othermad.Scz[otherwheel] + Scz[wheel]) * fix64.Quarter,
                                     2,
-                                    (wheelGround + otherWheelGround) / 2);
+                                    (wheelGround + otherWheelGround) / 2
+                                );
                             }
                         }
+
                         if (IsClientPlayer)
                         {
                             othermad.Lastcolido = 70;
                         }
+
                         if (othermad.IsClientPlayer)
                         {
                             Lastcolido = 70;
                         }
+
                         othermad.Scy[otherwheel] -= ownStats.Lift;
                     }
                 }
@@ -674,7 +677,13 @@ public partial class CarPhysics
 
     public event EventHandler? Distruct;
 
-    public void bounceRebound(int wi, ContO conto, DeterministicRandom random, int soundSurface = -1, Vector3? soundPosition = null)
+    public void bounceRebound(
+        int wi,
+        ContO conto,
+        DeterministicRandom random,
+        int soundSurface = -1,
+        Vector3? soundPosition = null
+    )
     {
         // part 1: the closer we are to 90/-90 in Pxy or Pzy, the bigger the bounce
         fix64 rebound = (fix64.Abs(UMath.Sin(Pxy)) + fix64.Abs(UMath.Sin(Pzy))) / (fix64)3;
@@ -728,7 +737,9 @@ public partial class CarPhysics
         FrameTrace.AddMessage($"position: {conto.X:0.00},{conto.Y:0.00},{conto.Z:0.00}");
         FrameTrace.AddMessage($"xz: {conto.Xz:0.00}, mxz: {Mxz:0.00}, lxz: {_lxz:0.00}, fxz: {_turnXz:0.00}, cxz: {Cxz:0.00}");
         FrameTrace.AddMessage($"xy: {conto.Xy:0.00}, pxy: {Pxy:0.00}, zy: {conto.Zy:0.00}, pzy: {Pzy:0.00}, xz: {conto.Xz:0.00}");
-        FrameTrace.AddMessage($"Travxz: {TotalStuntXz:0.00}, Travxy: {TotalStuntXy:0.00}, Travzy: {TotalStuntZy:0.00}, Surfing: {Surfing}");
+        FrameTrace.AddMessage(
+            $"Travxz: {TotalStuntXz:0.00}, Travxy: {TotalStuntXy:0.00}, Travzy: {TotalStuntZy:0.00}, Surfing: {Surfing}"
+        );
         OnGroundPlane = false;
 
         var xneg = 1;
@@ -989,11 +1000,17 @@ public partial class CarPhysics
                 Pzy = UMath.QuantizeTowardsZero((Pzy + (DownComponent - UpComponent) * UMath.Cos(Pxy) * _tickRate), _tickRate); //
                 if (zyinv)
                 {
-                    conto.Xz = UMath.QuantizeTowardsZero(conto.Xz + ((DownComponent - UpComponent) * UMath.Sin(Pxy) * _tickRate), _tickRate);
+                    conto.Xz = UMath.QuantizeTowardsZero(
+                        conto.Xz + ((DownComponent - UpComponent) * UMath.Sin(Pxy) * _tickRate),
+                        _tickRate
+                    );
                 }
                 else
                 {
-                    conto.Xz = UMath.QuantizeTowardsZero(conto.Xz - ((DownComponent - UpComponent) * UMath.Sin(Pxy) * _tickRate), _tickRate);
+                    conto.Xz = UMath.QuantizeTowardsZero(
+                        conto.Xz - ((DownComponent - UpComponent) * UMath.Sin(Pxy) * _tickRate),
+                        _tickRate
+                    );
                 }
 
                 Pxy = UMath.QuantizeTowardsZero((Pxy + (RightComponent - LeftComponent) * _tickRate), _tickRate);
@@ -1178,14 +1195,23 @@ public partial class CarPhysics
                         PressDown = false;
                     }
 
-                    Pzy = UMath.QuantizeTowardsZero((Pzy + ((DownComponent - UpComponent) * UMath.Cos(Pxy)) * _tickRate), _tickRate);
+                    Pzy = UMath.QuantizeTowardsZero(
+                        (Pzy + ((DownComponent - UpComponent) * UMath.Cos(Pxy)) * _tickRate),
+                        _tickRate
+                    );
                     if (zyinv)
                     {
-                        conto.Xz = UMath.QuantizeTowardsZero(conto.Xz + (((DownComponent - UpComponent) * UMath.Sin(Pxy)) * _tickRate), _tickRate);
+                        conto.Xz = UMath.QuantizeTowardsZero(
+                            conto.Xz + (((DownComponent - UpComponent) * UMath.Sin(Pxy)) * _tickRate),
+                            _tickRate
+                        );
                     }
                     else
                     {
-                        conto.Xz = UMath.QuantizeTowardsZero(conto.Xz - (((DownComponent - UpComponent) * UMath.Sin(Pxy)) * _tickRate), _tickRate);
+                        conto.Xz = UMath.QuantizeTowardsZero(
+                            conto.Xz - (((DownComponent - UpComponent) * UMath.Sin(Pxy)) * _tickRate),
+                            _tickRate
+                        );
                     }
 
                     Pxy = UMath.QuantizeTowardsZero((Pxy + (RightComponent - LeftComponent) * _tickRate), _tickRate);
@@ -1372,8 +1398,10 @@ public partial class CarPhysics
             {
                 Scz[wheelid] = i27 - 200;
             }
-            
-            FrameTrace.AddMessage($"Scx[{wheelid}]: {Scx[wheelid]:0.00}, Scz[{wheelid}]: {Scz[wheelid]:0.00}, Scy[{wheelid}]: {Scy[wheelid]:0.00}");
+
+            FrameTrace.AddMessage(
+                $"Scx[{wheelid}]: {Scx[wheelid]:0.00}, Scz[{wheelid}]: {Scz[wheelid]:0.00}, Scy[{wheelid}]: {Scy[wheelid]:0.00}"
+            );
         }
 
         for (var i29 = 0; i29 < 4; i29++)
@@ -1540,8 +1568,18 @@ public partial class CarPhysics
 
                         if (random.NextFixed6401() > (fix64)0.65f)
                         {
-                            conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
-                                f42 * Stat.Simag, (int)_tilt, BadLanding && Mtouch, wheelGround);
+                            conto.Dust(
+                                j,
+                                wheelx[j],
+                                wheely[j],
+                                wheelz[j],
+                                (int)Scx[j],
+                                (int)Scz[j],
+                                f42 * Stat.Simag,
+                                (int)_tilt,
+                                BadLanding && Mtouch,
+                                wheelGround
+                            );
                             if (!BadLanding && SkidSoundFilter.HasLateralSlip((float)Scx[j], (float)Scz[j], (float)conto.Xz))
                             {
                                 SfxPlaySkid?.Invoke(this, (surfaceType, (float)fix64.Sqrt(Scx[j] * Scx[j] + Scz[j] * Scz[j])));
@@ -1554,14 +1592,35 @@ public partial class CarPhysics
                     {
                         if (surfaceType == SurfaceType.OffTrack && random.NextFixed6401() > (fix64)0.8f)
                         {
-                            conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
-                                (fix64)1.1F * Stat.Simag, (int)_tilt, BadLanding && Mtouch, wheelGround);
+                            conto.Dust(
+                                j,
+                                wheelx[j],
+                                wheely[j],
+                                wheelz[j],
+                                (int)Scx[j],
+                                (int)Scz[j],
+                                (fix64)1.1F * Stat.Simag,
+                                (int)_tilt,
+                                BadLanding && Mtouch,
+                                wheelGround
+                            );
                         }
 
-                        if ((surfaceType == SurfaceType.OffRoad || surfaceType == SurfaceType.Bump) && random.NextFixed6401() > (fix64)0.6f)
+                        if ((surfaceType == SurfaceType.OffRoad || surfaceType == SurfaceType.Bump)
+                            && random.NextFixed6401() > (fix64)0.6f)
                         {
-                            conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
-                                (fix64)1.15F * Stat.Simag, (int)_tilt, BadLanding && Mtouch, wheelGround);
+                            conto.Dust(
+                                j,
+                                wheelx[j],
+                                wheely[j],
+                                wheelz[j],
+                                (int)Scx[j],
+                                (int)Scz[j],
+                                (fix64)1.15F * Stat.Simag,
+                                (int)_tilt,
+                                BadLanding && Mtouch,
+                                wheelGround
+                            );
                         }
                     }
                 }
@@ -1572,7 +1631,10 @@ public partial class CarPhysics
 
                 if (surfaceType == SurfaceType.Bump || surfaceType == SurfaceType.BumpySides)
                 {
-                    int k = random.Next(4); // choose 4 wheels randomly to bounce up, usually some wheel will be chosen twice, which means another wheel is not chosen, causing tilt
+                    int
+                        k = random.Next(
+                            4
+                        ); // choose 4 wheels randomly to bounce up, usually some wheel will be chosen twice, which means another wheel is not chosen, causing tilt
                     fix64 bumpLift = surfaceType == SurfaceType.Bump ? -100 : -150;
                     fix64 rng = (fix64)0.55F;
                     Scy[k] = bumpLift * rng * Speed / Stat.Swits[2] * (Stat.Bounce - (fix64)0.3F);
@@ -1652,9 +1714,18 @@ public partial class CarPhysics
                         f50 += (fix64)1.2f;
                     }
 
-                    conto.Dust(i49, wheelx[i49], wheely[i49], wheelz[i49], (int)Scx[i49], (int)Scz[i49],
+                    conto.Dust(
+                        i49,
+                        wheelx[i49],
+                        wheely[i49],
+                        wheelz[i49],
+                        (int)Scx[i49],
+                        (int)Scz[i49],
                         f50 * Stat.Simag,
-                        0, BadLanding && Mtouch, wheelGround);
+                        0,
+                        BadLanding && Mtouch,
+                        wheelGround
+                    );
                 } // CHK2
 
                 wheely[i49] = groundY;
@@ -1662,12 +1733,35 @@ public partial class CarPhysics
                 isWheelGrounded[i49] = true;
                 wheelContactNormal[i49] = Up;
 
-                bounceRebound(i49, conto, random, soundPosition: new Vector3((float)wheelx[i49], (float)wheely[i49], (float)wheelz[i49]));
+                bounceRebound(
+                    i49,
+                    conto,
+                    random,
+                    soundPosition: new Vector3((float)wheelx[i49], (float)wheely[i49], (float)wheelz[i49])
+                );
             }
         }
 
         // OmarTrackPieceCollision(control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical, isWheelGrounded, random);
-        PhyTrackPieceCollision(stage, control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical, isWheelGrounded, wheelContactNormal, random, gravity);
+        PhyTrackPieceCollision(
+            stage,
+            control,
+            conto,
+            wheelx,
+            wheely,
+            wheelz,
+            groundY,
+            wheelYThreshold,
+            wheelGround,
+            ref nGroundedWheels,
+            wasMtouch,
+            surfaceType,
+            out hitVertical,
+            isWheelGrounded,
+            wheelContactNormal,
+            random,
+            gravity
+        );
 
         // sparks and scrapes
         for (var i = 0; i < 4; i++)
@@ -1678,6 +1772,7 @@ public partial class CarPhysics
                 {
                     _crank[i, j] = 0;
                 }
+
                 _lcrank[i, j] = _crank[i, j];
             }
         }
@@ -1685,14 +1780,29 @@ public partial class CarPhysics
         if (hitVertical)
         {
             fix64 i;
-            for (i = fix64.Abs(conto.Xz + 45); i > 180; i -= 360) { }
+            for (i = fix64.Abs(conto.Xz + 45); i > 180; i -= 360)
+            {
+            }
+
             _pmlt = fix64.Abs(i) > 90 ? 1 : -1;
-            for (i = fix64.Abs(conto.Xz - 45); i > 180; i -= 360) { }
+            for (i = fix64.Abs(conto.Xz - 45); i > 180; i -= 360)
+            {
+            }
+
             _nmlt = fix64.Abs(i) > 90 ? 1 : -1;
         }
 
         // I think this line, among other things, is responsible for causing flatspins after glitching on the edge of a ramp
-        conto.Xz += _tickRate * _forca * (Scz[0] * _nmlt - Scz[1] * _pmlt + Scz[2] * _pmlt - Scz[3] * _nmlt + Scx[0] * _pmlt + Scx[1] * _nmlt - Scx[2] * _nmlt - Scx[3] * _pmlt);
+        conto.Xz += _tickRate
+                    * _forca
+                    * (Scz[0] * _nmlt
+                       - Scz[1] * _pmlt
+                       + Scz[2] * _pmlt
+                       - Scz[3] * _nmlt
+                       + Scx[0] * _pmlt
+                       + Scx[1] * _nmlt
+                       - Scx[2] * _nmlt
+                       - Scx[3] * _pmlt);
 
         // maxine: angle assist to make hypergliding easier
         if (!control.Left && !control.Right)
@@ -1708,11 +1818,12 @@ public partial class CarPhysics
             {
                 conto.Xz = fix64.Round(conto.Xz / 90) * 90;
             }
+
             FrameTrace.AddMessage($"assistxz: {assistxz:0.00}, conto.Xz: {conto.Xz:0.00}");
         }
 
         // Surface orientation from plane fitting.
-        
+
         var nWheelsOnSurface = 0;
         if (isWheelGrounded[0]) nWheelsOnSurface++;
         if (isWheelGrounded[1]) nWheelsOnSurface++;
@@ -1731,8 +1842,11 @@ public partial class CarPhysics
             while (d > 180) d = fix64.Abs(d - 360);
             return d > 30;
         }
+
         if (Jumped(Pxy, _dbgPxy) || Jumped(Pzy, _dbgPzy) || Jumped(conto.Xz, _dbgXz))
-            Logging.Warning($"ORIENT JUMP before plane fit: Pxy {_dbgPxy:0.0}->{Pxy:0.0}, Pzy {_dbgPzy:0.0}->{Pzy:0.0}, Xz {_dbgXz:0.0}->{conto.Xz:0.0}\n{FrameTrace.GetMessageString()}");
+            Logging.Warning(
+                $"ORIENT JUMP before plane fit: Pxy {_dbgPxy:0.0}->{Pxy:0.0}, Pzy {_dbgPzy:0.0}->{Pzy:0.0}, Xz {_dbgXz:0.0}->{conto.Xz:0.0}\n{FrameTrace.GetMessageString()}"
+            );
         var fitPxy = Pxy;
         var fitPzy = Pzy;
 
@@ -1768,19 +1882,24 @@ public partial class CarPhysics
             var carUp = new f64Vector3(
                 curSinP * cosXz + curCosP * curSinZ * sinXz,
                 -curCosP * curCosZ,
-                curSinP * sinXz - curCosP * curSinZ * cosXz);
+                curSinP * sinXz - curCosP * curSinZ * cosXz
+            );
 
             // Point the normal the same way as the car's up. Uses the full vector, not just Y,
             // which is ~0 whenever the car is on its side or vertical.
             var needsFlip = f64Vector3.Dot(terrainNormal, carUp) < fix64.Zero;
-            FrameTrace.AddMessage($"flipCheck: tn={terrainNormal}, carUp={carUp}, needsFlip={needsFlip}, Pxy={Pxy:0.0}, Pzy={Pzy:0.0}");
+            FrameTrace.AddMessage(
+                $"flipCheck: tn={terrainNormal}, carUp={carUp}, needsFlip={needsFlip}, Pxy={Pxy:0.0}, Pzy={Pzy:0.0}"
+            );
             if (needsFlip)
                 terrainNormal = -terrainNormal;
 
             var (fittedPxy, fittedPzy, gimbalLocked) = FitTerrainAngles(terrainNormal, conto.Xz, Pxy, Pzy);
             Pxy = fittedPxy;
             Pzy = fittedPzy;
-            FrameTrace.AddMessage($"terrainFit: tn={terrainNormal}, gimbalLocked={gimbalLocked}, → Pxy={Pxy:0.0}°, Pzy={Pzy:0.0}°");
+            FrameTrace.AddMessage(
+                $"terrainFit: tn={terrainNormal}, gimbalLocked={gimbalLocked}, → Pxy={Pxy:0.0}°, Pzy={Pzy:0.0}°"
+            );
         }
 
         // Balanced on the nose or tail, the wheel plane agrees with the pose and nothing supplies
@@ -1801,7 +1920,9 @@ public partial class CarPhysics
         }
 
         if (Jumped(Pxy, fitPxy) || Jumped(Pzy, fitPzy))
-            Logging.Warning($"ORIENT JUMP in plane fit: Pxy {fitPxy:0.0}->{Pxy:0.0}, Pzy {fitPzy:0.0}->{Pzy:0.0}\n{FrameTrace.GetMessageString()}");
+            Logging.Warning(
+                $"ORIENT JUMP in plane fit: Pxy {fitPxy:0.0}->{Pxy:0.0}, Pzy {fitPzy:0.0}->{Pzy:0.0}\n{FrameTrace.GetMessageString()}"
+            );
         _dbgPxy = Pxy;
         _dbgPzy = Pzy;
         _dbgXz = conto.Xz;
@@ -1814,50 +1935,59 @@ public partial class CarPhysics
                 Pzy += 360;
                 conto.Zy += 360;
             }
+
             while (Pzy > 360)
             {
                 Pzy -= 360;
                 conto.Zy -= 360;
             }
+
             if (Pzy < 190 && Pzy > 170)
             {
                 Pzy = 180;
                 conto.Zy = 180;
                 i_86++;
             }
+
             if (Pzy > 350 || Pzy < 10)
             {
                 Pzy = 0;
                 conto.Zy = 0;
                 i_86++;
             }
+
             while (Pxy < 360)
             {
                 Pxy += 360;
                 conto.Xy += 360;
             }
+
             while (Pxy > 360)
             {
                 Pxy -= 360;
                 conto.Xy -= 360;
             }
+
             if (Pxy < 190 && Pxy > 170)
             {
                 Pxy = 180;
                 conto.Xy = 180;
                 i_86++;
             }
+
             if (Pxy > 350 || Pxy < 10)
             {
                 Pxy = 0;
                 conto.Xy = 0;
                 i_86++;
             }
+
             if (i_86 == 2)
             {
                 Mtouch = true; //DS-addons: Bad landing hotfix
             }
         }
+
         if (!Mtouch && Wtouch)
         {
             if (_cntouch == 10)
@@ -1871,9 +2001,11 @@ public partial class CarPhysics
         }
         else
             _cntouch = 0; // CHK12
-                          //DS-addons: Bad landing hotfix
+        //DS-addons: Bad landing hotfix
 
-        fix64 newy = ((wheely[0] + wheely[1] + wheely[2] + wheely[3]) * fix64.Quarter - bottomy * UMath.Cos(Pzy) * UMath.Cos(Pxy) + airy);
+        fix64 newy = ((wheely[0] + wheely[1] + wheely[2] + wheely[3]) * fix64.Quarter
+                      - bottomy * UMath.Cos(Pzy) * UMath.Cos(Pxy)
+                      + airy);
         py = conto.Y - newy;
         conto.Y = newy;
         //conto.y = (int) ((fs_23[0] + fs_23[1] + fs_23[2] + fs_23[3]) * fix64.Quarter - (fix64) i_10 * Cos(this.Pzy) * Cos(this.Pxy) + f_12);
@@ -1887,17 +2019,39 @@ public partial class CarPhysics
 
         // CHK13
         // car sliding fix by jacher: do not adjust to tickrate
-        conto.X = ((wheelx[0] - conto.Keyx[0] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[0] * UMath.Sin(conto.Xz) +
-            wheelx[1] - conto.Keyx[1] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[1] * UMath.Sin(conto.Xz) +
-            wheelx[2] - conto.Keyx[2] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[2] * UMath.Sin(conto.Xz) +
-            wheelx[3] - conto.Keyx[3] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[3] * UMath.Sin(conto.Xz)) * fix64.Quarter
-            + bottomy * UMath.Sin(Pxy) * UMath.Cos(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Sin(conto.Xz) + airx);
+        conto.X = ((wheelx[0]
+                    - conto.Keyx[0] * UMath.Cos(conto.Xz)
+                    + xneg * conto.Keyz[0] * UMath.Sin(conto.Xz)
+                    + wheelx[1]
+                    - conto.Keyx[1] * UMath.Cos(conto.Xz)
+                    + xneg * conto.Keyz[1] * UMath.Sin(conto.Xz)
+                    + wheelx[2]
+                    - conto.Keyx[2] * UMath.Cos(conto.Xz)
+                    + xneg * conto.Keyz[2] * UMath.Sin(conto.Xz)
+                    + wheelx[3]
+                    - conto.Keyx[3] * UMath.Cos(conto.Xz)
+                    + xneg * conto.Keyz[3] * UMath.Sin(conto.Xz))
+                   * fix64.Quarter
+                   + bottomy * UMath.Sin(Pxy) * UMath.Cos(conto.Xz)
+                   - bottomy * UMath.Sin(Pzy) * UMath.Sin(conto.Xz)
+                   + airx);
 
-        conto.Z = ((wheelz[0] - xneg * conto.Keyz[0] * UMath.Cos(conto.Xz) - conto.Keyx[0] * UMath.Sin(conto.Xz)
-            + wheelz[1] - xneg * conto.Keyz[1] * UMath.Cos(conto.Xz) - conto.Keyx[1] * UMath.Sin(conto.Xz)
-            + wheelz[2] - xneg * conto.Keyz[2] * UMath.Cos(conto.Xz) - conto.Keyx[2] * UMath.Sin(conto.Xz)
-            + wheelz[3] - xneg * conto.Keyz[3] * UMath.Cos(conto.Xz) - conto.Keyx[3] * UMath.Sin(conto.Xz)) * fix64.Quarter
-            + bottomy * UMath.Sin(Pxy) * UMath.Sin(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Cos(conto.Xz) + airz);
+        conto.Z = ((wheelz[0]
+                    - xneg * conto.Keyz[0] * UMath.Cos(conto.Xz)
+                    - conto.Keyx[0] * UMath.Sin(conto.Xz)
+                    + wheelz[1]
+                    - xneg * conto.Keyz[1] * UMath.Cos(conto.Xz)
+                    - conto.Keyx[1] * UMath.Sin(conto.Xz)
+                    + wheelz[2]
+                    - xneg * conto.Keyz[2] * UMath.Cos(conto.Xz)
+                    - conto.Keyx[2] * UMath.Sin(conto.Xz)
+                    + wheelz[3]
+                    - xneg * conto.Keyz[3] * UMath.Cos(conto.Xz)
+                    - conto.Keyx[3] * UMath.Sin(conto.Xz))
+                   * fix64.Quarter
+                   + bottomy * UMath.Sin(Pxy) * UMath.Sin(conto.Xz)
+                   - bottomy * UMath.Sin(Pzy) * UMath.Cos(conto.Xz)
+                   + airz);
 
         if (fix64.Abs(Speed) > 10 || !Mtouch)
         {
@@ -1931,8 +2085,11 @@ public partial class CarPhysics
             {
                 conto.Zy = Pzy;
             }
-            FrameTrace.AddMessage($"AFT xy: {conto.Xy:0.00}, pxy: {Pxy:0.00}, zy: {conto.Zy:0.00}, pzy: {Pzy:0.00}, xz: {conto.Xz:0.00}");
+            FrameTrace.AddMessage(
+                $"AFT xy: {conto.Xy:0.00}, pxy: {Pxy:0.00}, zy: {conto.Zy:0.00}, pzy: {Pzy:0.00}, xz: {conto.Xz:0.00}"
+            );
         } // CHK14
+
         if (Wtouch && !BadLanding)
         {
             var f87 = (Speed / (fix64)Stat.Swits[2] * 14 * (Stat.Bounce - (fix64)0.4f));
@@ -1959,12 +2116,14 @@ public partial class CarPhysics
             {
                 _tilt = 0;
             }
+
             conto.Xy += _tilt * _tickRate;
             FrameTrace.AddMessage("y before tilt: " + conto.Y);
             if (Gtouch)
             {
                 conto.Y -= (int)((_tilt / (fix64)1.5f) * _tickRate);
             }
+
             FrameTrace.AddMessage("y after tilt: " + conto.Y);
             FrameTrace.AddMessage("tilt: " + _tilt);
         }
@@ -1972,20 +2131,23 @@ public partial class CarPhysics
         {
             _tilt = 0;
         }
+
         if (Wtouch && surfaceType == SurfaceType.OffRoad)
         {
-            conto.Zy += (int)((random.NextFixed6401() * 6 * Speed / Stat.Swits[2] - 3 * Speed / Stat.Swits[2]) *
-                                          (Stat.Bounce - (fix64)0.3f));
-            conto.Xy += (int)((random.NextFixed6401() * 6 * Speed / Stat.Swits[2] - 3 * Speed / Stat.Swits[2]) *
-                                          (Stat.Bounce - (fix64)0.3f));
+            conto.Zy += (int)((random.NextFixed6401() * 6 * Speed / Stat.Swits[2] - 3 * Speed / Stat.Swits[2])
+                              * (Stat.Bounce - (fix64)0.3f));
+            conto.Xy += (int)((random.NextFixed6401() * 6 * Speed / Stat.Swits[2] - 3 * Speed / Stat.Swits[2])
+                              * (Stat.Bounce - (fix64)0.3f));
         }
+
         if (Wtouch && surfaceType == SurfaceType.OffTrack)
         {
-            conto.Zy += (int)((random.NextFixed6401() * 4 * Speed / Stat.Swits[2] - 2 * Speed / Stat.Swits[2]) *
-                                          (Stat.Bounce - (fix64)0.3f));
-            conto.Xy += (int)((random.NextFixed6401() * 4 * Speed / Stat.Swits[2] - 2 * Speed / Stat.Swits[2]) *
-                                          (Stat.Bounce - (fix64)0.3f));
+            conto.Zy += (int)((random.NextFixed6401() * 4 * Speed / Stat.Swits[2] - 2 * Speed / Stat.Swits[2])
+                              * (Stat.Bounce - (fix64)0.3f));
+            conto.Xy += (int)((random.NextFixed6401() * 4 * Speed / Stat.Swits[2] - 2 * Speed / Stat.Swits[2])
+                              * (Stat.Bounce - (fix64)0.3f));
         } // CHK15
+
         if (DamagePoints >= Stat.Maxmag && !Wasted)
         {
             Distruct(this, EventArgs.Empty);
@@ -1997,11 +2159,13 @@ public partial class CarPhysics
             {
                 Cntdest++;
             }
+
             if (Cntdest == 1)
             {
                 //Record.Dest[Im] = 300;
             }
         }
+
         /*for (var i92 = 0; i92 < CheckPoints.N; i92++)
         {
             if (CheckPoints.Typ[i92] > 0)
@@ -2233,6 +2397,7 @@ public partial class CarPhysics
                 Newcar = false;
             }
         }
+
         if (!Mtouch)
         {
             if (TabletopCounter != 1)
@@ -2240,6 +2405,7 @@ public partial class CarPhysics
                 TabletopCounter = 1;
                 _lxz = conto.Xz;
             }
+
             if (StuntState == 2 || StuntState == -1)
             {
                 TotalStuntXy += ((RightComponent - LeftComponent) * _tickRate);
@@ -2247,27 +2413,32 @@ public partial class CarPhysics
                 {
                     RightTabletop = true;
                 }
+
                 TotalStuntZy += ((UpComponent - DownComponent) * _tickRate);
                 if (TotalStuntZy > 135)
                 {
                     ForwardTabletop = true;
                 }
+
                 if (TotalStuntZy < -135)
                 {
                     BackwardsTabletop = true;
                 }
             }
+
             if (_lxz != conto.Xz)
             {
                 TotalStuntXz += (_lxz - conto.Xz) * _tickRate;
                 _lxz = conto.Xz;
             }
+
             if (_surfCount < (10 * (_oneOverTickRate)))
             {
                 if (control.Wall != -1)
                 {
                     Surfing = true;
                 }
+
                 _surfCount++;
             }
         }
@@ -2279,6 +2450,7 @@ public partial class CarPhysics
                 {
                     CapsizedCounter = 0;
                 }
+
                 if (Gtouch && TabletopCounter != 0)
                 {
                     if (TabletopCounter == 9)
@@ -2295,6 +2467,7 @@ public partial class CarPhysics
                             JustSurfer = false;
                             Powerup += 30;
                         }
+
                         if (fix64.Abs(TotalStuntZy) > 90)
                         {
                             JustSurfer = false;
@@ -2307,26 +2480,30 @@ public partial class CarPhysics
                                 JustSurfer = false;
                                 Powerup += 40;
                             }
+
                             if (BackwardsTabletop)
                             {
                                 JustSurfer = false;
                                 Powerup += 40;
                             }
                         }
+
                         if (fix64.Abs(TotalStuntXz) > 90)
                         {
                             JustSurfer = false;
                             Powerup += fix64.Abs(TotalStuntXz) / 18;
                         }
+
                         if (Surfing)
                         {
                             Powerup += 30;
                         }
+
                         Power += Powerup;
 
                         // dont invoke powerup if we only did a surf...
-                        if(!JustSurfer) PowerUp?.Invoke(this, (float)Powerup);
-                        
+                        if (!JustSurfer) PowerUp?.Invoke(this, (float)Powerup);
+
                         /*if (Im == XTGraphics.Im && (int) Powerup > Record.Powered && Record.Wasted == 0 &&
                             (Powerup > 60 || CheckPoints.Stage == 1 || CheckPoints.Stage == 2))
                         {
@@ -2353,6 +2530,7 @@ public partial class CarPhysics
                             }
                         }
                     } // CHK17
+
                     if (TabletopCounter == 10)
                     {
                         TotalStuntXy = 0;
@@ -2385,6 +2563,7 @@ public partial class CarPhysics
                     _surfCount = 0;
                     Surfing = false;
                 }
+
                 if (CapsizedCounter == 0)
                 {
                     var i95 = 0;
@@ -2414,6 +2593,7 @@ public partial class CarPhysics
                     }
                 }
             }
+
             if (TabletopCounter == 0 && Speed != 0)
             {
                 if (_xtpower == 0)
@@ -2436,8 +2616,7 @@ public partial class CarPhysics
 
         // lava(): burn a share of max health while grounded. phy-addons applies this per
         // original-rate tick (21.4 Hz), so scale it to this submission's tick rate.
-        if (stage.Physics.Lava > 0 && Mtouch && !Wasted && DamagePoints < Stat.Maxmag &&
-            conto.Y + conto.Grat >= -250)
+        if (stage.Physics.Lava > 0 && Mtouch && !Wasted && DamagePoints < Stat.Maxmag && conto.Y + conto.Grat >= -250)
         {
             DamagePoints += (int)((fix64)stage.Physics.Lava / 100 * Stat.Maxmag / (fix64)21.276596F * _tickRate);
         }
@@ -2448,6 +2627,7 @@ public partial class CarPhysics
         {
             control.Wall = -1;
         }
+
         if (Im != 0 && Lastcolido != 0 && !Wasted)
         {
             Lastcolido--;
@@ -2488,11 +2668,24 @@ public partial class CarPhysics
     // input: number of grounded wheels to medium
     // output: hitVertical when colliding against a wall
     private void PhyTrackPieceCollision(
-        BackendStage stage, Control control, ContO conto,
-        Span<fix64> wheelx, Span<fix64> wheely, Span<fix64> wheelz,
-        fix64 groundY, fix64 wheelYThreshold, fix64 wheelGround, ref int nGroundedWheels, bool wasMtouch,
-        SurfaceType surfaceType, out bool hitVertical, Span<bool> isWheelGrounded, Span<f64Vector3> wheelContactNormal,
-        DeterministicRandom random, fix64 gravity)
+        BackendStage stage,
+        Control control,
+        ContO conto,
+        Span<fix64> wheelx,
+        Span<fix64> wheely,
+        Span<fix64> wheelz,
+        fix64 groundY,
+        fix64 wheelYThreshold,
+        fix64 wheelGround,
+        ref int nGroundedWheels,
+        bool wasMtouch,
+        SurfaceType surfaceType,
+        out bool hitVertical,
+        Span<bool> isWheelGrounded,
+        Span<f64Vector3> wheelContactNormal,
+        DeterministicRandom random,
+        fix64 gravity
+    )
     {
         hitVertical = false;
 
@@ -2505,7 +2698,7 @@ public partial class CarPhysics
         {
             var position = new f64Vector3(wheelx[k], wheely[k] - wheelGround, wheelz[k]);
             var velocity = new f64Vector3(Scx[k], Scy[k], Scz[k]);
-            
+
             if (!isWheelTouchingPiece[k])
             {
                 FrameTrace.AddMessage("start wheel");
@@ -2525,7 +2718,7 @@ public partial class CarPhysics
                             var p0 = collisionMesh.Vertices[collisionMesh.Indices[i]];
                             var p1 = collisionMesh.Vertices[collisionMesh.Indices[i + 1]];
                             var p2 = collisionMesh.Vertices[collisionMesh.Indices[i + 2]];
-                            
+
                             if (!TriangleMesh.PointInTriangleAABB(collisionMesh.Aabb[i / 3], localPosition)) continue;
 
                             var edge1 = p1 - p0;
@@ -2534,7 +2727,11 @@ public partial class CarPhysics
                             // Compute length via float to avoid fix64 overflow on large triangles
                             var floatLength = normal.LengthNoOverflow();
                             if (floatLength < (fix64)1e-3f) continue; // degenerate triangle
-                            var normalizedNormal = new f64Vector3(normal.X / floatLength, normal.Y / floatLength, normal.Z / floatLength);
+                            var normalizedNormal = new f64Vector3(
+                                normal.X / floatLength,
+                                normal.Y / floatLength,
+                                normal.Z / floatLength
+                            );
                             var groundness = -normal.Y / floatLength;
                             var toPoint = localPosition - p0;
                             var triangleData = new TriangleMesh.TriangleData(edge1, edge2, normalizedNormal, groundness, toPoint);
@@ -2543,34 +2740,44 @@ public partial class CarPhysics
                             {
                                 // Find closest triangle center to wheel in XZ (local space)
                                 var center = (p0 + p1 + p2) / (fix64)3;
-                                var dxz = fix64.Sqrt((center.X - localPosition.X) * (center.X - localPosition.X) + (center.Z - localPosition.Z) * (center.Z - localPosition.Z));
+                                var dxz = fix64.Sqrt(
+                                    (center.X - localPosition.X) * (center.X - localPosition.X)
+                                    + (center.Z - localPosition.Z) * (center.Z - localPosition.Z)
+                                );
                                 if ((float)dxz < 500 && groundness > (fix64)0.3f)
                                 {
                                     var inTri = TriangleMesh.DebugPointInTriangle(edge1, edge2, toPoint);
                                     var surfaceY = fix64.Abs(normalizedNormal.Y) > (fix64)1e-6
-                                        ? p0.Y - (normalizedNormal.X * (localPosition.X - p0.X) + normalizedNormal.Z * (localPosition.Z - p0.Z)) / normalizedNormal.Y
+                                        ? p0.Y
+                                          - (normalizedNormal.X * (localPosition.X - p0.X)
+                                             + normalizedNormal.Z * (localPosition.Z - p0.Z))
+                                          / normalizedNormal.Y
                                         : 999;
-                                    FrameTrace.AddMessage($"TRI[{i/3}] p0=({(float)p0.X:F0},{(float)p0.Y:F0},{(float)p0.Z:F0}) inTri={inTri} surfY={(float)surfaceY:F0} localWheel=({(float)localPosition.X:F0},{(float)localPosition.Y:F0},{(float)localPosition.Z:F0})");
+                                    FrameTrace.AddMessage(
+                                        $"TRI[{i / 3}] p0=({(float)p0.X:F0},{(float)p0.Y:F0},{(float)p0.Z:F0}) inTri={inTri} surfY={(float)surfaceY:F0} localWheel=({(float)localPosition.X:F0},{(float)localPosition.Y:F0},{(float)localPosition.Z:F0})"
+                                    );
                                 }
                             }
-                            
+
                             // Ground/ramp triangle: snap wheel Y to surface (local space, then convert back)
                             if (triangleData.IsGround)
                             {
                                 if (TriangleMesh.ResolveGround(p0, p1, p2, localPosition, triangleData) is { } groundHit)
                                 {
-                                    FrameTrace.AddMessage(triangleData.IsGround
-                                        ? $"ground triangle (normal {(float)normalizedNormal.X:F2}, {(float)normalizedNormal.Y:F2}, {(float)normalizedNormal.Z:F2}, groundness {(float)groundness:F2})"
-                                        : $"wall triangle (normal {(float)normalizedNormal.X:F2}, {(float)normalizedNormal.Y:F2}, {(float)normalizedNormal.Z:F2})");
+                                    FrameTrace.AddMessage(
+                                        triangleData.IsGround
+                                            ? $"ground triangle (normal {(float)normalizedNormal.X:F2}, {(float)normalizedNormal.Y:F2}, {(float)normalizedNormal.Z:F2}, groundness {(float)groundness:F2})"
+                                            : $"wall triangle (normal {(float)normalizedNormal.X:F2}, {(float)normalizedNormal.Y:F2}, {(float)normalizedNormal.Z:F2})"
+                                    );
 
                                     touching |= 1 << k;
                                     ++nGroundedWheels;
-                                    
+
                                     isWheelGrounded[k] = true;
                                     // normalizedNormal is in object-local XZ space; RotateXz brings it to world space.
                                     // groundness > 0 ⟹ normalizedNormal.Y < 0, which is the -Y (up) direction in Y-down. ✓
                                     wheelContactNormal[k] = normalizedNormal.RotateXz(boxMesh.GameObjectXz);
-                                    
+
                                     Wtouch = true;
                                     Gtouch = true;
 
@@ -2579,10 +2786,13 @@ public partial class CarPhysics
                                     var zTmp = localPosition.Y - groundHit.newY;
                                     // if (zTmp > 0 && zTmp < 200)
                                     {
-                                        var rampAngleDeg = fix64.Acos(fix64.Clamp(triangleData.Groundness, -1, 1)) * fix64.RadToDeg;
+                                        var rampAngleDeg = fix64.Acos(fix64.Clamp(triangleData.Groundness, -1, 1))
+                                                           * fix64.RadToDeg;
                                         var liftDivider = 1 + (50 - fix64.Abs(rampAngleDeg)) / (fix64)30;
                                         if (liftDivider < 4) liftDivider = 4;
-                                        FrameTrace.AddMessage($"ramp lift: {zTmp} liftDivider: {liftDivider:F2} total: {zTmp / liftDivider:F2}");
+                                        FrameTrace.AddMessage(
+                                            $"ramp lift: {zTmp} liftDivider: {liftDivider:F2} total: {zTmp / liftDivider:F2}"
+                                        );
                                         Scy[k] -= zTmp / liftDivider;
                                     }
 
@@ -2595,8 +2805,18 @@ public partial class CarPhysics
                                             dustMag += (fix64)1.1f;
                                         else
                                             dustMag += (fix64)1.2f;
-                                        conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k],
-                                            dustMag * Stat.Simag, 0, BadLanding && Mtouch, (int)wheelGround);
+                                        conto.Dust(
+                                            k,
+                                            wheelx[k],
+                                            wheely[k],
+                                            wheelz[k],
+                                            (int)Scx[k],
+                                            (int)Scz[k],
+                                            dustMag * Stat.Simag,
+                                            0,
+                                            BadLanding && Mtouch,
+                                            (int)wheelGround
+                                        );
                                     }
 
                                     // newY is in local space; RotateXz doesn't affect Y, so just add object Y
@@ -2610,11 +2830,14 @@ public partial class CarPhysics
                             else
                             {
                                 // Wall triangle: horizontal push-back (in local space, then rotate back)
-                                if (TriangleMesh.ResolveWall(p0, p1, p2, localPosition, localVelocity, triangleData) is { } wallHit)
+                                if (TriangleMesh.ResolveWall(p0, p1, p2, localPosition, localVelocity, triangleData) is
+                                    { } wallHit)
                                 {
-                                    FrameTrace.AddMessage(triangleData.IsGround
-                                        ? $"ground triangle (normal {(float)normalizedNormal.X:F2}, {(float)normalizedNormal.Y:F2}, {(float)normalizedNormal.Z:F2}, groundness {(float)groundness:F2})"
-                                        : $"wall triangle (normal {(float)normalizedNormal.X:F2}, {(float)normalizedNormal.Y:F2}, {(float)normalizedNormal.Z:F2})");
+                                    FrameTrace.AddMessage(
+                                        triangleData.IsGround
+                                            ? $"ground triangle (normal {(float)normalizedNormal.X:F2}, {(float)normalizedNormal.Y:F2}, {(float)normalizedNormal.Z:F2}, groundness {(float)groundness:F2})"
+                                            : $"wall triangle (normal {(float)normalizedNormal.X:F2}, {(float)normalizedNormal.Y:F2}, {(float)normalizedNormal.Z:F2})"
+                                    );
 
                                     // Rotate local-space push/impact back to world space
                                     var worldDelta = wallHit.positionDelta.RotateXz(boxMesh.GameObjectXz);
@@ -2629,15 +2852,29 @@ public partial class CarPhysics
                                     _crank[0, k]++;
                                     if (_crank[0, k] > 1)
                                     {
-                                        conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0,
-                                            (int)wheelGround);
+                                        conto.Spark(
+                                            wheelx[k],
+                                            wheely[k],
+                                            wheelz[k],
+                                            Scx[k],
+                                            Scy[k],
+                                            Scz[k],
+                                            0,
+                                            (int)wheelGround
+                                        );
 
                                         SfxPlayScrape?.Invoke(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                                     }
 
                                     var reboundVelocityDelta = worldImpact * (-GetReboundMul(wasMtouch));
-                                    Regz(k, reboundVelocityDelta.Length() * 1, conto, random, collidable.Index,
-                                        new Vector3((float)wheelx[k], (float)wheely[k], (float)wheelz[k]));
+                                    Regz(
+                                        k,
+                                        reboundVelocityDelta.Length() * 1,
+                                        conto,
+                                        random,
+                                        collidable.Index,
+                                        new Vector3((float)wheelx[k], (float)wheely[k], (float)wheelz[k])
+                                    );
                                     Scx[k] += reboundVelocityDelta.X;
                                     Scz[k] += reboundVelocityDelta.Z;
 
@@ -2672,10 +2909,22 @@ public partial class CarPhysics
                                     dustMag += (fix64)1.1f;
                                 else
                                     dustMag += (fix64)1.2f;
-                                conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], dustMag * Stat.Simag, 0, BadLanding && Mtouch, (int)wheelGround);
+                                conto.Dust(
+                                    k,
+                                    wheelx[k],
+                                    wheely[k],
+                                    wheelz[k],
+                                    (int)Scx[k],
+                                    (int)Scz[k],
+                                    dustMag * Stat.Simag,
+                                    0,
+                                    BadLanding && Mtouch,
+                                    (int)wheelGround
+                                );
                             }
+
                             wheely[k] = collision.newY + wheelGround; // snap wheel to the surface
-                            
+
                             // sparks and scrape
                             if (BadLanding && collidable.SurfaceType is SurfaceType.Road or SurfaceType.OffTrack)
                             {
@@ -2684,8 +2933,13 @@ public partial class CarPhysics
                                 SfxPlayGscrape?.Invoke(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                             }
 
-                            bounceRebound(k, conto, random, collidable.Index,
-                                new Vector3((float)wheelx[k], (float)wheely[k], (float)wheelz[k]));
+                            bounceRebound(
+                                k,
+                                conto,
+                                random,
+                                collidable.Index,
+                                new Vector3((float)wheelx[k], (float)wheely[k], (float)wheelz[k])
+                            );
                             isWheelTouchingPiece[k] = true;
                             break;
                         }
@@ -2694,12 +2948,13 @@ public partial class CarPhysics
                     {
                         if (boxWall.ResolveCollision(position, velocity) is { } collision)
                         {
-                            for (int w = 0; w < 4; w++) {
+                            for (int w = 0; w < 4; w++)
+                            {
                                 wheelx[w] += collision.positionDelta.X;
                                 wheely[w] += collision.positionDelta.Y;
                                 wheelz[w] += collision.positionDelta.Z;
                             }
-                            
+
                             // sparks and scrapes
                             if (collidable.SurfaceType != SurfaceType.OffRoad)
                                 _crank[0, k]++;
@@ -2713,8 +2968,14 @@ public partial class CarPhysics
 
                             // z rebound CHK5
                             f64Vector3 reboundVelocityDelta = collision.impactComponent * (-GetReboundMul(wasMtouch));
-                            Regz(k, reboundVelocityDelta.Length() * collidable.Damage * StageDamage(stage), conto, random, collidable.Index,
-                                new Vector3((float)wheelx[k], (float)wheely[k], (float)wheelz[k]));
+                            Regz(
+                                k,
+                                reboundVelocityDelta.Length() * collidable.Damage * StageDamage(stage),
+                                conto,
+                                random,
+                                collidable.Index,
+                                new Vector3((float)wheelx[k], (float)wheely[k], (float)wheelz[k])
+                            );
                             Scx[k] += reboundVelocityDelta.X;
                             Scy[k] += reboundVelocityDelta.Y;
                             Scz[k] += reboundVelocityDelta.Z;
@@ -2722,9 +2983,11 @@ public partial class CarPhysics
                             Skid = 2;
                             hitVertical = true;
                             isWheelTouchingPiece[k] = true;
-                            if (!collidable.NotWall) {
+                            if (!collidable.NotWall)
+                            {
                                 control.Wall = 9999;
                             }
+
                             break;
                         }
                     }
@@ -2735,8 +2998,11 @@ public partial class CarPhysics
                             var liftDivider = 1 + (50 - fix64.Abs(boxRamp.TrackersZy)) / (fix64)30;
                             if (liftDivider < 1)
                                 liftDivider = 1;
-                            if (collision.zTmp > 0 && collision.zTmp < 200) {
-                                FrameTrace.AddMessage($"ramp lift: {collision.zTmp} liftDivider: {liftDivider:F2} total: {collision.zTmp / liftDivider}");
+                            if (collision.zTmp > 0 && collision.zTmp < 200)
+                            {
+                                FrameTrace.AddMessage(
+                                    $"ramp lift: {collision.zTmp} liftDivider: {liftDivider:F2} total: {collision.zTmp / liftDivider}"
+                                );
                                 Scy[k] -= collision.zTmp / liftDivider;
                             }
 
@@ -2756,7 +3022,7 @@ public partial class CarPhysics
                                     nWheelsDirtRamp++;
                                 else
                                     nWheelsRoadRamp++;
-                                
+
                                 Wtouch = true;
                                 Gtouch = false;
 
@@ -2770,10 +3036,21 @@ public partial class CarPhysics
                                 if (!wasMtouch && surfaceType != SurfaceType.Road)
                                 {
                                     fix64 dustMag = (fix64)1.4F;
-                                    conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], dustMag * Stat.Simag, 0, BadLanding && Mtouch, (int)wheelGround);
+                                    conto.Dust(
+                                        k,
+                                        wheelx[k],
+                                        wheely[k],
+                                        wheelz[k],
+                                        (int)Scx[k],
+                                        (int)Scz[k],
+                                        dustMag * Stat.Simag,
+                                        0,
+                                        BadLanding && Mtouch,
+                                        (int)wheelGround
+                                    );
                                 }
                             }
-                            
+
                             wheelx[k] = collision.newPosition.X;
                             wheely[k] = collision.newPosition.Y + wheelGround;
                             wheelz[k] = collision.newPosition.Z;
@@ -2826,13 +3103,15 @@ public partial class CarPhysics
             {
                 f -= 100;
             }
+
             if (f < -100)
             {
                 f += 100;
             }
+
             Shakedam = (int)((fix64.Abs(f) + Shakedam) * fix64.Half);
             EmitCrashSound(i, (int)f, 0, conto);
-            for (var i111 = 0; i111 < 40; i111++)
+            for (var i111 = 0; i111 < pieceRad; i111++)
             {
                 fix64 f112 = 0;
                 for (var i113 = 0; i113 < 4; i113++)
@@ -2846,12 +3125,20 @@ public partial class CarPhysics
                 }
             }
         }
+
         if (i110 > 0) LastDamageFrom = sourceCar;
         return i110;
     }
 
-    private int Regy(int i, fix64 f, ContO conto, DeterministicRandom random, int soundSurface = -1,
-        Vector3? soundPosition = null, int sourceCar = -1)
+    private int Regy(
+        int i,
+        fix64 f,
+        ContO conto,
+        DeterministicRandom random,
+        int soundSurface = -1,
+        Vector3? soundPosition = null,
+        int sourceCar = -1
+    )
     {
         conto.DamageY(i, f, Mtouch, _numRoofDamage, RoofDamage);
         var i97 = 0;
@@ -2880,40 +3167,48 @@ public partial class CarPhysics
             for ( /**/; i100 < 360; i100 += 360)
             {
             }
+
             for ( /**/; i100 > 360; i100 -= 360)
             {
             }
+
             if (i100 < 210 && i100 > 150)
             {
                 i98 = -1;
             }
+
             if (i100 > 330 || i100 < 30)
             {
                 i98 = 1;
             }
+
             for ( /**/; i101 < 360; i101 += 360)
             {
             }
+
             for ( /**/; i101 > 360; i101 -= 360)
             {
             }
+
             if (i101 < 210 && i101 > 150)
             {
                 i99 = -1;
             }
+
             if (i101 > 330 || i101 < 30)
             {
                 i99 = 1;
             }
+
             if (i99 * i98 == 0)
             {
                 Shakedam = (int)((fix64.Abs(f) + Shakedam) * fix64.Half);
             }
-            
+
             EmitCrashSound(i, (int)f, i99 * i98, conto, soundSurface, soundPosition);
             if (i99 * i98 == 0 || Mtouch)
             {
-                for (var i102 = 0; i102 < 40; i102++)
+                for (var i102 = 0; i102 < pieceRad; i102++)
                 {
                     fix64 f103 = 0;
                     for (var i104 = 0; i104 < 4; i104++)
@@ -2927,13 +3222,14 @@ public partial class CarPhysics
                     }
                 }
             }
+
             if (i99 * i98 == -1)
             {
                 if (_numRoofDamage > 0)
                 {
                     var dividend = 0;
                     var divisor = 1;
-                    for (var i107 = 0; i107 < 40; i107++)
+                    for (var i107 = 0; i107 < pieceRad; i107++)
                     {
                         fix64 f108 = 0;
                         for (var i109 = 0; i109 < 4; i109++)
@@ -2948,6 +3244,7 @@ public partial class CarPhysics
                             }
                         }
                     }
+
                     RoofDamage += dividend / divisor;
                     _numRoofDamage = 0;
                 }
@@ -2957,12 +3254,20 @@ public partial class CarPhysics
                 }
             }
         }
+
         if (i97 > 0) LastDamageFrom = sourceCar;
         return i97;
     }
 
-    private int Regz(int i, fix64 f, ContO conto, DeterministicRandom random, int soundSurface = -1,
-        Vector3? soundPosition = null, int sourceCar = -1)
+    private int Regz(
+        int i,
+        fix64 f,
+        ContO conto,
+        DeterministicRandom random,
+        int soundSurface = -1,
+        Vector3? soundPosition = null,
+        int sourceCar = -1
+    )
     {
         conto.DamageZ(i, f);
         var i114 = 0;
@@ -2987,14 +3292,16 @@ public partial class CarPhysics
             {
                 f -= 100;
             }
+
             if (f < -100)
             {
                 f += 100;
             }
+
             Shakedam = (int)((fix64.Abs(f) + Shakedam) * fix64.Half);
-            
+
             EmitCrashSound(i, (int)f, 0, conto, soundSurface, soundPosition);
-            for (var i115 = 0; i115 < 40; i115++)
+            for (var i115 = 0; i115 < pieceRad; i115++)
             {
                 fix64 f116 = 0;
                 for (var i117 = 0; i117 < 4; i117++)
@@ -3008,6 +3315,7 @@ public partial class CarPhysics
                 }
             }
         }
+
         if (i114 > 0) LastDamageFrom = sourceCar;
         return i114;
     }
@@ -3020,6 +3328,7 @@ public partial class CarPhysics
             _dominate[i0] = false;
             _caught[i0] = false;
         }
+
         Mxz = 0;
         Cxz = 0;
         Pzy = 0;
@@ -3031,11 +3340,13 @@ public partial class CarPhysics
             Scx[i1] = 0;
             Scz[i1] = 0;
         }
-        _forca = (fix64.Sqrt(conto.Keyz[0] * conto.Keyz[0] + conto.Keyx[0] * conto.Keyx[0]) +
-                  fix64.Sqrt(conto.Keyz[1] * conto.Keyz[1] + conto.Keyx[1] * conto.Keyx[1]) +
-                  fix64.Sqrt(conto.Keyz[2] * conto.Keyz[2] + conto.Keyx[2] * conto.Keyx[2]) +
-                  fix64.Sqrt(conto.Keyz[3] * conto.Keyz[3] + conto.Keyx[3] * conto.Keyx[3])) / 10000 *
-                 (Stat.Bounce - (fix64)0.3f);
+
+        _forca = (fix64.Sqrt(conto.Keyz[0] * conto.Keyz[0] + conto.Keyx[0] * conto.Keyx[0])
+                  + fix64.Sqrt(conto.Keyz[1] * conto.Keyz[1] + conto.Keyx[1] * conto.Keyx[1])
+                  + fix64.Sqrt(conto.Keyz[2] * conto.Keyz[2] + conto.Keyx[2] * conto.Keyx[2])
+                  + fix64.Sqrt(conto.Keyz[3] * conto.Keyz[3] + conto.Keyx[3] * conto.Keyx[3]))
+                 / 10000
+                 * (Stat.Bounce - (fix64)0.3f);
         Mtouch = false;
         Wtouch = false;
         Txz = 0;
@@ -3075,6 +3386,7 @@ public partial class CarPhysics
                 _lcrank[i2, i3] = 0;
             }
         }
+
         //Pcleared = CheckPoints.Pcs;
         Nofocus = false;
         Power = 98;
@@ -3086,11 +3398,12 @@ public partial class CarPhysics
         Cntdest = 0;
         Wasted = false;
         Newcar = false;
-        if (/*Im == XTGraphics.Im*/Im == 0)
+        if ( /*Im == XTGraphics.Im*/Im == 0)
         {
             // Medium.Checkpoint = -1;
             // Medium.Lastcheck = false;
         }
+
         Newedcar = 0;
         _fixes = -1;
         /*if (CheckPoints.Nfix == 1)

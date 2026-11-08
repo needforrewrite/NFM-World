@@ -11,6 +11,7 @@ public class CheckPointHelper
 {
     // Checkpoints at or within this distance of the world ground count as ground-level.
     private static readonly fix64 AerialGroundTolerance = (fix64)50;
+
     [PluginVisible]
     public static void CalculatePositions(
         BackendStage currentStage,
@@ -30,6 +31,16 @@ public class CheckPointHelper
             {
                 var player2 = players[j];
                 if (player2.Car is not { } car2) continue;
+
+                // Dead cars rank behind every live one, so their progress cannot push a live car
+                // down the order in any HUD.
+                if (car1.Wasted != car2.Wasted)
+                {
+                    if (car1.Wasted) car1.Placement++;
+                    else car2.Placement++;
+                    continue;
+                }
+
                 if (car1.TotalCheckpoint != car2.TotalCheckpoint)
                 {
                     if (car1.TotalCheckpoint < car2.TotalCheckpoint)
@@ -54,8 +65,8 @@ public class CheckPointHelper
                             currentStage.Checkpoints[c].Position.X / 100,
                             car1.Position.Z / 100,
                             currentStage.Checkpoints[c].Position.Z / 100
-                        ) >
-                        UMath.Py(
+                        )
+                        > UMath.Py(
                             car2.Position.X / 100,
                             currentStage.Checkpoints[c].Position.X / 100,
                             car2.Position.Z / 100,
@@ -77,7 +88,8 @@ public class CheckPointHelper
     [PluginVisible]
     public static bool HandleCheckPoint(
         BackendStage currentStage,
-        BackendCar car)
+        BackendCar car
+    )
     {
         if (car.CurrentCheckpoint >= currentStage.Checkpoints.Count)
             return false;
@@ -86,12 +98,17 @@ public class CheckPointHelper
         f64Vector3 carPos = car.Position;
         var mad = car.CarPhysics;
         f64Vector3 velocity = new f64Vector3(
-            mad.Scx[0] + mad.Scx[1] + mad.Scx[2] + mad.Scx[3],
-            mad.Scy[0] + mad.Scy[1] + mad.Scy[2] + mad.Scy[3],
-            mad.Scz[0] + mad.Scz[1] + mad.Scz[2] + mad.Scz[3]) / 4;
+                                  mad.Scx[0] + mad.Scx[1] + mad.Scx[2] + mad.Scx[3],
+                                  mad.Scy[0] + mad.Scy[1] + mad.Scy[2] + mad.Scy[3],
+                                  mad.Scz[0] + mad.Scz[1] + mad.Scz[2] + mad.Scz[3]
+                              )
+                              / 4;
         f64Vector3 zDir = new f64Vector3(0, 0, 1);
-        f64Vector3 rad = new f64Vector3(700, 450,
-            60 + fix64.Abs(f64Vector3.Dot(velocity, zDir.RotateXz(nextCheckpoint.Rotation.Xz.Degrees))));
+        f64Vector3 rad = new f64Vector3(
+            700,
+            450,
+            60 + fix64.Abs(f64Vector3.Dot(velocity, zDir.RotateXz(nextCheckpoint.Rotation.Xz.Degrees)))
+        );
         f64Vector3 trackersPosition = new f64Vector3(0, -350, 0);
         var box = new CollisionBox(rad, trackersPosition, nextCheckpoint.Rotation.Xz.Degrees, nextCheckpoint.Position);
 
@@ -143,8 +160,8 @@ public class CheckPointHelper
         var lastCheckpoint = currentStage.Checkpoints[lastIndex];
         if (lastCheckpoint.Position.Y >= (fix64)World.Ground - AerialGroundTolerance) return false;
 
-        if (car.CurrentCheckpoint < currentStage.Checkpoints.Count &&
-            currentStage.Checkpoints[car.CurrentCheckpoint].Position.Y >= (fix64)World.Ground - AerialGroundTolerance)
+        if (car.CurrentCheckpoint < currentStage.Checkpoints.Count
+            && currentStage.Checkpoints[car.CurrentCheckpoint].Position.Y >= (fix64)World.Ground - AerialGroundTolerance)
             return false;
 
         car.CarPhysics.Reseto(car.CarPhysics.Im, car);
@@ -154,7 +171,8 @@ public class CheckPointHelper
         car.Position = new f64Vector3(
             lastCheckpoint.Position.X,
             lastCheckpoint.Position.Y - car.GroundAt,
-            lastCheckpoint.Position.Z);
+            lastCheckpoint.Position.Z
+        );
         car.Rotation = car.LastCheckpointRotation;
         return true;
     }

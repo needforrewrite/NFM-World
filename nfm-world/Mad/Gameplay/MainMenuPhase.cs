@@ -249,83 +249,66 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void OnFreePlayClicked()
     {
-        var factory = GamemodeFactory.Create(
-            "nfmm/pvp",
-            new Dictionary<string, object>()
-            {
-                ["constraint"] = "both"
-            }
-        );
-        ClientSidePlayerInfo[] players =
-        [
-            new()
-            {
-                CarName = MenuHistory.Car?.FileName ?? MenuHistory.DefaultCar,
-                IsClientPlayer = true,
-                PlayerName = "MadPlayer",
-                Color = default,
-                IsBot = false
-            },
-            new()
-            {
-                CarName = "nfmm/audir8",
-                IsClientPlayer = false,
-                PlayerName = "ElStupido1",
-                Color = default,
-                IsBot = true
-            },
-            new()
-            {
-                CarName = "nfmm/audir8",
-                IsClientPlayer = false,
-                PlayerName = "ElStupido2",
-                Color = default,
-                IsBot = true
-            },
-            new()
-            {
-                CarName = "nfmm/audir8",
-                IsClientPlayer = false,
-                PlayerName = "ElStupido3",
-                Color = default,
-                IsBot = true
-            },
-            new()
-            {
-                CarName = "nfmm/audir8",
-                IsClientPlayer = false,
-                PlayerName = "ElStupido4",
-                Color = default,
-                IsBot = true
-            },
-            new()
-            {
-                CarName = "nfmm/audir8",
-                IsClientPlayer = false,
-                PlayerName = "ElStupido5",
-                Color = default,
-                IsBot = true
-            },
-            new()
-            {
-                CarName = "nfmm/audir8",
-                IsClientPlayer = false,
-                PlayerName = "ElStupido6",
-                Color = default,
-                IsBot = true
-            }
-        ];
-        var stageName = MenuHistory.Stage;
-        var inRace = new RacePhase(
-            stageName,
-            factory,
-            players,
-            LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = players })
-        );
-        inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
-        GameSparker.PushPhase(inRace, PhaseManager.Groups.Event);
+        StageSelectPhase ssp;
+        try
+        {
+            ssp = new StageSelectPhase();
+        }
+        catch (DirectoryNotFoundException ex)
+        {
+            Logging.Error(ex.Message);
+            GameSparker.MessageWindow.ShowMessage("Stages unavailable", ex.Message);
+            return;
+        }
 
-        Logging.Info("Game started!");
+        ssp.StageSelected += (sender, stageName) =>
+        {
+            PhaseSharedState.SelectedStageName = stageName;
+
+            GaragePhase gp = new(ssp);
+            gp.CarSelected += (sender, car) =>
+            {
+                var factory = GamemodeFactory.Create(
+                    "nfmm/pvp",
+                    new Dictionary<string, object>()
+                    {
+                        ["constraint"] = "both"
+                    }
+                );
+                var players = CreateFreePlayPlayers(car.FileName);
+                LocalRaceHost host;
+                try
+                {
+                    host = LocalRaceHost.Create(
+                        stageName,
+                        factory,
+                        new ClientGamemodeParameters { Players = players }
+                    );
+                }
+                catch
+                {
+                    factory.End();
+                    throw;
+                }
+
+                var inRace = new RacePhase(stageName, factory, players, host, gp);
+                inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
+                GameSparker.Phases.ReplaceGroup(inRace, PhaseManager.Groups.Event);
+
+                Logging.Info("Game started!");
+            };
+
+            gp.CarSelectionCancelled += (sender, _) =>
+            {
+                ssp.TakeStageFrom(gp, takeMusic: false);
+                ssp.CurrentStage!.FadeFromOverride = 9999999;
+                GameSparker.PopPhase();
+            };
+
+            GameSparker.PushPhase(gp, PhaseManager.Groups.Event);
+        };
+
+        GameSparker.PushPhase(ssp, PhaseManager.Groups.Event);
     }
 
     private void OnGarageClicked()
@@ -379,7 +362,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
             PhaseSharedState.SelectedStageName = stageName;
 
-            GaragePhase gp = new(stageName);
+            GaragePhase gp = new(ssp);
             gp.CarSelected += (sender, car) =>
             {
                 var factory = GamemodeFactory.Create("nfmm/timetrial");
@@ -394,22 +377,66 @@ public class MainMenuPhase : BaseStageRenderingPhase
                         PlayerName = "MadPlayer"
                     }
                 ];
-                var inRace = new RacePhase(
-                    stageName,
-                    factory,
-                    players,
-                    LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = players })
-                );
+                LocalRaceHost host;
+                try
+                {
+                    host = LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = players });
+                }
+                catch
+                {
+                    factory.End();
+                    throw;
+                }
+
+                var inRace = new RacePhase(stageName, factory, players, host, gp);
                 inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
-                GameSparker.PushPhase(inRace, PhaseManager.Groups.Event);
+                GameSparker.Phases.ReplaceGroup(inRace, PhaseManager.Groups.Event);
             };
 
-            gp.CarSelectionCancelled += (sender, _) => { GameSparker.PopPhase(); };
+            gp.CarSelectionCancelled += (sender, _) =>
+            {
+                ssp.TakeStageFrom(gp, takeMusic: false);
+                ssp.CurrentStage!.FadeFromOverride = 9999999;
+                GameSparker.PopPhase();
+            };
 
             GameSparker.PushPhase(gp, PhaseManager.Groups.Event);
         };
 
         GameSparker.PushPhase(ssp, PhaseManager.Groups.Event);
+    }
+
+    private static ClientSidePlayerInfo[] CreateFreePlayPlayers(string playerCar)
+    {
+        var opponentCars = BackendGameSparker.cars[Collection.NFMM]
+            .Select(car => car.FileName)
+            .Where(name => !string.Equals(name, playerCar, StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        System.Random.Shared.Shuffle(opponentCars);
+
+        var players = new ClientSidePlayerInfo[1 + Math.Min(6, opponentCars.Length)];
+        players[0] = new()
+        {
+            CarName = playerCar,
+            IsClientPlayer = true,
+            PlayerName = "MadPlayer",
+            Color = default,
+            IsBot = false
+        };
+        for (var i = 1; i < players.Length; i++)
+        {
+            players[i] = new()
+            {
+                CarName = opponentCars[i - 1],
+                IsClientPlayer = false,
+                PlayerName = $"ElStupido{i}",
+                Color = default,
+                IsBot = true
+            };
+        }
+
+        return players;
     }
 
     public override void GameTick()

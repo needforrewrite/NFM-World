@@ -1,3 +1,4 @@
+using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
 using NFMWorld.UI.Components;
@@ -22,7 +23,12 @@ public static class RaceHudView
             children:
             [
                 Sx.Switch(race.Skin, HudSkinRegistry.Branches(race), () => HudSkinRegistry.BuildDefault(race)),
-                new RaceOverlays(race, () => race.Skin.Value == "world"),
+                new RaceOverlays(
+                    race,
+                    () => race.Skin.Value == "world",
+                    () => HudSkinRegistry.UsesClassicSkin(race.Skin.Value),
+                    () => race.StageSnap.Value
+                ),
                 new RaceMessages(race),
                 Sx.Show(
                     () => HudSkinRegistry.ShowDefaultMessages(race.Skin.Value) && race.Message.Length > 0,
@@ -31,8 +37,24 @@ public static class RaceHudView
                             () => race.Message,
                             24,
                             colorAccessor: () => HudSkinRegistry.UsesClassicSkin(race.Skin.Value)
-                                ? HudColorSnap.Apply(Theme.TextSecondary, race.StageSnap.Value)
+                                ? new Color(0, 0, 0)
                                 : Theme.TextSecondary
+                        )
+                    )
+                ),
+                Sx.Show(
+                    () => race.Finished.Value
+                          && HudSkinRegistry.UsesClassicSkin(race.Skin.Value)
+                          && (race.ClientWon.Value || race.ClientLost.Value),
+                    () => new HudScaleHost(
+                        GlassCardUi.CenterText(
+                            () => race.ClientWon.Value ? "YOU WON!" : "YOU LOST!",
+                            48,
+                            color: new Color(0, 0, 0),
+                            top: 100f,
+                            height: 120f,
+                            fontFamily: FontFamily.Adventure,
+                            fontStyle: FontStyle.Bold | FontStyle.Italic
                         )
                     )
                 ),

@@ -25,7 +25,7 @@ public class PhaseManager
         /// </summary>
         public static Group Event { get; } = new("Event");
     }
-    
+
     public sealed class Group(string friendlyName)
     {
         public string FriendlyName { get; } = friendlyName;
@@ -67,6 +67,7 @@ public class PhaseManager
             phase.Exit();
             QueueDisposal(phase);
         }
+
         _stack.Clear();
         FlushDisposals();
 
@@ -104,7 +105,8 @@ public class PhaseManager
         if (_stack.Count <= 1)
         {
             throw new InvalidOperationException(
-                "Cannot pop the root phase. Use Replace or PopToRoot instead, or push a new phase first.");
+                "Cannot pop the root phase. Use Replace or PopToRoot instead, or push a new phase first."
+            );
         }
 
         var popped = _stack[^1];
@@ -122,18 +124,37 @@ public class PhaseManager
     public void PopGroup(Group group)
     {
         if (_stack[^1].Group != group) return;
-        
+
         do
         {
             if (_stack.Count <= 1)
             {
                 throw new InvalidOperationException(
-                    "Cannot pop the root phase. Use Replace or PopToRoot instead, or push a new phase first.");
+                    "Cannot pop the root phase. Use Replace or PopToRoot instead, or push a new phase first."
+                );
             }
 
             Logging.Info($"PhaseManager: popping via group {group.FriendlyName} (depth {_stack.Count})");
             Pop();
         } while (_stack[^1].Group == group);
+    }
+
+    /// <summary>Replaces the top group without re-entering the phases underneath it.</summary>
+    public void ReplaceGroup(BasePhase phase, Group group)
+    {
+        if (_stack.Count > 0)
+            _stack[^1].Phase.Exit();
+
+        while (_stack.Count > 1 && _stack[^1].Group == group)
+        {
+            var popped = _stack[^1];
+            _stack.RemoveAt(_stack.Count - 1);
+            QueueDisposal(popped.Phase);
+        }
+
+        _stack.Add((phase, group));
+        phase.Enter();
+        Logging.Info($"PhaseManager: replaced group {group.FriendlyName} with {phase.GetType().Name} (depth {_stack.Count})");
     }
 
     /// <summary>

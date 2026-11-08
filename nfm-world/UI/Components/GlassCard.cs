@@ -109,21 +109,28 @@ public static class GlassCardUi
 
     /// <summary>Large centre-screen text, split on newlines.</summary>
     public static View CenterText(
-        Func<string?>? text = null,
-        float size = 64,
-        Color? color = null,
-        Func<Color>? colorAccessor = null
-    )
+            Func<string?>? text = null,
+            float size = 64,
+            Color? color = null,
+            Func<Color>? colorAccessor = null,
+            float? top = null,
+            float? height = null,
+            FontFamily? fontFamily = null,
+            FontStyle? fontStyle = null
+        )
+        )
+
     {
         var textColor = color ?? Theme.TextSecondary;
 
         return Sx.View(
             style: () => Sx.Styles(
                 position: Position.Absolute,
-                top: 0,
+                top: top ?? 0,
                 left: 0,
                 right: 0,
-                bottom: 0,
+                bottom: height is null ? 0f : MeasurementMarginPosition.Undefined,
+                height: height is { } h ? h : MeasurementWidthHeight.Undefined,
                 flexDirection: FlexDirection.Column,
                 alignItems: Align.Center,
                 justifyContent: Justify.Center
@@ -133,7 +140,8 @@ public static class GlassCardUi
                 row: (line, _) => Sx.Text(
                     style: () => Sx.TextStyles(
                         fontSize: size,
-                        fontStyle: FontStyle.Bold,
+                        fontFamily: fontFamily,
+                        fontStyle: fontStyle ?? FontStyle.Bold,
                         foregroundColor: colorAccessor?.Invoke() ?? textColor,
                         horizontalAlignment: TextHorizontalAlignment.Center
                     ),

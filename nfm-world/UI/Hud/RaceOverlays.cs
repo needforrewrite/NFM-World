@@ -18,14 +18,37 @@ public sealed class RaceOverlays : Component
     /// <summary>Radar corner radius in unscaled pixels; scales with the HUD.</summary>
     private const float CornerRadius = 10;
 
+    /// <summary>Name tag font at the camera's usual follow distance, before the HUD scale.</summary>
+    private const float TagFontSize = 20;
+
+    /// <summary>Distance the tag sits above the racer's roof, in world units.</summary>
+    private const float TagRoofOffset = 120;
+
+    /// <summary>Depth at which a tag is drawn at full size; farther racers get smaller tags.</summary>
+    private const float TagFullSizeDepth = 900;
+
+    /// <summary>Floor for the distance falloff, so distant tags stay readable.</summary>
+    private const float TagSmallestScale = 0.85f;
+
     private readonly IHudData _race;
 
     private readonly Func<bool> _skinDrawsRadar;
 
-    public RaceOverlays(IHudData race, Func<bool>? skinDrawsRadar = null)
+    private readonly Func<bool> _classicSkin;
+
+    private readonly Func<Color3> _snap;
+
+    public RaceOverlays(
+        IHudData race,
+        Func<bool>? skinDrawsRadar = null,
+        Func<bool>? classicSkin = null,
+        Func<Color3>? snap = null
+    )
     {
         _race = race;
         _skinDrawsRadar = skinDrawsRadar ?? (() => false);
+        _classicSkin = classicSkin ?? (() => false);
+        _snap = snap ?? (() => default);
         Styles = Sx.Styles(
             position: Position.Absolute,
             left: 0,
@@ -120,42 +143,81 @@ public sealed class RaceOverlays : Component
         G.ResetScissor();
     }
 
-    /// <summary>Project each visible racer's roof to the screen and label it.</summary>
+    /// <summary>
+    /// Project each visible racer's roof to the screen and label it. The tag shrinks with distance,
+    /// and its bottom edge stays above the projected roof so a distant car is never covered.
+    /// </summary>
     private void DrawNameTags(Vector2 position, Vector2 size)
     {
         if (_race.Racers.Count <= 1 || _race.ClientPosition is null) return;
-        var scale = MathF.Min(size.X / 960, size.Y / 540) * HudScaleSettings.Default * SettingsMenu.HudScale;
-        if (scale <= 0) return;
-        G.SetFont(new Font(FontFamily.DroidSans, FontStyle.Bold, 11 * scale));
-        var metrics = G.GetFontMetrics();
+        var hudScale = HudScaleSettings.Normalize(SettingsMenu.HudScale);
+        if (hudScale <= 0) return;
+        var classic = _classicSkin();
 
         foreach (var marker in _race.Markers)
         {
             if (marker.IsClient || marker.Wasted) continue;
-            if (!Project(new Vector3(marker.X, marker.Y - 120, marker.Z), out var screen, position, size)) continue;
+            if (!Project(
+                    new Vector3(marker.X, marker.Y - TagRoofOffset, marker.Z),
+                    out var screen,
+                    out var depth,
+                    position,
+                    size
+                )) continue;
+
+            var tagScale = hudScale * Math.Clamp(TagFullSizeDepth / depth, TagSmallestScale, 1f);
+            var font = new Font(FontFamily.DroidSans, FontStyle.Bold, TagFontSize * tagScale);
+            G.SetFont(font);
+            var metrics = G.GetFontMetrics();
             var width = metrics.MeasureText(marker.Name).X;
             var height = metrics.LineHeight;
             var x = screen.X - width / 2;
-            G.SetColor(new Color(0, 0, 0, 110));
-            G.FillRoundedRect(
-                (int)(x - 4 * scale),
-                (int)(screen.Y - 2 * scale),
-                (int)(width + 8 * scale),
-                (int)(height + 4 * scale),
-                4,
-                4,
-                4,
-                4
-            );
-            G.SetColor(new Color(235, 245, 255));
-            G.DrawString(marker.Name, (int)x, (int)screen.Y + (int)metrics.LineHeight);
+
+            if (classic)
+            {
+                // No plate: the name sits over a small triangle that points down at the car.
+                var tipY = screen.Y - 2 * tagScale;
+                var triangleHeight = 7 * tagScale;
+                var halfWidth = 6 * tagScale;
+
+                Span<int> px = [(int)(screen.X - halfWidth), (int)(screen.X + halfWidth), (int)screen.X];
+                Span<int> py = [(int)(tipY - triangleHeight), (int)(tipY - triangleHeight), (int)tipY];
+                G.SetColor(Snap(0, 0, 0));
+                G.FillPolygon(px, py, 3);
+                G.SetColor(Snap(new Color(220, 245, 255, 170)));
+                G.SetStrokeWidth(MathF.Max(0.5f, 0.5f * tagScale));
+                G.DrawPolygon(px, py, 3);
+
+                var textTop = tipY - triangleHeight - height;
+                G.SetColor(Snap(0, 0, 0));
+                G.DrawString(marker.Name, (int)x, (int)(textTop + height));
+            }
+            else
+            {
+                var padX = 4 * tagScale;
+                var textTop = screen.Y - 3 * tagScale - height;
+                G.SetColor(new Color(0, 0, 0, 110));
+                G.FillRoundedRect(
+                    (int)(x - padX),
+                    (int)(textTop - 2 * tagScale),
+                    (int)(width + 2 * padX),
+                    (int)(height + 4 * tagScale),
+                    4,
+                    4,
+                    4,
+                    4
+                );
+                G.SetColor(new Color(235, 245, 255));
+                G.DrawString(marker.Name, (int)x, (int)(textTop + height));
+            }
         }
     }
 
-    private bool Project(Vector3 world, out Vector2 screen, Vector2 position, Vector2 size)
+    private bool Project(Vector3 world, out Vector2 screen, out float depth, Vector2 position, Vector2 size)
     {
         var clip = Vector4.Transform(new Vector4(world, 1f), _race.ViewProjection);
         screen = default;
+        depth = clip.W;
         if (clip.W <= 0.001f) return false;
         var ndcX = clip.X / clip.W;
         var ndcY = clip.Y / clip.W;
@@ -163,6 +225,10 @@ public sealed class RaceOverlays : Component
         screen = position + new Vector2((ndcX + 1f) * 0.5f * size.X, (1f - ndcY) * 0.5f * size.Y);
         return true;
     }
+
+    private Color Snap(Color color) => HudColorSnap.Apply(color, _snap());
+
+    private Color Snap(int r, int g, int b) => Snap(new Color(r, g, b));
 
     /// <summary>
     /// Draws the baked stage image rotated so the car's heading points up, and clipped to the

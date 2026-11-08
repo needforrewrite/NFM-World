@@ -10,7 +10,7 @@ namespace NFMWorld;
 /// <summary>
 /// Client-side representation of a stage. Composes a <see cref="BackendStage"/> for collision/AI data
 /// and adds rendering (stage geometry, cars, scene management). Owns camera and light setup.
-/// Fully self-contained — constructed once per phase; car visuals are synced lazily each tick.
+/// Stage resources can move between phases; car visuals are synced lazily each tick.
 /// </summary>
 public class ClientStage : IDisposable
 {
@@ -27,6 +27,7 @@ public class ClientStage : IDisposable
 
     /// <summary>The baked top-down map, rendered once on the first race frame that needs it.</summary>
     public StageMinimap Minimap { get; }
+
     public Camera Camera { get; set; }
     public bool CarSoundsEnabled { get; set; } = true;
     public int? FadeFromOverride { get; set; }
@@ -42,7 +43,8 @@ public class ClientStage : IDisposable
         string stageName,
         ObservableUnlimitedArray<BackendCar> cars,
         Camera camera,
-        IReadOnlyList<Camera> lightCameras)
+        IReadOnlyList<Camera> lightCameras
+    )
     {
         _cars = cars;
         Camera = camera;
@@ -65,7 +67,7 @@ public class ClientStage : IDisposable
 
         if (string.IsNullOrEmpty(MusicPath))
             Logging.Error("No music is defined for this stage!");
-        
+
         _cars.CollectionChanged += CarsOnCollectionChanged;
     }
 
@@ -77,6 +79,7 @@ public class ClientStage : IDisposable
         _cars.CollectionChanged -= CarsOnCollectionChanged;
         _cars = cars;
         _cars.CollectionChanged += CarsOnCollectionChanged;
+        CarsOnCollectionChanged(cars, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
     }
 
     /// <summary>
@@ -115,6 +118,7 @@ public class ClientStage : IDisposable
             visual = _carVisuals[car] = new CarVisual(car, _crashSounds);
             _scene.Objects.Add(visual);
         }
+
         return visual;
     }
 
@@ -127,7 +131,7 @@ public class ClientStage : IDisposable
         if (_players is { } players)
         {
             var car = players[index].Car
-                ?? throw new InvalidOperationException($"Player {index} has no car.");
+                      ?? throw new InvalidOperationException($"Player {index} has no car.");
             return GetCarVisual(car);
         }
 
@@ -238,6 +242,7 @@ public class ClientStage : IDisposable
                         _scene.Objects.Add(visual);
                     }
                 }
+
                 break;
             case NotifyCollectionChangedAction.Remove:
                 foreach (BackendCar car in e.OldItems!)
@@ -248,6 +253,7 @@ public class ClientStage : IDisposable
                         visual.Dispose();
                     }
                 }
+
                 break;
             case NotifyCollectionChangedAction.Replace:
                 foreach (BackendCar car in e.OldItems!)
@@ -258,7 +264,7 @@ public class ClientStage : IDisposable
                         visual.Dispose();
                     }
                 }
-                
+
                 foreach (BackendCar car in e.NewItems!)
                 {
                     if (!_carVisuals.ContainsKey(car))
@@ -267,6 +273,7 @@ public class ClientStage : IDisposable
                         _scene.Objects.Add(visual);
                     }
                 }
+
                 break;
             case NotifyCollectionChangedAction.Move:
                 // No need to do anything — the visuals are tracked by reference, not index, so moving items around
@@ -283,7 +290,7 @@ public class ClientStage : IDisposable
                         visual.Dispose();
                     }
                 }
-                
+
                 // ── Create visuals for cars that joined the collection ──
                 foreach (var car in _cars)
                 {
@@ -313,8 +320,10 @@ public class ClientStage : IDisposable
                 if (!CarSoundsEnabled)
                     sfx.Stop();
             }
+
             obj.GameTick(Backend);
         }
+
         _crashSounds.Flush(static (source, crash) => source.PlayCrashSound(crash));
         NFMWorld.Audio.SpatialAudio.UpdateListener(Camera.Position, Camera.LookAt - Camera.Position, Camera.Up);
     }
@@ -326,7 +335,12 @@ public class ClientStage : IDisposable
             visual.Sfx?.Stop();
     }
 
-    public void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha, bool useShadowMapping = true, bool clearRenderBuffer = true)
+    public void Render(
+        NFMWorld.Graphics.ICommandBuffer cb,
+        float alpha,
+        bool useShadowMapping = true,
+        bool clearRenderBuffer = true
+    )
     {
         Renderer.ApplyValues();
         if (FadeFromOverride is { } fadeFrom)

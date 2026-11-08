@@ -94,13 +94,27 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
         Sparks.AddSpark(wheelx, wheely, wheelz, scx, scy, scz, type, wheelGround);
     }
 
-    private void OnDusted(int wheelidx, float wheelx, float wheely, float wheelz, int scx, int scz, float simag, int tilt, bool onRoof, int wheelGround)
+    private void OnDusted(
+        int wheelidx,
+        float wheelx,
+        float wheely,
+        float wheelz,
+        int scx,
+        int scz,
+        float simag,
+        int tilt,
+        bool onRoof,
+        int wheelGround
+    )
     {
         Dust.AddDust(wheelidx, wheelx, wheely, wheelz, scx, scz, simag, tilt, onRoof, wheelGround);
     }
 
     private void OnDistruct(object? sender, EventArgs e)
     {
+        // Damage keeps re-emitting Distruct until the fix finishes (FinishedFix zeroes DamagePoints),
+        // so a car fixed mid-animation would restart the wasted sequence it just cancelled.
+        if (_fixing) return;
         VisuallyWasted = true;
     }
 
@@ -140,6 +154,7 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
             wheel.Rotation = Car.Wheels[i].Rotates == 11 ? Car.TurningWheelAngle : Car.WheelAngle;
             wheel.GameTick(stage);
         }
+
         Flames.GameTick();
         Dust.GameTick(stage);
         Chips.GameTick();
@@ -185,7 +200,7 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
 
                 if ((_fixTimer == 1 || _fixTimer > 2) && _fixTimer != 9)
                 {
-                    FixFlare.SetFixFx(_fixTimer);
+                    FixFlare.SetFixFx();
                 }
                 else
                 {

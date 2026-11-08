@@ -115,7 +115,11 @@ public class RaceAnnouncerTests
         announcer.Tick(car, gamemode);
         Assert.AreEqual("Checkpoint!", announcer.Status?.Text);
 
-        for (var i = 0; i < (int)(3 * Physics.TargetTps) + 1; i++) announcer.Tick(car, gamemode);
+        // The checkpoint flash is half a second, not the status line's default.
+        var ticks = (int)MathF.Ceiling(0.5f * Physics.TargetTps);
+        for (var i = 0; i < ticks - 1; i++) announcer.Tick(car, gamemode);
+        Assert.IsNotNull(announcer.Status);
+        announcer.Tick(car, gamemode);
         Assert.IsNull(announcer.Status);
     }
 
@@ -197,6 +201,68 @@ public class RaceAnnouncerTests
     }
 
     [TestMethod]
+    public void WrongWay_IsSuppressedWhileTheArrowTargetsCars()
+    {
+        var (announcer, gamemode, car) = Create(opponents: 0, checkpoints: true);
+        car.Control.Arrace = true;
+        car.CarPhysics.Cxz = 180;
+
+        for (var i = 0; i < (int)(2 * Physics.TargetTps); i++) announcer.Tick(car, gamemode);
+        Assert.AreNotEqual("Wrong Way!", announcer.Status?.Text);
+    }
+
+    [TestMethod]
+    public void CheckpointText_IsSuppressedWhileTheArrowTargetsCars()
+    {
+        var (announcer, gamemode, car) = Create(opponents: 0);
+        car.Control.Arrace = true;
+        announcer.Tick(car, gamemode);
+
+        car.TotalCheckpoint = 1;
+        announcer.Tick(car, gamemode);
+        Assert.AreNotEqual("Checkpoint!", announcer.Status?.Text);
+    }
+
+    [TestMethod]
+    public void MissedCheckpointText_IsSuppressedWhileTheArrowTargetsCars()
+    {
+        var (announcer, gamemode, car) = Create(opponents: 0, checkpoints: true);
+        var checkpoint = gamemode.CurrentStage.Checkpoints[0];
+        car.Control.Arrace = true;
+        announcer.Tick(car, gamemode);
+
+        car.CarPhysics.Mtouch = true;
+        car.Position = new f64Vector3(checkpoint.Position.X + 200, checkpoint.Position.Y, checkpoint.Position.Z);
+        announcer.Tick(car, gamemode);
+
+        car.Position = new f64Vector3(checkpoint.Position.X + 12_000, checkpoint.Position.Y, checkpoint.Position.Z);
+        announcer.Tick(car, gamemode);
+        Assert.AreNotEqual("Checkpoint Missed!", announcer.Status?.Text);
+    }
+
+    [TestMethod]
+    public void BadLanding_StartsOnImpactAndClearsWhenRighted()
+    {
+        var (announcer, gamemode, car) = Create(opponents: 0);
+        announcer.Tick(car, gamemode);
+
+        // Tilted mid-air is not a landing yet.
+        car.CarPhysics.BadLanding = true;
+        announcer.Tick(car, gamemode);
+        Assert.IsNull(announcer.Status);
+
+        car.CarPhysics.Mtouch = true;
+        announcer.Tick(car, gamemode);
+        Assert.AreEqual("Bad Landing!", announcer.Status?.Text);
+
+        // Back on its wheels: the warning goes on the same tick, not on the status timer.
+        car.CarPhysics.BadLanding = false;
+        car.CarPhysics.Mtouch = false;
+        announcer.Tick(car, gamemode);
+        Assert.IsNull(announcer.Status);
+    }
+
+    [TestMethod]
     public void MissedCheckpoint_WarnsOnceAfterGettingCloseThenLeaving()
     {
         var (announcer, gamemode, car) = Create(opponents: 0, checkpoints: true);
@@ -245,8 +311,12 @@ public class RaceAnnouncerTests
         Assert.IsNull(announcer.Status);
     }
 
-    private static void PassNear(BackendCar car, StageObject checkpoint, RaceAnnouncer announcer,
-        BaseClientGamemode gamemode)
+    private static void PassNear(
+        BackendCar car,
+        StageObject checkpoint,
+        RaceAnnouncer announcer,
+        BaseClientGamemode gamemode
+    )
     {
         car.CarPhysics.Mtouch = true;
         car.Position = new f64Vector3(checkpoint.Position.X + 200, checkpoint.Position.Y, checkpoint.Position.Z);
@@ -254,7 +324,10 @@ public class RaceAnnouncerTests
     }
 
     private static (RaceAnnouncer Announcer, TestGamemode Gamemode, BackendCar Car) Create(
-        int opponents, int laps = 3, bool checkpoints = false)
+        int opponents,
+        int laps = 3,
+        bool checkpoints = false
+    )
     {
         var players = new List<ClientSidePlayerInfo>
         {
@@ -262,10 +335,12 @@ public class RaceAnnouncerTests
         };
         for (var i = 0; i < opponents; i++)
         {
-            players.Add(new ClientSidePlayerInfo
-            {
-                PlayerName = $"Bot{i + 1}", CarName = CarName, Color = default, IsBot = true, IsClientPlayer = false
-            });
+            players.Add(
+                new ClientSidePlayerInfo
+                {
+                    PlayerName = $"Bot{i + 1}", CarName = CarName, Color = default, IsBot = true, IsClientPlayer = false
+                }
+            );
         }
 
         var gamemode = new TestGamemode(players.ToArray(), laps, checkpoints);
@@ -274,8 +349,10 @@ public class RaceAnnouncerTests
     }
 
     private sealed class TestGamemode(ClientSidePlayerInfo[] players, int laps, bool checkpoints)
-        : BaseClientGamemode(new ClientGamemodeParameters { Players = players },
-            new TestGamemodeContext(laps, checkpoints))
+        : BaseClientGamemode(
+            new ClientGamemodeParameters { Players = players },
+            new TestGamemodeContext(laps, checkpoints)
+        )
     {
         public override string GamemodeId => "test/announcer";
 
@@ -302,18 +379,32 @@ public class RaceAnnouncerTests
                 var rad = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], CarName);
                 stage.Checkpoints.Add(new StageObject(rad) { Position = new f64Vector3(0, 0, 5000) });
             }
+
             return stage;
         }
+
         public RaceState RaceState => RaceState.InProgress;
         public IClientCallbacks ClientCallbacks => new StubCallbacks();
-        public void SendServerEvent(ReadOnlySpan<byte> payload) { }
-        public void UpdatePlayers(IReadOnlyList<ClientSidePlayer> players) { }
+
+        public void SendServerEvent(ReadOnlySpan<byte> payload)
+        {
+        }
+
+        public void UpdatePlayers(IReadOnlyList<ClientSidePlayer> players)
+        {
+        }
     }
 
     private sealed class StubCallbacks : IClientCallbacks
     {
-        public void ResetCheckpointGlow() { }
-        public void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish) { }
+        public void ResetCheckpointGlow()
+        {
+        }
+
+        public void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish)
+        {
+        }
+
         public IClientCarCallbacks GetClientCarCallbacks(BackendCar car) => new StubCarCallbacks();
 
         private sealed class StubCarCallbacks : IClientCarCallbacks

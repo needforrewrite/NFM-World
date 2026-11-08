@@ -49,10 +49,12 @@ public class PvpGamemode : PluginGamemode
 
     private PhysicsController _physics;
 
-    public PvpGamemode(ClientGamemodeParameters clientGamemodeParameters,
+    public PvpGamemode(
+        ClientGamemodeParameters clientGamemodeParameters,
         IGamemodeContext gamemodeContext,
         string gamemodeId,
-        Dictionary<string, object>? config = null) : base(clientGamemodeParameters, gamemodeContext, gamemodeId, config)
+        Dictionary<string, object>? config = null
+    ) : base(clientGamemodeParameters, gamemodeContext, gamemodeId, config)
     {
         _physics = new PhysicsController(Players, CurrentStage);
         // TODO enforce constraint
@@ -87,6 +89,9 @@ public class PvpGamemode : PluginGamemode
         _clientTick = 0;
         HudState.StateText = null;
         HudState.StateTextEndsAt = null;
+        HudState.Finished = false;
+        HudState.ClientWon = false;
+        HudState.ClientLost = false;
     }
 
     public override void Reset()
@@ -110,6 +115,7 @@ public class PvpGamemode : PluginGamemode
                     _inner = GamemodeUtils.CountdownInterval;
                     _countdown--;
                 }
+
                 break;
             case GamemodeState.InProgress:
                 _physics.GameTick();
@@ -136,8 +142,13 @@ public class PvpGamemode : PluginGamemode
                 if (clientCrossed && ClientPlayer.Car is { } crossedCar)
                 {
                     SendServerEvent<ClientToServerEvent>(
-                        new CheckpointEvent(crossedCar.CurrentCheckpoint, crossedCar.CurrentLap,
-                            crossedCar.Placement, _clientTick));
+                        new CheckpointEvent(
+                            crossedCar.CurrentCheckpoint,
+                            crossedCar.CurrentLap,
+                            crossedCar.Placement,
+                            _clientTick
+                        )
+                    );
                 }
 
                 _clientTick++;
@@ -149,10 +160,22 @@ public class PvpGamemode : PluginGamemode
                     HudState.TotalLaps = CurrentStage.Nlaps;
                     HudState.Position = ClientPlayer.Car.Placement + 1;
                     HudState.TotalRacers = Players.Count;
-
-                    if (ClientPlayer.Car.CurrentLap >= CurrentStage.Nlaps)
-                        Finish();
                 }
+
+                // The first car across the line ends the race for everyone. Waiting for the
+                // client to finish let a bot complete every lap while the race carried on.
+                ClientSidePlayer? winner = null;
+                foreach (var player in Players)
+                {
+                    if (player.Car is { } car && car.CurrentLap >= CurrentStage.Nlaps)
+                    {
+                        winner = player;
+                        break;
+                    }
+                }
+
+                if (winner is not null)
+                    Finish(winner);
                 break;
             case GamemodeState.Finished:
                 _physics.GameTick();
@@ -182,7 +205,7 @@ public class PvpGamemode : PluginGamemode
     /// <summary>
     /// The race is over: every car coasts to a stop and the HUD stops advancing laps.
     /// </summary>
-    private void Finish()
+    private void Finish(ClientSidePlayer? winner = null)
     {
         if (_state == GamemodeState.Finished)
             return;
@@ -194,7 +217,21 @@ public class PvpGamemode : PluginGamemode
                 car.CarPhysics.Halted = true;
         }
 
-        HudState.StateText = "Finished!";
+        if (winner is not null)
+        {
+            var clientWon = winner.Info.IsClientPlayer;
+            HudState.StateText = clientWon
+                ? "You finished first, nice job!"
+                : $"{winner.Info.PlayerName} finished first, race over!";
+            HudState.ClientWon = clientWon;
+            HudState.ClientLost = !clientWon;
+        }
+        else
+        {
+            HudState.StateText = "Finished!";
+        }
+
+        HudState.Finished = true;
         HudState.StateTextEndsAt = null;
 
         // The announcer stops ticking with the race, so its lines would otherwise stay up.
@@ -208,7 +245,8 @@ public class PvpServerGamemode(
     ServerGamemodeParameters parameters,
     IServerGamemodeContext context,
     string gamemodeId,
-    Dictionary<string, object>? config = null)
+    Dictionary<string, object>? config = null
+)
     : PluginServerGamemode(parameters, context, gamemodeId, config)
 {
     private class PerPlayerGamemodeInfo
@@ -237,7 +275,7 @@ public class PvpServerGamemode(
         _inner = GamemodeUtils.ServerCountdownInterval;
         _countdown = 3;
         _state = ServerGamemodeState.WaitingToStart;
-        
+
         foreach (var player in Players)
         {
             _perPlayer[player.Id] = new PerPlayerGamemodeInfo
@@ -275,6 +313,7 @@ public class PvpServerGamemode(
                         BroadcastEvent<ServerToClientEvent>(new CountdownGoEvent());
                     }
                 }
+
                 break;
             case ServerGamemodeState.InProgress:
                 _serverTick++;
@@ -315,15 +354,21 @@ public class PvpServerGamemode(
     /// </summary>
     public void CompleteRace()
     {
-        FinishRace(TimeSpan.Zero, [.. _perPlayer
-            .OrderBy(kv => StandingGroup(kv.Value))
-            .ThenBy(kv => StandingWithin(kv.Value))
-            .Select((kv, index) => new RaceStanding
-            {
-                PlayerId = kv.Key,
-                FinishPosition = index,
-                FinishTime = TimeSpan.Zero
-            })]);
+        FinishRace(
+            TimeSpan.Zero,
+            [
+                .. _perPlayer
+                    .OrderBy(kv => StandingGroup(kv.Value))
+                    .ThenBy(kv => StandingWithin(kv.Value))
+                    .Select((kv, index) => new RaceStanding
+                        {
+                            PlayerId = kv.Key,
+                            FinishPosition = index,
+                            FinishTime = TimeSpan.Zero
+                        }
+                    )
+            ]
+        );
     }
 
     /// <summary>Running cars are placed by checkpoint progress; the dead and departed sort after them.</summary>
@@ -345,8 +390,9 @@ public class PvpServerGamemode(
         // Leaving forfeits: the player is placed last and the race carries on for everyone
         // else. Without this the abandoned player stayed on the grid at their last relayed
         // position and the race could never end on its own.
-        if (e is ForfeitEvent && _perPlayer.TryGetValue(clientId, out var forfeiter)
-                             && !forfeiter.Forfeited)
+        if (e is ForfeitEvent
+            && _perPlayer.TryGetValue(clientId, out var forfeiter)
+            && !forfeiter.Forfeited)
         {
             forfeiter.Forfeited = true;
             forfeiter.WastedAt = _serverTick;
@@ -394,7 +440,8 @@ public class PvpServerGamemode(
         Guid playerId,
         PerPlayerGamemodeInfo ps,
         ushort claimedCheckpoint,
-        byte claimedLap)
+        byte claimedLap
+    )
     {
         var checkpointCount = CurrentStage.Checkpoints.Count;
         if (checkpointCount == 0)

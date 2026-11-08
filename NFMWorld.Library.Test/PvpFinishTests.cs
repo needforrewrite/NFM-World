@@ -32,10 +32,11 @@ public class PvpFinishTests
         try
         {
             SentrySdk.Init(options =>
-            {
-                options.Dsn = "https://public@localhost/1";
-                options.TracesSampleRate = 0;
-            });
+                {
+                    options.Dsn = "https://public@localhost/1";
+                    options.TracesSampleRate = 0;
+                }
+            );
         }
         catch (InvalidOperationException)
         {
@@ -46,8 +47,11 @@ public class PvpFinishTests
     private static StageObject CreateCheckpoint(fix64 x)
         => StageObject.CreateDefaultObject(
             new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], "pvp-test"),
-            new f64Vector3(x, World.Ground, 0), f64Euler.Identity,
-            PiecePlacementType.CheckPoint, AiNodeKind.CheckPoint);
+            new f64Vector3(x, World.Ground, 0),
+            f64Euler.Identity,
+            PiecePlacementType.CheckPoint,
+            AiNodeKind.CheckPoint
+        );
 
     private static BackendStage CreateStage(ushort laps, int checkpoints)
     {
@@ -77,7 +81,10 @@ public class PvpFinishTests
         public bool? Wasted { get; set; }
         public f64Vector3? GetPlayerPosition(Guid playerId) => Position;
         public bool? IsPlayerWasted(Guid playerId) => Wasted;
-        public void BroadcastEvent(ReadOnlyMemory<byte> payload) { }
+
+        public void BroadcastEvent(ReadOnlyMemory<byte> payload)
+        {
+        }
     }
 
     /// <summary>
@@ -85,28 +92,48 @@ public class PvpFinishTests
     /// the checkpoint being headed for next, which wraps to 0 when a lap completes, plus the lap
     /// just completed.
     /// </summary>
-    private static void ReportCrossing(BaseGamemodeFactory factory, IServerGamemode server, ServerContext context,
-        int crossed, int checkpointCount, byte lap)
+    private static void ReportCrossing(
+        BaseGamemodeFactory factory,
+        IServerGamemode server,
+        ServerContext context,
+        int crossed,
+        int checkpointCount,
+        byte lap
+    )
     {
         context.Position = context.CurrentStage.Checkpoints[crossed].Position;
-        server.OnClientEvent(PlayerId, SerializeEvent(factory, "CheckpointEvent",
-            (ushort)((crossed + 1) % checkpointCount), lap, 0, 0).Span);
+        server.OnClientEvent(
+            PlayerId,
+            SerializeEvent(
+                factory,
+                "CheckpointEvent",
+                (ushort)((crossed + 1) % checkpointCount),
+                lap,
+                0,
+                0
+            ).Span
+        );
     }
 
     private static (BaseGamemodeFactory Factory, IServerGamemode Server, ServerContext Context) CreateRace(
-        ushort laps, int checkpoints)
+        ushort laps,
+        int checkpoints
+    )
     {
         var factory = CreateFactory();
         var context = new ServerContext(CreateStage(laps, checkpoints));
-        var server = factory.CreateServerGamemode(new ServerGamemodeParameters
-        {
-            // A concrete List, as the real hosts pass: the sandbox cannot enumerate the
-            // compiler's single-element collection-expression type.
-            Players = new List<ServerSidePlayerInfo>
+        var server = factory.CreateServerGamemode(
+            new ServerGamemodeParameters
             {
-                new() { Id = PlayerId, PlayerName = "test", CarName = "test", Color = default }
-            }
-        }, context)!;
+                // A concrete List, as the real hosts pass: the sandbox cannot enumerate the
+                // compiler's single-element collection-expression type.
+                Players = new List<ServerSidePlayerInfo>
+                {
+                    new() { Id = PlayerId, PlayerName = "test", CarName = "test", Color = default }
+                }
+            },
+            context
+        )!;
         server.Begin();
         server.StartRace();
         return (factory, server, context);
@@ -125,8 +152,10 @@ public class PvpFinishTests
 
             ReportCrossing(factory, server, context, crossed: 1, checkpointCount: 2, lap: 2);
 
-            Assert.IsTrue(server.GetStateSnapshot() is { IsFinished: true },
-                "crossing the last checkpoint on the final lap has to finish the race");
+            Assert.IsTrue(
+                server.GetStateSnapshot() is { IsFinished: true },
+                "crossing the last checkpoint on the final lap has to finish the race"
+            );
         }
         finally
         {
@@ -163,21 +192,26 @@ public class PvpFinishTests
         var factory = CreateFactory();
         try
         {
-            var server = factory.CreateServerGamemode(new ServerGamemodeParameters
-            {
-                Players = new List<ServerSidePlayerInfo>
+            var server = factory.CreateServerGamemode(
+                new ServerGamemodeParameters
                 {
-                    new() { Id = PlayerId, PlayerName = "a", CarName = "a", Color = default },
-                    new() { Id = OtherPlayerId, PlayerName = "b", CarName = "b", Color = default }
-                }
-            }, new ServerContext(CreateStage(laps: 1, checkpoints: 2)))!;
+                    Players = new List<ServerSidePlayerInfo>
+                    {
+                        new() { Id = PlayerId, PlayerName = "a", CarName = "a", Color = default },
+                        new() { Id = OtherPlayerId, PlayerName = "b", CarName = "b", Color = default }
+                    }
+                },
+                new ServerContext(CreateStage(laps: 1, checkpoints: 2))
+            )!;
             server.Begin();
             server.StartRace();
 
             server.OnClientEvent(PlayerId, SerializeEvent(factory, "ForfeitEvent").Span);
 
-            Assert.IsFalse(server.GetStateSnapshot() is { IsFinished: true },
-                "the other player is still racing");
+            Assert.IsFalse(
+                server.GetStateSnapshot() is { IsFinished: true },
+                "the other player is still racing"
+            );
         }
         finally
         {
@@ -191,22 +225,27 @@ public class PvpFinishTests
         var factory = CreateFactory();
         try
         {
-            var server = factory.CreateServerGamemode(new ServerGamemodeParameters
-            {
-                Players = new List<ServerSidePlayerInfo>
+            var server = factory.CreateServerGamemode(
+                new ServerGamemodeParameters
                 {
-                    new() { Id = PlayerId, PlayerName = "a", CarName = "a", Color = default },
-                    new() { Id = OtherPlayerId, PlayerName = "b", CarName = "b", Color = default }
-                }
-            }, new ServerContext(CreateStage(laps: 1, checkpoints: 2)))!;
+                    Players = new List<ServerSidePlayerInfo>
+                    {
+                        new() { Id = PlayerId, PlayerName = "a", CarName = "a", Color = default },
+                        new() { Id = OtherPlayerId, PlayerName = "b", CarName = "b", Color = default }
+                    }
+                },
+                new ServerContext(CreateStage(laps: 1, checkpoints: 2))
+            )!;
             server.Begin();
             server.StartRace();
 
             server.OnClientEvent(PlayerId, SerializeEvent(factory, "ForfeitEvent").Span);
             server.OnClientEvent(OtherPlayerId, SerializeEvent(factory, "ForfeitEvent").Span);
 
-            Assert.IsTrue(server.GetStateSnapshot() is { IsFinished: true },
-                "an empty race has nothing left to run");
+            Assert.IsTrue(
+                server.GetStateSnapshot() is { IsFinished: true },
+                "an empty race has nothing left to run"
+            );
         }
         finally
         {
@@ -221,12 +260,24 @@ public class PvpFinishTests
         public IClientCallbacks ClientCallbacks => this;
         public List<byte[]> SentEvents { get; } = [];
 
-        public void RaceRestarted() { }
-        public void ResetCheckpointGlow() { }
-        public void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish) { }
+        public void RaceRestarted()
+        {
+        }
+
+        public void ResetCheckpointGlow()
+        {
+        }
+
+        public void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish)
+        {
+        }
+
         public IClientCarCallbacks GetClientCarCallbacks(BackendCar car) => throw new NotSupportedException();
         public void SendServerEvent(ReadOnlySpan<byte> payload) => SentEvents.Add(payload.ToArray());
-        public void UpdatePlayers(IReadOnlyList<ClientSidePlayer> players) { }
+
+        public void UpdatePlayers(IReadOnlyList<ClientSidePlayer> players)
+        {
+        }
     }
 
     /// <summary>
@@ -241,14 +292,27 @@ public class PvpFinishTests
         BaseClientGamemode? client = null;
         try
         {
-            BackendGameSparker.dynamic_models.Add(carName,
-                (0, new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName)));
+            BackendGameSparker.dynamic_models.Add(
+                carName,
+                (0, new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName))
+            );
 
-            client = (BaseClientGamemode)factory.CreateGameMode(new ClientGamemodeParameters
-            {
-                Players = [new ClientSidePlayerInfo(carName, carName, new Color3(255, 0, 0),
-                    isBot: false, isClientPlayer: true)]
-            }, new ClientContext(CreateStage(laps: 3, checkpoints: 2)));
+            client = (BaseClientGamemode)factory.CreateGameMode(
+                new ClientGamemodeParameters
+                {
+                    Players =
+                    [
+                        new ClientSidePlayerInfo(
+                            carName,
+                            carName,
+                            new Color3(255, 0, 0),
+                            isBot: false,
+                            isClientPlayer: true
+                        )
+                    ]
+                },
+                new ClientContext(CreateStage(laps: 3, checkpoints: 2))
+            );
             client.Begin();
             client.OnServerEvent(SerializeEvent(factory, "CountdownGoEvent").Span);
 
@@ -257,6 +321,10 @@ public class PvpFinishTests
 
             Assert.AreEqual(3, client.HudState.Lap, "the lap counter must stop at the stage's lap count");
             Assert.IsTrue(client.ClientPlayer.Car.CarPhysics.Halted, "the car stops driving once the race is over");
+            Assert.IsTrue(client.HudState.Finished);
+            Assert.IsTrue(client.HudState.ClientWon);
+            Assert.IsFalse(client.HudState.ClientLost);
+            StringAssert.Contains(client.HudState.StateText ?? "", "You finished first");
         }
         finally
         {
@@ -278,20 +346,95 @@ public class PvpFinishTests
         BaseClientGamemode? client = null;
         try
         {
-            BackendGameSparker.dynamic_models.Add(carName,
-                (0, new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName)));
+            BackendGameSparker.dynamic_models.Add(
+                carName,
+                (0, new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName))
+            );
 
             var context = new ClientContext(CreateStage(laps: 1, checkpoints: 2));
-            client = (BaseClientGamemode)factory.CreateGameMode(new ClientGamemodeParameters
-            {
-                Players = [new ClientSidePlayerInfo(carName, carName, new Color3(255, 0, 0),
-                    isBot: false, isClientPlayer: true)]
-            }, context);
+            client = (BaseClientGamemode)factory.CreateGameMode(
+                new ClientGamemodeParameters
+                {
+                    Players =
+                    [
+                        new ClientSidePlayerInfo(
+                            carName,
+                            carName,
+                            new Color3(255, 0, 0),
+                            isBot: false,
+                            isClientPlayer: true
+                        )
+                    ]
+                },
+                context
+            );
             client.Begin();
 
             client.Forfeit();
 
             Assert.AreEqual(1, context.SentEvents.Count, "forfeiting must reach the server");
+        }
+        finally
+        {
+            BackendGameSparker.dynamic_models.Remove(carName);
+            client?.End();
+            factory.End();
+        }
+    }
+
+    /// <summary>
+    /// A bot crossing the line has to end the race. The client-only finish check let every
+    /// bot complete the race while the player kept driving.
+    /// </summary>
+    [TestMethod]
+    public void BotPassingItsFinalLap_EndsTheRaceForTheClient()
+    {
+        var factory = CreateFactory();
+        var carName = $"pvp-test/{Guid.NewGuid():N}";
+        BaseClientGamemode? client = null;
+        try
+        {
+            BackendGameSparker.dynamic_models.Add(
+                carName,
+                (0, new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName))
+            );
+
+            client = (BaseClientGamemode)factory.CreateGameMode(
+                new ClientGamemodeParameters
+                {
+                    Players =
+                    [
+                        new ClientSidePlayerInfo(
+                            carName,
+                            carName,
+                            new Color3(255, 0, 0),
+                            isBot: false,
+                            isClientPlayer: true
+                        ),
+                        new ClientSidePlayerInfo(
+                            "Classic",
+                            carName,
+                            new Color3(0, 0, 255),
+                            isBot: true,
+                            isClientPlayer: false
+                        )
+                    ]
+                },
+                new ClientContext(CreateStage(laps: 1, checkpoints: 2))
+            );
+            client.Begin();
+            client.OnServerEvent(SerializeEvent(factory, "CountdownGoEvent").Span);
+
+            var bot = client.Players[1];
+            Assert.IsNotNull(bot.Car);
+            bot.Car.CurrentLap = 1;
+            client.GameTick();
+
+            Assert.IsTrue(client.HudState.Finished, "a bot finishing has to end the race");
+            Assert.IsTrue(client.HudState.ClientLost);
+            Assert.IsFalse(client.HudState.ClientWon);
+            StringAssert.Contains(client.HudState.StateText ?? "", "Classic finished first, race over!");
+            Assert.IsTrue(client.ClientPlayer.Car!.CarPhysics.Halted, "the client car stops with the race");
         }
         finally
         {

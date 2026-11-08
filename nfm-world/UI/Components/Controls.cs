@@ -99,7 +99,11 @@ public static class Controls
                     paddingLeft: 12,
                     paddingRight: 12
                 );
-                MousePressed = _ => onSelect(_index);
+                MousePressed = e =>
+                {
+                    e.StopPropagation();
+                    onSelect(_index);
+                };
                 MouseEntered = _ =>
                 {
                     _hovered = true;
@@ -400,7 +404,9 @@ public static class Controls
         Func<IReadOnlyList<string>> options,
         Func<int> value,
         Action<int> onSelect,
-        string unselectedLabel = ""
+        string unselectedLabel = "",
+        float width = 240,
+        bool compact = false
     )
     {
         var open = new Signal<bool>(false);
@@ -460,6 +466,9 @@ public static class Controls
                     overflow: Overflow.Hidden,
                     zIndex: 1000
                 ),
+                // The popup can extend outside its modal card; a click here belongs to
+                // the dropdown, not to the backdrop underneath it.
+                onmousedown: e => e.StopPropagation(),
                 children: new DropdownListView(
                     openOptions,
                     () => cursor.Value,
@@ -478,7 +487,7 @@ public static class Controls
             Styles = Sx.Styles(
                 position: Position.Relative,
                 flexDirection: FlexDirection.Column,
-                width: 240,
+                width: width,
                 maxWidth: 100.Percent()
             )
         };
@@ -486,10 +495,10 @@ public static class Controls
             Sx.View(
                 style: () => Sx.Styles(
                     width: 100.Percent(),
-                    paddingTop: 8,
-                    paddingBottom: 8,
-                    paddingLeft: 12,
-                    paddingRight: 12,
+                    paddingTop: compact ? 2 : 8,
+                    paddingBottom: compact ? 2 : 8,
+                    paddingLeft: compact ? 6 : 12,
+                    paddingRight: compact ? 6 : 12,
                     backgroundColor: new Color(22, 42, 80, 145),
                     borderTop: 1,
                     borderBottom: 1,
@@ -514,13 +523,13 @@ public static class Controls
                 [
                     Sx.Text(
                         style: () => Sx.TextStyles(
-                            fontSize: 13,
+                            fontSize: compact ? 10 : 13,
                             foregroundColor: open.Value ? new Color(255, 255, 255) : new Color(255, 255, 255, 204)
                         ),
                         text: () => SelectedLabel(options(), value(), unselectedLabel)
                     ),
                     Sx.Text(
-                        style: () => Sx.TextStyles(fontSize: 12, foregroundColor: new Color(255, 255, 255, 128)),
+                        style: () => Sx.TextStyles(fontSize: compact ? 9 : 12, foregroundColor: new Color(255, 255, 255, 128)),
                         text: () => "▾"
                     )
                 ]

@@ -20,7 +20,25 @@ public class GaragePhase : BaseStageRenderingPhase
     {
     }
 
-    public GaragePhase(Rad3d? currentCar, string? stageName = null) : base(stageName ?? MenuHistory.Stage)
+    internal GaragePhase(StageSelectPhase source) : this(null, source.StageName, source)
+    {
+        try
+        {
+            LoadStageMusic();
+        }
+        catch
+        {
+            source.TakeStageFrom(this);
+            source.CurrentStage!.FadeFromOverride = 9999999;
+            throw;
+        }
+    }
+
+    public GaragePhase(
+        Rad3d? currentCar,
+        string? stageName = null,
+        BaseStageRenderingPhase? stageSource = null
+    ) : base(stageName ?? MenuHistory.Stage, stageSource)
     {
         if (currentCar != null)
             CarsInRace.Add(new BackendCar(currentCar, 0, 0, 0, true));
@@ -40,6 +58,7 @@ public class GaragePhase : BaseStageRenderingPhase
             _cameraDirector.ShowCar(Camera, car, 0, true, 1);
             _cameraInitialized = true;
         }
+
         FovOverride = 53;
     }
 
@@ -47,27 +66,56 @@ public class GaragePhase : BaseStageRenderingPhase
     {
         _garageCamera.Tick(1f / Physics.TargetTps);
         if (_garage.CurrentCar is { } car)
-            _cameraDirector.ShowCar(Camera, car, 0, garageBlend: 1,
-                garageAngle: _garageCamera.Angle, garageHeight: _garageCamera.Height);
+            _cameraDirector.ShowCar(
+                Camera,
+                car,
+                0,
+                garageBlend: 1,
+                garageAngle: _garageCamera.Angle,
+                garageHeight: _garageCamera.Height
+            );
         base.GameTick();
     }
 
-    public override void MousePressed(int x, int y, bool imguiWantsMouse, MouseButton button,
-        MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public override void MousePressed(
+        int x,
+        int y,
+        bool imguiWantsMouse,
+        MouseButton button,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         base.MousePressed(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
         _garageCamera.Press(x, y, imguiWantsMouse, button);
     }
 
-    public override void MouseMoved(int x, int y, bool imguiWantsMouse, MouseButtons buttons,
-        bool ctrlKey, bool shiftKey, bool altKey)
+    public override void MouseMoved(
+        int x,
+        int y,
+        bool imguiWantsMouse,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         base.MouseMoved(x, y, imguiWantsMouse, buttons, ctrlKey, shiftKey, altKey);
         _garageCamera.Move(x, y, imguiWantsMouse, buttons);
     }
 
-    public override void MouseReleased(int x, int y, bool imguiWantsMouse, MouseButton button,
-        MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public override void MouseReleased(
+        int x,
+        int y,
+        bool imguiWantsMouse,
+        MouseButton button,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         base.MouseReleased(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
         _garageCamera.Release(button);

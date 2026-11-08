@@ -7,21 +7,21 @@ namespace NFMWorld;
 
 public class FixFlare : IDisposable, IImmediateRenderElement
 {
+    private const float Inflation = 1.3f;
+    private const int ShellVertexCount = FixFlareGeometry.ShellVertexCount;
+    private const int ShellIndexCount = FixFlareGeometry.ShellTriangleCount * 3;
+
     private readonly CarVisual _visual;
-    private readonly PositionColorVertex[] _verts = new PositionColorVertex[16];
-    private readonly float[] _innerJitter = new float[8];
-    private readonly float[] _outerJitter = new float[8];
+    private readonly PositionColorVertex[] _verts = new PositionColorVertex[ShellVertexCount * 2];
+    private readonly Vector3[] _shell = new Vector3[ShellVertexCount];
+    private readonly float[] _innerJitter = new float[ShellVertexCount];
+    private readonly float[] _outerJitter = new float[ShellVertexCount];
     private readonly Vector3 _originalMin;
     private readonly Vector3 _originalMax;
     private Vector3 _min;
     private Vector3 _max;
     private bool _active;
-    private float _rotation;
-    private static readonly ushort[] Indices =
-    [
-        0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6, 7,
-        8, 9, 10, 8, 10, 11, 8, 11, 12, 8, 12, 13, 8, 13, 14, 8, 14, 15
-    ];
+    private static readonly ushort[] Indices = BuildIndices();
     private readonly IBuffer _vertexBuffer;
     private readonly IBuffer _indexBuffer;
 
@@ -36,6 +36,7 @@ public class FixFlare : IDisposable, IImmediateRenderElement
             min = Vector3.Min(min, point);
             max = Vector3.Max(max, point);
         }
+
         foreach (var wheel in wheels)
         {
             var position = (Vector3)wheel.Position;
@@ -43,7 +44,13 @@ public class FixFlare : IDisposable, IImmediateRenderElement
             min = Vector3.Min(min, position - radius);
             max = Vector3.Max(max, position + radius);
         }
-        if (!float.IsFinite(min.X)) { min = new Vector3(-1); max = Vector3.One; }
+
+        if (!float.IsFinite(min.X))
+        {
+            min = new Vector3(-1);
+            max = Vector3.One;
+        }
+
         _originalMin = min;
         _originalMax = max;
         _min = min;
@@ -51,18 +58,20 @@ public class FixFlare : IDisposable, IImmediateRenderElement
 
         var maxVertexBytes = _verts.Length * PositionColorVertex.Stride;
         _vertexBuffer = graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxVertexBytes), new byte[maxVertexBytes]);
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxVertexBytes),
+            new byte[maxVertexBytes]
+        );
         _indexBuffer = graphicsDevice.CreateBuffer(
             new BufferDesc(BufferKind.Index, BufferUsage.Immutable, Indices.Length * sizeof(ushort), IndexFormat.UInt16),
-            MemoryMarshal.AsBytes((ReadOnlySpan<ushort>)Indices));
+            MemoryMarshal.AsBytes((ReadOnlySpan<ushort>)Indices)
+        );
     }
 
     public void DeleteFixFx() => _active = false;
 
-    public void SetFixFx(int frame)
+    public void SetFixFx()
     {
         _active = true;
-        _rotation = float.DegreesToRadians(frame is 3 or 4 ? 22 : frame is 6 or 7 ? -22 : 0);
         _min = _originalMin;
         _max = _originalMax;
         foreach (var poly in _visual.Mesh.Polys)
@@ -71,7 +80,8 @@ public class FixFlare : IDisposable, IImmediateRenderElement
             _min = Vector3.Min(_min, point);
             _max = Vector3.Max(_max, point);
         }
-        for (var i = 0; i < 8; i++)
+
+        for (var i = 0; i < ShellVertexCount; i++)
         {
             _innerJitter[i] = 1 + URandom.Single() * 0.06f;
             _outerJitter[i] = 1.2f + URandom.Single() * 0.1f;
@@ -80,37 +90,46 @@ public class FixFlare : IDisposable, IImmediateRenderElement
 
     public void Render(ICommandBuffer cb, Camera camera, Lighting? _)
     {
-        if (!_active || !Matrix.Invert(camera.ViewMatrix, out var cameraWorld)) return;
-        if (!FixFlareGeometry.TryFit(_min, _max, _visual.MatrixWorld * camera.ViewMatrix,
-                camera.Near, MathF.Abs(camera.ProjectionMatrix.M34) > 0.5f, out var center, out var halfSize)) return;
+        if (!_active) return;
 
-        Span<Vector2> octagon = stackalloc Vector2[8];
-        FixFlareGeometry.WriteOctagon(halfSize, _rotation, octagon);
+        var center = (_min + _max) * 0.5f;
+        var halfSize = FixFlareGeometry.BallHalfSize((_max - _min) * 0.5f);
+        FixFlareGeometry.WriteShell(center, halfSize, Inflation, _shell);
+
         var outerColor = new Color(
             Math.Clamp((int)(191 + 191 * World.Snap[0] / 350f), 0, 255),
             Math.Clamp((int)(232 + 232 * World.Snap[1] / 350f), 0, 255),
-            Math.Clamp((int)(255 + 255 * World.Snap[2] / 350f), 0, 255));
+            Math.Clamp((int)(255 + 255 * World.Snap[2] / 350f), 0, 255)
+        );
         var innerColor = new Color(
             Math.Clamp((int)(213 + 213 * World.Snap[0] / 350f), 0, 255),
             Math.Clamp((int)(239 + 239 * World.Snap[1] / 350f), 0, 255),
-            Math.Clamp((int)(255 + 255 * World.Snap[2] / 350f), 0, 255));
-        for (var i = 0; i < 8; i++)
+            Math.Clamp((int)(255 + 255 * World.Snap[2] / 350f), 0, 255)
+        );
+        for (var i = 0; i < ShellVertexCount; i++)
         {
-            _verts[i] = new PositionColorVertex(new Vector3(octagon[i] * _outerJitter[i], 0), outerColor);
-            _verts[i + 8] = new PositionColorVertex(new Vector3(octagon[i] * _innerJitter[i], 0), innerColor);
+            _verts[i] = new PositionColorVertex(center + (_shell[i] - center) * _outerJitter[i], outerColor);
+            _verts[ShellVertexCount + i] = new PositionColorVertex(center + (_shell[i] - center) * _innerJitter[i], innerColor);
         }
+
         cb.UpdateBuffer(_vertexBuffer, MemoryMarshal.AsBytes(_verts.AsSpan()));
 
-        var world = cameraWorld;
-        world.Translation = Vector3.Transform(center, cameraWorld);
         var p = Effects.ParticleParameters;
-        cb.SetPipeline(Effects.ParticleNoDepthPipeline);
+        cb.SetPipeline(Effects.ParticleDepthReadPipeline);
         cb.SetVertexBuffer(0, _vertexBuffer, PositionColorVertex.Stride);
         cb.SetIndexBuffer(_indexBuffer);
-        p.World.SetValue(cb, world);
+        p.World.SetValue(cb, _visual.MatrixWorld);
         p.View.SetValue(cb, camera.ViewMatrix);
         p.Projection.SetValue(cb, camera.ProjectionMatrix);
         cb.DrawIndexed(baseVertex: 0, startIndex: 0, primitiveCount: Indices.Length / 3);
+    }
+
+    private static ushort[] BuildIndices()
+    {
+        var indices = new ushort[ShellIndexCount * 2];
+        FixFlareGeometry.WriteShellIndices(indices, 0);
+        FixFlareGeometry.WriteShellIndices(indices.AsSpan(ShellIndexCount), (ushort)ShellVertexCount);
+        return indices;
     }
 
     public void Dispose()

@@ -27,10 +27,13 @@ namespace NFMWorld.Gameplay;
 public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallbacks
 {
     /// <summary>The in-race HUD, with its pause menu wired to this phase.</summary>
-    public override Node BuildUi() => RaceHudView.Build(new RaceHudView.Actions(
-        Resume: ResumeRace,
-        Restart: _host is LocalRaceHost ? RestartRace : null,
-        Quit: QuitRace));
+    public override Node BuildUi() => RaceHudView.Build(
+        new RaceHudView.Actions(
+            Resume: ResumeRace,
+            Restart: _host is LocalRaceHost ? RestartRace : null,
+            Quit: QuitRace
+        )
+    );
 
     public readonly BaseGamemodeFactory Gamemode;
     public readonly IReadOnlyList<ClientSidePlayerInfo> Players;
@@ -54,13 +57,36 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         string stageName,
         BaseGamemodeFactory gamemode,
         IReadOnlyList<ClientSidePlayerInfo> players,
-        IRaceHost host) : base(stageName)
+        IRaceHost host,
+        BaseStageRenderingPhase? stageSource = null
+    ) : base(stageName, stageSource)
     {
         Gamemode = gamemode;
         Players = players;
         _host = host;
         _localPlayerId = players.FirstOrDefault(p => p.IsClientPlayer)?.Id ?? Guid.Empty;
 
+        try
+        {
+            InitializeRace(host);
+        }
+        catch
+        {
+            _host.Dispose();
+            CurrentStage?.SetPlayers(null);
+            GamemodeInstance?.End();
+            GamemodeInstance = null;
+            if (stageSource != null)
+                stageSource.TakeStageFrom(this);
+            else
+                base.Dispose(true);
+            Gamemode.End();
+            throw;
+        }
+    }
+
+    private void InitializeRace(IRaceHost host)
+    {
         // Create the gamemode once at construction time. Enter/Exit only handle
         // display-level activation/deactivation; the gamemode survives across
         // push/pop cycles (e.g., opening Settings over a race).
@@ -110,7 +136,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     IClientCallbacks IGamemodeContext.ClientCallbacks => this;
 
     public event EventHandler<RaceState>? RaceStateChanged;
-    
+
     /// <summary>
     /// Called when the race is exited, to pop the phase.
     /// </summary>
@@ -164,6 +190,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             hud.MapImage = null;
             hud.MapFrame = default;
         }
+
         hud.ArrowAngle = null;
         hud.ArrowTarget = "";
         hud.ArrowAtCars = false;
@@ -183,15 +210,32 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             var slot = player.Info.IsClientPlayer ? 0 : ++lockSlot;
             // The player's name, not the car's: every car in a race can be the same model.
             var name = player.Info.PlayerName;
-            hud.Racers.Add(new HudRacer(car.Placement + 1, name, damage,
-                player.Info.IsClientPlayer, car.Wasted, slot));
-            hud.Markers.Add(new HudRacerMarker(name,
-                (float)car.Position.X, (float)car.Position.Y, (float)car.Position.Z,
-                car.Placement + 1, player.Info.IsClientPlayer, car.Wasted));
+            hud.Racers.Add(
+                new HudRacer(
+                    car.Placement + 1,
+                    name,
+                    damage,
+                    player.Info.IsClientPlayer,
+                    car.Wasted,
+                    slot
+                )
+            );
+            hud.Markers.Add(
+                new HudRacerMarker(
+                    name,
+                    (float)car.Position.X,
+                    (float)car.Position.Y,
+                    (float)car.Position.Z,
+                    car.Placement + 1,
+                    player.Info.IsClientPlayer,
+                    car.Wasted
+                )
+            );
             if (player.Info.IsClientPlayer) continue;
             hud.Opponents++;
             if (car.Wasted) hud.Wasted++;
         }
+
         hud.Racers.Sort(static (a, b) => a.Position.CompareTo(b.Position));
         var targetCar = client is null ? null : TargetCarFor(client);
         if (client is not null)
@@ -214,8 +258,9 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         // and toggling the arrow off/on should start from that fallback rather than a dead lock.
         if (client is not null && (targetCar is null || client.Wasted))
             client.Control.Arrace = false;
-        if (client is not null && client.Control.ArrowLock >= 0 &&
-            !OrderedOpponents(gm).Any(p => p.Index == client.Control.ArrowLock && p.Car is { Wasted: false }))
+        if (client is not null
+            && client.Control.ArrowLock >= 0
+            && !OrderedOpponents(gm).Any(p => p.Index == client.Control.ArrowLock && p.Car is { Wasted: false }))
             client.Control.ArrowLock = -1;
         hud.ArrowAtCars = client?.Control.Arrace ?? false;
         hud.ArrowLocked = hud.ArrowAtCars && (client?.Control.ArrowLock ?? -1) >= 0;
@@ -226,14 +271,18 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
                 : OrderedOpponents(gm).FirstOrDefault(p => ReferenceEquals(p.Car, targetCar))?.Info.PlayerName
                   ?? "";
         }
+
         if (ArrowTarget(client, targetCar) is not { } target) return;
 
         var direction = target - new Vector3((float)client.Position.X, (float)client.Position.Y, (float)client.Position.Z);
         var forward = Camera.LookAt - Camera.Position;
-        if (direction.X * direction.X + direction.Z * direction.Z < 1 ||
-            forward.X * forward.X + forward.Z * forward.Z < 1) return;
-        var angle = MathF.Atan2(forward.Z * direction.X - forward.X * direction.Z,
-            forward.X * direction.X + forward.Z * direction.Z) * (180 / MathF.PI);
+        if (direction.X * direction.X + direction.Z * direction.Z < 1
+            || forward.X * forward.X + forward.Z * forward.Z < 1) return;
+        var angle = MathF.Atan2(
+                        forward.Z * direction.X - forward.X * direction.Z,
+                        forward.X * direction.X + forward.Z * direction.Z
+                    )
+                    * (180 / MathF.PI);
         hud.ArrowAngle = Math.Clamp(angle, hud.ArrowAtCars ? -100 : -130, hud.ArrowAtCars ? 100 : 130);
     }
 
@@ -313,14 +362,22 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             var dx = (double)(car.Position.X - client.Position.X);
             var dz = (double)(car.Position.Z - client.Position.Z);
             var distance = dx * dx + dz * dz;
-            var clip = Vector4.Transform(new Vector4((float)car.Position.X, (float)car.Position.Y,
-                (float)car.Position.Z, 1), Camera.ViewProjectionMatrix);
+            var clip = Vector4.Transform(
+                new Vector4(
+                    (float)car.Position.X,
+                    (float)car.Position.Y,
+                    (float)car.Position.Z,
+                    1
+                ),
+                Camera.ViewProjectionMatrix
+            );
             var onscreen = clip.W > 0 && MathF.Abs(clip.X) <= clip.W && MathF.Abs(clip.Y) <= clip.W;
             if ((bestOnscreen && !onscreen) || (onscreen == bestOnscreen && distance >= nearest)) continue;
             nearest = distance;
             best = car;
             bestOnscreen = onscreen;
         }
+
         return best;
     }
 
@@ -441,10 +498,13 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
     protected IGamemode ReloadGamemode()
     {
-        return Gamemode.CreateGameMode(new ClientGamemodeParameters
-        {
-            Players = Players
-        }, this);
+        return Gamemode.CreateGameMode(
+            new ClientGamemodeParameters
+            {
+                Players = Players
+            },
+            this
+        );
     }
 
     public override void Exit()
@@ -521,6 +581,15 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         GamemodeInstance?.KeyTyped(character);
     }
 
+    public override void KeyHeld(bool imguiWantsKeyboard, in Keys keys)
+    {
+        base.KeyHeld(imguiWantsKeyboard, keys);
+
+        if (imguiWantsKeyboard || IsPaused || GameSparker.devConsole.IsOpen()) return;
+
+        _input.Refresh(in keys, ClientCar?.Control, ClientCar?.CarPhysics.Mtouch == false);
+    }
+
     public override void KeyReleased(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
         base.KeyReleased(key, imguiWantsKeyboard, keys);
@@ -532,8 +601,16 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         GamemodeInstance?.KeyReleased(key, keys);
     }
 
-    public override void MousePressed(int x, int y, bool imguiWantsMouse, MouseButton button, MouseButtons buttons, bool ctrlKey,
-        bool shiftKey, bool altKey)
+    public override void MousePressed(
+        int x,
+        int y,
+        bool imguiWantsMouse,
+        MouseButton button,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         base.MousePressed(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
 
@@ -542,8 +619,16 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         GamemodeInstance?.MousePressed(x, y, button, buttons, ctrlKey, shiftKey, altKey);
     }
 
-    public override void MouseReleased(int x, int y, bool imguiWantsMouse, MouseButton button, MouseButtons buttons, bool ctrlKey,
-        bool shiftKey, bool altKey)
+    public override void MouseReleased(
+        int x,
+        int y,
+        bool imguiWantsMouse,
+        MouseButton button,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         base.MouseReleased(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
 
@@ -552,8 +637,16 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         GamemodeInstance?.MouseReleased(x, y, button, buttons, ctrlKey, shiftKey, altKey);
     }
 
-    public override void MouseScrolled(int x, int y, int delta, bool imguiWantsMouse, MouseButtons buttons,
-        bool ctrlKey, bool shiftKey, bool altKey)
+    public override void MouseScrolled(
+        int x,
+        int y,
+        int delta,
+        bool imguiWantsMouse,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         base.MouseScrolled(x, y, delta, imguiWantsMouse, buttons, ctrlKey, shiftKey, altKey);
 
@@ -562,7 +655,15 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         GamemodeInstance?.MouseScrolled(x, y, delta, buttons, ctrlKey, shiftKey, altKey);
     }
 
-    public override void MouseMoved(int x, int y, bool imguiWantsMouse, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public override void MouseMoved(
+        int x,
+        int y,
+        bool imguiWantsMouse,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         base.MouseMoved(x, y, imguiWantsMouse, buttons, ctrlKey, shiftKey, altKey);
 
@@ -587,7 +688,16 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         {
             G.SetFont(new Font(FontFamily.NotoSans, FontStyle.Plain, 26));
             G.SetColor(new Color(255, 255, 255));
-            G.DrawStringOutlinedAligned("Waiting for other players to load...", 0, 150, (int)G.Viewport.X, (int)G.Viewport.Y, new Color(0, 0, 0), 1f, TextHorizontalAlignment.Center);
+            G.DrawStringOutlinedAligned(
+                "Waiting for other players to load...",
+                0,
+                150,
+                (int)G.Viewport.X,
+                (int)G.Viewport.Y,
+                new Color(0, 0, 0),
+                1f,
+                TextHorizontalAlignment.Center
+            );
         }
         else if (RaceState == RaceState.FailedToStart)
         {
@@ -595,12 +705,28 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             // was left on a dead screen. The pause menu's Quit is the way out.
             G.SetFont(new Font(FontFamily.NotoSans, FontStyle.Plain, 26));
             G.SetColor(new Color(255, 180, 180));
-            G.DrawStringOutlinedAligned("Lost connection to the Game Master.", 0, 130,
-                (int)G.Viewport.X, (int)G.Viewport.Y, new Color(0, 0, 0), 1f, TextHorizontalAlignment.Center);
+            G.DrawStringOutlinedAligned(
+                "Lost connection to the Game Master.",
+                0,
+                130,
+                (int)G.Viewport.X,
+                (int)G.Viewport.Y,
+                new Color(0, 0, 0),
+                1f,
+                TextHorizontalAlignment.Center
+            );
             G.SetFont(new Font(FontFamily.NotoSans, FontStyle.Plain, 16));
             G.SetColor(new Color(230, 230, 230));
-            G.DrawStringOutlinedAligned("Press Escape to quit the race.", 0, 170,
-                (int)G.Viewport.X, (int)G.Viewport.Y, new Color(0, 0, 0), 1f, TextHorizontalAlignment.Center);
+            G.DrawStringOutlinedAligned(
+                "Press Escape to quit the race.",
+                0,
+                170,
+                (int)G.Viewport.X,
+                (int)G.Viewport.Y,
+                new Color(0, 0, 0),
+                1f,
+                TextHorizontalAlignment.Center
+            );
         }
 
         GamemodeInstance?.Render();
@@ -645,8 +771,8 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         if (IsPaused && _host is LocalRaceHost)
         {
             InvalidateOrdering();
-            if (ClientCar is { } pausedCar &&
-                _cameraDirector.CurrentViewMode is RaceCameraDirector.ViewMode.Follow
+            if (ClientCar is { } pausedCar
+                && _cameraDirector.CurrentViewMode is RaceCameraDirector.ViewMode.Follow
                     or RaceCameraDirector.ViewMode.FollowStatic
                     or RaceCameraDirector.ViewMode.CarCam)
             {
@@ -664,7 +790,8 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
         // The Game Master is gone and reconnection gave up. WaitingToStart used to sit on the
         // "waiting for other players" screen forever in this case.
-        if (!_host.IsConnected && _host is NetworkRaceHost { ReconnectFailed: true }
+        if (!_host.IsConnected
+            && _host is NetworkRaceHost { ReconnectFailed: true }
             && RaceState is RaceState.WaitingToStart or RaceState.InProgress)
         {
             RaceState = RaceState.FailedToStart;
@@ -741,5 +868,4 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         // Server-driven player roster updates; wired up when the server can
         // change rosters mid-race.
     }
-
 }

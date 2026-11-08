@@ -25,6 +25,28 @@ public class UiRenderer : IDisposable
 
     public View? ActiveRoot { get; private set; }
 
+    /// <summary>
+    /// Whether the mounted tree has a focused control (a text field, a slider), i.e.
+    /// whether key input belongs to the UI rather than to the phase.
+    /// </summary>
+    public bool WantsKeyboard => FocusManager.FocusedNode is not null;
+
+    /// <summary>
+    /// Whether the mounted tree contains an element under this point. Phases use it to
+    /// keep viewport input (camera drags, picking) from firing through the UI.
+    /// </summary>
+    public bool WantsMouse(int x, int y)
+    {
+        if (ActiveRoot is not { } root)
+            return false;
+
+        var chain = FocusManager.HitTestChain(root, new Vector2(x, y));
+
+        // The root is the full-window host so its absolutely positioned panels can
+        // resolve against it; a hit on the root alone is empty viewport, not UI.
+        return chain.Count > 1 || (chain.Count == 1 && !ReferenceEquals(chain[0], root));
+    }
+
     public UiRenderer()
     {
         // Effects run once per frame rather than once per write.
@@ -125,24 +147,47 @@ public class UiRenderer : IDisposable
     public void HandleMouseMoved(int x, int y, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
     {
         if (ActiveRoot == null) return;
-        FocusManager.DispatchMouseMove(ActiveRoot,
-            new BaseMouseMoveEvent(new Vector2(x, y), buttons, ctrlKey, altKey, shiftKey));
+        FocusManager.DispatchMouseMove(
+            ActiveRoot,
+            new BaseMouseMoveEvent(new Vector2(x, y), buttons, ctrlKey, altKey, shiftKey)
+        );
     }
 
-    public void HandleMouseDragged(int x, int y, int dragStartX, int dragStartY, MouseButton button, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public void HandleMouseDragged(
+        int x,
+        int y,
+        int dragStartX,
+        int dragStartY,
+        MouseButton button,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         if (ActiveRoot == null) return;
-        ActiveRoot.DispatchMouseDragged(new BaseMouseDragEvent(
-            new Vector2(dragStartX, dragStartY),
-            new Vector2(x, y),
-            (byte)button,
-            buttons,
-            ctrlKey,
-            altKey,
-            shiftKey));
+        ActiveRoot.DispatchMouseDragged(
+            new BaseMouseDragEvent(
+                new Vector2(dragStartX, dragStartY),
+                new Vector2(x, y),
+                (byte)button,
+                buttons,
+                ctrlKey,
+                altKey,
+                shiftKey
+            )
+        );
     }
 
-    public void HandleMousePressed(int x, int y, MouseButton button, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public void HandleMousePressed(
+        int x,
+        int y,
+        MouseButton button,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         if (ActiveRoot == null) return;
         UiScheduler.Instance.Flush();
@@ -156,7 +201,15 @@ public class UiRenderer : IDisposable
         UiScheduler.Instance.Flush();
     }
 
-    public void HandleMouseReleased(int x, int y, MouseButton button, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public void HandleMouseReleased(
+        int x,
+        int y,
+        MouseButton button,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         if (ActiveRoot == null) return;
         var @event = new BaseMouseEvent(new Vector2(x, y), button, buttons, ctrlKey, altKey, shiftKey);
@@ -166,6 +219,15 @@ public class UiRenderer : IDisposable
 
     public void HandleMouseScrolled(int x, int y, int delta, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
     {
-        ActiveRoot?.DispatchMouseScrolled(new BaseMouseWheelEvent(new System.Numerics.Vector3(0, delta, 0), new Vector2(x, y), buttons, ctrlKey, altKey, shiftKey));
+        ActiveRoot?.DispatchMouseScrolled(
+            new BaseMouseWheelEvent(
+                new System.Numerics.Vector3(0, delta, 0),
+                new Vector2(x, y),
+                buttons,
+                ctrlKey,
+                altKey,
+                shiftKey
+            )
+        );
     }
 }

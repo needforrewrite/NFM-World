@@ -1,5 +1,4 @@
 ﻿extern alias SDL3New;
-
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -73,7 +72,7 @@ public partial class WorldGame : IDisposable, IGameHost
 
     /// <summary>The SDL3 window this game owns.</summary>
     public SdlWindow Window { get; }
-    
+
     /// <summary>
     /// The device, whichever backend is running - a GL one under <c>--backend=desktopgl</c> or the
     /// ANGLE renderer, a <see cref="SokolGraphicsDevice"/> otherwise. Nothing outside the
@@ -185,8 +184,9 @@ public partial class WorldGame : IDisposable, IGameHost
                 if (!OperatingSystem.IsWindows())
                 {
                     throw new ArgumentException(
-                        $"{RendererArgumentPrefix}d3d11 needs Windows: the backend binds Direct3D 11 " +
-                        "and DXGI through TerraFX.Interop.Windows, which P/Invokes those DLLs directly.");
+                        $"{RendererArgumentPrefix}d3d11 needs Windows: the backend binds Direct3D 11 "
+                        + "and DXGI through TerraFX.Interop.Windows, which P/Invokes those DLLs directly."
+                    );
                 }
 
                 return Renderer.D3d11;
@@ -200,9 +200,10 @@ public partial class WorldGame : IDisposable, IGameHost
                 return Renderer.Angle;
 #else
                 throw new ArgumentException(
-                    $"{RendererArgumentPrefix}angle needs this build to include the ANGLE backend, " +
-                    "which is behind the NfmWorldAngle property - rebuild with " +
-                    "-p:NfmWorldAngle=true to use it.");
+                    $"{RendererArgumentPrefix}angle needs this build to include the ANGLE backend, "
+                    + "which is behind the NfmWorldAngle property - rebuild with "
+                    + "-p:NfmWorldAngle=true to use it."
+                );
 #endif
             }
 
@@ -210,11 +211,13 @@ public partial class WorldGame : IDisposable, IGameHost
                 return Renderer.DesktopGl;
 
             throw new ArgumentException(
-                $"Unknown {RendererArgumentPrefix}{value}. Valid renderers: sokol, desktopgl, d3d11" +
+                $"Unknown {RendererArgumentPrefix}{value}. Valid renderers: sokol, desktopgl, d3d11"
+                +
 #if ANGLE
                 ", angle" +
 #endif
-                ".");
+                "."
+            );
         }
 
         return Renderer.Auto;
@@ -428,7 +431,9 @@ public partial class WorldGame : IDisposable, IGameHost
     private MouseButtons _oldMouseState;
     private Int2 _oldMousePosition;
     private readonly NFMWorld.Reactor.MouseCursorState _mouseCursor = new();
+
     private int _oldScrollValue;
+
     // UI drag state: the renderer only receives pressed/moved/released today, so
     // mouse-drag events (needed by the Sx Slider) are synthesized here from a held
     // primary button + pointer movement since the press.
@@ -438,7 +443,7 @@ public partial class WorldGame : IDisposable, IGameHost
     private TimeStep _tickTimeStep = new((1000f / Physics.TargetTps) / 1000f);
 
     private static bool _loaded;
-    private const int FrameDelay = (int) (1000 / 21.3f);
+    private const int FrameDelay = (int)(1000 / 21.3f);
 
     private int _yogaDebugPage = -1;
 
@@ -500,9 +505,13 @@ public partial class WorldGame : IDisposable, IGameHost
     private readonly INativeContext? _browserContext;
 
     private WorldGame(
-        INativeContext? browserContext = null, int browserWidth = 0, int browserHeight = 0,
-        Action? browserPresent = null, Action<int>? browserSetSwapInterval = null,
-        Action<int, int>? browserResizeDrawable = null)
+        INativeContext? browserContext = null,
+        int browserWidth = 0,
+        int browserHeight = 0,
+        Action? browserPresent = null,
+        Action<int>? browserSetSwapInterval = null,
+        Action<int, int>? browserResizeDrawable = null
+    )
     {
         _browserContext = browserContext;
         GameThreadContext.Install();
@@ -534,8 +543,12 @@ public partial class WorldGame : IDisposable, IGameHost
                 // the game's resize path has no idea the canvas exists - so a resize would leave
                 // WebGL rasterising at the old size into a stretched canvas. See GlSwapchain.
                 _device = GlGraphicsDevice.Create(
-                    _browserContext, browserWidth, browserHeight, browserPresent,
-                    resizeDrawable: browserResizeDrawable);
+                    _browserContext,
+                    browserWidth,
+                    browserHeight,
+                    browserPresent,
+                    resizeDrawable: browserResizeDrawable
+                );
                 break;
             }
 
@@ -582,8 +595,9 @@ public partial class WorldGame : IDisposable, IGameHost
             }
 #else
                 throw new NotSupportedException(
-                    "The ANGLE renderer needs a build with the ANGLE backend enabled - rebuild with " +
-                    "-p:DefineConstants=ANGLE.");
+                    "The ANGLE renderer needs a build with the ANGLE backend enabled - rebuild with "
+                    + "-p:DefineConstants=ANGLE."
+                );
 #endif
 
             case Renderer.D3d11:
@@ -599,14 +613,17 @@ public partial class WorldGame : IDisposable, IGameHost
                 // than anywhere near the device.
                 Window = SdlWindow.Create("NFM World", 1280, 720);
 
-                var d3d11Device = D3D11GraphicsDevice.Create(new D3D11DeviceDescription(
-                    WindowHandle: Window.NativeWindowHandle,
-                    Width: Window.Width,
-                    Height: Window.Height,
-                    // From the settings menu, not from the shim: Graphics is only assigned after this
-                    // whole switch, so it is null here. This is the same source the GL arms reach
-                    // through the window's pixel format, which is why the property exists.
-                    MultiSampleCount: SettingsMenu.RequestedMultiSampleCount));
+                var d3d11Device = D3D11GraphicsDevice.Create(
+                    new D3D11DeviceDescription(
+                        WindowHandle: Window.NativeWindowHandle,
+                        Width: Window.Width,
+                        Height: Window.Height,
+                        // From the settings menu, not from the shim: Graphics is only assigned after this
+                        // whole switch, so it is null here. This is the same source the GL arms reach
+                        // through the window's pixel format, which is why the property exists.
+                        MultiSampleCount: SettingsMenu.RequestedMultiSampleCount
+                    )
+                );
                 _device = d3d11Device;
                 break;
             }
@@ -617,7 +634,11 @@ public partial class WorldGame : IDisposable, IGameHost
                 // ES hint, a core profile, and a device that compiles the bundles' Glsl330 form
                 // rather than their GlslEs one.
                 var (desktopContext, desktopWindow) = CreateGlContext(
-                    profileMask: CoreProfile, major: 3, minor: 3, hint: null);
+                    profileMask: CoreProfile,
+                    major: 3,
+                    minor: 3,
+                    hint: null
+                );
 
                 _glContext = desktopContext;
                 Window = desktopWindow;
@@ -626,9 +647,12 @@ public partial class WorldGame : IDisposable, IGameHost
                 _setSwapInterval = interval => SDL.SDL_GL_SetSwapInterval(interval);
 
                 var desktopDevice = GlGraphicsDeviceDesktop.Create(
-                    SDL.SDL_GL_GetProcAddress, desktopWindow.Width, desktopWindow.Height,
+                    SDL.SDL_GL_GetProcAddress,
+                    desktopWindow.Width,
+                    desktopWindow.Height,
                     () => SDL.SDL_GL_SwapWindow(desktopWindow.Handle),
-                    _glGrantedMultiSampleCount);
+                    _glGrantedMultiSampleCount
+                );
                 _device = desktopDevice;
                 break;
             }
@@ -695,7 +719,11 @@ public partial class WorldGame : IDisposable, IGameHost
     /// null case cannot be half-specified.
     /// </param>
     private static (IntPtr Context, SdlWindow Window) CreateGlContext(
-        int profileMask, int major, int minor, (string Name, string Value)? hint)
+        int profileMask,
+        int major,
+        int minor,
+        (string Name, string Value)? hint
+    )
     {
         if (hint is { } h)
             SDL.SDL_SetHint(h.Name, h.Value);
@@ -750,7 +778,11 @@ public partial class WorldGame : IDisposable, IGameHost
             throw new InvalidOperationException($"SDL_GL_LoadLibrary failed: {SDL.SDL_GetError()}");
 
         var window = SdlWindow.Create(
-            "NFM World", 1280, 720, extraFlags: SDL.SDL_WindowFlags.SDL_WINDOW_OPENGL);
+            "NFM World",
+            1280,
+            720,
+            extraFlags: SDL.SDL_WindowFlags.SDL_WINDOW_OPENGL
+        );
 
         var context = SDL.SDL_GL_CreateContext(window.Handle);
         if (context == IntPtr.Zero)
@@ -860,6 +892,7 @@ public partial class WorldGame : IDisposable, IGameHost
         {
             shadowRenderTarget?.Dispose();
         }
+
         ImguiRenderer?.Dispose();
         _nvg?.Dispose();
 
@@ -916,10 +949,10 @@ public partial class WorldGame : IDisposable, IGameHost
     private void UpdateInput()
     {
         var keys = SdlWindow.GetKeyboardState();
+        var imguiWantsKeyboard = ImguiRenderer is not null && ImGui.GetIO().WantCaptureKeyboard;
 
         foreach (var key in AllKeys)
         {
-            var imguiWantsKeyboard = ImguiRenderer is not null && ImGui.GetIO().WantCaptureKeyboard;
             if (keys[key] && !_oldKeyState[key])
             {
                 GameSparker.KeyPressed(key, keys, imguiWantsKeyboard);
@@ -938,15 +971,24 @@ public partial class WorldGame : IDisposable, IGameHost
 
         // Update saved state.
         _oldKeyState = keys;
+
+        // Edge events alone can drop a key that is still held; let the phase re-assert the
+        // physical state before the frame's game tick.
+        GameSparker.CurrentPhase.KeyHeld(imguiWantsKeyboard, keys);
     }
 
     private void UpdateMouseCursor()
     {
         var menuVisible = GameSparker.CurrentPhase is not RacePhase { IsPaused: false }
-            || GameSparker.devConsole.IsOpen() || GameSparker.MessageWindow.IsOpen;
+                          || GameSparker.devConsole.IsOpen()
+                          || GameSparker.MessageWindow.IsOpen;
         var (_, x, y) = SdlWindow.GetMouseState();
-        var (visible, warpTo) = _mouseCursor.Update(menuVisible, Window.HasFocus,
-            new System.Numerics.Vector2(x, y), new System.Numerics.Vector2(Window.Width, Window.Height));
+        var (visible, warpTo) = _mouseCursor.Update(
+            menuVisible,
+            Window.HasFocus,
+            new System.Numerics.Vector2(x, y),
+            new System.Numerics.Vector2(Window.Width, Window.Height)
+        );
         if (_mouseCursor.Locked) Window.SetRelativeMouseMode(true);
         if (!visible) _mouseDragging = false;
         if (warpTo is { } position)
@@ -954,11 +996,13 @@ public partial class WorldGame : IDisposable, IGameHost
             Window.WarpMouse(position.X, position.Y);
             _oldMousePosition = new Int2((int)MathF.Round(position.X), (int)MathF.Round(position.Y));
         }
+
         if (!_mouseCursor.Locked) Window.SetRelativeMouseMode(false);
         Window.CursorVisible = visible;
     }
 
     private static readonly MouseButtons[] MouseButtonsArray = Enum.GetValues<MouseButtons>();
+
     private void UpdateMouse()
     {
         var (buttons, mouseX, mouseY) = SdlWindow.GetMouseState();
@@ -969,7 +1013,7 @@ public partial class WorldGame : IDisposable, IGameHost
         var shiftKey = _oldKeyState[Key.LShiftKey] || _oldKeyState[Key.RShiftKey];
         var altKey = _oldKeyState[Key.Alt];
         var wantCaptureMouse = GameSparker.devConsole.IsOpen()
-            || (ImguiRenderer is not null && ImGui.GetIO().WantCaptureMouse);
+                               || (ImguiRenderer is not null && ImGui.GetIO().WantCaptureMouse);
         if (GameSparker.devConsole.IsOpen()) _mouseDragging = false;
 
         void DispatchButton(MouseButtons button, bool down, int x, int y, MouseButtons state)
@@ -1024,8 +1068,19 @@ public partial class WorldGame : IDisposable, IGameHost
             GameSparker.MouseMoved(mouseX, mouseY, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);
             if (!wantCaptureMouse && _mouseDragging)
             {
-                GameSparker.MouseDragged(mouseX, mouseY, _mouseDragStart.X, _mouseDragStart.Y, MouseButton.Primary, buttons, ctrlKey, shiftKey, altKey);
+                GameSparker.MouseDragged(
+                    mouseX,
+                    mouseY,
+                    _mouseDragStart.X,
+                    _mouseDragStart.Y,
+                    MouseButton.Primary,
+                    buttons,
+                    ctrlKey,
+                    shiftKey,
+                    altKey
+                );
             }
+
             YogaDebugger.MouseMove(mousePosition.X, mousePosition.Y);
         }
 
@@ -1109,7 +1164,8 @@ public partial class WorldGame : IDisposable, IGameHost
         // the request is recoverable from the shim, because Resize only ever writes back what it was
         // asked for - so a mismatch means the setting changed, or the window did, and one rebuild is
         // enough. Note a request the backend cannot honour does not loop; it simply takes effect as 0.
-        if (Window.Width != swapchain.Width || Window.Height != swapchain.Height
+        if (Window.Width != swapchain.Width
+            || Window.Height != swapchain.Height
             || multiSampleCount != _appliedMultiSampleRequest)
         {
             swapchain.Resize(Window.Width, Window.Height, multiSampleCount == 0 ? 1 : multiSampleCount);
@@ -1139,8 +1195,10 @@ public partial class WorldGame : IDisposable, IGameHost
         SyncBackendVSync();
 
         var cb = _device.AcquireCommandBuffer();
-        cb.Clear(ClearOptions.Color | ClearOptions.Depth | ClearOptions.Stencil,
-            new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f));
+        cb.Clear(
+            ClearOptions.Color | ClearOptions.Depth | ClearOptions.Stencil,
+            new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f)
+        );
         cb.SetViewport(new Graphics.Viewport(0, 0, Window.Width, Window.Height));
         SetFullScreenScissor(cb);
 
@@ -1163,7 +1221,7 @@ public partial class WorldGame : IDisposable, IGameHost
         if (BaseStageRenderingPhase.DebugDisplay)
         {
             FPSCounter.Render();
-            
+
             if (FrameTrace.IsEnabled)
             {
                 const int x = 250;
@@ -1232,8 +1290,9 @@ public partial class WorldGame : IDisposable, IGameHost
         // nothing to draw, a zero display size means it drew geometry that the projection then scaled
         // to nothing. Reported together because the symptom on screen is identical either way.
         Logging.Warning(
-            $"The boot message drew no geometry in {BootMessageFrameLimit} frames " +
-            $"({vertices} vertices, display size {ImGui.GetIO().DisplaySize}).");
+            $"The boot message drew no geometry in {BootMessageFrameLimit} frames "
+            + $"({vertices} vertices, display size {ImGui.GetIO().DisplaySize})."
+        );
     }
 
     private const int BootMessageFrameLimit = 5;
@@ -1244,18 +1303,27 @@ public partial class WorldGame : IDisposable, IGameHost
         EnsureSwapchainMatchesWindow();
 
         var cb = _device.AcquireCommandBuffer();
-        cb.Clear(ClearOptions.Color | ClearOptions.Depth | ClearOptions.Stencil,
-            new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f));
+        cb.Clear(
+            ClearOptions.Color | ClearOptions.Depth | ClearOptions.Stencil,
+            new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f)
+        );
         cb.SetViewport(new Viewport(0, 0, Window.Width, Window.Height));
         SetFullScreenScissor(cb);
 
         ImguiRenderer!.BeginLayout(new GameTime(TimeSpan.Zero, TimeSpan.Zero));
-        if (ImGui.Begin("##boot", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize |
-                                 ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings |
-                                 ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.AlwaysAutoResize))
+        if (ImGui.Begin(
+                "##boot",
+                ImGuiWindowFlags.NoTitleBar
+                | ImGuiWindowFlags.NoResize
+                | ImGuiWindowFlags.NoMove
+                | ImGuiWindowFlags.NoSavedSettings
+                | ImGuiWindowFlags.NoInputs
+                | ImGuiWindowFlags.AlwaysAutoResize
+            ))
         {
             ImGui.TextUnformatted(message);
         }
+
         ImGui.End();
         ImguiRenderer.EndLayout(cb);
 
@@ -1274,8 +1342,10 @@ public partial class WorldGame : IDisposable, IGameHost
     // budget. This is independent of vsync (matches the report that toggling vsync didn't help).
     private const int PreviousSleepTimeCount = 128; // must be a power of 2 for the bitmask below
     private const int SleepTimeMask = PreviousSleepTimeCount - 1;
+
     private static readonly TimeSpan[] previousSleepTimes =
         Enumerable.Repeat(TimeSpan.FromMilliseconds(1), PreviousSleepTimeCount).ToArray();
+
     private static int sleepTimeIndex;
     private static TimeSpan worstCaseSleepPrecision = TimeSpan.FromMilliseconds(1);
     private static TimeSpan accumulatedElapsedTime;
@@ -1309,6 +1379,7 @@ public partial class WorldGame : IDisposable, IGameHost
             {
                 if (t > maxSleepTime) maxSleepTime = t;
             }
+
             worstCaseSleepPrecision = maxSleepTime;
         }
 
@@ -1327,8 +1398,13 @@ public partial class WorldGame : IDisposable, IGameHost
     /// </summary>
     /// <param name="getProcAddress">The browser GL entry-point source, from <c>WebGlContext.Create</c>.</param>
     public static WorldGame CreateForBrowser(
-        INativeContext getProcAddress, int width, int height, Action present, Action<int> setSwapInterval,
-        Action<int, int>? resizeDrawable = null)
+        INativeContext getProcAddress,
+        int width,
+        int height,
+        Action present,
+        Action<int> setSwapInterval,
+        Action<int, int>? resizeDrawable = null
+    )
     {
         ArgumentNullException.ThrowIfNull(getProcAddress);
         return new WorldGame(getProcAddress, width, height, present, setSwapInterval, resizeDrawable);
@@ -1447,6 +1523,7 @@ public partial class WorldGame : IDisposable, IGameHost
             RecoverFailedStartup(program, args, ex);
             return;
         }
+
         if (program is null) return;
         var firstFrame = true;
 
@@ -1484,6 +1561,7 @@ public partial class WorldGame : IDisposable, IGameHost
                 RecoverFailedStartup(program, args, ex);
                 return;
             }
+
             if (firstFrame)
             {
                 WriteStartupStatus("");
@@ -1509,7 +1587,7 @@ public partial class WorldGame : IDisposable, IGameHost
 
             if (OperatingSystem.IsMacOS())
             {
-                return  "osx";
+                return "osx";
             }
 
             if (OperatingSystem.IsLinux())
@@ -1547,49 +1625,63 @@ public partial class WorldGame : IDisposable, IGameHost
                 "windows" => "SDL3.dll",
                 "osx" => "libSDL3.0.dylib",
                 "linux" or "freebsd" or "netbsd" => "libSDL3.so.0",
-                _ => throw new PlatformNotSupportedException($"Unsupported platform: {os}, please update {nameof(ImportResolver)}")
+                _ => throw new PlatformNotSupportedException(
+                    $"Unsupported platform: {os}, please update {nameof(ImportResolver)}"
+                )
             },
             "FNA3D" => os switch
             {
                 "windows" => "FNA3D.dll",
                 "osx" => "libFNA3D.0.dylib",
                 "linux" or "freebsd" or "netbsd" => "libFNA3D.so.0",
-                _ => throw new PlatformNotSupportedException($"Unsupported platform: {os}, please update {nameof(ImportResolver)}")
+                _ => throw new PlatformNotSupportedException(
+                    $"Unsupported platform: {os}, please update {nameof(ImportResolver)}"
+                )
             },
             "FAudio" => os switch
             {
                 "windows" => "FAudio.dll",
                 "osx" => "libFAudio.0.dylib",
                 "linux" or "freebsd" or "netbsd" => "libFAudio.so.0",
-                _ => throw new PlatformNotSupportedException($"Unsupported platform: {os}, please update {nameof(ImportResolver)}")
+                _ => throw new PlatformNotSupportedException(
+                    $"Unsupported platform: {os}, please update {nameof(ImportResolver)}"
+                )
             },
             "dav1dfile" => os switch
             {
                 "windows" => "dav1dfile.dll",
                 "osx" => "dav1dfile.1.dylib",
                 "linux" or "freebsd" or "netbsd" => "dav1dfile.so.0",
-                _ => throw new PlatformNotSupportedException($"Unsupported platform: {os}, please update {nameof(ImportResolver)}")
+                _ => throw new PlatformNotSupportedException(
+                    $"Unsupported platform: {os}, please update {nameof(ImportResolver)}"
+                )
             },
             "SDL2" => os switch
             {
                 "windows" => "SDL2.dll",
                 "osx" => "libSDL2-2.0.0.dylib",
                 "linux" or "freebsd" or "netbsd" => "libSDL2-2.0.so.0",
-                _ => throw new PlatformNotSupportedException($"Unsupported platform: {os}, please update {nameof(ImportResolver)}")
+                _ => throw new PlatformNotSupportedException(
+                    $"Unsupported platform: {os}, please update {nameof(ImportResolver)}"
+                )
             },
             "steam_api" or "steam_api64" => os switch
             {
                 "windows" => wordsize is "64" ? "steam_api64.dll" : "steam_api.dll",
                 "osx" => "libsteam_api.dylib",
                 "linux" or "freebsd" or "netbsd" => "libsteam_api.so",
-                _ => throw new PlatformNotSupportedException($"Unsupported platform: {os}, please update {nameof(ImportResolver)}")
+                _ => throw new PlatformNotSupportedException(
+                    $"Unsupported platform: {os}, please update {nameof(ImportResolver)}"
+                )
             },
             _ => os switch
             {
                 "windows" => $"{libraryName}.dll",
                 "osx" => $"lib{libraryName}.dylib",
                 "linux" or "freebsd" or "netbsd" => $"lib{libraryName}.so",
-                _ => throw new PlatformNotSupportedException($"Unsupported platform: {os}, please update {nameof(ImportResolver)}")
+                _ => throw new PlatformNotSupportedException(
+                    $"Unsupported platform: {os}, please update {nameof(ImportResolver)}"
+                )
             }
         };
 
@@ -1600,7 +1692,9 @@ public partial class WorldGame : IDisposable, IGameHost
                 "arm64" or "armv8" or "armv8-a" or "aarch64" or "arm64-v8a" => "arm64",
                 "x64" or "x86_64" or "amd64" => "x64",
                 "x86" or "x86_32" or "i386" => "x86",
-                _ => throw new PlatformNotSupportedException($"Unsupported CPU architecture: {cpu}, please update {nameof(ImportResolver)}")
+                _ => throw new PlatformNotSupportedException(
+                    $"Unsupported CPU architecture: {cpu}, please update {nameof(ImportResolver)}"
+                )
             },
             "osx" => "osx",
             "linux" or "freebsd" or "netbsd" => cpu switch
@@ -1609,7 +1703,9 @@ public partial class WorldGame : IDisposable, IGameHost
                 "arm64" or "armv8" or "armv8-a" or "aarch64" or "arm64-v8a" => "libaarch64",
                 "x64" or "x86_64" or "amd64" => "lib64",
                 "x86" or "x86_32" or "i386" => "lib32",
-                _ => throw new PlatformNotSupportedException($"Unsupported CPU architecture: {cpu}, please update {nameof(ImportResolver)}")
+                _ => throw new PlatformNotSupportedException(
+                    $"Unsupported CPU architecture: {cpu}, please update {nameof(ImportResolver)}"
+                )
             },
             "android" => cpu switch
             {
@@ -1617,7 +1713,9 @@ public partial class WorldGame : IDisposable, IGameHost
                 "arm64" or "armv8" or "armv8-a" or "aarch64" or "arm64-v8a" => "android-arm64-v8a",
                 "x64" or "x86_64" or "amd64" => "android-x86_64",
                 "x86" or "x86_32" or "i386" => "android-x86",
-                _ => throw new PlatformNotSupportedException($"Unsupported CPU architecture: {cpu}, please update {nameof(ImportResolver)}")
+                _ => throw new PlatformNotSupportedException(
+                    $"Unsupported CPU architecture: {cpu}, please update {nameof(ImportResolver)}"
+                )
             },
             _ => throw new PlatformNotSupportedException($"Unsupported platform: {os}, please update {nameof(ImportResolver)}")
         };

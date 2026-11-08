@@ -24,25 +24,90 @@ namespace NFMWorld;
 /// </remarks>
 internal static class Effects
 {
-    public static IShaderModule LineModule { get => CheckNotNull(field); private set; }
-    public static IPipelineState LinePipeline { get => CheckNotNull(field); private set; }
-    public static LineBasicParameters LineParameters { get => CheckNotNull(field); private set; }
+    public static IShaderModule LineModule
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static IPipelineState LinePipeline
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static LineBasicParameters LineParameters
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
 
     /// <summary>Line.fx with the depth test kept but depth writes off - the editor's translucent line overlays (see <see cref="PolyDepthReadPipeline"/>).</summary>
-    public static IPipelineState LineDepthReadPipeline { get => CheckNotNull(field); private set; }
-    public static LineBasicParameters LineDepthReadParameters { get => CheckNotNull(field); private set; }
+    public static IPipelineState LineDepthReadPipeline
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
 
-    public static IShaderModule GroundModule { get => CheckNotNull(field); private set; }
-    public static IPipelineState GroundPipeline { get => CheckNotNull(field); private set; }
-    public static GroundFullbrightParameters GroundParameters { get => CheckNotNull(field); private set; }
+    public static LineBasicParameters LineDepthReadParameters
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
 
-    public static IShaderModule MountainsModule { get => CheckNotNull(field); private set; }
-    public static IPipelineState MountainsPipeline { get => CheckNotNull(field); private set; }
-    public static MountainsFullbrightParameters MountainsParameters { get => CheckNotNull(field); private set; }
+    public static IShaderModule GroundModule
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
 
-    public static IShaderModule SkyModule { get => CheckNotNull(field); private set; }
-    public static IPipelineState SkyPipeline { get => CheckNotNull(field); private set; }
-    public static SkyFullbrightParameters SkyParameters { get => CheckNotNull(field); private set; }
+    public static IPipelineState GroundPipeline
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static GroundFullbrightParameters GroundParameters
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static IShaderModule MountainsModule
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static IPipelineState MountainsPipeline
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static MountainsFullbrightParameters MountainsParameters
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static IShaderModule SkyModule
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static IPipelineState SkyPipeline
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static SkyFullbrightParameters SkyParameters
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
 
     /// <summary>
     /// Poly.fx declares two techniques ("Basic" for the real color pass, "CreateShadowMap" for
@@ -51,12 +116,41 @@ internal static class Effects
     /// (<see cref="PolyParameters"/> vs <see cref="PolyShadowParameters"/>), taken from that bundle's
     /// own reflection - the two happen to be identical today, but nothing guarantees it.
     /// </summary>
-    public static IShaderModule PolyModule { get => CheckNotNull(field); private set; }
-    public static IShaderModule PolyShadowModule { get => CheckNotNull(field); private set; }
-    public static IPipelineState PolyPipeline { get => CheckNotNull(field); private set; }
-    public static PolyBasicParameters PolyParameters { get => CheckNotNull(field); private set; }
-    public static IPipelineState PolyShadowPipeline { get => CheckNotNull(field); private set; }
-    public static PolyCreateShadowMapParameters PolyShadowParameters { get => CheckNotNull(field); private set; }
+    public static IShaderModule PolyModule
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static IShaderModule PolyShadowModule
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static IPipelineState PolyPipeline
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static PolyBasicParameters PolyParameters
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static IPipelineState PolyShadowPipeline
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static PolyCreateShadowMapParameters PolyShadowParameters
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
 
     /// <summary>
     /// Two more pipelines off the same <see cref="PolyModule"/> for the model/stage editors'
@@ -74,29 +168,65 @@ internal static class Effects
     /// <c>BlendState.AlphaBlend</c>, which would over-brighten a translucent overlay; that code path
     /// had never been visually verified, so this is a deliberate correction rather than a regression.
     /// </remarks>
-    public static IPipelineState PolyDepthReadPipeline { get => CheckNotNull(field); private set; }
-    public static PolyBasicParameters PolyDepthReadParameters { get => CheckNotNull(field); private set; }
-    public static IPipelineState PolyNoDepthPipeline { get => CheckNotNull(field); private set; }
-    public static PolyBasicParameters PolyNoDepthParameters { get => CheckNotNull(field); private set; }
+    public static IPipelineState PolyDepthReadPipeline
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static PolyBasicParameters PolyDepthReadParameters
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static IPipelineState PolyNoDepthPipeline
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static PolyBasicParameters PolyNoDepthParameters
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
 
     /// <summary>
     /// Replaces the four <c>BasicEffect(LightingEnabled = false, VertexColorEnabled = true)</c>
     /// instances Chips/Dust/FixFlare/Flames/FixHoop used to share (FNA3D has no BasicEffect
     /// equivalent - see <c>data/shaders/Particle.fx</c>'s doc comment). All five consumers share
     /// one shader module and one resolved <see cref="ParticleFullbrightParameters"/> (the uniform
-    /// slots don't depend on blend/depth state), but need three different fixed-function-state
+    /// slots don't depend on blend/depth state), but need two different fixed-function-state
     /// pipelines because the old per-consumer <c>GraphicsDevice.BlendState</c>/
     /// <c>DepthStencilState</c> overrides differed and the new model bakes that state into the
     /// pipeline rather than setting it per-draw: <see cref="ParticleOpaquePipeline"/> (Chips,
-    /// Flames - opaque, default depth), <see cref="ParticleDepthReadPipeline"/> (Dust -
-    /// non-premultiplied blend, depth-tested but not written), <see cref="ParticleNoDepthPipeline"/>
-    /// (FixFlare - non-premultiplied blend, no depth test/write).
+    /// Flames - opaque, default depth) and <see cref="ParticleDepthReadPipeline"/> (Dust, FixFlare -
+    /// non-premultiplied blend, depth-tested but not written, so world geometry occludes them).
     /// </summary>
-    public static IShaderModule ParticleModule { get => CheckNotNull(field); private set; }
-    public static IPipelineState ParticleOpaquePipeline { get => CheckNotNull(field); private set; }
-    public static IPipelineState ParticleDepthReadPipeline { get => CheckNotNull(field); private set; }
-    public static IPipelineState ParticleNoDepthPipeline { get => CheckNotNull(field); private set; }
-    public static ParticleFullbrightParameters ParticleParameters { get => CheckNotNull(field); private set; }
+    public static IShaderModule ParticleModule
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static IPipelineState ParticleOpaquePipeline
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static IPipelineState ParticleDepthReadPipeline
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static ParticleFullbrightParameters ParticleParameters
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
 
     /// <summary>
     /// <see cref="NFMWorld.Debug"/>'s collision/wireframe/gizmo overlays - two more pipelines off
@@ -107,15 +237,37 @@ internal static class Effects
     /// matching the old <c>BlendState.AlphaBlend</c> + <c>RasterizerState.CullNone</c> override the
     /// ghost-preview fill pass used).
     /// </summary>
-    public static IPipelineState DebugLinePipeline { get => CheckNotNull(field); private set; }
-    public static IPipelineState DebugGhostFillPipeline { get => CheckNotNull(field); private set; }
+    public static IPipelineState DebugLinePipeline
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static IPipelineState DebugGhostFillPipeline
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
 
     /// <summary><see cref="ImmediateBatch3D"/>'s pipelines: depth-tested triangles, opaque and alpha-blended (no depth write).</summary>
-    public static IPipelineState Immediate3DOpaquePipeline { get => CheckNotNull(field); private set; }
-    public static IPipelineState Immediate3DAlphaPipeline { get => CheckNotNull(field); private set; }
+    public static IPipelineState Immediate3DOpaquePipeline
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
+
+    public static IPipelineState Immediate3DAlphaPipeline
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
 
     /// <summary>Shared clamp/point sampler for the ShadowMap0/1/2 textures <see cref="Lighting.SetShadowMapParameters"/> binds.</summary>
-    public static ISampler ShadowMapSampler { get => CheckNotNull(field); private set; }
+    public static ISampler ShadowMapSampler
+    {
+        get => CheckNotNull(field);
+        private set;
+    }
 
     /// <summary>
     /// Rasterizer state shared by every pipeline in this file: no culling (NFM's geometry is
@@ -145,15 +297,30 @@ internal static class Effects
     }
 
     [MemberNotNull(
-        nameof(LineModule), nameof(LinePipeline), nameof(LineDepthReadPipeline),
-        nameof(GroundModule), nameof(GroundPipeline),
-        nameof(MountainsModule), nameof(MountainsPipeline),
-        nameof(SkyModule), nameof(SkyPipeline),
-        nameof(PolyModule), nameof(PolyShadowModule), nameof(PolyPipeline), nameof(PolyShadowPipeline),
-        nameof(PolyDepthReadPipeline), nameof(PolyNoDepthPipeline),
-        nameof(ParticleModule), nameof(ParticleOpaquePipeline), nameof(ParticleDepthReadPipeline), nameof(ParticleNoDepthPipeline),
-        nameof(DebugLinePipeline), nameof(DebugGhostFillPipeline),
-        nameof(Immediate3DOpaquePipeline), nameof(Immediate3DAlphaPipeline), nameof(ShadowMapSampler))]
+        nameof(LineModule),
+        nameof(LinePipeline),
+        nameof(LineDepthReadPipeline),
+        nameof(GroundModule),
+        nameof(GroundPipeline),
+        nameof(MountainsModule),
+        nameof(MountainsPipeline),
+        nameof(SkyModule),
+        nameof(SkyPipeline),
+        nameof(PolyModule),
+        nameof(PolyShadowModule),
+        nameof(PolyPipeline),
+        nameof(PolyShadowPipeline),
+        nameof(PolyDepthReadPipeline),
+        nameof(PolyNoDepthPipeline),
+        nameof(ParticleModule),
+        nameof(ParticleOpaquePipeline),
+        nameof(ParticleDepthReadPipeline),
+        nameof(DebugLinePipeline),
+        nameof(DebugGhostFillPipeline),
+        nameof(Immediate3DOpaquePipeline),
+        nameof(Immediate3DAlphaPipeline),
+        nameof(ShadowMapSampler)
+    )]
     public static void Initialize(IGraphicsDevice graphicsDevice)
     {
         // Each bundle is created once and its module is then used for BOTH stages: the GL backend
@@ -165,20 +332,26 @@ internal static class Effects
         var line = LineBasic.Create();
         LineModule = Module(graphicsDevice, line.Vertex, line.Pixel, line.Reflection);
         LineParameters = line.Bind();
-        LinePipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
-            VertexShader: LineModule,
-            PixelShader: LineModule,
-            VertexLayouts: [LineMesh.LineMeshVertexAttribute.VertexLayout, InstanceData.VertexLayout],
-            BlendState: BlendStateDesc.NonPremultiplied,
-            DepthStencilState: DepthStencilStateDesc.Default,
-            RasterizerState: ScissorRasterizer));
-        LineDepthReadPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
-            VertexShader: LineModule,
-            PixelShader: LineModule,
-            VertexLayouts: [LineMesh.LineMeshVertexAttribute.VertexLayout, InstanceData.VertexLayout],
-            BlendState: BlendStateDesc.NonPremultiplied,
-            DepthStencilState: DepthStencilStateDesc.Default with { DepthWriteEnabled = false },
-            RasterizerState: ScissorRasterizer));
+        LinePipeline = graphicsDevice.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: LineModule,
+                PixelShader: LineModule,
+                VertexLayouts: [LineMesh.LineMeshVertexAttribute.VertexLayout, InstanceData.VertexLayout],
+                BlendState: BlendStateDesc.NonPremultiplied,
+                DepthStencilState: DepthStencilStateDesc.Default,
+                RasterizerState: ScissorRasterizer
+            )
+        );
+        LineDepthReadPipeline = graphicsDevice.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: LineModule,
+                PixelShader: LineModule,
+                VertexLayouts: [LineMesh.LineMeshVertexAttribute.VertexLayout, InstanceData.VertexLayout],
+                BlendState: BlendStateDesc.NonPremultiplied,
+                DepthStencilState: DepthStencilStateDesc.Default with { DepthWriteEnabled = false },
+                RasterizerState: ScissorRasterizer
+            )
+        );
         LineDepthReadParameters = line.Bind();
 
         // Ground/Mountains/GroundPolys: the original FNA code set DepthStencilState.DepthRead
@@ -198,24 +371,30 @@ internal static class Effects
         var ground = GroundFullbright.Create();
         GroundModule = Module(graphicsDevice, ground.Vertex, ground.Pixel, ground.Reflection);
         GroundParameters = ground.Bind();
-        GroundPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
-            VertexShader: GroundModule,
-            PixelShader: GroundModule,
-            VertexLayouts: [PositionColorVertex.VertexLayout],
-            BlendState: BlendStateDesc.Opaque,
-            DepthStencilState: groundDepthState,
-            RasterizerState: groundRasterizerState));
+        GroundPipeline = graphicsDevice.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: GroundModule,
+                PixelShader: GroundModule,
+                VertexLayouts: [PositionColorVertex.VertexLayout],
+                BlendState: BlendStateDesc.Opaque,
+                DepthStencilState: groundDepthState,
+                RasterizerState: groundRasterizerState
+            )
+        );
 
         var mountains = MountainsFullbright.Create();
         MountainsModule = Module(graphicsDevice, mountains.Vertex, mountains.Pixel, mountains.Reflection);
         MountainsParameters = mountains.Bind();
-        MountainsPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
-            VertexShader: MountainsModule,
-            PixelShader: MountainsModule,
-            VertexLayouts: [PositionColorVertex.VertexLayout],
-            BlendState: BlendStateDesc.Opaque,
-            DepthStencilState: groundDepthState,
-            RasterizerState: groundRasterizerState));
+        MountainsPipeline = graphicsDevice.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: MountainsModule,
+                PixelShader: MountainsModule,
+                VertexLayouts: [PositionColorVertex.VertexLayout],
+                BlendState: BlendStateDesc.Opaque,
+                DepthStencilState: groundDepthState,
+                RasterizerState: groundRasterizerState
+            )
+        );
 
         // Sky: the original FNA code set CullMode.None and DepthStencilState.None (test AND write
         // disabled) - it's an unbounded background dome, drawn first, that should never occlude or
@@ -223,13 +402,16 @@ internal static class Effects
         var sky = SkyFullbright.Create();
         SkyModule = Module(graphicsDevice, sky.Vertex, sky.Pixel, sky.Reflection);
         SkyParameters = sky.Bind();
-        SkyPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
-            VertexShader: SkyModule,
-            PixelShader: SkyModule,
-            VertexLayouts: [PositionColorVertex.VertexLayout],
-            BlendState: BlendStateDesc.Opaque,
-            DepthStencilState: DepthStencilStateDesc.None,
-            RasterizerState: ScissorRasterizer));
+        SkyPipeline = graphicsDevice.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: SkyModule,
+                PixelShader: SkyModule,
+                VertexLayouts: [PositionColorVertex.VertexLayout],
+                BlendState: BlendStateDesc.Opaque,
+                DepthStencilState: DepthStencilStateDesc.None,
+                RasterizerState: ScissorRasterizer
+            )
+        );
 
         // Poly (stage geometry - walls, ramps, everything Submesh draws): the original FNA code
         // set RasterizerState.CullNone for the whole draw (both the Basic and CreateShadowMap
@@ -245,101 +427,129 @@ internal static class Effects
 
         var polyVertexLayouts = new[] { Mesh.VertexPositionNormalColorCentroid.VertexLayout, InstanceData.VertexLayout };
         var polyRasterizerState = ScissorRasterizer;
-        PolyPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
-            VertexShader: PolyModule,
-            PixelShader: PolyModule,
-            VertexLayouts: polyVertexLayouts,
-            BlendState: BlendStateDesc.NonPremultiplied,
-            DepthStencilState: DepthStencilStateDesc.Default,
-            RasterizerState: polyRasterizerState));
-        PolyShadowPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
-            VertexShader: PolyShadowModule,
-            PixelShader: PolyShadowModule,
-            VertexLayouts: polyVertexLayouts,
-            BlendState: BlendStateDesc.Opaque,
-            DepthStencilState: DepthStencilStateDesc.Default,
-            RasterizerState: polyRasterizerState));
+        PolyPipeline = graphicsDevice.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: PolyModule,
+                PixelShader: PolyModule,
+                VertexLayouts: polyVertexLayouts,
+                BlendState: BlendStateDesc.NonPremultiplied,
+                DepthStencilState: DepthStencilStateDesc.Default,
+                RasterizerState: polyRasterizerState
+            )
+        );
+        PolyShadowPipeline = graphicsDevice.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: PolyShadowModule,
+                PixelShader: PolyShadowModule,
+                VertexLayouts: polyVertexLayouts,
+                BlendState: BlendStateDesc.Opaque,
+                DepthStencilState: DepthStencilStateDesc.Default,
+                RasterizerState: polyRasterizerState
+            )
+        );
 
         // Editor overlay variants of the Basic technique - see PolyDepthReadPipeline's doc comment.
         // Both reuse polyBasic's parameters: same program, so the same reflected slots.
-        PolyDepthReadPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
-            VertexShader: PolyModule,
-            PixelShader: PolyModule,
-            VertexLayouts: polyVertexLayouts,
-            BlendState: BlendStateDesc.NonPremultiplied,
-            DepthStencilState: DepthStencilStateDesc.Default with { DepthWriteEnabled = false },
-            RasterizerState: polyRasterizerState));
+        PolyDepthReadPipeline = graphicsDevice.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: PolyModule,
+                PixelShader: PolyModule,
+                VertexLayouts: polyVertexLayouts,
+                BlendState: BlendStateDesc.NonPremultiplied,
+                DepthStencilState: DepthStencilStateDesc.Default with { DepthWriteEnabled = false },
+                RasterizerState: polyRasterizerState
+            )
+        );
         PolyDepthReadParameters = polyBasic.Bind();
-        PolyNoDepthPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
-            VertexShader: PolyModule,
-            PixelShader: PolyModule,
-            VertexLayouts: polyVertexLayouts,
-            BlendState: BlendStateDesc.NonPremultiplied,
-            DepthStencilState: DepthStencilStateDesc.None,
-            RasterizerState: polyRasterizerState));
+        PolyNoDepthPipeline = graphicsDevice.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: PolyModule,
+                PixelShader: PolyModule,
+                VertexLayouts: polyVertexLayouts,
+                BlendState: BlendStateDesc.NonPremultiplied,
+                DepthStencilState: DepthStencilStateDesc.None,
+                RasterizerState: polyRasterizerState
+            )
+        );
         PolyNoDepthParameters = polyBasic.Bind();
 
         var particle = ParticleFullbright.Create();
         ParticleModule = Module(graphicsDevice, particle.Vertex, particle.Pixel, particle.Reflection);
         ParticleParameters = particle.Bind();
-        ParticleOpaquePipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
-            VertexShader: ParticleModule,
-            PixelShader: ParticleModule,
-            VertexLayouts: [PositionColorVertex.VertexLayout],
-            BlendState: BlendStateDesc.Opaque,
-            DepthStencilState: DepthStencilStateDesc.Default,
-            RasterizerState: ScissorRasterizer));
-        ParticleDepthReadPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
-            VertexShader: ParticleModule,
-            PixelShader: ParticleModule,
-            VertexLayouts: [PositionColorVertex.VertexLayout],
-            BlendState: BlendStateDesc.NonPremultiplied,
-            DepthStencilState: DepthStencilStateDesc.Default with { DepthWriteEnabled = false },
-            RasterizerState: ScissorRasterizer));
-        ParticleNoDepthPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
-            VertexShader: ParticleModule,
-            PixelShader: ParticleModule,
-            VertexLayouts: [PositionColorVertex.VertexLayout],
-            BlendState: BlendStateDesc.NonPremultiplied,
-            DepthStencilState: DepthStencilStateDesc.None,
-            RasterizerState: ScissorRasterizer));
+        ParticleOpaquePipeline = graphicsDevice.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: ParticleModule,
+                PixelShader: ParticleModule,
+                VertexLayouts: [PositionColorVertex.VertexLayout],
+                BlendState: BlendStateDesc.Opaque,
+                DepthStencilState: DepthStencilStateDesc.Default,
+                RasterizerState: ScissorRasterizer
+            )
+        );
+        ParticleDepthReadPipeline = graphicsDevice.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: ParticleModule,
+                PixelShader: ParticleModule,
+                VertexLayouts: [PositionColorVertex.VertexLayout],
+                BlendState: BlendStateDesc.NonPremultiplied,
+                DepthStencilState: DepthStencilStateDesc.Default with { DepthWriteEnabled = false },
+                RasterizerState: ScissorRasterizer
+            )
+        );
 
-        DebugLinePipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
-            VertexShader: ParticleModule,
-            PixelShader: ParticleModule,
-            VertexLayouts: [PositionColorVertex.VertexLayout],
-            Topology: PrimitiveTopology.LineList,
-            BlendState: BlendStateDesc.Opaque,
-            DepthStencilState: DepthStencilStateDesc.None,
-            RasterizerState: ScissorRasterizer));
-        DebugGhostFillPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
-            VertexShader: ParticleModule,
-            PixelShader: ParticleModule,
-            VertexLayouts: [PositionColorVertex.VertexLayout],
-            Topology: PrimitiveTopology.TriangleList,
-            BlendState: BlendStateDesc.NonPremultiplied,
-            DepthStencilState: DepthStencilStateDesc.Default,
-            RasterizerState: ScissorRasterizer));
+        DebugLinePipeline = graphicsDevice.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: ParticleModule,
+                PixelShader: ParticleModule,
+                VertexLayouts: [PositionColorVertex.VertexLayout],
+                Topology: PrimitiveTopology.LineList,
+                BlendState: BlendStateDesc.Opaque,
+                DepthStencilState: DepthStencilStateDesc.None,
+                RasterizerState: ScissorRasterizer
+            )
+        );
+        DebugGhostFillPipeline = graphicsDevice.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: ParticleModule,
+                PixelShader: ParticleModule,
+                VertexLayouts: [PositionColorVertex.VertexLayout],
+                Topology: PrimitiveTopology.TriangleList,
+                BlendState: BlendStateDesc.NonPremultiplied,
+                DepthStencilState: DepthStencilStateDesc.Default,
+                RasterizerState: ScissorRasterizer
+            )
+        );
 
-        Immediate3DOpaquePipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
-            VertexShader: ParticleModule,
-            PixelShader: ParticleModule,
-            VertexLayouts: [PositionColorVertex.VertexLayout],
-            BlendState: BlendStateDesc.Opaque,
-            DepthStencilState: DepthStencilStateDesc.Default,
-            RasterizerState: ScissorRasterizer));
-        Immediate3DAlphaPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
-            VertexShader: ParticleModule,
-            PixelShader: ParticleModule,
-            VertexLayouts: [PositionColorVertex.VertexLayout],
-            BlendState: BlendStateDesc.NonPremultiplied,
-            DepthStencilState: DepthStencilStateDesc.Default with { DepthWriteEnabled = false },
-            RasterizerState: ScissorRasterizer));
+        Immediate3DOpaquePipeline = graphicsDevice.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: ParticleModule,
+                PixelShader: ParticleModule,
+                VertexLayouts: [PositionColorVertex.VertexLayout],
+                BlendState: BlendStateDesc.Opaque,
+                DepthStencilState: DepthStencilStateDesc.Default,
+                RasterizerState: ScissorRasterizer
+            )
+        );
+        Immediate3DAlphaPipeline = graphicsDevice.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: ParticleModule,
+                PixelShader: ParticleModule,
+                VertexLayouts: [PositionColorVertex.VertexLayout],
+                BlendState: BlendStateDesc.NonPremultiplied,
+                DepthStencilState: DepthStencilStateDesc.Default with { DepthWriteEnabled = false },
+                RasterizerState: ScissorRasterizer
+            )
+        );
 
         // PointClamp, matching the old scene-wide default the pre-migration code force-set on all
         // 16 sampler slots (see Scene.cs's TODO on the equivalent removed call).
-        ShadowMapSampler = graphicsDevice.CreateSampler(new SamplerDesc(
-            Filter: TextureFilter.Point, AddressU: TextureAddressMode.Clamp, AddressV: TextureAddressMode.Clamp));
+        ShadowMapSampler = graphicsDevice.CreateSampler(
+            new SamplerDesc(
+                Filter: TextureFilter.Point,
+                AddressU: TextureAddressMode.Clamp,
+                AddressV: TextureAddressMode.Clamp
+            )
+        );
     }
 
     /// <summary>
@@ -357,6 +567,11 @@ internal static class Effects
     ///
     /// Keeping it in one helper is what makes that a single-site change rather than seven.
     /// </summary>
-    private static IShaderModule Module(IGraphicsDevice graphicsDevice, ShaderStageSources vertex, ShaderStageSources pixel, ShaderReflection reflection) =>
+    private static IShaderModule Module(
+        IGraphicsDevice graphicsDevice,
+        ShaderStageSources vertex,
+        ShaderStageSources pixel,
+        ShaderReflection reflection
+    ) =>
         graphicsDevice.CreateShaderModule(vertex, pixel, reflection);
 }
