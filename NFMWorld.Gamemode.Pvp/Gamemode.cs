@@ -110,17 +110,31 @@ public class PvpGamemode : PluginGamemode
                 break;
             case GamemodeState.InProgress:
                 _physics.GameTick();
-                
+
+                var clientCrossed = false;
                 foreach (var player in Players)
                 {
                     if (player.Car != null)
                     {
                         FixHoopHelper.HandleFixHoops(CurrentStage, player.Car);
                         if (CheckPointHelper.HandleCheckPoint(CurrentStage, player.Car) && player == ClientPlayer)
-                        {
-                            SendServerEvent<ClientToServerEvent>(new CheckpointEvent(player.Car.CurrentCheckpoint, player.Car.CurrentLap, player.Car.Placement, _clientTick));
-                        }
+                            clientCrossed = true;
                     }
+                }
+
+                // After the crossings, so a car that just took a checkpoint is ranked on it.
+                // Nothing computed the order in a race, so every car stayed at Placement 0 and
+                // the HUD showed the whole field as first. Only the client player's car is not
+                // driven by this client's physics; the rest are, but a bot's own rank pass
+                // writes the same permutation and the race must own the order, not the bots.
+                if (Players.Count > 1)
+                    CheckPointHelper.CalculatePositions(CurrentStage, Players);
+
+                if (clientCrossed && ClientPlayer.Car is { } crossedCar)
+                {
+                    SendServerEvent<ClientToServerEvent>(
+                        new CheckpointEvent(crossedCar.CurrentCheckpoint, crossedCar.CurrentLap,
+                            crossedCar.Placement, _clientTick));
                 }
 
                 _clientTick++;
@@ -200,12 +214,18 @@ public class PvpServerGamemode(
         public ushort Checkpoint;
         public int Position;
         public bool Forfeited;
+
+        /// <summary>Server tick the car was last seen wasted, or -1 while it is alive.</summary>
+        public int WastedAt = -1;
     }
 
     private ServerGamemodeState _state;
     private readonly Dictionary<Guid, PerPlayerGamemodeInfo> _perPlayer = [];
     private int _inner;
     private int _countdown;
+
+    /// <summary>Server ticks since the race started; DNF order is keyed on it.</summary>
+    private int _serverTick;
 
     public override void Begin()
     {
@@ -232,6 +252,7 @@ public class PvpServerGamemode(
         _state = ServerGamemodeState.Countdown;
         _countdown = 3;
         _inner = GamemodeUtils.ServerCountdownInterval;
+        _serverTick = 0;
     }
 
     public override void GameTick()
@@ -252,20 +273,66 @@ public class PvpServerGamemode(
                     }
                 }
                 break;
+            case ServerGamemodeState.InProgress:
+                _serverTick++;
+                TrackWasted();
+                break;
         }
     }
 
+    /// <summary>
+    /// Records when each car was last seen wasted, so the standings can order DNFs by who died
+    /// most recently. Wasted is the owner's own report, relayed with the car state.
+    /// </summary>
+    private void TrackWasted()
+    {
+        foreach (var (id, info) in _perPlayer)
+        {
+            if (info.Forfeited)
+                continue;
+
+            switch (IsPlayerWasted(id))
+            {
+                case true when info.WastedAt < 0:
+                    info.WastedAt = _serverTick;
+                    break;
+                // Revived (pushed through a fix hoop): back in the running, and it is no longer
+                // a DNF unless it dies again later.
+                case false:
+                    info.WastedAt = -1;
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Finishes the race with a canonical standing order: finishers by position, then everyone
+    /// still alive but unfinished, then DNFs newest-death first. A player who was revived is
+    /// alive again, so they sort with the running rather than the dead.
+    /// </summary>
     public void CompleteRace()
     {
-        FinishRace(TimeSpan.Zero, [
-            ..Players.Select(p => new RaceStanding
+        FinishRace(TimeSpan.Zero, [.. _perPlayer
+            .OrderBy(kv => StandingGroup(kv.Value))
+            .ThenBy(kv => StandingWithin(kv.Value))
+            .Select((kv, index) => new RaceStanding
             {
-                PlayerId = p.Id,
-                FinishPosition = _perPlayer[p.Id].Position,
+                PlayerId = kv.Key,
+                FinishPosition = index,
                 FinishTime = TimeSpan.Zero
-            })
-        ]);
+            })]);
     }
+
+    /// <summary>Running cars are placed by checkpoint progress; the dead and departed sort after them.</summary>
+    private static int StandingGroup(PerPlayerGamemodeInfo info)
+        => info.Forfeited || info.WastedAt >= 0 ? 1 : 0;
+
+    /// <summary>
+    /// Within a group: running cars by race position, lower first; DNFs by death time, most
+    /// recent first, so the tick is negated to sort that way ascending.
+    /// </summary>
+    private static int StandingWithin(PerPlayerGamemodeInfo info)
+        => info.Forfeited || info.WastedAt >= 0 ? -Math.Max(info.WastedAt, 0) : info.Position;
 
     public override void OnClientEvent(Guid clientId, ReadOnlySpan<byte> payload)
     {
@@ -279,6 +346,7 @@ public class PvpServerGamemode(
                              && !forfeiter.Forfeited)
         {
             forfeiter.Forfeited = true;
+            forfeiter.WastedAt = _serverTick;
             forfeiter.Position = Players.Count;
 
             // Nobody left to race: end it rather than ticking an empty session forever.

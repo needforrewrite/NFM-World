@@ -289,9 +289,12 @@ public class RaceOrchestrator : IDisposable
         if (!IsSanePlayerState(playerState.State))
             return;
 
-        // Store latest position for server gamemode queries
-        var pos = playerState.State.CarFrame.CarPosition;
+        // Store the latest state for server gamemode queries. Wasted comes out of the same
+        // frame: the gamemode decides who died when, but only the car's owner knows it died.
+        var frame = playerState.State.CarFrame;
+        var pos = frame.CarPosition;
         session.PlayerPositions[clientId] = new f64Vector3(pos.X, pos.Y, pos.Z);
+        session.PlayerWasted[clientId] = frame.TheBitFlags.Wasted;
 
         var others = session.Clients.Keys.Where(idx => idx != clientIndex).ToArray();
         if (others.Length > 0)
@@ -438,6 +441,9 @@ public class RaceOrchestrator : IDisposable
         /// <summary>Owns the gamemode's plugin load context; released alongside it.</summary>
         public BaseGamemodeFactory? Factory { get; set; }
         public ConcurrentDictionary<Guid, f64Vector3> PlayerPositions { get; set; } = [];
+
+        /// <summary>Last relayed wasted flag per player; absent until their first state.</summary>
+        public ConcurrentDictionary<Guid, bool> PlayerWasted { get; set; } = [];
         public IDictionary<byte, ServerSidePlayerInfo> PlayerInfos { get; set; } = new Dictionary<byte, ServerSidePlayerInfo>();
         public bool ResultsBroadcasted { get; set; }
 
@@ -459,6 +465,9 @@ public class RaceOrchestrator : IDisposable
 
         public f64Vector3? GetPlayerPosition(Guid playerId) =>
             session.PlayerPositions.TryGetValue(playerId, out var pos) ? pos : null;
+
+        public bool? IsPlayerWasted(Guid playerId) =>
+            session.PlayerWasted.TryGetValue(playerId, out var wasted) ? wasted : null;
 
         public void BroadcastEvent(ReadOnlyMemory<byte> payload) => broadcast(payload);
     }

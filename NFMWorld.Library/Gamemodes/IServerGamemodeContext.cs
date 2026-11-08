@@ -15,6 +15,12 @@ public interface IServerGamemodeContext
     /// Position data flows from <see cref="C2S_PlayerState"/> relay.
     /// </summary>
     f64Vector3? GetPlayerPosition(Guid playerId);
+
+    /// <summary>
+    /// Whether the last relayed state for a player says their car is wasted, or null before the
+    /// first state arrives. Wasted comes from the car's owner, the same relay as its position.
+    /// </summary>
+    bool? IsPlayerWasted(Guid playerId);
     
     /// <summary>
     /// Broadcast a payload to all clients.

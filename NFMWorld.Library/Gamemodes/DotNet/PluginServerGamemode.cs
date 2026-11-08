@@ -42,6 +42,13 @@ public class PluginServerGamemode(
     public f64Vector3? GetPlayerPosition(Guid playerId) => context.GetPlayerPosition(playerId);
 
     /// <summary>
+    /// Whether a player's last relayed state says their car is wasted, or null before the
+    /// first state arrives.
+    /// </summary>
+    [PluginVisible]
+    public bool? IsPlayerWasted(Guid playerId) => context.IsPlayerWasted(playerId);
+
+    /// <summary>
     /// Broadcast a payload to all clients.
     /// </summary>
     /// <param name="payload">The payload.</param>

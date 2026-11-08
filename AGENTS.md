@@ -213,7 +213,8 @@ from `PhysicsController.GameTick`. Two ship:
 | Gotcha | Rule |
 |---|---|
 | Path point tracking | the physics-side path walk in `CarPhysics.cs` is commented out (`/* … }*/ // CHK16`), so `CarPhysics.Point` is never assigned. `ClassicAi` carries its own index over `TrackPath`, built from `BackendStage.Nodes` minus the fix hoops, with `LastCheckpointNode` as the checkpoint floor |
-| Standings | PvP never calls `CheckPointHelper.CalculatePositions`, so `Placement` is 0 for everyone. A bot that needs rank computes it itself (`ClassicAi.RankCars`) — calling the helper would take over the HUD's standings as a side effect |
+| Standings | `PvpGamemode` (client) calls `CheckPointHelper.CalculatePositions` once per tick, after the checkpoint crossings, so `Placement` drives the HUD's position column. It runs only when there is more than one player. `ClassicAi.RankCars` recomputes the same permutation for its own use and is deliberately separate, so a bot never owns the race's order |
+| Tickrate | both AI plugins run at the client's 63 tps. `ClassicAi` gates only its bookkeeping counters on `Physics.OriginalTicksPerNewTick` (the original's `tick.fraction >= tick.scale`); `ElStupido` does not gate at all. Anything that must line up with the original's 21.4 Hz has to go through that gate, not a bare tick count |
 | Y axis | `Position.Y` is height *below* `World.Ground` and `CarPhysics.Scy` is positive downward; the original's `car.y`/`wheelSpeedY` are the other way round. The stunt take-off and landing triggers both sum `Scy`, so check the sign against a real jump |
 | Controls are ours | `Control` is not cleared between ticks — every bot must write Up/Down/Left/Right/Handb every `RunAi()`, or the car keeps its last input |
 
@@ -240,6 +241,11 @@ from `PhysicsController.GameTick`. Two ship:
   arrow targeting still excludes fake players.
 - Skins consume `NFMWorld.Library/Hud/IHudData.cs`; `RacePhase.UpdateHudPresentation` copies standings/targets without
   retaining plugin objects. Keep telemetry/target logic in the host.
+- **Standings order** is the server's, not the grid's. `PvpServerGamemode.CompleteRace` sorts into three keys: finishers
+  and still-running cars by position, then DNFs newest death first. A car's wasted flag is relayed by its owner in
+  `CarFrame.TheBitFlags.Wasted` and exposed to gamemodes as `IServerGamemodeContext.IsPlayerWasted`; `TrackWasted`
+  stamps the tick each death is first seen. Reviving through a fix hoop clears the stamp, so a revived car is live
+  again and can still win. A forfeit stamps the same field, so a leaver sorts with the dead.
 - Race status text is `RaceAnnouncer` (`NFMWorld.Library/Hud/`), ticked from
   `BaseClientGamemode.UpdateHudAndSounds`: it diffs car/opponent state and posts into two timed slots
   (`StatusMessage`, `StuntMessage` on `HudStateData`). Durations are **seconds** and converted with `SecondsToTicks`;

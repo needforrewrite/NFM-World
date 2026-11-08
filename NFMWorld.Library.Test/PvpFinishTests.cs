@@ -74,7 +74,9 @@ public class PvpFinishTests
     {
         public BackendStage CurrentStage { get; } = stage;
         public f64Vector3? Position { get; set; }
+        public bool? Wasted { get; set; }
         public f64Vector3? GetPlayerPosition(Guid playerId) => Position;
+        public bool? IsPlayerWasted(Guid playerId) => Wasted;
         public void BroadcastEvent(ReadOnlyMemory<byte> payload) { }
     }
 

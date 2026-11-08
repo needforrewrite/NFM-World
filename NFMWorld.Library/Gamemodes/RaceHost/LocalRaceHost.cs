@@ -124,7 +124,8 @@ public sealed class LocalRaceHost : IRaceHost
             _localPlayerId,
             state.CarFrame.CarPosition.X,
             state.CarFrame.CarPosition.Y,
-            state.CarFrame.CarPosition.Z);
+            state.CarFrame.CarPosition.Z,
+            state.CarFrame.TheBitFlags.Wasted);
 
     public void Dispose()
     {
@@ -146,18 +147,29 @@ public sealed class LocalRaceHost : IRaceHost
         : IServerGamemodeContext
     {
         private readonly Dictionary<Guid, f64Vector3> _positions = new();
+        private readonly Dictionary<Guid, bool> _wasted = new();
 
         public BackendStage CurrentStage { get; } = stageData is { } data ? new BackendStage(stageName, data) : new BackendStage(stageName);
 
         public f64Vector3? GetPlayerPosition(Guid playerId)
             => _positions.TryGetValue(playerId, out var pos) ? pos : null;
 
+        public bool? IsPlayerWasted(Guid playerId)
+            => _wasted.TryGetValue(playerId, out var wasted) ? wasted : null;
+
         public void BroadcastEvent(ReadOnlyMemory<byte> payload)
             => broadcast(payload);
 
-        public void RecordPlayerState(Guid playerId, fix64 x, fix64 y, fix64 z)
-            => _positions[playerId] = new f64Vector3(x, y, z);
+        public void RecordPlayerState(Guid playerId, fix64 x, fix64 y, fix64 z, bool wasted)
+        {
+            _positions[playerId] = new f64Vector3(x, y, z);
+            _wasted[playerId] = wasted;
+        }
 
-        public void ClearPlayerPositions() => _positions.Clear();
+        public void ClearPlayerPositions()
+        {
+            _positions.Clear();
+            _wasted.Clear();
+        }
     }
 }
