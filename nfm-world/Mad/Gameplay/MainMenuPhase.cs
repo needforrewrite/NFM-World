@@ -45,7 +45,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private bool _appliedRemasteredMusic;
 
     public override bool EnableUiInput => _menuVisible
-        && (_transitionTime < 0 || (_transitionToMenu && _transitionSwitched));
+                                          && (_transitionTime < 0 || (_transitionToMenu && _transitionSwitched));
 
     public MainMenuPhase(string stageName) : base(MenuPreferences.ResolveStage(TheVFS.VFS, SettingsMenu.MenuStage, stageName))
     {
@@ -74,28 +74,39 @@ public class MainMenuPhase : BaseStageRenderingPhase
     }
 
     /// <summary>The menu's items, wired straight to this phase's handlers.</summary>
-    public override Node BuildUi() => MainMenuIntroView.Build(_logo, logo => Sx.View(
-            style: () => Sx.Styles(position: Position.Absolute, left: 0, top: 0, width: "100%", height: "100%"),
+    public override Node BuildUi() => MainMenuIntroView.Build(
+        _logo,
+        logo => Sx.View(
+            style: () => Sx.Styles(position: Position.Absolute, left: 0, top: 0, width: 100.Percent(), height: 100.Percent()),
             children:
             [
-                MainMenuView.Build(new MainMenuView.Actions(
-                    Play: OnFreePlayClicked,
-                    Garage: OnGarageClicked,
-                    ModelEditor: GameSparker.StartModelViewer,
-                    StageEditor: GameSparker.StartStageEditor,
-                    TimeTrials: OnTTClicked,
-                    Unavailable: _ => GameSparker.MessageWindow.ShowMessage("Info", "This feature is currently unavailable."),
-                    Account: AccountView.Show,
-                    Multiplayer: OnMultiplayerClicked), logo),
-                AccountView.Build(new AccountView.Actions(
-                    SignIn: OnSignIn,
-                    Register: OnRegister,
-                    SignOut: OnSignOut,
-                    Close: AccountView.Hide),
+                MainMenuView.Build(
+                    new MainMenuView.Actions(
+                        Play: OnFreePlayClicked,
+                        Garage: OnGarageClicked,
+                        ModelEditor: GameSparker.StartModelViewer,
+                        StageEditor: GameSparker.StartStageEditor,
+                        TimeTrials: OnTTClicked,
+                        Unavailable: _ => GameSparker.MessageWindow.ShowMessage("Info", "This feature is currently unavailable."),
+                        Account: AccountView.Show,
+                        Multiplayer: OnMultiplayerClicked
+                    ),
+                    logo
+                ),
+                AccountView.Build(
+                    new AccountView.Actions(
+                        SignIn: OnSignIn,
+                        Register: OnRegister,
+                        SignOut: OnSignOut,
+                        Close: AccountView.Hide
+                    ),
                     () => GameSparker.AccountManager.LoggedIn,
-                    () => GameSparker.AccountManager.ActiveAccount?.Username ?? "")
-            ]),
-        () => _garage!.BuildUi());
+                    () => GameSparker.AccountManager.ActiveAccount?.Username ?? ""
+                )
+            ]
+        ),
+        () => _garage!.BuildUi()
+    );
 
     private void OnSignIn(string username, string password)
     {
@@ -155,6 +166,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
             if (_menuCar != null)
                 _cameraDirector.ShowCar(Camera, _menuCar, _menuTime, true);
         }
+
         UiState.MainMenu.StageName.Value = CurrentStage!.Backend.Name;
         base.Enter();
     }
@@ -169,14 +181,15 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     protected override (string Path, double Tempo, double Frequency)? GetMusicTrack()
         => MenuPreferences.ResolveMusic(TheVFS.VFS, SettingsMenu.MenuMusic) is { } path
-            ? (path, 1d, 1d) : base.GetMusicTrack();
+            ? (path, 1d, 1d)
+            : base.GetMusicTrack();
 
     private void ApplyMenuPreferences(bool checkHistory = false)
     {
         var stageChanged = _appliedMenuStage != SettingsMenu.MenuStage;
         var musicChanged = _appliedMenuMusic != SettingsMenu.MenuMusic
-            || (_appliedRemasteredMusic != GameSparker.UseRemasteredMusic
-                && MenuPreferences.ResolveMusic(TheVFS.VFS, SettingsMenu.MenuMusic) == null);
+                           || (_appliedRemasteredMusic != GameSparker.UseRemasteredMusic
+                               && MenuPreferences.ResolveMusic(TheVFS.VFS, SettingsMenu.MenuMusic) == null);
         _appliedRemasteredMusic = GameSparker.UseRemasteredMusic;
         if (!stageChanged && !musicChanged && !checkHistory) return;
 
@@ -194,6 +207,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 CurrentStage.GetCarVisual(_menuCar);
                 _cameraDirector.ShowCar(Camera, _menuCar, _menuTime, true);
             }
+
             UiState.MainMenu.StageName.Value = CurrentStage.Backend.Name;
             musicChanged |= MenuPreferences.ResolveMusic(TheVFS.VFS, SettingsMenu.MenuMusic) == null;
         }
@@ -203,6 +217,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
             LoadStageMusic(reloadIfLoaded: true);
             if (!checkHistory) GameSparker.CurrentMusic = StageMusic;
         }
+
         _appliedMenuStage = SettingsMenu.MenuStage;
         _appliedMenuMusic = SettingsMenu.MenuMusic;
     }
@@ -215,6 +230,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
             GameSparker.AccountManager.ActiveAccountChanged -= OnActiveAccountChanged;
             (_logo as IDisposable)?.Dispose();
         }
+
         base.Dispose(disposing);
     }
 
@@ -233,11 +249,15 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void OnFreePlayClicked()
     {
-        var factory = GamemodeFactory.Create("nfmm/pvp", new Dictionary<string, object>()
-        {
-            ["constraint"] = "both"
-        });
-        ClientSidePlayerInfo[] players = [
+        var factory = GamemodeFactory.Create(
+            "nfmm/pvp",
+            new Dictionary<string, object>()
+            {
+                ["constraint"] = "both"
+            }
+        );
+        ClientSidePlayerInfo[] players =
+        [
             new()
             {
                 CarName = MenuHistory.Car?.FileName ?? MenuHistory.DefaultCar,
@@ -296,12 +316,13 @@ public class MainMenuPhase : BaseStageRenderingPhase
             }
         ];
         var stageName = MenuHistory.Stage;
-        var inRace = new RacePhase(stageName, factory, players,
-            LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = players }));
-        inRace.Exited += (sender, args) =>
-        {
-            GameSparker.PopGroup(PhaseManager.Groups.Event);
-        };
+        var inRace = new RacePhase(
+            stageName,
+            factory,
+            players,
+            LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = players })
+        );
+        inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
         GameSparker.PushPhase(inRace, PhaseManager.Groups.Event);
 
         Logging.Info("Game started!");
@@ -344,21 +365,26 @@ public class MainMenuPhase : BaseStageRenderingPhase
             GameSparker.MessageWindow.ShowMessage("Stages unavailable", ex.Message);
             return;
         }
+
         ssp.StageSelected += (sender, stageName) =>
         {
             if (ssp.CurrentStage?.Backend.Checkpoints.Count is not > 0)
             {
-                GameSparker.MessageWindow.ShowMessage("Time trial unavailable",
-                    "This stage has no checkpoints. Choose a stage with checkpoints to start a time trial.");
+                GameSparker.MessageWindow.ShowMessage(
+                    "Time trial unavailable",
+                    "This stage has no checkpoints. Choose a stage with checkpoints to start a time trial."
+                );
                 return;
             }
+
             PhaseSharedState.SelectedStageName = stageName;
 
             GaragePhase gp = new(stageName);
             gp.CarSelected += (sender, car) =>
             {
                 var factory = GamemodeFactory.Create("nfmm/timetrial");
-                ClientSidePlayerInfo[] players = [
+                ClientSidePlayerInfo[] players =
+                [
                     new()
                     {
                         CarName = car.FileName,
@@ -368,19 +394,17 @@ public class MainMenuPhase : BaseStageRenderingPhase
                         PlayerName = "MadPlayer"
                     }
                 ];
-                var inRace = new RacePhase(stageName, factory, players,
-                    LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = players }));
-                inRace.Exited += (sender, args) =>
-                {
-                    GameSparker.PopGroup(PhaseManager.Groups.Event);
-                };
+                var inRace = new RacePhase(
+                    stageName,
+                    factory,
+                    players,
+                    LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = players })
+                );
+                inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
                 GameSparker.PushPhase(inRace, PhaseManager.Groups.Event);
             };
 
-            gp.CarSelectionCancelled += (sender, _) =>
-            {
-                GameSparker.PopPhase();
-            };
+            gp.CarSelectionCancelled += (sender, _) => { GameSparker.PopPhase(); };
 
             GameSparker.PushPhase(gp, PhaseManager.Groups.Event);
         };
@@ -402,17 +426,31 @@ public class MainMenuPhase : BaseStageRenderingPhase
             _menuCar = _garage?.CurrentCar ?? _menuCar;
             if (_menuCar != null)
             {
-                _cameraDirector.ShowCar(Camera, _menuCar, _menuTime, garageBlend: Smooth(_garageBlend),
-                    garageAngle: _garageCamera.Angle, garageHeight: _garageCamera.Height);
+                _cameraDirector.ShowCar(
+                    Camera,
+                    _menuCar,
+                    _menuTime,
+                    garageBlend: Smooth(_garageBlend),
+                    garageAngle: _garageCamera.Angle,
+                    garageHeight: _garageCamera.Height
+                );
                 _settingsCamera.Update(Camera, _menuCar, NFMWorld.UI.Components.SettingsView.CameraPreviewActive);
                 if (NFMWorld.UI.Components.SettingsView.MenuHudPreviewData is { } preview)
                 {
                     preview.Power.Value = (float)_menuCar.CarPhysics.Power / 100f;
                     preview.Damage.Value = _menuCar.Stats.Maxmag > 0
-                        ? (float)_menuCar.CarPhysics.DamagePoints / _menuCar.Stats.Maxmag : 0;
+                        ? (float)_menuCar.CarPhysics.DamagePoints / _menuCar.Stats.Maxmag
+                        : 0;
                     preview.Racers.Clear();
-                    preview.Racers.Add(new NFMWorldLibrary.Hud.HudRacer(1, _menuCar.Stats.Name,
-                        preview.DamageFraction, true, _menuCar.Wasted));
+                    preview.Racers.Add(
+                        new NFMWorldLibrary.Hud.HudRacer(
+                            1,
+                            _menuCar.Stats.Name,
+                            preview.DamageFraction,
+                            true,
+                            _menuCar.Wasted
+                        )
+                    );
                 }
             }
         }
@@ -428,6 +466,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 if (_cameraDirector.CarActionRoad is { } road)
                     _attractDrive = new MenuAttractDrive(CurrentStage, CarsInRace, road);
             }
+
             _attractDrive?.Tick();
         }
 
@@ -455,9 +494,11 @@ public class MainMenuPhase : BaseStageRenderingPhase
                     _introTime = LogoFadeStart;
                     _cameraDirector.Reset(Camera, CurrentStage!.Backend);
                 }
+
                 UiState.MainMenu.MenuVisible.Value = _menuVisible;
                 MainMenuView.Reset();
             }
+
             UiState.MainMenu.BlackOpacity.Value = _transitionTime < 0.8f
                 ? Smooth(_transitionTime / 0.8f)
                 : 1 - Smooth((_transitionTime - 0.8f) / 1.2f);
@@ -468,15 +509,23 @@ public class MainMenuPhase : BaseStageRenderingPhase
         {
             UiState.MainMenu.BlackOpacity.Value = Math.Max(1 - Smooth((_introTime - IntroFadeStart) / 2), _cameraDirector.Fade);
         }
+
         if (!_menuVisible)
         {
-            _introVisibility = Math.Clamp(_introVisibility
-                + (UiState.MainMenu.SceneryOnly.Value ? -seconds : seconds) / 0.6f, 0, 1);
+            _introVisibility = Math.Clamp(
+                _introVisibility
+                + (UiState.MainMenu.SceneryOnly.Value ? -seconds : seconds) / 0.6f,
+                0,
+                1
+            );
             var visibility = Smooth(_introVisibility);
             UiState.MainMenu.LogoOpacity.Value = Smooth((_introTime - LogoFadeStart) / LogoFadeDuration) * visibility;
-            UiState.MainMenu.PromptOpacity.Value = Smooth((_introTime - PromptFadeStart) / 0.8f) * visibility
-                * (0.82f + 0.18f * MathF.Cos((_introTime - PromptFadeStart) * MathF.Tau / 1.5f));
+            UiState.MainMenu.PromptOpacity.Value = Smooth((_introTime - PromptFadeStart) / 0.8f)
+                                                   * visibility
+                                                   * (0.82f
+                                                      + 0.18f * MathF.Cos((_introTime - PromptFadeStart) * MathF.Tau / 1.5f));
         }
+
         CurrentStage!.FadeFromOverride = _menuVisible ? null : _cameraDirector.ViewDistance;
         UiState.MainMenu.InputEnabled.Value = EnableUiInput;
         base.GameTick();
@@ -517,19 +566,23 @@ public class MainMenuPhase : BaseStageRenderingPhase
             _garage.KeyPressed(key, imguiWantsKeyboard, keys);
             return;
         }
-        if (!imguiWantsKeyboard && key == Key.Enter
+
+        if (!imguiWantsKeyboard
+            && key == Key.Enter
             && ((!_menuVisible && _transitionTime < 0) || (_transitionTime >= 0 && _transitionToMenu)))
         {
             BeginTransition(true);
             _transitionTime = TransitionDuration;
             return;
         }
+
         if (!imguiWantsKeyboard && EnableUiInput && key == Key.Escape)
         {
             if (!MainMenuView.NavigateBack())
                 BeginTransition(false);
             return;
         }
+
         if (!imguiWantsKeyboard && EnableUiInput)
             MainMenuView.KeyPressed(key);
         if (!imguiWantsKeyboard && !_menuVisible && _introTime >= IntroFadeStart && _transitionTime < 0)
@@ -539,12 +592,21 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 UiState.MainMenu.SceneryOnly.Value = !UiState.MainMenu.SceneryOnly.Value;
                 return;
             }
+
             BeginTransition(true);
         }
     }
 
-    public override void MousePressed(int x, int y, bool imguiWantsMouse, MouseButton button,
-        MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public override void MousePressed(
+        int x,
+        int y,
+        bool imguiWantsMouse,
+        MouseButton button,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         base.MousePressed(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
         if (_garage != null && EnableUiInput)
@@ -553,16 +615,31 @@ public class MainMenuPhase : BaseStageRenderingPhase
             BeginTransition(true);
     }
 
-    public override void MouseMoved(int x, int y, bool imguiWantsMouse, MouseButtons buttons,
-        bool ctrlKey, bool shiftKey, bool altKey)
+    public override void MouseMoved(
+        int x,
+        int y,
+        bool imguiWantsMouse,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         base.MouseMoved(x, y, imguiWantsMouse, buttons, ctrlKey, shiftKey, altKey);
         if (_garage != null && EnableUiInput)
             _garageCamera.Move(x, y, imguiWantsMouse, buttons);
     }
 
-    public override void MouseReleased(int x, int y, bool imguiWantsMouse, MouseButton button,
-        MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
+    public override void MouseReleased(
+        int x,
+        int y,
+        bool imguiWantsMouse,
+        MouseButton button,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
     {
         base.MouseReleased(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
         _garageCamera.Release(button);

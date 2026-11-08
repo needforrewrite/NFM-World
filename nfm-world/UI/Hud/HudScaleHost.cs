@@ -10,8 +10,15 @@ internal sealed class HudScaleHost : Component
     public HudScaleHost(Component content)
     {
         _content = content;
-        Styles = Sx.Styles(position: Position.Absolute, left: 0, top: 0,
-            width: "100%", height: "100%", flexShrink: 0, pointerEvents: false);
+        Styles = Sx.Styles(
+            position: Position.Absolute,
+            left: 0,
+            top: 0,
+            width: 100.Percent(),
+            height: 100.Percent(),
+            flexShrink: 0,
+            pointerEvents: false
+        );
     }
 
     protected override void RenderContent(Vector2 position, Vector2 size)

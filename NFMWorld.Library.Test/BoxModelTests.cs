@@ -1,6 +1,7 @@
 using System.Numerics;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
+using NFMWorld.Reactor.Sx;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorld.Library.Test;
@@ -33,15 +34,17 @@ public class BoxModelTests
     [TestMethod]
     public void MarginBottom_DoesNotShrinkTheBorderBox()
     {
-        var root = Box("root", new Styles { Width = 340, Height = 600, FlexDirection = FlexDirection.Column });
-        var card = Box("card", new Styles
-        {
-            Width = 100,
-            Height = 40,
-            MarginBottom = 16,
-            FlexDirection = FlexDirection.Column,
-            FlexShrink = 0,
-        });
+        var root = Box("root", Sx.Styles(width: 340, height: 600, flexDirection: FlexDirection.Column));
+        var card = Box(
+            "card",
+            Sx.Styles(
+                width: 100,
+                height: 40,
+                marginBottom: 16,
+                flexDirection: FlexDirection.Column,
+                flexShrink: 0
+            )
+        );
         root.AddChild(card);
 
         root.LayoutAndRender(new Vector2(340, 600));
@@ -49,8 +52,12 @@ public class BoxModelTests
         // The margin must not be taken out of the painted rect.
         Assert.AreEqual(40f, card.LayoutBorderSize.Y, 0.01f, "the border box is the layout height");
         Assert.AreEqual(100f, card.LayoutBorderSize.X, 0.01f);
-        Assert.AreEqual(16f, card.LayoutMarginSize.Y - card.LayoutBorderSize.Y, 0.01f,
-            "the margin box extends past the border box by the margin");
+        Assert.AreEqual(
+            16f,
+            card.LayoutMarginSize.Y - card.LayoutBorderSize.Y,
+            0.01f,
+            "the margin box extends past the border box by the margin"
+        );
 
         // These are the rects BeginPaint hands to RenderBackground / RenderBorder / the clip.
         Assert.AreEqual(0f, card.LayoutBorderPosition.Y, 0.01f, "the card is the first child of the root");
@@ -61,21 +68,23 @@ public class BoxModelTests
     [TestMethod]
     public void MarginBoxPosition_StepsOutwardFromTheBorderBox()
     {
-        var root = Box("root", new Styles { Width = 400, Height = 400, FlexDirection = FlexDirection.Column });
-        var card = Box("card", new Styles
-        {
-            Height = 40,
-            Width = 100,
-            MarginTop = 10,
-            MarginBottom = 16,
-            MarginLeft = 7,
-            MarginRight = 9,
-            PaddingTop = 5,
-            PaddingBottom = 6,
-            PaddingLeft = 11,
-            PaddingRight = 12,
-            FlexShrink = 0,
-        });
+        var root = Box("root", Sx.Styles(width: 400, height: 400, flexDirection: FlexDirection.Column));
+        var card = Box(
+            "card",
+            Sx.Styles(
+                height: 40,
+                width: 100,
+                marginTop: 10,
+                marginBottom: 16,
+                marginLeft: 7,
+                marginRight: 9,
+                paddingTop: 5,
+                paddingBottom: 6,
+                paddingLeft: 11,
+                paddingRight: 12,
+                flexShrink: 0
+            )
+        );
         root.AddChild(card);
 
         root.LayoutAndRender(new Vector2(400, 400));
@@ -107,21 +116,23 @@ public class BoxModelTests
     [TestMethod]
     public void BorderWidth_IsTakenOutOfThePaddingAndContentBoxes()
     {
-        var root = Box("root", new Styles { Width = 400, Height = 400, FlexDirection = FlexDirection.Column });
-        var card = Box("card", new Styles
-        {
-            Height = 40,
-            Width = 100,
-            BorderTop = 2,
-            BorderBottom = 3,
-            BorderLeft = 4,
-            BorderRight = 5,
-            PaddingTop = 6,
-            PaddingBottom = 7,
-            PaddingLeft = 8,
-            PaddingRight = 9,
-            FlexShrink = 0,
-        });
+        var root = Box("root", Sx.Styles(width: 400, height: 400, flexDirection: FlexDirection.Column));
+        var card = Box(
+            "card",
+            Sx.Styles(
+                height: 40,
+                width: 100,
+                borderTop: 2,
+                borderBottom: 3,
+                borderLeft: 4,
+                borderRight: 5,
+                paddingTop: 6,
+                paddingBottom: 7,
+                paddingLeft: 8,
+                paddingRight: 9,
+                flexShrink: 0
+            )
+        );
         root.AddChild(card);
 
         root.LayoutAndRender(new Vector2(400, 400));
@@ -145,17 +156,19 @@ public class BoxModelTests
     [TestMethod]
     public void CardMarginBottom_PushesTheNextSiblingDown()
     {
-        var root = Box("root", new Styles { Width = 340, Height = 600, FlexDirection = FlexDirection.Column });
-        var inner = Box("inner", new Styles { FlexDirection = FlexDirection.Column, FlexShrink = 0 });
-        var card = Box("card", new Styles
-        {
-            Height = 72,
-            Width = 120,
-            MarginBottom = 16,
-            FlexDirection = FlexDirection.Column,
-            FlexShrink = 0,
-        });
-        var next = Box("next", new Styles { Height = 40, Width = 120, FlexShrink = 0 });
+        var root = Box("root", Sx.Styles(width: 340, height: 600, flexDirection: FlexDirection.Column));
+        var inner = Box("inner", Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0));
+        var card = Box(
+            "card",
+            Sx.Styles(
+                height: 72,
+                width: 120,
+                marginBottom: 16,
+                flexDirection: FlexDirection.Column,
+                flexShrink: 0
+            )
+        );
+        var next = Box("next", Sx.Styles(height: 40, width: 120, flexShrink: 0));
         inner.AddChild(card);
         inner.AddChild(next);
         root.AddChild(inner);
@@ -163,8 +176,12 @@ public class BoxModelTests
         root.LayoutAndRender(new Vector2(340, 600));
 
         Assert.AreEqual(72f, card.LayoutBorderSize.Y, 0.01f, "the card keeps its full height");
-        Assert.AreEqual(72f + 16f, next.LayoutBorderPosition.Y, 0.01f,
-            "the margin leaves a 16px gap below the card");
+        Assert.AreEqual(
+            72f + 16f,
+            next.LayoutBorderPosition.Y,
+            0.01f,
+            "the margin leaves a 16px gap below the card"
+        );
     }
 
     /// <summary>
@@ -174,16 +191,18 @@ public class BoxModelTests
     [TestMethod]
     public void ScrollExtent_IncludesTrailingMarginOfLastChild()
     {
-        var root = Box("root", new Styles
-        {
-            Width = 300,
-            Height = 100,
-            FlexDirection = FlexDirection.Column,
-            Overflow = Overflow.Scroll,
-            PaddingTop = 10,
-            PaddingBottom = 10,
-        });
-        var child = Box("child", new Styles { Height = 100, Width = 100, FlexShrink = 0, MarginBottom = 20 });
+        var root = Box(
+            "root",
+            Sx.Styles(
+                width: 300,
+                height: 100,
+                flexDirection: FlexDirection.Column,
+                overflow: Overflow.Scroll,
+                paddingTop: 10,
+                paddingBottom: 10
+            )
+        );
+        var child = Box("child", Sx.Styles(height: 100, width: 100, flexShrink: 0, marginBottom: 20));
         root.AddChild(child);
 
         root.LayoutAndRender(new Vector2(300, 100));
@@ -201,16 +220,18 @@ public class BoxModelTests
     [TestMethod]
     public void ScrollExtent_DescendsIntoFlowHosts()
     {
-        var root = Box("root", new Styles
-        {
-            Width = 300,
-            Height = 100,
-            FlexDirection = FlexDirection.Column,
-            Overflow = Overflow.Scroll,
-        });
-        var host = Box("host", new Styles { Display = Display.Contents });
-        host.AddChild(Box("row", new Styles { Height = 60, Width = 100, FlexShrink = 0 }));
-        host.AddChild(Box("row2", new Styles { Height = 60, Width = 100, FlexShrink = 0 }));
+        var root = Box(
+            "root",
+            Sx.Styles(
+                width: 300,
+                height: 100,
+                flexDirection: FlexDirection.Column,
+                overflow: Overflow.Scroll
+            )
+        );
+        var host = Box("host", Sx.Styles(display: Display.Contents));
+        host.AddChild(Box("row", Sx.Styles(height: 60, width: 100, flexShrink: 0)));
+        host.AddChild(Box("row2", Sx.Styles(height: 60, width: 100, flexShrink: 0)));
         root.AddChild(host);
 
         root.LayoutAndRender(new Vector2(300, 100));

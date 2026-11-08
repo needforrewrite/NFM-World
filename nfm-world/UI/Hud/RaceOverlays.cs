@@ -26,8 +26,15 @@ public sealed class RaceOverlays : Component
     {
         _race = race;
         _skinDrawsRadar = skinDrawsRadar ?? (() => false);
-        Styles = Sx.Styles(position: Position.Absolute, left: 0, top: 0,
-            width: "100%", height: "100%", flexShrink: 0, pointerEvents: false);
+        Styles = Sx.Styles(
+            position: Position.Absolute,
+            left: 0,
+            top: 0,
+            width: 100.Percent(),
+            height: 100.Percent(),
+            flexShrink: 0,
+            pointerEvents: false
+        );
     }
 
     protected override void RenderContent(Vector2 position, Vector2 size)
@@ -130,8 +137,16 @@ public sealed class RaceOverlays : Component
             var height = metrics.LineHeight;
             var x = screen.X - width / 2;
             G.SetColor(new Color(0, 0, 0, 110));
-            G.FillRoundedRect((int)(x - 4 * scale), (int)(screen.Y - 2 * scale),
-                (int)(width + 8 * scale), (int)(height + 4 * scale), 4, 4, 4, 4);
+            G.FillRoundedRect(
+                (int)(x - 4 * scale),
+                (int)(screen.Y - 2 * scale),
+                (int)(width + 8 * scale),
+                (int)(height + 4 * scale),
+                4,
+                4,
+                4,
+                4
+            );
             G.SetColor(new Color(235, 245, 255));
             G.DrawString(marker.Name, (int)x, (int)screen.Y + (int)metrics.LineHeight);
         }
@@ -166,9 +181,21 @@ public sealed class RaceOverlays : Component
         // from the markers drawn on top of it. Its axes are per image pixel; the draw maps the
         // unit square, so they scale by the image's size.
         var placement = RadarMap.ToUnitSquare(
-            RadarMap.Place(minX, maxZ, unitsPerPixel, clientX, clientZ, _race.ClientHeading,
-                x, y, size, RadarRange),
-            image.Width, image.Height);
+            RadarMap.Place(
+                minX,
+                maxZ,
+                unitsPerPixel,
+                clientX,
+                clientZ,
+                _race.ClientHeading,
+                x,
+                y,
+                size,
+                RadarRange
+            ),
+            image.Width,
+            image.Height
+        );
 
         G.DrawImageTransformed(image, placement.Origin, placement.AxisX, placement.AxisY, new Color(255, 255, 255, 200));
         return true;
@@ -176,7 +203,16 @@ public sealed class RaceOverlays : Component
 
     // World XZ offset from the car, scaled into the radar, then rotated by the car's heading so
     // forward maps to the top of the map. Shared with the map image's own placement.
-    private static Vector2 ToRadar(float x, float z, float clientX, float clientZ,
-        float sin, float cos, float centerX, float centerY, float size)
+    private static Vector2 ToRadar(
+        float x,
+        float z,
+        float clientX,
+        float clientZ,
+        float sin,
+        float cos,
+        float centerX,
+        float centerY,
+        float size
+    )
         => RadarMap.ToRadar(x, z, clientX, clientZ, sin, cos, centerX, centerY, size, RadarRange);
 }

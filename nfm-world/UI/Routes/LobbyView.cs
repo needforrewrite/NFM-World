@@ -39,7 +39,8 @@ public static class LobbyView
         Action<string> SetStage,
         Action<int> SetMaxPlayers,
         Action<int> SetBots,
-        Action<string, string> SetConfig);
+        Action<string, string> SetConfig
+    );
 
     private static readonly Color Blue = Theme.MenuBlue;
     private static readonly Color TextBlue = Theme.MenuTextBlue;
@@ -55,123 +56,223 @@ public static class LobbyView
         var lobby = UiState.Lobby;
 
         return Sx.View(
-            style: () => Sx.Styles(position: Position.Absolute, left: 0, top: 0, right: 0, bottom: 0,
+            style: () => Sx.Styles(
+                position: Position.Absolute,
+                left: 0,
+                top: 0,
+                right: 0,
+                bottom: 0,
                 backgroundColor: new Color(3, 8, 20, 170),
-                alignItems: Align.Center, justifyContent: Justify.Center),
+                alignItems: Align.Center,
+                justifyContent: Justify.Center
+            ),
             children:
             [
                 Sx.View(
-                    style: () => Sx.Styles(width: MeasurementWidthHeight.Percent(92),
-                        maxWidth: 1100, height: MeasurementWidthHeight.Percent(90),
+                    style: () => Sx.Styles(
+                        width: 92.Percent(),
+                        maxWidth: 1100,
+                        height: 90.Percent(),
                         flexDirection: FlexDirection.Column,
                         backgroundColor: PanelColor,
-                        borderTop: 1, borderBottom: 1, borderLeft: 1, borderRight: 1,
-                        borderColor: Border, borderRadius: 12, paddingTop: 18, paddingBottom: 14,
-                        paddingLeft: 22, paddingRight: 22, gapRow: 12),
+                        borderTop: 1,
+                        borderBottom: 1,
+                        borderLeft: 1,
+                        borderRight: 1,
+                        borderColor: Border,
+                        borderRadius: 12,
+                        paddingTop: 18,
+                        paddingBottom: 14,
+                        paddingLeft: 22,
+                        paddingRight: 22,
+                        gapRow: 12
+                    ),
                     children:
                     [
                         Header(actions),
                         Sx.View(
-                            style: () => Sx.Styles(flexDirection: FlexDirection.Row, flexGrow: 1, gapColumn: 14,
-                                alignItems: Align.Stretch),
+                            style: () => Sx.Styles(
+                                flexDirection: FlexDirection.Row,
+                                flexGrow: 1,
+                                gapColumn: 14,
+                                alignItems: Align.Stretch
+                            ),
                             children:
                             [
                                 PlayersPanel(),
                                 GamesPanel(actions),
                                 ChatPanel(actions)
-                            ])
-                    ]),
+                            ]
+                        )
+                    ]
+                ),
                 Sx.Show(() => lobby.ShowCreateDialog.Value, () => CreateDialog(actions))
-            ]);
+            ]
+        );
     }
 
     private static Node Header(Actions actions)
     {
         var lobby = UiState.Lobby;
         return Sx.View(
-            style: () => Sx.Styles(flexDirection: FlexDirection.Row, alignItems: Align.FlexEnd, gapColumn: 12,
-                flexShrink: 0),
+            style: () => Sx.Styles(
+                flexDirection: FlexDirection.Row,
+                alignItems: Align.FlexEnd,
+                gapColumn: 12,
+                flexShrink: 0
+            ),
             children:
             [
-                Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexGrow: 1),
+                Sx.View(
+                    style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexGrow: 1),
                     children:
                     [
-                        Sx.Text(style: () => Sx.TextStyles(fontSize: 30, fontFamily: FontFamily.Adventure,
-                                fontStyle: FontStyle.Bold, foregroundColor: Blue),
-                            text: () => "MULTIPLAYER"),
-                        Sx.Text(style: () => Sx.TextStyles(fontSize: 12,
-                                foregroundColor: lobby.Connected.Value ? TextBlue : Theme.Danger),
-                            text: () => lobby.Status.Value.Length > 0 ? lobby.Status.Value : "Connecting..."),
+                        Sx.Text(
+                            style: () => Sx.TextStyles(
+                                fontSize: 30,
+                                fontFamily: FontFamily.Adventure,
+                                fontStyle: FontStyle.Bold,
+                                foregroundColor: Blue
+                            ),
+                            text: () => "MULTIPLAYER"
+                        ),
+                        Sx.Text(
+                            style: () => Sx.TextStyles(
+                                fontSize: 12,
+                                foregroundColor: lobby.Connected.Value ? TextBlue : Theme.Danger
+                            ),
+                            text: () => lobby.Status.Value.Length > 0 ? lobby.Status.Value : "Connecting..."
+                        ),
                         // Only once retries are exhausted: leaving is the way out.
-                        Sx.Show(() => lobby.Disconnected.Value,
-                            () => Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.Danger),
-                                text: () => "Could not reconnect. Press BACK and try again."))
-                    ]),
+                        Sx.Show(
+                            () => lobby.Disconnected.Value,
+                            () => Sx.Text(
+                                style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.Danger),
+                                text: () => "Could not reconnect. Press BACK and try again."
+                            )
+                        )
+                    ]
+                ),
                 SmallButton("REFRESH", actions.Refresh),
                 SmallButton("BACK", actions.Back)
-            ]);
+            ]
+        );
     }
 
     private static Node PlayersPanel()
     {
         var lobby = UiState.Lobby;
-        return Panel("PLAYERS", 240, () => Sx.For(
-            each: () => lobby.Players.Value,
-            row: (player, _) => Sx.View(
-                style: () => Sx.Styles(flexDirection: FlexDirection.Column, paddingTop: 4, paddingBottom: 4,
-                    borderBottom: 1, borderColor: new Color(128, 170, 255, 40)),
-                children:
-                [
-                    Sx.Text(style: () => Sx.TextStyles(fontSize: 14, fontStyle: FontStyle.Bold,
-                        foregroundColor: player.IsSelf ? Blue : TextBlue), text: () => player.Name),
-                    Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
-                        text: () => player.Car)
-                ])));
+        return Panel(
+            "PLAYERS",
+            240,
+            () => Sx.For(
+                each: () => lobby.Players.Value,
+                row: (player, _) => Sx.View(
+                    style: () => Sx.Styles(
+                        flexDirection: FlexDirection.Column,
+                        paddingTop: 4,
+                        paddingBottom: 4,
+                        borderBottom: 1,
+                        borderColor: new Color(128, 170, 255, 40)
+                    ),
+                    children:
+                    [
+                        Sx.Text(
+                            style: () => Sx.TextStyles(
+                                fontSize: 14,
+                                fontStyle: FontStyle.Bold,
+                                foregroundColor: player.IsSelf ? Blue : TextBlue
+                            ),
+                            text: () => player.Name
+                        ),
+                        Sx.Text(
+                            style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                            text: () => player.Car
+                        )
+                    ]
+                )
+            )
+        );
     }
 
     private static Node GamesPanel(Actions actions)
     {
         var lobby = UiState.Lobby;
         return Sx.View(
-            style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexGrow: 1, gapRow: 10,
-                overflow: Overflow.Hidden),
+            style: () => Sx.Styles(
+                flexDirection: FlexDirection.Column,
+                flexGrow: 1,
+                gapRow: 10,
+                overflow: Overflow.Hidden
+            ),
             children:
             [
                 // flexShrink: 0 would let a long list push the buttons off the bottom; the
                 // panel takes what is left and its list scrolls.
-                Sx.View(style: () => Sx.Styles(flexGrow: 1, flexShrink: 1, flexDirection: FlexDirection.Column),
+                Sx.View(
+                    style: () => Sx.Styles(flexGrow: 1, flexShrink: 1, flexDirection: FlexDirection.Column),
                     children:
                     [
-                        Panel("GAMES", null, () => Sx.Show(
-                            when: () => lobby.Sessions.Value.Count == 0,
-                            then: () => Sx.Text(style: () => Sx.TextStyles(fontSize: 13,
-                                    foregroundColor: Theme.MenuDim),
-                                text: () => "No games yet. Create one to get started."),
-                            otherwise: () => Sx.For(
-                                each: () => lobby.Sessions.Value,
-                                row: (session, _) => SessionRow(session, actions))))
-                    ]),
+                        Panel(
+                            "GAMES",
+                            null,
+                            () => Sx.Show(
+                                when: () => lobby.Sessions.Value.Count == 0,
+                                then: () => Sx.Text(
+                                    style: () => Sx.TextStyles(
+                                        fontSize: 13,
+                                        foregroundColor: Theme.MenuDim
+                                    ),
+                                    text: () => "No games yet. Create one to get started."
+                                ),
+                                otherwise: () => Sx.For(
+                                    each: () => lobby.Sessions.Value,
+                                    row: (session, _) => SessionRow(session, actions)
+                                )
+                            )
+                        )
+                    ]
+                ),
                 Sx.View(
                     style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10, flexShrink: 0),
                     children:
                     [
-                        ActionButton("CREATE GAME", actions.OpenCreate, primary: true,
-                            disabled: () => !lobby.Connected.Value),
-                        Sx.Show(() => lobby.CurrentSession.Value is not null,
-                            () => Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10),
+                        ActionButton(
+                            "CREATE GAME",
+                            actions.OpenCreate,
+                            primary: true,
+                            disabled: () => !lobby.Connected.Value
+                        ),
+                        Sx.Show(
+                            () => lobby.CurrentSession.Value is not null,
+                            () => Sx.View(
+                                style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10),
                                 children:
                                 [
                                     // Only the creator may start, so it is not shown to a member
                                     // who cannot use it.
-                                    Sx.Show(() => lobby.CurrentSession.Value?.IsCreator == true,
-                                        () => ActionButton(() => "START RACE", actions.StartRace, primary: true,
+                                    Sx.Show(
+                                        () => lobby.CurrentSession.Value?.IsCreator == true,
+                                        () => ActionButton(
+                                            () => "START RACE",
+                                            actions.StartRace,
+                                            primary: true,
                                             disabled: () => !lobby.Connected.Value
-                                                          || lobby.CurrentSession.Value?.State != SessionState.NotStarted)),
-                                    ActionButton("LEAVE", actions.Leave,
-                                        disabled: () => !lobby.Connected.Value)
-                                ]))
-                    ])
-            ]);
+                                                            || lobby.CurrentSession.Value?.State != SessionState.NotStarted
+                                        )
+                                    ),
+                                    ActionButton(
+                                        "LEAVE",
+                                        actions.Leave,
+                                        disabled: () => !lobby.Connected.Value
+                                    )
+                                ]
+                            )
+                        )
+                    ]
+                )
+            ]
+        );
     }
 
     private static Node SessionRow(UiState.LobbySession session, Actions actions)
@@ -185,31 +286,57 @@ public static class LobbyView
             style: () => Sx.Styles(
                 backgroundColor: lobby.SelectedSessionId.Value == session.Id
                     ? Theme.MenuHighlight
-                    : new Color(22, 42, 80, 110)),
+                    : new Color(22, 42, 80, 110)
+            ),
             children:
             [
-                Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexGrow: 1),
+                Sx.View(
+                    style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexGrow: 1),
                     children:
                     [
-                        Sx.Text(style: () => Sx.TextStyles(fontSize: 14, fontStyle: FontStyle.Bold,
-                            foregroundColor: TextBlue), text: () => session.StageName),
-                        Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
-                            text: () => $"{session.CreatorName} · {session.PlayerCount}/{session.MaxPlayers}")
-                    ]),
-                Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: StateColor(session.State)),
-                    text: () => StateLabel(session.State)),
+                        Sx.Text(
+                            style: () => Sx.TextStyles(
+                                fontSize: 14,
+                                fontStyle: FontStyle.Bold,
+                                foregroundColor: TextBlue
+                            ),
+                            text: () => session.StageName
+                        ),
+                        Sx.Text(
+                            style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                            text: () => $"{session.CreatorName} · {session.PlayerCount}/{session.MaxPlayers}"
+                        )
+                    ]
+                ),
+                Sx.Text(
+                    style: () => Sx.TextStyles(fontSize: 11, foregroundColor: StateColor(session.State)),
+                    text: () => StateLabel(session.State)
+                ),
 
                 // A member who did not create the race leaves it; only the creator starts it.
                 // Both used to call StartRace, so LEAVE launched a race and nothing left.
                 session.IsMember && session.IsCreator
-                    ? ActionButton(() => "START", actions.StartRace, small: true,
-                        disabled: () => session.State != SessionState.NotStarted || !lobby.Connected.Value)
+                    ? ActionButton(
+                        () => "START",
+                        actions.StartRace,
+                        small: true,
+                        disabled: () => session.State != SessionState.NotStarted || !lobby.Connected.Value
+                    )
                     : session.IsMember
-                        ? ActionButton(() => "LEAVE", actions.Leave, small: true,
-                            disabled: () => !lobby.Connected.Value)
-                        : ActionButton(() => "JOIN", () => actions.Join(session.Id), small: true,
-                            disabled: () => session.State != SessionState.NotStarted || !lobby.Connected.Value)
-            ]);
+                        ? ActionButton(
+                            () => "LEAVE",
+                            actions.Leave,
+                            small: true,
+                            disabled: () => !lobby.Connected.Value
+                        )
+                        : ActionButton(
+                            () => "JOIN",
+                            () => actions.Join(session.Id),
+                            small: true,
+                            disabled: () => session.State != SessionState.NotStarted || !lobby.Connected.Value
+                        )
+            ]
+        );
     }
 
     private static Color StateColor(SessionState state) => state switch
@@ -233,58 +360,104 @@ public static class LobbyView
         // The input row must not be squeezed as the transcript grows, and the transcript must
         // not grow the column past the viewport: Panel's list takes what is left and scrolls.
         return Sx.View(
-            style: () => Sx.Styles(width: 300, flexShrink: 0, flexDirection: FlexDirection.Column, gapRow: 8,
-                overflow: Overflow.Hidden),
+            style: () => Sx.Styles(
+                width: 300,
+                flexShrink: 0,
+                flexDirection: FlexDirection.Column,
+                gapRow: 8,
+                overflow: Overflow.Hidden
+            ),
             children:
             [
-                Sx.View(style: () => Sx.Styles(flexGrow: 1, flexShrink: 1, flexDirection: FlexDirection.Column),
+                Sx.View(
+                    style: () => Sx.Styles(flexGrow: 1, flexShrink: 1, flexDirection: FlexDirection.Column),
                     children:
                     [
-                        Panel("CHAT", null, () => Sx.View(
-                            style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 4),
-                            children: Sx.For(
-                                each: () => lobby.Chat.Value,
-                                row: (line, _) => Sx.View(
-                                    style: () => Sx.Styles(flexDirection: FlexDirection.Column),
-                                    children:
-                                    [
-                                        Sx.Text(style: () => Sx.TextStyles(fontSize: 11, fontStyle: FontStyle.Bold,
-                                            foregroundColor: line.IsSystem ? Theme.MenuDim : line.Color),
-                                            text: () => line.Sender),
-                                        // Word-wrap: a long message ran out of the column and
-                                        // off the right edge of the lobby.
-                                        Sx.Text(style: () => Sx.WrappingText(fontSize: 12,
-                                                foregroundColor: line.IsSystem ? Theme.MenuDim : TextBlue),
-                                            layout: () => Sx.Styles(width: MeasurementWidthHeight.Percent(100)),
-                                            text: () => line.Message)
-                                    ]))))
-                    ]),
+                        Panel(
+                            "CHAT",
+                            null,
+                            () => Sx.View(
+                                style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 4),
+                                children: Sx.For(
+                                    each: () => lobby.Chat.Value,
+                                    row: (line, _) => Sx.View(
+                                        style: () => Sx.Styles(flexDirection: FlexDirection.Column),
+                                        children:
+                                        [
+                                            Sx.Text(
+                                                style: () => Sx.TextStyles(
+                                                    fontSize: 11,
+                                                    fontStyle: FontStyle.Bold,
+                                                    foregroundColor: line.IsSystem ? Theme.MenuDim : line.Color
+                                                ),
+                                                text: () => line.Sender
+                                            ),
+                                            // Word-wrap: a long message ran out of the column and
+                                            // off the right edge of the lobby.
+                                            Sx.Text(
+                                                style: () => Sx.WrappingText(
+                                                    fontSize: 12,
+                                                    foregroundColor: line.IsSystem ? Theme.MenuDim : TextBlue
+                                                ),
+                                                layout: () => Sx.Styles(width: 100.Percent()),
+                                                text: () => line.Message
+                                            )
+                                        ]
+                                    )
+                                )
+                            )
+                        )
+                    ]
+                ),
                 Sx.View(
                     // A row stretches its children by default, which made the button as tall
                     // as the input; centring keeps it beside the field instead.
-                    style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6, flexShrink: 0,
-                        alignItems: Align.Center),
+                    style: () => Sx.Styles(
+                        flexDirection: FlexDirection.Row,
+                        gapColumn: 6,
+                        flexShrink: 0,
+                        alignItems: Align.Center
+                    ),
                     children:
                     [
-                        Sx.View(style: () => Sx.Styles(flexGrow: 1, flexShrink: 1), children:
-                        [
-                            Sx.TextInput(
-                                style: () => Sx.Styles(width: MeasurementWidthHeight.Percent(100),
-                                    minHeight: 30,
-                                    paddingTop: 6, paddingBottom: 6, paddingLeft: 8, paddingRight: 8,
-                                    backgroundColor: new Color(255, 255, 255, 16),
-                                    borderTop: 1, borderBottom: 1, borderLeft: 1, borderRight: 1,
-                                    borderColor: Border, borderRadius: 6),
-                                text: () => ChatInput.Value,
-                                onchange: value => ChatInput.Value = value,
-                                placeholder: () => "Message...",
-                                // Enter submits, so the field behaves like a chat box.
-                                onsubmit: _ => Send(actions))
-                        ]),
-                        ActionButton("SEND", () => Send(actions), small: true,
-                            disabled: () => !lobby.Connected.Value)
-                    ])
-            ]);
+                        Sx.View(
+                            style: () => Sx.Styles(flexGrow: 1, flexShrink: 1),
+                            children:
+                            [
+                                Sx.TextInput(
+                                    style: () => Sx.Styles(
+                                        width: 100.Percent(),
+                                        minHeight: 30,
+                                        paddingTop: 6,
+                                        paddingBottom: 6,
+                                        paddingLeft: 8,
+                                        paddingRight: 8,
+                                        backgroundColor: new Color(255, 255, 255, 16),
+                                        borderTop: 1,
+                                        borderBottom: 1,
+                                        borderLeft: 1,
+                                        borderRight: 1,
+                                        borderColor: Border,
+                                        borderRadius: 6
+                                    ),
+                                    text: () => ChatInput.Value,
+                                    onchange: value => ChatInput.Value = value,
+                                    placeholder: () => "Message...",
+                                    // Enter submits, so the field behaves like a chat box.
+                                    onsubmit: _ => Send(actions)
+                                )
+                            ]
+                        ),
+                        ActionButton(
+                            "SEND",
+                            () => Send(actions),
+                            small: true,
+                            disabled: () => !lobby.Connected.Value
+                        )
+                    ]
+                )
+            ]
+        );
     }
 
     private static void Send(Actions actions)
@@ -305,59 +478,117 @@ public static class LobbyView
         var stages = AvailableStages();
 
         return Sx.View(
-            style: () => Sx.Styles(position: Position.Absolute, left: 0, top: 0, right: 0, bottom: 0,
+            style: () => Sx.Styles(
+                position: Position.Absolute,
+                left: 0,
+                top: 0,
+                right: 0,
+                bottom: 0,
                 backgroundColor: new Color(3, 8, 20, 200),
-                alignItems: Align.Center, justifyContent: Justify.Center),
+                alignItems: Align.Center,
+                justifyContent: Justify.Center
+            ),
             children:
             [
                 Sx.View(
-                    style: () => Sx.Styles(width: 460, flexDirection: FlexDirection.Column, gapRow: 10,
-                        backgroundColor: PanelColor, borderTop: 1, borderBottom: 1, borderLeft: 1, borderRight: 1,
-                        borderColor: Border, borderRadius: 10, paddingTop: 18, paddingBottom: 16,
-                        paddingLeft: 20, paddingRight: 20),
+                    style: () => Sx.Styles(
+                        width: 460,
+                        flexDirection: FlexDirection.Column,
+                        gapRow: 10,
+                        backgroundColor: PanelColor,
+                        borderTop: 1,
+                        borderBottom: 1,
+                        borderLeft: 1,
+                        borderRight: 1,
+                        borderColor: Border,
+                        borderRadius: 10,
+                        paddingTop: 18,
+                        paddingBottom: 16,
+                        paddingLeft: 20,
+                        paddingRight: 20
+                    ),
                     children:
                     [
-                        Sx.Text(style: () => Sx.TextStyles(fontSize: 20, fontFamily: FontFamily.Adventure,
-                            fontStyle: FontStyle.Bold, foregroundColor: Blue), text: () => "CREATE GAME"),
-                        Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
-                            text: () => "Stage"),
-                        Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 4,
-                                maxHeight: 220, overflow: Overflow.Scroll),
+                        Sx.Text(
+                            style: () => Sx.TextStyles(
+                                fontSize: 20,
+                                fontFamily: FontFamily.Adventure,
+                                fontStyle: FontStyle.Bold,
+                                foregroundColor: Blue
+                            ),
+                            text: () => "CREATE GAME"
+                        ),
+                        Sx.Text(
+                            style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                            text: () => "Stage"
+                        ),
+                        Sx.View(
+                            style: () => Sx.Styles(
+                                flexDirection: FlexDirection.Column,
+                                gapRow: 4,
+                                maxHeight: 220,
+                                overflow: Overflow.Scroll
+                            ),
                             children: Sx.For(
                                 each: () => stages,
-                                row: (stage, _) => StageOption(stage, actions))),
-                        Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
-                            text: () => $"Max players: {lobby.MaxPlayers.Value}"),
+                                row: (stage, _) => StageOption(stage, actions)
+                            )
+                        ),
+                        Sx.Text(
+                            style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                            text: () => $"Max players: {lobby.MaxPlayers.Value}"
+                        ),
                         Sx.View(
                             style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6),
                             children: Controls.Slider(
                                 () => lobby.MaxPlayers.Value,
                                 value => actions.SetMaxPlayers((int)value),
-                                2, MatchGameplayInfo.MaxPlayers, 1)),
+                                2,
+                                MatchGameplayInfo.MaxPlayers,
+                                1
+                            )
+                        ),
 
-                        Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
-                            text: () => "Bots (they fill the empty slots)"),
+                        Sx.Text(
+                            style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                            text: () => "Bots (they fill the empty slots)"
+                        ),
                         Sx.View(
                             style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6),
                             children: Controls.Slider(
                                 () => lobby.BotCount.Value,
                                 value => actions.SetBots((int)value),
-                                0, Math.Max(0, MatchGameplayInfo.MaxPlayers - lobby.MaxPlayers.Value), 1)),
-                        Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
-                            text: () => $"Field: {lobby.MaxPlayers.Value + lobby.BotCount.Value}"),
+                                0,
+                                Math.Max(0, MatchGameplayInfo.MaxPlayers - lobby.MaxPlayers.Value),
+                                1
+                            )
+                        ),
+                        Sx.Text(
+                            style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                            text: () => $"Field: {lobby.MaxPlayers.Value + lobby.BotCount.Value}"
+                        ),
 
-                        ..GamemodeConfigControls(actions),
+                        .. GamemodeConfigControls(actions),
                         Sx.View(
                             style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10, marginTop: 6),
                             children:
                             [
-                                Sx.View(style: () => Sx.Styles(flexGrow: 1), children:
-                                    [ActionButton("CREATE", actions.Create, primary: true)]),
-                                Sx.View(style: () => Sx.Styles(flexGrow: 1), children:
-                                    [ActionButton("CANCEL", actions.CloseCreate)])
-                            ])
-                    ])
-            ]);
+                                Sx.View(
+                                    style: () => Sx.Styles(flexGrow: 1),
+                                    children:
+                                    [ActionButton("CREATE", actions.Create, primary: true)]
+                                ),
+                                Sx.View(
+                                    style: () => Sx.Styles(flexGrow: 1),
+                                    children:
+                                    [ActionButton("CANCEL", actions.CloseCreate)]
+                                )
+                            ]
+                        )
+                    ]
+                )
+            ]
+        );
     }
 
     /// <summary>
@@ -374,22 +605,34 @@ public static class LobbyView
             if (property.Options.Count == 0)
                 continue;
 
-            controls.Add(Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
-                text: () => property.Label));
+            controls.Add(
+                Sx.Text(
+                    style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                    text: () => property.Label
+                )
+            );
 
             var options = new List<Node>();
             foreach (var option in property.Options)
             {
                 var value = option.Value;
-                options.Add(ActionButton(() => option.Label, () => actions.SetConfig(property.Name, value),
-                    small: true,
-                    active: () => lobby.GamemodeConfig.Value.TryGetValue(property.Name, out var chosen)
-                              && chosen == value));
+                options.Add(
+                    ActionButton(
+                        () => option.Label,
+                        () => actions.SetConfig(property.Name, value),
+                        small: true,
+                        active: () => lobby.GamemodeConfig.Value.TryGetValue(property.Name, out var chosen)
+                                      && chosen == value
+                    )
+                );
             }
 
-            controls.Add(Sx.View(
-                style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6),
-                children: [.. options]));
+            controls.Add(
+                Sx.View(
+                    style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6),
+                    children: [.. options]
+                )
+            );
         }
 
         return controls;
@@ -403,13 +646,19 @@ public static class LobbyView
             style: () => Sx.Styles(
                 backgroundColor: lobby.SelectedStage.Value == stage
                     ? Theme.MenuHighlight
-                    : new Color(22, 42, 80, 100)),
+                    : new Color(22, 42, 80, 100)
+            ),
             children:
             [
-                Sx.Text(style: () => Sx.TextStyles(fontSize: 13,
-                    foregroundColor: lobby.SelectedStage.Value == stage ? Blue : TextBlue),
-                    text: () => stage)
-            ]);
+                Sx.Text(
+                    style: () => Sx.TextStyles(
+                        fontSize: 13,
+                        foregroundColor: lobby.SelectedStage.Value == stage ? Blue : TextBlue
+                    ),
+                    text: () => stage
+                )
+            ]
+        );
     }
 
     /// <summary>Stage names for the create dialog.</summary>
@@ -432,58 +681,110 @@ public static class LobbyView
     {
         return Sx.View(
             style: () => Sx.Styles(
-                flexDirection: FlexDirection.Column, flexGrow: width is null ? 1 : 0,
-                flexShrink: 1, minHeight: 0,
+                flexDirection: FlexDirection.Column,
+                flexGrow: width is null ? 1 : 0,
+                flexShrink: 1,
+                minHeight: 0,
                 width: width is { } w ? w : null,
-                gapRow: 8, paddingTop: 10, paddingBottom: 10, paddingLeft: 12, paddingRight: 12,
+                gapRow: 8,
+                paddingTop: 10,
+                paddingBottom: 10,
+                paddingLeft: 12,
+                paddingRight: 12,
                 backgroundColor: new Color(22, 42, 80, 90),
-                borderTop: 1, borderBottom: 1, borderLeft: 1, borderRight: 1,
-                borderColor: new Color(128, 170, 255, 70), borderRadius: 8),
+                borderTop: 1,
+                borderBottom: 1,
+                borderLeft: 1,
+                borderRight: 1,
+                borderColor: new Color(128, 170, 255, 70),
+                borderRadius: 8
+            ),
             children:
             [
-                Sx.Text(style: () => Sx.TextStyles(fontSize: 11, fontStyle: FontStyle.Bold,
-                    foregroundColor: Blue), layout: () => Sx.Styles(flexShrink: 0),
-                    text: () => title),
+                Sx.Text(
+                    style: () => Sx.TextStyles(
+                        fontSize: 11,
+                        fontStyle: FontStyle.Bold,
+                        foregroundColor: Blue
+                    ),
+                    layout: () => Sx.Styles(flexShrink: 0),
+                    text: () => title
+                ),
                 // The panel's height is its parent's, so the list takes the remainder and
                 // scrolls: an unbounded list would push past the panel instead.
-                Sx.View(style: () => Sx.Styles(flexGrow: 1, flexShrink: 1, flexDirection: FlexDirection.Column,
-                        overflow: Overflow.Scroll),
-                    children: [content()])
-            ]);
+                Sx.View(
+                    style: () => Sx.Styles(
+                        flexGrow: 1,
+                        flexShrink: 1,
+                        flexDirection: FlexDirection.Column,
+                        overflow: Overflow.Scroll
+                    ),
+                    children: [content()]
+                )
+            ]
+        );
     }
 
     /// <summary>A clickable row with the menu's hover treatment.</summary>
-    private static View Row(Action<NFMWorld.ClayDom.Events.MouseEvent> onmousedown, Func<Styles> style,
-        params object?[] children)
+    private static View Row(
+        Action<NFMWorld.ClayDom.Events.MouseEvent> onmousedown,
+        Func<Styles> style,
+        params object?[] children
+    )
     {
         var hovered = new Signal<bool>(false);
         return Sx.View(
-            style: () => style().Over(Sx.Styles(
-                paddingTop: 6, paddingBottom: 6, paddingLeft: 8, paddingRight: 8,
-                gapColumn: 10, alignItems: Align.Center,
-                flexDirection: FlexDirection.Row,
-                borderRadius: 6,
-                backgroundColor: hovered.Value ? Theme.MenuHighlight : null)),
+            style: () => style().Over(
+                Sx.Styles(
+                    paddingTop: 6,
+                    paddingBottom: 6,
+                    paddingLeft: 8,
+                    paddingRight: 8,
+                    gapColumn: 10,
+                    alignItems: Align.Center,
+                    flexDirection: FlexDirection.Row,
+                    borderRadius: 6,
+                    backgroundColor: hovered.Value ? Theme.MenuHighlight : null
+                )
+            ),
             onmousedown: onmousedown,
             onmouseenter: _ => hovered.Value = true,
             onmouseleave: _ => hovered.Value = false,
-            children: children);
+            children: children
+        );
     }
 
-    private static Node ActionButton(Func<string> label, Action onPress, bool primary = false, bool small = false,
-        Func<bool>? disabled = null, Func<bool>? active = null)
+    private static Node ActionButton(
+        Func<string> label,
+        Action onPress,
+        bool primary = false,
+        bool small = false,
+        Func<bool>? disabled = null,
+        Func<bool>? active = null
+    )
         => MenuButton(label, onPress, primary, small, disabled, active);
 
-    private static Node ActionButton(string label, Action onPress, bool primary = false, bool small = false,
-        Func<bool>? disabled = null)
+    private static Node ActionButton(
+        string label,
+        Action onPress,
+        bool primary = false,
+        bool small = false,
+        Func<bool>? disabled = null
+    )
         => MenuButton(() => label, onPress, primary, small, disabled, null);
 
     private static Node SmallButton(string label, Action onPress)
         => MenuButton(() => label, onPress, false, true, null, null);
 
     /// <summary>The shared button, restyled into the menu palette.</summary>
-    private static Node MenuButton(Func<string> label, Action onPress, bool primary, bool small,
-        Func<bool>? disabled, Func<bool>? active)
+    private static Node MenuButton(
+        Func<string> label,
+        Action onPress,
+        bool primary,
+        bool small,
+        Func<bool>? disabled,
+        Func<bool>? active
+    )
     {
         return Button.Create(
             label,
@@ -495,8 +796,13 @@ public static class LobbyView
             // the handler is what actually stops the action.
             style: () => Sx.Styles(
                 opacity: disabled?.Invoke() == true ? 0.4f : 1f,
-                borderColor: primary ? Theme.AccentBorder : new Color(128, 170, 255, 170)),
-            textStyle: () => Sx.TextStyles(fontSize: small ? 11 : 13, fontStyle: FontStyle.Bold,
-                foregroundColor: Blue));
+                borderColor: primary ? Theme.AccentBorder : new Color(128, 170, 255, 170)
+            ),
+            textStyle: () => Sx.TextStyles(
+                fontSize: small ? 11 : 13,
+                fontStyle: FontStyle.Bold,
+                foregroundColor: Blue
+            )
+        );
     }
 }

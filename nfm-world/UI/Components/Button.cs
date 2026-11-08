@@ -39,7 +39,8 @@ public static class Button
         bool fullWidth = false,
         bool disabled = false,
         Func<Styles>? style = null,
-        Func<TextStyles>? textStyle = null)
+        Func<TextStyles>? textStyle = null
+    )
     {
         var hovered = new Signal<bool>(false);
 
@@ -66,26 +67,25 @@ public static class Button
                     _ => (hover ? Theme.SurfaceHover : Theme.Surface, Theme.SurfaceBorder)
                 };
 
-                var result = new Styles
-                {
-                    FlexDirection = FlexDirection.Row,
-                    AlignItems = Align.Center,
-                    JustifyContent = Justify.Center,
-                    GapColumn = 6,
-                    GapRow = 6,
-                    PaddingTop = (float)padTop,
-                    PaddingBottom = (float)padBottom,
-                    PaddingLeft = (float)padLeft,
-                    PaddingRight = (float)padRight,
-                    BackgroundColor = background,
-                    BorderTop = 1,
-                    BorderBottom = 1,
-                    BorderLeft = 1,
-                    BorderRight = 1,
-                    BorderColor = border,
-                    BorderRadius = 6,
-                    Width = fullWidth ? MeasurementWidthHeight.Percent(100) : MeasurementWidthHeight.Undefined,
-                };
+                var result = Sx.Styles(
+                    flexDirection: FlexDirection.Row,
+                    alignItems: Align.Center,
+                    justifyContent: Justify.Center,
+                    gapColumn: 6,
+                    gapRow: 6,
+                    paddingTop: padTop,
+                    paddingBottom: padBottom,
+                    paddingLeft: padLeft,
+                    paddingRight: padRight,
+                    backgroundColor: background,
+                    borderTop: 1,
+                    borderBottom: 1,
+                    borderLeft: 1,
+                    borderRight: 1,
+                    borderColor: border,
+                    borderRadius: 6,
+                    width: fullWidth ? 100.Percent() : MeasurementWidthHeight.Undefined
+                );
 
                 // Over only applies what the caller set, so an override that mentions
                 // only, say, MinWidth keeps the variant's padding and border.
@@ -104,8 +104,10 @@ public static class Button
             [
                 Sx.Text(
                     style: () => TextFor(variant, active?.Invoke() ?? false, disabled, textStyle?.Invoke()),
-                    text: label)
-            ]);
+                    text: label
+                )
+            ]
+        );
     }
 
     private static TextStyles TextFor(ButtonVariant variant, bool active, bool disabled, TextStyles? overrides)
@@ -119,8 +121,7 @@ public static class Button
                 _ => Theme.TextPrimary
             };
 
-        TextStyles result = new TextStyles { FontSize = 13, FontStyle = FontStyle.Bold, ForegroundColor = color };
+        var result = Sx.TextStyles(fontSize: 13, fontStyle: FontStyle.Bold, foregroundColor: color);
         return overrides is { } over ? result.Over(over) : result;
     }
-
 }

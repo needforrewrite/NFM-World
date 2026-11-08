@@ -17,8 +17,10 @@ namespace NFMWorld.Library.Test;
 public class SignalsDotnetLeakTests
 {
     private static readonly System.Reflection.FieldInfo CurrentScope =
-        typeof(Signal).GetField("_currentScope",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
+        typeof(Signal).GetField(
+            "_currentScope",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static
+        )!;
 
     private static readonly System.Reflection.PropertyInfo ScopeValue =
         CurrentScope.FieldType.GetProperty("Value")!;
@@ -31,8 +33,11 @@ public class SignalsDotnetLeakTests
     {
         var scopeType = CurrentScope.FieldType.GetGenericArguments()[0];
         var ctor = scopeType.GetConstructor(
-            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
-            [scopeType])!;
+            System.Reflection.BindingFlags.Public
+            | System.Reflection.BindingFlags.NonPublic
+            | System.Reflection.BindingFlags.Instance,
+            [scopeType]
+        )!;
         ScopeValue.SetValue(CurrentScope.GetValue(null), ctor.Invoke([null]));
     }
 
@@ -49,7 +54,12 @@ public class SignalsDotnetLeakTests
                    ?? root.GetType().GetField("<Next>k__BackingField", Private);
         object? node = root;
         var count = 0;
-        while (node is not null && count < 100_000) { count++; node = next?.GetValue(node); }
+        while (node is not null && count < 100_000)
+        {
+            count++;
+            node = next?.GetValue(node);
+        }
+
         return count;
     }
 
@@ -67,10 +77,12 @@ public class SignalsDotnetLeakTests
         PinScope();
 
         var mounted = Renderer.Mount(() => Sx.View(
-            style: () => Sx.Styles(width: "100%"),
-            children: Enumerable.Range(0, 4)
-                .Select(i => (object?)Sx.Text(text: () => $"{value.Value}-{i}"))
-                .ToArray()));
+                style: () => Sx.Styles(width: 100.Percent()),
+                children: Enumerable.Range(0, 4)
+                    .Select(i => (object?)Sx.Text(text: () => $"{value.Value}-{i}"))
+                    .ToArray()
+            )
+        );
 
         for (var i = 0; i < 200; i++)
         {
@@ -78,8 +90,11 @@ public class SignalsDotnetLeakTests
             Renderer.Flush();
         }
 
-        Assert.IsLessThan(40, Observers(),
-            "each compute left an observer behind on the scope, so every signal read fans out to all of them");
+        Assert.IsLessThan(
+            40,
+            Observers(),
+            "each compute left an observer behind on the scope, so every signal read fans out to all of them"
+        );
 
         mounted.Dispose();
         ClearScope();

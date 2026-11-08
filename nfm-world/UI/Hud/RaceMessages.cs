@@ -15,10 +15,12 @@ public sealed class RaceMessages : Component
 {
     /// <summary>Fraction of the viewport height each line starts at.</summary>
     private const float StuntTop = 0.18f;
+
     private const float StatusTop = 0.22f;
 
     /// <summary>Blink toggles per second, and how far the dark phase dims the colour.</summary>
     private const float BlinkHz = 20f;
+
     private const float BlinkDim = 0.75f;
 
     private readonly IHudData _race;
@@ -30,8 +32,15 @@ public sealed class RaceMessages : Component
         _race = race;
         // Absolute and full-screen for the same reason as RaceOverlays: as a flex child this
         // would be laid out in a row and get no usable bounds.
-        Styles = Sx.Styles(position: Position.Absolute, left: 0, top: 0,
-            width: "100%", height: "100%", flexShrink: 0, pointerEvents: false);
+        Styles = Sx.Styles(
+            position: Position.Absolute,
+            left: 0,
+            top: 0,
+            width: 100.Percent(),
+            height: 100.Percent(),
+            flexShrink: 0,
+            pointerEvents: false
+        );
     }
 
     protected override void RenderContent(Vector2 position, Vector2 size)
@@ -57,9 +66,16 @@ public sealed class RaceMessages : Component
         G.SetColor(ColourFor(value.Kind));
         // Area-relative draw: the height is the text's own line height, so `top` is the baseline.
         var lineHeight = (int)G.GetFontMetrics(font).LineHeight;
-        G.DrawStringOutlinedAligned(value.Text, (int)position.X, (int)(position.Y + size.Y * top),
-            (int)size.X, lineHeight, new Color(0, 0, 0), MathF.Max(1, scale),
-            TextHorizontalAlignment.Center);
+        G.DrawStringOutlinedAligned(
+            value.Text,
+            (int)position.X,
+            (int)(position.Y + size.Y * top),
+            (int)size.X,
+            lineHeight,
+            new Color(0, 0, 0),
+            MathF.Max(1, scale),
+            TextHorizontalAlignment.Center
+        );
     }
 
     private Color ColourFor(HudMessageKind kind)

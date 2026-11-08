@@ -18,7 +18,8 @@ public static class AccountView
         Action<string, string> SignIn,
         Action<string, string> Register,
         Action SignOut,
-        Action Close);
+        Action Close
+    );
 
     private static readonly Signal<bool> Open = new(false);
     private static readonly Signal<int> Tab = new(0);
@@ -72,7 +73,8 @@ public static class AccountView
     {
         return Sx.Show(
             when: () => Open.Value,
-            then: () => Card(actions, signedIn, username));
+            then: () => Card(actions, signedIn, username)
+        );
     }
 
     private static Node Card(Actions actions, Func<bool> signedIn, Func<string> username)
@@ -98,26 +100,39 @@ public static class AccountView
                 borderLeft: 1,
                 borderRight: 1,
                 borderColor: new Color(128, 170, 255, 195),
-                borderRadius: 10),
+                borderRadius: 10
+            ),
             children:
             [
-                Sx.Text(style: () => Sx.TextStyles(fontSize: 20, fontFamily: FontFamily.Adventure,
-                        fontStyle: FontStyle.Bold, foregroundColor: MenuBlue),
-                    text: () => signedIn() ? "ACCOUNT" : Tab.Value == 0 ? "SIGN IN" : "CREATE ACCOUNT"),
+                Sx.Text(
+                    style: () => Sx.TextStyles(
+                        fontSize: 20,
+                        fontFamily: FontFamily.Adventure,
+                        fontStyle: FontStyle.Bold,
+                        foregroundColor: MenuBlue
+                    ),
+                    text: () => signedIn() ? "ACCOUNT" : Tab.Value == 0 ? "SIGN IN" : "CREATE ACCOUNT"
+                ),
 
                 // Signed in: show who it is and offer sign out.
-                Sx.Show(() => signedIn(),
+                Sx.Show(
+                    () => signedIn(),
                     () => Sx.View(
                         style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 10),
                         children:
                         [
-                            Sx.Text(style: () => Sx.TextStyles(fontSize: 14, foregroundColor: MenuBlue),
-                                text: () => username()),
+                            Sx.Text(
+                                style: () => Sx.TextStyles(fontSize: 14, foregroundColor: MenuBlue),
+                                text: () => username()
+                            ),
                             ButtonRow("SIGN OUT", actions.SignOut, primary: false),
                             ButtonRow("CLOSE", actions.Close, primary: true)
-                        ])),
+                        ]
+                    )
+                ),
 
-                Sx.Show(() => !signedIn(),
+                Sx.Show(
+                    () => !signedIn(),
                     () => Sx.View(
                         style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 10),
                         children:
@@ -127,27 +142,49 @@ public static class AccountView
                             // Word-wrap: an archive error is a full sentence, and without it the
                             // line ran out of the card's width.
                             Sx.Text(
-                                style: () => Sx.WrappingText(fontSize: 12,
-                                    foregroundColor: Status.Value.StartsWith("!") ? ErrorRed : MenuBlue),
-                                layout: () => Sx.Styles(width: MeasurementWidthHeight.Percent(100)),
-                                text: () => Status.Value.TrimStart('!')),
+                                style: () => Sx.WrappingText(
+                                    fontSize: 12,
+                                    foregroundColor: Status.Value.StartsWith("!") ? ErrorRed : MenuBlue
+                                ),
+                                layout: () => Sx.Styles(width: 100.Percent()),
+                                text: () => Status.Value.TrimStart('!')
+                            ),
                             Sx.View(
                                 style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10),
                                 children:
                                 [
-                                    Sx.View(style: () => Sx.Styles(flexGrow: 1),
-                                        children: [ButtonRow(
-                                            () => Busy.Value ? "..." : Tab.Value == 0 ? "SIGN IN" : "CREATE",
-                                            () => Submit(actions), primary: true)]),
-                                    Sx.View(style: () => Sx.Styles(flexGrow: 1),
-                                        children: [ButtonRow(
-                                            () => Tab.Value == 0 ? "CREATE ACCOUNT" : "BACK TO SIGN IN",
-                                            () => Tab.Value = Tab.Value == 0 ? 1 : 0)]),
-                                    Sx.View(style: () => Sx.Styles(flexGrow: 1),
-                                        children: [ButtonRow("CANCEL", actions.Close)])
-                                ])
-                        ]))
-            ]);
+                                    Sx.View(
+                                        style: () => Sx.Styles(flexGrow: 1),
+                                        children:
+                                        [
+                                            ButtonRow(
+                                                () => Busy.Value ? "..." : Tab.Value == 0 ? "SIGN IN" : "CREATE",
+                                                () => Submit(actions),
+                                                primary: true
+                                            )
+                                        ]
+                                    ),
+                                    Sx.View(
+                                        style: () => Sx.Styles(flexGrow: 1),
+                                        children:
+                                        [
+                                            ButtonRow(
+                                                () => Tab.Value == 0 ? "CREATE ACCOUNT" : "BACK TO SIGN IN",
+                                                () => Tab.Value = Tab.Value == 0 ? 1 : 0
+                                            )
+                                        ]
+                                    ),
+                                    Sx.View(
+                                        style: () => Sx.Styles(flexGrow: 1),
+                                        children: [ButtonRow("CANCEL", actions.Close)]
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+                )
+            ]
+        );
     }
 
     private static void Submit(Actions actions)
@@ -180,39 +217,62 @@ public static class AccountView
                 Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: MenuBlue), text: () => label),
                 Sx.TextInput(
                     style: () => Sx.Styles(
-                        width: MeasurementWidthHeight.Percent(100),
+                        width: 100.Percent(),
                         // The inner text collapses to ~0 high when the field is empty, so the
                         // input's own size has to come from minHeight, not its content.
                         minHeight: FieldHeight,
-                        paddingTop: 8, paddingBottom: 8, paddingLeft: 10, paddingRight: 10,
+                        paddingTop: 8,
+                        paddingBottom: 8,
+                        paddingLeft: 10,
+                        paddingRight: 10,
                         backgroundColor: new Color(255, 255, 255, 16),
-                        borderTop: 1, borderBottom: 1, borderLeft: 1, borderRight: 1,
+                        borderTop: 1,
+                        borderBottom: 1,
+                        borderLeft: 1,
+                        borderRight: 1,
                         borderColor: new Color(128, 170, 255, 90),
-                        borderRadius: 6),
+                        borderRadius: 6
+                    ),
                     text: () => value.Value,
                     onchange: v => value.Value = v,
                     maskCharacter: password ? '*' : null,
                     // Enter submits, so the form behaves like a form.
-                    onsubmit: _ => value.Value = value.Value)
-            ]);
+                    onsubmit: _ => value.Value = value.Value
+                )
+            ]
+        );
     }
 
     private static Node ButtonRow(Func<string> label, Action onPress, bool primary = false)
     {
         return Sx.View(
             style: () => Sx.Styles(
-                paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 12,
+                paddingTop: 8,
+                paddingBottom: 8,
+                paddingLeft: 12,
+                paddingRight: 12,
                 alignItems: Align.Center,
                 backgroundColor: primary ? new Color(50, 90, 160, 220) : new Color(22, 42, 80, 160),
-                borderTop: 1, borderBottom: 1, borderLeft: 1, borderRight: 1,
+                borderTop: 1,
+                borderBottom: 1,
+                borderLeft: 1,
+                borderRight: 1,
                 borderColor: new Color(128, 170, 255, 170),
-                borderRadius: 6),
+                borderRadius: 6
+            ),
             onmousedown: _ => onPress(),
             children:
             [
-                Sx.Text(style: () => Sx.TextStyles(fontSize: 13, fontStyle: FontStyle.Bold,
-                    foregroundColor: MenuBlue), text: label)
-            ]);
+                Sx.Text(
+                    style: () => Sx.TextStyles(
+                        fontSize: 13,
+                        fontStyle: FontStyle.Bold,
+                        foregroundColor: MenuBlue
+                    ),
+                    text: label
+                )
+            ]
+        );
     }
 
     private static Node ButtonRow(string label, Action onPress, bool primary = false)

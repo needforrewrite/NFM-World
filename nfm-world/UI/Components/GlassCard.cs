@@ -9,21 +9,20 @@ namespace NFMWorld.UI.Components;
 /// </summary>
 public static class GlassCardUi
 {
-    private static readonly Styles Wrapper = new()
-    {
-        BackgroundColor = new Color(0, 0, 0, 51),
-        BorderTop = 1,
-        BorderBottom = 1,
-        BorderLeft = 1,
-        BorderRight = 1,
-        BorderColor = Theme.Transparent,
-        PaddingTop = 16,
-        PaddingBottom = 16,
-        PaddingLeft = 20,
-        PaddingRight = 20,
-        Position = Position.Relative,
-        Overflow = Overflow.Hidden,
-    };
+    private static readonly Styles Wrapper = Sx.Styles(
+        backgroundColor: new Color(0, 0, 0, 51),
+        borderTop: 1,
+        borderBottom: 1,
+        borderLeft: 1,
+        borderRight: 1,
+        borderColor: Theme.Transparent,
+        paddingTop: 16,
+        paddingBottom: 16,
+        paddingLeft: 20,
+        paddingRight: 20,
+        position: Position.Relative,
+        overflow: Overflow.Hidden
+    );
 
     /// <summary>
     /// A card with a 3px coloured accent bar. <paramref name="color"/> and
@@ -34,11 +33,13 @@ public static class GlassCardUi
         Func<Color>? color = null,
         Func<Styles>? style = null,
         Action<ClayDom.Events.MouseEvent>? onmousedown = null,
-        params object?[] children)
+        params object?[] children
+    )
         => Sx.View(
             style: () => Merge(style?.Invoke(), color?.Invoke()),
             onmousedown: onmousedown,
-            children: children);
+            children: children
+        );
 
     /// <summary>
     /// The card's own style, then the caller's overrides last. <see cref="Styles.Over"/>
@@ -62,82 +63,91 @@ public static class GlassCardUi
         string label = "",
         Func<double>? value = null,
         Color? color = null,
-        float height = 8)
+        float height = 8
+    )
     {
         var fillColor = color ?? Theme.Accent;
 
-        var fill = Sx.View(style: () => new Styles
-        {
-            Width = MeasurementWidthHeight.Percent((float)(Clamped(value) * 100)),
-            Height = MeasurementWidthHeight.Percent(100),
-            BackgroundColor = fillColor,
-            BorderRadius = height / 2,
-        });
+        var fill = Sx.View(
+            style: () => Sx.Styles(
+                width: ((float)(Clamped(value) * 100)).Percent(),
+                height: 100.Percent(),
+                backgroundColor: fillColor,
+                borderRadius: height / 2
+            )
+        );
 
         return Sx.View(
-            style: () => new Styles { MarginBottom = 8, FlexDirection = FlexDirection.Column, Width = MeasurementWidthHeight.Percent(100) },
+            style: () => Sx.Styles(marginBottom: 8, flexDirection: FlexDirection.Column, width: 100.Percent()),
             children:
             [
                 Sx.View(
-                    style: () => new Styles { JustifyContent = Justify.SpaceBetween, MarginBottom = 4 },
+                    style: () => Sx.Styles(justifyContent: Justify.SpaceBetween, marginBottom: 4),
                     children:
                     [
-                        Sx.Text(style: () => SmallLabel, layout: () => new Styles { FlexShrink = 0 }, children: label),
+                        Sx.Text(style: () => SmallLabel, layout: () => Sx.Styles(flexShrink: 0), children: label),
                         Sx.Text(
                             style: () => SmallLabel,
-                            layout: () => new Styles { FlexShrink = 0 },
-                            text: () => $"{Math.Floor(Clamped(value) * 100 + 0.5)}%")
-                    ]),
+                            layout: () => Sx.Styles(flexShrink: 0),
+                            text: () => $"{Math.Floor(Clamped(value) * 100 + 0.5)}%"
+                        )
+                    ]
+                ),
                 Sx.View(
-                    style: () => new Styles
-                    {
-                        Width = MeasurementWidthHeight.Percent(100),
-                        Height = height,
-                        BackgroundColor = new Color(255, 255, 255, 26),
-                        BorderRadius = height / 2,
-                        Overflow = Overflow.Hidden,
-                    },
-                    children: fill)
-            ]);
+                    style: () => Sx.Styles(
+                        width: 100.Percent(),
+                        height: height,
+                        backgroundColor: new Color(255, 255, 255, 26),
+                        borderRadius: height / 2,
+                        overflow: Overflow.Hidden
+                    ),
+                    children: fill
+                )
+            ]
+        );
     }
 
     /// <summary>Large centre-screen text, split on newlines.</summary>
-    public static View CenterText(Func<string?>? text = null, float size = 64, Color? color = null,
-        Func<Color>? colorAccessor = null)
+    public static View CenterText(
+        Func<string?>? text = null,
+        float size = 64,
+        Color? color = null,
+        Func<Color>? colorAccessor = null
+    )
     {
         var textColor = color ?? Theme.TextSecondary;
 
         return Sx.View(
-            style: () => new Styles
-            {
-                Position = Position.Absolute,
-                Top = 0,
-                Left = 0,
-                Right = 0,
-                Bottom = 0,
-                FlexDirection = FlexDirection.Column,
-                AlignItems = Align.Center,
-                JustifyContent = Justify.Center,
-            },
+            style: () => Sx.Styles(
+                position: Position.Absolute,
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                flexDirection: FlexDirection.Column,
+                alignItems: Align.Center,
+                justifyContent: Justify.Center
+            ),
             children: Sx.For(
                 each: () => SplitLines(text?.Invoke() ?? ""),
                 row: (line, _) => Sx.Text(
-                    style: () => new TextStyles
-                    {
-                        FontSize = size,
-                        FontStyle = FontStyle.Bold,
-                        ForegroundColor = colorAccessor?.Invoke() ?? textColor,
-                        HorizontalAlignment = TextHorizontalAlignment.Center,
-                    },
-                    text: () => line)));
+                    style: () => Sx.TextStyles(
+                        fontSize: size,
+                        fontStyle: FontStyle.Bold,
+                        foregroundColor: colorAccessor?.Invoke() ?? textColor,
+                        horizontalAlignment: TextHorizontalAlignment.Center
+                    ),
+                    text: () => line
+                )
+            )
+        );
     }
 
-    private static readonly TextStyles SmallLabel = new()
-    {
-        FontSize = 12,
-        ForegroundColor = new Color(255, 255, 255, 178),
-        StrokeColor = new Color(100, 100, 100, 102),
-    };
+    private static readonly TextStyles SmallLabel = Sx.TextStyles(
+        fontSize: 12,
+        foregroundColor: new Color(255, 255, 255, 178),
+        strokeColor: new Color(100, 100, 100, 102)
+    );
 
     private static double Clamped(Func<double>? value)
         => Math.Clamp(value?.Invoke() ?? 0, 0, 1);

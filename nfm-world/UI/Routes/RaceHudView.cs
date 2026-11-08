@@ -18,17 +18,26 @@ public static class RaceHudView
         var race = UiState.Race;
         race.Skin.Value = SettingsMenu.HudSkin;
         return Sx.View(
-            style: () => Sx.Styles(width: "100%", height: "100%", position: Position.Relative),
+            style: () => Sx.Styles(width: 100.Percent(), height: 100.Percent(), position: Position.Relative),
             children:
             [
                 Sx.Switch(race.Skin, HudSkinRegistry.Branches(race), () => HudSkinRegistry.BuildDefault(race)),
                 new RaceOverlays(race, () => race.Skin.Value == "world"),
                 new RaceMessages(race),
-                Sx.Show(() => HudSkinRegistry.ShowDefaultMessages(race.Skin.Value) && race.Message.Length > 0,
-                    () => new HudScaleHost(GlassCardUi.CenterText(() => race.Message, 24,
-                        colorAccessor: () => HudSkinRegistry.UsesClassicSkin(race.Skin.Value)
-                            ? HudColorSnap.Apply(Theme.TextSecondary, race.StageSnap.Value) : Theme.TextSecondary))),
+                Sx.Show(
+                    () => HudSkinRegistry.ShowDefaultMessages(race.Skin.Value) && race.Message.Length > 0,
+                    () => new HudScaleHost(
+                        GlassCardUi.CenterText(
+                            () => race.Message,
+                            24,
+                            colorAccessor: () => HudSkinRegistry.UsesClassicSkin(race.Skin.Value)
+                                ? HudColorSnap.Apply(Theme.TextSecondary, race.StageSnap.Value)
+                                : Theme.TextSecondary
+                        )
+                    )
+                ),
                 Sx.Show(() => race.Paused.Value, () => PauseMenuView.Build(actions))
-            ]);
+            ]
+        );
     }
 }

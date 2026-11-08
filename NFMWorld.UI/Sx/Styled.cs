@@ -32,7 +32,7 @@ public struct StyledStyle()
 /// <code>
 /// private static readonly Func&lt;Func&lt;Styles&gt;?, View&gt; Panel = Sx.Styled(Sx.View, new StyledStyle
 /// {
-///     Base = new Styles { FlexDirection = FlexDirection.Column, GapRow = 6 },
+///     Base = Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 6),
 /// });
 /// ...
 /// Panel(children: ...);
@@ -46,13 +46,15 @@ public delegate View StyledView(
     Func<Styles>? style = null,
     string? name = null,
     Action<MouseEvent>? onmousedown = null,
-    params object?[] children);
+    params object?[] children
+);
 
 /// <summary>A styled <see cref="Text"/> factory.</summary>
 public delegate Text StyledText(
     Func<TextStyles>? style = null,
     Func<string?>? text = null,
-    params object?[] children);
+    params object?[] children
+);
 
 public static class Styled
 {
@@ -71,7 +73,7 @@ public static class Styled
             Text = textStyle,
             HoverText = hoverTextStyle,
         };
-        
+
         return (style, name, onmousedown, children) =>
         {
             var hovered = new Signal<bool>(false);
@@ -82,7 +84,8 @@ public static class Styled
                 onmousedown: onmousedown,
                 onmouseenter: definition.Hover is null ? null : _ => hovered.Value = true,
                 onmouseleave: definition.Hover is null ? null : _ => hovered.Value = false,
-                children: children);
+                children: children
+            );
         };
     }
 
@@ -91,7 +94,8 @@ public static class Styled
         Styles baseStyle = default,
         Styles? hoverStyle = null,
         TextStyles textStyle = default,
-        TextStyles? hoverTextStyle = null)
+        TextStyles? hoverTextStyle = null
+    )
     {
         var definition = new StyledStyle
         {
@@ -108,7 +112,8 @@ public static class Styled
             return Sx.Text(
                 style: () => MergeText(definition, style?.Invoke(), hovered.Value),
                 text: text,
-                children: children);
+                children: children
+            );
         };
     }
 
@@ -137,5 +142,4 @@ public static class Styled
 
         return merged;
     }
-
 }

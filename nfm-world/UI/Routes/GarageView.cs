@@ -15,11 +15,13 @@ namespace NFMWorld.UI.Routes;
 public static class GarageView
 {
     internal const int SidebarWidth = 340;
+
     /// <summary>What the garage asks the game to do. The phase fills these in.</summary>
     public sealed record Actions(
         Action<string, string> CarSelected,
         Action<string> CollectionSelected,
-        Action Back);
+        Action Back
+    );
 
     private static readonly Signal<string> SearchQuery = new("");
 
@@ -37,67 +39,78 @@ public static class GarageView
     // which the renderer's reference check turns into zero property writes. Only layout
     // is set here - the card's padding comes from GlassCard's own style, and `Over`
     // leaves it alone because these never mention it.
-    private static readonly Styles CardSelected = new() { MarginBottom = 16, Opacity = 1, FlexDirection = FlexDirection.Column, FlexShrink = 0 };
-    private static readonly Styles CardUnselected = new() { MarginBottom = 16, Opacity = 0.7f, FlexDirection = FlexDirection.Column, FlexShrink = 0 };
+    private static readonly Styles CardSelected = Sx.Styles(
+        marginBottom: 16,
+        opacity: 1,
+        flexDirection: FlexDirection.Column,
+        flexShrink: 0
+    );
+
+    private static readonly Styles CardUnselected = Sx.Styles(
+        marginBottom: 16,
+        opacity: 0.7f,
+        flexDirection: FlexDirection.Column,
+        flexShrink: 0
+    );
 
     public static Node Build(Actions actions)
     {
         return Sx.View(
-            style: () => new Styles
-            {
-                Width = MeasurementWidthHeight.Percent(100),
-                Height = MeasurementWidthHeight.Percent(100),
-                FlexDirection = FlexDirection.Row,
-            },
+            style: () => Sx.Styles(
+                width: 100.Percent(),
+                height: 100.Percent(),
+                flexDirection: FlexDirection.Row
+            ),
             children:
             [
                 Sx.View(
-                    style: () => new Styles
-                    {
-                        Width = SidebarWidth,
-                        Height = MeasurementWidthHeight.Percent(100),
-                        PaddingTop = 32,
-                        PaddingBottom = 32,
-                        PaddingLeft = 24,
-                        PaddingRight = 24,
-                        FlexDirection = FlexDirection.Column,
-                        GapColumn = 16,
-                        GapRow = 16,
-                        BackgroundColor = new Color(0, 0, 0, 77),
-                        BorderRight = 1,
-                        BorderColor = new Color(255, 255, 255, 15),
-                    },
+                    style: () => Sx.Styles(
+                        width: SidebarWidth,
+                        height: 100.Percent(),
+                        paddingTop: 32,
+                        paddingBottom: 32,
+                        paddingLeft: 24,
+                        paddingRight: 24,
+                        flexDirection: FlexDirection.Column,
+                        gapColumn: 16,
+                        gapRow: 16,
+                        backgroundColor: new Color(0, 0, 0, 77),
+                        borderRight: 1,
+                        borderColor: new Color(255, 255, 255, 15)
+                    ),
                     children:
                     [
-                        Sx.Text(style: () => new TextStyles { FontSize = 28, FontStyle = FontStyle.Bold }, text: () => "Garage"),
+                        Sx.Text(style: () => Sx.TextStyles(fontSize: 28, fontStyle: FontStyle.Bold), text: () => "Garage"),
                         StatsPanel(),
                         SearchBox(actions),
                         CollectionList(actions),
 
                         Button.Create(
                             label: () => "← Back to Menu",
-                            onPress: actions.Back)
-                    ])
-            ]);
+                            onPress: actions.Back
+                        )
+                    ]
+                )
+            ]
+        );
     }
 
     private static Node SearchBox(Actions actions) => Sx.TextInput(
-        style: () => new Styles
-        {
-            Width = MeasurementWidthHeight.Percent(100),
-            PaddingTop = 10,
-            PaddingBottom = 10,
-            PaddingLeft = 14,
-            PaddingRight = 14,
-            BackgroundColor = new Color(255, 255, 255, 20),
-            BorderTop = 1,
-            BorderBottom = 1,
-            BorderLeft = 1,
-            BorderRight = 1,
-            BorderColor = new Color(255, 255, 255, 31),
-            BorderRadius = 8,
-            FlexShrink = 0,
-        },
+        style: () => Sx.Styles(
+            width: 100.Percent(),
+            paddingTop: 10,
+            paddingBottom: 10,
+            paddingLeft: 14,
+            paddingRight: 14,
+            backgroundColor: new Color(255, 255, 255, 20),
+            borderTop: 1,
+            borderBottom: 1,
+            borderLeft: 1,
+            borderRight: 1,
+            borderColor: new Color(255, 255, 255, 31),
+            borderRadius: 8,
+            flexShrink: 0
+        ),
         text: () => SearchQuery.Value,
         onchange: value => SearchQuery.Value = value,
         placeholder: () => "Search cars...",
@@ -109,38 +122,42 @@ public static class GarageView
                 actions.CarSelected(first.Id, first.Cars[0].FileName);
                 SearchQuery.Value = "";
             }
-        });
+        }
+    );
 
     private static View StatsPanel() => Sx.View(
-        style: () => new Styles { FlexShrink = 0, AlignItems = Align.Center, JustifyContent = Justify.Center },
+        style: () => Sx.Styles(flexShrink: 0, alignItems: Align.Center, justifyContent: Justify.Center),
         children:
         [
             Sx.Show(
                 when: () => UiState.Garage.CurrentCar.Value is not null,
                 then: () => StatsCard(),
                 otherwise: () => Sx.Text(
-                    style: () => new TextStyles { FontSize = 18, ForegroundColor = Theme.TextFaint },
-                    text: () => "Select a car to view stats"))
-        ]);
+                    style: () => Sx.TextStyles(fontSize: 18, foregroundColor: Theme.TextFaint),
+                    text: () => "Select a car to view stats"
+                )
+            )
+        ]
+    );
 
     private static View StatsCard()
     {
         return Sx.View(
-            style: () => new Styles
-            {
-                Width = 280,
-                PaddingTop = 24,
-                PaddingBottom = 24,
-                PaddingLeft = 24,
-                PaddingRight = 24,
-                FlexDirection = FlexDirection.Column,
-            },
+            style: () => Sx.Styles(
+                width: 280,
+                paddingTop: 24,
+                paddingBottom: 24,
+                paddingLeft: 24,
+                paddingRight: 24,
+                flexDirection: FlexDirection.Column
+            ),
             children:
             [
                 Sx.Text(
-                    style: () => new TextStyles { FontSize = 18, FontStyle = FontStyle.Bold, ForegroundColor = Theme.Accent },
-                    layout: () => new Styles { MarginBottom = 16 },
-                    text: () => UiState.Garage.CurrentCar.Value?.Name ?? ""),
+                    style: () => Sx.TextStyles(fontSize: 18, fontStyle: FontStyle.Bold, foregroundColor: Theme.Accent),
+                    layout: () => Sx.Styles(marginBottom: 16),
+                    text: () => UiState.Garage.CurrentCar.Value?.Name ?? ""
+                ),
                 Stat("Top Speed", c => c.TopSpeed, new Color(255, 110, 64)),
                 Stat("Acceleration", c => c.Acceleration, new Color(255, 215, 64)),
                 Stat("Handling", c => c.Handling, new Color(105, 240, 174)),
@@ -150,7 +167,8 @@ public static class GarageView
                 Stat("Stunting", c => c.Stunting, new Color(255, 110, 64)),
                 Stat("Hypergliding", c => c.Hypergliding, new Color(124, 77, 255)),
                 Stat("AB'ing", c => c.Abing, new Color(68, 138, 255))
-            ]);
+            ]
+        );
     }
 
     private static View Stat(string label, Func<CarStatsViewModel, double> read, Color color)
@@ -161,39 +179,43 @@ public static class GarageView
         var filtered = Sx.Computed(FilterCollections);
 
         return Sx.View(
-            style: () => new Styles
-            {
-                FlexGrow = 1,
-                FlexDirection = FlexDirection.Column,
-                Overflow = Overflow.Scroll,
-                GapColumn = 8,
-                GapRow = 8,
-            },
+            style: () => Sx.Styles(
+                flexGrow: 1,
+                flexDirection: FlexDirection.Column,
+                overflow: Overflow.Scroll,
+                gapColumn: 8,
+                gapRow: 8
+            ),
             children:
             [
                 Sx.For(
                     each: () => filtered.Value,
                     row: (collection, _) => Sx.View(
-                        style: () => new Styles { FlexDirection = FlexDirection.Column, FlexShrink = 0 },
+                        style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0),
                         children:
                         [
                             CollectionSection(collection.Id, actions),
                             Sx.For(
                                 each: () => collection.Cars,
-                                row: (car, _) => CarCard(car, collection.Id, actions))
-                        ])),
+                                row: (car, _) => CarCard(car, collection.Id, actions)
+                            )
+                        ]
+                    )
+                ),
                 Sx.Show(
                     when: () => SearchQuery.Value.Trim().Length > 0 && filtered.Value.Count == 0,
                     then: () => Sx.Text(
-                        style: () => new TextStyles
-                        {
-                            FontSize = 14,
-                            ForegroundColor = Theme.TextFaint,
-                            HorizontalAlignment = TextHorizontalAlignment.Center,
-                        },
-                        layout: () => new Styles { PaddingTop = 24, PaddingBottom = 24, PaddingLeft = 24, PaddingRight = 24 },
-                        text: () => $"No cars match \"{SearchQuery.Value}\""))
-            ]);
+                        style: () => Sx.TextStyles(
+                            fontSize: 14,
+                            foregroundColor: Theme.TextFaint,
+                            horizontalAlignment: TextHorizontalAlignment.Center
+                        ),
+                        layout: () => Sx.Styles(paddingTop: 24, paddingBottom: 24, paddingLeft: 24, paddingRight: 24),
+                        text: () => $"No cars match \"{SearchQuery.Value}\""
+                    )
+                )
+            ]
+        );
     }
 
     private static View CollectionSection(string id, Actions actions)
@@ -201,24 +223,25 @@ public static class GarageView
         var isActive = () => UiState.Garage.CurrentCollection.Value == id;
 
         return Sx.View(
-            style: () => new Styles
-            {
-                MarginBottom = 6,
-                PaddingTop = 4,
-                PaddingBottom = 4,
-                PaddingLeft = 8,
-                PaddingRight = 8,
-                BorderRadius = 4,
-                BorderLeft = 2,
-                BorderColor = isActive() ? Theme.Accent : Theme.Transparent,
-                BackgroundColor = isActive() ? Theme.AccentSoft : Theme.Transparent,
-                FlexGrow = 1,
-                FlexShrink = 0,
-            },
+            style: () => Sx.Styles(
+                marginBottom: 6,
+                paddingTop: 4,
+                paddingBottom: 4,
+                paddingLeft: 8,
+                paddingRight: 8,
+                borderRadius: 4,
+                borderLeft: 2,
+                borderColor: isActive() ? Theme.Accent : Theme.Transparent,
+                backgroundColor: isActive() ? Theme.AccentSoft : Theme.Transparent,
+                flexGrow: 1,
+                flexShrink: 0
+            ),
             onmousedown: _ => actions.CollectionSelected(id),
             children: Sx.Text(
-                style: () => new TextStyles { FontSize = 12, ForegroundColor = isActive() ? Theme.Accent : Theme.TextFaint },
-                text: () => id));
+                style: () => Sx.TextStyles(fontSize: 12, foregroundColor: isActive() ? Theme.Accent : Theme.TextFaint),
+                text: () => id
+            )
+        );
     }
 
     private static View CarCard(CarStatsViewModel car, string collectionId, Actions actions)
@@ -235,13 +258,16 @@ public static class GarageView
             children:
             [
                 Sx.Text(
-                    style: () => new TextStyles { FontSize = 14, FontStyle = FontStyle.Bold },
-                    layout: () => new Styles { MarginBottom = 4 },
-                    text: () => car.Name),
+                    style: () => Sx.TextStyles(fontSize: 14, fontStyle: FontStyle.Bold),
+                    layout: () => Sx.Styles(marginBottom: 4),
+                    text: () => car.Name
+                ),
                 Sx.Text(
-                    style: () => new TextStyles { FontSize = 11, ForegroundColor = Theme.TextFaint },
-                    text: () => collectionId)
-            ]);
+                    style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.TextFaint),
+                    text: () => collectionId
+                )
+            ]
+        );
     }
 
     private static IReadOnlyList<CarCollectionViewModel> FilterCollections()

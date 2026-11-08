@@ -42,10 +42,10 @@ public static class Sx
         float? flex = null,
         float? flexGrow = null,
         float? flexShrink = null,
-        float? minWidth = null,
-        float? minHeight = null,
-        float? maxWidth = null,
-        float? maxHeight = null,
+        MeasurementWidthHeight? minWidth = null,
+        MeasurementWidthHeight? minHeight = null,
+        MeasurementWidthHeight? maxWidth = null,
+        MeasurementWidthHeight? maxHeight = null,
         float? aspectRatio = null,
         MeasurementWidthHeight? width = null,
         MeasurementWidthHeight? height = null,
@@ -55,23 +55,24 @@ public static class Sx
         MeasurementMarginPosition? left = null,
         MeasurementGap? gapRow = null,
         MeasurementGap? gapColumn = null,
-        float? paddingTop = null,
-        float? paddingBottom = null,
-        float? paddingLeft = null,
-        float? paddingRight = null,
-        float? marginTop = null,
-        float? marginBottom = null,
-        float? marginLeft = null,
-        float? marginRight = null,
-        float? borderTop = null,
-        float? borderBottom = null,
-        float? borderLeft = null,
-        float? borderRight = null,
+        MeasurementPadding? paddingTop = null,
+        MeasurementPadding? paddingBottom = null,
+        MeasurementPadding? paddingLeft = null,
+        MeasurementPadding? paddingRight = null,
+        MeasurementMarginPosition? marginTop = null,
+        MeasurementMarginPosition? marginBottom = null,
+        MeasurementMarginPosition? marginLeft = null,
+        MeasurementMarginPosition? marginRight = null,
+        Pixels? borderTop = null,
+        Pixels? borderBottom = null,
+        Pixels? borderLeft = null,
+        Pixels? borderRight = null,
         Color? backgroundColor = null,
         Color? borderColor = null,
         CornerRadius? borderRadius = null,
         bool? pointerEvents = null,
-        int? zIndex = null)
+        int? zIndex = null
+    )
         => new()
         {
             Visibility = visibility,
@@ -126,7 +127,7 @@ public static class Sx
         => v ?? MeasurementWidthHeight.Undefined;
 
     private static MeasurementWidthHeight ToMeasurementWidthHeight(this float? v)
-        => v is { } p ? p : MeasurementWidthHeight.Undefined;
+        => v ?? MeasurementWidthHeight.Undefined;
 
     private static MeasurementMarginPosition ToMeasurementMarginPosition(this MeasurementMarginPosition? v)
         => v ?? MeasurementMarginPosition.Undefined;
@@ -134,11 +135,11 @@ public static class Sx
     private static MeasurementGap ToMeasurementGap(this MeasurementGap? v)
         => v ?? MeasurementGap.Undefined;
 
-    private static MeasurementPadding ToMeasurementPadding(this float? v)
-        => v is { } p ? p : MeasurementPadding.Undefined;
+    private static MeasurementPadding ToMeasurementPadding(this MeasurementPadding? v)
+        => v ?? MeasurementPadding.Undefined;
 
     private static MeasurementMarginPosition ToMeasurementMarginPosition(this float? v)
-        => v is { } p ? p : MeasurementMarginPosition.Undefined;
+        => v ?? MeasurementMarginPosition.Undefined;
 
     public static TextStyles TextStyles(
         Color? foregroundColor = null,
@@ -149,7 +150,8 @@ public static class Sx
         BreakType? breakType = null,
         OverflowBehavior? overflowBehavior = null,
         TextHorizontalAlignment? horizontalAlignment = null,
-        TextVerticalAlignment? verticalAlignment = null)
+        TextVerticalAlignment? verticalAlignment = null
+    )
         => new()
         {
             ForegroundColor = foregroundColor,
@@ -166,7 +168,8 @@ public static class Sx
     public static NFMWorld.Reactor.TextInputStyles TextInputStyles(
         Color? cursorColor = null,
         Color? selectionColor = null,
-        Color? placeholderColor = null)
+        Color? placeholderColor = null
+    )
         => new()
         {
             CursorColor = cursorColor,
@@ -184,7 +187,8 @@ public static class Sx
         float? fontSize = null,
         FontStyle? fontStyle = null,
         FontFamily? fontFamily = null,
-        TextHorizontalAlignment? horizontalAlignment = null)
+        TextHorizontalAlignment? horizontalAlignment = null
+    )
         => TextStyles(
             foregroundColor: foregroundColor,
             fontFamily: fontFamily,
@@ -192,11 +196,8 @@ public static class Sx
             fontStyle: fontStyle,
             breakType: BreakType.Word,
             overflowBehavior: OverflowBehavior.ContinueVertically,
-            horizontalAlignment: horizontalAlignment);
-
-    private static class Measurement
-    {
-    }
+            horizontalAlignment: horizontalAlignment
+        );
 
     // ── Elements ───────────────────────────────────────────────────────
 
@@ -210,7 +211,8 @@ public static class Sx
         Action<KeyboardEvent>? onkeydown = null,
         int? tabIndex = null,
         Action<View>? onmount = null,
-        params object?[] children)
+        params object?[] children
+    )
     {
         var view = new View();
         ApplyStyle(view, style);
@@ -248,7 +250,8 @@ public static class Sx
         Func<TextStyles>? style = null,
         Func<string?>? text = null,
         Func<Styles>? layout = null,
-        params object?[] children)
+        params object?[] children
+    )
     {
         var node = new Text();
         ApplyTextStyle(node, style);
@@ -268,7 +271,8 @@ public static class Sx
         Func<string?>? placeholder = null,
         Action<string>? onsubmit = null,
         char? maskCharacter = null,
-        params object?[] children)
+        params object?[] children
+    )
     {
         var node = new TextInput();
         ApplyStyle(node, style);
@@ -368,7 +372,7 @@ public static class Sx
     /// with value equality whose other fields change would keep showing its old content,
     /// and two equal items would collapse into one row.
     /// </remarks>
-    public static Node For<T>(Func<IReadOnlyList<T>> each, Func<T, int, object?> row)
+    public static Node For<T>(Func<IReadOnlyList<T>> each, Func<T, int, object?> row) where T : notnull
     {
         var host = FlowHost();
         var scope = new RenderScope();
@@ -447,7 +451,8 @@ public static class Sx
     public static Node Switch<TKey>(
         IReadOnlySignal<TKey> key,
         IReadOnlyDictionary<TKey, Func<Node>> branches,
-        Func<Node>? fallback = null)
+        Func<Node>? fallback = null
+    )
     {
         var host = FlowHost();
         var owner = new RenderScope();
@@ -490,7 +495,7 @@ public static class Sx
 
     // ── Internals ──────────────────────────────────────────────────────
 
-    internal static void ApplyStyle(Component component, Func<Styles>? style)
+    private static void ApplyStyle(Component component, Func<Styles>? style)
     {
         if (style is null)
             return;

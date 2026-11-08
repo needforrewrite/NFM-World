@@ -11,27 +11,24 @@ internal static class WorldSidebar
 {
     private const int MaxRows = 8;
 
-    private static readonly TextStyles Body = new()
-    {
-        FontSize = 13,
-        FontStyle = FontStyle.Bold,
-        ForegroundColor = Theme.MenuTextBlue,
-    };
+    private static readonly TextStyles Body = Sx.TextStyles(
+        fontSize: 13,
+        fontStyle: FontStyle.Bold,
+        foregroundColor: Theme.MenuTextBlue
+    );
 
-    private static readonly TextStyles Dim = new()
-    {
-        FontSize = 13,
-        FontStyle = FontStyle.Bold,
-        ForegroundColor = Theme.MenuDim,
-    };
+    private static readonly TextStyles Dim = Sx.TextStyles(
+        fontSize: 13,
+        fontStyle: FontStyle.Bold,
+        foregroundColor: Theme.MenuDim
+    );
 
-    private static readonly TextStyles Chip = new()
-    {
-        FontSize = 11,
-        FontStyle = FontStyle.Bold,
-        ForegroundColor = Theme.MenuDim,
-        HorizontalAlignment = TextHorizontalAlignment.Center,
-    };
+    private static readonly TextStyles Chip = Sx.TextStyles(
+        fontSize: 11,
+        fontStyle: FontStyle.Bold,
+        foregroundColor: Theme.MenuDim,
+        horizontalAlignment: TextHorizontalAlignment.Center
+    );
 
     /// <param name="tick">Read first in every accessor so the plain racer list is re-read once per frame.</param>
     public static View Build(IHudData race, Func<int> tick)
@@ -48,55 +45,61 @@ internal static class WorldSidebar
             var index = i;
             rows[i] = Sx.View(
                 style: () => At(index) is { } r
-                    ? new Styles
-                    {
-                        AlignItems = Align.Center,
-                        GapColumn = 6,
-                        PaddingTop = 4,
-                        PaddingBottom = 4,
-                        PaddingLeft = 8,
-                        PaddingRight = 8,
-                        BorderRadius = 6,
-                        BackgroundColor = r.IsClient ? Theme.MenuHighlight : Theme.MenuFill,
-                        Opacity = r.Wasted ? 0.5f : 1,
-                    }
-                    : new Styles { Display = Display.None },
+                    ? Sx.Styles(
+                        alignItems: Align.Center,
+                        gapColumn: 6,
+                        paddingTop: 4,
+                        paddingBottom: 4,
+                        paddingLeft: 8,
+                        paddingRight: 8,
+                        borderRadius: 6,
+                        backgroundColor: r.IsClient ? Theme.MenuHighlight : Theme.MenuFill,
+                        opacity: r.Wasted ? 0.5f : 1
+                    )
+                    : Sx.Styles(display: Display.None),
                 children:
                 [
                     Sx.Text(
                         style: () => At(index) is { IsClient: true } ? Body : Dim,
-                        layout: () => new Styles { Width = 18, FlexShrink = 0 },
-                        text: () => At(index) is { } r ? $"{r.Position}" : ""),
+                        layout: () => Sx.Styles(width: 18, flexShrink: 0),
+                        text: () => At(index) is { } r ? $"{r.Position}" : ""
+                    ),
                     Sx.View(
-                        style: () => new Styles { Width = 100, FlexShrink = 0, Overflow = Overflow.Hidden },
+                        style: () => Sx.Styles(width: 100, flexShrink: 0, overflow: Overflow.Hidden),
                         children: Sx.Text(
                             style: () => Body,
-                            text: () => At(index)?.Name)),
+                            text: () => At(index)?.Name
+                        )
+                    ),
                     Sx.View(
-                        style: () => new Styles
-                        {
-                            Width = 34,
-                            Height = 4,
-                            FlexShrink = 0,
-                            BackgroundColor = new Color(255, 255, 255, 26),
-                            BorderRadius = 2,
-                            Overflow = Overflow.Hidden,
-                        },
-                        children: Sx.View(style: () => new Styles
-                        {
-                            Width = MeasurementWidthHeight.Percent(Math.Clamp(At(index)?.Damage ?? 0, 0, 1) * 100),
-                            Height = MeasurementWidthHeight.Percent(100),
-                            BackgroundColor = Theme.Danger,
-                        })),
+                        style: () => Sx.Styles(
+                            width: 34,
+                            height: 4,
+                            flexShrink: 0,
+                            backgroundColor: new Color(255, 255, 255, 26),
+                            borderRadius: 2,
+                            overflow: Overflow.Hidden
+                        ),
+                        children: Sx.View(
+                            style: () => Sx.Styles(
+                                width: (Math.Clamp(At(index)?.Damage ?? 0, 0, 1) * 100).Percent(),
+                                height: 100.Percent(),
+                                backgroundColor: Theme.Danger
+                            )
+                        )
+                    ),
                     Sx.Text(
                         style: () => Chip,
-                        layout: () => new Styles { Width = 14, FlexShrink = 0 },
-                        text: () => At(index) is { LockSlot: > 0 } r ? $"{r.LockSlot % 10}" : "")
-                ]);
+                        layout: () => Sx.Styles(width: 14, flexShrink: 0),
+                        text: () => At(index) is { LockSlot: > 0 } r ? $"{r.LockSlot % 10}" : ""
+                    )
+                ]
+            );
         }
 
         return Sx.View(
-            style: () => new Styles { FlexDirection = FlexDirection.Column, GapRow = 4 },
-            children: rows);
+            style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 4),
+            children: rows
+        );
     }
 }

@@ -1,5 +1,6 @@
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
+using NFMWorld.Reactor.Sx;
 using NFMWorldLibrary;
 
 namespace NFMWorld.UI;
@@ -30,82 +31,79 @@ public static class TestView
         Visibility badgeVisibility = Visibility.Visible;
 
         var counterModulo = counter % 63;
-        
+
         return new View()
         {
             Name = "YogaTest",
-            Styles = new()
-            {
-                FlexDirection = FlexDirection.Column,
-                AlignItems = Align.FlexStart,
-                JustifyContent = Justify.FlexStart,
-                GapRow = 16f,
-                GapColumn = 16f,
-                PaddingTop = 20f,
-                PaddingBottom = 20f,
-                PaddingLeft = 20f,
-                PaddingRight = 20f,
-            },
+            Styles = Sx.Styles(
+                flexDirection: FlexDirection.Column,
+                alignItems: Align.FlexStart,
+                justifyContent: Justify.FlexStart,
+                gapRow: 16f,
+                gapColumn: 16f,
+                paddingTop: 20f,
+                paddingBottom: 20f,
+                paddingLeft: 20f,
+                paddingRight: 20f
+            ),
             Children =
             {
-                Section($"Counter: {counter} — scroll the list and click rows",
+                Section(
+                    $"Counter: {counter} — scroll the list and click rows",
                     font: new Font(FontFamily.Adventure, FontStyle.Bold, 18),
-                    color: new Color(255, 255, 255, 255)),
+                    color: new Color(255, 255, 255, 255)
+                ),
 
                 ScrollList(),
 
-                Section("Nested overflow: hidden (child is wider than the box)",
+                Section(
+                    "Nested overflow: hidden (child is wider than the box)",
                     font: new Font(FontFamily.Adventure, FontStyle.Plain, 16),
-                    color: new Color(180, 180, 180, 255)),
+                    color: new Color(180, 180, 180, 255)
+                ),
 
                 new View()
                 {
                     Name = "ClippedBox",
-                    Styles = new()
-                    {
-                        Width = 200f,
-                        Height = 80f,
-                        Overflow = Overflow.Hidden,
-                        BackgroundColor = new Color(30, 40, 60, 255),
-                        BorderColor = new Color(100, 200, 255, 255),
-                        BorderTop = 2f,
-                        BorderBottom = 2f,
-                        BorderLeft = 2f,
-                        BorderRight = 2f,
-                        BorderTopLeftRadius = 8f,
-                        BorderTopRightRadius = 8f,
-                        BorderBottomLeftRadius = 8f,
-                        BorderBottomRightRadius = 8f,
-                    },
+                    Styles = Sx.Styles(
+                        width: 200f,
+                        height: 80f,
+                        overflow: Overflow.Hidden,
+                        backgroundColor: new Color(30, 40, 60, 255),
+                        borderColor: new Color(100, 200, 255, 255),
+                        borderTop: 2f,
+                        borderBottom: 2f,
+                        borderLeft: 2f,
+                        borderRight: 2f,
+                        borderRadius: 8f
+                    ),
                     Children =
                     {
                         new View()
                         {
-                            Styles = new()
-                            {
-                                Width = 300f,
-                                Height = 40f,
-                                BackgroundColor = new Color(255, 100, 100, 255),
-                            },
+                            Styles = Sx.Styles(
+                                width: 300f,
+                                height: 40f,
+                                backgroundColor: new Color(255, 100, 100, 255)
+                            ),
                         }
                     }
                 },
-            
+
                 // ── Left side ──────────────────────────────────────────
                 new View
                 {
-                    Styles = new Styles()
-                    {
-                        FlexDirection = FlexDirection.Column,
-                        AlignItems = Align.FlexStart,
-                        JustifyContent = Justify.FlexStart,
-                        GapColumn = 16f,
-                        GapRow = 16f,
-                        PaddingTop = 20f,
-                        PaddingBottom = 20f,
-                        PaddingLeft = 20f,
-                        PaddingRight = 20f,
-                    },
+                    Styles = Sx.Styles(
+                        flexDirection: FlexDirection.Column,
+                        alignItems: Align.FlexStart,
+                        justifyContent: Justify.FlexStart,
+                        gapColumn: 16f,
+                        gapRow: 16f,
+                        paddingTop: 20f,
+                        paddingBottom: 20f,
+                        paddingLeft: 20f,
+                        paddingRight: 20f
+                    ),
                     Children =
                     {
                         // Section 1: Basic text bindings
@@ -115,65 +113,82 @@ public static class TestView
                         // Section 2: Inline text with counter
                         new View()
                         {
-                            Styles = new()
-                            {
-                                FlexDirection = FlexDirection.Row,
-                                GapColumn = 4f,
-                                GapRow = 4f,
-                            },
+                            Styles = Sx.Styles(
+                                flexDirection: FlexDirection.Row,
+                                gapColumn: 4f,
+                                gapRow: 4f
+                            ),
                             Children =
                             {
-                                Section(w: $"Counter: {counter}", font: new Font(FontFamily.Adventure, FontStyle.Bold, 18),
-                                    color: new Color(255, 255, 255, 255))
+                                Section(
+                                    w: $"Counter: {counter}",
+                                    font: new Font(FontFamily.Adventure, FontStyle.Bold, 18),
+                                    color: new Color(255, 255, 255, 255)
+                                )
                             }
                         },
 
                         // Section 3: Color swatches
                         new View()
                         {
-                            Styles = new Styles()
-                            {
-                                FlexDirection = FlexDirection.Row,
-                                GapColumn = 8f,
-                                GapRow = 8f,
-                                AlignItems = Align.Center,
-                            },
+                            Styles = Sx.Styles(
+                                flexDirection: FlexDirection.Row,
+                                gapColumn: 8f,
+                                gapRow: 8f,
+                                alignItems: Align.Center
+                            ),
                             Children =
                             {
-                                new View { Styles = new() { BackgroundColor = new Color(255, 0, 0, 255), Width = 24f, Height = 24f } },
-                                new View { Styles = new() { BackgroundColor = new Color(0, 255, 0, 255), Width = 24f, Height = 24f } },
-                                new View { Styles = new() { BackgroundColor = new Color(0, 0, 255, 255), Width = 24f, Height = 24f } },
-                                new View { Styles = new() { BackgroundColor = new Color(255, 255, 0, 255), Width = 24f, Height = 24f } },
-                                Section(w: "Color swatches", font: new Font(FontFamily.Adventure, FontStyle.Plain, 18),
-                                    color: new Color(180, 180, 180, 255), marginLeft: 8f)
+                                new View
+                                {
+                                    Styles = Sx.Styles(backgroundColor: new Color(255, 0, 0, 255), width: 24f, height: 24f)
+                                },
+                                new View
+                                {
+                                    Styles = Sx.Styles(backgroundColor: new Color(0, 255, 0, 255), width: 24f, height: 24f)
+                                },
+                                new View
+                                {
+                                    Styles = Sx.Styles(backgroundColor: new Color(0, 0, 255, 255), width: 24f, height: 24f)
+                                },
+                                new View
+                                {
+                                    Styles = Sx.Styles(backgroundColor: new Color(255, 255, 0, 255), width: 24f, height: 24f)
+                                },
+                                Section(
+                                    w: "Color swatches",
+                                    font: new Font(FontFamily.Adventure, FontStyle.Plain, 18),
+                                    color: new Color(180, 180, 180, 255),
+                                    marginLeft: 8f
+                                )
                             }
                         },
 
                         // Section 4: Visibility binding
                         new View()
                         {
-                            Styles = new Styles()
-                            {
-                                FlexDirection = FlexDirection.Row,
-                                GapColumn = 8f,
-                                GapRow = 8f,
-                                AlignItems = Align.Center,
-                            },
+                            Styles = Sx.Styles(
+                                flexDirection: FlexDirection.Row,
+                                gapColumn: 8f,
+                                gapRow: 8f,
+                                alignItems: Align.Center
+                            ),
                             Children =
                             {
                                 new View()
                                 {
-                                    Styles = new Styles()
-                                    {
-                                        BackgroundColor = new Color(0, 255, 255, 255),
-                                        Width = 16f,
-                                        Height = 16f,
-                                        Visibility = badgeVisibility
-                                    },
+                                    Styles = Sx.Styles(
+                                        backgroundColor: new Color(0, 255, 255, 255),
+                                        width: 16f,
+                                        height: 16f,
+                                        visibility: badgeVisibility
+                                    ),
                                 },
-                                Section(w: "Badge (visibility-bound)",
+                                Section(
+                                    w: "Badge (visibility-bound)",
                                     font: new Font(FontFamily.Adventure, FontStyle.Plain, 18),
-                                    color: new Color(255, 255, 255, 255))
+                                    color: new Color(255, 255, 255, 255)
+                                )
                             }
                         },
 
@@ -220,7 +235,7 @@ public static class TestView
                     }
                 },
                 // ── Middle spacer ──────────────────────────────────────
-                new View { Styles = new() { Flex = 1f } },
+                new View { Styles = Sx.Styles(flex: 1f) },
             },
         };
     }
@@ -230,26 +245,22 @@ public static class TestView
         var list = new View()
         {
             Name = "ScrollList",
-            Styles = new()
-            {
-                FlexDirection = FlexDirection.Column,
-                AlignItems = Align.Stretch,
-                Width = 360f,
-                Height = 260f,
-                Overflow = Overflow.Scroll,
-                BackgroundColor = new Color(20, 20, 30, 255),
-                BorderColor = new Color(230, 128, 26, 255),
-                BorderTop = 2f,
-                BorderBottom = 2f,
-                BorderLeft = 2f,
-                BorderRight = 2f,
-                BorderTopLeftRadius = 8f,
-                BorderTopRightRadius = 8f,
-                BorderBottomLeftRadius = 8f,
-                BorderBottomRightRadius = 8f,
-                PaddingTop = 4f,
-                PaddingBottom = 4f,
-            },
+            Styles = Sx.Styles(
+                flexDirection: FlexDirection.Column,
+                alignItems: Align.Stretch,
+                width: 360f,
+                height: 260f,
+                overflow: Overflow.Scroll,
+                backgroundColor: new Color(20, 20, 30, 255),
+                borderColor: new Color(230, 128, 26, 255),
+                borderTop: 2f,
+                borderBottom: 2f,
+                borderLeft: 2f,
+                borderRight: 2f,
+                borderRadius: 8f,
+                paddingTop: 4f,
+                paddingBottom: 4f
+            ),
         };
 
         for (int i = 0; i < 100; i++)
@@ -266,27 +277,25 @@ public static class TestView
         {
             Name = text,
             IsFocusable = true,
-            Styles = new()
-            {
-                FlexDirection = FlexDirection.Row,
-                AlignItems = Align.Center,
-                Height = 36f,
-                MinHeight = 36f,
-                MaxHeight = 36f,
-                PaddingLeft = 12f,
-                PaddingRight = 12f,
-                BackgroundColor = new Color(45, 45, 60, 255),
-            },
+            Styles = Sx.Styles(
+                flexDirection: FlexDirection.Row,
+                alignItems: Align.Center,
+                height: 36f,
+                minHeight: 36f,
+                maxHeight: 36f,
+                paddingLeft: 12f,
+                paddingRight: 12f,
+                backgroundColor: new Color(45, 45, 60, 255)
+            ),
             Children =
             {
                 new Text()
                 {
-                    TextStyles = new TextStyles()
-                    {
-                        FontFamily = FontFamily.Adventure,
-                        FontSize = 16f,
-                        ForegroundColor = new Color(220, 220, 220, 255),
-                    },
+                    TextStyles = Sx.TextStyles(
+                        fontFamily: FontFamily.Adventure,
+                        fontSize: 16f,
+                        foregroundColor: new Color(220, 220, 220, 255)
+                    ),
                     TextContent = text,
                 }
             }
@@ -294,7 +303,8 @@ public static class TestView
 
         row.MouseEntered = _ => row.Styles = row.Styles with { BackgroundColor = new Color(70, 70, 95, 255) };
         row.MouseLeft = _ => row.Styles = row.Styles with { BackgroundColor = new Color(45, 45, 60, 255) };
-        row.MousePressed = e => Logging.Info($"[YogaTest] pressed '{text}' rel=({e.RelativePosition.X:F0},{e.RelativePosition.Y:F0})");
+        row.MousePressed = e
+            => Logging.Info($"[YogaTest] pressed '{text}' rel=({e.RelativePosition.X:F0},{e.RelativePosition.Y:F0})");
 
         return row;
     }
@@ -303,25 +313,23 @@ public static class TestView
     {
         return new View()
         {
-            Styles = new()
-            {
-                FlexDirection = FlexDirection.Row,
-                GapRow = 4f,
-                GapColumn = 4f,
-                MarginLeft = marginLeft,
-            },
+            Styles = Sx.Styles(
+                flexDirection: FlexDirection.Row,
+                gapRow: 4f,
+                gapColumn: 4f,
+                marginLeft: marginLeft
+            ),
             Children =
             {
                 new Text()
                 {
-                    TextStyles = new TextStyles()
-                    {
-                        FontFamily = font.FontFamily,
-                        FontSize = font.Size,
-                        FontStyle = font.Style,
-                        ForegroundColor = color,
-                        StrokeColor = strokeColor,
-                    },
+                    TextStyles = Sx.TextStyles(
+                        fontFamily: font.FontFamily,
+                        fontSize: font.Size,
+                        fontStyle: font.Style,
+                        foregroundColor: color,
+                        strokeColor: strokeColor
+                    ),
                     Children =
                     {
                         new TextNode()

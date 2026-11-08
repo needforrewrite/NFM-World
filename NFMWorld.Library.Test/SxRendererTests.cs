@@ -22,15 +22,18 @@ public class SxRendererTests
         ((Text)root).TextContent = null; // detach so the bind's own write is the observable one
 
         var mounted = Renderer.Mount(() =>
-        {
-            var node = Sx.Text(text: () =>
             {
-                commits++;
-                return name.Value;
-            });
+                var node = Sx.Text(
+                    text: () =>
+                    {
+                        commits++;
+                        return name.Value;
+                    }
+                );
 
-            return node;
-        });
+                return node;
+            }
+        );
 
         var before = commits;
 
@@ -56,10 +59,12 @@ public class SxRendererTests
         var writes = 0;
 
         var mounted = Renderer.Mount(() => Sx.View(() =>
-        {
-            writes++;
-            return new Styles { BorderColor = active.Value ? new Maxine.Extensions.Mathematics.Color(79, 195, 247) : null };
-        }));
+                {
+                    writes++;
+                    return Sx.Styles(borderColor: active.Value ? new Maxine.Extensions.Mathematics.Color(79, 195, 247) : null);
+                }
+            )
+        );
 
         var afterMount = writes;
         active.Value = true;
@@ -77,12 +82,14 @@ public class SxRendererTests
         var built = new List<string>();
 
         var mounted = Renderer.Mount(() => Sx.For(
-            () => items.Value,
-            (item, _) =>
-            {
-                built.Add(item);
-                return Sx.Text(text: () => item);
-            }));
+                () => items.Value,
+                (item, _) =>
+                {
+                    built.Add(item);
+                    return Sx.Text(text: () => item);
+                }
+            )
+        );
 
         Assert.AreEqual(3, built.Count);
 
@@ -118,10 +125,13 @@ public class SxRendererTests
             : ["single", "multi", "back"];
 
         var mounted = Renderer.Mount(() => Sx.For(
-            each: Items,
-            row: (item, _) => Sx.Text(text: () => item)));
+                each: Items,
+                row: (item, _) => Sx.Text(text: () => item)
+            )
+        );
 
         var host = (View)mounted.Root;
+
         List<string?> Order() => host.VisualChildren.OfType<Text>()
             .Select(t => t.Children.OfType<TextNode>().FirstOrDefault()?.Text)
             .ToList();
@@ -131,8 +141,11 @@ public class SxRendererTests
         page.Value = "play";
         Renderer.Flush();
 
-        CollectionAssert.AreEqual(new[] { "single", "multi", "back" }, Order(),
-            "the reused BACK row kept its old position");
+        CollectionAssert.AreEqual(
+            new[] { "single", "multi", "back" },
+            Order(),
+            "the reused BACK row kept its old position"
+        );
 
         mounted.Dispose();
     }
@@ -146,8 +159,8 @@ public class SxRendererTests
     [TestMethod]
     public void Styles_Over_KeepsTheBasePadding()
     {
-        var card = new Styles { PaddingTop = 16, PaddingLeft = 20 };
-        var caller = new Styles { FlexDirection = FlexDirection.Column, MarginBottom = 16 };
+        var card = Sx.Styles(paddingTop: 16, paddingLeft: 20);
+        var caller = Sx.Styles(flexDirection: FlexDirection.Column, marginBottom: 16);
 
         var merged = card.Over(caller);
 
@@ -160,8 +173,8 @@ public class SxRendererTests
     [TestMethod]
     public void TextStyles_Over_LeavesUnsetFieldsAlone()
     {
-        var baseStyle = new TextStyles { FontSize = 48, FontStyle = FontStyle.Bold };
-        var overlay = new TextStyles { ForegroundColor = new Maxine.Extensions.Mathematics.Color(1, 2, 3) };
+        var baseStyle = Sx.TextStyles(fontSize: 48, fontStyle: FontStyle.Bold);
+        var overlay = Sx.TextStyles(foregroundColor: new Maxine.Extensions.Mathematics.Color(1, 2, 3));
 
         var merged = baseStyle.Over(overlay);
 
@@ -173,7 +186,7 @@ public class SxRendererTests
     [TestMethod]
     public void TextStyles_Resolved_AppliesDefaults()
     {
-        var resolved = new TextStyles().Resolved;
+        var resolved = Sx.TextStyles().Resolved;
 
         Assert.AreEqual(12f, resolved.FontSize);
         Assert.AreEqual(FontFamily.NotoSans, resolved.FontFamily);
@@ -183,8 +196,8 @@ public class SxRendererTests
     [TestMethod]
     public void Styles_Over_LeavesUnsetFieldsAlone()
     {
-        var baseline = new Styles { FlexDirection = FlexDirection.Column, AlignItems = Align.FlexStart, PaddingTop = 8 };
-        var overlay = new Styles { BackgroundColor = new Maxine.Extensions.Mathematics.Color(1, 2, 3) };
+        var baseline = Sx.Styles(flexDirection: FlexDirection.Column, alignItems: Align.FlexStart, paddingTop: 8);
+        var overlay = Sx.Styles(backgroundColor: new Maxine.Extensions.Mathematics.Color(1, 2, 3));
 
         var merged = baseline.Over(overlay);
 
@@ -197,7 +210,7 @@ public class SxRendererTests
     [TestMethod]
     public void Styles_Resolved_AppliesWebDefaults()
     {
-        var resolved = new Styles().Resolved;
+        var resolved = Sx.Styles().Resolved;
 
         Assert.AreEqual(FlexDirection.Row, resolved.FlexDirection);
         Assert.AreEqual(Align.Stretch, resolved.AlignItems);
@@ -212,13 +225,15 @@ public class SxRendererTests
         var mounts = 0;
 
         var mounted = Renderer.Mount(() => Sx.Show(
-            () => visible.Value,
-            () =>
-            {
-                mounts++;
-                return Sx.Text(text: () => "on");
-            },
-            () => Sx.Text(text: () => "off")));
+                () => visible.Value,
+                () =>
+                {
+                    mounts++;
+                    return Sx.Text(text: () => "on");
+                },
+                () => Sx.Text(text: () => "off")
+            )
+        );
 
         Assert.AreEqual(1, mounts);
 
@@ -245,8 +260,16 @@ public class SxRendererTests
         var runs = 0;
 
         var mounted = Renderer.Mount(() => Sx.Show(
-            () => visible.Value,
-            () => Sx.Text(text: () => { runs++; return probe.Value.ToString(); })));
+                () => visible.Value,
+                () => Sx.Text(
+                    text: () =>
+                    {
+                        runs++;
+                        return probe.Value.ToString();
+                    }
+                )
+            )
+        );
 
         Renderer.Flush();
 
@@ -283,12 +306,26 @@ public class SxRendererTests
         var runs = 0;
 
         var mounted = Renderer.Mount(() => Sx.Switch(
-            tab,
-            new Dictionary<string, Func<Node>>
-            {
-                ["a"] = () => Sx.Text(text: () => { runs++; return $"a{probe.Value}"; }),
-                ["b"] = () => Sx.Text(text: () => { runs++; return $"b{probe.Value}"; }),
-            }));
+                tab,
+                new Dictionary<string, Func<Node>>
+                {
+                    ["a"] = () => Sx.Text(
+                        text: () =>
+                        {
+                            runs++;
+                            return $"a{probe.Value}";
+                        }
+                    ),
+                    ["b"] = () => Sx.Text(
+                        text: () =>
+                        {
+                            runs++;
+                            return $"b{probe.Value}";
+                        }
+                    ),
+                }
+            )
+        );
 
         Renderer.Flush();
 
@@ -319,11 +356,17 @@ public class SxRendererTests
     [TestMethod]
     public void CollectionsOfChildren_AreFlattened()
     {
-        var mounted = Renderer.Mount(() => Sx.View(children: [new List<Node>
-        {
-            Sx.Text(text: () => "one"),
-            Sx.Text(text: () => "two"),
-        }]));
+        var mounted = Renderer.Mount(() => Sx.View(
+                children:
+                [
+                    new List<Node>
+                    {
+                        Sx.Text(text: () => "one"),
+                        Sx.Text(text: () => "two"),
+                    }
+                ]
+            )
+        );
 
         var texts = ((View)mounted.Root).VisualChildren.OfType<Text>()
             .Select(t => t.Children.OfType<TextNode>().FirstOrDefault()?.Text)
@@ -346,10 +389,19 @@ public class SxRendererTests
         var runs = 0;
 
         var mounted = Renderer.Mount(() => Sx.Show(
-            () => shown.Value,
-            () => Sx.For(
-                each: () => (IReadOnlyList<string>)["a", "b"],
-                row: (item, _) => Sx.Text(text: () => { runs++; return $"{item}{probe.Value}"; }))));
+                () => shown.Value,
+                () => Sx.For(
+                    each: () => (IReadOnlyList<string>)["a", "b"],
+                    row: (item, _) => Sx.Text(
+                        text: () =>
+                        {
+                            runs++;
+                            return $"{item}{probe.Value}";
+                        }
+                    )
+                )
+            )
+        );
 
         Renderer.Flush();
         Assert.IsTrue(runs > 0, "the rows should have rendered");

@@ -8,7 +8,7 @@
 // /// <summary>
 // /// Guards <c>StatBar</c>'s track width against the flex parent it is mounted in.
 // ///
-// /// StatBar's track is <c>width = "100%"</c> and the fill inside it is a percentage of the
+// /// StatBar's track is <c>width = 100.Percent()</c> and the fill inside it is a percentage of the
 // /// track. A percentage resolves against the parent's definite size, so when StatBar's root
 // /// had no width of its own it depended entirely on how the caller laid it out: inside a
 // /// column the parent's width is definite and it worked, but racehud puts the bar in a row
@@ -16,7 +16,7 @@
 // /// the fill's own percentage, so lowering the value shrank the bar AND the fill shrank
 // /// again within it (50%% read as a quarter-width bar).
 // ///
-// /// Giving the StatBar root <c>width = "100%"</c> makes the bar a percentage of its parent
+// /// Giving the StatBar root <c>width = 100.Percent()</c> makes the bar a percentage of its parent
 // /// in either direction, so only the fill moves. These tests mount the real
 // /// <c>glasscard.luau</c> through the real LuaUiLibrary host and lay it out with Yoga.
 // /// </summary>
@@ -180,3 +180,5 @@
 //         }
 //     }
 // }
+
+

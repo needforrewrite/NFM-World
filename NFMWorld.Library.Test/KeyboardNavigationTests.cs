@@ -2,6 +2,7 @@ using System.Numerics;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
+using NFMWorld.Reactor.Sx;
 
 namespace NFMWorld.Library.Test;
 
@@ -49,7 +50,7 @@ public class KeyboardNavigationTests
     {
         var root = new View();
         var first = Control();
-        var hidden = new View { Styles = new Styles { Visibility = Visibility.Hidden } };
+        var hidden = new View { Styles = Sx.Styles(visibility: Visibility.Hidden) };
         hidden.AddChild(Control());
         root.AddChild(first);
         root.AddChild(hidden);
@@ -68,22 +69,24 @@ public class KeyboardNavigationTests
     public void EnterOpensModalWithoutActivatingItsButtonAndRestoresFocusOnClose()
     {
         var root = new View();
-        var modal = KeyboardNavigation.Scope(new View { Styles = new Styles { Display = Display.None } });
+        var modal = KeyboardNavigation.Scope(new View { Styles = Sx.Styles(display: Display.None) });
         var activations = 0;
         var confirm = Control(key =>
-        {
-            if (key != Key.Enter) return false;
-            activations++;
-            modal.Styles = modal.Styles with { Display = Display.None };
-            return true;
-        });
+            {
+                if (key != Key.Enter) return false;
+                activations++;
+                modal.Styles = modal.Styles with { Display = Display.None };
+                return true;
+            }
+        );
         modal.AddChild(confirm);
         var opener = Control(key =>
-        {
-            if (key != Key.Enter) return false;
-            modal.Styles = modal.Styles with { Display = Display.Flex };
-            return true;
-        });
+            {
+                if (key != Key.Enter) return false;
+                modal.Styles = modal.Styles with { Display = Display.Flex };
+                return true;
+            }
+        );
         root.AddChild(opener);
         root.AddChild(Control());
         root.AddChild(modal);
@@ -106,10 +109,16 @@ public class KeyboardNavigationTests
     {
         var moves = 0;
         var dropdown = Control(key =>
-        {
-            if (key == Key.Down) { moves++; return true; }
-            return key == Key.Escape;
-        });
+            {
+                if (key == Key.Down)
+                {
+                    moves++;
+                    return true;
+                }
+
+                return key == Key.Escape;
+            }
+        );
         var root = new View();
         root.AddChild(dropdown);
         root.AddChild(Control());
@@ -160,18 +169,19 @@ public class KeyboardNavigationTests
     [TestMethod]
     public void NavigatingOffscreenScrollsTheFocusedSettingIntoView()
     {
-        var root = new View { Styles = new Styles { Width = 300, Height = 100 } };
+        var root = new View { Styles = Sx.Styles(width: 300, height: 100) };
         var scroll = new View
         {
-            Styles = new Styles { Width = 300, Height = 100, Overflow = Overflow.Scroll, FlexDirection = FlexDirection.Column }
+            Styles = Sx.Styles(width: 300, height: 100, overflow: Overflow.Scroll, flexDirection: FlexDirection.Column)
         };
         root.AddChild(scroll);
         var controls = Enumerable.Range(0, 6).Select(_ => Control()).ToArray();
         foreach (var control in controls)
         {
-            control.Styles = new Styles { Height = 50, FlexShrink = 0 };
+            control.Styles = Sx.Styles(height: 50, flexShrink: 0);
             scroll.AddChild(control);
         }
+
         root.LayoutAndRender(new Vector2(300, 100));
         var navigation = new KeyboardNavigation();
         navigation.UpdateFocus(root);

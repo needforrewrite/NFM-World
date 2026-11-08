@@ -22,6 +22,7 @@ public static class MainMenuView
     private const int ItemHeight = 36;
     private const int ItemGap = 11;
     private const int MenuRows = 7;
+
     public sealed class MenuItem(string label, string description, Action action)
     {
         public string Label { get; } = label;
@@ -40,7 +41,8 @@ public static class MainMenuView
         Action TimeTrials,
         Action<string> Unavailable,
         Action Account,
-        Action Multiplayer);
+        Action Multiplayer
+    );
 
     private static readonly Signal<IReadOnlyList<MenuPage>> PageStack = new([]);
     private static readonly Signal<bool> SettingsOpen = new(false);
@@ -52,20 +54,26 @@ public static class MainMenuView
     private static Func<MenuPage>? _currentPage;
 
     /// <summary>The page tree, with the current page's items. <paramref name="actions"/> supplies the game callbacks.</summary>
-    public static MenuPage MainPage(Actions actions) => new("NFM WORLD",
-    [
-        new("PLAY", "Play public, private matches online or play singleplayer.", () => PushPage(BuildPlayMenu(actions))),
-        new("GARAGE", "Customize and inspect your vehicles in the garage.", actions.Garage),
-        new("WORKSHOP", "Build your own models and stages.", () => PushPage(BuildWorkshopMenu(actions))),
-        new("SETTINGS", "Adjust game settings.", () => SettingsOpen.Value = true),
-        new("ACCOUNT", "Sign in, or create an archive account.", actions.Account),
-        new("EXTRAS", "View credits, statistics and replays.", () => PushPage(BuildExtrasMenu(actions))),
-        new("QUIT", "Exit the game.", () =>
-        {
-            QuitChoice.Value = 0;
-            QuitOpen.Value = true;
-        }),
-    ]);
+    public static MenuPage MainPage(Actions actions) => new(
+        "NFM WORLD",
+        [
+            new("PLAY", "Play public, private matches online or play singleplayer.", () => PushPage(BuildPlayMenu(actions))),
+            new("GARAGE", "Customize and inspect your vehicles in the garage.", actions.Garage),
+            new("WORKSHOP", "Build your own models and stages.", () => PushPage(BuildWorkshopMenu(actions))),
+            new("SETTINGS", "Adjust game settings.", () => SettingsOpen.Value = true),
+            new("ACCOUNT", "Sign in, or create an archive account.", actions.Account),
+            new("EXTRAS", "View credits, statistics and replays.", () => PushPage(BuildExtrasMenu(actions))),
+            new(
+                "QUIT",
+                "Exit the game.",
+                () =>
+                {
+                    QuitChoice.Value = 0;
+                    QuitOpen.Value = true;
+                }
+            ),
+        ]
+    );
 
     // ── Styles ────────────────────────────────────────────────────────
 
@@ -94,8 +102,12 @@ public static class MainMenuView
 
     private static readonly StyledText ItemLabel =
         Styled.StyleText(
-            textStyle: Sx.TextStyles(fontSize: 22, fontFamily: FontFamily.Adventure,
-                fontStyle: FontStyle.Bold, foregroundColor: MenuBlue)
+            textStyle: Sx.TextStyles(
+                fontSize: 22,
+                fontFamily: FontFamily.Adventure,
+                fontStyle: FontStyle.Bold,
+                foregroundColor: MenuBlue
+            )
         );
 
     public static Node Build(Actions actions, Node logo)
@@ -131,17 +143,35 @@ public static class MainMenuView
             ),
             children:
             [
-                Sx.View(style: () => Sx.Styles(position: Position.Absolute, bottom: "100%",
-                        width: "100%", maxWidth: 370,
-                        marginBottom: 60, pointerEvents: false),
-                    children: [logo]),
-                Sx.Show(() => PageStack.Value.Count > 0,
-                    () => Sx.Text(style: () => Sx.TextStyles(fontSize: 28, fontFamily: FontFamily.Adventure,
+                Sx.View(
+                    style: () => Sx.Styles(
+                        position: Position.Absolute,
+                        bottom: 100.Percent(),
+                        width: 100.Percent(),
+                        maxWidth: 370,
+                        marginBottom: 60,
+                        pointerEvents: false
+                    ),
+                    children: [logo]
+                ),
+                Sx.Show(
+                    () => PageStack.Value.Count > 0,
+                    () => Sx.Text(
+                        style: () => Sx.TextStyles(
+                            fontSize: 28,
+                            fontFamily: FontFamily.Adventure,
                             fontStyle: FontStyle.Bold,
-                            foregroundColor: MenuBlue),
-                        layout: () => Sx.Styles(position: Position.Absolute, bottom: "100%",
-                            height: 40, marginBottom: 8),
-                        text: () => CurrentPage().Title)),
+                            foregroundColor: MenuBlue
+                        ),
+                        layout: () => Sx.Styles(
+                            position: Position.Absolute,
+                            bottom: 100.Percent(),
+                            height: 40,
+                            marginBottom: 8
+                        ),
+                        text: () => CurrentPage().Title
+                    )
+                ),
 
                 Sx.View(
                     style: () => Sx.Styles(
@@ -157,78 +187,127 @@ public static class MainMenuView
                     ),
                     children: Sx.For(
                         each: () => CurrentPage().Items,
-                        row: (item, index) => ItemButton(item, index))),
+                        row: (item, index) => ItemButton(item, index)
+                    )
+                ),
 
-                Sx.View(style: () => Sx.Styles(width: "78%", minWidth: 250, maxWidth: 370,
-                        height: 29, flexShrink: 0,
-                        marginTop: 13, paddingLeft: 12, paddingRight: 12, paddingTop: 6, paddingBottom: 6,
-                        backgroundColor: new Color(3, 8, 20, 135), borderRadius: 14),
-                    children: [Sx.Text(style: () => Sx.TextStyles(fontSize: 12,
-                        foregroundColor: new Color(185, 211, 255)), text: () => Description.Value)]),
-                Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: MenuBlue),
+                Sx.View(
+                    style: () => Sx.Styles(
+                        width: "78%",
+                        minWidth: 250,
+                        maxWidth: 370,
+                        height: 29,
+                        flexShrink: 0,
+                        marginTop: 13,
+                        paddingLeft: 12,
+                        paddingRight: 12,
+                        paddingTop: 6,
+                        paddingBottom: 6,
+                        backgroundColor: new Color(3, 8, 20, 135),
+                        borderRadius: 14
+                    ),
+                    children:
+                    [
+                        Sx.Text(
+                            style: () => Sx.TextStyles(
+                                fontSize: 12,
+                                foregroundColor: new Color(185, 211, 255)
+                            ),
+                            text: () => Description.Value
+                        )
+                    ]
+                ),
+                Sx.Text(
+                    style: () => Sx.TextStyles(fontSize: 11, foregroundColor: MenuBlue),
                     layout: () => Sx.Styles(marginTop: 8),
-                    text: () => UiState.MainMenu.StageName.Value)
-            ]);
+                    text: () => UiState.MainMenu.StageName.Value
+                )
+            ]
+        );
     }
 
     private static View ItemButton(MenuItem item, int index)
     {
         return Sx.View(
-            style: () => Sx.Styles(flexDirection: FlexDirection.Column, alignItems: Align.Stretch,
-                height: ItemHeight, flexShrink: 0),
+            style: () => Sx.Styles(
+                flexDirection: FlexDirection.Column,
+                alignItems: Align.Stretch,
+                height: ItemHeight,
+                flexShrink: 0
+            ),
             onmouseenter: _ =>
             {
                 SelectedIndex.Value = index;
                 Description.Value = item.Description;
             },
-            children: [ItemRow(style: () => SelectedIndex.Value == index
-                    ? Sx.Styles(height: "100%", backgroundColor: new Color(55, 90, 150, 190),
-                        borderColor: new Color(205, 227, 255))
-                    : Sx.Styles(height: "100%"), onmousedown: _ => item.Action(),
-                children: [ItemLabel(text: () => item.Label)])]);
+            children:
+            [
+                ItemRow(
+                    style: () => SelectedIndex.Value == index
+                        ? Sx.Styles(
+                            height: 100.Percent(),
+                            backgroundColor: new Color(55, 90, 150, 190),
+                            borderColor: new Color(205, 227, 255)
+                        )
+                        : Sx.Styles(height: 100.Percent()),
+                    onmousedown: _ => item.Action(),
+                    children: [ItemLabel(text: () => item.Label)]
+                )
+            ]
+        );
     }
 
-    private static MenuPage BuildPlayMenu(Actions actions) => new("PLAY",
-    [
-        new("SINGLEPLAYER", "Play the original single player experiences.", () => PushPage(BuildSpMenu(actions))),
-        // One lobby: whether a race is rated is chosen per-race, not here.
-        new("MULTIPLAYER", "Play online with other players.", actions.Multiplayer),
-        new("TRAINING", "Train your skills and learn the game mechanics.", () => PushPage(BuildTrainingMenu(actions))),
-        new("BACK", "Return to the previous menu.", PopPage),
-    ]);
+    private static MenuPage BuildPlayMenu(Actions actions) => new(
+        "PLAY",
+        [
+            new("SINGLEPLAYER", "Play the original single player experiences.", () => PushPage(BuildSpMenu(actions))),
+            // One lobby: whether a race is rated is chosen per-race, not here.
+            new("MULTIPLAYER", "Play online with other players.", actions.Multiplayer),
+            new("TRAINING", "Train your skills and learn the game mechanics.", () => PushPage(BuildTrainingMenu(actions))),
+            new("BACK", "Return to the previous menu.", PopPage),
+        ]
+    );
 
-    private static MenuPage BuildSpMenu(Actions actions) => new("SINGLEPLAYER",
-    [
-        new("NFM1", "Play the original NFM1 singleplayer campaign.", () => actions.Unavailable("playNfm1")),
-        new("NFM2", "Play the original NFM2 singleplayer campaign.", () => actions.Unavailable("playNfm2")),
-        new("COMMUNITY", "Play custom experiences crafted by the community.", () => actions.Unavailable("playCommunity")),
-        new("FREE PLAY", "Play freely without any restrictions.", actions.Play),
-        new("BACK", "Return to the previous menu.", PopPage),
-    ]);
+    private static MenuPage BuildSpMenu(Actions actions) => new(
+        "SINGLEPLAYER",
+        [
+            new("NFM1", "Play the original NFM1 singleplayer campaign.", () => actions.Unavailable("playNfm1")),
+            new("NFM2", "Play the original NFM2 singleplayer campaign.", () => actions.Unavailable("playNfm2")),
+            new("COMMUNITY", "Play custom experiences crafted by the community.", () => actions.Unavailable("playCommunity")),
+            new("FREE PLAY", "Play freely without any restrictions.", actions.Play),
+            new("BACK", "Return to the previous menu.", PopPage),
+        ]
+    );
 
-    private static MenuPage BuildWorkshopMenu(Actions actions) => new("WORKSHOP",
-    [
-        new("MODEL EDITOR", "View and edit custom models.", actions.ModelEditor),
-        new("STAGE EDITOR", "Design your own stages.", actions.StageEditor),
-        new("CAMPAIGN EDITOR", "Craft custom experiences.", () => actions.Unavailable("campaignEditor")),
-        new("BACK", "Return to the previous menu.", PopPage),
-    ]);
+    private static MenuPage BuildWorkshopMenu(Actions actions) => new(
+        "WORKSHOP",
+        [
+            new("MODEL EDITOR", "View and edit custom models.", actions.ModelEditor),
+            new("STAGE EDITOR", "Design your own stages.", actions.StageEditor),
+            new("CAMPAIGN EDITOR", "Craft custom experiences.", () => actions.Unavailable("campaignEditor")),
+            new("BACK", "Return to the previous menu.", PopPage),
+        ]
+    );
 
-    private static MenuPage BuildExtrasMenu(Actions actions) => new("EXTRAS",
-    [
-        new("CREDITS", "View game credits.", () => actions.Unavailable("credits")),
-        new("STATS", "View your gameplay statistics.", () => actions.Unavailable("stats")),
-        new("REPLAYS", "Browse and watch saved replays.", () => actions.Unavailable("replays")),
-        new("BACK", "Return to the previous menu.", PopPage),
-    ]);
+    private static MenuPage BuildExtrasMenu(Actions actions) => new(
+        "EXTRAS",
+        [
+            new("CREDITS", "View game credits.", () => actions.Unavailable("credits")),
+            new("STATS", "View your gameplay statistics.", () => actions.Unavailable("stats")),
+            new("REPLAYS", "Browse and watch saved replays.", () => actions.Unavailable("replays")),
+            new("BACK", "Return to the previous menu.", PopPage),
+        ]
+    );
 
-    private static MenuPage BuildTrainingMenu(Actions actions) => new("TRAINING",
-    [
-        new("TIME TRIALS", "Flex your fastest time against other people.", actions.TimeTrials),
-        new("CHALLENGES", "Complete challenges to sharpen your mechanical skills.", () => actions.Unavailable("challenges")),
-        new("TUTORIAL", "Learn the rules and controls of the game.", () => actions.Unavailable("tutorial")),
-        new("BACK", "Return to the previous menu.", PopPage),
-    ]);
+    private static MenuPage BuildTrainingMenu(Actions actions) => new(
+        "TRAINING",
+        [
+            new("TIME TRIALS", "Flex your fastest time against other people.", actions.TimeTrials),
+            new("CHALLENGES", "Complete challenges to sharpen your mechanical skills.", () => actions.Unavailable("challenges")),
+            new("TUTORIAL", "Learn the rules and controls of the game.", () => actions.Unavailable("tutorial")),
+            new("BACK", "Return to the previous menu.", PopPage),
+        ]
+    );
 
     private static void PushPage(MenuPage page)
     {
@@ -263,8 +342,10 @@ public static class MainMenuView
                 else
                     QuitOpen.Value = false;
             }
+
             return;
         }
+
         if (SettingsOpen.Value || _currentPage is null) return;
         var items = _currentPage().Items;
         if (key is Key.Up or Key.Down)
@@ -285,11 +366,13 @@ public static class MainMenuView
             QuitOpen.Value = false;
             return true;
         }
+
         if (SettingsOpen.Value)
         {
             SettingsOpen.Value = false;
             return true;
         }
+
         if (PageStack.Value.Count == 0) return false;
         PopPage();
         return true;
@@ -306,37 +389,82 @@ public static class MainMenuView
 
     public static Node SettingsOverlay() => Sx.Show(
         when: () => SettingsOpen.Value,
-        then: () => SettingsView.Build(() => SettingsOpen.Value = false, menuPreviewAvailable: true));
+        then: () => SettingsView.Build(() => SettingsOpen.Value = false, menuPreviewAvailable: true)
+    );
 
-    public static Node QuitOverlay() => Sx.Show(() => QuitOpen.Value, () => Sx.View(
-        style: () => Sx.Styles(position: Position.Absolute, top: 0, left: 0, right: 0, bottom: 0,
-            alignItems: Align.Center, justifyContent: Justify.Center,
-            backgroundColor: new Color(3, 8, 20, 180), zIndex: 30),
-        children: Sx.View(
-            style: () => Sx.Styles(width: "90%", maxWidth: 420, flexDirection: FlexDirection.Column,
-                paddingTop: 28, paddingBottom: 28, paddingLeft: 28, paddingRight: 28,
-                backgroundColor: new Color(12, 22, 42, 250),
-                borderTop: 1, borderBottom: 1, borderLeft: 1, borderRight: 1,
-                borderColor: MenuBlue, borderRadius: 10, gapRow: 18),
-            children:
-            [
-                Sx.Text(style: () => Sx.TextStyles(fontSize: 26, fontFamily: FontFamily.Adventure,
-                    foregroundColor: MenuBlue), text: () => "QUIT NFM WORLD?"),
-                Sx.Text(style: () => Sx.TextStyles(fontSize: 14, foregroundColor: new Color(185, 211, 255)),
-                    text: () => "Are you sure you want to quit the game?"),
-                Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row,
-                        justifyContent: Justify.FlexEnd, gapColumn: 12),
-                    children:
-                    [
-                        QuitButton("Cancel", 0, () => QuitOpen.Value = false),
-                        QuitButton("Quit", 1, () => GameSparker.Game.Window.RequestClose())
-                    ])
-            ])));
+    public static Node QuitOverlay() => Sx.Show(
+        () => QuitOpen.Value,
+        () => Sx.View(
+            style: () => Sx.Styles(
+                position: Position.Absolute,
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                alignItems: Align.Center,
+                justifyContent: Justify.Center,
+                backgroundColor: new Color(3, 8, 20, 180),
+                zIndex: 30
+            ),
+            children: Sx.View(
+                style: () => Sx.Styles(
+                    width: "90%",
+                    maxWidth: 420,
+                    flexDirection: FlexDirection.Column,
+                    paddingTop: 28,
+                    paddingBottom: 28,
+                    paddingLeft: 28,
+                    paddingRight: 28,
+                    backgroundColor: new Color(12, 22, 42, 250),
+                    borderTop: 1,
+                    borderBottom: 1,
+                    borderLeft: 1,
+                    borderRight: 1,
+                    borderColor: MenuBlue,
+                    borderRadius: 10,
+                    gapRow: 18
+                ),
+                children:
+                [
+                    Sx.Text(
+                        style: () => Sx.TextStyles(
+                            fontSize: 26,
+                            fontFamily: FontFamily.Adventure,
+                            foregroundColor: MenuBlue
+                        ),
+                        text: () => "QUIT NFM WORLD?"
+                    ),
+                    Sx.Text(
+                        style: () => Sx.TextStyles(fontSize: 14, foregroundColor: new Color(185, 211, 255)),
+                        text: () => "Are you sure you want to quit the game?"
+                    ),
+                    Sx.View(
+                        style: () => Sx.Styles(
+                            flexDirection: FlexDirection.Row,
+                            justifyContent: Justify.FlexEnd,
+                            gapColumn: 12
+                        ),
+                        children:
+                        [
+                            QuitButton("Cancel", 0, () => QuitOpen.Value = false),
+                            QuitButton("Quit", 1, () => GameSparker.Game.Window.RequestClose())
+                        ]
+                    )
+                ]
+            )
+        )
+    );
 
     private static Node QuitButton(string label, int index, Action action) => Sx.View(
         onmouseenter: _ => QuitChoice.Value = index,
-        children: Button.Create(() => label, action,
-            style: () => Sx.Styles(minWidth: 110,
+        children: Button.Create(
+            () => label,
+            action,
+            style: () => Sx.Styles(
+                minWidth: 110,
                 backgroundColor: QuitChoice.Value == index ? new Color(55, 90, 150, 190) : new Color(22, 42, 80),
-                borderColor: QuitChoice.Value == index ? new Color(205, 227, 255) : MenuBlue)));
+                borderColor: QuitChoice.Value == index ? new Color(205, 227, 255) : MenuBlue
+            )
+        )
+    );
 }

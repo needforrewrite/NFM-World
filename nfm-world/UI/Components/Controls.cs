@@ -45,6 +45,7 @@ public static class Controls
                 _rows[i] = row;
                 content.AddChild(row);
             }
+
             AddChild(content);
         }
 
@@ -63,13 +64,18 @@ public static class Controls
                 if (top >= ScrollTop - 0.5f && bottom <= ScrollTop + LayoutPaddingSize.Y + 0.5f)
                     _lastSelected = selected;
             }
-            var first = Math.Clamp((int)(ScrollTop / (RowHeight * Math.Max(G.Scale, 0.01f))) - 1,
-                0, Math.Max(0, _options.Count - _rows.Length));
+
+            var first = Math.Clamp(
+                (int)(ScrollTop / (RowHeight * Math.Max(G.Scale, 0.01f))) - 1,
+                0,
+                Math.Max(0, _options.Count - _rows.Length)
+            );
             for (var i = 0; i < _rows.Length; i++)
             {
                 var index = first + i;
                 changed |= _rows[i].SetOption(index, _options[index], index == selected);
             }
+
             return changed;
         }
 
@@ -82,11 +88,28 @@ public static class Controls
 
             public DropdownOptionView(Action<int> onSelect)
             {
-                Styles = Sx.Styles(position: Position.Absolute, left: 0, right: 0, height: RowHeight,
-                    overflow: Overflow.Hidden, paddingTop: 7, paddingBottom: 7, paddingLeft: 12, paddingRight: 12);
+                Styles = Sx.Styles(
+                    position: Position.Absolute,
+                    left: 0,
+                    right: 0,
+                    height: RowHeight,
+                    overflow: Overflow.Hidden,
+                    paddingTop: 7,
+                    paddingBottom: 7,
+                    paddingLeft: 12,
+                    paddingRight: 12
+                );
                 MousePressed = _ => onSelect(_index);
-                MouseEntered = _ => { _hovered = true; UpdateColors(); };
-                MouseLeft = _ => { _hovered = false; UpdateColors(); };
+                MouseEntered = _ =>
+                {
+                    _hovered = true;
+                    UpdateColors();
+                };
+                MouseLeft = _ =>
+                {
+                    _hovered = false;
+                    UpdateColors();
+                };
                 AddChild(_text);
             }
 
@@ -101,6 +124,7 @@ public static class Controls
                     Styles = style;
                     _text.TextContent = option;
                 }
+
                 _index = index;
                 _selected = selected;
                 UpdateColors();
@@ -113,12 +137,11 @@ public static class Controls
                 style.BackgroundColor = _selected ? Theme.AccentSoft
                     : _hovered ? new Color(255, 255, 255, 20) : Theme.Transparent;
                 Styles = style;
-                _text.TextStyles = new TextStyles
-                {
-                    FontSize = 13,
-                    ForegroundColor = _selected ? Theme.Accent
-                        : _hovered ? new Color(255, 255, 255) : new Color(255, 255, 255, 204)
-                };
+                _text.TextStyles = Sx.TextStyles(
+                    fontSize: 13,
+                    foregroundColor: _selected ? Theme.Accent
+                    : _hovered ? new Color(255, 255, 255) : new Color(255, 255, 255, 204)
+                );
             }
         }
     }
@@ -126,21 +149,26 @@ public static class Controls
     public static void DismissDropdowns(View root, Vector2 position)
     {
         var hit = FocusManager.HitTestChain(root, position);
+
         void Visit(Node node)
         {
             if (node is DropdownView dropdown)
             {
                 var inside = hit.Any(target =>
-                {
-                    for (Node? current = target; current != null; current = current.VisualParent)
-                        if (ReferenceEquals(current, dropdown)) return true;
-                    return false;
-                });
+                    {
+                        for (Node? current = target; current != null; current = current.VisualParent)
+                            if (ReferenceEquals(current, dropdown))
+                                return true;
+                        return false;
+                    }
+                );
                 if (!inside) dropdown.Dismiss();
             }
+
             foreach (var child in node.VisualChildren)
                 Visit(child);
         }
+
         Visit(root);
     }
 
@@ -152,60 +180,77 @@ public static class Controls
         var focused = new Signal<bool>(false);
 
         var node = Sx.View(
-            style: () => new Styles
-            {
-                FlexDirection = FlexDirection.Row,
-                AlignItems = Align.Center,
-                GapColumn = 8,
-                GapRow = 8,
-            },
+            style: () => Sx.Styles(
+                flexDirection: FlexDirection.Row,
+                alignItems: Align.Center,
+                gapColumn: 8,
+                gapRow: 8
+            ),
             onmousedown: _ => onToggle(),
             onmouseenter: _ => hovered.Value = true,
             onmouseleave: _ => hovered.Value = false,
             children:
             [
                 Sx.View(
-                    style: () => new Styles
-                    {
-                        Width = 16,
-                        Height = 16,
-                        FlexShrink = 0,
-                        BorderTop = 1,
-                        BorderBottom = 1,
-                        BorderLeft = 1,
-                        BorderRight = 1,
-                        BorderColor = focused.Value ? new Color(205, 227, 255) : checkedValue()
+                    style: () => Sx.Styles(
+                        width: 16,
+                        height: 16,
+                        flexShrink: 0,
+                        borderTop: 1,
+                        borderBottom: 1,
+                        borderLeft: 1,
+                        borderRight: 1,
+                        borderColor: focused.Value
+                            ? new Color(205, 227, 255)
+                            : checkedValue()
+                                ? Theme.Accent
+                                : hovered.Value
+                                    ? new Color(255, 255, 255, 128)
+                                    : new Color(255, 255, 255, 64),
+                        backgroundColor: checkedValue()
                             ? Theme.Accent
-                            : hovered.Value ? new Color(255, 255, 255, 128) : new Color(255, 255, 255, 64),
-                        BackgroundColor = checkedValue()
-                            ? Theme.Accent
-                            : hovered.Value ? new Color(255, 255, 255, 41) : new Color(255, 255, 255, 20),
-                        BorderRadius = 3,
-                        AlignItems = Align.Center,
-                        JustifyContent = Justify.Center,
-                    },
+                            : hovered.Value
+                                ? new Color(255, 255, 255, 41)
+                                : new Color(255, 255, 255, 20),
+                        borderRadius: 3,
+                        alignItems: Align.Center,
+                        justifyContent: Justify.Center
+                    ),
                     children: Sx.Show(
                         when: checkedValue,
                         then: () => Sx.Text(
-                            style: () => new TextStyles { FontSize = 11, FontStyle = FontStyle.Bold, ForegroundColor = new Color(20, 20, 40) },
-                            text: () => "✓"))),
+                            style: () => Sx.TextStyles(
+                                fontSize: 11,
+                                fontStyle: FontStyle.Bold,
+                                foregroundColor: new Color(20, 20, 40)
+                            ),
+                            text: () => "✓"
+                        )
+                    )
+                ),
                 Sx.Show(
                     when: () => label is not null,
                     then: () => Sx.Text(
-                        style: () => new TextStyles
-                        {
-                            FontSize = 13,
-                            ForegroundColor = checkedValue() ? new Color(255, 255, 255) : new Color(255, 255, 255, 178),
-                        },
-                        text: () => label?.Invoke()))
-            ]);
-        return KeyboardNavigation.Bind(node, key =>
-        {
-            if (key is not (Key.Enter or Key.Space or Key.Left or Key.Right)) return false;
-            if (key == Key.Left && !checkedValue() || key == Key.Right && checkedValue()) return true;
-            onToggle();
-            return true;
-        }, value => focused.Value = value);
+                        style: () => Sx.TextStyles(
+                            fontSize: 13,
+                            foregroundColor: checkedValue() ? new Color(255, 255, 255) : new Color(255, 255, 255, 178)
+                        ),
+                        text: () => label?.Invoke()
+                    )
+                )
+            ]
+        );
+        return KeyboardNavigation.Bind(
+            node,
+            key =>
+            {
+                if (key is not (Key.Enter or Key.Space or Key.Left or Key.Right)) return false;
+                if (key == Key.Left && !checkedValue() || key == Key.Right && checkedValue()) return true;
+                onToggle();
+                return true;
+            },
+            value => focused.Value = value
+        );
     }
 
     // ── Slider ────────────────────────────────────────────────────────
@@ -219,7 +264,8 @@ public static class Controls
         Action<double> onValue,
         double min,
         double max,
-        double step)
+        double step
+    )
     {
         const float thumbWidth = 14f;
         const float thumbHeight = 14f;
@@ -252,83 +298,97 @@ public static class Controls
         }
 
         void SetFromDrag(MouseDragEvent e)
-            => SetFromPointer(new MouseEvent(
-                e.Position, NFMWorld.DriverInterface.MouseButton.Primary, e.Buttons, e.CtrlKey, e.MetaKey, e.ShiftKey, System.Numerics.Vector2.Zero));
+            => SetFromPointer(
+                new MouseEvent(
+                    e.Position,
+                    NFMWorld.DriverInterface.MouseButton.Primary,
+                    e.Buttons,
+                    e.CtrlKey,
+                    e.MetaKey,
+                    e.ShiftKey,
+                    System.Numerics.Vector2.Zero
+                )
+            );
 
         // The track owns both the fill and the handle, and is inset by half a thumb on each
         // side. Percentages on absolutely positioned children resolve against the parent's
         // padding box, so putting them here makes 0%..100% mean exactly the usable range -
         // the same range the pointer math below maps onto.
         var fill = Sx.View(
-            style: () => new Styles
-            {
-                Position = Position.Absolute,
-                Left = MeasurementMarginPosition.Percent(0),
-                Top = 0,
-                Width = MeasurementWidthHeight.Percent((float)(Progress() * 100)),
-                Height = MeasurementWidthHeight.Percent(100),
-                BackgroundColor = Theme.Accent,
-            });
+            style: () => Sx.Styles(
+                position: Position.Absolute,
+                left: 0,
+                top: 0,
+                width: ((float)(Progress() * 100)).Percent(),
+                height: 100.Percent(),
+                backgroundColor: Theme.Accent
+            )
+        );
 
         var thumb = Sx.View(
-            style: () => new Styles
-            {
-                Position = Position.Absolute,
-                Left = MeasurementMarginPosition.Percent((float)(Progress() * 100)),
-                MarginLeft = -thumbWidth / 2,
-                Top = (trackHeight - thumbHeight) / 2f,
-                Width = thumbWidth,
-                Height = thumbHeight,
-                BackgroundColor = new Color(255, 255, 255),
-                BorderTop = 2,
-                BorderBottom = 2,
-                BorderLeft = 2,
-                BorderRight = 2,
-                BorderColor = focused.Value ? new Color(255, 255, 255) : Theme.AccentBorder,
-                BorderRadius = 7,
-                ZIndex = 1,
-            });
+            style: () => Sx.Styles(
+                position: Position.Absolute,
+                left: ((float)(Progress() * 100)).Percent(),
+                marginLeft: -thumbWidth / 2,
+                top: (trackHeight - thumbHeight) / 2f,
+                width: thumbWidth,
+                height: thumbHeight,
+                backgroundColor: new Color(255, 255, 255),
+                borderTop: 2,
+                borderBottom: 2,
+                borderLeft: 2,
+                borderRight: 2,
+                borderColor: focused.Value ? new Color(255, 255, 255) : Theme.AccentBorder,
+                borderRadius: 7,
+                zIndex: 1
+            )
+        );
 
         var track = Sx.View(
-            style: () => new Styles
-            {
-                Position = Position.Absolute,
-                Top = (rowHeight - trackHeight) / 2f,
-                Height = trackHeight,
-                Left = thumbWidth / 2,
-                Right = thumbWidth / 2,
-                BackgroundColor = new Color(255, 255, 255, 38),
-                BorderRadius = trackHeight / 2f,
-                Overflow = Overflow.Hidden,
-            },
-            children: new object?[] { fill, thumb });
+            style: () => Sx.Styles(
+                position: Position.Absolute,
+                top: (rowHeight - trackHeight) / 2f,
+                height: trackHeight,
+                left: thumbWidth / 2,
+                right: thumbWidth / 2,
+                backgroundColor: new Color(255, 255, 255, 38),
+                borderRadius: trackHeight / 2f,
+                overflow: Overflow.Hidden
+            ),
+            children: new object?[] { fill, thumb }
+        );
 
         row = Sx.View(
-            style: () => new Styles
-            {
-                FlexGrow = 1,
-                Height = rowHeight,
-                MinWidth = 160,
-                Position = Position.Relative,
-                MarginLeft = 8,
-                MarginRight = 8,
-                BackgroundColor = focused.Value ? Theme.AccentSoft : Theme.Transparent,
-                BorderRadius = 4,
-            },
+            style: () => Sx.Styles(
+                flexGrow: 1,
+                height: rowHeight,
+                minWidth: 160,
+                position: Position.Relative,
+                marginLeft: 8,
+                marginRight: 8,
+                backgroundColor: focused.Value ? Theme.AccentSoft : Theme.Transparent,
+                borderRadius: 4
+            ),
             onmousedown: SetFromPointer,
             onmousedrag: SetFromDrag,
-            children: new object?[] { track });
+            children: new object?[] { track }
+        );
 
         // The row is positioned, so it is the containing block for the track and thumb.
-        return KeyboardNavigation.Bind(row, key =>
-        {
-            if (key is Key.Enter or Key.Space) return true;
-            if (key is not (Key.Left or Key.Right or Key.Home or Key.End)) return false;
-            var next = key == Key.Home ? min : key == Key.End ? max
-                : Math.Round((value() + (key == Key.Left ? -step : step)) / step) * step;
-            onValue(Math.Clamp(next, min, max));
-            return true;
-        }, value => focused.Value = value);
+        return KeyboardNavigation.Bind(
+            row,
+            key =>
+            {
+                if (key is Key.Enter or Key.Space) return true;
+                if (key is not (Key.Left or Key.Right or Key.Home or Key.End)) return false;
+                var next = key == Key.Home ? min
+                    : key == Key.End ? max
+                    : Math.Round((value() + (key == Key.Left ? -step : step)) / step) * step;
+                onValue(Math.Clamp(next, min, max));
+                return true;
+            },
+            value => focused.Value = value
+        );
     }
 
     // ── Dropdown ──────────────────────────────────────────────────────
@@ -340,7 +400,8 @@ public static class Controls
         Func<IReadOnlyList<string>> options,
         Func<int> value,
         Action<int> onSelect,
-        string unselectedLabel = "")
+        string unselectedLabel = ""
+    )
     {
         var open = new Signal<bool>(false);
         var opensAbove = new Signal<bool>(false);
@@ -360,6 +421,7 @@ public static class Controls
                 open.Value = false;
                 return;
             }
+
             if (root == null) return;
 
             openOptions = options().ToArray();
@@ -380,118 +442,137 @@ public static class Controls
         popup = Sx.Show(
             when: () => open.Value,
             then: () => Sx.View(
-                style: () => new Styles
-                {
-                    Position = Position.Absolute,
-                    Top = opensAbove.Value ? MeasurementMarginPosition.Undefined : MeasurementMarginPosition.Percent(100),
-                    Bottom = opensAbove.Value ? MeasurementMarginPosition.Percent(100) : MeasurementMarginPosition.Undefined,
-                    Left = 0,
-                    Width = MeasurementWidthHeight.Percent(100),
-                    MaxHeight = popupHeight.Value,
-                    FlexDirection = FlexDirection.Column,
-                    BackgroundColor = new Color(20, 24, 32, 250),
-                    BorderTop = 1,
-                    BorderBottom = 1,
-                    BorderLeft = 1,
-                    BorderRight = 1,
-                    BorderColor = new Color(255, 255, 255, 38),
-                    BorderRadius = 6,
-                    Overflow = Overflow.Hidden,
-                    ZIndex = 1000,
-                },
-                children: new DropdownListView(openOptions, () => cursor.Value,
+                style: () => Sx.Styles(
+                    position: Position.Absolute,
+                    top: opensAbove.Value ? MeasurementMarginPosition.Undefined : 100.Percent(),
+                    bottom: opensAbove.Value ? 100.Percent() : MeasurementMarginPosition.Undefined,
+                    left: 0,
+                    width: 100.Percent(),
+                    maxHeight: popupHeight.Value,
+                    flexDirection: FlexDirection.Column,
+                    backgroundColor: new Color(20, 24, 32, 250),
+                    borderTop: 1,
+                    borderBottom: 1,
+                    borderLeft: 1,
+                    borderRight: 1,
+                    borderColor: new Color(255, 255, 255, 38),
+                    borderRadius: 6,
+                    overflow: Overflow.Hidden,
+                    zIndex: 1000
+                ),
+                children: new DropdownListView(
+                    openOptions,
+                    () => cursor.Value,
                     index =>
                     {
                         onSelect(index);
                         open.Value = false;
-                    }, Math.Max(0, popupHeight.Value - 2))));
+                    },
+                    Math.Max(0, popupHeight.Value - 2)
+                )
+            )
+        );
 
         root = new DropdownView(() => open.Value = false)
         {
-            Styles = new Styles
-            {
-                Position = Position.Relative,
-                FlexDirection = FlexDirection.Column,
-                Width = 240,
-                MaxWidth = MeasurementWidthHeight.Percent(100),
-            }
+            Styles = Sx.Styles(
+                position: Position.Relative,
+                flexDirection: FlexDirection.Column,
+                width: 240,
+                maxWidth: 100.Percent()
+            )
         };
-        root.AddChild(Sx.View(
-                style: () => new Styles
-                {
-                    Width = MeasurementWidthHeight.Percent(100),
-                    PaddingTop = 8,
-                    PaddingBottom = 8,
-                    PaddingLeft = 12,
-                    PaddingRight = 12,
-                    BackgroundColor = new Color(22, 42, 80, 145),
-                    BorderTop = 1,
-                    BorderBottom = 1,
-                    BorderLeft = 1,
-                    BorderRight = 1,
-                    BorderColor = open.Value || focused.Value
+        root.AddChild(
+            Sx.View(
+                style: () => Sx.Styles(
+                    width: 100.Percent(),
+                    paddingTop: 8,
+                    paddingBottom: 8,
+                    paddingLeft: 12,
+                    paddingRight: 12,
+                    backgroundColor: new Color(22, 42, 80, 145),
+                    borderTop: 1,
+                    borderBottom: 1,
+                    borderLeft: 1,
+                    borderRight: 1,
+                    borderColor: open.Value || focused.Value
                         ? new Color(128, 170, 255)
-                        : hovered.Value ? new Color(205, 227, 255) : new Color(128, 170, 255, 100),
-                    BorderRadius = 6,
-                    FlexDirection = FlexDirection.Row,
-                    AlignItems = Align.Center,
-                    JustifyContent = Justify.SpaceBetween,
-                    GapColumn = 8,
-                    GapRow = 8,
-                },
+                        : hovered.Value
+                            ? new Color(205, 227, 255)
+                            : new Color(128, 170, 255, 100),
+                    borderRadius: 6,
+                    flexDirection: FlexDirection.Row,
+                    alignItems: Align.Center,
+                    justifyContent: Justify.SpaceBetween,
+                    gapColumn: 8,
+                    gapRow: 8
+                ),
                 onmousedown: _ => Toggle(),
                 onmouseenter: _ => hovered.Value = true,
                 onmouseleave: _ => hovered.Value = false,
                 children:
                 [
                     Sx.Text(
-                        style: () => new TextStyles
-                        {
-                            FontSize = 13,
-                            ForegroundColor = open.Value ? new Color(255, 255, 255) : new Color(255, 255, 255, 204),
-                        },
-                        text: () => SelectedLabel(options(), value(), unselectedLabel)),
+                        style: () => Sx.TextStyles(
+                            fontSize: 13,
+                            foregroundColor: open.Value ? new Color(255, 255, 255) : new Color(255, 255, 255, 204)
+                        ),
+                        text: () => SelectedLabel(options(), value(), unselectedLabel)
+                    ),
                     Sx.Text(
-                        style: () => new TextStyles { FontSize = 12, ForegroundColor = new Color(255, 255, 255, 128) },
-                        text: () => "▾")
-                ]));
+                        style: () => Sx.TextStyles(fontSize: 12, foregroundColor: new Color(255, 255, 255, 128)),
+                        text: () => "▾"
+                    )
+                ]
+            )
+        );
         root.AddChild(popup);
 
-        return KeyboardNavigation.Bind(root, key =>
-        {
-            if (key == Key.Escape && open.Value)
+        return KeyboardNavigation.Bind(
+            root,
+            key =>
             {
-                open.Value = false;
-                return true;
-            }
-            if (key is Key.Enter or Key.Space)
-            {
-                if (!open.Value) Toggle();
-                else
+                if (key == Key.Escape && open.Value)
                 {
-                    if (cursor.Value >= 0 && cursor.Value < openOptions.Count) onSelect(cursor.Value);
                     open.Value = false;
+                    return true;
                 }
-                return true;
-            }
-            if (open.Value && key is (Key.Up or Key.Down or Key.Left or Key.Right or Key.Home or Key.End))
+
+                if (key is Key.Enter or Key.Space)
+                {
+                    if (!open.Value) Toggle();
+                    else
+                    {
+                        if (cursor.Value >= 0 && cursor.Value < openOptions.Count) onSelect(cursor.Value);
+                        open.Value = false;
+                    }
+
+                    return true;
+                }
+
+                if (open.Value && key is (Key.Up or Key.Down or Key.Left or Key.Right or Key.Home or Key.End))
+                {
+                    cursor.Value = key == Key.Home ? 0
+                        : key == Key.End ? Math.Max(0, openOptions.Count - 1)
+                        : Math.Clamp(cursor.Value + (key is Key.Up or Key.Left ? -1 : 1), 0, Math.Max(0, openOptions.Count - 1));
+                    return true;
+                }
+
+                if (!open.Value && key is (Key.Left or Key.Right))
+                {
+                    var count = options().Count;
+                    if (count > 0) onSelect(Math.Clamp(value() + (key == Key.Left ? -1 : 1), 0, count - 1));
+                    return true;
+                }
+
+                return false;
+            },
+            value =>
             {
-                cursor.Value = key == Key.Home ? 0 : key == Key.End ? Math.Max(0, openOptions.Count - 1)
-                    : Math.Clamp(cursor.Value + (key is Key.Up or Key.Left ? -1 : 1), 0, Math.Max(0, openOptions.Count - 1));
-                return true;
+                focused.Value = value;
+                if (!value) open.Value = false;
             }
-            if (!open.Value && key is (Key.Left or Key.Right))
-            {
-                var count = options().Count;
-                if (count > 0) onSelect(Math.Clamp(value() + (key == Key.Left ? -1 : 1), 0, count - 1));
-                return true;
-            }
-            return false;
-        }, value =>
-        {
-            focused.Value = value;
-            if (!value) open.Value = false;
-        });
+        );
     }
 
     private static string SelectedLabel(IReadOnlyList<string> options, int value, string unselectedLabel)
@@ -502,28 +583,29 @@ public static class Controls
     public static Node TextField(
         Func<string> value,
         Action<string> onChange,
-        Func<string?>? placeholder = null)
+        Func<string?>? placeholder = null
+    )
     {
         var focused = new Signal<bool>(false);
         var node = Sx.TextInput(
-            style: () => new Styles
-            {
-                PaddingTop = 6,
-                PaddingBottom = 6,
-                PaddingLeft = 10,
-                PaddingRight = 10,
-                BackgroundColor = Theme.Surface,
-                BorderTop = 1,
-                BorderBottom = 1,
-                BorderLeft = 1,
-                BorderRight = 1,
-                BorderColor = focused.Value ? Theme.AccentBorder : Theme.SurfaceBorder,
-                BorderRadius = 6,
-                MinWidth = 180,
-            },
+            style: () => Sx.Styles(
+                paddingTop: 6,
+                paddingBottom: 6,
+                paddingLeft: 10,
+                paddingRight: 10,
+                backgroundColor: Theme.Surface,
+                borderTop: 1,
+                borderBottom: 1,
+                borderLeft: 1,
+                borderRight: 1,
+                borderColor: focused.Value ? Theme.AccentBorder : Theme.SurfaceBorder,
+                borderRadius: 6,
+                minWidth: 180
+            ),
             text: value,
             onchange: onChange,
-            placeholder: placeholder);
+            placeholder: placeholder
+        );
         return KeyboardNavigation.Bind(node, _ => false, value => focused.Value = value);
     }
 }
