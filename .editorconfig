@@ -1,0 +1,127 @@
+root = true
+
+[*]
+insert_final_newline = true
+
+[*.{cs,csx}]
+indent_style = space
+indent_size = 4
+
+##############################
+# Braces: next line (Allman)
+##############################
+csharp_new_line_before_open_brace = all
+resharper_csharp_brace_style = next_line
+
+##############################
+# Line breaks: grow downwards
+# Anything that passes 130 characters chops into its leaves rather than
+# fill-wrapping: one argument per line, one && operand per line with the
+# operator leading, and the closing ')' on its own line. That is what gives the
+# Sx view trees their XML-like shape.
+##############################
+resharper_csharp_max_line_length = 130
+resharper_csharp_wrap_arguments_style = chop_if_long
+resharper_csharp_wrap_parameters_style = chop_if_long
+resharper_csharp_wrap_chained_binary_expressions = chop_if_long
+resharper_csharp_wrap_before_binary_opsign = true
+resharper_csharp_wrap_after_invocation_lpar = true
+resharper_csharp_wrap_before_invocation_rpar = true
+resharper_csharp_wrap_after_declaration_lpar = true
+resharper_csharp_wrap_before_declaration_rpar = true
+resharper_csharp_wrap_before_arrow_with_expressions = true
+resharper_csharp_wrap_before_linq_expression = true
+resharper_csharp_align_multiline_argument = false
+resharper_csharp_align_multiline_parameter = false
+resharper_max_initializer_elements_on_line = 1
+
+##############################
+# Naming: Roslyn rules (Visual Studio, OmniSharp, analyzers)
+##############################
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+dotnet_naming_style.i_pascal_case.capitalization = pascal_case
+dotnet_naming_style.i_pascal_case.required_prefix = I
+dotnet_naming_style.underscore_camel_case.capitalization = camel_case
+dotnet_naming_style.underscore_camel_case.required_prefix = _
+dotnet_naming_style.camel_case.capitalization = camel_case
+
+dotnet_naming_symbols.types.applicable_kinds = class, struct, enum, delegate, namespace
+dotnet_naming_symbols.types.applicable_accessibilities = *
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_symbols.interfaces.applicable_accessibilities = *
+dotnet_naming_symbols.members.applicable_kinds = property, method, event
+dotnet_naming_symbols.members.applicable_accessibilities = *
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.applicable_accessibilities = *
+dotnet_naming_symbols.constants.required_modifiers = const
+dotnet_naming_symbols.static_readonly.applicable_kinds = field
+dotnet_naming_symbols.static_readonly.applicable_accessibilities = *
+dotnet_naming_symbols.static_readonly.required_modifiers = static, readonly
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_constants.applicable_kinds = field
+dotnet_naming_symbols.private_constants.applicable_accessibilities = private
+dotnet_naming_symbols.private_constants.required_modifiers = const
+dotnet_naming_symbols.private_static_readonly.applicable_kinds = field
+dotnet_naming_symbols.private_static_readonly.applicable_accessibilities = private
+dotnet_naming_symbols.private_static_readonly.required_modifiers = static, readonly
+dotnet_naming_symbols.locals.applicable_kinds = local, parameter
+dotnet_naming_symbols.locals.applicable_accessibilities = *
+
+dotnet_naming_rule.types_pascal_case.symbols = types
+dotnet_naming_rule.types_pascal_case.style = pascal_case
+dotnet_naming_rule.types_pascal_case.severity = suggestion
+dotnet_naming_rule.interfaces_pascal_case.symbols = interfaces
+dotnet_naming_rule.interfaces_pascal_case.style = i_pascal_case
+dotnet_naming_rule.interfaces_pascal_case.severity = suggestion
+dotnet_naming_rule.members_pascal_case.symbols = members
+dotnet_naming_rule.members_pascal_case.style = pascal_case
+dotnet_naming_rule.members_pascal_case.severity = suggestion
+dotnet_naming_rule.constants_pascal_case.symbols = constants
+dotnet_naming_rule.constants_pascal_case.style = pascal_case
+dotnet_naming_rule.constants_pascal_case.severity = suggestion
+dotnet_naming_rule.static_readonly_pascal_case.symbols = static_readonly
+dotnet_naming_rule.static_readonly_pascal_case.style = pascal_case
+dotnet_naming_rule.static_readonly_pascal_case.severity = suggestion
+# Private const and static readonly fields read as PascalCase members, not as
+# _camelCase fields; these intersections outrank the private_fields rule.
+dotnet_naming_rule.private_constants_pascal_case.symbols = private_constants
+dotnet_naming_rule.private_constants_pascal_case.style = pascal_case
+dotnet_naming_rule.private_constants_pascal_case.severity = suggestion
+dotnet_naming_rule.private_static_readonly_pascal_case.symbols = private_static_readonly
+dotnet_naming_rule.private_static_readonly_pascal_case.style = pascal_case
+dotnet_naming_rule.private_static_readonly_pascal_case.severity = suggestion
+dotnet_naming_rule.private_fields_underscore_camel.symbols = private_fields
+dotnet_naming_rule.private_fields_underscore_camel.style = underscore_camel_case
+dotnet_naming_rule.private_fields_underscore_camel.severity = suggestion
+dotnet_naming_rule.locals_camel_case.symbols = locals
+dotnet_naming_rule.locals_camel_case.style = camel_case
+dotnet_naming_rule.locals_camel_case.severity = suggestion
+
+# ReSharper's engine ignores dotnet_naming_*; this mirrors it. Each line lists
+# accepted styles, and the second style of a pair keeps an interior underscore
+# legal (C2S_ClientEvent).
+resharper_csharp_naming_rule.types_and_namespaces = AaBb, AaBb_AaBb
+resharper_csharp_naming_rule.interfaces = I + AaBb, I + AaBb_AaBb
+resharper_csharp_naming_rule.method = AaBb, AaBb_AaBb
+resharper_csharp_naming_rule.property = AaBb, AaBb_AaBb
+resharper_csharp_naming_rule.event = AaBb, AaBb_AaBb
+resharper_csharp_naming_rule.enum_member = AaBb, AaBb_AaBb
+resharper_csharp_naming_rule.local_functions = AaBb, AaBb_AaBb
+resharper_csharp_naming_rule.constants = AaBb, AA_BB
+resharper_csharp_naming_rule.private_constants = AaBb, AA_BB
+resharper_csharp_naming_rule.static_readonly = AaBb, AaBb_AaBb
+resharper_csharp_naming_rule.private_static_readonly = AaBb, AaBb_AaBb, s_ + aaBb
+resharper_csharp_naming_rule.private_instance_fields = _ + aaBb, _ + aaBb_aaBb
+resharper_csharp_naming_rule.private_static_fields = s_ + aaBb, s_ + aaBb_aaBb, _ + aaBb, _ + aaBb_aaBb
+resharper_csharp_naming_rule.locals = aaBb, aaBb_aaBb
+resharper_csharp_naming_rule.local_constants = aaBb, aaBb_aaBb
+resharper_csharp_naming_rule.parameters = aaBb, aaBb_aaBb
+
+[*.{csproj,props,targets,xml}]
+indent_style = space
+indent_size = 4
+
+[*.{json,jsonc,yml,yaml}]
+indent_style = space
+indent_size = 2

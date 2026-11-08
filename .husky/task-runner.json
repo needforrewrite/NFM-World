@@ -1,0 +1,13 @@
+{
+   "$schema": "https://alirezanet.github.io/Husky.Net/schema.json",
+   "tasks": [
+      {
+         "name": "reformat-staged-csharp",
+         "group": "pre-commit",
+         "command": "sh",
+         "args": [ ".husky/format-staged.sh", "${staged}" ],
+         "include": [ "**/*.cs" ],
+         "output": "always"
+      }
+   ]
+}

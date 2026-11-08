@@ -157,4 +157,14 @@
         <LuaSourceGenerator_LuaCATSOutputDirectory>$(MSBuildProjectDirectory)\..\NFMWorld.Library\data\library\declarations</LuaSourceGenerator_LuaCATSOutputDirectory>
         <LuaVisibleGenerator_StubsOutputDirectory>$(MSBuildProjectDirectory)\..\NFMWorld.Library\data\library\declarations</LuaVisibleGenerator_StubsOutputDirectory>
     </PropertyGroup>
+
+    <!-- Installs the git hooks on restore so a fresh clone gets them. -->
+    <Target Name="Husky" AfterTargets="Restore" Condition="'$(HUSKY)' != 0" Inputs="..\dotnet-tools.json" Outputs="..\.husky\_\install.stamp">
+        <Exec Command="dotnet tool restore" StandardOutputImportance="Low" StandardErrorImportance="High" />
+        <Exec Command="dotnet husky install" StandardOutputImportance="Low" StandardErrorImportance="High" WorkingDirectory=".." />
+        <Touch Files="..\.husky\_\install.stamp" AlwaysCreate="true" Condition="Exists('..\.husky\_')" />
+        <ItemGroup>
+            <FileWrites Include="..\.husky\_\install.stamp" />
+        </ItemGroup>
+    </Target>
 </Project>

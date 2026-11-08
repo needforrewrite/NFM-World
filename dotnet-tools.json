@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "husky": {
+      "version": "0.9.1",
+      "commands": [
+        "husky"
+      ],
+      "rollForward": false
+    },
+    "jetbrains.resharper.globaltools": {
+      "version": "2026.2.4.1",
+      "commands": [
+        "jb"
+      ],
+      "rollForward": false
+    }
+  }
+}
