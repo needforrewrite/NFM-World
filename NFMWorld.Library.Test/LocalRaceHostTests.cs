@@ -1,4 +1,5 @@
 using NFMWorldLibrary;
+using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Gamemodes.RaceHost;
@@ -11,10 +12,9 @@ namespace NFMWorld.Library.Test;
 public class LocalRaceHostTests
 {
     [TestMethod]
-    public void ClientOnlyTimeTrial_StartsAndRestartsWithoutLoadingStageFiles()
+    public void ClientOnlyGamemode_StartsAndRestartsWithoutLoadingStageFiles()
     {
-        TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
-        var factory = GamemodeFactory.Create("nfmm/timetrial");
+        var factory = new ClientOnlyFactory();
         try
         {
             Assert.IsFalse(factory.HasServerGamemode);
@@ -37,5 +37,17 @@ public class LocalRaceHostTests
         {
             factory.End();
         }
+    }
+
+    /// <summary>A gamemode with no server side, which the host must run client-only.</summary>
+    private sealed class ClientOnlyFactory : BaseGamemodeFactory
+    {
+        public override string GamemodeId => "test/client-only";
+
+        public override bool HasServerGamemode => false;
+
+        public override IGamemode CreateGameMode(ClientGamemodeParameters parameters,
+            IGamemodeContext gamemodeContext)
+            => throw new NotSupportedException();
     }
 }

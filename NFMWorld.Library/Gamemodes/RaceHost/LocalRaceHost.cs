@@ -35,7 +35,7 @@ public sealed class LocalRaceHost : IRaceHost
 
     /// <summary>
     /// Creates a local host for the given factory. If the factory has no
-    /// server gamemode (e.g., time trial), the host runs client-only.
+    /// server gamemode, the host runs client-only.
     /// </summary>
     /// <param name="stageData">
     /// The stage to use instead of reading the current stage files, for replay
