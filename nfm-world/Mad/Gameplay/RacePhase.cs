@@ -42,6 +42,10 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     private readonly RaceInputController _input = new();
     private readonly RaceCameraDirector _cameraDirector = new();
     private readonly SettingsCameraPreview _settingsCamera = new();
+
+    /// <summary>This client's player id in the match, so it can tell which bots it simulates.</summary>
+    private readonly Guid _localPlayerId;
+
     public IGamemode? GamemodeInstance { get; protected set; }
 
     BackendStage IGamemodeContext.CurrentStage => CurrentStage.Backend;
@@ -55,6 +59,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         Gamemode = gamemode;
         Players = players;
         _host = host;
+        _localPlayerId = players.FirstOrDefault(p => p.IsClientPlayer)?.Id ?? Guid.Empty;
 
         // Create the gamemode once at construction time. Enter/Exit only handle
         // display-level activation/deactivation; the gamemode survives across
@@ -610,14 +615,27 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
     private void ApplyPlayerState(int carIndex, PlayerState state)
     {
+        if (GamemodeInstance is not BaseClientGamemode gm)
+            return;
+
+        // A car this client simulates is authoritative here; relaying it back would fight
+        // the local physics with its own history.
+        if (IsLocallySimulated(gm.Players[carIndex]))
+            return;
+
         if (state.Ticks <= _lastTick[carIndex])
             return;
 
         _lastTick[carIndex] = state.Ticks;
 
-        if ((GamemodeInstance as BaseClientGamemode)?.Players[carIndex].Car is { } car)
+        if (gm.Players[carIndex].Car is { } car)
             PlayerState.ApplyTo(state, car);
     }
+
+    /// <summary>True for the client's own car and any bot it fielded.</summary>
+    private bool IsLocallySimulated(ClientSidePlayer player)
+        => player.Info.IsClientPlayer
+           || player.Info.IsBot && player.Info.OwnerId == _localPlayerId;
 
     public override void GameTick()
     {
@@ -673,9 +691,26 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
         if (RaceState == RaceState.InProgress)
         {
-            var myCar = ClientCar;
-            if (myCar is not null)
-                _host.SendPlayerState(PlayerState.CreateFrom(_ticks++, myCar));
+            // The cars this client simulates: its own, and any bot it fielded. Each reports
+            // under its own player id, because the sender alone does not say which car it is.
+            var tick = _ticks++;
+            if (ClientCar is { } myCar)
+                _host.SendPlayerState(PlayerState.CreateFrom(tick, myCar));
+
+            // Only online: singleplayer's local host invents ids of its own and needs no relay.
+            if (GamemodeInstance is BaseClientGamemode gm && _host is NetworkRaceHost)
+            {
+                foreach (var player in gm.Players)
+                {
+                    if (!player.Info.IsBot || player.Car is not { } botCar)
+                        continue;
+                    // An empty owner is a bot this build drives itself (singleplayer roster
+                    // reused online); treat it as ours rather than leaving it undriven.
+                    if (player.Info.OwnerId != Guid.Empty && player.Info.OwnerId != _localPlayerId)
+                        continue;
+                    _host.SendPlayerState(PlayerState.CreateFrom(tick, botCar), player.Info.Id);
+                }
+            }
         }
 
         base.GameTick();

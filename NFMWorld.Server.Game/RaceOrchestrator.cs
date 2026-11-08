@@ -289,19 +289,40 @@ public class RaceOrchestrator : IDisposable
         if (!IsSanePlayerState(playerState.State))
             return;
 
+        // An empty id means the sender's own car. Anything else names a player, and a client
+        // may only speak for the bots it owns - otherwise it could drive another human's car.
+        var reportedId = clientId;
+        if (playerState.PlayerId != Guid.Empty)
+        {
+            var owned = false;
+            foreach (var info in session.PlayerInfos.Values)
+            {
+                if (info.Id == playerState.PlayerId && info.IsBot && info.OwnerId == clientId)
+                {
+                    owned = true;
+                    break;
+                }
+            }
+
+            if (!owned)
+                return;
+
+            reportedId = playerState.PlayerId;
+        }
+
         // Store the latest state for server gamemode queries. Wasted comes out of the same
         // frame: the gamemode decides who died when, but only the car's owner knows it died.
         var frame = playerState.State.CarFrame;
         var pos = frame.CarPosition;
-        session.PlayerPositions[clientId] = new f64Vector3(pos.X, pos.Y, pos.Z);
-        session.PlayerWasted[clientId] = frame.TheBitFlags.Wasted;
+        session.PlayerPositions[reportedId] = new f64Vector3(pos.X, pos.Y, pos.Z);
+        session.PlayerWasted[reportedId] = frame.TheBitFlags.Wasted;
 
         var others = session.Clients.Keys.Where(idx => idx != clientIndex).ToArray();
         if (others.Length > 0)
         {
             _transport.SendPacketToClients(others, new S2C_PlayerState
             {
-                PlayerId = clientId,
+                PlayerId = reportedId,
                 State = playerState.State,
                 CurrentServerTime = DateTimeOffset.UtcNow
             }, false);
@@ -338,7 +359,9 @@ public class RaceOrchestrator : IDisposable
         {
             Id = sessionId,
             MatchKey = raceParams.MatchKey,
-            PlayerCount = raceParams.MatchGameplayInfo.Players.Count,
+            // Only a player with a connection loads. A bot never sends C2S_RaceLoaded, so
+            // counting it here would leave the race waiting for a player that cannot arrive.
+            PlayerCount = raceParams.MatchGameplayInfo.Players.Values.Count(p => !p.IsBot),
             Clients = [],
             PlayerInfos = raceParams.MatchGameplayInfo.Players,
             Gamemode = raceParams.MatchGameplayInfo.Gamemode
@@ -346,6 +369,11 @@ public class RaceOrchestrator : IDisposable
 
         foreach (var (playerIndex, playerInfo) in raceParams.MatchGameplayInfo.Players)
         {
+            // A bot has no client to hand a token to; its state arrives from the client that
+            // simulates it, under the bot's own player id.
+            if (playerInfo.IsBot)
+                continue;
+
             var token = Guid.NewGuid();
             joinTokens[playerIndex] = token;
             _joinTokens.TryAdd(token, (session, playerIndex, playerInfo.Id));

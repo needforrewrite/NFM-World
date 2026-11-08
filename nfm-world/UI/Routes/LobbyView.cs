@@ -5,6 +5,7 @@ using NFMWorld.Reactor.Sx;
 using NFMWorld.UI.Components;
 using NFMWorld.UI.ViewModels;
 using NFMWorldLibrary.Multiplayer;
+using NFMWorldLibrary.Plugins;
 using SignalsDotnet;
 
 namespace NFMWorld.UI.Routes;
@@ -36,7 +37,9 @@ public static class LobbyView
         Action CloseCreate,
         Action<uint> Select,
         Action<string> SetStage,
-        Action<int> SetMaxPlayers);
+        Action<int> SetMaxPlayers,
+        Action<int> SetBots,
+        Action<string, string> SetConfig);
 
     private static readonly Color Blue = Theme.MenuBlue;
     private static readonly Color TextBlue = Theme.MenuTextBlue;
@@ -327,7 +330,23 @@ public static class LobbyView
                             text: () => $"Max players: {lobby.MaxPlayers.Value}"),
                         Sx.View(
                             style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6),
-                            children: [..MaxPlayerButtons(actions)]),
+                            children: Controls.Slider(
+                                () => lobby.MaxPlayers.Value,
+                                value => actions.SetMaxPlayers((int)value),
+                                2, MatchGameplayInfo.MaxPlayers, 1)),
+
+                        Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                            text: () => "Bots (they fill the empty slots)"),
+                        Sx.View(
+                            style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6),
+                            children: Controls.Slider(
+                                () => lobby.BotCount.Value,
+                                value => actions.SetBots((int)value),
+                                0, Math.Max(0, MatchGameplayInfo.MaxPlayers - lobby.MaxPlayers.Value), 1)),
+                        Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                            text: () => $"Field: {lobby.MaxPlayers.Value + lobby.BotCount.Value}"),
+
+                        ..GamemodeConfigControls(actions),
                         Sx.View(
                             style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10, marginTop: 6),
                             children:
@@ -341,18 +360,39 @@ public static class LobbyView
             ]);
     }
 
-    private static List<Node> MaxPlayerButtons(Actions actions)
+    /// <summary>
+    /// One row per config property the gamemode declares, read from the plugin so the dialog
+    /// never has to know what a gamemode's settings are. Empty when the plugin declares none.
+    /// </summary>
+    private static List<Node> GamemodeConfigControls(Actions actions)
     {
         var lobby = UiState.Lobby;
-        var buttons = new List<Node>();
-        for (var count = 2; count <= 8; count++)
+        var controls = new List<Node>();
+
+        foreach (var property in GamemodeCatalog.ConfigProperties(DefaultGamemodes.PvP))
         {
-            // Captured per iteration: the lambdas must not all see the last count.
-            var value = count;
-            buttons.Add(ActionButton(() => value.ToString(), () => actions.SetMaxPlayers(value), small: true,
-                active: () => lobby.MaxPlayers.Value == value));
+            if (property.Options.Count == 0)
+                continue;
+
+            controls.Add(Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                text: () => property.Label));
+
+            var options = new List<Node>();
+            foreach (var option in property.Options)
+            {
+                var value = option.Value;
+                options.Add(ActionButton(() => option.Label, () => actions.SetConfig(property.Name, value),
+                    small: true,
+                    active: () => lobby.GamemodeConfig.Value.TryGetValue(property.Name, out var chosen)
+                              && chosen == value));
+            }
+
+            controls.Add(Sx.View(
+                style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6),
+                children: [.. options]));
         }
-        return buttons;
+
+        return controls;
     }
 
     private static Node StageOption(string stage, Actions actions)

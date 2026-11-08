@@ -10,4 +10,7 @@ public partial struct C2S_CreateSession : IPacketClientToServer<C2S_CreateSessio
     [MemoryPackOrder(1)] public required int MaxPlayers { get; set; }
     [MemoryPackOrder(2)] public required string GameMode { get; set; }
     [MemoryPackOrder(3)] public required Dictionary<string, string> GameModeParameters { get; set; }
+
+    /// <summary>Bots to fill the empty slots with when the race starts. Not part of the field size.</summary>
+    [MemoryPackOrder(4)] public int Bots { get; set; }
 }

@@ -42,4 +42,10 @@ public partial struct ServerSidePlayerInfo
     /// True when this slot was filled by a server-side bot rather than a connected client.
     /// </summary>
     [MemoryPackOrder(5), PluginVisible] public bool IsBot { get; set; }
+
+    /// <summary>
+    /// For a bot, the player whose client simulates it - that client relays the bot's state.
+    /// Empty for a human. A client may only report state for a bot it owns.
+    /// </summary>
+    [MemoryPackOrder(6), PluginVisible] public Guid OwnerId { get; set; }
 }

@@ -169,6 +169,12 @@ public static class UiState
         public Signal<string> SelectedStage { get; } = new("");
         public Signal<int> MaxPlayers { get; } = new(4);
 
+        /// <summary>Bots that will fill empty slots. They are filled after the humans join.</summary>
+        public Signal<int> BotCount { get; } = new(0);
+
+        /// <summary>Gamemode config values chosen in the create dialog, keyed by property name.</summary>
+        public Signal<IReadOnlyDictionary<string, string>> GamemodeConfig { get; } = new(new Dictionary<string, string>());
+
         public void Reset()
         {
             Connected.Value = false;
@@ -180,6 +186,8 @@ public static class UiState
             CurrentSession.Value = null;
             SelectedSessionId.Value = null;
             ShowCreateDialog.Value = false;
+            BotCount.Value = 0;
+            GamemodeConfig.Value = new Dictionary<string, string>();
         }
     }
 

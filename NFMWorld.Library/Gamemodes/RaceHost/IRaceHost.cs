@@ -18,8 +18,12 @@ public interface IRaceHost : IDisposable
     /// <summary>Send a gamemode-specific event to the host.</summary>
     void SendServerEvent(ReadOnlyMemory<byte> payload);
 
-    /// <summary>Send the local player's car state to the host.</summary>
-    void SendPlayerState(PlayerState state);
+    /// <summary>
+    /// Send a car state to the host. <paramref name="playerId"/> names the player the car
+    /// belongs to; null means the local player's own car. A client-owned bot reports under
+    /// its own id, since the sender alone does not say which car it is.
+    /// </summary>
+    void SendPlayerState(PlayerState state, Guid? playerId = null);
 
     /// <summary>Fired when the race may begin (all players loaded).</summary>
     event Action? RaceCanStart;

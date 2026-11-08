@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using NFMWorldLibrary.Multiplayer;
+using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Multiplayer;
 
@@ -21,8 +23,12 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
     }
 
     /// <summary>Creates a new session. Returns the created session.</summary>
+    /// <param name="bots">
+    /// Bots to place in the empty slots when the race starts. They are filled then, not now, so
+    /// a human joining before the start takes one of those slots instead.
+    /// </param>
     public GameSession? CreateSession(uint creatorclientIndex, string stageName, byte maxPlayers, string gamemode,
-        Dictionary<string, string>? gamemodeParameters = null)
+        Dictionary<string, string>? gamemodeParameters = null, int bots = 0)
     {
         var creator = players.Get(creatorclientIndex);
         if (creator is null)
@@ -37,7 +43,8 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
             MaxPlayers = maxPlayers,
             Gamemode = gamemode,
             GamemodeParameters = gamemodeParameters is null ? [] : new(gamemodeParameters),
-            Players = new ConcurrentDictionary<byte, Guid> { [0] = creator.Id }
+            Players = new ConcurrentDictionary<byte, Guid> { [0] = creator.Id },
+            BotCount = Math.Max(0, bots)
         };
 
         creator.InSession = (0, session.Id);
@@ -130,12 +137,20 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
                     aplayer.IsInGame = true;
                 }
 
+                FillBots(session);
                 return true;
             }
 
             return false;
         }
     }
+
+    /// <summary>
+    /// Places the session's bots in the free slots. Humans take slots first because they can
+    /// join up to the moment the race starts, so this runs at the start, not at creation.
+    /// </summary>
+    private static void FillBots(GameSession session)
+        => session.Bots = SessionBots.Place(session.Players.Keys, session.BotCount, session.CreatorId);
 
     /// <summary>
     /// Checks for timed-out sessions (WaitingToLoad past StartTime).
@@ -209,9 +224,28 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         public required string StageName { get; set; }
         public int MaxPlayers { get; set; }
         public ConcurrentDictionary<byte, Guid> Players { get; set; } = [];
+
+        /// <summary>
+        /// Slots filled by bots, by slot. Kept apart from <see cref="Players"/> because a bot has
+        /// no connection: every path that maps a slot back to a client would otherwise have to
+        /// special-case an id the registry does not know.
+        /// </summary>
+        public Dictionary<byte, ServerSidePlayerInfo> Bots { get; set; } = [];
+
+        /// <summary>How many bots to place in the free slots when the race starts.</summary>
+        public int BotCount { get; set; }
+
         public DateTimeOffset? StartTime { get; set; }
         public SessionState State { get; set; } = SessionState.NotStarted;
         public string Gamemode { get; set; } = DefaultGamemodes.PvP;
         public Dictionary<string, string> GamemodeParameters { get; set; } = [];
+
+        /// <summary>Every occupied slot, humans and bots, in slot order.</summary>
+        public IEnumerable<(byte Slot, Guid Id)> AllSlots()
+            => Players.Select(kv => (kv.Key, kv.Value)).Concat(Bots.Keys.Select(b => (b, Guid.Empty)))
+                .OrderBy(e => e.Item1);
+
+        /// <summary>True when the slot is a bot rather than a connected human.</summary>
+        public bool IsBot(byte slot) => Bots.ContainsKey(slot);
     }
 }

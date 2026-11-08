@@ -8,6 +8,7 @@ using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
 using NFMWorldLibrary.Multiplayer.Packets.S2C;
+using NFMWorldLibrary.Plugins;
 
 namespace NFMWorld.Gameplay;
 
@@ -35,11 +36,13 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         Refresh: () => Lobby.Status.Value = ConnectionStatus(),
         SendChat: OnSendChat,
         Back: OnBack,
-        OpenCreate: () => Lobby.ShowCreateDialog.Value = true,
+        OpenCreate: OnOpenCreate,
         CloseCreate: () => Lobby.ShowCreateDialog.Value = false,
         Select: id => Lobby.SelectedSessionId.Value = id,
         SetStage: stage => Lobby.SelectedStage.Value = stage,
-        SetMaxPlayers: count => Lobby.MaxPlayers.Value = count);
+        SetMaxPlayers: count => Lobby.MaxPlayers.Value = count,
+        SetBots: count => Lobby.BotCount.Value = count,
+        SetConfig: OnSetConfig);
 
     public override Node BuildUi() => LobbyView.Build(Actions);
 
@@ -188,7 +191,9 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
                 Color = c.Color,
                 PlayerName = c.PlayerName,
                 IsBot = c.IsBot,
-                IsClientPlayer = c.Id == _player.Id
+                IsClientPlayer = c.Id == _player.Id,
+                Id = c.Id,
+                OwnerId = c.OwnerId
             })
             .ToArray();
 
@@ -237,7 +242,9 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             && !_activeSessions.Any(s => s.Id == selected))
             Lobby.SelectedSessionId.Value = null;
 
-        Lobby.MaxPlayers.Value = Math.Clamp(Lobby.MaxPlayers.Value, 2, 8);
+        Lobby.MaxPlayers.Value = Math.Clamp(Lobby.MaxPlayers.Value, 2, MatchGameplayInfo.MaxPlayers);
+        Lobby.BotCount.Value = Math.Clamp(Lobby.BotCount.Value, 0,
+            MatchGameplayInfo.MaxPlayers - Lobby.MaxPlayers.Value);
         if (string.IsNullOrEmpty(Lobby.SelectedStage.Value))
             Lobby.SelectedStage.Value = GameSparker.GetAvailableStages().FirstOrDefault() ?? "";
     }
@@ -338,9 +345,9 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         {
             GameMode = DefaultGamemodes.PvP,
             StageName = stage,
-            // The wire field is an int; the server clamps it to its own maximum.
             MaxPlayers = Lobby.MaxPlayers.Value,
-            GameModeParameters = new Dictionary<string, string> { ["constraint"] = "both" }
+            GameModeParameters = new(Lobby.GamemodeConfig.Value),
+            Bots = Lobby.BotCount.Value
         });
         Lobby.ShowCreateDialog.Value = false;
     }
@@ -350,6 +357,28 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         if (!CanAct || string.IsNullOrWhiteSpace(message))
             return;
         transport.SendPacketToServer(new C2S_LobbyChatMessage { Message = message });
+    }
+
+    private void OnOpenCreate()
+    {
+        // Seed the dialog with each property's first declared option, so a config is always a
+        // complete set rather than whatever the previous session left behind.
+        var defaults = new Dictionary<string, string>();
+        foreach (var property in GamemodeCatalog.ConfigProperties(DefaultGamemodes.PvP))
+        {
+            if (property.Options.Count > 0 && !defaults.ContainsKey(property.Name))
+                defaults[property.Name] = property.Options[0].Value;
+        }
+
+        Lobby.GamemodeConfig.Value = defaults;
+        Lobby.BotCount.Value = 0;
+        Lobby.ShowCreateDialog.Value = true;
+    }
+
+    private void OnSetConfig(string name, string value)
+    {
+        var config = new Dictionary<string, string>(Lobby.GamemodeConfig.Value) { [name] = value };
+        Lobby.GamemodeConfig.Value = config;
     }
 
     private void OnBack() => GameSparker.PopPhase();

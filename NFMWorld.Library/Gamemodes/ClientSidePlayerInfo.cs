@@ -21,6 +21,17 @@ public partial class ClientSidePlayerInfo
     /// </summary>
     [PluginVisible] public required bool IsClientPlayer { get; init; } = false;
 
+    /// <summary>
+    /// This player's id in the match, which is what a relayed car state is addressed by.
+    /// </summary>
+    [PluginVisible] public Guid Id { get; init; }
+
+    /// <summary>
+    /// The player whose client simulates this one, for a bot. Bots have no connection of their
+    /// own, so the client that owns them simulates them and relays their state.
+    /// </summary>
+    [PluginVisible] public Guid OwnerId { get; init; }
+
     public ClientSidePlayerInfo()
     {
     }

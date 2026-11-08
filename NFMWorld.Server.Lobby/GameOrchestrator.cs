@@ -353,8 +353,14 @@ public class GameOrchestrator
         var player = _players.Get(clientId);
         if (player is null) return;
 
-        var session = _sessions.CreateSession(clientId, create.StageName, (byte)create.MaxPlayers,
-            create.GameMode, create.GameModeParameters);
+        var session = _sessions.CreateSession(clientId, create.StageName,
+            (byte)Math.Clamp(create.MaxPlayers, 2, MatchGameplayInfo.MaxPlayers),
+            create.GameMode, create.GameModeParameters,
+            Math.Clamp(create.Bots, 0, MatchGameplayInfo.MaxPlayers - 1));
+
+        // The creator can be gone by the time this runs, and CreateSession reports that as null.
+        if (session is null)
+            return;
 
         _chat.BroadcastSystem(
             $"{session.CreatorName} has started a session for {session.StageName}!");
@@ -427,6 +433,11 @@ public class GameOrchestrator
                 AccountId = p.AccountId
             };
         }
+
+        // Bots occupy real slots in the match, so they are in the roster the clients build -
+        // but they have no connection, so they get no join token and are sent nothing.
+        foreach (var (index, bot) in session.Bots)
+            playerInfos[index] = bot;
 
         var matchInfo = new MatchGameplayInfo
         {

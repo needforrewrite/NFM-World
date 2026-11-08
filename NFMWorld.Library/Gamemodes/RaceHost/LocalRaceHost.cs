@@ -119,9 +119,9 @@ public sealed class LocalRaceHost : IRaceHost
     public void SendServerEvent(ReadOnlyMemory<byte> payload)
         => _serverGamemode?.OnClientEvent(_localPlayerId, payload.Span);
 
-    public void SendPlayerState(PlayerState state)
+    public void SendPlayerState(PlayerState state, Guid? playerId = null)
         => _context.RecordPlayerState(
-            _localPlayerId,
+            playerId ?? _localPlayerId,
             state.CarFrame.CarPosition.X,
             state.CarFrame.CarPosition.Y,
             state.CarFrame.CarPosition.Z,

@@ -69,7 +69,10 @@ public class PvpGamemode : PluginGamemode
             car.CurrentCheckpoint = 0;
             car.CurrentLap = 0;
 
-            if (player.Info.IsBot)
+            // Only the client that owns a bot drives it; every other client sees the
+            // state its owner relays. An ownerless bot (singleplayer) is driven locally.
+            if (player.Info.IsBot
+                && (player.Info.OwnerId == Guid.Empty || player.Info.OwnerId == ClientPlayer.Info.Id))
                 AttachBot("classic", player);
         }
     }

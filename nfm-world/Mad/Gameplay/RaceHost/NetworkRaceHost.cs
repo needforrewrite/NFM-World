@@ -95,8 +95,13 @@ public sealed class NetworkRaceHost : IRaceHost
     public void SendServerEvent(ReadOnlyMemory<byte> payload)
         => _transport.SendPacketToServer(new C2S_ClientEvent { Payload = payload.ToArray() }, reliable: true);
 
-    public void SendPlayerState(PlayerState state)
-        => _transport.SendPacketToServer(new C2S_PlayerState { State = state }, false);
+    public void SendPlayerState(PlayerState state, Guid? playerId = null)
+        => _transport.SendPacketToServer(new C2S_PlayerState
+        {
+            State = state,
+            // Null is the sender's own car; a bot the client simulates sends its own id.
+            PlayerId = playerId ?? Guid.Empty
+        }, false);
 
     public void Dispose()
     {

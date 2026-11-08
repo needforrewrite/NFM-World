@@ -143,6 +143,15 @@ Gamemodes are compiled `.NET` plugins — the Lua path is gone. Singleplayer and
 - **Authoring** — derive from `PluginGamemode` / `PluginServerGamemode` (gamemodes) or `PluginAi` (AI), and mark the
   assembly with `[assembly: Gamemode(Name = ..., Description = ...)]` or `[assembly: Ai(...)]`, plus
   `GamemodeConfigProperty` / `GamemodeConfigPropertyOption`.
+- **Config in the UI** — the lobby's create dialog renders whatever the gamemode declares, read through
+  `GamemodeCatalog.ConfigProperties(id)`, which loads the plugin only to read its schema and releases it again. Nothing
+  in the client hardcodes a gamemode's options.
+- **Bots in a session** — the creator's client simulates every bot it fielded, and only that client
+  (`(player.Info.IsBot && player.Info.OwnerId == ClientPlayer.Info.Id)`). Bots take real slots with fresh ids
+  (`SessionBots.Place`, filled at *race start*, so a human joining the lobby first takes the slot), get no join token,
+  and are excluded from the GM's `PlayerCount` — a bot never sends `C2S_RaceLoaded`. Their state is relayed by their
+  owner under the *bot's* id (`C2S_PlayerState.PlayerId`), and the GM accepts it only when
+  `PlayerInfos[id].IsBot && OwnerId == sender`. A receiving client must not apply relayed state to a car it simulates.
 - **Build** — `Plugin.props` is imported by each plugin project; `Plugin.Plugins.targets` is imported by each *host*
   (`NFMWorld`, `nfm-world`, `NFMWorld.Server.Game`, `NFMWorld.Library.Test`) and builds the plugins, passing its own
   output dir down so each plugin copies only its own output. `PluginOutputRoot` is the only property handed down: it

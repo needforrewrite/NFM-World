@@ -35,6 +35,12 @@ public partial struct MatchGameplayInfo()
     /// </summary>
     public readonly ServerSidePlayerInfo[] InSlotOrder()
         => [.. Players.OrderBy(kv => kv.Key).Select(kv => kv.Value)];
+
+    /// <summary>
+    /// The largest field a session may have, bots included. Both ends clamp to it: the client
+    /// stops its sliders here and the lobby clamps whatever a client sends.
+    /// </summary>
+    public const int MaxPlayers = 16;
 }
 
 public static class DefaultGamemodes
