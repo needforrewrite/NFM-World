@@ -1,0 +1,86 @@
+# The whole multiplayer stack on one machine: lobby, one game master, archive.
+#
+#   1. git clone --recurse-submodules (the build needs every submodule)
+#   2. cp .env.example .env, fill it in
+#   3. docker compose up --build
+#
+#   Client (debug build)  ws://localhost:7001        lobby, from the menu or `connect localhost 7001`
+#   Players                udp 7002                  race traffic, straight to the game master
+#   Website / API          http://localhost:8080     archive
+#   Game-master API        tcp 7003                  lobby -> GM only, not published
+#
+# Only 7001 and 7002 should ever be exposed to the internet; the archive on 8080 is a web
+# app and needs a TLS terminator in front before it is public.
+#
+# The game master is addressed by `ports` plus its service name on the compose network. The
+# lobby reaches it as `game-master:7003` and tells players `game-master:<udp port>` - which
+# only resolves for a player on this machine's network. Set GAME_MASTER_DOMAINS to an address
+# players' machines can resolve before letting anyone else in.
+
+name: nfmw
+
+services:
+  archive:
+    build:
+      context: .
+      dockerfile: NFMWorld.Archive/Dockerfile
+    restart: unless-stopped
+    environment:
+      # Only this process may write ratings, and the lobby is the only party given its key.
+      Archive__TrustedServerKeys: ${ARCHIVE_TRUSTED_KEYS:?set ARCHIVE_TRUSTED_KEYS in .env}
+      Archive__PublicBaseUrl: ${ARCHIVE_PUBLIC_URL:-http://localhost:8080}
+      Archive__DiscordClientId: ${DISCORD_CLIENT_ID:-}
+      Archive__DiscordClientSecret: ${DISCORD_CLIENT_SECRET:-}
+      Archive__DiscordRedirectUri: ${DISCORD_REDIRECT_URI:-}
+    ports:
+      - "8080:8080"
+    volumes:
+      # SQLite database and uploaded files. Losing this loses every account and rating.
+      - archive-data:/data
+
+  game-master:
+    build:
+      context: .
+      dockerfile: NFMWorld.Server.Game/Dockerfile
+    restart: unless-stopped
+    environment:
+      GM_GAME_PORT: "${GM_GAME_PORT:-7002}"
+      GM_HTTP_ENDPOINT: "http://+:7003/"
+      GM_HMAC_KEYS: ${GM_HMAC_KEYS:?set GM_HMAC_KEYS in .env}
+      # Where a finished race is reported. The lobby is the only party that knows which
+      # account each slot belongs to, so the GM hands it the result and the lobby forwards it
+      # to the archive. Unset, races are played but never rated.
+      LOBBY_RESULTS_URL: "http://lobby:7001/race-ended"
+      HMAC_KEY_ID: ${GM_KEY_ID:-primary}
+      HMAC_SECRET_KEY: ${GM_HMAC_SECRET:?set GM_HMAC_SECRET in .env}
+    ports:
+      # UDP only: players connect here directly, and the lobby tells them this port.
+      - "${GM_GAME_PORT:-7002}:${GM_GAME_PORT:-7002}/udp"
+
+  lobby:
+    build:
+      context: .
+      dockerfile: NFMWorld.Server.Lobby/Dockerfile
+    restart: unless-stopped
+    environment:
+      # Binds every interface; the container's own port mapping decides who can reach it.
+      LOBBY_HTTP_ENDPOINT: "http://+:7001/"
+      # host:udpPort+httpPort - the game master's container name, its UDP game port, its HTTP port.
+      GAME_MASTER_DOMAINS: "game-master:${GM_GAME_PORT:-7002}+7003"
+      # Verifies /race-ended from the game master.
+      GM_HMAC_KEYS: ${GM_HMAC_KEYS:?set GM_HMAC_KEYS in .env}
+      HMAC_KEY_ID: ${GM_KEY_ID:-primary}
+      HMAC_SECRET_KEY: ${GM_HMAC_SECRET:?set GM_HMAC_SECRET in .env}
+      # Verifies player tokens on join and signs the result report to the archive. Unset,
+      # everyone plays as a guest and no result is reported.
+      ARCHIVE_URL: "http://archive:8080/"
+      ARCHIVE_SECRET_KEY: ${ARCHIVE_SECRET:?set ARCHIVE_SECRET in .env}
+    ports:
+      - "7001:7001"
+    # No depends_on: the lobby's game-master registry retries resolution on a timer, and
+    # GameMasterRegistry throws if it finds nothing at startup - so making the lobby wait
+    # would deadlock the stack. Bring it up last, or let `restart: unless-stopped` retry it
+    # when the game master's container name starts resolving.
+
+volumes:
+  archive-data:

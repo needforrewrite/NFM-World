@@ -70,3 +70,6 @@ gamemode.deps.json
 
 /scratch
 /data/cfg/config.cfg
+
+# Local deploy secrets for docker-compose.yml. The example is committed, the real one is not.
+/.env

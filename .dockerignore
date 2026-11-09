@@ -1,0 +1,28 @@
+# Build contexts here are the whole repo, and three services share it - so this is about upload
+# size and build time, not correctness. Nothing ignored here is on the lobby, game master, or
+# archive reference path. The browser head (which pulls the graphics/ImGui trees) is not built.
+
+**/bin/
+**/obj/
+**/Generated/
+**/.vs/
+**/TestResults/
+**/*.pdb
+
+# Upstream trees and heavy tooling no server service builds.
+kni/
+luau/
+Sokol.NET/
+scratch/
+FontStashSharp/samples/
+SDL3-CS/
+NFMWorld.ImGui.Browser/src/Generated/
+NFMWorld.Graphics.Sokol/
+NFMWorld.Browser/
+
+# Local state
+.git/
+.env
+NFMWorld.Archive/archive.db*
+NFMWorld.Archive/storage/
+/data/cfg/config.cfg
