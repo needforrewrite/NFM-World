@@ -57,6 +57,9 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         // Reset emptied the status signal, so the cached text would make UpdateStatus a no-op
         // and leave the line blank on re-entry.
         _lastStatus = null;
+        // Enter runs on every return to the lobby, so a race that already happened is stale
+        // from here on: the next session's start failure must still be reported.
+        _racedThisSession = false;
         // Returning from a race re-enters this phase, and the server only resends lobby state
         // on the next change; the transcript this client already received stays put.
         Lobby.Chat.Value = _chatMessages.ToArray();
@@ -74,7 +77,6 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         // A reconnected transport is a brand-new connection: the lobby knows nothing about
         // this player until it authenticates and identifies itself again.
         _sentClientIdentity = false;
-        _racedThisSession = false;
         _player.Id = Guid.Empty;
         _players = [];
         _activeSessions = [];
