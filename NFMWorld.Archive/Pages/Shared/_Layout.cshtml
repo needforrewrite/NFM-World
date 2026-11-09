@@ -1,97 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>@[] · NFM World Archive</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · NFM World Archive</title>
     <style>
-        :root {
-            color-scheme: dark;
-        }
-
-        body {
-            margin: 0;
-            font: 15px/1.5 system-ui, sans-serif;
-            background: #0d1424;
-            color: #d5e2ff;
-        }
-
-        a {
-            color: #80aaff;
-        }
-
-        header {
-            display: flex;
-            gap: 20px;
-            align-items: baseline;
-            padding: 14px 24px;
-            border-bottom: 1px solid #24345c;
-        }
-
-        header nav a {
-            margin-right: 16px;
-            text-decoration: none;
-        }
-
-        main {
-            max-width: 960px;
-            margin: 24px auto;
-            padding: 0 24px;
-        }
-
-        h1 {
-            font-size: 22px;
-            margin-top: 0;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            text-align: left;
-            padding: 6px 8px;
-            border-bottom: 1px solid #1c2743;
-        }
-
-        input, button, select, textarea {
-            font:
-                inherit;
-            padding
-            : 6px 8px;
-            background: #16203a;
-            color: inherit;
-            border: 1px solid #2b3d6b;
-            border-radius: 4px;
-        }
-
-        button {
-            background: #2a4a8f;
-            cursor: pointer;
-        }
-
-        .error {
-            color:;
-        }
-
-        .muted {;
-         }
-
-         form.row {
-            display
-            : flex;
-            gap: 8px;
-            :;
-            align-items: end;
-            margin-bottom: 12px;
-        }
+        :root { color-scheme: dark; }
+        body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: #0d1424; color: #d5e2ff; }
+        a { color: #80aaff; }
+        header { display: flex; gap: 20px; align-items: baseline; padding: 14px 24px; border-bottom: 1px solid #24345c; }
+        header nav a { margin-right: 16px; text-decoration: none; }
+        main { max-width: 960px; margin: 24px auto; padding: 0 24px; }
+        h1 { font-size: 22px; margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #1c2743; }
+        input, button, select, textarea { font: inherit; padding: 6px 8px; background: #16203a; color: inherit;
+            border: 1px solid #2b3d6b; border-radius: 4px; }
+        button { background: #2a4a8f; cursor: pointer; }
+        .error { color: #ff9a9a; }
+        .muted { color: #7f8fb5; }
+        form.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; margin-bottom: 12px; }
     </style>
 </head>
 <body>
 <header>
-    <strong>NFM
-        WORLD</strong>
+    <strong>NFM WORLD ARCHIVE</strong>
     <nav>
         <a href="/">Account</a>
         <a href="/browse">Browse</a>
@@ -100,18 +33,18 @@
         <a href="/upload">Upload</a>
     </nav>
     @{
-    var viewer = ViewData["Viewer"] as NFMWorld.Archive.Pages.ViewerState;
+        var viewer = ViewData["Viewer"] as NFMWorld.Archive.Pages.ViewerState;
     }
     @if (viewer?.Username is { } username)
     {
-    <span class="muted" style="margin-left:auto">@username</span>
-    <form method="post" action="/logout" style="margin:0">
-        <button type="submit">Sign out</button>
-    </form>
+        <span class="muted" style="margin-left:auto">@username</span>
+        <form method="post" action="/logout" style="margin:0">
+            <button type="submit">Sign out</button>
+        </form>
     }
     else
     {
-    <a style="margin-left:auto" href="/account/login">Sign in</a>
+        <a style="margin-left:auto" href="/account/login">Sign in</a>
     }
 </header>
 <main>

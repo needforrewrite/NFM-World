@@ -13,9 +13,7 @@
 
 @if (Model.MyClan is not null)
 {
-    <p>You are in
-        <strong>@Model.MyClan.Name</strong>@(string.IsNullOrEmpty(Model.MyClan.Tag) ? "" : $" [{Model.MyClan.Tag}]").
-    </p>
+    <p>You are in <strong>@Model.MyClan.Name</strong>@(string.IsNullOrEmpty(Model.MyClan.Tag) ? "" : $" [{Model.MyClan.Tag}]").</p>
     <form method="post" asp-page-handler="Leave">
         <button type="submit">Leave clan</button>
     </form>
@@ -24,8 +22,8 @@ else if (Model.IsSignedIn)
 {
     <h2>Create a clan</h2>
     <form method="post" asp-page-handler="Create" class="row">
-        <label>Name<br/><input asp-for="ClanName"/></label>
-        <label>Tag<br/><input asp-for="Tag" maxlength="6"/></label>
+        <label>Name<br /><input asp-for="ClanName" /></label>
+        <label>Tag<br /><input asp-for="Tag" maxlength="6" /></label>
         <button type="submit">Create</button>
     </form>
 }
@@ -37,31 +35,24 @@ else if (Model.IsSignedIn)
 }
 else
 {
-<
-    table>
-        <tr>
-            <th>Clan</th>
-            <th>Tag</th>
-            <th>Members</th>
-            <th></th>
-        </tr>
-            @foreach (var clan in Model.)
-            {
+    <table>
+        <tr><th>Clan</th><th>Tag</th><th>Members</th><th></th></tr>
+        @foreach (var clan in Model.Clans)
+        {
             <tr>
-            <td>@clan.Name
+                <td>@clan.Name</td>
                 <td>@clan.Tag</td>
-            <td>@clan..Count</td>
-            <td>
-                @if (.IsSignedIn && Model.is null)
-                {
-                <form method="post" asp-page-handler="Join" style="margin:0">
-                    <input type="hidden" name="JoinClanId" value="@clan.Id"/>
-            <
-                button type="submit">Join</>
-                </form>
-            }
-    </td>
-    </tr>
-    }
-</table>
+                <td>@clan.Members.Count</td>
+                <td>
+                    @if (Model.IsSignedIn && Model.MyClan is null)
+                    {
+                        <form method="post" asp-page-handler="Join" style="margin:0">
+                            <input type="hidden" name="JoinClanId" value="@clan.Id" />
+                            <button type="submit">Join</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+    </table>
 }

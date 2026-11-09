@@ -16,8 +16,7 @@ else
         <select name="stageHash" onchange="this.form.carHash.value='';this.form.submit()">
             @foreach (var board in Model.Boards.GroupBy(b => (b.StageHash, b.StageName)))
             {
-                <option value="@board.Key.StageHash"
-                        selected="@(Model.StageHash == board.Key.StageHash)">@board.Key.StageName</option>
+                <option value="@board.Key.StageHash" selected="@(Model.StageHash == board.Key.StageHash)">@board.Key.StageName</option>
             }
         </select>
         <select name="carHash" onchange="this.form.submit()">
@@ -30,13 +29,7 @@ else
     </form>
 
     <table>
-        <tr>
-            <th>#</th>
-            <th>Player</th>
-            <th>Time</th>
-            <th>Set</th>
-            <th></th>
-        </tr>
+        <tr><th>#</th><th>Player</th><th>Time</th><th>Set</th><th></th></tr>
         @for (var i = 0; i < Model.Entries.Count; i++)
         {
             var entry = Model.Entries[i];

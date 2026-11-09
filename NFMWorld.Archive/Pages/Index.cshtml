@@ -19,22 +19,18 @@
 else
 {
     <table>
-        <tr>
-            <th>Gamemode</th>
-            <th>Elo</th>
-            <th>Wins</th>
-        <>Losses</th>
-        <>Matches@foreach (rating in.Ratings)
+        <tr><th>Gamemode</th><th>Elo</th><th>Wins</th><th>Losses</th><th>Matches</th></tr>
+        @foreach (var rating in Model.Ratings)
         {
-        <tr>
-        <td>@rating.Gamemode
-            <td>@Math.Round(.Elo)</td>
-        <td>
-            @.Wins</td>
-        <td>@.Losses</td>
-    <td>@rating.Matches</tr>
-    }
-</table>
+            <tr>
+                <td>@rating.Gamemode</td>
+                <td>@Math.Round(rating.Elo)</td>
+                <td>@rating.Wins</td>
+                <td>@rating.Losses</td>
+                <td>@rating.Matches</td>
+            </tr>
+        }
+    </table>
 }
 
 <h2>Your content</h2>
