@@ -37,18 +37,25 @@ public record ResolvedGameMaster
 public class GameMasterRegistry : IDisposable
 {
     private readonly List<ResolvedGameMaster> _masters = new();
+    private readonly IReadOnlyDictionary<string, (string Host, ushort? Port)>? _publicAddresses;
     private readonly int _maxConsecutiveFailures;
     private readonly Timer _refreshTimer;
     private readonly object _lock = new();
     private int _roundRobinIndex;
 
+    /// <param name="publicAddresses">
+    /// Where players reach a game master, keyed by the domain the lobby reaches it at. Absent,
+    /// players are told the same address the lobby uses.
+    /// </param>
     public GameMasterRegistry(
         IEnumerable<string> domains,
         int maxConsecutiveFailures = 3,
-        int refreshIntervalSeconds = 60
+        int refreshIntervalSeconds = 60,
+        IReadOnlyDictionary<string, (string Host, ushort? Port)>? publicAddresses = null
     )
     {
         _maxConsecutiveFailures = maxConsecutiveFailures;
+        _publicAddresses = publicAddresses;
 
         foreach (var domain in domains)
             ResolveAndAdd(domain.Trim());
@@ -76,7 +83,51 @@ public class GameMasterRegistry : IDisposable
                          ?? "localhost";
 
         var domains = domainsStr.Split(',', StringSplitOptions.RemoveEmptyEntries);
-        return new GameMasterRegistry(domains, maxConsecutiveFailures, refreshIntervalSeconds);
+
+        // Where the lobby reaches a game master is rarely where players reach it: behind a
+        // tunnel or on a private network those are different names. Players are told the
+        // public one, which is resolved to an address here because that is what goes on the
+        // wire - a player who got the name back would still have to resolve it themselves.
+        var publicAddress = Environment.GetEnvironmentVariable("GM_PUBLIC_ADDRESS");
+        var map = string.IsNullOrWhiteSpace(publicAddress)
+            ? null
+            : ParseAddressMap(publicAddress);
+
+        return new GameMasterRegistry(domains, maxConsecutiveFailures, refreshIntervalSeconds, map);
+    }
+
+    /// <summary>
+    /// Parses <c>privateHost=publicHost[:port][,privateHost=publicHost...]</c>. The port is the
+    /// game's UDP port and defaults to the private side's.
+    /// </summary>
+    public static Dictionary<string, (string Host, ushort? Port)> ParseAddressMap(string value)
+    {
+        var map = new Dictionary<string, (string Host, ushort? Port)>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var entry in value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var split = entry.IndexOf('=');
+            if (split <= 0)
+                continue;
+
+            var from = entry[..split].Trim();
+            var to = entry[(split + 1)..].Trim();
+            if (from.Length == 0 || to.Length == 0)
+                continue;
+
+            // Only split a port off when the tail is numeric, so an IPv6 literal survives.
+            ushort? port = null;
+            var colon = to.LastIndexOf(':');
+            if (colon > 0 && ushort.TryParse(to[(colon + 1)..], out var parsedPort))
+            {
+                port = parsedPort;
+                to = to[..colon];
+            }
+
+            map[from] = (to, port);
+        }
+
+        return map;
     }
 
     /// <summary>Selects a healthy Game Master using round-robin.</summary>
@@ -204,7 +255,7 @@ public class GameMasterRegistry : IDisposable
         }
     }
 
-    private static ResolvedGameMaster? ResolveDomain(string domain)
+    private ResolvedGameMaster? ResolveDomain(string domain)
     {
         // Dev mode: host:udpPort+httpPort (e.g. localhost:7000+7002)
         var plusIdx = domain.IndexOf('+');
@@ -217,7 +268,7 @@ public class GameMasterRegistry : IDisposable
         return ResolveSrvDomain(domain);
     }
 
-    private static ResolvedGameMaster? ResolveDevEntry(string entry, int plusIdx)
+    private ResolvedGameMaster? ResolveDevEntry(string entry, int plusIdx)
     {
         try
         {
@@ -229,15 +280,23 @@ public class GameMasterRegistry : IDisposable
             var udpPort = colonIdx > 0 ? ushort.Parse(hostAndUdp[(colonIdx + 1)..]) : (ushort)7000;
             var httpPort = ushort.Parse(httpPortStr);
 
-            var addresses = host == "localhost"
-                ? [IPAddress.Loopback]
-                : Dns.GetHostAddresses(host);
+            // The lobby may reach the game master somewhere players cannot - a tunnel, a
+            // private network - so players are given the public name resolved here instead.
+            var publicHost = host;
+            var publicPort = udpPort;
+            if (_publicAddresses is not null && _publicAddresses.TryGetValue(host, out var mapped))
+            {
+                publicHost = mapped.Host;
+                publicPort = mapped.Port ?? udpPort;
+            }
 
+            var addresses = HostName(publicHost);
             if (addresses.Length == 0) return null;
             var ip = addresses[0];
 
             Console.WriteLine(
-                $"[GameMasterRegistry] Dev GM: {host} UDP:{udpPort} HTTP:{httpPort}"
+                $"[GameMasterRegistry] GM: {host} UDP:{udpPort} HTTP:{httpPort}, "
+                + $"players reach it at {publicHost}:{publicPort} ({ip})"
             );
 
             return new ResolvedGameMaster
@@ -246,7 +305,7 @@ public class GameMasterRegistry : IDisposable
                 HttpEndpoint = new Uri($"http://{host}:{httpPort}"),
                 GameAddress = new IpAndPort(
                     new CompactIpAddress(ip.GetAddressBytes()),
-                    udpPort
+                    publicPort
                 ),
                 Domain = entry
             };
@@ -258,22 +317,34 @@ public class GameMasterRegistry : IDisposable
         }
     }
 
-    private static ResolvedGameMaster? ResolveSrvDomain(string domain)
+    private static IPAddress[] HostName(string host)
+        => host is "localhost" ? [IPAddress.Loopback] : Dns.GetHostAddresses(host);
+
+    private ResolvedGameMaster? ResolveSrvDomain(string domain)
     {
         try
         {
-            var addresses = Dns.GetHostAddresses(domain);
+            // The domain resolves to whichever name the lobby can reach; players are given
+            // the mapped public one when there is one.
+            var publicHost = domain;
+            var publicPort = (ushort)7000; // TODO: use actual SRV port when DnsClient is added
+            if (_publicAddresses is not null && _publicAddresses.TryGetValue(domain, out var mapped))
+            {
+                publicHost = mapped.Host;
+                publicPort = mapped.Port ?? publicPort;
+            }
+
+            var addresses = HostName(publicHost);
             if (addresses.Length == 0) return null;
 
             var ip = addresses[0];
-            var port = 7000; // TODO: use actual SRV port when DnsClient is added
 
             return new ResolvedGameMaster
             {
-                HttpEndpoint = new Uri($"http://{ip}:80"),
+                HttpEndpoint = new Uri($"https://{domain}:443"),
                 GameAddress = new IpAndPort(
                     new CompactIpAddress(ip.GetAddressBytes()),
-                    (ushort)port
+                    publicPort
                 ),
                 Domain = domain
             };

@@ -392,6 +392,12 @@ palette). One lobby; whether a race is rated is chosen per race, not by a menu p
   too, via `AccountManager.ActiveAccountChanged`. A lobby with no `ARCHIVE_URL` admits everyone as a guest rather
   than refusing the token, since it cannot check it. **One account, one connection**: a second connection presenting
   an account already in the lobby is refused and disconnected, because it could otherwise take two cars in a race.
+- **Where players reach a game master** is `GM_PUBLIC_ADDRESS`, a
+  `privateHost=publicHost[:udpPort][,...]` map applied by `GameMasterRegistry`. The lobby almost never
+  reaches a GM at the address players do (compose network, tunnel, private LAN), and the wire carries a
+  `CompactIpAddress`, not a name — so the lobby resolves the *public* host and sends that address.
+  Unset, players are told the same address the lobby uses. The dev entry form is
+  `host:udpPort+httpPort`; production is an SRV lookup, whose HTTP side is assumed to be `https://host:443`.
 - **Pausing is local.** `RacePhase.IsPaused` shows the pause menu; only a `LocalRaceHost` also stops the tick
   (`GameTick` returns early). Online the world keeps running, the client just stops driving, and `RaceState` is left
   alone. `RaceHudView.Actions.Restart` is null online, so RESTART is not offered. Quitting an in-progress online race

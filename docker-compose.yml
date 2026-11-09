@@ -12,10 +12,10 @@
 # Only 7001 and 7002 should ever be exposed to the internet; the archive on 8080 is a web
 # app and needs a TLS terminator in front before it is public.
 #
-# The game master is addressed by `ports` plus its service name on the compose network. The
-# lobby reaches it as `game-master:7003` and tells players `game-master:<udp port>` - which
-# only resolves for a player on this machine's network. Set GAME_MASTER_DOMAINS to an address
-# players' machines can resolve before letting anyone else in.
+# The lobby reaches the game master as `game-master` on the compose network. Players are told
+# GM_PUBLIC_HOST instead - the name from which the lobby resolves the address put on the wire.
+# Set it to the game master's public name (game-nfmw.puppykitty.racing); left at localhost it
+# only works for a client on this machine.
 
 name: nfmw
 
@@ -67,6 +67,9 @@ services:
       LOBBY_HTTP_ENDPOINT: "http://+:7001/"
       # host:udpPort+httpPort - the game master's container name, its UDP game port, its HTTP port.
       GAME_MASTER_DOMAINS: "game-master:${GM_GAME_PORT:-7002}+7003"
+      # Where players reach it. The lobby reaches the GM as `game-master`, which only resolves
+      # on this network; players are told (and the lobby resolves for them) the public name.
+      GM_PUBLIC_ADDRESS: "game-master=${GM_PUBLIC_HOST:-localhost}:${GM_GAME_PORT:-7002}"
       # Verifies /race-ended from the game master.
       GM_HMAC_KEYS: ${GM_HMAC_KEYS:?set GM_HMAC_KEYS in .env}
       HMAC_KEY_ID: ${GM_KEY_ID:-primary}
