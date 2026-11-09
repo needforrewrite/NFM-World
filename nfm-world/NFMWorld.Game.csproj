@@ -20,7 +20,7 @@
         <DefineConstants Condition="'$(NfmwBrowser)' == 'true'">$(DefineConstants);WEB_AUDIO</DefineConstants>
         <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
 
-        <ArchiveEndpoint Condition="'$(ArchiveEndpoint)' == '' and '$(Configuration)' == 'Release'">https://archive.nfmw.net</ArchiveEndpoint>
+        <ArchiveEndpoint Condition="'$(ArchiveEndpoint)' == '' and '$(Configuration)' == 'Release'">https://nfmw.puppykitty.racing</ArchiveEndpoint>
         <ArchiveEndpoint Condition="'$(ArchiveEndpoint)' == ''">http://localhost:5000</ArchiveEndpoint>
 
         <!-- The lobby the game connects to by default. A Debug build talks to a local lobby,
@@ -29,7 +29,7 @@
              The port is the lobby's HTTP/WebSocket listener (LOBBY_HTTP_ENDPOINT), not the game
              master's ENet port. The session token travels on this connection, so the release
              lobby is wss only. -->
-        <LobbyEndpoint Condition="'$(LobbyEndpoint)' == '' and '$(Configuration)' == 'Release'">lobby.nfmw.net</LobbyEndpoint>
+        <LobbyEndpoint Condition="'$(LobbyEndpoint)' == '' and '$(Configuration)' == 'Release'">lobby-nfmw.puppykitty.racing</LobbyEndpoint>
         <LobbyEndpoint Condition="'$(LobbyEndpoint)' == ''">localhost</LobbyEndpoint>
         <LobbyPort Condition="'$(LobbyPort)' == '' and '$(Configuration)' == 'Release'">443</LobbyPort>
         <LobbyPort Condition="'$(LobbyPort)' == ''">7001</LobbyPort>
