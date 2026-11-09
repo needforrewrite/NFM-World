@@ -142,6 +142,12 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
                 }
 
                 FillBots(session);
+
+                // Past this point the load timeout no longer applies: the session is waiting for
+                // the race to finish, not for players to load. Nothing ever cleared it, so every
+                // race was marked timed out - and told it had failed - 20 seconds after starting.
+                session.State = SessionState.Started;
+                session.StartTime = null;
                 return true;
             }
 

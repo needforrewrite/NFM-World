@@ -26,6 +26,9 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     private bool _sentClientIdentity;
     private string? _lastStatus;
 
+    /// <summary>This phase has launched a race, so a late start notice is stale.</summary>
+    private bool _racedThisSession;
+
     private static UiState.LobbyState Lobby => UiState.Lobby;
 
     private LobbyView.Actions Actions => new(
@@ -71,6 +74,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         // A reconnected transport is a brand-new connection: the lobby knows nothing about
         // this player until it authenticates and identifies itself again.
         _sentClientIdentity = false;
+        _racedThisSession = false;
         _player.Id = Guid.Empty;
         _players = [];
         _activeSessions = [];
@@ -160,8 +164,11 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
                     break;
 
                 // The session's load window elapsed (or the game master refused it). Nothing
-                // else resets the row, so say so rather than leaving it on "LOADING".
-                case S2C_RaceFailedToStart:
+                // else resets the row, so say so rather than leaving it on "LOADING". The lobby
+                // sends this to everyone in the session, including a client that has already
+                // gone back to the lobby after racing, so it must not overwrite a race that
+                // actually ran.
+                case S2C_RaceFailedToStart when !_racedThisSession:
                     SetStatus("The race could not start. Try again.");
                     break;
             }
@@ -184,6 +191,8 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
     private void StartRace(S2C_RaceStarted raceStarted)
     {
+        _racedThisSession = true;
+
         // A NEW transport to the Game Master for in-game traffic. The lobby transport stays
         // alive, so exiting the race returns to this lobby.
         var gameAddr = raceStarted.JoinInfo.RaceServerIpAddress;

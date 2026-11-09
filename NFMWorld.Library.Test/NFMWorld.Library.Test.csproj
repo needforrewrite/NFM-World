@@ -23,6 +23,8 @@
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj"/>
         <ProjectReference Include="..\NFMWorld.ClientOnlyAnalyzer\NFMWorld.ClientOnlyAnalyzer.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
         <ProjectReference Include="..\NFMWorld.UI\NFMWorld.UI.csproj"/>
+        <!-- Session lifecycle (load timeout, bot fill) is server-side behaviour worth testing. -->
+        <ProjectReference Include="..\NFMWorld.Server.Lobby\NFMWorld.Server.Lobby.csproj"/>
     </ItemGroup>
 
     <!-- So the gamemode plugin loader tests exercise the real built plugins, and so a
