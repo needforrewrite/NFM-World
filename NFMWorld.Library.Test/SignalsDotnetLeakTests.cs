@@ -2,6 +2,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
+using NFMWorld.UI;
 using SignalsDotnet;
 
 namespace NFMWorld.Library.Test;
