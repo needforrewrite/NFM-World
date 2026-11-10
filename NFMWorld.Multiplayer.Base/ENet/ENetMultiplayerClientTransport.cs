@@ -103,8 +103,7 @@ public class ENetMultiplayerClientTransport : BaseMultiplayerClientTransport
                         );
                         try
                         {
-                            using var messageData = netEvent.Packet.AsMemory();
-                            ReceivePacket(messageData.Memory);
+                            ReceivePacket(netEvent.Packet.AsMemory());
                         }
                         finally
                         {

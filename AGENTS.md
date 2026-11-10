@@ -33,6 +33,7 @@ C#; there are no Lua or Luau code paths in the main tree any more. Older comment
 | `NFMWorld.Server.Game`, `.Server.Lobby`, `.Server.SharedMemory` | Dedicated server, `RaceOrchestrator`. |
 | `NFMWorld.Archive`, `.Archive.Test`, `.Archive.Validator` | Account/asset server (ASP.NET Core + SQLite) and its out-of-process validator. See [Archive server](#archive-server). |
 | `NFMWorld.Multiplayer.Base`, `NFMWorld.Api`, `NFMWorld.Sentry`, `NFMWorld.CrashReporter` | Transport, HTTP API, telemetry, crash reports. |
+| `NFMWorld.Multiplayer.ENet` | Fully managed port of the ENet-CSharp fork (host/peer/protocol, UDP via `System.Net.Sockets`). No native `enet.dll`. |
 | `Microsoft.UI.Reactor.Yoga` | Yoga layout binding. |
 | `NFMWorld.Reactor.ObservableCollections` | `ObservableUnlimitedArray<T>`, `ClientStage` observes these. |
 | `CasCore/` (submodule) | The plugin sandbox. |
@@ -622,3 +623,25 @@ old `!newInsidePoly0` requirement was wrong. For `le > 1` the new region is alwa
 - Read game files with `System.IO` — go through `TheVFS.VFS`.
 - Add a second asset-copy pipeline; extend `data\**\*`.
 - Flatten MSBuild platform/RID conditionals without testing desktop and `browser-wasm`.
+
+## Managed ENet
+
+`NFMWorld.Multiplayer.ENet` replaces the native `ENet-CSharp` package with a managed port of its bundled enet fork
+(nxrighthere/ENet-CSharp 2.4.8, `Source/Native/enet.h`). It keeps the wrapper's public surface (`ENet.Host`, `Peer`,
+`Packet`, `Address`, `Event`, `Library`, `PacketFlags`, `EventType`, `PeerState`) and is wire-compatible with the
+native library, so a managed peer interops with a native one in both directions.
+
+- **What is ported** — host/peer/protocol state machines, connect/verify/ack handshake, reliable and unreliable
+  channels, fragment reassembly (reliable and unreliable), unsequenced windows, timeouts/RTT/throttle, bandwidth
+  limiting, CRC-64 checksum callback and broadcast. Compression is not in the fork and is not ported.
+- **Fork specifics to keep when diffing against upstream enet** — `ENET_HOST_DEFAULT_MTU` is 1280, the sent-time
+  header flag is bit 14 (compression and bit 15 are gone), `ENET_EVENT_TYPE_DISCONNECT_TIMEOUT` is the wrapper's
+  `EventType.Timeout`, reliable commands with a payload live in `outgoingSendReliableCommands` (merged with
+  `outgoingCommands` by `queueTime`), and timeouts reset `roundTripTimeout` from the current RTT instead of doubling.
+- **Serialization is big-endian** (`ENetProtocol*` are `htons`/`htonl` fields); readers/writers live in
+  `Protocol.cs`, and command sizes must stay in sync with the packed C structs.
+- **Sockets** are `System.Net.Sockets`: servers bind dual-stack IPv6 with `DualMode`, clients bind an ephemeral
+  port (ENet leaves them unbound, but .NET requires a local endpoint for `ReceiveFrom`), and IPv4 peers are stored
+  normalized while destinations are mapped to IPv4-mapped IPv6.
+- **Threading** is unchanged: one host per thread, `Service`/`Flush` drive send and receive; ENet state is not
+  thread-safe.

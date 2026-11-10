@@ -133,7 +133,7 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
         return packets.Count > 0 ? packets.ToArray() : [];
     }
 
-    protected void ReceivePacket(Memory<byte> memory)
+    protected void ReceivePacket(ReadOnlyMemory<byte> memory)
     {
         if (memory.IsEmpty)
         {

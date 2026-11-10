@@ -46,7 +46,7 @@ public abstract class BaseMultiplayerServerTransport : IMultiplayerServerTranspo
         SendRawPacketToClients(Connections.ToArray(), arrayWriter.WrittenSpan, reliable);
     }
 
-    protected void ReceivePacket(uint clientIndex, Memory<byte> memory)
+    protected void ReceivePacket(uint clientIndex, ReadOnlyMemory<byte> memory)
     {
         // An empty datagram has no opcode; remote input, so it must not throw here.
         if (memory.IsEmpty)

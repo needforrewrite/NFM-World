@@ -95,6 +95,7 @@
   <Project Path="NFMWorld.Archive/NFMWorld.Archive.csproj" />
   <Project Path="NFMWorld.Archive.Test/NFMWorld.Archive.Test.csproj" />
   <Project Path="NFMWorld.Archive.Validator/NFMWorld.Archive.Validator.csproj" />
+  <Project Path="NFMWorld.Multiplayer.ENet/NFMWorld.Multiplayer.ENet.csproj" />
   <Project Path="NFMWorld.NativeLibs/NFMWorld.NativeLibs.csproj" />
   <Project Path="NFMWorld.OpcodeSourceGen/NFMWorld.OpcodeSourceGen.csproj" />
   <Project Path="NFMWorld.PhysicsFS/NFMWorld.PhysicsFS.csproj" />

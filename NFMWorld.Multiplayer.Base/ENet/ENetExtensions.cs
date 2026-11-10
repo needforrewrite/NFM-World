@@ -1,5 +1,4 @@
-﻿using ENet;
-using Maxine.Extensions;
+using ENet;
 
 namespace NFMWorldLibrary.Multiplayer;
 
@@ -12,37 +11,15 @@ public static class ENetExtensions
             if (!packet.IsSet)
                 throw new InvalidOperationException("Packet is not set.");
 
-            unsafe
-            {
-                byte* dataPtr = (byte*)packet.Data.ToPointer();
-                return new Span<byte>(dataPtr, packet.Length);
-            }
+            return packet.DataSpan;
         }
 
-        public UnmanagedMemoryManager<byte> AsMemory()
+        public ReadOnlyMemory<byte> AsMemory()
         {
             if (!packet.IsSet)
                 throw new InvalidOperationException("Packet is not set.");
 
-            unsafe
-            {
-                byte* dataPtr = (byte*)packet.Data.ToPointer();
-                return new UnmanagedMemoryManager<byte>(dataPtr, packet.Length);
-            }
-        }
-    }
-
-    extension(ref Packet packet)
-    {
-        public void Create(ReadOnlySpan<byte> data, PacketFlags flags = PacketFlags.Reliable)
-        {
-            unsafe
-            {
-                fixed (byte* dataPtr = data)
-                {
-                    packet.Create((IntPtr)dataPtr, data.Length, flags);
-                }
-            }
+            return packet.Memory;
         }
     }
 }

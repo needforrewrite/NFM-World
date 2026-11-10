@@ -124,8 +124,7 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
             case EventType.Receive:
                 try
                 {
-                    using var messageData = netEvent.Packet.AsMemory();
-                    ReceivePacket(netEvent.Peer.ID, messageData.Memory);
+                    ReceivePacket(netEvent.Peer.ID, netEvent.Packet.Memory);
                 }
                 finally
                 {

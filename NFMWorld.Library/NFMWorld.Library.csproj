@@ -34,7 +34,6 @@
     <ItemGroup>
         <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.0"/>
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2"/>
-        <PackageReference Include="ENet-CSharp" Version="2.4.8"/>
         <PackageReference Include="JetBrains.Profiler.Api" Version="1.4.13"/>
         <PackageReference Include="LuzFaltex.Core.Collections" Version="0.1.0"/>
         <PackageReference Include="MessagePack" Version="3.1.8"/>
@@ -48,6 +47,7 @@
         <ProjectReference Include="..\Microsoft.UI.Reactor.Yoga\Microsoft.UI.Reactor.Yoga.csproj"/>
         <ProjectReference Include="..\NFMWorld.CrashReporter\NFMWorld.CrashReporter.csproj"/>
         <ProjectReference Include="..\NFMWorld.DriverInterface\NFMWorld.DriverInterface.csproj"/>
+        <ProjectReference Include="..\NFMWorld.Multiplayer.ENet\NFMWorld.Multiplayer.ENet.csproj"/>
         <ProjectReference Include="..\NFMWorld.Library.Base\NFMWorld.Library.Base.csproj"/>
         <ProjectReference Include="..\NFMWorld.Math\NFMWorld.Math.csproj"/>
         <ProjectReference Include="..\NFMWorld.OpcodeSourceGen\NFMWorld.OpcodeSourceGen.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
