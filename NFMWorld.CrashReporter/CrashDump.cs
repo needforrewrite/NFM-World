@@ -18,6 +18,12 @@ public static class CrashDump
     private static bool _hooked;
 
     /// <summary>
+    /// Held for the process lifetime: Windows keeps only the function pointer, so a collected
+    /// delegate would leave the filter pointing at freed memory.
+    /// </summary>
+    private static TopLevelExceptionFilter? _filter;
+
+    /// <summary>
     /// Where dumps land. The install directory is not writable for many users, and a dump of
     /// this process is tens of megabytes.
     /// </summary>
@@ -37,14 +43,14 @@ public static class CrashDump
             return;
 
         _hooked = true;
-        SetUnhandledExceptionFilter((_, exceptionInfo, _, _) =>
-            {
-                // The runtime's own filter and every registered handler get first refusal; this
-                // only writes when nothing has handled it and the process is about to die.
-                Write("crash");
-                return ExceptionContinuingSearch;
-            }
-        );
+        _filter = (_, _, _, _) =>
+        {
+            // The runtime's own filter and every registered handler get first refusal; this
+            // only writes when nothing has handled it and the process is about to die.
+            Write("crash");
+            return ExceptionContinuingSearch;
+        };
+        SetUnhandledExceptionFilter(_filter);
     }
 
     /// <summary>Writes a minidump and a text summary beside it.</summary>
