@@ -319,13 +319,21 @@ public class PvpServerGamemode(
         }
     }
 
-    public override ReadOnlyMemory<byte>? CaptureState() =>
-        MemoryPackSerializer.Serialize<ServerToClientEvent>(
+    public override ReadOnlyMemory<byte>? CaptureState()
+    {
+        // Before the race starts nothing has been broadcast, so there is nothing to catch up on.
+        // A baseline here would carry the server's not-yet-started state and overwrite the
+        // client's own countdown, leaving a fresh race with no countdown on screen.
+        if (_state == ServerGamemodeState.WaitingToStart)
+            return null;
+
+        return MemoryPackSerializer.Serialize<ServerToClientEvent>(
             new RaceStateEvent(
                 InProgress: _state is ServerGamemodeState.InProgress or ServerGamemodeState.Finished,
                 Countdown: _state == ServerGamemodeState.Countdown ? _countdown : 0
             )
         );
+    }
 
     public override void StartRace()
     {

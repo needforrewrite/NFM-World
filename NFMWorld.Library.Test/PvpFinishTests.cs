@@ -335,6 +335,42 @@ public class PvpFinishTests
     }
 
     /// <summary>
+    /// A race that has not started yet has nothing to catch up on, so the server sends no
+    /// baseline. Sending one carrying its own not-yet-started state wiped the client's countdown
+    /// and a fresh race went from "waiting for players" straight to racing.
+    /// </summary>
+    [TestMethod]
+    public void ServerNotStartedYet_CapturesNoBaseline()
+    {
+        var factory = CreateFactory();
+        IServerGamemode? server = null;
+        try
+        {
+            server = factory.CreateServerGamemode(
+                new ServerGamemodeParameters
+                {
+                    Players = new List<ServerSidePlayerInfo>
+                    {
+                        new() { Id = PlayerId, PlayerName = "test", CarName = "test", Color = default }
+                    }
+                },
+                new ServerContext(CreateStage(laps: 3, checkpoints: 2))
+            )!;
+            server.Begin();
+
+            Assert.IsNull(server.CaptureState(), "nothing has been broadcast before the start");
+
+            server.StartRace();
+            Assert.IsNotNull(server.CaptureState(), "a countdown in progress is state a late join missed");
+        }
+        finally
+        {
+            server?.End();
+            factory.End();
+        }
+    }
+
+    /// <summary>
     /// A baseline taken mid-countdown carries the count left, so a late attach counts down the
     /// remainder rather than starting the race early or from three again.
     /// </summary>
