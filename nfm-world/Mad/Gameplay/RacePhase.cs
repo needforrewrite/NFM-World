@@ -941,7 +941,9 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
                 _host.SendPlayerState(PlayerState.CreateFrom(tick, myCar));
 
             // Only online: singleplayer's local host invents ids of its own and needs no relay.
-            if (GamemodeInstance is BaseClientGamemode gm && _host is NetworkRaceHost)
+            // A spectator owns nothing; with no client id, an ownerless bot would look like one
+            // it fielded, and relaying it would fight the client that really drives it.
+            if (!_spectating && GamemodeInstance is BaseClientGamemode gm && _host is NetworkRaceHost)
             {
                 foreach (var player in gm.Players)
                 {
