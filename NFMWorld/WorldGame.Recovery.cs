@@ -1,4 +1,4 @@
-extern alias SDL3New;
+﻿extern alias SDL3New;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -97,6 +97,11 @@ public partial class WorldGame
         var start = new ProcessStartInfo(executable)
         {
             UseShellExecute = false,
+            // The console-subsystem child normally inherits this process's console, so it does
+            // not get a window of its own; these make that explicit rather than relying on it,
+            // and cover the case of the game being started without a console to inherit.
+            CreateNoWindow = true,
+            WindowStyle = ProcessWindowStyle.Hidden,
             WorkingDirectory = System.Environment.CurrentDirectory
         };
         foreach (var argument in args) start.ArgumentList.Add(argument);
@@ -122,6 +127,22 @@ public partial class WorldGame
         {
             using var child = Process.Start(start);
             if (child is null) return -1;
+
+            // The parent has no window of its own to close, so the only way it ends other than
+            // through the child exiting is being killed. Taking the child with it then keeps a
+            // dead parent from leaving an orphaned game running.
+            AppDomain.CurrentDomain.ProcessExit += (_, _) =>
+            {
+                try
+                {
+                    if (!child.HasExited) child.Kill(entireProcessTree: true);
+                }
+                catch
+                {
+                    // The child is already gone.
+                }
+            };
+
             child.WaitForExit();
             return child.ExitCode;
         }
