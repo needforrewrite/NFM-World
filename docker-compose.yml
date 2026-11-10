@@ -33,7 +33,7 @@ services:
       Archive__DiscordClientSecret: ${DISCORD_CLIENT_SECRET:-}
       Archive__DiscordRedirectUri: ${DISCORD_REDIRECT_URI:-}
     ports:
-      - "8080:8080"
+      - "8069:8080"
     volumes:
       # SQLite database and uploaded files. Losing this loses every account and rating.
       - archive-data:/data
