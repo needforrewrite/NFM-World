@@ -12,7 +12,7 @@ public static class ArchiveEndpoint
     public static string Url { get; } = Metadata("NfmwArchiveEndpoint") ?? "http://localhost:5000";
 
     private static string? Metadata(string key)
-        => Assembly.GetExecutingAssembly()
+        => typeof(ArchiveEndpoint).Assembly
             .GetCustomAttributes<AssemblyMetadataAttribute>()
             .LastOrDefault(a => a.Key == key)?.Value is { Length: > 0 } value
             ? value

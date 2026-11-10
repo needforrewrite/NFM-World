@@ -24,7 +24,7 @@ public static class LobbyEndpoint
         !bool.TryParse(Metadata("NfmwLobbyInsecure"), out var insecure) || insecure;
 
     private static string? Metadata(string key)
-        => Assembly.GetExecutingAssembly()
+        => typeof(LobbyEndpoint).Assembly
             .GetCustomAttributes<AssemblyMetadataAttribute>()
             .LastOrDefault(a => a.Key == key)?.Value is { Length: > 0 } value
             ? value

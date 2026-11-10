@@ -13,7 +13,14 @@
              ordinary assembly and has no native AOT, so it must not be requested there. -->
         <PublishAot Condition="'$(RuntimeIdentifier)' != 'browser-wasm'">true</PublishAot>
         <NativeLib Condition="'$(RuntimeIdentifier)' != 'browser-wasm'">Shared</NativeLib>
+
+        <ArchiveEndpoint Condition="'$(ArchiveEndpoint)' == '' and '$(Configuration)' == 'Release'">https://nfmw.puppykitty.racing</ArchiveEndpoint>
+        <ArchiveEndpoint Condition="'$(ArchiveEndpoint)' == ''">http://localhost:5000</ArchiveEndpoint>
     </PropertyGroup>
+    
+    <ItemGroup>
+        <AssemblyMetadata Include="NfmwArchiveEndpoint" Value="$(ArchiveEndpoint)"/>
+    </ItemGroup>
 
     <ItemGroup>
         <InternalsVisibleTo Include="NFMWorld.Library.Test"/>

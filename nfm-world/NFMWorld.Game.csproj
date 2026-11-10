@@ -20,9 +20,6 @@
         <DefineConstants Condition="'$(NfmwBrowser)' == 'true'">$(DefineConstants);WEB_AUDIO</DefineConstants>
         <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
 
-        <ArchiveEndpoint Condition="'$(ArchiveEndpoint)' == '' and '$(Configuration)' == 'Release'">https://nfmw.puppykitty.racing</ArchiveEndpoint>
-        <ArchiveEndpoint Condition="'$(ArchiveEndpoint)' == ''">http://localhost:5000</ArchiveEndpoint>
-
         <!-- The lobby the game connects to by default. A Debug build talks to a local lobby,
              because the release lobby will not authenticate a debug client. Override with
              -p:LobbyEndpoint=host -p:LobbyPort=port; the `connect` command still reaches others.
@@ -38,7 +35,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <AssemblyMetadata Include="NfmwArchiveEndpoint" Value="$(ArchiveEndpoint)"/>
         <AssemblyMetadata Include="NfmwLobbyEndpoint" Value="$(LobbyEndpoint)"/>
         <AssemblyMetadata Include="NfmwLobbyPort" Value="$(LobbyPort)"/>
         <AssemblyMetadata Include="NfmwLobbyInsecure" Value="$(LobbyInsecure)"/>

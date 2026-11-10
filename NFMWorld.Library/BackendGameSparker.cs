@@ -4,6 +4,7 @@ using System.Text;
 using Maxine.Extensions;
 using NFMWorld.CrashReporter;
 using NFMWorld.DriverInterface.DriverInterface;
+using NFMWorld.Gameplay;
 using NFMWorld.PluginSystem;
 using NFMWorld.Sentry;
 using NFMWorldLibrary.Rad;
@@ -108,7 +109,7 @@ public static class BackendGameSparker
 
             // Mounted after the local directories so a local stage or car always wins over a
             // remote copy of the same name.
-            ArchiveMount.MountIfConfigured(Environment.GetEnvironmentVariable("NFMW_ARCHIVE_URL"));
+            ArchiveMount.MountIfConfigured(ArchiveEndpoint.Url);
         }
 
         cars.Add(Collection.NFMM, []);
