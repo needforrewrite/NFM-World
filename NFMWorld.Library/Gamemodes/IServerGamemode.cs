@@ -41,6 +41,13 @@ public interface IServerGamemode
     void OnClientEvent(Guid clientId, ReadOnlySpan<byte> payload);
 
     /// <summary>
+    /// Called when a client's connection goes away. A client that quits drops its transport
+    /// rather than sending a forfeit, so this is the only notice the gamemode gets that a racer
+    /// left - without it the race keeps ticking for a player who is not there.
+    /// </summary>
+    void OnClientDisconnected(Guid clientId);
+
+    /// <summary>
     /// Returns the current authoritative game state for broadcasting to clients.
     /// Return null if nothing has changed since the last call.
     /// </summary>

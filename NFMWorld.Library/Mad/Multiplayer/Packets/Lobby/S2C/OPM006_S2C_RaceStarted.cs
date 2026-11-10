@@ -31,4 +31,12 @@ public partial struct S2C_RaceStarted() : IPacketServerToClient<S2C_RaceStarted>
     /// </summary>
     [MemoryPackOrder(3)]
     public bool Spectator { get; set; }
+
+    /// <summary>
+    /// The lobby session this race was started from. The client leaves it when the race ends:
+    /// returning over the same socket produces no disconnect, so without this the lobby keeps
+    /// the player in a started session and never frees them.
+    /// </summary>
+    [MemoryPackOrder(4)]
+    public uint SessionId { get; set; }
 }

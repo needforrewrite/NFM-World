@@ -229,7 +229,15 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             spectating: raceStarted.Spectator
         );
 
-        phase.Exited += (_, _) => GameSparker.PopGroup(PhaseManager.Groups.Event);
+        // Back from the race: the lobby still has us in that session and flagged in-game, on
+        // the same socket - no disconnect ever reached it. Leaving here is what frees the
+        // player and lets the emptied race drop off the list.
+        phase.Exited += (_, _) =>
+        {
+            if (!raceStarted.Spectator && transport.State == ClientState.Connected)
+                transport.SendPacketToServer(new C2S_LeaveSession { SessionId = raceStarted.SessionId });
+            GameSparker.PopGroup(PhaseManager.Groups.Event);
+        };
         GameSparker.PushPhase(phase, PhaseManager.Groups.Event);
     }
 

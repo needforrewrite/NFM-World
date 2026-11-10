@@ -267,6 +267,48 @@ public class PvpStandingsTests
         }
     }
 
+    /// <summary>
+    /// A client that quits drops its transport rather than sending ForfeitEvent. The GM turns
+    /// that disconnect into OnClientDisconnected, which has to place the leaver last and end the
+    /// race once nobody is left - otherwise it ticked an empty session forever.
+    /// </summary>
+    [TestMethod]
+    public void DisconnectingTheOnlyPlayerEndsTheRace()
+    {
+        var (factory, server, context) = CreateRace(Alice);
+        try
+        {
+            StartRacing(server);
+            server.OnClientDisconnected(Alice);
+
+            var standings = Standings(server);
+            Assert.HasCount(1, standings, "the race ended, which only happens when its last player leaves");
+            Assert.AreEqual(Alice, standings[0].PlayerId);
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
+
+    /// <summary>A leaver in a field of three is placed last and the race carries on.</summary>
+    [TestMethod]
+    public void DisconnectingOneOfSeveralPlayersKeepsTheRaceGoing()
+    {
+        var (factory, server, context) = CreateRace(Alice, Bob, Carol);
+        try
+        {
+            StartRacing(server);
+            server.OnClientDisconnected(Alice);
+
+            Assert.IsNull(server.GetStateSnapshot(), "two players are still racing");
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
+
     [TestMethod]
     public void WastedPlayersSortBehindTheRunning()
     {

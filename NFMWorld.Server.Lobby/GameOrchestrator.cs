@@ -216,19 +216,20 @@ public class GameOrchestrator
     {
         if (_players.TryRemove(clientIndex, out var client) && client is not null)
         {
+            // Leaving a race and returning to the lobby reuses this same connection, so the
+            // disconnect only arrives when the client goes for good. Clearing the flag here is
+            // what lets a player who quit a race start another one.
+            client.IsInGame = false;
             if (client.InSession is { } inSession)
             {
                 var session = _sessions.Get(inSession.SessionIndex);
                 session?.Players.TryRemove(KeyValuePair.Create(inSession.PlayerIndex, client.Id));
 
-                // A race whose roster emptied out will never finish on its own: the GM waits
-                // for a start only players could trigger, so the row sat in the list at 0/16.
-                // Ending it lets PruneFinished drop it, and marks the match over.
-                if (session is { State: SessionState.NotStarted or SessionState.WaitingToLoad }
-                    && session.Players.IsEmpty)
-                {
+                // Nobody is left in the session, so it can never start and nobody can join it.
+                // Any state, not just the pre-race ones: a started race whose players all left
+                // was left in the list as "1/2 racing" with START greyed out forever.
+                if (session is not null && session.Players.IsEmpty)
                     _sessions.AbortSession(session.Id);
-                }
             }
 
             _chat.BroadcastSystem($"{client.Name} has left...");
@@ -476,6 +477,7 @@ public class GameOrchestrator
                 MatchGameplayInfo = pending.Info,
                 State = SessionState.Started,
                 Spectator = true,
+                SessionId = spectate.SessionId,
                 JoinInfo = new S2C_RaceStarted.GameJoinInfo
                 {
                     RaceServerIpAddress = pending.GameAddress,
@@ -493,6 +495,14 @@ public class GameOrchestrator
         var session = _sessions.LeaveSession(clientId, leave.SessionId);
         if (session is not null)
         {
+            // The client sends this on returning from a race, and it is already back in the
+            // lobby: keeping IsInGame would leave it unable to start or watch anything again.
+            player.IsInGame = false;
+
+            // A session nobody is left in can never start, and nobody can join it either.
+            if (session.Players.IsEmpty)
+                _sessions.AbortSession(session.Id);
+
             _chat.BroadcastSystem(
                 $"{player.Name} has left {session.CreatorName}'s session!"
             );
@@ -594,6 +604,7 @@ public class GameOrchestrator
                             {
                                 MatchGameplayInfo = matchInfo,
                                 State = session.State,
+                                SessionId = session.Id,
                                 JoinInfo = new S2C_RaceStarted.GameJoinInfo
                                 {
                                     RaceServerIpAddress = gameAddress,

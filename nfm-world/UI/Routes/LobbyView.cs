@@ -315,27 +315,43 @@ public static class LobbyView
                     text: () => StateLabel(session.State)
                 ),
 
-                // A member who did not create the race leaves it; only the creator starts it.
-                // Both used to call StartRace, so LEAVE launched a race and nothing left.
-                // Once a race is under way there is no slot to take, so a non-member watches it.
-                session.IsMember && session.IsCreator
-                    ? ActionButton(
-                        () => "START",
-                        actions.StartRace,
-                        small: true,
-                        disabled: () => session.State != SessionState.NotStarted || !lobby.Connected.Value
-                    )
-                    : session.IsMember
-                        ? ActionButton(
-                            () => "LEAVE",
-                            actions.Leave,
-                            small: true,
-                            disabled: () => !lobby.Connected.Value
-                        )
-                        : session.State is SessionState.Started or SessionState.WaitingToLoad
-                            ? ActionButton(
+                // Once a race is under way there is no slot to take, so everyone - member or
+                // not - gets WATCH, and a member keeps the LEAVE that gets it out of the
+                // session it is stuck in. Before that, only the creator starts an open race;
+                // a member leaves it. (Both once called StartRace, so LEAVE launched a race.)
+                session.State is SessionState.Started or SessionState.WaitingToLoad
+                    ? Sx.View(
+                        style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6, flexShrink: 0),
+                        children:
+                        [
+                            ActionButton(
                                 () => "WATCH",
                                 () => actions.Spectate(session.Id),
+                                small: true,
+                                disabled: () => !lobby.Connected.Value
+                            ),
+                            // A member still needs a way out of the session it is stuck in.
+                            session.IsMember
+                                ? ActionButton(
+                                    () => "LEAVE",
+                                    actions.Leave,
+                                    small: true,
+                                    disabled: () => !lobby.Connected.Value
+                                )
+                                : null
+                        ]
+                    )
+                    : session.IsMember && session.IsCreator
+                        ? ActionButton(
+                            () => "START",
+                            actions.StartRace,
+                            small: true,
+                            disabled: () => session.State != SessionState.NotStarted || !lobby.Connected.Value
+                        )
+                        : session.IsMember
+                            ? ActionButton(
+                                () => "LEAVE",
+                                actions.Leave,
                                 small: true,
                                 disabled: () => !lobby.Connected.Value
                             )
@@ -344,7 +360,7 @@ public static class LobbyView
                                 () => actions.Join(session.Id),
                                 small: true,
                                 disabled: () => session.State != SessionState.NotStarted || !lobby.Connected.Value
-                            )
+                            ),
             ]
         );
     }

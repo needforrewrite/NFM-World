@@ -246,7 +246,30 @@ public class RaceOrchestrator : IDisposable
     }
 
     private void TransportOnClientDisconnected(object? sender, uint clientIndex)
-        => _clients.TryRemove(clientIndex, out _); // TODO send disconnect packet in session
+    {
+        _clients.TryRemove(clientIndex, out _);
+
+        // A connection leaving is the only notice this server gets that a racer walked out:
+        // the client drops the transport on quit instead of sending a forfeit. The gamemode
+        // must hear it, or the race keeps ticking for a player who is not there.
+        foreach (var (_, session) in _sessions)
+        {
+            if (!session.Clients.TryRemove(clientIndex, out var clientId))
+                continue;
+
+            // Only a racer was counted as loaded. A spectator was given a throwaway id and
+            // never incremented the count, so decrementing for one would undercount the race.
+            var isRacer = session.PlayerInfos.Values.Any(p => p.Id == clientId);
+            if (isRacer)
+            {
+                session.LoadedCount = Math.Max(0, session.LoadedCount - 1);
+                session.ServerGamemode?.OnClientDisconnected(clientId);
+            }
+
+            Logging.Info($"[GM] {(isRacer ? "Client" : "Spectator")} {clientId} left the race");
+            return;
+        }
+    }
 
     // ── Packet dispatch ──────────────────────────────────────────────
 

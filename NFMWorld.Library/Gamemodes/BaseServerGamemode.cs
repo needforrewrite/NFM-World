@@ -51,6 +51,11 @@ public abstract class BaseServerGamemode : IServerGamemode
     {
     }
 
+    /// <summary>Called when a client's connection goes away. Forfeits them in gamemodes that care.</summary>
+    public virtual void OnClientDisconnected(Guid clientId)
+    {
+    }
+
     /// <summary>
     /// Returns the current authoritative game state for broadcasting to clients.
     /// Return null if nothing has changed since the last call.

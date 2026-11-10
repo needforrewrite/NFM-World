@@ -413,6 +413,27 @@ public class PvpServerGamemode(
         );
     }
 
+    /// <summary>
+    /// A client's connection went away. A player who quits drops its transport instead of
+    /// sending ForfeitEvent, so this is that same departure arriving by another route.
+    /// </summary>
+    public override void OnClientDisconnected(Guid clientId) => Forfeit(clientId);
+
+    /// <summary>Places a departing player last; the race ends only once every player has gone.</summary>
+    private void Forfeit(Guid clientId)
+    {
+        if (!_perPlayer.TryGetValue(clientId, out var forfeiter) || forfeiter.Forfeited)
+            return;
+
+        forfeiter.Forfeited = true;
+        forfeiter.WastedAt = _serverTick;
+        forfeiter.Position = Players.Count;
+
+        // Nobody left to race: end it rather than ticking an empty session forever.
+        if (_perPlayer.Values.All(p => p.Forfeited))
+            EndRace();
+    }
+
     /// <summary>Running cars are placed by checkpoint progress; the dead and departed sort after them.</summary>
     private static int StandingGroup(PerPlayerGamemodeInfo info)
         => info.Forfeited || info.WastedAt >= 0 ? 1 : 0;
@@ -432,21 +453,9 @@ public class PvpServerGamemode(
         // Leaving forfeits: the player is placed last and the race carries on for everyone
         // else. Without this the abandoned player stayed on the grid at their last relayed
         // position and the race could never end on its own.
-        if (e is ForfeitEvent
-            && _perPlayer.TryGetValue(clientId, out var forfeiter)
-            && !forfeiter.Forfeited)
+        if (e is ForfeitEvent)
         {
-            forfeiter.Forfeited = true;
-            forfeiter.WastedAt = _serverTick;
-            forfeiter.Position = Players.Count;
-
-            // Nobody left to race: end it rather than ticking an empty session forever.
-            if (_perPlayer.Values.All(p => p.Forfeited))
-            {
-                _state = ServerGamemodeState.Finished;
-                CompleteRace();
-            }
-
+            Forfeit(clientId);
             return;
         }
 
