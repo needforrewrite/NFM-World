@@ -302,6 +302,7 @@ public partial class BackendStage
         return span;
     }
 
+    [PluginVisible]
     public (fix64 X, fix64 Z) GetStartPosition(int index)
     {
         fix64 x = 0, z = 0;

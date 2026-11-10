@@ -32,10 +32,9 @@ internal enum TimeTrialState
 [UsedImplicitly]
 public class TimeTrialGamemode : PluginGamemode
 {
-    private const int PlayerCarIndex = 0;
-
     private readonly Stopwatch _timer = new();
     private readonly bool _simulation;
+    private readonly bool _multiplayer;
 
     private TimeTrialState _state;
     private int _countdown;
@@ -57,25 +56,25 @@ public class TimeTrialGamemode : PluginGamemode
         : base(clientGamemodeParameters, gamemodeContext, gamemodeId, config)
     {
         _simulation = Config is not null && Config.TryGetValue("simulation", out var value) && value is true;
+        _multiplayer = IsMultiplayer;
     }
 
     public override void Begin()
     {
         if (!ValidateStage()) return;
         base.Begin();
-        _state = TimeTrialState.NotStarted;
-        HudState.Lap = 1;
-        HudState.TotalLaps = CurrentStage.Nlaps;
-        HudState.Position = 1;
-        HudState.TotalRacers = 1;
-        HudState.StateText = "";
+        SetupRun();
     }
 
     public override void Reset()
     {
-        if (!ValidateStage()) return;
+        if (_multiplayer || !ValidateStage()) return;
         base.Reset();
+        SetupRun();
+    }
 
+    private void SetupRun()
+    {
         _tick = 0;
         _ghostFinishTick = null;
         _ghostIndex = null;
@@ -95,6 +94,14 @@ public class TimeTrialGamemode : PluginGamemode
         }
 
         RemoveFakePlayers();
+        for (var i = 0; i < Players.Count; i++)
+        {
+            var player = Players[i];
+            player.Car = new BackendCar(player.Info, i, 0, 0);
+            if (player != ClientPlayer)
+                ClientCallbacks.GetClientCarCallbacks(player.Car).AlphaOverride = 0.5f;
+        }
+
         SetupPlayer();
         SetupGhost();
         UpdatePosition();
@@ -107,9 +114,6 @@ public class TimeTrialGamemode : PluginGamemode
 
         switch (_state)
         {
-            case TimeTrialState.NotStarted:
-                Reset();
-                break;
             case TimeTrialState.Countdown:
                 TickCountdown();
                 break;
@@ -154,7 +158,7 @@ public class TimeTrialGamemode : PluginGamemode
             return;
 
         _inner = GamemodeUtils.CountdownInterval;
-        _countdown--;
+        _countdown = Math.Max(_multiplayer ? 1 : 0, _countdown - 1);
         if (_countdown > 0)
             return;
 
@@ -163,9 +167,74 @@ public class TimeTrialGamemode : PluginGamemode
         _timer.Start();
     }
 
+    public override void Forfeit()
+    {
+        if (ClientPlayer is not null)
+            SendServerEvent<ClientToServerEvent>(new ForfeitEvent());
+    }
+
+    public override void OnServerEvent(ReadOnlySpan<byte> payload) => ApplyServerState(payload);
+
+    public override void OnServerState(ReadOnlySpan<byte> payload) => ApplyServerState(payload);
+
+    private void ApplyServerState(ReadOnlySpan<byte> payload)
+    {
+        if (!_multiplayer
+            || _simulation
+            || _state == TimeTrialState.Unavailable
+            || MemoryPackSerializer.Deserialize<RaceStateEvent>(payload) is not { } state)
+            return;
+
+        _countdown = state.Countdown;
+        _inner = GamemodeUtils.CountdownInterval;
+        HudState.CountdownTimer = state.Countdown;
+        if (state.InProgress && _state != TimeTrialState.Finished)
+        {
+            _state = TimeTrialState.InProgress;
+            _timer.Start();
+        }
+        else if (!state.InProgress)
+        {
+            _state = TimeTrialState.Countdown;
+        }
+    }
+
+    public override void OnServerRaceFinished(RaceResults results)
+    {
+        if (_state == TimeTrialState.Unavailable) return;
+        _state = TimeTrialState.Finished;
+        _timer.Stop();
+        HudState.Finished = true;
+        foreach (var player in Players)
+        {
+            if (player.Car is { } car)
+                car.CarPhysics.Halted = true;
+        }
+
+        if (ClientPlayer?.Car is { } own && own.CurrentLap >= CurrentStage.Nlaps)
+            RenderFinishedText();
+        else
+            HudState.StateText = "Finished!";
+    }
+
+    private void TickRemoteCars()
+    {
+        foreach (var player in Players)
+        {
+            if (player == ClientPlayer || player.IsFake || player.Car is not { } car)
+                continue;
+
+            FixHoopHelper.HandleFixHoops(CurrentStage, car);
+            CheckPointHelper.HandleCheckPoint(CurrentStage, car);
+            // Ghosts still drive against the stage, but never collide with another car.
+            car.Drive(CurrentStage);
+        }
+    }
+
     private void TickInProgress()
     {
-        if (Players[PlayerCarIndex].Car is { } car)
+        TickRemoteCars();
+        if (ClientPlayer?.Car is { } car)
         {
             FixHoopHelper.HandleFixHoops(CurrentStage, car);
             if (CheckPointHelper.HandleCheckPoint(CurrentStage, car))
@@ -179,7 +248,6 @@ public class TimeTrialGamemode : PluginGamemode
 
             _current?.RecordTick(car);
             ApplyGhost();
-            UpdatePosition();
 
             if (car.CurrentLap >= CurrentStage.Nlaps)
             {
@@ -190,15 +258,19 @@ public class TimeTrialGamemode : PluginGamemode
             }
         }
 
+        UpdatePosition();
         _tick++;
     }
 
     private void TickFinished()
     {
-        if (Players[PlayerCarIndex].Car is { } car)
-            car.Drive(CurrentStage);
+        TickRemoteCars();
+        UpdatePosition();
+        if (ClientPlayer?.Car is not { } car)
+            return;
+        car.Drive(CurrentStage);
 
-        if (_written)
+        if (_written || car.CurrentLap < CurrentStage.Nlaps)
             return;
 
         _written = true;
@@ -207,16 +279,15 @@ public class TimeTrialGamemode : PluginGamemode
     }
 
     /// <summary>
-    /// Creates the player's car and opens the best-run and current-run recordings.
+    /// Opens the local player's best-run and current-run recordings.
     /// </summary>
     private void SetupPlayer()
     {
-        var player = Players[PlayerCarIndex];
-        var car = new BackendCar(player.Info, PlayerCarIndex, 0, 0);
-        player.Car = car;
-
-        car.CurrentCheckpoint = 0;
-        car.CurrentLap = 0;
+        _best = null;
+        _current = null;
+        HudState.Finished = false;
+        HudState.ClientWon = false;
+        HudState.ClientLost = false;
 
         HudState.Lap = 1;
         HudState.TotalLaps = CurrentStage.Nlaps;
@@ -229,7 +300,7 @@ public class TimeTrialGamemode : PluginGamemode
         HudState.StateTextEndsAt = null;
         ClientCallbacks.ResetCheckpointGlow();
 
-        if (_simulation)
+        if (_simulation || ClientPlayer?.Car is not { } car)
             return;
 
         _best = SavedTimeTrial.Load(car.Player.CarName, CurrentStage.Path);
@@ -241,7 +312,7 @@ public class TimeTrialGamemode : PluginGamemode
     /// </summary>
     private void SetupGhost()
     {
-        if (_simulation || _best is null || Players[PlayerCarIndex].Car is not { } source)
+        if (_multiplayer || _simulation || _best is null || ClientPlayer?.Car is not { } source)
             return;
 
         var ghostIndex = Players.Count;
@@ -275,9 +346,18 @@ public class TimeTrialGamemode : PluginGamemode
 
     private void UpdatePosition()
     {
+        if (_multiplayer)
+        {
+            if (Players.Count > 1)
+                CheckPointHelper.CalculatePositions(CurrentStage, Players);
+            HudState.TotalRacers = Players.Count;
+            HudState.Position = ClientPlayer?.Car is { } own ? own.Placement + 1 : 0;
+            return;
+        }
+
         HudState.Position = 1;
         HudState.TotalRacers = 1;
-        if (Players[PlayerCarIndex].Car is not { } car
+        if (ClientPlayer?.Car is not { } car
             || _ghostIndex is not { } index
             || index >= Players.Count
             || Players[index].Car is not { } ghost) return;
@@ -321,8 +401,10 @@ public class TimeTrialGamemode : PluginGamemode
     {
         var totalMs = (long)_timer.Elapsed.TotalMilliseconds;
 
+        var next = !_multiplayer ? "\nPress R to restart"
+            : HudState.Finished ? "" : "\nWaiting for other players...";
         HudState.StateText =
-            $"Finished! Time: {totalMs / 60000:D2}:{totalMs % 60000 / 1000:D2}.{totalMs % 1000:D3}\nPress R to restart";
+            $"Finished! Time: {totalMs / 60000:D2}:{totalMs % 60000 / 1000:D2}.{totalMs % 1000:D3}{next}";
         HudState.StateTextEndsAt = null;
     }
 
@@ -336,10 +418,7 @@ public class TimeTrialGamemode : PluginGamemode
     }
 }
 
-/// <summary>
-/// Server-side time trial. The client reports the finished race and the server
-/// ends it, crediting the sender with the single standing.
-/// </summary>
+/// <summary>Each participant finishes their own trial; the session waits for everyone.</summary>
 [UsedImplicitly]
 public class TimeTrialServerGamemode(
     ServerGamemodeParameters parameters,
@@ -349,39 +428,117 @@ public class TimeTrialServerGamemode(
 )
     : PluginServerGamemode(parameters, context, gamemodeId, config)
 {
+    private readonly Dictionary<Guid, TimeSpan?> _finishes = [];
+    private readonly HashSet<Guid> _left = [];
+    private readonly Stopwatch _timer = new();
+    private TimeTrialState _state;
+    private int _countdown;
+    private int _inner;
+
+    public override void Begin()
+    {
+        base.Begin();
+        _state = TimeTrialState.NotStarted;
+        _finishes.Clear();
+        _left.Clear();
+        _timer.Reset();
+        foreach (var player in Players)
+            _finishes[player.Id] = null;
+    }
+
     public override void StartRace()
     {
         base.StartRace();
-        BroadcastEvent(new RaceStartedEvent());
+        _state = TimeTrialState.Countdown;
+        _countdown = 3;
+        _inner = GamemodeUtils.ServerCountdownInterval;
+        if (Config is not null && Config.TryGetValue("simulation", out var value) && value is true)
+            StartDriving();
+    }
+
+    public override ReadOnlyMemory<byte>? CaptureState()
+    {
+        if (_state == TimeTrialState.NotStarted)
+            return null;
+        return MemoryPackSerializer.Serialize(
+            new RaceStateEvent(_state != TimeTrialState.Countdown, _state == TimeTrialState.Countdown ? _countdown : 0)
+        );
+    }
+
+    public override void GameTick()
+    {
+        base.GameTick();
+        if (_state != TimeTrialState.Countdown || --_inner > 0)
+            return;
+
+        _inner = GamemodeUtils.ServerCountdownInterval;
+        if (--_countdown <= 0)
+            StartDriving();
+    }
+
+    private void StartDriving()
+    {
+        _state = TimeTrialState.InProgress;
+        _timer.Start();
+        BroadcastEvent(new RaceStateEvent(true, 0));
     }
 
     public override void OnClientEvent(Guid clientId, ReadOnlySpan<byte> payload)
     {
         base.OnClientEvent(clientId, payload);
+        switch (MemoryPackSerializer.Deserialize<ClientToServerEvent>(payload))
+        {
+            case ForfeitEvent:
+                OnClientDisconnected(clientId);
+                break;
+            case FinishedEvent when _state == TimeTrialState.InProgress && CurrentStage.Checkpoints.Count > 0:
+                if (!_finishes.TryGetValue(clientId, out var finish) || finish is not null || _left.Contains(clientId))
+                    return;
+                _finishes[clientId] = _timer.Elapsed;
+                CompleteIfDone();
+                break;
+        }
+    }
 
-        if (MemoryPackSerializer.Deserialize<ClientToServerEvent>(payload) is not FinishedEvent)
+    public override void OnClientDisconnected(Guid clientId)
+    {
+        if (!_finishes.ContainsKey(clientId) || _state == TimeTrialState.Finished)
+            return;
+        _left.Add(clientId);
+        CompleteIfDone();
+    }
+
+    private void CompleteIfDone()
+    {
+        if (_finishes.Any(p => p.Value is null && !_left.Contains(p.Key)))
             return;
 
+        _state = TimeTrialState.Finished;
+        _timer.Stop();
         FinishRace(
-            TimeSpan.Zero,
-            [
-                new RaceStanding
-                {
-                    PlayerId = clientId,
-                    FinishPosition = 0,
-                    FinishTime = TimeSpan.Zero
-                }
-            ]
+            _timer.Elapsed,
+            _finishes.OrderBy(p => p.Value is null).ThenBy(p => p.Value)
+                .Select((p, index) => new RaceStanding
+                    {
+                        PlayerId = p.Key,
+                        FinishPosition = index,
+                        FinishTime = p.Value
+                    }
+                ).ToArray()
         );
     }
 }
 
 [MemoryPackable]
 [MemoryPackUnion(0, typeof(FinishedEvent))]
+[MemoryPackUnion(1, typeof(ForfeitEvent))]
 public abstract partial record ClientToServerEvent;
 
 [MemoryPackable]
 public partial record FinishedEvent() : ClientToServerEvent;
 
 [MemoryPackable]
-public partial record RaceStartedEvent();
+public partial record ForfeitEvent() : ClientToServerEvent;
+
+[MemoryPackable]
+public partial record RaceStateEvent(bool InProgress, int Countdown);

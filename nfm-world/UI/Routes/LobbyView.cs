@@ -41,7 +41,8 @@ public static class LobbyView
         Action<string> SetStage,
         Action<int> SetMaxPlayers,
         Action<int> SetBots,
-        Action<string, string> SetConfig
+        Action<string, string> SetConfig,
+        Action<string> SetGamemode
     );
 
     private static readonly Color Blue = Theme.MenuBlue;
@@ -550,6 +551,16 @@ public static class LobbyView
                             ),
                             text: () => "CREATE GAME"
                         ),
+                        Sx.View(
+                            style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6),
+                            children: GamemodeCatalog.Ids.Select(id => ActionButton(
+                                    () => GamemodeCatalog.DisplayName(id),
+                                    () => actions.SetGamemode(id),
+                                    small: true,
+                                    active: () => lobby.SelectedGamemode.Value == id
+                                )
+                            ).ToArray()
+                        ),
                         Sx.Text(
                             style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
                             text: () => "Stage"
@@ -581,18 +592,27 @@ public static class LobbyView
                             )
                         ),
 
-                        Sx.Text(
-                            style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
-                            text: () => "Bots (they fill the empty slots)"
-                        ),
-                        Sx.View(
-                            style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6),
-                            children: Controls.Slider(
-                                () => lobby.BotCount.Value,
-                                value => actions.SetBots((int)value),
-                                0,
-                                Math.Max(0, MatchGameplayInfo.MaxPlayers - lobby.MaxPlayers.Value),
-                                1
+                        Sx.Show(
+                            () => lobby.SelectedGamemode.Value != DefaultGamemodes.TimeTrial,
+                            () => Sx.View(
+                                style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 10),
+                                children:
+                                [
+                                    Sx.Text(
+                                        style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                                        text: () => "Bots (they fill the empty slots)"
+                                    ),
+                                    Sx.View(
+                                        style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6),
+                                        children: Controls.Slider(
+                                            () => lobby.BotCount.Value,
+                                            value => actions.SetBots((int)value),
+                                            0,
+                                            Math.Max(0, MatchGameplayInfo.MaxPlayers - lobby.MaxPlayers.Value),
+                                            1
+                                        )
+                                    )
+                                ]
                             )
                         ),
                         Sx.Text(
@@ -600,7 +620,7 @@ public static class LobbyView
                             text: () => $"Field: {lobby.MaxPlayers.Value + lobby.BotCount.Value}"
                         ),
 
-                        .. GamemodeConfigControls(actions),
+                        (Func<object?>)(() => GamemodeConfigControls(actions)),
                         Sx.View(
                             style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10, marginTop: 6),
                             children:
@@ -632,7 +652,7 @@ public static class LobbyView
         var lobby = UiState.Lobby;
         var controls = new List<Node>();
 
-        foreach (var property in GamemodeCatalog.ConfigProperties(DefaultGamemodes.PvP))
+        foreach (var property in GamemodeCatalog.ConfigProperties(lobby.SelectedGamemode.Value))
         {
             if (property.Options.Count == 0)
                 continue;

@@ -15,7 +15,14 @@ namespace NFMWorldLibrary.Plugins;
 public static class GamemodeCatalog
 {
     /// <summary>The gamemodes offered in the lobby, in display order.</summary>
-    public static IReadOnlyList<string> Ids { get; } = [DefaultGamemodes.PvP];
+    public static IReadOnlyList<string> Ids { get; } = [DefaultGamemodes.PvP, DefaultGamemodes.TimeTrial];
+
+    public static string DisplayName(string id) => id switch
+    {
+        DefaultGamemodes.PvP => "PvP",
+        DefaultGamemodes.TimeTrial => "Time Trial",
+        _ => id
+    };
 
     /// <summary>
     /// Loads <paramref name="gamemodeId"/> to read its config schema. Returns an empty list if

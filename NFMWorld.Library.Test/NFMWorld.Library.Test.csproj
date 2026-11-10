@@ -27,6 +27,10 @@
         <ProjectReference Include="..\NFMWorld.Server.Lobby\NFMWorld.Server.Lobby.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <Compile Include="..\nfm-world\Mad\Gameplay\MenuHistory.cs" Link="MenuHistory.cs"/>
+    </ItemGroup>
+
     <!-- So the gamemode plugin loader tests exercise the real built plugins, and so a
          regression in the plugin build wiring fails the suite. -->
     <ItemGroup>

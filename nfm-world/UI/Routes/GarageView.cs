@@ -20,6 +20,7 @@ public static class GarageView
     public sealed record Actions(
         Action<string, string> CarSelected,
         Action<string> CollectionSelected,
+        Action Confirm,
         Action Back
     );
 
@@ -85,6 +86,10 @@ public static class GarageView
                         SearchBox(actions),
                         CollectionList(actions),
 
+                        Button.Create(
+                            label: () => "SELECT CAR",
+                            onPress: actions.Confirm
+                        ),
                         Button.Create(
                             label: () => "← Back to Menu",
                             onPress: actions.Back

@@ -265,47 +265,40 @@ public class MainMenuPhase : BaseStageRenderingPhase
         {
             PhaseSharedState.SelectedStageName = stageName;
 
-            GaragePhase gp = new(ssp);
-            gp.CarSelected += (sender, car) =>
+            if (MenuHistory.Car is not { } car)
             {
-                var factory = GamemodeFactory.Create(
-                    "nfmm/pvp",
-                    new Dictionary<string, object>()
-                    {
-                        ["constraint"] = "both"
-                    }
+                GameSparker.MessageWindow.ShowMessage("Cars unavailable", "No playable cars are installed.");
+                return;
+            }
+
+            var factory = GamemodeFactory.Create(
+                "nfmm/pvp",
+                new Dictionary<string, object>()
+                {
+                    ["constraint"] = "both"
+                }
+            );
+            var players = CreateFreePlayPlayers(car.FileName);
+            LocalRaceHost host;
+            try
+            {
+                host = LocalRaceHost.Create(
+                    stageName,
+                    factory,
+                    new ClientGamemodeParameters { Players = players }
                 );
-                var players = CreateFreePlayPlayers(car.FileName);
-                LocalRaceHost host;
-                try
-                {
-                    host = LocalRaceHost.Create(
-                        stageName,
-                        factory,
-                        new ClientGamemodeParameters { Players = players }
-                    );
-                }
-                catch
-                {
-                    factory.End();
-                    throw;
-                }
-
-                var inRace = new RacePhase(stageName, factory, players, host, stageSource: gp);
-                inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
-                GameSparker.Phases.ReplaceGroup(inRace, PhaseManager.Groups.Event);
-
-                Logging.Info("Game started!");
-            };
-
-            gp.CarSelectionCancelled += (sender, _) =>
+            }
+            catch
             {
-                ssp.TakeStageFrom(gp, takeMusic: false);
-                ssp.CurrentStage!.FadeFromOverride = 9999999;
-                GameSparker.PopPhase();
-            };
+                factory.End();
+                throw;
+            }
 
-            GameSparker.PushPhase(gp, PhaseManager.Groups.Event);
+            var inRace = new RacePhase(stageName, factory, players, host, stageSource: ssp);
+            inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
+            GameSparker.Phases.ReplaceGroup(inRace, PhaseManager.Groups.Event);
+
+            Logging.Info("Game started!");
         };
 
         GameSparker.PushPhase(ssp, PhaseManager.Groups.Event);
@@ -313,7 +306,15 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void OnGarageClicked()
     {
-        if (_garage != null || _menuCar == null) return;
+        if (_garage != null) return;
+        if (_menuCar == null)
+            SetupMenuCar();
+        if (_menuCar == null)
+        {
+            GameSparker.MessageWindow.ShowMessage("Cars unavailable", "No playable cars are installed.");
+            return;
+        }
+
         _garageEntryCar = _menuCar;
         if (_garageBlend == 0)
             _garageCamera.Reset();
@@ -362,45 +363,38 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
             PhaseSharedState.SelectedStageName = stageName;
 
-            GaragePhase gp = new(ssp);
-            gp.CarSelected += (sender, car) =>
+            if (MenuHistory.Car is not { } car)
             {
-                var factory = GamemodeFactory.Create("nfmm/timetrial");
-                ClientSidePlayerInfo[] players =
-                [
-                    new()
-                    {
-                        CarName = car.FileName,
-                        Color = default,
-                        IsBot = false,
-                        IsClientPlayer = true,
-                        PlayerName = "MadPlayer"
-                    }
-                ];
-                LocalRaceHost host;
-                try
-                {
-                    host = LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = players });
-                }
-                catch
-                {
-                    factory.End();
-                    throw;
-                }
+                GameSparker.MessageWindow.ShowMessage("Cars unavailable", "No playable cars are installed.");
+                return;
+            }
 
-                var inRace = new RacePhase(stageName, factory, players, host, stageSource: gp);
-                inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
-                GameSparker.Phases.ReplaceGroup(inRace, PhaseManager.Groups.Event);
-            };
-
-            gp.CarSelectionCancelled += (sender, _) =>
+            var factory = GamemodeFactory.Create("nfmm/timetrial");
+            ClientSidePlayerInfo[] players =
+            [
+                new()
+                {
+                    CarName = car.FileName,
+                    Color = default,
+                    IsBot = false,
+                    IsClientPlayer = true,
+                    PlayerName = "MadPlayer"
+                }
+            ];
+            LocalRaceHost host;
+            try
             {
-                ssp.TakeStageFrom(gp, takeMusic: false);
-                ssp.CurrentStage!.FadeFromOverride = 9999999;
-                GameSparker.PopPhase();
-            };
+                host = LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = players });
+            }
+            catch
+            {
+                factory.End();
+                throw;
+            }
 
-            GameSparker.PushPhase(gp, PhaseManager.Groups.Event);
+            var inRace = new RacePhase(stageName, factory, players, host, stageSource: ssp);
+            inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
+            GameSparker.Phases.ReplaceGroup(inRace, PhaseManager.Groups.Event);
         };
 
         GameSparker.PushPhase(ssp, PhaseManager.Groups.Event);

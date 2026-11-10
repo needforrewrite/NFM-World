@@ -48,4 +48,5 @@ public partial struct MatchGameplayInfo()
 public static class DefaultGamemodes
 {
     public const string PvP = "nfmm/pvp";
+    public const string TimeTrial = "nfmm/timetrial";
 }

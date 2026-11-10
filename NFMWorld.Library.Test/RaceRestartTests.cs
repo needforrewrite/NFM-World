@@ -6,6 +6,7 @@ using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Gamemodes.DotNet;
 using NFMWorldLibrary.Gamemodes.RaceHost;
 using NFMWorldLibrary.Multiplayer;
+using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorld.Library.Test;
@@ -55,13 +56,24 @@ public class RaceRestartTests
         var factory = GamemodeFactory.Create("nfmm/timetrial");
         try
         {
-            using var host = LocalRaceHost.Create("empty", factory, CreateParameters());
+            var stage = new StageLoader { nlaps = 1 };
+            stage.pieces.Add(
+                new PiecePlacement(
+                    PiecePlacementType.CheckPoint,
+                    new Rad3d([], castsShadow: false, fileName: "restart-checkpoint"),
+                    default,
+                    default
+                )
+            );
+            using var host = LocalRaceHost.Create("restart-test", factory, CreateParameters(), stage);
             var plugin = ((NativeGamemodeFactory)factory).Plugin;
             var finishedEvent = plugin.Assembly.GetExportedTypes().Single(t => t.Name == "FinishedEvent");
             var payload = MemoryPackSerializer.Serialize(finishedEvent.BaseType!, Activator.CreateInstance(finishedEvent));
             var finishes = 0;
             host.GameFinished += _ => finishes++;
             host.Start();
+            for (var i = 0; i < GamemodeUtils.ServerCountdownInterval * 3; i++)
+                host.Update();
             host.SendServerEvent(payload);
             host.Update();
             host.Update();
@@ -70,6 +82,8 @@ public class RaceRestartTests
             host.Restart();
             host.Update();
             Assert.AreEqual(1, finishes, "The previous run's results must be cleared.");
+            for (var i = 0; i < GamemodeUtils.ServerCountdownInterval * 3; i++)
+                host.Update();
             host.SendServerEvent(payload);
             host.Update();
             host.Update();

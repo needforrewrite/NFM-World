@@ -136,6 +136,18 @@ Gamemodes are compiled `.NET` plugins — the Lua path is gone. Singleplayer and
   keeps one `CarVisual` per car. Race phases do not keep a `CarsInRace` array; `BaseStageRenderingPhase` phases
   (garage, menu) still use `ClientStage.SetCars`.
 
+### Car selection and Time Trial
+
+- Main-menu GARAGE commits with SELECT CAR/Enter; Back cancels. `MenuHistory.Car` is the shared car for
+  free play, time trials and lobby identity, persisted through VFS in `data/cfg/menu-history.json`.
+  Entering a race remembers only its stage; test drives and dev commands must not overwrite the garage choice.
+- The lobby offers PvP and Time Trial through `GamemodeCatalog.Ids`; config controls follow the selected mode.
+  Time Trial has no bots. Real remote racers remain roster players, not `IsFake` replay ghosts; they are drawn
+  translucent and driven without inter-car collisions. Saved best-run ghosts remain singleplayer-only.
+- `IGamemodeContext.IsMultiplayer` distinguishes online sessions, including solo online races, from local play.
+  Never infer this from player count. Online Time Trial restart is disabled; the server waits for every racer
+  to finish or forfeit/disconnect before completing the session.
+
 ### Plugin layout & lifecycle
 
 - **Layout** — `data/gamemodes/{id}/gamemode.dll`, `data/ais/{id}/ai.dll`. The file name is identical in every

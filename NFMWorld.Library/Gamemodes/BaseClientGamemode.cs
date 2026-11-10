@@ -23,6 +23,7 @@ public abstract class BaseClientGamemode : IGamemode
 
     [PluginVisible] public ObservableUnlimitedArray<ClientSidePlayer> Players { get; }
     [PluginVisible] public BackendStage CurrentStage => GamemodeContext.CurrentStage;
+    [PluginVisible] public bool IsMultiplayer => GamemodeContext.IsMultiplayer;
     [PluginVisible] public int NumPlayers => Players.Count;
 
     /// <summary>

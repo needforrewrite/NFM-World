@@ -79,14 +79,14 @@ internal sealed class GarageController
         new GarageView.Actions(
             CarSelected: SelectCar,
             CollectionSelected: SelectCollection,
+            Confirm: SelectedCar,
             Back: SelectionCancelled
         )
     );
 
     /// <summary>
     /// Browses to a car without committing it: the panel and the 3D preview show it, and
-    /// Enter or the Back button commits. Matches the Luau garage, where clicking a card
-    /// only changed what you were looking at.
+    /// Enter or SELECT CAR commits; Back cancels.
     /// </summary>
     private void SelectCar(string collection, string fileName)
     {

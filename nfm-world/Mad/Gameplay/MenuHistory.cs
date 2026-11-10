@@ -1,4 +1,5 @@
 using System.Text.Json;
+using NFMWorld.PhysicsFS;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
@@ -15,12 +16,14 @@ public static class MenuHistory
 
     public static Selection LastPlayed { get; private set; } = new();
 
-    public static void Load()
+    public static void Load(VirtualFS? fileSystem = null)
     {
+        var fs = fileSystem ?? TheVFS.VFS;
+        LastPlayed = new();
         try
         {
-            if (TheVFS.VFS.FileExists(SavePath))
-                LastPlayed = JsonSerializer.Deserialize<Selection>(TheVFS.VFS.ReadAllText(SavePath)) ?? new();
+            if (fs.FileExists(SavePath))
+                LastPlayed = JsonSerializer.Deserialize<Selection>(fs.ReadAllText(SavePath)) ?? new();
         }
         catch (Exception ex)
         {
@@ -35,17 +38,18 @@ public static class MenuHistory
         ? LastPlayed.Stage
         : DefaultStage;
 
-    public static Rad3d? Car => BackendGameSparker.GetCar(LastPlayed.Car ?? DefaultCar).Rad
-                                ?? BackendGameSparker.GetCar(DefaultCar).Rad;
+    public static Rad3d? Car => BackendGameSparker.GetCar((LastPlayed.Car ?? DefaultCar).Replace('\\', '/')).Rad
+                                ?? BackendGameSparker.GetCar(DefaultCar).Rad
+                                ?? BackendGameSparker.cars.Values.SelectMany(cars => cars).FirstOrDefault();
 
-    public static void Remember(string? stage = null, string? car = null)
+    public static void Remember(string? stage = null, string? car = null, VirtualFS? fileSystem = null)
     {
         var next = new Selection(stage ?? LastPlayed.Stage, car ?? LastPlayed.Car);
         if (next == LastPlayed) return;
         LastPlayed = next;
         try
         {
-            using var stream = TheVFS.VFS.OpenWrite(SavePath);
+            using var stream = (fileSystem ?? TheVFS.VFS).OpenWrite(SavePath);
             using var writer = new StreamWriter(stream);
             writer.Write(JsonSerializer.Serialize(LastPlayed));
         }

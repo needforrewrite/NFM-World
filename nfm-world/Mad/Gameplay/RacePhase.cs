@@ -53,6 +53,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     public IGamemode? GamemodeInstance { get; protected set; }
 
     BackendStage IGamemodeContext.CurrentStage => CurrentStage.Backend;
+    bool IGamemodeContext.IsMultiplayer => _host is NetworkRaceHost;
 
     /// <summary>
     /// Watching a race this client has no car in. There is no client player, so input drives
@@ -90,6 +91,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
         try
         {
+            LoadStageMusic();
             InitializeRace(host);
         }
         catch
@@ -569,7 +571,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         base.Enter();
         var player = Players.FirstOrDefault(p => p.IsClientPlayer);
         if (player != null)
-            MenuHistory.Remember(StageName, player.CarName);
+            MenuHistory.Remember(stage: StageName);
     }
 
     protected IGamemode ReloadGamemode()

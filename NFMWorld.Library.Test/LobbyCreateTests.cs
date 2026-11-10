@@ -71,6 +71,15 @@ public class LobbyCreateTests
     }
 
     [TestMethod]
+    public void GamemodeCatalog_OffersMultiplayerTimeTrial()
+    {
+        CollectionAssert.Contains(GamemodeCatalog.Ids.ToArray(), DefaultGamemodes.TimeTrial);
+        Assert.AreEqual("Time Trial", GamemodeCatalog.DisplayName(DefaultGamemodes.TimeTrial));
+        NFMWorldLibrary.TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
+        Assert.IsEmpty(GamemodeCatalog.ConfigProperties(DefaultGamemodes.TimeTrial));
+    }
+
+    [TestMethod]
     public void GamemodeCatalog_MissingPluginYieldsNoOptions()
     {
         NFMWorldLibrary.TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);

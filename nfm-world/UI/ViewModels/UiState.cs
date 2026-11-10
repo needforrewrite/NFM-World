@@ -187,6 +187,7 @@ public static class UiState
 
         public Signal<bool> ShowCreateDialog { get; } = new(false);
         public Signal<string> SelectedStage { get; } = new("");
+        public Signal<string> SelectedGamemode { get; } = new(NFMWorldLibrary.Multiplayer.DefaultGamemodes.PvP);
         public Signal<int> MaxPlayers { get; } = new(4);
 
         /// <summary>Bots that will fill empty slots. They are filled after the humans join.</summary>
@@ -207,6 +208,7 @@ public static class UiState
             SelectedSessionId.Value = null;
             ShowCreateDialog.Value = false;
             BotCount.Value = 0;
+            SelectedGamemode.Value = NFMWorldLibrary.Multiplayer.DefaultGamemodes.PvP;
             GamemodeConfig.Value = new Dictionary<string, string>();
         }
     }

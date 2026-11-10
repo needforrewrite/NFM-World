@@ -46,7 +46,8 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         SetStage: stage => Lobby.SelectedStage.Value = stage,
         SetMaxPlayers: count => Lobby.MaxPlayers.Value = count,
         SetBots: count => Lobby.BotCount.Value = count,
-        SetConfig: OnSetConfig
+        SetConfig: OnSetConfig,
+        SetGamemode: OnSetGamemode
     );
 
     public override Node BuildUi() => LobbyView.Build(Actions);
@@ -70,6 +71,8 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         GameSparker.AccountManager.ActiveAccountChanged += OnAccountChanged;
         // A reconnected socket is a new session on the server, so the handshake is replayed.
         transport.Reconnected += OnReconnected;
+        if (_sentClientIdentity && transport.State == ClientState.Connected)
+            SendUpdatePlayerIdentity();
         base.Enter();
     }
 
@@ -427,11 +430,11 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         transport.SendPacketToServer(
             new C2S_CreateSession
             {
-                GameMode = DefaultGamemodes.PvP,
+                GameMode = Lobby.SelectedGamemode.Value,
                 StageName = stage,
                 MaxPlayers = Lobby.MaxPlayers.Value,
                 GameModeParameters = new(Lobby.GamemodeConfig.Value),
-                Bots = Lobby.BotCount.Value
+                Bots = Lobby.SelectedGamemode.Value == DefaultGamemodes.TimeTrial ? 0 : Lobby.BotCount.Value
             }
         );
         Lobby.ShowCreateDialog.Value = false;
@@ -446,18 +449,25 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
     private void OnOpenCreate()
     {
-        // Seed the dialog with each property's first declared option, so a config is always a
-        // complete set rather than whatever the previous session left behind.
+        OnSetGamemode(Lobby.SelectedGamemode.Value);
+        Lobby.BotCount.Value = 0;
+        Lobby.ShowCreateDialog.Value = true;
+    }
+
+    private void OnSetGamemode(string id)
+    {
+        if (!GamemodeCatalog.Ids.Contains(id)) return;
+        Lobby.SelectedGamemode.Value = id;
         var defaults = new Dictionary<string, string>();
-        foreach (var property in GamemodeCatalog.ConfigProperties(DefaultGamemodes.PvP))
+        foreach (var property in GamemodeCatalog.ConfigProperties(id))
         {
             if (property.Options.Count > 0 && !defaults.ContainsKey(property.Name))
                 defaults[property.Name] = property.Options[0].Value;
         }
 
         Lobby.GamemodeConfig.Value = defaults;
-        Lobby.BotCount.Value = 0;
-        Lobby.ShowCreateDialog.Value = true;
+        if (id == DefaultGamemodes.TimeTrial)
+            Lobby.BotCount.Value = 0;
     }
 
     private void OnSetConfig(string name, string value)
@@ -474,7 +484,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             new C2S_PlayerIdentity
             {
                 PlayerName = _player.Name,
-                SelectedVehicle = _player.Vehicle,
+                SelectedVehicle = MenuHistory.Car?.FileName ?? MenuHistory.DefaultCar,
                 Color = _player.Color
             }
         );
@@ -488,6 +498,5 @@ internal class Player
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = System.Environment.UserName;
-    public string Vehicle { get; set; } = "nfmm/radicalone";
     public Color3 Color { get; set; } = new(0, 128, 255);
 }
