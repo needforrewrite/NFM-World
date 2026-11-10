@@ -16,9 +16,7 @@ public sealed class RaceInputController
     private bool _freelook;
 
     /// <summary>
-    /// Q/E only apply while airborne. On the ground they press both halves of a pair
-    /// (bounce = up+down, strafe = left+right), which cancels normal driving — holding E
-    /// through a landing is what makes left steering look dead.
+    /// Aerial bounce only applies while airborne.
     /// </summary>
     private bool _airborne;
 
@@ -185,7 +183,7 @@ public sealed class RaceInputController
         bool turnLeftPressed = _pressedKeys.Contains(bindings.TurnLeft);
         bool turnRightPressed = _pressedKeys.Contains(bindings.TurnRight);
         bool aerialBouncePressed = _airborne && _pressedKeys.Contains(bindings.AerialBounce);
-        bool aerialStrafePressed = _airborne && _pressedKeys.Contains(bindings.AerialStrafe);
+        bool aerialStrafePressed = _pressedKeys.Contains(bindings.AerialStrafe);
         bool handbrakePressed = _pressedKeys.Contains(bindings.Handbrake);
 
         // apply Up/Down controls
