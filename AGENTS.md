@@ -276,6 +276,9 @@ from `PhysicsController.GameTick`. Two ship:
   GM reports the result. On the client the roster has **no** `ClientPlayer` (which is why
   `IGamemode.ClientPlayer` is nullable and `BaseClientGamemode.FirstClientPlayer` replaced `Single`);
   `RacePhase` then rides `SpectateCar()` — the lock-key target, or the leader — and skips `Forfeit` on quit.
+  It relays no `PlayerState` at all (`_spectating` guards the bot loop, or an ownerless bot would look like one
+  it fielded), and it is neither winner nor loser: `PvpGamemode.Finish` leaves `ClientWon`/`ClientLost` false when
+  `ClientPlayer` is null, so a watched race does not end on `YOU LOST!`.
 - A **wasted** client is spectated: `RacePhase.GameTick` passes `TargetCarFor(car)` to the camera instead of the
   client car. The lock keys pick the target (same `LockTargetHelper.LockedCar` the arrow uses, which refuses a
   wasted car), falling back to the nearest live opponent. `IHudData.Spectating` carries this to the skins, which draw
