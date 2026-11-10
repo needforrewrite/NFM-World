@@ -335,6 +335,58 @@ public class PvpFinishTests
     }
 
     /// <summary>
+    /// A spectator owns nobody, so someone else winning is neither a win nor a loss for it.
+    /// </summary>
+    [TestMethod]
+    public void SpectatorWithSomeoneElseFinishing_IsNeitherWinNorLoss()
+    {
+        var factory = CreateFactory();
+        var carName = $"pvp-test/{Guid.NewGuid():N}";
+        BaseClientGamemode? client = null;
+        try
+        {
+            BackendGameSparker.dynamic_models.Add(
+                carName,
+                (0, new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName))
+            );
+
+            client = (BaseClientGamemode)factory.CreateGameMode(
+                new ClientGamemodeParameters
+                {
+                    Players =
+                    [
+                        new ClientSidePlayerInfo(
+                            carName,
+                            carName,
+                            new Color3(255, 0, 0),
+                            isBot: false,
+                            isClientPlayer: false
+                        )
+                    ]
+                },
+                new ClientContext(CreateStage(laps: 3, checkpoints: 2))
+            );
+            Assert.IsNull(client.ClientPlayer);
+            client.Begin();
+            client.OnServerEvent(SerializeEvent(factory, "CountdownGoEvent").Span);
+
+            client.Players[0].Car!.CurrentLap = 3;
+            client.GameTick();
+
+            Assert.IsTrue(client.HudState.Finished);
+            Assert.IsFalse(client.HudState.ClientWon);
+            Assert.IsFalse(client.HudState.ClientLost);
+            StringAssert.Contains(client.HudState.StateText ?? "", "finished first, race over");
+        }
+        finally
+        {
+            BackendGameSparker.dynamic_models.Remove(carName);
+            client?.End();
+            factory.End();
+        }
+    }
+
+    /// <summary>
     /// Leaving online sends a forfeit to the server, so the abandoned car does not sit on the
     /// grid forever and the race can still end.
     /// </summary>

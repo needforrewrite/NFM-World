@@ -226,12 +226,14 @@ public class PvpGamemode : PluginGamemode
 
         if (winner is not null)
         {
-            var clientWon = winner.Info.IsClientPlayer;
+            // A spectator has no horse in this race: nobody won or lost for them.
+            var spectating = ClientPlayer is null;
+            var clientWon = !spectating && winner.Info.IsClientPlayer;
             HudState.StateText = clientWon
                 ? "You finished first, nice job!"
                 : $"{winner.Info.PlayerName} finished first, race over!";
             HudState.ClientWon = clientWon;
-            HudState.ClientLost = !clientWon;
+            HudState.ClientLost = !spectating && !clientWon;
         }
         else
         {
