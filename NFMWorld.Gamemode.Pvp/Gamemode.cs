@@ -66,7 +66,10 @@ public class PvpGamemode : PluginGamemode
         for (var i = 0; i < Players.Count; i++)
         {
             var player = Players[i];
-            var car = new BackendCar(player.Info, i, -500 + (400 * i), 0);
+
+            var (x, z) = CurrentStage.GetStartPosition(i);
+
+            var car = new BackendCar(player.Info, i, x, z);
             player.Car = car;
 
             car.CurrentCheckpoint = 0;

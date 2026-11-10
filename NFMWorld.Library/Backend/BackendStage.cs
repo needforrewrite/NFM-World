@@ -301,6 +301,29 @@ public partial class BackendStage
         span.Sort(static (a, b) => a.Index.CompareTo(b.Index));
         return span;
     }
+
+    public (fix64 X, fix64 Z) GetStartPosition(int index)
+    {
+        fix64 x = 0, z = 0;
+        int i1 = index % 3;
+        if (i1 == 0)
+        {
+            x = 0;
+            z = -760 + index / 3 * 760;
+        }
+        else if (i1 == 1)
+        {
+            x = -350;
+            z = -380 + index / 3 * 760;
+        }
+        else if (i1 == 2)
+        {
+            x = 350;
+            z = -380 + index / 3 * 760;
+        }
+
+        return (x, z);
+    }
 }
 
 [PluginVisible]
