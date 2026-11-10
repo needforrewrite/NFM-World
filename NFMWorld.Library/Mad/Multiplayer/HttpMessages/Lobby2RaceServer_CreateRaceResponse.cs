@@ -16,4 +16,11 @@ public partial struct Lobby2RaceServer_CreateRaceResponse
     /// </summary>
     [MemoryPackOrder(0)]
     public required IDictionary<byte, Guid> PlayerSecretIds { get; set; }
+
+    /// <summary>
+    /// A token that attaches a connection to the race without taking a car slot. It is counted
+    /// in neither the roster nor the race start, so anyone may use it to watch.
+    /// </summary>
+    [MemoryPackOrder(1)]
+    public Guid SpectatorToken { get; set; }
 }

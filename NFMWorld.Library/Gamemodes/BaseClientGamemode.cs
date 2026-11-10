@@ -35,8 +35,30 @@ public abstract class BaseClientGamemode : IGamemode
     [PluginVisible]
     public HudStateData HudState { get; protected internal set; } = new();
 
-    [PluginVisible] public ClientSidePlayer ClientPlayer { get; }
+    /// <summary>
+    /// The player this client drives. Team modes can field more than one; a spectator drives
+    /// none, which is why this is the first client player rather than a hard requirement.
+    /// </summary>
+    [PluginVisible]
+    public ClientSidePlayer? ClientPlayer { get; }
+
     private readonly IClientCallbacks _clientCallbacks;
+
+    /// <summary>
+    /// The player this client drives, or null for a spectator whose roster has none. A team
+    /// mode could legitimately hold several, which is why this is the first rather than a
+    /// requirement that there be exactly one.
+    /// </summary>
+    public static ClientSidePlayer? FirstClientPlayer(IReadOnlyList<ClientSidePlayer> players)
+    {
+        foreach (var player in players)
+        {
+            if (player.Info.IsClientPlayer)
+                return player;
+        }
+
+        return null;
+    }
 
     protected BaseClientGamemode(ClientGamemodeParameters clientGamemodeParameters, IGamemodeContext gamemodeContext)
     {
@@ -45,7 +67,9 @@ public abstract class BaseClientGamemode : IGamemode
         Players = new ObservableUnlimitedArray<ClientSidePlayer>();
         foreach (var (parameters, idx) in clientGamemodeParameters.Players.Select((p, idx) => (p, idx)))
             Players.Add(new ClientSidePlayer(parameters, idx));
-        ClientPlayer = Players.Single(p => p.Info.IsClientPlayer);
+        // A spectator roster has no client player, so this cannot be Single: it was, and a
+        // spectator threw on construction before it could watch anything.
+        ClientPlayer = FirstClientPlayer(Players.ToArray());
         _clientCallbacks = new PluginClientCallbacks(gamemodeContext.ClientCallbacks);
     }
 
@@ -345,7 +369,9 @@ public abstract class BaseClientGamemode : IGamemode
         _lcarz = car.Position.Z;
 
         HudState.Speed = MathF.Sqrt(diffx * diffx + diffz * diffz);
-        HudState.Damage = (float)car.CarPhysics.DamagePoints / ClientPlayer.Car?.Stats.Maxmag ?? 100;
+        HudState.Damage = ClientPlayer?.Car is { } own
+            ? (float)car.CarPhysics.DamagePoints / own.Stats.Maxmag
+            : 0f;
         HudState.Power = (float)car.CarPhysics.Power / 100f;
 
         if (car.CurrentCheckpoint != _lastClientCheckpoint)

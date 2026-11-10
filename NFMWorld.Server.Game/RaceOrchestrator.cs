@@ -24,8 +24,10 @@ public class RaceOrchestrator : IDisposable
     private readonly ConcurrentDictionary<uint, ClientInfo> _clients = new();
     private readonly IMultiplayerServerTransport _transport;
 
-    // join token → (session, player index)
-    private readonly ConcurrentDictionary<Guid, (RaceSession Session, byte PlayerIndex, Guid ClientId)> _joinTokens = new();
+    // join token → (session, player index, player id, whether this token only watches)
+    private readonly ConcurrentDictionary<Guid, (RaceSession Session, byte PlayerIndex, Guid ClientId, bool Spectator)>
+        _joinTokens = new();
+
     private readonly ConcurrentDictionary<uint, RaceSession> _sessions = new();
 
     // Server gamemode tick loop
@@ -239,8 +241,28 @@ public class RaceOrchestrator : IDisposable
             return;
         }
 
-        var clientId = entry.ClientId;
         var session = entry.Session;
+
+        // A spectator attaches under its token but is not a racer: it must not advance
+        // LoadedCount, or the race would start waiting on a player who never drives, and it
+        // owns no player id, so it can never be taken for one of the people racing. It still
+        // goes into Clients, which is the list every S2C_PlayerState is relayed to - that is
+        // how it sees the cars.
+        if (entry.Spectator)
+        {
+            session.Clients[clientIndex] = Guid.NewGuid();
+            Logging.Info($"[GM] Spectator attached on connection {clientIndex}");
+            if (session.ResultsBroadcasted)
+                _transport.SendPacketToClient(
+                    clientIndex,
+                    new S2C_GameFinished { Results = session.LastResults }
+                );
+            else if (session.LoadedCount >= session.PlayerCount)
+                _transport.SendPacketToClient(clientIndex, new S2C_RaceCanStart());
+            return;
+        }
+
+        var clientId = entry.ClientId;
 
         // Already attached under another connection index: this is a reconnect. Move the
         // mapping rather than counting the player as loaded twice. A loop, not FirstOrDefault:
@@ -394,7 +416,7 @@ public class RaceOrchestrator : IDisposable
 
             var token = Guid.NewGuid();
             joinTokens[playerIndex] = token;
-            _joinTokens.TryAdd(token, (session, playerIndex, playerInfo.Id));
+            _joinTokens.TryAdd(token, (session, playerIndex, playerInfo.Id, false));
         }
 
         var factory = GamemodeFactory.Create(raceParams.MatchGameplayInfo.Gamemode, raceParams.MatchGameplayInfo.Parameters);
@@ -428,9 +450,15 @@ public class RaceOrchestrator : IDisposable
             $"[GM] Race created: {raceParams.MatchKey}, {joinTokens.Count} players"
         );
 
+        // One token for every onlooker: a spectator takes no slot and speaks for no car, so
+        // there is nothing per-person to keep apart. PlayerIndex is unused for it.
+        var spectatorToken = Guid.NewGuid();
+        _joinTokens.TryAdd(spectatorToken, (session, 0, Guid.Empty, true));
+
         return new Lobby2RaceServer_CreateRaceResponse
         {
-            PlayerSecretIds = joinTokens
+            PlayerSecretIds = joinTokens,
+            SpectatorToken = spectatorToken
         };
     }
 

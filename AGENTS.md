@@ -267,6 +267,15 @@ from `PhysicsController.GameTick`. Two ship:
   first car across the line when `Racing`, and `PvpServerGamemode.CheckConstraint` ends the race when at most one car
   is alive when `Wasting`. "Alive" is the current relayed state (`WastedAt < 0`), not a latched first death, so a car
   revived through a fix hoop still counts. A solo session never satisfies the wasting rule.
+- **Watching a race you are not in** — `C2S_SpectateSession` (lobby → `S2C_RaceStarted` with
+  `Spectator = true`). The GM hands out one spectator token per race
+  (`Lobby2RaceServer_CreateRaceResponse.SpectatorToken`); a connection using it joins `session.Clients`
+  but never `LoadedCount`, so it receives every `S2C_PlayerState` (relayed to all clients) without
+  affecting the race start or the gamemode's players. The timestamped `_sessionMatches` map in
+  `GameOrchestrator` is what lets the lobby find a running race to hand over; it is cleared when the
+  GM reports the result. On the client the roster has **no** `ClientPlayer` (which is why
+  `IGamemode.ClientPlayer` is nullable and `BaseClientGamemode.FirstClientPlayer` replaced `Single`);
+  `RacePhase` then rides `SpectateCar()` — the lock-key target, or the leader — and skips `Forfeit` on quit.
 - A **wasted** client is spectated: `RacePhase.GameTick` passes `TargetCarFor(car)` to the camera instead of the
   client car. The lock keys pick the target (same `LockTargetHelper.LockedCar` the arrow uses, which refuses a
   wasted car), falling back to the nearest live opponent. `IHudData.Spectating` carries this to the skins, which draw

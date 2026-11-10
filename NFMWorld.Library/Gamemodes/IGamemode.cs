@@ -45,9 +45,10 @@ public interface IGamemode
     void OnServerEvent(ReadOnlySpan<byte> payload);
 
     /// <summary>
-    /// Gets the client player.
+    /// Gets the player this client drives, and whose car it owns. Null when the client is
+    /// watching a racing session it has no car in - nothing in that roster belongs to it.
     /// </summary>
-    ClientSidePlayer ClientPlayer { get; }
+    ClientSidePlayer? ClientPlayer { get; }
 
     // ── Client-only members ───────────────────────────────────────────
 

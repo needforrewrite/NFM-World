@@ -42,6 +42,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         OpenCreate: OnOpenCreate,
         CloseCreate: () => Lobby.ShowCreateDialog.Value = false,
         Select: id => Lobby.SelectedSessionId.Value = id,
+        Spectate: OnSpectate,
         SetStage: stage => Lobby.SelectedStage.Value = stage,
         SetMaxPlayers: count => Lobby.MaxPlayers.Value = count,
         SetBots: count => Lobby.BotCount.Value = count,
@@ -211,7 +212,9 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
                     Color = c.Color,
                     PlayerName = c.PlayerName,
                     IsBot = c.IsBot,
-                    IsClientPlayer = c.Id == _player.Id,
+                    // A spectator is in none of the slots: nobody is the client player, so no car
+                    // is driven here and the camera rides a watched one instead.
+                    IsClientPlayer = !raceStarted.Spectator && c.Id == _player.Id,
                     Id = c.Id,
                     OwnerId = c.OwnerId
                 }
@@ -222,7 +225,8 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             session.StageName,
             GetGameModeFactory(session),
             players,
-            new NetworkRaceHost(gameTransport, session, raceStarted.JoinInfo.JoinToken)
+            new NetworkRaceHost(gameTransport, session, raceStarted.JoinInfo.JoinToken),
+            spectating: raceStarted.Spectator
         );
 
         phase.Exited += (_, _) => GameSparker.PopGroup(PhaseManager.Groups.Event);
@@ -358,6 +362,16 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             return;
 
         transport.SendPacketToServer(new C2S_JoinSession { SessionId = id });
+    }
+
+    /// <summary>
+    /// Watch a running race. The lobby answers with an <see cref="S2C_RaceStarted"/> marked as a
+    /// spectator, which <see cref="OnRaceStarted"/> turns into a race with no client player.
+    /// </summary>
+    private void OnSpectate(uint id)
+    {
+        if (CanAct)
+            transport.SendPacketToServer(new C2S_SpectateSession { SessionId = id });
     }
 
     private void OnLeave()

@@ -25,7 +25,15 @@ public class GameOrchestrator
     /// <summary>Matches handed to a game master and not yet reported back, keyed by match key.</summary>
     private readonly ConcurrentDictionary<Guid, PendingMatch> _pendingMatches = new();
 
-    private sealed record PendingMatch(MatchGameplayInfo Info, uint SessionId);
+    /// <summary>Which match a session's race is, while it runs. An onlooker starts from the session.</summary>
+    private readonly ConcurrentDictionary<uint, Guid> _sessionMatches = new();
+
+    private sealed record PendingMatch(
+        MatchGameplayInfo Info,
+        uint SessionId,
+        IpAndPort GameAddress,
+        Guid SpectatorToken
+    );
 
     private Thread? _lobbyThread;
     private bool _lobbyIsRunning = true;
@@ -44,6 +52,9 @@ public class GameOrchestrator
 
         // The race is over, so its players are back in the lobby and free to start another.
         // IsInGame is set when a race starts and was only ever cleared on timeout or failure.
+        // The race is over, so nobody can be sent to watch it any more.
+        _sessionMatches.TryRemove(pending.SessionId, out _);
+
         var session = _sessions.Get(pending.SessionId);
         if (session is not null)
         {
@@ -236,6 +247,10 @@ public class GameOrchestrator
                 HandleJoinSession(e.ClientIndex, join);
                 break;
 
+            case C2S_SpectateSession spectate:
+                HandleSpectateSession(e.ClientIndex, spectate);
+                break;
+
             case C2S_LeaveSession leave:
                 HandleLeaveSession(e.ClientIndex, leave);
                 break;
@@ -423,6 +438,39 @@ public class GameOrchestrator
         _broadcaster.BroadcastToAll();
     }
 
+    /// <summary>
+    /// Sends a client to watch a race that is already running. The client is not put in the
+    /// session's player slots - the race is already under way and its roster is fixed - so this
+    /// only hands over the game master's address and the spectator token.
+    /// </summary>
+    private void HandleSpectateSession(uint clientId, C2S_SpectateSession spectate)
+    {
+        var player = _players.Get(clientId);
+        if (player is null || player.IsInGame) return;
+
+        if (!_sessionMatches.TryGetValue(spectate.SessionId, out var matchKey)
+            || !_pendingMatches.TryGetValue(matchKey, out var pending))
+        {
+            // The race is not running (or is already over), so there is nothing to watch.
+            return;
+        }
+
+        _transport.SendPacketToClient(
+            player.ClientIndex,
+            new S2C_RaceStarted
+            {
+                MatchGameplayInfo = pending.Info,
+                State = SessionState.Started,
+                Spectator = true,
+                JoinInfo = new S2C_RaceStarted.GameJoinInfo
+                {
+                    RaceServerIpAddress = pending.GameAddress,
+                    JoinToken = pending.SpectatorToken
+                }
+            }
+        );
+    }
+
     private void HandleLeaveSession(uint clientId, C2S_LeaveSession leave)
     {
         var player = _players.Get(clientId);
@@ -501,16 +549,23 @@ public class GameOrchestrator
             var createResponse = await _gmClient.CreateRaceAsync(gm, createRequest);
             _gmRegistry.MarkSuccess(gm);
 
+            // Use the GM's SRV-resolved game address (Lobby already knows it)
+            var gameAddress = gm.GameAddress;
+
             // Kept until the game master reports the race over. This is what lets the lobby turn
-            // the GM's player slots into accounts when the result comes back.
-            _pendingMatches[createRequest.MatchKey] = new PendingMatch(matchInfo, session.Id);
+            // the GM's player slots into accounts when the result comes back - and what lets a
+            // spectator be handed a way into the race while it is still running.
+            _pendingMatches[createRequest.MatchKey] = new PendingMatch(
+                matchInfo,
+                session.Id,
+                gameAddress,
+                createResponse.SpectatorToken
+            );
+            _sessionMatches[session.Id] = createRequest.MatchKey;
 
             _chat.BroadcastSystem(
                 $"{session.CreatorName} has started the race on {session.StageName}!"
             );
-
-            // Use the GM's SRV-resolved game address (Lobby already knows it)
-            var gameAddress = gm.GameAddress;
 
             foreach (var (index, id) in session.Players)
             {

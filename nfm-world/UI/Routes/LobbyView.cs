@@ -36,6 +36,8 @@ public static class LobbyView
         Action OpenCreate,
         Action CloseCreate,
         Action<uint> Select,
+        /// <summary>Watch a race that is already running, without taking a slot.</summary>
+        Action<uint> Spectate,
         Action<string> SetStage,
         Action<int> SetMaxPlayers,
         Action<int> SetBots,
@@ -315,6 +317,7 @@ public static class LobbyView
 
                 // A member who did not create the race leaves it; only the creator starts it.
                 // Both used to call StartRace, so LEAVE launched a race and nothing left.
+                // Once a race is under way there is no slot to take, so a non-member watches it.
                 session.IsMember && session.IsCreator
                     ? ActionButton(
                         () => "START",
@@ -329,12 +332,19 @@ public static class LobbyView
                             small: true,
                             disabled: () => !lobby.Connected.Value
                         )
-                        : ActionButton(
-                            () => "JOIN",
-                            () => actions.Join(session.Id),
-                            small: true,
-                            disabled: () => session.State != SessionState.NotStarted || !lobby.Connected.Value
-                        )
+                        : session.State is SessionState.Started or SessionState.WaitingToLoad
+                            ? ActionButton(
+                                () => "WATCH",
+                                () => actions.Spectate(session.Id),
+                                small: true,
+                                disabled: () => !lobby.Connected.Value
+                            )
+                            : ActionButton(
+                                () => "JOIN",
+                                () => actions.Join(session.Id),
+                                small: true,
+                                disabled: () => session.State != SessionState.NotStarted || !lobby.Connected.Value
+                            )
             ]
         );
     }

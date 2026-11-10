@@ -74,8 +74,9 @@ public class PvpGamemode : PluginGamemode
 
             // Only the client that owns a bot drives it; every other client sees the
             // state its owner relays. An ownerless bot (singleplayer) is driven locally.
+            var localId = ClientPlayer?.Info.Id;
             if (player.Info.IsBot
-                && (player.Info.OwnerId == Guid.Empty || player.Info.OwnerId == ClientPlayer.Info.Id))
+                && (player.Info.OwnerId == Guid.Empty || player.Info.OwnerId == localId))
                 AttachBot("classic", player);
         }
     }
@@ -141,7 +142,7 @@ public class PvpGamemode : PluginGamemode
                 if (Players.Count > 1)
                     CheckPointHelper.CalculatePositions(CurrentStage, Players);
 
-                if (clientCrossed && ClientPlayer.Car is { } crossedCar)
+                if (clientCrossed && ClientPlayer?.Car is { } crossedCar)
                 {
                     SendServerEvent<ClientToServerEvent>(
                         new CheckpointEvent(
@@ -155,14 +156,16 @@ public class PvpGamemode : PluginGamemode
 
                 _clientTick++;
 
-                if (ClientPlayer.Car != null)
+                // A spectator has no car of its own; it still gets the lap count and field size.
+                if (ClientPlayer?.Car is { } ownCar)
                 {
-                    UpdateHudAndSounds(ClientPlayer.Car);
-                    HudState.Lap = Math.Min(ClientPlayer.Car.CurrentLap + 1, CurrentStage.Nlaps);
-                    HudState.TotalLaps = CurrentStage.Nlaps;
-                    HudState.Position = ClientPlayer.Car.Placement + 1;
-                    HudState.TotalRacers = Players.Count;
+                    UpdateHudAndSounds(ownCar);
+                    HudState.Lap = Math.Min(ownCar.CurrentLap + 1, CurrentStage.Nlaps);
+                    HudState.Position = ownCar.Placement + 1;
                 }
+
+                HudState.TotalLaps = CurrentStage.Nlaps;
+                HudState.TotalRacers = Players.Count;
 
                 // The first car across the line ends the race for everyone. Waiting for the
                 // client to finish let a bot complete every lap while the race carried on.

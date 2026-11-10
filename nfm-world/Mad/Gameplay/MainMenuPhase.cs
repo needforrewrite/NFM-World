@@ -291,7 +291,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                     throw;
                 }
 
-                var inRace = new RacePhase(stageName, factory, players, host, gp);
+                var inRace = new RacePhase(stageName, factory, players, host, stageSource: gp);
                 inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
                 GameSparker.Phases.ReplaceGroup(inRace, PhaseManager.Groups.Event);
 
@@ -388,7 +388,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                     throw;
                 }
 
-                var inRace = new RacePhase(stageName, factory, players, host, gp);
+                var inRace = new RacePhase(stageName, factory, players, host, stageSource: gp);
                 inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
                 GameSparker.Phases.ReplaceGroup(inRace, PhaseManager.Groups.Event);
             };

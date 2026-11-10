@@ -24,4 +24,11 @@ public partial struct S2C_RaceStarted() : IPacketServerToClient<S2C_RaceStarted>
     [MemoryPackOrder(0)] public required MatchGameplayInfo MatchGameplayInfo { get; set; }
     [MemoryPackOrder(1)] public required SessionState State { get; set; } = SessionState.NotStarted;
     [MemoryPackOrder(2)] public required GameJoinInfo JoinInfo { get; set; }
+
+    /// <summary>
+    /// True when this client was given a way into the race without taking a slot. It sees every
+    /// car but sits in none of them, so its race has no client player.
+    /// </summary>
+    [MemoryPackOrder(3)]
+    public bool Spectator { get; set; }
 }

@@ -54,17 +54,28 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
     BackendStage IGamemodeContext.CurrentStage => CurrentStage.Backend;
 
+    /// <summary>
+    /// Watching a race this client has no car in. There is no client player, so input drives
+    /// nothing and the camera rides the watched car.
+    /// </summary>
+    private readonly bool _spectating;
+
+    /// <summary>Player index a spectator is following, or -1 to follow the leader.</summary>
+    private int _spectateLock = -1;
+
     public RacePhase(
         string stageName,
         BaseGamemodeFactory gamemode,
         IReadOnlyList<ClientSidePlayerInfo> players,
         IRaceHost host,
+        bool spectating = false,
         BaseStageRenderingPhase? stageSource = null
     ) : base(stageName, stageSource)
     {
         Gamemode = gamemode;
         Players = players;
         _host = host;
+        _spectating = spectating;
         _localPlayerId = players.FirstOrDefault(p => p.IsClientPlayer)?.Id ?? Guid.Empty;
 
         try
@@ -196,6 +207,11 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         hud.ArrowTarget = "";
         hud.ArrowAtCars = false;
         hud.ArrowLocked = false;
+        // A spectator has no own car, so it names whoever it is watching. The digit on that
+        // racer's row is the key that switches away from them.
+        hud.Spectating = _spectating;
+        if (_spectating && SpectateCar() is { } watched)
+            hud.ArrowTarget = OrderedPlayers(gm).FirstOrDefault(p => ReferenceEquals(p.Car, watched))?.Info.PlayerName ?? "";
         hud.TimeTrial = gm.GamemodeId == "nfmm/timetrial";
         var client = ClientCar;
         InvalidateOrdering();
@@ -264,8 +280,10 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             && !OrderedOpponents(gm).Any(p => p.Index == client.Control.ArrowLock && p.Car is { Wasted: false }))
             client.Control.ArrowLock = -1;
         // Wasted: the camera rides whoever is targeted, so the HUD names them even though the
-        // arrow itself is off (a dead car has no heading to point it from).
-        hud.Spectating = client?.Wasted ?? false;
+        // arrow itself is off (a dead car has no heading to point it from). A spectator's name
+        // was set above and must survive this.
+        if (!_spectating)
+            hud.Spectating = client?.Wasted ?? false;
         hud.ArrowAtCars = client?.Control.Arrace ?? false;
         hud.ArrowLocked = hud.ArrowAtCars && (client?.Control.ArrowLock ?? -1) >= 0;
         if (client is not null && (hud.ArrowAtCars || hud.Spectating))
@@ -384,12 +402,49 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     private int LockableOpponents()
         => GamemodeInstance is BaseClientGamemode gm ? OrderedOpponents(gm).Length : 0;
 
+    /// <summary>Sidebar slot → player index, for whichever list is being locked.</summary>
+    private int LockTargetAt(int slot)
+        => _spectating ? SpectateTargetAt(slot) : OpponentTargetAt(slot);
+
+    private int SpectateTargetAt(int slot)
+    {
+        if (GamemodeInstance is not BaseClientGamemode gm) return -1;
+        var players = OrderedPlayers(gm);
+        return slot >= 0 && slot < players.Length ? players[slot].Index : -1;
+    }
+
+    /// <summary>
+    /// The car a spectator follows. The lock keys pick it (the same Ctrl+digit a racer uses);
+    /// with nothing locked it is whoever is leading, so the view is never empty. It follows the
+    /// car through a death too - a spectator is watching the racer, not a live car.
+    /// </summary>
+    private BackendCar? SpectateCar()
+    {
+        if (GamemodeInstance is not BaseClientGamemode gm) return null;
+        var players = OrderedPlayers(gm);
+        if (players.Length == 0) return null;
+        foreach (var player in players)
+        {
+            if (player.Index == _spectateLock && player.Car is { } locked)
+                return locked;
+        }
+
+        // OrderedPlayers puts the client first, then by placement; with no client, first is the leader.
+        foreach (var player in players)
+        {
+            if (player.Car is { } car)
+                return car;
+        }
+
+        return null;
+    }
+
     /// <summary>
     /// Resolves a lock slot (0-based, sidebar order) to that opponent's stable player index, or -1
     /// when the slot holds no live opponent. The digit prints from <see cref="HudRacer.LockSlot"/>
     /// using the same ordering, so a key always locks the car whose row shows it.
     /// </summary>
-    private int LockTargetAt(int slot)
+    private int OpponentTargetAt(int slot)
     {
         if (GamemodeInstance is not BaseClientGamemode gm) return -1;
         var opponents = OrderedOpponents(gm);
@@ -478,7 +533,9 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
         // Online, leaving mid-race is a forfeit: the Game Master keeps the race going for
         // everyone else, and the transport is dropped by Dispose as if the game had closed.
-        if (_host is NetworkRaceHost && RaceState == RaceState.InProgress)
+        // A spectator is racing nothing, so it has nothing to forfeit - and a forfeit packet
+        // from it would be read as one of the players walking out.
+        if (!_spectating && _host is NetworkRaceHost && RaceState == RaceState.InProgress)
             GamemodeInstance?.Forfeit();
 
         Exited?.Invoke(this, EventArgs.Empty);
@@ -562,6 +619,25 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         {
             _cameraDirector.CycleViewMode();
             _input.SetFreelook(_cameraDirector.CurrentViewMode == RaceCameraDirector.ViewMode.Freelook, ClientCar?.Control);
+        }
+
+        // A spectator has no car and so no Control to write the lock into; the key drives the
+        // spectate target instead. Everyone else locks through the normal arrow path.
+        if (_spectating)
+        {
+            var slots = SettingsMenu.Bindings.LockSlots;
+            for (var slot = 0; slot < slots.Length; slot++)
+            {
+                if (key != slots[slot]) continue;
+                var target = SpectateTargetAt(slot);
+                if (target < 0) break;
+                // The same key again releases the lock, falling back to the leader.
+                _spectateLock = _spectateLock == target ? -1 : target;
+                break;
+            }
+
+            GamemodeInstance?.KeyPressed(key, in keys);
+            return;
         }
 
         // The arrow can only target cars while there is one to target.
@@ -806,7 +882,15 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             GamemodeInstance?.GameTick();
         }
 
-        if (ClientCar is { } car)
+        if (_spectating)
+        {
+            // Watching a race with no car of our own: the camera rides the chosen car. A race
+            // with no cars yet (still loading) leaves the camera where it is.
+            _cameraDirector.Navigation = _input.Navigation;
+            if (SpectateCar() is { } watched)
+                _cameraDirector.Update(Camera, watched);
+        }
+        else if (ClientCar is { } car)
         {
             // Per tick, not per UI push: the camera runs here, before PushUiState, so the target
             // is resolved fresh rather than read from the HUD a frame late.

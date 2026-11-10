@@ -192,6 +192,59 @@ public class AiPluginTests
         }
     }
 
+    /// <summary>
+    /// A spectator joins with nobody marked as the client player. The client gamemode used to
+    /// require exactly one and threw here, which made watching an impossible feature.
+    /// </summary>
+    [TestMethod]
+    public void BeginPvp_AsSpectator_HasNoClientPlayer()
+    {
+        TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
+        var plugin = NFMWorldLibrary.Gamemodes.DotNet.GamemodePlugin.Load(
+            "nfmm/pvp",
+            "data/gamemodes/nfmm/pvp/gamemode.dll"
+        );
+        Assert.IsNotNull(plugin);
+        BaseClientGamemode? gamemode = null;
+        var carName = $"sandbox-test/{Guid.NewGuid():N}";
+        try
+        {
+            var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
+            BackendGameSparker.dynamic_models.Add(carName, (0, car));
+            gamemode = plugin.CreateClient(
+                new ClientGamemodeParameters
+                {
+                    Players =
+                    [
+                        new ClientSidePlayerInfo
+                            { PlayerName = "Alice", CarName = carName, Color = default, IsBot = false, IsClientPlayer = false },
+                        new ClientSidePlayerInfo
+                            { PlayerName = "Bob", CarName = carName, Color = default, IsBot = false, IsClientPlayer = false }
+                    ]
+                },
+                new StubContext("empty")
+            );
+
+            gamemode.Begin();
+
+            Assert.IsNull(gamemode.ClientPlayer, "a spectator drives none of the slots");
+            foreach (var player in gamemode.Players)
+                Assert.IsNotNull(player.Car, "the cars are still built so they can be watched");
+        }
+        finally
+        {
+            BackendGameSparker.dynamic_models.Remove(carName);
+            try
+            {
+                gamemode?.End();
+            }
+            finally
+            {
+                plugin.Unload();
+            }
+        }
+    }
+
     [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
