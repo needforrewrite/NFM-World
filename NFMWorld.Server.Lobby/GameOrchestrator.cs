@@ -70,6 +70,11 @@ public class GameOrchestrator
         if (_archive is not { CanReportResults: true })
             return false;
 
+        // An abandoned race (nobody loaded) reports an empty standing order. There is nothing
+        // to rate, and posting it would record a played match that was never played.
+        if (results.Standings.Length == 0)
+            return false;
+
         var players = new List<ResultPlayer>();
         foreach (var standing in results.Standings)
         {
@@ -215,6 +220,15 @@ public class GameOrchestrator
             {
                 var session = _sessions.Get(inSession.SessionIndex);
                 session?.Players.TryRemove(KeyValuePair.Create(inSession.PlayerIndex, client.Id));
+
+                // A race whose roster emptied out will never finish on its own: the GM waits
+                // for a start only players could trigger, so the row sat in the list at 0/16.
+                // Ending it lets PruneFinished drop it, and marks the match over.
+                if (session is { State: SessionState.NotStarted or SessionState.WaitingToLoad }
+                    && session.Players.IsEmpty)
+                {
+                    _sessions.AbortSession(session.Id);
+                }
             }
 
             _chat.BroadcastSystem($"{client.Name} has left...");

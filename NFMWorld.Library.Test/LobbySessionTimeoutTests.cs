@@ -84,4 +84,42 @@ public class LobbySessionTimeoutTests
 
         Assert.HasCount(1, sessions.CheckTimeouts());
     }
+
+    /// <summary>
+    /// A timed-out player has to be released, or it stays flagged in-game and can never start
+    /// another race. The release looked players up by id through the connection-index overload,
+    /// so it silently found nothing; this asserts the flag actually clears.
+    /// </summary>
+    [TestMethod]
+    public void TimedOutSession_ReleasesItsPlayers()
+    {
+        var (sessions, players, sessionId) = CreateSession();
+        var creator = players.Get(1)!;
+        creator.IsInGame = true;
+
+        sessions.Get(sessionId)!.State = SessionState.WaitingToLoad;
+        sessions.Get(sessionId)!.StartTime = DateTimeOffset.UtcNow.AddSeconds(-1);
+        sessions.CheckTimeouts();
+
+        Assert.IsFalse(creator.IsInGame, "a timed-out player must be free to start another race");
+        Assert.IsNull(creator.InSession);
+    }
+
+    /// <summary>
+    /// A race whose players all disconnect can never start, so it must not sit in the list at
+    /// 0/16. Aborting marks it finished, which the pruner then removes.
+    /// </summary>
+    [TestMethod]
+    public void AbortedSession_IsPruned()
+    {
+        var (sessions, _, sessionId) = CreateSession();
+        var session = sessions.Get(sessionId)!;
+        session.State = SessionState.WaitingToLoad;
+        session.Players.Clear();
+
+        sessions.AbortSession(sessionId);
+        sessions.PruneFinished();
+
+        Assert.IsNull(sessions.Get(sessionId), "an empty, unfinished race is not a race anyone can join");
+    }
 }

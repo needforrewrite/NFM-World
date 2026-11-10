@@ -171,6 +171,8 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         var timedOut = new List<GameSession>();
         foreach (var (_, session) in _sessions)
         {
+            // The deadline is absolute (StartTime = now + 20s), so it is reached once, not
+            // every second after - which is why the state has to change when it fires.
             if (session.State == SessionState.WaitingToLoad
                 && session.StartTime is { } startTime
                 && DateTimeOffset.UtcNow >= startTime)
@@ -178,14 +180,16 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
                 session.State = SessionState.Finished;
                 timedOut.Add(session);
 
-                foreach (var (_, clientIndex) in session.Players)
+                // Players are keyed by slot to the player *id*, and IsInGame is tracked in the
+                // registry by connection index. Looking up by id always missed, so every client
+                // stayed flagged in-game and could not start anything again.
+                foreach (var id in session.Players.Values)
                 {
-                    var player = players.Get(clientIndex);
-                    if (player is not null)
-                    {
-                        player.InSession = null;
-                        player.IsInGame = false;
-                    }
+                    var player = players.Get(id);
+                    if (player is null)
+                        continue;
+                    player.InSession = null;
+                    player.IsInGame = false;
                 }
             }
         }
@@ -205,6 +209,19 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
             var empty = session.State == SessionState.NotStarted && session.Players.IsEmpty;
             if (finished || empty)
                 _sessions.TryRemove(id, out _);
+        }
+    }
+
+    /// <summary>
+    /// Ends a session that nobody is in any more. Its state moves to Finished so the next
+    /// <see cref="PruneFinished"/> drops it, and the lobby stops offering it as a race to watch.
+    /// </summary>
+    public void AbortSession(uint sessionId)
+    {
+        lock (_lock)
+        {
+            if (_sessions.TryGetValue(sessionId, out var session))
+                session.State = SessionState.Finished;
         }
     }
 

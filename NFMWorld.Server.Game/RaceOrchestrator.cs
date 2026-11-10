@@ -123,6 +123,17 @@ public class RaceOrchestrator : IDisposable
                 session.ServerGamemode = null;
                 session.Factory?.End();
                 session.Factory = null;
+                continue;
+            }
+
+            // Players never arrived. Without this the race waits on them for the life of the
+            // process, and every one of them sits on "waiting for other players to load".
+            if (!session.ResultsBroadcasted
+                && session.ServerGamemode is not null
+                && session.LoadedCount < session.PlayerCount
+                && DateTimeOffset.UtcNow >= session.LoadDeadline)
+            {
+                AbandonSession(session);
             }
         }
 
@@ -130,6 +141,49 @@ public class RaceOrchestrator : IDisposable
         // still on the stack; the check only sees the truth on a later tick.
         PluginUnloadVerifier.Verify();
     }
+
+    /// <summary>
+    /// Ends a race nobody loaded into. Told about it explicitly so a waiting client leaves the
+    /// screen, and reported to the lobby so the match stops being listed and its players are
+    /// released - an abandoned race is not rated.
+    /// </summary>
+    private void AbandonSession(RaceSession session)
+    {
+        session.ResultsBroadcasted = true;
+        session.LoadDeadline = DateTimeOffset.MaxValue;
+
+        _transport.SendPacketToClients(
+            session.Clients.Keys.ToArray(),
+            new S2C_RaceFailedToStart(),
+            reliable: true
+        );
+
+        Logging.Warning(
+            $"[GM] Race {session.MatchKey} abandoned: {session.LoadedCount}/{session.PlayerCount} loaded before the deadline"
+        );
+
+        // An empty standing order: the race produced no result, but the lobby has to learn that
+        // it is over or the session stays listed and its players stay flagged in a race.
+        ReportToLobby(
+            session,
+            new RaceResults
+            {
+                Standings = [],
+                RaceDuration = TimeSpan.Zero,
+                GamemodeId = session.Gamemode
+            }
+        );
+
+        session.ServerGamemode = null;
+        session.Factory?.End();
+        session.Factory = null;
+    }
+
+    /// <summary>
+    /// How long a created race waits for its players to reach this server before it is
+    /// abandoned. Matches the lobby's own load deadline, which no longer covers this phase.
+    /// </summary>
+    private const int LoadTimeoutSeconds = 20;
 
     /// <summary>
     /// Tells the lobby this race is over. The lobby is the only party that knows which account
@@ -404,7 +458,10 @@ public class RaceOrchestrator : IDisposable
             PlayerCount = raceParams.MatchGameplayInfo.Players.Values.Count(p => !p.IsBot),
             Clients = [],
             PlayerInfos = raceParams.MatchGameplayInfo.Players,
-            Gamemode = raceParams.MatchGameplayInfo.Gamemode
+            Gamemode = raceParams.MatchGameplayInfo.Gamemode,
+            // From creation, not from the first load: a race whose players never reach this
+            // server at all would otherwise wait on them forever.
+            LoadDeadline = DateTimeOffset.UtcNow.AddSeconds(LoadTimeoutSeconds)
         };
 
         foreach (var (playerIndex, playerInfo) in raceParams.MatchGameplayInfo.Players)
@@ -513,6 +570,14 @@ public class RaceOrchestrator : IDisposable
         public Guid MatchKey { get; set; }
 
         public string Gamemode { get; set; } = DefaultGamemodes.PvP;
+
+        /// <summary>
+        /// When a race still waiting for players to load is abandoned. Nothing else ends a race
+        /// whose clients never arrive: the lobby's own load deadline applies to a different phase
+        /// and is cleared before this one starts.
+        /// </summary>
+        public DateTimeOffset LoadDeadline { get; set; }
+
         public int PlayerCount { get; set; }
         public int LoadedCount { get; set; }
         public ConcurrentDictionary<uint, Guid> Clients { get; set; } = [];

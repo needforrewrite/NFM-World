@@ -63,6 +63,16 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     /// <summary>Player index a spectator is following, or -1 to follow the leader.</summary>
     private int _spectateLock = -1;
 
+    /// <summary>
+    /// When an online race started waiting for the other players to load, or null if it never
+    /// had to. A client that never reaches the Game Master gets no failure packet from anyone -
+    /// the GM only knows connections it received - so this screen has to time out here too.
+    /// </summary>
+    private long? _waitingSince;
+
+    /// <summary>How long a race waits to start before it gives up. Matches the server's own deadline.</summary>
+    private const int LoadTimeoutMs = 20_000;
+
     public RacePhase(
         string stageName,
         BaseGamemodeFactory gamemode,
@@ -112,6 +122,8 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
         // Host wiring: identical for local and network hosts.
         RaceState = RaceState.WaitingToStart;
+        // Only an online race can wait on other people; a local one starts below.
+        _waitingSince = host is LocalRaceHost ? null : System.Environment.TickCount64;
         host.RaceCanStart += () => RaceState = RaceState.InProgress;
         host.RaceFailedToStart += () => RaceState = RaceState.FailedToStart;
         host.PlayerStateReceived += ApplyPlayerState;
@@ -868,6 +880,17 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         if (!_host.IsConnected
             && _host is NetworkRaceHost { ReconnectFailed: true }
             && RaceState is RaceState.WaitingToStart or RaceState.InProgress)
+        {
+            RaceState = RaceState.FailedToStart;
+            return;
+        }
+
+        // Still waiting on other players, and the deadline has passed. The GM abandons the race
+        // from its side, but a client that never reached the GM hears nothing, so this is what
+        // stops "waiting for other players to load" from being permanent.
+        if (RaceState == RaceState.WaitingToStart
+            && _waitingSince is { } waitingSince
+            && System.Environment.TickCount64 - waitingSince >= LoadTimeoutMs)
         {
             RaceState = RaceState.FailedToStart;
             return;
