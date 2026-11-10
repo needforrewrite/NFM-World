@@ -29,6 +29,13 @@ public interface IHudData
     string ArrowTarget { get; }
     bool ArrowAtCars { get; }
 
+    /// <summary>
+    /// The client car is wasted and the camera is riding <see cref="ArrowTarget"/> instead. The
+    /// arrow itself is meaningless here - a dead car has no heading - so the HUD shows only who
+    /// is being watched.
+    /// </summary>
+    bool Spectating => false;
+
     /// <summary>Whether the arrow is locked onto a chosen opponent rather than the automatic pick.</summary>
     bool ArrowLocked => false;
 

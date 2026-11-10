@@ -47,6 +47,8 @@ public class PvpGamemode : PluginGamemode
     private int _inner;
     private int _clientTick;
 
+    private RaceConstraint _constraint = RaceConstraint.Both;
+
     private PhysicsController _physics;
 
     public PvpGamemode(
@@ -57,7 +59,6 @@ public class PvpGamemode : PluginGamemode
     ) : base(clientGamemodeParameters, gamemodeContext, gamemodeId, config)
     {
         _physics = new PhysicsController(Players, CurrentStage);
-        // TODO enforce constraint
     }
 
     private void SetupCars()
@@ -87,6 +88,7 @@ public class PvpGamemode : PluginGamemode
         _countdown = 3;
         _inner = GamemodeUtils.CountdownInterval;
         _clientTick = 0;
+        _constraint = RaceConstraint.From(Config);
         HudState.StateText = null;
         HudState.StateTextEndsAt = null;
         HudState.Finished = false;
@@ -174,7 +176,9 @@ public class PvpGamemode : PluginGamemode
                     }
                 }
 
-                if (winner is not null)
+                // A wasting-only race has no line to win: the last car alive wins instead, which
+                // the server reports.
+                if (winner is not null && _constraint.Racing)
                     Finish(winner);
                 break;
             case GamemodeState.Finished:
@@ -268,6 +272,8 @@ public class PvpServerGamemode(
     /// <summary>Server ticks since the race started; DNF order is keyed on it.</summary>
     private int _serverTick;
 
+    private RaceConstraint _constraint = RaceConstraint.Both;
+
     public override void Begin()
     {
         base.Begin();
@@ -275,6 +281,7 @@ public class PvpServerGamemode(
         _inner = GamemodeUtils.ServerCountdownInterval;
         _countdown = 3;
         _state = ServerGamemodeState.WaitingToStart;
+        _constraint = RaceConstraint.From(Config);
 
         foreach (var player in Players)
         {
@@ -318,8 +325,40 @@ public class PvpServerGamemode(
             case ServerGamemodeState.InProgress:
                 _serverTick++;
                 TrackWasted();
+                CheckConstraint();
                 break;
         }
+    }
+
+    /// <summary>
+    /// Ends the race when the chosen constraint is satisfied: wasting ignores racing, so it ends
+    /// once at most one car is still alive, and racing ignores deaths, so it ends on the line
+    /// (handled in the checkpoint event).
+    /// </summary>
+    private void CheckConstraint()
+    {
+        // A solo session has nobody to waste; the last car alive is trivially the only car.
+        if (!_constraint.Wasting || _perPlayer.Count <= 1)
+            return;
+
+        var alive = 0;
+        foreach (var info in _perPlayer.Values)
+        {
+            if (!info.Forfeited && info.WastedAt < 0)
+                alive++;
+        }
+
+        if (alive <= 1)
+            EndRace();
+    }
+
+    private void EndRace()
+    {
+        if (_state == ServerGamemodeState.Finished)
+            return;
+
+        _state = ServerGamemodeState.Finished;
+        CompleteRace();
     }
 
     /// <summary>
@@ -424,11 +463,10 @@ public class PvpServerGamemode(
             ps.Checkpoint = cp;
             ps.Position = placement;
 
-            if (lap >= CurrentStage.Nlaps && _state != ServerGamemodeState.Finished)
-            {
-                _state = ServerGamemodeState.Finished;
-                CompleteRace();
-            }
+            // a racing constraint does not end the race on the line, so the ranking
+            // is left to the wasting rule instead.
+            if (lap >= CurrentStage.Nlaps && _constraint.Racing)
+                EndRace();
         }
     }
 

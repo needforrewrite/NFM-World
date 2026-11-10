@@ -101,17 +101,24 @@ internal sealed class WorldHud(IHudData race)
     );
 
     private View Arrow() => Sx.View(
-        // Hidden while there is nothing to point at (no checkpoint, noarrow(), wasted).
-        style: () => Tick() >= 0 && race.ArrowAngle is not null
+        // Hidden while there is nothing to point at (no checkpoint, noarrow(), wasted). A
+        // spectating client has no heading to point from, but still needs the name of the car it
+        // is riding.
+        style: () => Tick() >= 0 && (race.ArrowAngle is not null || race.Spectating)
             ? PanelStyle(Sx.Styles(alignItems: Align.Center))
             : Sx.Styles(display: Display.None),
         children:
         [
+            // Draws nothing when ArrowAngle is null, which is the spectating case.
             new WorldArrow(race, 44),
             Sx.Text(
                 style: () => Label,
                 layout: () => Sx.Styles(marginTop: 4),
-                text: () => Tick() >= 0 && race.ArrowAtCars && race.ArrowTarget.Length > 0 ? race.ArrowTarget : "CHECKPOINT"
+                text: () => Tick() < 0 || race.ArrowTarget.Length == 0
+                    ? "CHECKPOINT"
+                    : race.ArrowAtCars || race.Spectating
+                        ? race.ArrowTarget
+                        : "CHECKPOINT"
             )
         ]
     );

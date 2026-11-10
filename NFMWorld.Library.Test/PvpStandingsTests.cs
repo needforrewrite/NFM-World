@@ -26,6 +26,7 @@ public class PvpStandingsTests
     private static readonly Guid Alice = Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001");
     private static readonly Guid Bob = Guid.Parse("bbbbbbbb-0000-0000-0000-000000000002");
     private static readonly Guid Carol = Guid.Parse("cccccccc-0000-0000-0000-000000000003");
+    private static readonly Guid Dave = Guid.Parse("dddddddd-0000-0000-0000-000000000004");
 
     private static StageObject CreateCheckpoint(fix64 x)
         => StageObject.CreateDefaultObject(
@@ -63,10 +64,15 @@ public class PvpStandingsTests
 
     private static (BaseGamemodeFactory Factory, IServerGamemode Server, ServerContext Context) CreateRace(
         params Guid[] players
+    ) => CreateRace("racing", players);
+
+    private static (BaseGamemodeFactory Factory, IServerGamemode Server, ServerContext Context) CreateRace(
+        string constraint,
+        params Guid[] players
     )
     {
         NFMWorldLibrary.TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
-        var factory = GamemodeFactory.Create("nfmm/pvp", new Dictionary<string, object> { ["constraint"] = "racing" });
+        var factory = GamemodeFactory.Create("nfmm/pvp", new Dictionary<string, object> { ["constraint"] = constraint });
         var context = new ServerContext(CreateStage(laps: 3, checkpoints: 2));
         var server = factory.CreateServerGamemode(
             new ServerGamemodeParameters
@@ -160,6 +166,106 @@ public class PvpStandingsTests
 
     private static void Finish(BaseGamemodeFactory factory, IServerGamemode server, ServerContext context, Guid player)
         => DriveToFinish(factory, server, context, player, Laps, Checkpoints);
+
+    /// <summary>
+    /// A wasting race is decided by survival: once only one car is still alive the race is over,
+    /// and the survivor wins even though nobody crossed a line.
+    /// </summary>
+    [TestMethod]
+    public void WastingConstraint_EndsWhenOneCarIsLeftAndThatCarWins()
+    {
+        var (factory, server, context) = CreateRace("wasting", Alice, Bob, Carol);
+        try
+        {
+            StartRacing(server);
+            Wasted(server, context, Alice);
+            Assert.IsNull(server.GetStateSnapshot(), "two cars are still alive");
+            Wasted(server, context, Bob);
+
+            var standings = Standings(server);
+            Assert.AreEqual(Carol, standings[0].PlayerId, "the last car alive wins a wasting race");
+            Assert.AreEqual(Bob, standings[1].PlayerId, "the newest death sorts ahead of the older one");
+            Assert.AreEqual(Alice, standings[2].PlayerId);
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
+
+    /// <summary>A racing race ignores deaths: everyone can be out and the race still runs.</summary>
+    [TestMethod]
+    public void RacingConstraint_DoesNotEndWhenEveryCarIsWasted()
+    {
+        var (factory, server, context) = CreateRace("racing", Alice, Bob, Carol);
+        try
+        {
+            StartRacing(server);
+            Wasted(server, context, Alice);
+            Wasted(server, context, Bob);
+            Wasted(server, context, Carol);
+
+            Assert.IsNull(server.GetStateSnapshot(), "a racing race has no survival condition");
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
+
+    /// <summary>
+    /// The realistic revive: Bob is wasted and the server sees it on one tick, then he is pushed
+    /// through a fix hoop and the next tick clears it. The death must not latch - two cars are
+    /// alive again, so the race keeps going.
+    /// </summary>
+    [TestMethod]
+    public void WastingConstraint_ACarRevivedAfterItsDeathWasSeenKeepsTheRaceAlive()
+    {
+        var (factory, server, context) = CreateRace("wasting", Alice, Bob, Carol, Dave);
+        try
+        {
+            StartRacing(server);
+            Wasted(server, context, Alice);
+            Wasted(server, context, Bob);
+            Assert.IsNull(server.GetStateSnapshot(), "Carol and Dave are still alive");
+
+            Revived(server, context, Bob);
+
+            // Alice is out but Bob is back, so three cars are racing.
+            Assert.IsNull(server.GetStateSnapshot(), "Bob's death was cleared by the hoop");
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
+
+    /// <summary>
+    /// A car can be wasted and pushed back through a fix hoop between two server ticks. The
+    /// constraint reads the latest relayed state, so a car that is alive now keeps the race
+    /// going - it must not latch a death it has already recovered from.
+    /// </summary>
+    [TestMethod]
+    public void WastingConstraint_ReadsTheCurrentStateNotAnEarlierDeath()
+    {
+        var (factory, server, context) = CreateRace("wasting", Alice, Bob, Carol);
+        try
+        {
+            StartRacing(server);
+            Wasted(server, context, Alice);
+
+            // One relay gap: Bob dies and is revived before the server ticks again.
+            context.Wasted[Bob] = true;
+            context.Wasted[Bob] = false;
+            server.GameTick();
+
+            Assert.IsNull(server.GetStateSnapshot(), "Bob is back on the road, so two cars are alive");
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
 
     [TestMethod]
     public void WastedPlayersSortBehindTheRunning()

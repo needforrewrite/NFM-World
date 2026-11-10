@@ -262,6 +262,15 @@ from `PhysicsController.GameTick`. Two ship:
   `CarFrame.TheBitFlags.Wasted` and exposed to gamemodes as `IServerGamemodeContext.IsPlayerWasted`; `TrackWasted`
   stamps the tick each death is first seen. Reviving through a fix hoop clears the stamp, so a revived car is live
   again and can still win. A forfeit stamps the same field, so a leaver sorts with the dead.
+- **Race constraint** — the PvP `constraint` config option (`racing` / `wasting` / `both`, default both) is parsed
+  into `RaceConstraint` (library, `[PluginVisible]`). It gates the finish: `PvpGamemode.Finish` only fires on the
+  first car across the line when `Racing`, and `PvpServerGamemode.CheckConstraint` ends the race when at most one car
+  is alive when `Wasting`. "Alive" is the current relayed state (`WastedAt < 0`), not a latched first death, so a car
+  revived through a fix hoop still counts. A solo session never satisfies the wasting rule.
+- A **wasted** client is spectated: `RacePhase.GameTick` passes `TargetCarFor(car)` to the camera instead of the
+  client car. The lock keys pick the target (same `LockTargetHelper.LockedCar` the arrow uses, which refuses a
+  wasted car), falling back to the nearest live opponent. `IHudData.Spectating` carries this to the skins, which draw
+  only the name (the arrow has no heading to point from). A revive clears `Wasted`, so the camera returns by itself.
 - The race ends when **any** car's `CurrentLap` reaches `Nlaps` (`PvpGamemode.Finish(winner)`), not only the
   client. `HudState.StateText` carries `"<name> finished first, race over!"` / `"You finished first, nice job!"`,
   and `HudState.Finished` / `ClientWon` / `ClientLost` are copied to `UiState.Race`; `RaceHudView` draws

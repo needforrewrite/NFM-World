@@ -187,6 +187,13 @@ public sealed class ClassicHud(IHudData race) : Component
                 center: true,
                 color: new Color(20, 20, 120)
             );
+        // Spectating a car we are not driving: the name is the point, the arrow is not.
+        if (Race.Spectating)
+        {
+            Text($"SPECTATING: {Race.ArrowTarget}", center, top + 3 * scale, scale, center: true, color: new Color(20, 20, 120));
+            return;
+        }
+
         if (!Race.IsPreview && !Race.ArrowAtCars && MathF.Abs(_arrowAngle) <= 7) return;
 
         // xtGraphics.arrow: rotate its seven X/Z vertices, then project at y=-90.

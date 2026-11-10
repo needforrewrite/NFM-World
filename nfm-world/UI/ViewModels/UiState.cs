@@ -39,6 +39,7 @@ public static class UiState
         public float? ArrowAngle { get; set; }
         public string ArrowTarget { get; set; } = "";
         public bool ArrowAtCars { get; set; }
+        public bool Spectating { get; set; }
         public bool ArrowLocked { get; set; }
         public List<HudRacer> Racers { get; } = [];
         public List<HudRacerMarker> Markers { get; } = [];
@@ -87,6 +88,7 @@ public static class UiState
         public int Countdown => CountdownTimer.Value;
         bool IHudData.Paused => Paused.Value;
         bool IHudData.ArrowLocked => ArrowLocked;
+        bool IHudData.Spectating => Spectating;
         IReadOnlyList<HudRacer> IHudData.Racers => Racers;
         (float X, float Y, float Z)? IHudData.ClientPosition => ClientPosition;
         float IHudData.ClientHeading => ClientHeading;

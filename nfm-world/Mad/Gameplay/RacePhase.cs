@@ -12,6 +12,7 @@ using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Gamemodes.RaceHost;
+using NFMWorldLibrary.Helpers;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Util;
 using NFMWorldLibrary.Hud;
@@ -262,9 +263,12 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             && client.Control.ArrowLock >= 0
             && !OrderedOpponents(gm).Any(p => p.Index == client.Control.ArrowLock && p.Car is { Wasted: false }))
             client.Control.ArrowLock = -1;
+        // Wasted: the camera rides whoever is targeted, so the HUD names them even though the
+        // arrow itself is off (a dead car has no heading to point it from).
+        hud.Spectating = client?.Wasted ?? false;
         hud.ArrowAtCars = client?.Control.Arrace ?? false;
         hud.ArrowLocked = hud.ArrowAtCars && (client?.Control.ArrowLock ?? -1) >= 0;
-        if (client is not null && hud.ArrowAtCars)
+        if (client is not null && (hud.ArrowAtCars || hud.Spectating))
         {
             hud.ArrowTarget = targetCar is null
                 ? ""
@@ -346,12 +350,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         if (opponents.Length == 0) return null;
 
         // ArrowLock is a player index, so other cars dying cannot shift it onto a different car.
-        foreach (var player in opponents)
-        {
-            if (player.Index != client.Control.ArrowLock) continue;
-            if (!player.Car!.Wasted) return player.Car;
-            break;
-        }
+        if (LockTargetHelper.LockedCar(opponents, client.Control.ArrowLock) is { } locked) return locked;
 
         BackendCar? best = null;
         var nearest = double.PositiveInfinity;
@@ -813,7 +812,10 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             // is resolved fresh rather than read from the HUD a frame late.
             _cameraDirector.ArrowTarget = ArrowTarget(car, TargetCarFor(car));
             _cameraDirector.Navigation = _input.Navigation;
-            _cameraDirector.Update(Camera, car);
+            // A wasted car is spectated, not followed: the lock keys (and the nearest-live
+            // fallback in TargetCarFor) choose who the camera rides. A revive clears Wasted, so
+            // the camera comes back to the client without any further action.
+            _cameraDirector.Update(Camera, car.Wasted ? TargetCarFor(car) ?? car : car);
         }
 
         if (RaceState == RaceState.InProgress)
