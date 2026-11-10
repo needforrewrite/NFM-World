@@ -5,6 +5,8 @@
 **/bin/
 **/obj/
 **/Generated/
+# Except the Steamworks binding: its Generated/ is checked-in source, not build output.
+!Facepunch.Steamworks/Facepunch.Steamworks/Generated/
 **/.vs/
 **/TestResults/
 **/*.pdb
