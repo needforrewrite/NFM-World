@@ -403,7 +403,13 @@ public static class LobbyView
                             "CHAT",
                             null,
                             () => Sx.View(
-                                style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 4),
+                                // flexShrink 0, or the column shrinks to the panel instead of
+                                // overflowing it - which leaves the transcript nothing to scroll.
+                                style: () => Sx.Styles(
+                                    flexDirection: FlexDirection.Column,
+                                    flexShrink: 0,
+                                    gapRow: 4
+                                ),
                                 children: Sx.For(
                                     each: () => lobby.Chat.Value,
                                     row: (line, _) => Sx.View(

@@ -66,7 +66,6 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
         car.DamagedZ += OnDamagedZ;
         car.Sparked += OnSparked;
         car.Dusted += OnDusted;
-        car.CarPhysics.Distruct += OnDistruct;
         car.Fixed += OnFixed;
 
         Sfx = new MadSfx(car, crashSounds);
@@ -110,12 +109,25 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
         Dust.AddDust(wheelidx, wheelx, wheely, wheelz, scx, scz, simag, tilt, onRoof, wheelGround);
     }
 
-    private void OnDistruct(object? sender, EventArgs e)
+    /// <summary>
+    /// Follows the car's own wasted flag rather than latching on the local damage event. Every
+    /// client simulates every car, so a remote car could reach max damage here while its owner
+    /// still had it alive; only the owner clears it again on a revive, and the relayed frame
+    /// carries that. Reading the flag keeps the flames in step with whoever drives the car.
+    /// </summary>
+    private void SyncWasted()
     {
-        // Damage keeps re-emitting Distruct until the fix finishes (FinishedFix zeroes DamagePoints),
-        // so a car fixed mid-animation would restart the wasted sequence it just cancelled.
-        if (_fixing) return;
-        VisuallyWasted = true;
+        // Damage keeps re-emitting Distruct until the fix finishes (FinishedFix zeroes
+        // DamagePoints), so a car fixed mid-animation would restart the animation it cancelled.
+        if (Car.CarPhysics.Wasted)
+        {
+            if (!_fixing)
+                VisuallyWasted = true;
+        }
+        else
+        {
+            VisuallyWasted = false;
+        }
     }
 
     private void OnFixed()
@@ -155,6 +167,7 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
             wheel.GameTick(stage);
         }
 
+        SyncWasted();
         Flames.GameTick();
         Dust.GameTick(stage);
         Chips.GameTick();
@@ -272,7 +285,6 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
         car.DamagedZ -= OnDamagedZ;
         car.Sparked -= OnSparked;
         car.Dusted -= OnDusted;
-        car.CarPhysics.Distruct -= OnDistruct;
         car.Fixed -= OnFixed;
 
         Chips.Dispose();
