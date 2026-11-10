@@ -1460,6 +1460,11 @@ public partial class WorldGame : IDisposable, IGameHost
     /// <summary>The desktop entry point. The browser head has its own in NFMWorld.Browser.</summary>
     public static void Main(string[] args)
     {
+        // Before anything else: the runtime only reads its dump settings as it starts. Returns
+        // the child's exit code when it relaunched us, -1 when it did not.
+        if (RelaunchForCrashDumps(args) is var dumpExit and >= 0)
+            System.Environment.Exit(dumpExit);
+
         // The graphics layer below this app references no logging stack of its own - see
         // GraphicsDiagnostics - so this is where its diagnostics reach the log rather than being
         // dropped. Wired before anything creates a device, because the first message the D3D11 backend

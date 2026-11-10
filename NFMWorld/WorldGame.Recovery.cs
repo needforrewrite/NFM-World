@@ -45,6 +45,95 @@ public partial class WorldGame
         }
     }
 
+    /// <summary>Set on the child, so the relaunch happens once.</summary>
+    private const string CrashDumpChildVariable = "NFMW_CRASH_DUMP_CHILD";
+
+    /// <summary>
+    /// Where <c>createdump</c> writes. The same folder <c>CrashDump</c> in the crash reporter
+    /// uses; the exe cannot reference that project, so the path is repeated rather than shared.
+    /// </summary>
+    private static string CrashDumpPath => Path.GetFullPath(
+        Path.Combine(
+            System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
+            "NFMWorld",
+            "crashes",
+            "crash-%p.dmp"
+        )
+    );
+
+    /// <summary>
+    /// Relaunches the game with the runtime's dump settings in the environment. They are only
+    /// read as the CLR starts, so setting them from managed code is too late - a relaunch is the
+    /// only way to arm them.
+    /// </summary>
+    /// <remarks>
+    /// The top-level exception filter in <c>CrashDump</c> catches access violations, but an
+    /// internal CLR error is a fail-fast: it terminates from inside the runtime and never reaches
+    /// that filter. <c>createdump</c> does catch it, and a stack overflow too, once the runtime is
+    /// started with these variables set.
+    ///
+    /// Returned rather than always taken: a debugger attach does not survive a relaunch, and
+    /// under <c>dotnet</c> the process path is the host, so there is no game executable to
+    /// relaunch. Both fall through to the filter alone.
+    /// </remarks>
+    private static int RelaunchForCrashDumps(string[] args)
+    {
+        // Release only. A Debug build is what a developer runs from an IDE, and a relaunch
+        // there would detach the child from the debugger and leave it orphaned when the IDE
+        // stops the parent. The crash hook is gated the same way.
+#if DEBUG
+        return -1;
+#else
+        if (!OperatingSystem.IsWindows()
+            || Debugger.IsAttached
+            || System.Environment.GetEnvironmentVariable(CrashDumpChildVariable) == "1")
+            return -1;
+
+        var executable = System.Environment.ProcessPath;
+        if (executable is null
+            || string.Equals(Path.GetFileNameWithoutExtension(executable), "dotnet", StringComparison.OrdinalIgnoreCase))
+            return -1;
+
+        var start = new ProcessStartInfo(executable)
+        {
+            UseShellExecute = false,
+            WorkingDirectory = System.Environment.CurrentDirectory
+        };
+        foreach (var argument in args) start.ArgumentList.Add(argument);
+        start.Environment[CrashDumpChildVariable] = "1";
+        start.Environment["DOTNET_DbgEnableMiniDump"] = "1";
+        // 4 = full dump. The runtime's default is a mini dump, which has no heap and so no
+        // managed stack or object graph to read.
+        start.Environment["DOTNET_DbgMiniDumpType"] = "4";
+        start.Environment["DOTNET_DbgMiniDumpName"] = CrashDumpPath;
+
+        // createdump writes into an existing folder or not at all - it does not create one,
+        // and it fails silently when it cannot open the path.
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(CrashDumpPath)!);
+        }
+        catch (Exception ex)
+        {
+            Logging.Warning($"Could not create the crash dump folder: {ex.Message}");
+        }
+
+        try
+        {
+            using var child = Process.Start(start);
+            if (child is null) return -1;
+            child.WaitForExit();
+            return child.ExitCode;
+        }
+        catch (Exception ex)
+        {
+            // No dump, but the game itself still has to start.
+            Logging.Warning($"Could not relaunch for crash dumps: {ex.Message}");
+            return -1;
+        }
+#endif
+    }
+
     private static string[] RecoveryRetryArguments(string[] args) => args.Where(arg =>
         arg != GraphicsRecoveryArgument
         && !arg.StartsWith(RendererArgumentPrefix, StringComparison.OrdinalIgnoreCase)

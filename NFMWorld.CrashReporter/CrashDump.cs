@@ -42,6 +42,12 @@ public static class CrashDump
         if (_hooked || !OperatingSystem.IsWindows())
             return;
 
+        // The game relaunches itself with this set, which makes the runtime's own createdump
+        // write the dump - including for the fail-fasts this filter cannot see. Writing one here
+        // as well would just duplicate it.
+        if (System.Environment.GetEnvironmentVariable("DOTNET_DbgEnableMiniDump") == "1")
+            return;
+
         _hooked = true;
         _filter = (_, _, _, _) =>
         {
