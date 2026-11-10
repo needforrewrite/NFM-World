@@ -280,7 +280,7 @@ public class AiPluginTests
             gamemode.Reset();
             gamemode.GameTick();
 
-            Assert.IsNull(gamemode.ClientPlayer.Car);
+            Assert.IsNull(gamemode.ClientPlayer?.Car);
             Assert.AreEqual(0, gamemode.HudState.CountdownTimer);
             Assert.AreEqual(0, gamemode.HudState.LapTime);
             Assert.AreEqual(0, gamemode.HudState.Position);

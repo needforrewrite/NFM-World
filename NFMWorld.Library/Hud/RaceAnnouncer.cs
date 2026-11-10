@@ -177,7 +177,8 @@ public sealed class RaceAnnouncer
         var name = NameOf(car, gamemode);
         var killer = car.CarPhysics.LastDamageFrom;
         if (killer < 0) return $"{name} has been wasted!";
-        if (gamemode.ClientPlayer.Car is { } own && own.CarPhysics.Im == killer)
+        // A spectator has no client player, so nothing was "wasted by you".
+        if (gamemode.ClientPlayer?.Car is { } own && own.CarPhysics.Im == killer)
             return $"You wasted {name}!";
         foreach (var player in gamemode.Players)
         {

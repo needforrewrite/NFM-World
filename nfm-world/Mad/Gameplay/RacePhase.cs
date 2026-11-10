@@ -141,9 +141,10 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     }
 
     /// <summary>
-    /// The local client player's car, or null if the gamemode hasn't assigned one yet.
+    /// The local client player's car, or null if the gamemode hasn't assigned one yet - or if
+    /// there is no client player at all, which is every spectator.
     /// </summary>
-    public BackendCar? ClientCar => (GamemodeInstance as BaseClientGamemode)?.ClientPlayer.Car;
+    public BackendCar? ClientCar => (GamemodeInstance as BaseClientGamemode)?.ClientPlayer?.Car;
 
     public RaceState RaceState
     {
@@ -280,6 +281,12 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
                 var next = checkpoints[Math.Clamp((int)client.CurrentCheckpoint, 0, checkpoints.Count - 1)];
                 hud.TargetCheckpoint = ((float)next.Position.X, (float)next.Position.Z);
             }
+        }
+        else if (_spectating && SpectateCar() is { } followed)
+        {
+            // No car of our own, so the radar follows the one being watched; the client
+            // position stays null, which is what keeps the other overlays off.
+            hud.TrackCenter = ((float)followed.Position.X, (float)followed.Position.Z);
         }
 
         // If the client is out, or there is no car left to chase, car targeting ends. Losing the
