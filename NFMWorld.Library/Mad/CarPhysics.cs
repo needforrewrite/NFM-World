@@ -1902,21 +1902,25 @@ public partial class CarPhysics
             );
         }
 
-        // Balanced on the nose or tail, the wheel plane agrees with the pose and nothing supplies
-        // the gravity torque that tips the car over, so lean it away from vertical. Exactly
-        // vertical leans towards Pzy=0. Skipped when on its side, where Pzy is local yaw.
-        if (nWheelsOnSurface > 0 && fix64.Abs(UMath.Cos(Pxy)) > fix64.Half)
+        // Standing on the nose, the tail or a side, the wheels are stacked above each other, so one
+        // falling straight down changes no angle and the fit holds the pose forever. Lean each
+        // angle off its 90° balance point; exactly 90° leans towards 0.
+        static fix64 TipOver(fix64 angle)
         {
-            var z = Pzy;
-            while (z > 180) z -= 360;
-            while (z <= -180) z += 360;
-            var lean = fix64.Abs(z) - 90; // > 0: past vertical, towards the roof
-            if (fix64.Abs(lean) < 30)
-            {
-                var away = lean > fix64.Zero ? fix64.One : -fix64.One;
-                Pzy += (z >= fix64.Zero ? away : -away) * 9 * _tickRate;
-                FrameTrace.AddMessage($"tipOver: lean={lean:0.0}, → Pzy={Pzy:0.0}°");
-            }
+            var a = angle;
+            while (a > 180) a -= 360;
+            while (a <= -180) a += 360;
+            var lean = fix64.Abs(a) - 90; // > 0: past vertical, towards 180
+            if (fix64.Abs(lean) >= 30) return angle;
+            var away = lean > fix64.Zero ? fix64.One : -fix64.One;
+            return angle + (a >= fix64.Zero ? away : -away) * 9 * _tickRate;
+        }
+
+        if (nWheelsOnSurface > 0)
+        {
+            Pzy = TipOver(Pzy);
+            Pxy = TipOver(Pxy);
+            FrameTrace.AddMessage($"tipOver: → Pxy={Pxy:0.0}°, Pzy={Pzy:0.0}°");
         }
 
         if (Jumped(Pxy, fitPxy) || Jumped(Pzy, fitPzy))
@@ -2150,7 +2154,7 @@ public partial class CarPhysics
 
         if (DamagePoints >= Stat.Maxmag && !Wasted)
         {
-            Distruct(this, EventArgs.Empty);
+            Distruct?.Invoke(this, EventArgs.Empty);
             if (Cntdest == 7)
             {
                 Wasted = true;
