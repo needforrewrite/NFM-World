@@ -99,6 +99,27 @@ public class RaceOrchestrator : IDisposable
             var gm = session.ServerGamemode;
             if (gm == null) continue;
 
+            // Before the tick, so a baseline goes out ahead of the first delta this tick produces,
+            // and on this thread, which is the only one allowed to read or start the gamemode.
+            while (session.PendingAttach.TryDequeue(out var clientIndex))
+                SendAttach(session, gm, clientIndex);
+
+            // The last racer to load starts the race from here rather than from its attach, so
+            // its baseline is sent ahead of the start notice like every other attach.
+            if (!session.RaceStarted
+                && !session.ResultsBroadcasted
+                && session.LoadedCount >= session.PlayerCount)
+            {
+                session.RaceStarted = true;
+                gm.StartRace();
+                _transport.SendPacketToClients(
+                    session.Clients.Keys.ToArray(),
+                    new S2C_RaceCanStart(),
+                    reliable: true
+                );
+                Logging.Info($"[GM] Race starting: {session.PlayerCount} players");
+            }
+
             gm.GameTick();
 
             var snapshot = gm.GetStateSnapshot();
@@ -140,6 +161,34 @@ public class RaceOrchestrator : IDisposable
         // Finished sessions released their plugin in a frame of this tick loop, which is
         // still on the stack; the check only sees the truth on a later tick.
         PluginUnloadVerifier.Verify();
+    }
+
+    /// <summary>
+    /// Hands a newly attached connection the game's current state, then its start notice. Both
+    /// go out here rather than at attach time so the baseline is ordered ahead of the first
+    /// delta the client would otherwise apply on top of nothing.
+    /// </summary>
+    private void SendAttach(RaceSession session, IServerGamemode gm, uint clientIndex)
+    {
+        if (session.ResultsBroadcasted)
+        {
+            _transport.SendPacketToClient(
+                clientIndex,
+                new S2C_GameFinished { Results = session.LastResults },
+                reliable: true
+            );
+            return;
+        }
+
+        if (gm.CaptureState() is { Length: > 0 } state)
+            _transport.SendPacketToClient(
+                clientIndex,
+                new S2C_ServerState { Payload = state },
+                reliable: true
+            );
+
+        if (session.LoadedCount >= session.PlayerCount)
+            _transport.SendPacketToClient(clientIndex, new S2C_RaceCanStart(), reliable: true);
     }
 
     /// <summary>
@@ -329,13 +378,7 @@ public class RaceOrchestrator : IDisposable
         {
             session.Clients[clientIndex] = Guid.NewGuid();
             Logging.Info($"[GM] Spectator attached on connection {clientIndex}");
-            if (session.ResultsBroadcasted)
-                _transport.SendPacketToClient(
-                    clientIndex,
-                    new S2C_GameFinished { Results = session.LastResults }
-                );
-            else if (session.LoadedCount >= session.PlayerCount)
-                _transport.SendPacketToClient(clientIndex, new S2C_RaceCanStart());
+            session.PendingAttach.Enqueue(clientIndex);
             return;
         }
 
@@ -362,14 +405,8 @@ public class RaceOrchestrator : IDisposable
             session.Clients[clientIndex] = clientId;
 
             Logging.Info($"[GM] Client {clientId} re-attached");
-            // Everything it needs to rejoin the race as it was.
-            if (session.ResultsBroadcasted)
-                _transport.SendPacketToClient(
-                    clientIndex,
-                    new S2C_GameFinished { Results = session.LastResults }
-                );
-            else if (session.LoadedCount >= session.PlayerCount)
-                _transport.SendPacketToClient(clientIndex, new S2C_RaceCanStart());
+            // Reconnected mid-race, so it is as behind as a fresh attach and needs the same thing.
+            session.PendingAttach.Enqueue(clientIndex);
             return;
         }
 
@@ -380,12 +417,8 @@ public class RaceOrchestrator : IDisposable
             $"[GM] Client {clientId} loaded ({session.LoadedCount}/{session.PlayerCount})"
         );
 
-        if (session.LoadedCount >= session.PlayerCount)
-        {
-            session.ServerGamemode?.StartRace();
-            _transport.SendPacketToClients(session.Clients.Keys.ToArray(), new S2C_RaceCanStart());
-            Logging.Info($"[GM] Race starting: {session.PlayerCount} players");
-        }
+        // The tick starts the race once LoadedCount is complete, after catching this connection up.
+        session.PendingAttach.Enqueue(clientIndex);
     }
 
     private void HandlePlayerState(uint clientIndex, C2S_PlayerState playerState)
@@ -604,6 +637,14 @@ public class RaceOrchestrator : IDisposable
         public int PlayerCount { get; set; }
         public int LoadedCount { get; set; }
         public ConcurrentDictionary<uint, Guid> Clients { get; set; } = [];
+
+        /// <summary>
+        /// Connections that have loaded but not yet been handed the gamemode's state. Handled on
+        /// the tick thread: the attach arrives on the transport thread, and both reading the
+        /// gamemode and sending before its first delta have to happen where the tick runs.
+        /// </summary>
+        public ConcurrentQueue<uint> PendingAttach { get; } = new();
+
         public IServerGamemode? ServerGamemode { get; set; }
 
         /// <summary>Owns the gamemode's plugin load context; released alongside it.</summary>
@@ -615,6 +656,10 @@ public class RaceOrchestrator : IDisposable
         public ConcurrentDictionary<Guid, bool> PlayerWasted { get; set; } = [];
 
         public IDictionary<byte, ServerSidePlayerInfo> PlayerInfos { get; set; } = new Dictionary<byte, ServerSidePlayerInfo>();
+
+        /// <summary>Set once every player has loaded and the gamemode has been started.</summary>
+        public bool RaceStarted { get; set; }
+
         public bool ResultsBroadcasted { get; set; }
 
         /// <summary>Kept so a client that reconnects after the finish still gets the results.</summary>

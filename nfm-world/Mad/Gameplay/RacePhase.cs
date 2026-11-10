@@ -128,6 +128,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         host.RaceFailedToStart += () => RaceState = RaceState.FailedToStart;
         host.PlayerStateReceived += ApplyPlayerState;
         host.ServerEventReceived += payload => GamemodeInstance?.OnServerEvent(payload.Span);
+        host.ServerStateReceived += payload => GamemodeInstance?.OnServerState(payload.Span);
         host.GameFinished += results =>
         {
             GamemodeInstance?.SetServerResults(results);

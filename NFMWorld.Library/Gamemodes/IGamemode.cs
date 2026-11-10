@@ -45,6 +45,13 @@ public interface IGamemode
     void OnServerEvent(ReadOnlySpan<byte> payload);
 
     /// <summary>
+    /// Called once with the gamemode's whole state after this client attached, before any later
+    /// <see cref="OnServerEvent"/>. It replaces whatever state the client had; a mid-race join
+    /// or a reconnect would otherwise run on whatever the deltas happened to leave behind.
+    /// </summary>
+    void OnServerState(ReadOnlySpan<byte> payload);
+
+    /// <summary>
     /// Gets the player this client drives, and whose car it owns. Null when the client is
     /// watching a racing session it has no car in - nothing in that roster belongs to it.
     /// </summary>

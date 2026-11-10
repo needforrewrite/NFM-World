@@ -57,6 +57,12 @@ public abstract class BaseServerGamemode : IServerGamemode
     }
 
     /// <summary>
+    /// The gamemode's whole current state, for a client that just attached. Null for a gamemode
+    /// with nothing a late joiner would have missed.
+    /// </summary>
+    public virtual ReadOnlyMemory<byte>? CaptureState() => null;
+
+    /// <summary>
     /// Returns the current authoritative game state for broadcasting to clients.
     /// Return null if nothing has changed since the last call.
     /// </summary>

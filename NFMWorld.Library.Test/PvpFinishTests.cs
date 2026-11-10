@@ -335,6 +335,53 @@ public class PvpFinishTests
     }
 
     /// <summary>
+    /// A baseline taken mid-countdown carries the count left, so a late attach counts down the
+    /// remainder rather than starting the race early or from three again.
+    /// </summary>
+    [TestMethod]
+    public void AttachingDuringTheCountdown_ResumesItAtTheServersRemainingCount()
+    {
+        var factory = CreateFactory();
+        var carName = $"pvp-test/{Guid.NewGuid():N}";
+        BaseClientGamemode? client = null;
+        try
+        {
+            BackendGameSparker.dynamic_models.Add(
+                carName,
+                (0, new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName))
+            );
+
+            client = (BaseClientGamemode)factory.CreateGameMode(
+                new ClientGamemodeParameters
+                {
+                    Players =
+                    [
+                        new ClientSidePlayerInfo(
+                            carName,
+                            carName,
+                            new Color3(255, 0, 0),
+                            isBot: false,
+                            isClientPlayer: false
+                        )
+                    ]
+                },
+                new ClientContext(CreateStage(laps: 3, checkpoints: 2))
+            );
+            client.Begin();
+            client.OnServerState(SerializeEvent(factory, "RaceStateEvent", false, 2).Span);
+            client.GameTick();
+
+            Assert.AreEqual(2, client.HudState.CountdownTimer, "the baseline's count is what the HUD shows");
+        }
+        finally
+        {
+            BackendGameSparker.dynamic_models.Remove(carName);
+            client?.End();
+            factory.End();
+        }
+    }
+
+    /// <summary>
     /// A spectator owns nobody, so someone else winning is neither a win nor a loss for it.
     /// </summary>
     [TestMethod]
@@ -369,9 +416,10 @@ public class PvpFinishTests
             Assert.IsNull(client.ClientPlayer);
             client.Begin();
 
-            // No CountdownGoEvent: it was broadcast before a spectator could attach. Starting
-            // in the countdown left it on 3-2-1 for good, and never drove a car - which is what
-            // the camera reads its yaw from.
+            // The baseline a mid-race attach receives in place of the start event it missed.
+            // Without it the race never leaves the countdown, so no car is driven - and the
+            // camera yaw Drive computes stays at zero.
+            client.OnServerState(SerializeEvent(factory, "RaceStateEvent", true, 0).Span);
             client.GameTick();
             Assert.AreEqual(0, client.HudState.CountdownTimer, "a spectator's race is already under way");
 

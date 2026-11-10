@@ -37,6 +37,12 @@ public interface IRaceHost : IDisposable
     /// <summary>Fired when a gamemode-specific event arrives from the host.</summary>
     event Action<ReadOnlyMemory<byte>>? ServerEventReceived;
 
+    /// <summary>
+    /// Fired once with the gamemode's whole state after this client attached, before any later
+    /// <see cref="ServerEventReceived"/>. The receiver replaces its state rather than merging.
+    /// </summary>
+    event Action<ReadOnlyMemory<byte>>? ServerStateReceived;
+
     /// <summary>Fired with authoritative results when the host ends the race.</summary>
     event Action<RaceResults>? GameFinished;
 }

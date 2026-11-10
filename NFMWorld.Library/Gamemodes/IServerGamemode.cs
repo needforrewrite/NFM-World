@@ -48,6 +48,17 @@ public interface IServerGamemode
     void OnClientDisconnected(Guid clientId);
 
     /// <summary>
+    /// The gamemode's whole current state, for a client that just attached and missed every
+    /// event broadcast before it. Sent to that connection once, before any later event, so a
+    /// delta can never arrive on top of state the client never had.
+    /// </summary>
+    /// <returns>
+    /// A MemoryPack payload the client's own gamemode deserializes, or null when there is
+    /// nothing to catch up on.
+    /// </returns>
+    ReadOnlyMemory<byte>? CaptureState();
+
+    /// <summary>
     /// Returns the current authoritative game state for broadcasting to clients.
     /// Return null if nothing has changed since the last call.
     /// </summary>

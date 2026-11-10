@@ -82,6 +82,14 @@ public abstract class BaseClientGamemode : IGamemode
     }
 
     /// <summary>
+    /// The gamemode's whole state, sent once after this client attached. Replaces rather than
+    /// merges: it is a baseline, not a delta.
+    /// </summary>
+    public virtual void OnServerState(ReadOnlySpan<byte> payload)
+    {
+    }
+
+    /// <summary>
     /// Called when the race is finished server-side.
     /// </summary>
     public virtual void OnServerRaceFinished(RaceResults results)

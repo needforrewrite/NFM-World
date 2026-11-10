@@ -85,11 +85,7 @@ public class PvpGamemode : PluginGamemode
     {
         base.Begin();
         SetupCars();
-        // A spectator joins a race already under way, so the server's start event was broadcast
-        // before it attached and will never arrive. Left counting down it sat on 3-2-1 forever,
-        // and a gamemode that is not racing never drives a car - so the camera yaw Drive
-        // computes (Cxz, StaticCameraXz) stayed at zero and the view faced the wrong way.
-        _state = ClientPlayer is null ? GamemodeState.InProgress : GamemodeState.Countdown;
+        _state = GamemodeState.Countdown;
         _countdown = 3;
         _inner = GamemodeUtils.CountdownInterval;
         _clientTick = 0;
@@ -199,11 +195,31 @@ public class PvpGamemode : PluginGamemode
     public override void OnServerEvent(ReadOnlySpan<byte> payload)
     {
         base.OnServerEvent(payload);
-        var ev = MemoryPackSerializer.Deserialize<ServerToClientEvent>(payload);
-        if (ev is CountdownGoEvent)
+        Apply(MemoryPackSerializer.Deserialize<ServerToClientEvent>(payload));
+    }
+
+    public override void OnServerState(ReadOnlySpan<byte> payload)
+    {
+        base.OnServerState(payload);
+        Apply(MemoryPackSerializer.Deserialize<ServerToClientEvent>(payload));
+    }
+
+    private void Apply(ServerToClientEvent? ev)
+    {
+        switch (ev)
         {
-            HudState.CountdownTimer = 0;
-            _state = GamemodeState.InProgress;
+            case CountdownGoEvent:
+                HudState.CountdownTimer = 0;
+                _state = GamemodeState.InProgress;
+                break;
+
+            // The baseline. A race already under way must run its physics: no car is driven
+            // otherwise, and the camera yaw Drive computes stays at zero.
+            case RaceStateEvent state:
+                _state = state.InProgress ? GamemodeState.InProgress : GamemodeState.Countdown;
+                _countdown = state.Countdown;
+                HudState.CountdownTimer = state.Countdown;
+                break;
         }
     }
 
@@ -302,6 +318,14 @@ public class PvpServerGamemode(
             };
         }
     }
+
+    public override ReadOnlyMemory<byte>? CaptureState() =>
+        MemoryPackSerializer.Serialize<ServerToClientEvent>(
+            new RaceStateEvent(
+                InProgress: _state is ServerGamemodeState.InProgress or ServerGamemodeState.Finished,
+                Countdown: _state == ServerGamemodeState.Countdown ? _countdown : 0
+            )
+        );
 
     public override void StartRace()
     {
@@ -545,7 +569,16 @@ public partial record ForfeitEvent : ClientToServerEvent;
 
 [MemoryPackable]
 [MemoryPackUnion(0, typeof(CountdownGoEvent))]
+[MemoryPackUnion(1, typeof(RaceStateEvent))]
 public abstract partial record ServerToClientEvent;
 
 [MemoryPackable]
 public partial record CountdownGoEvent : ServerToClientEvent;
+
+/// <summary>
+/// The race's phase and how long the countdown has left. Sent as the baseline to a client that
+/// attached mid-race, which is how a spectator learns the countdown already finished instead of
+/// waiting for a start event that was broadcast before it connected.
+/// </summary>
+[MemoryPackable]
+public partial record RaceStateEvent(bool InProgress, int Countdown) : ServerToClientEvent;

@@ -49,6 +49,7 @@ public sealed class NetworkRaceHost : IRaceHost
     public event Action? RaceFailedToStart;
     public event Action<int, PlayerState>? PlayerStateReceived;
     public event Action<ReadOnlyMemory<byte>>? ServerEventReceived;
+    public event Action<ReadOnlyMemory<byte>>? ServerStateReceived;
     public event Action<RaceResults>? GameFinished;
 
     public void Update()
@@ -83,6 +84,17 @@ public sealed class NetworkRaceHost : IRaceHost
                     finally
                     {
                         serverEvent.Dispose();
+                    }
+
+                    break;
+                case S2C_ServerState serverState:
+                    try
+                    {
+                        ServerStateReceived?.Invoke(serverState.Payload);
+                    }
+                    finally
+                    {
+                        serverState.Dispose();
                     }
 
                     break;

@@ -25,6 +25,7 @@ public sealed class LocalRaceHost : IRaceHost
     public event Action? RaceFailedToStart;
     public event Action<int, PlayerState>? PlayerStateReceived;
     public event Action<ReadOnlyMemory<byte>>? ServerEventReceived;
+    public event Action<ReadOnlyMemory<byte>>? ServerStateReceived;
     public event Action<RaceResults>? GameFinished;
 
     private LocalRaceHost(
@@ -99,6 +100,13 @@ public sealed class LocalRaceHost : IRaceHost
             return;
 
         _started = true;
+
+        // Singleplayer attaches in-process, so there is nothing to catch up on: the client
+        // gamemode has been driving this session from the start. Sent anyway when the gamemode
+        // has state, so the client's handling is exercised by the same path as online play.
+        if (_serverGamemode?.CaptureState() is { Length: > 0 } state)
+            ServerStateReceived?.Invoke(state);
+
         _serverGamemode?.StartRace();
         RaceCanStart?.Invoke();
     }
