@@ -316,6 +316,10 @@ jobs:
 
   release:
     needs: [prepare, build-windows, build-linux, build-macos]
+    # macOS runners are often unavailable outright ("The job was not acquired by Runner of
+    # type hosted"), which never starts the job and so cannot be retried from here. Ship the
+    # other platforms rather than nothing; the packaging loop already skips absent directories.
+    if: ${{ !cancelled() && needs.build-windows.result == 'success' && needs.build-linux.result == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
