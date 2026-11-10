@@ -368,7 +368,12 @@ public class PvpFinishTests
             );
             Assert.IsNull(client.ClientPlayer);
             client.Begin();
-            client.OnServerEvent(SerializeEvent(factory, "CountdownGoEvent").Span);
+
+            // No CountdownGoEvent: it was broadcast before a spectator could attach. Starting
+            // in the countdown left it on 3-2-1 for good, and never drove a car - which is what
+            // the camera reads its yaw from.
+            client.GameTick();
+            Assert.AreEqual(0, client.HudState.CountdownTimer, "a spectator's race is already under way");
 
             client.Players[0].Car!.CurrentLap = 3;
             client.GameTick();

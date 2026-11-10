@@ -85,7 +85,11 @@ public class PvpGamemode : PluginGamemode
     {
         base.Begin();
         SetupCars();
-        _state = GamemodeState.Countdown;
+        // A spectator joins a race already under way, so the server's start event was broadcast
+        // before it attached and will never arrive. Left counting down it sat on 3-2-1 forever,
+        // and a gamemode that is not racing never drives a car - so the camera yaw Drive
+        // computes (Cxz, StaticCameraXz) stayed at zero and the view faced the wrong way.
+        _state = ClientPlayer is null ? GamemodeState.InProgress : GamemodeState.Countdown;
         _countdown = 3;
         _inner = GamemodeUtils.CountdownInterval;
         _clientTick = 0;
