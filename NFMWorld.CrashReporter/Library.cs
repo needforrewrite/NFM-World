@@ -8,9 +8,14 @@ public static class CrashReportLibrary
 {
     public static void Hook(string dsn, string release)
     {
+        // Native first: an access violation inside the renderer never reaches the managed
+        // handler below, so this is the only thing that runs for one.
+        CrashDump.Hook();
+
         AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
         {
             var ex = (Exception)args.ExceptionObject;
+            CrashDump.WriteSummary(ex, release);
             var eventId = SentrySdk.CaptureException(ex);
 
             using var process = Process.Start(

@@ -28,7 +28,7 @@ public static class LobbyView
     public sealed record Actions(
         Action<uint> Join,
         Action Leave,
-        Action StartRace,
+        Action<uint> StartRace,
         Action Create,
         Action Refresh,
         Action<string> SendChat,
@@ -257,7 +257,7 @@ public static class LobbyView
                                         () => lobby.CurrentSession.Value?.IsCreator == true,
                                         () => ActionButton(
                                             () => "START RACE",
-                                            actions.StartRace,
+                                            () => actions.StartRace(lobby.CurrentSession.Value!.Id),
                                             primary: true,
                                             disabled: () => !lobby.Connected.Value
                                                             || lobby.CurrentSession.Value?.State != SessionState.NotStarted
@@ -344,7 +344,7 @@ public static class LobbyView
                     : session.IsMember && session.IsCreator
                         ? ActionButton(
                             () => "START",
-                            actions.StartRace,
+                            () => actions.StartRace(session.Id),
                             small: true,
                             disabled: () => session.State != SessionState.NotStarted || !lobby.Connected.Value
                         )

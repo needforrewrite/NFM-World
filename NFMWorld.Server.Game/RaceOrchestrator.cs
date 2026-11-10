@@ -149,7 +149,12 @@ public class RaceOrchestrator : IDisposable
 
             // Players never arrived. Without this the race waits on them for the life of the
             // process, and every one of them sits on "waiting for other players to load".
-            if (!session.ResultsBroadcasted
+            //
+            // Only before the race starts: a racer leaving mid-race lowers LoadedCount below
+            // PlayerCount for good, and without RaceStarted here the abandoned race fired at the
+            // deadline and told everyone still driving that the Game Master had gone.
+            if (!session.RaceStarted
+                && !session.ResultsBroadcasted
                 && session.ServerGamemode is not null
                 && session.LoadedCount < session.PlayerCount
                 && DateTimeOffset.UtcNow >= session.LoadDeadline)

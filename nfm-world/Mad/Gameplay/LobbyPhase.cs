@@ -384,14 +384,29 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
     private void OnLeave()
     {
-        if (CanAct && Lobby.CurrentSession.Value is { } session)
-            transport.SendPacketToServer(new C2S_LeaveSession { SessionId = session.Id });
+        if (!CanAct || Lobby.CurrentSession.Value is not { } session)
+            return;
+
+        transport.SendPacketToServer(new C2S_LeaveSession { SessionId = session.Id });
+
+        // The leave is fire-and-forget and nothing else re-reads membership until the server's
+        // next state broadcast, so the row kept offering the session START acts on. Dropping our
+        // membership here makes the buttons follow the leave immediately; the broadcast that
+        // follows replaces this list with the server's.
+        Lobby.CurrentSession.Value = null;
+        Lobby.Sessions.Value = Lobby.Sessions.Value
+            .Select(s => s.Id == session.Id ? s with { IsMember = false } : s)
+            .ToArray();
     }
 
-    private void OnStartRace()
+    /// <summary>
+    /// Starts the session the button belongs to. Takes the row's id rather than reading
+    /// CurrentSession, so a row left over from before a leave cannot start the wrong race.
+    /// </summary>
+    private void OnStartRace(uint id)
     {
-        if (CanAct && Lobby.CurrentSession.Value is { IsCreator: true } session)
-            transport.SendPacketToServer(new C2S_LobbyStartRace { SessionId = session.Id });
+        if (CanAct)
+            transport.SendPacketToServer(new C2S_LobbyStartRace { SessionId = id });
     }
 
     private void OnCreate()
