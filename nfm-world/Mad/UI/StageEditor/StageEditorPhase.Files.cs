@@ -562,14 +562,12 @@ public partial class StageEditorPhase
         );
 
 
-        // Save PNG next to the stage file
-        var exportDir = "data/stages/user";
-        Directory.CreateDirectory(exportDir);
-        var filePath = $"{exportDir}/{ActiveTab.StageFileName}_topdown.png";
+        // Save PNG next to the stage file, through the VFS so the browser's MEMFS gets it too.
+        var filePath = $"data/stages/user/{ActiveTab.StageFileName}_topdown.png";
 
         try
         {
-            using var fs = new FileStream(filePath, FileMode.Create);
+            using var fs = VFS.OpenWrite(filePath);
             PngCodec.Encode(fs, MemoryMarshal.AsBytes(pixels.AsSpan()), _exportWidth, _exportHeight);
             _exportResultMessage = $"Saved: {filePath}";
             Logging.Info($"Exported top-down image: {filePath}");
@@ -590,17 +588,12 @@ public partial class StageEditorPhase
     {
         _availableStages.Clear();
 
-        var userStagesDir = "data/stages/user";
-        if (!Directory.Exists(userStagesDir))
-        {
-            return;
-        }
-
-        var files = Directory.GetFiles(userStagesDir, "*.txt");
-        foreach (var file in files)
+        // Through the VFS: in the browser the user's stages live in MEMFS, not on disk.
+        foreach (var file in VFS.EnumerateFiles("data/stages/user", "*.txt", SearchOption.TopDirectoryOnly))
         {
             var fileName = Path.GetFileNameWithoutExtension(file);
-            _availableStages.Add(fileName);
+            if (fileName.Length > 0)
+                _availableStages.Add(fileName);
         }
 
         _availableStages.Sort();
@@ -803,14 +796,14 @@ public partial class StageEditorPhase
         tab.PreservedDirectives.Clear();
 
         var filePath = $"data/stages/user/{stageFileName}.txt";
-        if (!File.Exists(filePath))
+        if (!VFS.FileExists(filePath))
         {
             return;
         }
 
         try
         {
-            foreach (var rawLine in File.ReadLines(filePath))
+            foreach (var rawLine in VFS.ReadAllLines(filePath))
             {
                 var line = rawLine.Trim();
                 if (string.IsNullOrEmpty(line))
