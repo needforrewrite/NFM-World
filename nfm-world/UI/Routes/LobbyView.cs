@@ -620,7 +620,10 @@ public static class LobbyView
                             text: () => $"Field: {lobby.MaxPlayers.Value + lobby.BotCount.Value}"
                         ),
 
-                        (Func<object?>)(() => GamemodeConfigControls(actions)),
+                        (Func<object?>)(() => Sx.View(
+                            style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 10),
+                            children: [.. GamemodeConfigControls(actions)]
+                        )),
                         Sx.View(
                             style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10, marginTop: 6),
                             children:

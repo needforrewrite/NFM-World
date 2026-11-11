@@ -377,6 +377,42 @@ public class SxRendererTests
         mounted.Dispose();
     }
 
+    [TestMethod]
+    public void ReactiveControlList_WrappedInView_MountsAndSwitchesModes()
+    {
+        var open = new Signal<bool>(false);
+        var hasOptions = new Signal<bool>(true);
+        View? controls = null;
+
+        List<Node> Options() => hasOptions.Value
+            ? [Sx.Text(text: () => "Race constraint"), Sx.Text(text: () => "Racing")]
+            : [];
+
+        using var mounted = Renderer.Mount(() => Sx.Show(
+                () => open.Value,
+                () => Sx.View(
+                    children:
+                    [
+                        (Func<object?>)(() => controls = Sx.View(children: [.. Options()]))
+                    ]
+                )
+            )
+        );
+
+        open.Value = true;
+        Renderer.Flush();
+        Assert.IsNotNull(controls);
+        Assert.HasCount(2, controls.VisualChildren);
+
+        hasOptions.Value = false;
+        Renderer.Flush();
+        Assert.IsEmpty(controls.VisualChildren);
+
+        hasOptions.Value = true;
+        Renderer.Flush();
+        Assert.HasCount(2, controls.VisualChildren);
+    }
+
     /// <summary>
     /// A For host that leaves the tree must release its rows. The parent only detaches
     /// nodes, so this is what the Disposing hook exists for.
