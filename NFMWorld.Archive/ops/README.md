@@ -3,6 +3,13 @@
 Single ASP.NET Core process, SQLite in WAL mode, uploaded files on disk. One node is the
 intended deployment for the expected user count; everything below assumes that.
 
+## Website styling
+
+The Razor site uses [Blades CSS](https://github.com/anyblades/blades) 3.1.1, vendored under
+`wwwroot/lib/blades/` with its MIT license. It is served locally, not from a CDN; no npm install
+or frontend build is required. `wwwroot/css/archive.css` contains the small site-specific layout rules.
+To update Blades, replace the stylesheet and license together from a pinned `@anyblades/blades` release.
+
 ## Configuration
 
 Set through the `Archive__*` environment variables (double underscore nests).
@@ -20,20 +27,29 @@ Set through the `Archive__*` environment variables (double underscore nests).
 
 ### Turnstile
 
-Set `TURNSTILE_SECRET` to the secret for the existing widget with public sitekey
+In Production and Staging, set `TURNSTILE_SECRET` to the secret for the existing widget with public sitekey
 `0x4AAAAAAF8y76GGmumUX1_K`, and `TURNSTILE_HOSTNAMES` to a comma-separated exact allowlist
 of archive website hostnames (no schemes, ports, paths or wildcards). Obtain the secret from
 Cloudflare yourself and supply it through deployment secrets; never commit it or expose it to clients.
 Configure the same production hostnames on the existing widget. Do not add localhost to the production
 widget or allowlist; loopback hostnames are refused outside ASP.NET Core Development.
 
-Without either variable, registration and web sign-in fail closed. Every registration path, including
+Without either variable outside Development, registration and web sign-in fail closed. Every registration path, including
 `POST /auth/register` (JSON field `cf-turnstile-response`, action `register`) and Discord account creation,
-requires a verified challenge. The web forms use actions `register`, `signin`, and `discord` respectively.
+requires a verified challenge. `/account/login?flow=signin|register|discord` renders only the selected form
+and one widget, with the corresponding action. Switching flows loads a fresh page and challenge.
 Discord must start through the challenged web form; the old GET link only redirects there.
 Native `POST /auth/login` remains password-based and throttled, without a Turnstile requirement.
 Siteverify has a 10-second timeout; errors, expired/replayed tokens, unexpected actions and hostnames
 all reject the attempt. The login page requires Cloudflare's JavaScript and iframe to load.
+
+For local development, `dotnet run --project NFMWorld.Archive/NFMWorld.Archive.csproj` uses the checked-in
+launch profile (`Development`, `http://localhost:5288`). That environment uses Cloudflare's always-pass test
+sitekey and secret automatically; no `TURNSTILE_*` settings are needed. Verification still calls Siteverify
+and rejects missing tokens and network/errors, but skips hostname/action matching because dummy responses
+report `example.com` without an action. A custom IDE run configuration must also select `Development`.
+Never run a public deployment with `ASPNETCORE_ENVIRONMENT=Development` or `DOTNET_ENVIRONMENT=Development`;
+production must use the real widget and configured hostname/action checks.
 
 ### Generating keys
 

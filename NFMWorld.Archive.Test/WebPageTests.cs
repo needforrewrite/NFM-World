@@ -39,7 +39,7 @@ public class WebPageTests
         using var factory = new ArchiveAppFactory();
         using var client = Browser(factory);
 
-        var page = await client.GetAsync("/account/login");
+        var page = await client.GetAsync("/account/login?flow=register");
         var token = ExtractAntiforgery(await page.Content.ReadAsStringAsync());
 
         var form = new FormUrlEncodedContent(
@@ -67,7 +67,7 @@ public class WebPageTests
         using var factory = new ArchiveAppFactory();
         using var client = Browser(factory);
 
-        var page = await client.GetAsync("/account/login");
+        var page = await client.GetAsync("/account/login?flow=register");
         var token = ExtractAntiforgery(await page.Content.ReadAsStringAsync());
 
         await client.PostAsync(
@@ -109,7 +109,7 @@ public class WebPageTests
         using var factory = new ArchiveAppFactory();
         using var client = Browser(factory);
 
-        var page = await client.GetAsync("/account/login");
+        var page = await client.GetAsync("/account/login?flow=register");
         var token = ExtractAntiforgery(await page.Content.ReadAsStringAsync());
 
         await client.PostAsync(
@@ -154,6 +154,31 @@ public class WebPageTests
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
     }
 
+    [TestMethod]
+    public async Task LoginPage_ServesVersionedBladesAndSiteStylesLocally()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = Browser(factory);
+        var html = await client.GetStringAsync("/account/login");
+        StringAssert.Contains(html, "data-theme=\"dark\"");
+        StringAssert.Contains(html, "class=\"account-form\"");
+        var styles = Regex.Matches(html, "<link[^>]*href=\"([^\"]+)\"")
+            .Select(match => WebUtility.HtmlDecode(match.Groups[1].Value)).ToArray();
+        Assert.HasCount(2, styles);
+        StringAssert.StartsWith(styles[0], "/lib/blades/blades.min.css?v=");
+        StringAssert.StartsWith(styles[1], "/css/archive.css?v=");
+
+        foreach (var url in styles)
+        {
+            using var response = await client.GetAsync(url);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, url);
+            Assert.AreEqual("text/css", response.Content.Headers.ContentType?.MediaType);
+            Assert.AreEqual("nosniff", response.Headers.GetValues("X-Content-Type-Options").Single());
+            var css = await response.Content.ReadAsStringAsync();
+            StringAssert.Contains(css, "--pico-");
+        }
+    }
+
     /// <summary>
     /// The browse page used to order assets by CreatedAt, which SQLite refuses to sort
     /// (DateTimeOffset is stored as TEXT), so the page failed with a 500 as soon as it loaded.
@@ -164,7 +189,7 @@ public class WebPageTests
         using var factory = new ArchiveAppFactory();
         using var client = Browser(factory);
 
-        var page = await client.GetAsync("/account/login");
+        var page = await client.GetAsync("/account/login?flow=register");
         var token = ExtractAntiforgery(await page.Content.ReadAsStringAsync());
         await client.PostAsync(
             "/account/login?handler=Register",

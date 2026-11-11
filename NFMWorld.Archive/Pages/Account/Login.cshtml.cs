@@ -24,9 +24,11 @@ public sealed class LoginModel(
     public string? TurnstileResponse { get; set; }
 
     public string? Error { get; private set; }
+    public string Flow { get; private set; } = "signin";
 
-    public IActionResult OnGet(string? returnUrl)
+    public IActionResult OnGet(string? returnUrl, string? flow)
     {
+        Flow = flow is "register" or "discord" ? flow : "signin";
         ReturnUrl = returnUrl;
         return Page();
     }
@@ -76,6 +78,7 @@ public sealed class LoginModel(
 
     public async Task<IActionResult> OnPostRegisterAsync()
     {
+        Flow = "register";
         if (options.ReadOnly)
         {
             Error = "This archive is not accepting new accounts.";

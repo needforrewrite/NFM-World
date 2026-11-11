@@ -17,6 +17,7 @@ public sealed class FakeSiteverifyHandler : HttpMessageHandler
     public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
     public Exception? Exception { get; set; }
     public int Calls { get; private set; }
+    public string ExpectedSecret { get; set; } = "test-secret";
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
@@ -28,7 +29,7 @@ public sealed class FakeSiteverifyHandler : HttpMessageHandler
         var fields = (await request.Content!.ReadAsStringAsync(ct)).Split('&')
             .Select(field => field.Split('=', 2))
             .ToDictionary(field => field[0], field => Uri.UnescapeDataString(field[1]));
-        Assert.AreEqual("test-secret", fields["secret"]);
+        Assert.AreEqual(ExpectedSecret, fields["secret"]);
         var token = fields["response"];
         return new HttpResponseMessage(Status)
         {
@@ -47,6 +48,77 @@ public sealed class FakeSiteverifyHandler : HttpMessageHandler
 [TestClass]
 public class TurnstileTests
 {
+    [TestMethod]
+    [DataRow("", "signin", "/account/login?handler=SignIn")]
+    [DataRow("?flow=signin", "signin", "/account/login?handler=SignIn")]
+    [DataRow("?flow=register", "register", "/account/login?handler=Register")]
+    [DataRow("?flow=discord", "discord", "/auth/discord/start")]
+    [DataRow("?flow=unexpected", "signin", "/account/login?handler=SignIn")]
+    public async Task LoginPage_RendersOneWidgetForTheSelectedFlow(string query, string action, string formAction)
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = factory.CreateClient();
+        var html = await client.GetStringAsync("/account/login" + query);
+
+        Assert.HasCount(1, Regex.Matches(html, "class=\"cf-turnstile\""));
+        StringAssert.Contains(html, $"data-action=\"{action}\"");
+        var forms = Regex.Matches(html, "<form[^>]*action=\"([^\"]+)\"");
+        Assert.HasCount(1, forms);
+        Assert.AreEqual(formAction.ToLowerInvariant(), WebUtility.HtmlDecode(forms[0].Groups[1].Value).ToLowerInvariant());
+        StringAssert.Contains(html, "name=\"__RequestVerificationToken\"");
+        Assert.AreEqual(action != "discord", html.Contains("name=\"Username\""));
+        Assert.AreEqual(action == "register", html.Contains("name=\"RegisterPassword\""));
+        Assert.AreEqual(action == "signin", html.Contains("name=\"Password\""));
+    }
+
+    [TestMethod]
+    [DataRow("Development", "1x00000000000000000000AA", true)]
+    [DataRow("Production", "0x4AAAAAAF8y76GGmumUX1_K", false)]
+    [DataRow("Staging", "0x4AAAAAAF8y76GGmumUX1_K", false)]
+    public async Task TestCredentials_AreUsedOnlyInDevelopment(string environment, string siteKey, bool accepted)
+    {
+        using var factory = new ArchiveAppFactory();
+        factory.Siteverify.ExpectedSecret = accepted ? "1x0000000000000000000000000000000AA" : "test-secret";
+        factory.Siteverify.RawResponse = """{"success":true,"hostname":"example.com"}""";
+        using var configured = factory.WithWebHostBuilder(builder =>
+            {
+                builder.UseEnvironment(environment);
+                builder.UseSetting("TURNSTILE_HOSTNAMES", "example.com");
+            }
+        );
+        using var client = configured.CreateClient();
+        var html = await client.GetStringAsync("/account/login");
+        StringAssert.Contains(html, $"data-sitekey=\"{siteKey}\"");
+        var verifier = configured.Services.GetRequiredService<TurnstileVerifier>();
+        Assert.AreEqual(accepted, await verifier.VerifyAsync("test-token", "signin", default));
+        Assert.AreEqual(1, factory.Siteverify.Calls);
+    }
+
+    [TestMethod]
+    public async Task Development_DoesNotRequireProductionSettingsButStillValidatesTokens()
+    {
+        using var factory = new ArchiveAppFactory();
+        factory.Siteverify.ExpectedSecret = "1x0000000000000000000000000000000AA";
+        factory.Siteverify.RawResponse = """{"success":true,"hostname":"example.com"}""";
+        using var configured = factory.WithWebHostBuilder(builder =>
+            {
+                builder.UseEnvironment("Development");
+                builder.UseSetting("TURNSTILE_SECRET", "");
+                builder.UseSetting("TURNSTILE_HOSTNAMES", "");
+            }
+        );
+        var verifier = configured.Services.GetRequiredService<TurnstileVerifier>();
+        foreach (var token in new[] { null, "", new string('a', 2049) })
+            Assert.IsFalse(await verifier.VerifyAsync(token, "signin", default));
+        Assert.AreEqual(0, factory.Siteverify.Calls);
+        Assert.IsTrue(await verifier.VerifyAsync("test-token", "signin", default));
+
+        factory.Siteverify.RawResponse = """{"success":false}""";
+        Assert.IsFalse(await verifier.VerifyAsync("test-token", "signin", default));
+        factory.Siteverify.Exception = new HttpRequestException();
+        Assert.IsFalse(await verifier.VerifyAsync("test-token", "signin", default));
+    }
+
     [TestMethod]
     public async Task Verify_AcceptsOnceAndRejectsReplay()
     {
@@ -179,7 +251,10 @@ public class TurnstileTests
                 }
             )
         );
-        StringAssert.Contains(await response.Content.ReadAsStringAsync(), TurnstileVerifier.Error);
+        var errorPage = await response.Content.ReadAsStringAsync();
+        StringAssert.Contains(errorPage, TurnstileVerifier.Error);
+        Assert.HasCount(1, Regex.Matches(errorPage, "class=\"cf-turnstile\""));
+        StringAssert.Contains(errorPage, $"data-action=\"{handler.ToLowerInvariant()}\"");
         Assert.IsFalse(
             response.Headers.TryGetValues("Set-Cookie", out var cookies)
             && cookies.Any(cookie => cookie.StartsWith("nfmw_session="))

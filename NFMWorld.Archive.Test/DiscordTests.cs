@@ -43,9 +43,9 @@ public class DiscordTests
         using var factory = new DiscordArchiveAppFactory();
         using var client = factory.CreateClient(new() { AllowAutoRedirect = false });
         var oldStart = await client.GetAsync("/auth/discord/start");
-        Assert.AreEqual("/account/login", oldStart.Headers.Location!.ToString());
+        Assert.AreEqual("/account/login?flow=discord", oldStart.Headers.Location!.ToString());
 
-        var html = await client.GetStringAsync("/account/login");
+        var html = await client.GetStringAsync(oldStart.Headers.Location);
         var antiforgery = Regex.Match(html, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
         var form = new Dictionary<string, string> { ["__RequestVerificationToken"] = antiforgery };
         var missing = await client.PostAsync("/auth/discord/start", new FormUrlEncodedContent(form));

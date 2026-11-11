@@ -73,7 +73,7 @@ public sealed partial class AccountManager : IDisposable
         }
     }
 
-    public Uri RegistrationUrl => new(_baseUri, "account/login#register");
+    public Uri RegistrationUrl => new(_baseUri, "account/login?flow=register");
 
     public RequestResult OpenRegistration()
     {

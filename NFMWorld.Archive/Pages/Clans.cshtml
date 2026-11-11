@@ -8,22 +8,22 @@
 
 @if (Model.Error is not null)
 {
-    <p class="error">@Model.Error</p>
+    <p class="error" role="alert">@Model.Error</p>
 }
 
 @if (Model.MyClan is not null)
 {
     <p>You are in <strong>@Model.MyClan.Name</strong>@(string.IsNullOrEmpty(Model.MyClan.Tag) ? "" : $" [{Model.MyClan.Tag}]").</p>
     <form method="post" asp-page-handler="Leave">
-        <button type="submit">Leave clan</button>
+        <button type="submit" class="secondary">Leave clan</button>
     </form>
 }
 else if (Model.IsSignedIn)
 {
     <h2>Create a clan</h2>
-    <form method="post" asp-page-handler="Create" class="row">
-        <label>Name<br /><input asp-for="ClanName" /></label>
-        <label>Tag<br /><input asp-for="Tag" maxlength="6" /></label>
+    <form method="post" asp-page-handler="Create" class="grid filter-form">
+        <label>Name<input asp-for="ClanName" /></label>
+        <label>Tag<input asp-for="Tag" maxlength="6" /></label>
         <button type="submit">Create</button>
     </form>
 }
@@ -35,24 +35,30 @@ else if (Model.IsSignedIn)
 }
 else
 {
-    <table>
-        <tr><th>Clan</th><th>Tag</th><th>Members</th><th></th></tr>
-        @foreach (var clan in Model.Clans)
-        {
-            <tr>
-                <td>@clan.Name</td>
-                <td>@clan.Tag</td>
-                <td>@clan.Members.Count</td>
-                <td>
-                    @if (Model.IsSignedIn && Model.MyClan is null)
-                    {
-                        <form method="post" asp-page-handler="Join" style="margin:0">
-                            <input type="hidden" name="JoinClanId" value="@clan.Id" />
-                            <button type="submit">Join</button>
-                        </form>
-                    }
-                </td>
-            </tr>
-        }
-    </table>
+    <div class="overflow-auto">
+        <table>
+            <thead>
+                <tr><th scope="col">Clan</th><th scope="col">Tag</th><th scope="col">Members</th><th scope="col">Actions</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var clan in Model.Clans)
+                {
+                    <tr>
+                        <td>@clan.Name</td>
+                        <td>@clan.Tag</td>
+                        <td>@clan.Members.Count</td>
+                        <td>
+                            @if (Model.IsSignedIn && Model.MyClan is null)
+                            {
+                                <form method="post" asp-page-handler="Join">
+                                    <input type="hidden" name="JoinClanId" value="@clan.Id" />
+                                    <button type="submit">Join</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }

@@ -6,15 +6,17 @@
 
 <h1>Browse</h1>
 
-<form method="get" class="row">
-    <input name="query" value="@Model.Query" placeholder="Search by name" />
-    <select name="type">
-        <option value="">Any type</option>
-        @foreach (var type in Enum.GetNames<NFMWorld.Archive.Data.AssetType>())
-        {
-            <option value="@type" selected="@(Model.Type == type)">@type</option>
-        }
-    </select>
+<form method="get" class="grid filter-form">
+    <label>Search by name<input name="query" value="@Model.Query" placeholder="Search by name" /></label>
+    <label>Type
+        <select name="type">
+            <option value="">Any type</option>
+            @foreach (var type in Enum.GetNames<NFMWorld.Archive.Data.AssetType>())
+            {
+                <option value="@type" selected="@(Model.Type == type)">@type</option>
+            }
+        </select>
+    </label>
     <button type="submit">Search</button>
 </form>
 
@@ -24,16 +26,22 @@
 }
 else
 {
-    <table>
-        <tr><th>Name</th><th>Type</th><th>Size</th><th>Downloads</th></tr>
-        @foreach (var asset in Model.Assets)
-        {
-            <tr>
-                <td><a href="/assets/@asset.ContentHash">@asset.Name</a></td>
-                <td>@asset.Type</td>
-                <td>@((asset.SizeBytes / 1024) + " KB")</td>
-                <td>@asset.DownloadCount</td>
-            </tr>
-        }
-    </table>
+    <div class="overflow-auto">
+        <table>
+            <thead>
+                <tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Size</th><th scope="col">Downloads</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var asset in Model.Assets)
+                {
+                    <tr>
+                        <td><a href="/assets/@asset.ContentHash">@asset.Name</a></td>
+                        <td>@asset.Type</td>
+                        <td>@((asset.SizeBytes / 1024) + " KB")</td>
+                        <td>@asset.DownloadCount</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }

@@ -18,21 +18,27 @@
 }
 else
 {
-    <table>
-        <tr><th>Gamemode</th><th>Elo</th><th>Wins</th><th>Losses</th><th>Matches</th></tr>
-        @foreach (var rating in Model.Ratings)
-        {
-            <tr>
-                <td>@rating.Gamemode</td>
-                <td>@Math.Round(rating.Elo)</td>
-                <td>@rating.Wins</td>
-                <td>@rating.Losses</td>
-                <td>@rating.Matches</td>
-            </tr>
-        }
-    </table>
+    <div class="overflow-auto">
+        <table>
+            <thead>
+                <tr><th scope="col">Gamemode</th><th scope="col">Elo</th><th scope="col">Wins</th><th scope="col">Losses</th><th scope="col">Matches</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var rating in Model.Ratings)
+                {
+                    <tr>
+                        <td>@rating.Gamemode</td>
+                        <td>@Math.Round(rating.Elo)</td>
+                        <td>@rating.Wins</td>
+                        <td>@rating.Losses</td>
+                        <td>@rating.Matches</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }
 
 <h2>Your content</h2>
 <p>@Model.AssetCount uploaded assets · @Model.TimeTrialCount time trials</p>
-<p><a href="/upload">Upload something</a></p>
+<p><a href="/upload" role="button">Upload something</a></p>

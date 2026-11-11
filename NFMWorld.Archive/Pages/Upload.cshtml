@@ -9,18 +9,18 @@
 
 @if (Model.Error is not null)
 {
-    <p class="error">@Model.Error</p>
+    <p class="error" role="alert">@Model.Error</p>
 }
 @if (Model.Message is not null)
 {
-    <p>@Model.Message</p>
+    <p role="status">@Model.Message</p>
 }
 
 <form method="post" enctype="multipart/form-data">
-    <div class="row">
-        <label>File<br /><input type="file" asp-for="File" accept=".radpack,.rad" /></label>
-        <label>Name<br /><input asp-for="Name" /></label>
-        <label>Type<br />
+    <label>File<input type="file" asp-for="File" accept=".radpack,.rad" /></label>
+    <div class="grid">
+        <label>Name<input asp-for="Name" /></label>
+        <label>Type
             <select asp-for="Type">
                 @foreach (var type in Enum.GetNames<NFMWorld.Archive.Data.AssetType>())
                 {
@@ -29,8 +29,6 @@
             </select>
         </label>
     </div>
-    <div class="row">
-        <label style="flex:1">Description<br /><textarea asp-for="Description" rows="3" style="width:100%"></textarea></label>
-    </div>
+    <label>Description<textarea asp-for="Description" rows="3"></textarea></label>
     <button type="submit">Upload</button>
 </form>

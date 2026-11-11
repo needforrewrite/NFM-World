@@ -1,0 +1,44 @@
+.site-header {
+    border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+.site-header nav,
+.site-header nav ul {
+    flex-wrap: wrap;
+}
+
+.site-header nav {
+    column-gap: var(--pico-spacing);
+}
+
+.site-header form,
+.site-header button,
+td form,
+td button {
+    margin-bottom: 0;
+}
+
+.account-menu {
+    margin-left: auto;
+}
+
+.account-form {
+    max-width: 32rem;
+    margin-inline: auto;
+}
+
+.account-options {
+    display: block;
+}
+
+.filter-form {
+    align-items: end;
+}
+
+.error {
+    color: var(--pico-del-color);
+}
+
+.muted {
+    color: var(--pico-muted-color);
+}

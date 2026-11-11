@@ -32,6 +32,7 @@ public class ArchiveAppFactory : WebApplicationFactory<Program>
         // Without this the host searches upward for a content root and finds the test project,
         // so appsettings.json never loads and every test shares one real archive.db.
         builder.UseContentRoot(AppContext.BaseDirectory);
+        builder.UseEnvironment("Production");
 
         // UseSetting (not just ConfigureAppConfiguration) because the app binds ArchiveOptions at
         // build time, before a later configuration source would be layered on.

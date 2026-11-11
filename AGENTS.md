@@ -378,6 +378,9 @@ reference it; new shader work goes through `NFMWorld.ShaderCompiler`.
 In-tree replacement for the Rust `nfmw-archive`. ASP.NET Core minimal APIs plus Razor Pages, EF Core on SQLite,
 uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment configuration and the backup drill.
 
+- **Website styling.** Razor pages use self-hosted Blades CSS 3.1.1 (`wwwroot/lib/blades/`, MIT license included).
+  Keep local layout tweaks in `wwwroot/css/archive.css`; use Blades semantic HTML, `.container`, `.grid`, and
+  `.overflow-auto` rather than rebuilding its controls. No npm or frontend build step is needed.
 - **Trust boundaries.** Accounts are the archive's; ratings are only written by a request signed with a trusted
   server key, and only the lobby holds one. A game master is run by anyone, so it reports a finished race to the
   lobby (`LOBBY_RESULTS_URL`) and the lobby forwards it to `/results/match`.
@@ -390,10 +393,13 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
   cancelled, so the archive runs it as a child process with a wall clock and kills it. A time trial is ranked only by
   that simulation's tick count, never by a number the client sends.
 - **Web account protection.** `TurnstileVerifier` checks Siteverify with a ten-second timeout, exact hostname
-  allowlist and per-form action. Set `TURNSTILE_SECRET` and comma-separated `TURNSTILE_HOSTNAMES`; missing settings
-  fail closed. The site key is public. Web sign-in, all password registration and Discord OAuth initiation require
+  allowlist and per-form action. Outside Development, set `TURNSTILE_SECRET` and comma-separated
+  `TURNSTILE_HOSTNAMES`; missing settings fail closed. Development uses Cloudflare's public test key pair and skips
+  hostname/action matching (dummy hostname, no action); Siteverify success is still required. The archive launch
+  profile selects Development on localhost:5288. Never deploy with that environment. The site key is public. Web sign-in, all password registration and Discord OAuth initiation require
   verification; Discord start is an antiforgery-protected POST. Native `/auth/login` remains password/throttle-only.
-  The game offers browser registration at `/account/login#register`, never an in-app registration request.
+  The login page renders one widget for the selected `flow` (`signin`, `register`, or `discord`); switching flows
+  reloads the page with a fresh widget. The game opens `/account/login?flow=register` for registration.
 - **Client.** `AccountManager` (`nfm-world/Mad/Account/`) talks to `/auth/*` directly and persists the token through
   the VFS write root; the menu's ACCOUNT item opens `AccountView`. `ArchiveMount` mounts the asset store as a read-only
   VFS layer when `NFMW_ARCHIVE_URL` is set, after the local directories so local content wins.

@@ -32,7 +32,7 @@ public static class DiscordEndpoints
 
     public static void MapDiscordEndpoints(this WebApplication app)
     {
-        app.MapGet("/auth/discord/start", () => Results.Redirect("/account/login"));
+        app.MapGet("/auth/discord/start", () => Results.Redirect("/account/login?flow=discord"));
         app.MapPost(
             "/auth/discord/start",
             async (

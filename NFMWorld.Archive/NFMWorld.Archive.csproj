@@ -27,6 +27,7 @@
         <EnableDefaultRazorComponentItems>true</EnableDefaultRazorComponentItems>
     </PropertyGroup>
     <ItemGroup>
+        <Content Update="wwwroot\**\*" CopyToOutputDirectory="PreserveNewest"/>
         <Content Remove="Pages\**\*.cshtml"/>
         <RazorGenerate Include="Pages\**\*.cshtml"/>
     </ItemGroup>

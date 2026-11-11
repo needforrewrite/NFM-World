@@ -1,39 +1,59 @@
 @page
 @model NFMWorld.Archive.Pages.Account.LoginModel
+@inject NFMWorld.Archive.Auth.TurnstileVerifier Turnstile
 @{
-    ViewData["Title"] = "Sign in";
+    var title = Model.Flow switch
+    {
+        "register" => "Create an account",
+        "discord" => "Sign in with Discord",
+        _ => "Sign in"
+    };
+    ViewData["Title"] = title;
+    var formAction = Model.Flow == "discord"
+        ? Url.Content("~/auth/discord/start")
+        : Url.Page("/Account/Login", Model.Flow == "register" ? "Register" : "SignIn");
 }
 
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-<h1>Sign in</h1>
+<article class="account-form">
+    <h1>@title</h1>
 
-@if (Model.Error is not null)
-{
-    <p class="error">@Model.Error</p>
-}
+    @if (Model.Error is not null)
+    {
+        <p class="error" role="alert">@Model.Error</p>
+    }
 
-<form method="post" asp-page-handler="SignIn">
-    <input type="hidden" asp-for="ReturnUrl" />
-    <div class="row">
-        <label>Username<br /><input asp-for="Username" autocomplete="username" /></label>
-        <label>Password<br /><input asp-for="Password" type="password" autocomplete="current-password" /></label>
-        <div class="cf-turnstile" data-sitekey="@NFMWorld.Archive.Auth.TurnstileVerifier.SiteKey" data-action="signin"></div>
-        <button type="submit">Sign in</button>
-    </div>
-</form>
+    <form method="post" action="@formAction">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="ReturnUrl" />
+        @if (Model.Flow != "discord")
+        {
+            <label>Username<input asp-for="Username" autocomplete="username" /></label>
+            @if (Model.Flow == "register")
+            {
+                <label>Password<input asp-for="RegisterPassword" type="password" autocomplete="new-password" /></label>
+            }
+            else
+            {
+                <label>Password<input asp-for="Password" type="password" autocomplete="current-password" /></label>
+            }
+        }
+        <div class="cf-turnstile" data-sitekey="@Turnstile.SiteKey" data-action="@Model.Flow"></div>
+        <button type="submit">@(Model.Flow == "register" ? "Register" : title)</button>
+    </form>
 
-<h2 id="register">Create an account</h2>
-<form method="post" asp-page-handler="Register">
-    <div class="row">
-        <label>Username<br /><input asp-for="Username" autocomplete="username" /></label>
-        <label>Password<br /><input asp-for="RegisterPassword" type="password" autocomplete="new-password" /></label>
-        <div class="cf-turnstile" data-sitekey="@NFMWorld.Archive.Auth.TurnstileVerifier.SiteKey" data-action="register"></div>
-        <button type="submit">Register</button>
-    </div>
-</form>
-
-<form method="post" action="/auth/discord/start">
-    @Html.AntiForgeryToken()
-    <div class="cf-turnstile" data-sitekey="@NFMWorld.Archive.Auth.TurnstileVerifier.SiteKey" data-action="discord"></div>
-    <button type="submit">Sign in with Discord</button>
-</form>
+    <nav class="account-options" aria-label="Account options">
+        @if (Model.Flow != "signin")
+        {
+            <p><a asp-page="/Account/Login" asp-route-returnUrl="@Model.ReturnUrl">Sign in with a password</a></p>
+        }
+        @if (Model.Flow != "register")
+        {
+            <p><a asp-page="/Account/Login" asp-route-flow="register" asp-route-returnUrl="@Model.ReturnUrl">Create an account</a></p>
+        }
+        @if (Model.Flow != "discord")
+        {
+            <p><a asp-page="/Account/Login" asp-route-flow="discord" asp-route-returnUrl="@Model.ReturnUrl">Sign in with Discord</a></p>
+        }
+    </nav>
+</article>

@@ -89,6 +89,8 @@ app.Use(async (context, next) =>
     }
 );
 
+app.UseStaticFiles();
+
 app.Run();
 
 /// <summary>Entry point marker so integration tests can host the real app.</summary>
