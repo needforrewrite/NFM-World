@@ -402,7 +402,9 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
   reloads the page with a fresh widget. The game opens `/account/login?flow=register` for registration.
 - **Client.** `AccountManager` (`nfm-world/Mad/Account/`) talks to `/auth/*` directly and persists the token through
   the VFS write root; the menu's ACCOUNT item opens `AccountView`. `ArchiveMount` mounts the asset store as a read-only
-  VFS layer when `NFMW_ARCHIVE_URL` is set, after the local directories so local content wins.
+  VFS layer after local content. It reads `archive/<sha256>` directly from `/assets/<hash>` without a remote listing
+  or name-to-hash manifest; existence/enumeration only know assets already fetched. Online search/listing needs
+  explicit endpoints, not a VFS-wide asset index.
 
 | Gotcha | Rule |
 |---|---|
