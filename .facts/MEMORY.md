@@ -1,0 +1,39 @@
+# Memory index
+
+- [Ask user to verify visuals, don't inject input](ask-user-to-verify-visuals-dont-inject-input.md) — visual checks in NFM-World are the user's job; never drive the game's UI with simulated WinAPI/SendKeys input.
+- [Don't forward the user's email](dont-forward-user-email.md) — the user's address identifies them to me only; never put it in a header, URL, or payload unless asked.
+- [Check git status before discarding ops](git-status-before-work-discarding-ops.md) — uncommitted work may not be mine to throw away.
+- [LuaCSharp table enumerator MoveNext index bug](luacsharp-table-enumerator-movenext-index-bug.md) — the enumerator's index handling is subtly wrong.
+- [LuaValue must stay unboxed Fixed64](luavalue-must-stay-unboxed-fixed64.md) — boxing it changes semantics.
+- [Terse visual bug reports: keep the named symptom](terse-visual-bug-reports-keep-the-named-symptom.md) — don't paraphrase away the exact symptom the user named.
+- [UI runtime is Sx, not Preact](ui-runtime-is-sx-not-preact.md) — the UI layer is Sx-based.
+- [C# Sx UI traps](sx-csharp-ui-traps.md) — flow hosts need Display.Contents, Styles fields are nullable on purpose, effects schedule through TimeProvider.
+- [Silk EGL generated using-trim breaks CS1614](silk-egl-generated-using-trim-breaks-cs1614.md) — stripping "unused" usings from `Maxine.Silk.EGL/*.gen.cs` makes `[Extension]` ambiguous; restore, don't hand-edit.
+- [SignalsDotnet subscription leak](signalsdotnet-subscription-leak.md) — 3.4.1 leaked an observer per compute; vendored fork fixes it, and the slowdown aggregates over time rather than per frame.
+- [sokol/D3D11 HLSL semantic names must match the shader signature](sokol-d3d11-hlsl-semantic-names-must-match-signature.md) — spirv-cross renames every vertex input to TEXCOORD&lt;location&gt;, so source semantics like POSITION0 can never match; upstream shdc hardcodes TEXCOORD.
+- [sokol index format is baked into the pipeline](sokol-index-format-is-baked-into-the-pipeline.md) — the abstraction supplies it per buffer, and a mismatch makes sg_apply_bindings silently skip the draw.
+- [sokol deferred upload must cover create-time data](sokol-deferred-upload-must-cover-create-time-data.md) — a dynamic buffer created with initial data never uploaded, so only static instanced geometry broke.
+- [sokol backend bundles need HLSL, not just SPIR-V](sokol-backend-bundle-shaders-need-hlsl.md) — the vendored sokol.dll is D3D11-only and cannot consume SPIR-V; bundles must carry spirv-cross's HLSL.
+- [GLES3 links varyings by name](gles3-links-varyings-by-name.md) — HLSL→SPIR-V→ES makes the two stages' varying names differ, so every program fails at *link*, never at compile; rename in the spirv-cross IR, keyed by location.
+- [Browser shader link blows the GPU watchdog](browser-shader-link-blows-the-gpu-watchdog.md) — a 100 s link returning false with an *empty* log is Chromium killing the GPU process, not a shader error.
+- [ANGLE defers shader compilation to the first draw](angle-deferred-shader-compilation.md) — compile/link report ~0.2 ms and the real ~3 ms cost lands at the first draw, so a naive benchmark reads backwards.
+- [MSBuild task host: native loading, DLL locking, relative paths](msbuild-task-host-native-and-path-traps.md) — four traps for a build-time task built by its own build; the fixes look wrong but are load-bearing, and the "could not load" message that names the wrong culprit is documented.
+- [GL buffer orphaning is not the cost](gl-buffer-orphaning-is-not-the-cost.md) — falsified as a perf lever; and the GL backends are the only ones with no SetPipeline dedup.
+- [GL dynamic buffers use a CPU mirror](gl-dynamic-buffers-use-a-cpu-mirror.md) — whole-buffer BufferData on every update, and why deferring the upload is a trap.
+- [ANGLE's Apos translation takes minutes](angle-hlsl-translation-of-apos-shapes-takes-minutes.md) — the GL smoke test looks hung for ~2 min; don't mistake it for a deadlock.
+- [GL smoke tests never switch pipelines](gl-smoke-tests-never-switch-pipelines.md) — a green smoke run is not evidence for state-caching changes; the bug passed both suites.
+- [D3DReflect mangles cbuffer member names](d3dreflect-mangles-cbuffer-member-names.md) — the compiled reflection says `_360_Projection` where the bundle says `Projection`; size matches, every name misses.
+- [Remora.MSDFGen traps](remora-msdfgen-traps.md) — its MSDF path is off by a half texel and the range is in shape units, both silent; plus the verified orientation, colouring-angle, and error-correction specifics.
+- [MSDF field box must fit the atlas](msdf-field-box-must-fit-the-atlas.md) — a glyph whose field is taller than the atlas rows draws nothing, with no error and a perfectly correct bake.
+- [MSDF text: verify in a fresh batch](msdf-text-verify-in-a-fresh-batch.md) — check a lonely glyph before blaming the shader; and the outline band's real semantics.
+- [Headless ANGLE derivatives are zero](headless-angle-derivatives-are-zero.md) — the GL smoke's context returns 0 from ddx/ddy, so every shape draws hard-edged and no rendered check there can see an AA change.
+- [net11 browser-wasm project setup](net11-browser-wasm-project-setup.md) — three mandatory MSBuild settings, and the workload gap that silently skips `_framework`.
+- [WASM P/Invoke table and GL proc addresses](wasm-pinvoke-table-and-gl-proc-addresses.md) — P/Invoke resolves through a static table keyed by file name; `calli` works only on `[UnmanagedCallersOnly]` trampolines; emscripten's `gl*` are JS glue needing a C shim.
+- [MSBuild: compiling C to wasm bitcode in a target](wasm-msbuild-emscripten-toolchain.md) — which properties hold emcc, the env vars emcc needs, and why `IntermediateOutputPath` silently puts objects in the project dir.
+- [WASM runtime-async and RID propagation](wasm-runtime-async-and-rid-propagation.md) - the RID is stripped from referenced libraries, so gate wasm compiler differences on a global property.
+- [Hexa.NET.ImGui on wasm](hexa-imgui-on-wasm.md) - its function-table binding cannot work on wasm; rebuild it with ImportType=DllImport, CIMGUI_VARGS0, and no DisableRuntimeMarshalling.
+- [libopenmpt on wasm: legacy exceptions only, and use the v1 create API](libopenmpt-wasm-legacy-exceptions-and-v1-api.md) — `-fwasm-exceptions` emits an uninstantiable module and `create_from_memory2` aborts; only v1 + legacy links work, both failures silent.
+- [WASM AOT crashes only on SDL3.Core](wasm-aot-crashes-only-on-sdl3-core.md) — 108 of 109 assemblies AOT fine; the SDK's documented skip hook is dead code, so skip it by pulling it from `_WasmAssembliesInternal`.
+- [Browser build: route game file I/O through TheVFS.VFS](browser-build-vfs-routing-rule.md) — direct System.IO hits an empty MEMFS in the browser; writes must go to the `/tmp/nfmw` write root, and the head must call LoadConfigValues itself.
+- [Mono wasm has no collectible ALC](mono-wasm-has-no-collectible-alc.md) — ALC works, collectible ALC does not, so gamemode plugins are cached per id and never unload on browser.
+- [Thin-quad varyings need nointerpolation](thin-quad-varyings-need-nointerpolation.md) — a per-line constant interpolated over thin line quads arrives ~1px noisy; use nointerpolation + SV_Position.

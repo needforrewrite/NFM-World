@@ -13,6 +13,9 @@ NFM World is a custom game engine and game written in **C#**, targeting `net11.0
 C#; there are no Lua or Luau code paths in the main tree any more. Older comments and docs still mention them — see
 [Agent working guidelines](#agent-working-guidelines) for which references are stale and why.
 
+Where possible, put "memories" in .facts and update .facts/MEMORY.md. Do not commit repo or user secrets to the .facts
+directory. Remove outdated facts when they become irrelevant.
+
 ## Layout
 
 | Path | Role |
