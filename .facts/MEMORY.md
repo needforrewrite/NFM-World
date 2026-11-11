@@ -1,4 +1,4 @@
-# Memory index
+﻿# Memory index
 
 - [Ask user to verify visuals, don't inject input](ask-user-to-verify-visuals-dont-inject-input.md) — visual checks in NFM-World are the user's job; never drive the game's UI with simulated WinAPI/SendKeys input.
 - [Don't forward the user's email](dont-forward-user-email.md) — the user's address identifies them to me only; never put it in a header, URL, or payload unless asked.
@@ -37,3 +37,4 @@
 - [Browser build: route game file I/O through TheVFS.VFS](browser-build-vfs-routing-rule.md) — direct System.IO hits an empty MEMFS in the browser; writes must go to the `/tmp/nfmw` write root, and the head must call LoadConfigValues itself.
 - [Mono wasm has no collectible ALC](mono-wasm-has-no-collectible-alc.md) — ALC works, collectible ALC does not, so gamemode plugins are cached per id and never unload on browser.
 - [Thin-quad varyings need nointerpolation](thin-quad-varyings-need-nointerpolation.md) — a per-line constant interpolated over thin line quads arrives ~1px noisy; use nointerpolation + SV_Position.
+- [Archive content preparation and Sx editor facts](archive-content-preparation-and-sx-editor-facts.md) — a race needs clients to prepare cars+stage and the GM the stage; Sx has no drag/drop or context menu, so the stage editor fakes both.
