@@ -1,4 +1,4 @@
-﻿using Maxine.Extensions;
+using Maxine.Extensions;
 using Maxine.Extensions.Collections;
 using NFMWorldLibrary.Backend;
 
@@ -6,6 +6,9 @@ namespace NFMWorld.UI;
 
 public partial class StageEditorPhase
 {
+    private static WallSnapshot CreateWallSnapshot(EditorStageWall wall)
+        => new(wall.Id, wall.Direction, wall.Count, wall.Position, wall.Offset);
+
     private EditorSnapshot CaptureEditorSnapshot()
     {
         if (ActiveTab == null)

@@ -1,4 +1,4 @@
-﻿using Maxine.Extensions;
+using Maxine.Extensions;
 using NFMWorld.DriverInterface;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
@@ -7,9 +7,11 @@ namespace NFMWorld.UI;
 
 public partial class StageEditorPhase
 {
+    private static bool UiWantsKeyboard() => GameSparker.UiRenderer?.WantsKeyboard == true;
+
     public override void KeyPressed(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
-        if (imguiWantsKeyboard) return;
+        if (imguiWantsKeyboard || UiWantsKeyboard()) return;
         if (!_isOpen) return;
 
         // In placement mode
@@ -224,7 +226,8 @@ public partial class StageEditorPhase
 
     public override void KeyReleased(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
-        if (imguiWantsKeyboard) return;
+        // Releases clear held state even when the UI took the keyboard: a key held while a
+        // field gained focus must not leave the camera moving.
         if (!_isOpen) return;
 
         // Camera movement

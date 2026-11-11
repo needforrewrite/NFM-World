@@ -1,4 +1,4 @@
-﻿namespace NFMWorld.UI;
+namespace NFMWorld.UI;
 
 public partial class StageEditorPhase
 {
@@ -80,5 +80,34 @@ public partial class StageEditorPhase
             // GameTick the renderer so StageObjectGameObjects sync position from piece.Obj
             ActiveTab.StageRenderer?.GameTick();
         }
+
+        SyncViewportBounds();
+
+        // Viewport picking and hierarchy writes change the selection without going through
+        // the view, so republish when it changed.
+        var stamp = SelectionStamp();
+        if (stamp != _lastSelectionStamp)
+        {
+            _lastSelectionStamp = stamp;
+            Touch();
+        }
+    }
+
+    /// <summary>
+    /// The 3D area's measured bounds, in window pixels, drive scissoring, picking and the
+    /// gizmos. They come from the actual Sx node rather than from panel arithmetic here.
+    /// </summary>
+    private void SyncViewportBounds()
+    {
+        if (_viewportView is null)
+            return;
+
+        var position = _viewportView.LayoutBorderPosition;
+        var size = _viewportView.LayoutBorderSize;
+        if (size.X <= 0 || size.Y <= 0)
+            return;
+
+        _viewportMin = position;
+        _viewportMax = position + size;
     }
 }

@@ -1,4 +1,4 @@
-﻿using Maxine.Extensions;
+using Maxine.Extensions;
 using NFMWorld.DriverInterface;
 using NFMWorld.Platform.SDL3;
 using NFMWorldLibrary.Backend;
@@ -321,7 +321,7 @@ public partial class StageEditorPhase
     {
         base.MousePressed(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
 
-        if (imguiWantsMouse) return;
+        if (imguiWantsMouse || GameSparker.UiRenderer?.WantsMouse(x, y) == true) return;
         if (!GameSparker.Game.IsActive) return;
         if (!_isOpen) return;
 
