@@ -118,6 +118,19 @@ SolidJS-style: signals, per-slot effects, **no vnode and no diffing**. Backed by
 | `For` keys by value | Rows are keyed by item equality and built **once**; moving them only reorders nodes. So a row remounts whenever `each` yields a new item value (a freshly built record or string does), and the `index` passed to the row is the one it was created with — read position from a signal inside the row, not from that argument. |
 | Scopes own effects | Content mounted by a flow helper lives in its own `RenderScope`; disposing that scope tears down everything created inside it. Reusing a node across mounts without adopting a new scope leaves its effects dead. |
 | Style structs are nullable | `Styles` fields are `T?` on purpose (merge semantics). Setting a field to its CLR default is not the same as leaving it null. |
+| Rows in a scroll container | Yoga's web default `flexShrink: 1` squeezes list rows to their padding, so a long list shows crushed rows (or one solid block) instead of scrolling. List rows need `flexShrink: 0` — the main-menu items and `LobbyView.Row` set it. |
+
+### Yoga port
+
+`Microsoft.UI.Reactor.Yoga` is a hand port of [microsoft-ui-reactor's C# Yoga](https://github.com/microsoft/microsoft-ui-reactor/tree/main/src/Reactor/Yoga),
+and it lags upstream. Layout bugs that read as "impossible" numbers (a row hundreds of millions of
+pixels tall, text laid out at `y = -3` inside its own row) are usually a missing upstream fix — diff
+the affected function against upstream before debugging the tree. Two that were ported:
+
+| Missing fix | Symptom |
+|---|---|
+| facebook/yoga#2038 (`DistributeFreeSpaceSecondPass`) | Dividing by a **small positive** shrink-total residual instead of skipping it gave `~1e8`-pixel child sizes; a scroll container's rows all landed off-screen and the list painted as one flat block. Ours tested `== 0`; upstream tests `>= 0`. `YogaScrollFlexTests` covers it. |
+| facebook/yoga#2042 (`CalculateLayoutInternal`) | A cached measurement was reused across different owner sizes, so a subtree with percentage sizes got another parent's result. `CachedMeasurement` now records `OwnerWidth`/`OwnerHeight` and `YogaStyle.ResolvesAgainstOwnerWidth/Height` gates the hit. |
 
 ---
 

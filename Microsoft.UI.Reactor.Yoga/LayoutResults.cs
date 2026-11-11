@@ -15,7 +15,14 @@ internal struct CachedMeasurement
     public float ComputedWidth = -1;
     public float ComputedHeight = -1;
 
-    public CachedMeasurement() { }
+    // Upstream facebook/yoga#2042: the owner size the entry was computed against,
+    // for nodes whose percentages resolve against it.
+    public float OwnerWidth = -1;
+    public float OwnerHeight = -1;
+
+    public CachedMeasurement()
+    {
+    }
 
     public bool Equals(CachedMeasurement other)
     {
@@ -30,6 +37,10 @@ internal struct CachedMeasurement
             isEqual = isEqual && ComputedWidth == other.ComputedWidth;
         if (!YogaFloat.IsUndefined(ComputedHeight) || !YogaFloat.IsUndefined(other.ComputedHeight))
             isEqual = isEqual && ComputedHeight == other.ComputedHeight;
+        if (!YogaFloat.IsUndefined(OwnerWidth) || !YogaFloat.IsUndefined(other.OwnerWidth))
+            isEqual = isEqual && OwnerWidth == other.OwnerWidth;
+        if (!YogaFloat.IsUndefined(OwnerHeight) || !YogaFloat.IsUndefined(other.OwnerHeight))
+            isEqual = isEqual && OwnerHeight == other.OwnerHeight;
 
         return isEqual;
     }
@@ -88,9 +99,12 @@ internal sealed class LayoutResults
         // The _dimensions family historically defaulted to NaN (the float[]
         // initializers); _position/_margin/_border/_padding defaulted to 0,
         // which matches a zero-initialized inline buffer (no seeding needed).
-        _dimensions[0] = float.NaN; _dimensions[1] = float.NaN;
-        _measuredDimensions[0] = float.NaN; _measuredDimensions[1] = float.NaN;
-        _rawDimensions[0] = float.NaN; _rawDimensions[1] = float.NaN;
+        _dimensions[0] = float.NaN;
+        _dimensions[1] = float.NaN;
+        _measuredDimensions[0] = float.NaN;
+        _measuredDimensions[1] = float.NaN;
+        _rawDimensions[0] = float.NaN;
+        _rawDimensions[1] = float.NaN;
     }
 
     public FlexLayoutDirection Direction

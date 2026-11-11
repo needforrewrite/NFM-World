@@ -173,6 +173,7 @@ public static class LobbyView
                 row: (player, _) => Sx.View(
                     style: () => Sx.Styles(
                         flexDirection: FlexDirection.Column,
+                        flexShrink: 0,
                         paddingTop: 4,
                         paddingBottom: 4,
                         borderBottom: 1,
@@ -798,6 +799,9 @@ public static class LobbyView
                     gapColumn: 10,
                     alignItems: Align.Center,
                     flexDirection: FlexDirection.Row,
+                    // List rows keep their height and overflow the scroll container; the web
+                    // default (shrink 1) squeezed every row to its padding instead.
+                    flexShrink: 0,
                     borderRadius: 6,
                     backgroundColor: hovered.Value ? Theme.MenuHighlight : null
                 )

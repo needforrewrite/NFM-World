@@ -49,8 +49,8 @@ internal sealed class YogaStyle
     private EdgeValues _position;
     private EdgeValues _padding;
     private EdgeValues _border;
-    private GutterValues _gap;            // Column=0, Row=1, All=2
-    private DimensionValues _dimensions;  // Width=0, Height=1
+    private GutterValues _gap; // Column=0, Row=1, All=2
+    private DimensionValues _dimensions; // Width=0, Height=1
     private DimensionValues _minDimensions;
     private DimensionValues _maxDimensions;
 
@@ -81,6 +81,7 @@ internal sealed class YogaStyle
             _padding[i] = YogaValue.Undefined;
             _border[i] = YogaValue.Undefined;
         }
+
         _gap[0] = YogaValue.Undefined;
         _gap[1] = YogaValue.Undefined;
         _gap[2] = YogaValue.Undefined;
@@ -94,6 +95,7 @@ internal sealed class YogaStyle
 
     // Aspect ratio (NaN = undefined)
     private float _aspectRatio = float.NaN;
+
     public float AspectRatio
     {
         get => _aspectRatio;
@@ -106,9 +108,12 @@ internal sealed class YogaStyle
             if (!float.IsNaN(value))
             {
                 if (value <= 0 || float.IsInfinity(value))
-                    throw new ArgumentOutOfRangeException(nameof(value),
-                        $"AspectRatio must be a positive finite number or NaN; got {value}.");
+                    throw new ArgumentOutOfRangeException(
+                        nameof(value),
+                        $"AspectRatio must be a positive finite number or NaN; got {value}."
+                    );
             }
+
             _aspectRatio = value;
         }
     }
@@ -236,6 +241,30 @@ internal sealed class YogaStyle
     public bool IsInlineEndPositionAuto(FlexDirection axis, FlexLayoutDirection direction)
         => ComputePosition(FlexDirectionHelper.InlineEndEdge(axis, direction), direction).IsAuto;
 
+    // ── Owner-size dependencies (facebook/yoga#2042) ──
+
+    /// <summary>
+    /// Whether any percentage in this style resolves against the owner's width, so a cached
+    /// measurement only holds for the width it was computed against.
+    /// </summary>
+    public bool ResolvesAgainstOwnerWidth()
+    {
+        for (int i = 0; i < 9; i++)
+        {
+            if (_margin[i].IsPercent || _padding[i].IsPercent)
+                return true;
+        }
+
+        return _dimensions[(int)YogaDimension.Width].IsPercent ||
+               _minDimensions[(int)YogaDimension.Width].IsPercent ||
+               _maxDimensions[(int)YogaDimension.Width].IsPercent;
+    }
+
+    public bool ResolvesAgainstOwnerHeight() =>
+        _dimensions[(int)YogaDimension.Height].IsPercent ||
+        _minDimensions[(int)YogaDimension.Height].IsPercent ||
+        _maxDimensions[(int)YogaDimension.Height].IsPercent;
+
     // ── Computed position values ──
 
     public float ComputeFlexStartPosition(FlexDirection axis, FlexLayoutDirection direction, float axisSize)
@@ -284,13 +313,19 @@ internal sealed class YogaStyle
         => YogaFloat.MaxOrDefined(ComputePadding(FlexDirectionHelper.FlexStartEdge(axis), direction).Resolve(widthSize), 0);
 
     public float ComputeInlineStartPadding(FlexDirection axis, FlexLayoutDirection direction, float widthSize)
-        => YogaFloat.MaxOrDefined(ComputePadding(FlexDirectionHelper.InlineStartEdge(axis, direction), direction).Resolve(widthSize), 0);
+        => YogaFloat.MaxOrDefined(
+            ComputePadding(FlexDirectionHelper.InlineStartEdge(axis, direction), direction).Resolve(widthSize),
+            0
+        );
 
     public float ComputeFlexEndPadding(FlexDirection axis, FlexLayoutDirection direction, float widthSize)
         => YogaFloat.MaxOrDefined(ComputePadding(FlexDirectionHelper.FlexEndEdge(axis), direction).Resolve(widthSize), 0);
 
     public float ComputeInlineEndPadding(FlexDirection axis, FlexLayoutDirection direction, float widthSize)
-        => YogaFloat.MaxOrDefined(ComputePadding(FlexDirectionHelper.InlineEndEdge(axis, direction), direction).Resolve(widthSize), 0);
+        => YogaFloat.MaxOrDefined(
+            ComputePadding(FlexDirectionHelper.InlineEndEdge(axis, direction), direction).Resolve(widthSize),
+            0
+        );
 
     // ── Combined padding + border ──
 
@@ -310,14 +345,18 @@ internal sealed class YogaStyle
     {
         var flexDir = dimension == YogaDimension.Width ? FlexDirection.Row : FlexDirection.Column;
         return ComputeFlexStartPaddingAndBorder(flexDir, direction, widthSize)
-             + ComputeFlexEndPaddingAndBorder(flexDir, direction, widthSize);
+               + ComputeFlexEndPaddingAndBorder(flexDir, direction, widthSize);
     }
 
     public float ComputeBorderForAxis(FlexDirection axis)
         => ComputeInlineStartBorder(axis, FlexLayoutDirection.LTR) + ComputeInlineEndBorder(axis, FlexLayoutDirection.LTR);
 
     public float ComputeMarginForAxis(FlexDirection axis, float widthSize)
-        => ComputeInlineStartMargin(axis, FlexLayoutDirection.LTR, widthSize) + ComputeInlineEndMargin(axis, FlexLayoutDirection.LTR, widthSize);
+        => ComputeInlineStartMargin(axis, FlexLayoutDirection.LTR, widthSize) + ComputeInlineEndMargin(
+            axis,
+            FlexLayoutDirection.LTR,
+            widthSize
+        );
 
     public float ComputeGapForAxis(FlexDirection axis, float ownerSize)
     {
