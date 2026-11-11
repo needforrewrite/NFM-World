@@ -80,7 +80,7 @@ public class AuthEndpointTests
         using var factory = new ArchiveAppFactory();
         using var client = factory.CreateClient();
 
-        var register = await client.PostAsJsonAsync("/auth/register", new { Username = "alice", Password = "password123" });
+        var register = await client.PostAsJsonAsync("/auth/register", ArchiveAppFactory.Registration("alice"));
         Assert.AreEqual(HttpStatusCode.OK, register.StatusCode, await register.Content.ReadAsStringAsync());
 
         var body = await register.Content.ReadFromJsonAsync<JsonElement>();
@@ -101,8 +101,8 @@ public class AuthEndpointTests
         using var factory = new ArchiveAppFactory();
         using var client = factory.CreateClient();
 
-        await client.PostAsJsonAsync("/auth/register", new { Username = "alice", Password = "password123" });
-        var second = await client.PostAsJsonAsync("/auth/register", new { Username = "ALICE", Password = "password456" });
+        await client.PostAsJsonAsync("/auth/register", ArchiveAppFactory.Registration("alice"));
+        var second = await client.PostAsJsonAsync("/auth/register", ArchiveAppFactory.Registration("ALICE", "password456"));
 
         Assert.AreEqual(HttpStatusCode.Conflict, second.StatusCode);
     }
@@ -113,7 +113,7 @@ public class AuthEndpointTests
         using var factory = new ArchiveAppFactory();
         using var client = factory.CreateClient();
 
-        await client.PostAsJsonAsync("/auth/register", new { Username = "alice", Password = "password123" });
+        await client.PostAsJsonAsync("/auth/register", ArchiveAppFactory.Registration("alice"));
         var login = await client.PostAsJsonAsync("/auth/login", new { Username = "alice", Password = "wrong" });
 
         Assert.AreEqual(HttpStatusCode.Unauthorized, login.StatusCode);
@@ -124,7 +124,7 @@ public class AuthEndpointTests
     {
         using var factory = new ArchiveAppFactory();
         using var client = factory.CreateClient();
-        await client.PostAsJsonAsync("/auth/register", new { Username = "alice", Password = "password123" });
+        await client.PostAsJsonAsync("/auth/register", ArchiveAppFactory.Registration("alice"));
 
         for (var i = 0; i < 10; i++)
             await client.PostAsJsonAsync("/auth/login", new { Username = "alice", Password = "wrong" });
@@ -149,7 +149,7 @@ public class AuthEndpointTests
         using var factory = new ArchiveAppFactory();
         using var client = factory.CreateClient();
 
-        var register = await client.PostAsJsonAsync("/auth/register", new { Username = "alice", Password = "password123" });
+        var register = await client.PostAsJsonAsync("/auth/register", ArchiveAppFactory.Registration("alice"));
         var token = (await register.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString()!;
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -163,7 +163,7 @@ public class AuthEndpointTests
         using var factory = new ArchiveAppFactory();
         using var client = factory.CreateClient();
 
-        await client.PostAsJsonAsync("/auth/register", new { Username = "alice", Password = "password123" });
+        await client.PostAsJsonAsync("/auth/register", ArchiveAppFactory.Registration("alice"));
         var login = await client.PostAsJsonAsync("/auth/login", new { Username = "alice", Password = "password123" });
         var secondToken = (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString()!;
 

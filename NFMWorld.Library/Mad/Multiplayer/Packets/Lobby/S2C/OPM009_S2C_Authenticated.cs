@@ -3,9 +3,8 @@ using MemoryPack;
 namespace NFMWorldLibrary.Multiplayer.Packets.S2C;
 
 /// <summary>
-/// Sent once the lobby has checked the client's token against the archive. A rejected token
-/// gets a refusal rather than a disconnect, so the client can fall back to guest or show a
-/// "signed out" notice without losing its place in the lobby list.
+/// Reports account verification. Refused connections are disconnected; only a definitively
+/// rejected session should be removed from the client's account store.
 /// </summary>
 [MemoryPackable]
 [PacketServerToClient(-9)]
@@ -13,7 +12,7 @@ public partial struct S2C_Authenticated : IPacketServerToClient<S2C_Authenticate
 {
     [MemoryPackOrder(0)] public required bool Accepted { get; set; }
 
-    /// <summary>The archive account id, when accepted. Zero for a guest.</summary>
+    /// <summary>The verified archive account id when accepted.</summary>
     [MemoryPackOrder(1)]
     public required int AccountId { get; set; }
 
@@ -22,4 +21,6 @@ public partial struct S2C_Authenticated : IPacketServerToClient<S2C_Authenticate
     public required string Username { get; set; }
 
     [MemoryPackOrder(3)] public string? Error { get; set; }
+
+    [MemoryPackOrder(4)] public bool SessionRejected { get; set; }
 }

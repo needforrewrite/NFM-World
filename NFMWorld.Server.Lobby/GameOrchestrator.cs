@@ -21,6 +21,7 @@ public class GameOrchestrator
     private readonly GameMasterRegistry _gmRegistry;
     private readonly GameMasterHttpClient _gmClient;
     private readonly ArchiveClient? _archive;
+    private readonly Lock _authenticationLock = new();
 
     /// <summary>Matches handed to a game master and not yet reported back, keyed by match key.</summary>
     private readonly ConcurrentDictionary<Guid, PendingMatch> _pendingMatches = new();
@@ -87,9 +88,6 @@ public class GameOrchestrator
             if (slot.Value.Id != standing.PlayerId || slot.Value.Id == Guid.Empty)
                 continue;
 
-            // A guest has a slot but no account: they take part and can be ranked in the result,
-            // they just cannot be rated. Bots are distinguished from guests upstream (the client
-            // marks them), so an accountless slot is a guest here rather than a bot.
             players.Add(
                 new ResultPlayer(
                     slot.Value.AccountId > 0 ? slot.Value.AccountId : null,
@@ -114,6 +112,11 @@ public class GameOrchestrator
     }
 
     public GameOrchestrator(IMultiplayerServerTransport transport)
+        : this(transport, CreateArchiveClient())
+    {
+    }
+
+    public GameOrchestrator(IMultiplayerServerTransport transport, ArchiveClient? archive)
     {
         _transport = transport;
         _players = new PlayerRegistry();
@@ -127,22 +130,22 @@ public class GameOrchestrator
             Environment.GetEnvironmentVariable("HMAC_SECRET_KEY") ?? ""
         );
 
-        // The archive is optional: a lobby run without one still works, it just admits everyone
-        // as a guest and reports no results.
-        if (Environment.GetEnvironmentVariable("ARCHIVE_URL") is { Length: > 0 } archiveUrl)
-        {
-            _archive = new ArchiveClient(
-                archiveUrl,
-                Environment.GetEnvironmentVariable("HMAC_KEY_ID"),
-                Environment.GetEnvironmentVariable("ARCHIVE_SECRET_KEY")
-            );
-        }
+        _archive = archive;
 
         transport.PacketReceived += TransportOnPacketReceived;
         transport.ClientConnected += TransportOnClientConnected;
         transport.ClientDisconnected += TransportOnClientDisconnected;
         transport.ClientConnecting += TransportOnClientConnecting;
     }
+
+    private static ArchiveClient? CreateArchiveClient() =>
+        Environment.GetEnvironmentVariable("ARCHIVE_URL") is { Length: > 0 } archiveUrl
+            ? new ArchiveClient(
+                archiveUrl,
+                Environment.GetEnvironmentVariable("HMAC_KEY_ID"),
+                Environment.GetEnvironmentVariable("ARCHIVE_SECRET_KEY")
+            )
+            : null;
 
     public void Start()
     {
@@ -232,7 +235,8 @@ public class GameOrchestrator
                     _sessions.AbortSession(session.Id);
             }
 
-            _chat.BroadcastSystem($"{client.Name} has left...");
+            if (client.IsAuthenticated)
+                _chat.BroadcastSystem($"{client.Name} has left...");
             _broadcaster.BroadcastToAll();
         }
     }
@@ -244,6 +248,10 @@ public class GameOrchestrator
         (uint ClientIndex, IPacketClientToServer Packet) e
     )
     {
+        if (e.Packet is not C2S_Authenticate
+            && _players.Get(e.ClientIndex) is not { IsAuthenticated: true, AccountId: > 0 })
+            return;
+
         switch (e.Packet)
         {
             case C2S_Authenticate authenticate:
@@ -294,90 +302,75 @@ public class GameOrchestrator
 
     private async Task HandleAuthenticateAsync(uint clientIndex, C2S_Authenticate authenticate)
     {
-        var client = _players.Get(clientIndex);
-        if (client is null) return;
-
-        if (string.IsNullOrEmpty(authenticate.Token))
+        PlayerRegistry.ClientInfo client;
+        lock (_authenticationLock)
         {
-            client.AccountId = 0;
-            client.IsAuthenticated = true;
-            // Cleared so signing back in with the same token is not treated as a repeat.
-            client.PresentedToken = null;
-            SendAuthenticated(clientIndex, true, client.Name, null);
-            return;
-        }
+            var connected = _players.Get(clientIndex);
+            if (connected is null) return;
+            client = connected;
 
-        // A client controls how often it presents a token, and every attempt is an HTTP round
-        // trip to the archive, so a re-auth is accepted once per connection unless the text
-        // actually changed.
-        if (client.IsAuthenticated && authenticate.Token == client.PresentedToken)
-            return;
+            if (string.IsNullOrWhiteSpace(authenticate.Token))
+            {
+                RefuseAuthentication(clientIndex, "Sign in to an account before joining the lobby.");
+                return;
+            }
 
-        if (_archive is null)
-        {
-            // Not signed out: this lobby simply cannot check accounts. The client keeps its
-            // token and plays as a guest rather than losing its saved session.
-            client.AccountId = 0;
-            client.IsAuthenticated = true;
+            if (client.PresentedToken == authenticate.Token)
+                return;
+
+            if (client.PresentedToken is not null)
+            {
+                RefuseAuthentication(clientIndex, "Reconnect to the lobby to change accounts.");
+                return;
+            }
+
             client.PresentedToken = authenticate.Token;
-            SendAuthenticated(clientIndex, true, client.Name, null);
-            return;
+            if (_archive is null)
+            {
+                RefuseAuthentication(clientIndex, "The account server is not configured. Try again later.");
+                return;
+            }
         }
 
         var (status, account) = await _archive.ValidateTokenAsync(authenticate.Token, CancellationToken.None);
-        client.PresentedToken = authenticate.Token;
-
-        switch (status)
+        lock (_authenticationLock)
         {
-            case TokenVerification.Valid:
-                // One account, one seat: a second connection on the same account would let one
-                // player take two cars in a race and vote twice in every session.
-                if (account!.AccountId != 0
-                    && _players.All.Any(p =>
-                        p.Key != clientIndex && p.Value.AccountId == account.AccountId
-                    ))
-                {
-                    SendAuthenticated(
-                        clientIndex,
-                        false,
-                        "",
-                        "This account is already in the lobby on another connection.",
-                        accountId: 0
-                    );
-                    _transport.DisconnectClient(clientIndex);
+            // Verification may finish after disconnect, including after the index was reused.
+            if (!ReferenceEquals(_players.Get(clientIndex), client))
+                return;
+
+            switch (status)
+            {
+                case TokenVerification.Valid:
+                    if (_players.All.Any(p => p.Key != clientIndex && p.Value.AccountId == account!.AccountId))
+                    {
+                        RefuseAuthentication(clientIndex, "This account is already in the lobby on another connection.");
+                        return;
+                    }
+
+                    client.AccountId = account!.AccountId;
+                    client.Name = account.Username;
+                    client.IsAuthenticated = true;
+                    SendAuthenticated(clientIndex, true, account.Username, null, account.AccountId);
+                    _broadcaster.BroadcastToAll();
                     break;
-                }
 
-                client.AccountId = account!.AccountId;
-                client.IsAuthenticated = true;
-                client.Name = account.Username;
-                SendAuthenticated(clientIndex, true, account.Username, null, account.AccountId);
-                _broadcaster.BroadcastToAll();
-                break;
+                case TokenVerification.Rejected:
+                    RefuseAuthentication(clientIndex, "Your session has expired. Sign in again.", sessionRejected: true);
+                    break;
 
-            case TokenVerification.Rejected:
-                // The archive has spoken: the session is gone. Say so and evict: leaving the
-                // connection open let a refused client keep sitting in the lobby.
-                client.AccountId = 0;
-                SendAuthenticated(
-                    clientIndex,
-                    false,
-                    "",
-                    "Your session has expired. Sign in again.",
-                    accountId: 0
-                );
-                _transport.DisconnectClient(clientIndex);
-                break;
-
-            default:
-                // Could not ask. Admitted as a guest: `Accepted` false means "the archive
-                // rejected you" to the client, which would throw away a session over what may
-                // be a momentary network failure.
-                client.AccountId = 0;
-                client.IsAuthenticated = true;
-                SendAuthenticated(clientIndex, true, client.Name, "Could not reach the account server; playing as a guest.");
-                break;
+                default:
+                    RefuseAuthentication(clientIndex, "Could not reach the account server. Try again later.");
+                    break;
+            }
         }
+    }
+
+    private void RefuseAuthentication(uint clientIndex, string error, bool sessionRejected = false)
+    {
+        SendAuthenticated(clientIndex, false, "", error, accountId: 0, sessionRejected: sessionRejected);
+        TransportOnClientDisconnected(this, clientIndex);
+        _transport.DisconnectClient(clientIndex);
     }
 
     private void SendAuthenticated(
@@ -385,7 +378,8 @@ public class GameOrchestrator
         bool accepted,
         string username,
         string? error,
-        int? accountId = null
+        int? accountId = null,
+        bool sessionRejected = false
     )
     {
         var client = _players.Get(clientIndex);
@@ -396,7 +390,8 @@ public class GameOrchestrator
                 Accepted = accepted,
                 AccountId = accountId ?? client?.AccountId ?? 0,
                 Username = username,
-                Error = error
+                Error = error,
+                SessionRejected = sessionRejected
             }
         );
     }
@@ -406,9 +401,6 @@ public class GameOrchestrator
         var client = _players.Get(clientId);
         if (client is null) return;
 
-        // A signed-in player's name comes from their account; only a guest may choose one.
-        if (client.AccountId == 0)
-            client.Name = identity.PlayerName;
         client.Vehicle = identity.SelectedVehicle;
         client.Color = identity.Color;
     }

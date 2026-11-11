@@ -18,6 +18,23 @@ Set through the `Archive__*` environment variables (double underscore nests).
 | `Archive__DiscordClientId` / `DiscordClientSecret` / `DiscordRedirectUri` | Discord sign-in                                                                   |
 | `Archive__ReadOnly`                                                       | Disables registration and uploads                                                 |
 
+### Turnstile
+
+Set `TURNSTILE_SECRET` to the secret for the existing widget with public sitekey
+`0x4AAAAAAF8y76GGmumUX1_K`, and `TURNSTILE_HOSTNAMES` to a comma-separated exact allowlist
+of archive website hostnames (no schemes, ports, paths or wildcards). Obtain the secret from
+Cloudflare yourself and supply it through deployment secrets; never commit it or expose it to clients.
+Configure the same production hostnames on the existing widget. Do not add localhost to the production
+widget or allowlist; loopback hostnames are refused outside ASP.NET Core Development.
+
+Without either variable, registration and web sign-in fail closed. Every registration path, including
+`POST /auth/register` (JSON field `cf-turnstile-response`, action `register`) and Discord account creation,
+requires a verified challenge. The web forms use actions `register`, `signin`, and `discord` respectively.
+Discord must start through the challenged web form; the old GET link only redirects there.
+Native `POST /auth/login` remains password-based and throttled, without a Turnstile requirement.
+Siteverify has a 10-second timeout; errors, expired/replayed tokens, unexpected actions and hostnames
+all reject the attempt. The login page requires Cloudflare's JavaScript and iframe to load.
+
 ### Generating keys
 
 There are two independent keys in the system. Generate each with the same tool:

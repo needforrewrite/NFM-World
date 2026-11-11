@@ -32,6 +32,8 @@ services:
       Archive__DiscordClientId: ${DISCORD_CLIENT_ID:-}
       Archive__DiscordClientSecret: ${DISCORD_CLIENT_SECRET:-}
       Archive__DiscordRedirectUri: ${DISCORD_REDIRECT_URI:-}
+      TURNSTILE_SECRET: ${TURNSTILE_SECRET:?set TURNSTILE_SECRET in .env}
+      TURNSTILE_HOSTNAMES: ${TURNSTILE_HOSTNAMES:?set exact archive hostnames in .env}
     ports:
       - "8069:8080"
     volumes:

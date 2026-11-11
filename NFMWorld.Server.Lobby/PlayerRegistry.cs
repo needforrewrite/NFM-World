@@ -96,13 +96,13 @@ public class PlayerRegistry
         public Guid Id { get; set; }
         public ClientState State { get; set; }
 
-        /// <summary>Empty until the client authenticates or sends its identity.</summary>
+        /// <summary>Empty until the archive authenticates the client.</summary>
         public string Name { get; set; } = "";
 
-        /// <summary>Archive account id, or 0 for a guest.</summary>
+        /// <summary>Archive account id, or 0 before authentication.</summary>
         public int AccountId { get; set; }
 
-        /// <summary>False until the client has presented a token or been admitted as a guest.</summary>
+        /// <summary>True only after the archive validates the account token.</summary>
         public bool IsAuthenticated { get; set; }
 
         /// <summary>The last token presented, so a reconnect loop cannot re-verify it every tick.</summary>

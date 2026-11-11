@@ -389,6 +389,11 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
 - **Validation is out of process** (`NFMWorld.Archive.Validator`). `TimeTrialSimulator` is synchronous and cannot be
   cancelled, so the archive runs it as a child process with a wall clock and kills it. A time trial is ranked only by
   that simulation's tick count, never by a number the client sends.
+- **Web account protection.** `TurnstileVerifier` checks Siteverify with a ten-second timeout, exact hostname
+  allowlist and per-form action. Set `TURNSTILE_SECRET` and comma-separated `TURNSTILE_HOSTNAMES`; missing settings
+  fail closed. The site key is public. Web sign-in, all password registration and Discord OAuth initiation require
+  verification; Discord start is an antiforgery-protected POST. Native `/auth/login` remains password/throttle-only.
+  The game offers browser registration at `/account/login#register`, never an in-app registration request.
 - **Client.** `AccountManager` (`nfm-world/Mad/Account/`) talks to `/auth/*` directly and persists the token through
   the VFS write root; the menu's ACCOUNT item opens `AccountView`. `ArchiveMount` mounts the asset store as a read-only
   VFS layer when `NFMW_ARCHIVE_URL` is set, after the local directories so local content wins.
@@ -420,12 +425,12 @@ palette). One lobby; whether a race is rated is chosen per race, not by a menu p
 - **The view reads `UiState.Lobby` only.** The phase writes it from `GameTick`. `LobbyView.Actions` carries every
   callback; JOIN takes the clicked row's id (`Action<uint>`), because a button stops the press reaching its row, so
   the row's own click handler never runs.
-- **Auth to the archive.** `C2S_Authenticate` carries the account token; the lobby validates it with
-  `ArchiveClient.ValidateTokenAsync`, which distinguishes `Rejected` (archive said no → sign out) from
-  `Unavailable` (could not ask → admit as guest, keep the token). Signing in while already in the lobby is forwarded
-  too, via `AccountManager.ActiveAccountChanged`. A lobby with no `ARCHIVE_URL` admits everyone as a guest rather
-  than refusing the token, since it cannot check it. **One account, one connection**: a second connection presenting
-  an account already in the lobby is refused and disconnected, because it could otherwise take two cars in a race.
+- **Accounts are required.** `LobbyConnection.TryOpen` prompts for sign-in on the main menu before connecting;
+  successful sign-in continues into the requested lobby on the game tick. Identity is sent only after authentication.
+  The server refuses missing/invalid tokens and archive outages or missing `ARCHIVE_URL`; there is no guest fallback.
+  `S2C_Authenticated.SessionRejected` clears the saved token only when the archive definitively rejects it, not for
+  outages or duplicate-account refusals. Unauthenticated connections cannot act or receive lobby snapshots/chat.
+  **One account, one connection**: duplicate account authentication is refused; account changes require reconnecting.
 - **Where players reach a game master** is `GM_PUBLIC_ADDRESS`, a
   `privateHost=publicHost[:udpPort][,...]` map applied by `GameMasterRegistry`. The lobby almost never
   reaches a GM at the address players do (compose network, tunnel, private LAN), and the wire carries a

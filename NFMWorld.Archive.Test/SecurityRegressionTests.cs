@@ -43,7 +43,7 @@ public class SecurityRegressionTests
 
         HttpResponseMessage? last = null;
         for (var i = 0; i < 12; i++)
-            last = await client.PostAsJsonAsync("/auth/register", new { Username = $"user{i}", Password = "password123" });
+            last = await client.PostAsJsonAsync("/auth/register", ArchiveAppFactory.Registration($"user{i}"));
 
         Assert.AreEqual(HttpStatusCode.TooManyRequests, last!.StatusCode);
     }
@@ -57,7 +57,7 @@ public class SecurityRegressionTests
 
         var register = await client.PostAsJsonAsync(
             "/auth/register",
-            new { Username = "alice", Password = "password123" }
+            ArchiveAppFactory.Registration("alice")
         );
         var token = (await register.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>())
             .GetProperty("token").GetString()!;

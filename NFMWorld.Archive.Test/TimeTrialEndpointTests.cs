@@ -17,7 +17,7 @@ public class TimeTrialEndpointTests
     private static async Task<HttpClient> SignedInClient(ArchiveAppFactory factory)
     {
         var client = factory.CreateClient();
-        var register = await client.PostAsJsonAsync("/auth/register", new { Username = "racer", Password = "password123" });
+        var register = await client.PostAsJsonAsync("/auth/register", ArchiveAppFactory.Registration("racer"));
         var token = (await register.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return client;

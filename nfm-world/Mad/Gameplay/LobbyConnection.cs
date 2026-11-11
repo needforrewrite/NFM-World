@@ -32,6 +32,19 @@ public static class LobbyConnection
             return false;
         }
 
+        if (!GameSparker.AccountManager.LoggedIn)
+        {
+            if (GameSparker.CurrentPhase is MainMenuPhase menu)
+            {
+                menu.RequireLobbySignIn(host, port, insecure);
+                error = "";
+                return true;
+            }
+
+            error = "Sign in from the main menu before opening multiplayer.";
+            return false;
+        }
+
         ENetMultiplayer.Init();
         GameSparker.PushPhase(new LobbyPhase(new WebSocketMultiplayerClientTransport(host, port, insecure)));
         error = "";

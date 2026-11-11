@@ -21,23 +21,52 @@ public static class DiscordEndpoints
     private const string TokenUrl = "https://discord.com/api/oauth2/token";
     private const string UserUrl = "https://discord.com/api/users/@me";
 
-    private sealed record DiscordTokenResponse(string? AccessToken, string? TokenType);
+    private sealed record DiscordTokenResponse(
+        [property: System.Text.Json.Serialization.JsonPropertyName("access_token")]
+        string? AccessToken,
+        [property: System.Text.Json.Serialization.JsonPropertyName("token_type")]
+        string? TokenType
+    );
 
     private sealed record DiscordUser(string? Id, string? Username);
 
     public static void MapDiscordEndpoints(this WebApplication app)
     {
-        app.MapGet(
+        app.MapGet("/auth/discord/start", () => Results.Redirect("/account/login"));
+        app.MapPost(
             "/auth/discord/start",
             async (
-                ArchiveOptions options, ArchiveDbContext db, IHttpClientFactory clients, HttpContext http,
-                CancellationToken ct
+                ArchiveOptions options, ArchiveDbContext db, TurnstileVerifier turnstile, LoginThrottle throttle,
+                Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery, HttpContext http, CancellationToken ct
             ) =>
             {
                 if (string.IsNullOrEmpty(options.DiscordClientId) || string.IsNullOrEmpty(options.DiscordRedirectUri))
                     return Results.NotFound();
 
-                var state = Tokens.Create();
+                try
+                {
+                    await antiforgery.ValidateRequestAsync(http);
+                }
+                catch (Microsoft.AspNetCore.Antiforgery.AntiforgeryValidationException)
+                {
+                    return Results.BadRequest();
+                }
+
+                var ipKey = "ip:" + (http.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+                if (throttle.IsBlocked(ipKey, out _))
+                    return Results.StatusCode(StatusCodes.Status429TooManyRequests);
+                var form = await http.Request.ReadFormAsync(ct);
+                if (!await turnstile.VerifyAsync(
+                        form["cf-turnstile-response"],
+                        "discord",
+                        ct,
+                        http.Connection.RemoteIpAddress?.ToString()
+                    ))
+                    return Results.BadRequest(new { error = TurnstileVerifier.Error });
+                throttle.RecordFailure(ipKey);
+
+                // The prefix excludes pending flows created before challenge enforcement.
+                var state = "turnstile." + Tokens.Create();
                 var verifier = Tokens.Create();
                 var challenge = Tokens.Base64UrlEncode(SHA256.HashData(System.Text.Encoding.ASCII.GetBytes(verifier)));
 
@@ -83,7 +112,9 @@ public static class DiscordEndpoints
                 SessionService sessions, IHttpClientFactory clients, HttpContext http, CancellationToken ct
             ) =>
             {
-                if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state))
+                if (string.IsNullOrEmpty(code)
+                    || string.IsNullOrEmpty(state)
+                    || !state.StartsWith("turnstile.", StringComparison.Ordinal))
                     return Results.BadRequest(new { error = "Missing code or state." });
 
                 // The state must be the one this browser started with, not merely a live one: a
@@ -154,6 +185,9 @@ public static class DiscordEndpoints
                 }
                 else
                 {
+                    if (options.ReadOnly)
+                        return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+
                     var baseName = SanitizeUsername(discordUser.Username) ?? $"discord{discordUser.Id}";
                     user = new User
                     {

@@ -58,7 +58,7 @@ public sealed class ArchiveClient
     /// Resolves an account token to an account. A token the archive refuses is
     /// <see cref="TokenVerification.Rejected"/>; a token it could not be asked about - a network
     /// failure, a timeout, an unusable answer - is <see cref="TokenVerification.Unavailable"/>,
-    /// which the lobby treats as a guest, not as a reason to sign the player out.
+    /// which refuses lobby access without invalidating the player's stored session.
     /// </summary>
     public async Task<(TokenVerification Status, ArchiveAccount? Account)> ValidateTokenAsync(
         string token,
@@ -71,17 +71,16 @@ public sealed class ArchiveClient
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             using var response = await _http.SendAsync(request, ct);
 
-            // 5xx means the archive is broken, not that the player's session ended.
-            if ((int)response.StatusCode >= 500)
-                return (TokenVerification.Unavailable, null);
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                return (TokenVerification.Rejected, null);
 
             if (!response.IsSuccessStatusCode)
-                return (TokenVerification.Rejected, null);
+                return (TokenVerification.Unavailable, null);
 
             var account = await response.Content.ReadFromJsonAsync<ArchiveAccount>(ct);
             return account is { AccountId: > 0 }
                 ? (TokenVerification.Valid, account)
-                : (TokenVerification.Rejected, null);
+                : (TokenVerification.Unavailable, null);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
         {

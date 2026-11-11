@@ -17,6 +17,9 @@ public class LobbyStateBroadcaster(
     {
         foreach (var (clientIndex, player) in players.All)
         {
+            if (!player.IsAuthenticated || player.AccountId <= 0)
+                continue;
+
             var packet = BuildSnapshot(player.Id);
             transport.SendPacketToClient(clientIndex, packet);
         }
@@ -32,7 +35,7 @@ public class LobbyStateBroadcaster(
         {
             // A connection that has not authenticated yet is not a player: listing it showed
             // the registry's placeholder name until the handshake finished.
-            if (!client.IsAuthenticated)
+            if (!client.IsAuthenticated || client.AccountId <= 0)
                 continue;
 
             playerList.Add(

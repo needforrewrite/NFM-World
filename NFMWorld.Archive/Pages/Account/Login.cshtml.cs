@@ -6,13 +6,23 @@ using NFMWorld.Archive.Endpoints;
 
 namespace NFMWorld.Archive.Pages.Account;
 
-public sealed class LoginModel(ArchiveDbContext db, SessionService sessions, ArchiveOptions options, LoginThrottle throttle)
+public sealed class LoginModel(
+    ArchiveDbContext db,
+    SessionService sessions,
+    ArchiveOptions options,
+    LoginThrottle throttle,
+    TurnstileVerifier turnstile
+)
     : ArchivePageModel(db)
 {
     [BindProperty] public string? Username { get; set; }
     [BindProperty] public string? Password { get; set; }
     [BindProperty] public string? RegisterPassword { get; set; }
     [BindProperty] public string? ReturnUrl { get; set; }
+
+    [BindProperty(Name = "cf-turnstile-response")]
+    public string? TurnstileResponse { get; set; }
+
     public string? Error { get; private set; }
 
     public IActionResult OnGet(string? returnUrl)
@@ -33,6 +43,9 @@ public sealed class LoginModel(ArchiveDbContext db, SessionService sessions, Arc
             Error = "Too many attempts. Try again in a few minutes.";
             return Page();
         }
+
+        if (!await VerifyTurnstileAsync("signin"))
+            return Page();
 
         var user = await Db.Users.FirstOrDefaultAsync(u => u.UsernameNormalized == normalized);
         var hash = user?.PasswordHash ?? PasswordHasher.DummyHash;
@@ -76,6 +89,9 @@ public sealed class LoginModel(ArchiveDbContext db, SessionService sessions, Arc
             return Page();
         }
 
+        if (!await VerifyTurnstileAsync("register"))
+            return Page();
+
         if (!UsernamePolicy.TryValidate(Username, out var nameError))
         {
             Error = nameError;
@@ -116,6 +132,19 @@ public sealed class LoginModel(ArchiveDbContext db, SessionService sessions, Arc
         AuthEndpoints.SetSessionCookie(HttpContext, token, options);
 
         return Redirect("/");
+    }
+
+    private async Task<bool> VerifyTurnstileAsync(string action)
+    {
+        if (await turnstile.VerifyAsync(
+                TurnstileResponse,
+                action,
+                HttpContext.RequestAborted,
+                HttpContext.Connection.RemoteIpAddress?.ToString()
+            ))
+            return true;
+        Error = TurnstileVerifier.Error;
+        return false;
     }
 
     /// <summary>Only same-site paths: an open redirect here would send a freshly signed-in user anywhere.</summary>

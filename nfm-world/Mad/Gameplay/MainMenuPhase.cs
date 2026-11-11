@@ -43,6 +43,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private string _appliedMenuStage;
     private string _appliedMenuMusic;
     private bool _appliedRemasteredMusic;
+    private (string Host, ushort Port, bool Insecure)? _lobbyAfterSignIn;
 
     public override bool EnableUiInput => _menuVisible
                                           && (_transitionTime < 0 || (_transitionToMenu && _transitionSwitched));
@@ -98,7 +99,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                         SignIn: OnSignIn,
                         Register: OnRegister,
                         SignOut: OnSignOut,
-                        Close: AccountView.Hide
+                        Close: CloseAccount
                     ),
                     () => GameSparker.AccountManager.LoggedIn,
                     () => GameSparker.AccountManager.ActiveAccount?.Username ?? ""
@@ -122,27 +123,23 @@ public class MainMenuPhase : BaseStageRenderingPhase
             AccountView.Hide();
     }
 
-    private void OnRegister(string username, string password)
+    private void OnRegister()
     {
-        AccountView.SetBusy();
-        _ = RegisterAsync(username, password);
+        var result = GameSparker.AccountManager.OpenRegistration();
+        AccountView.SetStatus((result.Success ? "" : "!") + result.Message, isError: !result.Success);
     }
 
-    private async Task RegisterAsync(string username, string password)
+    private void CloseAccount()
     {
-        var created = await GameSparker.AccountManager.CreateLocalAccount(username, password);
-        if (!created.Success)
-        {
-            AccountView.SetStatus("!" + created.Message, isError: true);
-            return;
-        }
+        _lobbyAfterSignIn = null;
+        AccountView.Hide();
+    }
 
-        // Creating an account and signing in are separate calls, so do both rather than make
-        // the player type the password again.
-        var signedIn = await GameSparker.AccountManager.LogInToLocalAccount(username, password);
-        AccountView.SetStatus(signedIn.Success ? "Account created." : "!" + signedIn.Message, isError: !signedIn.Success);
-        if (signedIn.Success)
-            AccountView.Hide();
+    public void RequireLobbySignIn(string host, ushort port, bool insecure)
+    {
+        _lobbyAfterSignIn = (host, port, insecure);
+        AccountView.Show();
+        AccountView.SetStatus("Sign in to play multiplayer. New accounts can be registered in your browser.", isError: false);
     }
 
     private void OnSignOut()
@@ -435,6 +432,14 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     public override void GameTick()
     {
+        if (_lobbyAfterSignIn is { } lobby && GameSparker.AccountManager.LoggedIn)
+        {
+            _lobbyAfterSignIn = null;
+            if (!LobbyConnection.TryOpen(lobby.Host, lobby.Port, lobby.Insecure, out var error))
+                GameSparker.MessageWindow.ShowMessage("Multiplayer unavailable", error);
+            return;
+        }
+
         const float seconds = 1f / Physics.TargetTps;
         _settingsCamera.RestoreNormal(Camera);
         ApplyMenuPreferences();
@@ -575,13 +580,20 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     public void NavigationKeyRepeated(Key key)
     {
-        if (EnableUiInput && _garage is null)
+        if (EnableUiInput && _garage is null && !AccountView.IsOpen)
             MainMenuView.KeyPressed(key);
     }
 
     public override void KeyPressed(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
         base.KeyPressed(key, imguiWantsKeyboard, keys);
+        if (AccountView.IsOpen)
+        {
+            if (!imguiWantsKeyboard && key == Key.Escape)
+                CloseAccount();
+            return;
+        }
+
         if (_garage != null)
         {
             _garage.KeyPressed(key, imguiWantsKeyboard, keys);

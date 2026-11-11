@@ -3,6 +3,7 @@ using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
 using SignalsDotnet;
+using Maxine.Extensions.Mathematics;
 
 namespace NFMWorld.UI.Routes;
 
@@ -16,13 +17,12 @@ public static class AccountView
 {
     public sealed record Actions(
         Action<string, string> SignIn,
-        Action<string, string> Register,
+        Action Register,
         Action SignOut,
         Action Close
     );
 
     private static readonly Signal<bool> Open = new(false);
-    private static readonly Signal<int> Tab = new(0);
     private static readonly Signal<string> Username = new("");
     private static readonly Signal<string> Password = new("");
     private static readonly Signal<string> Status = new("");
@@ -63,7 +63,6 @@ public static class AccountView
     public static void Reset()
     {
         Open.Value = false;
-        Tab.Value = 0;
         Password.Value = "";
         Status.Value = "";
         Busy.Value = false;
@@ -111,7 +110,7 @@ public static class AccountView
                         fontStyle: FontStyle.Bold,
                         foregroundColor: MenuBlue
                     ),
-                    text: () => signedIn() ? "ACCOUNT" : Tab.Value == 0 ? "SIGN IN" : "CREATE ACCOUNT"
+                    text: () => signedIn() ? "ACCOUNT" : "SIGN IN"
                 ),
 
                 // Signed in: show who it is and offer sign out.
@@ -158,7 +157,7 @@ public static class AccountView
                                         children:
                                         [
                                             ButtonRow(
-                                                () => Busy.Value ? "..." : Tab.Value == 0 ? "SIGN IN" : "CREATE",
+                                                () => Busy.Value ? "..." : "SIGN IN",
                                                 () => Submit(actions),
                                                 primary: true
                                             )
@@ -169,8 +168,8 @@ public static class AccountView
                                         children:
                                         [
                                             ButtonRow(
-                                                () => Tab.Value == 0 ? "CREATE ACCOUNT" : "BACK TO SIGN IN",
-                                                () => Tab.Value = Tab.Value == 0 ? 1 : 0
+                                                "REGISTER IN BROWSER",
+                                                actions.Register
                                             )
                                         ]
                                     ),
@@ -199,10 +198,7 @@ public static class AccountView
             return;
         }
 
-        if (Tab.Value == 0)
-            actions.SignIn(Username.Value, Password.Value);
-        else
-            actions.Register(Username.Value, Password.Value);
+        actions.SignIn(Username.Value, Password.Value);
     }
 
     /// <summary>Room for one line of the field's own font plus its padding.</summary>

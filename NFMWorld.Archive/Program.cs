@@ -19,6 +19,7 @@ builder.Services.AddSingleton<NonceCache>();
 builder.Services.AddSingleton<TrustedServerAuth>();
 builder.Services.AddSingleton<ValidatorRunner>();
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient<TurnstileVerifier>(client => client.Timeout = TimeSpan.FromSeconds(10));
 // Pages carry a form that signs someone in, so the antiforgery token is validated, not just
 // rendered. The JSON endpoints are not covered by it (they are token/bearer based).
 builder.Services.AddRazorPages(options =>
@@ -83,7 +84,7 @@ app.Use(async (context, next) =>
         headers.XFrameOptions = "DENY";
         headers["Referrer-Policy"] = "no-referrer";
         headers["Content-Security-Policy"] =
-            "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'";
+            "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'";
         await next();
     }
 );

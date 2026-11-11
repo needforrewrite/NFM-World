@@ -47,7 +47,7 @@ public class WebPageTests
             {
                 ["Username"] = "websiteuser",
                 ["RegisterPassword"] = "password123",
-                ["__RequestVerificationToken"] = token
+                ["cf-turnstile-response"] = ArchiveAppFactory.Challenge("register"), ["__RequestVerificationToken"] = token
             }
         );
 
@@ -75,7 +75,8 @@ public class WebPageTests
             new FormUrlEncodedContent(
                 new Dictionary<string, string>
                 {
-                    ["Username"] = "someone", ["RegisterPassword"] = "password123", ["__RequestVerificationToken"] = token
+                    ["Username"] = "someone", ["RegisterPassword"] = "password123",
+                    ["cf-turnstile-response"] = ArchiveAppFactory.Challenge("register"), ["__RequestVerificationToken"] = token
                 }
             )
         );
@@ -89,7 +90,8 @@ public class WebPageTests
             new FormUrlEncodedContent(
                 new Dictionary<string, string>
                 {
-                    ["Username"] = "someone", ["Password"] = "wrong", ["__RequestVerificationToken"] = loginToken
+                    ["Username"] = "someone", ["Password"] = "wrong",
+                    ["cf-turnstile-response"] = ArchiveAppFactory.Challenge("signin"), ["__RequestVerificationToken"] = loginToken
                 }
             )
         );
@@ -115,7 +117,8 @@ public class WebPageTests
             new FormUrlEncodedContent(
                 new Dictionary<string, string>
                 {
-                    ["Username"] = "redirector", ["RegisterPassword"] = "password123", ["__RequestVerificationToken"] = token
+                    ["Username"] = "redirector", ["RegisterPassword"] = "password123",
+                    ["cf-turnstile-response"] = ArchiveAppFactory.Challenge("register"), ["__RequestVerificationToken"] = token
                 }
             )
         );
@@ -132,7 +135,7 @@ public class WebPageTests
                     ["Username"] = "redirector",
                     ["Password"] = "password123",
                     ["ReturnUrl"] = "https://evil.example/",
-                    ["__RequestVerificationToken"] = loginToken
+                    ["cf-turnstile-response"] = ArchiveAppFactory.Challenge("signin"), ["__RequestVerificationToken"] = loginToken
                 }
             )
         );
@@ -168,7 +171,8 @@ public class WebPageTests
             new FormUrlEncodedContent(
                 new Dictionary<string, string>
                 {
-                    ["Username"] = "browser", ["RegisterPassword"] = "password123", ["__RequestVerificationToken"] = token
+                    ["Username"] = "browser", ["RegisterPassword"] = "password123",
+                    ["cf-turnstile-response"] = ArchiveAppFactory.Challenge("register"), ["__RequestVerificationToken"] = token
                 }
             )
         );

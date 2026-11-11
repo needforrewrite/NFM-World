@@ -4,6 +4,7 @@
     ViewData["Title"] = "Sign in";
 }
 
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <h1>Sign in</h1>
 
 @if (Model.Error is not null)
@@ -16,17 +17,23 @@
     <div class="row">
         <label>Username<br /><input asp-for="Username" autocomplete="username" /></label>
         <label>Password<br /><input asp-for="Password" type="password" autocomplete="current-password" /></label>
+        <div class="cf-turnstile" data-sitekey="@NFMWorld.Archive.Auth.TurnstileVerifier.SiteKey" data-action="signin"></div>
         <button type="submit">Sign in</button>
     </div>
 </form>
 
-<h2>Create an account</h2>
+<h2 id="register">Create an account</h2>
 <form method="post" asp-page-handler="Register">
     <div class="row">
         <label>Username<br /><input asp-for="Username" autocomplete="username" /></label>
         <label>Password<br /><input asp-for="RegisterPassword" type="password" autocomplete="new-password" /></label>
+        <div class="cf-turnstile" data-sitekey="@NFMWorld.Archive.Auth.TurnstileVerifier.SiteKey" data-action="register"></div>
         <button type="submit">Register</button>
     </div>
 </form>
 
-<p><a href="/auth/discord/start">Sign in with Discord</a></p>
+<form method="post" action="/auth/discord/start">
+    @Html.AntiForgeryToken()
+    <div class="cf-turnstile" data-sitekey="@NFMWorld.Archive.Auth.TurnstileVerifier.SiteKey" data-action="discord"></div>
+    <button type="submit">Sign in with Discord</button>
+</form>

@@ -56,7 +56,7 @@ public class ResultEndpointTests
 
         async Task<int> Register(string name)
         {
-            var response = await client.PostAsJsonAsync("/auth/register", new { Username = name, Password = "password123" });
+            var response = await client.PostAsJsonAsync("/auth/register", ArchiveAppFactory.Registration(name));
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             var token = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString()!;
 

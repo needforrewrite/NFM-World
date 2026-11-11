@@ -23,7 +23,8 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     private List<S2C_LobbyState.GameSession> _activeSessions = [];
     private readonly List<UiState.LobbyChatLine> _chatMessages = [];
     private long _nextChatLineId;
-    private bool _sentClientIdentity;
+    private bool _sentAuthentication;
+    private bool _authenticated;
     private string? _lastStatus;
 
     /// <summary>This phase has launched a race, so a late start notice is stale.</summary>
@@ -71,7 +72,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         GameSparker.AccountManager.ActiveAccountChanged += OnAccountChanged;
         // A reconnected socket is a new session on the server, so the handshake is replayed.
         transport.Reconnected += OnReconnected;
-        if (_sentClientIdentity && transport.State == ClientState.Connected)
+        if (_authenticated && transport.State == ClientState.Connected)
             SendUpdatePlayerIdentity();
         base.Enter();
     }
@@ -80,7 +81,8 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     {
         // A reconnected transport is a brand-new connection: the lobby knows nothing about
         // this player until it authenticates and identifies itself again.
-        _sentClientIdentity = false;
+        _sentAuthentication = false;
+        _authenticated = false;
         _player.Id = Guid.Empty;
         _players = [];
         _activeSessions = [];
@@ -100,19 +102,17 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     {
         base.GameTick();
 
-        if (!_sentClientIdentity && transport.State == ClientState.Connected)
+        if (!_sentAuthentication && transport.State == ClientState.Connected)
         {
-            _sentClientIdentity = true;
+            _sentAuthentication = true;
 
-            // Presented before the identity packet: a signed-in player's name and account come
-            // from the account, and the identity packet's name is ignored for them.
+            // Identity is sent only after the server verifies this account.
             transport.SendPacketToServer(
                 new C2S_Authenticate
                 {
                     Token = GameSparker.AccountManager.ActiveAccount?.Token ?? ""
                 }
             );
-            SendUpdatePlayerIdentity();
         }
 
         // The transport can drop at any point (server restart, network loss); the status line
@@ -129,31 +129,27 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
                     break;
 
                 case S2C_Authenticated authenticated:
-                    if (!authenticated.Accepted)
+                    if (!authenticated.Accepted || authenticated.AccountId <= 0)
                     {
-                        // The lobby holds the authority here, so a token it refuses is treated as
-                        // signed out locally too. The lobby also disconnects us, and reconnecting
-                        // would only repeat the refusal.
-                        Logging.Info($"Lobby rejected the session: {authenticated.Error}");
-                        GameSparker.AccountManager.LogOut();
+                        _authenticated = false;
+                        Logging.Info($"Lobby refused the connection: {authenticated.Error}");
+                        if (authenticated.SessionRejected)
+                            GameSparker.AccountManager.LogOut();
                         transport.StopReconnecting();
                         GameSparker.PopPhase();
                         GameSparker.MessageWindow.ShowMessage(
                             "Session refused",
                             authenticated.Error is { Length: > 0 }
                                 ? authenticated.Error
-                                : "Your session was rejected. Sign in again."
+                                : "Sign in to join multiplayer."
                         );
+                        return;
                     }
-                    else if (authenticated.AccountId == 0 && GameSparker.AccountManager.LoggedIn)
+                    else
                     {
-                        // Admitted as a guest even though we presented a token: the lobby could
-                        // not check it. Keep the token - it is not known to be bad.
-                        SetStatus(
-                            authenticated.Error is { Length: > 0 }
-                                ? authenticated.Error
-                                : "Playing as a guest."
-                        );
+                        _authenticated = true;
+                        SendUpdatePlayerIdentity();
+                        UpdateStatus();
                     }
 
                     break;
@@ -312,7 +308,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
     private void UpdateStatus()
     {
-        Lobby.Connected.Value = transport.State == ClientState.Connected;
+        Lobby.Connected.Value = CanAct;
         // Only once retries are exhausted; while reconnecting, Connected is already false but
         // the player is not being asked to do anything yet.
         Lobby.Disconnected.Value = transport.ReconnectFailed;
@@ -334,9 +330,9 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
     private string ConnectionStatus() => transport.State switch
     {
-        ClientState.Connected when GameSparker.AccountManager.LoggedIn =>
-            $"Signed in as {GameSparker.AccountManager.ActiveAccount!.Username}",
-        ClientState.Connected => "Connected as a guest",
+        ClientState.Connected when _authenticated && GameSparker.AccountManager.ActiveAccount is { } account =>
+            $"Signed in as {account.Username}",
+        ClientState.Connected => "Verifying account...",
         ClientState.Connecting => "Connecting...",
         _ when transport.IsReconnecting => "Connection lost - reconnecting...",
         _ => "Disconnected",
@@ -363,7 +359,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     /// Whether an action can reach the lobby. Everything but BACK needs a live connection;
     /// while reconnecting a packet would be written into a closed socket and dropped.
     /// </summary>
-    private bool CanAct => transport.State == ClientState.Connected;
+    private bool CanAct => _authenticated && transport.State == ClientState.Connected;
 
     private void OnJoin(uint id)
     {

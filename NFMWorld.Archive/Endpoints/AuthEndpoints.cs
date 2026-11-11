@@ -5,7 +5,12 @@ using NFMWorld.Archive.Data;
 
 namespace NFMWorld.Archive.Endpoints;
 
-public sealed record RegisterRequest(string? Username, string? Password);
+public sealed record RegisterRequest(
+    string? Username,
+    string? Password,
+    [property: System.Text.Json.Serialization.JsonPropertyName("cf-turnstile-response")]
+    string? TurnstileResponse
+);
 
 public sealed record LoginRequest(string? Username, string? Password);
 
@@ -28,7 +33,7 @@ public static class AuthEndpoints
             "/register",
             async (
                 RegisterRequest request, ArchiveDbContext db, ArchiveOptions options, LoginThrottle throttle,
-                SessionService sessions, HttpContext http, CancellationToken ct
+                SessionService sessions, TurnstileVerifier turnstile, HttpContext http, CancellationToken ct
             ) =>
             {
                 if (options.ReadOnly)
@@ -41,6 +46,9 @@ public static class AuthEndpoints
                         new { error = "Too many attempts. Try again later." },
                         statusCode: StatusCodes.Status429TooManyRequests
                     );
+
+                if (!await turnstile.VerifyAsync(request.TurnstileResponse, "register", ct, Ip(http)))
+                    return Results.BadRequest(new { error = TurnstileVerifier.Error });
 
                 if (!UsernamePolicy.TryValidate(request.Username, out var nameError))
                     return Results.BadRequest(new { error = nameError });

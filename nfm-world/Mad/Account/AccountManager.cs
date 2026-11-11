@@ -14,11 +14,10 @@ namespace NFMWorld.Accounts;
 /// no longer exist. The archive is a small, stable surface now, so the three calls it needs are
 /// written directly.
 /// </summary>
-public sealed class AccountManager : IDisposable
+public sealed partial class AccountManager : IDisposable
 {
     private readonly HttpClient _http;
     private readonly Uri _baseUri;
-    private bool _signingIn;
 
     public AccountManager()
     {
@@ -74,24 +73,33 @@ public sealed class AccountManager : IDisposable
         }
     }
 
-    public async Task<RequestResult> CreateLocalAccount(string username, string password)
+    public Uri RegistrationUrl => new(_baseUri, "account/login#register");
+
+    public RequestResult OpenRegistration()
     {
         try
         {
-            using var response = await _http.PostAsJsonAsync(
-                new Uri(_baseUri, "auth/register"),
-                new { Username = username, Password = password }
+#if WEB_AUDIO
+            OpenBrowser(RegistrationUrl.AbsoluteUri, "_blank", "noopener,noreferrer");
+#else
+            using var browser = System.Diagnostics.Process.Start(
+                new System.Diagnostics.ProcessStartInfo(
+                    RegistrationUrl.AbsoluteUri
+                ) { UseShellExecute = true }
             );
-            if (response.IsSuccessStatusCode)
-                return new RequestResult("Success", true);
-
-            return new RequestResult(await ReadErrorAsync(response), false);
+#endif
+            return new RequestResult("Complete registration in your browser, then sign in here.", true);
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        catch (Exception ex)
         {
-            return new RequestResult($"Could not reach the archive: {ex.Message}", false);
+            return new RequestResult($"Could not open registration: {ex.Message}", false);
         }
     }
+
+#if WEB_AUDIO
+    [System.Runtime.InteropServices.JavaScript.JSImport("globalThis.open")]
+    private static partial void OpenBrowser(string url, string target, string features);
+#endif
 
     public async Task<RequestResult> LogInToLocalAccount(string username, string password)
     {
@@ -115,26 +123,6 @@ public sealed class AccountManager : IDisposable
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             return new RequestResult($"Could not reach the archive: {ex.Message}", false);
-        }
-    }
-
-    /// <summary>Opens the archive's Discord flow in the browser; the session arrives by cookie there.</summary>
-    public Task OpenDiscordLogin()
-    {
-        if (_signingIn)
-            return Task.CompletedTask;
-
-        _signingIn = true;
-        try
-        {
-            // There is no desktop hand-off for this yet, so the flow completes on the website
-            // rather than signing the game in. Discarding the result would be worse than saying so.
-            Logging.Info("Discord sign-in is only available on the archive website for now.");
-            return Task.CompletedTask;
-        }
-        finally
-        {
-            _signingIn = false;
         }
     }
 

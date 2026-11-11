@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using NFMWorld.Archive.Auth;
 
 namespace NFMWorld.Archive.Test;
 
@@ -11,6 +13,17 @@ namespace NFMWorld.Archive.Test;
 public class ArchiveAppFactory : WebApplicationFactory<Program>
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "nfmw-archive-test", Guid.NewGuid().ToString("N"));
+
+    public FakeSiteverifyHandler Siteverify { get; } = new();
+
+    public static string Challenge(string action) => action + ":" + Guid.NewGuid().ToString("N");
+
+    public static Dictionary<string, string> Registration(string username, string password = "password123") => new()
+    {
+        ["Username"] = username,
+        ["Password"] = password,
+        ["cf-turnstile-response"] = Challenge("register")
+    };
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -24,6 +37,11 @@ public class ArchiveAppFactory : WebApplicationFactory<Program>
         // build time, before a later configuration source would be layered on.
         builder.UseSetting("Archive:Database", $"Data Source={Path.Combine(_root, "test.db")}");
         builder.UseSetting("Archive:StorageRoot", Path.Combine(_root, "storage"));
+        builder.UseSetting("TURNSTILE_SECRET", "test-secret");
+        builder.UseSetting("TURNSTILE_HOSTNAMES", "archive.example");
+        builder.ConfigureServices(services =>
+            services.AddHttpClient<TurnstileVerifier>().ConfigurePrimaryHttpMessageHandler(() => Siteverify)
+        );
 
         builder.ConfigureAppConfiguration((_, config) =>
             {
