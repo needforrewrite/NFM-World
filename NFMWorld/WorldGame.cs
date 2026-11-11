@@ -783,6 +783,30 @@ public partial class WorldGame : IDisposable, IGameHost
             SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_MULTISAMPLESAMPLES, samples);
         }
 
+        // SDL asks dyld for the ANGLE libraries by leaf name, and a leaf-name dlopen searches the
+        // working directory, not the executable's folder. Launched from anywhere else (Finder,
+        // Spotlight, a wrapper) that fails as "Could not initialize OpenGL / GLES library" even
+        // though both dylibs sit beside the binary. The hints make the loads absolute. The desktop
+        // arm clears them again: there the same hint names the system OpenGL library.
+        if (OperatingSystem.IsMacOS())
+        {
+            if (profileMask == EsProfile)
+            {
+                var eglPath = Path.Combine(AppContext.BaseDirectory, "libEGL.dylib");
+                var glesPath = Path.Combine(AppContext.BaseDirectory, "libGLESv2.dylib");
+                if (!File.Exists(eglPath) || !File.Exists(glesPath))
+                    Logging.Warning($"ANGLE libraries are missing beside the executable ({eglPath}, {glesPath}).");
+
+                SDL.SDL_SetHint(SDL.SDL_HINT_EGL_LIBRARY, eglPath);
+                SDL.SDL_SetHint(SDL.SDL_HINT_OPENGL_LIBRARY, glesPath);
+            }
+            else
+            {
+                SDL.SDL_ResetHint(SDL.SDL_HINT_EGL_LIBRARY);
+                SDL.SDL_ResetHint(SDL.SDL_HINT_OPENGL_LIBRARY);
+            }
+        }
+
         if (!SDL.SDL_GL_LoadLibrary(null))
             throw new InvalidOperationException($"SDL_GL_LoadLibrary failed: {SDL.SDL_GetError()}");
 
