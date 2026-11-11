@@ -1,51 +1,60 @@
-﻿using Hexa.NET.ImGui;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
+using NFMWorld.Reactor;
+using NFMWorld.UI.Routes;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorld.Gameplay;
 
+/// <summary>
+/// Stage selection: the shared Sx selector over every playable stage (text and radpack), with
+/// this phase owning the 3D preview and its music.
+/// </summary>
 public class StageSelectPhase : BaseStageRenderingPhase
 {
     public event EventHandler<string>? StageSelected;
 
-    private UnlimitedArray<string> _stageCollections = [];
-    private string _selectedCollection = "";
-    private UnlimitedArray<string> _stagesInCollection = [];
-    private int _selectedStageIndex = 0;
-    private string _searchQuery = "";
-    private bool _inAutocomplete = false;
-    private int _autocompleteIndex = 0;
-    private string[] _autocompleteMatches = [];
-    private int _searchKbFocus = 0;
-    private bool _openSearchPopup = false;
-
-    private AroundStageCamera _aroundStageCamera = new();
+    private readonly string[] _allStages;
+    private readonly StageSelectState _state = new();
+    private readonly AroundStageCamera _aroundStageCamera = new();
     private IRadicalMusic _stageSelectMusic;
+    private string _loadedStage = "";
 
     public StageSelectPhase() : base()
     {
-        // The VFS, not Directory: the browser's assets live in a zip with no real directories
-        // behind them, and these two listings are how the stage list is discovered.
-        foreach (var dir in TheVFS.VFS.EnumerateDirectories("data/stages"))
-        {
-            if (!TheVFS.VFS.EnumerateFiles(dir, "*.txt").Any()) continue;
+        _allStages = MenuPreferences.GetStages(VFS);
 
-            _stageCollections.Add(Path.GetFileName(dir));
-        }
-
-        if (_stageCollections.Count == 0)
+        if (_allStages.Length == 0)
             throw new DirectoryNotFoundException(
                 "No playable stages were found in data/stages. Check that the game assets are installed."
             );
-        // randomly select collection
-        _selectedCollection = _stageCollections[new System.Random().Next(0, _stageCollections.Count)];
-        LoadStagesInCollection(_selectedCollection);
-        LoadStageInCollection();
+
+        var collections = _allStages
+            .Select(CollectionOf)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        _state.Collections.Value = collections;
+
+        // Start somewhere in the middle of the first collection, as the old screen did.
+        var collection = collections[new System.Random().Next(0, collections.Length)];
+        _state.Collection.Value = collection;
+        RefreshStages(loadPreview: true);
 
         _stageSelectMusic = IBackend.Backend.LoadMusic("data/music/nfm1/stageselectremastered.mp3");
     }
+
+    public override Node? BuildUi() => StageSelectView.Build(
+        _state,
+        new StageSelectView.Actions(
+            CollectionSelected: SelectCollection,
+            StageSelected: SelectStage,
+            SearchChanged: OnSearchChanged,
+            Confirm: Confirm,
+            Back: GameSparker.ReturnToMainMenu
+        )
+    );
 
     public override void Enter()
     {
@@ -53,61 +62,98 @@ public class StageSelectPhase : BaseStageRenderingPhase
         GameSparker.CurrentMusic = _stageSelectMusic;
     }
 
-    private void LoadStagesInCollection(string collection)
+    /// <summary>The directory a stage id lives in; ids without one are shown as "stages".</summary>
+    private static string CollectionOf(string stageId)
     {
-        _stagesInCollection.Clear();
-
-        // VFS paths always use '/', whatever the platform's separator happens to be.
-        var dirPath = Path.Combine("data/stages", collection).Replace('\\', '/');
-        var entries = TheVFS.VFS.EnumerateFiles(dirPath, "*.txt").ToArray();
-        // first sort alphabetically
-        Array.Sort(entries, NaturalCompare.CompareNatural);
-
-        foreach (var entry in entries)
-        {
-            var stageFilename = Path.GetFileName(entry).Replace(".txt", "");
-            _stagesInCollection.Add(stageFilename);
-        }
-
-        if (_stagesInCollection.Count == 0)
-            throw new DirectoryNotFoundException($"No playable stages were found in {dirPath}.");
+        var slash = stageId.IndexOf('/');
+        return slash < 0 ? "stages" : stageId[..slash];
     }
 
-    private void LoadStageInCollection()
+    private string StageLabel(string stageId)
     {
-        World.DrawClouds = false;
-        LoadStage(_selectedCollection + "/" + _stagesInCollection[_selectedStageIndex], false);
+        var slash = stageId.LastIndexOf('/');
+        return slash < 0 ? stageId : stageId[(slash + 1)..];
+    }
+
+    private void SelectCollection(string collection)
+    {
+        if (_state.Collection.Value == collection)
+            return;
+
+        _state.Collection.Value = collection;
+        RefreshStages(loadPreview: true);
+    }
+
+    private void OnSearchChanged(string query)
+    {
+        _state.Search.Value = query;
+        RefreshStages(loadPreview: false);
+    }
+
+    private void SelectStage(string stageId)
+    {
+        if (!_state.Stages.Value.Contains(stageId))
+            return;
+
+        _state.Selected.Value = stageId;
+        _state.ConfirmEnabled.Value = true;
+        LoadStage(stageId, loadMusic: false, reloadIfLoaded: true);
+        _loadedStage = stageId;
         // ApplyValues re-applies the stage's fadefrom() every frame, so override it after that.
-        CurrentStage!.FadeFromOverride = 9999999;
-        _aroundStageCamera = new AroundStageCamera();
+        if (CurrentStage != null)
+            CurrentStage.FadeFromOverride = 9999999;
     }
 
-    private void CycleStageInCollection(int direction)
+    private void Confirm()
     {
-        _selectedStageIndex += direction;
+        if (!_state.ConfirmEnabled.Value || string.IsNullOrEmpty(_state.Selected.Value))
+            return;
 
-        if (_selectedStageIndex < 0)
+        StageSelected?.Invoke(this, _state.Selected.Value);
+    }
+
+    private void RefreshStages(bool loadPreview)
+    {
+        var query = _state.Search.Value.Trim();
+        var stages = _allStages
+            .Where(id => string.Equals(CollectionOf(id), _state.Collection.Value, StringComparison.OrdinalIgnoreCase))
+            .Where(id => query.Length == 0
+                         || StageLabel(id).Contains(query, StringComparison.OrdinalIgnoreCase)
+                         || id.Contains(query, StringComparison.OrdinalIgnoreCase)
+            )
+            .ToArray();
+
+        _state.Stages.Value = stages;
+
+        if (stages.Length == 0)
         {
-            _selectedStageIndex = _stagesInCollection.Count - 1;
-        }
-        else if (_selectedStageIndex >= _stagesInCollection.Count)
-        {
-            _selectedStageIndex = 0;
+            _state.Selected.Value = "";
+            _state.ConfirmEnabled.Value = false;
+            return;
         }
 
-        LoadStageInCollection();
+        var selected = stages.Contains(_state.Selected.Value) ? _state.Selected.Value : stages[0];
+        _state.Selected.Value = selected;
+        _state.ConfirmEnabled.Value = true;
+
+        if (loadPreview && selected != _loadedStage)
+            SelectStage(selected);
     }
 
     public override void GameTick()
     {
         base.GameTick();
 
-        _aroundStageCamera.AroundStage(Camera, CurrentStage.Backend);
+        if (CurrentStage != null)
+            _aroundStageCamera.AroundStage(Camera, CurrentStage.Backend);
     }
 
     public override void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
     {
         base.Render(cb, alpha);
+
+        if (CurrentStage == null)
+            return;
 
         G.SetFont(new Font(FontFamily.NotoSans, FontStyle.Bold, 48));
         G.SetColor(new Color(255, 255, 255));
@@ -123,173 +169,38 @@ public class StageSelectPhase : BaseStageRenderingPhase
         );
     }
 
-    public override void RenderImgui()
-    {
-        base.RenderImgui();
-
-        if (ImGui.BeginMainMenuBar())
-        {
-            if (ImGui.BeginMenu("Collection"))
-            {
-                foreach (string key in _stageCollections)
-                {
-                    if (ImGui.MenuItem(key.ToString()))
-                    {
-                        LoadStagesInCollection(key);
-                        _selectedCollection = key;
-                        _selectedStageIndex = 0;
-                        LoadStageInCollection();
-                    }
-                }
-
-                ImGui.EndMenu();
-            }
-
-            if (ImGui.BeginMenu("Search", !_openSearchPopup))
-            {
-                _searchKbFocus++;
-                if (HandleSearch())
-                {
-                    ImGui.CloseCurrentPopup();
-                }
-
-
-                ImGui.EndMenu();
-            }
-            else
-            {
-                if (!_openSearchPopup) _searchKbFocus = 0;
-            }
-
-            ImGui.EndMainMenuBar();
-        }
-
-        if (_openSearchPopup)
-        {
-            ImGui.SetNextWindowSize(new Vector2(0, 0));
-
-            bool open = _openSearchPopup;
-
-            if (ImGui.Begin("Search", ref open, ImGuiWindowFlags.NoResize))
-            {
-                _searchKbFocus++;
-                if (HandleSearch())
-                {
-                    _openSearchPopup = false;
-                    open = false;
-                    ImGui.CloseCurrentPopup();
-                }
-
-                ;
-
-                ImGui.End();
-            }
-
-            _openSearchPopup = open;
-            if (!_openSearchPopup)
-            {
-                _searchQuery = "";
-            }
-        }
-    }
-
-    private bool HandleSearch()
-    {
-        if (ImGui.InputText(
-                $"Search {_selectedCollection}",
-                ref _searchQuery,
-                256,
-                ImGuiInputTextFlags.EscapeClearsAll | ImGuiInputTextFlags.EnterReturnsTrue
-            ))
-        {
-            if (_autocompleteMatches.Length > 0)
-            {
-                _selectedStageIndex = _stagesInCollection.ToList().FindIndex(c => c == _autocompleteMatches[_autocompleteIndex]);
-                LoadStageInCollection();
-                _searchQuery = "";
-                return true;
-            }
-        }
-
-        if (_searchKbFocus == 1)
-        {
-            ImGui.SetKeyboardFocusHere(-1);
-        }
-
-        if (string.IsNullOrEmpty(_searchQuery))
-        {
-            _autocompleteMatches = _stagesInCollection.ToArray();
-        }
-        else
-        {
-            _autocompleteMatches = _stagesInCollection.ToList().FindAll(x => x.ToLower().StartsWith(_searchQuery.ToLower()))
-                .ToArray();
-        }
-
-        string[] _autocompleteMatchedNames = _autocompleteMatches.ToArray();
-
-
-        if (_autocompleteMatches.Length > 0)
-        {
-            _inAutocomplete = true;
-            if (ImGui.ListBox(
-                    "##AutocompleteEntries",
-                    ref _autocompleteIndex,
-                    _autocompleteMatchedNames,
-                    _autocompleteMatches.Length,
-                    _autocompleteMatches.Length
-                ))
-            {
-                _selectedStageIndex = _stagesInCollection.ToList().FindIndex(c => c == _autocompleteMatches[_autocompleteIndex]);
-                LoadStageInCollection();
-                _searchQuery = "";
-                return true;
-            }
-
-            ;
-        }
-
-        return false;
-    }
-
     public override void KeyPressed(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
         base.KeyPressed(key, imguiWantsKeyboard, keys);
 
-        if (key == Key.Down && _inAutocomplete)
+        if (imguiWantsKeyboard)
+            return;
+
+        var stages = _state.Stages.Value;
+        if (stages.Count == 0)
+            return;
+
+        var index = 0;
+        for (var i = 0; i < stages.Count; i++)
         {
-            _autocompleteIndex++;
-            if (_autocompleteIndex >= _autocompleteMatches.Length)
+            if (stages[i] == _state.Selected.Value)
             {
-                _autocompleteIndex = 0;
-            }
-        }
-        else if (key == Key.Up && _inAutocomplete)
-        {
-            _autocompleteIndex--;
-            if (_autocompleteIndex < 0)
-            {
-                _autocompleteIndex = _autocompleteMatches.Length - 1;
+                index = i;
+                break;
             }
         }
 
-        if (imguiWantsKeyboard) return;
-
-        if (key == Key.Left)
+        switch (key)
         {
-            CycleStageInCollection(-1);
-        }
-        else if (key == Key.Right)
-        {
-            CycleStageInCollection(1);
-        }
-        else if (key == Key.Enter)
-        {
-            StageSelected?.Invoke(this, $"{_selectedCollection}/{_stagesInCollection[_selectedStageIndex]}");
-        }
-        else if (key == Key.S)
-        {
-            _openSearchPopup = true;
+            case Key.Left:
+                SelectStage(stages[(index - 1 + stages.Count) % stages.Count]);
+                break;
+            case Key.Right:
+                SelectStage(stages[(index + 1) % stages.Count]);
+                break;
+            case Key.Enter:
+                Confirm();
+                break;
         }
     }
 

@@ -69,6 +69,17 @@ public class MenuHistoryTests
     }
 
     [TestMethod]
+    public void CanonicalArchiveStage_IsNotDiscardedForBeingUncachedLocally()
+    {
+        var hash = new string('a', 64);
+        MenuHistory.Remember(stage: "archive/" + hash, fileSystem: _fs);
+
+        MenuHistory.Load(_fs);
+
+        Assert.AreEqual("archive/" + hash, MenuHistory.Stage);
+    }
+
+    [TestMethod]
     public void MissingHistoryResetsToDefaults()
     {
         MenuHistory.Remember(car: "nfmm/other", fileSystem: _fs);

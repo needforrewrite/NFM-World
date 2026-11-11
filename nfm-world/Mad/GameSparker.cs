@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using NFMWorld.Accounts;
 using NFMWorld.DriverInterface;
@@ -245,61 +245,13 @@ public static partial class GameSparker
         CurrentPhase.KeyReleased(key, imguiWantsKeyboard, keys);
     }
 
+    /// <summary>
+    /// Every playable stage, including radpacks. The select screen and the lobby's create
+    /// dialog both read this, so they cannot disagree about what exists.
+    /// </summary>
     public static List<string> GetAvailableStages()
-    {
-        var stages = new List<string>();
-        var stagesPath = "data/stages";
+        => [.. NFMWorldLibrary.Util.MenuPreferences.GetStages(VFS)];
 
-        if (VFS.DirectoryExists(stagesPath))
-        {
-            // recursive search
-            foreach (var file in VFS.EnumerateFiles(stagesPath, "*.txt", SearchOption.AllDirectories))
-            {
-                var relativePath = Path.GetRelativePath(stagesPath, file);
-                var pathWithoutExtension = Path.ChangeExtension(relativePath, null);
-                stages.Add(pathWithoutExtension.Replace('\\', '/'));
-            }
-        }
-
-        // sort numbers properly
-        stages.Sort((a, b) =>
-            {
-                var aSegments = a.Split('/');
-                var bSegments = b.Split('/');
-
-                for (int seg = 0; seg < Math.Min(aSegments.Length, bSegments.Length); seg++)
-                {
-                    var aParts = DigitSplit.Split(aSegments[seg])
-                        .Where(s => !string.IsNullOrEmpty(s))
-                        .ToArray();
-                    var bParts = DigitSplit.Split(bSegments[seg])
-                        .Where(s => !string.IsNullOrEmpty(s))
-                        .ToArray();
-
-                    for (int i = 0; i < Math.Min(aParts.Length, bParts.Length); i++)
-                    {
-                        if (int.TryParse(aParts[i], out var aNum) && int.TryParse(bParts[i], out var bNum))
-                        {
-                            int numCompare = aNum.CompareTo(bNum);
-                            if (numCompare != 0) return numCompare;
-                        }
-                        else
-                        {
-                            int strCompare = string.Compare(aParts[i], bParts[i], StringComparison.OrdinalIgnoreCase);
-                            if (strCompare != 0) return strCompare;
-                        }
-                    }
-
-                    if (aParts.Length != bParts.Length)
-                        return aParts.Length.CompareTo(bParts.Length);
-                }
-
-                return aSegments.Length.CompareTo(bSegments.Length);
-            }
-        );
-
-        return stages;
-    }
 
     public static void Load(IGameHost game)
     {

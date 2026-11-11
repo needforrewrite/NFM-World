@@ -69,7 +69,11 @@ public static class SentrySdk
     /// </summary>
     public static SentryEventId CaptureException(Exception ex, SentryLevel level = SentryLevel.Error)
     {
-        EnsureInitialized();
+        // Reporting is best effort. Library code runs in hosts that never configured Sentry (the
+        // archive, the validator, tests), and a report must never be what takes them down.
+        if (!_initialized)
+            return default;
+
 
         // Record breadcrumb first
         AddBreadcrumb(Breadcrumb.FromException(ex, level));
@@ -91,7 +95,9 @@ public static class SentrySdk
     /// </summary>
     public static SentryEventId CaptureMessage(string message, SentryLevel level = SentryLevel.Info)
     {
-        EnsureInitialized();
+        if (!_initialized)
+            return default;
+
 
         // Record breadcrumb first
         AddBreadcrumb(Breadcrumb.FromMessage(message, level));
@@ -114,7 +120,9 @@ public static class SentrySdk
     /// </summary>
     public static SentryEventId CaptureEvent(SentryEvent evt)
     {
-        EnsureInitialized();
+        if (!_initialized)
+            return default;
+
 
         evt.Release ??= _options!.Release;
         evt.Breadcrumbs ??= SnapshotBreadcrumbs();
@@ -174,7 +182,9 @@ public static class SentrySdk
     /// </summary>
     public static void CaptureFeedback(SentryFeedback feedback)
     {
-        EnsureInitialized();
+        if (!_initialized)
+            return;
+
 
         _uploader!.Enqueue(new FeedbackItem(feedback));
     }
@@ -185,7 +195,10 @@ public static class SentrySdk
     /// </summary>
     public static SentryTransaction StartTransaction(string name, string operation)
     {
-        EnsureInitialized();
+        // Tracing is optional instrumentation: library code that parses content must keep working
+        // in hosts that never configured Sentry (the archive, the validator, tests).
+        if (!_initialized)
+            return new SentryTransaction();
 
         // Sampling check
         if (_options!.TracesSampleRate <= 0)

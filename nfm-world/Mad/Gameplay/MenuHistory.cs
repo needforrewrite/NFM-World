@@ -2,6 +2,7 @@ using System.Text.Json;
 using NFMWorld.PhysicsFS;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Rad;
+using NFMWorldLibrary.Radpack;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorld.Gameplay;
@@ -33,7 +34,8 @@ public static class MenuHistory
     }
 
     public static string Stage => !string.IsNullOrWhiteSpace(LastPlayed.Stage)
-                                  && (TheVFS.VFS.FileExists($"data/stages/{LastPlayed.Stage}.txt")
+                                  && (RadpackReader.IsArchiveId(LastPlayed.Stage)
+                                      || TheVFS.VFS.FileExists($"data/stages/{LastPlayed.Stage}.txt")
                                       || TheVFS.VFS.FileExists($"data/stages/{LastPlayed.Stage}.radpack"))
         ? LastPlayed.Stage
         : DefaultStage;

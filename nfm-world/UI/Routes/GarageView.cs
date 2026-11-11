@@ -1,4 +1,4 @@
-﻿using NFMWorld.DriverInterface;
+using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
@@ -21,7 +21,9 @@ public static class GarageView
         Action<string, string> CarSelected,
         Action<string> CollectionSelected,
         Action Confirm,
-        Action Back
+        Action Back,
+        Action<bool> SourceSelected,
+        Action<string> OnlineSearch
     );
 
     private static readonly Signal<string> SearchQuery = new("");
@@ -82,8 +84,10 @@ public static class GarageView
                     children:
                     [
                         Sx.Text(style: () => Sx.TextStyles(fontSize: 28, fontStyle: FontStyle.Bold), text: () => "Garage"),
+                        SourcePicker(actions),
                         StatsPanel(),
                         SearchBox(actions),
+                        StatusLine(),
                         CollectionList(actions),
 
                         Button.Create(
@@ -122,6 +126,12 @@ public static class GarageView
         // Enter picks the first match, as the Luau version did.
         onsubmit: _ =>
         {
+            if (UiState.Garage.OnlineSource.Value)
+            {
+                actions.OnlineSearch(SearchQuery.Value);
+                return;
+            }
+
             if (FilterCollections().FirstOrDefault() is { Cars.Count: > 0 } first)
             {
                 actions.CarSelected(first.Id, first.Cars[0].FileName);
@@ -129,6 +139,36 @@ public static class GarageView
             }
         }
     );
+
+    private static Node SourcePicker(Actions actions)
+        => Sx.View(
+            style: () => Sx.Styles(flexDirection: FlexDirection.Row, flexShrink: 0, gapColumn: 8, gapRow: 8),
+            children:
+            [
+                Button.Create(
+                    label: () => "LOCAL",
+                    onPress: () => actions.SourceSelected(false),
+                    active: () => !UiState.Garage.OnlineSource.Value,
+                    size: ButtonSize.Sm
+                ),
+                Button.Create(
+                    label: () => "ONLINE",
+                    onPress: () => actions.SourceSelected(true),
+                    active: () => UiState.Garage.OnlineSource.Value,
+                    size: ButtonSize.Sm
+                )
+            ]
+        );
+
+    private static Node StatusLine()
+        => Sx.Show(
+            when: () => UiState.Garage.OnlineStatus.Value.Length > 0,
+            then: () => Sx.Text(
+                style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.TextFaint),
+                text: () => UiState.Garage.OnlineStatus.Value
+            ),
+            otherwise: () => Sx.View(style: () => Sx.Styles(height: 0))
+        );
 
     private static View StatsPanel() => Sx.View(
         style: () => Sx.Styles(flexShrink: 0, alignItems: Align.Center, justifyContent: Justify.Center),

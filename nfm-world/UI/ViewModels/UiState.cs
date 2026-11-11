@@ -1,4 +1,4 @@
-﻿using NFMWorld.DriverInterface;
+using NFMWorld.DriverInterface;
 using NFMWorldLibrary;
 using SignalsDotnet;
 using NFMWorldLibrary.Hud;
@@ -235,6 +235,12 @@ public static class UiState
         public Signal<IReadOnlyList<CarCollectionViewModel>> Collections { get; } = new([]);
         public Signal<string> CurrentCollection { get; } = new(nameof(NFMWorldLibrary.Collection.User));
         public Signal<CarStatsViewModel?> CurrentCar { get; } = new(null);
+
+        /// <summary>True while the list shows archive search results instead of local collections.</summary>
+        public Signal<bool> OnlineSource { get; } = new(false);
+
+        /// <summary>Progress, failure or eligibility note shown under the search box.</summary>
+        public Signal<string> OnlineStatus { get; } = new("");
     }
 }
 

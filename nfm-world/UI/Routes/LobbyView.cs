@@ -510,6 +510,16 @@ public static class LobbyView
         // Read once per open: this enumerates the whole stage tree, and the component only
         // runs when the dialog is mounted.
         var stages = AvailableStages();
+        var stageState = new StageSelectState();
+        stageState.Collections.Value = stages
+            .Select(StageCollectionOf)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        stageState.Collection.Value = stageState.Collections.Value.FirstOrDefault() ?? "";
+        stageState.Stages.Value = stages;
+        stageState.Selected.Value = lobby.SelectedStage.Value;
+        stageState.ConfirmEnabled.Value = stages.Count > 0;
 
         return Sx.View(
             style: () => Sx.Styles(
@@ -566,16 +576,32 @@ public static class LobbyView
                             style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
                             text: () => "Stage"
                         ),
-                        Sx.View(
-                            style: () => Sx.Styles(
-                                flexDirection: FlexDirection.Column,
-                                gapRow: 4,
-                                maxHeight: 220,
-                                overflow: Overflow.Scroll
-                            ),
-                            children: Sx.For(
-                                each: () => stages,
-                                row: (stage, _) => StageOption(stage, actions)
+                        // The same selector free play uses, in its compact form.
+                        StageSelectView.Compact(
+                            stageState,
+                            new StageSelectView.Actions(
+                                CollectionSelected: collection =>
+                                {
+                                    stageState.Collection.Value = collection;
+                                    stageState.Stages.Value = stages
+                                        .Where(stage => StageCollectionOf(stage) == collection)
+                                        .ToArray();
+                                },
+                                StageSelected: stage =>
+                                {
+                                    stageState.Selected.Value = stage;
+                                    actions.SetStage(stage);
+                                },
+                                SearchChanged: query =>
+                                {
+                                    stageState.Stages.Value = stages
+                                        .Where(stage => query.Trim().Length == 0
+                                                        || stage.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase)
+                                        )
+                                        .ToArray();
+                                },
+                                Confirm: () => { },
+                                Back: () => { }
                             )
                         ),
                         Sx.Text(
@@ -715,6 +741,12 @@ public static class LobbyView
                 )
             ]
         );
+    }
+
+    private static string StageCollectionOf(string stageId)
+    {
+        var slash = stageId.IndexOf('/');
+        return slash < 0 ? "stages" : stageId[..slash];
     }
 
     /// <summary>Stage names for the create dialog.</summary>

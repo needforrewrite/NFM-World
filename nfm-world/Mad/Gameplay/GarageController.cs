@@ -1,10 +1,13 @@
-﻿using NFMWorld.DriverInterface;
+using System.Net.Http;
+using NFMWorld.DriverInterface;
 using NFMWorld.Reactor;
 using NFMWorld.UI.Routes;
 using NFMWorld.UI.ViewModels;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.Content;
 using NFMWorldLibrary.Rad;
+using NFMWorldLibrary.Radpack;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorld.Gameplay;
@@ -23,7 +26,17 @@ internal sealed class GarageController
     /// </summary>
     public event EventHandler? CarSelectionCancelled;
 
+    private static readonly Lazy<ArchiveContentClient> Content =
+        new(() => new ArchiveContentClient(ArchiveEndpoint.Url));
+
+    private static readonly Lazy<IReadOnlyList<StockPackage>> Stock =
+        new(() => StockCatalog.Build(AppContext.BaseDirectory));
+
     private int _selectedCarIdx = 0;
+    private string? _selectedCarIdentity;
+    private bool _selectionReady = true;
+    private CancellationTokenSource? _onlineCancellation;
+    private int _onlineGeneration;
 
     private Collection _currentCollection = Collection.NFMM;
     private UnlimitedArray<Rad3d> _cars = BackendGameSparker.cars[Collection.NFMM];
@@ -80,7 +93,9 @@ internal sealed class GarageController
             CarSelected: SelectCar,
             CollectionSelected: SelectCollection,
             Confirm: SelectedCar,
-            Back: SelectionCancelled
+            Back: SelectionCancelled,
+            SourceSelected: SetOnlineSource,
+            OnlineSearch: SearchOnline
         )
     );
 
@@ -90,6 +105,12 @@ internal sealed class GarageController
     /// </summary>
     private void SelectCar(string collection, string fileName)
     {
+        if (collection == "Online")
+        {
+            _ = PrepareOnlineCarAsync(fileName);
+            return;
+        }
+
         // Search ALL collections, switching if the car lives in another one.
         if (Enum.TryParse<Collection>(collection, out var col)
             && BackendGameSparker.cars.TryGetValue(col, out var cars))
@@ -100,6 +121,8 @@ internal sealed class GarageController
                 _currentCollection = col;
                 _cars = cars;
                 _selectedCarIdx = idx;
+                _selectedCarIdentity = fileName;
+                _selectionReady = true;
                 SetupCurrentCar();
             }
         }
@@ -199,7 +222,7 @@ internal sealed class GarageController
         float ab = _backendCar.Stats.Airc / 75f;
 
         UiState.Garage.CurrentCar.Value = new CarStatsViewModel(
-            _backendCar.Rad.FileName,
+            _selectedCarIdentity ?? _backendCar.Rad.FileName,
             _backendCar.Stats.Name,
             _currentCollection.ToString(),
             switsLevel,
@@ -217,9 +240,132 @@ internal sealed class GarageController
         UiState.Garage.CurrentCollection.Value = _currentCollection.ToString();
     }
 
+    private void SetOnlineSource(bool online)
+    {
+        if (UiState.Garage.OnlineSource.Value == online)
+            return;
+
+        UiState.Garage.OnlineSource.Value = online;
+        GarageView.ClearSearch();
+        UiState.Garage.OnlineStatus.Value = online ? "Search the archive for public cars." : "";
+
+        if (online)
+        {
+            _onlineCancellation?.Cancel();
+            _onlineGeneration++;
+            UiState.Garage.Collections.Value = [];
+            _selectionReady = false;
+            return;
+        }
+
+        GarageDataRequested();
+    }
+
+    private async void SearchOnline(string query)
+    {
+        _onlineCancellation?.Cancel();
+        _onlineCancellation = new CancellationTokenSource();
+        var cancellation = _onlineCancellation;
+        var generation = ++_onlineGeneration;
+        UiState.Garage.OnlineStatus.Value = "Searching...";
+
+        try
+        {
+            var page = await Content.Value.SearchAsync(query, "Car", 30, null, cancellation.Token);
+            if (generation != _onlineGeneration)
+                return;
+
+            var cars = page.Items
+                .Where(item => item.Eligible)
+                .Select(item => new CarStatsViewModel(
+                        item.ContentHash,
+                        item.Name,
+                        "Online",
+                        0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                    )
+                )
+                .ToArray();
+
+            UiState.Garage.Collections.Value = [new CarCollectionViewModel("Online", cars)];
+            UiState.Garage.OnlineStatus.Value = cars.Length == 0
+                ? "No public cars matched."
+                : $"{cars.Length} public car(s). Select one to preview it.";
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            if (generation == _onlineGeneration)
+                UiState.Garage.OnlineStatus.Value = $"Could not search the archive: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// Downloads and verifies a selected public car, then previews it. The previously committed
+    /// car stays untouched until SELECT CAR, so a failed download changes nothing.
+    /// </summary>
+    private async Task PrepareOnlineCarAsync(string hash)
+    {
+        var generation = ++_onlineGeneration;
+        UiState.Garage.OnlineStatus.Value = "Preparing car...";
+        _selectionReady = false;
+
+        var result = await ContentCache.PrepareAsync(Content.Value, hash, AssetKind.Car, CancellationToken.None);
+        if (generation != _onlineGeneration)
+            return;
+
+        if (!result.Ok)
+        {
+            UiState.Garage.OnlineStatus.Value = result.Error ?? "That car could not be prepared.";
+            return;
+        }
+
+        var identity = RadpackReader.ArchivePrefix + hash.ToLowerInvariant();
+        var (_, rad) = BackendGameSparker.GetCar(identity);
+        if (rad is null)
+        {
+            UiState.Garage.OnlineStatus.Value = "The downloaded car could not be read.";
+            return;
+        }
+
+        _cars = new UnlimitedArray<Rad3d>();
+        _cars.Add(rad);
+        _selectedCarIdx = 0;
+        _currentCollection = Collection.User;
+        _selectedCarIdentity = identity;
+        _selectionReady = true;
+        UiState.Garage.OnlineStatus.Value = "";
+        SetupCurrentCar();
+    }
+
+    private void UpdateOnlineEligibility()
+    {
+        var identity = _selectedCarIdentity ?? _backendCar?.Rad.FileName;
+        if (identity is null)
+            return;
+
+        if (RadpackReader.IsArchiveId(identity))
+        {
+            UiState.Garage.OnlineStatus.Value = "Public archive car.";
+            return;
+        }
+
+        var stock = Stock.Value.Any(p => p.Kind == AssetKind.Car && p.Id == identity);
+        UiState.Garage.OnlineStatus.Value = stock
+            ? ""
+            : "Local car — publish it to the archive before using it online.";
+    }
+
     public void Enter()
     {
         GarageView.ClearSearch();
+        _selectionReady = true;
         if (_backendCar == null)
             SetupCurrentCar();
 
@@ -229,9 +375,16 @@ internal sealed class GarageController
 
     private void SelectedCar()
     {
+        if (!_selectionReady || _backendCar is null)
+        {
+            UiState.Garage.OnlineStatus.Value = "That car is not ready yet.";
+            return;
+        }
+
         if (CarSelected == null)
             throw new ArgumentNullException(nameof(CarSelected), "Attempted to invoke CarSelected, but it was null.");
-        MenuHistory.Remember(car: _backendCar!.Rad.FileName);
+        MenuHistory.Remember(car: _selectedCarIdentity ?? _backendCar!.Rad.FileName);
+        UpdateOnlineEligibility();
         CarSelected.Invoke(this, _backendCar!.Rad);
     }
 
