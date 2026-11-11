@@ -1,4 +1,5 @@
-﻿using NFMWorld.DriverInterface;
+using NFMWorld.Accounts;
+using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Audio;
 using NFMWorld.Gameplay.RaceHost;
@@ -968,6 +969,9 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     {
         CurrentStage.Renderer.ResetCheckpointGlow();
     }
+
+    void IClientCallbacks.TimeTrialCompleted(TimeTrialCompletion completion) =>
+        TimeTrialUploader.Enqueue(completion);
 
     void IClientCallbacks.UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish)
     {

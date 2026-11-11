@@ -52,23 +52,24 @@ public static class TimeTrialEndpoints
                 if (file is null || string.IsNullOrEmpty(stageHash) || string.IsNullOrEmpty(carHash))
                     return Results.BadRequest(new { error = "Missing replay, stage hash or car hash." });
 
-                // Both hashes have to name content the archive actually holds, of the right kind.
-                // They are the leaderboard's key, so an invented hash would rank a time against
-                // content that does not exist. This binds the claim to real assets; the validator
-                // still resolves the stage by name, so it is not yet proof of what was simulated.
-                // shortcut: hashes are not used to load the stage for simulation, upgrade when the
-                // validator can be pointed at an asset by hash.
-                if (!await db.Assets.AnyAsync(a => a.ContentHash == stageHash && a.Type == AssetType.Stage, ct)
-                    || !await db.Assets.AnyAsync(a => a.ContentHash == carHash && a.Type == AssetType.Car, ct))
-                    return Results.BadRequest(new { error = "The stage or car is not in the archive." });
+                // Both hashes have to name public, validated content of the right kind. They are
+                // the leaderboard's key and the validator's input, so an invented or mismatched
+                // hash must fail here rather than rank a time against something else.
+                var usable = db.Assets.Where(a => a.IsPublic && !a.IsTakedown && a.IsValidated);
+                var stageAsset = await usable
+                    .FirstOrDefaultAsync(a => a.ContentHash == stageHash && a.Type == AssetType.Stage, ct);
+                var carAsset = await usable
+                    .FirstOrDefaultAsync(a => a.ContentHash == carHash && a.Type == AssetType.Car, ct);
+                if (stageAsset is null || carAsset is null)
+                    return Results.BadRequest(new { error = "The stage or car is not available in the archive." });
 
                 if (file.Length > RadpackLimits.MaxTimeTrialBytes)
                     return Results.BadRequest(new { error = "Replay exceeds the size limit." });
 
-                // The validator simulates against the archive's stored stage, not the one the replay
-                // carries, so the replay cannot choose the course it is verified on.
-                var stageAsset = await db.Assets.FirstAsync(a => a.ContentHash == stageHash && a.Type == AssetType.Stage, ct);
+                // The validator simulates against the archive's stored stage and car, not the
+                // copies the replay carries, so the replay cannot choose what it is verified on.
                 var stagePath = Path.Combine(storage.Root, stageAsset.StoragePath);
+                var carPath = Path.Combine(storage.Root, carAsset.StoragePath);
 
                 await using var received = file.OpenReadStream();
                 var stored = await StoreAndValidateAsync(
@@ -79,6 +80,7 @@ public static class TimeTrialEndpoints
                     stageName,
                     carName,
                     stagePath,
+                    carPath,
                     ct
                 );
 
@@ -186,13 +188,18 @@ public static class TimeTrialEndpoints
         string stageName,
         string carName,
         string stageAssetPath,
+        string carAssetPath,
         CancellationToken ct
     )
     {
         var (_, relative, _) = await storage.PutAsync(source, RadpackLimits.MaxTimeTrialBytes, ct);
         var path = Path.Combine(storage.Root, relative);
 
-        var result = await validator.RunAsync("tt-sim", [path, stageName, carName, stageAssetPath], ct);
+        var result = await validator.RunAsync(
+            "tt-sim",
+            [path, stageName, carName, stageAssetPath, carAssetPath],
+            ct
+        );
         // The path is content-addressed: a replay or asset already stored under the same bytes
         // must not lose its file because a second, identical upload failed to validate.
         if (!result.Ok)

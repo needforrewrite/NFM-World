@@ -57,6 +57,20 @@ public class TimeTrialEndpointTests
     }
 
     [TestMethod]
+    public async Task Upload_RefusesHashesThatAreNotPublicValidatedContent()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = await SignedInClient(factory);
+
+        // Nothing is catalogued under these hashes.
+        var response = await client.PostAsync("/tt/upload", Upload(new byte[64], Hash('a'), Hash('b')));
+
+        Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    private static string Hash(char c) => new(c, 64);
+
+    [TestMethod]
     public async Task Leaderboard_IsEmptyForAnUnknownStage()
     {
         using var factory = new ArchiveAppFactory();

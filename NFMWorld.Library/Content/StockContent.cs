@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Security.Cryptography;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Radpack;
+using NFMWorldLibrary;
 
 namespace NFMWorldLibrary.Content;
 
@@ -24,7 +25,7 @@ public sealed record StockPackage(string Id, AssetKind Kind, byte[] Bytes, strin
 /// </remarks>
 public static class StockCatalog
 {
-    public static IReadOnlyList<StockPackage> Build(string shippedRoot)
+    public static IReadOnlyList<StockPackage> Build(string shippedRoot, bool includeTextStages = false)
     {
         var packages = new List<StockPackage>();
         if (!Directory.Exists(shippedRoot))
@@ -40,6 +41,8 @@ public static class StockCatalog
         AddModelDirectory(packages, shippedRoot, "data/models/football/stage", AssetKind.StagePiece);
 
         AddRadpackStages(packages, shippedRoot);
+        if (includeTextStages)
+            AddTextStages(packages, shippedRoot);
         return packages;
     }
 
@@ -64,6 +67,26 @@ public static class StockCatalog
                     Type = type
                 },
                 Rad = rad
+            },
+            writer
+        );
+        return writer.WrittenSpan.ToArray();
+    }
+
+    /// <summary>The canonical bytes for a stage, so a recording pins the exact course it ran.</summary>
+    public static byte[] PackageStage(string id, StageLoader stage)
+    {
+        var writer = new ArrayBufferWriter<byte>();
+        RadpackSerializer.Serialize(
+            new RadpackTrack
+            {
+                Metadata = new RadpackMetadata
+                {
+                    Name = id,
+                    CreationDate = DateTimeOffset.UnixEpoch,
+                    Type = RadpackType.Track
+                },
+                Stage = stage
             },
             writer
         );
@@ -103,6 +126,37 @@ public static class StockCatalog
             catch (Exception ex) when (ex is IOException or InvalidDataException or FormatException)
             {
                 Logging.Warning($"[Stock] Could not package '{file}': {ex.Message}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Packages stages that ship as text, using the game's loaded piece set. Only the running game
+    /// has that set, so a seeder that never loads the game skips these.
+    /// </summary>
+    private static void AddTextStages(List<StockPackage> packages, string root)
+    {
+        if (BackendGameSparker.stage_parts.Count == 0)
+            return;
+
+        var directory = Path.Combine(root, "data", "stages");
+        if (!Directory.Exists(directory))
+            return;
+
+        foreach (var file in Directory.EnumerateFiles(directory, "*.txt", SearchOption.AllDirectories)
+            .OrderBy(f => f, StringComparer.Ordinal))
+        {
+            var id = Path.GetRelativePath(directory, file).Replace('\\', '/');
+            id = id[..id.LastIndexOf('.')];
+            try
+            {
+                var stage = StageLoader.FromLines(id, File.ReadLines(file));
+                var bytes = PackageStage(id, stage);
+                packages.Add(new StockPackage(id, AssetKind.Stage, bytes, HashOf(bytes), bytes.Length));
+            }
+            catch (Exception ex) when (ex is IOException or StageLoadException)
+            {
+                Logging.Warning($"[Stock] Could not package stage '{file}': {ex.Message}");
             }
         }
     }

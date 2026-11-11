@@ -275,6 +275,7 @@ public class TimeTrialGamemode : PluginGamemode
 
         _written = true;
         SaveIfBest();
+        NotifyCompleted();
         RenderFinishedText();
     }
 
@@ -381,6 +382,26 @@ public class TimeTrialGamemode : PluginGamemode
 
         car.Placement = HudState.Position - 1;
         ghost.Placement = 1 - car.Placement;
+    }
+
+    /// <summary>
+    /// Hands the host a copy of the completed run. This is every finish, not only a personal
+    /// best: the archive wants a ranking, and the host decides what may be submitted.
+    /// </summary>
+    private void NotifyCompleted()
+    {
+        if (_simulation || _current is null)
+            return;
+
+        ClientCallbacks.TimeTrialCompleted(
+            new TimeTrialCompletion(
+                _current.StageName,
+                _current.CarName,
+                _current.DemoData.Ticks.Count,
+                _current.Version ?? 0,
+                _current.ToBytes()
+            )
+        );
     }
 
     /// <summary>

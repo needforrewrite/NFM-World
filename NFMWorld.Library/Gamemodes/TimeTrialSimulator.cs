@@ -1,4 +1,5 @@
 using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Files;
 using NFMWorldLibrary.Gamemodes.RaceHost;
@@ -19,10 +20,42 @@ public static class TimeTrialSimulator
         => Run(stageName, replay, carName, tickLimit, replay.StageData);
 
     /// <summary>
-    /// Simulates against a supplied stage rather than the one the replay carries. The archive
-    /// uses this so a replay cannot choose the course it is verified on.
+    /// Simulates against supplied content rather than the copies the replay carries. The archive
+    /// uses this so a replay cannot choose the course or the car it is verified on: both are the
+    /// exact archived assets named by their hashes.
     /// </summary>
-    public static int? Run(string stageName, SavedTimeTrial replay, string carName, int tickLimit, StageLoader? stageData)
+    public static int? Run(
+        string stageName,
+        SavedTimeTrial replay,
+        string carName,
+        int tickLimit,
+        StageLoader? stageData,
+        Rad3d? carData = null
+    )
+    {
+        // A supplied car is registered under a name no stock or user id can be, so the local
+        // install cannot shadow the archived bytes by carrying the same name.
+        var playerCarName = carName;
+        var registeredCar = false;
+        if (carData is not null)
+        {
+            playerCarName = "__archived_car__";
+            BackendGameSparker.dynamic_models[playerCarName] = (0, carData);
+            registeredCar = true;
+        }
+
+        try
+        {
+            return RunCore(stageName, replay, playerCarName, tickLimit, stageData);
+        }
+        finally
+        {
+            if (registeredCar)
+                BackendGameSparker.dynamic_models.Remove(playerCarName);
+        }
+    }
+
+    private static int? RunCore(string stageName, SavedTimeTrial replay, string carName, int tickLimit, StageLoader? stageData)
     {
         var parameters = new ClientGamemodeParameters
         {

@@ -116,6 +116,16 @@ public partial class SavedTimeTrial
         return MemoryPackSerializer.Deserialize<SavedTimeTrial>(decompData, MemoryPackHelpers.Options);
     }
 
+    /// <summary>
+    /// The same bytes <see cref="Save"/> writes, for a caller that holds the run in memory and
+    /// must not depend on what is currently on disk.
+    /// </summary>
+    public byte[] ToBytes()
+    {
+        var body = MemoryPackSerializer.Serialize(this, MemoryPackHelpers.Options);
+        return Deflate.Compress(body);
+    }
+
     [PluginVisible]
     public void Save()
     {

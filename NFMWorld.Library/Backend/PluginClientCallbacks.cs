@@ -19,6 +19,9 @@ public sealed class PluginClientCallbacks(IClientCallbacks callbacks) : IClientC
     [PluginVisible]
     public IClientCarCallbacks GetClientCarCallbacks(BackendCar car) =>
         new PluginCarCallbacks(callbacks.GetClientCarCallbacks(car));
+
+    [PluginVisible]
+    public void TimeTrialCompleted(TimeTrialCompletion completion) => callbacks.TimeTrialCompleted(completion);
 }
 
 [PluginVisible]
