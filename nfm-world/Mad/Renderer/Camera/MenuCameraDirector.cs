@@ -371,8 +371,9 @@ public sealed class MenuCameraDirector
                     )
                     * settle
                     * (1 - garageBlend);
-        // Keep the car on the right, clear of the menu.
-        var framing = 335 - 55 * garageBlend;
+        // Keep the car on the right, clear of the main menu. The garage's preview sits
+        // between two equal panels, so its framing is centred.
+        var framing = 335 * (1 - garageBlend);
         target += new Vector3(MathF.Sin(angle) * framing, 0, -MathF.Cos(angle) * framing);
         camera.Fov = 53;
         if (cut)

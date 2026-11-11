@@ -20,10 +20,16 @@ Set through the `Archive__*` environment variables (double underscore nests).
 | `Archive__StorageRoot`                                                    | Directory for uploaded files                                                      |
 | `Archive__PublicBaseUrl`                                                  | Origin clients use; must be a **separate origin** from the website                |
 | `Archive__TrustedServerKeys`                                              | `id=base64secret` list the lobby signs results with                               |
-| `Archive__ValidatorPath`                                                  | Path to `NFMWorld.Archive.Validator`; time-trial validation is refused without it |
-| `Archive__ValidatorWorkingDirectory`                                      | Directory holding the game `data/` tree the validator needs                       |
+| `Archive__ValidatorPath`                                                  | Path to `NFMWorld.Archive.Validator`; uploads and time-trial validation are refused without it |
+| `Archive__ValidatorWorkingDirectory`                                      | Directory holding the game `data/` tree the validator needs (defaults to the executable's folder) |
 | `Archive__DiscordClientId` / `DiscordClientSecret` / `DiscordRedirectUri` | Discord sign-in                                                                   |
 | `Archive__ReadOnly`                                                       | Disables registration and uploads                                                 |
+
+Relative validator paths are resolved against the content root. In **Development** only, leaving
+`Archive__ValidatorPath` unset makes the archive use `NFMWorld.Archive.Validator` built beside this
+project (`NFMWorld.Archive.Validator/bin/<Configuration>/net11.0/`), so `dotnet build` that project
+and restart the archive. A deployed archive must set the variable; otherwise startup logs that
+uploads and time trials will be refused.
 
 ### Turnstile
 
@@ -115,5 +121,9 @@ migrate out of band so two processes do not race the migration lock.
 ## Validation isolation
 
 Time-trial simulation is synchronous and cannot be cancelled, so it runs in a separate process
-with a wall clock (`Archive__ValidationTimeout`). The archive refuses to rank a time trial when
-the validator is not configured rather than trusting the client's claimed time.
+with a wall clock (`Archive__ValidationTimeout`). Radpack and legacy-model uploads use the same
+process. The archive refuses both when the validator is not configured rather than trusting the
+client's claimed time or file contents. The Docker image publishes the validator to `/validator`
+and sets `Archive__ValidatorPath`, so the compose stack needs no extra configuration; deployments
+outside the image must point the variable at the built executable. A missing validator (or a
+missing file at the configured path) is logged at startup.

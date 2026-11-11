@@ -39,7 +39,8 @@ public static class Button
         bool fullWidth = false,
         bool disabled = false,
         Func<Styles>? style = null,
-        Func<TextStyles>? textStyle = null
+        Func<TextStyles>? textStyle = null,
+        Func<string?>? name = null
     )
     {
         var hovered = new Signal<bool>(false);
@@ -52,6 +53,7 @@ public static class Button
         };
 
         return Sx.View(
+            name: name,
             style: () =>
             {
                 var isActive = active?.Invoke() ?? false;

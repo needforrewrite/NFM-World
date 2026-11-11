@@ -4454,9 +4454,10 @@ public sealed class ModelEditorView
 
         // Parse before asking for a name: a document that cannot be packaged should fail here,
         // not once the upload has been prepared.
+        Rad3d parsed;
         try
         {
-            RadParser.ParseRad(tab.TextContent, tab.ModelPath ?? "editing");
+            parsed = RadParser.ParseRad(tab.TextContent, tab.ModelPath ?? "editing");
         }
         catch (Exception ex)
         {
@@ -4464,7 +4465,13 @@ public sealed class ModelEditorView
             return;
         }
 
-        _publishName.Value = tab.GetDisplayName().TrimEnd('*');
+        // Prefer the car's stats name; the tab label is a file name, and the parser's fallback
+        // name says nothing about this model.
+        var fallbackName = tab.GetDisplayName().TrimEnd('*');
+        var statsName = parsed.Stats.Name?.Trim();
+        _publishName.Value = statsName is { Length: > 0 } && statsName != RadParser.DefaultName
+            ? statsName
+            : fallbackName;
         _publishDescription.Value = "";
         _publishStatus.Value = "";
         _publishBusy.Value = false;

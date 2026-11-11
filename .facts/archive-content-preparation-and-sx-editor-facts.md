@@ -35,3 +35,27 @@ Facts from implementing in-game archive publishing/racing on top of the existing
   directory (a `BackendGameSparker` static init does) otherwise counts their historical submissions
   as this client's queue. The `MaxPending` bound also counts only `pending` entries: uploaded runs
   stay on disk for the browser, and counting them filled the queue permanently after 20 races.
+
+- **The shared stage selector browses archive stages.** `StageSelectState.Stages` holds
+  `StageOption(Id, Label, Subtitle)`, not raw ids; the LOCAL source fills it from
+  `MenuPreferences.GetStages` (label = file name), the ONLINE source from
+  `ArchiveContentClient.SearchAsync(..., "Stage", ...)` (id = `archive/<hash>`). Selecting an archive
+  row runs `ContentCache.PrepareAsync(..., AssetKind.Stage, ...)` and only then `LoadStage`; RACE
+  waits for that prepare, so a failed download never starts a race with an unprepared stage. The
+  lobby's create dialog still uses `Compact`, which is local-only and accepts a typed archive id.
+- **The garage is two side panels, not one sidebar.** `GarageView` keeps browsing (source tabs,
+  search, collections, cars) in a 380-wide left panel and the selected car's stats plus SELECT CAR in
+  a 380-wide right panel, leaving the middle clear for the 3D preview. Collection and car lists need
+  `minHeight: 0` on their scroll box and `flexShrink: 0` on rows, or the surrounding column squeezes
+  the list to nothing (the old single sidebar did exactly that).
+- **Menu harness views**: `--sx-harness` `view` also accepts `garage` and `stage-select`, mounting
+  those real views over synthetic `UiState.Garage` / `StageSelectState` fixtures. `assert-size`
+  compares logical width/height times harness scale — but a `100%` height stays at device pixels, so
+  do not scale-assert full-height panels. `Button.Create(name: ...)` names buttons for harness targets.
+
+- **`Overflow.Scroll` is two-axis.** A vertical list gets a horizontal scrollbar as soon as one
+  direct child (a wide row or a long empty-state/error message) exceeds its width. Both menu lists
+  now keep their rows in a `width: 100%`, `flexShrink: 0` inner column, and status/no-match text
+  uses `Sx.WrappingText` at 100% width; the harness asserts `ScrollableWidth == 0`. Echo long
+  search queries in the no-match line, but left-align it — a centered wrapping line whose single
+  unbreakable word overflows shifts the earlier lines off the left edge.

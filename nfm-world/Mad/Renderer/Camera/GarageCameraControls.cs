@@ -1,4 +1,5 @@
 using NFMWorld.DriverInterface;
+using NFMWorld.DriverInterface.DriverInterface;
 
 namespace NFMWorld;
 
@@ -24,7 +25,8 @@ internal sealed class GarageCameraControls
 
     public void Press(int x, int y, bool captured, MouseButton button)
     {
-        if (captured || button != MouseButton.Primary || x <= UI.Routes.GarageView.SidebarWidth)
+        if (captured || button != MouseButton.Primary
+            || x <= UI.Routes.GarageView.SidebarWidth * TheGraphics.G.Scale)
             return;
         _lastMouse = new Vector2(x, y);
         _dragging = true;

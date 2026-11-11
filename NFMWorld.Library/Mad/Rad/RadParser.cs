@@ -149,7 +149,10 @@ public partial class RadParser
     )]
     private static partial Regex PhyShotWheelDef { get; }
 
-    public static Rad3d ParseRad(string radFile, string fileName = "hogan rewish")
+    /// <summary>Name a car gets when its rad file has no <c>name(</c> line.</summary>
+    public const string DefaultName = "hogan rewish";
+
+    public static Rad3d ParseRad(string radFile, string fileName = DefaultName)
     {
         var transaction = SentrySdk.StartTransaction("load_rad", fileName);
         var parser = new RadParser(fileName);

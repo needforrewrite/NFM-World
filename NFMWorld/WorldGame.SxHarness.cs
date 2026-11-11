@@ -7,6 +7,8 @@ using NFMWorld.Graphics;
 using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
 using NFMWorld.UI;
+using NFMWorld.UI.Routes;
+using NFMWorld.UI.ViewModels;
 using NFMWorld.Util;
 using NFMWorldLibrary;
 
@@ -49,6 +51,8 @@ public partial class WorldGame
         {
             "stage-editor" => new StageEditorPhase(game._device),
             "model-editor" => new ModelEditorPhase(game._device),
+            "garage" => new FixturePhase(GarageFixture),
+            "stage-select" => new FixturePhase(StageSelectFixture),
             _ => throw new InvalidOperationException($"Unknown harness view: {viewName}")
         };
         if (config.TryGetProperty("pieceCount", out var count))
@@ -142,7 +146,9 @@ public partial class WorldGame
                 Width = node.LayoutBorderSize.X,
                 Height = node.LayoutBorderSize.Y,
                 node.IsHovered,
-                node.IsDisplayed
+                node.IsDisplayed,
+                node.ScrollableWidth,
+                node.ScrollableHeight
             });
             File.WriteAllText(
                 Path.Combine(output, name + ".json"),
@@ -211,6 +217,26 @@ public partial class WorldGame
                         * scale)
                         throw new InvalidOperationException($"Control was squeezed: {step}");
                     break;
+                case "assert-no-horizontal-scroll":
+                    var scrolled = Find(step.GetProperty("target").GetString()!);
+                    if (scrolled.ScrollableWidth > 0.5f)
+                        throw new InvalidOperationException(
+                            $"Expected no horizontal overflow, found {scrolled.ScrollableWidth}: {step}"
+                        );
+                    break;
+                case "assert-size":
+                    var sized = Find(step.GetProperty("target").GetString()!);
+                    if (step.TryGetProperty("width", out var expectedWidth)
+                        && Math.Abs(sized.LayoutBorderSize.X - expectedWidth.GetSingle() * scale) > 1)
+                        throw new InvalidOperationException(
+                            $"Expected width {expectedWidth.GetSingle() * scale}, got {sized.LayoutBorderSize.X}: {step}"
+                        );
+                    if (step.TryGetProperty("height", out var expectedHeight)
+                        && Math.Abs(sized.LayoutBorderSize.Y - expectedHeight.GetSingle() * scale) > 1)
+                        throw new InvalidOperationException(
+                            $"Expected height {expectedHeight.GetSingle() * scale}, got {sized.LayoutBorderSize.Y}: {step}"
+                        );
+                    break;
                 case "assert-hover":
                     if (!Find(step.GetProperty("target").GetString()!).IsHovered)
                         throw new InvalidOperationException($"Expected hovered target: {step}");
@@ -251,5 +277,144 @@ public partial class WorldGame
         }
 
         GameSparker.UiRenderer = null;
+    }
+
+    /// <summary>Mounts a menu tree with no gameplay behind it, for layout captures.</summary>
+    private sealed class FixturePhase(Func<Node?> build) : NFMWorld.Gameplay.BasePhase
+    {
+        public override Node? BuildUi() => build();
+    }
+
+    private static Node GarageFixture()
+    {
+        var garage = UiState.Garage;
+        CarStatsViewModel Car(string name, string collection, string fileName = "")
+            => new(fileName.Length > 0 ? fileName : name, name, collection, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+        CarStatsViewModel WithStats(CarStatsViewModel car) => car with
+        {
+            TopSpeed = 0.82,
+            Acceleration = 0.64,
+            Handling = 0.71,
+            PowerSave = 0.55,
+            Strength = 0.48,
+            MaxHealth = 0.9,
+            Stunting = 0.76,
+            Hypergliding = 0.38,
+            Abing = 0.6
+        };
+
+        var local = new[] { Car("Bullet", "NFMM"), Car("Monster", "NFMM"), Car("Mega", "NFMM"), Car("F1", "NFMM") };
+        var user = new[] { Car("My Custom Car", "User"), Car("Prototype", "User") };
+        var online = new List<CarStatsViewModel>
+        {
+            Car("Sunset Racer", "Online", "archive/" + new string('a', 64)),
+            Car("Night Runner", "Online", "archive/" + new string('b', 64)),
+            Car("Rally Boss", "Online", "archive/" + new string('c', 64)),
+            Car("A Very Long Public Car Name That Should Not Move The List Sideways", "Online", "archive/" + new string('d', 64))
+        };
+        for (var i = 0; i < 16; i++)
+            online.Add(Car($"Public Car {i + 1}", "Online", "archive/" + new string((char)('e' + i % 10), 64)));
+        var onlineCars = online.ToArray();
+
+        garage.Collections.Value = [new CarCollectionViewModel("NFMM", local), new CarCollectionViewModel("User", user)];
+        garage.CurrentCollection.Value = "NFMM";
+        garage.CurrentCar.Value = WithStats(local[0]);
+        garage.OnlineSource.Value = false;
+        garage.OnlineStatus.Value = "";
+
+        return GarageView.Build(new GarageView.Actions(
+            CarSelected: (collection, fileName) =>
+            {
+                var cars = collection == "Online" ? onlineCars : collection == "User" ? user : local;
+                if (cars.FirstOrDefault(car => car.FileName == fileName) is { } picked)
+                    garage.CurrentCar.Value = WithStats(picked);
+                garage.CurrentCollection.Value = collection;
+            },
+            CollectionSelected: collection => garage.CurrentCollection.Value = collection,
+            Confirm: () => { },
+            Back: () => { },
+            SourceSelected: isOnline =>
+            {
+                garage.OnlineSource.Value = isOnline;
+                garage.OnlineStatus.Value = isOnline ? "3 public car(s). Select one to preview it." : "";
+                garage.Collections.Value = isOnline
+                    ? [new CarCollectionViewModel("Online", onlineCars)]
+                    : [new CarCollectionViewModel("NFMM", local), new CarCollectionViewModel("User", user)];
+            },
+            OnlineSearch: _ => garage.OnlineStatus.Value =
+                "Could not search the archive: Connection refused (localhost:5288) while requesting assets/search?type=Car"
+        ));
+    }
+
+    private static Node StageSelectFixture()
+    {
+        var state = new StageSelectState();
+        var local = new[]
+        {
+            new StageOption("nfmm/stage1", "Stage 1"),
+            new StageOption("nfmm/stage2", "Stage 2"),
+            new StageOption("nfmm/stage3", "Stage 3"),
+            new StageOption("nfmm/stage4", "Stage 4"),
+            new StageOption("nfmm/stage5", "Stage 5"),
+            new StageOption("nfmm/stage6", "Stage 6")
+        };
+        var online = new[]
+        {
+            new StageOption("archive/" + new string('a', 64), "Sunset Loop", "maxine"),
+            new StageOption("archive/" + new string('b', 64), "Night Run", "uwx"),
+            new StageOption("archive/" + new string('c', 64), "Harbour Sprint", "maxine"),
+            new StageOption(
+                "archive/" + new string('d', 64),
+                "A Very Long Public Stage Name That Should Not Move The List Sideways",
+                "a-rather-long-author-name"
+            )
+        }.Concat(Enumerable.Range(1, 18).Select(i => new StageOption(
+            "archive/" + new string((char)('e' + i % 10), 64),
+            $"Public Stage {i}",
+            "another-author"
+        ))).ToArray();
+
+        state.Collections.Value = ["nfmm", "user"];
+        state.Collection.Value = "nfmm";
+        state.Stages.Value = local;
+        state.Selected.Value = local[0].Id;
+        state.ConfirmEnabled.Value = true;
+
+        return StageSelectView.Build(
+            state,
+            new StageSelectView.Actions(
+                CollectionSelected: collection =>
+                {
+                    state.Collection.Value = collection;
+                    state.Stages.Value = local
+                        .Where(stage => stage.Id.StartsWith(collection + "/", StringComparison.Ordinal))
+                        .ToArray();
+                },
+                StageSelected: id => state.Selected.Value = id,
+                SearchChanged: query =>
+                {
+                    if (state.OnlineSource.Value)
+                        return;
+
+                    var search = query.Trim();
+                    state.Stages.Value = local
+                        .Where(stage => search.Length == 0 || stage.Label.Contains(search, StringComparison.OrdinalIgnoreCase))
+                        .ToArray();
+                },
+                Confirm: () => { },
+                Back: () => { },
+                SourceSelected: isOnline =>
+                {
+                    state.OnlineSource.Value = isOnline;
+                    state.Stages.Value = isOnline ? online : local;
+                    state.Selected.Value = "";
+                    state.Status.Value = isOnline ? "3 public stage(s). Pick one to preview it." : "";
+                    state.Busy.Value = false;
+                },
+                OnlineSearch: _ => state.Status.Value =
+                    "Could not search the archive: Connection refused (localhost:5288) while requesting assets/search?type=Stage"
+            )
+        );
     }
 }

@@ -119,6 +119,7 @@ SolidJS-style: signals, per-slot effects, **no vnode and no diffing**. Backed by
 | Scopes own effects | Content mounted by a flow helper lives in its own `RenderScope`; disposing that scope tears down everything created inside it. Reusing a node across mounts without adopting a new scope leaves its effects dead. |
 | Style structs are nullable | `Styles` fields are `T?` on purpose (merge semantics). Setting a field to its CLR default is not the same as leaving it null. |
 | Rows in a scroll container | Yoga's web default `flexShrink: 1` squeezes list rows to their padding, so a long list shows crushed rows (or one solid block) instead of scrolling. List rows need `flexShrink: 0` — the main-menu items and `LobbyView.Row` set it. |
+| Scroll is both axes | `Overflow.Scroll` has no X/Y split in `Styles`, so any direct child wider than the viewport adds a horizontal scrollbar. Put rows and messages in a `width: 100%`, `flexShrink: 0` column inside the scroller; long messages use `Sx.WrappingText` at 100% width. |
 
 ### Yoga port
 
@@ -407,7 +408,10 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
   hash.
 - **Validation is out of process** (`NFMWorld.Archive.Validator`). `TimeTrialSimulator` is synchronous and cannot be
   cancelled, so the archive runs it as a child process with a wall clock and kills it. A time trial is ranked only by
-  that simulation's tick count, never by a number the client sends.
+  that simulation's tick count, never by a number the client sends. `Archive:ValidatorPath` must point at the built
+  executable — uploads are refused with "Validator is not configured on this server" without it. Development
+  auto-discovers the sibling project's build; deployed archives must set it. The Dockerfile publishes the
+  validator to `/validator` and sets both `Archive:ValidatorPath` and `Archive:ValidatorWorkingDirectory`.
 - **Web account protection.** `TurnstileVerifier` checks Siteverify with a ten-second timeout, exact hostname
   allowlist and per-form action. Outside Development, set `TURNSTILE_SECRET` and comma-separated
   `TURNSTILE_HOSTNAMES`; missing settings fail closed. Development uses Cloudflare's public test key pair and skips
@@ -698,6 +702,11 @@ Added with the archive/content work; read this before touching content loading, 
 - **Stock content** — `StockCatalog` builds deterministic packages from an explicit shipped root with
   fixed metadata (`UnixEpoch`, no description). `StockSeeder` inserts them at archive startup when
   `Archive:StockContentPath` is set. A mod shadowing a stock name does not change the catalog hash.
+- **Stage browsing** — `StageSelectView` has LOCAL/ONLINE sources. Local options come from
+  `MenuPreferences.GetStages`; online options come from `ArchiveContentClient.SearchAsync(..., "Stage", ...)`
+  and carry `archive/<hash>` ids. Choosing an archive option prepares it with
+  `ContentCache.PrepareAsync(..., AssetKind.Stage, ...)` before `LoadStage`, and RACE waits for that
+  prepare. The lobby's create dialog uses the compact selector and still accepts a typed archive id.
 - **Content cache** — `ContentCache.Mount()` is called before `ArchiveMount`; prepared assets only
   appear after hash verification and typed decode, through a temp-file rename. Synchronous loaders
   read `archive/<sha256>` from the mount; `PrepareAsync` coalesces duplicate downloads and a corrupt

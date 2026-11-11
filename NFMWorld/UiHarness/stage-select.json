@@ -1,0 +1,76 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-stage-select-captures",
+  "view": "stage-select",
+  "steps": [
+    {
+      "action": "capture",
+      "capture": "local"
+    },
+    {
+      "action": "assert-size",
+      "target": "Stage select sidebar",
+      "width": 300
+    },
+    {
+      "action": "assert-min-height",
+      "target": "Stage select list",
+      "height": 300
+    },
+    {
+      "action": "assert-min-height",
+      "target": "Stage select confirm",
+      "height": 40
+    },
+    {
+      "action": "click",
+      "target": "Stage row nfmm/stage3",
+      "capture": "local-selected"
+    },
+    {
+      "action": "assert-hover",
+      "target": "Stage row nfmm/stage3"
+    },
+    {
+      "action": "click",
+      "target": "Stage select source online",
+      "capture": "online"
+    },
+    {
+      "action": "assert-no-horizontal-scroll",
+      "target": "Stage select list"
+    },
+    {
+      "action": "click",
+      "target": "Stage select search"
+    },
+    {
+      "action": "text",
+      "value": "x"
+    },
+    {
+      "action": "key",
+      "value": "Enter"
+    },
+    {
+      "action": "capture",
+      "capture": "online-error"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Stage row archive/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "action": "click",
+      "target": "Stage row archive/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "capture": "online-selected"
+    },
+    {
+      "action": "click",
+      "target": "Stage select source local",
+      "capture": "local-again"
+    }
+  ]
+}

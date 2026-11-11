@@ -1,0 +1,93 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-garage-captures",
+  "view": "garage",
+  "steps": [
+    {
+      "action": "capture",
+      "capture": "local"
+    },
+    {
+      "action": "assert-size",
+      "target": "Garage browse",
+      "width": 380
+    },
+    {
+      "action": "assert-size",
+      "target": "Garage detail",
+      "width": 380
+    },
+    {
+      "action": "assert-min-height",
+      "target": "Garage car list",
+      "height": 240
+    },
+    {
+      "action": "assert-min-height",
+      "target": "Garage stats",
+      "height": 300
+    },
+    {
+      "action": "hover",
+      "target": "Garage car Monster",
+      "capture": "hover-car"
+    },
+    {
+      "action": "assert-hover",
+      "target": "Garage car Monster"
+    },
+    {
+      "action": "click",
+      "target": "Garage car Monster",
+      "capture": "picked-car"
+    },
+    {
+      "action": "click",
+      "target": "Garage source online",
+      "capture": "online"
+    },
+    {
+      "action": "assert-hover",
+      "target": "Garage source online"
+    },
+    {
+      "action": "assert-no-horizontal-scroll",
+      "target": "Garage car list"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Garage car archive/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "action": "click",
+      "target": "Garage car archive/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "capture": "online-picked"
+    },
+    {
+      "action": "click",
+      "target": "Garage search"
+    },
+    {
+      "action": "text",
+      "value": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+    },
+    {
+      "action": "assert-no-horizontal-scroll",
+      "target": "Garage car list"
+    },
+    {
+      "action": "key",
+      "value": "Enter"
+    },
+    {
+      "action": "capture",
+      "capture": "online-error"
+    },
+    {
+      "action": "capture",
+      "capture": "online-no-match"
+    }
+  ]
+}

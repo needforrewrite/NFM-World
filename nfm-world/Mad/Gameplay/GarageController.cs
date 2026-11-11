@@ -253,7 +253,7 @@ internal sealed class GarageController
 
         UiState.Garage.OnlineSource.Value = online;
         GarageView.ClearSearch();
-        UiState.Garage.OnlineStatus.Value = online ? "Search the archive for public cars." : "";
+        UiState.Garage.OnlineStatus.Value = online ? "Loading public cars..." : "";
 
         if (online)
         {
@@ -261,6 +261,8 @@ internal sealed class GarageController
             _onlineGeneration++;
             UiState.Garage.Collections.Value = [];
             _selectionReady = false;
+            // List recent public cars straight away; searching narrows it.
+            SearchOnline("");
             return;
         }
 
@@ -284,7 +286,7 @@ internal sealed class GarageController
             var cars = page.Items
                 .Where(item => item.Eligible)
                 .Select(item => new CarStatsViewModel(
-                        item.ContentHash,
+                        RadpackReader.ArchivePrefix + item.ContentHash.ToLowerInvariant(),
                         item.Name,
                         "Online",
                         0,
@@ -316,8 +318,11 @@ internal sealed class GarageController
     /// Downloads and verifies a selected public car, then previews it. The previously committed
     /// car stays untouched until SELECT CAR, so a failed download changes nothing.
     /// </summary>
-    private async Task PrepareOnlineCarAsync(string hash)
+    private async Task PrepareOnlineCarAsync(string hashOrIdentity)
     {
+        var hash = RadpackReader.IsArchiveId(hashOrIdentity)
+            ? hashOrIdentity[RadpackReader.ArchivePrefix.Length..]
+            : hashOrIdentity;
         var generation = ++_onlineGeneration;
         UiState.Garage.OnlineStatus.Value = "Preparing car...";
         _selectionReady = false;

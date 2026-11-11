@@ -29,6 +29,9 @@ services:
       # Only this process may write ratings, and the lobby is the only party given its key.
       Archive__TrustedServerKeys: ${ARCHIVE_TRUSTED_KEYS:?set ARCHIVE_TRUSTED_KEYS in .env}
       Archive__PublicBaseUrl: ${ARCHIVE_PUBLIC_URL:-http://localhost:8080}
+      # The image publishes the validator beside the app; uploads and time trials are refused
+      # when this is missing.
+      Archive__ValidatorPath: "/validator/NFMWorld.Archive.Validator"
       Archive__DiscordClientId: ${DISCORD_CLIENT_ID:-}
       Archive__DiscordClientSecret: ${DISCORD_CLIENT_SECRET:-}
       Archive__DiscordRedirectUri: ${DISCORD_REDIRECT_URI:-}

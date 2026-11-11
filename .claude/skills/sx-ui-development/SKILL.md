@@ -102,6 +102,7 @@ For a vertical panel:
 1. Header/search/toolbars/footer actions: `flexShrink: 0`.
 2. Scrollable middle: `flexGrow: 1`, `flexShrink: 1`, `minHeight: 0`, `overflow: Overflow.Scroll`.
 3. Rows and grouped controls inside that scroller: `flexShrink: 0`.
+4. Wrap those rows in a `width: 100%`, `flexShrink: 0` column. `Overflow.Scroll` scrolls both axes, so one wide child or a long empty-state message otherwise draws a horizontal scrollbar on a vertical list. Use `Sx.WrappingText` at `width: 100%` for messages and error lines.
 
 For horizontal layouts, use `minWidth: 0` on the flexible content and preserve fixed controls. A fixed width on the outer panel does **not** prevent its descendants from shrinking vertically. Inspect both the panel's children and nested groups. A long list must scroll, not compress buttons into their padding.
 
@@ -174,7 +175,7 @@ dotnet run --project NFMWorld -- --backend=d3d11 --sx-harness=NFMWorld/UiHarness
 
 The harness mounts the actual editor `BuildUi`, uses Apos/fonts and GPU rendering, and sends direct `UiRenderer` events—**never OS mouse/SendKeys automation**. It renders offscreen and writes PNGs plus measured node/hover JSON. Read and inspect the PNGs using `view_image`; creating captures alone is not visual verification.
 
-Script fields: `width`, `height`, `scale`, `output` (relative to the script), optional `view` (`stage-editor` or `model-editor`), and `steps`. `pieceCount` seeds a synthetic stage-editor hierarchy/selection for layout stress; it is not a real rendered track. Use the existing inspector scenario for an 80-row list.
+Script fields: `width`, `height`, `scale`, `output` (relative to the script), optional `view` (`stage-editor`, `model-editor`, `garage`, `stage-select`), and `steps`. `pieceCount` seeds a synthetic stage-editor hierarchy/selection for layout stress; it is not a real rendered track. Use the existing inspector scenario for an 80-row list. The menu views mount the real `GarageView`/`StageSelectView` over synthetic state fixtures.
 
 Supported steps:
 
@@ -190,6 +191,7 @@ Supported steps:
 | `assert-aligned` | target and `anchor` left edges within one pixel |
 | `assert-input-aligned` | named field containers' direct TextInputs have equal left edges and widths |
 | `assert-min-height` | `height`: minimum logical height, scaled by the harness |
+| `assert-size` | `width`/`height`: exact logical size, scaled; do not use on `100%` heights, which stay at device pixels |
 
 Any step can include `capture`. Example:
 
@@ -208,7 +210,7 @@ Any step can include `capture`. Example:
 }
 ```
 
-Limitations matter: the current harness is UI-only, does not run phase gameplay/input ticks or real scene rendering, and only exposes the registered editor fixtures. `assert-visible` alone does not prove a node is on-screen, unclipped, or unobstructed; inspect bounds, hit tests, and pixels too. Extend the harness with a narrow real view factory for new screens rather than testing a lookalike. Keep writes sandboxed and exclude capture artifacts from source control.
+Limitations matter: the current harness is UI-only, does not run phase gameplay/input ticks or real scene rendering, and only exposes the registered fixtures. `assert-visible` alone does not prove a node is on-screen, unclipped, or unobstructed; inspect bounds, hit tests, and pixels too. Extend the harness with a narrow real view factory for new screens rather than testing a lookalike. Give interactive components a `name` (`Button.Create(..., name:)`, `Sx.View(name:)`) so scenarios can target them. Keep writes sandboxed and exclude capture artifacts from source control.
 
 Verify at least: empty and dense content; first/last rows; long text; hover transition between siblings; focused input; open/close/reopen dialog; selected-object switching; small viewport and another scale. For a popup compare before/after measured anchors and inspect the actual highlight in the image. If a screenshot cannot decode, verify the capture path itself (PNG requires zlib framing and correct chunk CRCs).
 

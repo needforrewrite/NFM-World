@@ -518,7 +518,7 @@ public static class LobbyView
             .Order(StringComparer.OrdinalIgnoreCase)
             .ToArray();
         stageState.Collection.Value = stageState.Collections.Value.FirstOrDefault() ?? "";
-        stageState.Stages.Value = stages;
+        stageState.Stages.Value = stages.Select(StageOptionFor).ToArray();
         stageState.Selected.Value = lobby.SelectedStage.Value;
         stageState.ConfirmEnabled.Value = stages.Length > 0;
         if (!MultiplayerContentPolicy.IsAcceptedStage(lobby.SelectedStage.Value))
@@ -588,6 +588,7 @@ public static class LobbyView
                                     stageState.Collection.Value = collection;
                                     stageState.Stages.Value = stages
                                         .Where(stage => StageCollectionOf(stage) == collection)
+                                        .Select(StageOptionFor)
                                         .ToArray();
                                 },
                                 StageSelected: stage =>
@@ -617,7 +618,7 @@ public static class LobbyView
                                         && !matches.Contains(search, StringComparer.Ordinal))
                                         matches.Insert(0, search);
 
-                                    stageState.Stages.Value = matches.ToArray();
+                                    stageState.Stages.Value = matches.Select(StageOptionFor).ToArray();
                                 },
                                 Confirm: () => { },
                                 Back: () => { }
@@ -766,6 +767,12 @@ public static class LobbyView
     {
         var slash = stageId.IndexOf('/');
         return slash < 0 ? "stages" : stageId[..slash];
+    }
+
+    private static StageOption StageOptionFor(string stageId)
+    {
+        var slash = stageId.LastIndexOf('/');
+        return new StageOption(stageId, slash < 0 ? stageId : stageId[(slash + 1)..], StageCollectionOf(stageId));
     }
 
     /// <summary>Stage names for the create dialog.</summary>

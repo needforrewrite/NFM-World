@@ -10,6 +10,29 @@ using NFMWorldLibrary.Multiplayer;
 var builder = WebApplication.CreateBuilder(args);
 
 var options = builder.Configuration.GetSection("Archive").Get<ArchiveOptions>() ?? new ArchiveOptions();
+
+// Resolve configured validator paths against the content root, so a relative Development path
+// does not depend on the directory the process happened to start in.
+if (!string.IsNullOrWhiteSpace(options.ValidatorPath))
+    options.ValidatorPath = Path.GetFullPath(options.ValidatorPath, builder.Environment.ContentRootPath);
+if (!string.IsNullOrWhiteSpace(options.ValidatorWorkingDirectory))
+{
+    options.ValidatorWorkingDirectory = Path.GetFullPath(
+        options.ValidatorWorkingDirectory,
+        builder.Environment.ContentRootPath
+    );
+}
+
+// Development can use the validator built beside this project; a deployed archive must still set
+// Archive:ValidatorPath explicitly, so an empty path keeps uploads refused there.
+if (string.IsNullOrWhiteSpace(options.ValidatorPath)
+    && builder.Environment.IsDevelopment()
+    && ValidatorLocator.FindBesideRepository(builder.Environment.ContentRootPath) is { } localValidator)
+{
+    options.ValidatorPath = localValidator;
+    options.ValidatorWorkingDirectory = Path.GetDirectoryName(localValidator);
+}
+
 builder.Services.AddSingleton(options);
 builder.Services.AddSingleton(new FileStorage(options.StorageRoot));
 builder.Services.AddDbContext<ArchiveDbContext>(o => o.UseSqlite(options.Database));
@@ -27,6 +50,14 @@ builder.Services.AddRazorPages(options =>
 );
 
 var app = builder.Build();
+
+if (string.IsNullOrWhiteSpace(options.ValidatorPath) || !File.Exists(options.ValidatorPath))
+{
+    app.Logger.LogWarning(
+        "No archive validator configured: uploads and time trials will be refused. "
+        + "Set Archive__ValidatorPath to the built NFMWorld.Archive.Validator executable."
+    );
+}
 
 // TLS terminates at the proxy in the documented deployment, so without this every request
 // looks like local plain HTTP: the login throttle would share one global IP bucket (locking
