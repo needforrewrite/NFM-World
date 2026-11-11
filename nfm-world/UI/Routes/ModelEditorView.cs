@@ -34,6 +34,11 @@ public sealed class ModelEditorView
     private readonly Signal<BottomTab> _bottomTab = new(BottomTab.Controls);
     private readonly Signal<bool> _newModelOpen = new(false);
     private readonly Signal<bool> _loadOpen = new(false);
+    private readonly Signal<bool> _publishOpen = new(false);
+    private readonly Signal<string> _publishName = new("");
+    private readonly Signal<string> _publishDescription = new("");
+    private readonly Signal<string> _publishStatus = new("");
+    private readonly Signal<bool> _publishBusy = new(false);
     private readonly Signal<bool> _newIsCar = new(true);
     private readonly Signal<string> _newName = new("");
     private readonly Signal<bool> _newOpenInTab = new(true);
@@ -202,6 +207,7 @@ public sealed class ModelEditorView
     /// <summary>Any modal or the polygon editor has the screen, so the viewport must not.</summary>
     public bool ModalOpen => _newModelOpen.Value
                              || _loadOpen.Value
+                             || _publishOpen.Value
                              || _confirm.Value is not null
                              || _error.Value is not null;
 
@@ -444,6 +450,7 @@ public sealed class ModelEditorView
                 EmptyState(),
                 NewModelDialog(),
                 LoadModelDialog(),
+                PublishModelDialog(),
                 PolygonEditorDialog(),
                 ConfirmDialog(),
                 ErrorDialog(),
@@ -4434,8 +4441,8 @@ public sealed class ModelEditorView
         => _confirm.Value = new ConfirmRequest(title, message, actions);
 
     /// <summary>
-    /// Publishes the editor's live text, not the file on disk, so unsaved edits are included.
-    /// The document, its dirty flag and its history are not touched.
+    /// Opens the publication dialog for the editor's live text, not the file on disk, so unsaved
+    /// edits are included. The document, its dirty flag and its history are not touched.
     /// </summary>
     private void PublishActiveModel()
     {
@@ -4445,10 +4452,11 @@ public sealed class ModelEditorView
             return;
         }
 
-        Rad3d rad;
+        // Parse before asking for a name: a document that cannot be packaged should fail here,
+        // not once the upload has been prepared.
         try
         {
-            rad = RadParser.ParseRad(tab.TextContent, tab.ModelPath ?? "editing");
+            RadParser.ParseRad(tab.TextContent, tab.ModelPath ?? "editing");
         }
         catch (Exception ex)
         {
@@ -4456,18 +4464,136 @@ public sealed class ModelEditorView
             return;
         }
 
-        var kind = tab.ModelType == ModelEditorTab.ModelTypeEnum.Car ? AssetKind.Car : AssetKind.StagePiece;
-        var name = tab.GetDisplayName().TrimEnd('*');
-        _ = PublishAsync(rad, kind, name);
+        _publishName.Value = tab.GetDisplayName().TrimEnd('*');
+        _publishDescription.Value = "";
+        _publishStatus.Value = "";
+        _publishBusy.Value = false;
+        _publishOpen.Value = true;
     }
 
-    private async Task PublishAsync(Rad3d rad, AssetKind kind, string name)
+    private Node PublishModelDialog() => Sx.Show(
+        when: () => _publishOpen.Value,
+        then: () => Modal(
+            () =>
+            {
+                if (!_publishBusy.Value)
+                    _publishOpen.Value = false;
+            },
+            Sx.View(
+                style: () => Sx.Styles(
+                    width: 470,
+                    flexDirection: FlexDirection.Column,
+                    gapRow: 12,
+                    paddingTop: 22,
+                    paddingBottom: 22,
+                    paddingLeft: 24,
+                    paddingRight: 24,
+                    backgroundColor: Panel,
+                    borderTop: 1,
+                    borderBottom: 1,
+                    borderLeft: 1,
+                    borderRight: 1,
+                    borderColor: Border,
+                    borderRadius: 12
+                ),
+                onmousedown: e => e.StopPropagation(),
+                children:
+                [
+                    DialogTitle("PUBLISH TO ARCHIVE", "Publication is public and includes unsaved edits."),
+                    Sx.Text(
+                        style: () => Sx.TextStyles(fontSize: 11, foregroundColor: TextBlue),
+                        text: () => _phase.ActiveTab?.ModelType == ModelEditorTab.ModelTypeEnum.Car
+                            ? "KIND: CAR"
+                            : "KIND: STAGE SCENERY"
+                    ),
+                    Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: TextBlue), text: () => "NAME"),
+                    Controls.TextField(
+                        () => _publishName.Value,
+                        value => _publishName.Value = value,
+                        () => "model_name"
+                    ),
+                    Sx.Text(
+                        style: () => Sx.TextStyles(fontSize: 11, foregroundColor: TextBlue),
+                        text: () => "DESCRIPTION"
+                    ),
+                    Controls.TextField(
+                        () => _publishDescription.Value,
+                        value => _publishDescription.Value = value,
+                        () => "optional"
+                    ),
+                    Sx.Show(
+                        when: () => _publishStatus.Value.Length > 0,
+                        then: () => Sx.Text(
+                            style: () => Sx.TextStyles(fontSize: 11, foregroundColor: TextBlue),
+                            text: () => _publishStatus.Value
+                        )
+                    ),
+                    Sx.View(
+                        style: () => Sx.Styles(
+                            flexDirection: FlexDirection.Row,
+                            justifyContent: Justify.FlexEnd,
+                            gapColumn: 10,
+                            gapRow: 10,
+                            marginTop: 4
+                        ),
+                        children:
+                        [
+                            Button.Create(
+                                () => "CANCEL",
+                                () => _publishOpen.Value = false,
+                                variant: ButtonVariant.Ghost,
+                                style: () => Sx.Styles(minWidth: 100)
+                            ),
+                            Button.Create(
+                                () => _publishBusy.Value ? "PUBLISHING..." : "PUBLISH",
+                                PublishActiveModelNow,
+                                ButtonVariant.Primary,
+                                style: () => Sx.Styles(minWidth: 130)
+                            )
+                        ]
+                    )
+                ]
+            )
+        )
+    );
+
+    private void PublishActiveModelNow()
     {
-        var result = await ArchivePublisher.PublishModelAsync(rad, kind, name, null);
+        if (_publishBusy.Value || _phase.ActiveTab is not { } tab)
+            return;
+
+        Rad3d rad;
+        try
+        {
+            rad = RadParser.ParseRad(tab.TextContent, tab.ModelPath ?? "editing");
+        }
+        catch (Exception ex)
+        {
+            _publishStatus.Value = $"The model could not be read: {ex.Message}";
+            return;
+        }
+
+        var kind = tab.ModelType == ModelEditorTab.ModelTypeEnum.Car ? AssetKind.Car : AssetKind.StagePiece;
+        _publishBusy.Value = true;
+        _publishStatus.Value = "Publishing...";
+        _ = PublishAsync(rad, kind, _publishName.Value.Trim(), _publishDescription.Value.Trim());
+    }
+
+    private async Task PublishAsync(Rad3d rad, AssetKind kind, string name, string description)
+    {
+        var result = await ArchivePublisher.PublishModelAsync(
+            rad,
+            kind,
+            string.IsNullOrWhiteSpace(name) ? "model" : name,
+            description
+        );
+
+        _publishBusy.Value = false;
+        _publishStatus.Value = result.Message;
+
+        // Kept open on failure: the name and description are what the author retries with.
         if (result.Success)
-            ShowConfirm("Published", result.Message, [new ConfirmAction("OK", () => { })]);
-        else
-            ShowError("Publish", result.Message);
+            _publishOpen.Value = false;
     }
 
     private void ShowError(string title, string message) => _error.Value = new ErrorRequest(title, message);

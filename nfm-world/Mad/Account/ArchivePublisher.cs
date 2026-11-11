@@ -1,4 +1,4 @@
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -32,7 +32,16 @@ public static class ArchivePublisher
         if (kind is not (AssetKind.Car or AssetKind.StagePiece or AssetKind.Wheel))
             return new AssetUploadResult(false, $"{AssetKinds.Name((byte)kind)} cannot be published.", null);
 
-        var bytes = StockCatalog.PackageModel(kind, name, rad, description);
+        byte[] bytes;
+        try
+        {
+            bytes = StockCatalog.PackageModel(kind, name, rad, description);
+        }
+        catch (Exception ex)
+        {
+            return new AssetUploadResult(false, $"The model could not be packaged: {ex.Message}", null);
+        }
+
         return await UploadAsync(bytes, name, description ?? "", kind);
     }
 
@@ -42,7 +51,16 @@ public static class ArchivePublisher
         string? description
     )
     {
-        var bytes = StockCatalog.PackageStage(name, stage);
+        byte[] bytes;
+        try
+        {
+            bytes = StockCatalog.PackageStage(name, stage);
+        }
+        catch (Exception ex)
+        {
+            return new AssetUploadResult(false, $"The stage could not be packaged: {ex.Message}", null);
+        }
+
         return await UploadAsync(bytes, name, description ?? "", AssetKind.Stage);
     }
 
@@ -52,19 +70,35 @@ public static class ArchivePublisher
         if (!AssetKinds.IsPublishable((byte)kind))
             return null;
 
-        var bytes = StockCatalog.PackageModel(kind, name, rad);
         var path = $"data/models/{name}.radpack";
-        using (var stream = VFS.OpenWrite(path))
-            stream.Write(bytes);
+        try
+        {
+            using var stream = VFS.OpenWrite(path);
+            stream.Write(StockCatalog.PackageModel(kind, name, rad));
+        }
+        catch (Exception ex)
+        {
+            Logging.Warning($"Could not export the model: {ex.Message}");
+            return null;
+        }
+
         return path;
     }
 
     public static string? ExportLocalStage(StageLoader stage, string name)
     {
-        var bytes = StockCatalog.PackageStage(name, stage);
         var path = $"data/stages/{name}.radpack";
-        using (var stream = VFS.OpenWrite(path))
-            stream.Write(bytes);
+        try
+        {
+            using var stream = VFS.OpenWrite(path);
+            stream.Write(StockCatalog.PackageStage(name, stage));
+        }
+        catch (Exception ex)
+        {
+            Logging.Warning($"Could not export the stage: {ex.Message}");
+            return null;
+        }
+
         return path;
     }
 

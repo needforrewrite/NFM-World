@@ -713,6 +713,11 @@ Added with the archive/content work; read this before touching content loading, 
   or the two-minute deadline calls the start off and restores the session. The game master builds no
   cars, so it is never asked for them; its download has its own HTTP timeout and never consumes the
   create-race window. Bots never acknowledge.
+- **Publishing** — `ArchivePublisher` packages a snapshot of the live editor document (never a
+  reread of the file) and uploads it with `AccountManager`'s bearer session, or writes a local
+  radpack with `ExportLocal*`. Both editors show name, description and that the publication is
+  public; a failure leaves the document, its dirty flag and its history alone. Packaging failures
+  are returned as messages rather than thrown, because the callers are fire-and-forget UI actions.
 - **Time trials** — the client notifies `IClientCallbacks.TimeTrialCompleted` once per completed run
   (never for simulation), `TimeTrialSubmissions` writes the recording and a MemoryPack sidecar before
   network work, and `TimeTrialUploader` retries from the replay browser. The archive simulates the
