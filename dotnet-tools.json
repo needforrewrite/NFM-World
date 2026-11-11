@@ -9,10 +9,10 @@
       ],
       "rollForward": false
     },
-    "jetbrains.resharper.globaltools": {
-      "version": "2026.2.4.1",
+    "csharp-format": {
+      "version": "1.0.0",
       "commands": [
-        "jb"
+        "csharp-format"
       ],
       "rollForward": false
     }

@@ -1,6 +1,6 @@
 #!/bin/sh
-# Reformats the staged C# files with ReSharper's CLI, then re-stages them.
-# The settings layers are disabled so only the repo's .editorconfig applies.
+# Reformats staged C# files with csharp-format, then re-stages them.
+# csharp-format reads the repo's .editorconfig itself.
 set -e
 
 files=""
@@ -11,10 +11,7 @@ done
 [ -n "$files" ] || exit 0
 
 # shellcheck disable=SC2086 # the paths come from git and contain no spaces
-dotnet jb cleanupcode $files \
-    --profile="Built-in: Reformat Code" \
-    --disable-settings-layers="GlobalAll;GlobalPerProduct;SolutionShared;SolutionPersonal" \
-    --no-updates
+dotnet csharp-format format $files
 
 # shellcheck disable=SC2086
 git add -- $files
