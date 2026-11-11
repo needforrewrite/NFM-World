@@ -1,8 +1,9 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Gamemodes.DotNet;
+using NFMWorldLibrary.Plugins;
 using NFMWorldLibrary.Radpack;
 
 namespace NFMWorldLibrary.Multiplayer;
@@ -91,5 +92,9 @@ public static class GamemodeFactory
 
     [RequiresUnreferencedCode("Plugin loading requires loading code at runtime.")]
     private static GamemodePlugin? LoadPlugin(string gamemodeId)
-        => GamemodePlugin.Load(gamemodeId, $"data/gamemodes/{gamemodeId}/gamemode.dll");
+        => GamemodePlugin.Load(
+            gamemodeId,
+            PluginPaths.For("gamemodes", gamemodeId, "gamemode.dll"),
+            PluginPaths.PackageFor("gamemodes", gamemodeId, "gamemode.radpack")
+        );
 }

@@ -66,13 +66,14 @@ public sealed class GamemodePlugin
         => _clientConstructor ?? throw new InvalidOperationException($"Gamemode plugin '{Id}' has been unloaded.");
 
     /// <summary>
-    /// Loads the plugin at <paramref name="path"/> into its own load context, or returns
-    /// null if there is no assembly there or it is not marked <c>[assembly: Gamemode]</c>.
+    /// Loads the plugin at <paramref name="path"/>, or from <paramref name="packagePath"/> when
+    /// no loose assembly is installed, and returns null if neither exists or the assembly is not
+    /// marked <c>[assembly: Gamemode]</c>.
     /// </summary>
     [RequiresUnreferencedCode("Loads an assembly into a collectible context.")]
-    public static GamemodePlugin? Load(string id, string path)
+    public static GamemodePlugin? Load(string id, string path, string? packagePath = null)
     {
-        var assembly = PluginAssembly.Load(id, path);
+        var assembly = PluginAssembly.Load(id, path, packagePath);
         if (assembly is null)
             return null;
 

@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using Maxine.Extensions;
@@ -20,7 +20,18 @@ public static class BackendGameSparker
     public static UnlimitedArray<Rad3d> stage_parts = [];
     public static UnlimitedArray<Rad3d> vendor_stage_parts = [];
     public static UnlimitedArray<Rad3d> user_stage_parts = [];
+
+    /// <summary>Models registered at runtime (test drives), keyed by name. Cars only.</summary>
     public static Dictionary<string, (int Index, Rad3d Rad)> dynamic_models = new();
+
+    // File-backed models, separated by kind and canonical identity so a car and a stage piece
+    // with the same name cannot collide.
+    private static readonly Dictionary<string, (int Index, Rad3d Rad)> _carFiles =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    private static readonly Dictionary<string, (int Index, Rad3d Rad)> _stagePartFiles =
+        new(StringComparer.OrdinalIgnoreCase);
+
     public static Rad3d error_mesh;
 
     public static readonly string[] CarRads =
@@ -66,6 +77,7 @@ public static class BackendGameSparker
         {
             CrashReportLibrary.Hook(Logging.SentryDsn, Logging.Release);
         }
+
 #endif
 
 #if DEBUG
@@ -75,6 +87,7 @@ public static class BackendGameSparker
             VFS.MountDirectory(projectDirectory);
             VFS.MountDirectory(Path.GetFullPath(Path.Combine(projectDirectory, "..", "NFMWorld.Library")));
         }
+
 #endif
 
         // The browser has no install directory and no writable one: the head mounts the asset
@@ -113,106 +126,100 @@ public static class BackendGameSparker
         }
 
         cars.Add(Collection.NFMM, []);
-        FileUtil.LoadFiles(
+        LoadModelDirectory(
             "./data/models/nfmm/cars",
             CarRads,
-            (ais, fileName) => RadParser.ParseRad(Encoding.UTF8.GetString(ais), "nfmm/" + fileName),
-            (id, result) => cars[Collection.NFMM][id] = result
+            RadpackType.Car,
+            "nfmm/",
+            (id, result) => cars[Collection.NFMM][id] = result,
+            null,
+            tolerant: false
         );
 
-        FileUtil.LoadFiles(
+        LoadModelDirectory(
             "./data/models/nfmm/stage",
             StageRads,
-            (ais, fileName) => RadParser.ParseRad(Encoding.UTF8.GetString(ais), "nfmm/" + fileName),
-            (id, result) => stage_parts[id] = result
+            RadpackType.TrackPiece,
+            "nfmm/",
+            (id, result) => stage_parts[id] = result,
+            null,
+            tolerant: false
         );
 
         cars.Add(Collection.World, []);
-        FileUtil.LoadFiles(
+        LoadModelDirectory(
             "./data/models/world/cars",
-            (ais, fileName) => RadParser.ParseRad(Encoding.UTF8.GetString(ais), "world/" + fileName),
-            result => cars[Collection.World].Add(result)
+            null,
+            RadpackType.Car,
+            "world/",
+            null,
+            result => cars[Collection.World].Add(result),
+            tolerant: false
         );
 
         cars.Add(Collection.Elo, []);
-        FileUtil.LoadFiles(
+        LoadModelDirectory(
             "./data/models/elo/cars",
-            (ais, fileName) => RadParser.ParseRad(Encoding.UTF8.GetString(ais), "elo/" + fileName),
-            result => cars[Collection.Elo].Add(result)
+            null,
+            RadpackType.Car,
+            "elo/",
+            null,
+            result => cars[Collection.Elo].Add(result),
+            tolerant: false
         );
 
         cars.Add(Collection.Football, []);
-        FileUtil.LoadFiles(
+        LoadModelDirectory(
             "./data/models/football/cars",
-            (ais, fileName) => RadParser.ParseRad(Encoding.UTF8.GetString(ais), "football/" + fileName),
-            result => cars[Collection.Football].Add(result)
+            null,
+            RadpackType.Car,
+            "football/",
+            null,
+            result => cars[Collection.Football].Add(result),
+            tolerant: false
         );
 
-        FileUtil.LoadFiles(
+        LoadModelDirectory(
             "./data/models/world/stage",
-            (ais, fileName) => RadParser.ParseRad(Encoding.UTF8.GetString(ais), "world/" + fileName),
-            result => vendor_stage_parts.Add(result)
+            null,
+            RadpackType.TrackPiece,
+            "world/",
+            null,
+            result => vendor_stage_parts.Add(result),
+            tolerant: false
         );
 
-        FileUtil.LoadFiles(
+        LoadModelDirectory(
             "./data/models/football/stage",
-            (ais, fileName) => RadParser.ParseRad(Encoding.UTF8.GetString(ais), "football/" + fileName),
-            result => vendor_stage_parts.Add(result)
+            null,
+            RadpackType.TrackPiece,
+            "football/",
+            null,
+            result => vendor_stage_parts.Add(result),
+            tolerant: false
         );
 
         cars.Add(Collection.User, []);
-        FileUtil.LoadFiles(
+        LoadModelDirectory(
             "./data/models/user/cars",
-            (ais, fileName) =>
-            {
-                try
-                {
-                    return RadParser.ParseRad(Encoding.UTF8.GetString(ais), "user/" + fileName);
-                }
-                catch (Exception ex)
-                {
-                    SentrySdk.CaptureEvent(
-                        new SentryEvent(ex)
-                        {
-                            Message = $"Error loading user car part '{fileName}'"
-                        }
-                    );
-                    Logging.Info($"Error loading user car '{fileName}': {ex.Message}\n{ex.StackTrace}");
-                    return null;
-                }
-            },
-            result =>
-            {
-                if (result != null)
-                    cars[Collection.User].Add(result);
-            }
+            null,
+            RadpackType.Car,
+            "user/",
+            null,
+            result => cars[Collection.User].Add(result),
+            tolerant: true
         );
 
-        FileUtil.LoadFiles(
-            "./data/models/user/cars",
-            (ais, fileName) =>
-            {
-                try
-                {
-                    return RadParser.ParseRad(Encoding.UTF8.GetString(ais), "user/" + fileName);
-                }
-                catch (Exception ex)
-                {
-                    SentrySdk.CaptureEvent(
-                        new SentryEvent(ex)
-                        {
-                            Message = $"Error loading user stage part '{fileName}'"
-                        }
-                    );
-                    Logging.Info($"Error loading user car '{fileName}': {ex.Message}\n{ex.StackTrace}");
-                    return null;
-                }
-            },
-            result =>
-            {
-                if (result != null)
-                    user_stage_parts.Add(result);
-            }
+        // User stage pieces have their own folder. This used to read the car folder, so a user
+        // car could be registered as a stage piece.
+        LoadModelDirectory(
+            "./data/models/user/stage",
+            null,
+            RadpackType.TrackPiece,
+            "user/",
+            null,
+            result => user_stage_parts.Add(result),
+            tolerant: true
         );
 
         error_mesh = RadParser.ParseRad(Encoding.UTF8.GetString(VFS.ReadAllBytes("./data/models/error.rad")), "error.rad");
@@ -241,6 +248,87 @@ public static class BackendGameSparker
             }
         }
     }
+
+    /// <summary>
+    /// Loads a folder of <c>.rad</c> text models and <c>.radpack</c> models of one kind.
+    /// </summary>
+    /// <remarks>
+    /// The kind is passed to the reader rather than inferred from the file, so a car radpack in a
+    /// stage-piece folder is rejected instead of loaded as a piece. Shipped folders are strict
+    /// (a broken stock model fails the load); user folders skip the broken file and keep going.
+    /// </remarks>
+    private static void LoadModelDirectory(
+        string folder,
+        string[]? orderedNames,
+        RadpackType kind,
+        string labelPrefix,
+        Action<int, Rad3d>? saveIndexed,
+        Action<Rad3d>? save,
+        bool tolerant
+    )
+    {
+        if (!VFS.DirectoryExists(folder))
+        {
+            Logging.Info($"Folder not found: {folder}");
+            return;
+        }
+
+        var extras = new List<Rad3d>();
+
+        foreach (var file in VFS.EnumerateFiles(folder))
+        {
+            var extension = Path.GetExtension(file);
+            if (!extension.Equals(".rad", StringComparison.OrdinalIgnoreCase)
+                && !extension.Equals(".radpack", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var name = Path.GetFileNameWithoutExtension(file);
+            var index = orderedNames?.IndexOf(name) ?? -1;
+            if (orderedNames is not null && index == -1)
+                Logging.Debug($"Extra file found: {file}");
+
+            Rad3d? model;
+            try
+            {
+                model = ReadModelFile(file, extension, kind, labelPrefix + name);
+            }
+            catch (Exception ex) when (tolerant)
+            {
+                SentrySdk.CaptureEvent(new SentryEvent(ex) { Message = $"Error loading user model '{file}'" });
+                Logging.Info($"Error loading model '{file}': {ex.Message}\n{ex.StackTrace}");
+                continue;
+            }
+
+            if (model is null)
+                continue;
+
+            if (index > -1)
+                saveIndexed!(index, model);
+            else
+                extras.Add(model);
+        }
+
+        var next = orderedNames?.Length ?? 0;
+        foreach (var model in extras)
+        {
+            if (saveIndexed is not null)
+                saveIndexed(next++, model);
+            else
+                save!(model);
+        }
+    }
+
+    private static Rad3d? ReadModelFile(string file, string extension, RadpackType kind, string label)
+    {
+        if (extension.Equals(".radpack", StringComparison.OrdinalIgnoreCase))
+        {
+            var asset = RadpackReader.Read(file, kind);
+            return asset is RadpackRad3d rad ? rad.Rad : null;
+        }
+
+        return RadParser.ParseRad(Encoding.UTF8.GetString(VFS.ReadAllBytes(file)), label);
+    }
+
 
     private static IntPtr ImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
     {
@@ -368,51 +456,23 @@ public static class BackendGameSparker
             return dynRad;
         }
 
-        var radpackPath = $"data/models/{name}.radpack";
-        if (VFS.FileExists(radpackPath))
-        {
-            try
-            {
-                total += dynamic_models.Count;
-                var radpack = RadpackSerializer.Deserialize(VFS.ReadAllBytes(radpackPath));
-                if (radpack is not RadpackRad3d rad)
-                {
-                    throw new InvalidOperationException("Radpack does not contain a Rad3d Model");
-                }
+        var identity = RadpackReader.Identity(name);
+        if (_carFiles.TryGetValue(identity, out var cachedCar))
+            return cachedCar;
 
-                return dynamic_models[name] = (total, rad.Rad);
-            }
-            catch (Exception ex)
-            {
-                SentrySdk.CaptureEvent(
-                    new SentryEvent(ex)
-                    {
-                        Message = $"Error loading dynamic model '{name}'"
-                    }
-                );
-                Logging.Info($"Error loading dynamic model '{name}': {ex.Message}\n{ex.StackTrace}");
-            }
+        var model = RadpackReader.TryReadModel(name, RadpackType.Car, out var modelError);
+        if (modelError is { } carError)
+        {
+            // A file that exists but is the wrong kind or unreadable is a real error: falling
+            // through would substitute a legacy download of the same name for it.
+            Logging.Error($"Error loading car '{name}': {carError}");
+            return (-1, null!);
         }
 
-        var relativePath = $"data/models/{name}.rad";
-        if (VFS.FileExists(relativePath))
+        if (model is not null)
         {
-            try
-            {
-                total += dynamic_models.Count;
-                var rad = RadParser.ParseRad(VFS.ReadAllText(relativePath), name);
-                return dynamic_models[name] = (total, rad);
-            }
-            catch (Exception ex)
-            {
-                SentrySdk.CaptureEvent(
-                    new SentryEvent(ex)
-                    {
-                        Message = $"Error loading dynamic model '{name}'"
-                    }
-                );
-                Logging.Info($"Error loading dynamic model '{name}': {ex.Message}\n{ex.StackTrace}");
-            }
+            var index = total + _carFiles.Count + dynamic_models.Count;
+            return _carFiles[identity] = (index, model);
         }
 
         // Read-only legacy import: a .radq the user dropped in data/legacy/cars first, then the
@@ -422,10 +482,10 @@ public static class BackendGameSparker
         {
             try
             {
-                total += dynamic_models.Count;
+                total += _carFiles.Count + dynamic_models.Count;
                 var rad = RadParser.ParseRad(legacyRad, name);
                 Logging.Info($"Imported legacy car '{name}' from .radq.");
-                return dynamic_models[name] = (total, rad);
+                return _carFiles[identity] = (total, rad);
             }
             catch (Exception ex)
             {
@@ -456,51 +516,23 @@ public static class BackendGameSparker
             }
         }
 
-        var radpackPath = $"data/models/{name}.radpack";
-        if (VFS.FileExists(radpackPath))
-        {
-            try
-            {
-                total += dynamic_models.Count;
-                var radpack = RadpackSerializer.Deserialize(VFS.ReadAllBytes(radpackPath));
-                if (radpack is not RadpackRad3d rad)
-                {
-                    throw new InvalidOperationException("Radpack does not contain a Rad3d Model");
-                }
+        var identity = RadpackReader.Identity(name);
+        if (_stagePartFiles.TryGetValue(identity, out var cachedPart))
+            return cachedPart;
 
-                return dynamic_models[name] = (total, rad.Rad);
-            }
-            catch (Exception ex)
-            {
-                SentrySdk.CaptureEvent(
-                    new SentryEvent(ex)
-                    {
-                        Message = $"Error loading dynamic model '{name}'"
-                    }
-                );
-                Logging.Info($"Error loading dynamic model '{name}': {ex.Message}\n{ex.StackTrace}");
-            }
+        // Stage pieces are a different kind from cars: sharing a cache with GetCar let a car
+        // named like a piece be used as that piece.
+        var model = RadpackReader.TryReadModel(name, RadpackType.TrackPiece, out var partError);
+        if (partError is { } error)
+        {
+            Logging.Error($"Error loading stage part '{name}': {error}");
+            return (-1, null!);
         }
 
-        var relativePath = $"data/models/{name}.rad";
-        if (VFS.FileExists(relativePath))
+        if (model is not null)
         {
-            try
-            {
-                total += dynamic_models.Count;
-                var rad = RadParser.ParseRad(VFS.ReadAllText(relativePath), name);
-                return dynamic_models[name] = (total, rad);
-            }
-            catch (Exception ex)
-            {
-                SentrySdk.CaptureEvent(
-                    new SentryEvent(ex)
-                    {
-                        Message = $"Error loading dynamic model '{name}'"
-                    }
-                );
-                Logging.Info($"Error loading dynamic model '{name}': {ex.Message}\n{ex.StackTrace}");
-            }
+            var index = total + _stagePartFiles.Count;
+            return _stagePartFiles[identity] = (index, model);
         }
 
         // Read-only legacy import, same on-demand path as GetCar. Only a phy:/ds:/nfm: label
@@ -510,10 +542,10 @@ public static class BackendGameSparker
         {
             try
             {
-                total += dynamic_models.Count;
+                total += _stagePartFiles.Count;
                 var rad = RadParser.ParseRad(legacyPart, name);
                 Logging.Info($"Imported legacy stage part '{name}'.");
-                return dynamic_models[name] = (total, rad);
+                return _stagePartFiles[identity] = (total, rad);
             }
             catch (Exception ex)
             {

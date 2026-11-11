@@ -34,7 +34,8 @@ public static class GamemodeCatalog
         // once: a missing or broken plugin costs the dialog its options, not the menu.
         var plugin = GamemodePlugin.Load(
             gamemodeId,
-            PluginPaths.For("gamemodes", gamemodeId, "gamemode.dll")
+            PluginPaths.For("gamemodes", gamemodeId, "gamemode.dll"),
+            PluginPaths.PackageFor("gamemodes", gamemodeId, "gamemode.radpack")
         );
         if (plugin is null)
             return [];

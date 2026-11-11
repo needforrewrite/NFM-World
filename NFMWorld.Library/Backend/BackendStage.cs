@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Collision;
 using NFMWorldLibrary.FixedMath;
@@ -56,16 +56,14 @@ public partial class BackendStage
         {
             if (stageLoader == null)
             {
-                var radpackPath = $"data/stages/{stageName}.radpack";
-                if (VFS.FileExists(radpackPath))
+                if (RadpackReader.IsArchiveId(stageName) || VFS.FileExists($"data/stages/{stageName}.radpack"))
                 {
-                    var radpack = RadpackSerializer.Deserialize(VFS.ReadAllBytes(radpackPath));
-                    if (radpack is not RadpackTrack track)
-                    {
-                        throw new InvalidOperationException("Radpack does not contain a Track");
-                    }
-
-                    StageLoader = track.Stage;
+                    // The header type is checked, so a car radpack in the stages folder is an
+                    // error rather than an empty track.
+                    StageLoader = RadpackReader.TryReadTrack(stageName, out var stageError)
+                                  ?? throw new InvalidDataException(
+                                      stageError ?? $"Stage '{stageName}' is not a readable track."
+                                  );
                 }
                 else
                 {

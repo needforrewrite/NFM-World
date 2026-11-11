@@ -1,4 +1,6 @@
+using System.Buffers;
 using NFMWorldLibrary.Gamemodes.DotNet;
+using NFMWorldLibrary.Radpack;
 
 namespace NFMWorld.Library.Test;
 
@@ -67,6 +69,56 @@ public class GamemodePluginTests
 
         Assert.AreNotEqual(pvpAssembly, timeTrialAssembly);
         Assert.AreNotEqual(pvpAssembly.GetName().Name, timeTrialAssembly.GetName().Name);
+    }
+
+    /// <summary>
+    /// A gamemode package is a radpack carrying one assembly. It is loaded through the same
+    /// sandbox and reflection path as a loose DLL, and a loose DLL wins when both exist.
+    /// </summary>
+    [TestMethod]
+    public void Load_GamemodePackage_ConstructsThePlugin()
+    {
+        NFMWorldLibrary.TheVFS.VFS.MountDirectory(OutputRoot);
+
+        var packageDirectory = Path.Combine(OutputRoot, "data", "gamemodes", "package-test");
+        Directory.CreateDirectory(packageDirectory);
+        var packagePath = Path.Combine(packageDirectory, "gamemode.radpack");
+
+        try
+        {
+            var assembly = File.ReadAllBytes(Path.Combine(OutputRoot, "data", "gamemodes", "nfmm", "pvp", "gamemode.dll"));
+            var writer = new ArrayBufferWriter<byte>();
+            RadpackSerializer.Serialize(
+                new RadpackGamemode
+                {
+                    Metadata = new RadpackMetadata
+                    {
+                        Name = "packaged pvp",
+                        CreationDate = DateTimeOffset.UnixEpoch,
+                        Type = RadpackType.GamemodePackage
+                    },
+                    Assembly = assembly
+                },
+                writer
+            );
+            File.WriteAllBytes(packagePath, writer.WrittenSpan.ToArray());
+
+            var plugin = GamemodePlugin.Load(
+                "package/pvp",
+                "data/gamemodes/package-test/gamemode.dll",
+                "data/gamemodes/package-test/gamemode.radpack"
+            );
+
+            Assert.IsNotNull(plugin);
+            Assert.AreEqual("PvP", plugin.Name);
+            Assert.IsTrue(plugin.HasServerGamemode);
+            plugin.Unload();
+        }
+        finally
+        {
+            if (Directory.Exists(packageDirectory))
+                Directory.Delete(packageDirectory, recursive: true);
+        }
     }
 
     [TestMethod]

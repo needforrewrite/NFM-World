@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 using DouglasDwyer.CasCore;
 using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.Radpack;
 
 namespace NFMWorldLibrary.Plugins;
 
@@ -14,6 +15,10 @@ internal static class PluginPaths
     /// disambiguates - <see cref="PluginAssembly.Id"/> is that folder.
     /// </summary>
     public static string For(string kind, string id, string fileName)
+        => $"data/{kind}/{id}/{fileName}";
+
+    /// <summary>Package form of a gamemode's assembly, used when no loose DLL is installed.</summary>
+    public static string PackageFor(string kind, string id, string fileName)
         => $"data/{kind}/{id}/{fileName}";
 }
 
@@ -75,19 +80,41 @@ public sealed class PluginAssembly
     /// cannot release the first, so there the load happens once per id and is reused.
     /// </remarks>
     [RequiresUnreferencedCode("Loads an assembly into a collectible context.")]
-    public static PluginAssembly? Load(string id, string path)
+    public static PluginAssembly? Load(string id, string path, string? packagePath = null)
     {
-        if (!VFS.FileExists(path))
+        byte[] assemblyBytes;
+
+        if (VFS.FileExists(path))
+        {
+            // A loose DLL always wins over a package of the same id, so an installed plugin is
+            // never shadowed by a downloaded one.
+            assemblyBytes = VFS.ReadAllBytes(path);
+        }
+        else if (packagePath is not null && VFS.FileExists(packagePath))
+        {
+            // Downloaded executable content is only ever run inside the sandbox. Where the
+            // runtime cannot instrument it, say so instead of running it unsandboxed.
+            if (!PluginPolicy.Supported)
+                throw new NotSupportedException(
+                    $"Plugin package '{id}' cannot be loaded: the plugin sandbox is unavailable on this platform."
+                );
+
+            if (RadpackReader.Read(packagePath, RadpackType.GamemodePackage) is not RadpackGamemode gamemodePackage)
+                throw new InvalidDataException($"'{packagePath}' is not a gamemode package.");
+
+            assemblyBytes = gamemodePackage.Assembly;
+            path = packagePath;
+        }
+        else
+        {
             return null;
+        }
 
         var cacheable = !PluginLoadContext.IsCollectibleSupported;
 
         if (!cacheable || !Resident.TryGetValue(id, out var loaded))
         {
-            using var stream = VFS.OpenRead(path);
-            using var buffer = new MemoryStream();
-            stream.CopyTo(buffer);
-            buffer.Position = 0;
+            using var buffer = new MemoryStream(assemblyBytes, writable: false);
 
             if (PluginPolicy.Supported)
             {
