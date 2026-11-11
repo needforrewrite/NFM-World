@@ -1,4 +1,4 @@
-using System.Buffers;
+﻿using System.Buffers;
 using System.Security.Cryptography;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
@@ -19,6 +19,13 @@ public class TimeTrialSubmissionsTests
         Directory.CreateDirectory(Root);
         TheVFS.VFS.MountWriteDestination(Root);
     }
+
+    /// <summary>
+    /// Another test class can re-mount the process-wide write root (the config-persistence and
+    /// menu-history tests do), so the isolated root is re-asserted per test rather than only once.
+    /// </summary>
+    [TestInitialize]
+    public void UseIsolatedRoot() => TheVFS.VFS.MountWriteDestination(Root);
 
     private static TimeTrialCompletion Completion(byte[] recording)
         => new("nfmm/stage1", "nfmm/2000tornados", 1234, SavedTimeTrialVersion, recording);
@@ -82,7 +89,8 @@ public class TimeTrialSubmissionsTests
     public void ReadRecording_RefusesBytesThatNoLongerMatchTheDigest()
     {
         var recording = RandomBytes();
-        var submission = TimeTrialSubmissions.Record(Completion(recording), null, null, "racer")!;
+        var submission = TimeTrialSubmissions.Record(Completion(recording), null, null, "racer");
+        Assert.IsNotNull(submission, "the submission queue must have room for a fresh run");
         using (var stream = TheVFS.VFS.OpenWrite($"{TimeTrialSubmissions.PendingDirectory}/{submission.Digest}.timetrial"))
             stream.Write(RandomBytes());
 

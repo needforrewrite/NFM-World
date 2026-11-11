@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using MemoryPack;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Util;
@@ -60,8 +60,11 @@ public static class TimeTrialSubmissions
             return null;
 
         var digest = Convert.ToHexStringLower(SHA256.HashData(completion.Recording));
+        // Only work that is still outstanding counts against the bound. Uploaded runs stay on
+        // disk for the browser, so counting them would fill the queue for good after 20 races.
         var existing = List();
-        if (existing.All(s => s.Digest != digest) && existing.Count >= MaxPending)
+        if (existing.All(s => s.Digest != digest)
+            && existing.Count(s => s.Status == "pending") >= MaxPending)
         {
             // Bound the queue rather than growing without limit while offline.
             Logging.Warning("[TT] Submission queue is full; the run was saved locally only.");
@@ -101,7 +104,7 @@ public static class TimeTrialSubmissions
         if (!VFS.DirectoryExists(PendingDirectory))
             return;
 
-        foreach (var file in VFS.EnumerateFiles(PendingDirectory, "*" + RecordingSuffix))
+        foreach (var file in VFS.EnumerateWriteFiles(PendingDirectory, "*" + RecordingSuffix))
         {
             var digest = Path.GetFileNameWithoutExtension(file);
             if (VFS.FileExists(SidecarPath(digest)))
@@ -126,7 +129,7 @@ public static class TimeTrialSubmissions
             return [];
 
         var submissions = new List<PendingSubmission>();
-        foreach (var file in VFS.EnumerateFiles(PendingDirectory, "*" + SidecarSuffix))
+        foreach (var file in VFS.EnumerateWriteFiles(PendingDirectory, "*" + SidecarSuffix))
         {
             try
             {

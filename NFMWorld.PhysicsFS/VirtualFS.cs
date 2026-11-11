@@ -45,6 +45,28 @@ public class VirtualFS
 
     // ── Query ─────────────────────────────────────────────────
 
+    /// <summary>
+    /// Files under the write root only, ignoring read mounts. Content this installation produced
+    /// (the pending submission queue) must not be confused with a copy of the same path that came
+    /// from a mounted install or user directory.
+    /// </summary>
+    public IEnumerable<string> EnumerateWriteFiles(
+        string path,
+        string searchPattern = "*.*",
+        SearchOption searchOption = SearchOption.TopDirectoryOnly
+    )
+    {
+        if (_writeRoot is null)
+            yield break;
+
+        var fullPath = Path.Combine(_writeRoot, path);
+        if (!Directory.Exists(fullPath))
+            yield break;
+
+        foreach (var file in Directory.EnumerateFiles(fullPath, searchPattern, searchOption))
+            yield return Path.GetRelativePath(_writeRoot, file).Replace("\\", "/");
+    }
+
     public IEnumerable<string> EnumerateFiles(
         string path,
         string searchPattern = "*.*",

@@ -1,4 +1,4 @@
----
+﻿---
 name: archive-content-preparation-and-sx-editor-facts
 description: "How a multiplayer race gets canonical archive content, and the Sx patterns the stage-editor port needed (no native drag/drop or context menus)."
 metadata:
@@ -30,3 +30,8 @@ Facts from implementing in-game archive publishing/racing on top of the existing
   and drawn by `NFMWorld.DriverInterface.UI.Image`. A `Sx.Show` whose condition reads a
   `_previewRevision` signal remounts the image branch when a preview finishes; rows inside
   `Sx.For` do not re-run their builder for equal values.
+- **The pending TT queue is write-root-only.** `TimeTrialSubmissions.List()`/`Recover()` now use
+  `VirtualFS.EnumerateWriteFiles`, because a test process that mounts the developer's real user
+  directory (a `BackendGameSparker` static init does) otherwise counts their historical submissions
+  as this client's queue. The `MaxPending` bound also counts only `pending` entries: uploaded runs
+  stay on disk for the browser, and counting them filled the queue permanently after 20 races.
