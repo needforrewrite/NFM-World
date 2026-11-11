@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
-using Hexa.NET.ImGui;
 using Maxine.Extensions;
 using Maxine.Extensions.Collections;
+using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorldLibrary;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
@@ -185,26 +185,6 @@ public partial class StageEditorPhase
         RebuildAllWalls();
     }
 
-    private void RenderAutoGenerateBordersButton(string idSuffix = "")
-    {
-        bool canAutoGenerate = HasPlaceableStageGeometry();
-        if (!canAutoGenerate)
-            ImGui.BeginDisabled();
-
-        if (ImGui.Button($"Auto-Generate Borders##autoborder{idSuffix}", new Vector2(-1, 0)))
-        {
-            PushUndoSnapshot();
-            AutoGenerateStageBordersFromGeometry();
-        }
-
-        if (!canAutoGenerate)
-        {
-            ImGui.EndDisabled();
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                ImGui.SetTooltip("Add at least one non-wall stage piece before generating borders.");
-        }
-    }
-
     private static void RenderSelectionHighlights(NFMWorld.Graphics.ICommandBuffer cb, StageEditorTab tab)
     {
         if (tab.SelectedPieceIds.Count == 0)
@@ -312,16 +292,17 @@ public partial class StageEditorPhase
         GameSparker.Game.SetFullScreenScissor(cb);
         World.Snap = oldSnap;
 
-        // The thumbnail is shown by ImGui, so hand it the render target's colour texture directly -
-        // this is what SdlImGuiRenderer.BindTexture(ITexture) exists for (Panels.cs flips V when it
-        // images it, which is unrelated to the texture's own orientation).
-        _partPreviews[name] = (rt, GameSparker.Game.ImguiRenderer!.BindTexture(rt.ColorTexture));
+        _partPreviews[name] = (rt, TheGraphics.G.WrapTexture(rt.ColorTexture)!);
+        _previewRevision.Value = _previewRevision.Value + 1;
+        Touch();
     }
 
     private void QueuePartPreview(string name, Rad3d rad)
     {
-        if (!_partPreviews.ContainsKey(name))
-            _previewQueue.Enqueue((name, rad));
+        if (_partPreviews.ContainsKey(name) || !_previewQueued.Add(name))
+            return;
+
+        _previewQueue.Enqueue((name, rad));
     }
 
     /// <summary>

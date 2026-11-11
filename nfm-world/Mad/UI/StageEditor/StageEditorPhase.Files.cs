@@ -86,172 +86,173 @@ public partial class StageEditorPhase
         return stageName.ToLower().Replace(' ', '_');
     }
 
-    private void SaveStage()
+    /// <summary>
+    /// The live document as stage lines, with no file or dirty-state side effects. Saving and
+    /// publishing both serialize this same snapshot, so a publication cannot differ from a save.
+    /// </summary>
+    private string? BuildStageText()
     {
         if (ActiveTab == null || ActiveTab.Stage == null || string.IsNullOrWhiteSpace(ActiveTab.StageFileName))
         {
             Logging.Info("Cannot save: no stage loaded");
-            return;
+            return null;
         }
 
-        // Ensure the user stages directory exists
-        var userStagesDir = "data/stages/user";
-        Directory.CreateDirectory(userStagesDir);
+        using var writer = new StringWriter();
 
-        var filePath = $"{userStagesDir}/{ActiveTab.StageFileName}.txt";
-
-        try
-        {
-            using var writer = new StreamWriter(filePath);
-
-            // Write stage parameters from active tab's stored values
-            writer.WriteLine($"name({ActiveTab.TabName})");
-            writer.WriteLine($"sky({(int)ActiveTab.SkyColor.R},{(int)ActiveTab.SkyColor.G},{(int)ActiveTab.SkyColor.B})");
-            writer.WriteLine($"fog({(int)ActiveTab.FogColor.R},{(int)ActiveTab.FogColor.G},{(int)ActiveTab.FogColor.B})");
-            writer.WriteLine(
+        // Write stage parameters from active tab's stored values
+        writer.WriteLine($"name({ActiveTab.TabName})");
+        writer.WriteLine($"sky({(int)ActiveTab.SkyColor.R},{(int)ActiveTab.SkyColor.G},{(int)ActiveTab.SkyColor.B})");
+        writer.WriteLine($"fog({(int)ActiveTab.FogColor.R},{(int)ActiveTab.FogColor.G},{(int)ActiveTab.FogColor.B})");
+        writer.WriteLine(
                 $"ground({(int)ActiveTab.GroundColor.R},{(int)ActiveTab.GroundColor.G},{(int)ActiveTab.GroundColor.B})"
             );
 
-            // Write polys parameter
-            if (ActiveTab.PolysEnabled)
-            {
-                writer.WriteLine(
+        // Write polys parameter
+        if (ActiveTab.PolysEnabled)
+        {
+            writer.WriteLine(
                     $"polys({(int)ActiveTab.PolysColor.R},{(int)ActiveTab.PolysColor.G},{(int)ActiveTab.PolysColor.B})"
                 );
-            }
-            else
-            {
-                writer.WriteLine("polys(false)");
-            }
+        }
+        else
+        {
+            writer.WriteLine("polys(false)");
+        }
 
-            // Write snap parameter
-            writer.WriteLine($"snap({ActiveTab.SnapA},{ActiveTab.SnapB},{ActiveTab.SnapC})");
+        // Write snap parameter
+        writer.WriteLine($"snap({ActiveTab.SnapA},{ActiveTab.SnapB},{ActiveTab.SnapC})");
 
-            // Write clouds parameter
-            if (ActiveTab.CloudsEnabled)
-            {
-                writer.WriteLine(
+        // Write clouds parameter
+        if (ActiveTab.CloudsEnabled)
+        {
+            writer.WriteLine(
                     $"clouds({(int)ActiveTab.CloudsColor.R},{(int)ActiveTab.CloudsColor.G},{(int)ActiveTab.CloudsColor.B},{ActiveTab.CloudsParam4},{ActiveTab.CloudsHeight})"
                 );
-                writer.WriteLine($"cloudcoverage({ActiveTab.CloudCoverage})");
-            }
-            else
-            {
-                writer.WriteLine("clouds(false)");
-            }
+            writer.WriteLine($"cloudcoverage({ActiveTab.CloudCoverage})");
+        }
+        else
+        {
+            writer.WriteLine("clouds(false)");
+        }
 
-            // Write mountains parameter
-            if (ActiveTab.MountainsEnabled)
-            {
-                writer.WriteLine($"mountains({ActiveTab.MountainsSeed})");
-            }
-            else
-            {
-                writer.WriteLine("mountains(false)");
-            }
+        // Write mountains parameter
+        if (ActiveTab.MountainsEnabled)
+        {
+            writer.WriteLine($"mountains({ActiveTab.MountainsSeed})");
+        }
+        else
+        {
+            writer.WriteLine("mountains(false)");
+        }
 
-            writer.WriteLine($"fadefrom({ActiveTab.FadeFrom})");
+        writer.WriteLine($"fadefrom({ActiveTab.FadeFrom})");
 
-            // Write unknown parameters
-            foreach (var param in ActiveTab.UnknownParameters)
-            {
-                writer.WriteLine(param);
-            }
+        // Write unknown parameters
+        foreach (var param in ActiveTab.UnknownParameters)
+        {
+            writer.WriteLine(param);
+        }
 
-            // Write known-but-unsupported directives exactly as loaded.
-            foreach (var directive in ActiveTab.PreservedDirectives)
-            {
-                writer.WriteLine(directive);
-            }
+        // Write known-but-unsupported directives exactly as loaded.
+        foreach (var directive in ActiveTab.PreservedDirectives)
+        {
+            writer.WriteLine(directive);
+        }
 
-            writer.WriteLine();
+        writer.WriteLine();
 
-            // ── Build piece lists ──────────────────────────────────────────────────
-            var allNonWall = ActiveTab.ScenePieces
-                .Where(p => !p.PiecePlacement.IsWall)
-                .ToList();
-            var groupedIds = new HashSet<int>(ActiveTab.HierarchyGroups.SelectMany(g => g.PieceIds));
-            var ungroupedPieces = allNonWall.Where(p => !groupedIds.Contains(p.Id)).ToList();
-            int ungroupedSlotSave = ActiveTab.UngroupedOrderIndex >= 0
+        // ── Build piece lists ──────────────────────────────────────────────────
+        var allNonWall = ActiveTab.ScenePieces
+            .Where(p => !p.PiecePlacement.IsWall)
+            .ToList();
+        var groupedIds = new HashSet<int>(ActiveTab.HierarchyGroups.SelectMany(g => g.PieceIds));
+        var ungroupedPieces = allNonWall.Where(p => !groupedIds.Contains(p.Id)).ToList();
+        int ungroupedSlotSave = ActiveTab.UngroupedOrderIndex >= 0
                 ? Math.Clamp(ActiveTab.UngroupedOrderIndex, 0, ActiveTab.HierarchyGroups.Count)
                 : ActiveTab.HierarchyGroups.Count; // default: after all groups
 
-            // Local helper: serialise one piece as set/chk/fix
-            void WritePiece(StagePieceInstance piece)
-            {
-                if (piece.Obj == null) return;
-                var pos = piece.Position;
-                var rot = piece.Rotation;
-                string pieceId;
+        // Local helper: serialise one piece as set/chk/fix
+        void WritePiece(StagePieceInstance piece)
+        {
+            if (piece.Obj == null) return;
+            var pos = piece.Position;
+            var rot = piece.Rotation;
+            string pieceId;
 #if WRITE_NFMM_PIECES_AS_STRING
-                int numericId = -1;
-                if (piece.Name.StartsWith("nfmm/"))
+            int numericId = -1;
+            if (piece.Name.StartsWith("nfmm/"))
+            {
+                var baseName = piece.Name.Substring(5);
+                var idx = Array.IndexOf(BackendGameSparker.StageRads, baseName);
+                if (idx >= 0)
                 {
-                    var baseName = piece.Name.Substring(5);
-                    var idx = Array.IndexOf(BackendGameSparker.StageRads, baseName);
-                    if (idx >= 0) { numericId = idx + 10; pieceId = numericId.ToString(); }
-                    else pieceId = piece.Name;
+                    numericId = idx + 10;
+                    pieceId = numericId.ToString();
                 }
-                else
+                else pieceId = piece.Name;
+            }
+
+            else
 #endif
-                {
-                    pieceId = piece.Name;
-                }
-                int yCoord = (int)pos.Y;
-                int rotX = (int)rot.Xz.Degrees;
-                if (piece.PiecePlacement.Type == PiecePlacementType.FixHoop)
-                {
-                    writer.WriteLine($"fix({pieceId},{(int)pos.X},{(int)pos.Z},{yCoord},{rotX})");
-                }
-                else if (piece.PiecePlacement.Type == PiecePlacementType.CheckPoint)
-                {
-                    bool isAir = piece.Name.Contains("nfmm/aircheckpoint");
-                    if (yCoord == 250) writer.WriteLine($"chk({pieceId},{(int)pos.X},{(int)pos.Z},{rotX})");
-                    else
-                    {
-                        int fileY = isAir ? yCoord : 250 - yCoord;
-                        writer.WriteLine($"chk({pieceId},{(int)pos.X},{(int)pos.Z},{rotX},{fileY})");
-                    }
-                }
+            {
+                pieceId = piece.Name;
+            }
+            int yCoord = (int)pos.Y;
+            int rotX = (int)rot.Xz.Degrees;
+            if (piece.PiecePlacement.Type == PiecePlacementType.FixHoop)
+            {
+                writer.WriteLine($"fix({pieceId},{(int)pos.X},{(int)pos.Z},{yCoord},{rotX})");
+            }
+            else if (piece.PiecePlacement.Type == PiecePlacementType.CheckPoint)
+            {
+                bool isAir = piece.Name.Contains("nfmm/aircheckpoint");
+                if (yCoord == 250) writer.WriteLine($"chk({pieceId},{(int)pos.X},{(int)pos.Z},{rotX})");
                 else
                 {
-                    if (yCoord == 250) writer.WriteLine($"set({pieceId},{(int)pos.X},{(int)pos.Z},{rotX})");
-                    else writer.WriteLine($"set({pieceId},{(int)pos.X},{(int)pos.Z},{rotX},{250 - yCoord})");
+                    int fileY = isAir ? yCoord : 250 - yCoord;
+                    writer.WriteLine($"chk({pieceId},{(int)pos.X},{(int)pos.Z},{rotX},{fileY})");
                 }
             }
-
-            // ── Write pieces in visual order ────────────────────────────────────────
-            // New format: each group is preceded by  #editor_group(Name)
-            // and its pieces appear immediately below.  Ungrouped pieces appear at
-            // ungroupedSlotSave (0 = before all groups, groups.Count = after all groups).
-            for (int slot = 0; slot <= ActiveTab.HierarchyGroups.Count; slot++)
+            else
             {
-                if (slot == ungroupedSlotSave && ungroupedPieces.Count > 0)
-                {
-                    foreach (var piece in ungroupedPieces)
-                        WritePiece(piece);
-                    writer.WriteLine();
-                }
+                if (yCoord == 250) writer.WriteLine($"set({pieceId},{(int)pos.X},{(int)pos.Z},{rotX})");
+                else writer.WriteLine($"set({pieceId},{(int)pos.X},{(int)pos.Z},{rotX},{250 - yCoord})");
+            }
+        }
 
-                if (slot < ActiveTab.HierarchyGroups.Count)
-                {
-                    var group = ActiveTab.HierarchyGroups[slot];
-                    var groupPieces = group.PieceIds
-                        .Select(id => allNonWall.Find(p => p.Id == id))
-                        .Where(p => p != null).ToList()!;
-                    writer.WriteLine($"#editor_group({group.Name})");
-                    foreach (var piece in groupPieces)
-                        WritePiece(piece);
-                    writer.WriteLine();
-                }
+        // ── Write pieces in visual order ────────────────────────────────────────
+        // New format: each group is preceded by  #editor_group(Name)
+        // and its pieces appear immediately below.  Ungrouped pieces appear at
+        // ungroupedSlotSave (0 = before all groups, groups.Count = after all groups).
+        for (int slot = 0; slot <= ActiveTab.HierarchyGroups.Count; slot++)
+        {
+            if (slot == ungroupedSlotSave && ungroupedPieces.Count > 0)
+            {
+                foreach (var piece in ungroupedPieces)
+                    WritePiece(piece);
+                writer.WriteLine();
             }
 
-            // ── Stage walls ─────────────────────────────────────────────────────────
-            if (ActiveTab.StageWalls.Count > 0)
+            if (slot < ActiveTab.HierarchyGroups.Count)
             {
-                foreach (var wall in ActiveTab.StageWalls)
-                {
-                    string command = wall.Direction switch
+                var group = ActiveTab.HierarchyGroups[slot];
+                var groupPieces = group.PieceIds
+                    .Select(id => allNonWall.Find(p => p.Id == id))
+                    .Where(p => p != null).ToList()!;
+                writer.WriteLine($"#editor_group({group.Name})");
+                foreach (var piece in groupPieces)
+                    WritePiece(piece);
+                writer.WriteLine();
+            }
+        }
+
+        // ── Stage walls ─────────────────────────────────────────────────────────
+        if (ActiveTab.StageWalls.Count > 0)
+        {
+            foreach (var wall in ActiveTab.StageWalls)
+            {
+                string command = wall.Direction switch
                     {
                         WallDirection.Right => "maxr",
                         WallDirection.Left => "maxl",
@@ -259,15 +260,31 @@ public partial class StageEditorPhase
                         WallDirection.Bottom => "maxb",
                         _ => "maxr"
                     };
-                    writer.WriteLine($"{command}({wall.Count},{wall.Position},{wall.Offset})");
-                }
-
-                writer.WriteLine();
+                writer.WriteLine($"{command}({wall.Count},{wall.Position},{wall.Offset})");
             }
 
-            // ── Editor metadata (non-default ungrouped order) ────────────────────────
-            if (ActiveTab.UngroupedOrderIndex >= 0)
-                writer.WriteLine($"#editor_ungrouped_order({ActiveTab.UngroupedOrderIndex})");
+            writer.WriteLine();
+        }
+
+        // ── Editor metadata (non-default ungrouped order) ────────────────────────
+        if (ActiveTab.UngroupedOrderIndex >= 0)
+            writer.WriteLine($"#editor_ungrouped_order({ActiveTab.UngroupedOrderIndex})");
+
+        return writer.ToString();
+    }
+
+    private void SaveStage()
+    {
+        var text = BuildStageText();
+        if (text is null)
+            return;
+
+        var filePath = $"data/stages/user/{ActiveTab!.StageFileName}.txt";
+        try
+        {
+            using (var stream = VFS.OpenWrite(filePath))
+            using (var writer = new StreamWriter(stream))
+                writer.Write(text);
 
             Logging.Info($"Stage saved to: {filePath}");
             ActiveTab.HasUnsavedChanges = false;
@@ -283,7 +300,7 @@ public partial class StageEditorPhase
     /// Renders the stage top-down into an off-screen target, keys the background out on the CPU and
     /// writes a PNG next to the stage file. Takes the caller's command buffer because binding a
     /// render target is a command-buffer operation - it is invoked from the frame's own render pass
-    /// (see <c>_exportRequested</c> in StageEditorPhase), never from an ImGui callback where no
+    /// (see <c>_exportRequested</c> in StageEditorPhase), never from a callback where no
     /// buffer is live.
     /// </summary>
     private void ExportTopDownImage(NFMWorld.Graphics.ICommandBuffer cb)

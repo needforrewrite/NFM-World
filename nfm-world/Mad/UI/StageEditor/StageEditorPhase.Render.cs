@@ -29,7 +29,7 @@ public partial class StageEditorPhase
             cb.Clear(NFMWorld.Graphics.ClearOptions.Color, new NFMWorld.Graphics.ColorRgba(135 / 255f, 206 / 255f, 235 / 255f));
         }
 
-        // Clip the 3D view to the ImGui viewport rect the panels computed, so scene geometry doesn't
+        // Clip the 3D view to the UI viewport rect the panels computed, so scene geometry doesn't
         // bleed under/over the editor's panels. Every game pipeline has scissor testing enabled
         // (Effects.ScissorRasterizer), so setting the rect is all this needs; CullMode needs no
         // equivalent of the old RasterizerState override, since each pipeline already bakes its own.
@@ -128,9 +128,9 @@ public partial class StageEditorPhase
         if (_pendingPlacementPartIndex >= 0 && _hasValidPlacementPos)
             RenderPlacementPreview(cb);
 
-        // Clear the depth buffer so ImGui always renders on top of the 3D scene.
+        // Clear the depth buffer so the UI always draws on top of the 3D scene.
         // Without this, geometry close to the camera writes near-zero depth values and
-        // ImGui pixels (rendered later with DepthRead) fail the depth test at those positions.
+        // UI pixels (rendered later with DepthRead) fail the depth test at those positions.
         cb.Clear(NFMWorld.Graphics.ClearOptions.Depth, default, 1f, 0);
     }
 }

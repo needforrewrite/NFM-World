@@ -5,8 +5,11 @@ using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
 using NFMWorld.UI.Components;
+using NFMWorld.Accounts;
 using NFMWorldLibrary;
 using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Rad;
+using NFMWorldLibrary.Radpack;
 using SignalsDotnet;
 using SDL = SDL3New::SDL3.SDL;
 
@@ -489,6 +492,7 @@ public sealed class ModelEditorView
             ),
             BarButton("NEW", OpenNewModelDialog, ButtonVariant.Primary),
             BarButton("OPEN", OpenLoadDialog),
+            BarButton("PUBLISH", PublishActiveModel),
             BarButton("BACK TO MENU", RequestExit)
         ]
     );
@@ -4428,6 +4432,43 @@ public sealed class ModelEditorView
 
     private void ShowConfirm(string title, string message, IReadOnlyList<ConfirmAction> actions)
         => _confirm.Value = new ConfirmRequest(title, message, actions);
+
+    /// <summary>
+    /// Publishes the editor's live text, not the file on disk, so unsaved edits are included.
+    /// The document, its dirty flag and its history are not touched.
+    /// </summary>
+    private void PublishActiveModel()
+    {
+        if (_phase.ActiveTab is not { } tab)
+        {
+            ShowError("Publish", "There is no model open.");
+            return;
+        }
+
+        Rad3d rad;
+        try
+        {
+            rad = RadParser.ParseRad(tab.TextContent, tab.ModelPath ?? "editing");
+        }
+        catch (Exception ex)
+        {
+            ShowError("Publish", $"The model could not be read: {ex.Message}");
+            return;
+        }
+
+        var kind = tab.ModelType == ModelEditorTab.ModelTypeEnum.Car ? AssetKind.Car : AssetKind.StagePiece;
+        var name = tab.GetDisplayName().TrimEnd('*');
+        _ = PublishAsync(rad, kind, name);
+    }
+
+    private async Task PublishAsync(Rad3d rad, AssetKind kind, string name)
+    {
+        var result = await ArchivePublisher.PublishModelAsync(rad, kind, name, null);
+        if (result.Success)
+            ShowConfirm("Published", result.Message, [new ConfirmAction("OK", () => { })]);
+        else
+            ShowError("Publish", result.Message);
+    }
 
     private void ShowError(string title, string message) => _error.Value = new ErrorRequest(title, message);
 }

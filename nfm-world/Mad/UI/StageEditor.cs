@@ -1,5 +1,4 @@
 ﻿using System.Collections.ObjectModel;
-using Hexa.NET.ImGui;
 using Maxine.Extensions;
 using Maxine.Extensions.Collections;
 using NFMWorld.Gameplay;
@@ -343,8 +342,14 @@ public partial class StageEditorPhase : BasePhase
     // Export top-down image
     private bool _showExportDialog = false;
 
-    // Export asked for from an ImGui callback, performed at the top of the next Render(cb, ...)
-    // - binding a render target needs the frame's command buffer, and ImGui handling runs inside it.
+    // Stage publication; the snapshot is serialized from the live document, never reread
+    private bool _showPublishDialog = false;
+    private string _publishName = "";
+    private string _publishDescription = "";
+    private string _publishStatus = "";
+
+    // Export asked for from the export dialog, performed at the top of the next Render(cb, ...)
+    // - binding a render target needs the frame's command buffer.
     private bool _exportRequested;
 
     private int _exportWidth = 1024;
@@ -362,9 +367,12 @@ public partial class StageEditorPhase : BasePhase
     // Swap piece mode
     private bool _isSwapMode = false;
 
-    // Part preview thumbnails: FileName -> (RenderTarget, ImGui texture ref)
-    private readonly Dictionary<string, (NFMWorld.Graphics.IRenderTarget RT, ImTextureRef Ref)> _partPreviews = new();
+    // Part preview thumbnails: FileName -> (RenderTarget, wrapped UI image)
+    private readonly Dictionary<string, (NFMWorld.Graphics.IRenderTarget RT, NFMWorld.DriverInterface.DriverInterface
+        .IImage Image)> _partPreviews = new();
+
     private readonly Queue<(string Name, Rad3d Rad)> _previewQueue = new();
+    private readonly HashSet<string> _previewQueued = new();
     private const int PreviewSize = 64;
 
     // Gizmo state
@@ -404,9 +412,6 @@ public partial class StageEditorPhase : BasePhase
     private bool _inspectorPosDragging = false;
     private bool _inspectorRotDragging = false;
     private bool _inspectorWallDragging = false;
-
-    // Hierarchy drag-reorder state
-    private int _hierDragSourceId = -1;
 
     // Rectangle selection state (viewport LMB drag)
     private bool _isRectSelecting = false;
@@ -667,11 +672,10 @@ public partial class StageEditorPhase : BasePhase
         _tabs.Clear();
 
         foreach (var (_, preview) in _partPreviews)
-        {
-            GameSparker.Game.ImguiRenderer?.UnbindTexture(preview.Ref);
             preview.RT.Dispose();
-        }
 
         _partPreviews.Clear();
+        _previewQueue.Clear();
+        _previewQueued.Clear();
     }
 }

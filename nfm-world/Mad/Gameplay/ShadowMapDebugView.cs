@@ -101,8 +101,7 @@ internal static class ShadowMapDebugView
                 $"cascade {_shownCascade} of {GameSparker.ShadowRenderTargets.Count}, "
                 + $"{GameSparker.ShadowResolution}x{GameSparker.ShadowResolution} {TextureFormat.Single}"
             );
-            // Flip V: cascade render targets are stored bottom-up, same as the stage editor's part
-            // thumbnails (see StageEditorPhase.Panels.cs).
+            // Flip V: cascade render targets are stored bottom-up.
             ImGui.Image(
                 _previewRef,
                 new Vector2(PreviewSize, PreviewSize),
