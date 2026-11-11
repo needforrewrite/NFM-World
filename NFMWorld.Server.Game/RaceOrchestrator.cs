@@ -635,9 +635,10 @@ public class RaceOrchestrator : IDisposable
     }
 
     /// <summary>
-    /// Every asset this race will read must already be in the prepared cache or be genuine
-    /// shipped content: constructing a <see cref="BackendStage"/> or a car from an unprepared
-    /// archive id would do synchronous HTTP on the server's request thread.
+    /// The stage this race will read must already be in the prepared cache or be genuine shipped
+    /// content: constructing a <see cref="BackendStage"/> from an unprepared archive id would do
+    /// synchronous HTTP on the server's request thread. Cars are not checked here - the game
+    /// master relays car state and never constructs one, so downloading them would be dead weight.
     /// </summary>
     private static void EnsureContentPrepared(MatchGameplayInfo info)
     {
@@ -648,19 +649,6 @@ public class RaceOrchestrator : IDisposable
             && !VFS.FileExists($"data/stages/{info.StageName}.txt")
             && !VFS.FileExists($"data/stages/{info.StageName}.radpack"))
             throw new InvalidOperationException($"Stage '{info.StageName}' is not installed on this server.");
-
-        foreach (var player in info.Players.Values)
-        {
-            if (RadpackReader.IsArchiveId(player.CarName))
-            {
-                if (!ContentCache.IsPrepared(player.CarName))
-                    throw new InvalidOperationException($"Car '{player.CarName}' has not been prepared.");
-                continue;
-            }
-
-            if (BackendGameSparker.GetCar(player.CarName).Rad is null)
-                throw new InvalidOperationException($"Car '{player.CarName}' is not installed on this server.");
-        }
     }
 
     // ── Helpers ──────────────────────────────────────────────────────

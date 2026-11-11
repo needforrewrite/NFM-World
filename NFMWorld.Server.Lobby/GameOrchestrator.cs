@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Multiplayer.Archive;
+using NFMWorldLibrary.Radpack;
 using NFMWorldLibrary.Multiplayer.HttpMessages;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
 using NFMWorldLibrary.Multiplayer.Packets.S2C;
@@ -46,6 +47,9 @@ public class GameOrchestrator
         public required MatchGameplayInfo Match { get; init; }
         public required PreparedContent[] Content { get; init; }
         public required ResolvedGameMaster GameMaster { get; init; }
+
+        /// <summary>The roster the requests were built from; the race is sent to exactly these.</summary>
+        public required (byte Index, uint ClientIndex)[] Participants { get; init; }
 
         /// <summary>Connection indices still owing an acknowledgement.</summary>
         public ConcurrentDictionary<uint, byte> Waiting { get; } = new();
@@ -630,6 +634,14 @@ public class GameOrchestrator
             return;
         }
 
+        var participants = new List<(byte Index, uint ClientIndex)>();
+        foreach (var (index, pid) in session.Players)
+        {
+            var member = _players.Get(pid);
+            if (member is not null)
+                participants.Add((index, member.ClientIndex));
+        }
+
         var preparation = new PendingPreparation
         {
             SessionId = session.Id,
@@ -637,18 +649,15 @@ public class GameOrchestrator
             MatchKey = Guid.NewGuid(),
             Match = matchInfo,
             Content = required,
-            GameMaster = gm
+            GameMaster = gm,
+            Participants = participants.ToArray()
         };
 
-        foreach (var (_, pid) in session.Players)
+        foreach (var participant in preparation.Participants)
         {
-            var member = _players.Get(pid);
-            if (member is null)
-                continue;
-
-            preparation.Waiting[member.ClientIndex] = 0;
+            preparation.Waiting[participant.ClientIndex] = 0;
             _transport.SendPacketToClient(
-                member.ClientIndex,
+                participant.ClientIndex,
                 new S2C_PrepareContent
                 {
                     SessionId = session.Id,
@@ -676,12 +685,13 @@ public class GameOrchestrator
     /// </summary>
     private async Task RunPreparationAsync(PendingPreparation preparation)
     {
+        // The game master builds only the stage; cars are the clients' problem.
         var gmTask = _gmClient.PrepareContentAsync(
             preparation.GameMaster,
             new Lobby2RaceServer_PrepareContent
             {
                 MatchKey = preparation.MatchKey,
-                Content = preparation.Content
+                Content = preparation.Content.Where(item => item.Kind == (byte)AssetKind.Stage).ToArray()
             }
         );
 
@@ -717,14 +727,15 @@ public class GameOrchestrator
         }
 
         _gmRegistry.MarkSuccess(preparation.GameMaster);
-        await CreateRaceAsync(session, preparation.Match, preparation.GameMaster);
+        await CreateRaceAsync(session, preparation.Match, preparation.GameMaster, preparation.Participants);
     }
 
     /// <summary>Hands the frozen roster to a game master and tells every slot where to connect.</summary>
     private async Task CreateRaceAsync(
         SessionManager.GameSession session,
         MatchGameplayInfo matchInfo,
-        ResolvedGameMaster? gm = null
+        ResolvedGameMaster? gm = null,
+        (byte Index, uint ClientIndex)[]? participants = null
     )
     {
         try
@@ -757,15 +768,21 @@ public class GameOrchestrator
                 $"{session.CreatorName} has started the race on {session.StageName}!"
             );
 
-            foreach (var (index, id) in session.Players)
+            // The frozen roster when there was one: a member who joined after the snapshot has
+            // no seat in the race that is being created.
+            var seats = participants
+                        ?? session.Players
+                .Select(entry => (entry.Key, _players.Get(entry.Value)))
+                .Where(entry => entry.Item2 is not null)
+                .Select(entry => (entry.Key, entry.Item2!.ClientIndex))
+                .ToArray();
+
+            foreach (var (index, clientIndex) in seats)
             {
                 if (createResponse.PlayerSecretIds.TryGetValue(index, out var token))
                 {
-                    var player = _players.Get(id);
-                    if (player != null)
-                    {
-                        _transport.SendPacketToClient(
-                            player.ClientIndex,
+                    _transport.SendPacketToClient(
+                            clientIndex,
                             new S2C_RaceStarted
                             {
                                 MatchGameplayInfo = matchInfo,
@@ -778,7 +795,6 @@ public class GameOrchestrator
                                 }
                             }
                         );
-                    }
                 }
             }
 

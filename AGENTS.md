@@ -708,10 +708,11 @@ Added with the archive/content work; read this before touching content loading, 
   session creation, and the game master applies it again before constructing any stage.
 - **Preparation before a race** — `RequiredArchiveContent` lists the stage and each distinct archive
   car. The lobby freezes the roster, sends `S2C_PrepareContent` (nonce) to every member and calls the
-  game master's `/prepare-content` at the same time; members answer `C2S_ContentReady` and only then
-  is the race created. A stale nonce, a selection change, a leave/disconnect, a refusal or the
-  two-minute deadline calls the start off and restores the session. The game master's download has
-  its own HTTP timeout, so it never consumes the create-race window. Bots never acknowledge.
+  game master's `/prepare-content` with the stage at the same time; members answer `C2S_ContentReady`
+  and only then is the race created. A stale nonce, a selection change, a leave/disconnect, a refusal
+  or the two-minute deadline calls the start off and restores the session. The game master builds no
+  cars, so it is never asked for them; its download has its own HTTP timeout and never consumes the
+  create-race window. Bots never acknowledge.
 - **Time trials** — the client notifies `IClientCallbacks.TimeTrialCompleted` once per completed run
   (never for simulation), `TimeTrialSubmissions` writes the recording and a MemoryPack sidecar before
   network work, and `TimeTrialUploader` retries from the replay browser. The archive simulates the
