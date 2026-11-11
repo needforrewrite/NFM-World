@@ -478,7 +478,7 @@ palette). One lobby; whether a race is rated is chosen per race, not by a menu p
 | Roster order | `MatchGameplayInfo.Players` is keyed by **slot**, but the client gamemode addresses players by **array position**. Always build the array (and the id→index map) through `MatchGameplayInfo.InSlotOrder()`; a dictionary enumerates in no order, and building it as-is put each player in another player's slot, so relayed state landed on the wrong car and opponents never moved |
 | Who is in the roster | `PlayerRegistry.ClientInfo` has an empty `Name` until the client authenticates, and `LobbyStateBroadcaster` skips connections that have not, so a half-open connection is not listed as a player |
 | Names in the HUD | the sidebar, car markers, the arrow target and the announcer show `ClientSidePlayerInfo.PlayerName`, not `car.Stats.Name` — in a race every car can be the same model |
-| Stage list | enumerate once per dialog mount (`CreateDialog`), not per frame |
+| Stage list | enumerate once per dialog mount (`CreateDialog`), not per frame. The create dialog lists only `MultiplayerContentPolicy.IsAcceptedStage` entries (a local `user/` stage cannot be raced) and accepts a canonical archive id typed into search |
 | Child collections | `Sx` flattens a nested `IEnumerable` child, but an unsupported child throws inside an effect — and the signal machinery swallows it, so the subtree silently fails to mount. Keep the flattened case covered (`SxRendererTests`) |
 
 ## Virtual File System (Maxine.VFS)

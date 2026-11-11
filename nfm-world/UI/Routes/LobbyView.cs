@@ -1,4 +1,4 @@
-using NFMWorld.DriverInterface;
+﻿using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
@@ -508,8 +508,9 @@ public static class LobbyView
         var lobby = UiState.Lobby;
 
         // Read once per open: this enumerates the whole stage tree, and the component only
-        // runs when the dialog is mounted.
-        var stages = AvailableStages();
+        // runs when the dialog is mounted. A local stage cannot be raced online, so the list is
+        // the distributable subset; a published stage is offered by typing its archive id.
+        var stages = AvailableStages().Where(MultiplayerContentPolicy.IsAcceptedStage).ToArray();
         var stageState = new StageSelectState();
         stageState.Collections.Value = stages
             .Select(StageCollectionOf)
@@ -519,7 +520,9 @@ public static class LobbyView
         stageState.Collection.Value = stageState.Collections.Value.FirstOrDefault() ?? "";
         stageState.Stages.Value = stages;
         stageState.Selected.Value = lobby.SelectedStage.Value;
-        stageState.ConfirmEnabled.Value = stages.Count > 0;
+        stageState.ConfirmEnabled.Value = stages.Length > 0;
+        if (!MultiplayerContentPolicy.IsAcceptedStage(lobby.SelectedStage.Value))
+            stageState.Restriction.Value = LocalStageRestriction;
 
         return Sx.View(
             style: () => Sx.Styles(
@@ -590,15 +593,31 @@ public static class LobbyView
                                 StageSelected: stage =>
                                 {
                                     stageState.Selected.Value = stage;
-                                    actions.SetStage(stage);
+                                    stageState.Restriction.Value = MultiplayerContentPolicy.IsAcceptedStage(stage)
+                                        ? ""
+                                        : LocalStageRestriction;
+
+                                    // Only a distributable stage is handed on: the server refuses
+                                    // the others, so selecting one must not look like it worked.
+                                    if (MultiplayerContentPolicy.IsAcceptedStage(stage))
+                                        actions.SetStage(stage);
                                 },
                                 SearchChanged: query =>
                                 {
-                                    stageState.Stages.Value = stages
-                                        .Where(stage => query.Trim().Length == 0
-                                                        || stage.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase)
+                                    var search = query.Trim();
+                                    var matches = stages
+                                        .Where(stage => search.Length == 0
+                                                        || stage.Contains(search, StringComparison.OrdinalIgnoreCase)
                                         )
-                                        .ToArray();
+                                        .ToList();
+
+                                    // A published stage has no local name to browse; its archive
+                                    // id is the only handle, so accept one typed into search.
+                                    if (MultiplayerContentPolicy.IsCanonicalArchiveId(search)
+                                        && !matches.Contains(search, StringComparer.Ordinal))
+                                        matches.Insert(0, search);
+
+                                    stageState.Stages.Value = matches.ToArray();
                                 },
                                 Confirm: () => { },
                                 Back: () => { }
@@ -750,6 +769,9 @@ public static class LobbyView
     }
 
     /// <summary>Stage names for the create dialog.</summary>
+    private const string LocalStageRestriction =
+        "Local stages have to be published before they can be raced online.";
+
     private static IReadOnlyList<string> AvailableStages()
     {
         try
