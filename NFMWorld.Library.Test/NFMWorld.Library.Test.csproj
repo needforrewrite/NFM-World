@@ -30,6 +30,7 @@
     <ItemGroup>
         <Compile Include="..\nfm-world\Mad\Gameplay\MenuHistory.cs" Link="MenuHistory.cs"/>
         <Compile Include="..\nfm-world\UI\Routes\AccountView.cs" Link="AccountView.cs"/>
+        <Compile Include="..\nfm-world\Util\PngCodec.cs" Link="PngCodec.cs"/>
     </ItemGroup>
 
     <!-- So the gamemode plugin loader tests exercise the real built plugins, and so a

@@ -58,7 +58,7 @@ public static class PngCodec
         }
 
         using var compressed = new MemoryStream();
-        using (var deflate = new DeflateStream(compressed, CompressionMode.Compress, true))
+        using (var deflate = new ZLibStream(compressed, CompressionMode.Compress, true))
         {
             raw.Position = 0;
             raw.CopyTo(deflate);
@@ -100,6 +100,6 @@ public static class PngCodec
         var crc32 = new Crc32();
         crc32.Append(Encoding.ASCII.GetBytes(type));
         crc32.Append(data);
-        return BitConverter.ToUInt32(crc32.GetCurrentHash(), 0);
+        return crc32.GetCurrentHashAsUInt32();
     }
 }

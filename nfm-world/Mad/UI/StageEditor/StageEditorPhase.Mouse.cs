@@ -1,6 +1,6 @@
 using Maxine.Extensions;
 using NFMWorld.DriverInterface;
-using NFMWorld.Platform.SDL3;
+using NFMWorld.Reactor;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Collision;
 using NFMWorldLibrary.FixedMath;
@@ -10,6 +10,28 @@ namespace NFMWorld.UI;
 
 public partial class StageEditorPhase
 {
+    private bool CanUseViewport(int x, int y, bool imguiWantsMouse)
+    {
+        SyncViewportBounds();
+        if (imguiWantsMouse || _viewportMax.X <= _viewportMin.X || _viewportMax.Y <= _viewportMin.Y
+            || !IsMouseInViewport(x, y))
+            return false;
+
+        if (GameSparker.UiRenderer?.ActiveRoot is not { } root)
+            return true;
+
+        foreach (var hit in FocusManager.HitTestChain(root, new Vector2(x, y)))
+        {
+            var ancestor = (Node?)_viewportView;
+            while (ancestor != null && !ReferenceEquals(ancestor, hit))
+                ancestor = ancestor.VisualParent;
+            if (ancestor == null)
+                return false;
+        }
+
+        return true;
+    }
+
     public override void MouseMoved(
         int x,
         int y,
@@ -22,6 +44,8 @@ public partial class StageEditorPhase
     {
         if (!GameSparker.Game.IsActive) return;
         if (!_isOpen) return;
+
+        _cursorPosition.Value = (x, y);
 
         // Handle gizmo dragging before anything else
         if (_gizmoDragging != GizmoAxis.None && ActiveTab != null)
@@ -179,7 +203,7 @@ public partial class StageEditorPhase
         // Update placement preview position while hovering over the viewport
         if (_pendingPlacementPartIndex >= 0)
         {
-            if (IsMouseInViewport(x, y))
+            if (CanUseViewport(x, y, imguiWantsMouse))
             {
                 _hasValidPlacementPos = TryGetGroundPositionAtMouse(x, y, out var groundPos);
                 if (_hasValidPlacementPos)
@@ -273,13 +297,13 @@ public partial class StageEditorPhase
         }
 
         // Check if right mouse button is currently held down
-        var (mouseButtons, _, _) = SdlWindow.GetMouseState();
-        bool isRightButtonHeld = mouseButtons.HasFlag(MouseButtons.Secondary);
+        bool isRightButtonHeld = buttons.HasFlag(MouseButtons.Secondary);
 
         // Start dragging if right button is held, we're in viewport, in Scene view, and not already dragging
         if (isRightButtonHeld
-            && IsMouseInViewport(x, y)
-            && ActiveTab.ViewMode == StageEditorTab.ViewModeEnum.Scene
+            && _isRightButtonDown
+            && CanUseViewport(x, y, imguiWantsMouse)
+            && ActiveTab?.ViewMode == StageEditorTab.ViewModeEnum.Scene
             && !_isRightDragging)
         {
             _isRightDragging = true;
@@ -290,7 +314,7 @@ public partial class StageEditorPhase
         }
 
         // Handle right-click drag for camera rotation (only in Scene view)
-        if (_isRightDragging && isRightButtonHeld && !imguiWantsMouse && ActiveTab.ViewMode == StageEditorTab.ViewModeEnum.Scene)
+        if (_isRightDragging && isRightButtonHeld && !imguiWantsMouse && ActiveTab?.ViewMode == StageEditorTab.ViewModeEnum.Scene)
         {
             int deltaX = x - _rightDragStartX;
             int deltaY = y - _rightDragStartY;
@@ -321,7 +345,13 @@ public partial class StageEditorPhase
     {
         base.MousePressed(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
 
-        if (imguiWantsMouse || GameSparker.UiRenderer?.WantsMouse(x, y) == true) return;
+        if (_dismissedEditorOverlay)
+        {
+            _dismissedEditorOverlay = false;
+            return;
+        }
+
+        if (!CanUseViewport(x, y, imguiWantsMouse)) return;
         if (!GameSparker.Game.IsActive) return;
         if (!_isOpen) return;
 
@@ -329,9 +359,7 @@ public partial class StageEditorPhase
         _mouseY = y;
 
         // Check if it's right mouse button via the SDL mouse state
-        var (mouseButtons, _, _) = SdlWindow.GetMouseState();
-
-        if (mouseButtons.HasFlag(MouseButtons.Secondary))
+        if (button == MouseButton.Secondary)
         {
             // Right-click for camera rotation (only in Scene view)
             _isRightButtonDown = true;
@@ -346,7 +374,7 @@ public partial class StageEditorPhase
             }
         }
 
-        if (mouseButtons.HasFlag(MouseButtons.Primary))
+        if (button == MouseButton.Primary)
         {
             // Left-click
             _isLeftButtonDown = true;
@@ -395,7 +423,7 @@ public partial class StageEditorPhase
             }
         }
 
-        if (mouseButtons.HasFlag(MouseButtons.Middle))
+        if (button == MouseButton.Middle)
         {
             // In placement mode
             if (_pendingPlacementPartIndex >= 0)
@@ -418,9 +446,13 @@ public partial class StageEditorPhase
     {
         base.MouseScrolled(x, y, delta, imguiWantsMouse, buttons, ctrlKey, shiftKey, altKey);
 
-        if (imguiWantsMouse) return;
         if (!GameSparker.Game.IsActive) return;
         if (!_isOpen) return;
+        if (!CanUseViewport(x, y, imguiWantsMouse)) return;
+
+        _mouseX = x;
+        _mouseY = y;
+        Touch();
 
         // In placement mode
         if (_pendingPlacementPartIndex >= 0)
@@ -438,7 +470,7 @@ public partial class StageEditorPhase
         }
 
         // Only act if mouse is in viewport
-        if (IsMouseInViewport(_mouseX, _mouseY))
+        if (ActiveTab != null)
         {
             if (ActiveTab.ViewMode == StageEditorTab.ViewModeEnum.TopDown)
             {
@@ -468,11 +500,10 @@ public partial class StageEditorPhase
     )
     {
         base.MouseReleased(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
+        Touch();
 
         // Check if it's right mouse button
-        var (mouseButtons, _, _) = SdlWindow.GetMouseState();
-
-        if (!mouseButtons.HasFlag(MouseButtons.Secondary) && _isRightButtonDown)
+        if (button == MouseButton.Secondary && _isRightButtonDown)
         {
             _isRightButtonDown = false;
 
@@ -487,7 +518,7 @@ public partial class StageEditorPhase
                 _hasValidPlacementPos = false;
             }
         }
-        else if (!mouseButtons.HasFlag(MouseButtons.Primary) && _isLeftButtonDown)
+        else if (button == MouseButton.Primary && _isLeftButtonDown)
         {
             _isLeftButtonDown = false;
 
@@ -502,11 +533,13 @@ public partial class StageEditorPhase
             if (_isRectSelecting)
             {
                 _isRectSelecting = false;
+                _rectSelectEndX = x;
+                _rectSelectEndY = y;
                 int rw = Math.Abs(_rectSelectEndX - _rectSelectStartX);
                 int rh = Math.Abs(_rectSelectEndY - _rectSelectStartY);
                 bool isRectDrag = rw > 5 || rh > 5;
 
-                if (isRectDrag && ActiveTab != null && !imguiWantsMouse)
+                if (isRectDrag && ActiveTab != null && CanUseViewport(x, y, imguiWantsMouse))
                 {
                     int minX = Math.Min(_rectSelectStartX, _rectSelectEndX);
                     int maxX = Math.Max(_rectSelectStartX, _rectSelectEndX);
@@ -541,7 +574,7 @@ public partial class StageEditorPhase
             }
 
             // Handle piece selection on left click
-            if (!imguiWantsMouse && IsMouseInViewport(x, y))
+            if (CanUseViewport(x, y, imguiWantsMouse))
             {
                 // Placement mode: spawn the part at the hovered ground position
                 if (_pendingPlacementPartIndex >= 0)

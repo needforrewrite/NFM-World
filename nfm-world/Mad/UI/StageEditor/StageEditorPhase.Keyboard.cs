@@ -11,7 +11,25 @@ public partial class StageEditorPhase
 
     public override void KeyPressed(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
-        if (imguiWantsKeyboard || UiWantsKeyboard()) return;
+        try
+        {
+            HandleEditorKey(key, imguiWantsKeyboard, in keys);
+        }
+        finally
+        {
+            Touch();
+        }
+    }
+
+    private void HandleEditorKey(Key key, bool imguiWantsKeyboard, in Keys keys)
+    {
+        if (key == Key.Escape && _openEditorMenu.Value is not null)
+        {
+            _openEditorMenu.Value = null;
+            return;
+        }
+
+        if (imguiWantsKeyboard || UiWantsKeyboard() || EditorModalOpen()) return;
         if (!_isOpen) return;
 
         // In placement mode
@@ -45,7 +63,7 @@ public partial class StageEditorPhase
         }
 
         // Camera movement
-        switch (key)
+        switch (_isCtrlPressed ? (Key)0 : key)
         {
             case Key.W:
                 _moveForward = true;
@@ -76,7 +94,7 @@ public partial class StageEditorPhase
         }
 
         // Handle keyboard shortcuts here
-        if (key == Key.Delete)
+        if (key == Key.Delete && ActiveTab != null)
         {
             // Build the set of IDs to delete (multi-selection or single)
             int[] idsToDelete = [.. ActiveTab.SelectedPieceIds];

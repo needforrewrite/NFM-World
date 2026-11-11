@@ -20,6 +20,7 @@ public partial class StageEditorPhase
     // Built once. Slots read the live editor fields; Touch() republishes them after an action.
     private readonly Signal<int> _uiRevision = new(0);
     private readonly Signal<int> _previewRevision = new(0);
+    private readonly Signal<(int X, int Y)> _cursorPosition = new((0, 0));
     private View? _viewportView;
     private long _lastInspectorEditAt;
     private int _lastSelectionStamp;
@@ -37,6 +38,11 @@ public partial class StageEditorPhase
     private float _contextMenuY;
 
     private void Touch() => _uiRevision.Value = _uiRevision.Value + 1;
+
+    private bool EditorModalOpen() => _showNewStageDialog || _showLoadStageDialog || _showExportDialog
+                                      || _showPropertiesDialog || _showPublishDialog || _showExitWarningDialog
+                                      || _showCloseTabWarningDialog || _showRenameGroupDialog || _contextMenuOpen
+                                      || _openEditorMenu.Value is not null;
 
     private int SelectionStamp()
     {
@@ -57,15 +63,55 @@ public partial class StageEditorPhase
             PartsPanel(),
             Dialogs(),
             RectSelectionOverlay(),
+            MenuOverlay(),
             ContextMenuOverlay()
         ]
     );
 
     private static Node SmallButton(string label, Action action)
-        => Button.Create(label: () => label, onPress: action, size: ButtonSize.Sm);
+    {
+        var button = Button.Create(
+            label: () => label,
+            onPress: action,
+            size: ButtonSize.Sm,
+            style: () => Sx.Styles(flexShrink: 0)
+        );
+        button.Name = "Editor action " + label;
+        return button;
+    }
 
-    private static Node SmallButton(Func<string> label, Action action)
-        => Button.Create(label: label, onPress: action, size: ButtonSize.Sm);
+    private Node SmallButton(Func<string> label, Action action)
+        => Button.Create(
+            label: Observe(label),
+            onPress: action,
+            size: ButtonSize.Sm,
+            style: () => Sx.Styles(flexShrink: 0)
+        );
+
+    private Func<T> Observe<T>(Func<T> read) => () =>
+    {
+        _ = _uiRevision.Value;
+        return read();
+    };
+
+    private Node EditorText(Func<TextStyles>? style = null, Func<string?>? text = null, Func<Styles>? layout = null)
+        => Sx.Text(
+            style: style is null ? null : Observe(style),
+            text: text is null ? null : Observe(text),
+            layout: layout is null ? null : Observe(layout)
+        );
+
+    private Node EditorShow(Func<bool> when, Func<object?> then, Func<object?>? otherwise = null)
+        => Sx.Show(Observe(when), then, otherwise);
+
+    private Node EditorField(Func<string> value, Action<string> onChange, Func<string?>? placeholder = null)
+        => Controls.TextField(Observe(value), onChange, placeholder);
+
+    private Node EditorCheckbox(Func<bool> value, Action toggle, Func<string?>? label = null)
+        => Controls.Checkbox(Observe(value), toggle, label);
+
+    private Node EditorSlider(Func<double> value, Action<double> set, double min, double max, double step)
+        => Controls.Slider(Observe(value), set, min, max, step);
 
     private static string ShortName(string name)
     {
@@ -73,8 +119,13 @@ public partial class StageEditorPhase
         return slash < 0 ? name : name[(slash + 1)..];
     }
 
+    private readonly Signal<string?> _openEditorMenu = new(null);
+    private bool _dismissedEditorOverlay;
+    private readonly Dictionary<string, View> _editorMenuTriggers = new();
+
     private Node TopBar()
         => Sx.View(
+            name: () => "Stage editor menu bar",
             style: () => Sx.Styles(
                 position: Position.Absolute,
                 left: 0,
@@ -83,55 +134,203 @@ public partial class StageEditorPhase
                 height: 36,
                 flexDirection: FlexDirection.Row,
                 alignItems: Align.Center,
-                gapColumn: 6,
-                paddingTop: 6,
-                paddingBottom: 6,
-                paddingLeft: 8,
-                paddingRight: 8,
-                backgroundColor: new Color(8, 16, 32, 240)
+                gapColumn: 4,
+                paddingLeft: 12,
+                paddingRight: 12,
+                backgroundColor: new Color(8, 16, 32),
+                borderBottom: 1,
+                borderColor: new Color(128, 170, 255, 45),
+                zIndex: 20
             ),
             children:
             [
-                SmallButton("NEW", () => { _newStageName = ""; _showNewStageDialog = true; Touch(); }),
-                SmallButton(
-                    "LOAD",
-                    () => { RefreshAvailableStages(); _selectedStageIndex = -1; _showLoadStageDialog = true; Touch(); }
+                EditorText(
+                    style: () => Sx.TextStyles(fontSize: 12, fontStyle: FontStyle.Bold, foregroundColor: new Color(128, 170, 255)),
+                    layout: () => Sx.Styles(marginRight: 16, flexShrink: 0),
+                    text: () => "STAGE EDITOR"
                 ),
-                SmallButton("SAVE", () => { if (ActiveTab?.Stage != null) SaveStage(); Touch(); }),
-                SmallButton("EXPORT TOP-DOWN", () => { _exportResultMessage = ""; _showExportDialog = true; Touch(); }),
-                SmallButton(
-                    "PROPERTIES",
-                    () =>
-                    {
-                        if (ActiveTab?.Stage != null)
-                        {
-                            LoadPropertiesFromTab();
-                            _showPropertiesDialog = true;
-                            Touch();
-                        }
-                    }
-                ),
-                SmallButton("EXIT", RequestExit),
-                SmallButton(
-                    () => _autoGeneratePolys ? "POLYS ON" : "POLYS OFF",
-                    () => { _autoGeneratePolys = !_autoGeneratePolys; if (_autoGeneratePolys) RecreateEnvironment(); Touch(); }
-                ),
-                Sx.View(style: () => Sx.Styles(flexGrow: 1)),
-                Sx.Text(
-                    style: () => Sx.TextStyles(fontSize: 12, foregroundColor: new Color(185, 211, 255)),
-                    text: () =>
-                    {
-                        _uiRevision.Value.ToString();
-                        return ActiveTab is { Stage: { } stage }
-                        ? $"{ActiveTab.TabName}{(ActiveTab.HasUnsavedChanges ? " *" : "")}  ·  {ActiveTab.ScenePieces.Count} pieces  ·  {stage.Nlaps} lap(s)"
-                        : "No stage loaded — NEW or LOAD";
-                    }
+                MenuTrigger("File"), MenuTrigger("Edit"), MenuTrigger("View"),
+                Sx.View(style: () => Sx.Styles(flexGrow: 1, pointerEvents: false)),
+                EditorText(
+                    style: () => Sx.TextStyles(fontSize: 11, foregroundColor: new Color(140, 166, 202)),
+                    layout: () => Sx.Styles(flexShrink: 0),
+                    text: () => ActiveTab is { Stage: { } stage } tab
+                        ? $"{tab.ScenePieces.Count} pieces  /  {stage.Nlaps} laps" : "No document"
                 )
             ]
         );
 
+    private Node MenuTrigger(string label)
+    {
+        var trigger = Button.Create(
+            label: () => label + " ▾",
+            onPress: () => _openEditorMenu.Value = _openEditorMenu.Value == label ? null : label,
+            active: () => _openEditorMenu.Value == label,
+            variant: ButtonVariant.Ghost,
+            size: ButtonSize.Sm,
+            style: () => Sx.Styles(minWidth: 64, flexShrink: 0)
+        );
+        trigger.Name = "Editor menu " + label;
+        _editorMenuTriggers[label] = trigger;
+        return trigger;
+    }
+
+    private Node MenuOverlay()
+        => Sx.Show(
+            when: () => _openEditorMenu.Value is not null,
+            then: () => Sx.View(
+                name: () => "Editor menu overlay",
+                style: () => Sx.Styles(
+                    position: Position.Absolute,
+                    left: 0,
+                    right: 0,
+                    top: 36,
+                    bottom: 0,
+                    zIndex: 40
+                ),
+                onmousedown: e => { _dismissedEditorOverlay = true; _openEditorMenu.Value = null; e.StopPropagation(); },
+                children: Sx.View(
+                    name: () => "Editor menu popup",
+                    style: () => Sx.Styles(
+                        position: Position.Absolute,
+                        left: _editorMenuTriggers[_openEditorMenu.Value!].LayoutBorderPosition.X / TheGraphics.G.Scale,
+                        top: 0,
+                        width: 250,
+                        flexDirection: FlexDirection.Column,
+                        paddingTop: 6,
+                        paddingBottom: 6,
+                        backgroundColor: new Color(15, 28, 50),
+                        borderTop: 1,
+                        borderBottom: 1,
+                        borderLeft: 1,
+                        borderRight: 1,
+                        borderColor: new Color(128, 170, 255, 85),
+                        borderRadius: 6
+                    ),
+                    onmousedown: e => e.StopPropagation(),
+                    children: Sx.For(
+                        each: () => new[] { _openEditorMenu.Value! },
+                        row: (menu, _) => Sx.View(
+                        style: () => Sx.Styles(flexDirection: FlexDirection.Column),
+                        children: menu switch
+                    {
+                        "File" => new object[]
+                        {
+                            MenuAction("New stage…", "", OpenNewStage),
+                            MenuAction(
+                                "Open stage…",
+                                "",
+                                () => { RefreshAvailableStages(); _selectedStageIndex = -1; _showLoadStageDialog = true; }
+                            ),
+                            MenuAction("Save", "Ctrl+S", () => { if (ActiveTab?.Stage != null) SaveStage(); }),
+                            MenuAction("Publish / export pack…", "", () =>
+                                {
+                                    if (ActiveTab is null) return;
+                                    _publishName = ActiveTab.TabName;
+                                    _publishStatus = "";
+                                    _showPublishDialog = true;
+                                }
+                            ),
+                            MenuAction(
+                                "Export top-down image…",
+                                "",
+                                () => { _exportResultMessage = ""; _showExportDialog = true; }
+                            ),
+                            MenuAction("Close tab", "", () => { if (ActiveTab != null) CloseTab(_activeTabIndex); }),
+                            MenuAction("Exit editor", "", RequestExit)
+                        },
+                        "Edit" => new object[]
+                        {
+                            MenuAction("Undo", "Ctrl+Z", PerformUndo),
+                            MenuAction("Redo", "Ctrl+Y", PerformRedo),
+                            MenuAction("Delete selection", "Delete", DeleteSelection),
+                            MenuAction("Group selection", "", CreateGroupFromSelection),
+                            MenuAction("Stage properties…", "", () =>
+                                {
+                                    if (ActiveTab?.Stage == null) return;
+                                    LoadPropertiesFromTab();
+                                    _showPropertiesDialog = true;
+                                }
+                            )
+                        },
+                        _ => new object[]
+                        {
+                            MenuAction("3D scene", "", () => SetViewMode(StageEditorTab.ViewModeEnum.Scene)),
+                            MenuAction("Top down", "", () => SetViewMode(StageEditorTab.ViewModeEnum.TopDown)),
+                            MenuAction(_autoGeneratePolys ? "Disable ground polys" : "Enable ground polys", "", () =>
+                                {
+                                    _autoGeneratePolys = !_autoGeneratePolys;
+                                    if (ActiveTab != null) RecreateEnvironment();
+                                }
+                            )
+                        }
+                    }
+                        )
+                    )
+                )
+            )
+        );
+
+    private Node MenuAction(string label, string shortcut, Action action)
+    {
+        var hovered = new Signal<bool>(false);
+        return KeyboardNavigation.Bind(
+            Sx.View(
+                name: () => "Editor menu item " + label,
+                style: () => Sx.Styles(
+                    flexDirection: FlexDirection.Row,
+                    justifyContent: Justify.SpaceBetween,
+                    paddingTop: 8,
+                    paddingBottom: 8,
+                    paddingLeft: 12,
+                    paddingRight: 12,
+                    backgroundColor: hovered.Value ? new Color(39, 66, 108) : new Color(0, 0, 0, 0)
+                ),
+                onmouseenter: _ => hovered.Value = true,
+                onmouseleave: _ => hovered.Value = false,
+                onmousedown: e =>
+                {
+                    if (e.Button != MouseButton.Primary) return;
+                    _dismissedEditorOverlay = true;
+                    _openEditorMenu.Value = null;
+                    action();
+                    Touch();
+                    e.StopPropagation();
+                },
+                children:
+                [
+                    EditorText(
+                        style: () => Sx.TextStyles(fontSize: 12, foregroundColor: new Color(211, 228, 252)),
+                        text: () => label
+                    ),
+                    EditorText(
+                        style: () => Sx.TextStyles(fontSize: 11, foregroundColor: new Color(128, 155, 190)),
+                        text: () => shortcut
+                    )
+                ]
+            ),
+            key =>
+            {
+                if (key is not (Key.Enter or Key.Space)) return false;
+                _openEditorMenu.Value = null;
+                action();
+                Touch();
+                return true;
+            },
+            focused => hovered.Value = focused
+        );
+    }
+
+    private void OpenNewStage()
+    {
+        _newStageName = "";
+        _showNewStageDialog = true;
+        Touch();
+    }
+
     private Node TabStrip()
-        => Sx.View(
+        => KeyboardNavigation.Row(Sx.View(
+            name: () => "Stage document tabs",
             style: () => Sx.Styles(
                 position: Position.Absolute,
                 left: 0,
@@ -139,46 +338,81 @@ public partial class StageEditorPhase
                 top: 36,
                 height: 34,
                 flexDirection: FlexDirection.Row,
-                gapColumn: 4,
-                paddingTop: 4,
-                paddingBottom: 4,
+                alignItems: Align.Stretch,
                 paddingLeft: 8,
-                paddingRight: 8,
-                backgroundColor: new Color(12, 22, 42, 230)
+                backgroundColor: new Color(7, 14, 28),
+                borderBottom: 1,
+                borderColor: new Color(128, 170, 255, 45)
             ),
-            children: Sx.For(
-                each: () => { _uiRevision.Value.ToString(); return Enumerable.Range(0, _tabs.Count).ToArray(); },
-                row: (index, _) => TabChip(index)
-            )
-        );
-
-    private Node TabChip(int index)
-    {
-        var active = () => { _uiRevision.Value.ToString(); return _activeTabIndex == index; };
-        return Sx.View(
-            style: () => Sx.Styles(
-                flexDirection: FlexDirection.Row,
-                alignItems: Align.Center,
-                gapColumn: 6,
-                paddingTop: 5,
-                paddingBottom: 5,
-                paddingLeft: 12,
-                paddingRight: 8,
-                borderRadius: 5,
-                backgroundColor: active() ? new Color(55, 90, 150, 220) : new Color(22, 42, 80, 160)
-            ),
-            onmousedown: _ => SelectTab(index),
             children:
             [
-                Sx.Text(
-                    style: () => Sx.TextStyles(
-                        fontSize: 13,
-                        foregroundColor: active() ? new Color(128, 170, 255) : new Color(185, 211, 255)
-                    ),
-                    text: () => index < _tabs.Count ? _tabs[index].TabName + (_tabs[index].HasUnsavedChanges ? "*" : "") : ""
+                Sx.View(
+                    style: () => Sx.Styles(flexDirection: FlexDirection.Row, flexGrow: 1, minWidth: 0, overflow: Overflow.Scroll),
+                    children: Sx.For(each: Observe(() => _tabs.ToArray()), row: (tab, _) => TabChip(tab))
                 ),
-                SmallButton("×", () => { CloseTab(index); Touch(); })
+                SmallButton("+", OpenNewStage)
             ]
+        ));
+
+    private Node TabChip(StageEditorTab tab)
+    {
+        var hovered = new Signal<bool>(false);
+        var active = Observe(() => ReferenceEquals(ActiveTab, tab));
+        void Select() => SelectTab(_tabs.IndexOf(tab));
+        return KeyboardNavigation.Bind(
+            Sx.View(
+                style: () => Sx.Styles(
+                    position: Position.Relative,
+                    flexDirection: FlexDirection.Row,
+                    alignItems: Align.Center,
+                    justifyContent: Justify.SpaceBetween,
+                    gapColumn: 12,
+                    flexShrink: 0,
+                    minWidth: 140,
+                    maxWidth: 260,
+                    paddingLeft: 14,
+                    paddingRight: 6,
+                    backgroundColor: active() ? new Color(22, 42, 80) : hovered.Value ? new Color(17, 32, 57) : new Color(
+                        0,
+                        0,
+                        0,
+                        0
+                    ),
+                    borderRight: 1,
+                    borderColor: new Color(128, 170, 255, 30)
+                ),
+                onmouseenter: _ => hovered.Value = true,
+                onmouseleave: _ => hovered.Value = false,
+                onmousedown: e => { if (e.Button == MouseButton.Primary) Select(); },
+                children:
+                [
+                    EditorText(
+                        style: () => Sx.TextStyles(
+                            fontSize: 12,
+                            fontStyle: FontStyle.Bold,
+                            foregroundColor: active() ? new Color(205, 227, 255) : new Color(130, 155, 195)
+                        ),
+                        text: () => tab.TabName + (tab.HasUnsavedChanges ? " •" : "")
+                    ),
+                    Button.Create(
+                        label: () => "×",
+                        onPress: () => { CloseTab(_tabs.IndexOf(tab)); Touch(); },
+                        variant: ButtonVariant.Ghost,
+                        size: ButtonSize.Sm
+                    ),
+                    Sx.View(style: () => Sx.Styles(
+                        position: Position.Absolute,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        height: 3,
+                        backgroundColor: active() ? new Color(91, 163, 255) : new Color(0, 0, 0, 0),
+                        pointerEvents: false
+                    ))
+                ]
+            ),
+            key => { if (key is not (Key.Enter or Key.Space)) return false; Select(); return true; },
+            focused => hovered.Value = focused
         );
     }
 
@@ -219,33 +453,46 @@ public partial class StageEditorPhase
                 paddingLeft: 8,
                 paddingRight: 8,
                 gapRow: 6,
-                backgroundColor: new Color(12, 22, 42, 250)
+                backgroundColor: new Color(12, 22, 42, 250),
+                borderRight: 1,
+                borderColor: new Color(128, 170, 255, 40)
             ),
             children:
             [
-                Sx.Text(style: () => Sx.TextStyles(fontSize: 13, fontStyle: FontStyle.Bold), text: () => "Hierarchy"),
-                Controls.TextField(() => _hierarchySearch, value => { _hierarchySearch = value; Touch(); }, () => "Search pieces"),
+                Sx.View(
+                    style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 6, flexShrink: 0),
+                    children:
+                    [
+                        EditorText(style: () => Sx.TextStyles(fontSize: 13, fontStyle: FontStyle.Bold), text: () => "Hierarchy"),
+                        EditorField(
+                            () => _hierarchySearch,
+                            value => { _hierarchySearch = value; Touch(); },
+                            () => "Search pieces"
+                        )
+                    ]
+                ),
                 Sx.View(
                     style: () => Sx.Styles(
                         flexDirection: FlexDirection.Column,
                         flexGrow: 1,
                         flexShrink: 1,
+                        minHeight: 0,
                         overflow: Overflow.Scroll,
                         gapRow: 2
                     ),
                     children:
                     [
                         Sx.For(each: HierarchyRows, row: (row, _) => HierarchyRow(row)),
-                        Sx.Show(
+                        EditorShow(
                             when: () => !ActiveTabHasPieces(),
-                            then: () => Sx.Text(
+                            then: () => EditorText(
                                 style: () => Sx.TextStyles(fontSize: 12, foregroundColor: new Color(255, 255, 255, 90)),
                                 text: () => "No pieces yet."
                             )
                         )
                     ]
                 ),
-                Sx.Show(
+                EditorShow(
                     when: () =>
                     {
                         _uiRevision.Value.ToString();
@@ -380,7 +627,7 @@ public partial class StageEditorPhase
             },
             onmousedown: e => OnHierarchyRowPressed(row, e),
             onmouseenter: e => OnHierarchyRowHovered(row, e),
-            children: Sx.Text(
+            children: EditorText(
                 style: () =>
                 {
                     _uiRevision.Value.ToString();
@@ -399,14 +646,14 @@ public partial class StageEditorPhase
 
     private Node BordersHeader()
         => Sx.View(
-            style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 3, paddingTop: 2, paddingBottom: 4),
+            style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 3, paddingTop: 2, paddingBottom: 4, flexShrink: 0),
             children:
             [
-                Sx.Text(
+                EditorText(
                     style: () => Sx.TextStyles(fontSize: 11, fontStyle: FontStyle.Bold, foregroundColor: new Color(170, 200, 255)),
                     text: () => "STAGE BORDERS"
                 ),
-                Controls.Checkbox(
+                EditorCheckbox(
                     () => _autoUpdateWalls,
                     () => { _autoUpdateWalls = !_autoUpdateWalls; Touch(); },
                     () => "Auto-update walls"
@@ -672,10 +919,11 @@ public partial class StageEditorPhase
             {
                 if (e.Button != MouseButton.Primary)
                     return;
+                _dismissedEditorOverlay = true;
                 RunMenuCommand(row);
                 e.StopPropagation();
             },
-            children: Sx.Text(
+            children: EditorText(
                 style: () => Sx.TextStyles(fontSize: 12, foregroundColor: new Color(185, 211, 255)),
                 text: () => row.Label
             )
@@ -751,6 +999,7 @@ public partial class StageEditorPhase
             {
                 if (!_contextMenuOpen)
                     return;
+                _dismissedEditorOverlay = true;
                 CloseHierarchyContextMenu();
                 Touch();
                 e.StopPropagation();
@@ -781,17 +1030,25 @@ public partial class StageEditorPhase
     private Node CenterViewport()
     {
         var surface = Sx.View(
-            style: () => Sx.Styles(flexGrow: 1, flexShrink: 1, minHeight: 0, pointerEvents: false),
-            children: Sx.Show(
+            name: () => "Stage viewport",
+            style: () => Sx.Styles(
+                position: Position.Absolute,
+                left: 250,
+                right: 300,
+                top: 110,
+                bottom: 240,
+                pointerEvents: false
+            ),
+            children: EditorShow(
                 when: () => ActiveTab?.Stage != null,
-                then: () => Sx.Text(
+                then: () => EditorText(
                     style: () => Sx.TextStyles(fontSize: 12, foregroundColor: new Color(255, 255, 255, 140)),
                     layout: () => Sx.Styles(position: Position.Absolute, top: 8, left: 12),
                     text: StatusText
                 ),
                 otherwise: () => Sx.View(
                     style: () => Sx.Styles(flexGrow: 1, alignItems: Align.Center, justifyContent: Justify.Center),
-                    children: Sx.Text(
+                    children: EditorText(
                         style: () => Sx.TextStyles(fontSize: 16, foregroundColor: new Color(255, 255, 255, 130)),
                         text: () => "No stage is loaded. Use NEW or LOAD."
                     )
@@ -801,28 +1058,40 @@ public partial class StageEditorPhase
         _viewportView = surface;
 
         var view = Sx.View(
-            style: () => Sx.Styles(
-                position: Position.Absolute,
-                left: 250,
-                right: 300,
-                top: 70,
-                bottom: 240,
-                flexDirection: FlexDirection.Column
-            ),
+            style: () => Sx.Styles(display: Display.Contents),
             children:
             [
                 Sx.View(
                     style: () => Sx.Styles(
+                        position: Position.Absolute,
+                        left: 250,
+                        right: 300,
+                        top: 70,
+                        height: 40,
                         flexDirection: FlexDirection.Row,
+                        alignItems: Align.Center,
                         flexShrink: 0,
                         gapColumn: 6,
-                        paddingTop: 4,
-                        paddingBottom: 4
+                        paddingLeft: 10,
+                        paddingRight: 10,
+                        backgroundColor: new Color(10, 21, 39),
+                        borderBottom: 1,
+                        borderColor: new Color(128, 170, 255, 45)
                     ),
                     children:
                     [
-                        SmallButton("3D SCENE", () => SetViewMode(StageEditorTab.ViewModeEnum.Scene)),
-                        SmallButton("TOP DOWN", () => SetViewMode(StageEditorTab.ViewModeEnum.TopDown)),
+                        Button.Create(
+                            label: () => "3D SCENE",
+                            onPress: () => SetViewMode(StageEditorTab.ViewModeEnum.Scene),
+                            active: Observe(() => ActiveTab?.ViewMode == StageEditorTab.ViewModeEnum.Scene),
+                            size: ButtonSize.Sm
+                        ),
+                        Button.Create(
+                            label: () => "TOP DOWN",
+                            onPress: () => SetViewMode(StageEditorTab.ViewModeEnum.TopDown),
+                            active: Observe(() => ActiveTab?.ViewMode == StageEditorTab.ViewModeEnum.TopDown),
+                            size: ButtonSize.Sm
+                        ),
                         SmallButton(() => ActiveTab?.TopDownOrtho == true ? "ORTHO" : "PERSPECTIVE", () =>
                             {
                                 if (ActiveTab is { } tab)
@@ -863,7 +1132,8 @@ public partial class StageEditorPhase
         var placement = _pendingPlacementPartIndex >= 0 && _pendingPlacementPartIndex < _availableParts.Count
             ? $"  ·  Placing {ShortName(_availableParts[_pendingPlacementPartIndex].FileName)}  [Q/E] rotate  [LMB] place  [Esc] cancel"
             : "";
-        return $"Cursor {_mouseX},{_mouseY}  ·  {ActiveTab.ViewMode}  ·  {snap}  ·  {grid}{placement}";
+        var cursor = _cursorPosition.Value;
+        return $"Cursor {cursor.X},{cursor.Y}  ·  {ActiveTab.ViewMode}  ·  {snap}  ·  {grid}{placement}";
     }
 
     private Node RightPanel()
@@ -880,11 +1150,13 @@ public partial class StageEditorPhase
                 paddingLeft: 10,
                 paddingRight: 10,
                 gapRow: 6,
-                backgroundColor: new Color(12, 22, 42, 250)
+                backgroundColor: new Color(12, 22, 42, 250),
+                borderRight: 1,
+                borderColor: new Color(128, 170, 255, 40)
             ),
             children:
             [
-                Sx.Text(style: () => Sx.TextStyles(fontSize: 13, fontStyle: FontStyle.Bold), text: () => "Inspector"),
+                EditorText(style: () => Sx.TextStyles(fontSize: 13, fontStyle: FontStyle.Bold), text: () => "Inspector"),
                 Sx.View(
                     style: () => Sx.Styles(
                         flexGrow: 1,
@@ -893,20 +1165,10 @@ public partial class StageEditorPhase
                         flexDirection: FlexDirection.Column,
                         gapRow: 6
                     ),
-                    children: Sx.Show(
-                        when: () => SelectedPiece() is not null || SelectedWall() is not null,
-                        then: () => Sx.View(
-                            style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 6),
-                            children:
-                            [
-                                Sx.Show(when: () => SelectedPiece() is not null, then: PieceInspector),
-                                Sx.Show(when: () => SelectedWall() is not null, then: WallInspector)
-                            ]
-                        ),
-                        otherwise: () => Sx.Text(
-                            style: () => Sx.TextStyles(fontSize: 12, foregroundColor: new Color(255, 255, 255, 90)),
-                            text: () => "Nothing selected. Click a piece in the viewport or the hierarchy."
-                        )
+                    children: Sx.For(
+                        each: () => SelectedPiece() is { } piece ? new object[] { piece }
+                            : SelectedWall() is { } wall ? new object[] { wall } : [],
+                        row: (selected, _) => selected is StagePieceInstance ? PieceInspector() : WallInspector()
                     )
                 )
             ]
@@ -928,24 +1190,24 @@ public partial class StageEditorPhase
     {
         var piece = SelectedPiece()!;
         return Sx.View(
-            style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 4),
+            style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 4, flexShrink: 0),
             children:
             [
-                Sx.Text(
+                EditorText(
                     style: () => Sx.TextStyles(fontSize: 13, fontStyle: FontStyle.Bold, foregroundColor: new Color(170, 255, 170)),
                     text: () => ShortName(piece.Name)
                 ),
                 NumberField("X", () => (float)piece.Position.X, value => SetPieceX(piece, value)),
-                NumberField("Y (0 = ground)", () => (float)piece.Position.Y - 250, value => SetPieceY(piece, value)),
+                NumberField("Y", () => (float)piece.Position.Y - 250, value => SetPieceY(piece, value), "(0 = ground)"),
                 NumberField("Z", () => (float)piece.Position.Z, value => SetPieceZ(piece, value)),
                 NumberField("Yaw", () => (float)piece.Rotation.Yaw.Degrees, value => SetPieceYaw(piece, value)),
-                Sx.Text(
+                EditorText(
                     style: () => Sx.TextStyles(fontSize: 11, foregroundColor: new Color(255, 255, 255, 110)),
                     text: () => "Type"
                 ),
                 Controls.Dropdown(
                     options: () => ["Object", "Checkpoint", "Fix Hoop"],
-                    value: () => (int)piece.PiecePlacement.Type,
+                    value: Observe(() => (int)piece.PiecePlacement.Type),
                     onSelect: index =>
                     {
                         BeginInspectorEdit();
@@ -971,10 +1233,10 @@ public partial class StageEditorPhase
     {
         var wall = SelectedWall()!;
         return Sx.View(
-            style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 4),
+            style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 4, flexShrink: 0),
             children:
             [
-                Sx.Text(style: () => Sx.TextStyles(fontSize: 13, fontStyle: FontStyle.Bold), text: () => wall.GetDisplayName()),
+                EditorText(style: () => Sx.TextStyles(fontSize: 13, fontStyle: FontStyle.Bold), text: () => wall.GetDisplayName()),
                 NumberField("Count", () => wall.Count, value =>
                     {
                         BeginInspectorEdit();
@@ -1016,27 +1278,56 @@ public partial class StageEditorPhase
         );
     }
 
-    private Node NumberField(string label, Func<float> value, Action<float> set)
-        => Sx.View(
-            style: () => Sx.Styles(flexDirection: FlexDirection.Row, alignItems: Align.Center, gapColumn: 6),
+    private Node NumberField(string label, Func<float> value, Action<float> set, string? hint = null)
+    {
+        var draft = new Signal<string>(value().ToString("0.##", CultureInfo.InvariantCulture));
+        var coordinate = label is "X" or "Y" or "Z";
+        return Sx.View(
+            name: () => "Inspector field " + label,
+            style: () => Sx.Styles(flexDirection: FlexDirection.Row, alignItems: Align.Center, gapColumn: 6, flexShrink: 0),
             children:
             [
-                Sx.Text(
+                EditorText(
                     style: () => Sx.TextStyles(fontSize: 11, foregroundColor: new Color(255, 255, 255, 130)),
+                    layout: () => Sx.Styles(width: coordinate ? 24 : 65, flexShrink: 0),
                     text: () => label
                 ),
-                Controls.TextField(
-                    () => value().ToString("0.##", CultureInfo.InvariantCulture),
-                    text =>
+                Sx.TextInput(
+                    style: () => Sx.Styles(
+                        flexGrow: 1,
+                        minWidth: 0,
+                        width: 0,
+                        paddingTop: 6,
+                        paddingBottom: 6,
+                        paddingLeft: 10,
+                        paddingRight: 10,
+                        backgroundColor: new Color(22, 34, 54),
+                        borderRadius: 6,
+                        borderTop: 1,
+                        borderBottom: 1,
+                        borderLeft: 1,
+                        borderRight: 1,
+                        borderColor: new Color(128, 170, 255, 65)
+                    ),
+                    text: () => draft.Value,
+                    onchange: text =>
                     {
-                        if (!float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
+                        draft.Value = text;
+                        if (!float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) || !float
+                            .IsFinite(parsed))
                             return;
                         set(parsed);
                         Touch();
                     }
-                )
+                ),
+                coordinate ? EditorText(
+                    style: () => Sx.TextStyles(fontSize: 10, foregroundColor: new Color(255, 255, 255, 110)),
+                    layout: () => Sx.Styles(width: 72, flexShrink: 0),
+                    text: () => hint ?? ""
+                ) : null
             ]
         );
+    }
 
     private void BeginInspectorEdit()
     {
@@ -1100,6 +1391,8 @@ public partial class StageEditorPhase
             tab.Stage.Pieces.Remove(piece.Obj);
             tab.ScenePieces.Remove(piece);
             tab.SelectedPieceIds.Remove(piece.Id);
+            foreach (var group in tab.HierarchyGroups)
+                group.PieceIds.Remove(piece.Id);
             tab.ActivePieceId = -1;
         }
 
@@ -1130,27 +1423,53 @@ public partial class StageEditorPhase
                     style: () => Sx.Styles(
                         flexDirection: FlexDirection.Row,
                         alignItems: Align.Center,
-                        gapColumn: 6,
+                        flexShrink: 0,
+                        minHeight: 38,
+                        gapRow: 8,
+                        paddingBottom: 8,
+                        borderBottom: 1,
+                        borderColor: new Color(128, 170, 255, 40),
+                        gapColumn: 8,
                         flexWrap: Wrap.Wrap
                     ),
                     children:
                     [
-                        Sx.Text(style: () => Sx.TextStyles(fontSize: 13, fontStyle: FontStyle.Bold), text: () => "Parts"),
-                        SmallButton("ALL", () => { _partsCategory = 0; Touch(); }),
-                        SmallButton("NFMM", () => { _partsCategory = 1; Touch(); }),
-                        SmallButton("VENDOR", () => { _partsCategory = 2; Touch(); }),
-                        SmallButton("USER", () => { _partsCategory = 3; Touch(); }),
-                        Controls.TextField(() => _partsSearch, value => { _partsSearch = value; Touch(); }, () => "Search parts"),
+                        EditorText(style: () => Sx.TextStyles(fontSize: 13, fontStyle: FontStyle.Bold), text: () => "Parts"),
+                        Button.Create(
+                            label: () => "ALL",
+                            onPress: () => { _partsCategory = 0; Touch(); },
+                            active: Observe(() => _partsCategory == 0),
+                            size: ButtonSize.Sm
+                        ),
+                        Button.Create(
+                            label: () => "NFMM",
+                            onPress: () => { _partsCategory = 1; Touch(); },
+                            active: Observe(() => _partsCategory == 1),
+                            size: ButtonSize.Sm
+                        ),
+                        Button.Create(
+                            label: () => "VENDOR",
+                            onPress: () => { _partsCategory = 2; Touch(); },
+                            active: Observe(() => _partsCategory == 2),
+                            size: ButtonSize.Sm
+                        ),
+                        Button.Create(
+                            label: () => "USER",
+                            onPress: () => { _partsCategory = 3; Touch(); },
+                            active: Observe(() => _partsCategory == 3),
+                            size: ButtonSize.Sm
+                        ),
+                        EditorField(() => _partsSearch, value => { _partsSearch = value; Touch(); }, () => "Search parts"),
                         SmallButton(() => _snapEnabled ? "SNAP ON" : "SNAP OFF", () => { _snapEnabled = !_snapEnabled; Touch(); }),
                         SmallButton(
                             () => _gridSnapEnabled ? $"GRID {_gridSnapSize:0}" : "GRID OFF",
                             () => { _gridSnapEnabled = !_gridSnapEnabled; Touch(); }
                         ),
-                        Sx.Show(
+                        EditorShow(
                             when: () => { _uiRevision.Value.ToString(); return _gridSnapEnabled; },
                             then: () => Controls.Dropdown(
                                 options: () => SnapPresets.Select(size => size.ToString("0")).ToArray(),
-                                value: () => _snapPresetIndex,
+                                value: Observe(() => _snapPresetIndex),
                                 onSelect: index =>
                                 {
                                     _snapPresetIndex = index;
@@ -1160,13 +1479,13 @@ public partial class StageEditorPhase
                                 width: 90
                             )
                         ),
-                        Sx.Show(
+                        EditorShow(
                             when: () => { _uiRevision.Value.ToString(); return _pendingPlacementPartIndex >= 0; },
                             then: () => Sx.View(
                                 style: () => Sx.Styles(flexDirection: FlexDirection.Row, alignItems: Align.Center, gapColumn: 4),
                                 children:
                                 [
-                                    Sx.Text(
+                                    EditorText(
                                         style: () => Sx.TextStyles(fontSize: 11, foregroundColor: new Color(26, 230, 255)),
                                         text: () => $"Yaw {_pendingPlacementYaw:0}°"
                                     ),
@@ -1195,7 +1514,12 @@ public partial class StageEditorPhase
                         gapColumn: 4,
                         gapRow: 4,
                         overflow: Overflow.Scroll,
-                        flexGrow: 1
+                        flexGrow: 1,
+                        minHeight: 0,
+                        alignContent: Align.FlexStart,
+                        alignItems: Align.FlexStart,
+                        paddingTop: 4,
+                        paddingBottom: 4
                     ),
                     children: Sx.For(each: FilteredParts, row: (part, _) => PartButton(part))
                 )
@@ -1245,7 +1569,9 @@ public partial class StageEditorPhase
 
         return Sx.View(
             style: () => Sx.Styles(
-                width: 68,
+                width: 92,
+                height: 92,
+                flexShrink: 0,
                 flexDirection: FlexDirection.Column,
                 alignItems: Align.Center,
                 gapRow: 2,
@@ -1275,24 +1601,24 @@ public partial class StageEditorPhase
             },
             children:
             [
-                Sx.Show(
+                EditorShow(
                     when: () => preview() is not null,
                     then: () => new NFMWorld.DriverInterface.UI.Image
                     {
                         ImageData = preview(),
-                        Styles = Sx.Styles(width: 64, height: 52, flexShrink: 0)
+                        Styles = Sx.Styles(width: 80, height: 60, flexShrink: 0, pointerEvents: false)
                     },
                     otherwise: () => Sx.View(
                         style: () => Sx.Styles(
-                            width: 64,
-                            height: 52,
+                            width: 80,
+                            height: 60,
                             flexShrink: 0,
                             borderRadius: 3,
                             backgroundColor: PartTileColor(part.Part.FileName)
                         )
                     )
                 ),
-                Sx.Text(
+                EditorText(
                     style: () => Sx.TextStyles(
                         fontSize: 10,
                         foregroundColor: active() ? new Color(128, 170, 255) : new Color(185, 211, 255)
@@ -1353,21 +1679,21 @@ public partial class StageEditorPhase
         => Dialog(
             () => _showNewStageDialog,
             "NEW STAGE",
-            [
-                Controls.TextField(() => _newStageName, value => { _newStageName = value; Touch(); }, () => "Stage name"),
-                Sx.Text(
+            () => [
+                EditorField(() => _newStageName, value => { _newStageName = value; Touch(); }, () => "Stage name"),
+                EditorText(
                     style: () => Sx.TextStyles(fontSize: 11),
                     text: () => $"File: {ConvertStageNameToFilename(_newStageName)}.txt"
                 ),
-                Sx.View(
-                    style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6),
-                    children: _newStageStartPartOptions.Select((option, index) => SmallButton(option, () =>
-                        {
-                            _newStageStartPartIndex = index;
-                            Touch();
-                        }
-                    )
-                    ).ToArray()
+                EditorText(
+                    style: () => Sx.TextStyles(fontSize: 12, foregroundColor: new Color(140, 166, 202)),
+                    text: () => "Starting road"
+                ),
+                Controls.Dropdown(
+                    options: () => _newStageStartPartOptions,
+                    value: Observe(() => _newStageStartPartIndex),
+                    onSelect: index => { _newStageStartPartIndex = index; Touch(); },
+                    width: 370
                 ),
                 DialogButtons(
                     "CREATE",
@@ -1388,15 +1714,25 @@ public partial class StageEditorPhase
         => Dialog(
             () => _showLoadStageDialog,
             "LOAD STAGE",
-            [
+            () => [
                 Sx.View(
                     style: () => Sx.Styles(flexDirection: FlexDirection.Column, overflow: Overflow.Scroll, maxHeight: 240),
                     children: Sx.For(
-                        each: () => { _uiRevision.Value.ToString(); return _availableStages; },
+                        each: () => { _uiRevision.Value.ToString(); return _availableStages.ToArray(); },
                         row: (stage, _) => Sx.View(
-                            style: () => Sx.Styles(flexShrink: 0, paddingTop: 4, paddingBottom: 4),
+                            style: Observe(() => Sx.Styles(
+                                flexShrink: 0,
+                                paddingTop: 7,
+                                paddingBottom: 7,
+                                paddingLeft: 10,
+                                paddingRight: 10,
+                                borderRadius: 4,
+                                backgroundColor: _selectedStageIndex == _availableStages.IndexOf(stage)
+                                    ? new Color(39, 66, 108) : new Color(0, 0, 0, 0)
+                            )
+                            ),
                             onmousedown: _ => { _selectedStageIndex = _availableStages.IndexOf(stage); Touch(); },
-                            children: Sx.Text(style: () => Sx.TextStyles(fontSize: 12), text: () => stage)
+                            children: EditorText(style: () => Sx.TextStyles(fontSize: 12), text: () => stage)
                         )
                     )
                 ),
@@ -1418,11 +1754,11 @@ public partial class StageEditorPhase
         => Dialog(
             () => _showExportDialog,
             "EXPORT TOP-DOWN",
-            [
+            () => [
                 NumberField("Width", () => _exportWidth, value => _exportWidth = (int)value),
                 NumberField("Height", () => _exportHeight, value => _exportHeight = (int)value),
                 NumberField("Padding", () => _exportPadding, value => _exportPadding = (int)value),
-                Sx.Text(
+                EditorText(
                     style: () => Sx.TextStyles(fontSize: 11, foregroundColor: new Color(255, 255, 255, 110)),
                     text: () => _exportResultMessage
                 ),
@@ -1438,8 +1774,8 @@ public partial class StageEditorPhase
         => Dialog(
             () => _showPropertiesDialog,
             "STAGE PROPERTIES",
-            [
-                Controls.TextField(() => _editStageName, value => { _editStageName = value; Touch(); }, () => "Stage name"),
+            () => [
+                EditorField(() => _editStageName, value => { _editStageName = value; Touch(); }, () => "Stage name"),
                 ColorSliders(
                     "Sky",
                     () => _editSkyColor,
@@ -1448,7 +1784,7 @@ public partial class StageEditorPhase
                 ),
                 ColorSliders("Fog", () => _editFogColor, c => { _editFogColor = c; World.Fog = c; Touch(); }),
                 ColorSliders("Ground", () => _editGroundColor, c => { _editGroundColor = c; World.GroundColor = c; Touch(); }),
-                Controls.Checkbox(() => _editPolysEnabled, () =>
+                EditorCheckbox(() => _editPolysEnabled, () =>
                     {
                         _editPolysEnabled = !_editPolysEnabled;
                         World.HasPolys = _editPolysEnabled;
@@ -1460,7 +1796,7 @@ public partial class StageEditorPhase
                         Touch();
                     }, () => "Ground polys"
                 ),
-                Controls.Checkbox(() => _editCloudsEnabled, () =>
+                EditorCheckbox(() => _editCloudsEnabled, () =>
                     {
                         _editCloudsEnabled = !_editCloudsEnabled;
                         World.HasClouds = _editCloudsEnabled;
@@ -1468,7 +1804,7 @@ public partial class StageEditorPhase
                         Touch();
                     }, () => "Clouds"
                 ),
-                Controls.Checkbox(() => _editMountainsEnabled, () =>
+                EditorCheckbox(() => _editMountainsEnabled, () =>
                     {
                         _editMountainsEnabled = !_editMountainsEnabled;
                         World.DrawMountains = _editMountainsEnabled;
@@ -1492,18 +1828,18 @@ public partial class StageEditorPhase
         => Dialog(
             () => _showPublishDialog,
             "PUBLISH TO ARCHIVE",
-            [
-                Sx.Text(
+            () => [
+                EditorText(
                     style: () => Sx.TextStyles(fontSize: 11, foregroundColor: new Color(255, 200, 120)),
                     text: () => "Publication is public. Unsaved edits are included."
                 ),
-                Controls.TextField(() => _publishName, value => { _publishName = value; Touch(); }, () => "Name"),
-                Controls.TextField(
+                EditorField(() => _publishName, value => { _publishName = value; Touch(); }, () => "Name"),
+                EditorField(
                     () => _publishDescription,
                     value => { _publishDescription = value; Touch(); },
                     () => "Description"
                 ),
-                Sx.Text(
+                EditorText(
                     style: () => Sx.TextStyles(fontSize: 11, foregroundColor: new Color(255, 255, 255, 120)),
                     text: () => _publishStatus
                 ),
@@ -1581,8 +1917,8 @@ public partial class StageEditorPhase
         => Dialog(
             () => _showExitWarningDialog,
             "UNSAVED CHANGES",
-            [
-                Sx.Text(style: () => Sx.TextStyles(fontSize: 12), text: () => "One or more stages have unsaved changes."),
+            () => [
+                EditorText(style: () => Sx.TextStyles(fontSize: 12), text: () => "One or more stages have unsaved changes."),
                 DialogButtons(
                     "EXIT WITHOUT SAVING",
                     () => { _showExitWarningDialog = false; GameSparker.ReturnToMainMenu(); },
@@ -1595,8 +1931,8 @@ public partial class StageEditorPhase
         => Dialog(
             () => _showCloseTabWarningDialog,
             "CLOSE TAB?",
-            [
-                Sx.Text(style: () => Sx.TextStyles(fontSize: 12), text: () => "This stage has unsaved changes."),
+            () => [
+                EditorText(style: () => Sx.TextStyles(fontSize: 12), text: () => "This stage has unsaved changes."),
                 DialogButtons(
                     "CLOSE WITHOUT SAVING",
                     () =>
@@ -1616,8 +1952,8 @@ public partial class StageEditorPhase
         => Dialog(
             () => _showRenameGroupDialog,
             "RENAME GROUP",
-            [
-                Controls.TextField(
+            () => [
+                EditorField(
                     () => _renameGroupBuffer,
                     value => { _renameGroupBuffer = value; Touch(); },
                     () => "Group name"
@@ -1641,8 +1977,8 @@ public partial class StageEditorPhase
             ]
         );
 
-    private Node Dialog(Func<bool> open, string title, Node[] content)
-        => Sx.Show(
+    private Node Dialog(Func<bool> open, string title, Func<Node[]> content)
+        => EditorShow(
             when: () => { _uiRevision.Value.ToString(); return open(); },
             then: () => Sx.View(
                 style: () => Sx.Styles(
@@ -1651,13 +1987,16 @@ public partial class StageEditorPhase
                     top: 0,
                     right: 0,
                     bottom: 0,
-                    backgroundColor: new Color(3, 8, 20, 180),
+                    backgroundColor: new Color(3, 8, 20, 200),
+                    zIndex: 60,
                     alignItems: Align.Center,
                     justifyContent: Justify.Center
                 ),
                 children: Sx.View(
                     style: () => Sx.Styles(
-                        width: 420,
+                        width: 460,
+                        maxHeight: 90.Percent(),
+                        overflow: Overflow.Scroll,
                         flexDirection: FlexDirection.Column,
                         gapRow: 8,
                         paddingTop: 16,
@@ -1674,7 +2013,7 @@ public partial class StageEditorPhase
                     ),
                     children:
                     [
-                        Sx.Text(
+                        EditorText(
                             style: () => Sx.TextStyles(
                                 fontSize: 18,
                                 fontStyle: FontStyle.Bold,
@@ -1682,8 +2021,9 @@ public partial class StageEditorPhase
                             ),
                             text: () => title
                         ),
-                        ..content
-                    ]
+                        ..content()
+                    ],
+                    onmousedown: e => e.StopPropagation()
                 )
             )
         );
@@ -1699,13 +2039,13 @@ public partial class StageEditorPhase
             style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 2),
             children:
             [
-                Sx.Text(
+                EditorText(
                     style: () => Sx.TextStyles(fontSize: 11, foregroundColor: new Color(255, 255, 255, 130)),
                     text: () => label
                 ),
-                Controls.Slider(() => read().R, value => write(new Color3((short)value, read().G, read().B)), 0, 255, 1),
-                Controls.Slider(() => read().G, value => write(new Color3(read().R, (short)value, read().B)), 0, 255, 1),
-                Controls.Slider(() => read().B, value => write(new Color3(read().R, read().G, (short)value)), 0, 255, 1)
+                EditorSlider(() => read().R, value => write(new Color3((short)value, read().G, read().B)), 0, 255, 1),
+                EditorSlider(() => read().G, value => write(new Color3(read().R, (short)value, read().B)), 0, 255, 1),
+                EditorSlider(() => read().B, value => write(new Color3(read().R, read().G, (short)value)), 0, 255, 1)
             ]
         );
 

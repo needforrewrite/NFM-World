@@ -13,7 +13,13 @@ public partial class StageEditorPhase
         base.GameTick();
 
         if (!_isOpen) return;
+        SyncViewportBounds();
         if (ActiveTab == null) return;
+
+        if (EditorModalOpen() || UiWantsKeyboard() || !GameSparker.Game.IsActive)
+        {
+            _moveForward = _moveBackward = _moveLeft = _moveRight = _moveUp = _moveDown = false;
+        }
 
         // Handle camera movement with WASD in first-person flying mode
         if (ActiveTab.ViewMode == StageEditorTab.ViewModeEnum.Scene)
@@ -81,12 +87,10 @@ public partial class StageEditorPhase
             ActiveTab.StageRenderer?.GameTick();
         }
 
-        SyncViewportBounds();
-
         // Viewport picking and hierarchy writes change the selection without going through
         // the view, so republish when it changed.
         var stamp = SelectionStamp();
-        if (stamp != _lastSelectionStamp)
+        if (stamp != _lastSelectionStamp || _isRectSelecting || _gizmoDragging != GizmoAxis.None)
         {
             _lastSelectionStamp = stamp;
             Touch();
@@ -100,12 +104,19 @@ public partial class StageEditorPhase
     private void SyncViewportBounds()
     {
         if (_viewportView is null)
+        {
+            _viewportMin = _viewportMax = default;
             return;
+        }
 
         var position = _viewportView.LayoutBorderPosition;
         var size = _viewportView.LayoutBorderSize;
-        if (size.X <= 0 || size.Y <= 0)
+        if (!float.IsFinite(position.X) || !float.IsFinite(position.Y)
+            || !float.IsFinite(size.X) || !float.IsFinite(size.Y) || size.X <= 0 || size.Y <= 0)
+        {
+            _viewportMin = _viewportMax = default;
             return;
+        }
 
         _viewportMin = position;
         _viewportMax = position + size;

@@ -155,6 +155,47 @@ public class FocusManagerMousePressTests
     }
 
     [TestMethod]
+    public void ContentsViewportWrapper_DoesNotCaptureEmptyViewport_ButToolbarRemainsInteractive()
+    {
+        var root = MakeRoot();
+        var wrapper = MakeBox("wrapper", 0, 0, 200, 200);
+        wrapper.Styles = wrapper.Styles with { Display = Display.Flex };
+        var surface = MakeBox("surface", 0, 0, 200, 200);
+        surface.Styles = surface.Styles with { PointerEvents = false };
+        var toolbar = MakeBox("toolbar", 0, 0, 100, 30, focusable: true);
+        var presses = 0;
+        toolbar.MousePressed = _ => presses++;
+        wrapper.AddChild(surface);
+        wrapper.AddChild(toolbar);
+        root.AddChild(wrapper);
+        root.LayoutAndRender(new Vector2(200, 200));
+
+        CollectionAssert.AreEqual(
+            new Component[] { root, wrapper },
+            FocusManager.HitTestChain(root, new Vector2(150, 150))
+        );
+
+        wrapper.Styles = wrapper.Styles with { Display = Display.Contents };
+        root.LayoutAndRender(new Vector2(200, 200));
+
+        CollectionAssert.AreEqual(
+            new Component[] { root },
+            FocusManager.HitTestChain(root, new Vector2(150, 150))
+        );
+        CollectionAssert.AreEqual(
+            new Component[] { root, toolbar },
+            FocusManager.HitTestChain(root, new Vector2(50, 15))
+        );
+
+        FocusManager.HandleMousePressed(root, Press(50, 15));
+        root.DispatchMousePressed(Press(50, 15));
+
+        Assert.AreSame(toolbar, FocusManager.FocusedNode);
+        Assert.AreSame(toolbar, FocusManager.ActiveNode);
+        Assert.AreEqual(1, presses);
+    }
+
+    [TestMethod]
     public void HandleMouseReleased_ClearsActiveButKeepsFocus()
     {
         var root = MakeRoot();

@@ -1,0 +1,25 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-menu-captures",
+  "steps": [
+    { "action": "capture", "capture": "closed" },
+    { "action": "click", "target": "Editor menu File", "capture": "file" },
+    { "action": "assert-aligned", "target": "Editor menu popup", "anchor": "Editor menu File" },
+    { "action": "hover", "target": "Editor menu item Open stage…", "capture": "file-hover" },
+    { "action": "assert-hover", "target": "Editor menu item Open stage…" },
+    { "action": "hover", "target": "Editor menu item Save", "capture": "file-hover-save" },
+    { "action": "assert-hover", "target": "Editor menu item Save" },
+    { "action": "click", "target": "Editor menu Edit", "capture": "edit" },
+    { "action": "assert-aligned", "target": "Editor menu popup", "anchor": "Editor menu Edit" },
+    { "action": "hover", "target": "Editor menu item Undo", "capture": "edit-hover" },
+    { "action": "assert-hover", "target": "Editor menu item Undo" },
+    { "action": "click", "target": "Editor menu View", "capture": "view" },
+    { "action": "assert-aligned", "target": "Editor menu popup", "anchor": "Editor menu View" },
+    { "action": "hover", "target": "Editor menu item Top down", "capture": "view-hover" },
+    { "action": "assert-hover", "target": "Editor menu item Top down" },
+    { "action": "click", "target": "Editor menu File" },
+    { "action": "click", "target": "Editor menu item New stage…", "capture": "new-stage" }
+  ]
+}

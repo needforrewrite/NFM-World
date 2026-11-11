@@ -389,7 +389,7 @@ public partial class WorldGame : IDisposable, IGameHost
             return;
         }
 
-        var function = (delegate* unmanaged[Cdecl]<int, byte*>)getString;
+        var function = (delegate* unmanaged [Cdecl]<int, byte*>)getString;
 
         string Read(int name)
         {
@@ -557,21 +557,21 @@ public partial class WorldGame : IDisposable, IGameHost
 
             case Renderer.Angle:
 #if ANGLE
-            {
-                // ANGLE only exists under its define, so this arm is compiled out with it. The
-                // switch's default arm below reports that rather than this failing to build.
-                //
-                // The platform display's attributes have to be installed before the window is
-                // created, because SDL asks EGL for that display while it builds the window's
-                // surface. See InstallAnglePlatformAttributes for why this is the only way to choose
-                // an ANGLE backend at all - and for why a default run deliberately does not, leaving
-                // it on the display and config every earlier measurement of this path was taken on.
-                if (!_angleSelection.IsDefault)
-                    InstallAnglePlatformAttributes(_angleSelection);
+                {
+                    // ANGLE only exists under its define, so this arm is compiled out with it. The
+                    // switch's default arm below reports that rather than this failing to build.
+                    //
+                    // The platform display's attributes have to be installed before the window is
+                    // created, because SDL asks EGL for that display while it builds the window's
+                    // surface. See InstallAnglePlatformAttributes for why this is the only way to choose
+                    // an ANGLE backend at all - and for why a default run deliberately does not, leaving
+                    // it on the display and config every earlier measurement of this path was taken on.
+                    if (!_angleSelection.IsDefault)
+                        InstallAnglePlatformAttributes(_angleSelection);
 
-                ReportMissingVulkanLoader();
+                    ReportMissingVulkanLoader();
 
-                var (angleContext, angleWindow) = CreateGlContext(
+                    var (angleContext, angleWindow) = CreateGlContext(
                     profileMask: EsProfile,
                     major: 3,
                     minor: 0,
@@ -579,29 +579,29 @@ public partial class WorldGame : IDisposable, IGameHost
                     hint: (SDL.SDL_HINT_OPENGL_ES_DRIVER, "1")
                 );
 
-                _glContext = angleContext;
-                Window = angleWindow;
+                    _glContext = angleContext;
+                    Window = angleWindow;
 
-                // Read back what SDL actually gave us rather than assuming the request was honoured.
-                // Two things can go wrong silently here: the driver clamps the count, and - the case
-                // this whole mechanism exists to avoid - SDL never asked ANGLE for the platform at
-                // all, so our attributes were dropped on the floor.
-                _glGrantedMultiSampleCount = ReadGrantedMultiSampleCount();
+                    // Read back what SDL actually gave us rather than assuming the request was honoured.
+                    // Two things can go wrong silently here: the driver clamps the count, and - the case
+                    // this whole mechanism exists to avoid - SDL never asked ANGLE for the platform at
+                    // all, so our attributes were dropped on the floor.
+                    _glGrantedMultiSampleCount = ReadGrantedMultiSampleCount();
 
-                // SDL owns this context, so the interval is SDL's call - and it can be changed at any
-                // time, which is what makes VSync work here at all.
-                _setSwapInterval = interval => SDL.SDL_GL_SetSwapInterval(interval);
+                    // SDL owns this context, so the interval is SDL's call - and it can be changed at any
+                    // time, which is what makes VSync work here at all.
+                    _setSwapInterval = interval => SDL.SDL_GL_SetSwapInterval(interval);
 
-                _device = GlGraphicsDevice.Create(
+                    _device = GlGraphicsDevice.Create(
                     SDL.SDL_GL_GetProcAddress,
                     angleWindow.Width,
                     angleWindow.Height,
                     () => SDL.SDL_GL_SwapWindow(angleWindow.Handle),
                     _glGrantedMultiSampleCount
                 );
-                ReportGlRenderer(_angleSelection);
-                break;
-            }
+                    ReportGlRenderer(_angleSelection);
+                    break;
+                }
 #else
                 throw new NotSupportedException(
                     "The ANGLE renderer needs a build with the ANGLE backend enabled - rebuild with "
@@ -1521,6 +1521,12 @@ public partial class WorldGame : IDisposable, IGameHost
         // registered again here.
         NativeLibrary.SetDllImportResolver(typeof(WorldGame).Assembly, ImportResolver);
         NativeLibrary.SetDllImportResolver(typeof(SDL).Assembly, ImportResolver);
+
+        if (args.Any(arg => arg.StartsWith("--sx-harness=", StringComparison.Ordinal)))
+        {
+            RunSxHarness(args);
+            return;
+        }
 
         BackendGameSparker.Load(isHeadless: false);
 

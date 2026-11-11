@@ -728,6 +728,16 @@ Added with the archive/content work; read this before touching content loading, 
   recorded `CarFrame`s directly (no physics, gamemode, save or upload), uses the embedded
   `StageLoader`/`Rad3d` when present, and drives `RaceCameraDirector` itself. Frames are snapshots,
   not resumable checkpoints.
+- **Sx visual harness** — run `dotnet run --project NFMWorld -- --backend=d3d11 --sx-harness=NFMWorld/UiHarness/stage-editor-menu.json`
+  from the repo root. It mounts the actual editor Sx tree with the real Apos/font renderer, sends
+  direct UI events (never OS input), renders offscreen, and writes PNGs plus measured node/hover JSON
+  under `.git/sx-menu-captures`. The script supports named-target or pixel `click`/`hover`, `text`,
+  `key`, `scroll`, `capture`, `assert-hover`, `assert-visible`, and `assert-aligned`; `view` selects
+  `stage-editor` (default) or `model-editor`. `--sx-scale=1.25` repeats at a different UI scale.
+  This is a UI-only fixture: no gameplay, network, audio, populated stage or scene rendering; writes
+  go to an output-local sandbox. Inspect captures with `view_image` and assertions before reporting
+  visual fixes. Menu rows must be keyed by menu identity (`Sx.For`), not constructed in a reactive
+  slot that accidentally subscribes to their hover signals and replaces them on every hover.
 - **Stage editor UI** — the Sx tree lives in `StageEditorPhase.Sx.cs` and mirrors values through
   `_uiRevision`; the controller/history/camera code is unchanged. Panels are absolutely positioned so
   the viewport is the only non-UI area (`WantsMouse` must stay false over it); its measured

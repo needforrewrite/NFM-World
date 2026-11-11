@@ -59,11 +59,11 @@ public class SxRendererTests
         var writes = 0;
 
         var mounted = Renderer.Mount(() => Sx.View(() =>
-                {
-                    writes++;
-                    return Sx.Styles(borderColor: active.Value ? new Maxine.Extensions.Mathematics.Color(79, 195, 247) : null);
-                }
-            )
+            {
+                writes++;
+                return Sx.Styles(borderColor: active.Value ? new Maxine.Extensions.Mathematics.Color(79, 195, 247) : null);
+            }
+        )
         );
 
         var afterMount = writes;
@@ -84,11 +84,11 @@ public class SxRendererTests
         var mounted = Renderer.Mount(() => Sx.For(
                 () => items.Value,
                 (item, _) =>
-                {
-                    built.Add(item);
-                    return Sx.Text(text: () => item);
-                }
-            )
+            {
+                built.Add(item);
+                return Sx.Text(text: () => item);
+            }
+        )
         );
 
         Assert.AreEqual(3, built.Count);
@@ -227,10 +227,10 @@ public class SxRendererTests
         var mounted = Renderer.Mount(() => Sx.Show(
                 () => visible.Value,
                 () =>
-                {
-                    mounts++;
-                    return Sx.Text(text: () => "on");
-                },
+            {
+                mounts++;
+                return Sx.Text(text: () => "on");
+            },
                 () => Sx.Text(text: () => "off")
             )
         );
@@ -375,6 +375,245 @@ public class SxRendererTests
         CollectionAssert.AreEqual(new[] { "one", "two" }, texts);
 
         mounted.Dispose();
+    }
+
+    [TestMethod]
+    public void LazyDialog_ReopenCreatesFreshControls_AndOwnsTheirEffects()
+    {
+        var open = new Signal<bool>(false);
+        var probe = new Signal<int>(0);
+        var factoryRuns = 0;
+        var effectRuns = 0;
+        Text? control = null;
+
+        Node Dialog(Func<Node[]> content) => Sx.Show(
+            () => open.Value,
+            () => Sx.View(children: [.. content()])
+        );
+
+        using var mounted = Renderer.Mount(() => Dialog(() =>
+            {
+                factoryRuns++;
+                control = Sx.Text(text: () =>
+                    {
+                        effectRuns++;
+                        return probe.Value.ToString();
+                    }
+                );
+                return [control];
+            }
+        )
+        );
+        Renderer.Flush();
+
+        Assert.AreEqual(0, factoryRuns);
+        Assert.AreEqual(0, effectRuns);
+        Assert.IsNull(control);
+
+        open.Value = true;
+        Renderer.Flush();
+        Assert.AreEqual(1, factoryRuns);
+        Assert.IsNotNull(control);
+        var firstControl = control;
+        var before = effectRuns;
+        probe.Value = 1;
+        Renderer.Flush();
+        Assert.AreEqual(before + 1, effectRuns);
+        Assert.AreEqual("1", firstControl.Children.OfType<TextNode>().Single().Text);
+
+        open.Value = false;
+        Renderer.Flush();
+        before = effectRuns;
+        probe.Value = 2;
+        Renderer.Flush();
+        Assert.AreEqual(before, effectRuns);
+        Assert.AreEqual(1, factoryRuns);
+
+        open.Value = true;
+        Renderer.Flush();
+        Assert.AreEqual(2, factoryRuns);
+        Assert.IsNotNull(control);
+        Assert.AreNotSame(firstControl, control);
+        Assert.AreEqual("2", control.Children.OfType<TextNode>().Single().Text);
+        before = effectRuns;
+        probe.Value = 3;
+        Renderer.Flush();
+        Assert.AreEqual(before + 1, effectRuns);
+        Assert.AreEqual("3", control.Children.OfType<TextNode>().Single().Text);
+        Assert.AreEqual("1", firstControl.Children.OfType<TextNode>().Single().Text);
+
+        mounted.Dispose();
+        before = effectRuns;
+        probe.Value = 4;
+        Renderer.Flush();
+        Assert.AreEqual(before, effectRuns);
+        Assert.AreEqual(2, factoryRuns);
+    }
+
+    [TestMethod]
+    public void DropdownMenu_ReactiveRowsMountSwitchAndExecute()
+    {
+        IBackend.Backend = new DummyBackend();
+        var menu = new Signal<string?>(null);
+        var invoked = "";
+        View? rows = null;
+
+        Node Action(string label) => Sx.View(
+            onmousedown: _ => { invoked = label; menu.Value = null; },
+            children: Sx.Text(text: () => label)
+        );
+
+        using var mounted = Renderer.Mount(() => Sx.Show(
+            () => menu.Value is not null,
+            () => Sx.View(children: (Func<object?>)(() => rows = Sx.View(
+                style: () => Sx.Styles(flexDirection: FlexDirection.Column),
+                children: menu.Value switch
+                {
+                    "File" => new object[] { Action("New"), Action("Open") },
+                    "Edit" => new object[] { Action("Undo") },
+                    _ => new object[] { Action("Top down") }
+                }
+            ))
+            )
+        )
+        );
+
+        foreach (var (name, expected) in new[] { ("File", 2), ("Edit", 1), ("View", 1) })
+        {
+            menu.Value = name;
+            Renderer.Flush();
+            Assert.IsNotNull(rows);
+            Assert.HasCount(expected, rows.VisualChildren);
+        }
+
+        var action = (View)rows!.VisualChildren[0];
+        action.MousePressed!.Invoke(default);
+        Renderer.Flush();
+        Assert.AreEqual("Top down", invoked);
+        Assert.IsNull(menu.Value);
+
+        menu.Value = "File";
+        Renderer.Flush();
+        Assert.HasCount(2, rows!.VisualChildren);
+    }
+
+    [TestMethod]
+    public void DropdownMenu_KeyedRowsSurviveHoverAndRemountOnMenuChange()
+    {
+        IBackend.Backend = new DummyBackend();
+        FocusManager.ClearHover();
+        var menu = new Signal<string>("File");
+        var builds = 0;
+        var normal = new Maxine.Extensions.Mathematics.Color(20, 30, 40);
+        var highlight = new Maxine.Extensions.Mathematics.Color(70, 80, 90);
+        View? rows = null;
+
+        View Action(string label)
+        {
+            var hovered = new Signal<bool>(false);
+            return Sx.View(
+                name: () => label,
+                style: () => Sx.Styles(
+                    width: 100,
+                    height: 30,
+                    flexShrink: 0,
+                    backgroundColor: hovered.Value ? highlight : normal
+                ),
+                onmouseenter: _ => hovered.Value = true,
+                onmouseleave: _ => hovered.Value = false
+            );
+        }
+
+        using var mounted = Renderer.Mount(() => Sx.View(
+            style: () => Sx.Styles(width: 200, height: 200),
+            children: Sx.For(
+                each: () => new[] { menu.Value },
+                row: (page, _) =>
+                {
+                    builds++;
+                    return rows = Sx.View(
+                        style: () => Sx.Styles(width: 100, flexDirection: FlexDirection.Column),
+                        children: page == "File"
+                            ? new object[] { Action("New"), Action("Open") }
+                            : new object[] { Action("Undo") }
+                    );
+                }
+            )
+        )
+        );
+        var root = (View)mounted.Root;
+
+        void Move(float x, float y)
+        {
+            FocusManager.DispatchMouseMove(root, new NFMWorld.ClayDom.Events.BaseMouseMoveEvent(
+                new System.Numerics.Vector2(x, y),
+                default,
+                false,
+                false,
+                false
+            )
+            );
+            Renderer.Flush();
+            root.LayoutAndRender(new System.Numerics.Vector2(200, 200));
+        }
+
+        try
+        {
+            root.LayoutAndRender(new System.Numerics.Vector2(200, 200));
+            Assert.IsNotNull(rows);
+            var originalRows = rows;
+            var first = (View)rows.VisualChildren[0];
+            var second = (View)rows.VisualChildren[1];
+            CollectionAssert.AreEqual(new[] { "New", "Open" }, rows.VisualChildren.Cast<View>().Select(n => n.Name).ToArray());
+
+            Move(50, 15);
+            Assert.AreSame(originalRows, rows);
+            Assert.AreSame(first, rows.VisualChildren[0]);
+            Assert.IsTrue(first.IsHovered);
+            Assert.IsFalse(second.IsHovered);
+            Assert.AreEqual(highlight, first.Styles.BackgroundColor);
+            Assert.AreEqual(normal, second.Styles.BackgroundColor);
+
+            Move(50, 45);
+            Assert.AreSame(originalRows, rows);
+            Assert.AreSame(first, rows.VisualChildren[0]);
+            Assert.AreSame(second, rows.VisualChildren[1]);
+            Assert.IsFalse(first.IsHovered);
+            Assert.IsTrue(second.IsHovered);
+            Assert.AreEqual(normal, first.Styles.BackgroundColor);
+            Assert.AreEqual(highlight, second.Styles.BackgroundColor);
+
+            Move(150, 100);
+            Assert.AreSame(originalRows, rows);
+            Assert.AreSame(second, rows.VisualChildren[1]);
+            Assert.IsFalse(first.IsHovered);
+            Assert.IsFalse(second.IsHovered);
+            Assert.AreEqual(normal, first.Styles.BackgroundColor);
+            Assert.AreEqual(normal, second.Styles.BackgroundColor);
+            Assert.AreEqual(1, builds);
+
+            menu.Value = "Edit";
+            Renderer.Flush();
+            root.LayoutAndRender(new System.Numerics.Vector2(200, 200));
+            Assert.AreNotSame(originalRows, rows);
+            CollectionAssert.AreEqual(new[] { "Undo" }, rows.VisualChildren.Cast<View>().Select(n => n.Name).ToArray());
+            Move(50, 15);
+            Assert.IsTrue(((View)rows.VisualChildren[0]).IsHovered);
+            Assert.AreEqual(highlight, ((View)rows.VisualChildren[0]).Styles.BackgroundColor);
+            Assert.AreEqual(2, builds);
+
+            Move(150, 100);
+            menu.Value = "File";
+            Renderer.Flush();
+            Assert.AreNotSame(originalRows, rows);
+            Assert.AreNotSame(first, rows.VisualChildren[0]);
+            CollectionAssert.AreEqual(new[] { "New", "Open" }, rows.VisualChildren.Cast<View>().Select(n => n.Name).ToArray());
+            Assert.AreEqual(3, builds);
+        }
+        finally
+        {
+            FocusManager.ClearHover();
+        }
     }
 
     [TestMethod]

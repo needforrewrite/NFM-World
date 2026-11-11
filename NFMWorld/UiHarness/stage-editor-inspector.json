@@ -1,0 +1,16 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "pieceCount": 80,
+  "output": "../../.git/sx-inspector-captures",
+  "steps": [
+    { "action": "capture", "capture": "populated" },
+    { "action": "assert-input-aligned", "target": "Inspector field Y", "anchor": "Inspector field X" },
+    { "action": "assert-input-aligned", "target": "Inspector field Z", "anchor": "Inspector field X" },
+    { "action": "assert-min-height", "target": "Editor action AUTO-GENERATE BORDERS", "height": 26 },
+    { "action": "assert-min-height", "target": "Editor action + GROUP FROM SELECTION", "height": 26 },
+    { "action": "assert-visible", "target": "Editor action AUTO-GENERATE BORDERS" },
+    { "action": "hover", "target": "Editor action AUTO-GENERATE BORDERS", "capture": "borders-hover" }
+  ]
+}
