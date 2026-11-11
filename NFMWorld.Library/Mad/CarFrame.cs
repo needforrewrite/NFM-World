@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Maxine.Extensions;
 using MemoryPack;
+using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.FixedMath;
 
@@ -9,110 +10,129 @@ namespace NFMWorldLibrary;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 [MemoryPackable]
+[PluginVisible]
 public partial struct CarFrame
 {
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     [MemoryPackable]
+    [PluginVisible]
     public partial struct BitFlags
     {
         public Nibble<uint> Values;
 
+        [PluginVisible]
         public bool Right
         {
             readonly get => Values[0];
             set => Values[0] = value;
         }
 
+        [PluginVisible]
         public bool Left
         {
             readonly get => Values[1];
             set => Values[1] = value;
         }
 
+        [PluginVisible]
         public bool Up
         {
             readonly get => Values[2];
             set => Values[2] = value;
         }
 
+        [PluginVisible]
         public bool Down
         {
             readonly get => Values[3];
             set => Values[3] = value;
         }
 
+        [PluginVisible]
         public bool Handb
         {
             readonly get => Values[4];
             set => Values[4] = value;
         }
 
+        [PluginVisible]
         public bool Mtouch
         {
             readonly get => Values[5];
             set => Values[5] = value;
         }
 
+        [PluginVisible]
         public bool Wtouch
         {
             readonly get => Values[6];
             set => Values[6] = value;
         }
 
+        [PluginVisible]
         public bool Gtouch
         {
             readonly get => Values[7];
             set => Values[7] = value;
         }
 
+        [PluginVisible]
         public bool Pu
         {
             readonly get => Values[8];
             set => Values[8] = value;
         }
 
+        [PluginVisible]
         public bool Pd
         {
             readonly get => Values[9];
             set => Values[9] = value;
         }
 
+        [PluginVisible]
         public bool Pl
         {
             readonly get => Values[10];
             set => Values[10] = value;
         }
 
+        [PluginVisible]
         public bool Pr
         {
             readonly get => Values[11];
             set => Values[11] = value;
         }
 
+        [PluginVisible]
         public bool Pushed
         {
             readonly get => Values[12];
             set => Values[12] = value;
         }
 
+        [PluginVisible]
         public bool Newcar
         {
             readonly get => Values[13];
             set => Values[13] = value;
         }
 
+        [PluginVisible]
         public bool BadLanding
         {
             readonly get => Values[14];
             set => Values[14] = value;
         }
 
+        [PluginVisible]
         public bool Wasted
         {
             readonly get => Values[15];
             set => Values[15] = value;
         }
 
+        [PluginVisible]
         public bool Surfer
         {
             readonly get => Values[16];
@@ -120,19 +140,20 @@ public partial struct CarFrame
         }
     }
 
-    public (fix64 X, fix64 Y, fix64 Z) CarPosition;
-    public (fix64 Xz, fix64 Pxy, fix64 Pzy) CarRotation;
-    public (InlineArray4<fix64> Scx, InlineArray4<fix64> Scy, InlineArray4<fix64> Scz) WheelVelocities;
-    public fix64 Power;
-    public int Damage;
-    public (fix64 Ucomp, fix64 Dcomp, fix64 Lcomp, fix64 Rcomp) AngularVelocities;
-    public (byte Lap, ushort CheckpointInlap) RacePosition;
-    public (sbyte StuntType, fix64 Travxz, fix64 Travxy, fix64 Travzy) StuntState;
-    public fix64 Powerup;
-    public fix64 Speed;
-    public (fix64 Mxz, fix64 Txz) XzReadings;
-    public BitFlags TheBitFlags;
+    [PluginVisible] public (fix64 X, fix64 Y, fix64 Z) CarPosition;
+    [PluginVisible] public (fix64 Xz, fix64 Pxy, fix64 Pzy) CarRotation;
+    [PluginVisible] public (InlineArray4<fix64> Scx, InlineArray4<fix64> Scy, InlineArray4<fix64> Scz) WheelVelocities;
+    [PluginVisible] public fix64 Power;
+    [PluginVisible] public int Damage;
+    [PluginVisible] public (fix64 Ucomp, fix64 Dcomp, fix64 Lcomp, fix64 Rcomp) AngularVelocities;
+    [PluginVisible] public (byte Lap, ushort CheckpointInlap) RacePosition;
+    [PluginVisible] public (sbyte StuntType, fix64 Travxz, fix64 Travxy, fix64 Travzy) StuntState;
+    [PluginVisible] public fix64 Powerup;
+    [PluginVisible] public fix64 Speed;
+    [PluginVisible] public (fix64 Mxz, fix64 Txz) XzReadings;
+    [PluginVisible] public BitFlags TheBitFlags;
 
+    [PluginVisible]
     public static CarFrame Create(BackendCar car)
     {
         CarFrame entry = new CarFrame();
@@ -187,6 +208,7 @@ public partial struct CarFrame
         return entry;
     }
 
+    [PluginVisible]
     public readonly void ApplyToCar(BackendCar car)
     {
         car.Control.Up = TheBitFlags.Up;

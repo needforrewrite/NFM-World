@@ -1,18 +1,21 @@
 using MemoryPack;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.Files.Demo;
 
-[MemoryPackable(GenerateType.VersionTolerant)]
+[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
 public partial class Demo
 {
-    [MemoryPackOrder(0)] public List<NFMWorldLibrary.CarFrame> Ticks = [];
+    [MemoryPackOrder(0), PluginVisible] public List<CarFrame> Ticks = [];
 
-    public void AddEntry(NFMWorldLibrary.CarFrame entry)
+    [PluginVisible]
+    public void AddEntry(CarFrame entry)
     {
         Ticks.Add(entry);
     }
 
-    public NFMWorldLibrary.CarFrame GetEntry(int tick)
+    [PluginVisible]
+    public CarFrame GetEntry(int tick)
     {
         return Ticks[tick];
     }

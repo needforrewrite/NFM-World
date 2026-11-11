@@ -15,11 +15,11 @@ public partial class SavedTimeTrial
 
     [MemoryPackOrder(0), PluginVisible] public string CarName;
     [MemoryPackOrder(1), PluginVisible] public string StageName;
-    [MemoryPackOrder(2)] public Demo.Demo DemoData;
+    [MemoryPackOrder(2), PluginVisible] public Demo.Demo DemoData;
     [MemoryPackOrder(3), PluginVisible] public Splits Splits;
-    [MemoryPackOrder(4)] public int? Version; // New in version 1, defaults to 0
-    [MemoryPackOrder(5)] public StageLoader? StageData; // New in version 2 
-    [MemoryPackOrder(6)] public Rad3d? CarData; // New in version 2
+    [MemoryPackOrder(4), PluginVisible] public int? Version; // New in version 1, defaults to 0
+    [MemoryPackOrder(5), PluginVisible] public StageLoader? StageData; // New in version 2 
+    [MemoryPackOrder(6), PluginVisible] public Rad3d? CarData; // New in version 2
 
     public static string GetDirName(string carName, string stageName)
     {
@@ -36,6 +36,7 @@ public partial class SavedTimeTrial
         return "data/tts/" + stageName + "/" + carName + ".timetrial";
     }
 
+    [PluginVisible]
     public static IEnumerable<(string stageName, string carName, string fileName)> GetTimeTrials()
     {
         foreach (var file in VFS.EnumerateFiles("data/tts", "*.timetrial", SearchOption.AllDirectories))
@@ -111,6 +112,7 @@ public partial class SavedTimeTrial
     /// Loads from bytes, capping the decompressed size: this overload also reads uploads, whose
     /// compressed length says nothing about how far they expand.
     /// </summary>
+    [PluginVisible]
     public static SavedTimeTrial? Load(ReadOnlyMemory<byte> data)
     {
         var decompData = Deflate.Decompress(data.Span, RadpackLimits.MaxDecompressedBytes);
@@ -121,6 +123,7 @@ public partial class SavedTimeTrial
     /// The same bytes <see cref="Save"/> writes, for a caller that holds the run in memory and
     /// must not depend on what is currently on disk.
     /// </summary>
+    [PluginVisible]
     public byte[] ToBytes()
     {
         var body = MemoryPackSerializer.Serialize(this, MemoryPackHelpers.Options);
