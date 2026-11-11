@@ -1,4 +1,4 @@
-﻿using System.Collections.Specialized;
+using System.Collections.Specialized;
 using NFMWorldLibrary;
 using NFMWorld.Sfx;
 using NFMWorldLibrary.Backend;
@@ -44,13 +44,27 @@ public class ClientStage : IDisposable
         ObservableUnlimitedArray<BackendCar> cars,
         Camera camera,
         IReadOnlyList<Camera> lightCameras
+    ) : this(stageName, cars, camera, lightCameras, null)
+    {
+    }
+
+    /// <summary>
+    /// As the ordinary constructor, but from embedded stage data. A replay viewer must show the
+    /// course it was recorded on, not whatever the current install has under the same name.
+    /// </summary>
+    public ClientStage(
+        string stageName,
+        ObservableUnlimitedArray<BackendCar> cars,
+        Camera camera,
+        IReadOnlyList<Camera> lightCameras,
+        StageLoader? stageData
     )
     {
         _cars = cars;
         Camera = camera;
         LightCameras = lightCameras;
 
-        Backend = new BackendStage(stageName);
+        Backend = stageData is null ? new BackendStage(stageName) : new BackendStage(stageName, stageData);
         Renderer = new ClientStageRenderer(Backend);
         Renderer.ApplyValues();
         Minimap = new StageMinimap(Backend);

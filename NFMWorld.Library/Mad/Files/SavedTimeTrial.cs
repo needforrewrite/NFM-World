@@ -90,7 +90,8 @@ public partial class SavedTimeTrial
             {
                 using var stream = VFS.OpenRead(fileName);
                 using var sequence = stream.AsPooledReadOnlySequence();
-                var data = Deflate.Decompress(sequence.Sequence);
+                // A recording is untrusted input too: cap what it can expand to before parsing.
+                var data = Deflate.Decompress(sequence.Sequence, RadpackLimits.MaxDecompressedBytes);
                 return MemoryPackSerializer.Deserialize<SavedTimeTrial>(data, MemoryPackHelpers.Options);
             }
             else

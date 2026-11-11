@@ -1,4 +1,4 @@
-﻿using NFMWorld.ClayDom.Events;
+using NFMWorld.ClayDom.Events;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.DriverInterface;
 using NFMWorld.Reactor;
@@ -40,6 +40,7 @@ public static class MainMenuView
         Action StageEditor,
         Action TimeTrials,
         Action<string> Unavailable,
+        Action Replays,
         Action Account,
         Action Multiplayer
     );
@@ -294,7 +295,7 @@ public static class MainMenuView
         [
             new("CREDITS", "View game credits.", () => actions.Unavailable("credits")),
             new("STATS", "View your gameplay statistics.", () => actions.Unavailable("stats")),
-            new("REPLAYS", "Browse and watch saved replays.", () => actions.Unavailable("replays")),
+            new("REPLAYS", "Browse and watch saved replays.", actions.Replays),
             new("BACK", "Return to the previous menu.", PopPage),
         ]
     );

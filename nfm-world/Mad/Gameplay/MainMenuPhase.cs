@@ -1,4 +1,4 @@
-﻿using NFMWorld.Accounts;
+using NFMWorld.Accounts;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
@@ -89,6 +89,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                         StageEditor: GameSparker.StartStageEditor,
                         TimeTrials: OnTTClicked,
                         Unavailable: _ => GameSparker.MessageWindow.ShowMessage("Info", "This feature is currently unavailable."),
+                        Replays: () => GameSparker.PushPhase(new ReplayBrowserPhase()),
                         Account: AccountView.Show,
                         Multiplayer: OnMultiplayerClicked
                     ),

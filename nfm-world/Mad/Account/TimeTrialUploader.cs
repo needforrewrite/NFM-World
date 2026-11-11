@@ -64,6 +64,18 @@ public static class TimeTrialUploader
         _ = UploadAsync(submission, completion.Recording);
     }
 
+    /// <summary>Retries a durable submission from the replay browser.</summary>
+    public static void Retry(PendingSubmission submission)
+    {
+        if (TimeTrialSubmissions.ReadRecording(submission) is not { } recording)
+        {
+            Logging.Warning("[TT] The pending recording is missing or damaged.");
+            return;
+        }
+
+        _ = UploadAsync(submission, recording);
+    }
+
     private static async Task UploadAsync(PendingSubmission submission, byte[] recording)
     {
         await Gate.WaitAsync();
