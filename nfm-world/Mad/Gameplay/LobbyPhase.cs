@@ -541,8 +541,22 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     /// </summary>
     private void OnStartRace(uint id)
     {
-        if (CanAct)
+        if (CanAct && RequireRaceableCar())
             transport.SendPacketToServer(new C2S_LobbyStartRace { SessionId = id });
+    }
+
+    /// <summary>
+    /// The lobby refuses a local car and falls back to a stock one, so say so before the race
+    /// instead of letting the player line up in a car they did not choose.
+    /// </summary>
+    private bool RequireRaceableCar()
+    {
+        var car = MenuHistory.LastPlayed.Car;
+        if (MultiplayerContentPolicy.IsAcceptedCar(car))
+            return true;
+
+        SetStatus($"'{car}' is local-only and cannot be raced online. Pick a stock car or publish it.");
+        return false;
     }
 
     private void OnCreate()
@@ -559,6 +573,9 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             SetStatus("Choose a stage first.");
             return;
         }
+
+        if (!RequireRaceableCar())
+            return;
 
         transport.SendPacketToServer(
             new C2S_CreateSession
