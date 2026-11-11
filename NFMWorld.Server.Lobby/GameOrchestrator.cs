@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Multiplayer.Archive;
 using NFMWorldLibrary.Multiplayer.HttpMessages;
@@ -401,7 +401,9 @@ public class GameOrchestrator
         var client = _players.Get(clientId);
         if (client is null) return;
 
-        client.Vehicle = identity.SelectedVehicle;
+        // A client's chosen car is a claim. Only shipped ids and canonical archive hashes are
+        // allowed; anything else (a local path, a URL, a malformed hash) falls back to a stock car.
+        client.Vehicle = MultiplayerContentPolicy.CoerceCar(identity.SelectedVehicle);
         client.Color = identity.Color;
     }
 
@@ -409,6 +411,15 @@ public class GameOrchestrator
     {
         var player = _players.Get(clientId);
         if (player is null) return;
+
+        if (!MultiplayerContentPolicy.IsAcceptedStage(create.StageName))
+        {
+            _chat.BroadcastSystem($"{player.Name} chose a stage that is not available online.");
+            return;
+        }
+
+        if (!GamemodeIds.IsInstalled(create.GameMode))
+            return;
 
         var session = _sessions.CreateSession(
             clientId,
@@ -551,6 +562,14 @@ public class GameOrchestrator
             Parameters = new(session.GamemodeParameters),
             Players = playerInfos
         };
+
+        // The last word before a race is created: every slot's car and the stage are checked
+        // again, because player identities and bots are assembled from what clients sent.
+        if (MultiplayerContentPolicy.ValidateMatch(matchInfo) is { } refusal)
+        {
+            _chat.BroadcastSystem(refusal);
+            return;
+        }
 
         ResolvedGameMaster? gm = null;
         try

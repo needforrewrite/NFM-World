@@ -129,6 +129,13 @@ public sealed class Asset
     /// <summary>False while an upload is being validated; only public rows are listed.</summary>
     public bool IsPublic { get; set; }
 
+    /// <summary>
+    /// True once the stored bytes have been read of the right kind by the out-of-process
+    /// validator. Only validated data assets are advertised as multiplayer-eligible; a legacy
+    /// row's claimed type is never trusted on its own.
+    /// </summary>
+    public bool IsValidated { get; set; }
+
     /// <summary>Set by moderation; a taken-down asset is never served.</summary>
     public bool IsTakedown { get; set; }
 

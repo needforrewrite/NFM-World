@@ -18,6 +18,9 @@
 
     <ItemGroup>
         <ProjectReference Include="..\NFMWorld.Archive\NFMWorld.Archive.csproj"/>
+        <!-- Built, not referenced: the archive runs it as a separate process, exactly as it
+             does in deployment, so its own bin tree is where the tests find it. -->
+        <ProjectReference Include="..\NFMWorld.Archive.Validator\NFMWorld.Archive.Validator.csproj" ReferenceOutputAssembly="false"/>
     </ItemGroup>
 
 </Project>

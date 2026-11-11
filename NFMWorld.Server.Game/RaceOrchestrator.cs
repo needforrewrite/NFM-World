@@ -1,7 +1,9 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using MemoryPack;
 using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.Content;
+using NFMWorldLibrary.Radpack;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Gamemodes.DotNet;
@@ -507,6 +509,14 @@ public class RaceOrchestrator : IDisposable
 
     public Lobby2RaceServer_CreateRaceResponse CreateRace(Lobby2RaceServer_CreateRace raceParams)
     {
+        // The lobby is trusted infrastructure, but its roster is still assembled from client
+        // claims. Reject before any stage object is constructed, so nothing can be loaded from a
+        // path a player chose.
+        if (MultiplayerContentPolicy.ValidateMatch(raceParams.MatchGameplayInfo) is { } refusal)
+            throw new InvalidOperationException(refusal);
+
+        EnsureContentPrepared(raceParams.MatchGameplayInfo);
+
         var sessionId = Interlocked.Increment(ref _sessionIdCounter);
         var joinTokens = new Dictionary<byte, Guid>();
 
@@ -578,6 +588,35 @@ public class RaceOrchestrator : IDisposable
             PlayerSecretIds = joinTokens,
             SpectatorToken = spectatorToken
         };
+    }
+
+    /// <summary>
+    /// Every asset this race will read must already be in the prepared cache or be genuine
+    /// shipped content: constructing a <see cref="BackendStage"/> or a car from an unprepared
+    /// archive id would do synchronous HTTP on the server's request thread.
+    /// </summary>
+    private static void EnsureContentPrepared(MatchGameplayInfo info)
+    {
+        if (RadpackReader.IsArchiveId(info.StageName) && !ContentCache.IsPrepared(info.StageName))
+            throw new InvalidOperationException($"Stage '{info.StageName}' has not been prepared.");
+
+        if (!RadpackReader.IsArchiveId(info.StageName)
+            && !VFS.FileExists($"data/stages/{info.StageName}.txt")
+            && !VFS.FileExists($"data/stages/{info.StageName}.radpack"))
+            throw new InvalidOperationException($"Stage '{info.StageName}' is not installed on this server.");
+
+        foreach (var player in info.Players.Values)
+        {
+            if (RadpackReader.IsArchiveId(player.CarName))
+            {
+                if (!ContentCache.IsPrepared(player.CarName))
+                    throw new InvalidOperationException($"Car '{player.CarName}' has not been prepared.");
+                continue;
+            }
+
+            if (BackendGameSparker.GetCar(player.CarName).Rad is null)
+                throw new InvalidOperationException($"Car '{player.CarName}' is not installed on this server.");
+        }
     }
 
     // ── Helpers ──────────────────────────────────────────────────────

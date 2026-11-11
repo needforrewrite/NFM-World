@@ -1,9 +1,15 @@
-﻿namespace NFMWorld.PhysicsFS;
+namespace NFMWorld.PhysicsFS;
 
 public class VirtualFS
 {
     private readonly List<IVirtualFileSystem> _readMounts = [];
     private string? _writeRoot;
+
+    /// <summary>
+    /// Where writes land, or null before a destination is mounted. Desktop heads point this at a
+    /// persistent directory; the browser points it at MEMFS, which lasts for the session.
+    /// </summary>
+    public string? WriteRoot => _writeRoot;
 
     // ── Mounting ──────────────────────────────────────────────
 

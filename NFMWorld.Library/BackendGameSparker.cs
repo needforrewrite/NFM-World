@@ -8,6 +8,7 @@ using NFMWorld.Gameplay;
 using NFMWorld.PluginSystem;
 using NFMWorld.Sentry;
 using NFMWorldLibrary.Rad;
+using NFMWorldLibrary.Content;
 using NFMWorldLibrary.Radpack;
 using NFMWorldLibrary.Util;
 
@@ -120,8 +121,9 @@ public static class BackendGameSparker
             if (Directory.Exists(modsFolder))
                 VFS.MountDirectory(modsFolder);
 
-            // Mounted after the local directories so a local stage or car always wins over a
-            // remote copy of the same name.
+            // The cache is mounted before the network mount so an already-prepared asset never
+            // goes back over HTTP; both only answer archive/<hash> paths.
+            ContentCache.Mount();
             ArchiveMount.MountIfConfigured(ArchiveEndpoint.Url);
         }
 

@@ -5,7 +5,7 @@
 }
 
 <h1>Upload</h1>
-<p class="muted">Radpacks only. The file's own type must match the type you choose.</p>
+<p class="muted">Radpacks (or legacy .rad models). The file's own type must match the type you choose.</p>
 
 @if (Model.Error is not null)
 {
@@ -22,7 +22,7 @@
         <label>Name<input asp-for="Name" /></label>
         <label>Type
             <select asp-for="Type">
-                @foreach (var type in Enum.GetNames<NFMWorld.Archive.Data.AssetType>())
+                @foreach (var type in Model.PublishableTypes)
                 {
                     <option value="@type">@type</option>
                 }

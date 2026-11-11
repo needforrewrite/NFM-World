@@ -16,6 +16,46 @@ public class ArchiveAppFactory : WebApplicationFactory<Program>
 
     public FakeSiteverifyHandler Siteverify { get; } = new();
 
+    /// <summary>
+    /// The real validator executable, so upload tests exercise the process boundary instead of a
+    /// mocked success. Located from the environment first, then from the sibling project's output.
+    /// </summary>
+    public static string? ValidatorPath { get; } = FindValidator();
+
+    private static string Configuration =>
+#if DEBUG
+        "Debug";
+#else
+    "Release";
+#endif
+
+    private static string? FindValidator()
+    {
+        var fromEnvironment = Environment.GetEnvironmentVariable("NFMW_VALIDATOR_PATH");
+        if (!string.IsNullOrWhiteSpace(fromEnvironment) && File.Exists(fromEnvironment))
+            return fromEnvironment;
+
+        var executable = OperatingSystem.IsWindows()
+            ? "NFMWorld.Archive.Validator.exe"
+            : "NFMWorld.Archive.Validator";
+
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+        {
+            var candidate = Path.Combine(
+                directory.FullName,
+                "NFMWorld.Archive.Validator",
+                "bin",
+                Configuration,
+                "net11.0",
+                executable
+            );
+            if (File.Exists(candidate))
+                return candidate;
+        }
+
+        return null;
+    }
+
     public static string Challenge(string action) => action + ":" + Guid.NewGuid().ToString("N");
 
     public static Dictionary<string, string> Registration(string username, string password = "password123") => new()
@@ -38,6 +78,12 @@ public class ArchiveAppFactory : WebApplicationFactory<Program>
         // build time, before a later configuration source would be layered on.
         builder.UseSetting("Archive:Database", $"Data Source={Path.Combine(_root, "test.db")}");
         builder.UseSetting("Archive:StorageRoot", Path.Combine(_root, "storage"));
+        if (ValidatorPath is { } validator)
+        {
+            builder.UseSetting("Archive:ValidatorPath", validator);
+            builder.UseSetting("Archive:ValidatorWorkingDirectory", Path.GetDirectoryName(validator));
+        }
+
         builder.UseSetting("TURNSTILE_SECRET", "test-secret");
         builder.UseSetting("TURNSTILE_HOSTNAMES", "archive.example");
         builder.ConfigureServices(services =>
