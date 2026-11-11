@@ -11,6 +11,7 @@ namespace NFMWorldLibrary.Multiplayer;
 public class GameMasterHttpClient
 {
     private readonly HttpClient _httpClient;
+    private readonly HttpClient _contentHttpClient;
     private readonly string _keyId;
     private readonly byte[] _secretKey;
 
@@ -19,6 +20,32 @@ public class GameMasterHttpClient
         _keyId = keyId;
         _secretKey = Convert.FromBase64String(secretKeyBase64);
         _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+        // Asset downloads get their own window: a cold stage on a slow link is not a race
+        // creation failure, and must not eat the create-race timeout.
+        _contentHttpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
+    }
+
+    public async Task PrepareContentAsync(
+        ResolvedGameMaster master,
+        Lobby2RaceServer_PrepareContent request
+    )
+    {
+        var body = MemoryPackSerializer.Serialize(request);
+        var authHeader = HmacAuth.Sign("POST", "/prepare-content", body, _keyId, _secretKey);
+
+        var requestUri = new Uri(master.HttpEndpoint, "/prepare-content");
+        Console.WriteLine($"[Lobby→GM] POST {requestUri}");
+
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, requestUri)
+        {
+            Content = new ByteArrayContent(body)
+        };
+        httpRequest.Headers.Add("Authorization", authHeader);
+        httpRequest.Content.Headers.ContentType =
+            new MediaTypeHeaderValue("application/octet-stream");
+
+        using var response = await _contentHttpClient.SendAsync(httpRequest);
+        response.EnsureSuccessStatusCode();
     }
 
     public async Task<Lobby2RaceServer_CreateRaceResponse> CreateRaceAsync(

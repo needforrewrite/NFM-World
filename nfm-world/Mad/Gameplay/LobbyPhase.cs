@@ -4,11 +4,13 @@ using NFMWorld.Reactor.Sx;
 using NFMWorld.UI.Routes;
 using NFMWorld.UI.ViewModels;
 using NFMWorldLibrary;
+using NFMWorldLibrary.Content;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
 using NFMWorldLibrary.Multiplayer.Packets.S2C;
 using NFMWorldLibrary.Plugins;
+using NFMWorldLibrary.Radpack;
 
 namespace NFMWorld.Gameplay;
 
@@ -29,6 +31,9 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
     /// <summary>This phase has launched a race, so a late start notice is stale.</summary>
     private bool _racedThisSession;
+
+    /// <summary>The download in flight for a race's content, cancelled when it is superseded.</summary>
+    private CancellationTokenSource? _preparationCancellation;
 
     private static UiState.LobbyState Lobby => UiState.Lobby;
 
@@ -165,6 +170,10 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
                     StartRace(raceStarted);
                     break;
 
+                case S2C_PrepareContent prepareContent:
+                    PrepareContent(prepareContent);
+                    break;
+
                 // The session's load window elapsed (or the game master refused it). Nothing
                 // else resets the row, so say so rather than leaving it on "LOADING". The lobby
                 // sends this to everyone in the session, including a client that has already
@@ -181,6 +190,11 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     {
         if (disposing)
         {
+            // A preparation outliving the phase would keep downloading for a race this client
+            // has left, and its acknowledgement would answer a request nobody is waiting on.
+            _preparationCancellation?.Cancel();
+            _preparationCancellation?.Dispose();
+            _preparationCancellation = null;
             // Leaving the lobby must close the socket: the server only drops the ghost player when
             // the connection goes, and the receive loop would otherwise run for the process lifetime.
             GameSparker.AccountManager.ActiveAccountChanged -= OnAccountChanged;
@@ -189,6 +203,62 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         }
 
         base.Dispose(disposing);
+    }
+
+    /// <summary>
+    /// Downloads and verifies the race's canonical content, then tells the lobby. The race is
+    /// only created once every member has answered, so nothing here can be skipped: a client
+    /// that reaches the load handshake without these bytes cannot build the stage or the cars.
+    /// </summary>
+    private async void PrepareContent(S2C_PrepareContent request)
+    {
+        _preparationCancellation?.Cancel();
+        _preparationCancellation?.Dispose();
+
+        var cancellation = new CancellationTokenSource();
+        _preparationCancellation = cancellation;
+
+        // A new attempt at starting a race, so a failure notice is current again.
+        _racedThisSession = false;
+        SetStatus("Preparing race content...");
+
+        foreach (var item in request.Content)
+        {
+            var result = await ContentCache.PrepareAsync(
+                GarageController.ContentClient,
+                item.Id,
+                (AssetKind)item.Kind,
+                cancellation.Token
+            );
+
+            if (cancellation.IsCancellationRequested)
+                return;
+
+            if (result.Ok)
+                continue;
+
+            transport.SendPacketToServer(
+                new C2S_ContentReady
+                {
+                    SessionId = request.SessionId,
+                    PreparationId = request.PreparationId,
+                    Ready = false,
+                    Reason = result.Error
+                }
+            );
+            SetStatus($"Could not prepare the race: {result.Error}");
+            return;
+        }
+
+        transport.SendPacketToServer(
+            new C2S_ContentReady
+            {
+                SessionId = request.SessionId,
+                PreparationId = request.PreparationId,
+                Ready = true
+            }
+        );
+        SetStatus("Content ready. Waiting for the race...");
     }
 
     private void StartRace(S2C_RaceStarted raceStarted)
@@ -480,7 +550,9 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             new C2S_PlayerIdentity
             {
                 PlayerName = _player.Name,
-                SelectedVehicle = MenuHistory.Car?.FileName ?? MenuHistory.DefaultCar,
+                // The canonical selection, not the loaded model's name: an archive identity has
+                // to survive even when the car has not been cached yet, and the lobby re-checks it.
+                SelectedVehicle = MenuHistory.LastPlayed.Car,
                 Color = _player.Color
             }
         );

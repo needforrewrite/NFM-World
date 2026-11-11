@@ -1,4 +1,4 @@
-using System.Buffers;
+﻿using System.Buffers;
 using CommunityToolkit.HighPerformance.Buffers;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
@@ -102,6 +102,50 @@ public class LobbyPacketTests
         Assert.AreEqual("nfmm/road", received.MatchGameplayInfo.StageName);
         Assert.AreEqual("racing", received.MatchGameplayInfo.Parameters["constraint"]);
         Assert.AreEqual("alice", received.MatchGameplayInfo.Players[0].PlayerName);
+    }
+
+    [TestMethod]
+    public void PrepareContent_RoundTripsTheAssetList()
+    {
+        var content = new[]
+        {
+            new PreparedContent { Id = "archive/" + new string('a', 64), Kind = 1 },
+            new PreparedContent { Id = "archive/" + new string('b', 64), Kind = 0 }
+        };
+
+        var sent = new S2C_PrepareContent
+        {
+            SessionId = 42,
+            PreparationId = Guid.NewGuid(),
+            Content = content
+        };
+
+        var received = RoundTrip(sent, -11);
+
+        Assert.AreEqual(42u, received.SessionId);
+        Assert.AreEqual(sent.PreparationId, received.PreparationId);
+        Assert.AreEqual(2, received.Content.Length);
+        Assert.AreEqual(content[0].Id, received.Content[0].Id);
+        Assert.AreEqual((byte)1, received.Content[0].Kind);
+    }
+
+    [TestMethod]
+    public void ContentReady_RoundTripsTheReason()
+    {
+        var sent = new C2S_ContentReady
+        {
+            SessionId = 7,
+            PreparationId = Guid.NewGuid(),
+            Ready = false,
+            Reason = "Could not download the asset"
+        };
+
+        var received = RoundTrip(sent, 13);
+
+        Assert.AreEqual(7u, received.SessionId);
+        Assert.AreEqual(sent.PreparationId, received.PreparationId);
+        Assert.IsFalse(received.Ready);
+        Assert.AreEqual("Could not download the asset", received.Reason);
     }
 
     /// <summary>

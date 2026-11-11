@@ -42,6 +42,27 @@ public static class MultiplayerContentPolicy
     public static string CoerceCar(string? id) => IsAcceptedCar(id) ? Normalize(id!) : DefaultCar;
 
     /// <summary>
+    /// The canonical archive assets every participant has to hold before the race can load: the
+    /// stage and each distinct car. Shipped ids need no preparation; they are already on disk.
+    /// </summary>
+    public static PreparedContent[] RequiredArchiveContent(MatchGameplayInfo info)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var required = new List<PreparedContent>(info.Players.Count + 1);
+
+        if (IsCanonicalArchiveId(info.StageName) && seen.Add(info.StageName))
+            required.Add(new PreparedContent { Id = info.StageName, Kind = (byte)AssetKind.Stage });
+
+        foreach (var player in info.Players.Values)
+        {
+            if (IsCanonicalArchiveId(player.CarName) && seen.Add(player.CarName))
+                required.Add(new PreparedContent { Id = player.CarName, Kind = (byte)AssetKind.Car });
+        }
+
+        return required.ToArray();
+    }
+
+    /// <summary>
     /// Checks a whole roster before a race is constructed. Returns the reason it was refused, or
     /// null when every slot is usable.
     /// </summary>

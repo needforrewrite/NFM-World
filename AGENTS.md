@@ -1,4 +1,4 @@
-# Agent instructions — NFM-World
+﻿# Agent instructions — NFM-World
 
 Keep guidance short and actionable. Reference files and patterns below when making changes.
 
@@ -674,3 +674,59 @@ native library, so a managed peer interops with a native one in both directions.
   normalized while destinations are mapped to IPv4-mapped IPv6.
 - **Threading** is unchanged: one host per thread, `Service`/`Flush` drive send and receive; ENet state is not
   thread-safe.
+
+---
+
+## In-game archive integration
+
+Added with the archive/content work; read this before touching content loading, the archive or the editors.
+
+- **Typed radpack loading** — `RadpackReader` (`NFMWorld.Library/Radpack/`) is the only reader game code
+  uses. It validates the header kind against the payload union (`AssetKinds` maps archive kinds:
+  `Stage` ↔ `Track`, `StagePiece` ↔ `TrackPiece`) and applies `RadpackLimits`. `BackendGameSparker`
+  keeps separate car/stage-piece caches; `dynamic_models` stays the car-only manual cache.
+  `LoadModelDirectory` rejects a wrong-kind file instead of parsing it as another asset.
+- **Gamemode packages** — `RadpackType.GamemodePackage` / `RadpackGamemode` append new tags; old tags
+  never change. `PluginAssembly.Load(id, dllPath, packagePath)` prefers a loose DLL and unwraps a
+  package only when no DLL exists. Downloadable packages require `PluginPolicy.Supported`; the
+  browser's unsandboxed path is only for shipped DLLs.
+- **Archive API** — `/assets/search` is keyset paged (`after`, stable id order, `nextCursor`); types
+  are validated and kind names come from `AssetKinds`. `/assets/meta/{hash}` feeds eligibility.
+  Visibility is one rule: `IsPublic && !IsTakedown`; eligibility additionally requires
+  `IsValidated`. Legacy `.rad` uploads are validated out of process (`validator rad`), cannot claim
+  Stage, and old rows are not trusted for multiplayer.
+- **Stock content** — `StockCatalog` builds deterministic packages from an explicit shipped root with
+  fixed metadata (`UnixEpoch`, no description). `StockSeeder` inserts them at archive startup when
+  `Archive:StockContentPath` is set. A mod shadowing a stock name does not change the catalog hash.
+- **Content cache** — `ContentCache.Mount()` is called before `ArchiveMount`; prepared assets only
+  appear after hash verification and typed decode, through a temp-file rename. Synchronous loaders
+  read `archive/<sha256>` from the mount; `PrepareAsync` coalesces duplicate downloads and a corrupt
+  cached file is deleted and refetched. Browser persistence is the VFS write root (MEMFS), so it is
+  session-only.
+- **Multiplayer policy** — `MultiplayerContentPolicy` accepts shipped car ids and canonical
+  `archive/<hash>` only; `user/` and local paths are refused. The lobby applies it to identities and
+  session creation, and the game master applies it again before constructing any stage.
+- **Preparation before a race** — `RequiredArchiveContent` lists the stage and each distinct archive
+  car. The lobby freezes the roster, sends `S2C_PrepareContent` (nonce) to every member and calls the
+  game master's `/prepare-content` at the same time; members answer `C2S_ContentReady` and only then
+  is the race created. A stale nonce, a selection change, a leave/disconnect, a refusal or the
+  two-minute deadline calls the start off and restores the session. The game master's download has
+  its own HTTP timeout, so it never consumes the create-race window. Bots never acknowledge.
+- **Time trials** — the client notifies `IClientCallbacks.TimeTrialCompleted` once per completed run
+  (never for simulation), `TimeTrialSubmissions` writes the recording and a MemoryPack sidecar before
+  network work, and `TimeTrialUploader` retries from the replay browser. The archive simulates the
+  exact archived stage *and* car (`tt-sim` takes both paths).
+- **Replay viewer** — `ReplayBrowserPhase` reads bounded recordings; `ReplayViewerPhase` applies
+  recorded `CarFrame`s directly (no physics, gamemode, save or upload), uses the embedded
+  `StageLoader`/`Rad3d` when present, and drives `RaceCameraDirector` itself. Frames are snapshots,
+  not resumable checkpoints.
+- **Stage editor UI** — the Sx tree lives in `StageEditorPhase.Sx.cs` and mirrors values through
+  `_uiRevision`; the controller/history/camera code is unchanged. Panels are absolutely positioned so
+  the viewport is the only non-UI area (`WantsMouse` must stay false over it); its measured
+  `LayoutBorderPosition/Size` drive scissor, picking and gizmos. Part thumbnails are render targets
+  wrapped with `TheGraphics.G.WrapTexture`; `_previewRevision` remounts the image slot when one
+  finishes. Hierarchy rows are one `Sx.For` list (borders header, walls, group headers, pieces):
+  press-and-drag reorders pieces or groups and moves pieces between groups, and right-click opens the
+  context menu (`ContextMenuOverlay`), which is state-driven rather than a native popup. Saving and
+  publishing both serialize `BuildStageText()`; publishing parses that snapshot and never writes the
+  working document.

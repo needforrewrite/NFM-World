@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Multiplayer.Archive;
 using NFMWorldLibrary.Multiplayer.HttpMessages;
@@ -28,6 +28,31 @@ public class GameOrchestrator
 
     /// <summary>Which match a session's race is, while it runs. An onlooker starts from the session.</summary>
     private readonly ConcurrentDictionary<uint, Guid> _sessionMatches = new();
+
+    /// <summary>Starts waiting on participants and the game master for canonical content.</summary>
+    private static readonly TimeSpan PreparationTimeout = TimeSpan.FromMinutes(2);
+
+    /// <summary>Content preparation in flight, keyed by session. Only one race per session.</summary>
+    private readonly ConcurrentDictionary<uint, PendingPreparation> _preparations = new();
+
+    private sealed class PendingPreparation
+    {
+        public required uint SessionId { get; init; }
+
+        /// <summary>Quoted by acknowledgements; a reply to an older request is ignored.</summary>
+        public required Guid PreparationId { get; init; }
+
+        public required Guid MatchKey { get; init; }
+        public required MatchGameplayInfo Match { get; init; }
+        public required PreparedContent[] Content { get; init; }
+        public required ResolvedGameMaster GameMaster { get; init; }
+
+        /// <summary>Connection indices still owing an acknowledgement.</summary>
+        public ConcurrentDictionary<uint, byte> Waiting { get; } = new();
+
+        public TaskCompletionSource ClientsDone { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
 
     private sealed record PendingMatch(
         MatchGameplayInfo Info,
@@ -225,6 +250,8 @@ public class GameOrchestrator
             client.IsInGame = false;
             if (client.InSession is { } inSession)
             {
+                InvalidatePreparation(inSession.SessionIndex, "A player disconnected while the race was preparing.");
+
                 var session = _sessions.Get(inSession.SessionIndex);
                 session?.Players.TryRemove(KeyValuePair.Create(inSession.PlayerIndex, client.Id));
 
@@ -288,6 +315,10 @@ public class GameOrchestrator
 
             case C2S_LobbyStartRace startRace:
                 _ = HandleStartRaceAsync(e.ClientIndex, startRace);
+                break;
+
+            case C2S_ContentReady contentReady:
+                HandleContentReady(e.ClientIndex, contentReady);
                 break;
 
             default:
@@ -405,6 +436,11 @@ public class GameOrchestrator
         // allowed; anything else (a local path, a URL, a malformed hash) falls back to a stock car.
         client.Vehicle = MultiplayerContentPolicy.CoerceCar(identity.SelectedVehicle);
         client.Color = identity.Color;
+
+        // A selection that changes mid-preparation leaves the frozen roster stale, so the start
+        // is called off rather than racing a car nobody downloaded.
+        if (client.InSession is { } session)
+            InvalidatePreparation(session.SessionIndex, "A player changed their selection while the race was preparing.");
     }
 
     private void HandleCreateSession(uint clientId, C2S_CreateSession create)
@@ -498,6 +534,8 @@ public class GameOrchestrator
         var session = _sessions.LeaveSession(clientId, leave.SessionId);
         if (session is not null)
         {
+            InvalidatePreparation(session.Id, "A player left while the race was preparing.");
+
             // The client sends this on returning from a race, and it is already back in the
             // lobby: keeping IsInGame would leave it unable to start or watch anything again.
             player.IsInGame = false;
@@ -571,10 +609,127 @@ public class GameOrchestrator
             return;
         }
 
-        ResolvedGameMaster? gm = null;
+        // Canonical archive content is not on anyone's disk yet. Prepare it on every participant
+        // and on the game master first, then create the race; creating it first would make the
+        // load window cover downloads.
+        var required = MultiplayerContentPolicy.RequiredArchiveContent(matchInfo);
+        if (required.Length == 0)
+        {
+            await CreateRaceAsync(session, matchInfo);
+            return;
+        }
+
+        ResolvedGameMaster gm;
         try
         {
             gm = _gmRegistry.SelectGameMaster();
+        }
+        catch (Exception ex)
+        {
+            FailRaceStart(session.Id, $"No game master is available: {ex.Message}");
+            return;
+        }
+
+        var preparation = new PendingPreparation
+        {
+            SessionId = session.Id,
+            PreparationId = Guid.NewGuid(),
+            MatchKey = Guid.NewGuid(),
+            Match = matchInfo,
+            Content = required,
+            GameMaster = gm
+        };
+
+        foreach (var (_, pid) in session.Players)
+        {
+            var member = _players.Get(pid);
+            if (member is null)
+                continue;
+
+            preparation.Waiting[member.ClientIndex] = 0;
+            _transport.SendPacketToClient(
+                member.ClientIndex,
+                new S2C_PrepareContent
+                {
+                    SessionId = session.Id,
+                    PreparationId = preparation.PreparationId,
+                    Content = required
+                }
+            );
+        }
+
+        if (preparation.Waiting.IsEmpty || !_preparations.TryAdd(session.Id, preparation))
+        {
+            FailRaceStart(session.Id, "The race could not be prepared.");
+            return;
+        }
+
+        _chat.BroadcastSystem($"{session.CreatorName}'s race is preparing content...");
+        _broadcaster.BroadcastToAll();
+        _ = RunPreparationAsync(preparation);
+    }
+
+    /// <summary>
+    /// Waits for the participants' acknowledgements and the game master's download, then creates
+    /// the race. The stored roster is the one the packets were built from, so a race can never
+    /// start against a selection that changed while it was preparing.
+    /// </summary>
+    private async Task RunPreparationAsync(PendingPreparation preparation)
+    {
+        var gmTask = _gmClient.PrepareContentAsync(
+            preparation.GameMaster,
+            new Lobby2RaceServer_PrepareContent
+            {
+                MatchKey = preparation.MatchKey,
+                Content = preparation.Content
+            }
+        );
+
+        try
+        {
+            await Task.WhenAll(gmTask, preparation.ClientsDone.Task).WaitAsync(PreparationTimeout);
+        }
+        catch (Exception ex)
+        {
+            _preparations.TryRemove(preparation.SessionId, out _);
+
+            // Only an unreachable or failing game master counts against it; a client that cannot
+            // download a car says nothing about the server.
+            if (gmTask.IsFaulted)
+                _gmRegistry.MarkFailure(preparation.GameMaster);
+
+            FailRaceStart(
+                preparation.SessionId,
+                ex is TimeoutException
+                    ? "The race could not be prepared in time."
+                    : $"The race could not be prepared: {ex.Message}"
+            );
+            return;
+        }
+
+        _preparations.TryRemove(preparation.SessionId, out _);
+
+        var session = _sessions.Get(preparation.SessionId);
+        if (session is null)
+        {
+            FailRaceStart(preparation.SessionId, "The race could not be started.");
+            return;
+        }
+
+        _gmRegistry.MarkSuccess(preparation.GameMaster);
+        await CreateRaceAsync(session, preparation.Match, preparation.GameMaster);
+    }
+
+    /// <summary>Hands the frozen roster to a game master and tells every slot where to connect.</summary>
+    private async Task CreateRaceAsync(
+        SessionManager.GameSession session,
+        MatchGameplayInfo matchInfo,
+        ResolvedGameMaster? gm = null
+    )
+    {
+        try
+        {
+            gm ??= _gmRegistry.SelectGameMaster();
             var createRequest = new Lobby2RaceServer_CreateRace
             {
                 MatchKey = Guid.NewGuid(),
@@ -636,19 +791,84 @@ public class GameOrchestrator
             if (gm is not null)
                 _gmRegistry.MarkFailure(gm);
 
-            // Revert session state on failure
-            session.State = SessionState.NotStarted;
-            session.StartTime = null;
-
-            foreach (var (_, pid) in session.Players)
-            {
-                var p = _players.Get(pid);
-                if (p is not null) p.IsInGame = false;
-            }
-
             _chat.BroadcastSystem(
                 $"Failed to start race on {session.StageName}: {ex.Message}\n{ex.StackTrace}"
             );
+
+            FailRaceStart(session.Id, $"The race on {session.StageName} could not start.");
         }
+    }
+
+    /// <summary>
+    /// Puts a session back to a usable pre-race state and tells its members the start failed.
+    /// <see cref="SessionManager.StartRace"/> already marked them in-game, so this undoes that.
+    /// </summary>
+    private void FailRaceStart(uint sessionId, string reason)
+    {
+        _chat.BroadcastSystem(reason);
+
+        var session = _sessions.Get(sessionId);
+        if (session is null)
+            return;
+
+        session.State = SessionState.NotStarted;
+        session.StartTime = null;
+
+        var clients = new List<uint>();
+        foreach (var (_, id) in session.Players)
+        {
+            var player = _players.Get(id);
+            if (player is null)
+                continue;
+
+            player.IsInGame = false;
+            clients.Add(player.ClientIndex);
+        }
+
+        if (clients.Count > 0)
+            _transport.SendPacketToClients(clients.ToArray(), new S2C_RaceFailedToStart(), false);
+
+        _broadcaster.BroadcastToAll();
+    }
+
+    private void HandleContentReady(uint clientIndex, C2S_ContentReady ready)
+    {
+        if (!_preparations.TryGetValue(ready.SessionId, out var preparation))
+            return;
+
+        // A reply to an earlier request describes content nobody is waiting on any more.
+        if (preparation.PreparationId != ready.PreparationId)
+            return;
+
+        // A duplicate acknowledgement must not count twice, and a connection that is not part
+        // of this preparation cannot finish it.
+        if (!preparation.Waiting.TryRemove(clientIndex, out _))
+            return;
+
+        if (!ready.Ready)
+        {
+            InvalidatePreparation(
+                ready.SessionId,
+                ready.Reason is { Length: > 0 }
+                    ? $"The race could not be prepared: {ready.Reason}"
+                    : "A player could not prepare the race content."
+            );
+            return;
+        }
+
+        if (preparation.Waiting.IsEmpty)
+            preparation.ClientsDone.TrySetResult();
+    }
+
+    /// <summary>
+    /// Abandons a preparation in flight. The awaiting task reports the failure, so this only has
+    /// to fault the wait; a session with no preparation is left alone.
+    /// </summary>
+    private void InvalidatePreparation(uint sessionId, string reason)
+    {
+        if (!_preparations.TryRemove(sessionId, out var preparation))
+            return;
+
+        preparation.ClientsDone.TrySetException(new InvalidOperationException(reason));
     }
 }

@@ -1,6 +1,7 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using MemoryPack;
+using NFMWorld.Gameplay;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Content;
 using NFMWorldLibrary.Radpack;
@@ -35,6 +36,24 @@ public class RaceOrchestrator : IDisposable
     // Server gamemode tick loop
     private CancellationTokenSource? _tickCts;
     private Thread? _tickThread;
+
+    // Public archive downloads for race content. Created on first preparation and kept, so the
+    // connection pool survives between races.
+    private ArchiveContentClient? _contentClient;
+    private readonly Lock _contentClientLock = new();
+
+    private ArchiveContentClient ContentClient
+    {
+        get
+        {
+            lock (_contentClientLock)
+            {
+                return _contentClient ??= new ArchiveContentClient(
+                    Environment.GetEnvironmentVariable("ARCHIVE_URL") ?? ArchiveEndpoint.Url
+                );
+            }
+        }
+    }
 
     public RaceOrchestrator(IMultiplayerServerTransport transport)
     {
@@ -507,6 +526,31 @@ public class RaceOrchestrator : IDisposable
 
     // ── HTTP handler ─────────────────────────────────────────────────
 
+    /// <summary>
+    /// Downloads the race's canonical content onto this server, ahead of
+    /// <see cref="CreateRace"/>. Every asset must verify against its hash and kind; a failure
+    /// fails the request so the lobby can call the race off.
+    /// </summary>
+    public async Task PrepareContentAsync(Lobby2RaceServer_PrepareContent request, CancellationToken ct = default)
+    {
+        ContentCache.Mount();
+
+        foreach (var item in request.Content)
+        {
+            var result = await ContentCache.PrepareAsync(
+                ContentClient,
+                item.Id,
+                (AssetKind)item.Kind,
+                ct
+            );
+
+            if (!result.Ok)
+                throw new InvalidOperationException($"Could not prepare '{item.Id}': {result.Error}");
+        }
+
+        Logging.Info($"[GM] Prepared {request.Content.Length} asset(s) for {request.MatchKey}");
+    }
+
     public Lobby2RaceServer_CreateRaceResponse CreateRace(Lobby2RaceServer_CreateRace raceParams)
     {
         // The lobby is trusted infrastructure, but its roster is still assembled from client
@@ -655,6 +699,8 @@ public class RaceOrchestrator : IDisposable
         _transport.ClientConnected -= TransportOnClientConnected;
         _transport.ClientDisconnected -= TransportOnClientDisconnected;
         _transport.ClientConnecting -= TransportOnClientConnecting;
+        _contentClient?.Dispose();
+        _contentClient = null;
     }
 
     private class ClientInfo

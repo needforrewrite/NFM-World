@@ -44,7 +44,7 @@ try
     while (!cts.IsCancellationRequested)
     {
         var ctx = await http.GetContextAsync().WaitAsync(cts.Token);
-        _ = Task.Run(() => HandleRequest(ctx, orchestrator, knownKeys));
+        _ = Task.Run(async () => await HandleRequestAsync(ctx, orchestrator, knownKeys));
     }
 }
 catch (OperationCanceledException)
@@ -59,7 +59,7 @@ return;
 
 // ── Request handler ─────────────────────────────────────────────────
 
-static void HandleRequest(
+static async Task HandleRequestAsync(
     HttpListenerContext ctx,
     RaceOrchestrator orchestrator,
     IReadOnlyDictionary<string, byte[]> knownKeys
@@ -101,7 +101,26 @@ static void HandleRequest(
         return;
     }
 
-    if (req.Url!.LocalPath == "/create-race")
+    if (req.Url!.LocalPath == "/prepare-content")
+    {
+        try
+        {
+            var prepareParams = MemoryPackSerializer.Deserialize<Lobby2RaceServer_PrepareContent>(bodyArray);
+            await orchestrator.PrepareContentAsync(prepareParams);
+            res.StatusCode = 204;
+            res.Close();
+        }
+        catch (Exception ex)
+        {
+            Logging.Info($"[GameMaster] PrepareContent failed: {ex}");
+            var errBytes = Encoding.UTF8.GetBytes(ex.Message);
+            res.StatusCode = 500;
+            res.ContentLength64 = errBytes.Length;
+            res.OutputStream.Write(errBytes);
+            res.Close();
+        }
+    }
+    else if (req.Url!.LocalPath == "/create-race")
     {
         try
         {

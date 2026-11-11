@@ -29,6 +29,12 @@ internal sealed class GarageController
     private static readonly Lazy<ArchiveContentClient> Content =
         new(() => new ArchiveContentClient(ArchiveEndpoint.Url));
 
+    /// <summary>
+    /// The shared public-content client. Downloading a race's assets before it starts uses the
+    /// same connection pool as browsing, so a race does not open a second one.
+    /// </summary>
+    public static ArchiveContentClient ContentClient => Content.Value;
+
     private static readonly Lazy<IReadOnlyList<StockPackage>> Stock =
         new(() => StockCatalog.Build(AppContext.BaseDirectory));
 
