@@ -35,6 +35,12 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     /// <summary>The download in flight for a race's content, cancelled when it is superseded.</summary>
     private CancellationTokenSource? _preparationCancellation;
 
+    /// <summary>
+    /// A spectator join waiting on its downloads. Racers already prepared content as a group, so
+    /// this is only ever the late onlooker's own copy; it must not hold anything else up.
+    /// </summary>
+    private (S2C_RaceStarted Started, Task<bool> Work)? _pendingSpectate;
+
     private static UiState.LobbyState Lobby => UiState.Lobby;
 
     private LobbyView.Actions Actions => new(
@@ -124,6 +130,17 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         // has to follow it or it stays on "Connecting..." forever after a failed connect.
         UpdateStatus();
 
+        // Phases are pushed on the game tick, so a spectator's completed downloads are consumed
+        // here rather than from the download's continuation.
+        if (_pendingSpectate is { Work.IsCompleted: true } pending)
+        {
+            _pendingSpectate = null;
+            if (pending.Work.Result)
+                StartRaceCore(pending.Started);
+            else
+                SetStatus("The race content could not be downloaded.");
+        }
+
         foreach (var packet in transport.GetNewPackets())
         {
             switch (packet)
@@ -195,6 +212,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             _preparationCancellation?.Cancel();
             _preparationCancellation?.Dispose();
             _preparationCancellation = null;
+            _pendingSpectate = null;
             // Leaving the lobby must close the socket: the server only drops the ghost player when
             // the connection goes, and the receive loop would otherwise run for the process lifetime.
             GameSparker.AccountManager.ActiveAccountChanged -= OnAccountChanged;
@@ -262,6 +280,55 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     }
 
     private void StartRace(S2C_RaceStarted raceStarted)
+    {
+        // A late spectator was not part of the race's preparation, so its own missing assets are
+        // fetched first. Racers always arrive here already prepared by the lobby handshake.
+        var missing = MultiplayerContentPolicy.RequiredArchiveContent(raceStarted.MatchGameplayInfo)
+            .Where(item => !ContentCache.IsPrepared(item.Id))
+            .ToArray();
+
+        if (missing.Length > 0)
+        {
+            _pendingSpectate = (raceStarted, PrepareSpectateContentAsync(missing));
+            SetStatus("Preparing race content...");
+            return;
+        }
+
+        StartRaceCore(raceStarted);
+    }
+
+    private async Task<bool> PrepareSpectateContentAsync(PreparedContent[] required)
+    {
+        // Never faults: the tick reads Result once the task completes, and an exception there
+        // would escape the game loop.
+        try
+        {
+            foreach (var item in required)
+            {
+                var result = await ContentCache.PrepareAsync(
+                    GarageController.ContentClient,
+                    item.Id,
+                    (AssetKind)item.Kind,
+                    CancellationToken.None
+                );
+
+                if (!result.Ok)
+                {
+                    SetStatus($"Could not prepare the race: {result.Error}");
+                    return false;
+                }
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Could not prepare the race: {ex.Message}");
+            return false;
+        }
+    }
+
+    private void StartRaceCore(S2C_RaceStarted raceStarted)
     {
         _racedThisSession = true;
 

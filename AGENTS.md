@@ -712,7 +712,9 @@ Added with the archive/content work; read this before touching content loading, 
   and only then is the race created. A stale nonce, a selection change, a leave/disconnect, a refusal
   or the two-minute deadline calls the start off and restores the session. The game master builds no
   cars, so it is never asked for them; its download has its own HTTP timeout and never consumes the
-  create-race window. Bots never acknowledge.
+  create-race window. Bots never acknowledge. A late spectator is not in that handshake: it downloads
+  any missing asset itself and the race phase is pushed when the download finishes, so it never delays
+  the racers.
 - **Publishing** — `ArchivePublisher` packages a snapshot of the live editor document (never a
   reread of the file) and uploads it with `AccountManager`'s bearer session, or writes a local
   radpack with `ExportLocal*`. Both editors show name, description and that the publication is
