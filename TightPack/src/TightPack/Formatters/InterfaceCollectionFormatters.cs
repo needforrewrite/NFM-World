@@ -5,12 +5,13 @@ namespace TightPack.Formatters;
 
 internal static class InterfaceCollections
 {
-    public static void WriteSequence<TBufferWriter, T>(
+    public static void WriteSequence<TBufferWriter, T, TEnumerable>(
         ref TightPackWriter<TBufferWriter> writer,
         int count,
-        IEnumerable<T> items
+        TEnumerable items
     )
         where TBufferWriter : System.Buffers.IBufferWriter<byte>
+        where TEnumerable : IEnumerable<T>
     {
         writer.WriteCollectionHeader(count);
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
@@ -43,8 +44,21 @@ internal static class InterfaceCollections
     /// <summary>Reads a sequence into a set, which is what the set interface formatters rebuild.</summary>
     public static HashSet<T>? ReadSet<T>(ref TightPackReader reader)
     {
-        List<T>? items = ReadSequence<T>(ref reader);
-        return items is null ? null : new HashSet<T>(items);
+        if (!reader.TryReadCollectionHeader(out int length))
+        {
+            return null;
+        }
+
+        var result = new HashSet<T>(length);
+        var formatter = TightPackFormatterProvider.GetFormatter<T>();
+        for (int i = 0; i < length; i++)
+        {
+            T? item = default;
+            formatter.Deserialize(ref reader, ref item);
+            result.Add(item!);
+        }
+
+        return result;
     }
 
     public static Dictionary<TKey, TValue>? ReadMap<TKey, TValue>(ref TightPackReader reader)
@@ -70,13 +84,14 @@ internal static class InterfaceCollections
         return result;
     }
 
-    public static void WriteMap<TBufferWriter, TKey, TValue>(
+    public static void WriteMap<TBufferWriter, TKey, TValue, TDictionary>(
         ref TightPackWriter<TBufferWriter> writer,
         int count,
-        IDictionary<TKey, TValue> value
+        TDictionary value
     )
         where TBufferWriter : System.Buffers.IBufferWriter<byte>
         where TKey : notnull
+        where TDictionary : IDictionary<TKey, TValue>
     {
         writer.WriteCollectionHeader(count);
         var keyFormatter = TightPackFormatterProvider.GetFormatter<TKey>();
@@ -103,7 +118,7 @@ public sealed class InterfaceListFormatter<T> : TightPackFormatter<IList<T>?>
             return;
         }
 
-        InterfaceCollections.WriteSequence<TBufferWriter, T>(ref writer, value.Count, value);
+        InterfaceCollections.WriteSequence<TBufferWriter, T, IList<T>>(ref writer, value.Count, value);
     }
 
     public override void Deserialize(ref TightPackReader reader, ref IList<T>? value) =>
@@ -122,7 +137,7 @@ public sealed class IReadOnlyListFormatter<T> : TightPackFormatter<IReadOnlyList
             return;
         }
 
-        InterfaceCollections.WriteSequence<TBufferWriter, T>(ref writer, value.Count, value);
+        InterfaceCollections.WriteSequence<TBufferWriter, T, IReadOnlyList<T>>(ref writer, value.Count, value);
     }
 
     public override void Deserialize(ref TightPackReader reader, ref IReadOnlyList<T>? value) =>
@@ -141,7 +156,7 @@ public sealed class InterfaceCollectionFormatter<T> : TightPackFormatter<ICollec
             return;
         }
 
-        InterfaceCollections.WriteSequence<TBufferWriter, T>(ref writer, value.Count, value);
+        InterfaceCollections.WriteSequence<TBufferWriter, T, ICollection<T>>(ref writer, value.Count, value);
     }
 
     public override void Deserialize(ref TightPackReader reader, ref ICollection<T>? value) =>
@@ -163,7 +178,7 @@ public sealed class IReadOnlyCollectionFormatter<T> : TightPackFormatter<IReadOn
             return;
         }
 
-        InterfaceCollections.WriteSequence<TBufferWriter, T>(ref writer, value.Count, value);
+        InterfaceCollections.WriteSequence<TBufferWriter, T, IReadOnlyCollection<T>>(ref writer, value.Count, value);
     }
 
     public override void Deserialize(ref TightPackReader reader, ref IReadOnlyCollection<T>? value) =>
@@ -186,7 +201,7 @@ public sealed class InterfaceDictionaryFormatter<TKey, TValue> : TightPackFormat
             return;
         }
 
-        InterfaceCollections.WriteMap<TBufferWriter, TKey, TValue>(ref writer, value.Count, value);
+        InterfaceCollections.WriteMap<TBufferWriter, TKey, TValue, IDictionary<TKey, TValue>>(ref writer, value.Count, value);
     }
 
     public override void Deserialize(ref TightPackReader reader, ref IDictionary<TKey, TValue>? value) =>
@@ -238,7 +253,7 @@ public sealed class InterfaceSetFormatter<T> : TightPackFormatter<ISet<T>?>
             return;
         }
 
-        InterfaceCollections.WriteSequence<TBufferWriter, T>(ref writer, value.Count, value);
+        InterfaceCollections.WriteSequence<TBufferWriter, T, ISet<T>>(ref writer, value.Count, value);
     }
 
     public override void Deserialize(ref TightPackReader reader, ref ISet<T>? value) =>
@@ -257,7 +272,7 @@ public sealed class IReadOnlySetFormatter<T> : TightPackFormatter<IReadOnlySet<T
             return;
         }
 
-        InterfaceCollections.WriteSequence<TBufferWriter, T>(ref writer, value.Count, value);
+        InterfaceCollections.WriteSequence<TBufferWriter, T, IReadOnlySet<T>>(ref writer, value.Count, value);
     }
 
     public override void Deserialize(ref TightPackReader reader, ref IReadOnlySet<T>? value) =>

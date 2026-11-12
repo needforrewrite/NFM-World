@@ -66,7 +66,7 @@ public sealed class QueueFormatter<T> : TightPackFormatter<Queue<T>?>
             return;
         }
 
-        InterfaceCollections.WriteSequence<TBufferWriter, T>(ref writer, value.Count, value);
+        InterfaceCollections.WriteSequence<TBufferWriter, T, Queue<T>>(ref writer, value.Count, value);
     }
 
     public override void Deserialize(ref TightPackReader reader, ref Queue<T>? value)
@@ -94,7 +94,7 @@ public sealed class LinkedListFormatter<T> : TightPackFormatter<LinkedList<T>?>
             return;
         }
 
-        InterfaceCollections.WriteSequence<TBufferWriter, T>(ref writer, value.Count, value);
+        InterfaceCollections.WriteSequence<TBufferWriter, T, ICollection<T>>(ref writer, value.Count, value);
     }
 
     public override void Deserialize(ref TightPackReader reader, ref LinkedList<T>? value)
@@ -128,7 +128,7 @@ public sealed class SortedSetFormatter<T> : TightPackFormatter<SortedSet<T>?>
             return;
         }
 
-        InterfaceCollections.WriteSequence<TBufferWriter, T>(ref writer, value.Count, value);
+        InterfaceCollections.WriteSequence<TBufferWriter, T, SortedSet<T>>(ref writer, value.Count, value);
     }
 
     public override void Deserialize(ref TightPackReader reader, ref SortedSet<T>? value)
@@ -150,7 +150,7 @@ public sealed class CollectionFormatter<T> : TightPackFormatter<Collection<T>?>
             return;
         }
 
-        InterfaceCollections.WriteSequence<TBufferWriter, T>(ref writer, value.Count, value);
+        InterfaceCollections.WriteSequence<TBufferWriter, T, Collection<T>>(ref writer, value.Count, value);
     }
 
     public override void Deserialize(ref TightPackReader reader, ref Collection<T>? value)
@@ -175,7 +175,7 @@ public sealed class ObservableCollectionFormatter<T> : TightPackFormatter<Observ
             return;
         }
 
-        InterfaceCollections.WriteSequence<TBufferWriter, T>(ref writer, value.Count, value);
+        InterfaceCollections.WriteSequence<TBufferWriter, T, ObservableCollection<T>>(ref writer, value.Count, value);
     }
 
     public override void Deserialize(ref TightPackReader reader, ref ObservableCollection<T>? value)
@@ -200,7 +200,7 @@ public sealed class ConcurrentQueueFormatter<T> : TightPackFormatter<ConcurrentQ
             return;
         }
 
-        InterfaceCollections.WriteSequence<TBufferWriter, T>(ref writer, value.Count, value);
+        InterfaceCollections.WriteSequence<TBufferWriter, T, ConcurrentQueue<T>>(ref writer, value.Count, value);
     }
 
     public override void Deserialize(ref TightPackReader reader, ref ConcurrentQueue<T>? value)
@@ -233,7 +233,7 @@ public sealed class ConcurrentStackFormatter<T> : TightPackFormatter<ConcurrentS
             reversed[i] = items[items.Length - 1 - i];
         }
 
-        InterfaceCollections.WriteSequence<TBufferWriter, T>(ref writer, reversed.Length, reversed);
+        InterfaceCollections.WriteSequence<TBufferWriter, T, T[]>(ref writer, reversed.Length, reversed);
     }
 
     public override void Deserialize(ref TightPackReader reader, ref ConcurrentStack<T>? value)
@@ -255,7 +255,7 @@ public sealed class ConcurrentBagFormatter<T> : TightPackFormatter<ConcurrentBag
             return;
         }
 
-        InterfaceCollections.WriteSequence<TBufferWriter, T>(ref writer, value.Count, value);
+        InterfaceCollections.WriteSequence<TBufferWriter, T, ConcurrentBag<T>>(ref writer, value.Count, value);
     }
 
     public override void Deserialize(ref TightPackReader reader, ref ConcurrentBag<T>? value)
@@ -282,7 +282,11 @@ public sealed class ConcurrentDictionaryFormatter<TKey, TValue>
             return;
         }
 
-        InterfaceCollections.WriteMap<TBufferWriter, TKey, TValue>(ref writer, value.Count, value);
+        InterfaceCollections.WriteMap<TBufferWriter, TKey, TValue, ConcurrentDictionary<TKey, TValue>>(
+            ref writer,
+            value.Count,
+            value
+        );
     }
 
     public override void Deserialize(ref TightPackReader reader, ref ConcurrentDictionary<TKey, TValue>? value)
@@ -308,7 +312,11 @@ public sealed class SortedDictionaryFormatter<TKey, TValue> : TightPackFormatter
             return;
         }
 
-        InterfaceCollections.WriteMap<TBufferWriter, TKey, TValue>(ref writer, value.Count, value);
+        InterfaceCollections.WriteMap<TBufferWriter, TKey, TValue, SortedDictionary<TKey, TValue>>(
+            ref writer,
+            value.Count,
+            value
+        );
     }
 
     public override void Deserialize(ref TightPackReader reader, ref SortedDictionary<TKey, TValue>? value)
@@ -334,7 +342,7 @@ public sealed class SortedListFormatter<TKey, TValue> : TightPackFormatter<Sorte
             return;
         }
 
-        InterfaceCollections.WriteMap<TBufferWriter, TKey, TValue>(ref writer, value.Count, value);
+        InterfaceCollections.WriteMap<TBufferWriter, TKey, TValue, SortedList<TKey, TValue>>(ref writer, value.Count, value);
     }
 
     public override void Deserialize(ref TightPackReader reader, ref SortedList<TKey, TValue>? value)
@@ -412,7 +420,7 @@ public sealed class ReadOnlyCollectionFormatter<T> : TightPackFormatter<ReadOnly
             return;
         }
 
-        InterfaceCollections.WriteSequence<TBufferWriter, T>(ref writer, value.Count, value);
+        InterfaceCollections.WriteSequence<TBufferWriter, T, ReadOnlyCollection<T>>(ref writer, value.Count, value);
     }
 
     public override void Deserialize(ref TightPackReader reader, ref ReadOnlyCollection<T>? value)
@@ -438,7 +446,7 @@ public sealed class ReadOnlyObservableCollectionFormatter<T>
             return;
         }
 
-        InterfaceCollections.WriteSequence<TBufferWriter, T>(ref writer, value.Count, value);
+        InterfaceCollections.WriteSequence<TBufferWriter, T, ReadOnlyObservableCollection<T>>(ref writer, value.Count, value);
     }
 
     public override void Deserialize(ref TightPackReader reader, ref ReadOnlyObservableCollection<T>? value)
@@ -467,7 +475,7 @@ public sealed class BlockingCollectionFormatter<T> : TightPackFormatter<Blocking
             return;
         }
 
-        InterfaceCollections.WriteSequence<TBufferWriter, T>(ref writer, value.Count, value);
+        InterfaceCollections.WriteSequence<TBufferWriter, T, BlockingCollection<T>>(ref writer, value.Count, value);
     }
 
     public override void Deserialize(ref TightPackReader reader, ref BlockingCollection<T>? value)
