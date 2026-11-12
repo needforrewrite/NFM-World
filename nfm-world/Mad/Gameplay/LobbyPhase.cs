@@ -29,6 +29,14 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     private bool _authenticated;
     private string? _lastStatus;
 
+    /// <summary>
+    /// When the outstanding handshake was written, so a lobby that never answers is retried
+    /// rather than leaving the player on "Verifying account..." for the rest of the session.
+    /// </summary>
+    private long _authenticationSentAt;
+
+    private bool _authenticationFailed;
+
     /// <summary>This phase has launched a race, so a late start notice is stale.</summary>
     private bool _racedThisSession;
 
@@ -48,7 +56,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         Leave: OnLeave,
         StartRace: OnStartRace,
         Create: OnCreate,
-        Refresh: () => Lobby.Status.Value = ConnectionStatus(),
+        Refresh: OnRefresh,
         SendChat: OnSendChat,
         Back: OnBack,
         OpenCreate: OnOpenCreate,
@@ -92,20 +100,102 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     {
         // A reconnected transport is a brand-new connection: the lobby knows nothing about
         // this player until it authenticates and identifies itself again.
-        _sentAuthentication = false;
-        _authenticated = false;
+        ResetHandshake();
         _player.Id = Guid.Empty;
         _players = [];
         _activeSessions = [];
         Publish();
     }
 
+    /// <summary>How long to wait for an answer before asking again.</summary>
+    private const long AuthenticationTimeoutMs = 5000;
+
+    /// <summary>
+    /// How many times to ask before telling the player instead of waiting forever. A reply already
+    /// on the wire when the connection drops is gone, and a lobby behind a stale proxy can drop one
+    /// without a trace; neither is visible to this side.
+    /// </summary>
+    private const int MaxAuthenticationAttempts = 3;
+
+    private int _authenticationAttempts;
+
+    private void ResetHandshake()
+    {
+        _sentAuthentication = false;
+        _authenticated = false;
+        _authenticationFailed = false;
+        _authenticationAttempts = 0;
+    }
+
+    /// <summary>
+    /// Drives the account handshake. It is not fire-and-forget: the phase waits on an answer, and
+    /// re-asks once that answer is overdue, because the status line is otherwise the last thing
+    /// the player ever sees.
+    /// </summary>
+    private void UpdateHandshake()
+    {
+        if (transport.State != ClientState.Connected)
+        {
+            // A drop redoes the handshake when the transport reconnects.
+            _sentAuthentication = false;
+            _authenticationAttempts = 0;
+            _authenticationFailed = false;
+            return;
+        }
+
+        if (_authenticated)
+            return;
+
+        if (_sentAuthentication && Elapsed(_authenticationSentAt) < AuthenticationTimeoutMs)
+            return;
+
+        if (_authenticationAttempts >= MaxAuthenticationAttempts)
+        {
+            if (!_authenticationFailed)
+            {
+                _authenticationFailed = true;
+                Logging.Warning("The lobby did not answer the account handshake.");
+            }
+
+            return;
+        }
+
+        // Identity is sent only after the server verifies this account.
+        SendAuthenticate(GameSparker.AccountManager.ActiveAccount?.Token ?? "");
+    }
+
+    private void SendAuthenticate(string token)
+    {
+        _sentAuthentication = true;
+        _authenticationSentAt = System.Environment.TickCount64;
+        _authenticationAttempts++;
+        transport.SendPacketToServer(new C2S_Authenticate { Token = token });
+    }
+
+    private static long Elapsed(long since) => System.Environment.TickCount64 - since;
+
     private void OnAccountChanged(NFMWorld.Accounts.Account? account)
     {
         // Empty token = signing out, which the lobby models as a guest.
         if (transport.State != ClientState.Connected)
             return;
-        transport.SendPacketToServer(new C2S_Authenticate { Token = account?.Token ?? "" });
+        // A different account is a fresh handshake, so it gets its own retry budget.
+        _authenticationAttempts = 0;
+        _authenticationFailed = false;
+        SendAuthenticate(account?.Token ?? "");
+        UpdateStatus();
+    }
+
+    /// <summary>The REFRESH button, which also retries a handshake that was given up on.</summary>
+    private void OnRefresh()
+    {
+        if (transport.State == ClientState.Connected && !_authenticated)
+        {
+            _authenticationAttempts = 0;
+            _authenticationFailed = false;
+            SendAuthenticate(GameSparker.AccountManager.ActiveAccount?.Token ?? "");
+        }
+
         UpdateStatus();
     }
 
@@ -113,18 +203,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     {
         base.GameTick();
 
-        if (!_sentAuthentication && transport.State == ClientState.Connected)
-        {
-            _sentAuthentication = true;
-
-            // Identity is sent only after the server verifies this account.
-            transport.SendPacketToServer(
-                new C2S_Authenticate
-                {
-                    Token = GameSparker.AccountManager.ActiveAccount?.Token ?? ""
-                }
-            );
-        }
+        UpdateHandshake();
 
         // The transport can drop at any point (server restart, network loss); the status line
         // has to follow it or it stays on "Connecting..." forever after a failed connect.
@@ -170,6 +249,8 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
                     else
                     {
                         _authenticated = true;
+                        _authenticationFailed = false;
+                        _authenticationAttempts = 0;
                         SendUpdatePlayerIdentity();
                         UpdateStatus();
                     }
@@ -467,6 +548,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
     private string ConnectionStatus() => transport.State switch
     {
+        ClientState.Connected when _authenticationFailed => "The lobby did not answer. Press BACK and try again.",
         ClientState.Connected when _authenticated && GameSparker.AccountManager.ActiveAccount is { } account =>
             $"Signed in as {account.Username}",
         ClientState.Connected => "Verifying account...",

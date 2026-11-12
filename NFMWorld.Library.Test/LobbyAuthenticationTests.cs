@@ -52,7 +52,8 @@ public class LobbyAuthenticationTests
                 SendPacketToClient(client, packet, reliable);
         }
 
-        public void BroadcastPacket<T>(T packet, bool reliable = true) where T : IPacketServerToClient<T>
+        public void BroadcastPacket<T>(T packet, bool reliable = true)
+            where T : IPacketServerToClient<T>
             => Sent.Enqueue((0, packet));
 
         public void Start()
@@ -198,7 +199,8 @@ public class LobbyAuthenticationTests
         Assert.IsFalse(transport.Sent.Any(p => p.Client == 2 && p.Packet is S2C_LobbyState or S2C_LobbyChatMessage));
         transport.Receive(2, new C2S_Authenticate { Token = "second-token" });
 
-        Assert.IsTrue(Reply(transport).Accepted);
+        // The repeated token is answered again, so take the first acceptance rather than exactly one.
+        Assert.IsTrue(transport.Sent.Select(p => p.Packet).OfType<S2C_Authenticated>().First().Accepted);
         Assert.IsFalse(Reply(transport, 2).Accepted);
         Assert.IsFalse(Reply(transport, 2).SessionRejected);
         CollectionAssert.AreEqual(new uint[] { 2 }, transport.Disconnected.ToArray());
@@ -224,6 +226,91 @@ public class LobbyAuthenticationTests
 
         response.SetResult(Account());
         Assert.IsTrue((await transport.Authentication.Task.WaitAsync(TimeSpan.FromSeconds(5))).Accepted);
+        lobby.Stop();
+    }
+
+    /// <summary>
+    /// The handshake reply can be lost on the wire. The client re-asks, and a silent "already
+    /// seen that token" would leave it on "Verifying account..." forever.
+    /// </summary>
+    [TestMethod]
+    public void RepeatedToken_OnAnAuthenticatedConnection_IsAnsweredAgain()
+    {
+        var transport = new StubTransport();
+        var archive = new StubArchive(() => Task.FromResult(Account()));
+        var lobby = new GameOrchestrator(transport, Archive(archive));
+        transport.Connect(1);
+        transport.Receive(1, new C2S_Authenticate { Token = "saved-token" });
+        Assert.IsTrue(Reply(transport).Accepted);
+
+        transport.Receive(1, new C2S_Authenticate { Token = "saved-token" });
+
+        var replies = transport.Sent.Select(p => p.Packet).OfType<S2C_Authenticated>().ToArray();
+        Assert.HasCount(2, replies);
+        Assert.IsTrue(replies[1].Accepted);
+        Assert.AreEqual(42, replies[1].AccountId);
+        Assert.AreEqual("account-name", replies[1].Username);
+        Assert.AreEqual(1, archive.Requests, "the retry must not ask the archive again");
+        lobby.Stop();
+    }
+
+    /// <summary>
+    /// The verification is fire-and-forget. An exception escaping it used to leave the client
+    /// with no answer at all, which is indistinguishable from a lobby that never received it.
+    /// </summary>
+    [TestMethod]
+    public void UnexpectedVerificationFailure_IsAnsweredWithARefusal()
+    {
+        var transport = new StubTransport();
+        var archive = new StubArchive(() => throw new InvalidOperationException("boom"));
+        var lobby = new GameOrchestrator(transport, Archive(archive));
+        transport.Connect(1);
+        transport.Receive(1, new C2S_Authenticate { Token = "saved-token" });
+
+        var reply = Reply(transport);
+        Assert.IsFalse(reply.Accepted);
+        Assert.IsFalse(reply.SessionRejected);
+        Assert.IsNotEmpty(reply.Error);
+        CollectionAssert.Contains(transport.Disconnected.ToArray(), 1u);
+        lobby.Stop();
+    }
+
+    /// <summary>
+    /// A proxy or captive portal answers with HTML and a success status. That is an outage, so it
+    /// must not read as a rejected session (which would sign the player out).
+    /// </summary>
+    [TestMethod]
+    public void UnreadableArchiveAnswer_IsAnOutageNotARejection()
+    {
+        var transport = new StubTransport();
+        var archive = new StubArchive(() => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("<html>blocked</html>", System.Text.Encoding.UTF8, "text/html")
+        }));
+        var lobby = new GameOrchestrator(transport, Archive(archive));
+        transport.Connect(1);
+        transport.Receive(1, new C2S_Authenticate { Token = "saved-token" });
+
+        var reply = Reply(transport);
+        Assert.IsFalse(reply.Accepted);
+        Assert.IsFalse(reply.SessionRejected);
+        Assert.IsNotEmpty(reply.Error);
+        lobby.Stop();
+    }
+
+    /// <summary>A reply for a connection the registry never admitted still has to be sent.</summary>
+    [TestMethod]
+    public void AuthenticateFromAnUnregisteredConnection_IsRefused()
+    {
+        var transport = new StubTransport();
+        var lobby = new GameOrchestrator(transport, Archive(new StubArchive(() => Task.FromResult(Account()))));
+        // No Connect: the connection-limit path drops a client without registering it.
+        transport.Receive(7, new C2S_Authenticate { Token = "saved-token" });
+
+        var reply = Reply(transport, 7);
+        Assert.IsFalse(reply.Accepted);
+        Assert.IsNotEmpty(reply.Error);
+        CollectionAssert.Contains(transport.Disconnected.ToArray(), 7u);
         lobby.Stop();
     }
 }

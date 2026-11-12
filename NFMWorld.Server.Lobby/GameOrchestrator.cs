@@ -335,13 +335,40 @@ public class GameOrchestrator
 
     // ── Packet handlers ──────────────────────────────────────────────
 
+    /// <summary>
+    /// Verifies a client's account token. Every request has to be answered: the call is
+    /// fire-and-forget and the client has one handshake, so returning (or throwing) without a
+    /// reply leaves it on "Verifying account..." for good.
+    /// </summary>
     private async Task HandleAuthenticateAsync(uint clientIndex, C2S_Authenticate authenticate)
+    {
+        try
+        {
+            await VerifyAndAnswerAsync(clientIndex, authenticate);
+        }
+        catch (Exception ex)
+        {
+            // Unobserved before: the client waited on a reply that would never come.
+            Logging.Error($"[Lobby] Account verification for client {clientIndex} failed", exception: ex);
+            lock (_authenticationLock)
+                RefuseAuthentication(clientIndex, "Could not verify your account. Try again later.");
+        }
+    }
+
+    private async Task VerifyAndAnswerAsync(uint clientIndex, C2S_Authenticate authenticate)
     {
         PlayerRegistry.ClientInfo client;
         lock (_authenticationLock)
         {
             var connected = _players.Get(clientIndex);
-            if (connected is null) return;
+            if (connected is null)
+            {
+                // Over the connection limit the registry never got an entry, so nothing else
+                // here would ever answer this client.
+                RefuseAuthentication(clientIndex, "The lobby is full. Try again later.");
+                return;
+            }
+
             client = connected;
 
             if (string.IsNullOrWhiteSpace(authenticate.Token))
@@ -351,7 +378,13 @@ public class GameOrchestrator
             }
 
             if (client.PresentedToken == authenticate.Token)
+            {
+                // Verification is already in flight, or it finished and the client never saw the
+                // answer. Repeating the accepted decision is what recovers the second case.
+                if (client.IsAuthenticated)
+                    SendAuthenticated(clientIndex, true, client.Name, null, client.AccountId);
                 return;
+            }
 
             if (client.PresentedToken is not null)
             {

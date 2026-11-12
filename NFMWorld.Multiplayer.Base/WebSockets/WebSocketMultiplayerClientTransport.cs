@@ -110,10 +110,60 @@ public class WebSocketMultiplayerClientTransport : BaseMultiplayerClientTranspor
 
     private bool IsStopping { get; set; }
 
+    // One send at a time: a second SendAsync while one is outstanding throws, and the packet is
+    // dropped. The handshake packets go out back to back, so this is a real path.
+    private readonly Lock _sendLock = new();
+    private Task _pendingSend = Task.CompletedTask;
+    private int _queuedSends;
+
+    /// <summary>Backlog cap, so a stalled connection cannot grow this queue without bound.</summary>
+    private const int MaxQueuedSends = 256;
+
     protected override void SendRawPacketToServer(ReadOnlySpan<byte> span, bool reliable)
     {
-        if (_client is { State: WebSocketState.Open } client)
-            _ = client.SendAsync(span.ToArray(), WebSocketMessageType.Binary, true, CancellationToken.None);
+        var client = _client;
+        if (client is not { State: WebSocketState.Open })
+        {
+            Logging.Warning("Dropped a packet for the lobby: the connection is not open");
+            return;
+        }
+
+        if (Volatile.Read(ref _queuedSends) >= MaxQueuedSends)
+        {
+            Logging.Warning("Dropped a packet for the lobby: the send queue is backed up");
+            return;
+        }
+
+        var data = span.ToArray();
+        Interlocked.Increment(ref _queuedSends);
+        lock (_sendLock)
+        {
+            _pendingSend = _pendingSend
+                .ContinueWith(
+                    _ =>
+                    {
+                        Interlocked.Decrement(ref _queuedSends);
+                        return SendCoreAsync(client, data);
+                    },
+                    CancellationToken.None,
+                    TaskContinuationOptions.None,
+                    TaskScheduler.Default
+                )
+                .Unwrap();
+        }
+    }
+
+    private async Task SendCoreAsync(ClientWebSocket client, byte[] data)
+    {
+        try
+        {
+            if (client.State == WebSocketState.Open)
+                await client.SendAsync(data, WebSocketMessageType.Binary, true, CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is WebSocketException or ObjectDisposedException or OperationCanceledException)
+        {
+            Logging.Warning($"Failed to send a packet to the lobby: {ex.Message}");
+        }
     }
 
     public override void Stop()

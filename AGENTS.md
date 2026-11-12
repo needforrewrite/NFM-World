@@ -530,6 +530,11 @@ palette). One lobby; whether a race is rated is chosen per race, not by a menu p
   `S2C_Authenticated.SessionRejected` clears the saved token only when the archive definitively rejects it, not for
   outages or duplicate-account refusals. Unauthenticated connections cannot act or receive lobby snapshots/chat.
   **One account, one connection**: duplicate account authentication is refused; account changes require reconnecting.
+- **The handshake waits for an answer, and every request is answered.** `LobbyPhase.UpdateHandshake` re-sends
+  `C2S_Authenticate` every 5 s (three attempts) instead of firing it once, and only then says the lobby did not
+  answer; REFRESH retries it. On the server, `HandleAuthenticateAsync` wraps the verification so an unexpected
+  failure is still refused rather than ignored, and a repeated token on an already-authenticated connection replays
+  the acceptance instead of returning silently — that silence was indistinguishable from a reply lost on the wire.
 - **Where players reach a game master** is `GM_PUBLIC_ADDRESS`, a
   `privateHost=publicHost[:udpPort][,...]` map applied by `GameMasterRegistry`. The lobby almost never
   reaches a GM at the address players do (compose network, tunnel, private LAN), and the wire carries a
@@ -555,6 +560,8 @@ palette). One lobby; whether a race is rated is chosen per race, not by a menu p
 | Names in the HUD | the sidebar, car markers, the arrow target and the announcer show `ClientSidePlayerInfo.PlayerName`, not `car.Stats.Name` — in a race every car can be the same model |
 | Stage list | enumerate once per dialog mount (`CreateDialog`), not per frame. The create dialog lists only `MultiplayerContentPolicy.IsAcceptedStage` entries (a local `user/` stage cannot be raced) and accepts a canonical archive id typed into search |
 | Child collections | `Sx` flattens a nested `IEnumerable` child, but an unsupported child throws inside an effect — and the signal machinery swallows it, so the subtree silently fails to mount. Keep the flattened case covered (`SxRendererTests`) |
+| WebSocket sends are serialized | a `WebSocket` allows one outstanding `SendAsync`; a second throws `InvalidOperationException` and that packet is lost. `WsClient` (server) and the client transport chain sends per connection, and the server's close is chained behind them so a refusal sent just before a disconnect still arrives |
+| Archive outage vs rejection | `ArchiveClient.ValidateTokenAsync` returns `Unavailable` for anything it cannot read — HTML from a proxy, a bad charset, a timeout. Only `401` is `Rejected`, because only that may clear the player's saved token |
 
 ## Virtual File System (Maxine.VFS)
 

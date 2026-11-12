@@ -82,8 +82,11 @@ public sealed class ArchiveClient
                 ? (TokenVerification.Valid, account)
                 : (TokenVerification.Unavailable, null);
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        catch (Exception ex)
         {
+            // An unusable answer is an outage, not a rejection: a proxy or captive portal hands
+            // back HTML with a 200, and a bad charset surfaces as an invalid operation. Anything
+            // that is not a definitive refusal must leave the player's session alone.
             Logging.Warning($"[Archive] Token verification failed: {ex.Message}");
             return (TokenVerification.Unavailable, null);
         }

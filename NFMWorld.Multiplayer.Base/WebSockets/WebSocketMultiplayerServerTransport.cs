@@ -112,6 +112,8 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
 
     public override void DisconnectClient(uint clientIndex)
     {
+        // Queued behind the packets already written to this client, so a refusal sent just before
+        // the close is actually delivered.
         if (_clients.TryGetValue(clientIndex, out var client))
             _ = client.CloseAsync();
     }
@@ -122,7 +124,7 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
         foreach (var id in clientIndices)
         {
             if (_clients.TryGetValue(id, out var client))
-                _ = client.SendAsync(data);
+                client.Send(data);
         }
     }
 
@@ -131,11 +133,57 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
         public readonly uint Id = id;
         public readonly WebSocket Socket = socket;
 
-        public async Task SendAsync(byte[] data)
+        // One send at a time: a second SendAsync while one is outstanding throws, and the packet
+        // is lost. A close also has to wait for the packets before it, or a refusal written just
+        // ahead of it never reaches the client.
+        private readonly Lock _sendLock = new();
+        private Task _pending = Task.CompletedTask;
+        private int _queued;
+
+        /// <summary>
+        /// Backlog cap. A client that stops reading would otherwise grow this queue without
+        /// bound, since nothing else throttles the lobby's writes.
+        /// </summary>
+        private const int MaxQueuedSends = 1024;
+
+        public void Send(byte[] data)
+        {
+            if (Volatile.Read(ref _queued) >= MaxQueuedSends)
+            {
+                Logging.Warning($"WS client {Id} is not reading; dropping a packet");
+                return;
+            }
+
+            Chain(SendCoreAsync, data);
+        }
+
+        public Task CloseAsync() => Chain(CloseCoreAsync, null);
+
+        private Task Chain(Func<byte[]?, Task> operation, byte[]? data)
+        {
+            Interlocked.Increment(ref _queued);
+            lock (_sendLock)
+            {
+                return _pending = _pending
+                    .ContinueWith(
+                        _ =>
+                        {
+                            Interlocked.Decrement(ref _queued);
+                            return operation(data);
+                        },
+                        CancellationToken.None,
+                        TaskContinuationOptions.None,
+                        TaskScheduler.Default
+                    )
+                    .Unwrap();
+            }
+        }
+
+        private async Task SendCoreAsync(byte[]? data)
         {
             try
             {
-                if (Socket.State == WebSocketState.Open)
+                if (data is not null && Socket.State == WebSocketState.Open)
                     await Socket.SendAsync(data, WebSocketMessageType.Binary, true, CancellationToken.None);
             }
             catch (Exception ex)
@@ -144,7 +192,7 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
             }
         }
 
-        public async Task CloseAsync()
+        private async Task CloseCoreAsync(byte[]? _)
         {
             try
             {
