@@ -1,17 +1,10 @@
 #!/bin/sh
-# Reformats staged C# files with csharp-format, then re-stages them.
-# csharp-format reads the repo's .editorconfig itself.
+# Reformats staged C# files with csharp-format.
+# csharp-format reads the repo's .editorconfig itself. Husky re-stages the
+# result, including the temp copy it passes for partially staged files, so this
+# script must not touch the index.
 set -e
 
-files=""
-for file in "$@"; do
-    [ -f "$file" ] && files="$files $file"
-done
+[ "$#" -gt 0 ] || exit 0
 
-[ -n "$files" ] || exit 0
-
-# shellcheck disable=SC2086 # the paths come from git and contain no spaces
-dotnet csharp-format format $files
-
-# shellcheck disable=SC2086
-git add -- $files
+exec dotnet csharp-format format "$@"

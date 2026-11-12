@@ -36,7 +36,6 @@ using System.Text;
 
 namespace Poly2Tri
 {
-
     /// <summary>
     /// This is basically a light-weight version of the Polygon class, but with limited functionality and
     /// used for different purposes.   Nonetheless, for all intents and purposes, this should actually be
@@ -53,28 +52,79 @@ namespace Poly2Tri
             get { return mPoints[index] as TriangulationPoint; }
             set { mPoints[index] = value; }
         }
-        public string Name { get { return mName; } set { mName = value; } }
+
+        public string Name
+        {
+            get { return mName; }
+            set { mName = value; }
+        }
 
 
         public IList<DelaunayTriangle> Triangles
         {
-            get
-            {
-                throw new NotImplementedException("PolyHole.Triangles should never get called");
-            }
+            get { throw new NotImplementedException("PolyHole.Triangles should never get called"); }
             private set { }
         }
-        public TriangulationMode TriangulationMode { get { return mParent.TriangulationMode; } }
-        public string FileName { get { return mParent.FileName; } set { } }
-        public bool DisplayFlipX { get { return mParent.DisplayFlipX; } set { } }
-        public bool DisplayFlipY { get { return mParent.DisplayFlipY; } set { } }
-        public float DisplayRotate { get { return mParent.DisplayRotate; } set { } }
-        public double Precision { get { return mParent.Precision; } set { } }
-        public double MinX { get { return mBoundingBox.MinX; } }
-        public double MaxX { get { return mBoundingBox.MaxX; } }
-        public double MinY { get { return mBoundingBox.MinY; } }
-        public double MaxY { get { return mBoundingBox.MaxY; } }
-        public Rect2D Bounds { get { return mBoundingBox; } }
+
+        public TriangulationMode TriangulationMode
+        {
+            get { return mParent.TriangulationMode; }
+        }
+
+        public string FileName
+        {
+            get { return mParent.FileName; }
+            set { }
+        }
+
+        public bool DisplayFlipX
+        {
+            get { return mParent.DisplayFlipX; }
+            set { }
+        }
+
+        public bool DisplayFlipY
+        {
+            get { return mParent.DisplayFlipY; }
+            set { }
+        }
+
+        public float DisplayRotate
+        {
+            get { return mParent.DisplayRotate; }
+            set { }
+        }
+
+        public double Precision
+        {
+            get { return mParent.Precision; }
+            set { }
+        }
+
+        public double MinX
+        {
+            get { return mBoundingBox.MinX; }
+        }
+
+        public double MaxX
+        {
+            get { return mBoundingBox.MaxX; }
+        }
+
+        public double MinY
+        {
+            get { return mBoundingBox.MinY; }
+        }
+
+        public double MaxY
+        {
+            get { return mBoundingBox.MaxY; }
+        }
+
+        public Rect2D Bounds
+        {
+            get { return mBoundingBox; }
+        }
 
 
         public Contour(ITriangulatable parent)
@@ -126,6 +176,7 @@ namespace Poly2Tri
             {
                 pt = new TriangulationPoint(p.X, p.Y);
             }
+
             if (idx < 0)
             {
                 mPoints.Add(pt);
@@ -134,6 +185,7 @@ namespace Poly2Tri
             {
                 mPoints.Insert(idx, pt);
             }
+
             mBoundingBox.AddPoint(pt);
             if (bCalcWindingOrderAndEpsilon)
             {
@@ -141,6 +193,7 @@ namespace Poly2Tri
                 {
                     mWindingOrder = CalculateWindingOrder();
                 }
+
                 mEpsilon = CalculateEpsilon();
             }
         }
@@ -157,7 +210,9 @@ namespace Poly2Tri
             {
                 mWindingOrder = windingOrder;
             }
-            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown) && (windingOrder != WindingOrderType.Unknown) && (WindingOrder != windingOrder);
+
+            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown) && (windingOrder != WindingOrderType.Unknown)
+                                     && (WindingOrder != windingOrder);
             bool bAddedFirst = true;
             int startCount = mPoints.Count;
             iter.Reset();
@@ -172,6 +227,7 @@ namespace Poly2Tri
                 {
                     pt = new TriangulationPoint(iter.Current.X, iter.Current.Y);
                 }
+
                 if (!bAddedFirst)
                 {
                     bAddedFirst = true;
@@ -185,12 +241,15 @@ namespace Poly2Tri
                 {
                     mPoints.Add(pt);
                 }
+
                 mBoundingBox.AddPoint(iter.Current);
             }
+
             if (mWindingOrder == WindingOrderType.Unknown && windingOrder == WindingOrderType.Unknown)
             {
                 mWindingOrder = CalculateWindingOrder();
             }
+
             mEpsilon = CalculateEpsilon();
         }
 
@@ -208,7 +267,8 @@ namespace Poly2Tri
             }
 
             int numPoints = points.Count;
-            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown) && (windingOrder != WindingOrderType.Unknown) && (WindingOrder != windingOrder);
+            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown) && (windingOrder != WindingOrderType.Unknown)
+                                     && (WindingOrder != windingOrder);
             for (int i = 0; i < numPoints; ++i)
             {
                 int idx = i;
@@ -216,12 +276,15 @@ namespace Poly2Tri
                 {
                     idx = points.Count - i - 1;
                 }
+
                 Add(points[idx], -1, false);
             }
+
             if (mWindingOrder == WindingOrderType.Unknown)
             {
                 mWindingOrder = CalculateWindingOrder();
             }
+
             mEpsilon = CalculateEpsilon();
         }
 
@@ -357,6 +420,7 @@ namespace Poly2Tri
                         ++hole2Idx;
                     }
                 }
+
                 ++holeIdx;
             }
 
@@ -368,13 +432,25 @@ namespace Poly2Tri
                 int hole2Idx = holeIdx + 1;
                 while (hole2Idx < numHoles)
                 {
-                    if (PolygonUtil.PolygonContainsPolygon(holes[holeIdx], holes[holeIdx].Bounds, holes[hole2Idx], holes[hole2Idx].Bounds, false))
+                    if (PolygonUtil.PolygonContainsPolygon(
+                        holes[holeIdx],
+                        holes[holeIdx].Bounds,
+                        holes[hole2Idx],
+                        holes[hole2Idx].Bounds,
+                        false
+                    ))
                     {
                         holes[holeIdx].AddHole(holes[hole2Idx]);
                         holes.RemoveAt(hole2Idx);
                         --numHoles;
                     }
-                    else if (PolygonUtil.PolygonContainsPolygon(holes[hole2Idx], holes[hole2Idx].Bounds, holes[holeIdx], holes[holeIdx].Bounds, false))
+                    else if (PolygonUtil.PolygonContainsPolygon(
+                        holes[hole2Idx],
+                        holes[hole2Idx].Bounds,
+                        holes[holeIdx],
+                        holes[holeIdx].Bounds,
+                        false
+                    ))
                     {
                         holes[hole2Idx].AddHole(holes[holeIdx]);
                         holes.RemoveAt(holeIdx);
@@ -384,14 +460,23 @@ namespace Poly2Tri
                     }
                     else
                     {
-                        bool bIntersect = PolygonUtil.PolygonsIntersect2D(holes[holeIdx], holes[holeIdx].Bounds, holes[hole2Idx], holes[hole2Idx].Bounds);
+                        bool bIntersect = PolygonUtil.PolygonsIntersect2D(
+                            holes[holeIdx],
+                            holes[holeIdx].Bounds,
+                            holes[hole2Idx],
+                            holes[hole2Idx].Bounds
+                        );
                         if (bIntersect)
                         {
                             // this is actually an error condition
                             // fix by merging hole1 and hole2 into hole1 (including the holes inside hole2!) and delete hole2
                             // Then, because hole1 is now changed, restart it's check.
                             PolygonOperationContext ctx = new PolygonOperationContext();
-                            if (!ctx.Init(PolygonUtil.PolyOperation.Union | PolygonUtil.PolyOperation.Intersect, holes[holeIdx], holes[hole2Idx]))
+                            if (!ctx.Init(
+                                PolygonUtil.PolyOperation.Union | PolygonUtil.PolyOperation.Intersect,
+                                holes[holeIdx],
+                                holes[hole2Idx]
+                            ))
                             {
                                 if (ctx.mError == PolygonUtil.PolyUnionError.Poly1InsidePoly2)
                                 {
@@ -406,6 +491,7 @@ namespace Poly2Tri
                                     throw new Exception("PolygonOperationContext.Init had an error during initialization");
                                 }
                             }
+
                             PolygonUtil.PolyUnionError pue = PolygonUtil.PolygonOperation(ctx);
                             if (pue == PolygonUtil.PolyUnionError.None)
                             {
@@ -420,10 +506,11 @@ namespace Poly2Tri
 
                                 // add children from both of the merged contours
                                 int numChildHoles = holes[holeIdx].GetNumHoles();
-                                for(int i = 0; i < numChildHoles; ++i)
+                                for (int i = 0; i < numChildHoles; ++i)
                                 {
                                     c.AddHole(holes[holeIdx].GetHole(i));
                                 }
+
                                 numChildHoles = holes[hole2Idx].GetNumHoles();
                                 for (int i = 0; i < numChildHoles; ++i)
                                 {
@@ -458,6 +545,7 @@ namespace Poly2Tri
                         }
                     }
                 }
+
                 if (bIncrementHoleIdx)
                 {
                     ++holeIdx;
@@ -489,6 +577,7 @@ namespace Poly2Tri
                     {
                         holes[holeIdx][j] = tc.P;
                     }
+
                     if (holes[holeIdx][i].VertexCode == tc.Q.VertexCode)
                     {
                         holes[holeIdx][i] = tc.Q;
@@ -498,6 +587,7 @@ namespace Poly2Tri
                         holes[holeIdx][j] = tc.Q;
                     }
                 }
+
                 ++holeIdx;
             }
         }
@@ -572,6 +662,5 @@ namespace Poly2Tri
 
             return false;
         }
-
     }
 }

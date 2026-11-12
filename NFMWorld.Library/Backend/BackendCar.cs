@@ -244,7 +244,8 @@ public delegate void DamageFunc(CarStats stat, int wheelnum, fix64 amount);
 
 public delegate void RoofDamageFunc(CarStats stat, int wheelnum, fix64 amount, bool mtouch, int nbsq, int squash);
 
-public delegate void SparkFunc(
+public delegate void
+    SparkFunc(
     float wheelx,
     float wheely,
     float wheelz,

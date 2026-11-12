@@ -58,8 +58,13 @@ namespace Poly2Tri
             AddNode(tail);
         }
 
-        public void AddNode(AdvancingFrontNode node) { }
-        public void RemoveNode(AdvancingFrontNode node) { }
+        public void AddNode(AdvancingFrontNode node)
+        {
+        }
+
+        public void RemoveNode(AdvancingFrontNode node)
+        {
+        }
 
         public override string ToString()
         {
@@ -70,6 +75,7 @@ namespace Poly2Tri
                 sb.Append(node.Point.X).Append("->");
                 node = node.Next;
             }
+
             sb.Append(Tail.Point.X);
             return sb.ToString();
         }
@@ -169,6 +175,7 @@ namespace Poly2Tri
                     }
                 }
             }
+
             Search = node;
 
             return node;

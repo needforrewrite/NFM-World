@@ -36,7 +36,6 @@ using System.Collections.Generic;
 
 namespace Poly2Tri
 {
-
     public class TriangulationPoint : Point2D
     {
         public static readonly double kVertexCodeDefaultPrecision = 3.0;
@@ -61,6 +60,7 @@ namespace Poly2Tri
                 }
             }
         }
+
         public override double Y
         {
             get { return mY; }
@@ -83,11 +83,19 @@ namespace Poly2Tri
         }
 
         protected uint mVertexCode = 0;
-        public uint VertexCode { get { return mVertexCode; } }
+
+        public uint VertexCode
+        {
+            get { return mVertexCode; }
+        }
 
         // List of edges this point constitutes an upper ending point (CDT)
         public List<DTSweepConstraint> Edges { get; private set; }
-        public bool HasEdges { get { return Edges != null; } }
+
+        public bool HasEdges
+        {
+            get { return Edges != null; }
+        }
 
 
         public TriangulationPoint(double x, double y)
@@ -97,7 +105,7 @@ namespace Poly2Tri
 
 
         public TriangulationPoint(double x, double y, double precision)
-            : base(x,y)
+            : base(x, y)
         {
             mVertexCode = TriangulationPoint.CreateVertexCode(x, y, precision);
         }
@@ -139,7 +147,7 @@ namespace Poly2Tri
             }
         }
 
-        
+
         public static uint CreateVertexCode(double x, double y, double precision)
         {
             float fx = (float)MathUtil.RoundWithPrecision(x, precision);
@@ -157,10 +165,11 @@ namespace Poly2Tri
             {
                 Edges = new List<DTSweepConstraint>();
             }
+
             Edges.Add(e);
         }
 
-        
+
         public bool HasEdge(TriangulationPoint p)
         {
             DTSweepConstraint tmp = null;
@@ -199,7 +208,7 @@ namespace Poly2Tri
     public class TriangulationPointEnumerator : IEnumerator<TriangulationPoint>
     {
         protected IList<Point2D> mPoints;
-        protected int position = -1;  // Enumerators are positioned before the first element until the first MoveNext() call.
+        protected int position = -1; // Enumerators are positioned before the first element until the first MoveNext() call.
 
 
         public TriangulationPointEnumerator(IList<Point2D> points)
@@ -218,9 +227,14 @@ namespace Poly2Tri
             position = -1;
         }
 
-        void IDisposable.Dispose() { }
+        void IDisposable.Dispose()
+        {
+        }
 
-        Object IEnumerator.Current { get { return Current; } }
+        Object IEnumerator.Current
+        {
+            get { return Current; }
+        }
 
         public TriangulationPoint Current
         {
@@ -230,6 +244,7 @@ namespace Poly2Tri
                 {
                     return null;
                 }
+
                 return mPoints[position] as TriangulationPoint;
             }
         }
@@ -238,7 +253,5 @@ namespace Poly2Tri
 
     public class TriangulationPointList : Point2DList
     {
-
     }
-
 }

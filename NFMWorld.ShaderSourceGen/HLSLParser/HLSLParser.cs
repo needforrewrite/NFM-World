@@ -235,8 +235,7 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
     ];
 
     private static readonly int[,] _numberTypeRank = new int[(int)NumericType.Count, (int)NumericType.Count]
-    {
-        { 0, 4, 4, 4, 4 }, // Float
+    { { 0, 4, 4, 4, 4 }, // Float
         { 1, 0, 4, 4, 4 }, // Half
         { 5, 5, 0, 5, 5 }, // Bool
         { 5, 5, 4, 0, 3 }, // Int

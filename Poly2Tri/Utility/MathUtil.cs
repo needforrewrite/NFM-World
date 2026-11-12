@@ -35,6 +35,7 @@ namespace Poly2Tri
                 min = max;
                 max = tmp;
             }
+
             if ((val + tolerance) >= min && (val - tolerance) <= max)
             {
                 return true;

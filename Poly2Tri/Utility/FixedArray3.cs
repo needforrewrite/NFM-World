@@ -38,6 +38,7 @@ namespace Poly2Tri
     public struct FixedArray3<T> : IEnumerable<T> where T : class
     {
         public T _0, _1, _2;
+
         public T this[int index]
         {
             get
@@ -101,13 +102,13 @@ namespace Poly2Tri
             return -1;
         }
 
-        
+
         public void Clear()
         {
             _0 = _1 = _2 = null;
         }
 
-        
+
         public void Clear(T value)
         {
             for (int i = 0; i < 3; ++i)
@@ -128,10 +129,16 @@ namespace Poly2Tri
             }
         }
 
-        
-        public IEnumerator<T> GetEnumerator() { return Enumerate().GetEnumerator(); }
 
-        
-        IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
+        public IEnumerator<T> GetEnumerator()
+        {
+            return Enumerate().GetEnumerator();
+        }
+
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 }

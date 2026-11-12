@@ -2074,43 +2074,36 @@ public class Tests
                     new Vector3(476.00003f, -425f, 51.000004f),
                 ],
                 [
-
                     new Vector3(374f, -459f, 68f),
                     new Vector3(476.00003f, -425f, 51.000004f),
                     new Vector3(374f, -425f, 68f),
                 ],
                 [
-
                     new Vector3(374f, -459f, 68f),
                     new Vector3(374f, -425f, 68f),
                     new Vector3(0f, -425f, 119.00001f),
                 ],
                 [
-
                     new Vector3(374f, -459f, 68f),
                     new Vector3(0f, -425f, 119.00001f),
                     new Vector3(-374f, -425f, 68f),
                 ],
                 [
-
                     new Vector3(374f, -459f, 68f),
                     new Vector3(-374f, -425f, 68f),
                     new Vector3(-476.00003f, -425f, 51.000004f),
                 ],
                 [
-
                     new Vector3(-476.00003f, -425f, 51.000004f),
                     new Vector3(-476.00003f, -459f, 51.000004f),
                     new Vector3(-374f, -459f, 68f),
                 ],
                 [
-
                     new Vector3(-476.00003f, -425f, 51.000004f),
                     new Vector3(-374f, -459f, 68f),
                     new Vector3(0f, -459f, 119.00001f),
                 ],
                 [
-
                     new Vector3(-476.00003f, -425f, 51.000004f),
                     new Vector3(0f, -459f, 119.00001f),
                     new Vector3(374f, -459f, 68f),
@@ -2126,25 +2119,24 @@ public class Tests
 
         yield return (object[])
         [
-            (Vector3[]) [
-                new Vector3(-30,-18,85),
-                new Vector3(-44,-15,79),
-                new Vector3(-44,-7,87),
+            (Vector3[])[
+                new Vector3(-30, -18, 85),
+                new Vector3(-44, -15, 79),
+                new Vector3(-44, -7, 87),
 
-                new Vector3(-17,-7,104),
-                new Vector3(-15,-8,103),
+                new Vector3(-17, -7, 104),
+                new Vector3(-15, -8, 103),
 
-                new Vector3(-21,-9,100),
-                new Vector3(-39,-10,87),
-                new Vector3(-39,-14,83),
-                new Vector3(-33,-15,85),
-                new Vector3(-20,-10,99),
-                new Vector3(-21,-9,100),
+                new Vector3(-21, -9, 100),
+                new Vector3(-39, -10, 87),
+                new Vector3(-39, -14, 83),
+                new Vector3(-33, -15, 85),
+                new Vector3(-20, -10, 99),
+                new Vector3(-21, -9, 100),
 
-                new Vector3(-15,-8,103),
+                new Vector3(-15, -8, 103),
             ],
-            (Vector3[][]) [
-
+            (Vector3[][])[
                 [
                     new Vector3(-17, -7, 104),
                     new Vector3(-21, -9, 100),
@@ -2215,28 +2207,28 @@ public class Tests
 
         yield return (object[])
         [
-            (Vector3[]) [
-                new Vector3(-40,-54,-103),
-                new Vector3(-40,-27,-103),
-                new Vector3(40,-27,-103),
-                new Vector3(40,-54,-103),
-                new Vector3(38,-43,-103),
-                new Vector3(33,-42,-104),
-                new Vector3(33,-34,-104),
-                new Vector3(38,-33,-103),
-                new Vector3(38,-43,-103),
-                new Vector3(40,-54,-103),
-                new Vector3(19,-43,-103),
-                new Vector3(0,-45,-103),
-                new Vector3(-19,-43,-103),
-                new Vector3(-40,-54,-103),
-                new Vector3(-38,-43,-103),
-                new Vector3(-33,-42,-104),
-                new Vector3(-33,-34,-104),
-                new Vector3(-38,-33,-103),
-                new Vector3(-38,-43,-103),
+            (Vector3[])[
+                new Vector3(-40, -54, -103),
+                new Vector3(-40, -27, -103),
+                new Vector3(40, -27, -103),
+                new Vector3(40, -54, -103),
+                new Vector3(38, -43, -103),
+                new Vector3(33, -42, -104),
+                new Vector3(33, -34, -104),
+                new Vector3(38, -33, -103),
+                new Vector3(38, -43, -103),
+                new Vector3(40, -54, -103),
+                new Vector3(19, -43, -103),
+                new Vector3(0, -45, -103),
+                new Vector3(-19, -43, -103),
+                new Vector3(-40, -54, -103),
+                new Vector3(-38, -43, -103),
+                new Vector3(-33, -42, -104),
+                new Vector3(-33, -34, -104),
+                new Vector3(-38, -33, -103),
+                new Vector3(-38, -43, -103),
             ],
-            (Vector3[][]) [
+            (Vector3[][])[
                 [
                     new Vector3(-40, -54, -103),
                     new Vector3(-38, -43, -103),
@@ -2351,7 +2343,6 @@ public class Tests
         [
             (Vector3[])
             [
-
                 new Vector3(42.5f, 23.800001f, 207.40001f),
                 new Vector3(42.5f, -8.5f, 207.40001f),
                 new Vector3(27.2f, -20.400002f, 207.40001f),
@@ -2481,8 +2472,6 @@ public class Tests
                     new Vector3(35.7f, 11.900001f, 207.40001f),
                     new Vector3(35.7f, 23.800001f, 207.40001f),
                 ],
-
-
             ],
             new Vector3(4.382401E-14f, 8.668599E-14f, 1f),
             2
@@ -2493,8 +2482,12 @@ public class Tests
 
     [Test]
     [TestCaseSource(nameof(TriangulatorTestCases))]
-    public void TestTriangulation(Vector3[] expectedInput, Vector3[][] expectedOutput, Vector3 expectedNormal,
-        int expectedRegionCount)
+    public void TestTriangulation(
+        Vector3[] expectedInput,
+        Vector3[][] expectedOutput,
+        Vector3 expectedNormal,
+        int expectedRegionCount
+    )
     {
         var result = PolygonTriangulator.Triangulate(expectedInput);
 
@@ -2517,7 +2510,7 @@ public class Tests
                     expectedInput[result.Triangles[i + 2]]
                 ]);
             }
-            
+
             for (int i = 0; i < result.Triangles.Length; i += 3)
             {
                 Console.WriteLine("[");
@@ -2527,7 +2520,7 @@ public class Tests
                 Console.WriteLine("],");
                 Console.WriteLine();
             }
-            
+
             for (int i = 0; i < result.Triangles.Length; i += 3)
             {
                 Console.WriteLine("<p>");
@@ -2535,11 +2528,14 @@ public class Tests
                 Console.WriteLine("gr(40)");
                 Console.WriteLine("fs(1)");
                 Console.WriteLine($"p({expectedInput[result.Triangles[i]]})".Replace("<", "").Replace(">", "")
-                    .Replace(", ", ","));
+                    .Replace(", ", ",")
+                );
                 Console.WriteLine($"p({expectedInput[result.Triangles[i + 1]]})".Replace("<", "").Replace(">", "")
-                    .Replace(", ", ","));
+                    .Replace(", ", ",")
+                );
                 Console.WriteLine($"p({expectedInput[result.Triangles[i + 2]]})".Replace("<", "").Replace(">", "")
-                    .Replace(", ", ","));
+                    .Replace(", ", ",")
+                );
                 Console.WriteLine("</p>");
                 Console.WriteLine();
             }
@@ -2548,16 +2544,22 @@ public class Tests
             foreach (var expectedTriangle in expectedOutput)
             {
                 var found = actualTriangles.Any(actualTriangle => TrianglesEqual(expectedTriangle, actualTriangle));
-                Assert.That(found, Is.True,
-                    $"Expected triangle [{expectedTriangle[0]}, {expectedTriangle[1]}, {expectedTriangle[2]}] not found in output.");
+                Assert.That(
+                    found,
+                    Is.True,
+                    $"Expected triangle [{expectedTriangle[0]}, {expectedTriangle[1]}, {expectedTriangle[2]}] not found in output."
+                );
             }
 
             // Check that each actual triangle exists in expected triangles (no extras)
             foreach (var actualTriangle in actualTriangles)
             {
                 var found = expectedOutput.Any(expectedTriangle => TrianglesEqual(expectedTriangle, actualTriangle));
-                Assert.That(found, Is.True,
-                    $"Unexpected triangle [{actualTriangle[0]}, {actualTriangle[1]}, {actualTriangle[2]}] found in output.");
+                Assert.That(
+                    found,
+                    Is.True,
+                    $"Unexpected triangle [{actualTriangle[0]}, {actualTriangle[1]}, {actualTriangle[2]}] found in output."
+                );
             }
         }
 
@@ -2608,26 +2610,26 @@ public class Tests
     {
         var vertices = new Vector3[]
         {
-            new Vector3(-56,-17,192),
-            new Vector3(-56,-9,192),
-            new Vector3(-56,40,192),
-            new Vector3(-57,40,177),
-            new Vector3(-59,40,161),
-            new Vector3(-60,40,145),
-            new Vector3(-62,40,129),
-            new Vector3(-63,40,118),
-            new Vector3(-63,-73,118),
-            new Vector3(-56,-73,185),
-            new Vector3(-56,-37,192),
-            new Vector3(-56,-37,185),
-            new Vector3(-57,-65,180),
-            new Vector3(-62,-65,128),
-            new Vector3(-62,-32,128),
-            new Vector3(-59,-32,157),
-            new Vector3(-58,-22,163),
-            new Vector3(-56,-22,185),
-            new Vector3(-56,-37,185),
-            new Vector3(-56,-37,192),
+            new Vector3(-56, -17, 192),
+            new Vector3(-56, -9, 192),
+            new Vector3(-56, 40, 192),
+            new Vector3(-57, 40, 177),
+            new Vector3(-59, 40, 161),
+            new Vector3(-60, 40, 145),
+            new Vector3(-62, 40, 129),
+            new Vector3(-63, 40, 118),
+            new Vector3(-63, -73, 118),
+            new Vector3(-56, -73, 185),
+            new Vector3(-56, -37, 192),
+            new Vector3(-56, -37, 185),
+            new Vector3(-57, -65, 180),
+            new Vector3(-62, -65, 128),
+            new Vector3(-62, -32, 128),
+            new Vector3(-59, -32, 157),
+            new Vector3(-58, -22, 163),
+            new Vector3(-56, -22, 185),
+            new Vector3(-56, -37, 185),
+            new Vector3(-56, -37, 192),
         };
 
         var result = PolygonTriangulator.Triangulate(vertices);
@@ -2648,9 +2650,21 @@ public class Tests
             var a = vertices[result.Triangles[i]];
             var b = vertices[result.Triangles[i + 1]];
             var c = vertices[result.Triangles[i + 2]];
-            Assert.That(a, Is.Not.EqualTo(b), $"Degenerate triangle at {i}: vertex {result.Triangles[i]} equals {result.Triangles[i+1]}");
-            Assert.That(b, Is.Not.EqualTo(c), $"Degenerate triangle at {i}: vertex {result.Triangles[i+1]} equals {result.Triangles[i+2]}");
-            Assert.That(c, Is.Not.EqualTo(a), $"Degenerate triangle at {i}: vertex {result.Triangles[i+2]} equals {result.Triangles[i]}");
+            Assert.That(
+                a,
+                Is.Not.EqualTo(b),
+                $"Degenerate triangle at {i}: vertex {result.Triangles[i]} equals {result.Triangles[i+1]}"
+            );
+            Assert.That(
+                b,
+                Is.Not.EqualTo(c),
+                $"Degenerate triangle at {i}: vertex {result.Triangles[i+1]} equals {result.Triangles[i+2]}"
+            );
+            Assert.That(
+                c,
+                Is.Not.EqualTo(a),
+                $"Degenerate triangle at {i}: vertex {result.Triangles[i+2]} equals {result.Triangles[i]}"
+            );
         }
     }
 
@@ -2662,25 +2676,25 @@ public class Tests
     {
         var vertices = new Vector3[]
         {
-            new Vector3(-40,-54,-103),
-            new Vector3(-40,-27,-103),
-            new Vector3(40,-27,-103),
-            new Vector3(40,-54,-103),
-            new Vector3(38,-43,-103),
-            new Vector3(33,-42,-104),
-            new Vector3(33,-34,-104),
-            new Vector3(38,-33,-103),
-            new Vector3(38,-43,-103),
-            new Vector3(40,-54,-103),
-            new Vector3(19,-43,-103),
-            new Vector3(0,-45,-103),
-            new Vector3(-19,-43,-103),
-            new Vector3(-40,-54,-103),
-            new Vector3(-38,-43,-103),
-            new Vector3(-33,-42,-104),
-            new Vector3(-33,-34,-104),
-            new Vector3(-38,-33,-103),
-            new Vector3(-38,-43,-103),
+            new Vector3(-40, -54, -103),
+            new Vector3(-40, -27, -103),
+            new Vector3(40, -27, -103),
+            new Vector3(40, -54, -103),
+            new Vector3(38, -43, -103),
+            new Vector3(33, -42, -104),
+            new Vector3(33, -34, -104),
+            new Vector3(38, -33, -103),
+            new Vector3(38, -43, -103),
+            new Vector3(40, -54, -103),
+            new Vector3(19, -43, -103),
+            new Vector3(0, -45, -103),
+            new Vector3(-19, -43, -103),
+            new Vector3(-40, -54, -103),
+            new Vector3(-38, -43, -103),
+            new Vector3(-33, -42, -104),
+            new Vector3(-33, -34, -104),
+            new Vector3(-38, -33, -103),
+            new Vector3(-38, -43, -103),
         };
 
         var result = PolygonTriangulator.Triangulate(vertices);
@@ -2710,25 +2724,25 @@ public class Tests
     {
         var vertices = new Vector3[]
         {
-            new Vector3(42.5f,23.800001f,207.40001f),
-            new Vector3(42.5f,-8.5f,207.40001f),
-            new Vector3(27.2f,-20.400002f,207.40001f),
-            new Vector3(13.6f,-23.800001f,207.40001f),
-            new Vector3(-13.6f,-23.800001f,207.40001f),
-            new Vector3(-27.2f,-20.400002f,207.40001f),
-            new Vector3(-42.5f,-8.5f,207.40001f),
-            new Vector3(-42.5f,23.800001f,207.40001f),
-            new Vector3(-35.7f,23.800001f,207.40001f),
-            new Vector3(35.7f,23.800001f,207.40001f),
-            new Vector3(35.7f,11.900001f,207.40001f),
-            new Vector3(-35.7f,11.900001f,207.40001f),
-            new Vector3(-35.7f,-5.1000004f,207.40001f),
-            new Vector3(-23.800001f,-15.3f,207.40001f),
-            new Vector3(-13.6f,-17f,207.40001f),
-            new Vector3(13.6f,-17f,207.40001f),
-            new Vector3(23.800001f,-15.3f,207.40001f),
-            new Vector3(35.7f,-5.1000004f,207.40001f),
-            new Vector3(35.7f,23.800001f,207.40001f),
+            new Vector3(42.5f, 23.800001f, 207.40001f),
+            new Vector3(42.5f, -8.5f, 207.40001f),
+            new Vector3(27.2f, -20.400002f, 207.40001f),
+            new Vector3(13.6f, -23.800001f, 207.40001f),
+            new Vector3(-13.6f, -23.800001f, 207.40001f),
+            new Vector3(-27.2f, -20.400002f, 207.40001f),
+            new Vector3(-42.5f, -8.5f, 207.40001f),
+            new Vector3(-42.5f, 23.800001f, 207.40001f),
+            new Vector3(-35.7f, 23.800001f, 207.40001f),
+            new Vector3(35.7f, 23.800001f, 207.40001f),
+            new Vector3(35.7f, 11.900001f, 207.40001f),
+            new Vector3(-35.7f, 11.900001f, 207.40001f),
+            new Vector3(-35.7f, -5.1000004f, 207.40001f),
+            new Vector3(-23.800001f, -15.3f, 207.40001f),
+            new Vector3(-13.6f, -17f, 207.40001f),
+            new Vector3(13.6f, -17f, 207.40001f),
+            new Vector3(23.800001f, -15.3f, 207.40001f),
+            new Vector3(35.7f, -5.1000004f, 207.40001f),
+            new Vector3(35.7f, 23.800001f, 207.40001f),
         };
 
         var result = PolygonTriangulator.Triangulate(vertices);

@@ -46,10 +46,24 @@ namespace Poly2Tri
         protected Point2D mP = null;
         protected Point2D mQ = null;
 
-        public Point2D EdgeStart { get { return mP; } set { mP= value;} }
-        public Point2D EdgeEnd { get { return mQ; } set { mQ = value; } }
+        public Point2D EdgeStart
+        {
+            get { return mP; }
+            set { mP = value; }
+        }
 
-        public Edge() { mP = null; mQ = null; }
+        public Point2D EdgeEnd
+        {
+            get { return mQ; }
+            set { mQ = value; }
+        }
+
+        public Edge()
+        {
+            mP = null;
+            mQ = null;
+        }
+
         public Edge(Point2D edgeStart, Point2D edgeEnd)
         {
             mP = edgeStart;
@@ -57,15 +71,15 @@ namespace Poly2Tri
         }
     }
 
- 
+
     public class TriangulationConstraint : Edge
     {
         private uint mContraintCode = 0;
 
         public TriangulationPoint P
         {
-            get { return mP as TriangulationPoint; } 
-            set 
+            get { return mP as TriangulationPoint; }
+            set
             {
                 // Note:  intentionally use != instead of !Equals() because we
                 // WANT to compare pointer values here rather than VertexCode values
@@ -76,6 +90,7 @@ namespace Poly2Tri
                 }
             }
         }
+
         public TriangulationPoint Q
         {
             get { return mQ as TriangulationPoint; }
@@ -90,7 +105,11 @@ namespace Poly2Tri
                 }
             }
         }
-        public uint ConstraintCode { get { return mContraintCode; } }
+
+        public uint ConstraintCode
+        {
+            get { return mContraintCode; }
+        }
 
 
         /// <summary>
@@ -120,6 +139,7 @@ namespace Poly2Tri
                     //                return;
                 }
             }
+
             CalculateContraintCode();
         }
 
@@ -129,7 +149,7 @@ namespace Poly2Tri
             return "[P=" + P.ToString() + ", Q=" + Q.ToString() + " : {" + mContraintCode.ToString() + "}]";
         }
 
-        
+
         public void CalculateContraintCode()
         {
             mContraintCode = TriangulationConstraint.CalculateContraintCode(P, Q);
@@ -148,6 +168,5 @@ namespace Poly2Tri
 
             return constraintCode;
         }
-
     }
 }

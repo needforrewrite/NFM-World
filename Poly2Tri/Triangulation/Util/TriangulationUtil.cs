@@ -137,6 +137,7 @@ namespace Poly2Tri
             {
                 return false;
             }
+
             return true;
         }
 
@@ -160,6 +161,7 @@ namespace Poly2Tri
             {
                 return Orientation.CCW;
             }
+
             return Orientation.CW;
         }
 
@@ -238,10 +240,10 @@ namespace Poly2Tri
             return false;
         }
 
-        
+
         public static bool RectsIntersect(Rect2D r1, Rect2D r2)
         {
-            return  (r1.Right > r2.Left) &&
+            return (r1.Right > r2.Left) &&
                     (r1.Left < r2.Right) &&
                     (r1.Bottom > r2.Top) &&
                     (r1.Top < r2.Bottom);
@@ -273,11 +275,17 @@ namespace Poly2Tri
         /// <param name="pIntersectionPt">This is set to the intersection
         /// point if an intersection is detected.</param>
         /// <returns>True if an intersection is detected, false otherwise.</returns>
-        public static bool LinesIntersect2D(    Point2D ptStart0, Point2D ptEnd0,
-                                                Point2D ptStart1, Point2D ptEnd1,
-                                                bool firstIsSegment, bool secondIsSegment, bool coincidentEndPointCollisions,
+        public static bool LinesIntersect2D(
+            Point2D ptStart0,
+            Point2D ptEnd0,
+                                                Point2D ptStart1,
+            Point2D ptEnd1,
+                                                bool firstIsSegment,
+            bool secondIsSegment,
+            bool coincidentEndPointCollisions,
                                                 ref Point2D pIntersectionPt,
-                                                double epsilon)
+                                                double epsilon
+        )
         {
             double d = (ptEnd0.X - ptStart0.X) * (ptStart1.Y - ptEnd1.Y) - (ptStart1.X - ptEnd1.X) * (ptEnd0.Y - ptStart0.Y);
             if (Math.Abs(d) < epsilon)
@@ -292,9 +300,13 @@ namespace Poly2Tri
             double t0 = d0 * kOneOverD;
             double t1 = d1 * kOneOverD;
 
-            if ((!firstIsSegment  || ((t0 >= 0.0) && (t0 <= 1.0))) &&
+            if ((!firstIsSegment || ((t0 >= 0.0) && (t0 <= 1.0))) &&
                 (!secondIsSegment || ((t1 >= 0.0) && (t1 <= 1.0))) &&
-                (coincidentEndPointCollisions || (!MathUtil.AreValuesEqual(0.0, t0, epsilon) && !MathUtil.AreValuesEqual(0.0, t1, epsilon))))
+                (coincidentEndPointCollisions || (!MathUtil.AreValuesEqual(0.0, t0, epsilon) && !MathUtil.AreValuesEqual(
+                    0.0,
+                    t1,
+                    epsilon
+                ))))
             {
                 if (pIntersectionPt != null)
                 {
@@ -309,15 +321,29 @@ namespace Poly2Tri
         }
 
 
-        public static bool LinesIntersect2D(    Point2D ptStart0, Point2D ptEnd0,
-                                                Point2D ptStart1, Point2D ptEnd1,
+        public static bool LinesIntersect2D(
+            Point2D ptStart0,
+            Point2D ptEnd0,
+                                                Point2D ptStart1,
+            Point2D ptEnd1,
                                                 ref Point2D pIntersectionPt,
-                                                double epsilon)
+                                                double epsilon
+        )
         {
-            return TriangulationUtil.LinesIntersect2D(ptStart0, ptEnd0, ptStart1, ptEnd1, true, true, false, ref pIntersectionPt, epsilon);
+            return TriangulationUtil.LinesIntersect2D(
+                ptStart0,
+                ptEnd0,
+                ptStart1,
+                ptEnd1,
+                true,
+                true,
+                false,
+                ref pIntersectionPt,
+                epsilon
+            );
         }
 
-        
+
         ///////////////////////////////////////////////////////////////////////////
         // RaysIntersect2D
         //
@@ -344,9 +370,13 @@ namespace Poly2Tri
         }
 
 
-        public static bool RaysIntersect2D( Point2D ptRayOrigin0, Point2D ptRayVector0,
-                                            Point2D ptRayOrigin1, Point2D ptRayVector1,
-                                            ref Point2D ptIntersection)
+        public static bool RaysIntersect2D(
+            Point2D ptRayOrigin0,
+            Point2D ptRayVector0,
+                                            Point2D ptRayOrigin1,
+            Point2D ptRayVector1,
+                                            ref Point2D ptIntersection
+        )
         {
             double kEpsilon = 0.01;
 
@@ -388,8 +418,5 @@ namespace Poly2Tri
 
             return false;
         }
-
     }
-
-
 }

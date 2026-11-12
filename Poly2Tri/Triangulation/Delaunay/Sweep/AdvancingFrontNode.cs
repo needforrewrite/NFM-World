@@ -51,7 +51,14 @@ namespace Poly2Tri
             Value = point.X;
         }
 
-        public bool HasNext { get { return Next != null; } }
-        public bool HasPrev { get { return Prev != null; } }
+        public bool HasNext
+        {
+            get { return Next != null; }
+        }
+
+        public bool HasPrev
+        {
+            get { return Prev != null; }
+        }
     }
 }

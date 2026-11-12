@@ -60,23 +60,23 @@ public class FileUtil
         var extraFiles = new List<T>();
 
         foreach (var (index, result) in VFS.EnumerateFiles(folder)
-                     .AsParallel()
-                     .Select(file =>
-                         {
-                             var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
-                             var a = fileNames.IndexOf(fileNameWithoutExtension);
-                             if (a != -1)
-                             {
-                                 return (Index: a, Result: action(VFS.ReadAllBytes(file), fileNameWithoutExtension));
-                             }
-                             else
-                             {
-                                 Logging.Debug($"Extra file found: {file}");
-                                 return (Index: -1, Result: action(VFS.ReadAllBytes(file), fileNameWithoutExtension));
-                             }
-                         }
-                     )
-                     .ToArray())
+            .AsParallel()
+            .Select(file =>
+                {
+                    var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
+                    var a = fileNames.IndexOf(fileNameWithoutExtension);
+                    if (a != -1)
+                    {
+                        return (Index: a, Result: action(VFS.ReadAllBytes(file), fileNameWithoutExtension));
+                    }
+                    else
+                    {
+                        Logging.Debug($"Extra file found: {file}");
+                        return (Index: -1, Result: action(VFS.ReadAllBytes(file), fileNameWithoutExtension));
+                    }
+                }
+            )
+            .ToArray())
         {
             if (index > -1)
                 save(index, result);
@@ -100,14 +100,14 @@ public class FileUtil
         }
 
         foreach (var result in VFS.EnumerateFiles(folder)
-                     .AsParallel()
-                     .Select(file =>
-                         {
-                             var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
-                             return action(VFS.ReadAllBytes(file), fileNameWithoutExtension);
-                         }
-                     )
-                     .ToArray())
+            .AsParallel()
+            .Select(file =>
+                {
+                    var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
+                    return action(VFS.ReadAllBytes(file), fileNameWithoutExtension);
+                }
+            )
+            .ToArray())
         {
             save(result);
         }

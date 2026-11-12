@@ -1,0 +1,5 @@
+# C# is committed with LF. csharp-format preserves the EOL it finds, so the
+# CRLF blobs left in history would turn every formatter pass into a whole-file
+# rewrite.
+*.cs text eol=lf
+*.csproj text eol=lf

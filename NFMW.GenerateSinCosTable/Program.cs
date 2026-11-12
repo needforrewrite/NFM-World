@@ -17,4 +17,5 @@ foreach (var value in table)
 {
     s.WriteLine($"    {value}L,");
 }
+
 s.WriteLine("];");

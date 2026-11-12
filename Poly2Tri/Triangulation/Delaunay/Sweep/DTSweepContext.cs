@@ -51,7 +51,10 @@ namespace Poly2Tri
 
         private DTSweepPointComparator _comparator = new DTSweepPointComparator();
 
-        public override TriangulationAlgorithm Algorithm { get { return TriangulationAlgorithm.DTSweep; } }
+        public override TriangulationAlgorithm Algorithm
+        {
+            get { return TriangulationAlgorithm.DTSweep; }
+        }
 
 
         public DTSweepContext()
@@ -62,16 +65,14 @@ namespace Poly2Tri
 
         public override bool IsDebugEnabled
         {
-            get
-            {
-                return base.IsDebugEnabled;
-            }
+            get { return base.IsDebugEnabled; }
             protected set
             {
                 if (value && DebugContext == null)
                 {
                     DebugContext = new DTSweepDebugContext(this);
                 }
+
                 base.IsDebugEnabled = value;
             }
         }
@@ -207,14 +208,17 @@ namespace Poly2Tri
                 {
                     xmax = p.X;
                 }
+
                 if (p.X < xmin)
                 {
                     xmin = p.X;
                 }
+
                 if (p.Y > ymax)
                 {
                     ymax = p.Y;
                 }
+
                 if (p.Y < ymin)
                 {
                     ymin = p.Y;
@@ -247,6 +251,5 @@ namespace Poly2Tri
         {
             return new DTSweepConstraint(a, b);
         }
-
     }
 }

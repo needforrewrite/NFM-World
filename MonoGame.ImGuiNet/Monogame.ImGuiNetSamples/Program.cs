@@ -1,3 +1,2 @@
-﻿
-using var game = new Monogame.ImGuiNetSamples.Game1();
+﻿using var game = new Monogame.ImGuiNetSamples.Game1();
 game.Run();

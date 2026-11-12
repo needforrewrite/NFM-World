@@ -57,7 +57,7 @@ namespace Poly2Tri
         private const double PI_div2 = Math.PI / 2;
         private const double PI_3div4 = 3 * Math.PI / 4;
 
-        
+
         /// <summary>
         /// Triangulate simple polygon with holes
         /// </summary>
@@ -74,7 +74,7 @@ namespace Poly2Tri
             {
                 FinalizationPolygon(tcx);
             }
-            else 
+            else
             {
                 FinalizationConvexHull(tcx);
                 if (tcx.TriangulationMode == TriangulationMode.Constrained)
@@ -93,7 +93,7 @@ namespace Poly2Tri
             tcx.Done();
         }
 
-        
+
         /// <summary>
         /// Start sweeping the Y-sorted point set from bottom to top
         /// </summary>
@@ -116,9 +116,11 @@ namespace Poly2Tri
                         {
                             tcx.DTDebugContext.ActiveConstraint = e;
                         }
+
                         EdgeEvent(tcx, e, node);
                     }
                 }
+
                 tcx.Update(null);
             }
         }
@@ -126,7 +128,7 @@ namespace Poly2Tri
 
         private static void FixupConstrainedEdges(DTSweepContext tcx)
         {
-            foreach(DelaunayTriangle t in tcx.Triangles)
+            foreach (DelaunayTriangle t in tcx.Triangles)
             {
                 for (int i = 0; i < 3; ++i)
                 {
@@ -176,6 +178,7 @@ namespace Poly2Tri
                 tcx.MapTriangleToNodes(n1.Triangle);
                 tcx.MapTriangleToNodes(t1);
             }
+
             n1 = tcx.Front.Head.Next;
             if (n1.Triangle.Contains(n1.Prev.Point) && n1.Triangle.Contains(n1.Next.Point))
             {
@@ -199,6 +202,7 @@ namespace Poly2Tri
                 {
                     break;
                 }
+
                 t2 = t1.NeighborCCWFrom(p1);
                 t1.Clear();
                 t1 = t2;
@@ -224,10 +228,10 @@ namespace Poly2Tri
             tcx.Front.Head = tcx.Front.Head.Next;
             tcx.Front.Head.Prev = null;
             tcx.Front.Tail = tcx.Front.Tail.Prev;
-            tcx.Front.Tail.Next = null; 
+            tcx.Front.Tail.Next = null;
         }
 
-        
+
         /// <summary>
         /// We will traverse the entire advancing front and fill it to form a convex hull.
         /// </summary>
@@ -266,7 +270,7 @@ namespace Poly2Tri
             }
         }
 
-        
+
         private static void FinalizationPolygon(DTSweepContext tcx)
         {
             // Get an Internal triangle to start with
@@ -279,6 +283,7 @@ namespace Poly2Tri
                 {
                     break;
                 }
+
                 t = tTmp;
             }
 
@@ -323,6 +328,7 @@ namespace Poly2Tri
                 {
                     break;
                 }
+
                 t = tTmp;
             }
 
@@ -345,10 +351,12 @@ namespace Poly2Tri
             {
                 tcx.DTDebugContext.ActiveNode = node;
             }
+
             if (node == null || point == null)
             {
                 return null;
             }
+
             newNode = NewFrontTriangle(tcx, point, node);
 
             // Only need to check +epsilon since point never have smaller 
@@ -364,7 +372,7 @@ namespace Poly2Tri
             return newNode;
         }
 
-        
+
         /// <summary>
         /// Creates a new front triangle and legalize it
         /// </summary>
@@ -398,7 +406,7 @@ namespace Poly2Tri
             return newNode;
         }
 
-        
+
         private static void EdgeEvent(DTSweepContext tcx, DTSweepConstraint edge, AdvancingFrontNode node)
         {
             try
@@ -443,7 +451,7 @@ namespace Poly2Tri
             }
         }
 
-        
+
         private static void FillRightConcaveEdgeEvent(DTSweepContext tcx, DTSweepConstraint edge, AdvancingFrontNode node)
         {
             Fill(tcx, node.Next);
@@ -521,7 +529,11 @@ namespace Poly2Tri
         {
             while (node.Next.Point.X < edge.P.X)
             {
-                if (tcx.IsDebugEnabled) { tcx.DTDebugContext.ActiveNode = node; }
+                if (tcx.IsDebugEnabled)
+                {
+                    tcx.DTDebugContext.ActiveNode = node;
+                }
+
                 // Check if next node is below the edge
                 Orientation o1 = TriangulationUtil.Orient2d(edge.Q, node.Next.Point, edge.P);
                 if (o1 == Orientation.CCW)
@@ -535,7 +547,7 @@ namespace Poly2Tri
             }
         }
 
-        
+
         private static void FillLeftConvexEdgeEvent(DTSweepContext tcx, DTSweepConstraint edge, AdvancingFrontNode node)
         {
             // Next concave or convex?
@@ -560,7 +572,7 @@ namespace Poly2Tri
             }
         }
 
-        
+
         private static void FillLeftConcaveEdgeEvent(DTSweepContext tcx, DTSweepConstraint edge, AdvancingFrontNode node)
         {
             Fill(tcx, node.Prev);
@@ -583,7 +595,7 @@ namespace Poly2Tri
             }
         }
 
-        
+
         private static void FillLeftBelowEdgeEvent(DTSweepContext tcx, DTSweepConstraint edge, AdvancingFrontNode node)
         {
             if (tcx.IsDebugEnabled)
@@ -603,11 +615,10 @@ namespace Poly2Tri
                     // Retry this one
                     FillLeftBelowEdgeEvent(tcx, edge, node);
                 }
-
             }
         }
 
-        
+
         private static void FillLeftAboveEdgeEvent(DTSweepContext tcx, DTSweepConstraint edge, AdvancingFrontNode node)
         {
             while (node.Prev.Point.X > edge.P.X)
@@ -616,6 +627,7 @@ namespace Poly2Tri
                 {
                     tcx.DTDebugContext.ActiveNode = node;
                 }
+
                 // Check if next node is below the edge
                 Orientation o1 = TriangulationUtil.Orient2d(edge.Q, node.Prev.Point, edge.P);
                 if (o1 == Orientation.CW)
@@ -629,7 +641,7 @@ namespace Poly2Tri
             }
         }
 
-        
+
         private static bool IsEdgeSideOfTriangle(DelaunayTriangle triangle, TriangulationPoint ep, TriangulationPoint eq)
         {
             int index = triangle.EdgeIndex(ep, eq);
@@ -637,17 +649,25 @@ namespace Poly2Tri
             {
                 return false;
             }
+
             triangle.MarkConstrainedEdge(index);
             triangle = triangle.Neighbors[index];
             if (triangle != null)
             {
                 triangle.MarkConstrainedEdge(ep, eq);
             }
+
             return true;
         }
 
-        
-        private static void EdgeEvent(DTSweepContext tcx, TriangulationPoint ep, TriangulationPoint eq, DelaunayTriangle triangle, TriangulationPoint point)
+
+        private static void EdgeEvent(
+            DTSweepContext tcx,
+            TriangulationPoint ep,
+            TriangulationPoint eq,
+            DelaunayTriangle triangle,
+            TriangulationPoint point
+        )
         {
             TriangulationPoint p1, p2;
 
@@ -678,6 +698,7 @@ namespace Poly2Tri
                 {
                     throw new PointOnEdgeException("EdgeEvent - Point on constrained edge not supported yet", ep, eq, p1);
                 }
+
                 if (tcx.IsDebugEnabled)
                 {
                     Console.WriteLine("EdgeEvent - Point on constrained edge");
@@ -703,6 +724,7 @@ namespace Poly2Tri
                 {
                     throw new PointOnEdgeException("EdgeEvent - Point on constrained edge not supported yet", ep, eq, p2);
                 }
+
                 if (tcx.IsDebugEnabled)
                 {
                     Console.WriteLine("EdgeEvent - Point on constrained edge");
@@ -723,6 +745,7 @@ namespace Poly2Tri
                 {
                     triangle = triangle.NeighborCWFrom(point);
                 }
+
                 EdgeEvent(tcx, ep, eq, triangle, point);
             }
             else
@@ -733,7 +756,13 @@ namespace Poly2Tri
         }
 
 
-        private static void FlipEdgeEvent(DTSweepContext tcx, TriangulationPoint ep, TriangulationPoint eq, DelaunayTriangle t, TriangulationPoint p)
+        private static void FlipEdgeEvent(
+            DTSweepContext tcx,
+            TriangulationPoint ep,
+            TriangulationPoint eq,
+            DelaunayTriangle t,
+            TriangulationPoint p
+        )
         {
             DelaunayTriangle ot = t.NeighborAcrossFrom(p);
             TriangulationPoint op = ot.OppositePoint(t, p);
@@ -767,6 +796,7 @@ namespace Poly2Tri
                         {
                             Console.WriteLine("[FLIP] - constrained edge done"); // TODO: remove
                         }
+
                         t.MarkConstrainedEdge(ep, eq);
                         ot.MarkConstrainedEdge(ep, eq);
                         Legalize(tcx, t);
@@ -787,6 +817,7 @@ namespace Poly2Tri
                     {
                         Console.WriteLine("[FLIP] - flipping and continuing with triangle still crossing edge"); // TODO: remove
                     }
+
                     Orientation o = TriangulationUtil.Orient2d(eq, op, ep);
                     t = NextFlipTriangle(tcx, o, t, ot, p, op);
                     FlipEdgeEvent(tcx, ep, eq, t, p);
@@ -809,7 +840,13 @@ namespace Poly2Tri
         /// the point in current triangle that is the opposite point to the next
         /// triangle. 
         /// </summary>
-        private static bool NextFlipPoint(TriangulationPoint ep, TriangulationPoint eq, DelaunayTriangle ot, TriangulationPoint op, out TriangulationPoint newP)
+        private static bool NextFlipPoint(
+            TriangulationPoint ep,
+            TriangulationPoint eq,
+            DelaunayTriangle ot,
+            TriangulationPoint op,
+            out TriangulationPoint newP
+        )
         {
             newP = null;
             Orientation o2d = TriangulationUtil.Orient2d(eq, op, ep);
@@ -842,7 +879,14 @@ namespace Poly2Tri
         /// <param name="p">a point shared by both triangles</param>
         /// <param name="op">another point shared by both triangles</param>
         /// <returns>returns the triangle still intersecting the edge</returns>
-        private static DelaunayTriangle NextFlipTriangle(DTSweepContext tcx, Orientation o, DelaunayTriangle t, DelaunayTriangle ot, TriangulationPoint p, TriangulationPoint op)
+        private static DelaunayTriangle NextFlipTriangle(
+            DTSweepContext tcx,
+            Orientation o,
+            DelaunayTriangle t,
+            DelaunayTriangle ot,
+            TriangulationPoint p,
+            TriangulationPoint op
+        )
         {
             int edgeIndex;
             if (o == Orientation.CCW)
@@ -854,6 +898,7 @@ namespace Poly2Tri
                 ot.EdgeIsDelaunay.Clear();
                 return t;
             }
+
             // t is not crossing edge after flip
             edgeIndex = t.EdgeIndex(p, op);
             t.EdgeIsDelaunay[edgeIndex] = true;
@@ -875,7 +920,14 @@ namespace Poly2Tri
         /// <param name="flipTriangle">the current triangle sharing the point eq with edge</param>
         /// <param name="t"></param>
         /// <param name="p"></param>
-        private static void FlipScanEdgeEvent(DTSweepContext tcx, TriangulationPoint ep, TriangulationPoint eq, DelaunayTriangle flipTriangle, DelaunayTriangle t, TriangulationPoint p)
+        private static void FlipScanEdgeEvent(
+            DTSweepContext tcx,
+            TriangulationPoint ep,
+            TriangulationPoint eq,
+            DelaunayTriangle flipTriangle,
+            DelaunayTriangle t,
+            TriangulationPoint p
+        )
         {
             DelaunayTriangle ot;
             TriangulationPoint op, newP;
@@ -939,6 +991,7 @@ namespace Poly2Tri
                 {
                     break;
                 }
+
                 Fill(tcx, node);
                 node = node.Next;
             }
@@ -952,6 +1005,7 @@ namespace Poly2Tri
                 {
                     break;
                 }
+
                 Fill(tcx, node);
                 node = node.Prev;
             }
@@ -1040,6 +1094,7 @@ namespace Poly2Tri
                 {
                     return;
                 }
+
                 node = node.Next;
             }
             else if (node.Next == tcx.Basin.rightNode)
@@ -1049,6 +1104,7 @@ namespace Poly2Tri
                 {
                     return;
                 }
+
                 node = node.Prev;
             }
             else
@@ -1063,6 +1119,7 @@ namespace Poly2Tri
                     node = node.Next;
                 }
             }
+
             FillBasinReq(tcx, node);
         }
 
@@ -1079,10 +1136,12 @@ namespace Poly2Tri
             {
                 height = tcx.Basin.rightNode.Point.Y - node.Point.Y;
             }
+
             if (tcx.Basin.width > height)
             {
                 return true;
             }
+
             return false;
         }
 
@@ -1181,7 +1240,9 @@ namespace Poly2Tri
                 // then we should not try to legalize
                 if (ot.EdgeIsConstrained[oi] || ot.EdgeIsDelaunay[oi])
                 {
-                    t.SetConstrainedEdgeAcross(p, ot.EdgeIsConstrained[oi]); // XXX: have no good way of setting this property when creating new triangles so lets set it here
+                    t.SetConstrainedEdgeAcross(p, ot
+                        .EdgeIsConstrained[oi]
+                    ); // XXX: have no good way of setting this property when creating new triangles so lets set it here
                     continue;
                 }
 
@@ -1205,6 +1266,7 @@ namespace Poly2Tri
                 {
                     tcx.MapTriangleToNodes(t);
                 }
+
                 if (!Legalize(tcx, ot))
                 {
                     tcx.MapTriangleToNodes(ot);
@@ -1221,6 +1283,7 @@ namespace Poly2Tri
                 // the recursive legalization will handles those so we can end here.
                 return true;
             }
+
             return false;
         }
 
@@ -1237,7 +1300,12 @@ namespace Poly2Tri
         ///    +-----+ oP            +-----+
         ///       n4                    n4
         /// </summary>
-        private static void RotateTrianglePair(DelaunayTriangle t, TriangulationPoint p, DelaunayTriangle ot, TriangulationPoint op)
+        private static void RotateTrianglePair(
+            DelaunayTriangle t,
+            TriangulationPoint p,
+            DelaunayTriangle ot,
+            TriangulationPoint op
+        )
         {
             DelaunayTriangle n1, n2, n3, n4;
             n1 = t.NeighborCCWFrom(p);
@@ -1283,18 +1351,22 @@ namespace Poly2Tri
             {
                 ot.MarkNeighbor(n1);
             }
+
             if (n2 != null)
             {
                 t.MarkNeighbor(n2);
             }
+
             if (n3 != null)
             {
                 t.MarkNeighbor(n3);
             }
+
             if (n4 != null)
             {
                 ot.MarkNeighbor(n4);
             }
+
             t.MarkNeighbor(ot);
         }
     }

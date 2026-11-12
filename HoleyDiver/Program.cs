@@ -19,7 +19,10 @@ public class PolygonTriangulator
         Libtess
     }
 
-    public static TriangulationResult Triangulate(IReadOnlyList<Vector3> vertices, TriangulationAlgorithm algorithm = TriangulationAlgorithm.Libtess)
+    public static TriangulationResult Triangulate(
+        IReadOnlyList<Vector3> vertices,
+        TriangulationAlgorithm algorithm = TriangulationAlgorithm.Libtess
+    )
     {
         if (vertices == null || vertices.Count < 3)
             throw new ArgumentException("Must have at least 3 vertices");
@@ -64,12 +67,13 @@ public class PolygonTriangulator
             // If you want triangles as output, you need to use "Polygons" type as output and 3 vertices per polygon.
             // shortcut: an edge crossing has no source vertex, so it snaps to the heaviest contributor; emit new vertices if that distorts
             tess.Tessellate(combineCallback: (_, data, weights) =>
-            {
-                int best = 0;
-                for (int k = 1; k < weights.Length; k++)
-                    if (weights[k] > weights[best]) best = k;
-                return data[best];
-            });
+                {
+                    int best = 0;
+                    for (int k = 1; k < weights.Length; k++)
+                        if (weights[k] > weights[best]) best = k;
+                    return data[best];
+                }
+            );
 
             // Same call but the last callback is optional. Data will be null because no interpolated data would have been generated.
             //tess.Tessellate(LibTessDotNet.WindingRule.EvenOdd, LibTessDotNet.ElementType.Polygons, 3); // Some vertices will have null Data in this case.
@@ -148,7 +152,7 @@ public class PolygonTriangulator
                 {
                     foreach (var idx in polyLines[r])
                     {
-                        if (idx != -1)  // Skip the hole marker
+                        if (idx != -1) // Skip the hole marker
                             holeVertices.Add(idx);
                     }
                 }
@@ -203,6 +207,7 @@ public class PolygonTriangulator
                 {
                     holePolys[h] = holePolys[h].Where(idx => !outerSet.Contains(idx)).ToList();
                 }
+
                 // Remove any holes that became too small
                 holePolys.RemoveAll(h => h.Count < 3);
             }
@@ -290,6 +295,7 @@ public class PolygonTriangulator
                                         break;
                                     }
                                 }
+
                                 if (origIdx >= 0)
                                 {
                                     triIndices.Add((uint)origIdx);
@@ -367,6 +373,7 @@ public class PolygonTriangulator
                                     break;
                                 }
                             }
+
                             if (origIdx >= 0)
                                 allTriangles.Add((uint)origIdx);
                         }
@@ -403,6 +410,7 @@ public class PolygonTriangulator
                             break;
                         }
                     }
+
                     if (origIdx >= 0)
                         allTriangles.Add((uint)origIdx);
                 }
@@ -418,12 +426,17 @@ public class PolygonTriangulator
         }
     }
 
-    private static bool TryTriangulateSimple(IReadOnlyList<Vector3> vertices, Vector3 centroid, Vector3 normal, out TriangulationResult result)
+    private static bool TryTriangulateSimple(
+        IReadOnlyList<Vector3> vertices,
+        Vector3 centroid,
+        Vector3 normal,
+        out TriangulationResult result
+    )
     {
         if (IsConvex(vertices) && DoesNotContainDuplicatePoints(vertices))
         {
             // simple polygon: fan triangulation
-            
+
             var tris = new List<uint>(vertices.Count - 2);
             for (uint i = 1; i < vertices.Count - 1; i++)
                 tris.AddRange((uint)0, i, i + 1);
@@ -454,6 +467,7 @@ public class PolygonTriangulator
                 }
             }
         }
+
         return true;
     }
 
@@ -493,6 +507,7 @@ public class PolygonTriangulator
             if (sign == 0) sign = s;
             else if (s != sign) return false;
         }
+
         return true;
     }
 
@@ -559,7 +574,7 @@ public class PolygonTriangulator
                 {
                     return false;
                 }
-                
+
                 float dist3D = Vector3.Distance(vertices3D[i], vertices3D[j]);
                 float dist2D = Vector2.Distance(projected2D[i], projected2D[j]);
 
@@ -779,6 +794,7 @@ public class PolygonTriangulator
                             if (deduped.Count >= 3)
                                 newRegions.Add(deduped);
                         }
+
                         anySplit = true;
                     }
                     else
@@ -791,6 +807,7 @@ public class PolygonTriangulator
                     newRegions.Add(region);
                 }
             }
+
             polyLines = newRegions;
             polyLines.RemoveAll(r => r.Count < 3);
         }
@@ -839,6 +856,7 @@ public class PolygonTriangulator
                 markedHole.AddRange(hole);
                 result.Add(markedHole);
             }
+
             return result;
         }
 
@@ -894,14 +912,19 @@ public class PolygonTriangulator
                     int topIdx, botIdx;
                     if (v.Y > otherV.Y)
                     {
-                        topIdx = idx; botIdx = otherIdx;
-                        topY = v.Y; botY = otherV.Y;
+                        topIdx = idx;
+                        botIdx = otherIdx;
+                        topY = v.Y;
+                        botY = otherV.Y;
                     }
                     else
                     {
-                        topIdx = otherIdx; botIdx = idx;
-                        topY = otherV.Y; botY = v.Y;
+                        topIdx = otherIdx;
+                        botIdx = idx;
+                        topY = otherV.Y;
+                        botY = v.Y;
                     }
+
                     bars.Add((topIdx, botIdx, (v.X + otherV.X) / 2f, topY, botY));
                 }
             }
@@ -923,10 +946,10 @@ public class PolygonTriangulator
             // Check if these bars are actually connected by edges in the polygon
             // (i.e., there's a top-edge segment and a bottom-edge segment)
             // For simplicity, just create the quadrilateral hole.
-            int tl = leftBar.topIdx;   // top-left
-            int tr = rightBar.topIdx;  // top-right
-            int br = rightBar.botIdx;  // bottom-right
-            int bl = leftBar.botIdx;   // bottom-left
+            int tl = leftBar.topIdx; // top-left
+            int tr = rightBar.topIdx; // top-right
+            int br = rightBar.botIdx; // bottom-right
+            int bl = leftBar.botIdx; // bottom-left
 
             // Validate: all 4 vertices must exist and be distinct
             var holeSet = new HashSet<int> { tl, tr, br, bl };
@@ -992,6 +1015,7 @@ public class PolygonTriangulator
             markedHole.AddRange(hole);
             result.Add(markedHole);
         }
+
         return result;
     }
 
@@ -1041,14 +1065,22 @@ public class PolygonTriangulator
                 int prevA = -1;
                 for (int i = 0; i < n; i++)
                 {
-                    if (next[i] == a) { prevA = i; break; }
+                    if (next[i] == a)
+                    {
+                        prevA = i;
+                        break;
+                    }
                 }
 
                 // Find prev(b):
                 int prevB = -1;
                 for (int i = 0; i < n; i++)
                 {
-                    if (next[i] == b) { prevB = i; break; }
+                    if (next[i] == b)
+                    {
+                        prevB = i;
+                        break;
+                    }
                 }
 
                 if (prevA < 0 || prevB < 0) continue;
@@ -1159,6 +1191,7 @@ public class PolygonTriangulator
             markedHole.AddRange(hole);
             result.Add(markedHole);
         }
+
         return result;
     }
 
@@ -1249,14 +1282,15 @@ public class PolygonTriangulator
 
         // Sort holes by their centroid Y coordinate (bottom to top) to minimize bridge crossings
         holesCopy.Sort((a, b) =>
-        {
-            float sumYa = 0, sumYb = 0;
-            foreach (var idx in a) sumYa += vertices[idx].Y;
-            foreach (var idx in b) sumYb += vertices[idx].Y;
-            float avgYa = sumYa / a.Count;
-            float avgYb = sumYb / b.Count;
-            return avgYa.CompareTo(avgYb);
-        });
+            {
+                float sumYa = 0, sumYb = 0;
+                foreach (var idx in a) sumYa += vertices[idx].Y;
+                foreach (var idx in b) sumYb += vertices[idx].Y;
+                float avgYa = sumYa / a.Count;
+                float avgYb = sumYb / b.Count;
+                return avgYa.CompareTo(avgYb);
+            }
+        );
 
         var result = new List<int>(outerCopy);
 
@@ -1420,19 +1454,20 @@ public class PolygonTriangulator
         indices.RemoveAt(minIdx);
 
         indices.Sort((a, b) =>
-        {
-            Vector2 va = vertices[a] - pivot;
-            Vector2 vb = vertices[b] - pivot;
+            {
+                Vector2 va = vertices[a] - pivot;
+                Vector2 vb = vertices[b] - pivot;
 
-            float cross = va.X * vb.Y - va.Y * vb.X;
-            if (Math.Abs(cross) > 1e-9f)
-                return cross > 0 ? -1 : 1;
+                float cross = va.X * vb.Y - va.Y * vb.X;
+                if (Math.Abs(cross) > 1e-9f)
+                    return cross > 0 ? -1 : 1;
 
-            // Collinear - sort by distance
-            float distA = va.LengthSquared();
-            float distB = vb.LengthSquared();
-            return distA.CompareTo(distB);
-        });
+                // Collinear - sort by distance
+                float distA = va.LengthSquared();
+                float distB = vb.LengthSquared();
+                return distA.CompareTo(distB);
+            }
+        );
 
         // Build convex hull using stack
         var hull = new List<int> { minIdx };
@@ -1828,7 +1863,10 @@ public class Program
             var v0 = vertices[(int)result.Triangles[i]];
             var v1 = vertices[(int)result.Triangles[i + 1]];
             var v2 = vertices[(int)result.Triangles[i + 2]];
-            Console.WriteLine($"  tri {i / 3}: [{result.Triangles[i]}] {v0}, [{result.Triangles[i + 1]}] {v1}, [{result.Triangles[i + 2]}] {v2}");
+            Console
+                .WriteLine(
+                    $"  tri {i / 3}: [{result.Triangles[i]}] {v0}, [{result.Triangles[i + 1]}] {v1}, [{result.Triangles[i + 2]}] {v2}"
+                );
         }
     }
 }

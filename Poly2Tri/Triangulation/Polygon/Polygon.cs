@@ -49,21 +49,60 @@ namespace Poly2Tri
     {
         // ITriangulatable Implementation
         protected Dictionary<uint, TriangulationPoint> mPointMap = new Dictionary<uint, TriangulationPoint>();
-        public IList<TriangulationPoint> Points { get { return this; } }
+
+        public IList<TriangulationPoint> Points
+        {
+            get { return this; }
+        }
+
         protected List<DelaunayTriangle> mTriangles;
-        public IList<DelaunayTriangle> Triangles { get { return mTriangles; } }
-        public TriangulationMode TriangulationMode { get { return TriangulationMode.Polygon; } }
+
+        public IList<DelaunayTriangle> Triangles
+        {
+            get { return mTriangles; }
+        }
+
+        public TriangulationMode TriangulationMode
+        {
+            get { return TriangulationMode.Polygon; }
+        }
+
         public string FileName { get; set; }
         public bool DisplayFlipX { get; set; }
         public bool DisplayFlipY { get; set; }
         public float DisplayRotate { get; set; }
         private double mPrecision = TriangulationPoint.kVertexCodeDefaultPrecision;
-        public double Precision { get { return mPrecision; } set { mPrecision = value; } }
-        public double MinX { get { return mBoundingBox.MinX; } }
-        public double MaxX { get { return mBoundingBox.MaxX; } }
-        public double MinY { get { return mBoundingBox.MinY; } }
-        public double MaxY { get { return mBoundingBox.MaxY; } }
-        public Rect2D Bounds { get { return mBoundingBox; } }
+
+        public double Precision
+        {
+            get { return mPrecision; }
+            set { mPrecision = value; }
+        }
+
+        public double MinX
+        {
+            get { return mBoundingBox.MinX; }
+        }
+
+        public double MaxX
+        {
+            get { return mBoundingBox.MaxX; }
+        }
+
+        public double MinY
+        {
+            get { return mBoundingBox.MinY; }
+        }
+
+        public double MaxY
+        {
+            get { return mBoundingBox.MaxY; }
+        }
+
+        public Rect2D Bounds
+        {
+            get { return mBoundingBox; }
+        }
 
         // Point2DList overrides
         public new TriangulationPoint this[int index]
@@ -74,10 +113,14 @@ namespace Poly2Tri
 
         // Polygon Implementation
         protected List<Polygon> mHoles;
-        public IList<Polygon> Holes { get { return mHoles; } }
+
+        public IList<Polygon> Holes
+        {
+            get { return mHoles; }
+        }
+
         protected List<TriangulationPoint> mSteinerPoints;
         protected PolygonPoint _last;
-
 
 
         /// <summary>
@@ -99,9 +142,10 @@ namespace Poly2Tri
         /// Create a polygon from a list of at least 3 points with no duplicates.
         /// </summary>
         /// <param name="points">A list of unique points.</param>
-        public Polygon(IEnumerable<PolygonPoint> points) 
-            : this((points as IList<PolygonPoint>) ?? points.ToArray()) 
-        {}
+        public Polygon(IEnumerable<PolygonPoint> points)
+            : this((points as IList<PolygonPoint>) ?? points.ToArray())
+        {
+        }
 
 
         /// <summary>
@@ -110,7 +154,8 @@ namespace Poly2Tri
         /// <param name="points">A list of unique points.</param>
         public Polygon(params PolygonPoint[] points)
             : this((IList<PolygonPoint>)points)
-        {}
+        {
+        }
 
 
         IEnumerator<TriangulationPoint> IEnumerable<TriangulationPoint>.GetEnumerator()
@@ -157,6 +202,7 @@ namespace Poly2Tri
             {
                 return;
             }
+
             mPointMap.Add(pt.VertexCode, pt);
 
             base.Add(p, idx, bCalcWindingOrderAndEpsilon);
@@ -170,6 +216,7 @@ namespace Poly2Tri
                     pp.Next = _last.Next;
                     _last.Next = pp;
                 }
+
                 _last = pp;
             }
 
@@ -188,8 +235,10 @@ namespace Poly2Tri
             {
                 mWindingOrder = windingOrder;
             }
+
             int numPoints = points.Count;
-            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown) && (windingOrder != WindingOrderType.Unknown) && (WindingOrder != windingOrder);
+            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown) && (windingOrder != WindingOrderType.Unknown)
+                                     && (WindingOrder != windingOrder);
             for (int i = 0; i < numPoints; ++i)
             {
                 int idx = i;
@@ -197,12 +246,15 @@ namespace Poly2Tri
                 {
                     idx = points.Count - i - 1;
                 }
+
                 Add(points[idx], -1, false);
             }
+
             if (mWindingOrder == WindingOrderType.Unknown)
             {
                 mWindingOrder = CalculateWindingOrder();
             }
+
             mEpsilon = CalculateEpsilon();
         }
 
@@ -220,7 +272,8 @@ namespace Poly2Tri
             }
 
             int numPoints = points.Count;
-            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown) && (windingOrder != WindingOrderType.Unknown) && (WindingOrder != windingOrder);
+            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown) && (windingOrder != WindingOrderType.Unknown)
+                                     && (WindingOrder != windingOrder);
             for (int i = 0; i < numPoints; ++i)
             {
                 int idx = i;
@@ -228,12 +281,15 @@ namespace Poly2Tri
                 {
                     idx = points.Count - i - 1;
                 }
+
                 Add(points[idx], -1, false);
             }
+
             if (mWindingOrder == WindingOrderType.Unknown)
             {
                 mWindingOrder = CalculateWindingOrder();
             }
+
             mEpsilon = CalculateEpsilon();
         }
 
@@ -273,7 +329,6 @@ namespace Poly2Tri
         }
 
 
-
         public bool Contains(TriangulationPoint p)
         {
             return mPoints.Contains(p);
@@ -296,6 +351,7 @@ namespace Poly2Tri
             {
                 mSteinerPoints = new List<TriangulationPoint>();
             }
+
             mSteinerPoints.Add(point);
         }
 
@@ -306,6 +362,7 @@ namespace Poly2Tri
             {
                 mSteinerPoints = new List<TriangulationPoint>();
             }
+
             mSteinerPoints.AddRange(points);
         }
 
@@ -329,6 +386,7 @@ namespace Poly2Tri
             {
                 mHoles = new List<Polygon>();
             }
+
             mHoles.Add(poly);
             // XXX: tests could be made here to be sure it is fully inside
             //        addSubtraction( poly.getPoints() );
@@ -346,7 +404,7 @@ namespace Poly2Tri
             mTriangles.AddRange(list);
         }
 
-        
+
         public void ClearTriangles()
         {
             if (mTriangles != null)
@@ -383,6 +441,7 @@ namespace Poly2Tri
                 //tcx.NewConstraint(mPoints[i], mPoints[i + 1]);
                 tcx.NewConstraint(this[i], this[i + 1]);
             }
+
             tcx.NewConstraint(this[0], this[Count - 1]);
             tcx.Points.AddRange(this);
 
@@ -395,6 +454,7 @@ namespace Poly2Tri
                     {
                         tcx.NewConstraint(p[i], p[i + 1]);
                     }
+
                     tcx.NewConstraint(p[0], p[p.Count - 1]);
                     tcx.Points.AddRange(p);
                 }

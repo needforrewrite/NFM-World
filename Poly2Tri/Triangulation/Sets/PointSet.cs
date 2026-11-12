@@ -39,7 +39,13 @@ namespace Poly2Tri
     public class PointSet : Point2DList, ITriangulatable, IEnumerable<TriangulationPoint>, IList<TriangulationPoint>
     {
         protected Dictionary<uint, TriangulationPoint> mPointMap = new Dictionary<uint, TriangulationPoint>();
-        public IList<TriangulationPoint> Points { get { return this; } private set { } }
+
+        public IList<TriangulationPoint> Points
+        {
+            get { return this; }
+            private set { }
+        }
+
         public IList<DelaunayTriangle> Triangles { get; private set; }
 
         public string FileName { get; set; }
@@ -48,15 +54,42 @@ namespace Poly2Tri
         public float DisplayRotate { get; set; }
 
         protected double mPrecision = TriangulationPoint.kVertexCodeDefaultPrecision;
-        public double Precision { get { return mPrecision; } set { mPrecision = value; } }
 
-        public double MinX { get { return mBoundingBox.MinX; } }
-        public double MaxX { get { return mBoundingBox.MaxX; } }
-        public double MinY { get { return mBoundingBox.MinY; } }
-        public double MaxY { get { return mBoundingBox.MaxY; } }
-        public Rect2D Bounds { get { return mBoundingBox; } }
+        public double Precision
+        {
+            get { return mPrecision; }
+            set { mPrecision = value; }
+        }
 
-        public virtual TriangulationMode TriangulationMode { get { return TriangulationMode.Unconstrained; } }
+        public double MinX
+        {
+            get { return mBoundingBox.MinX; }
+        }
+
+        public double MaxX
+        {
+            get { return mBoundingBox.MaxX; }
+        }
+
+        public double MinY
+        {
+            get { return mBoundingBox.MinY; }
+        }
+
+        public double MaxY
+        {
+            get { return mBoundingBox.MaxY; }
+        }
+
+        public Rect2D Bounds
+        {
+            get { return mBoundingBox; }
+        }
+
+        public virtual TriangulationMode TriangulationMode
+        {
+            get { return TriangulationMode.Unconstrained; }
+        }
 
         public new TriangulationPoint this[int index]
         {
@@ -76,8 +109,9 @@ namespace Poly2Tri
                 // are considered to be the boundaries of the point-set
                 mBoundingBox.AddPoint(p);
             }
+
             mEpsilon = CalculateEpsilon();
-            mWindingOrder = WindingOrderType.Unknown;   // not valid for a point-set
+            mWindingOrder = WindingOrderType.Unknown; // not valid for a point-set
         }
 
 
@@ -129,6 +163,7 @@ namespace Poly2Tri
             {
                 return true;
             }
+
             mPointMap.Add(p.VertexCode, p);
 
             if (idx < 0)
@@ -158,7 +193,7 @@ namespace Poly2Tri
             }
         }
 
-        
+
         public virtual bool AddRange(List<TriangulationPoint> points)
         {
             bool bOK = true;
@@ -213,6 +248,7 @@ namespace Poly2Tri
             {
                 return;
             }
+
             mPoints.RemoveAt(idx);
         }
 
@@ -259,7 +295,7 @@ namespace Poly2Tri
             return (p.X != oldX) || (p.Y != oldY);
         }
 
-        
+
         public virtual void AddTriangle(DelaunayTriangle t)
         {
             Triangles.Add(t);
@@ -297,6 +333,7 @@ namespace Poly2Tri
             {
                 Triangles.Clear();
             }
+
             tcx.Points.AddRange(Points);
         }
     }

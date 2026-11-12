@@ -27,19 +27,21 @@ namespace NFMWorld.Api
     using System = global::System;
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class NfmwClient 
+    public partial class NfmwClient
     {
-        #pragma warning disable 8618
+#pragma warning disable 8618
         private string _baseUrl;
-        #pragma warning restore 8618
+#pragma warning restore 8618
 
         private System.Net.Http.HttpClient _httpClient;
-        private static System.Lazy<System.Text.Json.JsonSerializerOptions> _settings = new System.Lazy<System.Text.Json.JsonSerializerOptions>(CreateSerializerSettings, true);
+        private static System.Lazy<System.Text.Json.JsonSerializerOptions> _settings = new System.Lazy<System.Text.Json
+            .JsonSerializerOptions>(CreateSerializerSettings, true);
+
         private System.Text.Json.JsonSerializerOptions _instanceSettings;
 
-    #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public NfmwClient(string baseUrl, System.Net.Http.HttpClient httpClient)
-    #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
             BaseUrl = baseUrl;
             _httpClient = httpClient;
@@ -64,14 +66,22 @@ namespace NFMWorld.Api
             }
         }
 
-        protected System.Text.Json.JsonSerializerOptions JsonSerializerSettings { get { return _instanceSettings ?? _settings.Value; } }
+        protected System.Text.Json.JsonSerializerOptions JsonSerializerSettings
+        {
+            get { return _instanceSettings ?? _settings.Value; }
+        }
 
         static partial void UpdateJsonSerializerSettings(System.Text.Json.JsonSerializerOptions settings);
 
         partial void Initialize();
 
         partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, string url);
-        partial void PrepareRequest(System.Net.Http.HttpClient client, System.Net.Http.HttpRequestMessage request, System.Text.StringBuilder urlBuilder);
+        partial void PrepareRequest(
+            System.Net.Http.HttpClient client,
+            System.Net.Http.HttpRequestMessage request,
+            System.Text.StringBuilder urlBuilder
+        );
+
         partial void ProcessResponse(System.Net.Http.HttpClient client, System.Net.Http.HttpResponseMessage response);
 
         /// <returns>Service is healthy</returns>
@@ -84,7 +94,9 @@ namespace NFMWorld.Api
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>Service is healthy</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<HealthResponse> RootAsync(System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<HealthResponse> RootAsync(
+            System.Threading.CancellationToken cancellationToken
+        )
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -93,7 +105,9 @@ namespace NFMWorld.Api
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue
+                        .Parse("application/json")
+                    );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
@@ -106,11 +120,16 @@ namespace NFMWorld.Api
 
                     PrepareRequest(client_, request_, url_);
 
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var response_ = await client_.SendAsync(
+                        request_,
+                        System.Net.Http.HttpCompletionOption.ResponseHeadersRead,
+                        cancellationToken
+                    ).ConfigureAwait(false);
                     var disposeResponse_ = true;
                     try
                     {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
+                            .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
                         if (response_.Content != null && response_.Content.Headers != null)
@@ -124,17 +143,37 @@ namespace NFMWorld.Api
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<HealthResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<HealthResponse>(
+                                response_,
+                                headers_,
+                                cancellationToken
+                            ).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                throw new ApiException(
+                                    "Response was null which was not expected.",
+                                    status_,
+                                    objectResponse_.Text,
+                                    headers_,
+                                    null
+                                );
                             }
+
                             return objectResponse_.Object;
                         }
                         else
                         {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(
+                                response_.Content,
+                                cancellationToken
+                            ).ConfigureAwait(false);
+                            throw new ApiException(
+                                "The HTTP status code of the response was not expected (" + status_ + ").",
+                                status_,
+                                responseData_,
+                                headers_,
+                                null
+                            );
                         }
                     }
                     finally
@@ -154,7 +193,11 @@ namespace NFMWorld.Api
         /// <param name="authorization">Bearer token for user authentication</param>
         /// <returns>Asset created successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<CreateAssetResponse> CreateAssetAsync(string authorization, System.Collections.Generic.IEnumerable<int>? file, CreateAssetRequest? metadata)
+        public virtual System.Threading.Tasks.Task<CreateAssetResponse> CreateAssetAsync(
+            string authorization,
+            System.Collections.Generic.IEnumerable<int>? file,
+            CreateAssetRequest? metadata
+        )
         {
             return CreateAssetAsync(authorization, file, metadata, System.Threading.CancellationToken.None);
         }
@@ -163,7 +206,12 @@ namespace NFMWorld.Api
         /// <param name="authorization">Bearer token for user authentication</param>
         /// <returns>Asset created successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<CreateAssetResponse> CreateAssetAsync(string authorization, System.Collections.Generic.IEnumerable<int>? file, CreateAssetRequest? metadata, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<CreateAssetResponse> CreateAssetAsync(
+            string authorization,
+            System.Collections.Generic.IEnumerable<int>? file,
+            CreateAssetRequest? metadata,
+            System.Threading.CancellationToken cancellationToken
+        )
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -171,10 +219,12 @@ namespace NFMWorld.Api
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
-
                     if (authorization == null)
                         throw new System.ArgumentNullException("authorization");
-                    request_.Headers.TryAddWithoutValidation("Authorization", ConvertToString(authorization, System.Globalization.CultureInfo.InvariantCulture));
+                    request_.Headers.TryAddWithoutValidation(
+                        "Authorization",
+                        ConvertToString(authorization, System.Globalization.CultureInfo.InvariantCulture)
+                    );
                     var boundary_ = System.Guid.NewGuid().ToString();
                     var content_ = new System.Net.Http.MultipartFormDataContent(boundary_);
                     content_.Headers.Remove("Content-Type");
@@ -186,7 +236,12 @@ namespace NFMWorld.Api
                     {
                         foreach (var item_ in file)
                         {
-                            content_.Add(new System.Net.Http.StringContent(ConvertToString(item_, System.Globalization.CultureInfo.InvariantCulture)), "file");
+                            content_.Add(
+                                new System.Net.Http.StringContent(
+                                    ConvertToString(item_, System.Globalization.CultureInfo.InvariantCulture)
+                                ),
+                                "file"
+                            );
                         }
                     }
 
@@ -197,9 +252,12 @@ namespace NFMWorld.Api
                         var json_ = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(metadata, JsonSerializerSettings);
                         content_.Add(new System.Net.Http.ByteArrayContent(json_), "metadata");
                     }
+
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("POST");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue
+                        .Parse("application/json")
+                    );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
@@ -213,11 +271,16 @@ namespace NFMWorld.Api
 
                     PrepareRequest(client_, request_, url_);
 
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var response_ = await client_.SendAsync(
+                        request_,
+                        System.Net.Http.HttpCompletionOption.ResponseHeadersRead,
+                        cancellationToken
+                    ).ConfigureAwait(false);
                     var disposeResponse_ = true;
                     try
                     {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
+                            .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
                         if (response_.Content != null && response_.Content.Headers != null)
@@ -231,78 +294,208 @@ namespace NFMWorld.Api
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<CreateAssetResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<CreateAssetResponse>(
+                                response_,
+                                headers_,
+                                cancellationToken
+                            ).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                throw new ApiException(
+                                    "Response was null which was not expected.",
+                                    status_,
+                                    objectResponse_.Text,
+                                    headers_,
+                                    null
+                                );
                             }
+
                             return objectResponse_.Object;
                         }
                         else
-                        if (status_ == 400)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
+                            if (status_ == 400)
                             {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                    response_,
+                                    headers_,
+                                    cancellationToken
+                                ).ConfigureAwait(false);
+                                if (objectResponse_.Object == null)
+                                {
+                                    throw new ApiException(
+                                        "Response was null which was not expected.",
+                                        status_,
+                                        objectResponse_.Text,
+                                        headers_,
+                                        null
+                                    );
+                                }
+
+                                throw new ApiException<ErrorResponse>(
+                                    "Invalid request body",
+                                    status_,
+                                    objectResponse_.Text,
+                                    headers_,
+                                    objectResponse_.Object,
+                                    null
+                                );
                             }
-                            throw new ApiException<ErrorResponse>("Invalid request body", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        if (status_ == 401)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new ApiException<ErrorResponse>("Unauthorized", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        if (status_ == 403)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new ApiException<ErrorResponse>("Forbidden (likely due to attempted assignment of privileged tag)", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        if (status_ == 409)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new ApiException<ErrorResponse>("Asset name already used for this asset type by the current user", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        if (status_ == 413)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new ApiException<ErrorResponse>("Asset is larger than the maximum allowed size", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        if (status_ == 500)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new ApiException<ErrorResponse>("Internal server error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
+                            else
+                                if (status_ == 401)
+                                {
+                                    var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                        response_,
+                                        headers_,
+                                        cancellationToken
+                                    ).ConfigureAwait(false);
+                                    if (objectResponse_.Object == null)
+                                    {
+                                        throw new ApiException(
+                                            "Response was null which was not expected.",
+                                            status_,
+                                            objectResponse_.Text,
+                                            headers_,
+                                            null
+                                        );
+                                    }
+
+                                    throw new ApiException<ErrorResponse>(
+                                        "Unauthorized",
+                                        status_,
+                                        objectResponse_.Text,
+                                        headers_,
+                                        objectResponse_.Object,
+                                        null
+                                    );
+                                }
+                                else
+                                    if (status_ == 403)
+                                    {
+                                        var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                            response_,
+                                            headers_,
+                                            cancellationToken
+                                        ).ConfigureAwait(false);
+                                        if (objectResponse_.Object == null)
+                                        {
+                                            throw new ApiException(
+                                                "Response was null which was not expected.",
+                                                status_,
+                                                objectResponse_.Text,
+                                                headers_,
+                                                null
+                                            );
+                                        }
+
+                                        throw new ApiException<ErrorResponse>(
+                                            "Forbidden (likely due to attempted assignment of privileged tag)",
+                                            status_,
+                                            objectResponse_.Text,
+                                            headers_,
+                                            objectResponse_.Object,
+                                            null
+                                        );
+                                    }
+                                    else
+                                        if (status_ == 409)
+                                        {
+                                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                                response_,
+                                                headers_,
+                                                cancellationToken
+                                            ).ConfigureAwait(false);
+                                            if (objectResponse_.Object == null)
+                                            {
+                                                throw new ApiException(
+                                                    "Response was null which was not expected.",
+                                                    status_,
+                                                    objectResponse_.Text,
+                                                    headers_,
+                                                    null
+                                                );
+                                            }
+
+                                            throw new ApiException<ErrorResponse>(
+                                                "Asset name already used for this asset type by the current user",
+                                                status_,
+                                                objectResponse_.Text,
+                                                headers_,
+                                                objectResponse_.Object,
+                                                null
+                                            );
+                                        }
+                                        else
+                                            if (status_ == 413)
+                                            {
+                                                var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                                    response_,
+                                                    headers_,
+                                                    cancellationToken
+                                                ).ConfigureAwait(false);
+                                                if (objectResponse_.Object == null)
+                                                {
+                                                    throw new ApiException(
+                                                        "Response was null which was not expected.",
+                                                        status_,
+                                                        objectResponse_.Text,
+                                                        headers_,
+                                                        null
+                                                    );
+                                                }
+
+                                                throw new ApiException<ErrorResponse>(
+                                                    "Asset is larger than the maximum allowed size",
+                                                    status_,
+                                                    objectResponse_.Text,
+                                                    headers_,
+                                                    objectResponse_.Object,
+                                                    null
+                                                );
+                                            }
+                                            else
+                                                if (status_ == 500)
+                                                {
+                                                    var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                                        response_,
+                                                        headers_,
+                                                        cancellationToken
+                                                    ).ConfigureAwait(false);
+                                                    if (objectResponse_.Object == null)
+                                                    {
+                                                        throw new ApiException(
+                                                            "Response was null which was not expected.",
+                                                            status_,
+                                                            objectResponse_.Text,
+                                                            headers_,
+                                                            null
+                                                        );
+                                                    }
+
+                                                    throw new ApiException<ErrorResponse>(
+                                                        "Internal server error",
+                                                        status_,
+                                                        objectResponse_.Text,
+                                                        headers_,
+                                                        objectResponse_.Object,
+                                                        null
+                                                    );
+                                                }
+                                                else
+                                                {
+                                                    var responseData_ = response_.Content
+                                                                        == null ? null : await ReadAsStringAsync(
+                                                                            response_.Content,
+                                                                            cancellationToken
+                                                                        ).ConfigureAwait(false);
+                                                    throw new ApiException(
+                                                        "The HTTP status code of the response was not expected (" + status_
+                                                        + ").",
+                                                        status_,
+                                                        responseData_,
+                                                        headers_,
+                                                        null
+                                                    );
+                                                }
                     }
                     finally
                     {
@@ -321,7 +514,10 @@ namespace NFMWorld.Api
         /// <param name="authorization">Bearer token for user authentication</param>
         /// <returns>Assets retrieved successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<SearchAssetsResponse> SearchAssetsAsync(string authorization, SearchAssetsRequest body)
+        public virtual System.Threading.Tasks.Task<SearchAssetsResponse> SearchAssetsAsync(
+            string authorization,
+            SearchAssetsRequest body
+        )
         {
             return SearchAssetsAsync(authorization, body, System.Threading.CancellationToken.None);
         }
@@ -330,7 +526,11 @@ namespace NFMWorld.Api
         /// <param name="authorization">Bearer token for user authentication</param>
         /// <returns>Assets retrieved successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<SearchAssetsResponse> SearchAssetsAsync(string authorization, SearchAssetsRequest body, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<SearchAssetsResponse> SearchAssetsAsync(
+            string authorization,
+            SearchAssetsRequest body,
+            System.Threading.CancellationToken cancellationToken
+        )
         {
             if (body == null)
                 throw new System.ArgumentNullException("body");
@@ -341,16 +541,20 @@ namespace NFMWorld.Api
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
-
                     if (authorization == null)
                         throw new System.ArgumentNullException("authorization");
-                    request_.Headers.TryAddWithoutValidation("Authorization", ConvertToString(authorization, System.Globalization.CultureInfo.InvariantCulture));
+                    request_.Headers.TryAddWithoutValidation(
+                        "Authorization",
+                        ConvertToString(authorization, System.Globalization.CultureInfo.InvariantCulture)
+                    );
                     var json_ = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(body, JsonSerializerSettings);
                     var content_ = new System.Net.Http.ByteArrayContent(json_);
                     content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("POST");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue
+                        .Parse("application/json")
+                    );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
@@ -364,11 +568,16 @@ namespace NFMWorld.Api
 
                     PrepareRequest(client_, request_, url_);
 
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var response_ = await client_.SendAsync(
+                        request_,
+                        System.Net.Http.HttpCompletionOption.ResponseHeadersRead,
+                        cancellationToken
+                    ).ConfigureAwait(false);
                     var disposeResponse_ = true;
                     try
                     {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
+                            .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
                         if (response_.Content != null && response_.Content.Headers != null)
@@ -382,48 +591,122 @@ namespace NFMWorld.Api
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<SearchAssetsResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<SearchAssetsResponse>(
+                                response_,
+                                headers_,
+                                cancellationToken
+                            ).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                throw new ApiException(
+                                    "Response was null which was not expected.",
+                                    status_,
+                                    objectResponse_.Text,
+                                    headers_,
+                                    null
+                                );
                             }
+
                             return objectResponse_.Object;
                         }
                         else
-                        if (status_ == 400)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
+                            if (status_ == 400)
                             {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                    response_,
+                                    headers_,
+                                    cancellationToken
+                                ).ConfigureAwait(false);
+                                if (objectResponse_.Object == null)
+                                {
+                                    throw new ApiException(
+                                        "Response was null which was not expected.",
+                                        status_,
+                                        objectResponse_.Text,
+                                        headers_,
+                                        null
+                                    );
+                                }
+
+                                throw new ApiException<ErrorResponse>(
+                                    "Invalid request",
+                                    status_,
+                                    objectResponse_.Text,
+                                    headers_,
+                                    objectResponse_.Object,
+                                    null
+                                );
                             }
-                            throw new ApiException<ErrorResponse>("Invalid request", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        if (status_ == 401)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new ApiException<ErrorResponse>("Unauthorized", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        if (status_ == 500)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new ApiException<ErrorResponse>("Internal server error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
+                            else
+                                if (status_ == 401)
+                                {
+                                    var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                        response_,
+                                        headers_,
+                                        cancellationToken
+                                    ).ConfigureAwait(false);
+                                    if (objectResponse_.Object == null)
+                                    {
+                                        throw new ApiException(
+                                            "Response was null which was not expected.",
+                                            status_,
+                                            objectResponse_.Text,
+                                            headers_,
+                                            null
+                                        );
+                                    }
+
+                                    throw new ApiException<ErrorResponse>(
+                                        "Unauthorized",
+                                        status_,
+                                        objectResponse_.Text,
+                                        headers_,
+                                        objectResponse_.Object,
+                                        null
+                                    );
+                                }
+                                else
+                                    if (status_ == 500)
+                                    {
+                                        var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                            response_,
+                                            headers_,
+                                            cancellationToken
+                                        ).ConfigureAwait(false);
+                                        if (objectResponse_.Object == null)
+                                        {
+                                            throw new ApiException(
+                                                "Response was null which was not expected.",
+                                                status_,
+                                                objectResponse_.Text,
+                                                headers_,
+                                                null
+                                            );
+                                        }
+
+                                        throw new ApiException<ErrorResponse>(
+                                            "Internal server error",
+                                            status_,
+                                            objectResponse_.Text,
+                                            headers_,
+                                            objectResponse_.Object,
+                                            null
+                                        );
+                                    }
+                                    else
+                                    {
+                                        var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(
+                                            response_.Content,
+                                            cancellationToken
+                                        ).ConfigureAwait(false);
+                                        throw new ApiException(
+                                            "The HTTP status code of the response was not expected (" + status_ + ").",
+                                            status_,
+                                            responseData_,
+                                            headers_,
+                                            null
+                                        );
+                                    }
                     }
                     finally
                     {
@@ -442,7 +725,10 @@ namespace NFMWorld.Api
         /// <param name="authorization">Bearer token for user authentication</param>
         /// <returns>Liked status of asset changed</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<LikeAssetResponse> SetAssetLikedAsync(string authorization, LikeAssetRequest body)
+        public virtual System.Threading.Tasks.Task<LikeAssetResponse> SetAssetLikedAsync(
+            string authorization,
+            LikeAssetRequest body
+        )
         {
             return SetAssetLikedAsync(authorization, body, System.Threading.CancellationToken.None);
         }
@@ -451,7 +737,11 @@ namespace NFMWorld.Api
         /// <param name="authorization">Bearer token for user authentication</param>
         /// <returns>Liked status of asset changed</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<LikeAssetResponse> SetAssetLikedAsync(string authorization, LikeAssetRequest body, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<LikeAssetResponse> SetAssetLikedAsync(
+            string authorization,
+            LikeAssetRequest body,
+            System.Threading.CancellationToken cancellationToken
+        )
         {
             if (body == null)
                 throw new System.ArgumentNullException("body");
@@ -462,16 +752,20 @@ namespace NFMWorld.Api
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
-
                     if (authorization == null)
                         throw new System.ArgumentNullException("authorization");
-                    request_.Headers.TryAddWithoutValidation("Authorization", ConvertToString(authorization, System.Globalization.CultureInfo.InvariantCulture));
+                    request_.Headers.TryAddWithoutValidation(
+                        "Authorization",
+                        ConvertToString(authorization, System.Globalization.CultureInfo.InvariantCulture)
+                    );
                     var json_ = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(body, JsonSerializerSettings);
                     var content_ = new System.Net.Http.ByteArrayContent(json_);
                     content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("POST");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue
+                        .Parse("application/json")
+                    );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
@@ -485,11 +779,16 @@ namespace NFMWorld.Api
 
                     PrepareRequest(client_, request_, url_);
 
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var response_ = await client_.SendAsync(
+                        request_,
+                        System.Net.Http.HttpCompletionOption.ResponseHeadersRead,
+                        cancellationToken
+                    ).ConfigureAwait(false);
                     var disposeResponse_ = true;
                     try
                     {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
+                            .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
                         if (response_.Content != null && response_.Content.Headers != null)
@@ -503,58 +802,151 @@ namespace NFMWorld.Api
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<LikeAssetResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<LikeAssetResponse>(
+                                response_,
+                                headers_,
+                                cancellationToken
+                            ).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                throw new ApiException(
+                                    "Response was null which was not expected.",
+                                    status_,
+                                    objectResponse_.Text,
+                                    headers_,
+                                    null
+                                );
                             }
+
                             return objectResponse_.Object;
                         }
                         else
-                        if (status_ == 400)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
+                            if (status_ == 400)
                             {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                    response_,
+                                    headers_,
+                                    cancellationToken
+                                ).ConfigureAwait(false);
+                                if (objectResponse_.Object == null)
+                                {
+                                    throw new ApiException(
+                                        "Response was null which was not expected.",
+                                        status_,
+                                        objectResponse_.Text,
+                                        headers_,
+                                        null
+                                    );
+                                }
+
+                                throw new ApiException<ErrorResponse>(
+                                    "Invalid request",
+                                    status_,
+                                    objectResponse_.Text,
+                                    headers_,
+                                    objectResponse_.Object,
+                                    null
+                                );
                             }
-                            throw new ApiException<ErrorResponse>("Invalid request", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        if (status_ == 401)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new ApiException<ErrorResponse>("Unauthorized", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        if (status_ == 404)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new ApiException<ErrorResponse>("No asset found", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        if (status_ == 500)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new ApiException<ErrorResponse>("Internal server error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
+                            else
+                                if (status_ == 401)
+                                {
+                                    var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                        response_,
+                                        headers_,
+                                        cancellationToken
+                                    ).ConfigureAwait(false);
+                                    if (objectResponse_.Object == null)
+                                    {
+                                        throw new ApiException(
+                                            "Response was null which was not expected.",
+                                            status_,
+                                            objectResponse_.Text,
+                                            headers_,
+                                            null
+                                        );
+                                    }
+
+                                    throw new ApiException<ErrorResponse>(
+                                        "Unauthorized",
+                                        status_,
+                                        objectResponse_.Text,
+                                        headers_,
+                                        objectResponse_.Object,
+                                        null
+                                    );
+                                }
+                                else
+                                    if (status_ == 404)
+                                    {
+                                        var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                            response_,
+                                            headers_,
+                                            cancellationToken
+                                        ).ConfigureAwait(false);
+                                        if (objectResponse_.Object == null)
+                                        {
+                                            throw new ApiException(
+                                                "Response was null which was not expected.",
+                                                status_,
+                                                objectResponse_.Text,
+                                                headers_,
+                                                null
+                                            );
+                                        }
+
+                                        throw new ApiException<ErrorResponse>(
+                                            "No asset found",
+                                            status_,
+                                            objectResponse_.Text,
+                                            headers_,
+                                            objectResponse_.Object,
+                                            null
+                                        );
+                                    }
+                                    else
+                                        if (status_ == 500)
+                                        {
+                                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                                response_,
+                                                headers_,
+                                                cancellationToken
+                                            ).ConfigureAwait(false);
+                                            if (objectResponse_.Object == null)
+                                            {
+                                                throw new ApiException(
+                                                    "Response was null which was not expected.",
+                                                    status_,
+                                                    objectResponse_.Text,
+                                                    headers_,
+                                                    null
+                                                );
+                                            }
+
+                                            throw new ApiException<ErrorResponse>(
+                                                "Internal server error",
+                                                status_,
+                                                objectResponse_.Text,
+                                                headers_,
+                                                objectResponse_.Object,
+                                                null
+                                            );
+                                        }
+                                        else
+                                        {
+                                            var responseData_ = response_.Content
+                                                                == null ? null : await ReadAsStringAsync(
+                                                                    response_.Content,
+                                                                    cancellationToken
+                                                                ).ConfigureAwait(false);
+                                            throw new ApiException(
+                                                "The HTTP status code of the response was not expected (" + status_ + ").",
+                                                status_,
+                                                responseData_,
+                                                headers_,
+                                                null
+                                            );
+                                        }
                     }
                     finally
                     {
@@ -573,7 +965,8 @@ namespace NFMWorld.Api
         /// <param name="authorization">Bearer token for user authentication</param>
         /// <returns>Asset retrieved successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<System.Collections.Generic.ICollection<int>> GetAssetAsync(string authorization, string asset_type, string asset_author, string asset_name)
+        public virtual System.Threading.Tasks.Task<System.Collections.Generic
+            .ICollection<int>> GetAssetAsync(string authorization, string asset_type, string asset_author, string asset_name)
         {
             return GetAssetAsync(authorization, asset_type, asset_author, asset_name, System.Threading.CancellationToken.None);
         }
@@ -582,7 +975,14 @@ namespace NFMWorld.Api
         /// <param name="authorization">Bearer token for user authentication</param>
         /// <returns>Asset retrieved successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<int>> GetAssetAsync(string authorization, string asset_type, string asset_author, string asset_name, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<System.Collections.Generic
+            .ICollection<int>> GetAssetAsync(
+                string authorization,
+                string asset_type,
+                string asset_author,
+                string asset_name,
+                System.Threading.CancellationToken cancellationToken
+            )
         {
             if (asset_type == null)
                 throw new System.ArgumentNullException("asset_type");
@@ -599,22 +999,38 @@ namespace NFMWorld.Api
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
-
                     if (authorization == null)
                         throw new System.ArgumentNullException("authorization");
-                    request_.Headers.TryAddWithoutValidation("Authorization", ConvertToString(authorization, System.Globalization.CultureInfo.InvariantCulture));
+                    request_.Headers.TryAddWithoutValidation(
+                        "Authorization",
+                        ConvertToString(authorization, System.Globalization.CultureInfo.InvariantCulture)
+                    );
                     request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/octet-stream"));
+                    request_.Headers.Accept.Add(
+                        System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/octet-stream")
+                    );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
                     // Operation Path: "assets/{asset_type}/{asset_author}/{asset_name}.radpack"
                     urlBuilder_.Append("assets/");
-                    urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(asset_type, System.Globalization.CultureInfo.InvariantCulture)));
+                    urlBuilder_.Append(
+                        System.Uri.EscapeDataString(
+                            ConvertToString(asset_type, System.Globalization.CultureInfo.InvariantCulture)
+                        )
+                    );
                     urlBuilder_.Append('/');
-                    urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(asset_author, System.Globalization.CultureInfo.InvariantCulture)));
+                    urlBuilder_.Append(
+                        System.Uri.EscapeDataString(
+                            ConvertToString(asset_author, System.Globalization.CultureInfo.InvariantCulture)
+                        )
+                    );
                     urlBuilder_.Append('/');
-                    urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(asset_name, System.Globalization.CultureInfo.InvariantCulture)));
+                    urlBuilder_.Append(
+                        System.Uri.EscapeDataString(
+                            ConvertToString(asset_name, System.Globalization.CultureInfo.InvariantCulture)
+                        )
+                    );
                     urlBuilder_.Append(".radpack");
 
                     PrepareRequest(client_, request_, urlBuilder_);
@@ -624,11 +1040,16 @@ namespace NFMWorld.Api
 
                     PrepareRequest(client_, request_, url_);
 
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var response_ = await client_.SendAsync(
+                        request_,
+                        System.Net.Http.HttpCompletionOption.ResponseHeadersRead,
+                        cancellationToken
+                    ).ConfigureAwait(false);
                     var disposeResponse_ = true;
                     try
                     {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
+                            .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
                         if (response_.Content != null && response_.Content.Headers != null)
@@ -642,68 +1063,176 @@ namespace NFMWorld.Api
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<System.Collections.Generic.ICollection<int>>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<System.Collections.Generic
+                                .ICollection<int>>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                throw new ApiException(
+                                    "Response was null which was not expected.",
+                                    status_,
+                                    objectResponse_.Text,
+                                    headers_,
+                                    null
+                                );
                             }
+
                             return objectResponse_.Object;
                         }
                         else
-                        if (status_ == 400)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
+                            if (status_ == 400)
                             {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                    response_,
+                                    headers_,
+                                    cancellationToken
+                                ).ConfigureAwait(false);
+                                if (objectResponse_.Object == null)
+                                {
+                                    throw new ApiException(
+                                        "Response was null which was not expected.",
+                                        status_,
+                                        objectResponse_.Text,
+                                        headers_,
+                                        null
+                                    );
+                                }
+
+                                throw new ApiException<ErrorResponse>(
+                                    "Invalid request",
+                                    status_,
+                                    objectResponse_.Text,
+                                    headers_,
+                                    objectResponse_.Object,
+                                    null
+                                );
                             }
-                            throw new ApiException<ErrorResponse>("Invalid request", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        if (status_ == 401)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new ApiException<ErrorResponse>("Unauthorized", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        if (status_ == 403)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new ApiException<ErrorResponse>("Forbidden", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        if (status_ == 404)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new ApiException<ErrorResponse>("No asset found", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        if (status_ == 500)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new ApiException<ErrorResponse>("Internal server error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
+                            else
+                                if (status_ == 401)
+                                {
+                                    var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                        response_,
+                                        headers_,
+                                        cancellationToken
+                                    ).ConfigureAwait(false);
+                                    if (objectResponse_.Object == null)
+                                    {
+                                        throw new ApiException(
+                                            "Response was null which was not expected.",
+                                            status_,
+                                            objectResponse_.Text,
+                                            headers_,
+                                            null
+                                        );
+                                    }
+
+                                    throw new ApiException<ErrorResponse>(
+                                        "Unauthorized",
+                                        status_,
+                                        objectResponse_.Text,
+                                        headers_,
+                                        objectResponse_.Object,
+                                        null
+                                    );
+                                }
+                                else
+                                    if (status_ == 403)
+                                    {
+                                        var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                            response_,
+                                            headers_,
+                                            cancellationToken
+                                        ).ConfigureAwait(false);
+                                        if (objectResponse_.Object == null)
+                                        {
+                                            throw new ApiException(
+                                                "Response was null which was not expected.",
+                                                status_,
+                                                objectResponse_.Text,
+                                                headers_,
+                                                null
+                                            );
+                                        }
+
+                                        throw new ApiException<ErrorResponse>(
+                                            "Forbidden",
+                                            status_,
+                                            objectResponse_.Text,
+                                            headers_,
+                                            objectResponse_.Object,
+                                            null
+                                        );
+                                    }
+                                    else
+                                        if (status_ == 404)
+                                        {
+                                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                                response_,
+                                                headers_,
+                                                cancellationToken
+                                            ).ConfigureAwait(false);
+                                            if (objectResponse_.Object == null)
+                                            {
+                                                throw new ApiException(
+                                                    "Response was null which was not expected.",
+                                                    status_,
+                                                    objectResponse_.Text,
+                                                    headers_,
+                                                    null
+                                                );
+                                            }
+
+                                            throw new ApiException<ErrorResponse>(
+                                                "No asset found",
+                                                status_,
+                                                objectResponse_.Text,
+                                                headers_,
+                                                objectResponse_.Object,
+                                                null
+                                            );
+                                        }
+                                        else
+                                            if (status_ == 500)
+                                            {
+                                                var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                                    response_,
+                                                    headers_,
+                                                    cancellationToken
+                                                ).ConfigureAwait(false);
+                                                if (objectResponse_.Object == null)
+                                                {
+                                                    throw new ApiException(
+                                                        "Response was null which was not expected.",
+                                                        status_,
+                                                        objectResponse_.Text,
+                                                        headers_,
+                                                        null
+                                                    );
+                                                }
+
+                                                throw new ApiException<ErrorResponse>(
+                                                    "Internal server error",
+                                                    status_,
+                                                    objectResponse_.Text,
+                                                    headers_,
+                                                    objectResponse_.Object,
+                                                    null
+                                                );
+                                            }
+                                            else
+                                            {
+                                                var responseData_ = response_.Content
+                                                                    == null ? null : await ReadAsStringAsync(
+                                                                        response_.Content,
+                                                                        cancellationToken
+                                                                    ).ConfigureAwait(false);
+                                                throw new ApiException(
+                                                    "The HTTP status code of the response was not expected (" + status_ + ").",
+                                                    status_,
+                                                    responseData_,
+                                                    headers_,
+                                                    null
+                                                );
+                                            }
                     }
                     finally
                     {
@@ -729,7 +1258,11 @@ namespace NFMWorld.Api
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>Discord account created and session started</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<DiscordCreateAccountResponse> CreateDiscordAccountAsync(CreateAccountBody body, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks
+            .Task<DiscordCreateAccountResponse> CreateDiscordAccountAsync(
+                CreateAccountBody body,
+                System.Threading.CancellationToken cancellationToken
+            )
         {
             if (body == null)
                 throw new System.ArgumentNullException("body");
@@ -745,7 +1278,9 @@ namespace NFMWorld.Api
                     content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("POST");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue
+                        .Parse("application/json")
+                    );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
@@ -759,11 +1294,16 @@ namespace NFMWorld.Api
 
                     PrepareRequest(client_, request_, url_);
 
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var response_ = await client_.SendAsync(
+                        request_,
+                        System.Net.Http.HttpCompletionOption.ResponseHeadersRead,
+                        cancellationToken
+                    ).ConfigureAwait(false);
                     var disposeResponse_ = true;
                     try
                     {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
+                            .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
                         if (response_.Content != null && response_.Content.Headers != null)
@@ -777,38 +1317,94 @@ namespace NFMWorld.Api
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<DiscordCreateAccountResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<DiscordCreateAccountResponse>(
+                                response_,
+                                headers_,
+                                cancellationToken
+                            ).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                throw new ApiException(
+                                    "Response was null which was not expected.",
+                                    status_,
+                                    objectResponse_.Text,
+                                    headers_,
+                                    null
+                                );
                             }
+
                             return objectResponse_.Object;
                         }
                         else
-                        if (status_ == 400)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
+                            if (status_ == 400)
                             {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                    response_,
+                                    headers_,
+                                    cancellationToken
+                                ).ConfigureAwait(false);
+                                if (objectResponse_.Object == null)
+                                {
+                                    throw new ApiException(
+                                        "Response was null which was not expected.",
+                                        status_,
+                                        objectResponse_.Text,
+                                        headers_,
+                                        null
+                                    );
+                                }
+
+                                throw new ApiException<ErrorResponse>(
+                                    "Invalid or expired temp token, or username taken",
+                                    status_,
+                                    objectResponse_.Text,
+                                    headers_,
+                                    objectResponse_.Object,
+                                    null
+                                );
                             }
-                            throw new ApiException<ErrorResponse>("Invalid or expired temp token, or username taken", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        if (status_ == 500)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new ApiException<ErrorResponse>("Internal server error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
+                            else
+                                if (status_ == 500)
+                                {
+                                    var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                        response_,
+                                        headers_,
+                                        cancellationToken
+                                    ).ConfigureAwait(false);
+                                    if (objectResponse_.Object == null)
+                                    {
+                                        throw new ApiException(
+                                            "Response was null which was not expected.",
+                                            status_,
+                                            objectResponse_.Text,
+                                            headers_,
+                                            null
+                                        );
+                                    }
+
+                                    throw new ApiException<ErrorResponse>(
+                                        "Internal server error",
+                                        status_,
+                                        objectResponse_.Text,
+                                        headers_,
+                                        objectResponse_.Object,
+                                        null
+                                    );
+                                }
+                                else
+                                {
+                                    var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(
+                                        response_.Content,
+                                        cancellationToken
+                                    ).ConfigureAwait(false);
+                                    throw new ApiException(
+                                        "The HTTP status code of the response was not expected (" + status_ + ").",
+                                        status_,
+                                        responseData_,
+                                        headers_,
+                                        null
+                                    );
+                                }
                     }
                     finally
                     {
@@ -834,7 +1430,9 @@ namespace NFMWorld.Api
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>Discord OAuth2 authorization URL and poll ID</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<DiscordInitResponse> InitDiscordOauthAsync(System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<DiscordInitResponse> InitDiscordOauthAsync(
+            System.Threading.CancellationToken cancellationToken
+        )
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -843,7 +1441,9 @@ namespace NFMWorld.Api
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue
+                        .Parse("application/json")
+                    );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
@@ -857,11 +1457,16 @@ namespace NFMWorld.Api
 
                     PrepareRequest(client_, request_, url_);
 
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var response_ = await client_.SendAsync(
+                        request_,
+                        System.Net.Http.HttpCompletionOption.ResponseHeadersRead,
+                        cancellationToken
+                    ).ConfigureAwait(false);
                     var disposeResponse_ = true;
                     try
                     {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
+                            .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
                         if (response_.Content != null && response_.Content.Headers != null)
@@ -875,28 +1480,66 @@ namespace NFMWorld.Api
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<DiscordInitResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<DiscordInitResponse>(
+                                response_,
+                                headers_,
+                                cancellationToken
+                            ).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                throw new ApiException(
+                                    "Response was null which was not expected.",
+                                    status_,
+                                    objectResponse_.Text,
+                                    headers_,
+                                    null
+                                );
                             }
+
                             return objectResponse_.Object;
                         }
                         else
-                        if (status_ == 500)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
+                            if (status_ == 500)
                             {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                    response_,
+                                    headers_,
+                                    cancellationToken
+                                ).ConfigureAwait(false);
+                                if (objectResponse_.Object == null)
+                                {
+                                    throw new ApiException(
+                                        "Response was null which was not expected.",
+                                        status_,
+                                        objectResponse_.Text,
+                                        headers_,
+                                        null
+                                    );
+                                }
+
+                                throw new ApiException<ErrorResponse>(
+                                    "Internal server error",
+                                    status_,
+                                    objectResponse_.Text,
+                                    headers_,
+                                    objectResponse_.Object,
+                                    null
+                                );
                             }
-                            throw new ApiException<ErrorResponse>("Internal server error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
+                            else
+                            {
+                                var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(
+                                    response_.Content,
+                                    cancellationToken
+                                ).ConfigureAwait(false);
+                                throw new ApiException(
+                                    "The HTTP status code of the response was not expected (" + status_ + ").",
+                                    status_,
+                                    responseData_,
+                                    headers_,
+                                    null
+                                );
+                            }
                     }
                     finally
                     {
@@ -914,7 +1557,8 @@ namespace NFMWorld.Api
 
         /// <returns>Account created</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<CreateLocalAccountResponse> CreateLocalAccountAsync(CreateLocalAccountRequest body)
+        public virtual System.Threading.Tasks
+            .Task<CreateLocalAccountResponse> CreateLocalAccountAsync(CreateLocalAccountRequest body)
         {
             return CreateLocalAccountAsync(body, System.Threading.CancellationToken.None);
         }
@@ -922,7 +1566,11 @@ namespace NFMWorld.Api
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>Account created</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<CreateLocalAccountResponse> CreateLocalAccountAsync(CreateLocalAccountRequest body, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks
+            .Task<CreateLocalAccountResponse> CreateLocalAccountAsync(
+                CreateLocalAccountRequest body,
+                System.Threading.CancellationToken cancellationToken
+            )
         {
             if (body == null)
                 throw new System.ArgumentNullException("body");
@@ -938,7 +1586,9 @@ namespace NFMWorld.Api
                     content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("POST");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue
+                        .Parse("application/json")
+                    );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
@@ -952,11 +1602,16 @@ namespace NFMWorld.Api
 
                     PrepareRequest(client_, request_, url_);
 
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var response_ = await client_.SendAsync(
+                        request_,
+                        System.Net.Http.HttpCompletionOption.ResponseHeadersRead,
+                        cancellationToken
+                    ).ConfigureAwait(false);
                     var disposeResponse_ = true;
                     try
                     {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
+                            .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
                         if (response_.Content != null && response_.Content.Headers != null)
@@ -970,38 +1625,94 @@ namespace NFMWorld.Api
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<CreateLocalAccountResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<CreateLocalAccountResponse>(
+                                response_,
+                                headers_,
+                                cancellationToken
+                            ).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                throw new ApiException(
+                                    "Response was null which was not expected.",
+                                    status_,
+                                    objectResponse_.Text,
+                                    headers_,
+                                    null
+                                );
                             }
+
                             return objectResponse_.Object;
                         }
                         else
-                        if (status_ == 400)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
+                            if (status_ == 400)
                             {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                    response_,
+                                    headers_,
+                                    cancellationToken
+                                ).ConfigureAwait(false);
+                                if (objectResponse_.Object == null)
+                                {
+                                    throw new ApiException(
+                                        "Response was null which was not expected.",
+                                        status_,
+                                        objectResponse_.Text,
+                                        headers_,
+                                        null
+                                    );
+                                }
+
+                                throw new ApiException<ErrorResponse>(
+                                    "Validation error or username already taken",
+                                    status_,
+                                    objectResponse_.Text,
+                                    headers_,
+                                    objectResponse_.Object,
+                                    null
+                                );
                             }
-                            throw new ApiException<ErrorResponse>("Validation error or username already taken", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        if (status_ == 500)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new ApiException<ErrorResponse>("Internal server error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
+                            else
+                                if (status_ == 500)
+                                {
+                                    var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                        response_,
+                                        headers_,
+                                        cancellationToken
+                                    ).ConfigureAwait(false);
+                                    if (objectResponse_.Object == null)
+                                    {
+                                        throw new ApiException(
+                                            "Response was null which was not expected.",
+                                            status_,
+                                            objectResponse_.Text,
+                                            headers_,
+                                            null
+                                        );
+                                    }
+
+                                    throw new ApiException<ErrorResponse>(
+                                        "Internal server error",
+                                        status_,
+                                        objectResponse_.Text,
+                                        headers_,
+                                        objectResponse_.Object,
+                                        null
+                                    );
+                                }
+                                else
+                                {
+                                    var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(
+                                        response_.Content,
+                                        cancellationToken
+                                    ).ConfigureAwait(false);
+                                    throw new ApiException(
+                                        "The HTTP status code of the response was not expected (" + status_ + ").",
+                                        status_,
+                                        responseData_,
+                                        headers_,
+                                        null
+                                    );
+                                }
                     }
                     finally
                     {
@@ -1019,7 +1730,8 @@ namespace NFMWorld.Api
 
         /// <returns>Login successful</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<LoginLocalAccountResponse> LoginLocalAccountAsync(LoginLocalAccountRequest body)
+        public virtual System.Threading.Tasks
+            .Task<LoginLocalAccountResponse> LoginLocalAccountAsync(LoginLocalAccountRequest body)
         {
             return LoginLocalAccountAsync(body, System.Threading.CancellationToken.None);
         }
@@ -1027,7 +1739,11 @@ namespace NFMWorld.Api
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>Login successful</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<LoginLocalAccountResponse> LoginLocalAccountAsync(LoginLocalAccountRequest body, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks
+            .Task<LoginLocalAccountResponse> LoginLocalAccountAsync(
+                LoginLocalAccountRequest body,
+                System.Threading.CancellationToken cancellationToken
+            )
         {
             if (body == null)
                 throw new System.ArgumentNullException("body");
@@ -1043,7 +1759,9 @@ namespace NFMWorld.Api
                     content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
                     request_.Content = content_;
                     request_.Method = new System.Net.Http.HttpMethod("POST");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue
+                        .Parse("application/json")
+                    );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
@@ -1057,11 +1775,16 @@ namespace NFMWorld.Api
 
                     PrepareRequest(client_, request_, url_);
 
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var response_ = await client_.SendAsync(
+                        request_,
+                        System.Net.Http.HttpCompletionOption.ResponseHeadersRead,
+                        cancellationToken
+                    ).ConfigureAwait(false);
                     var disposeResponse_ = true;
                     try
                     {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
+                            .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
                         if (response_.Content != null && response_.Content.Headers != null)
@@ -1075,38 +1798,94 @@ namespace NFMWorld.Api
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<LoginLocalAccountResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<LoginLocalAccountResponse>(
+                                response_,
+                                headers_,
+                                cancellationToken
+                            ).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                throw new ApiException(
+                                    "Response was null which was not expected.",
+                                    status_,
+                                    objectResponse_.Text,
+                                    headers_,
+                                    null
+                                );
                             }
+
                             return objectResponse_.Object;
                         }
                         else
-                        if (status_ == 400)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
+                            if (status_ == 400)
                             {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                    response_,
+                                    headers_,
+                                    cancellationToken
+                                ).ConfigureAwait(false);
+                                if (objectResponse_.Object == null)
+                                {
+                                    throw new ApiException(
+                                        "Response was null which was not expected.",
+                                        status_,
+                                        objectResponse_.Text,
+                                        headers_,
+                                        null
+                                    );
+                                }
+
+                                throw new ApiException<ErrorResponse>(
+                                    "Invalid credentials",
+                                    status_,
+                                    objectResponse_.Text,
+                                    headers_,
+                                    objectResponse_.Object,
+                                    null
+                                );
                             }
-                            throw new ApiException<ErrorResponse>("Invalid credentials", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        if (status_ == 500)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new ApiException<ErrorResponse>("Internal server error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
+                            else
+                                if (status_ == 500)
+                                {
+                                    var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                        response_,
+                                        headers_,
+                                        cancellationToken
+                                    ).ConfigureAwait(false);
+                                    if (objectResponse_.Object == null)
+                                    {
+                                        throw new ApiException(
+                                            "Response was null which was not expected.",
+                                            status_,
+                                            objectResponse_.Text,
+                                            headers_,
+                                            null
+                                        );
+                                    }
+
+                                    throw new ApiException<ErrorResponse>(
+                                        "Internal server error",
+                                        status_,
+                                        objectResponse_.Text,
+                                        headers_,
+                                        objectResponse_.Object,
+                                        null
+                                    );
+                                }
+                                else
+                                {
+                                    var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(
+                                        response_.Content,
+                                        cancellationToken
+                                    ).ConfigureAwait(false);
+                                    throw new ApiException(
+                                        "The HTTP status code of the response was not expected (" + status_ + ").",
+                                        status_,
+                                        responseData_,
+                                        headers_,
+                                        null
+                                    );
+                                }
                     }
                     finally
                     {
@@ -1134,7 +1913,10 @@ namespace NFMWorld.Api
         /// <param name="poll_id">OAuth2 poll session ID returned by /auth/discord/start</param>
         /// <returns>Poll result (pending or final)</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<PollResponse> PollOauthAsync(string poll_id, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<PollResponse> PollOauthAsync(
+            string poll_id,
+            System.Threading.CancellationToken cancellationToken
+        )
         {
             if (poll_id == null)
                 throw new System.ArgumentNullException("poll_id");
@@ -1146,13 +1928,17 @@ namespace NFMWorld.Api
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue
+                        .Parse("application/json")
+                    );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
                     // Operation Path: "auth/poll/{poll_id}"
                     urlBuilder_.Append("auth/poll/");
-                    urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(poll_id, System.Globalization.CultureInfo.InvariantCulture)));
+                    urlBuilder_.Append(
+                        System.Uri.EscapeDataString(ConvertToString(poll_id, System.Globalization.CultureInfo.InvariantCulture))
+                    );
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -1161,11 +1947,16 @@ namespace NFMWorld.Api
 
                     PrepareRequest(client_, request_, url_);
 
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var response_ = await client_.SendAsync(
+                        request_,
+                        System.Net.Http.HttpCompletionOption.ResponseHeadersRead,
+                        cancellationToken
+                    ).ConfigureAwait(false);
                     var disposeResponse_ = true;
                     try
                     {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
+                            .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
                         if (response_.Content != null && response_.Content.Headers != null)
@@ -1179,38 +1970,94 @@ namespace NFMWorld.Api
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<PollResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<PollResponse>(
+                                response_,
+                                headers_,
+                                cancellationToken
+                            ).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                throw new ApiException(
+                                    "Response was null which was not expected.",
+                                    status_,
+                                    objectResponse_.Text,
+                                    headers_,
+                                    null
+                                );
                             }
+
                             return objectResponse_.Object;
                         }
                         else
-                        if (status_ == 404)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
+                            if (status_ == 404)
                             {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                                var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                    response_,
+                                    headers_,
+                                    cancellationToken
+                                ).ConfigureAwait(false);
+                                if (objectResponse_.Object == null)
+                                {
+                                    throw new ApiException(
+                                        "Response was null which was not expected.",
+                                        status_,
+                                        objectResponse_.Text,
+                                        headers_,
+                                        null
+                                    );
+                                }
+
+                                throw new ApiException<ErrorResponse>(
+                                    "Poll session not found",
+                                    status_,
+                                    objectResponse_.Text,
+                                    headers_,
+                                    objectResponse_.Object,
+                                    null
+                                );
                             }
-                            throw new ApiException<ErrorResponse>("Poll session not found", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        if (status_ == 500)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new ApiException<ErrorResponse>("Internal server error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
+                            else
+                                if (status_ == 500)
+                                {
+                                    var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
+                                        response_,
+                                        headers_,
+                                        cancellationToken
+                                    ).ConfigureAwait(false);
+                                    if (objectResponse_.Object == null)
+                                    {
+                                        throw new ApiException(
+                                            "Response was null which was not expected.",
+                                            status_,
+                                            objectResponse_.Text,
+                                            headers_,
+                                            null
+                                        );
+                                    }
+
+                                    throw new ApiException<ErrorResponse>(
+                                        "Internal server error",
+                                        status_,
+                                        objectResponse_.Text,
+                                        headers_,
+                                        objectResponse_.Object,
+                                        null
+                                    );
+                                }
+                                else
+                                {
+                                    var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(
+                                        response_.Content,
+                                        cancellationToken
+                                    ).ConfigureAwait(false);
+                                    throw new ApiException(
+                                        "The HTTP status code of the response was not expected (" + status_ + ").",
+                                        status_,
+                                        responseData_,
+                                        headers_,
+                                        null
+                                    );
+                                }
                     }
                     finally
                     {
@@ -1240,28 +2087,38 @@ namespace NFMWorld.Api
         }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-        private static System.Threading.Tasks.Task<string> ReadAsStringAsync(System.Net.Http.HttpContent content, System.Threading.CancellationToken cancellationToken)
+        private static System.Threading.Tasks.Task<string> ReadAsStringAsync(
+            System.Net.Http.HttpContent content,
+            System.Threading.CancellationToken cancellationToken
+        )
         {
-    #if NET5_0_OR_GREATER
+#if NET5_0_OR_GREATER
             return content.ReadAsStringAsync(cancellationToken);
-    #else
+#else
             return content.ReadAsStringAsync();
-    #endif
+#endif
         }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-        private static System.Threading.Tasks.Task<System.IO.Stream> ReadAsStreamAsync(System.Net.Http.HttpContent content, System.Threading.CancellationToken cancellationToken)
+        private static System.Threading.Tasks.Task<System.IO.Stream> ReadAsStreamAsync(
+            System.Net.Http.HttpContent content,
+            System.Threading.CancellationToken cancellationToken
+        )
         {
-    #if NET5_0_OR_GREATER
+#if NET5_0_OR_GREATER
             return content.ReadAsStreamAsync(cancellationToken);
-    #else
+#else
             return content.ReadAsStreamAsync();
-    #endif
+#endif
         }
 
         public bool ReadResponseAsString { get; set; }
 
-        protected virtual async System.Threading.Tasks.Task<ObjectResponseResult<T>> ReadObjectResponseAsync<T>(System.Net.Http.HttpResponseMessage response, System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> headers, System.Threading.CancellationToken cancellationToken)
+        protected virtual async System.Threading.Tasks.Task<ObjectResponseResult<T>> ReadObjectResponseAsync<T>(
+            System.Net.Http.HttpResponseMessage response,
+            System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> headers,
+            System.Threading.CancellationToken cancellationToken
+        )
         {
             if (response == null || response.Content == null)
             {
@@ -1286,9 +2143,14 @@ namespace NFMWorld.Api
             {
                 try
                 {
-                    using (var responseStream = await ReadAsStreamAsync(response.Content, cancellationToken).ConfigureAwait(false))
+                    using (var responseStream = await ReadAsStreamAsync(response.Content, cancellationToken)
+                        .ConfigureAwait(false))
                     {
-                        var typedBody = await System.Text.Json.JsonSerializer.DeserializeAsync<T>(responseStream, JsonSerializerSettings, cancellationToken).ConfigureAwait(false);
+                        var typedBody = await System.Text.Json.JsonSerializer.DeserializeAsync<T>(
+                            responseStream,
+                            JsonSerializerSettings,
+                            cancellationToken
+                        ).ConfigureAwait(false);
                         return new ObjectResponseResult<T>(typedBody!, string.Empty);
                     }
                 }
@@ -1315,7 +2177,10 @@ namespace NFMWorld.Api
                     var field_ = System.Reflection.IntrospectionExtensions.GetTypeInfo(value.GetType()).GetDeclaredField(name);
                     if (field_ != null)
                     {
-                        var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(field_, typeof(System.Runtime.Serialization.EnumMemberAttribute)) 
+                        var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(
+                            field_,
+                            typeof(System.Runtime.Serialization.EnumMemberAttribute)
+                        )
                             as System.Runtime.Serialization.EnumMemberAttribute;
                         if (attribute != null)
                         {
@@ -1323,17 +2188,19 @@ namespace NFMWorld.Api
                         }
                     }
 
-                    var converted = System.Convert.ToString(System.Convert.ChangeType(value, System.Enum.GetUnderlyingType(value.GetType()), cultureInfo));
+                    var converted = System.Convert.ToString(
+                        System.Convert.ChangeType(value, System.Enum.GetUnderlyingType(value.GetType()), cultureInfo)
+                    );
                     return converted == null ? string.Empty : converted;
                 }
             }
-            else if (value is bool) 
+            else if (value is bool)
             {
                 return System.Convert.ToString((bool)value, cultureInfo).ToLowerInvariant();
             }
             else if (value is byte[])
             {
-                return System.Convert.ToBase64String((byte[]) value);
+                return System.Convert.ToBase64String((byte[])value);
             }
             else if (value is string[])
             {
@@ -1347,6 +2214,7 @@ namespace NFMWorld.Api
                 {
                     valueTextArray[i] = ConvertToString(valueArray.GetValue(i), cultureInfo);
                 }
+
                 return string.Join(",", valueTextArray);
             }
 
@@ -1358,7 +2226,6 @@ namespace NFMWorld.Api
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public enum AssetType
     {
-
         [System.Runtime.Serialization.EnumMember(Value = @"track")]
         Track = 0,
 
@@ -1379,13 +2246,11 @@ namespace NFMWorld.Api
 
         [System.Runtime.Serialization.EnumMember(Value = @"wheel")]
         Wheel = 6,
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class CreateAccountBody
     {
-
         [System.Text.Json.Serialization.JsonPropertyName("tempToken")]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string TempToken { get; set; } = default!;
@@ -1402,16 +2267,15 @@ namespace NFMWorld.Api
             get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
             set { _additionalProperties = value; }
         }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class CreateAssetMultipart
     {
-
         [System.Text.Json.Serialization.JsonPropertyName("file")]
         [System.ComponentModel.DataAnnotations.Required]
-        public System.Collections.Generic.ICollection<int> File { get; set; } = new System.Collections.ObjectModel.Collection<int>();
+        public System.Collections.Generic.ICollection<int> File { get; set; } = new System.Collections.ObjectModel
+            .Collection<int>();
 
         [System.Text.Json.Serialization.JsonPropertyName("metadata")]
         [System.ComponentModel.DataAnnotations.Required]
@@ -1425,13 +2289,11 @@ namespace NFMWorld.Api
             get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
             set { _additionalProperties = value; }
         }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class CreateAssetRequest
     {
-
         [System.Text.Json.Serialization.JsonPropertyName("assetName")]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string AssetName { get; set; } = default!;
@@ -1459,13 +2321,11 @@ namespace NFMWorld.Api
             get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
             set { _additionalProperties = value; }
         }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class CreateAssetResponse
     {
-
         [System.Text.Json.Serialization.JsonPropertyName("assetId")]
         public long AssetId { get; set; } = default!;
 
@@ -1481,13 +2341,11 @@ namespace NFMWorld.Api
             get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
             set { _additionalProperties = value; }
         }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class CreateLocalAccountRequest
     {
-
         [System.Text.Json.Serialization.JsonPropertyName("password")]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Password { get; set; } = default!;
@@ -1504,13 +2362,11 @@ namespace NFMWorld.Api
             get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
             set { _additionalProperties = value; }
         }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class CreateLocalAccountResponse
     {
-
         [System.Text.Json.Serialization.JsonPropertyName("username")]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Username { get; set; } = default!;
@@ -1523,13 +2379,11 @@ namespace NFMWorld.Api
             get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
             set { _additionalProperties = value; }
         }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class DiscordCreateAccountResponse
     {
-
         [System.Text.Json.Serialization.JsonPropertyName("sessionToken")]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string SessionToken { get; set; } = default!;
@@ -1546,13 +2400,11 @@ namespace NFMWorld.Api
             get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
             set { _additionalProperties = value; }
         }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class DiscordInitResponse
     {
-
         [System.Text.Json.Serialization.JsonPropertyName("pollId")]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string PollId { get; set; } = default!;
@@ -1569,13 +2421,11 @@ namespace NFMWorld.Api
             get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
             set { _additionalProperties = value; }
         }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class ErrorResponse
     {
-
         [System.Text.Json.Serialization.JsonPropertyName("error")]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Error { get; set; } = default!;
@@ -1588,13 +2438,11 @@ namespace NFMWorld.Api
             get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
             set { _additionalProperties = value; }
         }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class HealthResponse
     {
-
         [System.Text.Json.Serialization.JsonPropertyName("status")]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Status { get; set; } = default!;
@@ -1607,13 +2455,11 @@ namespace NFMWorld.Api
             get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
             set { _additionalProperties = value; }
         }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class LikeAssetRequest
     {
-
         [System.Text.Json.Serialization.JsonPropertyName("assetAuthor")]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string AssetAuthor { get; set; } = default!;
@@ -1638,13 +2484,11 @@ namespace NFMWorld.Api
             get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
             set { _additionalProperties = value; }
         }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class LikeAssetResponse
     {
-
         [System.Text.Json.Serialization.JsonPropertyName("likes")]
         public long Likes { get; set; } = default!;
 
@@ -1656,13 +2500,11 @@ namespace NFMWorld.Api
             get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
             set { _additionalProperties = value; }
         }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class LoginLocalAccountRequest
     {
-
         [System.Text.Json.Serialization.JsonPropertyName("password")]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Password { get; set; } = default!;
@@ -1679,13 +2521,11 @@ namespace NFMWorld.Api
             get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
             set { _additionalProperties = value; }
         }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class LoginLocalAccountResponse
     {
-
         [System.Text.Json.Serialization.JsonPropertyName("sessionToken")]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string SessionToken { get; set; } = default!;
@@ -1702,13 +2542,11 @@ namespace NFMWorld.Api
             get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
             set { _additionalProperties = value; }
         }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class PollResponse
     {
-
         [System.Text.Json.Serialization.JsonPropertyName("payload")]
         public string? Payload { get; set; } = default!;
 
@@ -1724,13 +2562,11 @@ namespace NFMWorld.Api
             get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
             set { _additionalProperties = value; }
         }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class SearchAssetsAsset
     {
-
         [System.Text.Json.Serialization.JsonPropertyName("assetName")]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string AssetName { get; set; } = default!;
@@ -1752,7 +2588,8 @@ namespace NFMWorld.Api
 
         [System.Text.Json.Serialization.JsonPropertyName("tags")]
         [System.ComponentModel.DataAnnotations.Required]
-        public System.Collections.Generic.ICollection<string> Tags { get; set; } = new System.Collections.ObjectModel.Collection<string>();
+        public System.Collections.Generic.ICollection<string> Tags { get; set; } = new System.Collections.ObjectModel
+            .Collection<string>();
 
         [System.Text.Json.Serialization.JsonPropertyName("totalLikes")]
         public long TotalLikes { get; set; } = default!;
@@ -1765,13 +2602,11 @@ namespace NFMWorld.Api
             get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
             set { _additionalProperties = value; }
         }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class SearchAssetsRequest
     {
-
         [System.Text.Json.Serialization.JsonPropertyName("assetType")]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<AssetType>))]
@@ -1805,13 +2640,11 @@ namespace NFMWorld.Api
             get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
             set { _additionalProperties = value; }
         }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class SearchAssetsResponse
     {
-
         [System.Text.Json.Serialization.JsonPropertyName("entriesOnPage")]
         public int EntriesOnPage { get; set; } = default!;
 
@@ -1823,7 +2656,8 @@ namespace NFMWorld.Api
 
         [System.Text.Json.Serialization.JsonPropertyName("results")]
         [System.ComponentModel.DataAnnotations.Required]
-        public System.Collections.Generic.ICollection<SearchAssetsAsset> Results { get; set; } = new System.Collections.ObjectModel.Collection<SearchAssetsAsset>();
+        public System.Collections.Generic.ICollection<SearchAssetsAsset> Results { get; set; } = new System.Collections
+            .ObjectModel.Collection<SearchAssetsAsset>();
 
         [System.Text.Json.Serialization.JsonPropertyName("totalPages")]
         public int TotalPages { get; set; } = default!;
@@ -1839,13 +2673,11 @@ namespace NFMWorld.Api
             get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
             set { _additionalProperties = value; }
         }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public enum SortBy
     {
-
         [System.Runtime.Serialization.EnumMember(Value = @"mostLiked")]
         MostLiked = 0,
 
@@ -1857,9 +2689,7 @@ namespace NFMWorld.Api
 
         [System.Runtime.Serialization.EnumMember(Value = @"recentlyCreated")]
         RecentlyCreated = 3,
-
     }
-
 
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
@@ -1869,10 +2699,23 @@ namespace NFMWorld.Api
 
         public string? Response { get; private set; }
 
-        public System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> Headers { get; private set; }
+        public System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic
+            .IEnumerable<string>> Headers { get; private set; }
 
-        public ApiException(string message, int statusCode, string? response, System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> headers, System.Exception? innerException)
-            : base(message + "\n\nStatus: " + statusCode + "\nResponse: \n" + ((response == null) ? "(null)" : response.Substring(0, response.Length >= 512 ? 512 : response.Length)), innerException)
+        public ApiException(
+            string message,
+            int statusCode,
+            string? response,
+            System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> headers,
+            System.Exception? innerException
+        )
+            : base(
+                message + "\n\nStatus: " + statusCode + "\nResponse: \n" + ((response == null) ? "(null)" : response.Substring(
+                    0,
+                    response.Length >= 512 ? 512 : response.Length
+                )),
+                innerException
+            )
         {
             StatusCode = statusCode;
             Response = response;
@@ -1890,13 +2733,19 @@ namespace NFMWorld.Api
     {
         public TResult Result { get; private set; }
 
-        public ApiException(string message, int statusCode, string? response, System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> headers, TResult result, System.Exception? innerException)
+        public ApiException(
+            string message,
+            int statusCode,
+            string? response,
+            System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>> headers,
+            TResult result,
+            System.Exception? innerException
+        )
             : base(message, statusCode, response, headers, innerException)
         {
             Result = result;
         }
     }
-
 }
 
 #pragma warning restore  108

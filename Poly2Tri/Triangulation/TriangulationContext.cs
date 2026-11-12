@@ -128,7 +128,9 @@ namespace Poly2Tri
         public abstract TriangulationConstraint NewConstraint(TriangulationPoint a, TriangulationPoint b);
 
 
-        public void Update(string message) { }
+        public void Update(string message)
+        {
+        }
 
 
         public virtual void Clear()
@@ -138,12 +140,16 @@ namespace Poly2Tri
             {
                 DebugContext.Clear();
             }
+
             StepCount = 0;
         }
 
 
         public virtual bool IsDebugEnabled { get; protected set; }
 
-        public DTSweepDebugContext DTDebugContext { get { return DebugContext as DTSweepDebugContext; } }
+        public DTSweepDebugContext DTDebugContext
+        {
+            get { return DebugContext as DTSweepDebugContext; }
+        }
     }
 }

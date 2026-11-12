@@ -36,23 +36,73 @@ namespace Poly2Tri
 {
     public class Rect2D
     {
-        private double mMinX;   // left
-        private double mMaxX;   // right
-        private double mMinY;   // bottom // top
-        private double mMaxY;   // top    // bottom
+        private double mMinX; // left
+        private double mMaxX; // right
+        private double mMinY; // bottom // top
+        private double mMaxY; // top    // bottom
 
-        public double MinX { get { return mMinX; } set { mMinX = value; } }
-        public double MaxX { get { return mMaxX; } set { mMaxX = value; } }
-        public double MinY { get { return mMinY; } set { mMinY = value; } }
-        public double MaxY { get { return mMaxY; } set { mMaxY = value; } }
-        public double Left { get { return mMinX; } set { mMinX = value; } }
-        public double Right { get { return mMaxX; } set { mMaxX = value; } }
-        public double Top { get { return mMaxY; } set { mMaxY = value; } }
-        public double Bottom { get { return mMinY; } set { mMinY = value; } }
+        public double MinX
+        {
+            get { return mMinX; }
+            set { mMinX = value; }
+        }
 
-        public double Width { get { return (Right - Left); } }
-        public double Height { get { return (Top - Bottom); } }
-        public bool Empty { get { return (Left == Right) || (Top == Bottom); } }
+        public double MaxX
+        {
+            get { return mMaxX; }
+            set { mMaxX = value; }
+        }
+
+        public double MinY
+        {
+            get { return mMinY; }
+            set { mMinY = value; }
+        }
+
+        public double MaxY
+        {
+            get { return mMaxY; }
+            set { mMaxY = value; }
+        }
+
+        public double Left
+        {
+            get { return mMinX; }
+            set { mMinX = value; }
+        }
+
+        public double Right
+        {
+            get { return mMaxX; }
+            set { mMaxX = value; }
+        }
+
+        public double Top
+        {
+            get { return mMaxY; }
+            set { mMaxY = value; }
+        }
+
+        public double Bottom
+        {
+            get { return mMinY; }
+            set { mMinY = value; }
+        }
+
+        public double Width
+        {
+            get { return (Right - Left); }
+        }
+
+        public double Height
+        {
+            get { return (Top - Bottom); }
+        }
+
+        public bool Empty
+        {
+            get { return (Left == Right) || (Top == Bottom); }
+        }
 
 
         public Rect2D()
@@ -70,7 +120,7 @@ namespace Poly2Tri
         public override bool Equals(Object obj)
         {
             Rect2D r = obj as Rect2D;
-            if( r != null)
+            if (r != null)
             {
                 return Equals(r);
             }
@@ -91,14 +141,17 @@ namespace Poly2Tri
             {
                 return false;
             }
+
             if (!MathUtil.AreValuesEqual(MaxX, r.MaxX))
             {
                 return false;
             }
+
             if (!MathUtil.AreValuesEqual(MinY, r.MinY, epsilon))
             {
                 return false;
             }
+
             if (!MathUtil.AreValuesEqual(MaxY, r.MaxY, epsilon))
             {
                 return false;
@@ -152,7 +205,12 @@ namespace Poly2Tri
         {
             return (x > Left) && (y > Bottom) && (x < Right) && (y < Top);
         }
-        public bool Contains(Point2D p) { return Contains(p.X, p.Y); }
+
+        public bool Contains(Point2D p)
+        {
+            return Contains(p.X, p.Y);
+        }
+
         public bool Contains(Rect2D r)
         {
             return (Left < r.Left) && (Right > r.Right) && (Top < r.Top) && (Bottom > r.Bottom);
@@ -168,25 +226,38 @@ namespace Poly2Tri
         {
             return (x >= Left) && (y >= Top) && (x <= Right) && (y <= Bottom);
         }
+
         public bool ContainsInclusive(double x, double y, double epsilon)
         {
             return ((x + epsilon) >= Left) && ((y + epsilon) >= Top) && ((x - epsilon) <= Right) && ((y - epsilon) <= Bottom);
         }
-        public bool ContainsInclusive(Point2D p) { return ContainsInclusive(p.X, p.Y); }
-        public bool ContainsInclusive(Point2D p, double epsilon) { return ContainsInclusive(p.X, p.Y, epsilon); }
+
+        public bool ContainsInclusive(Point2D p)
+        {
+            return ContainsInclusive(p.X, p.Y);
+        }
+
+        public bool ContainsInclusive(Point2D p, double epsilon)
+        {
+            return ContainsInclusive(p.X, p.Y, epsilon);
+        }
+
         public bool ContainsInclusive(Rect2D r)
         {
             return (Left <= r.Left) && (Right >= r.Right) && (Top <= r.Top) && (Bottom >= r.Bottom);
         }
+
         public bool ContainsInclusive(Rect2D r, double epsilon)
         {
-            return ((Left - epsilon) <= r.Left) && ((Right + epsilon) >= r.Right) && ((Top - epsilon) <= r.Top) && ((Bottom + epsilon) >= r.Bottom);
+            return ((Left - epsilon) <= r.Left) && ((Right + epsilon) >= r.Right) && ((Top - epsilon) <= r.Top) && ((Bottom
+                                                                                                                     + epsilon)
+                                                                                                                    >= r.Bottom);
         }
 
 
         public bool Intersects(Rect2D r)
         {
-            return  (Right > r.Left) &&
+            return (Right > r.Left) &&
                     (Left < r.Right) &&
                     (Bottom < r.Top) &&
                     (Top > r.Bottom);
@@ -195,11 +266,11 @@ namespace Poly2Tri
 
         public Point2D GetCenter()
         {
-            Point2D p = new Point2D((Left + Right ) / 2, (Bottom + Top) / 2);
+            Point2D p = new Point2D((Left + Right) / 2, (Bottom + Top) / 2);
             return p;
         }
 
- 
+
         public bool IsNormalized()
         {
             return (Right >= Left) && (Bottom <= Top);
@@ -230,40 +301,40 @@ namespace Poly2Tri
 
 
         public void Inflate(double w, double h)
-        { 
-            Left   -= w; 
-            Top    += h; 
-            Right  += w; 
-            Bottom -= h; 
+        {
+            Left -= w;
+            Top += h;
+            Right += w;
+            Bottom -= h;
         }
 
 
         public void Inflate(double left, double top, double right, double bottom)
-        { 
-            Left   -= left; 
-            Top    += top; 
-            Right  += right; 
-            Bottom -= bottom; 
+        {
+            Left -= left;
+            Top += top;
+            Right += right;
+            Bottom -= bottom;
         }
 
 
         public void Offset(double w, double h)
         {
-            Left   += w; 
-            Top    += h; 
-            Right  += w; 
+            Left += w;
+            Top += h;
+            Right += w;
             Bottom += h;
         }
 
 
         public void SetPosition(double x, double y)
         {
-            double w = Right  - Left;
+            double w = Right - Left;
             double h = Bottom - Top;
-            Left   = x; 
-            Bottom = y; 
-            Right  = x + w; 
-            Top    = y + h;
+            Left = x;
+            Bottom = y;
+            Right = x + w;
+            Top = y + h;
         }
 
 
@@ -282,9 +353,9 @@ namespace Poly2Tri
                 return false;
             }
 
-            Left   = (r1.Left   > r2.Left)   ? r1.Left   : r2.Left;
-            Top    = (r1.Top    < r2.Top )   ? r1.Top    : r2.Top;
-            Right  = (r1.Right  < r2.Right)  ? r1.Right  : r2.Right;
+            Left = (r1.Left > r2.Left) ? r1.Left : r2.Left;
+            Top = (r1.Top < r2.Top) ? r1.Top : r2.Top;
+            Right = (r1.Right < r2.Right) ? r1.Right : r2.Right;
             Bottom = (r1.Bottom > r2.Bottom) ? r1.Bottom : r2.Bottom;
 
             return true;
@@ -316,6 +387,5 @@ namespace Poly2Tri
                 Bottom = (r1.Bottom < r2.Bottom) ? r1.Bottom : r2.Bottom;
             }
         }
-
     }
 }

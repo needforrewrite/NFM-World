@@ -38,6 +38,7 @@ namespace Poly2Tri
     public struct FixedBitArray3 : IEnumerable<bool>
     {
         public bool _0, _1, _2;
+
         public bool this[int index]
         {
             get
@@ -86,8 +87,8 @@ namespace Poly2Tri
 
             return false;
         }
-        
-        
+
+
         public int IndexOf(bool value)
         {
             for (int i = 0; i < 3; ++i)
@@ -101,13 +102,13 @@ namespace Poly2Tri
             return -1;
         }
 
-        
+
         public void Clear()
         {
             _0 = _1 = _2 = false;
         }
 
-        
+
         public void Clear(bool value)
         {
             for (int i = 0; i < 3; ++i)
@@ -128,10 +129,16 @@ namespace Poly2Tri
             }
         }
 
-        
-        public IEnumerator<bool> GetEnumerator() { return Enumerate().GetEnumerator(); }
 
-        
-        IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
+        public IEnumerator<bool> GetEnumerator()
+        {
+            return Enumerate().GetEnumerator();
+        }
+
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 }

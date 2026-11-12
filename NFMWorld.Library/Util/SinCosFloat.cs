@@ -6,7 +6,8 @@ using System.Runtime.CompilerServices;
 
 namespace NFMWorldLibrary.Util;
 
-public readonly record struct SinCosFloat : IFloatingPointIeee754<SinCosFloat>, IComparisonOperators<SinCosFloat, float, bool>,
+public readonly record struct SinCosFloat :
+    IFloatingPointIeee754<SinCosFloat>, IComparisonOperators<SinCosFloat, float, bool>,
     IComparisonOperators<SinCosFloat, int, bool>
 {
     public readonly float Value;

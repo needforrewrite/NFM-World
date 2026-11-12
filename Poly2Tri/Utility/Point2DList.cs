@@ -86,23 +86,27 @@ namespace Poly2Tri
         public enum PolygonError : uint
         {
             None = 0,
-            NotEnoughVertices           = 1 << 0,
-            NotConvex                   = 1 << 1,
-            NotSimple                   = 1 << 2,
-            AreaTooSmall                = 1 << 3,
-            SidesTooCloseToParallel     = 1 << 4,
-            TooThin                     = 1 << 5,
-            Degenerate                  = 1 << 6,
-            Unknown                     = 1 << 30,
+            NotEnoughVertices = 1 << 0,
+            NotConvex = 1 << 1,
+            NotSimple = 1 << 2,
+            AreaTooSmall = 1 << 3,
+            SidesTooCloseToParallel = 1 << 4,
+            TooThin = 1 << 5,
+            Degenerate = 1 << 6,
+            Unknown = 1 << 30,
         }
 
 
         protected List<Point2D> mPoints = new List<Point2D>();
         protected Rect2D mBoundingBox = new Rect2D();
         protected WindingOrderType mWindingOrder = WindingOrderType.Unknown;
-        protected double mEpsilon = MathUtil.EPSILON;    // Epsilon is a function of the size of the bounds of the polygon
+        protected double mEpsilon = MathUtil.EPSILON; // Epsilon is a function of the size of the bounds of the polygon
 
-        public Rect2D BoundingBox { get { return mBoundingBox; } }
+        public Rect2D BoundingBox
+        {
+            get { return mBoundingBox; }
+        }
+
         public WindingOrderType WindingOrder
         {
             get { return mWindingOrder; }
@@ -112,6 +116,7 @@ namespace Poly2Tri
                 {
                     mWindingOrder = CalculateWindingOrder();
                 }
+
                 if (value != mWindingOrder)
                 {
                     mPoints.Reverse();
@@ -119,14 +124,27 @@ namespace Poly2Tri
                 }
             }
         }
-        public double Epsilon { get { return mEpsilon; } }
+
+        public double Epsilon
+        {
+            get { return mEpsilon; }
+        }
+
         public Point2D this[int index]
         {
             get { return mPoints[index]; }
             set { mPoints[index] = value; }
         }
-        public int Count { get { return mPoints.Count; } }
-        public virtual bool IsReadOnly { get { return false; } }
+
+        public int Count
+        {
+            get { return mPoints.Count; }
+        }
+
+        public virtual bool IsReadOnly
+        {
+            get { return false; }
+        }
 
 
         public Point2DList()
@@ -153,6 +171,7 @@ namespace Poly2Tri
             {
                 mPoints.Add(l[i]);
             }
+
             mBoundingBox.Set(l.BoundingBox);
             mEpsilon = l.Epsilon;
             mWindingOrder = l.WindingOrder;
@@ -170,6 +189,7 @@ namespace Poly2Tri
                     builder.Append(" ");
                 }
             }
+
             return builder.ToString();
         }
 
@@ -179,12 +199,12 @@ namespace Poly2Tri
             return mPoints.GetEnumerator();
         }
 
-        
+
         IEnumerator<Point2D> IEnumerable<Point2D>.GetEnumerator()
         {
             return new Point2DEnumerator(mPoints);
         }
-        
+
 
         public void Clear()
         {
@@ -217,6 +237,7 @@ namespace Poly2Tri
             {
                 mPoints.Insert(idx, p);
             }
+
             mBoundingBox.AddPoint(p);
             if (bCalcWindingOrderAndEpsilon)
             {
@@ -224,6 +245,7 @@ namespace Poly2Tri
                 {
                     mWindingOrder = CalculateWindingOrder();
                 }
+
                 mEpsilon = CalculateEpsilon();
             }
         }
@@ -246,7 +268,9 @@ namespace Poly2Tri
             {
                 mWindingOrder = windingOrder;
             }
-            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown) && (windingOrder != WindingOrderType.Unknown) && (WindingOrder != windingOrder);
+
+            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown) && (windingOrder != WindingOrderType.Unknown)
+                                     && (WindingOrder != windingOrder);
             bool bAddedFirst = true;
             int startCount = mPoints.Count;
             iter.Reset();
@@ -265,12 +289,15 @@ namespace Poly2Tri
                 {
                     mPoints.Add(iter.Current);
                 }
+
                 mBoundingBox.AddPoint(iter.Current);
             }
+
             if (mWindingOrder == WindingOrderType.Unknown && windingOrder == WindingOrderType.Unknown)
             {
                 mWindingOrder = CalculateWindingOrder();
             }
+
             mEpsilon = CalculateEpsilon();
         }
 
@@ -300,6 +327,7 @@ namespace Poly2Tri
             {
                 return;
             }
+
             mPoints.RemoveAt(idx);
             CalculateBounds();
             mEpsilon = CalculateEpsilon();
@@ -312,6 +340,7 @@ namespace Poly2Tri
             {
                 return;
             }
+
             if (count == 0)
             {
                 return;
@@ -379,6 +408,7 @@ namespace Poly2Tri
             {
                 return 0;
             }
+
             return index + 1;
         }
 
@@ -394,6 +424,7 @@ namespace Poly2Tri
             {
                 return Count - 1;
             }
+
             return index - 1;
         }
 
@@ -411,6 +442,7 @@ namespace Poly2Tri
                 area += this[i].X * this[j].Y;
                 area -= this[i].Y * this[j].X;
             }
+
             area /= 2.0f;
 
             return area;
@@ -432,6 +464,7 @@ namespace Poly2Tri
                 area += this[i].X * this[j].Y;
                 area -= this[i].Y * this[j].X;
             }
+
             area /= 2.0f;
             return (area < 0 ? -area : area);
         }
@@ -529,10 +562,12 @@ namespace Poly2Tri
             {
                 return false;
             }
+
             if (Count < 3)
             {
                 return false;
             }
+
             for (int k = 0; k < Count; ++k)
             {
                 int j = PreviousIndex(k);
@@ -540,6 +575,7 @@ namespace Poly2Tri
                 {
                     return true;
                 }
+
                 int i = PreviousIndex(j);
                 Orientation orientation = TriangulationUtil.Orient2d(mPoints[i], mPoints[j], mPoints[k]);
                 if (orientation == Orientation.Collinear)
@@ -605,12 +641,20 @@ namespace Poly2Tri
                 {
                     int jplus = NextIndex(j);
                     Point2D temp = null;
-                    if (TriangulationUtil.LinesIntersect2D(mPoints[i], mPoints[iplus], mPoints[j], mPoints[jplus], ref temp, mEpsilon))
+                    if (TriangulationUtil.LinesIntersect2D(
+                        mPoints[i],
+                        mPoints[iplus],
+                        mPoints[j],
+                        mPoints[jplus],
+                        ref temp,
+                        mEpsilon
+                    ))
                     {
                         return false;
                     }
                 }
             }
+
             return true;
         }
 
@@ -638,10 +682,12 @@ namespace Poly2Tri
                 // no other tests will be valid at this point, so just return
                 return error;
             }
+
             if (IsDegenerate())
             {
                 error |= PolygonError.Degenerate;
             }
+
             //bool bIsConvex = IsConvex();
             //if (!IsConvex())
             //{
@@ -651,6 +697,7 @@ namespace Poly2Tri
             {
                 error |= PolygonError.NotSimple;
             }
+
             if (GetArea() < MathUtil.EPSILON)
             {
                 error |= PolygonError.AreaTooSmall;
@@ -698,40 +745,40 @@ namespace Poly2Tri
 
                     // For some reason, the following checks do not seem to work
                     // correctly in all cases - they return false positives.
-                //    //Too skinny check - only valid for convex polygons
-                //    if (bIsConvex)
-                //    {
-                //        for (int j = 0; j < Count; ++j)
-                //        {
-                //            if (j == i || j == NextIndex(i))
-                //            {
-                //                continue;
-                //            }
-                //            Point2D testVector = vertices[j] - vertices[i];
-                //            testVector.Normalize();
-                //            double s = Point2D.Dot(testVector, normals[i]);
-                //            if (s >= -Point2DList.kLinearSlop)
-                //            {
-                //                error |= PolygonError.TooThin;
-                //            }
-                //        }
+                    //    //Too skinny check - only valid for convex polygons
+                    //    if (bIsConvex)
+                    //    {
+                    //        for (int j = 0; j < Count; ++j)
+                    //        {
+                    //            if (j == i || j == NextIndex(i))
+                    //            {
+                    //                continue;
+                    //            }
+                    //            Point2D testVector = vertices[j] - vertices[i];
+                    //            testVector.Normalize();
+                    //            double s = Point2D.Dot(testVector, normals[i]);
+                    //            if (s >= -Point2DList.kLinearSlop)
+                    //            {
+                    //                error |= PolygonError.TooThin;
+                    //            }
+                    //        }
 
-                //        Point2D centroid = vertices.GetCentroid();
-                //        Point2D n1 = normals[iminus];
-                //        Point2D n2 = normals[i];
-                //        Point2D v = vertices[i] - centroid;
+                    //        Point2D centroid = vertices.GetCentroid();
+                    //        Point2D n1 = normals[iminus];
+                    //        Point2D n2 = normals[i];
+                    //        Point2D v = vertices[i] - centroid;
 
-                //        Point2D d = new Point2D();
-                //        d.X = Point2D.Dot(n1, v); // - toiSlop;
-                //        d.Y = Point2D.Dot(n2, v); // - toiSlop;
+                    //        Point2D d = new Point2D();
+                    //        d.X = Point2D.Dot(n1, v); // - toiSlop;
+                    //        d.Y = Point2D.Dot(n2, v); // - toiSlop;
 
-                //        // Shifting the edge inward by toiSlop should
-                //        // not cause the plane to pass the centroid.
-                //        if ((d.X < 0.0f) || (d.Y < 0.0f))
-                //        {
-                //            error |= PolygonError.TooThin;
-                //        }
-                //    }
+                    //        // Shifting the edge inward by toiSlop should
+                    //        // not cause the plane to pass the centroid.
+                    //        if ((d.X < 0.0f) || (d.Y < 0.0f))
+                    //        {
+                    //            error |= PolygonError.TooThin;
+                    //        }
+                    //    }
                 }
 
                 if (bReversed)
@@ -762,30 +809,40 @@ namespace Poly2Tri
                 {
                     sb.AppendFormat("NotEnoughVertices: must have between 3 and {0} vertices.\n", kMaxPolygonVertices);
                 }
+
                 if ((error & PolygonError.NotConvex) == PolygonError.NotConvex)
                 {
                     sb.AppendFormat("NotConvex: Polygon is not convex.\n");
                 }
+
                 if ((error & PolygonError.NotSimple) == PolygonError.NotSimple)
                 {
                     sb.AppendFormat("NotSimple: Polygon is not simple (i.e. it intersects itself).\n");
                 }
+
                 if ((error & PolygonError.AreaTooSmall) == PolygonError.AreaTooSmall)
                 {
                     sb.AppendFormat("AreaTooSmall: Polygon's area is too small.\n");
                 }
+
                 if ((error & PolygonError.SidesTooCloseToParallel) == PolygonError.SidesTooCloseToParallel)
                 {
                     sb.AppendFormat("SidesTooCloseToParallel: Polygon's sides are too close to parallel.\n");
                 }
+
                 if ((error & PolygonError.TooThin) == PolygonError.TooThin)
                 {
                     sb.AppendFormat("TooThin: Polygon is too thin or core shape generation would move edge past centroid.\n");
                 }
+
                 if ((error & PolygonError.Degenerate) == PolygonError.Degenerate)
                 {
-                    sb.AppendFormat("Degenerate: Polygon is degenerate (contains collinear points or duplicate coincident points).\n");
+                    sb
+                        .AppendFormat(
+                            "Degenerate: Polygon is degenerate (contains collinear points or duplicate coincident points).\n"
+                        );
                 }
+
                 if ((error & PolygonError.Unknown) == PolygonError.Unknown)
                 {
                     sb.AppendFormat("Unknown: Unknown Polygon error!.\n");
@@ -806,7 +863,7 @@ namespace Poly2Tri
             int j = 0;
             while (numPoints > 1 && j < numPoints)
             {
-                if(mPoints[i].Equals(mPoints[j]))
+                if (mPoints[i].Equals(mPoints[j]))
                 {
                     int idxToRemove = Math.Max(i, j);
                     mPoints.RemoveAt(idxToRemove);
@@ -821,7 +878,7 @@ namespace Poly2Tri
                 else
                 {
                     i = NextIndex(i);
-                    ++j;  // intentionally not wrapping value of j so we have a valid end-point for the loop
+                    ++j; // intentionally not wrapping value of j so we have a valid end-point for the loop
                 }
             }
         }
@@ -982,13 +1039,17 @@ namespace Poly2Tri
 
                 if (currIndex >= newNVertices)
                 {
-                    throw new Exception("Point2DList::MergeParallelEdges - currIndex[ " + currIndex.ToString() + "] >= newNVertices[" + newNVertices + "]");
+                    throw new Exception(
+                        "Point2DList::MergeParallelEdges - currIndex[ " + currIndex.ToString() + "] >= newNVertices["
+                        + newNVertices + "]"
+                    );
                 }
 
                 mPoints.Add(oldVertices[i]);
                 mBoundingBox.AddPoint(oldVertices[i]);
                 ++currIndex;
             }
+
             mWindingOrder = CalculateWindingOrder();
             mEpsilon = CalculateEpsilon();
         }

@@ -307,7 +307,8 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
     /// <returns>This builder so that additional calls can be chained.</returns>
     public virtual IndentedStringBuilder AppendJoin(
         string separator,
-        params ReadOnlySpan<string> values)
+        params ReadOnlySpan<string> values
+    )
     {
         DoIndent();
 
@@ -502,6 +503,7 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
                 {
                     AppendFormattedWithTempSpace(value, 0, format: null);
                 }
+
 #if NET7_0_OR_GREATER
                 else if (value is ISpanFormattable)
                 {
@@ -553,6 +555,7 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
                 {
                     AppendFormattedWithTempSpace(value, 0, format);
                 }
+
 #if NET7_0_OR_GREATER
                 else if (value is ISpanFormattable)
                 {
@@ -638,6 +641,7 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
                 handler.AppendFormatted(value, format);
                 AppendFormatted(handler.ToStringAndClear(), alignment);
             }
+
 #endif
         }
 

@@ -51,7 +51,10 @@ namespace Poly2Tri
         protected Dictionary<uint, TriangulationConstraint> mConstraintMap = new Dictionary<uint, TriangulationConstraint>();
         protected List<Contour> mHoles = new List<Contour>();
 
-        public override TriangulationMode TriangulationMode { get { return TriangulationMode.Constrained; } }
+        public override TriangulationMode TriangulationMode
+        {
+            get { return TriangulationMode.Constrained; }
+        }
 
 
         public ConstrainedPointSet(List<TriangulationPoint> bounds)
@@ -77,6 +80,7 @@ namespace Poly2Tri
                 TriangulationConstraint tc = new TriangulationConstraint(bounds[i], bounds[i + 1]);
                 l.Add(tc);
             }
+
             AddConstraints(l);
         }
 
@@ -92,21 +96,25 @@ namespace Poly2Tri
                 ptLL = new TriangulationPoint(MinX, MinY);
                 Add(ptLL);
             }
+
             if (!TryGetPoint(MaxX, MinY, out ptLR))
             {
                 ptLR = new TriangulationPoint(MaxX, MinY);
                 Add(ptLR);
             }
+
             if (!TryGetPoint(MaxX, MaxY, out ptUR))
             {
                 ptUR = new TriangulationPoint(MaxX, MaxY);
                 Add(ptUR);
             }
+
             if (!TryGetPoint(MinX, MaxY, out ptUL))
             {
                 ptUL = new TriangulationPoint(MinX, MaxY);
                 Add(ptUL);
             }
+
             TriangulationConstraint tcLLtoLR = new TriangulationConstraint(ptLL, ptLR);
             AddConstraint(tcLLtoLR);
             TriangulationConstraint tcLRtoUR = new TriangulationConstraint(ptLR, ptUR);
@@ -188,6 +196,7 @@ namespace Poly2Tri
                         bListOK = false;
                         continue;
                     }
+
                     if ((err & PolygonError.NotSimple) == PolygonError.NotSimple)
                     {
                         // split the polygons, remove the current list and add the resulting list to the end
@@ -200,9 +209,11 @@ namespace Poly2Tri
                             c.AddRange(newList);
                             pts.Add(c);
                         }
+
                         err = pts[listIdx].CheckPolygon();
                         continue;
                     }
+
                     if ((err & PolygonError.Degenerate) == PolygonError.Degenerate)
                     {
                         pts[listIdx].Simplify(this.Epsilon);
@@ -216,6 +227,7 @@ namespace Poly2Tri
                         //    continue;
                         //}
                     }
+
                     if ((err & PolygonError.AreaTooSmall) == PolygonError.AreaTooSmall ||
                         (err & PolygonError.SidesTooCloseToParallel) == PolygonError.SidesTooCloseToParallel ||
                         (err & PolygonError.TooThin) == PolygonError.TooThin ||
@@ -229,6 +241,7 @@ namespace Poly2Tri
                     //{
                     //}
                 }
+
                 if (!bListOK && pts[listIdx].Count != 2)
                 {
                     pts.RemoveAt(listIdx);
@@ -268,6 +281,7 @@ namespace Poly2Tri
                     ph.Name = name + ":" + listIdx.ToString();
                     mHoles.Add(ph);
                 }
+
                 ++listIdx;
             }
 
@@ -439,6 +453,5 @@ namespace Poly2Tri
         {
             Triangles.Add(t);
         }
-
     }
 }

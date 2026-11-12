@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System;
 using MonoGame.ImGuiNet;
 using Hexa.NET.ImGui;
-
 using Vec2 = System.Numerics.Vector2;
 using Vec3 = System.Numerics.Vector3;
 using Vec4 = System.Numerics.Vector4;
@@ -92,7 +91,9 @@ namespace Monogame.ImGuiNetSamples
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(
+                Keys.Escape
+            ))
                 Exit();
 
             //update logic
@@ -111,7 +112,9 @@ namespace Monogame.ImGuiNetSamples
                 WasResized = false;
                 current_res = select_res;
 
-                debug_log.Add("(" + DateTime.Now.ToShortTimeString() + ") [MonoGame] Changed Resolution to " + resolution[current_res]);
+                debug_log.Add(
+                    "(" + DateTime.Now.ToShortTimeString() + ") [MonoGame] Changed Resolution to " + resolution[current_res]
+                );
             }
 
             base.Update(gameTime);
@@ -129,6 +132,7 @@ namespace Monogame.ImGuiNetSamples
                     effect.View = view;
                     effect.Projection = projection;
                 }
+
                 mesh.Draw();
             }
         }
@@ -162,6 +166,7 @@ namespace Monogame.ImGuiNetSamples
             GuiRenderer.BeginLayout(gameTime);
 
             #region ImGui
+
             //Native Demos
             if (show_native_examples)
             {
@@ -223,6 +228,7 @@ namespace Monogame.ImGuiNetSamples
             {
                 DrawDemoWindow();
             }
+
             #endregion
 
             //ImGui End
@@ -230,10 +236,12 @@ namespace Monogame.ImGuiNetSamples
         }
 
         #region Demos
+
         private void DrawImGuiNativeDemos()
         {
             ImGui.ShowDemoWindow();
         }
+
         #endregion
 
         #region Overlay
@@ -246,7 +254,8 @@ namespace Monogame.ImGuiNetSamples
         private void DrawImGuiOverlay(float frameRate)
         {
             ImGuiIOPtr io = ImGui.GetIO();
-            ImGuiWindowFlags windowFlags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoMove;
+            ImGuiWindowFlags windowFlags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags
+                .NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoMove;
 
             if (corner >= 0 && corner < 4)
             {
@@ -259,6 +268,7 @@ namespace Monogame.ImGuiNetSamples
                 {
                     distanceX = 10.0f;
                 }
+
                 //offset Y
                 if (corner == 2 || corner == 3)
                 {
@@ -268,6 +278,7 @@ namespace Monogame.ImGuiNetSamples
                 {
                     distanceY = 10.0f;
                 }
+
                 //offset menubar
                 if ((corner == 0 || corner == 1) && show_app_main_menu_bar)
                 {
@@ -297,10 +308,25 @@ namespace Monogame.ImGuiNetSamples
                 if (ImGui.BeginPopupContextWindow())
                 {
                     //if (ImGui.MenuItem("Custom", null, corner == -1)) { corner = -1; }
-                    if (ImGui.MenuItem("Top-left", null, corner == 0)) { corner = 0; }
-                    if (ImGui.MenuItem("Top-right", null, corner == 1)) { corner = 1; }
-                    if (ImGui.MenuItem("Bottom-left", null, corner == 2)) { corner = 2; }
-                    if (ImGui.MenuItem("Bottom-right", null, corner == 3)) { corner = 3; }
+                    if (ImGui.MenuItem("Top-left", null, corner == 0))
+                    {
+                        corner = 0;
+                    }
+
+                    if (ImGui.MenuItem("Top-right", null, corner == 1))
+                    {
+                        corner = 1;
+                    }
+
+                    if (ImGui.MenuItem("Bottom-left", null, corner == 2))
+                    {
+                        corner = 2;
+                    }
+
+                    if (ImGui.MenuItem("Bottom-right", null, corner == 3))
+                    {
+                        corner = 3;
+                    }
 
                     ImGui.EndPopup();
                 }
@@ -308,9 +334,11 @@ namespace Monogame.ImGuiNetSamples
 
             ImGui.End();
         }
+
         #endregion
 
         #region MenuBar
+
         private void DrawImGuiMenuBar()
         {
             if (ImGui.BeginMainMenuBar())
@@ -320,16 +348,33 @@ namespace Monogame.ImGuiNetSamples
                     ShowExampleMenuFile();
                     ImGui.EndMenu();
                 }
+
                 if (ImGui.BeginMenu("Edit"))
                 {
-                    if (ImGui.MenuItem("Undo", "CTRL+Z")) { }
-                    if (ImGui.MenuItem("Redo", "CTRL+Y", false, false)) { }
+                    if (ImGui.MenuItem("Undo", "CTRL+Z"))
+                    {
+                    }
+
+                    if (ImGui.MenuItem("Redo", "CTRL+Y", false, false))
+                    {
+                    }
+
                     ImGui.Separator();
-                    if (ImGui.MenuItem("Cut", "CTRL+X")) { }
-                    if (ImGui.MenuItem("Copy", "CTRL+C")) { }
-                    if (ImGui.MenuItem("Paste", "CTRL+V")) { }
+                    if (ImGui.MenuItem("Cut", "CTRL+X"))
+                    {
+                    }
+
+                    if (ImGui.MenuItem("Copy", "CTRL+C"))
+                    {
+                    }
+
+                    if (ImGui.MenuItem("Paste", "CTRL+V"))
+                    {
+                    }
+
                     ImGui.EndMenu();
                 }
+
                 ImGui.EndMainMenuBar();
             }
         }
@@ -337,8 +382,14 @@ namespace Monogame.ImGuiNetSamples
         private void ShowExampleMenuFile()
         {
             ImGui.MenuItem("(demo menu)", null, false, false);
-            if (ImGui.MenuItem("New")) { }
-            if (ImGui.MenuItem("Open", "Ctrl+O")) { }
+            if (ImGui.MenuItem("New"))
+            {
+            }
+
+            if (ImGui.MenuItem("Open", "Ctrl+O"))
+            {
+            }
+
             if (ImGui.MenuItem("Open Recent"))
             {
                 ImGui.MenuItem("fish_hat.c");
@@ -353,12 +404,20 @@ namespace Monogame.ImGuiNetSamples
                         ShowExampleMenuFile();
                         ImGui.EndMenu();
                     }
+
                     ImGui.EndMenu();
                 }
+
                 ImGui.EndMenu();
             }
-            if (ImGui.MenuItem("Save", "Ctrl+S")) { }
-            if (ImGui.MenuItem("Save As ..")) { }
+
+            if (ImGui.MenuItem("Save", "Ctrl+S"))
+            {
+            }
+
+            if (ImGui.MenuItem("Save As .."))
+            {
+            }
 
             ImGui.Separator();
             if (ImGui.BeginMenu("Options"))
@@ -370,6 +429,7 @@ namespace Monogame.ImGuiNetSamples
                 {
                     ImGui.Text(string.Format("Scrolling Text {0}", i));
                 }
+
                 ImGui.EndChild();
                 float f = 0.5f;
                 int n = 0;
@@ -392,6 +452,7 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.SameLine();
                     ImGui.MenuItem(name);
                 }
+
                 ImGui.EndMenu();
             }
 
@@ -402,19 +463,30 @@ namespace Monogame.ImGuiNetSamples
                 ImGui.EndMenu();
             }
 
-            if (ImGui.BeginMenu("Disabled", false)) { } //Disabled
-            if (ImGui.MenuItem("Checked", null, true)) { }
-            if (ImGui.MenuItem("Quit", "Alt+F4")) { }
+            if (ImGui.BeginMenu("Disabled", false))
+            {
+            } //Disabled
+            if (ImGui.MenuItem("Checked", null, true))
+            {
+            }
+
+            if (ImGui.MenuItem("Quit", "Alt+F4"))
+            {
+            }
         }
+
         #endregion
 
         #region DebugLog
+
         static List<string> debug_log = new List<string>();
         static bool AutoScroll = true;
+
         unsafe private struct ImGuiDebugLog
         {
             //ImGuiTextBufferPtr Buf;
             ImGuiTextFilterPtr Filter;
+
             //ImVector<int> LineOffsets;
             //bool AutoScroll;
 
@@ -436,7 +508,6 @@ namespace Monogame.ImGuiNetSamples
                 //int old_size = this.Buf.Buf.Size;
 
                 debug_log.Add(text);
-
             }
 
             public void Destroy()
@@ -464,6 +535,7 @@ namespace Monogame.ImGuiNetSamples
                 {
                     ImGui.OpenPopup("Options");
                 }
+
                 ImGui.SameLine();
                 bool clear = ImGui.Button("Clear");
                 ImGui.SameLine();
@@ -478,6 +550,7 @@ namespace Monogame.ImGuiNetSamples
                 {
                     Clear();
                 }
+
                 if (copy)
                 {
                     ImGui.LogToClipboard();
@@ -493,9 +566,7 @@ namespace Monogame.ImGuiNetSamples
                             //ImGui.TextUnformatted(str);
                             ImGui.BulletText(str);
                         }
-
                     }
-
                 }
                 else
                 {
@@ -504,6 +575,7 @@ namespace Monogame.ImGuiNetSamples
                         ImGui.TextUnformatted(str);
                     }
                 }
+
                 ImGui.PopStyleVar();
 
                 if (AutoScroll && ImGui.GetScrollY() >= ImGui.GetScrollMaxY())
@@ -513,7 +585,6 @@ namespace Monogame.ImGuiNetSamples
 
                 ImGui.EndChild();
                 ImGui.End();
-
             }
         }
 
@@ -528,21 +599,28 @@ namespace Monogame.ImGuiNetSamples
                 string[] words = { "Bumfuzzled", "Cattywampus", "Snickersnee", "Abibliophobia", "Absquatulate" };
                 foreach (string str in words)
                 {
-                    log.AddLog("Frame " + ImGui.GetFrameCount() + " [info] Hello, current time is " + ImGui.GetTime() + " here's a word: " + str);
+                    log.AddLog(
+                        "Frame " + ImGui.GetFrameCount() + " [info] Hello, current time is " + ImGui.GetTime()
+                        + " here's a word: " + str
+                    );
                 }
             }
+
             ImGui.End();
 
             log.DebugLog();
             log.Draw("Example: Log");
             log.Destroy();
         }
+
         #endregion
 
         #region AppConsole
+
         static List<string> console_log = new List<string>();
         static List<string> console_history = new List<string>();
         static bool AutoScroll_Console = true;
+
         unsafe private struct ImGuiExampleAppConsole
         {
             ImGuiTextFilterPtr Filter;
@@ -583,13 +661,15 @@ namespace Monogame.ImGuiNetSamples
                     {
                         show_app_console = false;
                     }
+
                     ImGui.EndPopup();
                 }
 
                 ImGui.TextWrapped(
                 "This example implements a console with basic coloring" + //, completion "+//(TAB key) and history (Up/Down keys)
                 ". A more elaborate " +
-                "implementation may want to store entries along with extra data such as timestamp, emitter, etc.");
+                "implementation may want to store entries along with extra data such as timestamp, emitter, etc."
+                );
                 ImGui.TextWrapped("Enter 'HELP' for help.");
 
                 if (ImGui.SmallButton("Add Debug Text"))
@@ -598,16 +678,19 @@ namespace Monogame.ImGuiNetSamples
                     AddLog("some more text");
                     AddLog("display very important message here!");
                 }
+
                 ImGui.SameLine();
                 if (ImGui.SmallButton("Add Debug Error"))
                 {
                     AddLog("[error] something went wrong");
                 }
+
                 ImGui.SameLine();
                 if (ImGui.SmallButton("Clear"))
                 {
                     ClearLog();
                 }
+
                 ImGui.SameLine();
                 bool copy_to_clipboard = ImGui.SmallButton("Copy");
                 ImGui.Separator();
@@ -624,18 +707,25 @@ namespace Monogame.ImGuiNetSamples
                 {
                     ImGui.OpenPopup("Options");
                 }
+
                 ImGui.SameLine();
                 Filter.Draw("Filter (\"incl,-excl\") (\"error\")", 180.0f);
                 ImGui.Separator();
 
                 float footer_height_to_reserve = ImGui.GetStyle().ItemSpacing.Y + ImGui.GetFrameHeightWithSpacing();
-                ImGui.BeginChild("ScrollingRegion", new Vec2(0, -footer_height_to_reserve), ImGuiChildFlags.None, ImGuiWindowFlags.HorizontalScrollbar);
+                ImGui.BeginChild(
+                    "ScrollingRegion",
+                    new Vec2(0, -footer_height_to_reserve),
+                    ImGuiChildFlags.None,
+                    ImGuiWindowFlags.HorizontalScrollbar
+                );
                 if (ImGui.BeginPopupContextWindow())
                 {
                     if (ImGui.Selectable("Clear"))
                     {
                         ClearLog();
                     }
+
                     ImGui.EndPopup();
                 }
 
@@ -659,19 +749,20 @@ namespace Monogame.ImGuiNetSamples
                                 ImGui.PushStyleColor(ImGuiCol.Text, color);
                                 has_color = true;
                             }
+
                             if (str.IndexOf("# ") == 0)
                             {
                                 color = new Vec4(1.0f, 0.8f, 0.6f, 1.0f);
                                 ImGui.PushStyleColor(ImGuiCol.Text, color);
                                 has_color = true;
                             }
+
                             ImGui.TextUnformatted(str);
                             if (has_color)
                             {
                                 ImGui.PopStyleColor();
                             }
                         }
-
                     }
                 }
                 else
@@ -686,12 +777,14 @@ namespace Monogame.ImGuiNetSamples
                             ImGui.PushStyleColor(ImGuiCol.Text, color);
                             has_color = true;
                         }
+
                         if (str.IndexOf("# ") == 0)
                         {
                             color = new Vec4(1.0f, 0.8f, 0.6f, 1.0f);
                             ImGui.PushStyleColor(ImGuiCol.Text, color);
                             has_color = true;
                         }
+
                         ImGui.TextUnformatted(str);
                         if (has_color)
                         {
@@ -699,6 +792,7 @@ namespace Monogame.ImGuiNetSamples
                         }
                     }
                 }
+
                 ImGui.PopStyleVar();
 
                 if (AutoScroll_Console && ImGui.GetScrollY() >= ImGui.GetScrollMaxY())
@@ -711,7 +805,8 @@ namespace Monogame.ImGuiNetSamples
 
                 string input_buf = "";
                 bool reclaim_focus = false;
-                ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags.EnterReturnsTrue; //| ImGuiInputTextFlags.CallbackCompletion | ImGuiInputTextFlags.CallbackHistory;
+                ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags
+                    .EnterReturnsTrue; //| ImGuiInputTextFlags.CallbackCompletion | ImGuiInputTextFlags.CallbackHistory;
                 if (ImGui.InputText("Input", ref input_buf, 250, input_text_flags))
                 {
                     ExecCommand(input_buf);
@@ -725,7 +820,6 @@ namespace Monogame.ImGuiNetSamples
                 }
 
                 ImGui.End();
-
             }
 
             void ExecCommand(string command)
@@ -735,6 +829,7 @@ namespace Monogame.ImGuiNetSamples
                 {
                     console_history.RemoveAt(0);
                 }
+
                 console_history.Add(command);
 
                 //Show Input
@@ -765,9 +860,7 @@ namespace Monogame.ImGuiNetSamples
                 {
                     AddLog("Unknown command: '" + command + "'");
                 }
-
             }
-
         }
 
         private void DrawImGuiExampleAppConsole()
@@ -791,9 +884,11 @@ namespace Monogame.ImGuiNetSamples
             console.Draw(console_window_name);
             console.Destroy();
         }
+
         #endregion
 
         #region DrawDemoWindowVariables
+
         // Window options
         bool no_titlebar = false;
         bool no_scrollbar = false;
@@ -801,10 +896,12 @@ namespace Monogame.ImGuiNetSamples
         bool no_move = false;
         bool no_resize = false;
         bool no_collapse = false;
+
         //bool no_close = false;
         bool no_nav = false;
         bool no_background = false;
         bool no_bring_to_front = false;
+
         // Examples
         bool show_app_main_menu_bar = false;
         bool show_app_log = false;
@@ -812,25 +909,62 @@ namespace Monogame.ImGuiNetSamples
         bool show_native_examples = false;
         static bool show_app_console = false;
         bool show_monogame_settings = true;
+
         // Tools
         bool show_app_style_editor = false;
         bool show_app_metrics = false;
         bool show_app_about = false;
+
         #endregion
 
         private void DrawDemoWindow()
         {
-
             ImGuiWindowFlags windowFlags = 0;
-            if (no_titlebar) { windowFlags |= ImGuiWindowFlags.NoTitleBar; }
-            if (no_scrollbar) { windowFlags |= ImGuiWindowFlags.NoScrollbar; }
-            if (!no_menu) { windowFlags |= ImGuiWindowFlags.MenuBar; }
-            if (no_move) { windowFlags |= ImGuiWindowFlags.NoMove; }
-            if (no_resize) { windowFlags |= ImGuiWindowFlags.NoResize; }
-            if (no_collapse) { windowFlags |= ImGuiWindowFlags.NoCollapse; }
-            if (no_nav) { windowFlags |= ImGuiWindowFlags.NoNav; }
-            if (no_background) { windowFlags |= ImGuiWindowFlags.NoBackground; }
-            if (no_bring_to_front) { windowFlags |= ImGuiWindowFlags.NoBringToFrontOnFocus; }
+            if (no_titlebar)
+            {
+                windowFlags |= ImGuiWindowFlags.NoTitleBar;
+            }
+
+            if (no_scrollbar)
+            {
+                windowFlags |= ImGuiWindowFlags.NoScrollbar;
+            }
+
+            if (!no_menu)
+            {
+                windowFlags |= ImGuiWindowFlags.MenuBar;
+            }
+
+            if (no_move)
+            {
+                windowFlags |= ImGuiWindowFlags.NoMove;
+            }
+
+            if (no_resize)
+            {
+                windowFlags |= ImGuiWindowFlags.NoResize;
+            }
+
+            if (no_collapse)
+            {
+                windowFlags |= ImGuiWindowFlags.NoCollapse;
+            }
+
+            if (no_nav)
+            {
+                windowFlags |= ImGuiWindowFlags.NoNav;
+            }
+
+            if (no_background)
+            {
+                windowFlags |= ImGuiWindowFlags.NoBackground;
+            }
+
+            if (no_bring_to_front)
+            {
+                windowFlags |= ImGuiWindowFlags.NoBringToFrontOnFocus;
+            }
+
             //if (no_close) { } // p_open = null;
             //bool p_open = true;
 
@@ -838,7 +972,10 @@ namespace Monogame.ImGuiNetSamples
             ImGui.SetNextWindowSize(new Vec2(550, 680), ImGuiCond.FirstUseEver);
 
             //Main body
-            if (!ImGui.Begin("Dear ImGui Demo / Monogame & ImGui.Net", windowFlags))  //ref p_open, windowFlags)) Close button is not changing bool!?
+            if (!ImGui.Begin(
+                "Dear ImGui Demo / Monogame & ImGui.Net",
+                windowFlags
+            )) //ref p_open, windowFlags)) Close button is not changing bool!?
             {
                 ImGui.End();
                 return;
@@ -854,6 +991,7 @@ namespace Monogame.ImGuiNetSamples
                     ShowExampleMenuFile();
                     ImGui.EndMenu();
                 }
+
                 if (ImGui.BeginMenu("Examples"))
                 {
                     ImGui.MenuItem("Main menu bar", null, ref show_app_main_menu_bar);
@@ -873,6 +1011,7 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.MenuItem("MonoGame Settings", null, ref show_monogame_settings);
                     ImGui.EndMenu();
                 }
+
                 if (ImGui.BeginMenu("Tools"))
                 {
                     ImGui.MenuItem("Metrics/Debugger", null, ref show_app_metrics);
@@ -880,6 +1019,7 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.MenuItem("About Dear ImGui", null, ref show_app_about);
                     ImGui.EndMenu();
                 }
+
                 ImGui.EndMenuBar();
             }
 
@@ -891,7 +1031,10 @@ namespace Monogame.ImGuiNetSamples
                 ImGui.Text("ABOUT THIS DEMO:");
                 ImGui.BulletText("Sections below are demonstrating many aspects of the library.");
                 ImGui.BulletText("The \"Examples\" menu above leads to more demo contents.");
-                ImGui.BulletText("The \"Tools\" menu above gives access to: About Box, Style Editor,\nand Metrics/Debugger (general purpose Dear ImGui debugging tool).");
+                ImGui
+                    .BulletText(
+                        "The \"Tools\" menu above gives access to: About Box, Style Editor,\nand Metrics/Debugger (general purpose Dear ImGui debugging tool)."
+                    );
                 ImGui.Separator();
 
                 ImGui.Text("PROGRAMMER GUIDE:");
@@ -911,7 +1054,9 @@ namespace Monogame.ImGuiNetSamples
             {
                 if (ImGui.TreeNode("Style"))
                 {
-                    HelpMarker("The same contents can be accessed in 'Tools->Style Editor' or by calling the ShowStyleEditor() function.");
+                    HelpMarker(
+                        "The same contents can be accessed in 'Tools->Style Editor' or by calling the ShowStyleEditor() function."
+                    );
                     ImGui.ShowStyleEditor();
                     ImGui.TreePop();
                     ImGui.Separator();
@@ -919,7 +1064,9 @@ namespace Monogame.ImGuiNetSamples
 
                 if (ImGui.TreeNode("Capture/Logging"))
                 {
-                    HelpMarker("The logging API redirects all text output so you can easily capture the content of a window or a block. Tree nodes can be automatically expanded.\nTry opening any of the contents below in this window and then click one of the \"Log To\" button.");
+                    HelpMarker(
+                        "The logging API redirects all text output so you can easily capture the content of a window or a block. Tree nodes can be automatically expanded.\nTry opening any of the contents below in this window and then click one of the \"Log To\" button."
+                    );
                     ImGui.LogButtons();
 
                     HelpMarker("You can also call ImGui.LogText() to output directly to the log without a visual output.");
@@ -929,6 +1076,7 @@ namespace Monogame.ImGuiNetSamples
                         ImGui.LogText("Hello, world!");
                         ImGui.LogFinish();
                     }
+
                     ImGui.TreePop();
                 }
             }
@@ -972,6 +1120,7 @@ namespace Monogame.ImGuiNetSamples
         }
 
         #region DemoWindowWidgetsVariables
+
         //Basic Input
         int clicked = 0;
         bool check = true;
@@ -985,6 +1134,7 @@ namespace Monogame.ImGuiNetSamples
         double d0 = 999999.00000001;
         float f1 = 1.42f;
         Vec3 vec3 = new Vec3(0.10f, 0.20f, 0.30f);
+
         //Basic Drag & Slider
         int i1 = 50, i2 = 42;
         float f2 = 1.00f, f3 = 0.0067f;
@@ -994,31 +1144,39 @@ namespace Monogame.ImGuiNetSamples
         Vec3 col1 = new Vec3(1.0f, 0.0f, 0.2f);
         Vec4 col2 = new Vec4(0.4f, 0.7f, 0.0f, 0.5f);
         int current_fruit = 1;
+
         //Trees
         bool base_flags_first_run = true;
         uint base_flags = 0;
         bool align_label_with_current_x_position = false;
         int index_selected = 0;
+
         //bool test_drag_and_drop = false;
         //Collapsing headers
         bool closable_group = true;
+
         //Word wrapping
         float wrap_width = 200.0f;
+
         //Images
         int pressed_count = 0;
+
         //Combo
         uint flags = 0; //ImGuiComboFlags
         int item_current_idx = 0;
         int item_current_2 = 0;
         int item_current_3 = -1;
+
         //List boxes
         int item_current_idx_lb = 0;
+
         //Selectables
         bool[] selection = { false, true, false, false, false };
         int selected = -1;
         bool[] selection_ms = { false, false, false, false, false };
         bool[] selected_rend = { false, false, false };
         bool[] selected_align = { true, false, true, false, true, false, true, false, true };
+
         //Text input
         bool flags_ti_first_run = true;
         uint flags_ti = 0;
@@ -1028,10 +1186,12 @@ namespace Monogame.ImGuiNetSamples
         string buf4 = "";
         string buf5 = "";
         string password = "password123";
+
         //Tabs
         bool flags_tabs_first_run = true;
         uint tab_bar_flags = 0;
         bool[] opened = { true, true, true, true };
+
         //Plots Widgets
         bool animate = true;
         float[] values = new float[90];
@@ -1039,6 +1199,7 @@ namespace Monogame.ImGuiNetSamples
         double refresh_time = 0.0;
         float phase = 0.0f;
         float progress = 0.0f, progress_dir = 1.0f;
+
         //Color Widgets
         Vec3 color_vec3 = new Vec3(114.0f / 255.0f, 144.0f / 255.0f, 154 / 255.0f);
         Vec4 color_vec4 = new Vec4(114.0f / 255.0f, 144.0f / 255.0f, 154 / 255.0f, 200.0f / 255.0f);
@@ -1055,14 +1216,17 @@ namespace Monogame.ImGuiNetSamples
         int display_mode = 0;
         int picker_mode = 0;
         Vec4 color_hsv = new Vec4(0.23f, 1.0f, 1.0f, 1.0f);
+
         //Range Widgets
         float begin = 10, end = 90;
         int begin_i = 100, end_i = 1000;
+
         //Multi component Widgets
         Vec2 vec2f = new Vec2(0.10f, 0.20f);
         Vec3 vec3f = new Vec3(0.10f, 0.20f, 0.30f);
         Vec4 vec4f = new Vec4(0.10f, 0.20f, 0.30f, 0.44f);
         int[] vec4i = { 1, 5, 100, 255 };
+
         //Vertical Sliders
         float spacing = 4;
         int int_value = 0;
@@ -1071,6 +1235,7 @@ namespace Monogame.ImGuiNetSamples
         float col_green = 1.0f;
         float col_blue = 1.0f;
         float[] values2 = { 0.20f, 0.80f, 0.40f, 0.25f };
+
         #endregion
 
         private void DemoWindowWidgets()
@@ -1081,10 +1246,11 @@ namespace Monogame.ImGuiNetSamples
             }
 
             //Basic
+
             #region Basic
+
             if (ImGui.TreeNode("Basic"))
             {
-
                 if (ImGui.Button("Button"))
                 {
                     clicked++;
@@ -1093,6 +1259,7 @@ namespace Monogame.ImGuiNetSamples
                         clicked = 0;
                     }
                 }
+
                 if (clicked == 1)
                 {
                     ImGui.SameLine();
@@ -1113,6 +1280,7 @@ namespace Monogame.ImGuiNetSamples
                     {
                         ImGui.SameLine();
                     }
+
                     ImGui.PushID(i);
                     //ImColorPtr color = new ImColorPtr();
                     //ImGuiNative.ImColor_HSV ?
@@ -1130,9 +1298,17 @@ namespace Monogame.ImGuiNetSamples
 
                 float spacing = ImGui.GetStyle().ItemInnerSpacing.X;
                 ImGui.PushButtonRepeat(true);
-                if (ImGui.ArrowButton("##left", ImGuiDir.Left)) { counter--; }
+                if (ImGui.ArrowButton("##left", ImGuiDir.Left))
+                {
+                    counter--;
+                }
+
                 ImGui.SameLine(0.0f, spacing);
-                if (ImGui.ArrowButton("##right", ImGuiDir.Right)) { counter++; }
+                if (ImGui.ArrowButton("##right", ImGuiDir.Right))
+                {
+                    counter++;
+                }
+
                 ImGui.PopButtonRepeat();
                 ImGui.SameLine();
                 ImGui.Text(counter.ToString());
@@ -1225,17 +1401,25 @@ namespace Monogame.ImGuiNetSamples
 
                 ImGui.ColorEdit4("color 2", ref col2);
 
-                string[] fruits = { "Apple", "Banana", "Cherry", "Kiwi", "Mango", "Orange", "Pineapple", "Strawberry", "Watermelon" };
+                string[] fruits =
+                {
+                    "Apple", "Banana", "Cherry", "Kiwi", "Mango", "Orange", "Pineapple", "Strawberry", "Watermelon"
+                };
                 ImGui.ListBox("listbox", ref current_fruit, fruits, fruits.Length);
                 ImGui.SameLine();
-                HelpMarker("Using the simplified one-liner ListBox API here.\nRefer to the \"List boxes\" section below for an explanation of how to use the more flexible and general BeginListBox/EndListBox API.");
+                HelpMarker(
+                    "Using the simplified one-liner ListBox API here.\nRefer to the \"List boxes\" section below for an explanation of how to use the more flexible and general BeginListBox/EndListBox API."
+                );
 
                 ImGui.TreePop();
             }
+
             #endregion
 
             //Trees
+
             #region Trees
+
             if (ImGui.TreeNode("Trees"))
             {
                 if (ImGui.TreeNode("Basic trees"))
@@ -1251,10 +1435,14 @@ namespace Monogame.ImGuiNetSamples
                         {
                             ImGui.Text("blah blah");
                             ImGui.SameLine();
-                            if (ImGui.SmallButton("button")) { }
+                            if (ImGui.SmallButton("button"))
+                            {
+                            }
+
                             ImGui.TreePop();
                         }
                     }
+
                     ImGui.TreePop();
                 }
 
@@ -1262,7 +1450,8 @@ namespace Monogame.ImGuiNetSamples
                 {
                     HelpMarker(
                     "This is a more typical looking tree with selectable nodes.\n" +
-                    "Click to select, CTRL+Click to toggle, click on arrows or double-click to open.");
+                    "Click to select, CTRL+Click to toggle, click on arrows or double-click to open."
+                    );
 
                     if (base_flags_first_run)
                     {
@@ -1272,7 +1461,11 @@ namespace Monogame.ImGuiNetSamples
                     }
 
                     ImGui.CheckboxFlags("ImGuiTreeNodeFlags_OpenOnArrow", ref base_flags, (uint)ImGuiTreeNodeFlags.OpenOnArrow);
-                    ImGui.CheckboxFlags("ImGuiTreeNodeFlags_OpenOnDoubleClick", ref base_flags, (uint)ImGuiTreeNodeFlags.OpenOnDoubleClick);
+                    ImGui.CheckboxFlags(
+                        "ImGuiTreeNodeFlags_OpenOnDoubleClick",
+                        ref base_flags,
+                        (uint)ImGuiTreeNodeFlags.OpenOnDoubleClick
+                    );
                     ImGui.Checkbox("Align label with current X position", ref align_label_with_current_x_position);
                     //ImGui.Checkbox("Test tree node as drag source", ref test_drag_and_drop);
                     ImGui.Text("Hello!");
@@ -1311,14 +1504,17 @@ namespace Monogame.ImGuiNetSamples
 
 
                     ImGui.TreePop();
-
                 }
+
                 ImGui.TreePop();
             }
+
             #endregion
 
             //Collapsing Headers
+
             #region Collapsing Headers & Bullets
+
             if (ImGui.TreeNode("Collapsing Headers"))
             {
                 ImGui.Checkbox("Show 2nd header", ref closable_group);
@@ -1330,6 +1526,7 @@ namespace Monogame.ImGuiNetSamples
                         ImGui.Text("Some content " + i);
                     }
                 }
+
                 if (ImGui.CollapsingHeader("Header with a close button", ref closable_group))
                 {
                     ImGui.Text("IsItemHovered: " + ImGui.IsItemHovered());
@@ -1338,6 +1535,7 @@ namespace Monogame.ImGuiNetSamples
                         ImGui.Text("More content " + i);
                     }
                 }
+
                 ImGui.TreePop();
             }
 
@@ -1351,16 +1549,20 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.BulletText("Another bullet point");
                     ImGui.TreePop();
                 }
+
                 ImGui.Bullet();
                 ImGui.Text("Bullet point 3 (two calls)");
                 ImGui.Bullet();
                 ImGui.SmallButton("Button");
                 ImGui.TreePop();
             }
+
             #endregion
 
             //Text
+
             #region Text
+
             if (ImGui.TreeNode("Text"))
             {
                 if (ImGui.TreeNode("Colorful Text"))
@@ -1376,8 +1578,10 @@ namespace Monogame.ImGuiNetSamples
 
                 if (ImGui.TreeNode("Word Wrapping"))
                 {
-                    ImGui.TextWrapped("This text should automatically wrap on the edge of the window. The current implementation " +
-                    "for text wrapping follows simple rules suitable for English and possibly other languages.");
+                    ImGui.TextWrapped(
+                        "This text should automatically wrap on the edge of the window. The current implementation " +
+                    "for text wrapping follows simple rules suitable for English and possibly other languages."
+                    );
                     ImGui.Spacing();
 
                     ImGui.SliderFloat("Wrap width", ref wrap_width, -20, 600, "%.0f");
@@ -1392,7 +1596,13 @@ namespace Monogame.ImGuiNetSamples
                         ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + wrap_width);
                         if (n == 0)
                         {
-                            ImGui.Text(string.Format("The lazy dog is a good dog. This paragraph should fit within {0} pixels. Testing a 1 character word. The quick brown fox jumps over the lazy dog.", wrap_width));
+                            ImGui.Text(
+                                string
+                                    .Format(
+                                        "The lazy dog is a good dog. This paragraph should fit within {0} pixels. Testing a 1 character word. The quick brown fox jumps over the lazy dog.",
+                                        wrap_width
+                                    )
+                            );
                         }
                         else
                         {
@@ -1410,22 +1620,29 @@ namespace Monogame.ImGuiNetSamples
                         draw_list.AddRectFilled(marker_min, marker_max, col2);
 
                         ImGui.PopTextWrapPos();
-
                     }
+
                     ImGui.TreePop();
                 }
+
                 ImGui.TreePop();
             }
+
             #endregion
 
             //Images
+
             #region Images
+
             if (ImGui.TreeNode("Images"))
             {
                 ImGuiIOPtr io = ImGui.GetIO();
-                ImGui.TextWrapped("Below we are displaying the font texture (which is the only texture we have access to in this demo). " +
+                ImGui
+                    .TextWrapped(
+                        "Below we are displaying the font texture (which is the only texture we have access to in this demo). " +
                 "Use the 'ImTextureID' type as storage to pass pointers or identifier to your own texture data. " +
-                "Hover the texture for a zoomed view!");
+                "Hover the texture for a zoomed view!"
+                    );
 
                 System.IntPtr my_tex_id = io.Fonts.TexID;
                 float my_tex_w = (float)io.Fonts.TexWidth;
@@ -1447,10 +1664,24 @@ namespace Monogame.ImGuiNetSamples
                     float region_x = io.MousePos.X - pos.X - region_sz * 0.5f;
                     float region_y = io.MousePos.Y - pos.Y - region_sz * 0.5f;
                     float zoom = 4.0f;
-                    if (region_x < 0.0f) { region_x = 0.0f; }
-                    else if (region_x > my_tex_w - region_sz) { region_x = my_tex_w - region_sz; }
-                    if (region_y < 0.0f) { region_y = 0.0f; }
-                    else if (region_y > my_tex_h - region_sz) { region_y = my_tex_h - region_sz; }
+                    if (region_x < 0.0f)
+                    {
+                        region_x = 0.0f;
+                    }
+                    else if (region_x > my_tex_w - region_sz)
+                    {
+                        region_x = my_tex_w - region_sz;
+                    }
+
+                    if (region_y < 0.0f)
+                    {
+                        region_y = 0.0f;
+                    }
+                    else if (region_y > my_tex_h - region_sz)
+                    {
+                        region_y = my_tex_h - region_sz;
+                    }
+
                     ImGui.Text(string.Format("Min: ({0},{1})", region_x, region_y));
                     ImGui.Text(string.Format("Max: ({0},{1})", region_x + region_sz, region_y + region_sz));
                     Vec2 uv0 = new Vec2((region_x) / my_tex_w, (region_y) / my_tex_h);
@@ -1469,21 +1700,26 @@ namespace Monogame.ImGuiNetSamples
                     Vec2 uv1 = new Vec2(32.0f / my_tex_w, 32.0f / my_tex_h);
                     Vec4 bg_col = new Vec4(0.0f, 0.0f, 0.0f, 1.0f); // black background
                     Vec4 tint_col2 = new Vec4(1.0f, 1.0f, 1.0f, 1.0f); // no tint
-                    if (ImGui.ImageButton($"textured_button_id_{i}",my_tex_id, size, uv0, uv1, bg_col, tint_col2))
+                    if (ImGui.ImageButton($"textured_button_id_{i}", my_tex_id, size, uv0, uv1, bg_col, tint_col2))
                     {
                         pressed_count += 1;
                     }
+
                     ImGui.PopID();
                     ImGui.SameLine();
                 }
+
                 ImGui.NewLine();
                 ImGui.Text(string.Format("Pressed {0} times.", pressed_count));
                 ImGui.TreePop();
             }
+
             #endregion
 
             //Combo
+
             #region Combo & List boxes
+
             if (ImGui.TreeNode("Combo"))
             {
                 ImGui.CheckboxFlags("ImGuiComboFlags_PopupAlignLeft", ref flags, (uint)ImGuiComboFlags.PopupAlignLeft);
@@ -1493,12 +1729,17 @@ namespace Monogame.ImGuiNetSamples
                 {
                     flags &= ~(uint)ImGuiComboFlags.NoPreview; // clear the other flag
                 }
+
                 if (ImGui.CheckboxFlags("ImGuiComboFlags_NoPreview", ref flags, (uint)ImGuiComboFlags.NoPreview))
                 {
                     flags &= ~(uint)ImGuiComboFlags.NoArrowButton; // clear the other flag
                 }
 
-                string[] items = { "AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF", "GGGG", "HHHH", "IIII", "JJJJ", "KKKK", "LLLLLLL", "MMMM", "OOOOOOO" };
+                string[] items =
+                {
+                    "AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF", "GGGG", "HHHH", "IIII", "JJJJ", "KKKK", "LLLLLLL", "MMMM",
+                    "OOOOOOO"
+                };
                 string combo_label = items[item_current_idx];
                 ImGuiComboFlags flags_cf = (ImGuiComboFlags)flags;
                 if (ImGui.BeginCombo("combo 1", combo_label, flags_cf))
@@ -1516,6 +1757,7 @@ namespace Monogame.ImGuiNetSamples
                             ImGui.SetItemDefaultFocus();
                         }
                     }
+
                     ImGui.EndCombo();
                 }
 
@@ -1529,15 +1771,24 @@ namespace Monogame.ImGuiNetSamples
             //List boxes
             if (ImGui.TreeNode("List boxes"))
             {
-                string[] items = { "AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF", "GGGG", "HHHH", "IIII", "JJJJ", "KKKK", "LLLLLLL", "MMMM", "OOOOOOO" };
-                if (ImGui.ListBox("listbox 1", ref item_current_idx_lb, items, items.Length)) { }
+                string[] items =
+                {
+                    "AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF", "GGGG", "HHHH", "IIII", "JJJJ", "KKKK", "LLLLLLL", "MMMM",
+                    "OOOOOOO"
+                };
+                if (ImGui.ListBox("listbox 1", ref item_current_idx_lb, items, items.Length))
+                {
+                }
 
                 ImGui.TreePop();
             }
+
             #endregion
 
             //Selectables
+
             #region Selectables
+
             if (ImGui.TreeNode("Selectables"))
             {
                 if (ImGui.TreeNode("Basic"))
@@ -1553,8 +1804,10 @@ namespace Monogame.ImGuiNetSamples
                             selection[4] = !selection[4];
                         }
                     }
+
                     ImGui.TreePop();
                 }
+
                 if (ImGui.TreeNode("Selection State: Single Selection"))
                 {
                     for (int n = 0; n < 5; n++)
@@ -1565,8 +1818,10 @@ namespace Monogame.ImGuiNetSamples
                             selected = n;
                         }
                     }
+
                     ImGui.TreePop();
                 }
+
                 if (ImGui.TreeNode("Selection State: Multiple Selection"))
                 {
                     HelpMarker("Hold CTRL and click to select multiple items.");
@@ -1583,18 +1838,28 @@ namespace Monogame.ImGuiNetSamples
                                     selection_ms[r] = false;
                                 }
                             }
+
                             selection_ms[n] ^= true;
                         }
                     }
+
                     ImGui.TreePop();
                 }
+
                 if (ImGui.TreeNode("Rendering more text into the same line"))
                 {
-                    ImGui.Selectable("main.c", ref selected_rend[0]); ImGui.SameLine(300); ImGui.Text(" 2,345 bytes");
-                    ImGui.Selectable("Hello.cpp", ref selected_rend[1]); ImGui.SameLine(300); ImGui.Text("12,345 bytes");
-                    ImGui.Selectable("Hello.h", ref selected_rend[2]); ImGui.SameLine(300); ImGui.Text(" 2,345 bytes");
+                    ImGui.Selectable("main.c", ref selected_rend[0]);
+                    ImGui.SameLine(300);
+                    ImGui.Text(" 2,345 bytes");
+                    ImGui.Selectable("Hello.cpp", ref selected_rend[1]);
+                    ImGui.SameLine(300);
+                    ImGui.Text("12,345 bytes");
+                    ImGui.Selectable("Hello.h", ref selected_rend[2]);
+                    ImGui.SameLine(300);
+                    ImGui.Text(" 2,345 bytes");
                     ImGui.TreePop();
                 }
+
                 if (ImGui.TreeNode("Alignment"))
                 {
                     HelpMarker("By default, Selectables uses style.SelectableTextAlign but it can be overridden on a per-item " +
@@ -1607,20 +1872,29 @@ namespace Monogame.ImGuiNetSamples
                         {
                             Vec2 alignment = new Vec2((float)x / 2.0f, (float)y / 2.0f);
                             string name = string.Format("({0},{1})", alignment.X, alignment.Y);
-                            if (x > 0) { ImGui.SameLine(); }
+                            if (x > 0)
+                            {
+                                ImGui.SameLine();
+                            }
+
                             ImGui.PushStyleVar(ImGuiStyleVar.SelectableTextAlign, alignment);
                             ImGui.Selectable(name, ref selected_align[3 * y + x], ImGuiSelectableFlags.None, new Vec2(80, 80));
                             ImGui.PopStyleVar();
                         }
                     }
+
                     ImGui.TreePop();
                 }
+
                 ImGui.TreePop();
             }
+
             #endregion
 
             //Text Input
+
             #region Text Input
+
             if (ImGui.TreeNode("Text Input"))
             {
                 if (ImGui.TreeNode("Multi-line Text Input"))
@@ -1643,13 +1917,29 @@ namespace Monogame.ImGuiNetSamples
                         flags_ti_first_run = false;
                     }
 
-                    HelpMarker("You can use the ImGuiInputTextFlags_CallbackResize facility if you need to wire InputTextMultiline() to a dynamic string type. See misc/cpp/imgui_stdlib.h for an example. (This is not demonstrated in imgui_demo.cpp because we don't want to include <string> in here)");
+                    HelpMarker(
+                        "You can use the ImGuiInputTextFlags_CallbackResize facility if you need to wire InputTextMultiline() to a dynamic string type. See misc/cpp/imgui_stdlib.h for an example. (This is not demonstrated in imgui_demo.cpp because we don't want to include <string> in here)"
+                    );
                     ImGui.CheckboxFlags("ImGuiInputTextFlags_ReadOnly", ref flags_ti, (uint)ImGuiInputTextFlags.ReadOnly);
-                    ImGui.CheckboxFlags("ImGuiInputTextFlags_AllowTabInput", ref flags_ti, (uint)ImGuiInputTextFlags.AllowTabInput);
-                    ImGui.CheckboxFlags("ImGuiInputTextFlags_CtrlEnterForNewLine", ref flags_ti, (uint)ImGuiInputTextFlags.CtrlEnterForNewLine);
+                    ImGui.CheckboxFlags(
+                        "ImGuiInputTextFlags_AllowTabInput",
+                        ref flags_ti,
+                        (uint)ImGuiInputTextFlags.AllowTabInput
+                    );
+                    ImGui.CheckboxFlags(
+                        "ImGuiInputTextFlags_CtrlEnterForNewLine",
+                        ref flags_ti,
+                        (uint)ImGuiInputTextFlags.CtrlEnterForNewLine
+                    );
 
                     ImGuiInputTextFlags flags_ml = (ImGuiInputTextFlags)flags_ti;
-                    ImGui.InputTextMultiline("##source", ref text, (uint)text.Length, new Vec2(0, ImGui.GetTextLineHeight() * 16), flags_ml);
+                    ImGui.InputTextMultiline(
+                        "##source",
+                        ref text,
+                        (uint)text.Length,
+                        new Vec2(0, ImGui.GetTextLineHeight() * 16),
+                        flags_ml
+                    );
                     ImGui.TreePop();
                 }
 
@@ -1668,17 +1958,26 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.InputText("password", ref password, (uint)64, ImGuiInputTextFlags.Password);
                     ImGui.SameLine();
                     HelpMarker("Display all characters as '*'.\nDisable clipboard cut and copy.\nDisable logging.\n");
-                    ImGui.InputTextWithHint("password (w/ hint)", "<password>", ref password, (uint)64, ImGuiInputTextFlags.Password);
+                    ImGui.InputTextWithHint(
+                        "password (w/ hint)",
+                        "<password>",
+                        ref password,
+                        (uint)64,
+                        ImGuiInputTextFlags.Password
+                    );
                     ImGui.InputText("password (clear)", ref password, (uint)64);
                     ImGui.TreePop();
                 }
 
                 ImGui.TreePop();
             }
+
             #endregion
 
             //Tabs
+
             #region Tabs
+
             if (ImGui.TreeNode("Tabs"))
             {
                 if (ImGui.TreeNode("Basic"))
@@ -1691,18 +1990,22 @@ namespace Monogame.ImGuiNetSamples
                             ImGui.Text("This is the Avocado tab!\nblah blah blah blah blah");
                             ImGui.EndTabItem();
                         }
+
                         if (ImGui.BeginTabItem("Broccoli"))
                         {
                             ImGui.Text("This is the Broccoli tab!\nblah blah blah blah blah");
                             ImGui.EndTabItem();
                         }
+
                         if (ImGui.BeginTabItem("Cucumber"))
                         {
                             ImGui.Text("This is the Cucumber tab!\nblah blah blah blah blah");
                             ImGui.EndTabItem();
                         }
+
                         ImGui.EndTabBar();
                     }
+
                     ImGui.Separator();
                     ImGui.TreePop();
                 }
@@ -1717,18 +2020,41 @@ namespace Monogame.ImGuiNetSamples
                     }
 
                     ImGui.CheckboxFlags("ImGuiTabBarFlags_Reorderable", ref tab_bar_flags, (uint)ImGuiTabBarFlags.Reorderable);
-                    ImGui.CheckboxFlags("ImGuiTabBarFlags_AutoSelectNewTabs", ref tab_bar_flags, (uint)ImGuiTabBarFlags.AutoSelectNewTabs);
-                    ImGui.CheckboxFlags("ImGuiTabBarFlags_TabListPopupButton", ref tab_bar_flags, (uint)ImGuiTabBarFlags.TabListPopupButton);
-                    ImGui.CheckboxFlags("ImGuiTabBarFlags_NoCloseWithMiddleMouseButton", ref tab_bar_flags, (uint)ImGuiTabBarFlags.NoCloseWithMiddleMouseButton);
+                    ImGui.CheckboxFlags(
+                        "ImGuiTabBarFlags_AutoSelectNewTabs",
+                        ref tab_bar_flags,
+                        (uint)ImGuiTabBarFlags.AutoSelectNewTabs
+                    );
+                    ImGui.CheckboxFlags(
+                        "ImGuiTabBarFlags_TabListPopupButton",
+                        ref tab_bar_flags,
+                        (uint)ImGuiTabBarFlags.TabListPopupButton
+                    );
+                    ImGui.CheckboxFlags(
+                        "ImGuiTabBarFlags_NoCloseWithMiddleMouseButton",
+                        ref tab_bar_flags,
+                        (uint)ImGuiTabBarFlags.NoCloseWithMiddleMouseButton
+                    );
                     if ((tab_bar_flags & (uint)ImGuiTabBarFlags.FittingPolicyMask) == 0)
                     {
                         tab_bar_flags |= (uint)ImGuiTabBarFlags.FittingPolicyDefault;
                     }
-                    if (ImGui.CheckboxFlags("ImGuiTabBarFlags_FittingPolicyResizeDown", ref tab_bar_flags, (uint)ImGuiTabBarFlags.FittingPolicyResizeDown))
+
+                    if (ImGui.CheckboxFlags(
+                        "ImGuiTabBarFlags_FittingPolicyResizeDown",
+                        ref tab_bar_flags,
+                        (uint)ImGuiTabBarFlags.FittingPolicyResizeDown
+                    ))
                     {
-                        tab_bar_flags &= ~((uint)ImGuiTabBarFlags.FittingPolicyMask ^ (uint)ImGuiTabBarFlags.FittingPolicyResizeDown);
+                        tab_bar_flags &= ~((uint)ImGuiTabBarFlags.FittingPolicyMask ^ (uint)ImGuiTabBarFlags
+                            .FittingPolicyResizeDown);
                     }
-                    if (ImGui.CheckboxFlags("ImGuiTabBarFlags_FittingPolicyScroll", ref tab_bar_flags, (uint)ImGuiTabBarFlags.FittingPolicyScroll))
+
+                    if (ImGui.CheckboxFlags(
+                        "ImGuiTabBarFlags_FittingPolicyScroll",
+                        ref tab_bar_flags,
+                        (uint)ImGuiTabBarFlags.FittingPolicyScroll
+                    ))
                     {
                         tab_bar_flags &= ~((uint)ImGuiTabBarFlags.FittingPolicyMask ^ (uint)ImGuiTabBarFlags.FittingPolicyScroll);
                     }
@@ -1736,7 +2062,11 @@ namespace Monogame.ImGuiNetSamples
                     string[] names = { "Artichoke", "Beetroot", "Celery", "Daikon" };
                     for (int n = 0; n < opened.Length; n++)
                     {
-                        if (n > 0) { ImGui.SameLine(); }
+                        if (n > 0)
+                        {
+                            ImGui.SameLine();
+                        }
+
                         ImGui.Checkbox(names[n], ref opened[n]);
                     }
 
@@ -1752,22 +2082,27 @@ namespace Monogame.ImGuiNetSamples
                                 {
                                     ImGui.Text("I am an odd tab.");
                                 }
+
                                 ImGui.EndTabItem();
                             }
                         }
+
                         ImGui.EndTabBar();
                     }
+
                     ImGui.Separator();
                     ImGui.TreePop();
                 }
 
                 ImGui.TreePop();
-
             }
+
             #endregion
 
             //Plots Widgets
+
             #region Plot Widgets
+
             if (ImGui.TreeNode("Plots Widgets"))
             {
                 ImGui.Checkbox("Animate", ref animate);
@@ -1779,6 +2114,7 @@ namespace Monogame.ImGuiNetSamples
                 {
                     refresh_time = ImGui.GetTime();
                 }
+
                 while (refresh_time < ImGui.GetTime())
                 {
                     values[values_offset] = (float)Math.Cos(phase);
@@ -1792,6 +2128,7 @@ namespace Monogame.ImGuiNetSamples
                 {
                     average += values[n];
                 }
+
                 average /= (float)values.Length;
                 string overlay = string.Format("avg {0}", average);
                 ImGui.PlotLines("Lines", ref values[0], values.Length, values_offset, overlay, -1.0f, 1.0f, new Vec2(0, 80.0f));
@@ -1801,8 +2138,17 @@ namespace Monogame.ImGuiNetSamples
                 if (animate)
                 {
                     progress += progress_dir * 0.4f * ImGui.GetIO().DeltaTime;
-                    if (progress >= +1.1f) { progress = +1.1f; progress_dir *= -1.0f; }
-                    if (progress <= -0.1f) { progress = -0.1f; progress_dir *= -1.0f; }
+                    if (progress >= +1.1f)
+                    {
+                        progress = +1.1f;
+                        progress_dir *= -1.0f;
+                    }
+
+                    if (progress <= -0.1f)
+                    {
+                        progress = -0.1f;
+                        progress_dir *= -1.0f;
+                    }
                 }
 
                 ImGui.ProgressBar(progress, new Vec2(0.0f, 0.0f));
@@ -1814,23 +2160,35 @@ namespace Monogame.ImGuiNetSamples
                 ImGui.ProgressBar(progress, new Vec2(0.0f, 0.0f), buf);
                 ImGui.TreePop();
             }
+
             #endregion
 
             //Color Widgets
+
             #region Color Widgets
+
             if (ImGui.TreeNode("Color/Picker Widgets"))
             {
                 ImGui.Checkbox("With Alpha Preview", ref alpha_preview);
                 ImGui.Checkbox("With Half Alpha Preview", ref alpha_half_preview);
                 ImGui.Checkbox("With Drag and Drop", ref drag_and_drop);
-                ImGui.Checkbox("With Options Menu", ref options_menu); ImGui.SameLine(); HelpMarker("Right-click on the individual color widget to show options.");
-                ImGui.Checkbox("With HDR", ref hdr); ImGui.SameLine(); HelpMarker("Currently all this does is to lift the 0..1 limits on dragging widgets.");
-                ImGuiColorEditFlags misc_flags = (hdr ? ImGuiColorEditFlags.HDR : 0) | (drag_and_drop ? 0 : ImGuiColorEditFlags.NoDragDrop) | (alpha_half_preview ? ImGuiColorEditFlags.AlphaPreviewHalf : (alpha_preview ? ImGuiColorEditFlags.AlphaPreview : 0)) | (options_menu ? 0 : ImGuiColorEditFlags.NoOptions);
+                ImGui.Checkbox("With Options Menu", ref options_menu);
+                ImGui.SameLine();
+                HelpMarker("Right-click on the individual color widget to show options.");
+                ImGui.Checkbox("With HDR", ref hdr);
+                ImGui.SameLine();
+                HelpMarker("Currently all this does is to lift the 0..1 limits on dragging widgets.");
+                ImGuiColorEditFlags misc_flags = (hdr ? ImGuiColorEditFlags.HDR : 0) | (drag_and_drop ? 0 : ImGuiColorEditFlags
+                    .NoDragDrop) | (alpha_half_preview ? ImGuiColorEditFlags
+                        .AlphaPreviewHalf : (alpha_preview ? ImGuiColorEditFlags.AlphaPreview : 0))
+                                                 | (options_menu ? 0 : ImGuiColorEditFlags.NoOptions);
 
                 ImGui.Text("Color widget:");
-                ImGui.SameLine(); HelpMarker(
+                ImGui.SameLine();
+                HelpMarker(
                     "Click on the color square to open a color picker.\n" +
-                    "CTRL+click on individual component to input value.\n");
+                    "CTRL+click on individual component to input value.\n"
+                );
                 ImGui.ColorEdit3("MyColor##1", ref color_vec3, misc_flags);
 
                 ImGui.Text("Color widget HSV with Alpha:");
@@ -1844,7 +2202,11 @@ namespace Monogame.ImGuiNetSamples
                 HelpMarker("With the ImGuiColorEditFlags_NoInputs flag you can hide all the slider/text inputs.\n" +
                     "With the ImGuiColorEditFlags_NoLabel flag you can pass a non-empty label which will only " +
                     "be used for the tooltip and picker popup.");
-                ImGui.ColorEdit4("MyColor##3", ref color_vec4, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoLabel | misc_flags);
+                ImGui.ColorEdit4(
+                    "MyColor##3",
+                    ref color_vec4,
+                    ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoLabel | misc_flags
+                );
 
                 ImGui.Text("Color button only:");
                 ImGui.ColorButton("MyColor##3c", color_vec4, misc_flags, new Vec2(80, 80));
@@ -1864,56 +2226,112 @@ namespace Monogame.ImGuiNetSamples
                         ImGui.ColorEdit4("##RefColor", ref ref_color_v, ImGuiColorEditFlags.NoInputs | misc_flags);
                     }
                 }
+
                 ImGui.Combo("Display Mode", ref display_mode, "Auto/Current\0None\0RGB Only\0HSV Only\0Hex Only\0");
                 ImGui.SameLine();
                 HelpMarker(
                     "ColorEdit defaults to displaying RGB inputs if you don't specify a display mode, " +
                     "but the user can change it with a right-click.\n\nColorPicker defaults to displaying RGB+HSV+Hex " +
-                    "if you don't specify a display mode.\n\nYou can change the defaults using SetColorEditOptions().");
+                    "if you don't specify a display mode.\n\nYou can change the defaults using SetColorEditOptions()."
+                );
                 ImGui.Combo("Picker Mode", ref picker_mode, "Auto/Current\0Hue bar + SV rect\0Hue wheel + SV triangle\0");
-                ImGui.SameLine(); HelpMarker("User can right-click the picker to change mode.");
+                ImGui.SameLine();
+                HelpMarker("User can right-click the picker to change mode.");
                 ImGuiColorEditFlags flags = misc_flags;
-                if (!alpha) { flags |= ImGuiColorEditFlags.NoAlpha; }
-                if (alpha_bar) { flags |= ImGuiColorEditFlags.AlphaBar; }
-                if (!side_preview) { flags |= ImGuiColorEditFlags.NoSidePreview; }
-                if (picker_mode == 1) { flags |= ImGuiColorEditFlags.PickerHueBar; }
-                if (picker_mode == 2) { flags |= ImGuiColorEditFlags.PickerHueWheel; }
-                if (display_mode == 1) { flags |= ImGuiColorEditFlags.NoInputs; }
-                if (display_mode == 2) { flags |= ImGuiColorEditFlags.DisplayRGB; }
-                if (display_mode == 3) { flags |= ImGuiColorEditFlags.DisplayHSV; }
-                if (display_mode == 4) { flags |= ImGuiColorEditFlags.DisplayHex; }
+                if (!alpha)
+                {
+                    flags |= ImGuiColorEditFlags.NoAlpha;
+                }
+
+                if (alpha_bar)
+                {
+                    flags |= ImGuiColorEditFlags.AlphaBar;
+                }
+
+                if (!side_preview)
+                {
+                    flags |= ImGuiColorEditFlags.NoSidePreview;
+                }
+
+                if (picker_mode == 1)
+                {
+                    flags |= ImGuiColorEditFlags.PickerHueBar;
+                }
+
+                if (picker_mode == 2)
+                {
+                    flags |= ImGuiColorEditFlags.PickerHueWheel;
+                }
+
+                if (display_mode == 1)
+                {
+                    flags |= ImGuiColorEditFlags.NoInputs;
+                }
+
+                if (display_mode == 2)
+                {
+                    flags |= ImGuiColorEditFlags.DisplayRGB;
+                }
+
+                if (display_mode == 3)
+                {
+                    flags |= ImGuiColorEditFlags.DisplayHSV;
+                }
+
+                if (display_mode == 4)
+                {
+                    flags |= ImGuiColorEditFlags.DisplayHex;
+                }
+
                 ImGui.ColorPicker4("MyColor##4", ref color_vec4, flags, ref ref_color_v.X); // ref_color ? ref_color_v.X : null);
 
                 ImGui.Text("Set defaults in code:");
-                ImGui.SameLine(); HelpMarker("SetColorEditOptions() is designed to allow you to set boot-time default.\n" +
+                ImGui.SameLine();
+                HelpMarker("SetColorEditOptions() is designed to allow you to set boot-time default.\n" +
                     "We don't have Push/Pop functions because you can force options on a per-widget basis if needed," +
                     "and the user can change non-forced ones with the options menu.\nWe don't have a getter to avoid" +
                     "encouraging you to persistently save values that aren't forward-compatible.");
                 if (ImGui.Button("Default: Uint8 + HSV + Hue Bar"))
                 {
-                    ImGui.SetColorEditOptions(ImGuiColorEditFlags.Uint8 | ImGuiColorEditFlags.DisplayHSV | ImGuiColorEditFlags.PickerHueBar);
+                    ImGui.SetColorEditOptions(
+                        ImGuiColorEditFlags.Uint8 | ImGuiColorEditFlags.DisplayHSV | ImGuiColorEditFlags.PickerHueBar
+                    );
                 }
+
                 if (ImGui.Button("Default: Float + HDR + Hue Wheel"))
                 {
-                    ImGui.SetColorEditOptions(ImGuiColorEditFlags.Float | ImGuiColorEditFlags.HDR | ImGuiColorEditFlags.PickerHueWheel);
+                    ImGui.SetColorEditOptions(
+                        ImGuiColorEditFlags.Float | ImGuiColorEditFlags.HDR | ImGuiColorEditFlags.PickerHueWheel
+                    );
                 }
+
                 // HSV
                 ImGui.Spacing();
                 ImGui.Text("HSV encoded colors");
-                ImGui.SameLine(); HelpMarker("By default, colors are given to ColorEdit and ColorPicker in RGB, but ImGuiColorEditFlags_InputHSV" +
+                ImGui.SameLine();
+                HelpMarker("By default, colors are given to ColorEdit and ColorPicker in RGB, but ImGuiColorEditFlags_InputHSV" +
                     "allows you to store colors as HSV and pass them to ColorEdit and ColorPicker as HSV. This comes with the" +
                     "added benefit that you can manipulate hue values with the picker even when saturation or value are zero.");
                 ImGui.Text("Color widget with InputHSV:");
-                ImGui.ColorEdit4("HSV shown as RGB##1", ref color_hsv, ImGuiColorEditFlags.DisplayRGB | ImGuiColorEditFlags.InputHSV | ImGuiColorEditFlags.Float);
-                ImGui.ColorEdit4("HSV shown as HSV##1", ref color_hsv, ImGuiColorEditFlags.DisplayHSV | ImGuiColorEditFlags.InputHSV | ImGuiColorEditFlags.Float);
+                ImGui.ColorEdit4(
+                    "HSV shown as RGB##1",
+                    ref color_hsv,
+                    ImGuiColorEditFlags.DisplayRGB | ImGuiColorEditFlags.InputHSV | ImGuiColorEditFlags.Float
+                );
+                ImGui.ColorEdit4(
+                    "HSV shown as HSV##1",
+                    ref color_hsv,
+                    ImGuiColorEditFlags.DisplayHSV | ImGuiColorEditFlags.InputHSV | ImGuiColorEditFlags.Float
+                );
                 ImGui.DragFloat4("Raw HSV values", ref color_hsv, 0.01f, 0.0f, 1.0f);
 
                 ImGui.TreePop();
             }
+
             #endregion
 
             //Range & Multi Widgets
-            # region Range & Multi Widgets
+# region Range & Multi Widgets
             if (ImGui.TreeNode("Range Widgets"))
             {
                 ImGui.DragFloatRange2("range float", ref begin, ref end, 0.25f, 0.0f, 100.0f, "Min: %.1f %%", "Max: %.1f %%");
@@ -1949,10 +2367,13 @@ namespace Monogame.ImGuiNetSamples
 
                 ImGui.TreePop();
             }
+
             #endregion
 
             //Vertical Sliders
+
             #region Vertical Sliders
+
             if (ImGui.TreeNode("Vertical Sliders"))
             {
                 ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vec2(spacing, spacing));
@@ -1967,6 +2388,7 @@ namespace Monogame.ImGuiNetSamples
                     {
                         ImGui.SameLine();
                     }
+
                     ImGui.PushID(i);
 
                     ImGui.ColorConvertHSVtoRGB(i / 7.0f, 0.5f, 0.5f, out col_red, out col_green, out col_blue);
@@ -1987,19 +2409,25 @@ namespace Monogame.ImGuiNetSamples
                     {
                         ImGui.SetTooltip(values_vert[i].ToString());
                     }
+
                     ImGui.PopStyleColor(4);
                     ImGui.PopID();
                 }
+
                 ImGui.PopID();
 
                 ImGui.SameLine();
                 ImGui.PushID("set2");
 
                 int rows = 3;
-                Vec2 small_slider_size = new Vec2(18, 50);//(float)(int)((160.0f - (rows - 1) * spacing / rows)));
+                Vec2 small_slider_size = new Vec2(18, 50); //(float)(int)((160.0f - (rows - 1) * spacing / rows)));
                 for (int nx = 0; nx < 4; nx++)
                 {
-                    if (nx > 0) { ImGui.SameLine(); }
+                    if (nx > 0)
+                    {
+                        ImGui.SameLine();
+                    }
+
                     ImGui.BeginGroup();
                     for (int ny = 0; ny < rows; ny++)
                     {
@@ -2009,10 +2437,13 @@ namespace Monogame.ImGuiNetSamples
                         {
                             ImGui.SetTooltip(values2[nx].ToString());
                         }
+
                         ImGui.PopID();
                     }
+
                     ImGui.EndGroup();
                 }
+
                 ImGui.PopID();
 
                 ImGui.SameLine();
@@ -2023,27 +2454,33 @@ namespace Monogame.ImGuiNetSamples
                     {
                         ImGui.SameLine();
                     }
+
                     ImGui.PushID(i);
                     ImGui.PushStyleVar(ImGuiStyleVar.GrabMinSize, 40);
                     ImGui.VSliderFloat("##v", new Vec2(40, 160), ref values_vert[i], 0.0f, 1.0f, "%.2f\nsec");
                     ImGui.PopStyleVar();
                     ImGui.PopID();
                 }
+
                 ImGui.PopID();
                 ImGui.PopStyleVar();
                 ImGui.TreePop();
             }
+
             #endregion
         }
 
         #region DemoWindowLayoutVariables
+
         //Child windows
         bool disable_mouse_wheel = false;
         bool disable_menu = false;
         int offset_x = 0;
+
         //Widgets Width
         float f = 0.0f;
         bool show_indented_items = true;
+
         //Basic Horizontal Layout
         bool c1 = false;
         bool c2 = false;
@@ -2055,12 +2492,14 @@ namespace Monogame.ImGuiNetSamples
         string[] items = { "AAAA", "BBBB", "CCCC", "DDDD" };
         int item = -1;
         int[] bselection = { 0, 1, 2, 3 };
+
         //Scrolling
         int track_item = 50;
         bool enable_track = true;
         bool enable_extra_decorations = false;
         float scroll_to_off_px = 0.0f;
         float scroll_to_pos_px = 200.0f;
+
         #endregion
 
         private void DemoWindowLayout()
@@ -2071,10 +2510,14 @@ namespace Monogame.ImGuiNetSamples
             }
 
             //Child windows
+
             #region Child windows
+
             if (ImGui.TreeNode("Child windows"))
             {
-                HelpMarker("Use child windows to begin into a self-contained independent scrolling/clipping regions within a host window.");
+                HelpMarker(
+                    "Use child windows to begin into a self-contained independent scrolling/clipping regions within a host window."
+                );
 
                 ImGui.Checkbox("Disable Mouse Wheel", ref disable_mouse_wheel);
                 ImGui.Checkbox("Disable Menu", ref disable_menu);
@@ -2085,12 +2528,19 @@ namespace Monogame.ImGuiNetSamples
                 {
                     window_flags |= ImGuiWindowFlags.NoScrollWithMouse;
                 }
+
                 Vec2 content_region_max;
-                ImGui.BeginChild("ChildL", new Vec2(ImGui.GetWindowContentRegionMax().X * 0.5f, 260), ImGuiChildFlags.Border, window_flags);
+                ImGui.BeginChild(
+                    "ChildL",
+                    new Vec2(ImGui.GetWindowContentRegionMax().X * 0.5f, 260),
+                    ImGuiChildFlags.Border,
+                    window_flags
+                );
                 for (int i = 0; i < 100; i++)
                 {
                     ImGui.Text(string.Format("{0}: scrollable region", i.ToString("D4")));
                 }
+
                 ImGui.EndChild();
                 ImGui.SameLine();
 
@@ -2100,10 +2550,12 @@ namespace Monogame.ImGuiNetSamples
                 {
                     window_flags_child2 |= ImGuiWindowFlags.NoScrollWithMouse;
                 }
+
                 if (!disable_menu)
                 {
                     window_flags_child2 |= ImGuiWindowFlags.MenuBar;
                 }
+
                 ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, 5.0f);
                 ImGui.BeginChild("ChildR", new Vec2(0, 260), ImGuiChildFlags.Border, window_flags_child2);
                 if (!disable_menu && ImGui.BeginMenuBar())
@@ -2113,8 +2565,10 @@ namespace Monogame.ImGuiNetSamples
                         ShowExampleMenuFile();
                         ImGui.EndMenu();
                     }
+
                     ImGui.EndMenuBar();
                 }
+
                 for (int i = 0; i < 100; i++)
                 {
                     ImGui.Button(i.ToString("D3"));
@@ -2123,6 +2577,7 @@ namespace Monogame.ImGuiNetSamples
                         ImGui.SameLine();
                     }
                 }
+
                 ImGui.EndChild();
                 ImGui.PopStyleVar();
 
@@ -2139,26 +2594,39 @@ namespace Monogame.ImGuiNetSamples
                 {
                     ImGui.Text("Some test " + n.ToString());
                 }
+
                 ImGui.EndChild();
                 bool child_is_hovered = ImGui.IsItemHovered();
                 Vec2 child_rect_min = ImGui.GetItemRectMin();
                 Vec2 child_rect_max = ImGui.GetItemRectMax();
                 ImGui.PopStyleColor();
                 ImGui.Text("Hovered: " + child_is_hovered.ToString());
-                ImGui.Text(string.Format("Rect of child window is: ({0},{1}) ({2},{3})", child_rect_min.X, child_rect_min.Y, child_rect_max.X, child_rect_max.Y));
+                ImGui.Text(
+                    string.Format(
+                        "Rect of child window is: ({0},{1}) ({2},{3})",
+                        child_rect_min.X,
+                        child_rect_min.Y,
+                        child_rect_max.X,
+                        child_rect_max.Y
+                    )
+                );
 
                 ImGui.TreePop();
             }
+
             #endregion
 
             //Widgets Width
+
             #region Widgets Width
+
             if (ImGui.TreeNode("Widgets Width"))
             {
                 ImGui.Checkbox("Show intended items", ref show_indented_items);
 
                 ImGui.Text("SetNextItemWidth/PushItemWidth(100)");
-                ImGui.SameLine(); HelpMarker("Fixed width.");
+                ImGui.SameLine();
+                HelpMarker("Fixed width.");
                 ImGui.PushItemWidth(100);
                 ImGui.DragFloat("float##1b", ref f);
                 if (show_indented_items)
@@ -2167,10 +2635,12 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.DragFloat("float (intended)##1b", ref f);
                     ImGui.Unindent();
                 }
+
                 ImGui.PopItemWidth();
 
                 ImGui.Text("SetNextItemWidth/PushItemWidth(-100)");
-                ImGui.SameLine(); HelpMarker("Align to right edge minus 100");
+                ImGui.SameLine();
+                HelpMarker("Align to right edge minus 100");
                 ImGui.PushItemWidth(-100);
                 ImGui.DragFloat("float##2a", ref f);
                 if (show_indented_items)
@@ -2179,10 +2649,12 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.DragFloat("float (indented)##2b", ref f);
                     ImGui.Unindent();
                 }
+
                 ImGui.PopItemWidth();
 
                 ImGui.Text("SetNextItemWidth/PushItemWidth(GetContentRegionAvail().x * 0.5f)");
-                ImGui.SameLine(); HelpMarker("Half of available width.\n(~ right-cursor_pos)\n(works within a column set)");
+                ImGui.SameLine();
+                HelpMarker("Half of available width.\n(~ right-cursor_pos)\n(works within a column set)");
                 ImGui.PushItemWidth(ImGui.GetContentRegionAvail().X * 0.5f);
                 ImGui.DragFloat("float##3a", ref f);
                 if (show_indented_items)
@@ -2191,10 +2663,12 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.DragFloat("float (indented)##3b", ref f);
                     ImGui.Unindent();
                 }
+
                 ImGui.PopItemWidth();
 
                 ImGui.Text("SetNextItemWidth/PushItemWidth(-GetContentRegionAvail().x * 0.5f)");
-                ImGui.SameLine(); HelpMarker("Align to right edge minus half");
+                ImGui.SameLine();
+                HelpMarker("Align to right edge minus half");
                 ImGui.PushItemWidth(-ImGui.GetContentRegionAvail().X * 0.5f);
                 ImGui.DragFloat("float##4a", ref f);
                 if (show_indented_items)
@@ -2203,57 +2677,78 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.DragFloat("float (indented)##4b", ref f);
                     ImGui.Unindent();
                 }
+
                 ImGui.PopItemWidth();
 
                 ImGui.TreePop();
             }
+
             #endregion
 
             //Basic Horizontal Layout
+
             #region Basic Horizontal Layout
+
             if (ImGui.TreeNode("Basic Horizontal Layout"))
             {
                 ImGui.TextWrapped("(Use ImGui.SameLine() to keep adding items to the right of the preceding item)");
 
                 // Text
-                ImGui.Text("Two items: Hello"); ImGui.SameLine();
+                ImGui.Text("Two items: Hello");
+                ImGui.SameLine();
                 ImGui.TextColored(new Vec4(1, 1, 0, 1), "Sailor");
 
                 // Adjust spacing
-                ImGui.Text("More spacing: Hello"); ImGui.SameLine(0, 20);
+                ImGui.Text("More spacing: Hello");
+                ImGui.SameLine(0, 20);
                 ImGui.TextColored(new Vec4(1, 1, 0, 1), "Sailor");
 
                 // Button
                 ImGui.AlignTextToFramePadding();
-                ImGui.Text("Normal buttons"); ImGui.SameLine();
-                ImGui.Button("Banana"); ImGui.SameLine();
-                ImGui.Button("Apple"); ImGui.SameLine();
+                ImGui.Text("Normal buttons");
+                ImGui.SameLine();
+                ImGui.Button("Banana");
+                ImGui.SameLine();
+                ImGui.Button("Apple");
+                ImGui.SameLine();
                 ImGui.Button("Corniflower");
 
                 // Button
-                ImGui.Text("Small buttons"); ImGui.SameLine();
-                ImGui.SmallButton("Like this one"); ImGui.SameLine();
+                ImGui.Text("Small buttons");
+                ImGui.SameLine();
+                ImGui.SmallButton("Like this one");
+                ImGui.SameLine();
                 ImGui.Text("can fit within a text block.");
 
                 // Aligned to arbitrary position. Easy/cheap column.
                 ImGui.Text("Aligned");
-                ImGui.SameLine(150); ImGui.Text("x=150");
-                ImGui.SameLine(300); ImGui.Text("x=300");
+                ImGui.SameLine(150);
+                ImGui.Text("x=150");
+                ImGui.SameLine(300);
+                ImGui.Text("x=300");
                 ImGui.Text("Aligned");
-                ImGui.SameLine(150); ImGui.SmallButton("x=150");
-                ImGui.SameLine(300); ImGui.SmallButton("x=300");
+                ImGui.SameLine(150);
+                ImGui.SmallButton("x=150");
+                ImGui.SameLine(300);
+                ImGui.SmallButton("x=300");
 
                 // Checkbox
-                ImGui.Checkbox("My", ref c1); ImGui.SameLine();
-                ImGui.Checkbox("Tailor", ref c2); ImGui.SameLine();
-                ImGui.Checkbox("Is", ref c3); ImGui.SameLine();
+                ImGui.Checkbox("My", ref c1);
+                ImGui.SameLine();
+                ImGui.Checkbox("Tailor", ref c2);
+                ImGui.SameLine();
+                ImGui.Checkbox("Is", ref c3);
+                ImGui.SameLine();
                 ImGui.Checkbox("Rich", ref c4);
 
                 // Various
                 ImGui.PushItemWidth(80);
-                ImGui.Combo("Combo", ref item, items, items.Length); ImGui.SameLine();
-                ImGui.SliderFloat("X", ref bf0, 0.0f, 5.0f); ImGui.SameLine();
-                ImGui.SliderFloat("Y", ref bf1, 0.0f, 5.0f); ImGui.SameLine();
+                ImGui.Combo("Combo", ref item, items, items.Length);
+                ImGui.SameLine();
+                ImGui.SliderFloat("X", ref bf0, 0.0f, 5.0f);
+                ImGui.SameLine();
+                ImGui.SliderFloat("Y", ref bf1, 0.0f, 5.0f);
+                ImGui.SameLine();
                 ImGui.SliderFloat("Z", ref bf2, 0.0f, 5.0f);
                 ImGui.PopItemWidth();
 
@@ -2266,12 +2761,15 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.ListBox("", ref bselection[i], items, items.Length);
                     ImGui.PopID();
                 }
+
                 ImGui.PopItemWidth();
 
                 // Dummy
                 Vec2 button_sz = new Vec2(40, 40);
-                ImGui.Button("A", button_sz); ImGui.SameLine();
-                ImGui.Dummy(button_sz); ImGui.SameLine();
+                ImGui.Button("A", button_sz);
+                ImGui.SameLine();
+                ImGui.Dummy(button_sz);
+                ImGui.SameLine();
                 ImGui.Button("B", button_sz);
 
                 // Manually wrapping
@@ -2284,20 +2782,25 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.PushID(n);
                     ImGui.Button("Box", button_sz);
                     float last_button_x2 = ImGui.GetItemRectMax().X;
-                    float next_button_x2 = last_button_x2 + 1.0f + button_sz.X; // Expected position if next button was on same line
+                    float next_button_x2 = last_button_x2 + 1.0f + button_sz
+                        .X; // Expected position if next button was on same line
                     if (n + 1 < buttons_count && next_button_x2 < window_visible_x2)
                     {
                         ImGui.SameLine();
                     }
+
                     ImGui.PopID();
                 }
 
                 ImGui.TreePop();
             }
+
             #endregion
 
             //Groups
+
             #region Groups
+
             if (ImGui.TreeNode("Groups"))
             {
                 HelpMarker("BeginGroup() basically locks the horizontal position for new line. " +
@@ -2339,10 +2842,13 @@ namespace Monogame.ImGuiNetSamples
 
                 ImGui.TreePop();
             }
+
             #endregion
 
             //Text Baseline Alignment
+
             #region Text Baseline Alignment
+
             if (ImGui.TreeNode("Text Baseline Alignment"))
             {
                 ImGui.BulletText("Text baseline:");
@@ -2351,26 +2857,36 @@ namespace Monogame.ImGuiNetSamples
                     "Lines only composed of text or \"small\" widgets use less vertical space than lines with framed widgets.");
                 ImGui.Indent();
 
-                ImGui.Text("KO Blahblah"); ImGui.SameLine();
-                ImGui.Button("Some framed item"); ImGui.SameLine();
+                ImGui.Text("KO Blahblah");
+                ImGui.SameLine();
+                ImGui.Button("Some framed item");
+                ImGui.SameLine();
                 HelpMarker("Baseline of button will look misaligned with text..");
 
                 ImGui.AlignTextToFramePadding();
-                ImGui.Text("OK Blahblah"); ImGui.SameLine();
-                ImGui.Button("Some framed item"); ImGui.SameLine();
+                ImGui.Text("OK Blahblah");
+                ImGui.SameLine();
+                ImGui.Button("Some framed item");
+                ImGui.SameLine();
                 HelpMarker("We call AlignTextToFramePadding() to vertically align the text baseline by +FramePadding.y");
 
                 // SmallButton() uses the same vertical padding as Text
-                ImGui.Button("TEST##1"); ImGui.SameLine();
-                ImGui.Text("TEST"); ImGui.SameLine();
+                ImGui.Button("TEST##1");
+                ImGui.SameLine();
+                ImGui.Text("TEST");
+                ImGui.SameLine();
                 ImGui.SmallButton("TEST##2");
 
                 // If your line starts with text, call AlignTextToFramePadding() to align text to upcoming widgets.
                 ImGui.AlignTextToFramePadding();
-                ImGui.Text("Text aligned to framed item"); ImGui.SameLine();
-                ImGui.Button("Item##1"); ImGui.SameLine();
-                ImGui.Text("Item"); ImGui.SameLine();
-                ImGui.SmallButton("Item##2"); ImGui.SameLine();
+                ImGui.Text("Text aligned to framed item");
+                ImGui.SameLine();
+                ImGui.Button("Item##1");
+                ImGui.SameLine();
+                ImGui.Text("Item");
+                ImGui.SameLine();
+                ImGui.SmallButton("Item##2");
+                ImGui.SameLine();
                 ImGui.Button("Item##3");
 
                 ImGui.Unindent();
@@ -2379,21 +2895,30 @@ namespace Monogame.ImGuiNetSamples
 
                 ImGui.BulletText("Multi-line text:");
                 ImGui.Indent();
-                ImGui.Text("One\nTwo\nThree"); ImGui.SameLine();
-                ImGui.Text("Hello\nWorld"); ImGui.SameLine();
+                ImGui.Text("One\nTwo\nThree");
+                ImGui.SameLine();
+                ImGui.Text("Hello\nWorld");
+                ImGui.SameLine();
                 ImGui.Text("Banana");
 
-                ImGui.Text("Banana"); ImGui.SameLine();
-                ImGui.Text("Hello\nWorld"); ImGui.SameLine();
+                ImGui.Text("Banana");
+                ImGui.SameLine();
+                ImGui.Text("Hello\nWorld");
+                ImGui.SameLine();
                 ImGui.Text("One\nTwo\nThree");
 
-                ImGui.Button("HOP##1"); ImGui.SameLine();
-                ImGui.Text("Banana"); ImGui.SameLine();
-                ImGui.Text("Hello\nWorld"); ImGui.SameLine();
+                ImGui.Button("HOP##1");
+                ImGui.SameLine();
+                ImGui.Text("Banana");
+                ImGui.SameLine();
+                ImGui.Text("Hello\nWorld");
+                ImGui.SameLine();
                 ImGui.Text("Banana");
 
-                ImGui.Button("HOP##2"); ImGui.SameLine();
-                ImGui.Text("Hello\nWorld"); ImGui.SameLine();
+                ImGui.Button("HOP##2");
+                ImGui.SameLine();
+                ImGui.Text("Hello\nWorld");
+                ImGui.SameLine();
                 ImGui.Text("Banana");
                 ImGui.Unindent();
 
@@ -2430,7 +2955,8 @@ namespace Monogame.ImGuiNetSamples
                 // Common mistake to avoid: if we want to SameLine after TreeNode we need to do it before we add
                 // other contents below the node.
                 bool node_open = ImGui.TreeNode("Node##2");
-                ImGui.SameLine(0.0f, spacing); ImGui.Button("Button##2");
+                ImGui.SameLine(0.0f, spacing);
+                ImGui.Button("Button##2");
                 if (node_open)
                 {
                     // Placeholder tree data
@@ -2446,15 +2972,19 @@ namespace Monogame.ImGuiNetSamples
 
                 ImGui.AlignTextToFramePadding();
                 ImGui.BulletText("Node");
-                ImGui.SameLine(0.0f, spacing); ImGui.Button("Button##4");
+                ImGui.SameLine(0.0f, spacing);
+                ImGui.Button("Button##4");
                 ImGui.Unindent();
 
                 ImGui.TreePop();
             }
+
             #endregion
 
             //Scrolling
+
             #region Scrolling
+
             if (ImGui.TreeNode("Scrolling"))
             {
                 //vertical
@@ -2465,13 +2995,16 @@ namespace Monogame.ImGuiNetSamples
                 ImGui.Checkbox("Track", ref enable_track);
                 ImGui.PushItemWidth(100);
 
-                ImGui.SameLine(140); enable_track |= ImGui.DragInt("##item", ref track_item, 0.25f, 0, 99, "Item = %d");
+                ImGui.SameLine(140);
+                enable_track |= ImGui.DragInt("##item", ref track_item, 0.25f, 0, 99, "Item = %d");
 
                 bool scroll_to_off = ImGui.Button("Scroll Offset");
-                ImGui.SameLine(140); scroll_to_off |= ImGui.DragFloat("##off", ref scroll_to_off_px, 1.00f, 0, 100.0f, "+%.0f px");
+                ImGui.SameLine(140);
+                scroll_to_off |= ImGui.DragFloat("##off", ref scroll_to_off_px, 1.00f, 0, 100.0f, "+%.0f px");
 
                 bool scroll_to_pos = ImGui.Button("Scroll To Pos");
-                ImGui.SameLine(140); scroll_to_pos |= ImGui.DragFloat("##pos", ref scroll_to_pos_px, 1.00f, -10, 100.0f, "X/Y = %.0f px");
+                ImGui.SameLine(140);
+                scroll_to_pos |= ImGui.DragFloat("##pos", ref scroll_to_pos_px, 1.00f, -10, 100.0f, "X/Y = %.0f px");
                 ImGui.PopItemWidth();
 
                 if (scroll_to_off || scroll_to_pos)
@@ -2484,30 +3017,43 @@ namespace Monogame.ImGuiNetSamples
                 {
                     child_w = 1.0f;
                 }
+
                 ImGui.PushID("##VerticalScrolling");
                 for (int i = 0; i < 5; i++)
                 {
-                    if (i > 0) { ImGui.SameLine(); }
+                    if (i > 0)
+                    {
+                        ImGui.SameLine();
+                    }
+
                     ImGui.BeginGroup();
                     string[] names = { "Top", "25%", "Center", "75%", "Bottom" };
                     ImGui.TextUnformatted(names[i]);
 
                     ImGuiWindowFlags child_flags = enable_extra_decorations ? ImGuiWindowFlags.MenuBar : 0;
                     string child_id = names[i];
-                    bool child_is_visible = ImGui.BeginChild(child_id, new Vec2(child_w, 200.0f), ImGuiChildFlags.Border, child_flags);
+                    bool child_is_visible = ImGui.BeginChild(
+                        child_id,
+                        new Vec2(child_w, 200.0f),
+                        ImGuiChildFlags.Border,
+                        child_flags
+                    );
                     if (ImGui.BeginMenuBar())
                     {
                         ImGui.TextUnformatted("abc");
                         ImGui.EndMenuBar();
                     }
+
                     if (scroll_to_off)
                     {
                         ImGui.SetScrollY(scroll_to_off_px);
                     }
+
                     if (scroll_to_pos)
                     {
                         ImGui.SetScrollFromPosY(ImGui.GetCursorStartPos().Y + scroll_to_pos_px, i * 0.25f);
                     }
+
                     if (child_is_visible)
                     {
                         for (int item = 0; item < 100; item++)
@@ -2523,13 +3069,14 @@ namespace Monogame.ImGuiNetSamples
                             }
                         }
                     }
+
                     float scroll_y = ImGui.GetScrollY();
                     float scroll_max_y = ImGui.GetScrollMaxY();
                     ImGui.EndChild();
                     ImGui.Text(scroll_y + "/" + scroll_max_y);
                     ImGui.EndGroup();
-
                 }
+
                 ImGui.PopID();
 
                 //horizontal
@@ -2542,18 +3089,26 @@ namespace Monogame.ImGuiNetSamples
                 for (int i = 0; i < 5; i++)
                 {
                     float child_height = ImGui.GetTextLineHeight() + 30.0f;
-                    ImGuiWindowFlags child_flags = ImGuiWindowFlags.HorizontalScrollbar | (enable_extra_decorations ? ImGuiWindowFlags.AlwaysVerticalScrollbar : 0);
+                    ImGuiWindowFlags child_flags = ImGuiWindowFlags.HorizontalScrollbar
+                                                   | (enable_extra_decorations ? ImGuiWindowFlags.AlwaysVerticalScrollbar : 0);
                     string[] names = { "Left", "25%", "Center", "75%", "Right" };
                     string child_id = names[i];
-                    bool child_is_visible = ImGui.BeginChild(child_id, new Vec2(-100, child_height), ImGuiChildFlags.Border, child_flags);
+                    bool child_is_visible = ImGui.BeginChild(
+                        child_id,
+                        new Vec2(-100, child_height),
+                        ImGuiChildFlags.Border,
+                        child_flags
+                    );
                     if (scroll_to_off)
                     {
                         ImGui.SetScrollX(scroll_to_off_px);
                     }
+
                     if (scroll_to_pos)
                     {
                         ImGui.SetScrollFromPosX(ImGui.GetCursorStartPos().X + scroll_to_pos_px, i * 0.25f);
                     }
+
                     if (child_is_visible)
                     {
                         for (int item = 0; item < 100; item++)
@@ -2567,9 +3122,11 @@ namespace Monogame.ImGuiNetSamples
                             {
                                 ImGui.Text("Item " + item);
                             }
+
                             ImGui.SameLine();
                         }
                     }
+
                     float scroll_x = ImGui.GetScrollX();
                     float scroll_max_x = ImGui.GetScrollMaxX();
                     ImGui.EndChild();
@@ -2580,23 +3137,27 @@ namespace Monogame.ImGuiNetSamples
 
                 ImGui.TreePop();
             }
-            #endregion
 
+            #endregion
         }
 
         #region DemoWindowPopupsVariables
+
         //Popups
         int selected_fish = -1;
         bool[] toggles = { true, false, false, false, false };
+
         //Context menus
         float value = 0.5f;
         string name = "Label1";
+
         //Modals
         bool show = false;
         bool show_stacked = false;
         bool dont_ask_me_next_time = false;
         int item_mod = 1;
         Vec4 color = new Vec4(0.4f, 0.7f, 0.0f, 0.5f);
+
         #endregion
 
         private void DemoWindowPopups()
@@ -2607,7 +3168,9 @@ namespace Monogame.ImGuiNetSamples
             }
 
             //Popups
+
             #region Popups
+
             if (ImGui.TreeNode("Popups"))
             {
                 ImGui.TextWrapped("When a popup is active, it inhibits interacting with windows that are behind the popup. " +
@@ -2619,6 +3182,7 @@ namespace Monogame.ImGuiNetSamples
                 {
                     ImGui.OpenPopup("my_select_popup");
                 }
+
                 ImGui.SameLine();
                 ImGui.TextUnformatted(selected_fish == -1 ? "<None>" : names[selected_fish]);
                 if (ImGui.BeginPopup("my_select_popup"))
@@ -2632,6 +3196,7 @@ namespace Monogame.ImGuiNetSamples
                             selected_fish = i;
                         }
                     }
+
                     ImGui.EndPopup();
                 }
 
@@ -2640,12 +3205,14 @@ namespace Monogame.ImGuiNetSamples
                 {
                     ImGui.OpenPopup("my_toggle_popup");
                 }
+
                 if (ImGui.BeginPopup("my_toggle_popup"))
                 {
                     for (int i = 0; i < names.Length; i++)
                     {
                         ImGui.MenuItem(names[i], "", ref toggles[i]);
                     }
+
                     if (ImGui.BeginMenu("Sub-menu"))
                     {
                         ImGui.MenuItem("Click me");
@@ -2663,12 +3230,14 @@ namespace Monogame.ImGuiNetSamples
                     {
                         ImGui.OpenPopup("another popup");
                     }
+
                     if (ImGui.BeginPopup("another popup"))
                     {
                         for (int i = 0; i < names.Length; i++)
                         {
                             ImGui.MenuItem(names[i], "", ref toggles[i]);
                         }
+
                         if (ImGui.BeginMenu("Sub-menu"))
                         {
                             ImGui.MenuItem("Click me");
@@ -2676,15 +3245,19 @@ namespace Monogame.ImGuiNetSamples
                             {
                                 ImGui.OpenPopup("another popup");
                             }
+
                             if (ImGui.BeginPopup("another popup"))
                             {
                                 ImGui.Text("I am the last one here.");
                                 ImGui.EndPopup();
                             }
+
                             ImGui.EndMenu();
                         }
+
                         ImGui.EndPopup();
                     }
+
                     ImGui.EndPopup();
                 }
 
@@ -2692,6 +3265,7 @@ namespace Monogame.ImGuiNetSamples
                 {
                     ImGui.OpenPopup("my_file_popup");
                 }
+
                 if (ImGui.BeginPopup("my_file_popup"))
                 {
                     ShowExampleMenuFile();
@@ -2700,17 +3274,28 @@ namespace Monogame.ImGuiNetSamples
 
                 ImGui.TreePop();
             }
+
             #endregion
 
             //Context menus
+
             #region Context menus
+
             if (ImGui.TreeNode("Context menus"))
             {
                 ImGui.Text(string.Format("Value = {0} (<-- right-click here)", value));
                 if (ImGui.BeginPopupContextItem("item context menu"))
                 {
-                    if (ImGui.Selectable("Set to zero")) { value = 0.0f; }
-                    if (ImGui.Selectable("Set to PI")) { value = 3.1415f; }
+                    if (ImGui.Selectable("Set to zero"))
+                    {
+                        value = 0.0f;
+                    }
+
+                    if (ImGui.Selectable("Set to PI"))
+                    {
+                        value = 3.1415f;
+                    }
+
                     ImGui.SetNextItemWidth(-1.0f);
                     ImGui.DragFloat("##Value", ref value, 0.1f, 0.0f, 0.0f);
                     ImGui.EndPopup();
@@ -2728,16 +3313,22 @@ namespace Monogame.ImGuiNetSamples
                     {
                         ImGui.CloseCurrentPopup();
                     }
+
                     ImGui.EndPopup();
                 }
-                ImGui.SameLine(); ImGui.Text("(<-- right-click here)");
+
+                ImGui.SameLine();
+                ImGui.Text("(<-- right-click here)");
 
                 ImGui.TreePop();
             }
+
             #endregion
 
             //Modals
+
             #region Modals
+
             if (ImGui.TreeNode("Modals"))
             {
                 ImGui.TextWrapped("Modal windows are like popups but the user cannot close them by clicking outside.");
@@ -2760,10 +3351,18 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.Checkbox("Don't ask me next time", ref dont_ask_me_next_time);
                     ImGui.PopStyleVar();
 
-                    if (ImGui.Button("OK", new Vec2(120, 0))) { ImGui.CloseCurrentPopup(); }
+                    if (ImGui.Button("OK", new Vec2(120, 0)))
+                    {
+                        ImGui.CloseCurrentPopup();
+                    }
+
                     ImGui.SetItemDefaultFocus();
                     ImGui.SameLine();
-                    if (ImGui.Button("Cancel", new Vec2(120, 0))) { ImGui.CloseCurrentPopup(); }
+                    if (ImGui.Button("Cancel", new Vec2(120, 0)))
+                    {
+                        ImGui.CloseCurrentPopup();
+                    }
+
                     ImGui.EndPopup();
                 }
 
@@ -2772,17 +3371,23 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.OpenPopup("Stacked 1");
                     show_stacked = true;
                 }
+
                 if (ImGui.BeginPopupModal("Stacked 1", ref show_stacked, ImGuiWindowFlags.MenuBar))
                 {
                     if (ImGui.BeginMenuBar())
                     {
                         if (ImGui.BeginMenu("File"))
                         {
-                            if (ImGui.MenuItem("Some menu item")) { }
+                            if (ImGui.MenuItem("Some menu item"))
+                            {
+                            }
+
                             ImGui.EndMenu();
                         }
+
                         ImGui.EndMenuBar();
                     }
+
                     ImGui.Text("Hello from Stacked The First\nUsing style.Colors[ImGuiCol_ModalWindowDimBg] behind it.");
 
                     ImGui.Combo("Combo", ref item_mod, "aaaa\0bbbb\0cccc\0dddd\0eeee\0\0");
@@ -2801,6 +3406,7 @@ namespace Monogame.ImGuiNetSamples
                         {
                             ImGui.CloseCurrentPopup();
                         }
+
                         ImGui.EndPopup();
                     }
 
@@ -2808,16 +3414,20 @@ namespace Monogame.ImGuiNetSamples
                     {
                         ImGui.CloseCurrentPopup();
                     }
+
                     ImGui.EndPopup();
                 }
+
                 ImGui.TreePop();
             }
-            #endregion
 
+            #endregion
         }
 
         #region DemoWindowMiscVariables
+
         string buf = "hello";
+
         #endregion
 
         private void DemoWindowMisc()
@@ -2843,11 +3453,36 @@ namespace Monogame.ImGuiNetSamples
                     {
                         ImGui.Text("Mouse pos: <INVALID>");
                     }
+
                     ImGui.Text(string.Format("Mouse delta: ({0}, {1})", io.MouseDelta.X, io.MouseDelta.Y));
-                    ImGui.Text("Mouse down:"); for (int i = 0; i < io.MouseDown.Count; i++) if (io.MouseDownDuration[i] >= 0.0f) { ImGui.SameLine(); ImGui.Text(string.Format("{0} ({1} secs)", i, io.MouseDownDuration[i])); }
-                    ImGui.Text("Mouse clicked:"); for (int i = 0; i < io.MouseDown.Count; i++) if (ImGui.IsMouseClicked((ImGuiNET.ImGuiMouseButton)i)) { ImGui.SameLine(); ImGui.Text(i.ToString()); }
-                    ImGui.Text("Mouse dblclick:"); for (int i = 0; i < io.MouseDown.Count; i++) if (ImGui.IsMouseDoubleClicked((ImGuiNET.ImGuiMouseButton)i)) { ImGui.SameLine(); ImGui.Text(i.ToString()); }
-                    ImGui.Text("Mouse released:"); for (int i = 0; i < io.MouseDown.Count; i++) if (ImGui.IsMouseReleased((ImGuiNET.ImGuiMouseButton)i)) { ImGui.SameLine(); ImGui.Text(i.ToString()); }
+                    ImGui.Text("Mouse down:");
+                    for (int i = 0; i < io.MouseDown.Count; i++) if (io.MouseDownDuration[i] >= 0.0f)
+                    {
+                        ImGui.SameLine();
+                        ImGui.Text(string.Format("{0} ({1} secs)", i, io.MouseDownDuration[i]));
+                    }
+
+                    ImGui.Text("Mouse clicked:");
+                    for (int i = 0; i < io.MouseDown.Count; i++) if (ImGui.IsMouseClicked((ImGuiNET.ImGuiMouseButton)i))
+                    {
+                        ImGui.SameLine();
+                        ImGui.Text(i.ToString());
+                    }
+
+                    ImGui.Text("Mouse dblclick:");
+                    for (int i = 0; i < io.MouseDown.Count; i++) if (ImGui.IsMouseDoubleClicked((ImGuiNET.ImGuiMouseButton)i))
+                    {
+                        ImGui.SameLine();
+                        ImGui.Text(i.ToString());
+                    }
+
+                    ImGui.Text("Mouse released:");
+                    for (int i = 0; i < io.MouseDown.Count; i++) if (ImGui.IsMouseReleased((ImGuiNET.ImGuiMouseButton)i))
+                    {
+                        ImGui.SameLine();
+                        ImGui.Text(i.ToString());
+                    }
+
                     ImGui.Text(string.Format("Mouse wheel: {0}", io.MouseWheel));
 
 // TODO: Not Supported
@@ -2863,173 +3498,186 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.Text("NavInputs duration:"); for (int i = 0; i < io.NavInputs.Count; i++) if (io.NavInputsDownDuration[i] >= 0.0f) { ImGui.SameLine(); ImGui.Text(string.Format("[{0}] {1}", i, io.NavInputsDownDuration[i])); }
                     */
 
-                    
+
                     ImGui.Button("Hovering me sets the\nkeyboard capture flag");
                     if (ImGui.IsItemHovered())
                     {
 // TODO: Not Supported
                     }
+
                     ImGui.SameLine();
                     ImGui.Button("Holding me clears the\nthe keyboard capture flag");
                     if (ImGui.IsItemActive())
-                    { }
+                    {
+                    }
 // TODO: Not Supported
 //                        ImGui.CaptureKeyboardFromApp(true);
-                    }
-                    ImGui.SameLine();
-                    ImGui.Button("Holding me clears the\nthe keyboard capture flag");
-                    if (ImGui.IsItemActive())
-                    {
-  //                      ImGui.CaptureKeyboardFromApp(false);
-                    }
-                    ImGui.TreePop();
                 }
 
-                if (ImGui.TreeNode("Tabbing"))
+                ImGui.SameLine();
+                ImGui.Button("Holding me clears the\nthe keyboard capture flag");
+                if (ImGui.IsItemActive())
                 {
-                    ImGui.Text("Use TAB/SHIFT+TAB to cycle through keyboard editable fields.");
-                    ImGui.InputText("1", ref buf, 100);
-                    ImGui.InputText("2", ref buf, 100);
-                    ImGui.InputText("3", ref buf, 100);
+                    //                      ImGui.CaptureKeyboardFromApp(false);
+                }
+
+                ImGui.TreePop();
+            }
+
+            if (ImGui.TreeNode("Tabbing"))
+            {
+                ImGui.Text("Use TAB/SHIFT+TAB to cycle through keyboard editable fields.");
+                ImGui.InputText("1", ref buf, 100);
+                ImGui.InputText("2", ref buf, 100);
+                ImGui.InputText("3", ref buf, 100);
 // TODO: Not Supported
 //                    ImGui.PushAllowKeyboardFocus(false);
-                    ImGui.InputText("4 (tab skip)", ref buf, 100);
+                ImGui.InputText("4 (tab skip)", ref buf, 100);
 // TODO: Not Supported
 //                    ImGui.PopAllowKeyboardFocus();
-                    ImGui.InputText("5", ref buf, 100);
-                    ImGui.TreePop();
-                }
-            }
- 
-
-            #region DrawMonoGameWindowVariables
-            bool show_main_window = true;
-            bool exit_app = false;
-            int current_res = 0;
-            int select_res = 0;
-            int render_model = 1;
-            string[] resolution = { "1024x768", "1280x720", "1280x960", "1366x768", "1440x1080", "1680x1050", "1600x1200", "1920x1080" };
-            Vec4 monogame_color = new Vec4(231.0f / 255.0f, 60.0f / 255.0f, 0.0f / 255.0f, 200.0f / 255.0f);
-            Vec4 monogame_framebg = new Vec4(227.0f / 255.0f, 227.0f / 255.0f, 227.0f / 255.0f, 255.0f / 255.0f);
-            Vec4 color_black = new Vec4(0.0f / 255.0f, 0.0f / 0.0f, 0.0f / 255.0f, 200.0f / 255.0f);
-            Vec4 color_white = new Vec4(255.0f / 255.0f, 255.0f / 255.0f, 255.0f / 255.0f, 242.0f / 255.0f);
-            #endregion
-
-            private void DrawMonoGameWindow()
-            {
-                ImGui.SetNextWindowSize(new Vec2(300, 220), ImGuiCond.FirstUseEver);
-                ImGui.SetNextWindowPos(new Vec2(10, 140), ImGuiCond.FirstUseEver);
-
-                ImGui.PushStyleColor(ImGuiCol.WindowBg, color_white);
-                ImGui.PushStyleColor(ImGuiCol.FrameBg, monogame_framebg);
-                ImGui.PushStyleColor(ImGuiCol.PopupBg, monogame_framebg);
-                ImGui.PushStyleColor(ImGuiCol.MenuBarBg, monogame_framebg);
-                ImGui.PushStyleColor(ImGuiCol.TitleBg, monogame_color);
-                ImGui.PushStyleColor(ImGuiCol.TitleBgActive, monogame_color);
-                ImGui.PushStyleColor(ImGuiCol.Button, monogame_color);
-
-                if (!ImGui.Begin("MonoGame Settings", ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.MenuBar))
-                {
-                    ImGui.End();
-                    return;
-                }
-
-                ImGui.PushStyleColor(ImGuiCol.Text, color_black);
-
-                if (ImGui.BeginMenuBar())
-                {
-                    if (ImGui.BeginMenu("Options"))
-                    {
-                        ImGui.MenuItem("Exit App", null, ref exit_app);
-
-                        ImGui.EndMenu();
-                    }
-
-                    if (ImGui.BeginMenu("ImGui"))
-                    {
-                        ImGui.MenuItem("Show Demo Window", null, ref show_main_window);
-
-                        ImGui.EndMenu();
-                    }
-
-                    ImGui.EndMenuBar();
-                }
-
-                if (ImGui.SmallButton("Close"))
-                {
-                    show_monogame_settings = false;
-
-                    if (show_main_window == false)
-                    {
-                        show_main_window = true;
-                    }
-                }
-
-                ImGui.Separator();
-
-                //ImGui.ColorEdit4("MG", ref monogame_color, ImGuiColorEditFlags.DisplayHSV);
-                //ImGui.Text(monogame_color.ToString());
-
-                ImGui.Combo("Window Size", ref select_res, resolution, resolution.Length);
-
-                if (current_res != select_res && WasResized == false)
-                {
-                    WasResized = true;
-                }
-
-                ImGui.PushStyleColor(ImGuiCol.CheckMark, monogame_color);
-
-                ImGui.RadioButton("No render", ref render_model, 0);
-                ImGui.SameLine();
-                ImGui.RadioButton("Render model", ref render_model, 1);
-
-                ImGui.Separator();
-
-                ImGui.Text("Camera");
-                ImGui.PushButtonRepeat(true);
-
-                ImGui.Indent();
-                if (ImGui.ArrowButton("up", ImGuiDir.Up)) //ImGui.Button("Up"))
-                {
-                    world = world * Matrix.CreateRotationX(0.1f);
-                }
-                ImGui.Unindent();
-                if (ImGui.ArrowButton("left", ImGuiDir.Left)) //ImGui.Button("Left"))
-                {
-                    world = world * Matrix.CreateRotationY(-0.1f);
-                }
-                ImGui.SameLine();
-                ImGui.Text(" ");
-                ImGui.SameLine();
-                if (ImGui.ArrowButton("right", ImGuiDir.Right)) //ImGui.Button("Right"))
-                {
-                    world = world * Matrix.CreateRotationY(0.1f);
-                }
-
-                ImGui.Indent();
-                if (ImGui.ArrowButton("down", ImGuiDir.Down)) //ImGui.Button("Down"))
-                {
-                    world = world * Matrix.CreateRotationX(-0.1f);
-                }
-                ImGui.Unindent();
-                ImGui.PopButtonRepeat();
-
-                ImGui.PopStyleColor();
-                ImGui.PopStyleColor();
-                ImGui.PopStyleColor();
-                ImGui.PopStyleColor();
-                ImGui.PopStyleColor();
-                ImGui.PopStyleColor();
-                ImGui.PopStyleColor();
-                ImGui.PopStyleColor();
-                ImGui.PopStyleColor();
-
-                ImGui.End();
-
-                if (exit_app)
-                {
-                    this.Exit();
-                }
+                ImGui.InputText("5", ref buf, 100);
+                ImGui.TreePop();
             }
         }
+
+        #region DrawMonoGameWindowVariables
+
+        bool show_main_window = true;
+        bool exit_app = false;
+        int current_res = 0;
+        int select_res = 0;
+        int render_model = 1;
+
+        string[] resolution =
+        {
+            "1024x768", "1280x720", "1280x960", "1366x768", "1440x1080", "1680x1050", "1600x1200", "1920x1080"
+        };
+
+        Vec4 monogame_color = new Vec4(231.0f / 255.0f, 60.0f / 255.0f, 0.0f / 255.0f, 200.0f / 255.0f);
+        Vec4 monogame_framebg = new Vec4(227.0f / 255.0f, 227.0f / 255.0f, 227.0f / 255.0f, 255.0f / 255.0f);
+        Vec4 color_black = new Vec4(0.0f / 255.0f, 0.0f / 0.0f, 0.0f / 255.0f, 200.0f / 255.0f);
+        Vec4 color_white = new Vec4(255.0f / 255.0f, 255.0f / 255.0f, 255.0f / 255.0f, 242.0f / 255.0f);
+
+        #endregion
+
+        private void DrawMonoGameWindow()
+        {
+            ImGui.SetNextWindowSize(new Vec2(300, 220), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowPos(new Vec2(10, 140), ImGuiCond.FirstUseEver);
+
+            ImGui.PushStyleColor(ImGuiCol.WindowBg, color_white);
+            ImGui.PushStyleColor(ImGuiCol.FrameBg, monogame_framebg);
+            ImGui.PushStyleColor(ImGuiCol.PopupBg, monogame_framebg);
+            ImGui.PushStyleColor(ImGuiCol.MenuBarBg, monogame_framebg);
+            ImGui.PushStyleColor(ImGuiCol.TitleBg, monogame_color);
+            ImGui.PushStyleColor(ImGuiCol.TitleBgActive, monogame_color);
+            ImGui.PushStyleColor(ImGuiCol.Button, monogame_color);
+
+            if (!ImGui.Begin("MonoGame Settings", ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.MenuBar))
+            {
+                ImGui.End();
+                return;
+            }
+
+            ImGui.PushStyleColor(ImGuiCol.Text, color_black);
+
+            if (ImGui.BeginMenuBar())
+            {
+                if (ImGui.BeginMenu("Options"))
+                {
+                    ImGui.MenuItem("Exit App", null, ref exit_app);
+
+                    ImGui.EndMenu();
+                }
+
+                if (ImGui.BeginMenu("ImGui"))
+                {
+                    ImGui.MenuItem("Show Demo Window", null, ref show_main_window);
+
+                    ImGui.EndMenu();
+                }
+
+                ImGui.EndMenuBar();
+            }
+
+            if (ImGui.SmallButton("Close"))
+            {
+                show_monogame_settings = false;
+
+                if (show_main_window == false)
+                {
+                    show_main_window = true;
+                }
+            }
+
+            ImGui.Separator();
+
+            //ImGui.ColorEdit4("MG", ref monogame_color, ImGuiColorEditFlags.DisplayHSV);
+            //ImGui.Text(monogame_color.ToString());
+
+            ImGui.Combo("Window Size", ref select_res, resolution, resolution.Length);
+
+            if (current_res != select_res && WasResized == false)
+            {
+                WasResized = true;
+            }
+
+            ImGui.PushStyleColor(ImGuiCol.CheckMark, monogame_color);
+
+            ImGui.RadioButton("No render", ref render_model, 0);
+            ImGui.SameLine();
+            ImGui.RadioButton("Render model", ref render_model, 1);
+
+            ImGui.Separator();
+
+            ImGui.Text("Camera");
+            ImGui.PushButtonRepeat(true);
+
+            ImGui.Indent();
+            if (ImGui.ArrowButton("up", ImGuiDir.Up)) //ImGui.Button("Up"))
+            {
+                world = world * Matrix.CreateRotationX(0.1f);
+            }
+
+            ImGui.Unindent();
+            if (ImGui.ArrowButton("left", ImGuiDir.Left)) //ImGui.Button("Left"))
+            {
+                world = world * Matrix.CreateRotationY(-0.1f);
+            }
+
+            ImGui.SameLine();
+            ImGui.Text(" ");
+            ImGui.SameLine();
+            if (ImGui.ArrowButton("right", ImGuiDir.Right)) //ImGui.Button("Right"))
+            {
+                world = world * Matrix.CreateRotationY(0.1f);
+            }
+
+            ImGui.Indent();
+            if (ImGui.ArrowButton("down", ImGuiDir.Down)) //ImGui.Button("Down"))
+            {
+                world = world * Matrix.CreateRotationX(-0.1f);
+            }
+
+            ImGui.Unindent();
+            ImGui.PopButtonRepeat();
+
+            ImGui.PopStyleColor();
+            ImGui.PopStyleColor();
+            ImGui.PopStyleColor();
+            ImGui.PopStyleColor();
+            ImGui.PopStyleColor();
+            ImGui.PopStyleColor();
+            ImGui.PopStyleColor();
+            ImGui.PopStyleColor();
+            ImGui.PopStyleColor();
+
+            ImGui.End();
+
+            if (exit_app)
+            {
+                this.Exit();
+            }
+        }
+    }
 }

@@ -43,7 +43,9 @@ namespace Poly2Tri
     {
         protected List<Polygon> _polygons = new List<Polygon>();
 
-        public PolygonSet() { }
+        public PolygonSet()
+        {
+        }
 
         public PolygonSet(Polygon poly)
         {
@@ -55,6 +57,9 @@ namespace Poly2Tri
             _polygons.Add(p);
         }
 
-        public IEnumerable<Polygon> Polygons { get { return _polygons; } }
+        public IEnumerable<Polygon> Polygons
+        {
+            get { return _polygons; }
+        }
     }
 }
