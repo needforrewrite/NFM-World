@@ -539,36 +539,31 @@ public partial class StageEditorPhase
                 int rh = Math.Abs(_rectSelectEndY - _rectSelectStartY);
                 bool isRectDrag = rw > 5 || rh > 5;
 
-                if (isRectDrag && ActiveTab != null && CanUseViewport(x, y, imguiWantsMouse))
+                // The drag began inside the viewport, so a release over the UI still completes it.
+                if (isRectDrag && ActiveTab != null)
                 {
-                    int minX = Math.Min(_rectSelectStartX, _rectSelectEndX);
-                    int maxX = Math.Max(_rectSelectStartX, _rectSelectEndX);
-                    int minY = Math.Min(_rectSelectStartY, _rectSelectEndY);
-                    int maxY = Math.Max(_rectSelectStartY, _rectSelectEndY);
-
-                    if (!_isShiftPressed) ActiveTab.SelectedPieceIds.Clear();
-                    int lastId = -1;
-                    foreach (var piece in ActiveTab.ScenePieces)
+                    var (minX, minY, maxX, maxY) = RectSelectionBounds();
+                    if (maxX > minX && maxY > minY)
                     {
-                        if (piece.Obj == null) continue;
-                        var wp = new Vector3((float)piece.Position.X, (float)piece.Position.Y, (float)piece.Position.Z);
-                        if (Debug.WorldToScreen(wp, out var sp, activeCamera))
+                        if (!_isShiftPressed) ActiveTab.SelectedPieceIds.Clear();
+                        int lastId = -1;
+                        foreach (var piece in ActiveTab.ScenePieces)
                         {
-                            if (sp.X >= minX && sp.X <= maxX && sp.Y >= minY && sp.Y <= maxY)
-                            {
-                                ActiveTab.SelectedPieceIds.Add(piece.Id);
-                                lastId = piece.Id;
-                            }
+                            if (piece.Obj == null) continue;
+                            if (!PieceIntersectsRect(piece, minX, minY, maxX, maxY)) continue;
+
+                            ActiveTab.SelectedPieceIds.Add(piece.Id);
+                            lastId = piece.Id;
                         }
-                    }
 
-                    if (lastId >= 0)
-                    {
-                        ActiveTab.ActivePieceId = lastId;
                         ActiveTab.SelectedWallId = -1;
-                    }
+                        ActiveTab.ActivePieceId = lastId >= 0
+                            ? lastId
+                            : ActiveTab.SelectedPieceIds.Count > 0 ? ActiveTab.SelectedPieceIds.First() : -1;
 
-                    return;
+                        Touch();
+                        return;
+                    }
                 }
                 // else fall through to normal single click logic
             }
@@ -642,8 +637,64 @@ public partial class StageEditorPhase
                             ActiveTab.ActivePieceId = -1;
                         }
                     }
+
+                    // Keep the primary piece inside the selection: the gizmo and inspector read it.
+                    if (ActiveTab.ActivePieceId >= 0 && !ActiveTab.SelectedPieceIds.Contains(ActiveTab.ActivePieceId))
+                    {
+                        ActiveTab.ActivePieceId = ActiveTab.SelectedPieceIds.Count > 0
+                            ? ActiveTab.SelectedPieceIds.First()
+                            : -1;
+                    }
+
+                    Touch();
                 }
             }
         }
+    }
+
+    /// <summary>The drag rectangle in window pixels, clipped to the 3D viewport.</summary>
+    private (int MinX, int MinY, int MaxX, int MaxY) RectSelectionBounds()
+    {
+        var minX = Math.Min(_rectSelectStartX, _rectSelectEndX);
+        var maxX = Math.Max(_rectSelectStartX, _rectSelectEndX);
+        var minY = Math.Min(_rectSelectStartY, _rectSelectEndY);
+        var maxY = Math.Max(_rectSelectStartY, _rectSelectEndY);
+
+        if (_viewportMax.X > _viewportMin.X && _viewportMax.Y > _viewportMin.Y)
+        {
+            minX = Math.Max(minX, (int)_viewportMin.X);
+            maxX = Math.Min(maxX, (int)_viewportMax.X);
+            minY = Math.Max(minY, (int)_viewportMin.Y);
+            maxY = Math.Min(maxY, (int)_viewportMax.Y);
+        }
+
+        return (minX, minY, maxX, maxY);
+    }
+
+    /// <summary>
+    /// Whether the piece's projected footprint overlaps the rect. A road's origin can sit far
+    /// outside the geometry the user dragged over, so this uses its bounding sphere, not the origin.
+    /// </summary>
+    private bool PieceIntersectsRect(StagePieceInstance piece, int minX, int minY, int maxX, int maxY)
+    {
+        var center = new Vector3((float)piece.Position.X, (float)piece.Position.Y, (float)piece.Position.Z);
+        if (!Debug.WorldToScreen(center, out var screen, activeCamera))
+            return false;
+
+        var radius = (float)(piece.Obj?.MaxRadius ?? 0);
+        var radiusX = 0f;
+        var radiusY = 0f;
+        if (radius > 0f)
+        {
+            if (Debug.WorldToScreen(center + new Vector3(radius, 0f, 0f), out var edgeX, activeCamera))
+                radiusX = MathF.Abs(edgeX.X - screen.X);
+            if (Debug.WorldToScreen(center + new Vector3(0f, radius, 0f), out var edgeY, activeCamera))
+                radiusY = MathF.Abs(edgeY.Y - screen.Y);
+        }
+
+        return screen.X + radiusX >= minX
+               && screen.X - radiusX <= maxX
+               && screen.Y + radiusY >= minY
+               && screen.Y - radiusY <= maxY;
     }
 }

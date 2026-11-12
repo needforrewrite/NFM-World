@@ -670,6 +670,11 @@ public abstract partial class Component : Node, IAnimationCallback
     /// </summary>
     private static void MeasureContentExtent(Component c, float originX, float originY, ref float maxRight, ref float maxBottom)
     {
+        // Hidden children keep their last layout, which can sit far outside the box (a closed
+        // dropdown popup, say) and would otherwise force a scrollbar.
+        if (!c.IsDisplayed)
+            return;
+
         if (c.Styles.Display == Display.Contents)
         {
             foreach (var child in c.GetChildSnapshot())
@@ -1126,6 +1131,14 @@ public abstract partial class Component : Node, IAnimationCallback
         foreach (var visual in VisualChildren)
         {
             if (visual is not Component c || !c.IsDisplayed) continue;
+            if (s.Clip is { } clip && IsOutsideClip(c, s.ChildOrigin, clip))
+            {
+                // Not painted, so Root/ClipRect would go stale; an empty clip also keeps the
+                // skipped node from absorbing a press with its previous-frame bounds.
+                c.ClipRect = RectangleF.Empty;
+                continue;
+            }
+
             if ((c.Styles.ZIndex ?? 0) != 0)
             {
                 scs ??= new List<StackEntry>();
@@ -1136,6 +1149,28 @@ public abstract partial class Component : Node, IAnimationCallback
                 PaintNonStacking(c, s.ChildOrigin, s.OwnOpacity, s.Clip, ref scs);
             }
         }
+    }
+
+    /// <summary>
+    /// Whether a child paints entirely outside the inherited clip. A long scroll list is
+    /// laid out in full, so without this every off-screen row still submits its text and
+    /// images each frame.
+    /// </summary>
+    private static bool IsOutsideClip(Component child, Vector2 origin, RectangleF clip)
+    {
+        // Flow hosts are flattened by Yoga and have no box; their children still paint.
+        if (child.Styles.Display == Display.Contents)
+            return false;
+
+        var size = child.LayoutBorderSize;
+        if (size.X <= 0f || size.Y <= 0f)
+            return false;
+
+        var position = origin + new Vector2(child.LayoutX, child.LayoutY);
+        return position.X + size.X <= clip.X
+               || position.X >= clip.X + clip.Width
+               || position.Y + size.Y <= clip.Y
+               || position.Y >= clip.Y + clip.Height;
     }
 
     private static void PaintNonStacking(

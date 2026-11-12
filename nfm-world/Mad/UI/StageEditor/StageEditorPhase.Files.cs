@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Globalization;
+using System.Runtime.InteropServices;
 using Maxine.Extensions;
 using NFMWorld.Util;
 using NFMWorldLibrary;
@@ -102,6 +103,7 @@ public partial class StageEditorPhase
 
         // Write stage parameters from active tab's stored values
         writer.WriteLine($"name({ActiveTab.TabName})");
+        writer.WriteLine($"nlaps({ActiveTab.Stage.Nlaps})");
         writer.WriteLine($"sky({(int)ActiveTab.SkyColor.R},{(int)ActiveTab.SkyColor.G},{(int)ActiveTab.SkyColor.B})");
         writer.WriteLine($"fog({(int)ActiveTab.FogColor.R},{(int)ActiveTab.FogColor.G},{(int)ActiveTab.FogColor.B})");
         writer.WriteLine(
@@ -129,7 +131,7 @@ public partial class StageEditorPhase
             writer.WriteLine(
                     $"clouds({(int)ActiveTab.CloudsColor.R},{(int)ActiveTab.CloudsColor.G},{(int)ActiveTab.CloudsColor.B},{ActiveTab.CloudsParam4},{ActiveTab.CloudsHeight})"
                 );
-            writer.WriteLine($"cloudcoverage({ActiveTab.CloudCoverage})");
+            writer.WriteLine($"cloudcoverage({Fmt(ActiveTab.CloudCoverage)})");
         }
         else
         {
@@ -140,6 +142,8 @@ public partial class StageEditorPhase
         if (ActiveTab.MountainsEnabled)
         {
             writer.WriteLine($"mountains({ActiveTab.MountainsSeed})");
+            if (ActiveTab.MountainCoverage is { } mountainCoverage)
+                writer.WriteLine($"mountaincoverage({Fmt(mountainCoverage)})");
         }
         else
         {
@@ -147,6 +151,32 @@ public partial class StageEditorPhase
         }
 
         writer.WriteLine($"fadefrom({ActiveTab.FadeFrom})");
+
+        if (ActiveTab.FogDensity is { } fogDensity)
+            writer.WriteLine($"density({fogDensity})");
+
+        if (ActiveTab.Texture is { Length: 4 } texture)
+            writer.WriteLine($"texture({texture[0]},{texture[1]},{texture[2]},{texture[3]})");
+
+        if (ActiveTab.LightsOn)
+        {
+            writer.WriteLine("lightson()");
+            writer.WriteLine(
+                $"lightdir({Fmt(ActiveTab.LightDirection.X)},{Fmt(ActiveTab.LightDirection.Y)},{Fmt(ActiveTab.LightDirection.Z)})"
+            );
+        }
+
+        if (ActiveTab.Aerial)
+            writer.WriteLine("aerial()");
+
+        WriteSoundtrack(writer, "soundtrack", ActiveTab.MusicPath);
+        WriteSoundtrack(writer, "soundtrackremaster", ActiveTab.RemasteredMusicPath);
+        if (ActiveTab.MusicFreqMul != 1.0d)
+            writer.WriteLine($"soundtrackfreqmul({Fmt(ActiveTab.MusicFreqMul)})");
+        if (ActiveTab.MusicTempoMul != 1.0d)
+            writer.WriteLine($"soundtracktempomul({Fmt(ActiveTab.MusicTempoMul)})");
+
+        WriteStagePhysics(writer, ActiveTab.Physics);
 
         // Write unknown parameters
         foreach (var param in ActiveTab.UnknownParameters)
@@ -229,6 +259,9 @@ public partial class StageEditorPhase
         {
             if (slot == ungroupedSlotSave && ungroupedPieces.Count > 0)
             {
+                // Without this marker the loader keeps the previous `#editor_group` current, so
+                // ungrouped pieces written after the last group would be read back into it.
+                writer.WriteLine("#editor_ungrouped");
                 foreach (var piece in ungroupedPieces)
                     WritePiece(piece);
                 writer.WriteLine();
@@ -236,10 +269,11 @@ public partial class StageEditorPhase
 
             if (slot < ActiveTab.HierarchyGroups.Count)
             {
-                var group = ActiveTab.HierarchyGroups[slot];
+                var group = ActiveTab.HierarchyGroups.ByIndex(slot);
                 var groupPieces = group.PieceIds
                     .Select(id => allNonWall.Find(p => p.Id == id))
-                    .Where(p => p != null).ToList()!;
+                    .OfType<StagePieceInstance>()
+                    .ToList();
                 writer.WriteLine($"#editor_group({group.Name})");
                 foreach (var piece in groupPieces)
                     WritePiece(piece);
@@ -275,13 +309,13 @@ public partial class StageEditorPhase
 
     private void SaveStage()
     {
-        var text = BuildStageText();
-        if (text is null)
-            return;
-
         var filePath = $"data/stages/user/{ActiveTab!.StageFileName}.txt";
         try
         {
+            var text = BuildStageText();
+            if (text is null)
+                return;
+
             using (var stream = VFS.OpenWrite(filePath))
             using (var writer = new StreamWriter(stream))
                 writer.Write(text);
@@ -679,48 +713,68 @@ public partial class StageEditorPhase
             }
 
             // ── Resolve group membership ────────────────────────────────────────────
+            var legacyGroups = stageLoader.groups.Any(group => group.CoordinateKeys.Count > 0);
+            var pieceCursor = 0;
+
             foreach (var group in stageLoader.groups)
             {
-                // New format group: #editor_group(Name) with no keys, pieces are tracked by file order instead
-                var hierarchyGroup = new HierarchyGroup
-                {
-                    Id = tab.GetNextGroupId(),
-                    Name = group.Name,
-                    PieceIds = group.Pieces
-                        .Select(piece => tab.ScenePieces.FirstOrDefault(p => p.PiecePlacement == piece)?.Id ?? -1)
-                        .Where(id => id != -1)
-                        .ToList()
-                };
+                var hierarchyGroup = new HierarchyGroup { Id = tab.GetNextGroupId(), Name = group.Name };
                 tab.HierarchyGroups.Add(hierarchyGroup);
 
-                // Old format group: #editor_group(Name,x:z,...)
+                if (!legacyGroups)
                 {
-                    var keys = group.CoordinateKeys;
-                    var resolved = new List<int>();
-                    foreach (var key in keys)
+                    // #editor_group(Name) carries no keys: ScenePieces is in the same file order as
+                    // group.Pieces, so walk one cursor. Matching by value would collapse duplicates
+                    // (every identical piece resolving to the first one).
+                    foreach (var placement in group.Pieces)
                     {
-                        if (key.Contains(':'))
+                        while (pieceCursor < tab.ScenePieces.Count)
                         {
-                            var kparts = key.Split(':');
-                            if (kparts.Length == 2 && int.TryParse(kparts[0], out int kx) && int.TryParse(kparts[1], out int kz))
-                            {
-                                var match = tab.ScenePieces.FirstOrDefault(p =>
-                                    Math.Abs((int)p.Position.X - kx) <= 1 && Math.Abs((int)p.Position.Z - kz) <= 1
-                                );
-                                if (match != null && !resolved.Contains(match.Id))
-                                    resolved.Add(match.Id);
-                            }
-                        }
-                        else if (int.TryParse(key, out int legacyIdx) && legacyIdx >= 0 && legacyIdx < tab.ScenePieces.Count)
-                        {
-                            var legacyPiece = tab.ScenePieces.ByIndex(legacyIdx);
-                            if (!resolved.Contains(legacyPiece.Id))
-                                resolved.Add(legacyPiece.Id);
+                            var candidate = tab.ScenePieces.ByIndex(pieceCursor++);
+                            if (candidate.PiecePlacement != placement) continue;
+
+                            hierarchyGroup.PieceIds.Add(candidate.Id);
+                            break;
                         }
                     }
 
-                    hierarchyGroup.PieceIds.AddRange(resolved);
+                    continue;
                 }
+
+                // Old format group: #editor_group(Name,x:z,...)
+                var resolved = new List<int>();
+                foreach (var key in group.CoordinateKeys)
+                {
+                    if (key.Contains(':'))
+                    {
+                        var kparts = key.Split(':');
+                        if (kparts.Length == 2 && int.TryParse(kparts[0], out int kx) && int.TryParse(kparts[1], out int kz))
+                        {
+                            var match = tab.ScenePieces.FirstOrDefault(p =>
+                                Math.Abs((int)p.Position.X - kx) <= 1 && Math.Abs((int)p.Position.Z - kz) <= 1
+                            );
+                            if (match != null && !resolved.Contains(match.Id))
+                                resolved.Add(match.Id);
+                        }
+                    }
+                    else if (int.TryParse(key, out int legacyIdx) && legacyIdx >= 0 && legacyIdx < tab.ScenePieces.Count)
+                    {
+                        var legacyPiece = tab.ScenePieces.ByIndex(legacyIdx);
+                        if (!resolved.Contains(legacyPiece.Id))
+                            resolved.Add(legacyPiece.Id);
+                    }
+                }
+
+                hierarchyGroup.PieceIds.AddRange(resolved);
+            }
+
+            // A piece belongs to one group at most, and only while it exists.
+            var claimedIds = new HashSet<int>();
+            foreach (var group in tab.HierarchyGroups)
+            {
+                group.PieceIds.RemoveAll(id =>
+                    tab.ScenePieces.GetValueOrDefault(id) is null || !claimedIds.Add(id)
+                );
             }
 
             // Store properties in the tab from World (set by Stage constructor)
@@ -758,6 +812,21 @@ public partial class StageEditorPhase
             tab.SnapB = World.Snap.G;
             tab.SnapC = World.Snap.B;
             tab.FadeFrom = World.FadeFrom;
+
+            // Everything else the file format carries, straight off the loader.
+            tab.Aerial = stageLoader.Aerial;
+            tab.MusicPath = stageLoader.musicPath;
+            tab.RemasteredMusicPath = stageLoader.remasteredMusicPath;
+            tab.MusicFreqMul = stageLoader.musicFreqMul;
+            tab.MusicTempoMul = stageLoader.musicTempoMul;
+            tab.FogDensity = stageLoader.FogDensity is { } fogDensity ? Math.Max(0, (fogDensity - 1) / 2) : null;
+            tab.LightsOn = stageLoader.LightsOn;
+            tab.LightDirection = stageLoader.LightDirection ?? new Vector3(0, 1, 0);
+            tab.MountainCoverage = stageLoader.MountainCoverage;
+            tab.Texture = stageLoader.EnvironmentInstructions
+                .OfType<TextureInstruction>()
+                .LastOrDefault()?.Texture?.ToArray();
+            tab.Physics = stageLoader.Physics;
 
             // Add tab and activate it
             _tabs.Add(tab);
@@ -822,5 +891,35 @@ public partial class StageEditorPhase
             SentrySdk.CaptureException(ex);
             Logging.Warning($"Failed to load preserved directives from '{filePath}': {ex.Message}");
         }
+    }
+
+    private static string Fmt(float value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+
+    private static string Fmt(double value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+
+    /// <summary>Writes <c>directive(folder,file)</c>; the loader rejects a path without both.</summary>
+    private static void WriteSoundtrack(TextWriter writer, string directive, string path)
+    {
+        var slash = path.LastIndexOf('/');
+        if (slash <= 0 || slash == path.Length - 1)
+            return;
+
+        writer.WriteLine($"{directive}({path[..slash]},{path[(slash + 1)..]})");
+    }
+
+    /// <summary>phy-addons stage properties; defaults are left out so they stay absent.</summary>
+    private static void WriteStagePhysics(TextWriter writer, StagePhysics physics)
+    {
+        if (physics.RechargedStats) writer.WriteLine("stats()");
+        if (physics.Gravity != 1f) writer.WriteLine($"gravity({Fmt(physics.Gravity)})");
+        if (physics.Grip != 1f) writer.WriteLine($"grip({Fmt(physics.Grip)})");
+        if (physics.Powerloss != 1f) writer.WriteLine($"powerloss({Fmt(physics.Powerloss)})");
+        if (physics.Damage != 1f) writer.WriteLine($"dam({Fmt(physics.Damage)})");
+        if (physics.Lava != 0f) writer.WriteLine($"lava({Fmt(physics.Lava)})");
+        // The directive is a multiplier on the stock 300 clamp.
+        if (physics.MaxHit != 300f) writer.WriteLine($"maxhit({Fmt(physics.MaxHit / 300f)})");
+        if (physics.Recoil != 1f) writer.WriteLine($"recoil({Fmt(physics.Recoil)})");
+        if (physics.Rage != 1f) writer.WriteLine($"rage({Fmt(physics.Rage)})");
+        if (physics.NoArrow) writer.WriteLine("noarrow()");
     }
 }

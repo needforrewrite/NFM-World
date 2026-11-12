@@ -268,13 +268,14 @@ public static class Controls
         Action<double> onValue,
         double min,
         double max,
-        double step
+        double step,
+        bool compact = false
     )
     {
-        const float thumbWidth = 14f;
-        const float thumbHeight = 14f;
-        const float trackHeight = 4f;
-        const float rowHeight = 20f;
+        var thumbWidth = compact ? 10f : 14f;
+        var thumbHeight = compact ? 10f : 14f;
+        var trackHeight = compact ? 3f : 4f;
+        var rowHeight = compact ? 16f : 20f;
         View? row = null;
         var focused = new Signal<bool>(false);
 
@@ -343,7 +344,7 @@ public static class Controls
                 borderLeft: 2,
                 borderRight: 2,
                 borderColor: focused.Value ? new Color(255, 255, 255) : Theme.AccentBorder,
-                borderRadius: 7,
+                borderRadius: thumbWidth / 2,
                 zIndex: 1
             )
         );
@@ -366,10 +367,10 @@ public static class Controls
             style: () => Sx.Styles(
                 flexGrow: 1,
                 height: rowHeight,
-                minWidth: 160,
+                minWidth: compact ? 50 : 160,
                 position: Position.Relative,
-                marginLeft: 8,
-                marginRight: 8,
+                marginLeft: compact ? 2 : 8,
+                marginRight: compact ? 2 : 8,
                 backgroundColor: focused.Value ? Theme.AccentSoft : Theme.Transparent,
                 borderRadius: 4
             ),

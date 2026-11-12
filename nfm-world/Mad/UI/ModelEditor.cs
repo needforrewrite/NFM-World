@@ -266,34 +266,7 @@ public class ModelEditorPhase : BasePhase
         if (tab?.Object is null)
             return;
 
-        var opponents = BackendGameSparker.cars[Collection.NFMM]
-            .Select(car => car.FileName)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-        System.Random.Shared.Shuffle(opponents);
-
-        var botCount = withOtherCars ? Math.Min(6, opponents.Length) : 0;
-        var players = new ClientSidePlayerInfo[botCount + 1];
-        players[0] = new ClientSidePlayerInfo
-        {
-            PlayerName = "MadPlayer",
-            CarName = TestDriveCarName,
-            Color = default,
-            IsBot = false,
-            IsClientPlayer = true
-        };
-
-        for (var i = 0; i < botCount; i++)
-        {
-            players[i + 1] = new ClientSidePlayerInfo
-            {
-                PlayerName = $"ElStupido{i}",
-                CarName = opponents[i],
-                Color = default,
-                IsBot = true,
-                IsClientPlayer = false
-            };
-        }
+        var players = FreePlayRoster.Create(TestDriveCarName, withOtherCars);
 
         BaseGamemodeFactory factory;
         try
@@ -536,18 +509,17 @@ public class ModelEditorPhase : BasePhase
 
         if (importReference && selectedReferenceModel >= 0)
         {
-            // The reference lists are the NFMM collection, not a top-level cars/stage folder.
-            var builtInPath = $"./data/models/nfmm/{category}";
+            // Built-in models come from mounted game data, not the process working directory.
             var refModels = isCar ? BackendGameSparker.CarRads : BackendGameSparker.StageRads;
 
             if (selectedReferenceModel >= refModels.Length)
                 return "Select a reference model.";
 
-            var refFile = Path.Combine(builtInPath, refModels[selectedReferenceModel] + ".rad");
-            if (!File.Exists(refFile))
+            var refFile = $"data/models/nfmm/{category}/{refModels[selectedReferenceModel]}.rad";
+            if (!VFS.FileExists(refFile))
                 return $"Reference model not found: {refFile}";
 
-            radContent = File.ReadAllText(refFile);
+            radContent = VFS.ReadAllText(refFile);
         }
         else
         {
