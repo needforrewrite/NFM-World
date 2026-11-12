@@ -14,7 +14,7 @@
         <PublishAot Condition="'$(RuntimeIdentifier)' != 'browser-wasm'">true</PublishAot>
         <NativeLib Condition="'$(RuntimeIdentifier)' != 'browser-wasm'">Shared</NativeLib>
 
-        <ArchiveEndpoint Condition="'$(ArchiveEndpoint)' == '' and '$(Configuration)' == 'Release'">https://nfmw.puppykitty.racing</ArchiveEndpoint>
+        <ArchiveEndpoint Condition="'$(ArchiveEndpoint)' == '' and '$(Configuration)' == 'Release'">https://nfmw.net</ArchiveEndpoint>
         <ArchiveEndpoint Condition="'$(ArchiveEndpoint)' == ''">http://localhost:5000</ArchiveEndpoint>
     </PropertyGroup>
     
