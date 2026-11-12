@@ -1,0 +1,88 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-replay-captures/browser",
+  "view": "replay-browser",
+  "steps": [
+    {
+      "action": "capture",
+      "capture": "local"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Replay browser panel"
+    },
+    {
+      "action": "assert-no-horizontal-scroll",
+      "target": "Replay list"
+    },
+    {
+      "action": "assert-min-height",
+      "target": "Replay list",
+      "height": 200
+    },
+    {
+      "action": "hover",
+      "target": "Replay upload",
+      "capture": "hover-upload"
+    },
+    {
+      "action": "assert-hover",
+      "target": "Replay upload"
+    },
+    {
+      "action": "click",
+      "target": "Replay source online",
+      "capture": "online"
+    },
+    {
+      "action": "assert-no-horizontal-scroll",
+      "target": "Replay list"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Replay row archive:101"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Replay more"
+    },
+    {
+      "action": "click",
+      "target": "Replay more",
+      "capture": "online-error"
+    },
+    {
+      "action": "click",
+      "target": "Replay source local",
+      "capture": "local-again"
+    },
+    {
+      "action": "scroll",
+      "target": "Replay list",
+      "delta": -600,
+      "capture": "local-scrolled"
+    },
+    {
+      "action": "click",
+      "target": "Replay search"
+    },
+    {
+      "action": "text",
+      "value": "long/custom"
+    },
+    {
+      "action": "key",
+      "value": "Enter"
+    },
+    {
+      "action": "capture",
+      "capture": "local-filtered"
+    },
+    {
+      "action": "assert-no-horizontal-scroll",
+      "target": "Replay list"
+    }
+  ]
+}

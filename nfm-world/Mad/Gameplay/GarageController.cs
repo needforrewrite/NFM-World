@@ -40,6 +40,7 @@ internal sealed class GarageController
 
     private int _selectedCarIdx = 0;
     private string? _selectedCarIdentity;
+    private string? _selectedCarAuthor;
     private bool _selectionReady = true;
     private CancellationTokenSource? _onlineCancellation;
     private int _onlineGeneration;
@@ -128,6 +129,7 @@ internal sealed class GarageController
                 _cars = cars;
                 _selectedCarIdx = idx;
                 _selectedCarIdentity = fileName;
+                _selectedCarAuthor = null;
                 _selectionReady = true;
                 SetupCurrentCar();
             }
@@ -142,6 +144,7 @@ internal sealed class GarageController
             _cars = cars;
             _selectedCarIdx = 0;
             _currentCollection = col;
+            _selectedCarAuthor = null;
             SetupCurrentCar();
         }
     }
@@ -240,7 +243,10 @@ internal sealed class GarageController
             airs,
             hglide,
             ab
-        );
+        )
+        {
+            Author = _selectedCarAuthor
+        };
 
         // Highlights the active collection in the sidebar.
         UiState.Garage.CurrentCollection.Value = _currentCollection.ToString();
@@ -290,15 +296,18 @@ internal sealed class GarageController
                         item.Name,
                         "Online",
                         0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
                     )
+                    {
+                        Author = string.IsNullOrWhiteSpace(item.Author) ? null : item.Author
+                    }
                 )
                 .ToArray();
 
@@ -326,6 +335,12 @@ internal sealed class GarageController
         var generation = ++_onlineGeneration;
         UiState.Garage.OnlineStatus.Value = "Preparing car...";
         _selectionReady = false;
+
+        // Keep the published author on the preview: the committed car has no other memory of it.
+        _selectedCarAuthor = UiState.Garage.Collections.Value
+            .SelectMany(collection => collection.Cars)
+            .FirstOrDefault(car => car.FileName.Equals(hashOrIdentity, StringComparison.OrdinalIgnoreCase))
+            ?.Author;
 
         var result = await ContentCache.PrepareAsync(Content.Value, hash, AssetKind.Car, CancellationToken.None);
         if (generation != _onlineGeneration)

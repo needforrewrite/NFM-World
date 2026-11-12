@@ -1,0 +1,44 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-replay-captures/viewer",
+  "view": "replay-viewer",
+  "steps": [
+    {
+      "action": "capture",
+      "capture": "default"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Replay viewer band"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Replay play"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Replay viewer scrubber"
+    },
+    {
+      "action": "assert-no-horizontal-scroll",
+      "target": "Replay viewer band"
+    },
+    {
+      "action": "assert-size",
+      "target": "Replay viewer band",
+      "width": 760
+    },
+    {
+      "action": "click",
+      "target": "Replay play",
+      "capture": "paused"
+    },
+    {
+      "action": "click",
+      "target": "Replay back",
+      "capture": "back-hover"
+    }
+  ]
+}

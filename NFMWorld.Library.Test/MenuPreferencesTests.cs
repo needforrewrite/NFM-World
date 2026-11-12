@@ -97,6 +97,38 @@ public class MenuPreferencesTests
         Assert.AreEqual(0, reads);
     }
 
+    [TestMethod]
+    public void StageNamesComeFromTheNameLineWithoutReadingPackedStages()
+    {
+        var fs = CreateFileSystemWithContent(
+            ("data/stages/nfm1/1_stage.txt", "\nname(The Introductory Stage)\n\nsnap(-5,-5,20)\n"),
+            ("data/stages/custom/unnamed.txt", "snap(0,0,0)\n"),
+            ("data/stages/custom/packed.radpack", "")
+        );
+
+        var names = MenuPreferences.GetStageNames(fs);
+
+        Assert.AreEqual("The Introductory Stage", names["nfm1/1_stage"]);
+        Assert.IsFalse(names.ContainsKey("custom/unnamed"));
+        Assert.IsFalse(names.ContainsKey("custom/packed"));
+    }
+
+    private static VirtualFS CreateFileSystemWithContent(params (string Path, string Content)[] files)
+    {
+        using var stream = new MemoryStream();
+        using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
+            foreach (var (path, content) in files)
+            {
+                var entry = archive.CreateEntry(path);
+                using var writer = new StreamWriter(entry.Open());
+                writer.Write(content);
+            }
+
+        var fs = new VirtualFS();
+        fs.MountZip(stream.ToArray());
+        return fs;
+    }
+
     private static VirtualFS CreateFileSystem(params string[] files)
     {
         using var stream = new MemoryStream();

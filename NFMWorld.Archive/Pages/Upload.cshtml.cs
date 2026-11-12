@@ -22,6 +22,12 @@ public sealed class UploadModel(
     public string? Error { get; private set; }
     public string? Message { get; private set; }
 
+    /// <summary>The file formats the publish form accepts; the API applies the same pair.</summary>
+    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".radpack", ".rad"
+    };
+
     /// <summary>The kinds the publish form offers. Code and replays are not published here.</summary>
     public IReadOnlyList<string> PublishableTypes { get; } =
         ["Car", "Stage", "StagePiece", "Wheel", "Texture"];
@@ -53,7 +59,13 @@ public sealed class UploadModel(
         }
 
         var extension = Path.GetExtension(File.FileName);
-        if (extension.Equals(".rad", StringComparison.OrdinalIgnoreCase) && !AssetKinds.IsLegacyRadKind(kind))
+        if (!AllowedExtensions.Contains(extension))
+        {
+            Error = "Only .radpack and .rad files are accepted.";
+            return Page();
+        }
+
+        if (!AssetKinds.IsUploadExtensionAllowed(kind, extension))
         {
             Error = "A legacy .rad file can only be a Car, StagePiece or Wheel.";
             return Page();
@@ -77,8 +89,9 @@ public sealed class UploadModel(
             );
         if (!validation.Ok)
         {
-            if (!await Db.Assets.AnyAsync(a => a.ContentHash == hash))
-                storage.Delete(relative);
+            // Content-addressed: another row may already point at these exact bytes, and a failed
+            // re-upload must not delete the file it shares.
+            await storage.DeleteIfUnreferencedAsync(relative, Db, HttpContext.RequestAborted);
             Error = validation.Error ?? "That file could not be read.";
             return Page();
         }
@@ -88,8 +101,7 @@ public sealed class UploadModel(
             && validated.GetString() is { } validatedKind
             && !string.Equals(validatedKind, AssetKinds.Name(kind), StringComparison.OrdinalIgnoreCase))
         {
-            if (!await Db.Assets.AnyAsync(a => a.ContentHash == hash))
-                storage.Delete(relative);
+            await storage.DeleteIfUnreferencedAsync(relative, Db, HttpContext.RequestAborted);
             Error = $"That file is a {validatedKind}, not a {AssetKinds.Name(kind)}.";
             return Page();
         }

@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Numerics;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Radpack;
 
@@ -108,6 +109,37 @@ public class RadpackContentTests
                 RadpackLimits.MaxCompressedBytes,
                 RadpackLimits.MaxDecompressedBytes
             )
+        );
+    }
+
+    [TestMethod]
+    public void RoundTrip_Model_KeepsComputedBounds()
+    {
+        var poly = new Rad3dPoly(
+            default,
+            null,
+            PolyType.Flat,
+            null,
+            0,
+            [new Vector3(-400, 0, 0), new Vector3(400, 0, 0), new Vector3(0, 0, 900)]
+        );
+        var original = new Rad3d([poly], false, "marker");
+
+        var bytes = Serialize(
+            new RadpackRad3d
+            {
+                Metadata = Metadata("marker", RadpackType.Car),
+                Rad = original
+            }
+        );
+
+        var asset = RadpackSerializer.Deserialize(bytes, RadpackLimits.MaxCompressedBytes, RadpackLimits.MaxDecompressedBytes);
+        var restored = ((RadpackRad3d)asset).Rad;
+
+        Assert.AreEqual(original.MaxRadius, restored.MaxRadius);
+        CollectionAssert.AreEqual(
+            original.Polys.SelectMany(p => p.Points).ToArray(),
+            restored.Polys.SelectMany(p => p.Points).ToArray()
         );
     }
 

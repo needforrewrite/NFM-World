@@ -159,6 +159,8 @@ Gamemodes are compiled `.NET` plugins — the Lua path is gone. Singleplayer and
 - Main-menu GARAGE commits with SELECT CAR/Enter; Back cancels. `MenuHistory.Car` is the shared car for
   free play, time trials and lobby identity, persisted through VFS in `data/cfg/menu-history.json`.
   Entering a race remembers only its stage; test drives and dev commands must not overwrite the garage choice.
+  The ONLINE list shows each public car's publisher (`CarStatsViewModel.Author`, from the archive
+  search result) instead of the collection name; it is remembered while that car is previewed.
 - The lobby offers PvP and Time Trial through `GamemodeCatalog.Ids`; config controls follow the selected mode.
   Time Trial has no bots. Real remote racers remain roster players, not `IsFake` replay ghosts; they are drawn
   translucent and driven without inter-car collisions. Saved best-run ghosts remain singleplayer-only.
@@ -387,6 +389,13 @@ reference it; new shader work goes through `NFMWorld.ShaderCompiler`.
   in that list.
 - RAD car/stage meshes are parsed by `NFMWorld.Library/Mad/Rad/RadParser.cs`; a `phyangulation` line selects the
   `Phyrexian` triangulation algorithm (see HoleyDiver below).
+- **Never cache derived state in a `[MemoryPackable]` initializer.** MemoryPack builds these types through the
+  `[MemoryPackConstructor]` (often parameterless) constructor and assigns the `[MemoryPackOrder]` properties
+  afterwards, so a value computed from a constructor parameter keeps the *empty* value. `Rad3d.MaxRadius` was
+  `{ get; } = CalculateMaxRadius(polys)`, which meant every deserialized car and stage piece had `MaxRadius == 0`:
+  its bounding sphere became a point and `RenderQueue` frustum-culled it as soon as its origin left the view
+  (visible as pieces popping out mid-screen in replays, which always load embedded `.timetrial` data). Derive such
+  values lazily from the property instead. `RadpackContentTests.RoundTrip_Model_KeepsComputedBounds` covers it.
 - Native libraries live under `NFMWorld.NativeLibs/libs/` and are resolved by the `DllImport` resolver in
   `NFMWorld/WorldGame.cs` — add a new native file there, not next to the consuming code.
 
@@ -406,6 +415,13 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
 - **Content-addressed storage.** Every upload is stored under its own SHA-256 (`FileStorage`), so a re-upload of the
   same bytes resolves to the same path — never delete a rejected upload without checking no row still references the
   hash.
+- **Two upload surfaces, one rule set.** `POST /assets/upload` (the game client) and `Pages/Upload.cshtml`
+  (the website) both publish data assets, and they must refuse the same inputs: signed in, `Archive:ReadOnly`,
+  `AssetKinds.IsPublishable`, the `.radpack`/`.rad` extension allowlist, `AssetKinds.IsUploadExtensionAllowed`
+  (a bare `.rad` model has no kind of its own, so it can only claim Car/StagePiece/Wheel), the size cap, the
+  out-of-process validator, and the kind-inside-the-file check. Keep new gates in `AssetKinds` and call them from
+  both — the website silently lost its extension check once and would store a `.txt` with no validation at all.
+  Replays have no website path: `IsPublishable` excludes them, and only `/tt/upload` ranks a time, after simulating it.
 - **Validation is out of process** (`NFMWorld.Archive.Validator`). `TimeTrialSimulator` is synchronous and cannot be
   cancelled, so the archive runs it as a child process with a wall clock and kills it. A time trial is ranked only by
   that simulation's tick count, never by a number the client sends. `Archive:ValidatorPath` must point at the built
@@ -703,7 +719,9 @@ Added with the archive/content work; read this before touching content loading, 
   fixed metadata (`UnixEpoch`, no description). `StockSeeder` inserts them at archive startup when
   `Archive:StockContentPath` is set. A mod shadowing a stock name does not change the catalog hash.
 - **Stage browsing** — `StageSelectView` has LOCAL/ONLINE sources. Local options come from
-  `MenuPreferences.GetStages`; online options come from `ArchiveContentClient.SearchAsync(..., "Stage", ...)`
+  `MenuPreferences.GetStages`, labelled by `MenuPreferences.GetStageNames`, which reads each stage's
+  `name(...)` line without parsing the stage (packed stages keep their file name). Online options
+  come from `ArchiveContentClient.SearchAsync(..., "Stage", ...)`
   and carry `archive/<hash>` ids. Choosing an archive option prepares it with
   `ContentCache.PrepareAsync(..., AssetKind.Stage, ...)` before `LoadStage`, and RACE waits for that
   prepare. The lobby's create dialog uses the compact selector and still accepts a typed archive id.
@@ -732,17 +750,30 @@ Added with the archive/content work; read this before touching content loading, 
 - **Time trials** — the client notifies `IClientCallbacks.TimeTrialCompleted` once per completed run
   (never for simulation), `TimeTrialSubmissions` writes the recording and a MemoryPack sidecar before
   network work, and `TimeTrialUploader` retries from the replay browser. The archive simulates the
-  exact archived stage *and* car (`tt-sim` takes both paths).
-- **Replay viewer** — `ReplayBrowserPhase` reads bounded recordings; `ReplayViewerPhase` applies
-  recorded `CarFrame`s directly (no physics, gamemode, save or upload), uses the embedded
-  `StageLoader`/`Rad3d` when present, and drives `RaceCameraDirector` itself. Frames are snapshots,
-  not resumable checkpoints.
+  exact archived stage *and* car (`tt-sim` takes both paths). `GET /tt/replays` lists every valid
+  replay (public, keyset-paged by id like `/assets/search`, optional `query` over stage, car and
+  driver); `ArchiveReplayClient` reads it and fetches `/tt/replay/{id}`. `GET /tt/replay/{id}` and
+  the browse list are public because they carry only a username, a stage/car name and a time.
+- **Replay viewer** — `ReplayBrowserPhase` reads bounded recordings and lists published replays
+  from the archive (LOCAL/ONLINE tabs, paged, a manual UPLOAD for recordings still owed);
+  `ReplayViewerPhase` applies recorded `CarFrame`s directly (no physics, gamemode, save or upload),
+  uses the embedded `StageLoader`/`Rad3d` when present, and drives `RaceCameraDirector` itself.
+  Frames are snapshots, not resumable checkpoints. Both views are overlays — the browser is a
+  centred panel, the viewer a top-centre band — so neither hides the scene behind it. A frame
+  carries `CameraAngles` (`Cxz`/`StaticXz`) so the replay's follow and follow-static cameras point
+  where they did while recording; `ApplyToCar` writes them to `CarPhysics`. `CarFrame` is a
+  fixed-layout unmanaged snapshot, so adding a field changes both the recording and the
+  `PlayerState` wire layout: bump `SavedTimeTrial.CURRENT_VERSION` and refuse older recordings
+  (`ReplayBrowserPhase.IsCompatible`), which the archive validator already does.
 - **Sx visual harness** — run `dotnet run --project NFMWorld -- --backend=d3d11 --sx-harness=NFMWorld/UiHarness/stage-editor-menu.json`
   from the repo root. It mounts the actual editor Sx tree with the real Apos/font renderer, sends
   direct UI events (never OS input), renders offscreen, and writes PNGs plus measured node/hover JSON
   under `.git/sx-menu-captures`. The script supports named-target or pixel `click`/`hover`, `text`,
   `key`, `scroll`, `capture`, `assert-hover`, `assert-visible`, and `assert-aligned`; `view` selects
-  `stage-editor` (default) or `model-editor`. `--sx-scale=1.25` repeats at a different UI scale.
+  `stage-editor` (default), `model-editor`, `garage`, `stage-select`, `stage-select-local` (the shipped
+  stages with their real `name(...)` labels), `replay-browser`, `replay-viewer` or `replay-camera`
+  (applies recorded headings through `RaceCameraDirector` and prints the resulting camera).
+  `--sx-scale=1.25` repeats at a different UI scale.
   This is a UI-only fixture: no gameplay, network, audio, populated stage or scene rendering; writes
   go to an output-local sandbox. Inspect captures with `view_image` and assertions before reporting
   visual fixes. Menu rows must be keyed by menu identity (`Sx.For`), not constructed in a reactive

@@ -14,6 +14,21 @@ public sealed record TimeTrialEntry(
     string ReplayUrl
 );
 
+/// <summary>One replay in the public browser; carries what the client needs to open it.</summary>
+public sealed record TimeTrialReplayEntry(
+    int Id,
+    string Username,
+    string StageName,
+    string CarName,
+    string StageHash,
+    string CarHash,
+    int TotalTicks,
+    int ReplayVersion,
+    DateTimeOffset CreatedAt
+);
+
+public sealed record TimeTrialReplayPage(IReadOnlyList<TimeTrialReplayEntry> Items, int? NextCursor);
+
 /// <summary>
 /// Time-trial upload and leaderboards.
 ///
@@ -111,10 +126,25 @@ public static class TimeTrialEndpoints
 
                 if (existing is not null)
                 {
-                    await storage.DeleteIfUnreferencedAsync(existing.StoragePath, db, ct);
-                    existing.TotalTicks = totalTicks;
-                    existing.StoragePath = stored.StoragePath;
-                    existing.CreatedAt = DateTimeOffset.UtcNow;
+                    // The stored bytes are content-addressed, so a re-upload of the same recording
+                    // lands on the same path: deleting "the old" file would delete the new one.
+                    if (!string.Equals(existing.StoragePath, stored.StoragePath, StringComparison.Ordinal))
+                    {
+                        var previous = existing.StoragePath;
+                        existing.TotalTicks = totalTicks;
+                        existing.StoragePath = stored.StoragePath;
+                        existing.CreatedAt = DateTimeOffset.UtcNow;
+                        await db.SaveChangesAsync(ct);
+
+                        // The swap is saved first, so the delete can see the row's new path and
+                        // leave the replacement alone.
+                        await storage.DeleteIfUnreferencedAsync(previous, db, ct);
+                    }
+                    else
+                    {
+                        existing.TotalTicks = totalTicks;
+                        existing.CreatedAt = DateTimeOffset.UtcNow;
+                    }
                 }
                 else
                 {
@@ -153,6 +183,56 @@ public static class TimeTrialEndpoints
                         .Select(t => new TimeTrialEntry(t.User.Username, t.TotalTicks, t.CreatedAt, $"/tt/replay/{t.Id}"))
                         .ToListAsync(ct)
                 )
+        );
+
+        // Public: browsing every replay carries the same data as a leaderboard - username, stage,
+        // car and time - and it is what makes a replay watchable without first knowing the pair.
+        tt.MapGet(
+            "/replays",
+            async (
+                    ArchiveDbContext db, string? query, int? limit, int? after, CancellationToken ct
+                ) =>
+            {
+                var pageSize = Math.Clamp(limit ?? 50, 1, 100);
+
+                var q = db.TimeTrials.Where(t => t.IsValid);
+                if (!string.IsNullOrWhiteSpace(query))
+                {
+                    var escaped = query.Trim();
+                    q = q.Where(
+                        t => EF.Functions.Like(t.StageName, "%" + escaped + "%")
+                             || EF.Functions.Like(t.CarName, "%" + escaped + "%")
+                             || EF.Functions.Like(t.User.Username, "%" + escaped + "%")
+                    );
+                }
+
+                // Newest first by id: SQLite cannot ORDER BY a DateTimeOffset and ids follow
+                // creation order, so the cursor stays stable while new replays arrive.
+                if (after is { } cursor)
+                    q = q.Where(t => t.Id < cursor);
+
+                var rows = await q
+                    .OrderByDescending(t => t.Id)
+                    .Take(pageSize + 1)
+                    .Select(
+                        t => new TimeTrialReplayEntry(
+                            t.Id,
+                            t.User.Username,
+                            t.StageName,
+                            t.CarName,
+                            t.StageHash,
+                            t.CarHash,
+                            t.TotalTicks,
+                            t.ReplayVersion,
+                            t.CreatedAt
+                        )
+                    )
+                    .ToListAsync(ct);
+
+                var hasMore = rows.Count > pageSize;
+                var items = rows.Take(pageSize).ToList();
+                return Results.Ok(new TimeTrialReplayPage(items, hasMore ? items[^1].Id : null));
+            }
         );
 
         tt.MapGet(

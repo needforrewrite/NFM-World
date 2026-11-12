@@ -69,6 +69,22 @@ public static class AssetKinds
     /// <summary>Whether a legacy <c>.rad</c> file may claim this kind.</summary>
     public static bool IsLegacyRadKind(byte assetType) => assetType is Car or StagePiece or Wheel;
 
+    /// <summary>
+    /// Whether an upload of this extension may claim this kind. `radpack` carries its own kind, so
+    /// it fits all of them; a bare <c>.rad</c> model has no kind of its own and can only be a
+    /// model. Both the JSON asset API and the website's publish form apply this, so a file cannot
+    /// be refused in one place and stored via the other.
+    /// </summary>
+    public static bool IsUploadExtensionAllowed(byte assetType, string extension)
+    {
+        if (!IsPublishable(assetType))
+            return false;
+
+        return !extension.Equals(".rad", StringComparison.OrdinalIgnoreCase)
+               || IsLegacyRadKind(assetType);
+    }
+
+
     public static string Name(byte assetType)
         => assetType switch
         {

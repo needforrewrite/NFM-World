@@ -153,6 +153,9 @@ public partial struct CarFrame
     [PluginVisible] public (fix64 Mxz, fix64 Txz) XzReadings;
     [PluginVisible] public BitFlags TheBitFlags;
 
+    /// <summary>Camera headings, so a replay can drive the follow and static cameras.</summary>
+    [PluginVisible] public (fix64 Cxz, fix64 StaticXz) CameraAngles;
+
     [PluginVisible]
     public static CarFrame Create(BackendCar car)
     {
@@ -204,6 +207,8 @@ public partial struct CarFrame
         entry.TheBitFlags.Newcar = car.CarPhysics.Newcar;
         entry.XzReadings.Mxz = car.CarPhysics.Mxz;
         entry.XzReadings.Txz = car.CarPhysics.Txz;
+        entry.CameraAngles.Cxz = car.CarPhysics.Cxz;
+        entry.CameraAngles.StaticXz = car.CarPhysics.StaticCameraXz;
 
         return entry;
     }
@@ -268,5 +273,7 @@ public partial struct CarFrame
 
         car.CarPhysics.Mxz = XzReadings.Mxz;
         car.CarPhysics.Txz = XzReadings.Txz;
+        car.CarPhysics.Cxz = CameraAngles.Cxz;
+        car.CarPhysics.StaticCameraXz = CameraAngles.StaticXz;
     }
 }

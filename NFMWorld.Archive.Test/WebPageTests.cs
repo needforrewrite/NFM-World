@@ -210,6 +210,49 @@ public class WebPageTests
         );
     }
 
+    /// <summary>
+    /// The publish form has to refuse the same uploads the JSON API refuses. It used to check only
+    /// that a <c>.rad</c> claimed a model kind, so a <c>.txt</c> or a <c>.radpack</c> that was not a
+    /// radpack got stored with no validation at all.
+    /// </summary>
+    [TestMethod]
+    public async Task UploadPage_RefusesAnExtensionTheApiRefuses()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = Browser(factory);
+
+        var token = ExtractAntiforgery(await (await client.GetAsync("/account/login?flow=register"))
+            .Content.ReadAsStringAsync()
+        );
+        await client.PostAsync(
+            "/account/login?handler=Register",
+            new FormUrlEncodedContent(
+                new Dictionary<string, string>
+                {
+                    ["Username"] = "uploader", ["RegisterPassword"] = "password123",
+                    ["cf-turnstile-response"] = ArchiveAppFactory.Challenge("register"),
+                    ["__RequestVerificationToken"] = token
+                }
+            )
+        );
+
+        var page = await client.GetStringAsync("/upload");
+        var uploadToken = ExtractAntiforgery(page);
+
+        using var form = new MultipartFormDataContent();
+        form.Add(new ByteArrayContent("not a model"u8.ToArray()), "File", "notes.txt");
+        form.Add(new StringContent("notes"), "Name");
+        form.Add(new StringContent("Car"), "Type");
+        form.Add(new StringContent(uploadToken), "__RequestVerificationToken");
+
+        var response = await client.PostAsync("/upload", form);
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+        // The page answers 200 with the error rendered, so the refusal is the message.
+        var html = await response.Content.ReadAsStringAsync();
+        StringAssert.Contains(html, "Only .radpack and .rad files are accepted");
+    }
+
     private static string ExtractAntiforgery(string html)
     {
         // Attribute order is Razor's business; match the input element and pull value out of it.

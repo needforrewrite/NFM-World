@@ -215,7 +215,7 @@ public static class GarageView
                 Sx.Text(
                     style: () => Sx.TextStyles(fontSize: 12, foregroundColor: Theme.MenuDim),
                     layout: () => Sx.Styles(flexShrink: 0),
-                    text: () => UiState.Garage.CurrentCar.Value?.Collection ?? ""
+                    text: () => Subtitle(UiState.Garage.CurrentCar.Value)
                 )
             ]
         );
@@ -480,13 +480,20 @@ public static class GarageView
                 Sx.Text(
                     style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.TextFaint),
                     layout: () => Sx.Styles(flexShrink: 0),
-                    text: () => collectionId
+                    text: () => car.Author is { Length: > 0 } author ? author : collectionId
                 )
             ]
         );
         card.Name = "Garage car " + car.FileName;
         return card;
     }
+
+    private static string Subtitle(CarStatsViewModel? car)
+        => car is null
+            ? ""
+            : car.Author is { Length: > 0 } author
+                ? $"Published by {author}"
+                : car.Collection;
 
     private static IReadOnlyList<CarCollectionViewModel> FilterCollections()
     {

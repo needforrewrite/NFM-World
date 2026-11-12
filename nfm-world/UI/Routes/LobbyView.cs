@@ -511,6 +511,7 @@ public static class LobbyView
         // runs when the dialog is mounted. A local stage cannot be raced online, so the list is
         // the distributable subset; a published stage is offered by typing its archive id.
         var stages = AvailableStages().Where(MultiplayerContentPolicy.IsAcceptedStage).ToArray();
+        var names = AvailableStageNames();
         var stageState = new StageSelectState();
         stageState.Collections.Value = stages
             .Select(StageCollectionOf)
@@ -518,7 +519,7 @@ public static class LobbyView
             .Order(StringComparer.OrdinalIgnoreCase)
             .ToArray();
         stageState.Collection.Value = stageState.Collections.Value.FirstOrDefault() ?? "";
-        stageState.Stages.Value = stages.Select(StageOptionFor).ToArray();
+        stageState.Stages.Value = stages.Select(stage => StageOptionFor(stage, names)).ToArray();
         stageState.Selected.Value = lobby.SelectedStage.Value;
         stageState.ConfirmEnabled.Value = stages.Length > 0;
         if (!MultiplayerContentPolicy.IsAcceptedStage(lobby.SelectedStage.Value))
@@ -588,7 +589,7 @@ public static class LobbyView
                                     stageState.Collection.Value = collection;
                                     stageState.Stages.Value = stages
                                         .Where(stage => StageCollectionOf(stage) == collection)
-                                        .Select(StageOptionFor)
+                                        .Select(stage => StageOptionFor(stage, names))
                                         .ToArray();
                                 },
                                 StageSelected: stage =>
@@ -609,6 +610,8 @@ public static class LobbyView
                                     var matches = stages
                                         .Where(stage => search.Length == 0
                                                         || stage.Contains(search, StringComparison.OrdinalIgnoreCase)
+                                                        || (names.TryGetValue(stage, out var name)
+                                                            && name.Contains(search, StringComparison.OrdinalIgnoreCase))
                                         )
                                         .ToList();
 
@@ -618,7 +621,7 @@ public static class LobbyView
                                         && !matches.Contains(search, StringComparer.Ordinal))
                                         matches.Insert(0, search);
 
-                                    stageState.Stages.Value = matches.Select(StageOptionFor).ToArray();
+                                    stageState.Stages.Value = matches.Select(stage => StageOptionFor(stage, names)).ToArray();
                                 },
                                 Confirm: () => { },
                                 Back: () => { }
@@ -769,10 +772,15 @@ public static class LobbyView
         return slash < 0 ? "stages" : stageId[..slash];
     }
 
-    private static StageOption StageOptionFor(string stageId)
+    private static StageOption StageOptionFor(string stageId, IReadOnlyDictionary<string, string> names)
     {
         var slash = stageId.LastIndexOf('/');
-        return new StageOption(stageId, slash < 0 ? stageId : stageId[(slash + 1)..], StageCollectionOf(stageId));
+        return new StageOption(
+            stageId,
+            names.TryGetValue(stageId, out var name) ? name
+                : slash < 0 ? stageId : stageId[(slash + 1)..],
+            StageCollectionOf(stageId)
+        );
     }
 
     /// <summary>Stage names for the create dialog.</summary>
@@ -789,6 +797,18 @@ public static class LobbyView
         {
             // A stage tree that failed to load must not take the lobby down with it.
             return [];
+        }
+    }
+
+    private static IReadOnlyDictionary<string, string> AvailableStageNames()
+    {
+        try
+        {
+            return GameSparker.GetAvailableStageNames();
+        }
+        catch (Exception)
+        {
+            return new Dictionary<string, string>();
         }
     }
 

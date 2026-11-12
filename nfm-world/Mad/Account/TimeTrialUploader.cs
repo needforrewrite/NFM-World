@@ -76,6 +76,38 @@ public static class TimeTrialUploader
         _ = UploadAsync(submission, recording);
     }
 
+    /// <summary>
+    /// Manually submits a stored recording that has no durable submission, or retries the one it
+    /// has. The replay browser calls this for its UPLOAD button.
+    /// </summary>
+    public static bool Upload(string file)
+    {
+        var replay = SavedTimeTrial.Load(file);
+        if (replay is null)
+            return false;
+
+        var existing = TimeTrialSubmissions.List().FirstOrDefault(s =>
+            s.StageName == replay.StageName && s.CarName == replay.CarName
+        );
+        if (existing is { } submission)
+        {
+            Retry(submission);
+            return true;
+        }
+
+        var recording = VFS.ReadAllBytes(file);
+        Enqueue(
+            new TimeTrialCompletion(
+                replay.StageName,
+                replay.CarName,
+                replay.DemoData.Ticks.Count,
+                replay.Version ?? 0,
+                recording
+            )
+        );
+        return true;
+    }
+
     private static async Task UploadAsync(PendingSubmission submission, byte[] recording)
     {
         await Gate.WaitAsync();

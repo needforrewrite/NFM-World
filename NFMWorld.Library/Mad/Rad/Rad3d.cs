@@ -25,7 +25,29 @@ public sealed partial class Rad3d(
     CarStats? rechargedStats = null
 )
 {
-    [MemoryPackIgnore, PluginVisible] public int MaxRadius { get; } = CalculateMaxRadius(polys);
+    // Derived from Polys on read: MemoryPack builds this type through the parameterless
+    // constructor and assigns Polys afterwards, so a value captured in the constructor keeps
+    // the empty array's radius and every deserialized model gets a zero-radius bounding
+    // sphere (frustum culling then clips it as soon as its origin leaves the view).
+    // Keyed on the array reference, so damage that mutates polys in place does not invalidate
+    // it - the radius change is negligible, and Mesh copies the value when it is built.
+    private Rad3dPoly[]? _maxRadiusPolys;
+    private int _maxRadius;
+
+    [MemoryPackIgnore, PluginVisible]
+    public int MaxRadius
+    {
+        get
+        {
+            if (!ReferenceEquals(_maxRadiusPolys, Polys))
+            {
+                _maxRadiusPolys = Polys;
+                _maxRadius = CalculateMaxRadius(Polys);
+            }
+
+            return _maxRadius;
+        }
+    }
 
     [JsonPropertyName("colors"), MemoryPackOrder(0), PluginVisible]
     public IReadOnlyList<Color3> Colors { get; set; } = colors;

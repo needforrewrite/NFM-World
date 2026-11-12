@@ -7,6 +7,7 @@ namespace NFMWorldLibrary.Backend;
 /// gamemode's disposal. <see cref="Recording"/> is the exact bytes a submission would send.
 /// </summary>
 [PluginVisible]
+[method: PluginVisible]
 public sealed record TimeTrialCompletion(
     string StageName,
     string CarName,

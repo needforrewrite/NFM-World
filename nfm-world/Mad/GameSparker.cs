@@ -252,6 +252,13 @@ public static partial class GameSparker
     public static List<string> GetAvailableStages()
         => [.. NFMWorldLibrary.Util.MenuPreferences.GetStages(VFS)];
 
+    /// <summary>
+    /// The display name each stage declares, keyed by the id <see cref="GetAvailableStages"/>
+    /// returns. Packed stages are absent and keep their file name.
+    /// </summary>
+    public static IReadOnlyDictionary<string, string> GetAvailableStageNames()
+        => NFMWorldLibrary.Util.MenuPreferences.GetStageNames(VFS);
+
 
     public static void Load(IGameHost game)
     {

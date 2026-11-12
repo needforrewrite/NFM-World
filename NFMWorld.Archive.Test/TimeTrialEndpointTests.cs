@@ -82,4 +82,20 @@ public class TimeTrialEndpointTests
         var entries = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.AreEqual(0, entries.GetArrayLength());
     }
+
+    [TestMethod]
+    public async Task Replays_ArePublicAndPaged()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = factory.CreateClient();
+
+        // Public like the leaderboard: browsing needs no account, and an anonymous client must
+        // not be refused a list that carries nothing but a username and a time.
+        var response = await client.GetAsync("/tt/replays?limit=10");
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+        var page = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.AreEqual(0, page.GetProperty("items").GetArrayLength());
+        Assert.AreEqual(JsonValueKind.Null, page.GetProperty("nextCursor").ValueKind);
+    }
 }

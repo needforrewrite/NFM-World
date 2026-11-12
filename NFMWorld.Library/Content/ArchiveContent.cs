@@ -163,6 +163,111 @@ public sealed class ArchiveContentClient : IDisposable
     }
 }
 
+/// <summary>One replay published to the archive, as the browser lists it.</summary>
+public sealed record RemoteReplay(
+    int Id,
+    string Username,
+    string StageName,
+    string CarName,
+    string StageHash,
+    string CarHash,
+    int TotalTicks,
+    int ReplayVersion
+);
+
+public sealed record RemoteReplayPage(IReadOnlyList<RemoteReplay> Items, int? NextCursor);
+
+/// <summary>
+/// Read-only client for the archive's public replay list and downloads.
+/// </summary>
+/// <remarks>
+/// Separate from <see cref="ArchiveContentClient"/> because the endpoints and shapes differ; both
+/// point at the same archive. A downloaded replay is verified by parsing it, since the archive
+/// stores recordings outside the content-addressed asset store and cannot be checked by hash.
+/// </remarks>
+public sealed class ArchiveReplayClient : IDisposable
+{
+    private readonly Uri _baseUri;
+    private readonly HttpClient _http;
+    private readonly bool _ownsHttp;
+
+    public ArchiveReplayClient(string baseUrl, HttpClient? http = null)
+    {
+        _baseUri = new Uri(baseUrl.EndsWith('/') ? baseUrl : baseUrl + "/");
+        _ownsHttp = http is null;
+        _http = http ?? new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+    }
+
+    public async Task<RemoteReplayPage> BrowseAsync(string? query, int limit, int? after, CancellationToken ct)
+    {
+        var url = $"tt/replays?limit={Math.Clamp(limit, 1, 100)}";
+        if (!string.IsNullOrWhiteSpace(query))
+            url += "&query=" + Uri.EscapeDataString(query.Trim());
+        if (after is { } cursor)
+            url += "&after=" + cursor;
+
+        using var response = await _http.GetAsync(new Uri(_baseUri, url), ct);
+        response.EnsureSuccessStatusCode();
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>(ct);
+        var items = new List<RemoteReplay>();
+        foreach (var item in body.GetProperty("items").EnumerateArray())
+        {
+            items.Add(
+                new RemoteReplay(
+                    item.GetProperty("id").GetInt32(),
+                    item.GetProperty("username").GetString() ?? "",
+                    item.GetProperty("stageName").GetString() ?? "",
+                    item.GetProperty("carName").GetString() ?? "",
+                    item.GetProperty("stageHash").GetString() ?? "",
+                    item.GetProperty("carHash").GetString() ?? "",
+                    item.GetProperty("totalTicks").GetInt32(),
+                    item.GetProperty("replayVersion").GetInt32()
+                )
+            );
+        }
+
+        int? next = body.TryGetProperty("nextCursor", out var nextCursor) && nextCursor.ValueKind == JsonValueKind.Number
+            ? nextCursor.GetInt32()
+            : null;
+
+        return new RemoteReplayPage(items, next);
+    }
+
+    /// <summary>Fetches one replay's bytes, bounded so a hostile response cannot exhaust memory.</summary>
+    public async Task<byte[]> DownloadAsync(int id, int maxBytes, CancellationToken ct)
+    {
+        using var response = await _http.GetAsync(
+            new Uri(_baseUri, $"tt/replay/{id}"),
+            HttpCompletionOption.ResponseHeadersRead,
+            ct
+        );
+        response.EnsureSuccessStatusCode();
+
+        if (response.Content.Headers.ContentLength is { } length && length > maxBytes)
+            throw new InvalidDataException($"Replay is larger than {maxBytes} bytes.");
+
+        await using var stream = await response.Content.ReadAsStreamAsync(ct);
+        using var buffer = new MemoryStream();
+        var chunk = new byte[81920];
+        int read;
+        while ((read = await stream.ReadAsync(chunk, ct)) > 0)
+        {
+            if (buffer.Length + read > maxBytes)
+                throw new InvalidDataException($"Replay is larger than {maxBytes} bytes.");
+            buffer.Write(chunk, 0, read);
+        }
+
+        return buffer.ToArray();
+    }
+
+    public void Dispose()
+    {
+        if (_ownsHttp)
+            _http.Dispose();
+    }
+}
+
 public static class ContentHashes
 {
     public static bool IsCanonical(string? hash)

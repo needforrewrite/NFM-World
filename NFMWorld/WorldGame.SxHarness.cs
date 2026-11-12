@@ -11,6 +11,7 @@ using NFMWorld.UI.Routes;
 using NFMWorld.UI.ViewModels;
 using NFMWorld.Util;
 using NFMWorldLibrary;
+using NFMWorldLibrary.Util;
 
 namespace NFMWorld;
 
@@ -53,6 +54,10 @@ public partial class WorldGame
             "model-editor" => new ModelEditorPhase(game._device),
             "garage" => new FixturePhase(GarageFixture),
             "stage-select" => new FixturePhase(StageSelectFixture),
+            "stage-select-local" => new FixturePhase(StageSelectLocalFixture),
+            "replay-browser" => new FixturePhase(ReplayBrowserFixture),
+            "replay-viewer" => new FixturePhase(ReplayViewerFixture),
+            "replay-camera" => new FixturePhase(ReplayCameraFixture),
             _ => throw new InvalidOperationException($"Unknown harness view: {viewName}")
         };
         if (config.TryGetProperty("pieceCount", out var count))
@@ -308,13 +313,17 @@ public partial class WorldGame
         var user = new[] { Car("My Custom Car", "User"), Car("Prototype", "User") };
         var online = new List<CarStatsViewModel>
         {
-            Car("Sunset Racer", "Online", "archive/" + new string('a', 64)),
-            Car("Night Runner", "Online", "archive/" + new string('b', 64)),
-            Car("Rally Boss", "Online", "archive/" + new string('c', 64)),
+            Car("Sunset Racer", "Online", "archive/" + new string('a', 64)) with { Author = "maxine" },
+            Car("Night Runner", "Online", "archive/" + new string('b', 64)) with { Author = "uwx" },
+            Car("Rally Boss", "Online", "archive/" + new string('c', 64)) with { Author = "maxine" },
             Car("A Very Long Public Car Name That Should Not Move The List Sideways", "Online", "archive/" + new string('d', 64))
+                with { Author = "a-rather-long-author-name" }
         };
         for (var i = 0; i < 16; i++)
-            online.Add(Car($"Public Car {i + 1}", "Online", "archive/" + new string((char)('e' + i % 10), 64)));
+            online.Add(Car($"Public Car {i + 1}", "Online", "archive/" + new string((char)('e' + i % 10), 64)) with
+            {
+                Author = "another-author"
+            });
         var onlineCars = online.ToArray();
 
         garage.Collections.Value = [new CarCollectionViewModel("NFMM", local), new CarCollectionViewModel("User", user)];
@@ -345,6 +354,52 @@ public partial class WorldGame
             OnlineSearch: _ => garage.OnlineStatus.Value =
                 "Could not search the archive: Connection refused (localhost:5288) while requesting assets/search?type=Car"
         ));
+    }
+
+    /// <summary>
+    /// The select list over the shipped stages, so the harness shows the names the game really
+    /// reads out of each stage file rather than fixture labels.
+    /// </summary>
+    private static Node? StageSelectLocalFixture()
+    {
+        var ids = MenuPreferences.GetStages(VFS);
+        if (ids.Length == 0)
+            return null;
+
+        var names = MenuPreferences.GetStageNames(VFS);
+        var state = new StageSelectState();
+        var collections = ids.Select(id => id.Contains('/') ? id[..id.IndexOf('/')] : "stages")
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var collection = collections.Contains("nfm1") ? "nfm1" : collections[0];
+        var stages = ids
+            .Where(id => id.StartsWith(collection + "/", StringComparison.OrdinalIgnoreCase))
+            .Select(id => new StageOption(
+                    id,
+                    names.TryGetValue(id, out var name) ? name : id[(id.LastIndexOf('/') + 1)..]
+                )
+            )
+            .ToArray();
+
+        state.Collections.Value = collections;
+        state.Collection.Value = collection;
+        state.Stages.Value = stages;
+        state.Selected.Value = stages[0].Id;
+        state.ConfirmEnabled.Value = true;
+
+        return StageSelectView.Build(
+            state,
+            new StageSelectView.Actions(
+                CollectionSelected: _ => { },
+                StageSelected: id => state.Selected.Value = id,
+                SearchChanged: _ => { },
+                Confirm: () => { },
+                Back: () => { },
+                SourceSelected: _ => { },
+                OnlineSearch: _ => { }
+            )
+        );
     }
 
     private static Node StageSelectFixture()
@@ -414,6 +469,222 @@ public partial class WorldGame
                 },
                 OnlineSearch: _ => state.Status.Value =
                     "Could not search the archive: Connection refused (localhost:5288) while requesting assets/search?type=Stage"
+            )
+        );
+    }
+
+    private static Node ReplayBrowserFixture()
+    {
+        var state = new ReplayBrowserState();
+        var local = new[]
+        {
+            new ReplayBrowserEntry("data/tts/a.timetrial", "nfmm/stage1", "nfmm/radicalone", "1:24.512", "Uploaded", true, false),
+            new ReplayBrowserEntry(
+                "data/tts/b.timetrial",
+                "nfmm/stage2",
+                "nfmm/drifter",
+                "0:58.003",
+                "Upload pending",
+                true,
+                true
+            ),
+            new ReplayBrowserEntry(
+                "data/tts/c.timetrial",
+                "nfmm/stage3",
+                "nfmm/king",
+                "2:10.777",
+                "Publish required",
+                true,
+                true
+            ),
+            new ReplayBrowserEntry(
+                "data/tts/d.timetrial",
+                "nfmm/stage1",
+                "nfmm/2000tornados",
+                "1:02.140",
+                "Local only",
+                true,
+                false
+            ),
+            new ReplayBrowserEntry(
+                "data/tts/e.timetrial",
+                "a/very/long/custom/stage/name/that/should/not/scroll/sideways",
+                "a/very/long/custom/car/name/that/should/also/not/scroll/sideways",
+                "3:44.001",
+                "Upload refused because the archive rejected the recording version",
+                false,
+                false
+            )
+        }.Concat(
+            Enumerable.Range(1, 14).Select(i => new ReplayBrowserEntry(
+                $"data/tts/generated{i}.timetrial",
+                $"nfmm/stage{i % 6 + 1}",
+                "nfmm/radicalone",
+                $"{1 + i / 60}:{i % 60:00}.{i * 7 % 1000:000}",
+                "Local only",
+                true,
+                false
+            ))
+        ).ToArray();
+
+        var online = new[]
+        {
+            new ReplayBrowserEntry(
+                "archive:101",
+                "nfmm/stage1",
+                "nfmm/radicalone",
+                "1:19.884",
+                "maxine  ·  replay #101",
+                true,
+                false
+            ),
+            new ReplayBrowserEntry("archive:99", "nfmm/stage2", "nfmm/drifter", "0:55.210", "uwx  ·  replay #99", true, false),
+            new ReplayBrowserEntry(
+                "archive:87",
+                "nfmm/stage3",
+                "nfmm/king",
+                "2:04.663",
+                "someone-with-a-long-driver-name  ·  replay #87",
+                true,
+                false
+            )
+        }.Concat(
+            Enumerable.Range(1, 12).Select(i => new ReplayBrowserEntry(
+                $"archive:{50 - i}",
+                $"nfmm/stage{i % 6 + 1}",
+                "nfmm/radicalone",
+                $"{1 + i / 60}:{i % 60:00}.{i * 13 % 1000:000}",
+                $"driver{i}  ·  replay #{50 - i}",
+                true,
+                false
+            ))
+        ).ToArray();
+
+        state.Entries.Value = local;
+
+        return ReplayBrowserView.Build(
+            state,
+            new ReplayBrowserView.Actions(
+                Open: _ => { },
+                Upload: () => state.Status.Value = "Uploading 2 recordings...",
+                SourceSelected: isOnline =>
+                {
+                    state.Online.Value = isOnline;
+                    state.Entries.Value = isOnline ? online : local;
+                    state.HasMore.Value = isOnline;
+                    state.Status.Value = isOnline ? $"{online.Length} published replay(s). Pick one to watch it." : "";
+                    state.Busy.Value = false;
+                },
+                LoadMore: () => state.Status.Value =
+                    "Could not reach the archive: Connection refused (localhost:5288) while requesting tt/replays",
+                Search: query =>
+                {
+                    if (!state.Online.Value)
+                    {
+                        state.Entries.Value = local
+                            .Where(e => query.Length == 0
+                                        || e.Stage.Contains(query, StringComparison.OrdinalIgnoreCase)
+                                        || e.Car.Contains(query, StringComparison.OrdinalIgnoreCase)
+                            )
+                            .ToArray();
+                        return;
+                    }
+
+                    state.Entries.Value = online
+                        .Where(e => query.Length == 0 || e.Detail.Contains(query, StringComparison.OrdinalIgnoreCase))
+                        .ToArray();
+                    state.HasMore.Value = false;
+                    state.Status.Value = state.Entries.Value.Count == 0
+                        ? "No public replays matched."
+                        : $"{state.Entries.Value.Count} published replay(s). Pick one to watch it.";
+                },
+                Back: () => { }
+            )
+        );
+    }
+
+    /// <summary>
+    /// Records frames with known camera headings, saves and reloads them the way a replay is, and
+    /// drives the race cameras from them. The viewer's own path is ApplyToCar then
+    /// RaceCameraDirector.Update, so a camera that ignored the recorded headings lands in the same
+    /// place for every frame.
+    /// </summary>
+    private static Node? ReplayCameraFixture()
+    {
+        var rad = new NFMWorldLibrary.Rad.Rad3d(
+            [],
+            NFMWorldLibrary.CarStats.Default,
+            new NFMWorldLibrary.Rad.Rad3dWheelDef[4],
+            null,
+            [],
+            [],
+            false,
+            [],
+            "fixture/car"
+        );
+
+        var recording = new NFMWorldLibrary.Files.SavedTimeTrial("fixture/car", "fixture/stage", new StageLoader(), rad);
+        var source = new NFMWorldLibrary.Backend.BackendCar(rad, 0, 0, 0, true);
+        foreach (var heading in new[] { 0, 90, 180, 270 })
+        {
+            source.CarPhysics.Cxz = (fix64)heading;
+            source.CarPhysics.StaticCameraXz = (fix64)heading;
+            recording.RecordTick(source);
+        }
+
+        var replay = NFMWorldLibrary.Files.SavedTimeTrial.Load(recording.ToBytes())!;
+        var car = new NFMWorldLibrary.Backend.BackendCar(rad, 0, 0, 0, true);
+        var lines = new List<string> { $"version {replay.Version}" };
+        for (var i = 0; i < replay.DemoData.Ticks.Count; i++)
+        {
+            replay.DemoData.Ticks[i].ApplyToCar(car);
+
+            // A fresh director per frame: the cameras carry smoothing state, so reusing one would
+            // report the previous tick's easing rather than this frame's heading.
+            var camera = new PerspectiveCamera();
+            new NFMWorld.Gameplay.RaceCameraDirector().Update(camera, car);
+            var follow = $"follow ({camera.Position.X:0}, {camera.Position.Z:0})";
+
+            var staticDirector = new NFMWorld.Gameplay.RaceCameraDirector();
+            staticDirector.CycleViewMode();
+            var staticCamera = new PerspectiveCamera();
+            staticDirector.Update(staticCamera, car);
+            lines.Add(
+                $"frame {i} cxz {car.CarPhysics.Cxz:0} -> {follow}, static ({staticCamera.Position.X:0}, {staticCamera.Position.Z:0})"
+            );
+        }
+
+        return Sx.View(
+            style: () => Sx.Styles(
+                flexDirection: FlexDirection.Column,
+                paddingTop: 20,
+                paddingLeft: 20,
+                backgroundColor: Theme.MenuPanel
+            ),
+            children: lines.Select(line => (Node)Sx.Text(style: () => Sx.TextStyles(fontSize: 16), text: () => line)).ToList()
+        );
+    }
+
+    private static Node ReplayViewerFixture()
+    {
+        var state = new ReplayViewState
+        {
+            TotalFrames = { Value = 4321 },
+            Frame = { Value = 1200 },
+            TimeText = { Value = "0:19.047" }
+        };
+        state.Playing.Value = true;
+
+        return ReplayView.Build(
+            state,
+            new ReplayView.Actions(
+                TogglePlay: () => state.Playing.Value = !state.Playing.Value,
+                Restart: () => state.Frame.Value = 0,
+                Step: delta => state.Frame.Value = Math.Clamp(state.Frame.Value + delta, 0, state.TotalFrames.Value - 1),
+                Seek: frame => state.Frame.Value = (int)frame,
+                SetSpeed: speed => state.Speed.Value = speed,
+                CycleCamera: () => { },
+                Back: () => { }
             )
         );
     }

@@ -11,7 +11,7 @@ namespace NFMWorldLibrary.Files;
 [MemoryPackable(GenerateType.CircularReference), PluginVisible]
 public partial class SavedTimeTrial
 {
-    [PluginVisible] public const int CURRENT_VERSION = 5;
+    [PluginVisible] public const int CURRENT_VERSION = 6;
 
     [MemoryPackOrder(0), PluginVisible] public string CarName;
     [MemoryPackOrder(1), PluginVisible] public string StageName;

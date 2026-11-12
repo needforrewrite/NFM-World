@@ -312,6 +312,24 @@ public class AssetEndpointTests
     }
 
     [TestMethod]
+    public async Task Upload_RejectsAnExtensionThatIsNotAModel()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = await SignedInClient(factory);
+
+        // A plain text model has no kind of its own, so it cannot claim to be a stage; the website's
+        // publish form has to refuse it for the same reason.
+        var response = await UploadAsync(client, [1, 2, 3], "notes.txt", "notes", "Car");
+        Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+
+        Assert.IsFalse(AssetKinds.IsUploadExtensionAllowed(AssetKinds.Stage, ".rad"));
+        Assert.IsFalse(AssetKinds.IsUploadExtensionAllowed(AssetKinds.Texture, ".rad"));
+        Assert.IsTrue(AssetKinds.IsUploadExtensionAllowed(AssetKinds.Car, ".rad"));
+        Assert.IsTrue(AssetKinds.IsUploadExtensionAllowed(AssetKinds.Stage, ".radpack"));
+        Assert.IsFalse(AssetKinds.IsUploadExtensionAllowed(AssetKinds.Gamemode, ".radpack"));
+    }
+
+    [TestMethod]
     public async Task StockSeeding_AddsTheBuildsOwnPackagesWithoutAnOwner()
     {
         var shippedRoot = ArchiveAppFactory.ValidatorPath is { } validator

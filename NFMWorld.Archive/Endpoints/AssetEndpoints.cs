@@ -83,8 +83,7 @@ public static class AssetEndpoints
                 if (!AllowedExtensions.Contains(extension))
                     return Results.BadRequest(new { error = "Only .radpack and .rad files are accepted." });
 
-                if (extension.Equals(".rad", StringComparison.OrdinalIgnoreCase)
-                    && !AssetKinds.IsLegacyRadKind(kind))
+                if (!AssetKinds.IsUploadExtensionAllowed(kind, extension))
                     return Results.BadRequest(new { error = "A legacy .rad file can only be a Car, StagePiece or Wheel." });
 
                 if (file.Length > RadpackLimits.MaxCompressedBytes)

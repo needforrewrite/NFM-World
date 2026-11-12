@@ -1,0 +1,22 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-stage-names-captures",
+  "view": "stage-select-local",
+  "steps": [
+    {
+      "action": "capture",
+      "capture": "local"
+    },
+    {
+      "action": "assert-min-height",
+      "target": "Stage select list",
+      "height": 300
+    },
+    {
+      "action": "assert-no-horizontal-scroll",
+      "target": "Stage select list"
+    }
+  ]
+}

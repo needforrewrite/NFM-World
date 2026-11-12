@@ -28,9 +28,7 @@ public class TimeTrialSubmissionsTests
     public void UseIsolatedRoot() => TheVFS.VFS.MountWriteDestination(Root);
 
     private static TimeTrialCompletion Completion(byte[] recording)
-        => new("nfmm/stage1", "nfmm/2000tornados", 1234, SavedTimeTrialVersion, recording);
-
-    private const int SavedTimeTrialVersion = 5;
+        => new("nfmm/stage1", "nfmm/2000tornados", 1234, NFMWorldLibrary.Files.SavedTimeTrial.CURRENT_VERSION, recording);
 
     [TestMethod]
     public void Record_WritesTheRecordingAndItsSidecar()

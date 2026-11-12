@@ -1,0 +1,13 @@
+{
+  "width": 900,
+  "height": 320,
+  "scale": 1,
+  "output": "../../.git/sx-replay-camera-captures",
+  "view": "replay-camera",
+  "steps": [
+    {
+      "action": "capture",
+      "capture": "headings"
+    }
+  ]
+}

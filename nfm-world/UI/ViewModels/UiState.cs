@@ -258,7 +258,11 @@ public sealed record CarStatsViewModel(
     double Stunting,
     double Hypergliding,
     double Abing
-);
+)
+{
+    /// <summary>The archive account that published a public car; null for a local one.</summary>
+    public string? Author { get; init; }
+}
 
 /// <summary>A named group of cars in the garage.</summary>
 public sealed record CarCollectionViewModel(string Id, IReadOnlyList<CarStatsViewModel> Cars);

@@ -21,6 +21,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
     private static readonly ArchiveContentClient ContentClient = GarageController.ContentClient;
 
     private readonly string[] _allStages;
+    private readonly IReadOnlyDictionary<string, string> _stageNames;
     private readonly StageSelectState _state = new();
     private readonly AroundStageCamera _aroundStageCamera = new();
     private IRadicalMusic _stageSelectMusic;
@@ -32,6 +33,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
     public StageSelectPhase() : base()
     {
         _allStages = MenuPreferences.GetStages(VFS);
+        _stageNames = MenuPreferences.GetStageNames(VFS);
 
         if (_allStages.Length == 0)
             throw new DirectoryNotFoundException(
@@ -81,6 +83,9 @@ public class StageSelectPhase : BaseStageRenderingPhase
 
     private string StageLabel(string stageId)
     {
+        if (_stageNames.TryGetValue(stageId, out var name))
+            return name;
+
         var slash = stageId.LastIndexOf('/');
         return slash < 0 ? stageId : stageId[(slash + 1)..];
     }
