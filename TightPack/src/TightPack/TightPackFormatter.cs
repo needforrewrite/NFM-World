@@ -15,7 +15,7 @@ public abstract class TightPackFormatter<T>
 }
 
 /// <summary>Adapts a generated <see cref="ITightPackable{TSelf}"/> to the formatter API.</summary>
-public sealed class TightPackableFormatter<T> : TightPackFormatter<T>, ITightPackableUntyped
+public sealed class TightPackableFormatter<T> : TightPackFormatter<T>, IUntypedValueFormatter
     where T : ITightPackable<T>
 {
     public override void Serialize<TBufferWriter>(ref TightPackWriter<TBufferWriter> writer, in T? value)
@@ -31,22 +31,55 @@ public sealed class TightPackableFormatter<T> : TightPackFormatter<T>, ITightPac
     }
 
     /// <inheritdoc/>
-    public void SerializeUntyped<TBufferWriter>(ref TightPackWriter<TBufferWriter> writer, object? value)
+    public void WriteUntyped<TBufferWriter>(ref TightPackWriter<TBufferWriter> writer, object? value)
         where TBufferWriter : IBufferWriter<byte>
     {
-        T typed = (T)value!;
+        T typed = value is null ? default! : (T)value;
         T.Serialize(ref writer, in typed);
+    }
+
+    /// <inheritdoc/>
+    public void ReadUntyped(ref TightPackReader reader, ref object? value)
+    {
+        T? typed = value is T existing ? existing : default;
+        T.Deserialize(ref reader, ref typed!);
+        value = typed;
     }
 }
 
 /// <summary>
-/// Lets a caller that holds only a <see cref="Type"/> serialize through the generated code without
-/// binding a generic method by reflection.
+/// Writes and reads a value that is only known as <see cref="object"/> and <see cref="Type"/>. The
+/// buffer writer stays a generic parameter so the writer can remain a ref struct.
 /// </summary>
-public interface ITightPackableUntyped
+public interface IUntypedValueFormatter
 {
-    void SerializeUntyped<TBufferWriter>(ref TightPackWriter<TBufferWriter> writer, object? value)
+    void WriteUntyped<TBufferWriter>(ref TightPackWriter<TBufferWriter> writer, object? value)
         where TBufferWriter : IBufferWriter<byte>;
+
+    void ReadUntyped(ref TightPackReader reader, ref object? value);
+}
+
+/// <summary>
+/// Bridges a formatter of any <typeparamref name="T"/> to <see cref="IUntypedValueFormatter"/>. The
+/// formatter is resolved on every call, so a registration that lands later is never masked.
+/// </summary>
+internal sealed class UntypedFormatterAdapter<T> : IUntypedValueFormatter
+{
+    public void WriteUntyped<TBufferWriter>(ref TightPackWriter<TBufferWriter> writer, object? value)
+        where TBufferWriter : IBufferWriter<byte>
+    {
+        TightPackFormatter<T> formatter = TightPackFormatterProvider.GetFormatter<T>();
+        T typed = value is null ? default! : (T)value;
+        formatter.Serialize(ref writer, in typed);
+    }
+
+    public void ReadUntyped(ref TightPackReader reader, ref object? value)
+    {
+        TightPackFormatter<T> formatter = TightPackFormatterProvider.GetFormatter<T>();
+        T? typed = default;
+        formatter.Deserialize(ref reader, ref typed);
+        value = typed;
+    }
 }
 
 internal sealed class ErrorFormatter<T> : TightPackFormatter<T>

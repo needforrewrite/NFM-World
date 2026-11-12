@@ -70,6 +70,7 @@ internal static class TypeParser
         ["System.Numerics.Vector4"] = "Vector4Formatter",
         ["System.Text.StringBuilder"] = "StringBuilderFormatter",
         ["System.TimeZoneInfo"] = "TimeZoneInfoFormatter",
+        ["System.Type"] = "TypeFormatter",
         ["System.Uri"] = "UriFormatter",
         ["System.Version"] = "VersionFormatter",
     };
@@ -612,6 +613,25 @@ internal static class TypeParser
 
         string name = MetaName(type.OriginalDefinition);
         return name is "System.Collections.Generic.List<T>"
+            or "System.Collections.Generic.Stack<T>"
+            or "System.Collections.Generic.Queue<T>"
+            or "System.Collections.Generic.LinkedList<T>"
+            or "System.Collections.Generic.SortedSet<T>"
+            or "System.Collections.Generic.PriorityQueue<TElement, TPriority>"
+            or "System.Collections.Generic.SortedDictionary<TKey, TValue>"
+            or "System.Collections.Generic.SortedList<TKey, TValue>"
+            or "System.Collections.Generic.ISet<T>"
+            or "System.Collections.Generic.IReadOnlySet<T>"
+            or "System.Collections.ObjectModel.Collection<T>"
+            or "System.Collections.ObjectModel.ObservableCollection<T>"
+            or "System.Collections.ObjectModel.ReadOnlyCollection<T>"
+            or "System.Collections.ObjectModel.ReadOnlyObservableCollection<T>"
+            or "System.Collections.Concurrent.ConcurrentQueue<T>"
+            or "System.Collections.Concurrent.ConcurrentStack<T>"
+            or "System.Collections.Concurrent.ConcurrentBag<T>"
+            or "System.Collections.Concurrent.ConcurrentDictionary<TKey, TValue>"
+            or "System.Collections.Concurrent.BlockingCollection<T>"
+            or "System.ArraySegment<T>"
             or "System.Collections.Generic.IList<T>"
             or "System.Collections.Generic.IEnumerable<T>"
             or "System.Collections.Generic.ICollection<T>"
@@ -648,7 +668,14 @@ internal static class TypeParser
     {
         if (type is IArrayTypeSymbol array)
         {
-            return array.Rank == 1 ? Formatter("ArrayFormatter", array.ElementType) : null;
+            return array.Rank switch
+            {
+                1 => Formatter("ArrayFormatter", array.ElementType),
+                2 => Formatter("TwoDimensionalArrayFormatter", array.ElementType),
+                3 => Formatter("ThreeDimensionalArrayFormatter", array.ElementType),
+                4 => Formatter("FourDimensionalArrayFormatter", array.ElementType),
+                _ => null,
+            };
         }
 
         if (type is not INamedTypeSymbol named)
@@ -688,6 +715,31 @@ internal static class TypeParser
             "System.Collections.Generic.IReadOnlyCollection<T>" => Formatter("IReadOnlyCollectionFormatter", arguments),
             "System.Collections.Generic.IDictionary<TKey, TValue>" => Formatter("InterfaceDictionaryFormatter", arguments),
             "System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>" => Formatter("IReadOnlyDictionaryFormatter", arguments),
+            "System.Collections.Generic.Stack<T>" => Formatter("StackFormatter", arguments),
+            "System.Collections.Generic.Queue<T>" => Formatter("QueueFormatter", arguments),
+            "System.Collections.Generic.LinkedList<T>" => Formatter("LinkedListFormatter", arguments),
+            "System.Collections.Generic.SortedSet<T>" => Formatter("SortedSetFormatter", arguments),
+            "System.Collections.Generic.ISet<T>" => Formatter("InterfaceSetFormatter", arguments),
+            "System.Collections.Generic.IReadOnlySet<T>" => Formatter("IReadOnlySetFormatter", arguments),
+            "System.Collections.Generic.PriorityQueue<TElement, TPriority>" => Formatter("PriorityQueueFormatter", arguments),
+            "System.Collections.Generic.SortedDictionary<TKey, TValue>" => Formatter("SortedDictionaryFormatter", arguments),
+            "System.Collections.Generic.SortedList<TKey, TValue>" => Formatter("SortedListFormatter", arguments),
+            "System.Collections.ObjectModel.Collection<T>" => Formatter("CollectionFormatter", arguments),
+            "System.Collections.ObjectModel.ObservableCollection<T>" => Formatter("ObservableCollectionFormatter", arguments),
+            "System.Collections.ObjectModel.ReadOnlyCollection<T>" => Formatter("ReadOnlyCollectionFormatter", arguments),
+            "System.Collections.ObjectModel.ReadOnlyObservableCollection<T>" => Formatter(
+                "ReadOnlyObservableCollectionFormatter",
+                arguments
+            ),
+            "System.Collections.Concurrent.ConcurrentQueue<T>" => Formatter("ConcurrentQueueFormatter", arguments),
+            "System.Collections.Concurrent.ConcurrentStack<T>" => Formatter("ConcurrentStackFormatter", arguments),
+            "System.Collections.Concurrent.ConcurrentBag<T>" => Formatter("ConcurrentBagFormatter", arguments),
+            "System.Collections.Concurrent.ConcurrentDictionary<TKey, TValue>" => Formatter(
+                "ConcurrentDictionaryFormatter",
+                arguments
+            ),
+            "System.Collections.Concurrent.BlockingCollection<T>" => Formatter("BlockingCollectionFormatter", arguments),
+            "System.ArraySegment<T>" => Formatter("ArraySegmentFormatter", arguments),
             "System.Collections.BitArray" => "new global::TightPack.Formatters.BitArrayFormatter()",
             "System.Collections.Immutable.ImmutableArray<T>" => Formatter("ImmutableArrayFormatter", arguments),
             "System.Memory<T>" => IsByte(arguments[0])
@@ -751,7 +803,7 @@ internal static class TypeParser
     {
         if (type is IArrayTypeSymbol array)
         {
-            if (array.Rank == 1)
+            if (array.Rank is >= 1 and <= 4)
             {
                 yield return array.ElementType;
             }
@@ -772,6 +824,25 @@ internal static class TypeParser
             or "System.ReadOnlyMemory<T>"
             or "System.Memory<T>"
             or "System.Collections.Generic.List<T>"
+            or "System.Collections.Generic.Stack<T>"
+            or "System.Collections.Generic.Queue<T>"
+            or "System.Collections.Generic.LinkedList<T>"
+            or "System.Collections.Generic.SortedSet<T>"
+            or "System.Collections.Generic.ISet<T>"
+            or "System.Collections.Generic.IReadOnlySet<T>"
+            or "System.Collections.Generic.PriorityQueue<TElement, TPriority>"
+            or "System.Collections.Generic.SortedDictionary<TKey, TValue>"
+            or "System.Collections.Generic.SortedList<TKey, TValue>"
+            or "System.Collections.ObjectModel.Collection<T>"
+            or "System.Collections.ObjectModel.ObservableCollection<T>"
+            or "System.Collections.ObjectModel.ReadOnlyCollection<T>"
+            or "System.Collections.ObjectModel.ReadOnlyObservableCollection<T>"
+            or "System.Collections.Concurrent.ConcurrentQueue<T>"
+            or "System.Collections.Concurrent.ConcurrentStack<T>"
+            or "System.Collections.Concurrent.ConcurrentBag<T>"
+            or "System.Collections.Concurrent.ConcurrentDictionary<TKey, TValue>"
+            or "System.Collections.Concurrent.BlockingCollection<T>"
+            or "System.ArraySegment<T>"
             or "System.Collections.Generic.Dictionary<TKey, TValue>"
             or "System.Collections.Generic.HashSet<T>"
             or "System.Collections.Generic.KeyValuePair<TKey, TValue>"

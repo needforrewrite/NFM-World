@@ -71,6 +71,48 @@ public ref struct TightPackReader
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryReadUnionHeader(out ushort tag)
+    {
+        byte first = GetSpan(1)[0];
+        if (first < WideTag)
+        {
+            tag = first;
+            return true;
+        }
+
+        if (first == WideTag)
+        {
+            tag = BinaryPrimitives.ReadUInt16LittleEndian(GetSpan(2));
+            return true;
+        }
+
+        tag = 0;
+        return false;
+    }
+
+    /// <summary>
+    /// The header for a collection whose elements are smaller than a byte. The one-byte-per-element
+    /// bound <see cref="TryReadCollectionHeader"/> relies on does not hold there, so the caller is
+    /// responsible for validating the length it receives.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryReadPackedCollectionHeader(out int length)
+    {
+        length = BinaryPrimitives.ReadInt32LittleEndian(GetSpan(4));
+        if (length == NullCollection)
+        {
+            return false;
+        }
+
+        if (length < 0)
+        {
+            TightPackSerializationException.ThrowMessage($"Invalid collection length {length}.");
+        }
+
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryReadCollectionHeader(out int length)
     {
         length = BinaryPrimitives.ReadInt32LittleEndian(GetSpan(4));
@@ -94,28 +136,7 @@ public ref struct TightPackReader
         return true;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool TryReadUnionHeader(out ushort tag)
-    {
-        byte first = GetSpan(1)[0];
-        if (first < WideTag)
-        {
-            tag = first;
-            return true;
-        }
-
-        if (first == WideTag)
-        {
-            tag = BinaryPrimitives.ReadUInt16LittleEndian(GetSpan(2));
-            return true;
-        }
-
-        tag = 0;
-        return false;
-    }
-
     // ----- scalars -----
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool ReadBoolean() => GetSpan(1)[0] != 0;
 
@@ -271,6 +292,33 @@ public ref struct TightPackReader
         return Encoding.UTF8.GetString(utf8);
     }
 
+    /// <summary>
+    /// Reads a UTF-16 payload written by <see cref="TightPackWriter{TBufferWriter}.WriteUtf16"/>.
+    /// The length prefix is a byte count, so it must be even.
+    /// </summary>
+    public string? ReadUtf16String()
+    {
+        if (!TryReadCollectionHeader(out int byteLength))
+        {
+            return null;
+        }
+
+        if (byteLength == 0)
+        {
+            return string.Empty;
+        }
+
+        if ((byteLength & 1) != 0)
+        {
+            TightPackSerializationException.ThrowMessage(
+                $"A UTF-16 payload must have an even byte length, was {byteLength}."
+            );
+        }
+
+        ReadOnlySpan<byte> bytes = GetSpan(byteLength);
+        return new string(MemoryMarshal.Cast<byte, char>(bytes));
+    }
+
     /// <summary>Reads a UTF-8 payload without decoding it.</summary>
     public byte[]? ReadUtf8Bytes()
     {
@@ -387,6 +435,18 @@ public ref struct TightPackReader
     {
         EnsureDepth(typeof(T));
         formatter.Deserialize(ref this, ref value);
+        _depth--;
+    }
+
+    /// <summary>
+    /// Reads a value whose type is only known at run time. See
+    /// <see cref="TightPackWriter{TBufferWriter}.WriteValue(Type, object?)"/>.
+    /// </summary>
+    public void ReadValue(Type type, ref object? value)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        EnsureDepth(type);
+        TightPackFormatterProvider.GetUntypedFormatter(type).ReadUntyped(ref this, ref value);
         _depth--;
     }
 

@@ -40,6 +40,13 @@ internal static class InterfaceCollections
         return result;
     }
 
+    /// <summary>Reads a sequence into a set, which is what the set interface formatters rebuild.</summary>
+    public static HashSet<T>? ReadSet<T>(ref TightPackReader reader)
+    {
+        List<T>? items = ReadSequence<T>(ref reader);
+        return items is null ? null : new HashSet<T>(items);
+    }
+
     public static Dictionary<TKey, TValue>? ReadMap<TKey, TValue>(ref TightPackReader reader)
         where TKey : notnull
     {
@@ -217,4 +224,42 @@ public sealed class IReadOnlyDictionaryFormatter<TKey, TValue>
 
     public override void Deserialize(ref TightPackReader reader, ref IReadOnlyDictionary<TKey, TValue>? value) =>
         value = InterfaceCollections.ReadMap<TKey, TValue>(ref reader);
+}
+
+public sealed class InterfaceSetFormatter<T> : TightPackFormatter<ISet<T>?>
+{
+    public static readonly InterfaceSetFormatter<T> Default = new();
+
+    public override void Serialize<TBufferWriter>(ref TightPackWriter<TBufferWriter> writer, in ISet<T>? value)
+    {
+        if (value is null)
+        {
+            writer.WriteNullCollectionHeader();
+            return;
+        }
+
+        InterfaceCollections.WriteSequence<TBufferWriter, T>(ref writer, value.Count, value);
+    }
+
+    public override void Deserialize(ref TightPackReader reader, ref ISet<T>? value) =>
+        value = InterfaceCollections.ReadSet<T>(ref reader);
+}
+
+public sealed class IReadOnlySetFormatter<T> : TightPackFormatter<IReadOnlySet<T>?>
+{
+    public static readonly IReadOnlySetFormatter<T> Default = new();
+
+    public override void Serialize<TBufferWriter>(ref TightPackWriter<TBufferWriter> writer, in IReadOnlySet<T>? value)
+    {
+        if (value is null)
+        {
+            writer.WriteNullCollectionHeader();
+            return;
+        }
+
+        InterfaceCollections.WriteSequence<TBufferWriter, T>(ref writer, value.Count, value);
+    }
+
+    public override void Deserialize(ref TightPackReader reader, ref IReadOnlySet<T>? value) =>
+        value = InterfaceCollections.ReadSet<T>(ref reader);
 }

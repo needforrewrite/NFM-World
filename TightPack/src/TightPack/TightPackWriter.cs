@@ -381,6 +381,30 @@ public ref struct TightPackWriter<TBufferWriter>
         Advance(utf8.Length);
     }
 
+    /// <summary>
+    /// Writes a string as UTF-16 code units with a four-byte byte-length prefix. Unlike
+    /// <see cref="WriteString"/> this cannot fail on an unpaired surrogate, which is the reason to
+    /// pick it for a string that is not valid UTF-16 text.
+    /// </summary>
+    public void WriteUtf16(string? value)
+    {
+        if (value is null)
+        {
+            WriteNullCollectionHeader();
+            return;
+        }
+
+        int byteLength = checked(value.Length * 2);
+        WriteCollectionHeader(byteLength);
+        if (byteLength == 0)
+        {
+            return;
+        }
+
+        MemoryMarshal.AsBytes(value.AsSpan()).CopyTo(GetSpan(byteLength));
+        Advance(byteLength);
+    }
+
     /// <summary>Writes raw bytes with no header.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void WriteBytes(scoped ReadOnlySpan<byte> bytes)
@@ -469,6 +493,19 @@ public ref struct TightPackWriter<TBufferWriter>
     {
         EnsureDepth(typeof(T));
         formatter.Serialize(ref this, in value);
+        _depth--;
+    }
+
+    /// <summary>
+    /// Writes a value whose type is only known at run time - the dispatch a dynamic union and any
+    /// other reflection-reached payload need. Every statically typed member uses
+    /// <see cref="WriteValue{T}"/> instead.
+    /// </summary>
+    public void WriteValue(Type type, object? value)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        EnsureDepth(type);
+        TightPackFormatterProvider.GetUntypedFormatter(type).WriteUntyped(ref this, value);
         _depth--;
     }
 

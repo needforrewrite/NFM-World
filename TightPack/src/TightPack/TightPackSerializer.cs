@@ -170,15 +170,11 @@ public static class TightPackSerializer
     {
         ArgumentNullException.ThrowIfNull(type);
 
-        ITightPackableUntyped formatter =
-            TightPackFormatterProvider.GetFormatter(type) as ITightPackableUntyped
-            ?? throw TightPackSerializationException.NotRegistered(type);
-
         var buffer = TightPackBufferWriter.Rent();
         try
         {
             var writer = new TightPackWriter<TightPackBufferWriter>(ref buffer);
-            formatter.SerializeUntyped(ref writer, value);
+            writer.WriteValue(type, value);
             writer.Flush();
             return buffer.ToArray();
         }
@@ -186,5 +182,18 @@ public static class TightPackSerializer
         {
             TightPackBufferWriter.Return(buffer);
         }
+    }
+
+    /// <summary>
+    /// Deserializes a value reached only as <see cref="Type"/>. The counterpart of
+    /// <see cref="SerializeUntyped"/>; <paramref name="value"/> may carry an existing instance to
+    /// fill in.
+    /// </summary>
+    public static int DeserializeUntyped(Type type, ReadOnlySpan<byte> buffer, ref object? value)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        var reader = new TightPackReader(buffer);
+        reader.ReadValue(type, ref value);
+        return reader.Consumed;
     }
 }

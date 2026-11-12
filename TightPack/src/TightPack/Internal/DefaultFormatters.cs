@@ -1,4 +1,6 @@
+﻿using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 
 namespace TightPack.Internal;
@@ -16,6 +18,42 @@ internal static class DefaultFormatters
 
     private static int s_builtinsState;
 
+    /// <summary>
+    /// Runtime-resolved generic types, mapped to the formatter that handles each. One table because
+    /// two places must agree: this file builds them, and the generator classifies and names the same
+    /// types for the code it emits.
+    /// </summary>
+    private static readonly Dictionary<Type, Type> GenericFormatters = new()
+    {
+        [typeof(Stack<>)] = typeof(Formatters.StackFormatter<>),
+        [typeof(Queue<>)] = typeof(Formatters.QueueFormatter<>),
+        [typeof(LinkedList<>)] = typeof(Formatters.LinkedListFormatter<>),
+        [typeof(SortedSet<>)] = typeof(Formatters.SortedSetFormatter<>),
+        [typeof(Collection<>)] = typeof(Formatters.CollectionFormatter<>),
+        [typeof(ObservableCollection<>)] = typeof(Formatters.ObservableCollectionFormatter<>),
+        [typeof(ConcurrentQueue<>)] = typeof(Formatters.ConcurrentQueueFormatter<>),
+        [typeof(ConcurrentStack<>)] = typeof(Formatters.ConcurrentStackFormatter<>),
+        [typeof(ConcurrentBag<>)] = typeof(Formatters.ConcurrentBagFormatter<>),
+        [typeof(ReadOnlyCollection<>)] = typeof(Formatters.ReadOnlyCollectionFormatter<>),
+        [typeof(ReadOnlyObservableCollection<>)] = typeof(Formatters.ReadOnlyObservableCollectionFormatter<>),
+        [typeof(BlockingCollection<>)] = typeof(Formatters.BlockingCollectionFormatter<>),
+        [typeof(ArraySegment<>)] = typeof(Formatters.ArraySegmentFormatter<>),
+        [typeof(ISet<>)] = typeof(Formatters.InterfaceSetFormatter<>),
+        [typeof(IReadOnlySet<>)] = typeof(Formatters.IReadOnlySetFormatter<>),
+        [typeof(PriorityQueue<,>)] = typeof(Formatters.PriorityQueueFormatter<,>),
+        [typeof(SortedDictionary<,>)] = typeof(Formatters.SortedDictionaryFormatter<,>),
+        [typeof(SortedList<,>)] = typeof(Formatters.SortedListFormatter<,>),
+        [typeof(ConcurrentDictionary<,>)] = typeof(Formatters.ConcurrentDictionaryFormatter<,>),
+    };
+
+    /// <summary>Multi-dimensional arrays need one formatter per rank; the shape is part of the type.</summary>
+    private static readonly Dictionary<int, Type> ArrayFormattersByRank = new()
+    {
+        [2] = typeof(Formatters.TwoDimensionalArrayFormatter<>),
+        [3] = typeof(Formatters.ThreeDimensionalArrayFormatter<>),
+        [4] = typeof(Formatters.FourDimensionalArrayFormatter<>),
+    };
+
     public static object? TryCreate(Type type)
     {
         EnsureBuiltinsRegistered();
@@ -32,15 +70,30 @@ internal static class DefaultFormatters
 
         if (type.IsArray)
         {
-            return type.GetArrayRank() == 1
-                ? Create(typeof(Formatters.ArrayFormatter<>), type.GetElementType()!)
+            if (type.GetArrayRank() == 1)
+            {
+                return Create(typeof(Formatters.ArrayFormatter<>), type.GetElementType()!);
+            }
+
+            return ArrayFormattersByRank.TryGetValue(type.GetArrayRank(), out Type? ranked)
+                ? Create(ranked, type.GetElementType()!)
                 : null;
+        }
+
+        if (type == typeof(Type))
+        {
+            return Formatters.TypeFormatter.Default;
         }
 
         if (type.IsGenericType)
         {
             Type definition = type.GetGenericTypeDefinition();
             Type[] arguments = type.GetGenericArguments();
+
+            if (GenericFormatters.TryGetValue(definition, out Type? generic))
+            {
+                return Create(generic, arguments);
+            }
 
             if (definition == typeof(List<>))
             {

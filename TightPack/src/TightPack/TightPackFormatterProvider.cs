@@ -20,6 +20,9 @@ public static class TightPackFormatterProvider
 {
     private static readonly ConcurrentDictionary<Type, object> s_formatters = new();
 
+    /// <summary>Untyped bridges, keyed by type. Cleared with the registrations it is derived from.</summary>
+    private static readonly ConcurrentDictionary<Type, IUntypedValueFormatter> s_untyped = new();
+
     /// <summary>Bumped by every registration change, so memoised lookups resolve again.</summary>
     private static int s_generation;
 
@@ -63,6 +66,7 @@ public static class TightPackFormatterProvider
             return false;
         }
 
+        s_untyped.TryRemove(type, out _);
         Interlocked.Increment(ref s_generation);
         return true;
     }
@@ -88,6 +92,16 @@ public static class TightPackFormatterProvider
         if (dropped > 0)
         {
             Interlocked.Increment(ref s_generation);
+        }
+
+        // The bridge holds no state of its own, but a closed generic over the plugin's types is
+        // exactly the sort of type argument that keeps a collectible context alive.
+        foreach (Type key in s_untyped.Keys)
+        {
+            if (Involves(key, assembly))
+            {
+                s_untyped.TryRemove(key, out _);
+            }
         }
 
         return dropped;
@@ -200,5 +214,29 @@ public static class TightPackFormatterProvider
         }
 
         return Internal.DefaultFormatters.TryCreate(type);
+    }
+
+    /// <summary>
+    /// The untyped bridge for a type reached only as <see cref="Type"/>. Cached per closed type, so
+    /// <see cref="UnregisterAssembly"/> clears the entries that would pin a plugin load context.
+    /// The adapter resolves its formatter per call, so it never holds a stale registration.
+    /// </summary>
+    internal static IUntypedValueFormatter GetUntypedFormatter(Type type)
+    {
+        IUntypedValueFormatter? cached = s_untyped.TryGetValue(type, out IUntypedValueFormatter? found)
+            ? found
+            : null;
+
+        if (cached is not null)
+        {
+            return cached;
+        }
+
+        var created = (IUntypedValueFormatter)Activator.CreateInstance(
+            typeof(UntypedFormatterAdapter<>).MakeGenericType(type)
+        )!;
+
+        s_untyped[type] = created;
+        return created;
     }
 }
