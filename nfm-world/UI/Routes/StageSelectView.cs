@@ -55,6 +55,15 @@ public static class StageSelectView
 
     private static readonly Signal<string> SearchDraft = new("");
 
+    // Row surfaces sit over the live stage preview, so they carry enough alpha for the label to
+    // stay readable against a bright sky without hiding the course behind them.
+    private static readonly Color RowIdle = new(16, 30, 58, 170);
+    private static readonly Color RowHover = new(34, 58, 100, 185);
+    private static readonly Color RowLabel = new(232, 242, 255);
+    private static readonly Color DividerColor = new(128, 170, 255, 55);
+    private static readonly Color ContentScrim = new(4, 10, 22, 105);
+    private static readonly Color FieldFill = new(8, 18, 36, 165);
+
     /// <summary>Empties the search box. Returns false when it was already empty.</summary>
     public static bool ClearSearch()
     {
@@ -108,47 +117,81 @@ public static class StageSelectView
             style: () => Sx.Styles(
                 width: 300,
                 height: 100.Percent(),
-                paddingTop: 28,
-                paddingBottom: 28,
-                paddingLeft: 24,
-                paddingRight: 24,
+                paddingTop: 26,
+                paddingBottom: 22,
+                paddingLeft: 20,
+                paddingRight: 20,
                 flexDirection: FlexDirection.Column,
                 flexShrink: 0,
-                gapRow: 12,
-                backgroundColor: new Color(6, 14, 30, 205),
+                gapRow: 14,
+                backgroundColor: new Color(6, 14, 30, 215),
                 borderRight: 1,
                 borderColor: Theme.MenuBorder
             ),
             children:
             [
-                Sx.Text(
-                    style: () => Sx.TextStyles(
-                        fontSize: 30,
-                        fontFamily: FontFamily.Adventure,
-                        fontStyle: FontStyle.Bold,
-                        foregroundColor: Theme.MenuBlue
-                    ),
-                    layout: () => Sx.Styles(flexShrink: 0),
-                    text: () => title
+                Sx.View(
+                    style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0, gapRow: 2),
+                    children:
+                    [
+                        Sx.Text(
+                            style: () => Sx.TextStyles(
+                                fontSize: 30,
+                                fontFamily: FontFamily.Adventure,
+                                fontStyle: FontStyle.Bold,
+                                foregroundColor: Theme.MenuBlue
+                            ),
+                            layout: () => Sx.Styles(flexShrink: 0),
+                            text: () => title
+                        ),
+                        Sx.Text(
+                            style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                            layout: () => Sx.Styles(flexShrink: 0),
+                            text: () => "Choose where to race."
+                        )
+                    ]
                 ),
-                Sx.Text(
-                    style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
-                    layout: () => Sx.Styles(flexShrink: 0, marginBottom: 4),
-                    text: () => "Choose where to race."
-                ),
+                Divider(),
                 SourcePicker(state, actions),
                 Sx.Show(
                     when: () => !state.OnlineSource.Value,
                     then: () => CollectionRail(state, actions),
                     otherwise: () => Sx.View(
-                        style: () => Sx.Styles(flexGrow: 1, flexShrink: 1, minHeight: 0),
-                        children: Sx.Text(
-                            style: () => Sx.WrappingText(fontSize: 12, foregroundColor: Theme.TextFaint),
-                            layout: () => Sx.Styles(width: 100.Percent()),
-                            text: () => "Public archive stages. Search to narrow the list."
+                        // Holds the leftover height so the note floats at the top and Back stays
+                        // pinned to the bottom; the card itself hugs its text.
+                        style: () => Sx.Styles(
+                            flexDirection: FlexDirection.Column,
+                            flexGrow: 1,
+                            flexShrink: 1,
+                            minHeight: 0
+                        ),
+                        children: Sx.View(
+                            style: () => Sx.Styles(
+                                flexDirection: FlexDirection.Column,
+                                flexShrink: 0,
+                                width: 100.Percent(),
+                                paddingTop: 12,
+                                paddingBottom: 12,
+                                paddingLeft: 14,
+                                paddingRight: 14,
+                                borderRadius: 8,
+                                borderTop: 1,
+                                borderBottom: 1,
+                                borderLeft: 1,
+                                borderRight: 1,
+                                borderColor: Theme.MenuBorder,
+                                backgroundColor: FieldFill,
+                                gapRow: 4
+                            ),
+                            children: Sx.Text(
+                                style: () => Sx.WrappingText(fontSize: 11, foregroundColor: Theme.MenuDim),
+                                layout: () => Sx.Styles(width: 100.Percent()),
+                                text: () => "Stages published by players. Search to narrow the list."
+                            )
                         )
                     )
                 ),
+                Divider(),
                 Button.Create(
                     label: () => "← Back",
                     onPress: actions.Back,
@@ -157,6 +200,19 @@ public static class StageSelectView
                     name: () => "Stage select back"
                 )
             ]
+        );
+
+    /// <summary>A hairline that separates the sidebar's blocks without boxing them in.</summary>
+    private static Node Divider()
+        => Sx.View(
+            style: () => Sx.Styles(height: 1, width: 100.Percent(), flexShrink: 0, backgroundColor: DividerColor)
+        );
+
+    private static Node Hint(string text)
+        => Sx.Text(
+            style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+            layout: () => Sx.Styles(flexShrink: 0),
+            text: () => text
         );
 
     private static Node SourcePicker(StageSelectState state, Actions actions)
@@ -170,7 +226,7 @@ public static class StageSelectView
                     onPress: () => actions.SourceSelected?.Invoke(false),
                     active: () => !state.OnlineSource.Value,
                     size: ButtonSize.Sm,
-                    style: () => Sx.Styles(flexGrow: 1),
+                    style: () => Sx.Styles(flexGrow: 1, paddingTop: 7, paddingBottom: 7),
                     name: () => "Stage select source local"
                 ),
                 Button.Create(
@@ -178,7 +234,7 @@ public static class StageSelectView
                     onPress: () => actions.SourceSelected?.Invoke(true),
                     active: () => state.OnlineSource.Value,
                     size: ButtonSize.Sm,
-                    style: () => Sx.Styles(flexGrow: 1),
+                    style: () => Sx.Styles(flexGrow: 1, paddingTop: 7, paddingBottom: 7),
                     name: () => "Stage select source online"
                 )
             ]
@@ -193,7 +249,8 @@ public static class StageSelectView
                 flexShrink: 1,
                 minHeight: 0,
                 overflow: Overflow.Scroll,
-                gapRow: 4
+                gapRow: 3,
+                paddingRight: 8
             ),
             children: Sx.For(
                 each: () => state.Collections.Value,
@@ -203,26 +260,34 @@ public static class StageSelectView
 
     private static Node CollectionRow(StageSelectState state, string collection, Actions actions)
     {
+        var hovered = new Signal<bool>(false);
         var active = () => state.Collection.Value == collection;
+
         return Sx.View(
             name: () => "Stage collection " + collection,
             style: () => Sx.Styles(
                 flexShrink: 0,
-                paddingTop: 8,
-                paddingBottom: 8,
+                paddingTop: 9,
+                paddingBottom: 9,
                 paddingLeft: 12,
-                paddingRight: 12,
+                paddingRight: 10,
                 borderRadius: 6,
-                borderLeft: 2,
+                borderLeft: 3,
                 borderColor: active() ? Theme.Accent : Theme.Transparent,
-                backgroundColor: active() ? Theme.AccentSoft : new Color(255, 255, 255, 12)
+                backgroundColor: active()
+                    ? Theme.MenuHighlight
+                    : hovered.Value ? new Color(255, 255, 255, 22) : Theme.Transparent
             ),
             onmousedown: _ => actions.CollectionSelected(collection),
+            onmouseenter: _ => hovered.Value = true,
+            onmouseleave: _ => hovered.Value = false,
             children: Sx.Text(
                 style: () => Sx.TextStyles(
-                    fontSize: 14,
+                    fontSize: 13,
                     fontStyle: FontStyle.Bold,
-                    foregroundColor: active() ? Theme.Accent : Theme.MenuDim
+                    foregroundColor: active()
+                        ? RowLabel
+                        : hovered.Value ? Theme.MenuTextBlue : Theme.MenuDim
                 ),
                 text: () => collection
             )
@@ -237,63 +302,108 @@ public static class StageSelectView
                 flexGrow: 1,
                 flexShrink: 1,
                 minHeight: 0,
-                paddingTop: 28,
-                paddingBottom: 28,
+                paddingTop: 26,
+                paddingBottom: 22,
                 paddingLeft: 28,
                 paddingRight: 28,
-                gapRow: 12
+                gapRow: 14,
+                backgroundColor: ContentScrim
             ),
             children:
             [
-                Sx.View(
-                    style: () => Sx.Styles(
-                        flexDirection: FlexDirection.Row,
-                        justifyContent: Justify.SpaceBetween,
-                        flexShrink: 0,
-                        gapColumn: 12
-                    ),
-                    children:
-                    [
-                        Sx.Text(
-                            style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
-                            text: () => state.OnlineSource.Value ? "PUBLIC STAGES" : "STAGES"
-                        ),
-                        Sx.Text(
-                            style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.TextFaint),
-                            text: () => $"{state.Stages.Value.Count} available"
-                        )
-                    ]
-                ),
+                Header(state),
                 SearchBox(state, actions),
                 Status(state),
                 List(state, actions),
                 Restriction(state),
+                Footer(state, actions)
+            ]
+        );
+
+    private static Node Header(StageSelectState state)
+        => Sx.View(
+            name: () => "Stage select header",
+            style: () => Sx.Styles(
+                flexDirection: FlexDirection.Row,
+                alignItems: Align.Center,
+                justifyContent: Justify.SpaceBetween,
+                flexShrink: 0,
+                gapColumn: 12
+            ),
+            children:
+            [
                 Sx.View(
-                    style: () => Sx.Styles(
-                        flexDirection: FlexDirection.Row,
-                        alignItems: Align.Center,
-                        justifyContent: Justify.SpaceBetween,
-                        flexShrink: 0,
-                        gapColumn: 12
-                    ),
+                    style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 1, minWidth: 0, gapRow: 2),
                     children:
                     [
                         Sx.Text(
-                            style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.TextFaint),
-                            text: () => "↑ ↓ or ← → to browse  ·  Enter to race"
+                            style: () => Sx.TextStyles(
+                                fontSize: 9,
+                                fontStyle: FontStyle.Bold,
+                                foregroundColor: Theme.TextFaint
+                            ),
+                            text: () => Overline(state)
                         ),
-                        Button.Create(
-                            label: () => "RACE",
-                            onPress: actions.Confirm,
-                            variant: ButtonVariant.Primary,
-                            size: ButtonSize.Lg,
-                            style: () => Sx.Styles(minWidth: 180),
-                            name: () => "Stage select confirm"
+                        // A long published name wraps here instead of squeezing the count pill.
+                        Sx.Text(
+                            style: () => Sx.WrappingText(
+                                fontSize: 22,
+                                fontFamily: FontFamily.Adventure,
+                                fontStyle: FontStyle.Bold,
+                                foregroundColor: Theme.MenuTextBlue
+                            ),
+                            layout: () => Sx.Styles(width: 100.Percent()),
+                            text: () => Heading(state)
                         )
                     ]
+                ),
+                Sx.View(
+                    style: () => Sx.Styles(
+                        flexShrink: 0,
+                        paddingTop: 3,
+                        paddingBottom: 3,
+                        paddingLeft: 10,
+                        paddingRight: 10,
+                        borderRadius: 999,
+                        borderTop: 1,
+                        borderBottom: 1,
+                        borderLeft: 1,
+                        borderRight: 1,
+                        borderColor: Theme.MenuBorder
+                    ),
+                    children: Sx.Text(
+                        style: () => Sx.TextStyles(fontSize: 10, foregroundColor: Theme.MenuDim),
+                        text: () => state.Stages.Value.Count == 1 ? "1 stage" : $"{state.Stages.Value.Count} stages"
+                    )
                 )
             ]
         );
+
+    /// <summary>Where the list is drawn from: local content, or the public archive.</summary>
+    private static string Overline(StageSelectState state)
+        => state.OnlineSource.Value ? "PUBLIC ARCHIVE" : "STAGE LIBRARY";
+
+    /// <summary>
+    /// The selection's own name, which is the one thing that changes while browsing; it replaces
+    /// the large caption the phase used to draw over the preview. With nothing selected the
+    /// collection names itself, since that is what the list is then showing.
+    /// </summary>
+    private static string Heading(StageSelectState state)
+    {
+        var selected = state.Selected.Value;
+        foreach (var stage in state.Stages.Value)
+        {
+            if (stage.Id == selected)
+                return stage.Label;
+        }
+
+        if (state.OnlineSource.Value)
+            return "Public stages";
+
+        return string.IsNullOrEmpty(state.Collection.Value)
+            ? "Stages"
+            : state.Collection.Value.ToUpperInvariant();
+    }
 
     private static Node Status(StageSelectState state)
         => Sx.Show(
@@ -318,7 +428,7 @@ public static class StageSelectView
                 paddingBottom: 10,
                 paddingLeft: 14,
                 paddingRight: 14,
-                backgroundColor: new Color(255, 255, 255, 20),
+                backgroundColor: FieldFill,
                 borderTop: 1,
                 borderBottom: 1,
                 borderLeft: 1,
@@ -358,7 +468,8 @@ public static class StageSelectView
                 flexShrink: 1,
                 minHeight: 0,
                 flexDirection: FlexDirection.Column,
-                overflow: Overflow.Scroll
+                overflow: Overflow.Scroll,
+                paddingRight: 12
             ),
             children:
             [
@@ -380,22 +491,56 @@ public static class StageSelectView
                         ),
                         Sx.Show(
                             when: () => state.Stages.Value.Count == 0,
-                            then: () => Sx.Text(
-                                style: () => Sx.WrappingText(fontSize: 14, foregroundColor: Theme.TextFaint),
-                                layout: () => Sx.Styles(width: 100.Percent()),
-                                text: () => state.OnlineSource.Value
-                                    ? "No public stages yet. Search the archive for one."
-                                    : "No stages match."
-                            )
+                            then: () => EmptyState(state)
                         )
                     ]
                 )
             ]
         );
 
+    private static Node EmptyState(StageSelectState state)
+        => Sx.View(
+            style: () => Sx.Styles(
+                width: 100.Percent(),
+                flexDirection: FlexDirection.Column,
+                alignItems: Align.Center,
+                flexShrink: 0,
+                paddingTop: 48,
+                gapRow: 6
+            ),
+            children:
+            [
+                Sx.Text(
+                    style: () => Sx.TextStyles(
+                        fontSize: 14,
+                        fontStyle: FontStyle.Bold,
+                        foregroundColor: Theme.MenuDim,
+                        horizontalAlignment: TextHorizontalAlignment.Center
+                    ),
+                    layout: () => Sx.Styles(width: 100.Percent()),
+                    text: () => state.OnlineSource.Value ? "No public stages found." : "No stages match."
+                ),
+                Sx.Text(
+                    style: () => Sx.WrappingText(
+                        fontSize: 11,
+                        foregroundColor: Theme.TextFaint,
+                        horizontalAlignment: TextHorizontalAlignment.Center
+                    ),
+                    layout: () => Sx.Styles(width: 100.Percent()),
+                    text: () => state.Search.Value.Length > 0
+                        ? "Clear the search to see every stage."
+                        : state.OnlineSource.Value
+                            ? "Try a different search, or publish a stage to the archive."
+                            : "Pick another collection."
+                )
+            ]
+        );
+
     private static Node StageRow(StageSelectState state, StageOption stage, Actions actions)
     {
+        var hovered = new Signal<bool>(false);
         var active = () => state.Selected.Value == stage.Id;
+
         return Sx.View(
             name: () => "Stage row " + stage.Id,
             style: () => Sx.Styles(
@@ -404,36 +549,107 @@ public static class StageSelectView
                 alignItems: Align.Center,
                 justifyContent: Justify.SpaceBetween,
                 gapColumn: 12,
-                paddingTop: 10,
-                paddingBottom: 10,
+                paddingTop: 11,
+                paddingBottom: 11,
                 paddingLeft: 14,
                 paddingRight: 14,
-                borderRadius: 6,
-                borderLeft: 2,
+                borderRadius: 8,
+                borderLeft: 3,
                 borderColor: active() ? Theme.Accent : Theme.Transparent,
-                backgroundColor: active() ? Theme.MenuHighlight : new Color(22, 42, 80, 120)
+                backgroundColor: active()
+                    ? Theme.MenuHighlight
+                    : hovered.Value ? RowHover : RowIdle
             ),
             onmousedown: _ => actions.StageSelected(stage.Id),
+            onmouseenter: _ => hovered.Value = true,
+            onmouseleave: _ => hovered.Value = false,
             children:
             [
                 Sx.Text(
                     style: () => Sx.TextStyles(
                         fontSize: 14,
                         fontStyle: FontStyle.Bold,
-                        foregroundColor: active() ? new Color(235, 244, 255) : Theme.MenuTextBlue
+                        foregroundColor: active() || hovered.Value ? RowLabel : Theme.MenuTextBlue
                     ),
+                    layout: () => Sx.Styles(flexShrink: 1, minWidth: 0),
                     text: () => stage.Label
                 ),
-                Sx.Show(
-                    when: () => stage.Subtitle is { Length: > 0 },
-                    then: () => Sx.Text(
-                        style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
-                        text: () => stage.Subtitle ?? ""
-                    )
+                Sx.View(
+                    style: () => Sx.Styles(
+                        flexDirection: FlexDirection.Row,
+                        alignItems: Align.Center,
+                        gapColumn: 10,
+                        flexShrink: 0
+                    ),
+                    children:
+                    [
+                        Sx.Show(
+                            when: () => stage.Subtitle is { Length: > 0 },
+                            then: () => Sx.Text(
+                                style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                                text: () => stage.Subtitle ?? ""
+                            )
+                        ),
+                        Sx.Show(
+                            when: active,
+                            then: () => Sx.Text(
+                                style: () => Sx.TextStyles(fontSize: 16, foregroundColor: Theme.Accent),
+                                text: () => "›"
+                            )
+                        )
+                    ]
                 )
             ]
         );
     }
+
+    private static Node Footer(StageSelectState state, Actions actions)
+        => Sx.View(
+            style: () => Sx.Styles(
+                flexDirection: FlexDirection.Row,
+                alignItems: Align.Center,
+                justifyContent: Justify.SpaceBetween,
+                flexShrink: 0,
+                gapColumn: 12,
+                paddingTop: 14,
+                borderTop: 1,
+                borderColor: DividerColor
+            ),
+            children:
+            [
+                // A narrow window must not push the button: the hint wraps inside its own column
+                // instead of being squeezed to nothing (space-between overlaps under overflow).
+                Sx.View(
+                    style: () => Sx.Styles(
+                        flexShrink: 1,
+                        minWidth: 0,
+                        flexDirection: FlexDirection.Row,
+                        flexWrap: Wrap.Wrap,
+                        alignItems: Align.Center,
+                        gapColumn: 14,
+                        gapRow: 2
+                    ),
+                    children:
+                    [
+                        Hint("← →  browse"),
+                        Hint("Enter  race")
+                    ]
+                ),
+                Button.Create(
+                    label: () => "RACE",
+                    onPress: actions.Confirm,
+                    variant: ButtonVariant.Primary,
+                    size: ButtonSize.Lg,
+                    // Dimmed while nothing is selectable; Confirm itself re-checks the state.
+                    style: () => Sx.Styles(
+                        minWidth: 200,
+                        flexShrink: 0,
+                        opacity: state.ConfirmEnabled.Value ? 1f : 0.45f
+                    ),
+                    name: () => "Stage select confirm"
+                )
+            ]
+        );
 
     private static Node Restriction(StageSelectState state)
         => Sx.Show(

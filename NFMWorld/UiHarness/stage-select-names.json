@@ -17,6 +17,38 @@
     {
       "action": "assert-no-horizontal-scroll",
       "target": "Stage select list"
+    },
+    {
+      "action": "hover",
+      "target": "Stage row nfm1/4_grapefruit",
+      "capture": "hover"
+    },
+    {
+      "action": "assert-hover",
+      "target": "Stage row nfm1/4_grapefruit"
+    },
+    {
+      "action": "click",
+      "target": "Stage row nfm1/6_paninaro",
+      "capture": "selected"
+    },
+    {
+      "action": "scroll",
+      "target": "Stage select list",
+      "delta": -3,
+      "capture": "scrolled"
+    },
+    {
+      "action": "click",
+      "target": "Stage select search"
+    },
+    {
+      "action": "text",
+      "value": "zzzz"
+    },
+    {
+      "action": "capture",
+      "capture": "empty-search"
     }
   ]
 }

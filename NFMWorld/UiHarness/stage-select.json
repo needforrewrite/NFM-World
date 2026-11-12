@@ -69,6 +69,11 @@
     },
     {
       "action": "click",
+      "target": "Stage row archive/dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "capture": "online-long-name"
+    },
+    {
+      "action": "click",
       "target": "Stage select source local",
       "capture": "local-again"
     }

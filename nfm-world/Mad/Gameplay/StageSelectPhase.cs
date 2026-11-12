@@ -301,27 +301,6 @@ public class StageSelectPhase : BaseStageRenderingPhase
             _aroundStageCamera.AroundStage(Camera, CurrentStage.Backend);
     }
 
-    public override void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
-    {
-        base.Render(cb, alpha);
-
-        if (CurrentStage == null)
-            return;
-
-        G.SetFont(new Font(FontFamily.NotoSans, FontStyle.Bold, 48));
-        G.SetColor(new Color(255, 255, 255));
-        G.DrawStringOutlinedAligned(
-            CurrentStage.Backend.Name,
-            0,
-            60,
-            GameSparker.Game.Window.Width,
-            GameSparker.Game.Window.Height,
-            new Color(0, 0, 0),
-            1f,
-            TextHorizontalAlignment.Center
-        );
-    }
-
     public override void KeyPressed(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
         base.KeyPressed(key, imguiWantsKeyboard, keys);

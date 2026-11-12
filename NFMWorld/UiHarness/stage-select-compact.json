@@ -1,0 +1,37 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-stage-compact-captures",
+  "view": "stage-select-compact",
+  "steps": [
+    {
+      "action": "capture",
+      "capture": "dialog"
+    },
+    {
+      "action": "hover",
+      "target": "Stage row nfm1/5_stage",
+      "capture": "hover"
+    },
+    {
+      "action": "assert-hover",
+      "target": "Stage row nfm1/5_stage"
+    },
+    {
+      "action": "click",
+      "target": "Stage row nfm1/9_stage",
+      "capture": "selected"
+    },
+    {
+      "action": "scroll",
+      "target": "Stage select list",
+      "delta": -4,
+      "capture": "scrolled"
+    },
+    {
+      "action": "assert-no-horizontal-scroll",
+      "target": "Stage select list"
+    }
+  ]
+}

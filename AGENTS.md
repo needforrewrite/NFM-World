@@ -775,7 +775,9 @@ Added with the archive/content work; read this before touching content loading, 
   `Archive:StockContentPath` is set. A mod shadowing a stock name does not change the catalog hash.
 - **Stage browsing** — `StageSelectView` has LOCAL/ONLINE sources. Local options come from
   `MenuPreferences.GetStages`, labelled by `MenuPreferences.GetStageNames`, which reads each stage's
-  `name(...)` line without parsing the stage (packed stages keep their file name). Online options
+  `name(...)` line without parsing the stage (packed stages keep their file name). The content
+  header carries the *selected* stage's name, so `StageSelectPhase` draws no title over the preview
+  (it used to, and it collided with the header). Online options
   come from `ArchiveContentClient.SearchAsync(..., "Stage", ...)`
   and carry `archive/<hash>` ids. Choosing an archive option prepares it with
   `ContentCache.PrepareAsync(..., AssetKind.Stage, ...)` before `LoadStage`, and RACE waits for that
@@ -826,7 +828,8 @@ Added with the archive/content work; read this before touching content loading, 
   under `.git/sx-menu-captures`. The script supports named-target or pixel `click`/`hover`, `text`,
   `key`, `scroll`, `capture`, `assert-hover`, `assert-visible`, and `assert-aligned`; `view` selects
   `stage-editor` (default), `model-editor`, `garage`, `stage-select`, `stage-select-local` (the shipped
-  stages with their real `name(...)` labels), `replay-browser`, `replay-viewer` or `replay-camera`
+  stages with their real `name(...)` labels), `stage-select-compact` (the lobby dialog's selector),
+  `replay-browser`, `replay-viewer` or `replay-camera`
   (applies recorded headings through `RaceCameraDirector` and prints the resulting camera).
   `--sx-scale=1.25` repeats at a different UI scale.
   This is a UI-only fixture: no gameplay, network, audio, populated stage or scene rendering; writes

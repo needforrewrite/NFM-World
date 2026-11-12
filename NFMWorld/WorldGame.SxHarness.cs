@@ -55,6 +55,7 @@ public partial class WorldGame
             "garage" => new FixturePhase(GarageFixture),
             "stage-select" => new FixturePhase(StageSelectFixture),
             "stage-select-local" => new FixturePhase(StageSelectLocalFixture),
+            "stage-select-compact" => new FixturePhase(StageSelectCompactFixture),
             "replay-browser" => new FixturePhase(ReplayBrowserFixture),
             "replay-viewer" => new FixturePhase(ReplayViewerFixture),
             "replay-camera" => new FixturePhase(ReplayCameraFixture),
@@ -382,6 +383,24 @@ public partial class WorldGame
             )
             .ToArray();
 
+        StageOption[] StagesIn(string collectionId)
+        {
+            var search = state.Search.Value.Trim();
+            return ids
+                .Where(id => id.StartsWith(collectionId + "/", StringComparison.OrdinalIgnoreCase))
+                .Where(id => search.Length == 0
+                             || id.Contains(search, StringComparison.OrdinalIgnoreCase)
+                             || (names.TryGetValue(id, out var name)
+                                 && name.Contains(search, StringComparison.OrdinalIgnoreCase))
+                )
+                .Select(id => new StageOption(
+                        id,
+                        names.TryGetValue(id, out var name) ? name : id[(id.LastIndexOf('/') + 1)..]
+                    )
+                )
+                .ToArray();
+        }
+
         state.Collections.Value = collections;
         state.Collection.Value = collection;
         state.Stages.Value = stages;
@@ -391,13 +410,95 @@ public partial class WorldGame
         return StageSelectView.Build(
             state,
             new StageSelectView.Actions(
-                CollectionSelected: _ => { },
+                CollectionSelected: id =>
+                {
+                    state.Collection.Value = id;
+                    state.Stages.Value = StagesIn(id);
+                    state.ConfirmEnabled.Value = state.Stages.Value.Count > 0;
+                },
                 StageSelected: id => state.Selected.Value = id,
-                SearchChanged: _ => { },
+                SearchChanged: query =>
+                {
+                    state.Search.Value = query;
+                    state.Stages.Value = StagesIn(state.Collection.Value);
+                    if (state.Stages.Value.Count > 0 && state.Stages.Value.All(stage => stage.Id != state.Selected.Value))
+                        state.Selected.Value = state.Stages.Value[0].Id;
+                    state.ConfirmEnabled.Value = state.Stages.Value.Count > 0;
+                },
                 Confirm: () => { },
                 Back: () => { },
                 SourceSelected: _ => { },
                 OnlineSearch: _ => { }
+            )
+        );
+    }
+
+    /// <summary>
+    /// The compact selector as the lobby's create dialog mounts it: a fixed panel, no page
+    /// chrome, with the online-only restriction note under the list.
+    /// </summary>
+    private static Node StageSelectCompactFixture()
+    {
+        var state = new StageSelectState();
+        var stages = Enumerable.Range(1, 18)
+            .Select(i => new StageOption($"nfm1/{i}_stage", $"Stage {i}", i % 5 == 0 ? "another-author" : null))
+            .ToArray();
+        state.Collections.Value = ["nfm1"];
+        state.Collection.Value = "nfm1";
+        state.Stages.Value = stages;
+        state.Selected.Value = stages[1].Id;
+        state.ConfirmEnabled.Value = false;
+        state.Restriction.Value = "Local stages have to be published before they can be raced online.";
+
+        return Sx.View(
+            style: () => Sx.Styles(
+                width: 100.Percent(),
+                height: 100.Percent(),
+                alignItems: Align.Center,
+                justifyContent: Justify.Center,
+                backgroundColor: Theme.Overlay
+            ),
+            children: Sx.View(
+                name: () => "Create dialog",
+                style: () => Sx.Styles(
+                    width: 560,
+                    height: 520,
+                    flexDirection: FlexDirection.Column,
+                    paddingTop: 20,
+                    paddingBottom: 20,
+                    paddingLeft: 20,
+                    paddingRight: 20,
+                    gapRow: 10,
+                    borderRadius: 10,
+                    borderTop: 1,
+                    borderBottom: 1,
+                    borderLeft: 1,
+                    borderRight: 1,
+                    borderColor: Theme.MenuBorder,
+                    backgroundColor: Theme.MenuPanel
+                ),
+                children:
+                [
+                    Sx.Text(
+                        style: () => Sx.TextStyles(
+                            fontSize: 18,
+                            fontFamily: FontFamily.Adventure,
+                            fontStyle: FontStyle.Bold,
+                            foregroundColor: Theme.MenuBlue
+                        ),
+                        text: () => "Select Stage"
+                    ),
+                    StageSelectView.Compact(
+                        state,
+                        new StageSelectView.Actions(
+                            CollectionSelected: _ => { },
+                            StageSelected: id => state.Selected.Value = id,
+                            SearchChanged: _ => { },
+                            Confirm: () => { },
+                            Back: () => { }
+                        )
+                    )
+                ]
             )
         );
     }
