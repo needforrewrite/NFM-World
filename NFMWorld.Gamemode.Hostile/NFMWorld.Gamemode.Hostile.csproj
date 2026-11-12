@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <!-- A deliberately hostile gamemode, loaded by PluginSandboxTests to prove the CasCore
          policy stops it. Never shipped: it is only registered as a plugin for Debug builds,
@@ -17,9 +17,8 @@
 
     <ItemGroup>
         <ProjectReference Include="..\FixedMathSharp\src\FixedMathSharp\FixedMathSharp.csproj" Private="false" ExcludeAssets="runtime" />
-        <ProjectReference Include="..\MemoryPack\src\MemoryPack.Core\MemoryPack.Core.csproj" Private="false" ExcludeAssets="runtime" />
-        <ProjectReference Include="..\MemoryPack\src\MemoryPack\MemoryPack.csproj" Private="false" ExcludeAssets="runtime" />
-        <ProjectReference Include="..\MemoryPack\src\MemoryPack.Generator\MemoryPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+        <ProjectReference Include="..\TightPack\src\TightPack\TightPack.csproj" Private="false" ExcludeAssets="runtime"/>
+        <ProjectReference Include="..\TightPack\src\TightPack.Generator\TightPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
         <ProjectReference Include="..\NFMWorld.DriverInterface\NFMWorld.DriverInterface.csproj" Private="false" ExcludeAssets="runtime" />
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" Private="false" ExcludeAssets="runtime" />
     </ItemGroup>

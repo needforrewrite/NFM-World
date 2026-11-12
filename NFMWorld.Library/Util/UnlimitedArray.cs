@@ -3,12 +3,12 @@
 
 using System.Collections;
 using System.Runtime.CompilerServices;
-using MemoryPack;
+using TightPack;
 using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.Util;
 
-[MemoryPackable(GenerateType.Collection)]
+[TightPackable(GenerateType.Collection)]
 [PluginVisible(Visible.IncludingAnyGenericInstantiationAndAllMembersOfType)]
 public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
 {

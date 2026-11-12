@@ -1,17 +1,17 @@
-﻿using MemoryPack;
+﻿using TightPack;
 using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Collision;
 
 namespace NFMWorldLibrary.Rad;
 
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible(Visible.IncludingAllMembersOfType)]
-[method: MemoryPackConstructor]
+[TightPackable(GenerateType.VersionTolerant), PluginVisible(Visible.IncludingAllMembersOfType)]
+[method: TightPackConstructor]
 public readonly partial record struct Rad3dCollisionMesh(
-    [property: MemoryPackOrder(0)] f64Vector3[] Vertices,
-    [property: MemoryPackOrder(1)] ushort[] Indices
+    [property: TightPackOrder(0)] f64Vector3[] Vertices,
+    [property: TightPackOrder(1)] ushort[] Indices
 )
 {
-    [MemoryPackIgnore] public (f64Vector3 min, f64Vector3 max)[] Aabb { get; } = CalculateAabb(Vertices, Indices);
+    [TightPackIgnore] public (f64Vector3 min, f64Vector3 max)[] Aabb { get; } = CalculateAabb(Vertices, Indices);
 
     private readonly int _hashCode = CalculateHashCode(Vertices, Indices);
 

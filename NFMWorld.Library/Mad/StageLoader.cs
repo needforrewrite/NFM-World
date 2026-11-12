@@ -1,5 +1,5 @@
 ﻿using System.Text;
-using MemoryPack;
+using TightPack;
 using NFMWorld.PluginSystem;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
@@ -8,21 +8,22 @@ using NFMWorld.Sentry;
 
 namespace NFMWorldLibrary;
 
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
+[TightPackable(GenerateType.VersionTolerant), PluginVisible]
+[TightPackAllowSerialize]
 public readonly partial record struct PiecePlacement(
-    [property: MemoryPackOrder(0), PluginVisible]
+    [property: TightPackOrder(0), PluginVisible]
     PiecePlacementType Type,
-    [property: MemoryPackOrder(1), PluginVisible]
+    [property: TightPackOrder(1), PluginVisible]
     Rad3d Object,
-    [property: MemoryPackOrder(2), PluginVisible]
+    [property: TightPackOrder(2), PluginVisible]
     f64Vector3 Position,
-    [property: MemoryPackOrder(3), PluginVisible]
+    [property: TightPackOrder(3), PluginVisible]
     f64Euler Rotation,
-    [property: MemoryPackOrder(4), PluginVisible]
+    [property: TightPackOrder(4), PluginVisible]
     AiNodeKind? NodeKind = null,
-    [property: MemoryPackOrder(5), PluginVisible]
+    [property: TightPackOrder(5), PluginVisible]
     bool IsSpecial = false,
-    [property: MemoryPackOrder(6), PluginVisible]
+    [property: TightPackOrder(6), PluginVisible]
     bool IsWall = false
 );
 
@@ -37,15 +38,15 @@ public enum PiecePlacementType : byte
 // count = n parameter
 // position = o parameter
 // offset = p parameter
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
+[TightPackable(GenerateType.VersionTolerant), PluginVisible]
 public partial record StageWall(
-    [property: MemoryPackOrder(0), PluginVisible]
+    [property: TightPackOrder(0), PluginVisible]
     WallDirection Direction,
-    [property: MemoryPackOrder(1), PluginVisible]
+    [property: TightPackOrder(1), PluginVisible]
     int Count,
-    [property: MemoryPackOrder(2), PluginVisible]
+    [property: TightPackOrder(2), PluginVisible]
     int Position,
-    [property: MemoryPackOrder(3), PluginVisible]
+    [property: TightPackOrder(3), PluginVisible]
     int Offset
 );
 
@@ -58,149 +59,149 @@ public enum WallDirection : byte
     Bottom
 }
 
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
+[TightPackable(GenerateType.VersionTolerant), PluginVisible]
 public readonly partial record struct HierarchyGroup(
-    [property: MemoryPackOrder(0), PluginVisible]
+    [property: TightPackOrder(0), PluginVisible]
     string Name,
-    [property: MemoryPackOrder(1), PluginVisible]
+    [property: TightPackOrder(1), PluginVisible]
     UnlimitedArray<PiecePlacement> Pieces,
     // Old group format: #editor_group(Name,x:z,...)
-    [property: MemoryPackOrder(2), PluginVisible]
+    [property: TightPackOrder(2), PluginVisible]
     UnlimitedArray<string> CoordinateKeys
 );
 
 // colors have to be processed in order, so we provide a list of instructions in order
-[MemoryPackable]
-[MemoryPackUnion(0, typeof(SnapInstruction))]
-[MemoryPackUnion(1, typeof(SkyInstruction))]
-[MemoryPackUnion(2, typeof(FogInstruction))]
-[MemoryPackUnion(3, typeof(CloudsInstruction))]
-[MemoryPackUnion(4, typeof(GroundInstruction))]
-[MemoryPackUnion(5, typeof(TextureInstruction))]
-[MemoryPackUnion(6, typeof(PolysInstruction))]
+[TightPackable]
+[TightPackUnion(0, typeof(SnapInstruction))]
+[TightPackUnion(1, typeof(SkyInstruction))]
+[TightPackUnion(2, typeof(FogInstruction))]
+[TightPackUnion(3, typeof(CloudsInstruction))]
+[TightPackUnion(4, typeof(GroundInstruction))]
+[TightPackUnion(5, typeof(TextureInstruction))]
+[TightPackUnion(6, typeof(PolysInstruction))]
 [PluginVisible]
 public abstract partial record EnvironmentInstruction;
 
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
-[method: MemoryPackConstructor]
+[TightPackable(GenerateType.VersionTolerant), PluginVisible]
+[method: TightPackConstructor]
 public partial record SnapInstruction(
-    [property: MemoryPackOrder(0), PluginVisible]
+    [property: TightPackOrder(0), PluginVisible]
     Color3 Color
 ) : EnvironmentInstruction;
 
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
-[method: MemoryPackConstructor]
+[TightPackable(GenerateType.VersionTolerant), PluginVisible]
+[method: TightPackConstructor]
 public partial record SkyInstruction(
-    [property: MemoryPackOrder(0), PluginVisible]
+    [property: TightPackOrder(0), PluginVisible]
     Color3 Color
 ) : EnvironmentInstruction;
 
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
-[method: MemoryPackConstructor]
+[TightPackable(GenerateType.VersionTolerant), PluginVisible]
+[method: TightPackConstructor]
 public partial record FogInstruction(
-    [property: MemoryPackOrder(0), PluginVisible]
+    [property: TightPackOrder(0), PluginVisible]
     Color3 Color
 ) : EnvironmentInstruction;
 
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
-[method: MemoryPackConstructor]
+[TightPackable(GenerateType.VersionTolerant), PluginVisible]
+[method: TightPackConstructor]
 public partial record CloudsInstruction(
-    [property: MemoryPackOrder(0), PluginVisible]
+    [property: TightPackOrder(0), PluginVisible]
     IReadOnlyList<int> Clouds
 ) : EnvironmentInstruction;
 
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
-[method: MemoryPackConstructor]
+[TightPackable(GenerateType.VersionTolerant), PluginVisible]
+[method: TightPackConstructor]
 public partial record GroundInstruction(
-    [property: MemoryPackOrder(0), PluginVisible]
+    [property: TightPackOrder(0), PluginVisible]
     Color3 Color
 ) : EnvironmentInstruction;
 
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
-[method: MemoryPackConstructor]
+[TightPackable(GenerateType.VersionTolerant), PluginVisible]
+[method: TightPackConstructor]
 public partial record TextureInstruction(
-    [property: MemoryPackOrder(0), PluginVisible]
+    [property: TightPackOrder(0), PluginVisible]
     IReadOnlyList<int> Texture
 ) : EnvironmentInstruction;
 
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
-[method: MemoryPackConstructor]
+[TightPackable(GenerateType.VersionTolerant), PluginVisible]
+[method: TightPackConstructor]
 public partial record PolysInstruction(
-    [property: MemoryPackOrder(0), PluginVisible]
+    [property: TightPackOrder(0), PluginVisible]
     Color3 Color
 ) : EnvironmentInstruction;
 
-[MemoryPackable(GenerateType.CircularReference), PluginVisible]
+[TightPackable(GenerateType.CircularReference), PluginVisible]
 public partial class StageLoader
 {
-    [MemoryPackOrder(0), PluginVisible] public string Path;
+    [TightPackOrder(0), PluginVisible] public string Path;
 
-    [MemoryPackOrder(1), PluginVisible] public ushort nlaps = 3;
+    [TightPackOrder(1), PluginVisible] public ushort nlaps = 3;
 
     // soundtrack(folder,fileName)
-    [MemoryPackOrder(2), PluginVisible] public string musicPath = "";
+    [TightPackOrder(2), PluginVisible] public string musicPath = "";
 
     // soundtrackremaster(folder,fileName)
-    [MemoryPackOrder(3), PluginVisible] public string remasteredMusicPath = "";
+    [TightPackOrder(3), PluginVisible] public string remasteredMusicPath = "";
 
     // soundtrackfreqmul(mul)
-    [MemoryPackOrder(4), PluginVisible] public double musicFreqMul = 1.0d;
-    [MemoryPackOrder(5), PluginVisible] public double musicTempoMul = 1.0d;
-    [MemoryPackOrder(6), PluginVisible] public string Name = "hogan rewish";
-    [MemoryPackOrder(7), PluginVisible] public int indexOffset = 10;
+    [TightPackOrder(4), PluginVisible] public double musicFreqMul = 1.0d;
+    [TightPackOrder(5), PluginVisible] public double musicTempoMul = 1.0d;
+    [TightPackOrder(6), PluginVisible] public string Name = "hogan rewish";
+    [TightPackOrder(7), PluginVisible] public int indexOffset = 10;
 
     private bool swapYandRot = false;
     private bool reverseChkY = false;
 
     // left
-    [MemoryPackOrder(8), PluginVisible] public int Sx;
+    [TightPackOrder(8), PluginVisible] public int Sx;
 
     // top
-    [MemoryPackOrder(9), PluginVisible] public int Sz;
+    [TightPackOrder(9), PluginVisible] public int Sz;
 
     // width
-    [MemoryPackOrder(10), PluginVisible] public int Ncx;
+    [TightPackOrder(10), PluginVisible] public int Ncx;
 
     // height
-    [MemoryPackOrder(11), PluginVisible] public int Ncz;
+    [TightPackOrder(11), PluginVisible] public int Ncz;
 
-    [MemoryPackOrder(21), PluginVisible] public float? CloudCoverage;
-    [MemoryPackOrder(22), PluginVisible] public int? FogDensity;
-    [MemoryPackOrder(23), PluginVisible] public int? FadeFrom;
-    [MemoryPackOrder(24), PluginVisible] public bool LightsOn;
-    [MemoryPackOrder(25), PluginVisible] public bool DrawMountains = true;
-    [MemoryPackOrder(26), PluginVisible] public int? MountainSeed;
-    [MemoryPackOrder(27), PluginVisible] public float? MountainCoverage;
-    [MemoryPackOrder(28), PluginVisible] public Vector3? LightDirection;
-    [MemoryPackOrder(29), PluginVisible] public UnlimitedArray<PiecePlacement> pieces = new();
-    [MemoryPackOrder(30), PluginVisible] public UnlimitedArray<Rad3dBoxDef> walls = new();
-    [MemoryPackOrder(31), PluginVisible] public int maxr = 0;
-    [MemoryPackOrder(32), PluginVisible] public int maxl = 100;
-    [MemoryPackOrder(33), PluginVisible] public int maxt = 0;
-    [MemoryPackOrder(34), PluginVisible] public int maxb = 100;
+    [TightPackOrder(21), PluginVisible] public float? CloudCoverage;
+    [TightPackOrder(22), PluginVisible] public int? FogDensity;
+    [TightPackOrder(23), PluginVisible] public int? FadeFrom;
+    [TightPackOrder(24), PluginVisible] public bool LightsOn;
+    [TightPackOrder(25), PluginVisible] public bool DrawMountains = true;
+    [TightPackOrder(26), PluginVisible] public int? MountainSeed;
+    [TightPackOrder(27), PluginVisible] public float? MountainCoverage;
+    [TightPackOrder(28), PluginVisible] public Vector3? LightDirection;
+    [TightPackOrder(29), PluginVisible] public UnlimitedArray<PiecePlacement> pieces = new();
+    [TightPackOrder(30), PluginVisible] public UnlimitedArray<Rad3dBoxDef> walls = new();
+    [TightPackOrder(31), PluginVisible] public int maxr = 0;
+    [TightPackOrder(32), PluginVisible] public int maxl = 100;
+    [TightPackOrder(33), PluginVisible] public int maxt = 0;
+    [TightPackOrder(34), PluginVisible] public int maxb = 100;
 
-    [MemoryPackOrder(35), PluginVisible] public UnlimitedArray<EnvironmentInstruction> EnvironmentInstructions = new();
-    [MemoryPackOrder(36), PluginVisible] public bool DrawPolys = true;
-    [MemoryPackOrder(37), PluginVisible] public bool DrawClouds = true;
+    [TightPackOrder(35), PluginVisible] public UnlimitedArray<EnvironmentInstruction> EnvironmentInstructions = new();
+    [TightPackOrder(36), PluginVisible] public bool DrawPolys = true;
+    [TightPackOrder(37), PluginVisible] public bool DrawClouds = true;
 
     // aerial()
-    [MemoryPackOrder(38), PluginVisible] public bool Aerial;
+    [TightPackOrder(38), PluginVisible] public bool Aerial;
 
     /// <summary>Per-stage physics overrides (phy-addons stage properties).</summary>
-    [MemoryPackOrder(39), PluginVisible]
+    [TightPackOrder(39), PluginVisible]
     public StagePhysics Physics { get; set; } = new StagePhysics();
 
-    [MemoryPackOrder(40), PluginVisible] public UnlimitedArray<StageWall> wallDefs = [];
+    [TightPackOrder(40), PluginVisible] public UnlimitedArray<StageWall> wallDefs = [];
 
-    [MemoryPackIgnore, PluginVisible] public UnlimitedArray<HierarchyGroup> groups = [];
-    [MemoryPackIgnore, PluginVisible] public HierarchyGroup ungrouped = new("Ungrouped", [], []);
-    [MemoryPackIgnore, PluginVisible] public HierarchyGroup currentGroup;
-    [MemoryPackIgnore, PluginVisible] public int UngroupedOrderIndex = -1;
+    [TightPackIgnore, PluginVisible] public UnlimitedArray<HierarchyGroup> groups = [];
+    [TightPackIgnore, PluginVisible] public HierarchyGroup ungrouped = new("Ungrouped", [], []);
+    [TightPackIgnore, PluginVisible] public HierarchyGroup currentGroup;
+    [TightPackIgnore, PluginVisible] public int UngroupedOrderIndex = -1;
 
-    [MemoryPackOrder(41), PluginVisible] public UnlimitedArray<string> unknownParameters = [];
+    [TightPackOrder(41), PluginVisible] public UnlimitedArray<string> unknownParameters = [];
 
     // amodel/amodel2 models, resolved while loading only; pieces hold the Rad3d directly.
-    [MemoryPackIgnore] private readonly Dictionary<string, Rad3d> _embeddedModels = new(StringComparer.OrdinalIgnoreCase);
+    [TightPackIgnore] private readonly Dictionary<string, Rad3d> _embeddedModels = new(StringComparer.OrdinalIgnoreCase);
 
     public StageLoader(string stageName)
         : this(stageName, stageName, null)
@@ -974,7 +975,7 @@ public partial class StageLoader
         }
     }
 
-    [MemoryPackConstructor]
+    [TightPackConstructor]
     public StageLoader()
     {
         // Create an empty stage loader for editor purposes

@@ -1,4 +1,4 @@
-using MemoryPack;
+﻿using TightPack;
 
 namespace NFMWorldLibrary.Multiplayer.HttpMessages;
 
@@ -7,9 +7,9 @@ namespace NFMWorldLibrary.Multiplayer.HttpMessages;
 /// <see cref="Lobby2RaceServer_CreateRace"/> on its own request, so a cold asset does not consume
 /// the create-race window.
 /// </summary>
-[MemoryPackable]
+[TightPackable]
 public partial struct Lobby2RaceServer_PrepareContent
 {
-    [MemoryPackOrder(0)] public required Guid MatchKey { get; set; }
-    [MemoryPackOrder(1)] public required PreparedContent[] Content { get; set; }
+    [TightPackOrder(0)] public required Guid MatchKey { get; set; }
+    [TightPackOrder(1)] public required PreparedContent[] Content { get; set; }
 }

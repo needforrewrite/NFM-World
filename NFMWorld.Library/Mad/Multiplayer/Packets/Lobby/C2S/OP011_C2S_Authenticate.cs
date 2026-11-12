@@ -1,4 +1,4 @@
-using MemoryPack;
+﻿using TightPack;
 
 namespace NFMWorldLibrary.Multiplayer.Packets.C2S;
 
@@ -11,13 +11,13 @@ namespace NFMWorldLibrary.Multiplayer.Packets.C2S;
 /// which keeps singleplayer and quick free play working while making ranked results
 /// attributable.
 /// </summary>
-[MemoryPackable]
+[TightPackable]
 [PacketClientToServer(11)]
 public partial struct C2S_Authenticate : IPacketClientToServer<C2S_Authenticate>
 {
     /// <summary>
     /// Compact account token issued by the archive. Empty for a guest.
     /// </summary>
-    [MemoryPackOrder(0)]
+    [TightPackOrder(0)]
     public required string Token { get; set; }
 }

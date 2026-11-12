@@ -1,7 +1,7 @@
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Maxine.Extensions;
-using MemoryPack;
+using TightPack;
 using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.FixedMath;
@@ -9,12 +9,14 @@ using NFMWorldLibrary.FixedMath;
 namespace NFMWorldLibrary;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-[MemoryPackable]
+[TightPackable]
+[TightPackAllowSerialize]
 [PluginVisible]
 public partial struct CarFrame
 {
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    [MemoryPackable]
+    [TightPackable]
+    [TightPackAllowSerialize]
     [PluginVisible]
     public partial struct BitFlags
     {

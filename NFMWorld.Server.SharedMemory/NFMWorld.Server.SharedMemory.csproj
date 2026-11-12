@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net11.0</TargetFramework>
@@ -10,8 +10,8 @@
     <ItemGroup>
         <PackageReference Include="SharedMemory" Version="2.3.2"/>
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj"/>
-        <ProjectReference Include="..\MemoryPack\src\MemoryPack\MemoryPack.csproj"/>
-        <ProjectReference Include="..\MemoryPack\src\MemoryPack.Generator\MemoryPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
+        <ProjectReference Include="..\TightPack\src\TightPack\TightPack.csproj"/>
+        <ProjectReference Include="..\TightPack\src\TightPack.Generator\TightPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
 
     </ItemGroup>
 

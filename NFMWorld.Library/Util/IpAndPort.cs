@@ -1,6 +1,6 @@
-﻿using MemoryPack;
+﻿using TightPack;
 
 namespace NFMWorldLibrary.Multiplayer.Packets.S2C;
 
-[MemoryPackable]
+[TightPackable]
 public readonly partial record struct IpAndPort(CompactIpAddress Address, ushort Port);

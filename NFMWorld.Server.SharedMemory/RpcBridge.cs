@@ -1,10 +1,10 @@
-using MemoryPack;
+﻿using TightPack;
 using SharedMemory;
 
 namespace NFMWorld.Server.SharedMemory;
 
 /// <summary>
-/// Thin wrapper around <see cref="RpcBuffer"/> providing typed MemoryPack-serialized
+/// Thin wrapper around <see cref="RpcBuffer"/> providing typed TightPack-serialized
 /// communication between a Controller (Race Host) and its Worker process.
 /// 
 /// Uses request/response pattern: the Controller sends a <see cref="RpcMessage"/> and awaits
@@ -53,9 +53,9 @@ public sealed class RpcBridge : IDisposable
             channelName,
             (ulong msgId, byte[] requestData) =>
             {
-                var request = MemoryPackSerializer.Deserialize<RpcMessage>(requestData);
+                var request = TightPackSerializer.Deserialize<RpcMessage>(requestData);
                 var response = handler(request);
-                return MemoryPackSerializer.Serialize(response);
+                return TightPackSerializer.Serialize(response);
             },
             bufferCapacity,
             RpcProtocol.V1,
@@ -84,7 +84,7 @@ public sealed class RpcBridge : IDisposable
     {
         ThrowIfDisposed();
 
-        var requestBytes = MemoryPackSerializer.Serialize(message);
+        var requestBytes = TightPackSerializer.Serialize(message);
         var response = await _rpcBuffer.RemoteRequestAsync(
             requestBytes,
             timeoutMs,
@@ -97,7 +97,7 @@ public sealed class RpcBridge : IDisposable
                 + "The remote side may have crashed or be unresponsive."
             );
 
-        return MemoryPackSerializer.Deserialize<RpcMessage>(response.Data!);
+        return TightPackSerializer.Deserialize<RpcMessage>(response.Data!);
     }
 
     /// <summary>
@@ -112,7 +112,7 @@ public sealed class RpcBridge : IDisposable
     {
         ThrowIfDisposed();
 
-        var requestBytes = MemoryPackSerializer.Serialize(message);
+        var requestBytes = TightPackSerializer.Serialize(message);
         var response = _rpcBuffer.RemoteRequest(
             requestBytes,
             timeoutMs,
@@ -124,7 +124,7 @@ public sealed class RpcBridge : IDisposable
                 $"RPC request of type {message.Type} timed out after {timeoutMs}ms."
             );
 
-        return MemoryPackSerializer.Deserialize<RpcMessage>(response.Data!);
+        return TightPackSerializer.Deserialize<RpcMessage>(response.Data!);
     }
 
     /// <summary>

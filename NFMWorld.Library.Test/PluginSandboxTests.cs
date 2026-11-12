@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using System.Security;
 using NFMWorldLibrary.Gamemodes.DotNet;
 using NFMWorldLibrary.Backend;
@@ -15,11 +15,10 @@ namespace NFMWorld.Library.Test;
 /// thing a downloaded gamemode must not be able to do. Every probe has to fail, or the
 /// sandbox is decoration.
 ///
-/// The MemoryPack case is the subtle one: a plugin's generated formatters call
-/// <c>Unsafe.SizeOf</c>/<c>Unsafe.As</c> and MemoryPack's own read/write helpers, which
-/// are memory-unsafe in isolation. They are allowed only through MemoryPack's fixed
-/// signatures, whose reads and writes are bounds-checked by <c>GetSpanReference</c>, so a
-/// plugin keeps its serializer without gaining arbitrary memory access.
+/// The serialization case is the subtle one: a plugin's generated code calls TightPack's
+/// read/write helpers, which are memory-unsafe in isolation. They are allowed only through
+/// TightPack's fixed signatures, whose reads and writes are bounds-checked by <c>GetSpan</c>,
+/// so a plugin keeps its serializer without gaining arbitrary memory access.
 /// </summary>
 [TestClass]
 public class PluginSandboxTests
@@ -90,8 +89,8 @@ public class PluginSandboxTests
 
     /// <summary>
     /// The counterpart: the plugin's own serializer has to keep working, or the sandbox
-    /// would break every gamemode that sends events. Its generated formatter reaches
-    /// MemoryPack's unsafe primitives, which are on the policy by signature only.
+    /// would break every gamemode that sends events. Its generated code reaches TightPack's
+    /// primitives, which are on the policy by signature only.
     /// </summary>
     [TestMethod]
     public void SerializingAPluginEvent_Works()

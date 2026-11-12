@@ -1,4 +1,4 @@
-using MemoryPack;
+﻿using TightPack;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
@@ -122,7 +122,7 @@ public class PvpStandingsTests
     {
         var type = ((NativeGamemodeFactory)factory).Plugin.Assembly.GetExportedTypes()
             .Single(t => t.Name == name);
-        return MemoryPackSerializer.Serialize(type.BaseType!, Activator.CreateInstance(type, args));
+        return TightPackSerializer.SerializeUntyped(type.BaseType!, Activator.CreateInstance(type, args));
     }
 
     /// <summary>

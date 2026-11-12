@@ -1,17 +1,17 @@
-﻿using MemoryPack;
+﻿using TightPack;
 
 namespace NFMWorldLibrary.Multiplayer.Packets.S2C;
 
-[MemoryPackable]
+[TightPackable]
 [PacketServerToClient(-3)]
 public partial struct S2C_PlayerState : IPacketServerToClient<S2C_PlayerState>
 {
-    [MemoryPackOrder(0)] public required Guid PlayerId { get; set; }
-    [MemoryPackOrder(1)] public required PlayerState State;
+    [TightPackOrder(0)] public required Guid PlayerId { get; set; }
+    [TightPackOrder(1)] public required PlayerState State;
 
-    [MemoryPackOrder(2)] private ulong _currentTimeInMs;
+    [TightPackOrder(2)] private ulong _currentTimeInMs;
 
-    [MemoryPackIgnore]
+    [TightPackIgnore]
     public DateTimeOffset CurrentServerTime
     {
         readonly get => DateTimeOffset.FromUnixTimeMilliseconds((long)_currentTimeInMs);

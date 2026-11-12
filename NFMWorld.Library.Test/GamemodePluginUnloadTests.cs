@@ -1,4 +1,4 @@
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Util;
@@ -6,6 +6,7 @@ using NFMWorldLibrary.Gamemodes.DotNet;
 using NFMWorldLibrary.Gamemodes.RaceHost;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Plugins;
+using TightPack;
 
 namespace NFMWorld.Library.Test;
 
@@ -16,8 +17,8 @@ namespace NFMWorld.Library.Test;
 /// Worth a test of its own because the failure is invisible: calling
 /// <c>AssemblyLoadContext.Unload()</c> on a context something still references does
 /// nothing, quietly, with no error anywhere. The reference that pins it in practice
-/// is MemoryPack - a plugin's generated formatters register themselves into
-/// MemoryPack's static table from the plugin's module initializer, holding the
+/// is TightPack - a plugin's generated formatters register themselves into
+/// TightPack's static table from the type's static constructor, holding the
 /// plugin's types from there. <see cref="End_ReleasesTheAssembly_AfterItsTypesWereSerialized"/>
 /// covers that; without the cleanup in <see cref="GamemodePlugin.Unload"/> it fails.
 /// </summary>
@@ -99,8 +100,8 @@ public class GamemodePluginUnloadTests
 
     /// <summary>
     /// The case that would silently fail without the formatter cleanup: a gamemode that
-    /// has actually used its own MemoryPack event types. Serializing registers the
-    /// plugin's formatter into MemoryPack's static table, which holds the plugin's type -
+    /// has actually registered its own TightPack event types. Touching a type runs the
+    /// registration into TightPack's static table, which holds the plugin's type -
     /// and through it the whole load context - for the process lifetime.
     /// </summary>
     [TestMethod]
@@ -111,9 +112,17 @@ public class GamemodePluginUnloadTests
                 var eventType = plugin.Assembly.GetExportedTypes()
                     .First(t => t.Name == "CountdownGoEvent");
 
-                // Mirrors how the gamemode sends an event: the union base is what goes on
-                // the wire, and serializing it is what registers the plugin's formatters.
-                MemoryPack.MemoryPackSerializer.Serialize(eventType.BaseType!, Activator.CreateInstance(eventType));
+                // The generated static constructor is what registers the plugin's formatter into
+                // the host's provider — the same thing that happens on the gamemode's first event.
+                RuntimeHelpers.RunClassConstructor(eventType.TypeHandle);
+
+                // Resolve it through the provider too, which memoises the formatter in a generic
+                // static field. That memo must not pin the plugin: an instantiation over a
+                // collectible load context's types is itself collectible.
+                typeof(TightPackFormatterProvider)
+                .GetMethod(nameof(TightPackFormatterProvider.GetFormatter), Type.EmptyTypes)!
+                .MakeGenericMethod(eventType)
+                .Invoke(null, null);
             }
         );
 
@@ -121,7 +130,7 @@ public class GamemodePluginUnloadTests
 
         Assert.IsFalse(
             assembly.IsAlive,
-            "the plugin's assembly was still resident after the race, so MemoryPack is still holding its types"
+            "the plugin's assembly was still resident after the race, so TightPack is still holding its types"
         );
 
         GC.KeepAlive(retained);

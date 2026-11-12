@@ -1,18 +1,18 @@
 ﻿using System.Runtime.InteropServices;
-using MemoryPack;
+using TightPack;
 using NFMWorldLibrary.Backend;
 
 namespace NFMWorldLibrary;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public struct PlayerState
+[TightPackable]
+public partial struct PlayerState
 {
     public required CarFrame CarFrame;
     public required uint Ticks;
 
     private ulong _currentTimeInMs;
 
-    [MemoryPackIgnore]
     public required DateTimeOffset CurrentTime
     {
         readonly get => DateTimeOffset.FromUnixTimeMilliseconds((long)_currentTimeInMs);

@@ -10,7 +10,7 @@ namespace NFMWorld.Library.Test;
 /// <summary>
 /// Round-trips the packets that carry a gamemode's config.
 ///
-/// These were <c>Dictionary&lt;string, object&gt;</c>, which MemoryPack cannot serialize at all -
+/// These were <c>Dictionary&lt;string, object&gt;</c>, which the wire format cannot serialize at all -
 /// it has no formatter for <c>object</c>, and resolving the value formatter fails even for an
 /// empty dictionary. Creating a session crashed on the client; starting one would have crashed
 /// the same way, because <see cref="MatchGameplayInfo"/> is on that wire too.
@@ -18,7 +18,7 @@ namespace NFMWorld.Library.Test;
 [TestClass]
 public class LobbyPacketTests
 {
-    private static T RoundTrip<T>(T packet, sbyte opcode) where T : IReadableWritable<T>, MemoryPack.IMemoryPackable<T>
+    private static T RoundTrip<T>(T packet, sbyte opcode) where T : IReadableWritable<T>, TightPack.ITightPackable<T>
     {
         using var writer = new ArrayPoolBufferWriter<byte>();
         packet.Write(writer);

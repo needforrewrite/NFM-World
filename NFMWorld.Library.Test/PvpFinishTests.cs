@@ -1,4 +1,4 @@
-using MemoryPack;
+﻿using TightPack;
 using NFMWorld.Sentry;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
@@ -71,7 +71,7 @@ public class PvpFinishTests
     {
         var type = ((NativeGamemodeFactory)factory).Plugin.Assembly.GetExportedTypes()
             .Single(t => t.Name == name);
-        return MemoryPackSerializer.Serialize(type.BaseType!, Activator.CreateInstance(type, args));
+        return TightPackSerializer.SerializeUntyped(type.BaseType!, Activator.CreateInstance(type, args));
     }
 
     private sealed class ServerContext(BackendStage stage) : IServerGamemodeContext

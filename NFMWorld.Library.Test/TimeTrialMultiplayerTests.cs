@@ -1,4 +1,4 @@
-using MemoryPack;
+﻿using TightPack;
 using NFMWorld.Sentry;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
@@ -63,7 +63,7 @@ public class TimeTrialMultiplayerTests
     {
         var type = ((NativeGamemodeFactory)factory).Plugin.Assembly.GetExportedTypes().Single(t => t.Name == name);
         var instance = Activator.CreateInstance(type, args);
-        return MemoryPackSerializer.Serialize(name == "RaceStateEvent" ? type : type.BaseType!, instance);
+        return TightPackSerializer.SerializeUntyped(name == "RaceStateEvent" ? type : type.BaseType!, instance);
     }
 
     private sealed class CarCallbacks : IClientCarCallbacks

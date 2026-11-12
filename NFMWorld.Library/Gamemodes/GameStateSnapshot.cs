@@ -1,4 +1,4 @@
-using MemoryPack;
+﻿using TightPack;
 using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.Gamemodes;
@@ -6,7 +6,7 @@ namespace NFMWorldLibrary.Gamemodes;
 /// <summary>
 /// Snapshot of authoritative game state broadcast from server to clients.
 /// </summary>
-[MemoryPackable, PluginVisible(Visible.IncludingAllMembersOfType)]
+[TightPackable, PluginVisible(Visible.IncludingAllMembersOfType)]
 public readonly partial struct GameStateSnapshot
 {
     /// <summary>Whether the race has ended.</summary>

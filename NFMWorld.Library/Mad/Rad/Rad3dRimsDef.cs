@@ -1,15 +1,15 @@
 ﻿using System.Text.Json.Serialization;
-using MemoryPack;
+using TightPack;
 using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.Rad;
 
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible]
+[TightPackable(GenerateType.VersionTolerant), PluginVisible]
 public readonly partial record struct Rad3dRimsDef(
-    [property: JsonPropertyName("color"), MemoryPackOrder(0), PluginVisible]
+    [property: JsonPropertyName("color"), TightPackOrder(0), PluginVisible]
     Color3 Color,
-    [property: JsonPropertyName("size"), MemoryPackOrder(1), PluginVisible]
+    [property: JsonPropertyName("size"), TightPackOrder(1), PluginVisible]
     float Size,
-    [property: JsonPropertyName("depth"), MemoryPackOrder(2), PluginVisible]
+    [property: JsonPropertyName("depth"), TightPackOrder(2), PluginVisible]
     float Depth
 );

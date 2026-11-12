@@ -1,4 +1,4 @@
-using MemoryPack;
+﻿using TightPack;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
@@ -68,7 +68,7 @@ public class RaceRestartTests
             using var host = LocalRaceHost.Create("restart-test", factory, CreateParameters(), stage);
             var plugin = ((NativeGamemodeFactory)factory).Plugin;
             var finishedEvent = plugin.Assembly.GetExportedTypes().Single(t => t.Name == "FinishedEvent");
-            var payload = MemoryPackSerializer.Serialize(finishedEvent.BaseType!, Activator.CreateInstance(finishedEvent));
+            var payload = TightPackSerializer.SerializeUntyped(finishedEvent.BaseType!, Activator.CreateInstance(finishedEvent));
             var finishes = 0;
             host.GameFinished += _ => finishes++;
             host.Start();

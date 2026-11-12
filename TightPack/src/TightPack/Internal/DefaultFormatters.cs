@@ -1,0 +1,194 @@
+using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
+
+namespace TightPack.Internal;
+
+/// <summary>
+/// Builds a formatter for a type nobody registered explicitly. Runs once per type, on the first
+/// lookup that misses, and its result is cached by <see cref="TightPackFormatterProvider"/>, so the
+/// reflection never appears on a hot path.
+/// </summary>
+internal static class DefaultFormatters
+{
+    private const int BuiltinsPending = 0;
+    private const int BuiltinsRegistering = 1;
+    private const int BuiltinsDone = 2;
+
+    private static int s_builtinsState;
+
+    public static object? TryCreate(Type type)
+    {
+        EnsureBuiltinsRegistered();
+
+        if (Nullable.GetUnderlyingType(type) is { } underlying)
+        {
+            return Create(typeof(Formatters.NullableFormatter<>), underlying);
+        }
+
+        if (type.IsEnum)
+        {
+            return Create(typeof(Formatters.EnumFormatter<>), type);
+        }
+
+        if (type.IsArray)
+        {
+            return type.GetArrayRank() == 1
+                ? Create(typeof(Formatters.ArrayFormatter<>), type.GetElementType()!)
+                : null;
+        }
+
+        if (type.IsGenericType)
+        {
+            Type definition = type.GetGenericTypeDefinition();
+            Type[] arguments = type.GetGenericArguments();
+
+            if (definition == typeof(List<>))
+            {
+                return Create(typeof(Formatters.ListFormatter<>), arguments);
+            }
+
+            if (definition == typeof(Dictionary<,>))
+            {
+                return Create(typeof(Formatters.DictionaryFormatter<,>), arguments);
+            }
+
+            if (definition == typeof(HashSet<>))
+            {
+                return Create(typeof(Formatters.HashSetFormatter<>), arguments);
+            }
+
+            if (definition == typeof(KeyValuePair<,>))
+            {
+                return Create(typeof(Formatters.KeyValuePairFormatter<,>), arguments);
+            }
+
+            if (definition == typeof(IEnumerable<>))
+            {
+                return Create(typeof(Formatters.EnumerableFormatter<>), arguments);
+            }
+
+            if (definition == typeof(IList<>))
+            {
+                return Create(typeof(Formatters.InterfaceListFormatter<>), arguments);
+            }
+
+            if (definition == typeof(IReadOnlyList<>))
+            {
+                return Create(typeof(Formatters.IReadOnlyListFormatter<>), arguments);
+            }
+
+            if (definition == typeof(ICollection<>))
+            {
+                return Create(typeof(Formatters.InterfaceCollectionFormatter<>), arguments);
+            }
+
+            if (definition == typeof(IReadOnlyCollection<>))
+            {
+                return Create(typeof(Formatters.IReadOnlyCollectionFormatter<>), arguments);
+            }
+
+            if (definition == typeof(IDictionary<,>))
+            {
+                return Create(typeof(Formatters.InterfaceDictionaryFormatter<,>), arguments);
+            }
+
+            if (definition == typeof(IReadOnlyDictionary<,>))
+            {
+                return Create(typeof(Formatters.IReadOnlyDictionaryFormatter<,>), arguments);
+            }
+
+            if (definition == typeof(ImmutableArray<>))
+            {
+                return Create(typeof(Formatters.ImmutableArrayFormatter<>), arguments);
+            }
+
+            if (definition == typeof(ReadOnlyMemory<>))
+            {
+                return arguments[0] == typeof(byte)
+                    ? new Formatters.ReadOnlyMemoryByteFormatter()
+                    : Create(typeof(Formatters.ReadOnlyMemoryFormatter<>), arguments);
+            }
+
+            if (definition == typeof(Memory<>))
+            {
+                return arguments[0] == typeof(byte)
+                    ? new Formatters.MemoryByteFormatter()
+                    : Create(typeof(Formatters.MemoryFormatter<>), arguments);
+            }
+
+            if (definition == typeof(InlineArray2<>))
+            {
+                return Create(typeof(Formatters.InlineArray2Formatter<>), arguments);
+            }
+
+            if (definition == typeof(InlineArray3<>))
+            {
+                return Create(typeof(Formatters.InlineArray3Formatter<>), arguments);
+            }
+
+            if (definition == typeof(InlineArray4<>))
+            {
+                return Create(typeof(Formatters.InlineArray4Formatter<>), arguments);
+            }
+
+            Type? tuple = definition switch
+            {
+                _ when definition == typeof(ValueTuple<>) => typeof(Formatters.ValueTupleFormatter<>),
+                _ when definition == typeof(ValueTuple<,>) => typeof(Formatters.ValueTupleFormatter<,>),
+                _ when definition == typeof(ValueTuple<,,>) => typeof(Formatters.ValueTupleFormatter<,,>),
+                _ when definition == typeof(ValueTuple<,,,>) => typeof(Formatters.ValueTupleFormatter<,,,>),
+                _ when definition == typeof(ValueTuple<,,,,>) => typeof(Formatters.ValueTupleFormatter<,,,,>),
+                _ when definition == typeof(ValueTuple<,,,,,>) => typeof(Formatters.ValueTupleFormatter<,,,,,>),
+                _ when definition == typeof(ValueTuple<,,,,,,>) => typeof(Formatters.ValueTupleFormatter<,,,,,,>),
+                _ when definition == typeof(ValueTuple<,,,,,,,>) => typeof(Formatters.ValueTupleFormatter<,,,,,,,>),
+                _ => null,
+            };
+
+            if (tuple is not null)
+            {
+                return Create(tuple, arguments);
+            }
+        }
+
+        // Safety net: a generated type works even if its registration never ran.
+        if (Array.Exists(type.GetInterfaces(), i =>
+                i.IsGenericType
+                && i.GetGenericTypeDefinition() == typeof(ITightPackable<>)
+                && i.GetGenericArguments()[0] == type
+        ))
+        {
+            return Create(typeof(TightPackableFormatter<>), type);
+        }
+
+        return null;
+    }
+
+    internal static void EnsureBuiltinsRegistered()
+    {
+        // A plain read on every lookup; the interlocked path is only paid on the first one.
+        if (Volatile.Read(ref s_builtinsState) == BuiltinsDone)
+        {
+            return;
+        }
+
+        if (Interlocked.CompareExchange(ref s_builtinsState, BuiltinsRegistering, BuiltinsPending) != BuiltinsPending)
+        {
+            // Another thread is registering; wait for it rather than serve a half-filled table.
+            SpinWait spin = default;
+            while (Volatile.Read(ref s_builtinsState) != BuiltinsDone)
+            {
+                spin.SpinOnce();
+            }
+
+            return;
+        }
+
+        Formatters.BuiltinFormatters.RegisterAll();
+        Volatile.Write(ref s_builtinsState, BuiltinsDone);
+    }
+
+    private static object? Create(Type openGeneric, params Type[] arguments)
+    {
+        return Activator.CreateInstance(openGeneric.MakeGenericType(arguments));
+    }
+}

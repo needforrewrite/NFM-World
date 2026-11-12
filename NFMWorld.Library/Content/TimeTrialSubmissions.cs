@@ -1,34 +1,34 @@
 ﻿using System.Security.Cryptography;
-using MemoryPack;
+using TightPack;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Content;
 
 /// <summary>One completed run waiting to be, or in the middle of being, uploaded.</summary>
-[MemoryPackable]
+[TightPackable]
 public sealed partial class PendingSubmission
 {
     /// <summary>SHA-256 of the recording bytes; also the sidecar's key.</summary>
-    [MemoryPackOrder(0)]
+    [TightPackOrder(0)]
     public required string Digest { get; set; }
 
-    [MemoryPackOrder(1)] public required string StageName { get; set; }
-    [MemoryPackOrder(2)] public required string CarName { get; set; }
-    [MemoryPackOrder(3)] public string? StageHash { get; set; }
-    [MemoryPackOrder(4)] public string? CarHash { get; set; }
+    [TightPackOrder(1)] public required string StageName { get; set; }
+    [TightPackOrder(2)] public required string CarName { get; set; }
+    [TightPackOrder(3)] public string? StageHash { get; set; }
+    [TightPackOrder(4)] public string? CarHash { get; set; }
 
     /// <summary>The account that ran it. A later sign-in must not silently claim this run.</summary>
-    [MemoryPackOrder(5)]
+    [TightPackOrder(5)]
     public string? Account { get; set; }
 
     /// <summary><c>pending</c>, <c>uploaded</c>, <c>publish-required</c> or <c>rejected</c>.</summary>
-    [MemoryPackOrder(6)]
+    [TightPackOrder(6)]
     public required string Status { get; set; }
 
-    [MemoryPackOrder(7)] public int FinishTicks { get; set; }
-    [MemoryPackOrder(8)] public int ReplayVersion { get; set; }
-    [MemoryPackOrder(9)] public DateTimeOffset RecordedAt { get; set; }
+    [TightPackOrder(7)] public int FinishTicks { get; set; }
+    [TightPackOrder(8)] public int ReplayVersion { get; set; }
+    [TightPackOrder(9)] public DateTimeOffset RecordedAt { get; set; }
 }
 
 /// <summary>
@@ -133,11 +133,11 @@ public static class TimeTrialSubmissions
         {
             try
             {
-                var submission = MemoryPackSerializer.Deserialize<PendingSubmission>(VFS.ReadAllBytes(file));
+                var submission = TightPackSerializer.Deserialize<PendingSubmission>(VFS.ReadAllBytes(file));
                 if (submission is not null)
                     submissions.Add(submission);
             }
-            catch (Exception ex) when (ex is InvalidDataException or MemoryPackSerializationException)
+            catch (Exception ex) when (ex is InvalidDataException or TightPackSerializationException)
             {
                 // One malformed sidecar must not hide the rest of the browser.
             }
@@ -159,7 +159,7 @@ public static class TimeTrialSubmissions
     private static void WriteSidecar(PendingSubmission submission)
     {
         using var stream = VFS.OpenWrite(SidecarPath(submission.Digest));
-        var bytes = MemoryPackSerializer.Serialize(submission);
+        var bytes = TightPackSerializer.Serialize(submission);
         stream.Write(bytes);
     }
 

@@ -34,7 +34,7 @@
 
         The plugin's references all use Private="false" ExcludeAssets="runtime",
         so its output holds only its own files - the shared assemblies
-        (NFMWorld.Library, MemoryPack, ...) resolve against the host's base
+        (NFMWorld.Library, TightPack, ...) resolve against the host's base
         directory at load time instead of being shadowed by a second copy.
     -->
 

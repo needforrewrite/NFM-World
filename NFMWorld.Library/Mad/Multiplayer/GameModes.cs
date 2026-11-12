@@ -1,4 +1,4 @@
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
@@ -70,7 +70,7 @@ public static class GamemodeFactory
 
     /// <summary>
     /// The same factory from config carried over the wire, whose values are strings because
-    /// that is all MemoryPack can round-trip for a dictionary of mixed values.
+    /// that is all the wire format can round-trip for a dictionary of mixed values.
     /// </summary>
     [RequiresUnreferencedCode("Plugin loading requires loading code at runtime.")]
     public static BaseGamemodeFactory Create(string gamemodeId, IReadOnlyDictionary<string, string> config)

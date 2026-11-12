@@ -1,104 +1,105 @@
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
-using MemoryPack;
+using TightPack;
 using NFMWorld.PluginSystem;
 using NFMWorld.Sentry;
 
 namespace NFMWorldLibrary;
 
-[MemoryPackable(GenerateType.VersionTolerant)]
+[TightPackable(GenerateType.VersionTolerant)]
+[TightPackAllowSerialize]
 [PluginVisible]
 public partial record struct CarStats
 {
-    [JsonPropertyName("swits"), PluginVisible, MemoryPackOrder(0)]
+    [JsonPropertyName("swits"), PluginVisible, TightPackOrder(0)]
     public Int3 Swits { get; init; }
 
-    [JsonPropertyName("acelf"), PluginVisible, MemoryPackOrder(1)]
+    [JsonPropertyName("acelf"), PluginVisible, TightPackOrder(1)]
     public f64Vector3 Acelf { get; init; }
 
-    [JsonPropertyName("handb"), PluginVisible, MemoryPackOrder(2)]
+    [JsonPropertyName("handb"), PluginVisible, TightPackOrder(2)]
     public int Handb { get; init; }
 
-    [JsonPropertyName("airs"), PluginVisible, MemoryPackOrder(3)]
+    [JsonPropertyName("airs"), PluginVisible, TightPackOrder(3)]
     public fix64 Airs { get; init; }
 
-    [JsonPropertyName("airc"), PluginVisible, MemoryPackOrder(4)]
+    [JsonPropertyName("airc"), PluginVisible, TightPackOrder(4)]
     public int Airc { get; init; }
 
     // ReSharper disable once InconsistentNaming
-    [JsonIgnore, MemoryPackOrder(5)] public int _deprecated_Turn { get; init; }
+    [JsonIgnore, TightPackOrder(5)] public int _deprecated_Turn { get; init; }
 
-    [JsonPropertyName("grip"), PluginVisible, MemoryPackOrder(6)]
+    [JsonPropertyName("grip"), PluginVisible, TightPackOrder(6)]
     public fix64 Grip { get; init; }
 
-    [JsonPropertyName("bounce"), PluginVisible, MemoryPackOrder(7)]
+    [JsonPropertyName("bounce"), PluginVisible, TightPackOrder(7)]
     public fix64 Bounce { get; init; }
 
-    [JsonPropertyName("simag"), PluginVisible, MemoryPackOrder(8)]
+    [JsonPropertyName("simag"), PluginVisible, TightPackOrder(8)]
     public fix64 Simag { get; init; }
 
-    [JsonPropertyName("moment"), PluginVisible, MemoryPackOrder(9)]
+    [JsonPropertyName("moment"), PluginVisible, TightPackOrder(9)]
     public fix64 Moment { get; init; }
 
-    [JsonPropertyName("comprad"), PluginVisible, MemoryPackOrder(10)]
+    [JsonPropertyName("comprad"), PluginVisible, TightPackOrder(10)]
     public fix64 Comprad { get; init; }
 
-    [JsonPropertyName("push"), PluginVisible, MemoryPackOrder(11)]
+    [JsonPropertyName("push"), PluginVisible, TightPackOrder(11)]
     public fix64 Push { get; init; }
 
-    [JsonPropertyName("revpush"), PluginVisible, MemoryPackOrder(12)]
+    [JsonPropertyName("revpush"), PluginVisible, TightPackOrder(12)]
     public fix64 Revpush { get; init; }
 
-    [JsonPropertyName("lift"), PluginVisible, MemoryPackOrder(13)]
+    [JsonPropertyName("lift"), PluginVisible, TightPackOrder(13)]
     public int Lift { get; init; }
 
-    [JsonPropertyName("revlift"), PluginVisible, MemoryPackOrder(14)]
+    [JsonPropertyName("revlift"), PluginVisible, TightPackOrder(14)]
     public int Revlift { get; init; }
 
-    [JsonPropertyName("powerloss"), PluginVisible, MemoryPackOrder(15)]
+    [JsonPropertyName("powerloss"), PluginVisible, TightPackOrder(15)]
     public int Powerloss { get; init; }
 
-    [JsonPropertyName("flipy"), PluginVisible, MemoryPackOrder(16)]
+    [JsonPropertyName("flipy"), PluginVisible, TightPackOrder(16)]
     public int Flipy { get; init; }
 
-    [JsonPropertyName("msquash"), PluginVisible, MemoryPackOrder(17)]
+    [JsonPropertyName("msquash"), PluginVisible, TightPackOrder(17)]
     public int Msquash { get; init; }
 
-    [JsonPropertyName("clrad"), PluginVisible, MemoryPackOrder(18)]
+    [JsonPropertyName("clrad"), PluginVisible, TightPackOrder(18)]
     public int Clrad { get; init; }
 
-    [JsonPropertyName("dammult"), PluginVisible, MemoryPackOrder(19)]
+    [JsonPropertyName("dammult"), PluginVisible, TightPackOrder(19)]
     public fix64 Dammult { get; init; }
 
-    [JsonPropertyName("maxmag"), PluginVisible, MemoryPackOrder(20)]
+    [JsonPropertyName("maxmag"), PluginVisible, TightPackOrder(20)]
     public int Maxmag { get; init; }
 
-    [JsonPropertyName("dishandle"), PluginVisible, MemoryPackOrder(21)]
+    [JsonPropertyName("dishandle"), PluginVisible, TightPackOrder(21)]
     public fix64 Dishandle { get; init; }
 
-    [JsonPropertyName("outdam"), PluginVisible, MemoryPackOrder(22)]
+    [JsonPropertyName("outdam"), PluginVisible, TightPackOrder(22)]
     public fix64 Outdam { get; init; }
 
-    [JsonPropertyName("name"), PluginVisible, MemoryPackOrder(23)]
+    [JsonPropertyName("name"), PluginVisible, TightPackOrder(23)]
     public string Name { get; init; }
 
-    [JsonPropertyName("enginsignature"), PluginVisible, MemoryPackOrder(24)]
+    [JsonPropertyName("enginsignature"), PluginVisible, TightPackOrder(24)]
     public sbyte Enginsignature { get; init; }
 
-    [JsonPropertyName("turnradius"), PluginVisible, MemoryPackOrder(25)]
+    [JsonPropertyName("turnradius"), PluginVisible, TightPackOrder(25)]
     public int TurnRadius { get; set; }
 
-    [JsonPropertyName("roadgrip"), PluginVisible, MemoryPackOrder(26)]
+    [JsonPropertyName("roadgrip"), PluginVisible, TightPackOrder(26)]
     public fix64? RoadGrip { get; set; }
 
-    [JsonPropertyName("offroadgrip"), PluginVisible, MemoryPackOrder(27)]
+    [JsonPropertyName("offroadgrip"), PluginVisible, TightPackOrder(27)]
     public fix64? OffRoadGrip { get; set; }
 
-    [JsonPropertyName("offtrackgrip"), PluginVisible, MemoryPackOrder(28)]
+    [JsonPropertyName("offtrackgrip"), PluginVisible, TightPackOrder(28)]
     public fix64? OffTrackGrip { get; set; }
 
-    [JsonPropertyName("turn"), PluginVisible, MemoryPackOrder(29)]
+    [JsonPropertyName("turn"), PluginVisible, TightPackOrder(29)]
     public fix64 Turn { get; init; }
 
     /// <summary>
@@ -135,7 +136,7 @@ public partial record struct CarStats
     {
     }
 
-    [MemoryPackConstructor]
+    [TightPackConstructor]
     public CarStats(
         Int3? Swits = null,
         f64Vector3? Acelf = null,
@@ -304,20 +305,20 @@ public partial struct Int3 : IEquatable<Int3>
     /// <summary>
     /// The X component of the vector.
     /// </summary>
-    [JsonPropertyName("x")] [PluginVisible]
-    public int X;
+    [JsonPropertyName("x")]
+    [PluginVisible] public int X;
 
     /// <summary>
     /// The Y component of the vector.
     /// </summary>
-    [JsonPropertyName("y")] [PluginVisible]
-    public int Y;
+    [JsonPropertyName("y")]
+    [PluginVisible] public int Y;
 
     /// <summary>
     /// The Z component of the vector.
     /// </summary>
-    [JsonPropertyName("z")] [PluginVisible]
-    public int Z;
+    [JsonPropertyName("z")]
+    [PluginVisible] public int Z;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Int3"/> struct.

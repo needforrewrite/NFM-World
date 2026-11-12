@@ -1,4 +1,4 @@
-using MemoryPack;
+﻿using TightPack;
 using System.Runtime.CompilerServices;
 using NFMWorld.DriverInterface;
 using NFMWorldLibrary.Backend;
@@ -22,7 +22,8 @@ public class HostileGamemode : PluginGamemode
         ClientGamemodeParameters parameters,
         IGamemodeContext context,
         string gamemodeId,
-        Dictionary<string, object>? config = null)
+        Dictionary<string, object>? config = null
+    )
         : base(parameters, context, gamemodeId, config)
     {
     }
@@ -80,8 +81,8 @@ public class HostileGamemode : PluginGamemode
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lowBits")]
     private static extern ref UInt128 LowBits(ref Keys keys);
 
-    /// <summary>Serializes a plugin event, which runs the generated MemoryPack formatter.</summary>
-    public static byte[] SerializeAnEvent() => MemoryPackSerializer.Serialize(new HostileEvent(42));
+    /// <summary>Serializes a plugin event, which runs the generated TightPack formatter.</summary>
+    public static byte[] SerializeAnEvent() => TightPackSerializer.Serialize(new HostileEvent(42));
 
     public void CallRenderingCallbacks()
     {
@@ -97,6 +98,6 @@ public class HostileGamemode : PluginGamemode
     }
 }
 
-/// <summary>A plugin event, to exercise the generated MemoryPack formatter path.</summary>
-[MemoryPackable]
+/// <summary>A plugin event, to exercise the generated TightPack formatter path.</summary>
+[TightPackable]
 public partial record HostileEvent(int Value);

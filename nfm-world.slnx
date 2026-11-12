@@ -111,6 +111,9 @@
   <Project Path="NFMWorld.ShaderCompiler/NFMWorld.ShaderCompiler.csproj" />
   <Project Path="NFMWorld.ShaderCompiler.Task/NFMWorld.ShaderCompiler.Task.csproj" />
   <Project Path="NFMWorld.Shaders.Abstraction/NFMWorld.Shaders.Abstraction.csproj" />
+  <Project Path="TightPack/src/TightPack/TightPack.csproj" />
+  <Project Path="TightPack/src/TightPack.Generator/TightPack.Generator.csproj" />
+  <Project Path="TightPack/tests/TightPack.Tests/TightPack.Tests.csproj" />
   <Project Path="NFMWorld.UI/NFMWorld.UI.csproj" />
   <Project Path="NFMWorld/NFMWorld.csproj" />
   <Project Path="SDL3-CS/SDL3/SDL3.Core.csproj" />

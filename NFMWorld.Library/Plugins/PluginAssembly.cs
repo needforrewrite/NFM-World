@@ -1,4 +1,4 @@
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Loader;
 using DouglasDwyer.CasCore;
@@ -192,10 +192,10 @@ public sealed class PluginAssembly
     /// where contexts cannot be collected.
     /// </summary>
     /// <remarks>
-    /// Plugins declare their own MemoryPack event types, and the generated formatters
-    /// register themselves into MemoryPack's static table from the plugin's module
+    /// Plugins declare their own TightPack event types, and the generated formatters
+    /// register themselves into TightPack's static table from the type's static
     /// initializer - so the table holds them from the moment the plugin loads. It lives
-    /// in the host's MemoryPack assembly, so it holds the plugin's types, and through
+    /// in the host's TightPack assembly, so it holds the plugin's types, and through
     /// them the whole context, and would keep the plugin resident for the lifetime of
     /// the process no matter what this method does. Dropping this plugin's entries is
     /// what actually makes the unload possible, and it has to happen while the types are
@@ -213,12 +213,12 @@ public sealed class PluginAssembly
         if (!PluginLoadContext.IsCollectibleSupported)
             return;
 
-        var dropped = MemoryPackFormatterRegistry.DropFormatters(Assembly);
+        var dropped = TightPackFormatterRegistry.DropFormatters(Assembly);
 
         Assembly = null!;
 
         _unloadContext();
 
-        Logging.Info($"Unloading plugin '{Id}': {dropped} memorypack formatter(s) dropped");
+        Logging.Info($"Unloading plugin '{Id}': {dropped} tightpack formatter(s) dropped");
     }
 }

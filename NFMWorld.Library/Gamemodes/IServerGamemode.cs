@@ -1,4 +1,4 @@
-using NFMWorld.PluginSystem;
+﻿using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.Gamemodes;
 
@@ -36,7 +36,7 @@ public interface IServerGamemode
 
     /// <summary>
     /// Called when a client event is received from a client.
-    /// The payload is a MemoryPack-serialized gamemode-specific event.
+    /// The payload is a TightPack-serialized gamemode-specific event.
     /// </summary>
     void OnClientEvent(Guid clientId, ReadOnlySpan<byte> payload);
 
@@ -53,7 +53,7 @@ public interface IServerGamemode
     /// delta can never arrive on top of state the client never had.
     /// </summary>
     /// <returns>
-    /// A MemoryPack payload the client's own gamemode deserializes, or null when there is
+    /// A TightPack payload the client's own gamemode deserializes, or null when there is
     /// nothing to catch up on.
     /// </returns>
     ReadOnlyMemory<byte>? CaptureState();

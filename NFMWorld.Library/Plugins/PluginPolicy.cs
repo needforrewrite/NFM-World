@@ -1,4 +1,4 @@
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using DouglasDwyer.CasCore;
@@ -45,7 +45,7 @@ namespace NFMWorldLibrary.Plugins;
 ///
 /// A handful of members the runtime and the plugin's own package make it reach for -
 /// not part of the host surface, but unavoidable around it - are listed in
-/// <see cref="AllowMemoryPack"/>.
+/// <see cref="AllowTightPack"/>.
 ///
 /// Only built once a plugin is actually loaded. Not supported where the runtime cannot
 /// JIT the instrumented IL.
@@ -81,8 +81,8 @@ internal static class PluginPolicy
         AllowRuntimeReachable(builder);
 
         // Nothing in a plugin needs to reinterpret memory: Unsafe.As/SizeOf has no length,
-        // so nothing can check a reinterpretation through it. The generator's uses are
-        // served by the fixed wrappers in AllowMemoryPack instead.
+        // so nothing can check a reinterpretation through it. TightPack does its own unsafe
+        // work inside its runtime assembly, so the plugin's generated code never needs it.
         //
         // The deny runs last, on the finished policy, and only over what it admits:
         // Unsafe is a type-forwarder, so reflecting over it returns System.Private.CoreLib
@@ -158,63 +158,52 @@ internal static class PluginPolicy
     /// </remarks>
     private static void AllowRuntimeReachable(CasPolicyBuilder builder)
     {
-        AllowMemoryPack(builder);
+        AllowTightPack(builder);
     }
 
     /// <summary>
-    /// The MemoryPack members a plugin's generated formatters call.
+    /// The TightPack members a plugin's generated code calls.
     /// </summary>
     /// <remarks>
-    /// Generated formatters are ordinary plugin IL, so they only reach what is on the
-    /// policy like any other code - but a plugin that cannot serialize an event is not a
-    /// gamemode, so this set has to be complete enough to run them.
+    /// Generated serialization code is ordinary plugin IL, so it only reaches what is on
+    /// the policy like any other code - but a plugin that cannot serialize an event is not
+    /// a gamemode, so this set has to be complete enough to run it.
     ///
     /// The members here are named one at a time, and none of them can be given a wrong
-    /// length: every read and write goes through <see cref="MemoryPack.MemoryPackReader"/>
-    /// or <see cref="MemoryPack.MemoryPackWriter{TBufferWriter}"/>, whose span accessors
-    /// check the requested size against the buffer and throw on overrun. That is what
-    /// separates them from <c>System.Runtime.CompilerServices.Unsafe</c>, which is denied
-    /// below: the generator also emits <c>Unsafe.As</c>/<c>Unsafe.SizeOf</c>, and those
-    /// take no length at all.
+    /// length: every read and write goes through <see cref="TightPack.TightPackReader"/> or
+    /// <see cref="TightPack.TightPackWriter{TBufferWriter}"/>, whose span accessors check
+    /// the requested size against the buffer and throw on overrun. That is what separates
+    /// them from <c>System.Runtime.CompilerServices.Unsafe</c>, which is denied below
+    /// because it takes no length at all.
+    ///
+    /// Only blitting is exempt, and only for a struct the generator proved has no padding:
+    /// <c>WriteBlittable</c> is called with a compile-time size, and the generated static
+    /// field asserts it against the runtime.
     /// </remarks>
-    private static void AllowMemoryPack(CasPolicyBuilder builder)
+    private static void AllowTightPack(CasPolicyBuilder builder)
     {
         // The base every generated formatter derives from, and the registration path its
         // static constructor drives.
-        builder.Allow(new TypeBinding(typeof(MemoryPack.MemoryPackFormatter<>), Accessibility.Protected));
-        builder.Allow(new TypeBinding(typeof(MemoryPack.Formatters.MemoryPackableFormatter<>), Accessibility.Public));
-        builder.Allow(new TypeBinding(typeof(MemoryPack.Formatters.ArrayFormatter<>), Accessibility.Public));
-        builder.Allow(new TypeBinding(typeof(MemoryPack.MemoryPackSerializer), Accessibility.Public));
-        builder.Allow(new TypeBinding(typeof(MemoryPack.MemoryPackFormatterProvider), Accessibility.Public));
-        builder.Allow(new TypeBinding(typeof(MemoryPack.MemoryPackSerializationException), Accessibility.Public));
+        builder.Allow(new TypeBinding(typeof(TightPack.TightPackFormatter<>), Accessibility.Public));
+        builder.Allow(new TypeBinding(typeof(TightPack.TightPackableFormatter<>), Accessibility.Public));
+        builder.Allow(new TypeBinding(typeof(TightPack.TightPackSerializer), Accessibility.Public));
+        builder.Allow(new TypeBinding(typeof(TightPack.TightPackFormatterProvider), Accessibility.Public));
+        builder.Allow(new TypeBinding(typeof(TightPack.TightPackSerializationException), Accessibility.Public));
+        builder.Allow(new TypeBinding(typeof(TightPack.TightPackBlit), Accessibility.Public));
+        builder.Allow(new TypeBinding(typeof(TightPack.Formatters.ArrayFormatter<>), Accessibility.Public));
 
         // Reader and writer primitives, by signature so the generic instantiations the
-        // generated code calls are the only ones reachable.
-        foreach (var method in typeof(MemoryPack.MemoryPackReader).GetMethods(AllMembers)
-                     .Where(m => m.Name is nameof(MemoryPack.MemoryPackReader.ReadPackable)
-                                     or nameof(MemoryPack.MemoryPackReader.ReadValue)
-                                     or nameof(MemoryPack.MemoryPackReader.TryReadObjectHeader)
-                                     or nameof(MemoryPack.MemoryPackReader.TryReadUnionHeader)
-                                 || m.Name.StartsWith("ReadUnmanaged", StringComparison.Ordinal)
-                     ))
+        // generated code calls are the only ones reachable. Every one of them goes through
+        // GetSpan, which checks the requested size against the buffer.
+        foreach (var method in typeof(TightPack.TightPackReader).GetMethods(AllMembers)
+            .Where(m => m.Name.StartsWith("Read", StringComparison.Ordinal)
+                        || m.Name.StartsWith("TryRead", StringComparison.Ordinal)
+            ))
             builder.Allow(method);
 
-        foreach (var method in typeof(MemoryPack.MemoryPackWriter<>).GetMethods(AllMembers)
-                     .Where(m => m.Name is nameof(MemoryPack.MemoryPackWriter<>.WriteNullObjectHeader)
-                                     or nameof(MemoryPack.MemoryPackWriter<>.WriteNullUnionHeader)
-                                     or nameof(MemoryPack.MemoryPackWriter<>.WriteObjectHeader)
-                                     or nameof(MemoryPack.MemoryPackWriter<>.WriteUnionHeader)
-                                     or nameof(MemoryPack.MemoryPackWriter<>.WritePackable)
-                                     or nameof(MemoryPack.MemoryPackWriter<>.WriteValue)
-                                 // Unmanaged blobs: the generator emits these for plain fields, and
-                                 // they take the size from Unsafe.SizeOf internally, then hand it to
-                                 // GetSpanReference, which checks it against the buffer.
-                                 || m.Name.StartsWith("WriteUnmanaged", StringComparison.Ordinal)
-                     ))
+        foreach (var method in typeof(TightPack.TightPackWriter<>).GetMethods(AllMembers)
+            .Where(m => m.Name.StartsWith("Write", StringComparison.Ordinal)))
             builder.Allow(method);
-
-        // The Unsafe.SizeOf replacement generated code uses.
-        builder.Allow(new TypeBinding(typeof(MemoryPack.MemoryPackUnmanaged), Accessibility.Public));
     }
 
     /// <summary>
@@ -224,7 +213,7 @@ internal static class PluginPolicy
     /// <see cref="CasPolicyBuilderExtensions.WithDefaultSandbox"/> throws on this
     /// runtime: its JsonSerializerOptions binding names members the .NET 11 BCL no
     /// longer has, and the binding is eager. Plugins serialize their own events with
-    /// MemoryPack, so JSON is dropped rather than re-listed; restore it here if a plugin
+    /// TightPack, so JSON is dropped rather than re-listed; restore it here if a plugin
     /// ever needs System.Text.Json.
     /// </remarks>
     private static CasPolicyBuilder DefaultSandbox()

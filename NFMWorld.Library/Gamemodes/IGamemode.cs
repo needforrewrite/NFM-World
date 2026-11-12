@@ -1,4 +1,4 @@
-using NFMWorld.DriverInterface;
+﻿using NFMWorld.DriverInterface;
 using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.Gamemodes;
@@ -40,7 +40,7 @@ public interface IGamemode
 
     /// <summary>
     /// Called when an <c>S2C_ServerEvent</c> is received from the server.
-    /// The payload is a MemoryPack-serialized gamemode-specific event.
+    /// The payload is a TightPack-serialized gamemode-specific event.
     /// </summary>
     void OnServerEvent(ReadOnlySpan<byte> payload);
 

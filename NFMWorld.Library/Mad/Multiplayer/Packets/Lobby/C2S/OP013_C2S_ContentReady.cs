@@ -1,4 +1,4 @@
-using MemoryPack;
+﻿using TightPack;
 
 namespace NFMWorldLibrary.Multiplayer.Packets.C2S;
 
@@ -7,12 +7,12 @@ namespace NFMWorldLibrary.Multiplayer.Packets.C2S;
 /// <see cref="Ready"/> false carries the reason it could not, so the lobby can fail the start
 /// instead of waiting for a race that can never load.
 /// </summary>
-[MemoryPackable]
+[TightPackable]
 [PacketClientToServer(13)]
 public partial struct C2S_ContentReady : IPacketClientToServer<C2S_ContentReady>
 {
-    [MemoryPackOrder(0)] public required uint SessionId { get; set; }
-    [MemoryPackOrder(1)] public required Guid PreparationId { get; set; }
-    [MemoryPackOrder(2)] public required bool Ready { get; set; }
-    [MemoryPackOrder(3)] public string? Reason { get; set; }
+    [TightPackOrder(0)] public required uint SessionId { get; set; }
+    [TightPackOrder(1)] public required Guid PreparationId { get; set; }
+    [TightPackOrder(2)] public required bool Ready { get; set; }
+    [TightPackOrder(3)] public string? Reason { get; set; }
 }

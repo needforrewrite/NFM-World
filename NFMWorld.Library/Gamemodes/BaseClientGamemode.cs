@@ -1,5 +1,5 @@
-using System.Diagnostics.CodeAnalysis;
-using MemoryPack;
+﻿using System.Diagnostics.CodeAnalysis;
+using TightPack;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.PluginSystem;
@@ -76,7 +76,7 @@ public abstract class BaseClientGamemode : IGamemode
 
     /// <summary>
     /// Called when an event is received from the server.
-    /// The payload is a MemoryPack-serialized gamemode-specific event.
+    /// The payload is a TightPack-serialized gamemode-specific event.
     /// </summary>
     public virtual void OnServerEvent(ReadOnlySpan<byte> payload)
     {
@@ -120,8 +120,9 @@ public abstract class BaseClientGamemode : IGamemode
     /// </summary>
     [PluginVisible]
     protected internal void SendServerEvent<T>(T payload)
+        where T : ITightPackable<T>
     {
-        SendServerEvent((ReadOnlySpan<byte>)MemoryPackSerializer.Serialize(payload));
+        SendServerEvent((ReadOnlySpan<byte>)TightPackSerializer.Serialize(payload));
     }
 
     /// <summary>

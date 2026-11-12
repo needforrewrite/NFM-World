@@ -1,6 +1,6 @@
 ﻿using System.Net;
 using Maxine.Extensions;
-using MemoryPack;
+using TightPack;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Multiplayer.Archive;
@@ -154,7 +154,7 @@ static async Task HandleHttpRequest(
 
         // A game master is untrusted, so its report is only a claim: the signature proves which
         // lobby-issued race it refers to, and the lobby decides whether the match is still open.
-        var results = MemoryPackSerializer.Deserialize<RaceServer2Lobby_RaceResults>(body);
+        var results = TightPackSerializer.Deserialize<RaceServer2Lobby_RaceResults>(body);
         Logging.Info($"[Lobby] Race ended: MatchKey={results.MatchKey}, Players={results.Results.Standings?.Length ?? 0}");
 
         if (Guid.TryParse(results.MatchKey, out var matchKey))

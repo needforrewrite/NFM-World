@@ -1,20 +1,21 @@
-using System.Buffers;
+﻿using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using MemoryPack;
+using NFMWorldLibrary.Serialization;
+using TightPack;
 
 namespace NFMWorldLibrary.Multiplayer.Packets.C2S;
 
-[MemoryPackable]
+[TightPackable]
 [PacketClientToServer(10)]
 public partial struct C2S_ClientEvent : IPacketClientToServer<C2S_ClientEvent>, IDisposable
 {
-    [MemoryPackOrder(0)] [ReadOnlyMemoryPoolFormatterAttribute<byte>]
-    public required ReadOnlyMemory<byte> Payload;
+    [TightPackOrder(0)]
+    [TightPackCustomFormatter(typeof(PooledPayloadFormatter))] public required ReadOnlyMemory<byte> Payload;
 
     private bool _usePool;
 
-    [MemoryPackOnDeserialized]
+    [TightPackOnDeserialized]
     private void OnDeserialized()
     {
         _usePool = true;

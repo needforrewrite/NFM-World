@@ -1,6 +1,6 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using JetBrains.Annotations;
-using MemoryPack;
+using TightPack;
 using NFMWorld.DriverInterface;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
@@ -182,7 +182,7 @@ public class TimeTrialGamemode : PluginGamemode
         if (!_multiplayer
             || _simulation
             || _state == TimeTrialState.Unavailable
-            || MemoryPackSerializer.Deserialize<RaceStateEvent>(payload) is not { } state)
+            || TightPackSerializer.Deserialize<RaceStateEvent>(payload) is not { } state)
             return;
 
         _countdown = state.Countdown;
@@ -481,7 +481,7 @@ public class TimeTrialServerGamemode(
     {
         if (_state == TimeTrialState.NotStarted)
             return null;
-        return MemoryPackSerializer.Serialize(
+        return TightPackSerializer.Serialize(
             new RaceStateEvent(_state != TimeTrialState.Countdown, _state == TimeTrialState.Countdown ? _countdown : 0)
         );
     }
@@ -507,7 +507,7 @@ public class TimeTrialServerGamemode(
     public override void OnClientEvent(Guid clientId, ReadOnlySpan<byte> payload)
     {
         base.OnClientEvent(clientId, payload);
-        switch (MemoryPackSerializer.Deserialize<ClientToServerEvent>(payload))
+        switch (TightPackSerializer.Deserialize<ClientToServerEvent>(payload))
         {
             case ForfeitEvent:
                 OnClientDisconnected(clientId);
@@ -550,16 +550,16 @@ public class TimeTrialServerGamemode(
     }
 }
 
-[MemoryPackable]
-[MemoryPackUnion(0, typeof(FinishedEvent))]
-[MemoryPackUnion(1, typeof(ForfeitEvent))]
+[TightPackable]
+[TightPackUnion(0, typeof(FinishedEvent))]
+[TightPackUnion(1, typeof(ForfeitEvent))]
 public abstract partial record ClientToServerEvent;
 
-[MemoryPackable]
+[TightPackable]
 public partial record FinishedEvent() : ClientToServerEvent;
 
-[MemoryPackable]
+[TightPackable]
 public partial record ForfeitEvent() : ClientToServerEvent;
 
-[MemoryPackable]
+[TightPackable]
 public partial record RaceStateEvent(bool InProgress, int Countdown);

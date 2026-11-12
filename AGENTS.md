@@ -220,11 +220,11 @@ Gamemodes are compiled `.NET` plugins — the Lua path is gone. Singleplayer and
 | Gotcha | Rule |
 |---|---|
 | Assembly identity | Ship the file as `gamemode.dll` / `ai.dll` by **renaming at copy time** (`Plugin.props`), never via `TargetName`/`AssemblyName` — those rename the assembly *identity* too, and the runtime refuses to load two assemblies under one identity |
-| Plugin dependencies | Reference shared assemblies (`NFMWorld.Library`, `MemoryPack`, …) with `Private="false" ExcludeAssets="runtime"` so the plugin resolves against the host's copies instead of shadowing them |
+| Plugin dependencies | Reference shared assemblies (`NFMWorld.Library`, `TightPack`, …) with `Private="false" ExcludeAssets="runtime"` so the plugin resolves against the host's copies instead of shadowing them |
 | `DisableTransitiveProjectReferences` | every plugin csproj sets it, so a type used from a transitive dependency needs its own explicit reference |
 | Target resolution timing | read `$(TargetDir)` inside the target, not at evaluation time — the SDK sets it after the project body |
 | Unload is silent | `AssemblyLoadContext.Unload()` on a context something still references does nothing and reports nothing. Any surviving reference — a gamemode instance, a `CarVisual`, a reflected `ConstructorInfo` — keeps the assembly loaded, so teardown drops them *in order* |
-| MemoryPack pins the context | a plugin's generated formatters register into MemoryPack's **static** table from the plugin's module initializer (i.e. on load) and hold its types for the process lifetime. `MemoryPackFormatterRegistry` removes them in `Unload` by reflection (MemoryPack has no unregister API); without it the plugin never unloads, with no error to show |
+| TightPack pins the context | a plugin's generated code registers its formatters into TightPack's **static** table from each type's static constructor, and they hold the plugin's types for the process lifetime. `TightPackFormatterRegistry.DropFormatters` (→ `TightPackFormatterProvider.UnregisterAssembly`) removes them in `Unload`; without it the plugin never unloads, with no error to show. Lookups are also memoised per closed type in a generic static field, which is safe: an instantiation over a collectible load context's types is allocated in that context's loader allocator and dies with it. A `Type`-keyed cache would pin, which is what `GamemodePluginUnloadTests.End_ReleasesTheAssembly_AfterItsTypesWereSerialized` guards |
 | Teardown ordering | release the objects that reference the plugin *before* the factory's `End()`. `RacePhase.Dispose` does them in order: `_host.Dispose()`, `CurrentStage.SetPlayers(null)` (drops the `CarVisual`s), `GamemodeInstance?.End()`, `GamemodeInstance = null`, and only then `Gamemode.End()` — the factory release has to be last. `LocalRaceHost.Dispose` ends its server gamemode and then nulls the field for the same reason |
 | Verifying an unload | never inside `Unload`/`End()`: the frames above are live roots, so a forced collection always finds the assembly alive. `PluginUnloadVerifier` does it from the host loop. Tests assert it through a `WeakReference` to the plugin's **assembly** after `GC.Collect` (`GamemodePluginUnloadTests`), never by trusting `Unload`'s return — there isn't one |
 
@@ -232,7 +232,7 @@ Gamemodes are compiled `.NET` plugins — the Lua path is gone. Singleplayer and
 
 Every plugin assembly loads through `CasAssemblyLoader` (`PluginAssembly.Load`), so a plugin only reaches what the
 policy admits. `PluginPolicy` builds it: CasCore's default sandbox plus whatever the host marked `[PluginVisible]` /
-`[VendorPluginVisible]`. `Unsafe` is denied outright, and MemoryPack's reader/writer primitives are named one at a
+`[VendorPluginVisible]`. `Unsafe` is denied outright, and TightPack's reader/writer primitives are named one at a
 time — they carry their lengths, `Unsafe` does not.
 
 | Gotcha | Rule |
@@ -240,7 +240,7 @@ time — they carry their lengths, `Unsafe` does not.
 | CasCore is a fork | `CasCore/` is a submodule on `uwx/CasCore` branch `nfmw`, carrying two fixes upstream 0.3.0 needs on this runtime: `base.Foo()` calls went through the static guard and were always refused, and the JSON bindings name members .NET 11 no longer has. Rebase both on any upstream bump |
 | Policy entries by token | `CasPolicy` identifies a member by **module handle + metadata token**, not by `MemberInfo` instance. Denying through a type-forwarder (`Unsafe` forwards to `System.Private.CoreLib`) removes unrelated members that share the arithmetic — filter to `DeclaringType == typeof(...)` |
 | Accessibility is inclusive | `Private` ⊇ `Protected` ⊇ `Public`. `IncludingAllMembersOfType` binds public members plus public and protected constructors; any other protected member a plugin calls needs its own `[PluginVisible]` (`[method: PluginVisible]` on a ctor) |
-| Generated MemoryPack code | formatters are ordinary plugin IL, so they only reach the policy. The generator emits `Unsafe.As`/`Unsafe.SizeOf`; those are patched to a cast and `MemoryPackUnmanaged.SizeOf<T>` so the sandbox can deny `Unsafe` (`MemoryPackGenerator.Emitter.cs`) |
+| Generated TightPack code | it is ordinary plugin IL, so it only reaches the policy. TightPack's own runtime does the unsafe work internally, so `Unsafe` can stay denied: the generator emits direct calls to `TightPackWriter`/`TightPackReader`, whose `GetSpan` bounds-checks every access (`PluginPolicy.AllowTightPack`) |
 | Visibility levels | `Visible.Self` on a type exposes the type and members carrying their own `[PluginVisible]` — never private members. `IncludingAllMembersOfType` exposes the type's **public** members without a marker each; use it for a base class plugins derive from |
 | `[UnsafeAccessor]` in probes | a probe reading a private host field this way compiles to a direct `ldfld`, which the policy must refuse; it fails as `InvalidProgramException` from CasCore's IL verifier rather than `SecurityException`, so assert "throws", not the type |
 | Proving the sandbox | `NFMWorld.Gamemode.Hostile` has one probe per forbidden reach; `PluginSandboxTests` loads it like the game does and asserts every probe is refused. `AiPluginTests.CreateClient_PassesTheSandbox` constructs each real plugin's client gamemode, which no server-only path does. The test host declares its own plugin list, so probes never reach release output |
@@ -388,6 +388,46 @@ reference it; new shader work goes through `NFMWorld.ShaderCompiler`.
 
 ---
 
+## Serialization (TightPack)
+
+`TightPack/` is the wire and on-disk format: a source-generated, reflectionless serializer shaped like MemoryPack.
+MemoryPack still builds inside the solution (the `MemoryPack/`, `FixedMathSharp/` and `Maxine.Extensions/` submodules
+reference it) but **no NFMWorld code uses it** — treat any MemoryPack reference in game code as stale.
+
+- **Projects** — `TightPack` (runtime), `TightPack.Generator` (analyzer), `TightPack.Tests`, and
+  `TightPack/benchmarks/TightPack.Benchmarks` (a hand-rolled harness, not in the solution: BenchmarkDotNet 0.15.8
+  predates the `net11.0` moniker). Referenced by
+  `NFMWorld.Library` and the gamemode plugins (`Private="false" ExcludeAssets="runtime"`), and by
+  `NFMWorld.Server.SharedMemory` and `nfm-world`.
+- **Attributes** — `[TightPackable]` replaces `[MemoryPackable]`; `TightPackOrder`, `TightPackUnion`,
+  `TightPackIgnore`, `TightPackConstructor`, `TightPackOnDeserialized` are direct renames. A `[TightPackable]` type
+  must be `partial`, and so must every type that encloses it.
+- **API** — `ITightPackable<TSelf>` replaces `IMemoryPackable<TSelf>`; `TightPackSerializer.Serialize(in T)` /
+  `Deserialize<T>(ReadOnlySpan<byte>)` replace the MemoryPack calls. The generic overloads constrain on
+  `ITightPackable<T>`, so a generic helper that serializes `T` needs that constraint too.
+- **No padding on the wire** — the generator only blits a struct after proving its layout has no padding at all.
+  `StructLayout(Pack = n)` is honoured as the alignment cap for the struct that declares it, but it is not passed down:
+  a struct nested inside a packed one keeps its own layout, so a padded tuple inside a `Pack = 1` struct still blocks the
+  proof. Everything unproven is written member by member. `CarFrame` is one of those — it holds `(byte, ushort)` and
+  `sbyte`+`fix64` tuples, so it stays member-by-member however the outer struct is packed.
+- **Formatters** live in `TightPack/Formatters/`; `TightPackFormatterProvider` resolves the rest at runtime. Generated
+  types hold their formatters in their own static fields and register them from a static constructor, so nothing is
+  built by reflection and plugin assemblies stay unloadable (`UnregisterAssembly`).
+
+| Gotcha | Rule |
+|---|---|
+| Value types from other assemblies | `fix64`, `f64Vector3`, `Int3`, `f64Euler` and `Nibble<T>` live in projects that do not reference TightPack and cannot carry `[TightPackable]`. Their hand-written formatters are in `NFMWorld.Library/Serialization/TightPackFormatters.cs`, registered from a `[ModuleInitializer]`. |
+| `[TightPackAllowSerialize]` | Defers a member to the provider at runtime. On the *declaring type* it covers every member — the escape hatch for `required`/`init` members the generator cannot otherwise classify. |
+| `required` members | Cannot be left unset by a plain `new`, so such a type is rebuilt through an object initializer; a type needing that is not filled in place. |
+| Nested types | A nested `[TightPackable]` struct needs its own attribute — the outer one does not reach it. |
+| Untyped serialization | `TightPackSerializer.SerializeUntyped(Type, object)` is only for code that reaches a type purely by reflection; it needs an `ITightPackableUntyped` formatter. |
+| Union base | Serializing a derived event type directly writes no union tag. Round-tripping through a union means serializing as `type.BaseType`. |
+| Perf hot path | Generated code writes a **tuple member element by element** (`MemberWriteKind.Tuple`) instead of routing it through `ValueTupleFormatter`, and the tuple/collection formatters cache their element formatters in static fields. Both exist because a provider lookup costs ~2.7ns against ~1.9ns for a cached field and ~1.1ns for a direct write, and a tuple pays it per element. Any new formatter that loops must hoist its element formatter out of the loop the same way. `TightPackBufferWriter` uses a `[ThreadStatic]` free list for the same reason: the lock it used to hold cost ~24ns, more than encoding a small payload. |
+| Version gates | The wire format changed wholesale in the migration, so `SavedTimeTrial.CURRENT_VERSION` is 7 and `Rad3dPoly.CurrentTriangulationVersion` is 3. `RadpackType` byte values and union tags were *not* renumbered. |
+| Blittable primitives | `LayoutProver.Primitives` lists only types whose memory image *is* their encoding. `System.DateTime` is deliberately absent: `WriteDateTime` uses `ToBinary()`, which differs from the raw image for `DateTimeKind.Local`. Never add a type there whose writer formats rather than reinterprets. |
+
+---
+
 ## Assets & data
 
 - Both the game project and `NFMWorld.Library` ship data with `None Include="data\**\*" CopyToOutputDirectory="Always"`.
@@ -397,9 +437,9 @@ reference it; new shader work goes through `NFMWorld.ShaderCompiler`.
   in that list.
 - RAD car/stage meshes are parsed by `NFMWorld.Library/Mad/Rad/RadParser.cs`; a `phyangulation` line selects the
   `Phyrexian` triangulation algorithm (see HoleyDiver below).
-- **Never cache derived state in a `[MemoryPackable]` initializer.** MemoryPack builds these types through the
-  `[MemoryPackConstructor]` (often parameterless) constructor and assigns the `[MemoryPackOrder]` properties
-  afterwards, so a value computed from a constructor parameter keeps the *empty* value. `Rad3d.MaxRadius` was
+- **Never cache derived state in a serialized type's initializer.** A `[TightPackable]` type is rebuilt through its
+  parameterless constructor and its ordered properties are assigned afterwards, so a value computed from a
+  constructor parameter keeps the *empty* value. `Rad3d.MaxRadius` was
   `{ get; } = CalculateMaxRadius(polys)`, which meant every deserialized car and stage piece had `MaxRadius == 0`:
   its bounding sphere became a point and `RenderQueue` frustum-culled it as soon as its origin left the view
   (visible as pieces popping out mid-screen in replays, which always load embedded `.timetrial` data). Derive such
@@ -756,7 +796,7 @@ Added with the archive/content work; read this before touching content loading, 
   public; a failure leaves the document, its dirty flag and its history alone. Packaging failures
   are returned as messages rather than thrown, because the callers are fire-and-forget UI actions.
 - **Time trials** — the client notifies `IClientCallbacks.TimeTrialCompleted` once per completed run
-  (never for simulation), `TimeTrialSubmissions` writes the recording and a MemoryPack sidecar before
+  (never for simulation), `TimeTrialSubmissions` writes the recording and a TightPack sidecar before
   network work, and `TimeTrialUploader` retries from the replay browser. The archive simulates the
   exact archived stage *and* car (`tt-sim` takes both paths). `GET /tt/replays` lists every valid
   replay (public, keyset-paged by id like `/assets/search`, optional `query` over stage, car and

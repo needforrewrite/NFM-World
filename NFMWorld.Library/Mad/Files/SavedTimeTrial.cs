@@ -1,5 +1,5 @@
-using Maxine.Extensions;
-using MemoryPack;
+﻿using Maxine.Extensions;
+using TightPack;
 using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Rad;
@@ -8,18 +8,22 @@ using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Files;
 
-[MemoryPackable(GenerateType.CircularReference), PluginVisible]
+[TightPackable(GenerateType.CircularReference), PluginVisible]
 public partial class SavedTimeTrial
 {
-    [PluginVisible] public const int CURRENT_VERSION = 6;
+    /// <summary>
+    /// Bumped to 7 with the TightPack wire format: recordings written by a MemoryPack build are
+    /// not readable, so an older file is refused rather than misparsed.
+    /// </summary>
+    [PluginVisible] public const int CURRENT_VERSION = 7;
 
-    [MemoryPackOrder(0), PluginVisible] public string CarName;
-    [MemoryPackOrder(1), PluginVisible] public string StageName;
-    [MemoryPackOrder(2), PluginVisible] public Demo.Demo DemoData;
-    [MemoryPackOrder(3), PluginVisible] public Splits Splits;
-    [MemoryPackOrder(4), PluginVisible] public int? Version; // New in version 1, defaults to 0
-    [MemoryPackOrder(5), PluginVisible] public StageLoader? StageData; // New in version 2 
-    [MemoryPackOrder(6), PluginVisible] public Rad3d? CarData; // New in version 2
+    [TightPackOrder(0), PluginVisible] public string CarName;
+    [TightPackOrder(1), PluginVisible] public string StageName;
+    [TightPackOrder(2), PluginVisible] public Demo.Demo DemoData;
+    [TightPackOrder(3), PluginVisible] public Splits Splits;
+    [TightPackOrder(4), PluginVisible] public int? Version; // New in version 1, defaults to 0
+    [TightPackOrder(5), PluginVisible] public StageLoader? StageData; // New in version 2 
+    [TightPackOrder(6), PluginVisible] public Rad3d? CarData; // New in version 2
 
     public static string GetDirName(string carName, string stageName)
     {
@@ -49,7 +53,7 @@ public partial class SavedTimeTrial
         }
     }
 
-    [MemoryPackConstructor]
+    [TightPackConstructor]
     private SavedTimeTrial()
     {
         DemoData = new Demo.Demo
@@ -93,7 +97,7 @@ public partial class SavedTimeTrial
                 using var sequence = stream.AsPooledReadOnlySequence();
                 // A recording is untrusted input too: cap what it can expand to before parsing.
                 var data = Deflate.Decompress(sequence.Sequence, RadpackLimits.MaxDecompressedBytes);
-                return MemoryPackSerializer.Deserialize<SavedTimeTrial>(data, MemoryPackHelpers.Options);
+                return TightPackSerializer.Deserialize<SavedTimeTrial>(data);
             }
             else
             {
@@ -116,7 +120,7 @@ public partial class SavedTimeTrial
     public static SavedTimeTrial? Load(ReadOnlyMemory<byte> data)
     {
         var decompData = Deflate.Decompress(data.Span, RadpackLimits.MaxDecompressedBytes);
-        return MemoryPackSerializer.Deserialize<SavedTimeTrial>(decompData, MemoryPackHelpers.Options);
+        return TightPackSerializer.Deserialize<SavedTimeTrial>(decompData);
     }
 
     /// <summary>
@@ -126,7 +130,7 @@ public partial class SavedTimeTrial
     [PluginVisible]
     public byte[] ToBytes()
     {
-        var body = MemoryPackSerializer.Serialize(this, MemoryPackHelpers.Options);
+        var body = TightPackSerializer.Serialize(this);
         return Deflate.Compress(body);
     }
 
@@ -137,7 +141,7 @@ public partial class SavedTimeTrial
         // in-memory filesystem there. The directory is implied by the path, so it needs no mount
         // of its own.
         using var fileStream = VFS.OpenWrite(GetPathName(CarName, StageName));
-        var body = MemoryPackSerializer.Serialize(this, MemoryPackHelpers.Options);
+        var body = TightPackSerializer.Serialize(this);
         Deflate.Compress(body, fileStream.AsBufferWriter<byte>());
     }
 

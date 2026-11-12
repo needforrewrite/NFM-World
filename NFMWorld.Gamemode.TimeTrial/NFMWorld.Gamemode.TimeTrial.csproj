@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net11.0</TargetFramework>
@@ -14,16 +14,15 @@
 
     <ItemGroup>
         <ProjectReference Include="..\FixedMathSharp\src\FixedMathSharp\FixedMathSharp.csproj" Private="false" ExcludeAssets="runtime"/>
-        <ProjectReference Include="..\MemoryPack\src\MemoryPack.Core\MemoryPack.Core.csproj" Private="false" ExcludeAssets="runtime"/>
         <ProjectReference Include="..\NFMWorld.DriverInterface\NFMWorld.DriverInterface.csproj" Private="false" ExcludeAssets="runtime"/>
         <!-- Control.Encode()/Decode() traffic in Maxine.Extensions' Nibble<T>, which
              this project names directly. Explicit because transitive project
              references are off, and the host already ships the assembly. -->
         <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj" Private="false" ExcludeAssets="runtime"/>
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" Private="false" ExcludeAssets="runtime"/>
-        <ProjectReference Include="..\MemoryPack\src\MemoryPack\MemoryPack.csproj" Private="false" ExcludeAssets="runtime"/>
+        <ProjectReference Include="..\TightPack\src\TightPack\TightPack.csproj" Private="false" ExcludeAssets="runtime"/>
 
-        <ProjectReference Include="..\MemoryPack\src\MemoryPack.Generator\MemoryPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
+        <ProjectReference Include="..\TightPack\src\TightPack.Generator\TightPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
     </ItemGroup>
 
 </Project>

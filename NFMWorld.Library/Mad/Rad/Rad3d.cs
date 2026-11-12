@@ -1,13 +1,13 @@
 ﻿using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
-using MemoryPack;
+using TightPack;
 using NFMWorld.PluginSystem;
 
 namespace NFMWorldLibrary.Rad;
 
 // init properties aren't compatible with CircularReference, so can't use record
-[MemoryPackable(GenerateType.CircularReference), PluginVisible]
+[TightPackable(GenerateType.CircularReference), PluginVisible]
 [method: PluginVisible]
 public sealed partial class Rad3d(
     Color3[] colors,
@@ -25,7 +25,7 @@ public sealed partial class Rad3d(
     CarStats? rechargedStats = null
 )
 {
-    // Derived from Polys on read: MemoryPack builds this type through the parameterless
+    // Derived from Polys on read: Deserialization builds this type through the parameterless
     // constructor and assigns Polys afterwards, so a value captured in the constructor keeps
     // the empty array's radius and every deserialized model gets a zero-radius bounding
     // sphere (frustum culling then clips it as soon as its origin leaves the view).
@@ -34,7 +34,7 @@ public sealed partial class Rad3d(
     private Rad3dPoly[]? _maxRadiusPolys;
     private int _maxRadius;
 
-    [MemoryPackIgnore, PluginVisible]
+    [TightPackIgnore, PluginVisible]
     public int MaxRadius
     {
         get
@@ -49,44 +49,44 @@ public sealed partial class Rad3d(
         }
     }
 
-    [JsonPropertyName("colors"), MemoryPackOrder(0), PluginVisible]
+    [JsonPropertyName("colors"), TightPackOrder(0), PluginVisible]
     public IReadOnlyList<Color3> Colors { get; set; } = colors;
 
-    [JsonPropertyName("stats"), MemoryPackOrder(1), PluginVisible]
+    [JsonPropertyName("stats"), TightPackOrder(1), PluginVisible]
     public CarStats Stats { get; set; } = stats;
 
     /// <summary>The car's second stat set (the <c>stats()</c> directive), or null if it had none.</summary>
-    [JsonPropertyName("rechargedStats"), MemoryPackOrder(12), PluginVisible]
+    [JsonPropertyName("rechargedStats"), TightPackOrder(12), PluginVisible]
     public CarStats? RechargedStats { get; set; } = rechargedStats;
 
-    [JsonPropertyName("wheels"), MemoryPackOrder(2), PluginVisible]
+    [JsonPropertyName("wheels"), TightPackOrder(2), PluginVisible]
     public Rad3dWheelDef[] Wheels { get; set; } = wheels;
 
-    [JsonPropertyName("rims"), MemoryPackOrder(3), PluginVisible]
+    [JsonPropertyName("rims"), TightPackOrder(3), PluginVisible]
     public Rad3dRimsDef? Rims { get; set; } = rims;
 
-    [JsonPropertyName("boxes"), MemoryPackOrder(4), PluginVisible]
+    [JsonPropertyName("boxes"), TightPackOrder(4), PluginVisible]
     public Rad3dBoxDef[] Boxes { get; set; } = boxes;
 
-    [JsonPropertyName("polys"), MemoryPackOrder(5), PluginVisible]
+    [JsonPropertyName("polys"), TightPackOrder(5), PluginVisible]
     public Rad3dPoly[] Polys { get; set; } = polys;
 
-    [JsonPropertyName("shadow"), MemoryPackOrder(6), PluginVisible]
+    [JsonPropertyName("shadow"), TightPackOrder(6), PluginVisible]
     public bool CastsShadow { get; set; } = castsShadow;
 
-    [JsonPropertyName("atp"), MemoryPackOrder(7), PluginVisible]
+    [JsonPropertyName("atp"), TightPackOrder(7), PluginVisible]
     public Vector2[] Atp { get; set; } = atp;
 
-    [JsonPropertyName("fileName"), MemoryPackOrder(8), PluginVisible]
+    [JsonPropertyName("fileName"), TightPackOrder(8), PluginVisible]
     public string FileName { get; set; } = fileName;
 
-    [JsonPropertyName("collisionMesh"), MemoryPackOrder(9), PluginVisible]
+    [JsonPropertyName("collisionMesh"), TightPackOrder(9), PluginVisible]
     public Rad3dCollisionMesh? CollisionMesh { get; set; } = collisionMesh;
 
-    [JsonPropertyName("collisionHull"), MemoryPackOrder(10), PluginVisible]
+    [JsonPropertyName("collisionHull"), TightPackOrder(10), PluginVisible]
     public Rad3dCollisionHull? CollisionHull { get; set; } = collisionHull;
 
-    [JsonPropertyName("atLines"), MemoryPackOrder(11), PluginVisible]
+    [JsonPropertyName("atLines"), TightPackOrder(11), PluginVisible]
     public IReadOnlyList<Rad3dAttachmentLine>? AtLines { get; set; } = atLines;
 
     private readonly int _hashCode = CalculateHashCode(
@@ -121,7 +121,7 @@ public sealed partial class Rad3d(
         return maxR;
     }
 
-    [MemoryPackConstructor]
+    [TightPackConstructor]
     private Rad3d() : this([], default, [], null, [], [], false, [])
     {
     }

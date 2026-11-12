@@ -2,11 +2,11 @@
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-using MemoryPack;
+using TightPack;
 
 namespace NFMWorldLibrary.Multiplayer.Packets.S2C;
 
-[MemoryPackable]
+[TightPackable]
 public readonly partial struct CompactIpAddress
 {
     // ipv6: address

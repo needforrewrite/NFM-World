@@ -1,35 +1,37 @@
-using MemoryPack;
+﻿using TightPack;
 
 namespace NFMWorld.Server.SharedMemory;
 
 /// <summary>
 /// Top-level message envelope for Controller↔Worker RPC communication.
-/// The <see cref="Payload"/> contains a MemoryPack-serialized inner message
+/// The <see cref="Payload"/> contains a TightPack-serialized inner message
 /// whose type depends on <see cref="Type"/>.
 /// </summary>
-[MemoryPackable]
+[TightPackable]
 public partial struct RpcMessage
 {
     /// <summary>Message type discriminator.</summary>
-    [MemoryPackOrder(0)]
+    [TightPackOrder(0)]
     public RpcMessageType Type { get; set; }
 
-    /// <summary>MemoryPack-serialized inner message payload.</summary>
-    [MemoryPackOrder(1)]
+    /// <summary>TightPack-serialized inner message payload.</summary>
+    [TightPackOrder(1)]
     public byte[]? Payload { get; set; }
 
     public static RpcMessage Create<T>(RpcMessageType type, T inner)
+        where T : ITightPackable<T>
     {
         return new RpcMessage
         {
             Type = type,
-            Payload = MemoryPackSerializer.Serialize(inner)
+            Payload = TightPackSerializer.Serialize(inner)
         };
     }
 
     public T Deserialize<T>()
+        where T : ITightPackable<T>
     {
-        return MemoryPackSerializer.Deserialize<T>(Payload)!;
+        return TightPackSerializer.Deserialize<T>(Payload)!;
     }
 }
 

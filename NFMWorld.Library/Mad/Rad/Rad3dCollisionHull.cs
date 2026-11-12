@@ -1,15 +1,15 @@
 ﻿using System.Diagnostics;
-using MemoryPack;
+using TightPack;
 using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Collision;
 
 namespace NFMWorldLibrary.Rad;
 
-[MemoryPackable(GenerateType.VersionTolerant), PluginVisible(Visible.IncludingAllMembersOfType)]
-[method: MemoryPackConstructor]
+[TightPackable(GenerateType.VersionTolerant), PluginVisible(Visible.IncludingAllMembersOfType)]
+[method: TightPackConstructor]
 public readonly partial record struct Rad3dCollisionHull(
-    [property: MemoryPackOrder(0)] f64Vector3[] Vertices,
-    [property: MemoryPackOrder(1)] ushort[] Indices
+    [property: TightPackOrder(0)] f64Vector3[] Vertices,
+    [property: TightPackOrder(1)] ushort[] Indices
 )
 {
     private readonly int _hashCode = CalculateHashCode(Vertices, Indices);

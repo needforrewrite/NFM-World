@@ -1,20 +1,21 @@
-using System.Buffers;
+﻿using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using MemoryPack;
+using NFMWorldLibrary.Serialization;
+using TightPack;
 
 namespace NFMWorldLibrary.Multiplayer.Packets.S2C;
 
-[MemoryPackable]
+[TightPackable]
 [PacketServerToClient(-8)]
 public partial struct S2C_ServerEvent : IPacketServerToClient<S2C_ServerEvent>, IDisposable
 {
-    [MemoryPackOrder(0)] [ReadOnlyMemoryPoolFormatterAttribute<byte>]
-    public required ReadOnlyMemory<byte> Payload;
+    [TightPackOrder(0)]
+    [TightPackCustomFormatter(typeof(PooledPayloadFormatter))] public required ReadOnlyMemory<byte> Payload;
 
     private bool _usePool;
 
-    [MemoryPackOnDeserialized]
+    [TightPackOnDeserialized]
     private void OnDeserialized()
     {
         _usePool = true;

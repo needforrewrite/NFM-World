@@ -1,4 +1,4 @@
-﻿using MemoryPack;
+﻿using TightPack;
 
 namespace NFMWorldLibrary.Multiplayer.HttpMessages;
 
@@ -7,20 +7,20 @@ namespace NFMWorldLibrary.Multiplayer.HttpMessages;
 /// The Lobby already knows the GM's game address from SRV resolution;
 /// only the per-player join tokens need to be returned.
 /// </summary>
-[MemoryPackable]
+[TightPackable]
 public partial struct Lobby2RaceServer_CreateRaceResponse
 {
     /// <summary>
     /// Key: player car index as in <see cref="MatchGameplayInfo"/>
     /// Value: Secret GUID that said player can use to authenticate with the race server.
     /// </summary>
-    [MemoryPackOrder(0)]
+    [TightPackOrder(0)]
     public required IDictionary<byte, Guid> PlayerSecretIds { get; set; }
 
     /// <summary>
     /// A token that attaches a connection to the race without taking a car slot. It is counted
     /// in neither the roster nor the race start, so anyone may use it to watch.
     /// </summary>
-    [MemoryPackOrder(1)]
+    [TightPackOrder(1)]
     public Guid SpectatorToken { get; set; }
 }

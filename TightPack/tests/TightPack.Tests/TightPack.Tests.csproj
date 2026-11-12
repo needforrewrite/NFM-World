@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+        <LangVersion>preview</LangVersion>
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <AssemblyAttribute Include="Microsoft.VisualStudio.TestTools.UnitTesting.DoNotParallelizeAttribute"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1"/>
+        <PackageReference Include="MSTest.TestAdapter" Version="4.0.2"/>
+        <PackageReference Include="MSTest.TestFramework" Version="4.0.2"/>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.5.0"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\TightPack\TightPack.csproj"/>
+        <ProjectReference Include="..\..\src\TightPack.Generator\TightPack.Generator.csproj"
+                          OutputItemType="Analyzer"
+                          ReferenceOutputAssembly="false"/>
+        <!-- Generator tests drive the generator in-process, so the assembly is also a plain reference. -->
+        <ProjectReference Include="..\..\src\TightPack.Generator\TightPack.Generator.csproj"
+                          Aliases="TightPackGenerator"/>
+    </ItemGroup>
+
+</Project>

@@ -1,4 +1,4 @@
-using NFMWorld.PluginSystem;
+﻿using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
 using NFMWorldLibrary.Multiplayer.Packets.S2C;
@@ -45,7 +45,7 @@ public abstract class BaseServerGamemode : IServerGamemode
 
     /// <summary>
     /// Called when a <see cref="C2S_ClientEvent"/> is received from a client.
-    /// The payload is a MemoryPack-serialized gamemode-specific event.
+    /// The payload is a TightPack-serialized gamemode-specific event.
     /// </summary>
     public virtual void OnClientEvent(Guid clientId, ReadOnlySpan<byte> payload)
     {

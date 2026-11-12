@@ -1,4 +1,4 @@
-﻿using MemoryPack;
+﻿using TightPack;
 using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
@@ -62,7 +62,9 @@ public class PluginServerGamemode(
     /// </summary>
     /// <param name="payload">The payload.</param>
     [PluginVisible]
-    public void BroadcastEvent<T>(T payload) => BroadcastEvent((ReadOnlyMemory<byte>)MemoryPackSerializer.Serialize(payload));
+    public void BroadcastEvent<T>(T payload)
+        where T : ITightPackable<T> =>
+        BroadcastEvent((ReadOnlyMemory<byte>)TightPackSerializer.Serialize(payload));
 
     public override GameStateSnapshot? GetStateSnapshot() => _snapshot;
 

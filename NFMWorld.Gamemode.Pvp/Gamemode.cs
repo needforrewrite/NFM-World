@@ -1,5 +1,5 @@
 ﻿using JetBrains.Annotations;
-using MemoryPack;
+using TightPack;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
@@ -198,13 +198,13 @@ public class PvpGamemode : PluginGamemode
     public override void OnServerEvent(ReadOnlySpan<byte> payload)
     {
         base.OnServerEvent(payload);
-        Apply(MemoryPackSerializer.Deserialize<ServerToClientEvent>(payload));
+        Apply(TightPackSerializer.Deserialize<ServerToClientEvent>(payload));
     }
 
     public override void OnServerState(ReadOnlySpan<byte> payload)
     {
         base.OnServerState(payload);
-        Apply(MemoryPackSerializer.Deserialize<ServerToClientEvent>(payload));
+        Apply(TightPackSerializer.Deserialize<ServerToClientEvent>(payload));
     }
 
     private void Apply(ServerToClientEvent? ev)
@@ -330,7 +330,7 @@ public class PvpServerGamemode(
         if (_state == ServerGamemodeState.WaitingToStart)
             return null;
 
-        return MemoryPackSerializer.Serialize<ServerToClientEvent>(
+        return TightPackSerializer.Serialize<ServerToClientEvent>(
             new RaceStateEvent(
                 InProgress: _state is ServerGamemodeState.InProgress or ServerGamemodeState.Finished,
                 Countdown: _state == ServerGamemodeState.Countdown ? _countdown : 0
@@ -441,9 +441,9 @@ public class PvpServerGamemode(
             TimeSpan.Zero,
             [
                 .. _perPlayer
-                    .OrderBy(kv => StandingGroup(kv.Value))
-                    .ThenBy(kv => StandingWithin(kv.Value))
-                    .Select((kv, index) => new RaceStanding
+                .OrderBy(kv => StandingGroup(kv.Value))
+                .ThenBy(kv => StandingWithin(kv.Value))
+                .Select((kv, index) => new RaceStanding
                         {
                             PlayerId = kv.Key,
                             FinishPosition = index,
@@ -489,7 +489,7 @@ public class PvpServerGamemode(
     public override void OnClientEvent(Guid clientId, ReadOnlySpan<byte> payload)
     {
         base.OnClientEvent(clientId, payload);
-        var e = MemoryPackSerializer.Deserialize<ClientToServerEvent>(payload);
+        var e = TightPackSerializer.Deserialize<ClientToServerEvent>(payload);
 
         // Leaving forfeits: the player is placed last and the race carries on for everyone
         // else. Without this the abandoned player stayed on the grid at their last relayed
@@ -566,24 +566,24 @@ public class PvpServerGamemode(
     }
 }
 
-[MemoryPackable]
-[MemoryPackUnion(0, typeof(CheckpointEvent))]
-[MemoryPackUnion(1, typeof(ForfeitEvent))]
+[TightPackable]
+[TightPackUnion(0, typeof(CheckpointEvent))]
+[TightPackUnion(1, typeof(ForfeitEvent))]
 public abstract partial record ClientToServerEvent;
 
-[MemoryPackable]
+[TightPackable]
 public partial record CheckpointEvent(ushort Index, byte Lap, int Placement, int Tick) : ClientToServerEvent;
 
 /// <summary>A player left the race before finishing.</summary>
-[MemoryPackable]
+[TightPackable]
 public partial record ForfeitEvent : ClientToServerEvent;
 
-[MemoryPackable]
-[MemoryPackUnion(0, typeof(CountdownGoEvent))]
-[MemoryPackUnion(1, typeof(RaceStateEvent))]
+[TightPackable]
+[TightPackUnion(0, typeof(CountdownGoEvent))]
+[TightPackUnion(1, typeof(RaceStateEvent))]
 public abstract partial record ServerToClientEvent;
 
-[MemoryPackable]
+[TightPackable]
 public partial record CountdownGoEvent : ServerToClientEvent;
 
 /// <summary>
@@ -591,5 +591,5 @@ public partial record CountdownGoEvent : ServerToClientEvent;
 /// attached mid-race, which is how a spectator learns the countdown already finished instead of
 /// waiting for a start event that was broadcast before it connected.
 /// </summary>
-[MemoryPackable]
+[TightPackable]
 public partial record RaceStateEvent(bool InProgress, int Countdown) : ServerToClientEvent;

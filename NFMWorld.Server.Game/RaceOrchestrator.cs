@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
-using MemoryPack;
+using TightPack;
 using NFMWorld.Gameplay;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Content;
@@ -274,7 +274,7 @@ public class RaceOrchestrator : IDisposable
             return;
         }
 
-        var body = MemoryPackSerializer.Serialize(
+        var body = TightPackSerializer.Serialize(
             new RaceServer2Lobby_RaceResults
             {
                 MatchKey = session.MatchKey.ToString(),

@@ -2,55 +2,59 @@
 using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
 using HoleyDiver;
-using MemoryPack;
+using TightPack;
 using NFMWorld.PluginSystem;
 using NFMWorld.Sentry;
 
 namespace NFMWorldLibrary.Rad;
 
-[MemoryPackable(GenerateType.CircularReference)]
+[TightPackable(GenerateType.CircularReference)]
 [PluginVisible]
 public readonly partial record struct Rad3dPoly
 {
-    public const int CurrentTriangulationVersion = 2;
+    /// <summary>
+    /// Not a serialized field's value: the constant is written into <see cref="TriangulationVersion"/>,
+    /// and the payload layout it describes changed with the TightPack wire format.
+    /// </summary>
+    public const int CurrentTriangulationVersion = 3;
 
-    [JsonPropertyName("c"), MemoryPackOrder(0), PluginVisible]
+    [JsonPropertyName("c"), TightPackOrder(0), PluginVisible]
     public Color3 Color { get; init; }
 
-    [JsonPropertyName("colnum"), MemoryPackOrder(1), PluginVisible]
+    [JsonPropertyName("colnum"), TightPackOrder(1), PluginVisible]
     public int? ColNum { get; init; }
 
-    [JsonPropertyName("polyType"), MemoryPackOrder(2), PluginVisible]
+    [JsonPropertyName("polyType"), TightPackOrder(2), PluginVisible]
     public PolyType PolyType { get; init; }
 
-    [JsonPropertyName("lineType"), MemoryPackOrder(3), PluginVisible]
+    [JsonPropertyName("lineType"), TightPackOrder(3), PluginVisible]
     public LineType? LineType { get; init; }
 
-    [JsonPropertyName("decalOffset"), MemoryPackOrder(4)]
+    [JsonPropertyName("decalOffset"), TightPackOrder(4)]
     public float DecalOffset { get; init; }
 
-    [JsonPropertyName("p"), MemoryPackOrder(5)]
+    [JsonPropertyName("p"), TightPackOrder(5)]
     public Vector3[] Points { get; init; }
 
-    [JsonPropertyName("tri"), MemoryPackOrder(6)]
+    [JsonPropertyName("tri"), TightPackOrder(6)]
     public ImmutableArray<uint> Triangles { get; init; }
 
-    [JsonPropertyName("cent"), MemoryPackOrder(7)]
+    [JsonPropertyName("cent"), TightPackOrder(7)]
     public Vector3 Centroid { get; init; }
 
-    [JsonPropertyName("norm"), MemoryPackOrder(8)]
+    [JsonPropertyName("norm"), TightPackOrder(8)]
     public Vector3 Normal { get; init; }
 
-    [JsonPropertyName("triVersion"), MemoryPackOrder(9)]
+    [JsonPropertyName("triVersion"), TightPackOrder(9)]
     public int TriangulationVersion { get; init; }
 
-    [JsonPropertyName("triAlgorithm"), MemoryPackOrder(10)]
+    [JsonPropertyName("triAlgorithm"), TightPackOrder(10)]
     public PolygonTriangulator.TriangulationAlgorithm TriangulationAlgorithm { get; init; } =
         PolygonTriangulator.TriangulationAlgorithm.Libtess;
 
     private readonly int _hashCode;
 
-    [MemoryPackConstructor]
+    [TightPackConstructor]
     public Rad3dPoly() : this(default, null, default, null, 0, [])
     {
     }

@@ -16,7 +16,7 @@ public partial interface IGamemodeContext
 
     /// <summary>
     /// Sends an event to the server.
-    /// The payload is a MemoryPack-serialized gamemode-specific event.
+    /// The payload is a TightPack-serialized gamemode-specific event.
     /// </summary>
     /// <param name="payload"></param>
     void SendServerEvent(ReadOnlySpan<byte> payload);

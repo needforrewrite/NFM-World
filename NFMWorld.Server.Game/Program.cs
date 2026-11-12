@@ -1,6 +1,6 @@
 ﻿using System.Net;
 using System.Text;
-using MemoryPack;
+using TightPack;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Multiplayer.HttpMessages;
@@ -105,7 +105,7 @@ static async Task HandleRequestAsync(
     {
         try
         {
-            var prepareParams = MemoryPackSerializer.Deserialize<Lobby2RaceServer_PrepareContent>(bodyArray);
+            var prepareParams = TightPackSerializer.Deserialize<Lobby2RaceServer_PrepareContent>(bodyArray);
             await orchestrator.PrepareContentAsync(prepareParams);
             res.StatusCode = 204;
             res.Close();
@@ -124,8 +124,8 @@ static async Task HandleRequestAsync(
     {
         try
         {
-            var raceParams = MemoryPackSerializer.Deserialize<Lobby2RaceServer_CreateRace>(bodyArray);
-            var responseBytes = MemoryPackSerializer.Serialize(orchestrator.CreateRace(raceParams));
+            var raceParams = TightPackSerializer.Deserialize<Lobby2RaceServer_CreateRace>(bodyArray);
+            var responseBytes = TightPackSerializer.Serialize(orchestrator.CreateRace(raceParams));
 
             res.ContentType = "application/octet-stream";
             res.ContentLength64 = responseBytes.Length;

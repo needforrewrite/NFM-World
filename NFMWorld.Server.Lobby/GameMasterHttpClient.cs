@@ -1,5 +1,5 @@
-using System.Net.Http.Headers;
-using MemoryPack;
+﻿using System.Net.Http.Headers;
+using TightPack;
 using NFMWorldLibrary.Multiplayer.HttpMessages;
 
 namespace NFMWorldLibrary.Multiplayer;
@@ -30,7 +30,7 @@ public class GameMasterHttpClient
         Lobby2RaceServer_PrepareContent request
     )
     {
-        var body = MemoryPackSerializer.Serialize(request);
+        var body = TightPackSerializer.Serialize(request);
         var authHeader = HmacAuth.Sign("POST", "/prepare-content", body, _keyId, _secretKey);
 
         var requestUri = new Uri(master.HttpEndpoint, "/prepare-content");
@@ -53,7 +53,7 @@ public class GameMasterHttpClient
         Lobby2RaceServer_CreateRace request
     )
     {
-        var body = MemoryPackSerializer.Serialize(request);
+        var body = TightPackSerializer.Serialize(request);
         var authHeader = HmacAuth.Sign("POST", "/create-race", body, _keyId, _secretKey);
 
         var requestUri = new Uri(master.HttpEndpoint, "/create-race");
@@ -71,7 +71,7 @@ public class GameMasterHttpClient
         response.EnsureSuccessStatusCode();
 
         var responseBytes = await response.Content.ReadAsByteArrayAsync();
-        return MemoryPackSerializer.Deserialize<Lobby2RaceServer_CreateRaceResponse>(responseBytes);
+        return TightPackSerializer.Deserialize<Lobby2RaceServer_CreateRaceResponse>(responseBytes);
     }
 
     public async Task NotifyRaceEndedAsync(
@@ -79,7 +79,7 @@ public class GameMasterHttpClient
         RaceServer2Lobby_RaceResults results
     )
     {
-        var body = MemoryPackSerializer.Serialize(results);
+        var body = TightPackSerializer.Serialize(results);
         var authHeader = HmacAuth.Sign("POST", "/race-ended", body, _keyId, _secretKey);
 
         using var httpRequest = new HttpRequestMessage(

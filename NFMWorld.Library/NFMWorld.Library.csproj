@@ -42,8 +42,8 @@
         <None Include="data\**\*" CopyToOutputDirectory="Always"/>
         <ProjectReference Include="..\CasCore\CasCore\CasCore.csproj"/>
         <ProjectReference Include="..\HoleyDiver\HoleyDiver.csproj"/>
-        <ProjectReference Include="..\MemoryPack\src\MemoryPack\MemoryPack.csproj"/>
-        <ProjectReference Include="..\MemoryPack\src\MemoryPack.Generator\MemoryPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
+        <ProjectReference Include="..\TightPack\src\TightPack\TightPack.csproj"/>
+        <ProjectReference Include="..\TightPack\src\TightPack.Generator\TightPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
         <ProjectReference Include="..\Microsoft.UI.Reactor.Yoga\Microsoft.UI.Reactor.Yoga.csproj"/>
         <ProjectReference Include="..\NFMWorld.CrashReporter\NFMWorld.CrashReporter.csproj"/>
         <ProjectReference Include="..\NFMWorld.DriverInterface\NFMWorld.DriverInterface.csproj"/>

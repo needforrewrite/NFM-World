@@ -1,5 +1,5 @@
-using System.Buffers;
-using MemoryPack;
+﻿using System.Buffers;
+using TightPack;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 
@@ -16,7 +16,7 @@ public static class RadpackSerializer
         head[3] = (byte)asset.Metadata.Type;
         writer.Advance(4);
 
-        var body = MemoryPackSerializer.Serialize(asset, MemoryPackHelpers.Options);
+        var body = TightPackSerializer.Serialize<RadpackAsset>(asset);
         Deflate.Compress(body, writer);
     }
 
@@ -56,7 +56,7 @@ public static class RadpackSerializer
         RadpackAsset? result;
         try
         {
-            result = MemoryPackSerializer.Deserialize<RadpackAsset>(decompData);
+            result = TightPackSerializer.Deserialize<RadpackAsset>(decompData);
         }
         catch (Exception ex) when (ex is not InvalidDataException)
         {
@@ -131,49 +131,49 @@ public static class RadpackTypes
     }
 }
 
-[MemoryPackable]
-[MemoryPackUnion(0, typeof(RadpackTrack))]
-[MemoryPackUnion(1, typeof(RadpackRad3d))]
-[MemoryPackUnion(2, typeof(RadpackTexture))]
-[MemoryPackUnion(3, typeof(RadpackLua))]
+[TightPackable]
+[TightPackUnion(0, typeof(RadpackTrack))]
+[TightPackUnion(1, typeof(RadpackRad3d))]
+[TightPackUnion(2, typeof(RadpackTexture))]
+[TightPackUnion(3, typeof(RadpackLua))]
 // Appended: older payload tags keep their numbers so existing packages stay readable.
-[MemoryPackUnion(4, typeof(RadpackGamemode))]
+[TightPackUnion(4, typeof(RadpackGamemode))]
 public abstract partial class RadpackAsset
 {
-    [MemoryPackOrder(0)] public required RadpackMetadata Metadata { get; set; }
+    [TightPackOrder(0)] public required RadpackMetadata Metadata { get; set; }
 }
 
-[MemoryPackable(GenerateType.VersionTolerant)]
+[TightPackable(GenerateType.VersionTolerant)]
 public partial class RadpackMetadata
 {
-    [MemoryPackOrder(0)] public required string Name { get; init; }
-    [MemoryPackOrder(1)] public string? Description { get; init; }
-    [MemoryPackOrder(2)] public required DateTimeOffset CreationDate { get; init; }
+    [TightPackOrder(0)] public required string Name { get; init; }
+    [TightPackOrder(1)] public string? Description { get; init; }
+    [TightPackOrder(2)] public required DateTimeOffset CreationDate { get; init; }
 
-    [MemoryPackIgnore] public RadpackType Type { get; set; }
+    [TightPackIgnore] public RadpackType Type { get; set; }
 }
 
-[MemoryPackable(GenerateType.VersionTolerant)]
+[TightPackable(GenerateType.VersionTolerant)]
 public partial class RadpackTrack : RadpackAsset
 {
-    [MemoryPackOrder(1)] public required StageLoader Stage;
+    [TightPackOrder(1)] public required StageLoader Stage;
 }
 
-[MemoryPackable(GenerateType.VersionTolerant)]
+[TightPackable(GenerateType.VersionTolerant)]
 public partial class RadpackRad3d : RadpackAsset
 {
-    [MemoryPackOrder(1)] public required Rad3d Rad;
+    [TightPackOrder(1)] public required Rad3d Rad;
 }
 
-[MemoryPackable(GenerateType.VersionTolerant)]
+[TightPackable(GenerateType.VersionTolerant)]
 public partial class RadpackTexture : RadpackAsset
 {
     // Was [BrotliFormatter], which is a native call and throws on the browser. Plain bytes instead:
     // an image is already compressed, so the outer deflate stream carries it at almost its own size
     // and the per-field layer was buying little over the format's own compression.
-    [MemoryPackOrder(1)] public required byte[] RawData;
+    [TightPackOrder(1)] public required byte[] RawData;
 
-    [MemoryPackOrder(2)] public RadTextureFormat TextureFormat;
+    [TightPackOrder(2)] public RadTextureFormat TextureFormat;
 }
 
 public enum LuaScriptKind : byte
@@ -182,25 +182,25 @@ public enum LuaScriptKind : byte
     Ai
 }
 
-[MemoryPackable(GenerateType.VersionTolerant)]
+[TightPackable(GenerateType.VersionTolerant)]
 public partial class RadpackLua : RadpackAsset
 {
-    [MemoryPackOrder(1)] public required LuaScriptKind Kind;
+    [TightPackOrder(1)] public required LuaScriptKind Kind;
 
     /// <summary>
     /// The files, with path separator replaced with .
     /// </summary>
-    [MemoryPackOrder(2)] public required Dictionary<string, string> Files;
+    [TightPackOrder(2)] public required Dictionary<string, string> Files;
 }
 
 /// <summary>
 /// A native gamemode package: one managed assembly, loaded through the plugin sandbox like a
 /// <c>gamemode.dll</c>. Never extracted and never executed by browsing.
 /// </summary>
-[MemoryPackable(GenerateType.VersionTolerant)]
+[TightPackable(GenerateType.VersionTolerant)]
 public partial class RadpackGamemode : RadpackAsset
 {
-    [MemoryPackOrder(1)] public required byte[] Assembly;
+    [TightPackOrder(1)] public required byte[] Assembly;
 }
 
 public enum RadTextureFormat : byte
