@@ -62,6 +62,68 @@ internal static class PluginPolicy
 
     private static readonly Lazy<CasPolicy> Policy = new(Build);
 
+    /// <summary>
+    /// The formatters generated code constructs itself, one per member type it resolves through the
+    /// provider. Kept in step with <c>TightPack.Generator.TypeParser.BuildFormatterExpression</c>:
+    /// a type named there but missing here cannot be used by a plugin.
+    /// </summary>
+    private static readonly Type[] GeneratedFormatterTypes =
+    [
+        typeof(TightPack.Formatters.ArrayFormatter<>),
+        typeof(TightPack.Formatters.TwoDimensionalArrayFormatter<>),
+        typeof(TightPack.Formatters.ThreeDimensionalArrayFormatter<>),
+        typeof(TightPack.Formatters.FourDimensionalArrayFormatter<>),
+        typeof(TightPack.Formatters.ListFormatter<>),
+        typeof(TightPack.Formatters.DictionaryFormatter<,>),
+        typeof(TightPack.Formatters.HashSetFormatter<>),
+        typeof(TightPack.Formatters.KeyValuePairFormatter<,>),
+        typeof(TightPack.Formatters.EnumerableFormatter<>),
+        typeof(TightPack.Formatters.InterfaceListFormatter<>),
+        typeof(TightPack.Formatters.IReadOnlyListFormatter<>),
+        typeof(TightPack.Formatters.InterfaceCollectionFormatter<>),
+        typeof(TightPack.Formatters.IReadOnlyCollectionFormatter<>),
+        typeof(TightPack.Formatters.InterfaceDictionaryFormatter<,>),
+        typeof(TightPack.Formatters.IReadOnlyDictionaryFormatter<,>),
+        typeof(TightPack.Formatters.InterfaceSetFormatter<>),
+        typeof(TightPack.Formatters.IReadOnlySetFormatter<>),
+        typeof(TightPack.Formatters.StackFormatter<>),
+        typeof(TightPack.Formatters.QueueFormatter<>),
+        typeof(TightPack.Formatters.LinkedListFormatter<>),
+        typeof(TightPack.Formatters.SortedSetFormatter<>),
+        typeof(TightPack.Formatters.PriorityQueueFormatter<,>),
+        typeof(TightPack.Formatters.SortedDictionaryFormatter<,>),
+        typeof(TightPack.Formatters.SortedListFormatter<,>),
+        typeof(TightPack.Formatters.CollectionFormatter<>),
+        typeof(TightPack.Formatters.ObservableCollectionFormatter<>),
+        typeof(TightPack.Formatters.ReadOnlyCollectionFormatter<>),
+        typeof(TightPack.Formatters.ReadOnlyObservableCollectionFormatter<>),
+        typeof(TightPack.Formatters.ConcurrentQueueFormatter<>),
+        typeof(TightPack.Formatters.ConcurrentStackFormatter<>),
+        typeof(TightPack.Formatters.ConcurrentBagFormatter<>),
+        typeof(TightPack.Formatters.ConcurrentDictionaryFormatter<,>),
+        typeof(TightPack.Formatters.BlockingCollectionFormatter<>),
+        typeof(TightPack.Formatters.ArraySegmentFormatter<>),
+        typeof(TightPack.Formatters.ImmutableArrayFormatter<>),
+        typeof(TightPack.Formatters.MemoryFormatter<>),
+        typeof(TightPack.Formatters.ReadOnlyMemoryFormatter<>),
+        typeof(TightPack.Formatters.MemoryByteFormatter),
+        typeof(TightPack.Formatters.ReadOnlyMemoryByteFormatter),
+        typeof(TightPack.Formatters.InlineArray2Formatter<>),
+        typeof(TightPack.Formatters.InlineArray3Formatter<>),
+        typeof(TightPack.Formatters.InlineArray4Formatter<>),
+        typeof(TightPack.Formatters.NullableFormatter<>),
+        typeof(TightPack.Formatters.BitArrayFormatter),
+        typeof(TightPack.Formatters.TypeFormatter),
+        typeof(TightPack.Formatters.ValueTupleFormatter<>),
+        typeof(TightPack.Formatters.ValueTupleFormatter<,>),
+        typeof(TightPack.Formatters.ValueTupleFormatter<,,>),
+        typeof(TightPack.Formatters.ValueTupleFormatter<,,,>),
+        typeof(TightPack.Formatters.ValueTupleFormatter<,,,,>),
+        typeof(TightPack.Formatters.ValueTupleFormatter<,,,,,>),
+        typeof(TightPack.Formatters.ValueTupleFormatter<,,,,,,>),
+        typeof(TightPack.Formatters.ValueTupleFormatter<,,,,,,,>),
+    ];
+
     /// <summary>Whether the sandbox can run here: CasCore rewrites IL and needs a JIT.</summary>
     public static bool Supported => RuntimeFeature.IsDynamicCodeSupported;
 
@@ -190,7 +252,15 @@ internal static class PluginPolicy
         builder.Allow(new TypeBinding(typeof(TightPack.TightPackFormatterProvider), Accessibility.Public));
         builder.Allow(new TypeBinding(typeof(TightPack.TightPackSerializationException), Accessibility.Public));
         builder.Allow(new TypeBinding(typeof(TightPack.TightPackBlit), Accessibility.Public));
-        builder.Allow(new TypeBinding(typeof(TightPack.Formatters.ArrayFormatter<>), Accessibility.Public));
+
+        // Generated code names a member's formatter directly in a static field initializer, so a
+        // plugin that declares a collection, a multi-dimensional array or a Type member uses this
+        // type itself and not only the reader/writer below. Each one is a thin serializer over
+        // those same primitives.
+        foreach (Type formatter in GeneratedFormatterTypes)
+        {
+            builder.Allow(new TypeBinding(formatter, Accessibility.Public));
+        }
 
         // Reader and writer primitives, by signature so the generic instantiations the
         // generated code calls are the only ones reachable. Every one of them goes through

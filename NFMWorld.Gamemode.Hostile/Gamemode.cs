@@ -84,6 +84,33 @@ public class HostileGamemode : PluginGamemode
     /// <summary>Serializes a plugin event, which runs the generated TightPack formatter.</summary>
     public static byte[] SerializeAnEvent() => TightPackSerializer.Serialize(new HostileEvent(42));
 
+    /// <summary>
+    /// Serializes an event whose members resolve formatters the generated code names itself:
+    /// a collection, a multi-dimensional array, a set and a <see cref="Type"/>.
+    /// </summary>
+    public static byte[] SerializeACollectionEvent()
+    {
+        var value = new HostileCollectionEvent
+        {
+            Stack = new Stack<int>(new[] { 1, 2 }),
+            Map = new SortedDictionary<int, string> { [1] = "a" },
+            Set = new HashSet<int> { 5 },
+            Grid = new[,] { { 1, 2, 3 }, { 4, 5, 6 } },
+            // A corelib type: TypeFormatter cannot resolve a name from this collectible load context.
+            Kind = typeof(int),
+        };
+
+        return TightPackSerializer.Serialize(value);
+    }
+
+    /// <summary>Serializes and deserializes the same event, exercising both directions of the wire format.</summary>
+    public static int[,] RoundTripACollectionEvent()
+    {
+        var payload = SerializeACollectionEvent();
+        var restored = TightPackSerializer.Deserialize<HostileCollectionEvent>(payload);
+        return restored.Grid!;
+    }
+
     public void CallRenderingCallbacks()
     {
         var callbacks = ClientCallbacks;
@@ -101,3 +128,17 @@ public class HostileGamemode : PluginGamemode
 /// <summary>A plugin event, to exercise the generated TightPack formatter path.</summary>
 [TightPackable]
 public partial record HostileEvent(int Value);
+
+/// <summary>
+/// The same path for a member whose formatter the generated code names itself, which is the part
+/// of the provider surface a plugin reaches directly rather than through the writer.
+/// </summary>
+[TightPackable]
+public partial class HostileCollectionEvent
+{
+    public Stack<int>? Stack { get; set; }
+    public SortedDictionary<int, string>? Map { get; set; }
+    public ISet<int>? Set { get; set; }
+    public int[,]? Grid { get; set; }
+    public Type? Kind { get; set; }
+}

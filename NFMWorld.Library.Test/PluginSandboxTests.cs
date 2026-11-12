@@ -104,6 +104,28 @@ public class PluginSandboxTests
     }
 
     [TestMethod]
+    public void SerializingAnEventWithProviderResolvedMembers_Works()
+    {
+        var target = _hostile.GetType("NFMWorld.Gamemode.Hostile.HostileGamemode", throwOnError: true)!
+            .GetMethod("SerializeACollectionEvent", BindingFlags.Public | BindingFlags.Static)!;
+
+        var payload = (byte[])target.Invoke(null, null)!;
+
+        Assert.IsTrue(payload.Length > 0);
+
+        // Deserialising constructs the array and writes its elements, and reaching the serializer
+        // from a byte[] needs the ReadOnlySpan conversion; neither is exercised by serialising.
+        var roundTrip = _hostile.GetType("NFMWorld.Gamemode.Hostile.HostileGamemode", throwOnError: true)!
+            .GetMethod("RoundTripACollectionEvent", BindingFlags.Public | BindingFlags.Static)!;
+
+        var grid = (int[,])roundTrip.Invoke(null, null)!;
+
+        Assert.AreEqual(2, grid.GetLength(0));
+        Assert.AreEqual(3, grid.GetLength(1));
+        Assert.AreEqual(6, grid[1, 2]);
+    }
+
+    [TestMethod]
     public void RenderingCallbacksUseTrustedWrappers()
     {
         var callbacks = new RenderingCallbacks();

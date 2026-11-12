@@ -44,7 +44,7 @@ wire change.
 | `TypeFormatter` writes `FullName, AssemblyName` | Version, culture and token change on every rebuild. It cannot resolve a type from a collectible plugin load context, and a trimmed build cannot resolve a name it never saw. |
 | `PluginPolicy.GeneratedFormatterTypes` must list every generatable formatter | The generated code constructs the formatter in the plugin's own type initializer, so a missing entry throws `SecurityException` there. `PluginSandboxTests.SerializingAnEventWithProviderResolvedMembers_Works` guards it. |
 | Array members need an explicit CasCore switch | Every array's `.ctor`/`Get`/`Set`/`Address` reports `MetadataToken 0x06000000`, so `MemberId` cannot identify them. `CasPolicy` answers them from `AllowArrayMembers()` instead, which `WithSandboxedSystem()` sets. Plain `new T[i]` needs none of it — that is `newarr`, not a member call. |
-| A plugin still cannot deserialize from a `byte[]` | `TightPackSerializer.Deserialize<T>(ReadOnlySpan<byte>)` needs `ReadOnlySpan<byte>.op_Implicit(byte[])`, which CasCore's default sandbox leaves commented out. Serializing works; plugins only ever deserialize through the host, so nothing is blocked today. |
+| TypeFormatter cannot resolve a plugin's own type | `Type.GetType("Ns.Type, Asm")` does not search a collectible load context, so round-tripping a `Type` member whose value names the plugin itself throws. A corelib type round-trips fine. |
 
 ## Test coverage
 
