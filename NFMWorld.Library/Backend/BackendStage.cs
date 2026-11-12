@@ -46,6 +46,7 @@ public partial class BackendStage
         // Creates an empty stage for inheritance
         Path = "~empty~";
         StageLoader = new StageLoader();
+        Nlaps = StageLoader.nlaps;
     }
 
     [PluginVisible]

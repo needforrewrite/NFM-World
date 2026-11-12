@@ -34,9 +34,16 @@ public class StagePieceInstance
     }
 
     public string Name => PiecePlacement.Object.FileName;
-    public StageObject Obj { get; }
+    public StageObject Obj { get; private set; }
 
     public Rad3d Rad => PiecePlacement.Object;
+
+    /// <summary>Swaps the rendered stage object, e.g. after a part replacement.</summary>
+    public void ReplaceObject(StageObject obj)
+    {
+        Obj = obj;
+        PiecePlacement = PiecePlacement with { Object = obj.Rad };
+    }
 
     public f64Vector3 Position
     {
@@ -203,6 +210,26 @@ public class StageEditorTab
     public int SnapC { get; set; } = 0;
     public int FadeFrom { get; set; } = 10000;
 
+    // The rest of the stage format. These mirror the loader fields one-for-one so a save
+    // round-trips everything the runtime understands.
+    public bool Aerial { get; set; }
+    public string MusicPath { get; set; } = "";
+    public string RemasteredMusicPath { get; set; } = "";
+    public double MusicFreqMul { get; set; } = 1.0d;
+    public double MusicTempoMul { get; set; } = 1.0d;
+
+    /// <summary>Argument of <c>density()</c>; null when the stage has no fog directive.</summary>
+    public int? FogDensity { get; set; }
+
+    public bool LightsOn { get; set; }
+    public Vector3 LightDirection { get; set; } = new(0, 1, 0);
+    public float? MountainCoverage { get; set; }
+
+    /// <summary>Arguments of <c>texture(a,b,c,d)</c>; null when the stage has no texture directive.</summary>
+    public int[]? Texture { get; set; }
+
+    public StagePhysics Physics { get; set; } = new();
+
     public int GetNextPieceId()
     {
         int maxId = -1;
@@ -227,6 +254,9 @@ public partial class StageEditorPhase : BasePhase
     private readonly NFMWorld.Graphics.IGraphicsDevice _graphicsDevice;
     private bool _isOpen = false;
 
+    /// <summary>Set while a garage or race runs above the editor (test drive), so Exit keeps the tabs.</summary>
+    private bool _preserveTabsOnExit;
+
     // Tab management
     private List<StageEditorTab> _tabs = new();
     private int _activeTabIndex = -1;
@@ -240,11 +270,6 @@ public partial class StageEditorPhase : BasePhase
     // Viewport bounds for scissor testing
     private Vector2 _viewportMin;
     private Vector2 _viewportMax;
-
-    // UI state
-    private float _hierarchyWidth = 250f;
-    private float _inspectorWidth = 300f;
-    private float _partsLibraryHeight = 280f;
 
     // Mouse state
     private int _mouseX;
@@ -313,26 +338,6 @@ public partial class StageEditorPhase : BasePhase
     private bool _showLoadStageDialog = false;
     private List<string> _availableStages = new();
     private int _selectedStageIndex = -1;
-
-    // Properties dialog state
-    private bool _showPropertiesDialog = false;
-    private string _editStageName = "";
-    private Color3 _editSkyColor = new(135, 206, 235);
-    private Color3 _editFogColor = new(135, 206, 235);
-    private Color3 _editGroundColor = new(100, 200, 100);
-    private Color3 _editPolysColor = new(215, 210, 210);
-    private bool _editPolysEnabled = false;
-    private bool _editCloudsEnabled = false;
-    private Color3 _editCloudsColor = new(210, 210, 210);
-    private int _editCloudsParam4 = 1;
-    private int _editCloudsHeight = -1000;
-    private float _editCloudCoverage = 1.0f;
-    private bool _editMountainsEnabled = false;
-    private int _editMountainsSeed = 0;
-    private int _editSnapA = 0;
-    private int _editSnapB = 0;
-    private int _editSnapC = 0;
-    private int _editFadeFrom = 10000;
 
     // Unsaved changes warning dialogs
     private bool _showExitWarningDialog = false;
@@ -423,22 +428,13 @@ public partial class StageEditorPhase : BasePhase
     private string _renameGroupBuffer = "";
     private bool _showRenameGroupDialog = false;
 
+    // Directives the editor does not expose but must not drop on save. Everything the
+    // properties tabs write is deliberately absent from this list.
     private static readonly string[] _preservedDirectivePrefixes =
     [
-        "soundtrack(",
-        "soundtrackremaster(",
-        "soundtrackfreqmul(",
-        "soundtracktempomul(",
-        "density(",
-        "distfog(",
-        "lightson(",
-        "mountaincoverage(",
-        "lightdir(",
         "modeloffset(",
         "swapRotY(",
         "reverseChkY(",
-        "aerial(",
-        "nlaps(",
         "stagemaker(",
         "publish("
     ];
@@ -503,6 +499,7 @@ public partial class StageEditorPhase : BasePhase
 
     private void PerformCloseTab(int index)
     {
+        StopMusicPreview(notify: false);
         _tabs.RemoveAt(index);
 
         if (_tabs.Count == 0)
@@ -520,6 +517,17 @@ public partial class StageEditorPhase : BasePhase
         base.Enter();
 
         _isOpen = true;
+
+        var returningFromTestDrive = _preserveTabsOnExit;
+        _preserveTabsOnExit = false;
+        _testDriveLaunched = false;
+
+        // The garage and race reset World for their own copy of the stage; put this document back.
+        if (returningFromTestDrive && ActiveTab is not null)
+        {
+            ApplyTabWorldValuesToWorld();
+            RecreateEnvironment();
+        }
 
         // Wipe the shadow cascades, as the pre-migration editor did on entry: the editor's own Scene
         // renders with useShadowMapping: false (and no light cameras), so it never re-renders or
@@ -572,6 +580,11 @@ public partial class StageEditorPhase : BasePhase
     {
         base.Exit();
         _isOpen = false;
+        StopMusicPreview(notify: false);
+
+        // A test drive pushed the garage/race above us; the documents have to survive that.
+        if (_preserveTabsOnExit)
+            return;
 
         // Restore walls to all stages before exiting so they appear in gameplay
         foreach (var tab in _tabs)

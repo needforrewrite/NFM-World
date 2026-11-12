@@ -11,12 +11,24 @@ using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
+using NFMWorldLibrary.Util;
 using SignalsDotnet;
 
 namespace NFMWorld.UI;
 
 public partial class StageEditorPhase
 {
+    // Chrome metrics. Kept compact so the viewport, not the panels, owns the window.
+    private const float MenuBarHeight = 32;
+    private const float TabStripHeight = 30;
+    private const float ChromeTop = MenuBarHeight + TabStripHeight;
+    private const float HierarchyWidth = 200;
+    private const float InspectorWidth = 240;
+    private const float BottomPanelHeight = 224;
+    private const float PartTileSize = 64;
+    private const float PartPreviewWidth = 54;
+    private const float PartPreviewHeight = 38;
+
     // Built once. Slots read the live editor fields; Touch() republishes them after an action.
     private readonly Signal<int> _uiRevision = new(0);
     private readonly Signal<int> _previewRevision = new(0);
@@ -26,12 +38,13 @@ public partial class StageEditorPhase
     private int _lastSelectionStamp;
 
     // Hierarchy drag/context state. Rows are rebuilt from _uiRevision, so plain fields are enough.
-    private int _hierDragPieceId = -1;
+    private readonly List<int> _hierDragPieceIds = [];
     private int _hierDragGroupId = -1;
     private bool _hierDragging;
     private float _hierDragStartX;
     private float _hierDragStartY;
     private HierarchyRowVm? _hierDropRow;
+    private bool _hierDropAbove;
     private bool _contextMenuOpen;
     private HierarchyRowVm? _contextRow;
     private float _contextMenuX;
@@ -40,8 +53,9 @@ public partial class StageEditorPhase
     private void Touch() => _uiRevision.Value = _uiRevision.Value + 1;
 
     private bool EditorModalOpen() => _showNewStageDialog || _showLoadStageDialog || _showExportDialog
-                                      || _showPropertiesDialog || _showPublishDialog || _showExitWarningDialog
-                                      || _showCloseTabWarningDialog || _showRenameGroupDialog || _contextMenuOpen
+                                      || _showPublishDialog || _showExitWarningDialog
+                                      || _showCloseTabWarningDialog || _showRenameGroupDialog
+                                      || _showTestDriveSaveDialog || _contextMenuOpen
                                       || _openEditorMenu.Value is not null;
 
     private int SelectionStamp()
@@ -60,7 +74,7 @@ public partial class StageEditorPhase
             LeftPanel(),
             CenterViewport(),
             RightPanel(),
-            PartsPanel(),
+            BottomPanel(),
             Dialogs(),
             RectSelectionOverlay(),
             MenuOverlay(),
@@ -74,7 +88,8 @@ public partial class StageEditorPhase
             label: () => label,
             onPress: action,
             size: ButtonSize.Sm,
-            style: () => Sx.Styles(flexShrink: 0)
+            style: CompactStyle(),
+            textStyle: SmallButtonText
         );
         button.Name = "Editor action " + label;
         return button;
@@ -85,8 +100,11 @@ public partial class StageEditorPhase
             label: Observe(label),
             onPress: action,
             size: ButtonSize.Sm,
-            style: () => Sx.Styles(flexShrink: 0)
+            style: CompactStyle(),
+            textStyle: SmallButtonText
         );
+
+    private static TextStyles SmallButtonText() => Sx.TextStyles(fontSize: 11, fontStyle: FontStyle.Bold);
 
     private Func<T> Observe<T>(Func<T> read) => () =>
     {
@@ -104,14 +122,38 @@ public partial class StageEditorPhase
     private Node EditorShow(Func<bool> when, Func<object?> then, Func<object?>? otherwise = null)
         => Sx.Show(Observe(when), then, otherwise);
 
-    private Node EditorField(Func<string> value, Action<string> onChange, Func<string?>? placeholder = null)
-        => Controls.TextField(Observe(value), onChange, placeholder);
+    private Node EditorField(
+        Func<string> value,
+        Action<string> onChange,
+        Func<string?>? placeholder = null,
+        float minWidth = 160
+    )
+    {
+        var input = Sx.TextInput(
+            style: () => Sx.Styles(
+                minWidth: minWidth,
+                paddingTop: 3,
+                paddingBottom: 3,
+                paddingLeft: 8,
+                paddingRight: 8,
+                backgroundColor: new Color(22, 34, 54),
+                borderTop: 1,
+                borderBottom: 1,
+                borderLeft: 1,
+                borderRight: 1,
+                borderColor: new Color(128, 170, 255, 65),
+                borderRadius: 6
+            ),
+            text: Observe(value),
+            onchange: onChange,
+            placeholder: placeholder is null ? null : Observe(placeholder)
+        );
+        input.TextStyles = Sx.TextStyles(fontSize: 11);
+        return input;
+    }
 
     private Node EditorCheckbox(Func<bool> value, Action toggle, Func<string?>? label = null)
         => Controls.Checkbox(Observe(value), toggle, label);
-
-    private Node EditorSlider(Func<double> value, Action<double> set, double min, double max, double step)
-        => Controls.Slider(Observe(value), set, min, max, step);
 
     private static string ShortName(string name)
     {
@@ -131,7 +173,7 @@ public partial class StageEditorPhase
                 left: 0,
                 right: 0,
                 top: 0,
-                height: 36,
+                height: MenuBarHeight,
                 flexDirection: FlexDirection.Row,
                 alignItems: Align.Center,
                 gapColumn: 4,
@@ -145,14 +187,39 @@ public partial class StageEditorPhase
             children:
             [
                 EditorText(
-                    style: () => Sx.TextStyles(fontSize: 12, fontStyle: FontStyle.Bold, foregroundColor: new Color(128, 170, 255)),
+                    style: () => Sx.TextStyles(fontSize: 11, fontStyle: FontStyle.Bold, foregroundColor: new Color(128, 170, 255)),
                     layout: () => Sx.Styles(marginRight: 16, flexShrink: 0),
                     text: () => "STAGE EDITOR"
                 ),
                 MenuTrigger("File"), MenuTrigger("Edit"), MenuTrigger("View"),
+                Sx.View(style: () => Sx.Styles(width: 10, flexShrink: 0)),
+                ModeButton(
+                    () => "3D SCENE",
+                    () => ActiveTab?.ViewMode == StageEditorTab.ViewModeEnum.Scene,
+                    () => SetViewMode(StageEditorTab.ViewModeEnum.Scene)
+                ),
+                ModeButton(
+                    () => "TOP DOWN",
+                    () => ActiveTab?.ViewMode == StageEditorTab.ViewModeEnum.TopDown,
+                    () => SetViewMode(StageEditorTab.ViewModeEnum.TopDown)
+                ),
+                ModeButton(
+                    () => ActiveTab?.TopDownOrtho == true ? "ORTHO" : "PERSPECTIVE",
+                    () => ActiveTab?.TopDownOrtho == true,
+                    () =>
+                    {
+                        if (ActiveTab is { } tab)
+                        {
+                            tab.TopDownOrtho = !tab.TopDownOrtho;
+                            UpdateCameraPosition();
+                        }
+
+                        Touch();
+                    }
+                ),
                 Sx.View(style: () => Sx.Styles(flexGrow: 1, pointerEvents: false)),
                 EditorText(
-                    style: () => Sx.TextStyles(fontSize: 11, foregroundColor: new Color(140, 166, 202)),
+                    style: () => Sx.TextStyles(fontSize: 10, foregroundColor: new Color(140, 166, 202)),
                     layout: () => Sx.Styles(flexShrink: 0),
                     text: () => ActiveTab is { Stage: { } stage } tab
                         ? $"{tab.ScenePieces.Count} pieces  /  {stage.Nlaps} laps" : "No document"
@@ -168,12 +235,34 @@ public partial class StageEditorPhase
             active: () => _openEditorMenu.Value == label,
             variant: ButtonVariant.Ghost,
             size: ButtonSize.Sm,
-            style: () => Sx.Styles(minWidth: 64, flexShrink: 0)
+            style: CompactStyle(minWidth: 56),
+            textStyle: () => Sx.TextStyles(fontSize: 11, fontStyle: FontStyle.Bold)
         );
         trigger.Name = "Editor menu " + label;
         _editorMenuTriggers[label] = trigger;
         return trigger;
     }
+
+    private Node ModeButton(Func<string> label, Func<bool> active, Action onPress)
+        => Button.Create(
+            label: label,
+            onPress: onPress,
+            active: Observe(active),
+            size: ButtonSize.Sm,
+            style: CompactStyle(),
+            textStyle: () => Sx.TextStyles(fontSize: 10, fontStyle: FontStyle.Bold)
+        );
+
+    private static Func<Styles> CompactStyle(float minWidth = 0)
+        => () => Sx.Styles(
+            flexShrink: 0,
+            minWidth: minWidth,
+            paddingTop: 2,
+            paddingBottom: 2,
+            paddingLeft: 8,
+            paddingRight: 8,
+            borderRadius: 4
+        );
 
     private Node MenuOverlay()
         => Sx.Show(
@@ -184,7 +273,7 @@ public partial class StageEditorPhase
                     position: Position.Absolute,
                     left: 0,
                     right: 0,
-                    top: 36,
+                    top: MenuBarHeight,
                     bottom: 0,
                     zIndex: 40
                 ),
@@ -195,7 +284,7 @@ public partial class StageEditorPhase
                         position: Position.Absolute,
                         left: _editorMenuTriggers[_openEditorMenu.Value!].LayoutBorderPosition.X / TheGraphics.G.Scale,
                         top: 0,
-                        width: 250,
+                        width: 220,
                         flexDirection: FlexDirection.Column,
                         paddingTop: 6,
                         paddingBottom: 6,
@@ -244,14 +333,7 @@ public partial class StageEditorPhase
                             MenuAction("Undo", "Ctrl+Z", PerformUndo),
                             MenuAction("Redo", "Ctrl+Y", PerformRedo),
                             MenuAction("Delete selection", "Delete", DeleteSelection),
-                            MenuAction("Group selection", "", CreateGroupFromSelection),
-                            MenuAction("Stage properties…", "", () =>
-                                {
-                                    if (ActiveTab?.Stage == null) return;
-                                    LoadPropertiesFromTab();
-                                    _showPropertiesDialog = true;
-                                }
-                            )
+                            MenuAction("Group selection", "", CreateGroupFromSelection)
                         },
                         _ => new object[]
                         {
@@ -300,11 +382,11 @@ public partial class StageEditorPhase
                 children:
                 [
                     EditorText(
-                        style: () => Sx.TextStyles(fontSize: 12, foregroundColor: new Color(211, 228, 252)),
+                        style: () => Sx.TextStyles(fontSize: 11, foregroundColor: new Color(211, 228, 252)),
                         text: () => label
                     ),
                     EditorText(
-                        style: () => Sx.TextStyles(fontSize: 11, foregroundColor: new Color(128, 155, 190)),
+                        style: () => Sx.TextStyles(fontSize: 10, foregroundColor: new Color(128, 155, 190)),
                         text: () => shortcut
                     )
                 ]
@@ -335,8 +417,8 @@ public partial class StageEditorPhase
                 position: Position.Absolute,
                 left: 0,
                 right: 0,
-                top: 36,
-                height: 34,
+                top: MenuBarHeight,
+                height: TabStripHeight,
                 flexDirection: FlexDirection.Row,
                 alignItems: Align.Stretch,
                 paddingLeft: 8,
@@ -388,7 +470,7 @@ public partial class StageEditorPhase
                 [
                     EditorText(
                         style: () => Sx.TextStyles(
-                            fontSize: 12,
+                            fontSize: 11,
                             fontStyle: FontStyle.Bold,
                             foregroundColor: active() ? new Color(205, 227, 255) : new Color(130, 155, 195)
                         ),
@@ -422,6 +504,7 @@ public partial class StageEditorPhase
             return;
 
         _activeTabIndex = index;
+        StopMusicPreview(notify: false);
         UpdateCameraPosition();
         ApplyTabWorldValuesToWorld();
         RecreateEnvironment();
@@ -444,9 +527,9 @@ public partial class StageEditorPhase
             style: () => Sx.Styles(
                 position: Position.Absolute,
                 left: 0,
-                top: 70,
-                bottom: 240,
-                width: 250,
+                top: ChromeTop,
+                bottom: BottomPanelHeight,
+                width: HierarchyWidth,
                 flexDirection: FlexDirection.Column,
                 paddingTop: 8,
                 paddingBottom: 8,
@@ -463,7 +546,7 @@ public partial class StageEditorPhase
                     style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 6, flexShrink: 0),
                     children:
                     [
-                        EditorText(style: () => Sx.TextStyles(fontSize: 13, fontStyle: FontStyle.Bold), text: () => "Hierarchy"),
+                        EditorText(style: () => Sx.TextStyles(fontSize: 11, fontStyle: FontStyle.Bold), text: () => "Hierarchy"),
                         EditorField(
                             () => _hierarchySearch,
                             value => { _hierarchySearch = value; Touch(); },
@@ -478,6 +561,8 @@ public partial class StageEditorPhase
                         flexShrink: 1,
                         minHeight: 0,
                         overflow: Overflow.Scroll,
+                        // Keep rows and their buttons out from under the scrollbar.
+                        paddingRight: 8,
                         gapRow: 2
                     ),
                     children:
@@ -557,7 +642,7 @@ public partial class StageEditorPhase
             if (index == tab.HierarchyGroups.Count)
                 break;
 
-            var group = tab.HierarchyGroups[index];
+            var group = tab.HierarchyGroups.ByIndex(index);
             var members = group.PieceIds
                 .Select(id => tab.ScenePieces.GetValueOrDefault(id))
                 .Where(piece => piece is not null && Matches(piece, query))
@@ -607,42 +692,86 @@ public partial class StageEditorPhase
             return BordersHeader();
 
         var heading = row.Kind is HierarchyRowKind.Group or HierarchyRowKind.Ungrouped;
-        return Sx.View(
+        var wall = row.Kind == HierarchyRowKind.Wall;
+        var view = Sx.View(
             style: () =>
             {
                 _uiRevision.Value.ToString();
                 var selected = IsRowSelected(row);
-                var hovered = _hierDropRow == row;
+                var dropTarget = _hierDropRow == row;
                 return Sx.Styles(
+                    position: Position.Relative,
                     flexShrink: 0,
-                    paddingTop: 4,
-                    paddingBottom: 4,
-                    paddingLeft: heading ? 4 : 10,
+                    marginTop: heading ? 4 : 0,
+                    paddingTop: 3,
+                    paddingBottom: 3,
+                    paddingLeft: heading ? 6 : 12,
                     paddingRight: 8,
                     borderRadius: 4,
+                    // A band behind group headers: pieces must not read as siblings.
                     backgroundColor: selected ? new Color(55, 90, 150, 180)
-                        : hovered ? new Color(55, 90, 150, 90)
+                        : dropTarget ? new Color(55, 90, 150, ShowDropLine(row) ? 70 : 150)
+                        : heading ? new Color(128, 170, 255, 24)
                         : new Color(0, 0, 0, 0)
                 );
             },
-            onmousedown: e => OnHierarchyRowPressed(row, e),
-            onmouseenter: e => OnHierarchyRowHovered(row, e),
-            children: EditorText(
-                style: () =>
-                {
-                    _uiRevision.Value.ToString();
-                    return Sx.TextStyles(
-                        fontSize: heading ? 11 : 12,
-                        fontStyle: heading ? FontStyle.Bold : FontStyle.Plain,
-                        foregroundColor: heading ? new Color(170, 200, 255)
-                            : IsRowSelected(row) ? new Color(128, 170, 255)
-                            : new Color(185, 211, 255)
-                    );
-                },
-                text: () => row.Label
-            )
+            children:
+            [
+                EditorText(
+                    style: () =>
+                    {
+                        _uiRevision.Value.ToString();
+                        return Sx.TextStyles(
+                            fontSize: 10,
+                            fontStyle: heading ? FontStyle.Bold : FontStyle.Plain,
+                            foregroundColor: heading ? new Color(128, 170, 255)
+                                : IsRowSelected(row) ? new Color(170, 210, 255)
+                                : wall ? new Color(150, 185, 225)
+                                : new Color(211, 228, 252)
+                        );
+                    },
+                    text: () => row.Label
+                ),
+                DropIndicatorLine(row)
+            ]
         );
+
+        // The handlers need the row's own bounds to tell the insertion half.
+        view.MousePressed = e => OnHierarchyRowPressed(row, e);
+        view.MouseEntered = e => OnHierarchyRowHovered(row, e, view);
+        view.MouseMoved = e => OnHierarchyRowHovered(row, e, view);
+        return view;
     }
+
+    /// <summary>An insertion line rather than a row highlight when the drop is an ordering change.</summary>
+    private bool ShowDropLine(HierarchyRowVm row)
+        => _hierDropRow == row && (row.Kind == HierarchyRowKind.Piece || _hierDragGroupId >= 0);
+
+    private Node DropIndicatorLine(HierarchyRowVm row)
+        => Sx.View(
+            style: () =>
+            {
+                _ = _uiRevision.Value;
+                var styles = Sx.Styles(
+                    position: Position.Absolute,
+                    left: 0,
+                    right: 0,
+                    height: 2,
+                    backgroundColor: new Color(128, 200, 255),
+                    borderRadius: 1,
+                    pointerEvents: false,
+                    display: ShowDropLine(row) ? Display.Flex : Display.None
+                );
+
+                // Top edge means "insert before", bottom edge means "insert after".
+                if (_hierDropAbove)
+                    styles.Top = 0;
+                else
+                    styles.Bottom = 0;
+
+                return styles;
+            }
+        );
 
     private Node BordersHeader()
         => Sx.View(
@@ -650,13 +779,13 @@ public partial class StageEditorPhase
             children:
             [
                 EditorText(
-                    style: () => Sx.TextStyles(fontSize: 11, fontStyle: FontStyle.Bold, foregroundColor: new Color(170, 200, 255)),
+                    style: () => Sx.TextStyles(fontSize: 10, fontStyle: FontStyle.Bold, foregroundColor: new Color(128, 170, 255)),
                     text: () => "STAGE BORDERS"
                 ),
-                EditorCheckbox(
+                PropertyCheckbox(
+                    "Auto-update walls",
                     () => _autoUpdateWalls,
-                    () => { _autoUpdateWalls = !_autoUpdateWalls; Touch(); },
-                    () => "Auto-update walls"
+                    () => { _autoUpdateWalls = !_autoUpdateWalls; Touch(); }
                 ),
                 SmallButton(
                     "AUTO-GENERATE BORDERS",
@@ -703,8 +832,19 @@ public partial class StageEditorPhase
         switch (row.Kind)
         {
             case HierarchyRowKind.Piece:
-                SelectHierarchyPiece(tab, row.PieceId, e.CtrlKey);
-                _hierDragPieceId = row.PieceId;
+                // Pressing a row that is already part of a multi-selection drags the whole
+                // selection; pressing another row replaces the selection (ctrl toggles).
+                if (e.CtrlKey || !tab.SelectedPieceIds.Contains(row.PieceId) || tab.SelectedPieceIds.Count <= 1)
+                    SelectHierarchyPiece(tab, row.PieceId, e.CtrlKey);
+                else
+                    tab.ActivePieceId = row.PieceId;
+
+                _hierDragPieceIds.Clear();
+                if (tab.SelectedPieceIds.Contains(row.PieceId))
+                {
+                    _hierDragPieceIds.AddRange(tab.SelectedPieceIds.OrderBy(id => tab.ScenePieces.FindIndex(p => p.Id == id)));
+                }
+
                 _hierDragStartX = e.Position.X;
                 _hierDragStartY = e.Position.Y;
                 break;
@@ -737,7 +877,10 @@ public partial class StageEditorPhase
             tab.SelectedPieceIds.Add(pieceId);
         }
 
-        tab.ActivePieceId = pieceId;
+        // Ctrl-clicking a selected row unselects it; the primary piece must stay in the set.
+        tab.ActivePieceId = tab.SelectedPieceIds.Contains(pieceId)
+            ? pieceId
+            : tab.SelectedPieceIds.Count > 0 ? tab.SelectedPieceIds.First() : -1;
         tab.SelectedWallId = -1;
     }
 
@@ -755,9 +898,9 @@ public partial class StageEditorPhase
     }
 
     /// <summary>Hover only counts as a drop target once the pressed row has actually moved.</summary>
-    private void OnHierarchyRowHovered(HierarchyRowVm row, MouseMoveEvent e)
+    private void OnHierarchyRowHovered(HierarchyRowVm row, MouseMoveEvent e, Component rowView)
     {
-        if (_hierDragPieceId < 0 && _hierDragGroupId < 0)
+        if (_hierDragPieceIds.Count == 0 && _hierDragGroupId < 0)
             return;
 
         if (!_hierDragging)
@@ -767,24 +910,47 @@ public partial class StageEditorPhase
             _hierDragging = true;
         }
 
-        if (_hierDropRow == row)
+        if (!IsValidHierarchyDrop(row))
+        {
+            if (_hierDropRow is null)
+                return;
+
+            _hierDropRow = null;
+            Touch();
+            return;
+        }
+
+        // Top or bottom half decides insert-before vs insert-after.
+        var above = e.Position.Y < rowView.LayoutBorderPosition.Y + (rowView.LayoutBorderSize.Y / 2f);
+        if (_hierDropRow == row && _hierDropAbove == above)
             return;
 
         _hierDropRow = row;
+        _hierDropAbove = above;
         Touch();
+    }
+
+    private bool IsValidHierarchyDrop(HierarchyRowVm row)
+    {
+        if (_hierDragGroupId >= 0)
+            return row.Kind == HierarchyRowKind.Group;
+
+        return row.Kind is HierarchyRowKind.Piece or HierarchyRowKind.Group or HierarchyRowKind.Ungrouped;
     }
 
     private void CommitHierarchyDrag()
     {
         var target = _hierDropRow;
-        var pieceId = _hierDragPieceId;
+        var pieceIds = _hierDragPieceIds.ToArray();
         var groupId = _hierDragGroupId;
         var dragging = _hierDragging;
+        var dropAbove = _hierDropAbove;
 
-        _hierDragPieceId = -1;
+        _hierDragPieceIds.Clear();
         _hierDragGroupId = -1;
         _hierDragging = false;
         _hierDropRow = null;
+        _hierDropAbove = false;
 
         if (!dragging || target is not { } destination || ActiveTab is not { } tab)
         {
@@ -793,44 +959,35 @@ public partial class StageEditorPhase
             return;
         }
 
-        if (pieceId >= 0)
+        if (pieceIds.Length > 0)
         {
-            if (destination.Kind == HierarchyRowKind.Piece && destination.PieceId != pieceId)
+            if (destination.Kind == HierarchyRowKind.Piece)
             {
+                if (pieceIds.Contains(destination.PieceId))
+                {
+                    Touch();
+                    return;
+                }
+
                 PushUndoSnapshot();
-                ReorderPiece(pieceId, destination.PieceId);
+                ReorderPieces(pieceIds, destination.PieceId, after: !dropAbove);
                 tab.HasUnsavedChanges = true;
             }
             else if (destination.Kind is HierarchyRowKind.Group or HierarchyRowKind.Ungrouped)
             {
-                MovePieceToGroup(pieceId, destination.Kind == HierarchyRowKind.Group ? destination.GroupId : -1);
+                MovePiecesToGroup(
+                    pieceIds,
+                    destination.Kind == HierarchyRowKind.Group ? destination.GroupId : -1
+                );
             }
         }
         else if (groupId >= 0 && destination.Kind == HierarchyRowKind.Group)
         {
-            ReorderGroup(groupId, destination.GroupIndex);
+            // ReorderGroup inserts before the given index; +1 makes a bottom-half drop land after.
+            ReorderGroup(groupId, destination.GroupIndex + (dropAbove ? 0 : 1));
         }
 
         Touch();
-    }
-
-    private void MovePieceToGroup(int pieceId, int groupId)
-    {
-        if (ActiveTab is not { } tab)
-            return;
-
-        var target = groupId >= 0 ? tab.HierarchyGroups.GetValueOrDefault(groupId) : null;
-        if (target is not null && target.PieceIds.Contains(pieceId))
-            return;
-
-        if (target is null && !tab.HierarchyGroups.Any(g => g.PieceIds.Contains(pieceId)))
-            return;
-
-        PushUndoSnapshot();
-        foreach (var group in tab.HierarchyGroups)
-            group.PieceIds.Remove(pieceId);
-        target?.PieceIds.Add(pieceId);
-        tab.HasUnsavedChanges = true;
     }
 
     private void ReorderGroup(int groupId, int targetIndex)
@@ -841,7 +998,7 @@ public partial class StageEditorPhase
         var from = -1;
         for (var i = 0; i < tab.HierarchyGroups.Count; i++)
         {
-            if (tab.HierarchyGroups[i].Id != groupId)
+            if (tab.HierarchyGroups.ByIndex(i).Id != groupId)
                 continue;
             from = i;
             break;
@@ -851,7 +1008,7 @@ public partial class StageEditorPhase
             return;
 
         PushUndoSnapshot();
-        var group = tab.HierarchyGroups[from];
+        var group = tab.HierarchyGroups.ByIndex(from);
         tab.HierarchyGroups.RemoveAt(from);
         var insert = targetIndex > from ? targetIndex - 1 : targetIndex;
         tab.HierarchyGroups.Insert(Math.Clamp(insert, 0, tab.HierarchyGroups.Count), group);
@@ -938,10 +1095,14 @@ public partial class StageEditorPhase
         switch (row.Command)
         {
             case "ungroup":
-                MovePieceToGroup(row.PieceId, -1);
-                break;
             case "move":
-                MovePieceToGroup(row.PieceId, row.GroupId);
+                // Acts on the whole selection when the clicked row is part of one.
+                MovePiecesToGroup(
+                    tab.SelectedPieceIds.Contains(row.PieceId) && tab.SelectedPieceIds.Count > 1
+                        ? tab.SelectedPieceIds.ToArray()
+                        : [row.PieceId],
+                    row.Command == "ungroup" ? -1 : row.GroupId
+                );
                 break;
             case "selectall":
                 SelectGroup(tab, row.GroupId);
@@ -1005,23 +1166,30 @@ public partial class StageEditorPhase
                 e.StopPropagation();
             },
             children: Sx.View(
-                style: () => Sx.Styles(
-                    position: Position.Absolute,
-                    left: Math.Min(_contextMenuX, Math.Max(0, GameSparker.Game.Window.Width - 220)),
-                    top: Math.Min(_contextMenuY, Math.Max(0, GameSparker.Game.Window.Height - 40)),
-                    width: 210,
-                    flexDirection: FlexDirection.Column,
-                    paddingTop: 4,
-                    paddingBottom: 4,
-                    backgroundColor: new Color(12, 22, 42, 255),
-                    borderTop: 1,
-                    borderBottom: 1,
-                    borderLeft: 1,
-                    borderRight: 1,
-                    borderColor: new Color(128, 170, 255, 90),
-                    borderRadius: 6,
-                    zIndex: 20
-                ),
+                style: () =>
+                {
+                    // The menu is placed from mouse pixels, so convert into the scaled unit space.
+                    var scale = Math.Max(TheGraphics.G.Scale, 0.01f);
+                    var maxLeft = GameSparker.Game.Window.Width / scale - 218;
+                    var maxTop = GameSparker.Game.Window.Height / scale - 40;
+                    return Sx.Styles(
+                        position: Position.Absolute,
+                        left: Math.Clamp(_contextMenuX / scale, 0, Math.Max(0, maxLeft)),
+                        top: Math.Clamp(_contextMenuY / scale, 0, Math.Max(0, maxTop)),
+                        width: 210,
+                        flexDirection: FlexDirection.Column,
+                        paddingTop: 4,
+                        paddingBottom: 4,
+                        backgroundColor: new Color(12, 22, 42, 255),
+                        borderTop: 1,
+                        borderBottom: 1,
+                        borderLeft: 1,
+                        borderRight: 1,
+                        borderColor: new Color(128, 170, 255, 90),
+                        borderRadius: 6,
+                        zIndex: 20
+                    );
+                },
                 onmousedown: e => e.StopPropagation(),
                 children: [Sx.For(each: ContextMenuRows, row: (row, _) => ContextMenuItem(row))]
             )
@@ -1033,23 +1201,23 @@ public partial class StageEditorPhase
             name: () => "Stage viewport",
             style: () => Sx.Styles(
                 position: Position.Absolute,
-                left: 250,
-                right: 300,
-                top: 110,
-                bottom: 240,
+                left: HierarchyWidth,
+                right: InspectorWidth,
+                top: ChromeTop,
+                bottom: BottomPanelHeight,
                 pointerEvents: false
             ),
             children: EditorShow(
                 when: () => ActiveTab?.Stage != null,
                 then: () => EditorText(
-                    style: () => Sx.TextStyles(fontSize: 12, foregroundColor: new Color(255, 255, 255, 140)),
+                    style: () => Sx.TextStyles(fontSize: 10, foregroundColor: new Color(255, 255, 255, 140)),
                     layout: () => Sx.Styles(position: Position.Absolute, top: 8, left: 12),
                     text: StatusText
                 ),
                 otherwise: () => Sx.View(
                     style: () => Sx.Styles(flexGrow: 1, alignItems: Align.Center, justifyContent: Justify.Center),
                     children: EditorText(
-                        style: () => Sx.TextStyles(fontSize: 16, foregroundColor: new Color(255, 255, 255, 130)),
+                        style: () => Sx.TextStyles(fontSize: 14, foregroundColor: new Color(255, 255, 255, 130)),
                         text: () => "No stage is loaded. Use NEW or LOAD."
                     )
                 )
@@ -1057,59 +1225,7 @@ public partial class StageEditorPhase
         );
         _viewportView = surface;
 
-        var view = Sx.View(
-            style: () => Sx.Styles(display: Display.Contents),
-            children:
-            [
-                Sx.View(
-                    style: () => Sx.Styles(
-                        position: Position.Absolute,
-                        left: 250,
-                        right: 300,
-                        top: 70,
-                        height: 40,
-                        flexDirection: FlexDirection.Row,
-                        alignItems: Align.Center,
-                        flexShrink: 0,
-                        gapColumn: 6,
-                        paddingLeft: 10,
-                        paddingRight: 10,
-                        backgroundColor: new Color(10, 21, 39),
-                        borderBottom: 1,
-                        borderColor: new Color(128, 170, 255, 45)
-                    ),
-                    children:
-                    [
-                        Button.Create(
-                            label: () => "3D SCENE",
-                            onPress: () => SetViewMode(StageEditorTab.ViewModeEnum.Scene),
-                            active: Observe(() => ActiveTab?.ViewMode == StageEditorTab.ViewModeEnum.Scene),
-                            size: ButtonSize.Sm
-                        ),
-                        Button.Create(
-                            label: () => "TOP DOWN",
-                            onPress: () => SetViewMode(StageEditorTab.ViewModeEnum.TopDown),
-                            active: Observe(() => ActiveTab?.ViewMode == StageEditorTab.ViewModeEnum.TopDown),
-                            size: ButtonSize.Sm
-                        ),
-                        SmallButton(() => ActiveTab?.TopDownOrtho == true ? "ORTHO" : "PERSPECTIVE", () =>
-                            {
-                                if (ActiveTab is { } tab)
-                                {
-                                    tab.TopDownOrtho = !tab.TopDownOrtho;
-                                    UpdateCameraPosition();
-                                }
-
-                                Touch();
-                            }
-                        )
-                    ]
-                ),
-                surface
-            ]
-        );
-
-        return view;
+        return surface;
     }
 
     private void SetViewMode(StageEditorTab.ViewModeEnum mode)
@@ -1141,9 +1257,9 @@ public partial class StageEditorPhase
             style: () => Sx.Styles(
                 position: Position.Absolute,
                 right: 0,
-                top: 70,
-                bottom: 240,
-                width: 300,
+                top: ChromeTop,
+                bottom: BottomPanelHeight,
+                width: InspectorWidth,
                 flexDirection: FlexDirection.Column,
                 paddingTop: 8,
                 paddingBottom: 8,
@@ -1151,18 +1267,19 @@ public partial class StageEditorPhase
                 paddingRight: 10,
                 gapRow: 6,
                 backgroundColor: new Color(12, 22, 42, 250),
-                borderRight: 1,
+                borderLeft: 1,
                 borderColor: new Color(128, 170, 255, 40)
             ),
             children:
             [
-                EditorText(style: () => Sx.TextStyles(fontSize: 13, fontStyle: FontStyle.Bold), text: () => "Inspector"),
+                EditorText(style: () => Sx.TextStyles(fontSize: 11, fontStyle: FontStyle.Bold), text: () => "Inspector"),
                 Sx.View(
                     style: () => Sx.Styles(
                         flexGrow: 1,
                         flexShrink: 1,
                         overflow: Overflow.Scroll,
                         flexDirection: FlexDirection.Column,
+                        paddingRight: 8,
                         gapRow: 6
                     ),
                     children: Sx.For(
@@ -1194,7 +1311,7 @@ public partial class StageEditorPhase
             children:
             [
                 EditorText(
-                    style: () => Sx.TextStyles(fontSize: 13, fontStyle: FontStyle.Bold, foregroundColor: new Color(170, 255, 170)),
+                    style: () => Sx.TextStyles(fontSize: 12, fontStyle: FontStyle.Bold, foregroundColor: new Color(170, 255, 170)),
                     text: () => ShortName(piece.Name)
                 ),
                 NumberField("X", () => (float)piece.Position.X, value => SetPieceX(piece, value)),
@@ -1202,7 +1319,7 @@ public partial class StageEditorPhase
                 NumberField("Z", () => (float)piece.Position.Z, value => SetPieceZ(piece, value)),
                 NumberField("Yaw", () => (float)piece.Rotation.Yaw.Degrees, value => SetPieceYaw(piece, value)),
                 EditorText(
-                    style: () => Sx.TextStyles(fontSize: 11, foregroundColor: new Color(255, 255, 255, 110)),
+                    style: () => Sx.TextStyles(fontSize: 10, foregroundColor: new Color(255, 255, 255, 110)),
                     text: () => "Type"
                 ),
                 Controls.Dropdown(
@@ -1215,7 +1332,7 @@ public partial class StageEditorPhase
                         ActiveTab!.HasUnsavedChanges = true;
                         Touch();
                     },
-                    width: 270
+                    width: 210
                 ),
                 SmallButton(() => ActiveTab?.SelectedPieceIds.Count > 1 ? "DELETE ALL SELECTED" : "DELETE PIECE", DeleteSelection),
                 SmallButton(() => _isSwapMode ? "CANCEL SWAP" : "SWAP PIECE…", () =>
@@ -1236,7 +1353,7 @@ public partial class StageEditorPhase
             style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 4, flexShrink: 0),
             children:
             [
-                EditorText(style: () => Sx.TextStyles(fontSize: 13, fontStyle: FontStyle.Bold), text: () => wall.GetDisplayName()),
+                EditorText(style: () => Sx.TextStyles(fontSize: 12, fontStyle: FontStyle.Bold), text: () => wall.GetDisplayName()),
                 NumberField("Count", () => wall.Count, value =>
                     {
                         BeginInspectorEdit();
@@ -1280,49 +1397,56 @@ public partial class StageEditorPhase
 
     private Node NumberField(string label, Func<float> value, Action<float> set, string? hint = null)
     {
-        var draft = new Signal<string>(value().ToString("0.##", CultureInfo.InvariantCulture));
+        // Holds the text while the field is edited; null means "mirror the model", which is what
+        // makes a gizmo drag show its new position without reselecting the piece.
+        var draft = new Signal<string?>(null);
         var coordinate = label is "X" or "Y" or "Z";
+        TextInput? input = null;
+        input = Sx.TextInput(
+            style: () => Sx.Styles(
+                flexGrow: 1,
+                minWidth: 0,
+                width: 0,
+                paddingTop: 3,
+                paddingBottom: 3,
+                paddingLeft: 8,
+                paddingRight: 8,
+                backgroundColor: new Color(22, 34, 54),
+                borderRadius: 6,
+                borderTop: 1,
+                borderBottom: 1,
+                borderLeft: 1,
+                borderRight: 1,
+                borderColor: new Color(128, 170, 255, 65)
+            ),
+            text: Observe(() => input is { IsFocused: true } && draft.Value is { } typed
+                ? typed
+                : value().ToString("0.##", CultureInfo.InvariantCulture)),
+            onchange: text =>
+            {
+                draft.Value = text;
+                if (!float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) || !float
+                    .IsFinite(parsed))
+                    return;
+                set(parsed);
+                Touch();
+            }
+        );
+        input.TextStyles = Sx.TextStyles(fontSize: 11);
         return Sx.View(
             name: () => "Inspector field " + label,
             style: () => Sx.Styles(flexDirection: FlexDirection.Row, alignItems: Align.Center, gapColumn: 6, flexShrink: 0),
             children:
             [
                 EditorText(
-                    style: () => Sx.TextStyles(fontSize: 11, foregroundColor: new Color(255, 255, 255, 130)),
-                    layout: () => Sx.Styles(width: coordinate ? 24 : 65, flexShrink: 0),
+                    style: () => Sx.TextStyles(fontSize: 10, foregroundColor: new Color(255, 255, 255, 130)),
+                    layout: () => Sx.Styles(width: coordinate ? 22 : 60, flexShrink: 0),
                     text: () => label
                 ),
-                Sx.TextInput(
-                    style: () => Sx.Styles(
-                        flexGrow: 1,
-                        minWidth: 0,
-                        width: 0,
-                        paddingTop: 6,
-                        paddingBottom: 6,
-                        paddingLeft: 10,
-                        paddingRight: 10,
-                        backgroundColor: new Color(22, 34, 54),
-                        borderRadius: 6,
-                        borderTop: 1,
-                        borderBottom: 1,
-                        borderLeft: 1,
-                        borderRight: 1,
-                        borderColor: new Color(128, 170, 255, 65)
-                    ),
-                    text: () => draft.Value,
-                    onchange: text =>
-                    {
-                        draft.Value = text;
-                        if (!float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) || !float
-                            .IsFinite(parsed))
-                            return;
-                        set(parsed);
-                        Touch();
-                    }
-                ),
+                input,
                 coordinate ? EditorText(
-                    style: () => Sx.TextStyles(fontSize: 10, foregroundColor: new Color(255, 255, 255, 110)),
-                    layout: () => Sx.Styles(width: 72, flexShrink: 0),
+                    style: () => Sx.TextStyles(fontSize: 9, foregroundColor: new Color(255, 255, 255, 110)),
+                    layout: () => Sx.Styles(width: 68, flexShrink: 0),
                     text: () => hint ?? ""
                 ) : null
             ]
@@ -1401,64 +1525,29 @@ public partial class StageEditorPhase
         Touch();
     }
 
-    private Node PartsPanel()
+    private Node PartsContent()
+        => Sx.View(
+            style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexGrow: 1, minHeight: 0, gapRow: 6),
+            children: [PartsToolbar(), PartsGrid()]
+        );
+
+    private Node PartsToolbar()
         => Sx.View(
             style: () => Sx.Styles(
-                position: Position.Absolute,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: 240,
-                flexDirection: FlexDirection.Column,
-                paddingTop: 6,
-                paddingBottom: 6,
-                paddingLeft: 10,
-                paddingRight: 10,
+                flexDirection: FlexDirection.Row,
+                alignItems: Align.Center,
+                flexShrink: 0,
+                minHeight: 26,
                 gapRow: 6,
-                backgroundColor: new Color(8, 16, 32, 240)
+                gapColumn: 6,
+                flexWrap: Wrap.Wrap
             ),
             children:
             [
-                Sx.View(
-                    style: () => Sx.Styles(
-                        flexDirection: FlexDirection.Row,
-                        alignItems: Align.Center,
-                        flexShrink: 0,
-                        minHeight: 38,
-                        gapRow: 8,
-                        paddingBottom: 8,
-                        borderBottom: 1,
-                        borderColor: new Color(128, 170, 255, 40),
-                        gapColumn: 8,
-                        flexWrap: Wrap.Wrap
-                    ),
-                    children:
-                    [
-                        EditorText(style: () => Sx.TextStyles(fontSize: 13, fontStyle: FontStyle.Bold), text: () => "Parts"),
-                        Button.Create(
-                            label: () => "ALL",
-                            onPress: () => { _partsCategory = 0; Touch(); },
-                            active: Observe(() => _partsCategory == 0),
-                            size: ButtonSize.Sm
-                        ),
-                        Button.Create(
-                            label: () => "NFMM",
-                            onPress: () => { _partsCategory = 1; Touch(); },
-                            active: Observe(() => _partsCategory == 1),
-                            size: ButtonSize.Sm
-                        ),
-                        Button.Create(
-                            label: () => "VENDOR",
-                            onPress: () => { _partsCategory = 2; Touch(); },
-                            active: Observe(() => _partsCategory == 2),
-                            size: ButtonSize.Sm
-                        ),
-                        Button.Create(
-                            label: () => "USER",
-                            onPress: () => { _partsCategory = 3; Touch(); },
-                            active: Observe(() => _partsCategory == 3),
-                            size: ButtonSize.Sm
-                        ),
+                        ModeButton(() => "ALL", () => _partsCategory == 0, () => { _partsCategory = 0; Touch(); }),
+                        ModeButton(() => "NFMM", () => _partsCategory == 1, () => { _partsCategory = 1; Touch(); }),
+                        ModeButton(() => "VENDOR", () => _partsCategory == 2, () => { _partsCategory = 2; Touch(); }),
+                        ModeButton(() => "USER", () => _partsCategory == 3, () => { _partsCategory = 3; Touch(); }),
                         EditorField(() => _partsSearch, value => { _partsSearch = value; Touch(); }, () => "Search parts"),
                         SmallButton(() => _snapEnabled ? "SNAP ON" : "SNAP OFF", () => { _snapEnabled = !_snapEnabled; Touch(); }),
                         SmallButton(
@@ -1505,25 +1594,26 @@ public partial class StageEditorPhase
                                 ]
                             )
                         )
-                    ]
-                ),
-                Sx.View(
-                    style: () => Sx.Styles(
-                        flexDirection: FlexDirection.Row,
-                        flexWrap: Wrap.Wrap,
-                        gapColumn: 4,
-                        gapRow: 4,
-                        overflow: Overflow.Scroll,
-                        flexGrow: 1,
-                        minHeight: 0,
-                        alignContent: Align.FlexStart,
-                        alignItems: Align.FlexStart,
-                        paddingTop: 4,
-                        paddingBottom: 4
-                    ),
-                    children: Sx.For(each: FilteredParts, row: (part, _) => PartButton(part))
-                )
             ]
+        );
+
+    private Node PartsGrid()
+        => Sx.View(
+            style: () => Sx.Styles(
+                flexDirection: FlexDirection.Row,
+                flexWrap: Wrap.Wrap,
+                gapColumn: 4,
+                gapRow: 4,
+                overflow: Overflow.Scroll,
+                flexGrow: 1,
+                minHeight: 0,
+                alignContent: Align.FlexStart,
+                alignItems: Align.FlexStart,
+                paddingTop: 4,
+                paddingBottom: 4,
+                paddingRight: 8
+            ),
+            children: Sx.For(each: FilteredParts, row: (part, _) => PartButton(part))
         );
 
     private IReadOnlyList<(int Index, Rad3d Part)> FilteredParts()
@@ -1568,23 +1658,29 @@ public partial class StageEditorPhase
         };
 
         return Sx.View(
-            style: () => Sx.Styles(
-                width: 92,
-                height: 92,
-                flexShrink: 0,
-                flexDirection: FlexDirection.Column,
-                alignItems: Align.Center,
-                gapRow: 2,
-                paddingTop: 4,
-                paddingBottom: 4,
-                borderRadius: 4,
-                backgroundColor: active() ? new Color(55, 90, 150, 220) : new Color(22, 42, 80, 120),
-                borderTop: swapTarget() ? 2 : 0,
-                borderBottom: swapTarget() ? 2 : 0,
-                borderLeft: swapTarget() ? 2 : 0,
-                borderRight: swapTarget() ? 2 : 0,
-                borderColor: new Color(255, 190, 30)
-            ),
+            style: () =>
+            {
+                // DrawVariableBorderRect strokes whenever a colour is set, so the swap
+                // outline has to be absent rather than zero-width.
+                var swapping = swapTarget();
+                return Sx.Styles(
+                    width: PartTileSize,
+                    height: PartTileSize,
+                    flexShrink: 0,
+                    flexDirection: FlexDirection.Column,
+                    alignItems: Align.Center,
+                    gapRow: 2,
+                    paddingTop: 4,
+                    paddingBottom: 4,
+                    borderRadius: 4,
+                    backgroundColor: active() ? new Color(55, 90, 150, 220) : new Color(22, 42, 80, 120),
+                    borderTop: swapping ? 2 : 0,
+                    borderBottom: swapping ? 2 : 0,
+                    borderLeft: swapping ? 2 : 0,
+                    borderRight: swapping ? 2 : 0,
+                    borderColor: swapping ? new Color(255, 190, 30) : null
+                );
+            },
             onmousedown: _ =>
             {
                 if (_isSwapMode)
@@ -1606,12 +1702,17 @@ public partial class StageEditorPhase
                     then: () => new NFMWorld.DriverInterface.UI.Image
                     {
                         ImageData = preview(),
-                        Styles = Sx.Styles(width: 80, height: 60, flexShrink: 0, pointerEvents: false)
+                        Styles = Sx.Styles(
+                            width: PartPreviewWidth,
+                            height: PartPreviewHeight,
+                            flexShrink: 0,
+                            pointerEvents: false
+                        )
                     },
                     otherwise: () => Sx.View(
                         style: () => Sx.Styles(
-                            width: 80,
-                            height: 60,
+                            width: PartPreviewWidth,
+                            height: PartPreviewHeight,
                             flexShrink: 0,
                             borderRadius: 3,
                             backgroundColor: PartTileColor(part.Part.FileName)
@@ -1620,7 +1721,7 @@ public partial class StageEditorPhase
                 ),
                 EditorText(
                     style: () => Sx.TextStyles(
-                        fontSize: 10,
+                        fontSize: 9,
                         foregroundColor: active() ? new Color(128, 170, 255) : new Color(185, 211, 255)
                     ),
                     text: () => ShortName(part.Part.FileName)
@@ -1651,7 +1752,29 @@ public partial class StageEditorPhase
 
         PushUndoSnapshot();
         foreach (var piece in tab.ScenePieces.Where(p => tab.SelectedPieceIds.Contains(p.Id)).ToArray())
-            piece.PiecePlacement = piece.PiecePlacement with { Object = replacement };
+        {
+            // StageObject.Rad is immutable and the renderer caches by object, so the piece's
+            // stage object has to be replaced, not just its placement record.
+            var old = piece.Obj;
+            var replaced = StageObject.CreateDefaultObject(
+                replacement,
+                piece.Position,
+                piece.Rotation,
+                piece.PiecePlacement.Type,
+                piece.PiecePlacement.NodeKind,
+                piece.PiecePlacement.IsSpecial,
+                piece.PiecePlacement.IsWall
+            );
+
+            if (tab.Stage is { } stage)
+            {
+                var index = stage.Pieces.IndexOf(old);
+                if (index >= 0)
+                    stage.Pieces[index] = replaced;
+            }
+
+            piece.ReplaceObject(replaced);
+        }
 
         tab.HasUnsavedChanges = true;
         _isSwapMode = false;
@@ -1667,11 +1790,11 @@ public partial class StageEditorPhase
                 NewStageDialog(),
                 LoadStageDialog(),
                 ExportDialog(),
-                PropertiesDialog(),
                 ExitDialog(),
                 CloseTabDialog(),
                 RenameGroupDialog(),
-                PublishDialog()
+                PublishDialog(),
+                TestDriveSaveDialog()
             ]
         );
 
@@ -1716,7 +1839,12 @@ public partial class StageEditorPhase
             "LOAD STAGE",
             () => [
                 Sx.View(
-                    style: () => Sx.Styles(flexDirection: FlexDirection.Column, overflow: Overflow.Scroll, maxHeight: 240),
+                    style: () => Sx.Styles(
+                        flexDirection: FlexDirection.Column,
+                        overflow: Overflow.Scroll,
+                        maxHeight: 300,
+                        paddingRight: 8
+                    ),
                     children: Sx.For(
                         each: () => { _uiRevision.Value.ToString(); return _availableStages.ToArray(); },
                         row: (stage, _) => Sx.View(
@@ -1766,60 +1894,6 @@ public partial class StageEditorPhase
                     "EXPORT",
                     () => { _exportRequested = true; Touch(); },
                     () => { _showExportDialog = false; Touch(); }
-                )
-            ]
-        );
-
-    private Node PropertiesDialog()
-        => Dialog(
-            () => _showPropertiesDialog,
-            "STAGE PROPERTIES",
-            () => [
-                EditorField(() => _editStageName, value => { _editStageName = value; Touch(); }, () => "Stage name"),
-                ColorSliders(
-                    "Sky",
-                    () => _editSkyColor,
-                    c
-                    => { _editSkyColor = c; World.Sky = c; if (ActiveTab?.StageRenderer != null) ActiveTab.StageRenderer.sky = new Sky(GameSparker.GraphicsDevice); Touch(); }
-                ),
-                ColorSliders("Fog", () => _editFogColor, c => { _editFogColor = c; World.Fog = c; Touch(); }),
-                ColorSliders("Ground", () => _editGroundColor, c => { _editGroundColor = c; World.GroundColor = c; Touch(); }),
-                EditorCheckbox(() => _editPolysEnabled, () =>
-                    {
-                        _editPolysEnabled = !_editPolysEnabled;
-                        World.HasPolys = _editPolysEnabled;
-                        World.DrawPolys = _editPolysEnabled;
-                        if (ActiveTab?.StageRenderer != null)
-                            ActiveTab.StageRenderer.polys = _editPolysEnabled && ActiveTab.Stage != null
-                            ? Environment.MakePolys(ActiveTab.Stage, -10000, 20000, -10000, 20000, ActiveTab.ScenePieces.Count)
-                            : null;
-                        Touch();
-                    }, () => "Ground polys"
-                ),
-                EditorCheckbox(() => _editCloudsEnabled, () =>
-                    {
-                        _editCloudsEnabled = !_editCloudsEnabled;
-                        World.HasClouds = _editCloudsEnabled;
-                        World.DrawClouds = _editCloudsEnabled;
-                        Touch();
-                    }, () => "Clouds"
-                ),
-                EditorCheckbox(() => _editMountainsEnabled, () =>
-                    {
-                        _editMountainsEnabled = !_editMountainsEnabled;
-                        World.DrawMountains = _editMountainsEnabled;
-                        Touch();
-                    }, () => "Mountains"
-                ),
-                NumberField(
-                    "Fade from",
-                    () => _editFadeFrom,
-                    value => { _editFadeFrom = (int)value; World.FadeFrom = _editFadeFrom; }
-                ),
-                DialogButtons(
-                    "APPLY",
-                    () => { ApplyPropertiesDialog(); _showPropertiesDialog = false; Touch(); },
-                    () => { ApplyTabWorldValuesToWorld(); RecreateEnvironment(); _showPropertiesDialog = false; Touch(); }
                 )
             ]
         );
@@ -1996,7 +2070,9 @@ public partial class StageEditorPhase
                     style: () => Sx.Styles(
                         width: 460,
                         maxHeight: 90.Percent(),
-                        overflow: Overflow.Scroll,
+                        // Clipped, not scrollable: these are bounded forms, and a scroll container
+                        // here draws a bar even when the content fits (layout rounding).
+                        overflow: Overflow.Hidden,
                         flexDirection: FlexDirection.Column,
                         gapRow: 8,
                         paddingTop: 16,
@@ -2015,7 +2091,7 @@ public partial class StageEditorPhase
                     [
                         EditorText(
                             style: () => Sx.TextStyles(
-                                fontSize: 18,
+                                fontSize: 16,
                                 fontStyle: FontStyle.Bold,
                                 foregroundColor: new Color(128, 170, 255)
                             ),
@@ -2034,33 +2110,22 @@ public partial class StageEditorPhase
             children: [SmallButton(confirm, onConfirm), SmallButton("CANCEL", onCancel)]
         );
 
-    private Node ColorSliders(string label, Func<Color3> read, Action<Color3> write)
-        => Sx.View(
-            style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 2),
-            children:
-            [
-                EditorText(
-                    style: () => Sx.TextStyles(fontSize: 11, foregroundColor: new Color(255, 255, 255, 130)),
-                    text: () => label
-                ),
-                EditorSlider(() => read().R, value => write(new Color3((short)value, read().G, read().B)), 0, 255, 1),
-                EditorSlider(() => read().G, value => write(new Color3(read().R, (short)value, read().B)), 0, 255, 1),
-                EditorSlider(() => read().B, value => write(new Color3(read().R, read().G, (short)value)), 0, 255, 1)
-            ]
-        );
-
     private Node RectSelectionOverlay()
         => Sx.View(
             style: () =>
             {
                 _uiRevision.Value.ToString();
+                var (minX, minY, maxX, maxY) = RectSelectionBounds();
+
+                // Mouse coordinates are window pixels; style lengths are multiplied by G.Scale.
+                var scale = Math.Max(TheGraphics.G.Scale, 0.01f);
                 return Sx.Styles(
                     position: Position.Absolute,
-                    left: Math.Min(_rectSelectStartX, _rectSelectEndX),
-                    top: Math.Min(_rectSelectStartY, _rectSelectEndY),
-                    width: Math.Abs(_rectSelectEndX - _rectSelectStartX),
-                    height: Math.Abs(_rectSelectEndY - _rectSelectStartY),
-                    display: _isRectSelecting ? Display.Flex : Display.None,
+                    left: minX / scale,
+                    top: minY / scale,
+                    width: (maxX - minX) / scale,
+                    height: (maxY - minY) / scale,
+                    display: _isRectSelecting && maxX > minX && maxY > minY ? Display.Flex : Display.None,
                     pointerEvents: false,
                     backgroundColor: new Color(66, 150, 250, 40),
                     borderTop: 1,
@@ -2071,52 +2136,4 @@ public partial class StageEditorPhase
                 );
             }
         );
-
-    private void LoadPropertiesFromTab()
-    {
-        if (ActiveTab is not { } tab) return;
-        _editStageName = tab.TabName;
-        _editSkyColor = tab.SkyColor;
-        _editFogColor = tab.FogColor;
-        _editGroundColor = tab.GroundColor;
-        _editPolysColor = tab.PolysColor;
-        _editPolysEnabled = tab.PolysEnabled;
-        _editCloudsEnabled = tab.CloudsEnabled;
-        _editCloudsColor = tab.CloudsColor;
-        _editCloudsParam4 = tab.CloudsParam4;
-        _editCloudsHeight = tab.CloudsHeight;
-        _editCloudCoverage = tab.CloudCoverage;
-        _editMountainsEnabled = tab.MountainsEnabled;
-        _editMountainsSeed = tab.MountainsSeed;
-        _editSnapA = tab.SnapA;
-        _editSnapB = tab.SnapB;
-        _editSnapC = tab.SnapC;
-        _editFadeFrom = tab.FadeFrom;
-    }
-
-    private void ApplyPropertiesDialog()
-    {
-        if (ActiveTab is not { } tab) return;
-        tab.TabName = _editStageName;
-        tab.SkyColor = _editSkyColor;
-        tab.FogColor = _editFogColor;
-        tab.GroundColor = _editGroundColor;
-        tab.PolysColor = _editPolysColor;
-        tab.PolysEnabled = _editPolysEnabled;
-        tab.CloudsEnabled = _editCloudsEnabled;
-        tab.CloudsColor = _editCloudsColor;
-        tab.CloudsParam4 = _editCloudsParam4;
-        tab.CloudsHeight = _editCloudsHeight;
-        tab.CloudCoverage = _editCloudCoverage;
-        tab.MountainsEnabled = _editMountainsEnabled;
-        tab.MountainsSeed = _editMountainsSeed;
-        tab.SnapA = _editSnapA;
-        tab.SnapB = _editSnapB;
-        tab.SnapC = _editSnapC;
-        tab.FadeFrom = _editFadeFrom;
-        ApplyTabWorldValuesToWorld();
-        RecreateEnvironment();
-        RecreateScene();
-        tab.HasUnsavedChanges = true;
-    }
 }

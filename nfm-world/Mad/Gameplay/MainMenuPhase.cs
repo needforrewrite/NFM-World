@@ -276,7 +276,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                     ["constraint"] = "both"
                 }
             );
-            var players = CreateFreePlayPlayers(car.FileName);
+            var players = FreePlayRoster.Create(car.FileName);
             LocalRaceHost host;
             try
             {
@@ -396,39 +396,6 @@ public class MainMenuPhase : BaseStageRenderingPhase
         };
 
         GameSparker.PushPhase(ssp, PhaseManager.Groups.Event);
-    }
-
-    private static ClientSidePlayerInfo[] CreateFreePlayPlayers(string playerCar)
-    {
-        var opponentCars = BackendGameSparker.cars[Collection.NFMM]
-            .Select(car => car.FileName)
-            .Where(name => !string.Equals(name, playerCar, StringComparison.OrdinalIgnoreCase))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-        System.Random.Shared.Shuffle(opponentCars);
-
-        var players = new ClientSidePlayerInfo[1 + Math.Min(6, opponentCars.Length)];
-        players[0] = new()
-        {
-            CarName = playerCar,
-            IsClientPlayer = true,
-            PlayerName = "MadPlayer",
-            Color = default,
-            IsBot = false
-        };
-        for (var i = 1; i < players.Length; i++)
-        {
-            players[i] = new()
-            {
-                CarName = opponentCars[i - 1],
-                IsClientPlayer = false,
-                PlayerName = $"ElStupido{i}",
-                Color = default,
-                IsBot = true
-            };
-        }
-
-        return players;
     }
 
     public override void GameTick()

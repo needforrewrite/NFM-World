@@ -294,6 +294,12 @@ public partial class StageLoader
                     UngroupedOrderIndex = Utility.GetInt("#editor_ungrouped_order", line, 0);
                 }
 
+                else if (line.StartsWith("#editor_ungrouped"))
+                {
+                    // Ends the current #editor_group block: the pieces after it are ungrouped.
+                    currentGroup = ungrouped;
+                }
+
                 else if (line.StartsWith("snap"))
                 {
                     EnvironmentInstructions.Add(

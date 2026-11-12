@@ -101,9 +101,6 @@ public sealed class RaceInputController
         var firstPress = _pressedKeys.Add(key);
         UpdateControlState(control);
 
-        if (firstPress && key == bindings.ToggleMusic)
-            SettingsMenu.ToggleMusicMute();
-
         if (firstPress && key == bindings.ToggleSFX)
             SettingsMenu.ToggleSfxMute();
 

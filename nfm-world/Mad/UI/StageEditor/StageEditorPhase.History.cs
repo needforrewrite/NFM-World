@@ -74,6 +74,12 @@ public partial class StageEditorPhase
         ActiveTab.ScenePieces.Clear();
         ActiveTab.ScenePieces.AddRange(newPieces);
 
+        // Undo can remove pieces outside DeleteSelection; drop ids that no longer exist, or a
+        // later piece that reuses the id would appear inside the old group.
+        var liveIds = new HashSet<int>(ActiveTab.ScenePieces.Select(p => p.Id));
+        foreach (var group in ActiveTab.HierarchyGroups)
+            group.PieceIds.RemoveAll(id => !liveIds.Contains(id));
+
         if (wallsChanged)
         {
             var rebuiltWalls = KeyedCollection.From<int, EditorStageWall>(w => w.Id);

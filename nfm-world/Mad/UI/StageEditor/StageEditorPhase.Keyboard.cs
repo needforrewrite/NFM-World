@@ -159,8 +159,12 @@ public partial class StageEditorPhase
         {
             PushUndoSnapshot();
             ActiveTab.SelectedPieceIds.Clear();
-            // Determine paste offset — use snap size when enabled, otherwise a small fixed nudge
-            float pasteOffsetXZ = _gridSnapEnabled && _gridSnapSize > 0f ? _gridSnapSize : 200f;
+            // Clear the copied pieces' own footprint. A small nudge (one grid cell) leaves the
+            // copies inside the originals, where the coplanar-surface resolver hides them.
+            var clearance = _clipboard.Max(piece => piece.Rad.MaxRadius) * 2f + 100f;
+            float pasteOffsetXZ = _gridSnapEnabled && _gridSnapSize > 0f
+                ? MathF.Max(_gridSnapSize, clearance)
+                : MathF.Max(200f, clearance);
             var primaryPiece = ActiveTab.ScenePieces.GetValueOrDefault(ActiveTab.ActivePieceId);
             f64Vector3 pasteOrigin;
             if (primaryPiece != null)

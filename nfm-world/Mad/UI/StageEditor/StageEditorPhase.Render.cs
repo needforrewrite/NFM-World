@@ -120,8 +120,8 @@ public partial class StageEditorPhase
                 );
         }
 
-        // Process pending preview thumbnails
-        while (_previewQueue.Count > 0)
+        // Two a frame: a full library drained in one frame is a multi-second stall.
+        for (var i = 0; i < 2 && _previewQueue.Count > 0; i++)
             ProcessOnePreviewThumbnail(cb);
 
         // Render placement ghost if in placement mode and mouse is over viewport

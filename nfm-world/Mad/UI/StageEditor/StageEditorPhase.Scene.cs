@@ -47,9 +47,20 @@ public partial class StageEditorPhase
     private void ApplyTabWorldValuesToWorld()
     {
         if (ActiveTab == null) return;
-        World.Sky = ActiveTab.SkyColor;
+        World.SetSky(ActiveTab.SkyColor);
         World.Fog = ActiveTab.FogColor;
         World.GroundColor = ActiveTab.GroundColor;
+        // Derives GroundPolysColor, so it has to run before the explicit polys colour below.
+        if (ActiveTab.Texture is { Length: 4 } texture)
+        {
+            World.SetTexture(texture);
+            World.HasTexture = true;
+        }
+        else
+        {
+            World.HasTexture = false;
+        }
+
         World.FadeFrom = ActiveTab.FadeFrom;
         World.HasPolys = ActiveTab.PolysEnabled;
         World.DrawPolys = ActiveTab.PolysEnabled;
@@ -67,21 +78,33 @@ public partial class StageEditorPhase
             World.CloudCoverage = ActiveTab.CloudCoverage;
         }
 
+        // CloudColor is derived from Sky and Clouds by SetSky; redo it now both are final.
+        World.SetSky(World.Sky);
+
         World.DrawMountains = ActiveTab.MountainsEnabled;
         if (ActiveTab.MountainsEnabled)
             World.MountainSeed = ActiveTab.MountainsSeed;
+        World.MountainCoverage = ActiveTab.MountainCoverage ?? 1f;
+        // density(n) encodes as 2n+1; with no directive the stage keeps ResetValues' default.
+        World.FogDensity = ActiveTab.FogDensity is { } fogDensity ? fogDensity * 2 + 1 : 0.857f;
+        World.LightsOn = ActiveTab.LightsOn;
+        World.LightDirection = ActiveTab.LightDirection;
         World.Snap = new Color3((short)ActiveTab.SnapA, (short)ActiveTab.SnapB, (short)ActiveTab.SnapC);
     }
 
     private void RecreateEnvironment()
     {
-        if (ActiveTab?.StageRenderer == null) return;
-        ActiveTab.StageRenderer.sky = new Sky(GameSparker.GraphicsDevice);
-        ActiveTab.StageRenderer.ground = new Ground(GameSparker.GraphicsDevice);
+        if (ActiveTab?.StageRenderer is not { } renderer) return;
+
+        RecreateSky();
+        RecreateGround();
+
         if (ActiveTab.PolysEnabled && ActiveTab.Stage != null)
         {
             if (_autoGeneratePolys)
-                ActiveTab.StageRenderer.polys = Environment.MakePolys(
+            {
+                renderer.polys?.Dispose();
+                renderer.polys = Environment.MakePolys(
                     ActiveTab.Stage,
                     -10000,
                     20000,
@@ -89,20 +112,59 @@ public partial class StageEditorPhase
                     20000,
                     ActiveTab.ScenePieces.Count
                 );
+            }
             // else: preserve existing polys (don't touch) so manually-generated polys from the
             //        Properties dialog survive across piece placements when auto-generate is off.
         }
         else
-            ActiveTab.StageRenderer.polys = null;
+        {
+            renderer.polys?.Dispose();
+            renderer.polys = null;
+        }
 
-        if (ActiveTab.CloudsEnabled)
-            ActiveTab.StageRenderer.clouds = Environment.MakeClouds(-10000, 10000, -10000, 10000);
-        else
-            ActiveTab.StageRenderer.clouds = null;
-        if (ActiveTab.MountainsEnabled)
-            ActiveTab.StageRenderer.mountains = Environment.MakeMountains(-10000, 10000, -10000, 10000);
-        else
-            ActiveTab.StageRenderer.mountains = null;
+        RecreateScenery();
+    }
+
+    /// <summary>The ground quad bakes its colour into the vertex buffer, so it has to be rebuilt.</summary>
+    private void RecreateGround()
+    {
+        if (ActiveTab?.StageRenderer is not { } renderer) return;
+
+        renderer.ground?.Dispose();
+        renderer.ground = new Ground(GameSparker.GraphicsDevice);
+    }
+
+    /// <summary>The polys mesh bakes the ground/polys colours, so a colour or texture edit rebuilds it.</summary>
+    private void RecreatePolys()
+    {
+        if (ActiveTab?.StageRenderer is not { } renderer || ActiveTab.Stage is null) return;
+
+        renderer.polys?.Dispose();
+        renderer.polys = ActiveTab.PolysEnabled
+            ? Environment.MakePolys(ActiveTab.Stage, -10000, 20000, -10000, 20000, ActiveTab.ScenePieces.Count)
+            : null;
+    }
+
+    /// <summary>The sky gradient bakes the sky and fog colours at construction.</summary>
+    private void RecreateSky()
+    {
+        if (ActiveTab?.StageRenderer is not { } renderer) return;
+
+        renderer.sky?.Dispose();
+        renderer.sky = new Sky(GameSparker.GraphicsDevice);
+    }
+
+    /// <summary>Clouds and mountains only: their sliders change per tick, unlike polys.</summary>
+    private void RecreateScenery()
+    {
+        if (ActiveTab?.StageRenderer is not { } renderer) return;
+
+        renderer.clouds?.Dispose();
+        renderer.clouds = ActiveTab.CloudsEnabled ? Environment.MakeClouds(-10000, 10000, -10000, 10000) : null;
+
+        renderer.mountains?.Dispose();
+        renderer.mountains =
+            ActiveTab.MountainsEnabled ? Environment.MakeMountains(-10000, 10000, -10000, 10000) : null;
     }
 
     private void UpdateCameraPosition()

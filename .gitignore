@@ -36,6 +36,7 @@ replay_pid*
 
 /publish
 /tools
+/data
 /nfm-world/GPUCache
 /nfm-world/DawnCache
 /NFMWorld.Library/data/models/user

@@ -199,6 +199,12 @@ public static partial class GameSparker
 
         var bindings = SettingsMenu.Bindings;
 
+        // Global so the toggle works in menus too; a focused text field owns its keys.
+        if (!imguiWantsKeyboard
+            && FocusManager.FocusedNode is not TextInput
+            && key == bindings.ToggleMusic)
+            SettingsMenu.ToggleMusicMute();
+
         if (key == bindings.ToggleDevConsole)
         {
             devConsole.Toggle();

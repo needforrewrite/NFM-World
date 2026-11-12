@@ -128,6 +128,9 @@ SolidJS-style: signals, per-slot effects, **no vnode and no diffing**. Backed by
 | Style structs are nullable | `Styles` fields are `T?` on purpose (merge semantics). Setting a field to its CLR default is not the same as leaving it null. |
 | Rows in a scroll container | Yoga's web default `flexShrink: 1` squeezes list rows to their padding, so a long list shows crushed rows (or one solid block) instead of scrolling. List rows need `flexShrink: 0` — the main-menu items and `LobbyView.Row` set it. |
 | Scroll is both axes | `Overflow.Scroll` has no X/Y split in `Styles`, so any direct child wider than the viewport adds a horizontal scrollbar. Put rows and messages in a `width: 100%`, `flexShrink: 0` column inside the scroller; long messages use `Sx.WrappingText` at 100% width. |
+| Off-screen paint | `Component.PaintChildren` skips a child whose border box lies entirely outside the inherited clip, so a scrolled list only pays for its visible rows. Rows still lay out; only painting is skipped. Flow hosts (`Display.Contents`) are never culled by their own box — they have none. |
+| Scrollbars overlay content | `RenderScrollbars` draws inside the padding box's right/bottom 6px, over the content. A scroll container holding buttons or fields needs `paddingRight: 8` (and `paddingBottom` for the horizontal bar) or the bar sits on top of them — the stage editor's hierarchy, parts grid, inspector, property panels and dialogs all set it. |
+| Mouse pixels vs styled lengths | `MouseEvent.Position` is in window pixels; `Styles` lengths are multiplied by `G.Scale` at layout. A node placed from a mouse position (menu overlay, rect-selection box, hierarchy context menu) must divide by `G.Scale`, or it lands at `position × scale` and can paint over neighbouring panels. |
 
 ### Yoga port
 
@@ -850,6 +853,50 @@ Added with the archive/content work; read this before touching content loading, 
   wrapped with `TheGraphics.G.WrapTexture`; `_previewRevision` remounts the image slot when one
   finishes. Hierarchy rows are one `Sx.For` list (borders header, walls, group headers, pieces):
   press-and-drag reorders pieces or groups and moves pieces between groups, and right-click opens the
-  context menu (`ContextMenuOverlay`), which is state-driven rather than a native popup. Saving and
+  context menu (`ContextMenuOverlay`), which is state-driven rather than a native popup. A drag
+  tracks `_hierDropRow` plus `_hierDropAbove` (pointer in the row's top/bottom half) and draws an
+  insertion line at that edge; the half decides insert-before vs insert-after in `ReorderPieces` and
+  the `ReorderGroup` index. Pressing a row that is already part of a multi-selection drags the whole
+  selection as one block (`ReorderPieces` / `MovePiecesToGroup` keep its order). Dropping on a group
+  header is a membership move, shown as a row highlight instead; wall/border rows are never drop
+  targets. Group membership is file order: `#editor_group(Name)` starts a block and
+  `#editor_ungrouped` ends it — without that marker ungrouped pieces written after the last group
+  were read back into it, which is what made a group swallow the rest of the stage. Load maps group
+  pieces by a single cursor over `ScenePieces` (value matching collapsed identical pieces), and
+  undo prunes ids that no longer exist so a re-used id cannot inherit an old group. Saving and
   publishing both serialize `BuildStageText()`; publishing parses that snapshot and never writes the
   working document.
+- **Bottom dock tabs** — `StageEditorPhase.Properties.cs`. The dock the parts library lives in is
+  tabbed: PARTS plus STAGE/ATMOSPHERE/GROUND/SCENERY/MUSIC/PHYSICS. The property tabs edit the
+  `StageEditorTab` fields live (no apply button) and `BuildStageText` writes every one of them:
+  `nlaps`, the `soundtrack*` group, `density`, `lightson`/`lightdir`, `aerial`, `mountaincoverage`
+  and the phy-addons physics directives. Anything the tabs do not expose stays in
+  `PreservedDirectives` (`_preservedDirectivePrefixes`), so a save never drops it — remove a prefix
+  from that list when a tab starts writing the directive. MUSIC picks a track from a dropdown over
+  `data/music` (VFS enumeration) and previews through `GameSparker.CurrentMusic`; the preview is
+  disposed (and the previous track restored) on tab switch, tab close and phase exit. IMPORT uses
+  SDL's native picker (`SdlFileDialog` in `NFMWorld.Platform.SDL3`, which marshals the UTF-8 filter
+  list and hops the result back to the main thread) and copies the chosen files into
+  `data/music/custom/`; `soundtrack()` splits on `,`/`)`, so those characters are stripped from
+  imported names.
+  Environment colours are **baked into vertex buffers** (`Sky`, `Ground`, `GroundPolys`, clouds,
+  mountains read `World.*` and `.Snap(World.Snap)` in their constructors), so a colour edit must
+  rebuild the affected object — `RecreateSky`/`RecreateGround`/`RecreatePolys`/`RecreateScenery`/
+  `RecreateEnvironment` in `StageEditorPhase.Scene.cs`, each disposing the object it replaces.
+  Fog/cloud tint only reaches the sky and cloud meshes, so those edits rebuild those two.
+- **Piece identity** — `StageObject.Rad` is immutable and `ClientStageRenderer` keys its visual
+  cache by **object instance** (`StageObjectVisualComparer`), so swapping a part or pasting a
+  duplicate must replace the `StageObject` itself (`StagePieceInstance.ReplaceObject`) and the
+  matching `Stage.Pieces` slot; changing only `PiecePlacement.Object` updates the hierarchy label
+  and nothing else. Ctrl+V offsets by the copied pieces' footprint, not one grid cell — copies that
+  land inside the originals have their surfaces culled by the coplanar resolver and look missing.
+  The parts grid needs enough vertical room that the second tile row (and its label, the part users
+  click) is inside the scroller's clip, or those presses are rejected.
+- **Test drive** — `StageEditorPhase.TestDrive.cs`. The TEST DRIVE tab picks Solo / With AI cars
+  (`FreePlayRoster.Create`, shared with the main menu's free play) and pushes a `GaragePhase` in
+  `PhaseManager.Groups.Event` for the tab's **saved** stage (`user/<StageFileName>`); `CarSelected`
+  replaces the group with a local `nfmm/pvp` `RacePhase`, and `RacePhase.Exited` pops the group
+  back to the editor. Unsaved edits prompt first (`SAVE & DRIVE` / `CANCEL`), because both the
+  garage and the race load the file by name. Pushing the garage calls `Exit()` on the editor, so
+  `_preserveTabsOnExit` makes `Exit` keep the tabs and walls; `Enter` clears it and re-applies the
+  tab's World values (the race's copy of the stage ran `World.ResetValues`).

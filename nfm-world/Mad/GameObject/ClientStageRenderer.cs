@@ -40,23 +40,11 @@ public class ClientStageRenderer : GameObject, IDisposable
     {
         public static StageObjectVisualComparer Instance { get; } = new();
 
-        public bool Equals(StageObject? x, StageObject? y)
-        {
-            if (ReferenceEquals(x, y)) return true;
-            if (x is null) return false;
-            if (y is null) return false;
-            if (x.GetType() != y.GetType()) return false;
-            return ReferenceEquals(x.Rad, y.Rad)
-                   && x.Position.Equals(y.Position)
-                   && x.Rotation.Equals(y.Rotation)
-                   && x.IsSpecial == y.IsSpecial
-                   && x.Kind == y.Kind;
-        }
+        public bool Equals(StageObject? x, StageObject? y) => ReferenceEquals(x, y);
 
-        public int GetHashCode(StageObject obj)
-        {
-            return HashCode.Combine(RuntimeHelpers.GetHashCode(obj.Rad), obj.Position, obj.Rotation, obj.IsSpecial, obj.Kind);
-        }
+        // One visual per stage object. Value equality would let a pasted duplicate share (or
+        // suppress) the original's visual, since the renderer keys its cache by this comparer.
+        public int GetHashCode(StageObject obj) => RuntimeHelpers.GetHashCode(obj);
     }
 
     /**

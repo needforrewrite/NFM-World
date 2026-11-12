@@ -6,63 +6,99 @@ namespace NFMWorld.UI;
 
 public partial class StageEditorPhase
 {
-    private void ReorderPiece(int draggedId, int targetId)
+    /// <summary>
+    /// Reorders a dragged block of pieces as one unit, keeping the block's internal order.
+    /// <paramref name="after"/> places it after the target, otherwise before it.
+    /// </summary>
+    private void ReorderPieces(IReadOnlyList<int> draggedIds, int targetId, bool after)
     {
-        if (ActiveTab == null || draggedId == targetId) return;
-        int draggedIndex = ActiveTab.ScenePieces.FindIndex(p => p.Id == draggedId);
-        int targetIndex = ActiveTab.ScenePieces.FindIndex(p => p.Id == targetId);
-        if (draggedIndex < 0 || targetIndex < 0) return;
+        if (ActiveTab is not { } tab || draggedIds.Count == 0) return;
+        if (draggedIds.Contains(targetId)) return;
+        if (tab.ScenePieces.GetValueOrDefault(targetId) is not { } target) return;
 
-        var dragged = ActiveTab.ScenePieces.ByIndex(draggedIndex);
-        ActiveTab.ScenePieces.RemoveAt(draggedIndex);
-        // Insert AFTER the target. When draggedIndex < targetIndex, the removal
-        // shifted the target left by 1, so the target's new position is targetIndex-1.
-        // Inserting at targetIndex places the dragged item right after the target.
-        // When draggedIndex > targetIndex, the target didn't shift; insert at
-        // targetIndex+1 to place after the target.
-        int insertAt = draggedIndex < targetIndex ? targetIndex : targetIndex + 1;
-        // Safety: if the key somehow still exists (e.g. duplicate from corrupted state),
-        // remove the stale entry before inserting.
-        if (ActiveTab.ScenePieces.Contains(dragged.Id))
+        var block = OrderedPieces(tab, draggedIds);
+        if (block.Count == 0) return;
+
+        foreach (var piece in block)
+            tab.ScenePieces.RemoveAt(tab.ScenePieces.FindIndex(p => p.Id == piece.Id));
+
+        var targetIndex = tab.ScenePieces.FindIndex(p => p.Id == target.Id);
+        if (targetIndex < 0) targetIndex = tab.ScenePieces.Count - 1;
+
+        var insertAt = Math.Clamp(after ? targetIndex + 1 : targetIndex, 0, tab.ScenePieces.Count);
+        for (var i = 0; i < block.Count; i++)
+            tab.ScenePieces.Insert(insertAt + i, block[i]);
+
+        // Keep group membership in the same order. The destination is the target's group (or
+        // ungrouped); a drop inside one group is the same operation.
+        var destination = tab.HierarchyGroups.FirstOrDefault(g => g.PieceIds.Contains(target.Id));
+        foreach (var piece in block)
         {
-            ActiveTab.ScenePieces.Remove(dragged.Id);
+            foreach (var group in tab.HierarchyGroups)
+                group.PieceIds.Remove(piece.Id);
         }
 
-        ActiveTab.ScenePieces.Insert(insertAt, dragged);
-
-        // ── Sync group membership when dragging across groups ──────────────────
-        HierarchyGroup? srcGroup = ActiveTab.HierarchyGroups.FirstOrDefault(g => g.PieceIds.Contains(draggedId));
-        HierarchyGroup? dstGroup = ActiveTab.HierarchyGroups.FirstOrDefault(g => g.PieceIds.Contains(targetId));
-        if (srcGroup != dstGroup)
+        if (destination is not null)
         {
-            // Move piece from source group to destination group (or ungrouped if dstGroup == null)
-            srcGroup?.PieceIds.Remove(draggedId);
-            if (dstGroup != null)
-            {
-                int tpos = dstGroup.PieceIds.IndexOf(targetId);
-                if (tpos < 0) dstGroup.PieceIds.Add(draggedId);
-                else dstGroup.PieceIds.Insert(tpos + 1, draggedId);
-            }
-        }
-        else if (srcGroup != null)
-        {
-            // Reorder within the same group
-            srcGroup.PieceIds.Remove(draggedId);
-            int tpos = srcGroup.PieceIds.IndexOf(targetId);
-            if (tpos < 0) srcGroup.PieceIds.Add(draggedId);
-            else srcGroup.PieceIds.Insert(tpos + 1, draggedId);
+            var targetPosition = destination.PieceIds.IndexOf(target.Id);
+            var groupInsertAt = targetPosition < 0
+                ? destination.PieceIds.Count
+                : after ? targetPosition + 1 : targetPosition;
+            for (var i = 0; i < block.Count; i++)
+                destination.PieceIds.Insert(groupInsertAt + i, block[i].Id);
         }
 
-        // Sync Stage.pieces order (only non-wall pieces end up there)
-        if (ActiveTab.Stage != null)
+        SyncStagePieceOrder(tab);
+        tab.HasUnsavedChanges = true;
+    }
+
+    /// <summary>Moves a block of pieces into a group (null = ungrouped), keeping their order.</summary>
+    private void MovePiecesToGroup(IReadOnlyList<int> ids, int groupId)
+    {
+        if (ActiveTab is not { } tab || ids.Count == 0) return;
+
+        var target = groupId >= 0 ? tab.HierarchyGroups.GetValueOrDefault(groupId) : null;
+        var block = OrderedPieces(tab, ids);
+        if (block.Count == 0) return;
+
+        var changed = target is null
+            ? block.Any(piece => tab.HierarchyGroups.Any(group => group.PieceIds.Contains(piece.Id)))
+            : block.Any(piece => !target.PieceIds.Contains(piece.Id));
+        if (!changed) return;
+
+        PushUndoSnapshot();
+        foreach (var group in tab.HierarchyGroups)
         {
-            ActiveTab.Stage.Pieces.Clear();
-            foreach (var p in ActiveTab.ScenePieces)
-                if (!p.PiecePlacement.IsWall)
-                    ActiveTab.Stage.Pieces.Add(p.Obj);
+            foreach (var piece in block)
+                group.PieceIds.Remove(piece.Id);
         }
 
-        ActiveTab.HasUnsavedChanges = true;
+        if (target is not null)
+        {
+            foreach (var piece in block)
+                target.PieceIds.Add(piece.Id);
+        }
+
+        tab.HasUnsavedChanges = true;
+    }
+
+    private static List<StagePieceInstance> OrderedPieces(StageEditorTab tab, IReadOnlyList<int> ids)
+        => ids
+            .Select(id => tab.ScenePieces.GetValueOrDefault(id))
+            .Where(piece => piece is not null)
+            .Cast<StagePieceInstance>()
+            .OrderBy(piece => tab.ScenePieces.FindIndex(p => p.Id == piece.Id))
+            .ToList();
+
+    private static void SyncStagePieceOrder(StageEditorTab tab)
+    {
+        if (tab.Stage is null) return;
+
+        // Only non-wall pieces live in Stage.pieces.
+        tab.Stage.Pieces.Clear();
+        foreach (var piece in tab.ScenePieces)
+            if (!piece.PiecePlacement.IsWall)
+                tab.Stage.Pieces.Add(piece.Obj);
     }
 
     // Reorders ScenePieces so pieces appear in group order (grouped first, then ungrouped).
