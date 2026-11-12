@@ -17,7 +17,7 @@ namespace NFMWorld;
 
 public partial class WorldGame
 {
-    private static void RunSxHarness(string[] args)
+    static partial void RunSxHarness(string[] args)
     {
         var scriptPath = args.Single(arg => arg.StartsWith("--sx-harness=", StringComparison.Ordinal))[13..];
         using var script = JsonDocument.Parse(File.ReadAllText(scriptPath));

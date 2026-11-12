@@ -67,6 +67,13 @@ namespace NFMWorld;
 /// </remarks>
 public partial class WorldGame : IDisposable, IGameHost
 {
+    /// <summary>
+    /// Runs the Sx visual harness and returns. Only the desktop head compiles
+    /// <c>WorldGame.SxHarness.cs</c>; the browser head shares this file but not that one, and a
+    /// declaration with no implementation makes the compiler drop the call there.
+    /// </summary>
+    static partial void RunSxHarness(string[] args);
+
     /// <summary>Compatibility shim for <c>Mad/UI/SettingsMenu.cs</c>'s existing settings-application logic. See <see cref="GraphicsSettingsShim"/>.</summary>
     public GraphicsSettingsShim Graphics { get; }
 

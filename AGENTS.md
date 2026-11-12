@@ -58,13 +58,21 @@ Key characteristics:
   - Game only: `dotnet build NFMWorld/NFMWorld.csproj`
   - Run: `dotnet run --project NFMWorld/NFMWorld.csproj`
   - Tests: `dotnet test --no-build` from the solution root, or from a test project folder.
-  - Browser: `dotnet build NFMWorld.Browser/NFMWorld.Browser.csproj` (it sets `browser-wasm` itself).
+  - Browser: `dotnet build NFMWorld.Browser/NFMWorld.Browser.csproj -p:NfmwBrowser=true` (it sets
+    `browser-wasm` itself). The property cannot be set in the csproj: it has to reach referenced
+    projects, and only a command-line property does.
 
 - **Compile symbols**: `ANGLE` is defined in the game project and the backends; `WEB_AUDIO` is set only by the browser
   head (which passes `NfmwBrowser=true` through its references). Keep both when touching compilation logic.
 
 - **Don't** remove or flatten the MSBuild platform conditionals, or the `RuntimeIdentifier != 'browser-wasm'` guards
   that keep `PublishAot`/`NativeLib` off in the wasm head.
+
+- **`WorldGame.cs` is shared with the browser head, which links only some of the exe's files.** A
+  desktop-only member it calls has to be a `partial` method whose implementation sits in an
+  unlinked file (as `RunSxHarness` does in `WorldGame.SxHarness.cs`), because a plain call there
+  fails the browser build with `CS0103`. The same applies to anything else the browser head adds to
+  its `Compile` group.
 
 ---
 
