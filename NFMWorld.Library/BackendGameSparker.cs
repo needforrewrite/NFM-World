@@ -120,12 +120,14 @@ public static class BackendGameSparker
             var modsFolder = Path.Combine(Directory.GetCurrentDirectory(), "mods");
             if (Directory.Exists(modsFolder))
                 VFS.MountDirectory(modsFolder);
-
-            // The cache is mounted before the network mount so an already-prepared asset never
-            // goes back over HTTP; both only answer archive/<hash> paths.
-            ContentCache.Mount();
-            ArchiveMount.MountIfConfigured(ArchiveEndpoint.Url);
         }
+
+        // After the write root exists, and before any network mount, so a prepared asset is never
+        // fetched again. Both only answer archive/<hash> paths. The browser keeps its cache in
+        // MEMFS, which lasts for the session; without this mount every prepare there fails.
+        ContentCache.Mount();
+        if (!OperatingSystem.IsBrowser())
+            ArchiveMount.MountIfConfigured(ArchiveEndpoint.Url);
 
         cars.Add(Collection.NFMM, []);
         LoadModelDirectory(

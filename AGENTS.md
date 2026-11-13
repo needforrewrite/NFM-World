@@ -839,8 +839,11 @@ Added with the archive/content work; read this before touching content loading, 
 - **Content cache** — `ContentCache.Mount()` is called before `ArchiveMount`; prepared assets only
   appear after hash verification and typed decode, through a temp-file rename. Synchronous loaders
   read `archive/<sha256>` from the mount; `PrepareAsync` coalesces duplicate downloads and a corrupt
-  cached file is deleted and refetched. Browser persistence is the VFS write root (MEMFS), so it is
-  session-only.
+  cached file is deleted and refetched. Its id arguments take **either** a bare hash or the canonical
+  `archive/<sha256>` reference (`ContentHashes.TryResolve`), because search results, the garage, the
+  stage picker and the `PreparedContent` entries on the wire all carry the reference form — passing
+  one through unchanged is correct, and slicing off the prefix first is not needed. Browser
+  persistence is the VFS write root (MEMFS), so it is session-only.
 - **Multiplayer policy** — `MultiplayerContentPolicy` accepts shipped car ids and canonical
   `archive/<hash>` only; `user/` and local paths are refused. The lobby applies it to identities and
   session creation, and the game master applies it again before constructing any stage.

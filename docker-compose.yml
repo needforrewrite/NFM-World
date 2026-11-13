@@ -56,6 +56,10 @@ services:
       # account each slot belongs to, so the GM hands it the result and the lobby forwards it
       # to the archive. Unset, races are played but never rated.
       LOBBY_RESULTS_URL: "http://lobby:7001/race-ended"
+      # The GM downloads a race's stage from here before creating it. Unset, it falls back to
+      # the archive baked into the build (the public one), so a stage published to this stack
+      # would never be found.
+      ARCHIVE_URL: "http://archive:8080/"
       HMAC_KEY_ID: ${GM_KEY_ID:-primary}
       HMAC_SECRET_KEY: ${GM_HMAC_SECRET:?set GM_HMAC_SECRET in .env}
     ports:

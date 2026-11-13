@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Net;
 using System.Security.Cryptography;
+using NFMWorldLibrary;
 using NFMWorldLibrary.Content;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Radpack;
@@ -55,6 +56,26 @@ public class ContentCacheTests
     private static ArchiveContentClient Client(FakeHandler handler)
         => new("https://archive.example/", new HttpClient(handler));
 
+    private static (byte[] Bytes, string Hash) TrackRadpack()
+    {
+        var writer = new ArrayBufferWriter<byte>();
+        RadpackSerializer.Serialize(
+            new RadpackTrack
+            {
+                Metadata = new RadpackMetadata
+                {
+                    Name = Guid.NewGuid().ToString("N"),
+                    CreationDate = DateTimeOffset.UnixEpoch,
+                    Type = RadpackType.Track
+                },
+                Stage = new StageLoader()
+            },
+            writer
+        );
+        var bytes = writer.WrittenSpan.ToArray();
+        return (bytes, Convert.ToHexStringLower(SHA256.HashData(bytes)));
+    }
+
     [TestMethod]
     public async Task Prepare_PublishesAVerifiedAssetThatTheVfsCanRead()
     {
@@ -82,6 +103,42 @@ public class ContentCacheTests
 
         Assert.IsTrue(second.Ok, second.Error);
         Assert.AreEqual(callsAfterFirst, handler.Calls);
+    }
+
+    [TestMethod]
+    public async Task Prepare_AcceptsTheCanonicalArchiveReference()
+    {
+        // The wire carries `archive/<sha256>`, never a bare hash: this is what a lobby or game
+        // master actually passes, and it used to be refused as "Not a content hash."
+        var (bytes, hash) = CarRadpack();
+        var handler = new FakeHandler(_ => bytes);
+        using var client = Client(handler);
+        var reference = RadpackReader.ArchivePrefix + hash.ToUpperInvariant();
+
+        var result = await ContentCache.PrepareAsync(client, reference, AssetKind.Car, CancellationToken.None);
+
+        Assert.IsTrue(result.Ok, result.Error);
+        Assert.IsTrue(ContentCache.IsPrepared(reference));
+        Assert.IsTrue(ContentCache.IsPrepared(hash));
+        Assert.IsNotNull(RadpackReader.TryRead(ContentCache.PathForHash(reference), RadpackType.Car, out var error), error);
+    }
+
+    [TestMethod]
+    public async Task Prepare_StageByReference_IsReadableAsATrack()
+    {
+        // What the game master does for a custom stage: prepare the lobby's reference, then
+        // construct the stage synchronously through the mount.
+        var (bytes, hash) = TrackRadpack();
+        var handler = new FakeHandler(_ => bytes);
+        using var client = Client(handler);
+        var reference = RadpackReader.ArchivePrefix + hash;
+
+        var result = await ContentCache.PrepareAsync(client, reference, AssetKind.Stage, CancellationToken.None);
+        Assert.IsTrue(result.Ok, result.Error);
+
+        Assert.IsTrue(ContentCache.IsPrepared(reference));
+        var stage = RadpackReader.TryReadTrack(reference, out var error);
+        Assert.IsNotNull(stage, error);
     }
 
     [TestMethod]

@@ -329,9 +329,6 @@ internal sealed class GarageController
     /// </summary>
     private async Task PrepareOnlineCarAsync(string hashOrIdentity)
     {
-        var hash = RadpackReader.IsArchiveId(hashOrIdentity)
-            ? hashOrIdentity[RadpackReader.ArchivePrefix.Length..]
-            : hashOrIdentity;
         var generation = ++_onlineGeneration;
         UiState.Garage.OnlineStatus.Value = "Preparing car...";
         _selectionReady = false;
@@ -342,7 +339,7 @@ internal sealed class GarageController
             .FirstOrDefault(car => car.FileName.Equals(hashOrIdentity, StringComparison.OrdinalIgnoreCase))
             ?.Author;
 
-        var result = await ContentCache.PrepareAsync(Content.Value, hash, AssetKind.Car, CancellationToken.None);
+        var result = await ContentCache.PrepareAsync(Content.Value, hashOrIdentity, AssetKind.Car, CancellationToken.None);
         if (generation != _onlineGeneration)
             return;
 
@@ -352,7 +349,10 @@ internal sealed class GarageController
             return;
         }
 
-        var identity = RadpackReader.ArchivePrefix + hash.ToLowerInvariant();
+        // A bare hash reaches here from a typed id; both forms resolve to the same identity.
+        var identity = RadpackReader.Identity(
+            RadpackReader.IsArchiveId(hashOrIdentity) ? hashOrIdentity : RadpackReader.ArchivePrefix + hashOrIdentity
+        );
         var (_, rad) = BackendGameSparker.GetCar(identity);
         if (rad is null)
         {

@@ -314,6 +314,7 @@ a TLS terminator in front of it, because the client presents its session token o
 | `GM_HTTP_ENDPOINT`   | `http://localhost:7003/` | HTTP endpoint for Lobby API                                                    |
 | `GM_HMAC_KEYS`       | *(required)*             | `keyId=base64secret,...` pairs                                                 |
 | `LOBBY_RESULTS_URL`  | *(unset)*                | Where the GM posts a finished race (the lobby's `http://host:7001/race-ended`) |
+| `ARCHIVE_URL`        | build's `ArchiveEndpoint` | Archive base URL for the stage a race needs. Must be the archive the lobby uses, or a custom stage published there is never found |
 | `WORKER_BINARY_PATH` | `dotnet`                 | Path to Worker binary, or `dotnet` for dev                                     |
 
 #### Worker (v2 only — receives config via CLI args)

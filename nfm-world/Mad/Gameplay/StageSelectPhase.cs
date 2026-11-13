@@ -210,9 +210,8 @@ public class StageSelectPhase : BaseStageRenderingPhase
         var generation = ++_prepareGeneration;
         _state.Busy.Value = true;
         _state.Status.Value = "Downloading stage...";
-        var hash = stageId[RadpackReader.ArchivePrefix.Length..];
 
-        var result = await ContentCache.PrepareAsync(ContentClient, hash, AssetKind.Stage, CancellationToken.None);
+        var result = await ContentCache.PrepareAsync(ContentClient, stageId, AssetKind.Stage, CancellationToken.None);
         if (generation != _prepareGeneration)
             return;
 

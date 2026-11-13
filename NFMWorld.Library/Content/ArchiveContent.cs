@@ -273,6 +273,29 @@ public static class ContentHashes
     public static bool IsCanonical(string? hash)
         => hash is { Length: 64 } && hash.All(Uri.IsHexDigit);
 
+    /// <summary>
+    /// The bare hash behind either a hash or a canonical <c>archive/&lt;sha256&gt;</c> reference.
+    /// Both forms reach the cache: search results and the wire carry references, while the
+    /// archive's own endpoints are keyed by hash.
+    /// </summary>
+    public static bool TryResolve(string? reference, out string hash)
+    {
+        hash = "";
+        var trimmed = reference?.Trim();
+        if (string.IsNullOrEmpty(trimmed))
+            return false;
+
+        var candidate = RadpackReader.IsArchiveId(trimmed)
+            ? trimmed[RadpackReader.ArchivePrefix.Length..]
+            : trimmed;
+
+        if (!IsCanonical(candidate))
+            return false;
+
+        hash = candidate.ToLowerInvariant();
+        return true;
+    }
+
     public static string Normalize(string hash)
         => hash.Trim().ToLowerInvariant();
 
@@ -318,11 +341,16 @@ public static class ContentCache
         TheVFS.VFS.Mount(_mounted);
     }
 
-    public static bool IsPrepared(string hash)
-        => _root is not null && ContentHashes.IsCanonical(hash) && File.Exists(PathFor(ContentHashes.Normalize(hash)));
+    /// <summary>Whether a canonical asset is already in the cache. Takes a hash or an <c>archive/</c> id.</summary>
+    public static bool IsPrepared(string reference)
+        => _root is not null
+           && ContentHashes.TryResolve(reference, out var hash)
+           && File.Exists(PathFor(hash));
 
     /// <summary>The VFS path a prepared asset is read from.</summary>
-    public static string PathForHash(string hash) => RadpackReader.ArchivePrefix + ContentHashes.Normalize(hash);
+    public static string PathForHash(string reference)
+        => RadpackReader.ArchivePrefix
+           + (ContentHashes.TryResolve(reference, out var hash) ? hash : ContentHashes.Normalize(reference));
 
     /// <summary>
     /// Downloads and prepares one asset for the given kind, coalescing concurrent requests for the
@@ -331,7 +359,7 @@ public static class ContentCache
     /// </summary>
     public static async Task<ContentPrepareResult> PrepareAsync(
         ArchiveContentClient client,
-        string hash,
+        string reference,
         AssetKind kind,
         CancellationToken ct
     )
@@ -339,10 +367,8 @@ public static class ContentCache
         if (_root is null)
             return ContentPrepareResult.Failure("The content cache is not mounted.");
 
-        if (!ContentHashes.IsCanonical(hash))
+        if (!ContentHashes.TryResolve(reference, out var normalized))
             return ContentPrepareResult.Failure("Not a content hash.");
-
-        var normalized = ContentHashes.Normalize(hash);
 
         var radpackKind = AssetKinds.ToRadpackType(kind);
         if (radpackKind is null)
@@ -389,20 +415,26 @@ public static class ContentCache
     }
 
     /// <summary>Removes a cached asset so the next prepare fetches it again.</summary>
-    public static void Invalidate(string hash)
+    public static void Invalidate(string reference)
     {
-        if (_root is null || !ContentHashes.IsCanonical(hash))
+        if (_root is null || !ContentHashes.TryResolve(reference, out var hash))
             return;
 
-        var path = PathFor(ContentHashes.Normalize(hash));
+        var path = PathFor(hash);
         if (File.Exists(path))
             File.Delete(path);
     }
 
     /// <summary>True when <paramref name="bytes"/> are a well-formed radpack of the expected kind.</summary>
-    public static bool TryDecode(byte[] bytes, string hash, RadpackType kind, out string? error)
+    public static bool TryDecode(byte[] bytes, string reference, RadpackType kind, out string? error)
     {
-        if (!string.Equals(ContentHashes.Of(bytes), ContentHashes.Normalize(hash), StringComparison.Ordinal))
+        if (!ContentHashes.TryResolve(reference, out var hash))
+        {
+            error = "Not a content hash.";
+            return false;
+        }
+
+        if (!string.Equals(ContentHashes.Of(bytes), hash, StringComparison.Ordinal))
         {
             error = "The asset's hash does not match the requested one.";
             return false;
@@ -412,7 +444,7 @@ public static class ContentCache
         {
             RadpackReader.Read(
                 bytes,
-                RadpackReader.ArchivePrefix + ContentHashes.Normalize(hash),
+                RadpackReader.ArchivePrefix + hash,
                 kind,
                 RadpackLimits.MaxCompressedBytes,
                 RadpackLimits.MaxDecompressedBytes
