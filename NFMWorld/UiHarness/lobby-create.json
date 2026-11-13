@@ -1,0 +1,63 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-lobby-create-captures",
+  "view": "lobby-create",
+  "steps": [
+    {
+      "action": "capture",
+      "capture": "dialog"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Stage select source local"
+    },
+    {
+      "action": "assert-vertical-scroll",
+      "target": "Stage select list"
+    },
+    {
+      "action": "scroll",
+      "target": "Stage select list",
+      "delta": -5,
+      "capture": "scrolled"
+    },
+    {
+      "action": "assert-no-horizontal-scroll",
+      "target": "Stage select list"
+    },
+    {
+      "action": "click",
+      "target": "Stage select source online",
+      "capture": "online"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Stage select source online"
+    },
+    {
+      "action": "assert-vertical-scroll",
+      "target": "Stage select list"
+    },
+    {
+      "action": "click",
+      "target": "Stage row archive/02aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "capture": "online-picked"
+    },
+    {
+      "action": "click",
+      "target": "Stage select source local",
+      "capture": "back-to-local"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Stage select source local"
+    },
+    {
+      "action": "click",
+      "target": "Stage select source online",
+      "capture": "online-again"
+    }
+  ]
+}

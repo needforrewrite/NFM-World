@@ -1,4 +1,4 @@
-using NFMWorld.DriverInterface;
+﻿using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
@@ -31,6 +31,21 @@ public sealed class StageSelectState
 
     /// <summary>Why the selected stage cannot be used here, or empty when it can.</summary>
     public Signal<string> Restriction { get; } = new("");
+
+    /// <summary>Back to an empty LOCAL list, as a fresh selector would be.</summary>
+    public void Reset()
+    {
+        Collections.Value = [];
+        Collection.Value = "";
+        Stages.Value = [];
+        Selected.Value = "";
+        Search.Value = "";
+        ConfirmEnabled.Value = false;
+        OnlineSource.Value = false;
+        Busy.Value = false;
+        Status.Value = "";
+        Restriction.Value = "";
+    }
 }
 
 /// <summary>
@@ -94,22 +109,37 @@ public static class StageSelectView
         );
     }
 
-    /// <summary>A compact list for a dialog: no page chrome, just filter and rows.</summary>
+    /// <summary>A compact list for a dialog: no page chrome, just source, filter and rows.</summary>
     public static Node Compact(StageSelectState state, Actions actions)
     {
         SearchDraft.Value = state.Search.Value;
 
         return Sx.View(
             name: () => "Stage select compact",
-            style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexGrow: 1, flexShrink: 1, minHeight: 0, gapRow: 6),
+            // The minimum keeps a couple of rows readable; a dialog shorter than that grows a
+            // scrollbar of its own instead of squeezing the list to nothing.
+            style: () => Sx.Styles(
+                flexDirection: FlexDirection.Column,
+                flexGrow: 1,
+                flexShrink: 1,
+                minHeight: MinCompactHeight,
+                gapRow: 6
+            ),
             children:
             [
+                // Null when the host cannot search the archive, so a selector that only offers
+                // local content does not show a dead toggle.
+                SourcePicker(state, actions),
                 SearchBox(state, actions),
+                Status(state),
                 List(state, actions),
                 Restriction(state)
             ]
         );
     }
+
+    /// <summary>Height the compact selector keeps before its host dialog starts scrolling.</summary>
+    private const float MinCompactHeight = 200;
 
     private static Node Sidebar(StageSelectState state, Actions actions, string title)
         => Sx.View(
@@ -216,14 +246,24 @@ public static class StageSelectView
         );
 
     private static Node SourcePicker(StageSelectState state, Actions actions)
-        => Sx.View(
+    {
+        // A host with no archive search cannot leave LOCAL, so it gets no picker at all rather
+        // than two buttons where one does nothing. The empty view keeps the node name so a test
+        // (and the debugger) can still see that the picker exists and takes no space.
+        if (actions.SourceSelected is null || actions.OnlineSearch is null)
+            return Sx.View(
+                name: () => "Stage select source",
+                style: () => Sx.Styles(height: 0, flexShrink: 0)
+            );
+
+        return Sx.View(
             name: () => "Stage select source",
             style: () => Sx.Styles(flexDirection: FlexDirection.Row, flexShrink: 0, gapColumn: 8, gapRow: 8),
             children:
             [
                 Button.Create(
                     label: () => "LOCAL",
-                    onPress: () => actions.SourceSelected?.Invoke(false),
+                    onPress: () => actions.SourceSelected(false),
                     active: () => !state.OnlineSource.Value,
                     size: ButtonSize.Sm,
                     style: () => Sx.Styles(flexGrow: 1, paddingTop: 7, paddingBottom: 7),
@@ -231,7 +271,7 @@ public static class StageSelectView
                 ),
                 Button.Create(
                     label: () => "ONLINE",
-                    onPress: () => actions.SourceSelected?.Invoke(true),
+                    onPress: () => actions.SourceSelected(true),
                     active: () => state.OnlineSource.Value,
                     size: ButtonSize.Sm,
                     style: () => Sx.Styles(flexGrow: 1, paddingTop: 7, paddingBottom: 7),
@@ -239,6 +279,7 @@ public static class StageSelectView
                 )
             ]
         );
+    }
 
     private static Node CollectionRail(StageSelectState state, Actions actions)
         => Sx.View(

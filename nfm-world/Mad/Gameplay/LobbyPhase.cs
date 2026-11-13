@@ -51,6 +51,31 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
     private static UiState.LobbyState Lobby => UiState.Lobby;
 
+    /// <summary>Local stages the create dialog offers, read once so switching source is cheap.</summary>
+    private IReadOnlyList<StageOption>? _localStages;
+
+    /// <summary>Superseded archive searches and downloads are cancelled through this.</summary>
+    private CancellationTokenSource? _stageSearchCancellation;
+    private int _stageSearchGeneration;
+
+    private IReadOnlyList<StageOption> LocalStages => _localStages ??= LoadLocalStages();
+
+    private static IReadOnlyList<StageOption> LoadLocalStages()
+    {
+        try
+        {
+            return LobbyStageSelection.LocalStages(
+                GameSparker.GetAvailableStages(),
+                GameSparker.GetAvailableStageNames()
+            );
+        }
+        catch (Exception)
+        {
+            // A stage tree that failed to load must not take the lobby down with it.
+            return [];
+        }
+    }
+
     private LobbyView.Actions Actions => new(
         Join: OnJoin,
         Leave: OnLeave,
@@ -60,10 +85,13 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         SendChat: OnSendChat,
         Back: OnBack,
         OpenCreate: OnOpenCreate,
-        CloseCreate: () => Lobby.ShowCreateDialog.Value = false,
+        CloseCreate: OnCloseCreate,
         Select: id => Lobby.SelectedSessionId.Value = id,
         Spectate: OnSpectate,
-        SetStage: stage => Lobby.SelectedStage.Value = stage,
+        SetStage: OnSelectStage,
+        SetStageSearch: OnStageSearchChanged,
+        SetStageSource: OnStageSourceSelected,
+        SearchStagesOnline: query => _ = SearchStagesOnlineAsync(query),
         SetMaxPlayers: count => Lobby.MaxPlayers.Value = count,
         SetBots: count => Lobby.BotCount.Value = count,
         SetConfig: OnSetConfig,
@@ -316,6 +344,9 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             _preparationCancellation?.Dispose();
             _preparationCancellation = null;
             _pendingSpectate = null;
+            // A create-dialog search outliving the phase would write into state nobody renders
+            // and keep the HTTP request alive after the player has left the lobby.
+            CancelStageSearch();
             // Leaving the lobby must close the socket: the server only drops the ghost player when
             // the connection goes, and the receive loop would otherwise run for the process lifetime.
             GameSparker.AccountManager.ActiveAccountChanged -= OnAccountChanged;
@@ -542,8 +573,10 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             0,
             MatchGameplayInfo.MaxPlayers - Lobby.MaxPlayers.Value
         );
+        // A session needs a stage before the dialog can offer one, so start on the first local
+        // stage the lobby accepts. The dialog's own list takes over from there.
         if (string.IsNullOrEmpty(Lobby.SelectedStage.Value))
-            Lobby.SelectedStage.Value = GameSparker.GetAvailableStages().FirstOrDefault() ?? "";
+            Lobby.SelectedStage.Value = LocalStages.FirstOrDefault()?.Id ?? "";
     }
 
     private void UpdateStatus()
@@ -683,6 +716,12 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             return;
         }
 
+        if (!MultiplayerContentPolicy.IsAcceptedStage(stage))
+        {
+            SetStatus(LobbyStageSelection.LocalStageRestriction);
+            return;
+        }
+
         if (!RequireRaceableCar())
             return;
 
@@ -697,6 +736,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             }
         );
         Lobby.ShowCreateDialog.Value = false;
+        CancelStageSearch();
     }
 
     private void OnSendChat(string message)
@@ -710,7 +750,127 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     {
         OnSetGamemode(Lobby.SelectedGamemode.Value);
         Lobby.BotCount.Value = 0;
+        // The dialog renders this state, so it has to be filled before it is shown.
+        LobbyStageSelection.ShowLocal(Lobby.CreateStages, LocalStages, Lobby.SelectedStage.Value);
         Lobby.ShowCreateDialog.Value = true;
+    }
+
+    /// <summary>Closes the dialog and drops anything it was still doing, so a search cannot land later.</summary>
+    private void OnCloseCreate()
+    {
+        Lobby.ShowCreateDialog.Value = false;
+        CancelStageSearch();
+        Lobby.CreateStages.Busy.Value = false;
+    }
+
+    private void CancelStageSearch()
+    {
+        _stageSearchCancellation?.Cancel();
+        _stageSearchCancellation?.Dispose();
+        _stageSearchCancellation = null;
+        _stageSearchGeneration++;
+    }
+
+    private void OnStageSourceSelected(bool online)
+    {
+        var state = Lobby.CreateStages;
+        if (state.OnlineSource.Value == online)
+            return;
+
+        CancelStageSearch();
+
+        if (!online)
+        {
+            LobbyStageSelection.ShowLocal(state, LocalStages, Lobby.SelectedStage.Value);
+            return;
+        }
+
+        state.OnlineSource.Value = true;
+        state.Stages.Value = [];
+        state.Search.Value = "";
+        state.Restriction.Value = "";
+        StageSelectView.ClearSearch();
+        _ = SearchStagesOnlineAsync("");
+    }
+
+    private void OnStageSearchChanged(string query)
+    {
+        var state = Lobby.CreateStages;
+        if (state.OnlineSource.Value)
+        {
+            // Archive search is a request, not a filter: Enter starts it.
+            state.Search.Value = query;
+            return;
+        }
+
+        LobbyStageSelection.ApplyFilter(state, LocalStages, query);
+    }
+
+    private void OnSelectStage(string stageId)
+    {
+        var state = Lobby.CreateStages;
+        var option = state.Stages.Value.FirstOrDefault(stage => stage.Id == stageId);
+        if (option is null)
+            return;
+
+        // The session's stage is only replaced by one the lobby will accept, so a refused pick
+        // leaves the previous choice in place rather than turning into a broken session.
+        if (LobbyStageSelection.Select(state, stageId))
+            Lobby.SelectedStage.Value = stageId;
+    }
+
+    private async Task SearchStagesOnlineAsync(string query)
+    {
+        var state = Lobby.CreateStages;
+
+        // A typed archive id is not a search term: it names one stage exactly.
+        var typed = query.Trim();
+        if (MultiplayerContentPolicy.IsCanonicalArchiveId(typed))
+        {
+            CancelStageSearch();
+            if (LobbyStageSelection.Select(state, typed))
+                Lobby.SelectedStage.Value = typed;
+            // The empty result list still shows the chosen row, so the pick is visible.
+            LobbyStageSelection.ShowRemote(state, []);
+            state.Status.Value = "Using the typed archive id.";
+            return;
+        }
+
+        CancelStageSearch();
+
+        var cancellation = new CancellationTokenSource();
+        _stageSearchCancellation = cancellation;
+        var generation = _stageSearchGeneration;
+
+        state.Busy.Value = true;
+        state.Status.Value = "Searching the archive...";
+
+        try
+        {
+            var page = await GarageController.ContentClient.SearchAsync(query, "Stage", 40, null, cancellation.Token);
+            if (generation != _stageSearchGeneration)
+                return;
+
+            var stages = LobbyStageSelection.RemoteStages(page.Items);
+            LobbyStageSelection.ShowRemote(state, stages);
+            state.Status.Value = stages.Count == 0
+                ? "No public stages matched."
+                : $"{stages.Count} public stage(s). Pick one to use it.";
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            if (generation != _stageSearchGeneration)
+                return;
+
+            // The chosen stage keeps its row, so a failed search does not look like a lost pick.
+            LobbyStageSelection.ShowRemote(state, []);
+            state.Status.Value = $"Could not search the archive: {ex.Message}";
+        }
+        finally
+        {
+            if (generation == _stageSearchGeneration)
+                state.Busy.Value = false;
+        }
     }
 
     private void OnSetGamemode(string id)

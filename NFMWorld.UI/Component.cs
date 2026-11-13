@@ -692,8 +692,10 @@ public abstract partial class Component : Node, IAnimationCallback
 
     private void UpdateScrollExtent()
     {
-        // Floating-point rounding shouldn't create a scrollbar.
-        const float overflowEpsilon = 0.5f;
+        // Children are laid out on the physical pixel grid, so a fractional UI scale can leave a
+        // scale-unit of slack on a child stretched to the content box. That is rounding, not
+        // content: without the tolerance the dialog grew a 1px horizontal scrollbar at 1.25x.
+        var overflowEpsilon = Math.Max(0.5f, G.Scale);
 
         _scrollableWidth = 0f;
         _scrollableHeight = 0f;
@@ -718,9 +720,9 @@ public abstract partial class Component : Node, IAnimationCallback
         _scrollableWidth = Math.Max(0f, maxRight - contentSize.X);
         _scrollableHeight = Math.Max(0f, maxBottom - contentSize.Y);
 
-        if (_scrollableWidth < overflowEpsilon)
+        if (_scrollableWidth <= overflowEpsilon)
             _scrollableWidth = 0f;
-        if (_scrollableHeight < overflowEpsilon)
+        if (_scrollableHeight <= overflowEpsilon)
             _scrollableHeight = 0f;
 
         // Re-clamp against the freshly computed extents (content may have shrank).

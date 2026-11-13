@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Text.Json;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
+using NFMWorld.Gameplay;
 using NFMWorld.Graphics;
 using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
@@ -56,6 +57,7 @@ public partial class WorldGame
             "stage-select" => new FixturePhase(StageSelectFixture),
             "stage-select-local" => new FixturePhase(StageSelectLocalFixture),
             "stage-select-compact" => new FixturePhase(StageSelectCompactFixture),
+            "lobby-create" => new FixturePhase(LobbyCreateFixture),
             "replay-browser" => new FixturePhase(ReplayBrowserFixture),
             "replay-viewer" => new FixturePhase(ReplayViewerFixture),
             "replay-camera" => new FixturePhase(ReplayCameraFixture),
@@ -154,7 +156,13 @@ public partial class WorldGame
                 node.IsHovered,
                 node.IsDisplayed,
                 node.ScrollableWidth,
-                node.ScrollableHeight
+                node.ScrollableHeight,
+                ContentWidth = node.LayoutContentSize.X,
+                ContentHeight = node.LayoutContentSize.Y,
+                BorderLeft = node.LayoutBorderLeft,
+                BorderRight = node.LayoutBorderRight,
+                PaddingLeft = node.LayoutPaddingLeft,
+                PaddingRight = node.LayoutPaddingRight
             });
             File.WriteAllText(
                 Path.Combine(output, name + ".json"),
@@ -222,6 +230,12 @@ public partial class WorldGame
                     if (Find(step.GetProperty("target").GetString()!).LayoutBorderSize.Y < step.GetProperty("height").GetSingle()
                         * scale)
                         throw new InvalidOperationException($"Control was squeezed: {step}");
+                    break;
+                case "assert-vertical-scroll":
+                    if (Find(step.GetProperty("target").GetString()!).ScrollableHeight < 0.5f)
+                        throw new InvalidOperationException(
+                            $"Expected the target to have content to scroll: {step}"
+                        );
                     break;
                 case "assert-no-horizontal-scroll":
                     var scrolled = Find(step.GetProperty("target").GetString()!);
@@ -434,8 +448,96 @@ public partial class WorldGame
     }
 
     /// <summary>
-    /// The compact selector as the lobby's create dialog mounts it: a fixed panel, no page
-    /// chrome, with the online-only restriction note under the list.
+    /// The real lobby with its create dialog open over the 78 shipped stages, more than its list
+    /// can show: the case where a selector that refuses to scroll loses the rows below the fold.
+    /// </summary>
+    private static Node LobbyCreateFixture()
+    {
+        var lobby = UiState.Lobby;
+        lobby.Reset();
+        lobby.Connected.Value = true;
+        lobby.Status.Value = "Connected";
+
+        // Mirrors LobbyPhase.OnOpenCreate: the phase fills CreateStages, the dialog only renders it.
+        var local = LobbyStageSelectionForHarness();
+        lobby.SelectedStage.Value = local.FirstOrDefault()?.Id ?? "";
+        LobbyStageSelection.ShowLocal(lobby.CreateStages, local, lobby.SelectedStage.Value);
+        lobby.ShowCreateDialog.Value = true;
+
+        return LobbyView.Build(
+            new LobbyView.Actions(
+                Join: _ => { },
+                Leave: () => { },
+                StartRace: _ => { },
+                Create: () => { },
+                Refresh: () => { },
+                SendChat: _ => { },
+                Back: () => { },
+                OpenCreate: () => { },
+                CloseCreate: () => { },
+                Select: _ => { },
+                Spectate: _ => { },
+                SetStage: stage =>
+                {
+                    // Mirrors LobbyPhase.OnSelectStage: only an accepted stage becomes the
+                    // session's, and the selector state is the one that draws the highlight.
+                    if (LobbyStageSelection.Select(lobby.CreateStages, stage))
+                        lobby.SelectedStage.Value = stage;
+                },
+                SetStageSearch: _ => { },
+                // The archive is network work, so the fixture lists a fixed public set instead:
+                // the point of the capture is the ONLINE layout, not the HTTP client.
+                SetStageSource: online =>
+                {
+                    if (online)
+                    {
+                        var publicStages = PublicStagesForHarness();
+                        LobbyStageSelection.ShowRemote(lobby.CreateStages, publicStages);
+                        lobby.CreateStages.Status.Value = $"{publicStages.Count} public stage(s). Pick one to use it.";
+                    }
+                    else
+                    {
+                        LobbyStageSelection.ShowLocal(
+                            lobby.CreateStages,
+                            LobbyStageSelectionForHarness(),
+                            lobby.SelectedStage.Value
+                        );
+                    }
+                },
+                SearchStagesOnline: _ => { },
+                SetMaxPlayers: value => lobby.MaxPlayers.Value = value,
+                SetBots: value => lobby.BotCount.Value = value,
+                SetConfig: (name, value) => { },
+                SetGamemode: id => lobby.SelectedGamemode.Value = id
+            )
+        );
+    }
+
+    /// <summary>
+    /// The local stage list exactly as the lobby builds it. The archive search is network work, so
+    /// a fixture only ever shows LOCAL; the compact fixture covers an online-shaped list.
+    /// </summary>
+    private static IReadOnlyList<StageOption> LobbyStageSelectionForHarness()
+        => NFMWorld.Gameplay.LobbyStageSelection.LocalStages(
+            GameSparker.GetAvailableStages(),
+            GameSparker.GetAvailableStageNames()
+        );
+
+    /// <summary>Stand-in archive results, so the fixture can capture the ONLINE list offline.</summary>
+    private static IReadOnlyList<StageOption> PublicStagesForHarness()
+        => Enumerable.Range(1, 22)
+            .Select(i => new StageOption(
+                // Each id has to be distinct: Sx.For keys rows by value, so a repeated id would
+                // collapse two rows into one and make a click target ambiguous.
+                "archive/" + i.ToString("x2") + new string('a', 62),
+                $"Public Stage {i}",
+                i % 4 == 0 ? "a-rather-long-author-name" : "another-author"
+            ))
+            .ToArray();
+
+    /// <summary>
+    /// The compact selector in a plain dialog, with more rows than fit: a standalone layout
+    /// stress for the selector itself. <c>lobby-create</c> covers the real dialog.
     /// </summary>
     private static Node StageSelectCompactFixture()
     {
@@ -460,14 +562,18 @@ public partial class WorldGame
             ),
             children: Sx.View(
                 name: () => "Create dialog",
+                // Bounded and scrolling exactly as the lobby's dialog is: only the stage list
+                // gives up space, or a long list would push the panel off-screen.
                 style: () => Sx.Styles(
-                    width: 560,
-                    height: 520,
+                    width: 460,
+                    maxHeight: 90.Percent(),
+                    minHeight: 0,
                     flexDirection: FlexDirection.Column,
-                    paddingTop: 20,
-                    paddingBottom: 20,
+                    overflow: Overflow.Scroll,
+                    paddingTop: 18,
+                    paddingBottom: 16,
                     paddingLeft: 20,
-                    paddingRight: 20,
+                    paddingRight: 28,
                     gapRow: 10,
                     borderRadius: 10,
                     borderTop: 1,
@@ -481,12 +587,18 @@ public partial class WorldGame
                 [
                     Sx.Text(
                         style: () => Sx.TextStyles(
-                            fontSize: 18,
+                            fontSize: 20,
                             fontFamily: FontFamily.Adventure,
                             fontStyle: FontStyle.Bold,
                             foregroundColor: Theme.MenuBlue
                         ),
-                        text: () => "Select Stage"
+                        layout: () => Sx.Styles(flexShrink: 0),
+                        text: () => "CREATE GAME"
+                    ),
+                    Sx.Text(
+                        style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                        layout: () => Sx.Styles(flexShrink: 0),
+                        text: () => "Stage"
                     ),
                     StageSelectView.Compact(
                         state,
@@ -497,6 +609,11 @@ public partial class WorldGame
                             Confirm: () => { },
                             Back: () => { }
                         )
+                    ),
+                    Sx.Text(
+                        style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                        layout: () => Sx.Styles(flexShrink: 0),
+                        text: () => "Max players: 4"
                     )
                 ]
             )

@@ -17,6 +17,7 @@
 
     <ItemGroup>
         <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting"/>
+        <Using Include="Maxine.Extensions.Mathematics.Color" Alias="Color"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -30,6 +31,10 @@
     <ItemGroup>
         <Compile Include="..\nfm-world\Mad\Gameplay\MenuHistory.cs" Link="MenuHistory.cs"/>
         <Compile Include="..\nfm-world\UI\Routes\AccountView.cs" Link="AccountView.cs"/>
+        <Compile Include="..\nfm-world\UI\Routes\StageSelectView.cs" Link="StageSelectView.cs"/>
+        <Compile Include="..\nfm-world\Mad\Gameplay\LobbyStageSelection.cs" Link="LobbyStageSelection.cs"/>
+        <Compile Include="..\nfm-world\UI\Components\Button.cs" Link="Button.cs"/>
+        <Compile Include="..\nfm-world\UI\Theme.cs" Link="Theme.cs"/>
         <Compile Include="..\nfm-world\Util\PngCodec.cs" Link="PngCodec.cs"/>
     </ItemGroup>
 

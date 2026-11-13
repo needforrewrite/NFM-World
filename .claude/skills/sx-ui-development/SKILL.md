@@ -1,4 +1,4 @@
----
+﻿---
 name: sx-ui-development
 description: Design, implement, layout, style, and test NFM-World C# Sx interfaces end-to-end. Use for new screens, editor panels, menus, tabs, dialogs, controls, reactive UI bugs, focus/input routing, Yoga layout, scroll compression, and visual verification with the Sx screenshot harness.
 ---
@@ -102,7 +102,7 @@ For a vertical panel:
 1. Header/search/toolbars/footer actions: `flexShrink: 0`.
 2. Scrollable middle: `flexGrow: 1`, `flexShrink: 1`, `minHeight: 0`, `overflow: Overflow.Scroll`.
 3. Rows and grouped controls inside that scroller: `flexShrink: 0`.
-4. Wrap those rows in a `width: 100%`, `flexShrink: 0` column. `Overflow.Scroll` scrolls both axes, so one wide child or a long empty-state message otherwise draws a horizontal scrollbar on a vertical list. Use `Sx.WrappingText` at `width: 100%` for messages and error lines.
+4. Wrap those rows in a `width: 100%`, `flexShrink: 0` column. `Overflow.Scroll` scrolls both axes, so one wide child or a long empty-state message otherwise draws a horizontal scrollbar on a vertical list. Use `Sx.WrappingText` at `width: 100%` for messages and error lines. A dialog holding such a scroller needs its own `maxHeight` and `overflow: Overflow.Scroll` (`minHeight: 0`, `paddingRight: 28` for the bar) — otherwise the dialog grows to fit and the list never scrolls. Sub-`G.Scale` overflow is ignored by `Component.UpdateScrollExtent`, so a fractional UI scale does not grow a 1px horizontal bar from layout rounding.
 
 For horizontal layouts, use `minWidth: 0` on the flexible content and preserve fixed controls. A fixed width on the outer panel does **not** prevent its descendants from shrinking vertically. Inspect both the panel's children and nested groups. A long list must scroll, not compress buttons into their padding.
 
@@ -175,7 +175,7 @@ dotnet run --project NFMWorld -- --backend=d3d11 --sx-harness=NFMWorld/UiHarness
 
 The harness mounts the actual editor `BuildUi`, uses Apos/fonts and GPU rendering, and sends direct `UiRenderer` events—**never OS mouse/SendKeys automation**. It renders offscreen and writes PNGs plus measured node/hover JSON. Read and inspect the PNGs using `view_image`; creating captures alone is not visual verification.
 
-Script fields: `width`, `height`, `scale`, `output` (relative to the script), optional `view` (`stage-editor`, `model-editor`, `garage`, `stage-select`), and `steps`. `pieceCount` seeds a synthetic stage-editor hierarchy/selection for layout stress; it is not a real rendered track. Use the existing inspector scenario for an 80-row list. The menu views mount the real `GarageView`/`StageSelectView` over synthetic state fixtures.
+Script fields: `width`, `height`, `scale`, `output` (relative to the script), optional `view` (`stage-editor`, `model-editor`, `garage`, `stage-select`, `stage-select-compact`, `lobby-create`, `replay-browser`, `replay-viewer`, `replay-camera`), and `steps`. `pieceCount` seeds a synthetic stage-editor hierarchy/selection for layout stress; it is not a real rendered track. Use the existing inspector scenario for an 80-row list. The menu views mount the real `GarageView`/`StageSelectView` over synthetic state fixtures; `lobby-create` drives the real create dialog (LOCAL/ONLINE source toggle included) with a fixed archive result set, since the real search is network work. The measured JSON also carries `ContentWidth`/`BorderLeft`/`PaddingRight` per node, which is what a scrollbar artifact usually needs.
 
 Supported steps:
 
@@ -192,6 +192,7 @@ Supported steps:
 | `assert-input-aligned` | named field containers' direct TextInputs have equal left edges and widths |
 | `assert-min-height` | `height`: minimum logical height, scaled by the harness |
 | `assert-size` | `width`/`height`: exact logical size, scaled; do not use on `100%` heights, which stay at device pixels |
+| `assert-vertical-scroll`, `assert-no-horizontal-scroll` | the target scroll container must (not) have content beyond its viewport; use these to prove a list actually scrolls rather than being clipped |
 
 Any step can include `capture`. Example:
 

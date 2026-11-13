@@ -127,6 +127,7 @@ SolidJS-style: signals, per-slot effects, **no vnode and no diffing**. Backed by
 | Scopes own effects | Content mounted by a flow helper lives in its own `RenderScope`; disposing that scope tears down everything created inside it. Reusing a node across mounts without adopting a new scope leaves its effects dead. |
 | Style structs are nullable | `Styles` fields are `T?` on purpose (merge semantics). Setting a field to its CLR default is not the same as leaving it null. |
 | Rows in a scroll container | Yoga's web default `flexShrink: 1` squeezes list rows to their padding, so a long list shows crushed rows (or one solid block) instead of scrolling. List rows need `flexShrink: 0` — the main-menu items and `LobbyView.Row` set it. |
+| Scroll needs a bounded viewport | A `flexGrow: 1` scroll container inside a dialog with no height bound never scrolls: the auto-height panel grows to fit its content, so the list's viewport is the whole list. Give the dialog `maxHeight` + `minHeight: 0` and let it scroll itself (`Overflow.Scroll`) for windows too short for the form, and keep the list's own `minHeight` small enough that the two do not fight. The lobby create dialog's stage list failed exactly this way |
 | Scroll is both axes | `Overflow.Scroll` has no X/Y split in `Styles`, so any direct child wider than the viewport adds a horizontal scrollbar. Put rows and messages in a `width: 100%`, `flexShrink: 0` column inside the scroller; long messages use `Sx.WrappingText` at 100% width. |
 | Off-screen paint | `Component.PaintChildren` skips a child whose border box lies entirely outside the inherited clip, so a scrolled list only pays for its visible rows. Rows still lay out; only painting is skipped. Flow hosts (`Display.Contents`) are never culled by their own box — they have none. |
 | Scrollbars overlay content | `RenderScrollbars` draws inside the padding box's right/bottom 6px, over the content. A scroll container holding buttons or fields needs `paddingRight: 8` (and `paddingBottom` for the horizontal bar) or the bar sits on top of them — the stage editor's hierarchy, parts grid, inspector, property panels and dialogs all set it. |
@@ -527,6 +528,12 @@ palette). One lobby; whether a race is rated is chosen per race, not by a menu p
 - **The view reads `UiState.Lobby` only.** The phase writes it from `GameTick`. `LobbyView.Actions` carries every
   callback; JOIN takes the clicked row's id (`Action<uint>`), because a button stops the press reaching its row, so
   the row's own click handler never runs.
+- **The create dialog's stage list has two sources.** It renders `UiState.Lobby.CreateStages`, which
+  `LobbyPhase` fills on open (`LobbyStageSelection.ShowLocal`) and filters: LOCAL is the shipped stages a session may
+  use, ONLINE is the public archive searched on Enter (`GarageController.ContentClient`, `"Stage"`, eligible rows
+  only). Selecting a stage that `MultiplayerContentPolicy` refuses sets the selector's restriction and never becomes
+  the session's stage. The chosen stage survives a source switch — a public pick is re-added as its own row — so the
+  highlight and `Lobby.SelectedStage` never disagree.
 - **Accounts are required.** `LobbyConnection.TryOpen` prompts for sign-in on the main menu before connecting;
   successful sign-in continues into the requested lobby on the game tick. Identity is sent only after authentication.
   The server refuses missing/invalid tokens and archive outages or missing `ARCHIVE_URL`; there is no guest fallback.
@@ -561,7 +568,7 @@ palette). One lobby; whether a race is rated is chosen per race, not by a menu p
 | Roster order | `MatchGameplayInfo.Players` is keyed by **slot**, but the client gamemode addresses players by **array position**. Always build the array (and the id→index map) through `MatchGameplayInfo.InSlotOrder()`; a dictionary enumerates in no order, and building it as-is put each player in another player's slot, so relayed state landed on the wrong car and opponents never moved |
 | Who is in the roster | `PlayerRegistry.ClientInfo` has an empty `Name` until the client authenticates, and `LobbyStateBroadcaster` skips connections that have not, so a half-open connection is not listed as a player |
 | Names in the HUD | the sidebar, car markers, the arrow target and the announcer show `ClientSidePlayerInfo.PlayerName`, not `car.Stats.Name` — in a race every car can be the same model |
-| Stage list | enumerate once per dialog mount (`CreateDialog`), not per frame. The create dialog lists only `MultiplayerContentPolicy.IsAcceptedStage` entries (a local `user/` stage cannot be raced) and accepts a canonical archive id typed into search |
+| Stage list | the create dialog renders `UiState.Lobby.CreateStages`, filled and filtered by `LobbyPhase` (`LobbyStageSelection`) — enumerate once when the dialog opens, never per frame. LOCAL lists only `MultiplayerContentPolicy.IsAcceptedStage` entries and accepts a typed archive id; ONLINE is an Enter-only archive search (`SearchStagesOnline`), not a filter of the LOCAL rows |
 | Child collections | `Sx` flattens a nested `IEnumerable` child, but an unsupported child throws inside an effect — and the signal machinery swallows it, so the subtree silently fails to mount. Keep the flattened case covered (`SxRendererTests`) |
 | WebSocket sends are serialized | a `WebSocket` allows one outstanding `SendAsync`; a second throws `InvalidOperationException` and that packet is lost. `WsClient` (server) and the client transport chain sends per connection, and the server's close is chained behind them so a refusal sent just before a disconnect still arrives |
 | Archive outage vs rejection | `ArchiveClient.ValidateTokenAsync` returns `Unavailable` for anything it cannot read — HTML from a proxy, a bad charset, a timeout. Only `401` is `Rejected`, because only that may clear the player's saved token |
@@ -826,7 +833,9 @@ Added with the archive/content work; read this before touching content loading, 
   come from `ArchiveContentClient.SearchAsync(..., "Stage", ...)`
   and carry `archive/<hash>` ids. Choosing an archive option prepares it with
   `ContentCache.PrepareAsync(..., AssetKind.Stage, ...)` before `LoadStage`, and RACE waits for that
-  prepare. The lobby's create dialog uses the compact selector and still accepts a typed archive id.
+  prepare. The lobby's create dialog uses the same compact selector over
+  `UiState.Lobby.CreateStages`, so it offers both sources: LOCAL is the accepted shipped stages,
+  ONLINE searches the archive and carries the author; a typed archive id is still accepted.
 - **Content cache** — `ContentCache.Mount()` is called before `ArchiveMount`; prepared assets only
   appear after hash verification and typed decode, through a temp-file rename. Synchronous loaders
   read `archive/<sha256>` from the mount; `PrepareAsync` coalesces duplicate downloads and a corrupt
@@ -871,9 +880,13 @@ Added with the archive/content work; read this before touching content loading, 
   from the repo root. It mounts the actual editor Sx tree with the real Apos/font renderer, sends
   direct UI events (never OS input), renders offscreen, and writes PNGs plus measured node/hover JSON
   under `.git/sx-menu-captures`. The script supports named-target or pixel `click`/`hover`, `text`,
-  `key`, `scroll`, `capture`, `assert-hover`, `assert-visible`, and `assert-aligned`; `view` selects
+  `key`, `scroll`, `capture`, `assert-hover`, `assert-visible`, `assert-aligned`, and
+  `assert-vertical-scroll` (the target must have scrollable content); `view` selects
   `stage-editor` (default), `model-editor`, `garage`, `stage-select`, `stage-select-local` (the shipped
-  stages with their real `name(...)` labels), `stage-select-compact` (the lobby dialog's selector),
+  stages with their real `name(...)` labels), `stage-select-compact` (the compact selector in a plain
+  dialog), `lobby-create` (the real lobby and its create dialog over the shipped stage list;
+  its script also switches LOCAL→ONLINE→pick→LOCAL, and the ONLINE rows are a fixed fixture set
+  because the archive search is network work),
   `replay-browser`, `replay-viewer` or `replay-camera`
   (applies recorded headings through `RaceCameraDirector` and prints the resulting camera).
   `--sx-scale=1.25` repeats at a different UI scale.

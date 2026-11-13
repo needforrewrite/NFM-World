@@ -1,4 +1,5 @@
 using NFMWorld.DriverInterface;
+using NFMWorld.UI.Routes;
 using NFMWorldLibrary;
 using SignalsDotnet;
 using NFMWorldLibrary.Hud;
@@ -187,6 +188,12 @@ public static class UiState
 
         public Signal<bool> ShowCreateDialog { get; } = new(false);
         public Signal<string> SelectedStage { get; } = new("");
+
+        /// <summary>
+        /// The create dialog's stage list. The phase fills it when the dialog opens and owns the
+        /// archive search; the view only renders it, so LOCAL and ONLINE are the same list.
+        /// </summary>
+        public StageSelectState CreateStages { get; } = new();
         public Signal<string> SelectedGamemode { get; } = new(NFMWorldLibrary.Multiplayer.DefaultGamemodes.PvP);
         public Signal<int> MaxPlayers { get; } = new(4);
 
@@ -207,6 +214,7 @@ public static class UiState
             CurrentSession.Value = null;
             SelectedSessionId.Value = null;
             ShowCreateDialog.Value = false;
+            CreateStages.Reset();
             BotCount.Value = 0;
             SelectedGamemode.Value = NFMWorldLibrary.Multiplayer.DefaultGamemodes.PvP;
             GamemodeConfig.Value = new Dictionary<string, string>();

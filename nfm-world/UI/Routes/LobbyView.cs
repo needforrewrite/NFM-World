@@ -39,6 +39,12 @@ public static class LobbyView
         /// <summary>Watch a race that is already running, without taking a slot.</summary>
         Action<uint> Spectate,
         Action<string> SetStage,
+        /// <summary>The create dialog's search box: filters LOCAL, and is what ONLINE searches.</summary>
+        Action<string> SetStageSearch,
+        /// <summary>Switches the create dialog's stage list between local content and the archive.</summary>
+        Action<bool> SetStageSource,
+        /// <summary>Searches the public archive for stages. Enter in the search box.</summary>
+        Action<string> SearchStagesOnline,
         Action<int> SetMaxPlayers,
         Action<int> SetBots,
         Action<string, string> SetConfig,
@@ -507,24 +513,6 @@ public static class LobbyView
     {
         var lobby = UiState.Lobby;
 
-        // Read once per open: this enumerates the whole stage tree, and the component only
-        // runs when the dialog is mounted. A local stage cannot be raced online, so the list is
-        // the distributable subset; a published stage is offered by typing its archive id.
-        var stages = AvailableStages().Where(MultiplayerContentPolicy.IsAcceptedStage).ToArray();
-        var names = AvailableStageNames();
-        var stageState = new StageSelectState();
-        stageState.Collections.Value = stages
-            .Select(StageCollectionOf)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Order(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-        stageState.Collection.Value = stageState.Collections.Value.FirstOrDefault() ?? "";
-        stageState.Stages.Value = stages.Select(stage => StageOptionFor(stage, names)).ToArray();
-        stageState.Selected.Value = lobby.SelectedStage.Value;
-        stageState.ConfirmEnabled.Value = stages.Length > 0;
-        if (!MultiplayerContentPolicy.IsAcceptedStage(lobby.SelectedStage.Value))
-            stageState.Restriction.Value = LocalStageRestriction;
-
         return Sx.View(
             style: () => Sx.Styles(
                 position: Position.Absolute,
@@ -539,10 +527,18 @@ public static class LobbyView
             children:
             [
                 Sx.View(
+                    name: () => "Create dialog",
+                    // The dialog is height-bounded so the stage list - the only child that
+                    // shrinks - scrolls instead of pushing the panel past the screen edges.
                     style: () => Sx.Styles(
                         width: 460,
+                        maxHeight: 90.Percent(),
                         flexDirection: FlexDirection.Column,
                         gapRow: 10,
+                        minHeight: 0,
+                        // A window too short for the whole form scrolls the dialog rather
+                        // than spilling its buttons past the panel.
+                        overflow: Overflow.Scroll,
                         backgroundColor: PanelColor,
                         borderTop: 1,
                         borderBottom: 1,
@@ -553,7 +549,8 @@ public static class LobbyView
                         paddingTop: 18,
                         paddingBottom: 16,
                         paddingLeft: 20,
-                        paddingRight: 20
+                        // Leaves the dialog's own scrollbar clear of the fields.
+                        paddingRight: 28
                     ),
                     children:
                     [
@@ -564,10 +561,11 @@ public static class LobbyView
                                 fontStyle: FontStyle.Bold,
                                 foregroundColor: Blue
                             ),
+                            layout: () => Sx.Styles(flexShrink: 0),
                             text: () => "CREATE GAME"
                         ),
                         Sx.View(
-                            style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6),
+                            style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6, flexShrink: 0),
                             children: GamemodeCatalog.Ids.Select(id => ActionButton(
                                     () => GamemodeCatalog.DisplayName(id),
                                     () => actions.SetGamemode(id),
@@ -578,61 +576,31 @@ public static class LobbyView
                         ),
                         Sx.Text(
                             style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                            layout: () => Sx.Styles(flexShrink: 0),
                             text: () => "Stage"
                         ),
-                        // The same selector free play uses, in its compact form.
+                        // The same selector free play uses, in its compact form. It renders
+                        // UiState.Lobby.CreateStages, which the phase fills and filters, so a
+                        // source switch does not rebuild the dialog.
                         StageSelectView.Compact(
-                            stageState,
+                            lobby.CreateStages,
                             new StageSelectView.Actions(
-                                CollectionSelected: collection =>
-                                {
-                                    stageState.Collection.Value = collection;
-                                    stageState.Stages.Value = stages
-                                        .Where(stage => StageCollectionOf(stage) == collection)
-                                        .Select(stage => StageOptionFor(stage, names))
-                                        .ToArray();
-                                },
-                                StageSelected: stage =>
-                                {
-                                    stageState.Selected.Value = stage;
-                                    stageState.Restriction.Value = MultiplayerContentPolicy.IsAcceptedStage(stage)
-                                        ? ""
-                                        : LocalStageRestriction;
-
-                                    // Only a distributable stage is handed on: the server refuses
-                                    // the others, so selecting one must not look like it worked.
-                                    if (MultiplayerContentPolicy.IsAcceptedStage(stage))
-                                        actions.SetStage(stage);
-                                },
-                                SearchChanged: query =>
-                                {
-                                    var search = query.Trim();
-                                    var matches = stages
-                                        .Where(stage => search.Length == 0
-                                                        || stage.Contains(search, StringComparison.OrdinalIgnoreCase)
-                                                        || (names.TryGetValue(stage, out var name)
-                                                            && name.Contains(search, StringComparison.OrdinalIgnoreCase))
-                                        )
-                                        .ToList();
-
-                                    // A published stage has no local name to browse; its archive
-                                    // id is the only handle, so accept one typed into search.
-                                    if (MultiplayerContentPolicy.IsCanonicalArchiveId(search)
-                                        && !matches.Contains(search, StringComparer.Ordinal))
-                                        matches.Insert(0, search);
-
-                                    stageState.Stages.Value = matches.Select(stage => StageOptionFor(stage, names)).ToArray();
-                                },
+                                CollectionSelected: _ => { },
+                                StageSelected: actions.SetStage,
+                                SearchChanged: actions.SetStageSearch,
                                 Confirm: () => { },
-                                Back: () => { }
+                                Back: actions.CloseCreate,
+                                SourceSelected: actions.SetStageSource,
+                                OnlineSearch: actions.SearchStagesOnline
                             )
                         ),
                         Sx.Text(
                             style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                            layout: () => Sx.Styles(flexShrink: 0),
                             text: () => $"Max players: {lobby.MaxPlayers.Value}"
                         ),
                         Sx.View(
-                            style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6),
+                            style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6, flexShrink: 0),
                             children: Controls.Slider(
                                 () => lobby.MaxPlayers.Value,
                                 value => actions.SetMaxPlayers((int)value),
@@ -645,7 +613,11 @@ public static class LobbyView
                         Sx.Show(
                             () => lobby.SelectedGamemode.Value != DefaultGamemodes.TimeTrial,
                             () => Sx.View(
-                                style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 10),
+                                style: () => Sx.Styles(
+                                    flexDirection: FlexDirection.Column,
+                                    flexShrink: 0,
+                                    gapRow: 10
+                                ),
                                 children:
                                 [
                                     Sx.Text(
@@ -667,15 +639,21 @@ public static class LobbyView
                         ),
                         Sx.Text(
                             style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                            layout: () => Sx.Styles(flexShrink: 0),
                             text: () => $"Field: {lobby.MaxPlayers.Value + lobby.BotCount.Value}"
                         ),
 
                         (Func<object?>)(() => Sx.View(
-                            style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 10),
+                            style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0, gapRow: 10),
                             children: [.. GamemodeConfigControls(actions)]
                         )),
                         Sx.View(
-                            style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10, marginTop: 6),
+                            style: () => Sx.Styles(
+                                flexDirection: FlexDirection.Row,
+                                flexShrink: 0,
+                                gapColumn: 10,
+                                marginTop: 6
+                            ),
                             children:
                             [
                                 Sx.View(
@@ -743,75 +721,7 @@ public static class LobbyView
         return controls;
     }
 
-    private static Node StageOption(string stage, Actions actions)
-    {
-        var lobby = UiState.Lobby;
-        return Row(
-            onmousedown: _ => actions.SetStage(stage),
-            style: () => Sx.Styles(
-                backgroundColor: lobby.SelectedStage.Value == stage
-                    ? Theme.MenuHighlight
-                    : new Color(22, 42, 80, 100)
-            ),
-            children:
-            [
-                Sx.Text(
-                    style: () => Sx.TextStyles(
-                        fontSize: 13,
-                        foregroundColor: lobby.SelectedStage.Value == stage ? Blue : TextBlue
-                    ),
-                    text: () => stage
-                )
-            ]
-        );
-    }
-
-    private static string StageCollectionOf(string stageId)
-    {
-        var slash = stageId.IndexOf('/');
-        return slash < 0 ? "stages" : stageId[..slash];
-    }
-
-    private static StageOption StageOptionFor(string stageId, IReadOnlyDictionary<string, string> names)
-    {
-        var slash = stageId.LastIndexOf('/');
-        return new StageOption(
-            stageId,
-            names.TryGetValue(stageId, out var name) ? name
-                : slash < 0 ? stageId : stageId[(slash + 1)..],
-            StageCollectionOf(stageId)
-        );
-    }
-
-    /// <summary>Stage names for the create dialog.</summary>
-    private const string LocalStageRestriction =
-        "Local stages have to be published before they can be raced online.";
-
-    private static IReadOnlyList<string> AvailableStages()
-    {
-        try
-        {
-            return GameSparker.GetAvailableStages();
-        }
-        catch (Exception)
-        {
-            // A stage tree that failed to load must not take the lobby down with it.
-            return [];
-        }
-    }
-
-    private static IReadOnlyDictionary<string, string> AvailableStageNames()
-    {
-        try
-        {
-            return GameSparker.GetAvailableStageNames();
-        }
-        catch (Exception)
-        {
-            return new Dictionary<string, string>();
-        }
-    }
-
+    // ── Shared pieces ───────────────────────────────────────────────
     // ── Shared pieces ───────────────────────────────────────────────
 
     private static Node Panel(string title, int? width, Func<Node> content)

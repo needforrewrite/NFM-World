@@ -10,6 +10,10 @@
       "capture": "dialog"
     },
     {
+      "action": "assert-vertical-scroll",
+      "target": "Stage select list"
+    },
+    {
       "action": "hover",
       "target": "Stage row nfm1/5_stage",
       "capture": "hover"
