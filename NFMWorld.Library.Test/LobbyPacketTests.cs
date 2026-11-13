@@ -92,7 +92,10 @@ public class LobbyPacketTests
             State = SessionState.WaitingToLoad,
             JoinInfo = new S2C_RaceStarted.GameJoinInfo
             {
-                RaceServerIpAddress = default,
+                RaceServerIpAddress = new IpAndPort(
+                    new CompactIpAddress(System.Net.IPAddress.Parse("203.0.113.7").GetAddressBytes()),
+                    7777
+                ),
                 JoinToken = Guid.NewGuid()
             }
         };
@@ -102,6 +105,30 @@ public class LobbyPacketTests
         Assert.AreEqual("nfmm/road", received.MatchGameplayInfo.StageName);
         Assert.AreEqual("racing", received.MatchGameplayInfo.Parameters["constraint"]);
         Assert.AreEqual("alice", received.MatchGameplayInfo.Players[0].PlayerName);
+
+        // The address was silently dropped while the format wrote zero members for it, so a join
+        // was sent to 0.0.0.0. It has to survive as the actual endpoint.
+        Assert.AreEqual("203.0.113.7", ((System.Net.IPAddress)received.JoinInfo.RaceServerIpAddress.Address).ToString());
+        Assert.AreEqual(7777, received.JoinInfo.RaceServerIpAddress.Port);
+    }
+
+    [TestMethod]
+    public void CompactIpAddress_RoundTripsBothFamilies()
+    {
+        foreach (var text in new[] { "203.0.113.7", "2001:db8::1", "::1" })
+        {
+            var sent = new IpAndPort(
+                new CompactIpAddress(System.Net.IPAddress.Parse(text).GetAddressBytes()),
+                4242
+            );
+
+            var received = TightPack.TightPackSerializer.Deserialize<IpAndPort>(
+                TightPack.TightPackSerializer.Serialize(in sent)
+            );
+
+            Assert.AreEqual(text, ((System.Net.IPAddress)received.Address).ToString());
+            Assert.AreEqual(4242, received.Port);
+        }
     }
 
     [TestMethod]

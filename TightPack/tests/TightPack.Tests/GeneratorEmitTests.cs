@@ -104,4 +104,91 @@ public sealed class GeneratorEmitTests
             "Holder duplicates a registration OnlyInner already makes for itself:\n" + holder
         );
     }
+
+    /// <summary>
+    /// A readonly private field cannot be assigned by the deserializer, but a blitted value is
+    /// rebuilt from its whole image, so no assignment is needed and the constructor gate stops
+    /// applying. Types shaped like <c>CompactIpAddress</c> depend on this.
+    /// </summary>
+    [TestMethod]
+    public void IncludedReadonlyFields_AreBlitted()
+    {
+        ImmutableDictionary<string, string> sources = GeneratorDiagnosticsTests.RunAndGetSources(
+            """
+            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
+            [TightPackable]
+            public partial struct ReadonlyFields
+            {
+                [TightPackInclude] private readonly int _a;
+                [TightPackInclude] private readonly short _b;
+
+                public ReadonlyFields(int a, short b) => (_a, _b) = (a, b);
+                public int Sum => _a + _b;
+            }
+            """
+        );
+
+        string generated = sources["ReadonlyFields.TightPack.g.cs"];
+
+        Assert.IsTrue(
+            generated.Contains("WriteBlittable"),
+            "Readonly included fields are not blitted, so the type loses its layout optimization:\n" + generated
+        );
+    }
+
+    /// <summary>
+    /// A private field is invisible to the payload unless it is included, and a blit writes the whole
+    /// image, so an excluded field would be written uninitialised. It must stay on the member path.
+    /// </summary>
+    [TestMethod]
+    public void ExcludedPrivateFields_AreNotBlitted()
+    {
+        ImmutableDictionary<string, string> sources = GeneratorDiagnosticsTests.RunAndGetSources(
+            """
+            [TightPackable]
+            public partial struct PrivateFields
+            {
+                public int Visible;
+                private int _hidden;
+            }
+            """
+        );
+
+        string generated = sources["PrivateFields.TightPack.g.cs"];
+
+        Assert.IsFalse(
+            generated.Contains("WriteBlittable"),
+            "A struct with an excluded field was blitted, which puts it on the wire:\n" + generated
+        );
+    }
+
+    /// <summary>
+    /// The BCL declares inline arrays up to 16, and every one the format accepts must name a
+    /// formatter the provider can build without reflection.
+    /// </summary>
+    [TestMethod]
+    public void InlineArrayMembers_AboveFourAreSupported()
+    {
+        ImmutableDictionary<string, string> sources = GeneratorDiagnosticsTests.RunAndGetSources(
+            """
+            [TightPackable]
+            public partial struct WideArrays
+            {
+                public System.Runtime.CompilerServices.InlineArray8<ushort> Eight;
+                public System.Runtime.CompilerServices.InlineArray16<byte> Sixteen;
+            }
+            """
+        );
+
+        string generated = sources["WideArrays.TightPack.g.cs"];
+
+        Assert.IsTrue(
+            generated.Contains("InlineArray8Formatter"),
+            "InlineArray8 is not resolved to a formatter:\n" + generated
+        );
+        Assert.IsTrue(
+            generated.Contains("InlineArray16Formatter"),
+            "InlineArray16 is not resolved to a formatter:\n" + generated
+        );
+    }
 }

@@ -1,21 +1,23 @@
 ﻿using System.Buffers.Binary;
 using System.Net;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using TightPack;
 
 namespace NFMWorldLibrary.Multiplayer.Packets.S2C;
 
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
 [TightPackable]
 public readonly partial struct CompactIpAddress
 {
     // ipv6: address
-    private readonly InlineArray8<ushort> _addressBytes;
+    [TightPackInclude] private readonly InlineArray8<ushort> _addressBytes;
 
-    private readonly bool _isv6;
+    [TightPackInclude] private readonly bool _isv6;
 
     // ipv4: address. ipv4: scope id
-    private readonly uint _addressOrScopeId;
+    [TightPackInclude] private readonly uint _addressOrScopeId;
 
     public CompactIpAddress(ReadOnlySpan<byte> address)
     {

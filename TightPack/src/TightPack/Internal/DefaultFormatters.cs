@@ -184,6 +184,66 @@ internal static class DefaultFormatters
                 return Create(typeof(Formatters.InlineArray4Formatter<>), arguments);
             }
 
+            if (definition == typeof(InlineArray5<>))
+            {
+                return Create(typeof(Formatters.InlineArray5Formatter<>), arguments);
+            }
+
+            if (definition == typeof(InlineArray6<>))
+            {
+                return Create(typeof(Formatters.InlineArray6Formatter<>), arguments);
+            }
+
+            if (definition == typeof(InlineArray7<>))
+            {
+                return Create(typeof(Formatters.InlineArray7Formatter<>), arguments);
+            }
+
+            if (definition == typeof(InlineArray8<>))
+            {
+                return Create(typeof(Formatters.InlineArray8Formatter<>), arguments);
+            }
+
+            if (definition == typeof(InlineArray9<>))
+            {
+                return Create(typeof(Formatters.InlineArray9Formatter<>), arguments);
+            }
+
+            if (definition == typeof(InlineArray10<>))
+            {
+                return Create(typeof(Formatters.InlineArray10Formatter<>), arguments);
+            }
+
+            if (definition == typeof(InlineArray11<>))
+            {
+                return Create(typeof(Formatters.InlineArray11Formatter<>), arguments);
+            }
+
+            if (definition == typeof(InlineArray12<>))
+            {
+                return Create(typeof(Formatters.InlineArray12Formatter<>), arguments);
+            }
+
+            if (definition == typeof(InlineArray13<>))
+            {
+                return Create(typeof(Formatters.InlineArray13Formatter<>), arguments);
+            }
+
+            if (definition == typeof(InlineArray14<>))
+            {
+                return Create(typeof(Formatters.InlineArray14Formatter<>), arguments);
+            }
+
+            if (definition == typeof(InlineArray15<>))
+            {
+                return Create(typeof(Formatters.InlineArray15Formatter<>), arguments);
+            }
+
+            if (definition == typeof(InlineArray16<>))
+            {
+                return Create(typeof(Formatters.InlineArray16Formatter<>), arguments);
+            }
+
             Type? tuple = definition switch
             {
                 _ when definition == typeof(ValueTuple<>) => typeof(Formatters.ValueTupleFormatter<>),

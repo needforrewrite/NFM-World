@@ -6,7 +6,7 @@ using NFMWorldLibrary.Util;
 namespace NFMWorldLibrary.Content;
 
 /// <summary>One completed run waiting to be, or in the middle of being, uploaded.</summary>
-[TightPackable]
+[TightPackable(GenerateType.VersionTolerant)]
 public sealed partial class PendingSubmission
 {
     /// <summary>SHA-256 of the recording bytes; also the sidecar's key.</summary>

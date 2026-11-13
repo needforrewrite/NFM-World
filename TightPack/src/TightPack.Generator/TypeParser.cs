@@ -186,23 +186,35 @@ internal static class TypeParser
             return model;
         }
 
-        if (!ParseConstructor(symbol, model, kind, compilation, context, location))
-        {
-            return null;
-        }
-
-        // Blitting writes the struct's whole image, so it is only sound when every serialized member
-        // is a public field in declaration order: a property or an ignored field would make the
-        // member list disagree with the memory layout.
+        // Blitting writes the struct's whole image, so every non-static field has to reach the
+        // payload: an excluded or ignored one would leave it uninitialised, and a member list that
+        // disagrees with the memory layout (a property, a reordered field) would write it to the
+        // wrong offset. Private fields are fine as long as they are included.
+        //
+        // Proved before the constructor check because a blitted value is rebuilt from its image,
+        // which can also produce a readonly field with no assignment and no constructor.
         if (kind == GenerateKind.Object
             && symbol.IsValueType
-            && IsBlitShaped(symbol, model))
+            && IsBlitShaped(symbol, model)
+            && LayoutProver.TryProve(symbol, compilation, cancellationToken, out int size))
         {
-            if (LayoutProver.TryProve(symbol, compilation, cancellationToken, out int size))
+            model.Blittable = true;
+            model.BlittableSize = size;
+
+            // A callback would have to run after the image write, and the generated deserialize path
+            // returns the blitted value as-is. Refusing keeps the shape honest rather than dropping them.
+            if (model.OnSerializing.Count != 0 || model.OnSerialized.Count != 0
+                || model.OnDeserializing.Count != 0 || model.OnDeserialized.Count != 0)
             {
-                model.Blittable = true;
-                model.BlittableSize = size;
+                model.Blittable = false;
+                model.BlittableSize = 0;
             }
+        }
+
+        if (!model.Blittable
+            && !ParseConstructor(symbol, model, kind, compilation, context, location))
+        {
+            return null;
         }
 
         return model;
@@ -649,6 +661,18 @@ internal static class TypeParser
             or "System.Runtime.CompilerServices.InlineArray2<T>"
             or "System.Runtime.CompilerServices.InlineArray3<T>"
             or "System.Runtime.CompilerServices.InlineArray4<T>"
+            or "System.Runtime.CompilerServices.InlineArray5<T>"
+            or "System.Runtime.CompilerServices.InlineArray6<T>"
+            or "System.Runtime.CompilerServices.InlineArray7<T>"
+            or "System.Runtime.CompilerServices.InlineArray8<T>"
+            or "System.Runtime.CompilerServices.InlineArray9<T>"
+            or "System.Runtime.CompilerServices.InlineArray10<T>"
+            or "System.Runtime.CompilerServices.InlineArray11<T>"
+            or "System.Runtime.CompilerServices.InlineArray12<T>"
+            or "System.Runtime.CompilerServices.InlineArray13<T>"
+            or "System.Runtime.CompilerServices.InlineArray14<T>"
+            or "System.Runtime.CompilerServices.InlineArray15<T>"
+            or "System.Runtime.CompilerServices.InlineArray16<T>"
             or "System.ValueTuple<T1>"
             or "System.ValueTuple<T1, T2>"
             or "System.ValueTuple<T1, T2, T3>"
@@ -751,6 +775,18 @@ internal static class TypeParser
             "System.Runtime.CompilerServices.InlineArray2<T>" => Formatter("InlineArray2Formatter", arguments),
             "System.Runtime.CompilerServices.InlineArray3<T>" => Formatter("InlineArray3Formatter", arguments),
             "System.Runtime.CompilerServices.InlineArray4<T>" => Formatter("InlineArray4Formatter", arguments),
+            "System.Runtime.CompilerServices.InlineArray5<T>" => Formatter("InlineArray5Formatter", arguments),
+            "System.Runtime.CompilerServices.InlineArray6<T>" => Formatter("InlineArray6Formatter", arguments),
+            "System.Runtime.CompilerServices.InlineArray7<T>" => Formatter("InlineArray7Formatter", arguments),
+            "System.Runtime.CompilerServices.InlineArray8<T>" => Formatter("InlineArray8Formatter", arguments),
+            "System.Runtime.CompilerServices.InlineArray9<T>" => Formatter("InlineArray9Formatter", arguments),
+            "System.Runtime.CompilerServices.InlineArray10<T>" => Formatter("InlineArray10Formatter", arguments),
+            "System.Runtime.CompilerServices.InlineArray11<T>" => Formatter("InlineArray11Formatter", arguments),
+            "System.Runtime.CompilerServices.InlineArray12<T>" => Formatter("InlineArray12Formatter", arguments),
+            "System.Runtime.CompilerServices.InlineArray13<T>" => Formatter("InlineArray13Formatter", arguments),
+            "System.Runtime.CompilerServices.InlineArray14<T>" => Formatter("InlineArray14Formatter", arguments),
+            "System.Runtime.CompilerServices.InlineArray15<T>" => Formatter("InlineArray15Formatter", arguments),
+            "System.Runtime.CompilerServices.InlineArray16<T>" => Formatter("InlineArray16Formatter", arguments),
             "System.ValueTuple<T1>" => Formatter("ValueTupleFormatter", arguments),
             "System.ValueTuple<T1, T2>" => Formatter("ValueTupleFormatter", arguments),
             "System.ValueTuple<T1, T2, T3>" => Formatter("ValueTupleFormatter", arguments),
@@ -856,7 +892,19 @@ internal static class TypeParser
             or "System.Collections.Immutable.ImmutableArray<T>"
             or "System.Runtime.CompilerServices.InlineArray2<T>"
             or "System.Runtime.CompilerServices.InlineArray3<T>"
-            or "System.Runtime.CompilerServices.InlineArray4<T>";
+            or "System.Runtime.CompilerServices.InlineArray4<T>"
+            or "System.Runtime.CompilerServices.InlineArray5<T>"
+            or "System.Runtime.CompilerServices.InlineArray6<T>"
+            or "System.Runtime.CompilerServices.InlineArray7<T>"
+            or "System.Runtime.CompilerServices.InlineArray8<T>"
+            or "System.Runtime.CompilerServices.InlineArray9<T>"
+            or "System.Runtime.CompilerServices.InlineArray10<T>"
+            or "System.Runtime.CompilerServices.InlineArray11<T>"
+            or "System.Runtime.CompilerServices.InlineArray12<T>"
+            or "System.Runtime.CompilerServices.InlineArray13<T>"
+            or "System.Runtime.CompilerServices.InlineArray14<T>"
+            or "System.Runtime.CompilerServices.InlineArray15<T>"
+            or "System.Runtime.CompilerServices.InlineArray16<T>";
 
         if (!resolvedAtRuntime)
         {
@@ -1086,7 +1134,7 @@ internal static class TypeParser
             }
         }
 
-        if (fields.Count != model.Members.Count)
+        if (fields.Count == 0 || fields.Count != model.Members.Count)
         {
             return false;
         }

@@ -12,4 +12,19 @@
         <NoWarn>$(NoWarn);CA2255</NoWarn>
     </PropertyGroup>
 
+    <ItemGroup>
+      <None Update="Formatters\InlineArrayFormatters.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>InlineArrayFormatters.cs</LastGenOutput>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Formatters\InlineArrayFormatters.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>InlineArrayFormatters.tt</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
 </Project>

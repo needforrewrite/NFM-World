@@ -1,0 +1,44 @@
+﻿<#@ template language="C#" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+using System.Runtime.CompilerServices;
+
+namespace TightPack.Formatters;
+
+<#
+    for (var i = 2; i <= 16; i++)
+    {
+#>
+/// <summary>
+/// Element-wise formatters for BCL inline arrays. The element count is fixed by the type, so no
+/// length is written; only the elements are.
+/// </summary>
+public sealed class InlineArray<#= i #>Formatter<T> : TightPackFormatter<InlineArray<#= i #><T>>
+{
+    public static readonly InlineArray<#= i #>Formatter<T> Default = new();
+
+    public override void Serialize<TBufferWriter>(ref TightPackWriter<TBufferWriter> writer, in InlineArray<#= i #><T> value)
+    {
+        InlineArray<#= i #><T> copy = value;
+        var formatter = TightPackFormatterProvider.GetFormatter<T>();
+        for (int j = 0; j < <#= i #>; j++)
+        {
+            T? item = copy[j];
+            formatter.Serialize(ref writer, in item);
+        }
+    }
+
+    public override void Deserialize(ref TightPackReader reader, ref InlineArray<#= i #><T> value)
+    {
+        var formatter = TightPackFormatterProvider.GetFormatter<T>();
+        for (int j = 0; j < <#= i #>; j++)
+        {
+            T? item = default;
+            formatter.Deserialize(ref reader, ref item);
+            value[j] = item!;
+        }
+    }
+}
+<#
+    }
+#>
