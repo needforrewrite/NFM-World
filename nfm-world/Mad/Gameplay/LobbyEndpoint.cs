@@ -7,7 +7,7 @@ namespace NFMWorld.Gameplay;
 ///
 /// The endpoint is baked in at build time (see <c>LobbyEndpoint</c> in the game csproj) rather
 /// than being a setting: a release lobby will not authenticate a debug client, so a Debug build
-/// points at a local one. The <c>connect &lt;host&gt; [port]</c> command still reaches any other.
+/// points at the dev lobby. The <c>connect &lt;host&gt; [port]</c> command still reaches any other.
 /// </summary>
 public static class LobbyEndpoint
 {
