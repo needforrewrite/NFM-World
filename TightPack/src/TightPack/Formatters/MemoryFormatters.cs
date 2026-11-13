@@ -161,7 +161,7 @@ public sealed class PooledReadOnlyMemoryByteFormatter : TightPackFormatter<ReadO
         }
 
         byte[] buffer = ArrayPool<byte>.Shared.Rent(length);
-        reader.ReadBytes(buffer.AsSpan(0, length));
+        reader.ReadRawBytes(length).CopyTo(buffer);
         value = new ReadOnlyMemory<byte>(buffer, 0, length);
     }
 }

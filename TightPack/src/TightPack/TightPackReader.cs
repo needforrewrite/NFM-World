@@ -61,6 +61,10 @@ public ref struct TightPackReader
         _position += count;
     }
 
+    /// <summary>Reads <paramref name="length"/> raw bytes, advancing the reader, with no length prefix.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ReadOnlySpan<byte> ReadRawBytes(int length) => GetSpan(length);
+
     // ----- headers -----
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
