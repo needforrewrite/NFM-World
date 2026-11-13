@@ -67,6 +67,7 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
         }
 
         _clients.TryRemove(id, out _);
+        ForgetConnection(id);
         Logging.Info($"WS client disconnected - ID: {id}");
         ClientDisconnected?.Invoke(this, id);
     }

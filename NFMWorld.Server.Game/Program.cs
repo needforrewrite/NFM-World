@@ -82,6 +82,21 @@ static async Task HandleRequestAsync(
         return;
     }
 
+    // The wire version is part of the request, not the body: a mismatch has to be decided
+    // before the body is deserialized with a layout from another revision.
+    if (req.Headers[Protocol.HeaderName] is not { } declared
+        || !int.TryParse(declared, out var declaredVersion)
+        || declaredVersion != Protocol.Version)
+    {
+        Logging.Info(
+            $"[GameMaster] Refusing a request from a different game version ({(req.Headers[Protocol.HeaderName] ?? "none")} vs {Protocol.Version})"
+        );
+        res.StatusCode = 409;
+        res.StatusDescription = $"protocol {Protocol.Version}";
+        res.Close();
+        return;
+    }
+
     // Read body
     using var ms = new MemoryStream();
     req.InputStream.CopyTo(ms);

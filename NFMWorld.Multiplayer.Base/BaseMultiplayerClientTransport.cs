@@ -3,13 +3,131 @@ using CommunityToolkit.HighPerformance;
 using CommunityToolkit.HighPerformance.Buffers;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
 using NFMWorldLibrary.Multiplayer.Packets.S2C;
+using TightPack;
 
 namespace NFMWorldLibrary.Multiplayer;
 
 public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTransport
 {
     private ConcurrentQueue<IPacketServerToClient> _receivedPacketQueue = new();
-    public ClientState State { get; protected set; } = ClientState.Connecting;
+
+    private ClientState _state = ClientState.Connecting;
+
+    public ClientState State
+    {
+        get => _state;
+        protected set
+        {
+            // The version goes first on every fresh connection. A peer that does not know it
+            // would read every later packet with the wrong layout, so nothing else is sent
+            // until it has been answered.
+            var isNewConnection = value == ClientState.Connected && _state != ClientState.Connected;
+            _state = value;
+
+            if (isNewConnection)
+                BeginHandshake();
+        }
+    }
+
+    /// <summary>True once the server confirmed it reads this build's wire version.</summary>
+    public bool HandshakeAccepted { get; private set; }
+
+    /// <summary>
+    /// Why the server refused this build, or null while it may still answer. Set on a refusal
+    /// and after a handshake that was never answered.
+    /// </summary>
+    public string? HandshakeError { get; private set; }
+
+    /// <summary>
+    /// Declares the wire version again. The transport does this itself on connect; a caller
+    /// repeats it only to give a server that never answered another chance.
+    /// </summary>
+    public void SendHandshake() => SendPacketToServer(new C2S_Handshake { Version = Protocol.Version });
+
+    /// <summary>How long to wait for the version answer before declaring it again.</summary>
+    protected virtual int HandshakeRetryDelayMs => 5000;
+
+    /// <summary>
+    /// How many declarations to send before giving up. A server from before this handshake exists
+    /// ignores the opcode, so it never answers - silence is the only sign it is too old.
+    /// </summary>
+    protected virtual int MaxHandshakeAttempts => 3;
+
+    /// <summary>Bumped on every connection, so a stale retry loop stops touching live state.</summary>
+    private int _handshakeGeneration;
+
+    private void BeginHandshake()
+    {
+        HandshakeAccepted = false;
+        HandshakeError = null;
+
+        var generation = Interlocked.Increment(ref _handshakeGeneration);
+        SendHandshake();
+        _ = RetryHandshakeAsync(generation);
+    }
+
+    private async Task RetryHandshakeAsync(int generation)
+    {
+        for (var attempt = 1; attempt < MaxHandshakeAttempts; attempt++)
+        {
+            await Task.Delay(HandshakeRetryDelayMs);
+
+            if (generation != Volatile.Read(ref _handshakeGeneration) || HandshakeAccepted)
+                return;
+
+            if (State != ClientState.Connected)
+                return;
+
+            SendHandshake();
+        }
+
+        await Task.Delay(HandshakeRetryDelayMs);
+
+        if (generation != Volatile.Read(ref _handshakeGeneration) || HandshakeAccepted)
+            return;
+
+        // Refuse to talk to a server whose layout cannot be confirmed. An older build ignores the
+        // opcode instead of refusing it, so "never answered" is the only thing it can say.
+        HandshakeError = "The server did not answer the game version handshake. It is probably running an older version.";
+        Logging.Warning($"The server never acknowledged protocol {Protocol.Version}.");
+        StopReconnecting();
+        State = ClientState.Disconnected;
+    }
+
+    /// <summary>
+    /// Reads the server's answer. Accepting an old refusal's error string is what lets the
+    /// player see which side is out of date rather than "connection lost".
+    /// </summary>
+    private void HandleHandshake(ReadOnlyMemory<byte> message)
+    {
+        S2C_Handshake handshake;
+        try
+        {
+            handshake = TightPackSerializer.Deserialize<S2C_Handshake>(message.Span);
+        }
+        catch (Exception ex)
+        {
+            Logging.Warning($"Server sent an unreadable handshake ({message.Length} bytes)", exception: ex);
+            return;
+        }
+
+        if (handshake.Accepted && handshake.Version == Protocol.Version)
+        {
+            HandshakeAccepted = true;
+            HandshakeError = null;
+            return;
+        }
+
+        HandshakeAccepted = false;
+        HandshakeError = handshake.Error is { Length: > 0 } error
+            ? error
+            : $"This server runs game version {handshake.Version}; this build is version {Protocol.Version}.";
+        Logging.Warning($"Server refused the connection: {HandshakeError}");
+
+        // Reconnecting reaches the same server, which will refuse it again.
+        StopReconnecting();
+        State = ClientState.Disconnected;
+    }
 
     private readonly CancellationTokenSource _reconnectCts = new();
     private Task? _reconnectLoop;
@@ -143,6 +261,14 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
 
         var opcode = (sbyte)memory.Span[0];
         var message = memory[1..];
+
+        // Answered here and never queued: it is the transport's own business, and a caller that
+        // saw it would have to know to ignore it.
+        if (opcode == Protocol.ServerHandshakeOpcode)
+        {
+            HandleHandshake(message);
+            return;
+        }
 
         IPacketServerToClient? packet;
         try

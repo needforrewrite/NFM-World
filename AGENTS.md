@@ -566,6 +566,41 @@ palette). One lobby; whether a race is rated is chosen per race, not by a menu p
 | WebSocket sends are serialized | a `WebSocket` allows one outstanding `SendAsync`; a second throws `InvalidOperationException` and that packet is lost. `WsClient` (server) and the client transport chain sends per connection, and the server's close is chained behind them so a refusal sent just before a disconnect still arrives |
 | Archive outage vs rejection | `ArchiveClient.ValidateTokenAsync` returns `Unavailable` for anything it cannot read — HTML from a proxy, a bad charset, a timeout. Only `401` is `Rejected`, because only that may clear the player's saved token |
 
+## Wire protocol version
+
+`Protocol.Version` (`NFMWorld.Library/Mad/Multiplayer/Protocol.cs`) is declared by every peer — lobby client,
+game master client and, as an HTTP header, the lobby→GM API. Packets are TightPack structs with hardcoded
+opcodes, so a mismatch does not fail to parse: it parses into fields that mean something else. Both sides
+settle the number before anything else is exchanged.
+
+- **Gameplay sockets** — `BaseMultiplayerClientTransport` sends `C2S_Handshake` on every transition to
+  `Connected` (`Protocol.ClientHandshakeOpcode = 14`) and intercepts the reply
+  (`ServerHandshakeOpcode = -12`) before it reaches `GetNewPackets`. `BaseMultiplayerServerTransport`
+  handles the handshake itself and refuses every other opcode from a connection that has not declared one.
+  A refusal is an `S2C_Handshake { Accepted = false, Error }` followed by a disconnect; the error names
+  both versions so the player knows which side to update.
+- **Refusal before close** — the answer must reach the peer, so each transport chains the close behind its
+  sends: `WsClient.CloseAsync` continues the send task, ENet queues a deferred `DisconnectLater(0)` marker,
+  and Steam closes with `linger: true`.
+- **No answer means too old** — a build from before the handshake ignores the opcode, so the client re-sends
+  three times at 5 s (`HandshakeRetryDelayMs`/`MaxHandshakeAttempts`), then reports
+  `HandshakeError = "The server did not answer the game version handshake…"` and stops reconnecting.
+- **Consumers gate on it** — `LobbyPhase` refuses to authenticate or act until `HandshakeAccepted` and pops
+  with an "Update required" dialog on `HandshakeError`; `NetworkRaceHost` holds `C2S_RaceLoaded` and reports
+  the refusal as a failed race start. Both are default interface members on `IMultiplayerClientTransport`
+  (`HandshakeAccepted => true` for transports that never handshake).
+- **Lobby→GM HTTP** — `GameMasterHttpClient` adds `Protocol.HeaderName` (`X-Nfmw-Protocol`) to every request;
+  `NFMWorld.Server.Game/Program.cs` checks it **before reading the body** and answers `409` with
+  `StatusDescription = "protocol N"`. `/race-ended` on the lobby validates the header the same way. The
+  header is independent of the HMAC, which would still verify across revisions.
+- **Index reuse** — a transport that reuses connection ids (ENet does) calls `ForgetConnection` wherever it
+  raises `ClientDisconnected`, or the next peer inherits a handshake it never sent.
+- **When to bump** — any packet layout, packet meaning, or opcode-table change. Adding a packet is only a
+  bump if an older peer would keep acting on the conversation after failing to send its half of it.
+- **Tests** — `ProtocolVersionTests` (in-process stubs) and `ProtocolVersionTransportTests` (real WebSocket:
+  refusal received before the close, unversioned packet never reaching a handler, real client accepted and
+  usable).
+
 ## Virtual File System (Maxine.VFS)
 
 `TheVFS.VFS` (`NFMWorld.Library/TheVFS.cs`) is the single entry point; everything is a `VirtualFS` over `IPath`.

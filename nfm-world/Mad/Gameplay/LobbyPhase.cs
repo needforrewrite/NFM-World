@@ -119,12 +119,16 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
     private int _authenticationAttempts;
 
+    /// <summary>Set once the refusal has been shown, so a frame that keeps seeing it does not stack message boxes.</summary>
+    private bool _reportedVersionRefusal;
+
     private void ResetHandshake()
     {
         _sentAuthentication = false;
         _authenticated = false;
         _authenticationFailed = false;
         _authenticationAttempts = 0;
+        _reportedVersionRefusal = false;
     }
 
     /// <summary>
@@ -142,6 +146,11 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             _authenticationFailed = false;
             return;
         }
+
+        // Nothing is sent before the lobby confirms it reads this build's packets: an older
+        // server would parse an account packet as fields that mean something else.
+        if (!transport.HandshakeAccepted)
+            return;
 
         if (_authenticated)
             return;
@@ -177,7 +186,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     private void OnAccountChanged(NFMWorld.Accounts.Account? account)
     {
         // Empty token = signing out, which the lobby models as a guest.
-        if (transport.State != ClientState.Connected)
+        if (transport.State != ClientState.Connected || !transport.HandshakeAccepted)
             return;
         // A different account is a fresh handshake, so it gets its own retry budget.
         _authenticationAttempts = 0;
@@ -186,10 +195,12 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         UpdateStatus();
     }
 
-    /// <summary>The REFRESH button, which also retries a handshake that was given up on.</summary>
+    /// <summary>The REFRESH button, which retries an authentication the lobby never answered.</summary>
     private void OnRefresh()
     {
-        if (transport.State == ClientState.Connected && !_authenticated)
+        if (transport.State == ClientState.Connected
+            && !_authenticated
+            && transport.HandshakeAccepted)
         {
             _authenticationAttempts = 0;
             _authenticationFailed = false;
@@ -202,6 +213,17 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     public override void GameTick()
     {
         base.GameTick();
+
+        // A refused version is final for this connection: the server will keep refusing it, so
+        // say why and leave rather than sitting on a handshake that can never finish.
+        if (!_reportedVersionRefusal && transport.HandshakeError is { Length: > 0 } versionRefusal)
+        {
+            _reportedVersionRefusal = true;
+            Logging.Warning($"Lobby refused this build: {versionRefusal}");
+            GameSparker.PopPhase();
+            GameSparker.MessageWindow.ShowMessage("Update required", versionRefusal);
+            return;
+        }
 
         UpdateHandshake();
 
@@ -548,11 +570,14 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
     private string ConnectionStatus() => transport.State switch
     {
+        ClientState.Connected when transport.HandshakeError is { Length: > 0 } => "This build does not match the lobby. Update the game.",
+        ClientState.Connected when !transport.HandshakeAccepted => "Checking game version...",
         ClientState.Connected when _authenticationFailed => "The lobby did not answer. Press BACK and try again.",
         ClientState.Connected when _authenticated && GameSparker.AccountManager.ActiveAccount is { } account =>
             $"Signed in as {account.Username}",
         ClientState.Connected => "Verifying account...",
         ClientState.Connecting => "Connecting...",
+        _ when transport.HandshakeError is { Length: > 0 } => "This build does not match the lobby.",
         _ when transport.IsReconnecting => "Connection lost - reconnecting...",
         _ => "Disconnected",
     };
@@ -578,7 +603,9 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     /// Whether an action can reach the lobby. Everything but BACK needs a live connection;
     /// while reconnecting a packet would be written into a closed socket and dropped.
     /// </summary>
-    private bool CanAct => _authenticated && transport.State == ClientState.Connected;
+    private bool CanAct => _authenticated
+                           && transport.State == ClientState.Connected
+                           && transport.HandshakeAccepted;
 
     private void OnJoin(uint id)
     {

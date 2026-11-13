@@ -10,7 +10,7 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
     private Thread? _receiveThread;
     private readonly ConcurrentDictionary<uint, Peer> _connectedClients = [];
     private readonly Host _server;
-    private readonly ConcurrentQueue<(uint Peer, Packet Packet)> _sendPacketQueue = [];
+    private readonly ConcurrentQueue<(uint Peer, Packet? Packet)> _sendPacketQueue = [];
 
     public override IReadOnlyCollection<uint> Connections { get; }
 
@@ -79,16 +79,28 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
             // Send queued packets
             while (_sendPacketQueue.TryDequeue(out var sendPacket))
             {
-                if (_connectedClients.TryGetValue(sendPacket.Peer, out var peer))
+                if (!_connectedClients.TryGetValue(sendPacket.Peer, out var peer))
                 {
-                    peer.Send(0, ref sendPacket.Packet);
+                    sendPacket.Packet?.Dispose();
+                    continue;
+                }
+
+                // A null packet is a deferred close, ordered behind everything queued before it:
+                // a refusal written just ahead of the disconnect still goes out.
+                if (sendPacket.Packet is { } packet)
+                {
+                    peer.Send(0, ref packet);
+                }
+                else
+                {
+                    peer.DisconnectLater(0);
                 }
             }
         }
 
         while (_sendPacketQueue.TryDequeue(out var packet))
         {
-            packet.Packet.Dispose();
+            packet.Packet?.Dispose();
         }
 
         _server.Flush();
@@ -111,12 +123,14 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
 
             case EventType.Disconnect:
                 Logging.Info("Client disconnected - ID: " + netEvent.Peer.ID + ", IP: " + netEvent.Peer.IP);
+                ForgetConnection(netEvent.Peer.ID);
                 ClientDisconnected?.Invoke(this, netEvent.Peer.ID);
                 _connectedClients.TryRemove(netEvent.Peer.ID, out _);
                 break;
 
             case EventType.Timeout:
                 Logging.Info("Client timeout - ID: " + netEvent.Peer.ID + ", IP: " + netEvent.Peer.IP);
+                ForgetConnection(netEvent.Peer.ID);
                 ClientDisconnected?.Invoke(this, netEvent.Peer.ID);
                 _connectedClients.TryRemove(netEvent.Peer.ID, out _);
                 break;
@@ -137,8 +151,9 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
 
     public override void DisconnectClient(uint clientIndex)
     {
-        if (_connectedClients.TryGetValue(clientIndex, out var peer))
-            peer.DisconnectNow(0);
+        // Queued rather than immediate: DisconnectNow resets the peer's queues, which would
+        // drop a refusal packet written just before this call.
+        _sendPacketQueue.Enqueue((clientIndex, null));
     }
 
     public override void SendRawPacketToClients(ReadOnlySpan<uint> clientIndices, ReadOnlySpan<byte> span, bool reliable)

@@ -801,10 +801,13 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         {
             // Nothing else says anything when the Game Master is unreachable, so the player
             // was left on a dead screen. The pause menu's Quit is the way out.
+            var refused = (_host as NetworkRaceHost)?.VersionError is { Length: > 0 };
             G.SetFont(new Font(FontFamily.NotoSans, FontStyle.Plain, 26));
             G.SetColor(new Color(255, 180, 180));
             G.DrawStringOutlinedAligned(
-                "Lost connection to the Game Master.",
+                refused
+                    ? "This build does not match the Game Master. Update the game."
+                    : "Lost connection to the Game Master.",
                 0,
                 130,
                 (int)G.Viewport.X,

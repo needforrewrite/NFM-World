@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Net;
+using System.Net.Http.Headers;
 using TightPack;
 using NFMWorldLibrary.Multiplayer.HttpMessages;
 
@@ -14,6 +15,12 @@ public class GameMasterHttpClient
     private readonly HttpClient _contentHttpClient;
     private readonly string _keyId;
     private readonly byte[] _secretKey;
+
+    /// <summary>
+    /// Declared on every request, so a game master built from another revision refuses the call
+    /// instead of deserializing the body with a layout it does not share.
+    /// </summary>
+    private readonly string _protocolVersion = Protocol.Version.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     public GameMasterHttpClient(string keyId, string secretKeyBase64)
     {
@@ -41,10 +48,12 @@ public class GameMasterHttpClient
             Content = new ByteArrayContent(body)
         };
         httpRequest.Headers.Add("Authorization", authHeader);
+        httpRequest.Headers.Add(Protocol.HeaderName, _protocolVersion);
         httpRequest.Content.Headers.ContentType =
             new MediaTypeHeaderValue("application/octet-stream");
 
         using var response = await _contentHttpClient.SendAsync(httpRequest);
+        EnsureProtocolAccepted(response);
         response.EnsureSuccessStatusCode();
     }
 
@@ -64,14 +73,30 @@ public class GameMasterHttpClient
             Content = new ByteArrayContent(body)
         };
         httpRequest.Headers.Add("Authorization", authHeader);
+        httpRequest.Headers.Add(Protocol.HeaderName, _protocolVersion);
         httpRequest.Content.Headers.ContentType =
             new MediaTypeHeaderValue("application/octet-stream");
 
         using var response = await _httpClient.SendAsync(httpRequest);
+        EnsureProtocolAccepted(response);
         response.EnsureSuccessStatusCode();
 
         var responseBytes = await response.Content.ReadAsByteArrayAsync();
         return TightPackSerializer.Deserialize<Lobby2RaceServer_CreateRaceResponse>(responseBytes);
+    }
+
+    /// <summary>
+    /// Turns a version refusal into a message that names it. A plain status code would surface
+    /// as "the race could not start" and point at the wrong server.
+    /// </summary>
+    private static void EnsureProtocolAccepted(HttpResponseMessage response)
+    {
+        if (response.StatusCode != HttpStatusCode.Conflict)
+            return;
+
+        throw new InvalidOperationException(
+            $"The Game Master runs a different game version ({response.ReasonPhrase}). Update the server and try again."
+        );
     }
 
     public async Task NotifyRaceEndedAsync(
@@ -90,6 +115,7 @@ public class GameMasterHttpClient
             Content = new ByteArrayContent(body)
         };
         httpRequest.Headers.Add("Authorization", authHeader);
+        httpRequest.Headers.Add(Protocol.HeaderName, _protocolVersion);
         httpRequest.Content.Headers.ContentType =
             new MediaTypeHeaderValue("application/octet-stream");
 

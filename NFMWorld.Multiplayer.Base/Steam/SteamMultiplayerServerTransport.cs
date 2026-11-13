@@ -70,6 +70,7 @@ public class SteamMultiplayerServerTransport : BaseMultiplayerServerTransport, I
     public void OnDisconnected(Connection connection, ConnectionInfo info)
     {
         _connectedClients.TryRemove(connection, out _);
+        ForgetConnection(connection.Id);
         ClientDisconnected?.Invoke(this, connection.Id);
         Logging.Info($"{info.Identity} has left the game");
     }
@@ -97,6 +98,13 @@ public class SteamMultiplayerServerTransport : BaseMultiplayerServerTransport, I
                 connection.SendMessage(span, reliable ? SendType.Reliable : SendType.Unreliable);
             }
         }
+    }
+
+    public override void DisconnectClient(uint clientIndex)
+    {
+        // Lingering, so a refusal written just before this is actually delivered.
+        if (_connectedClients.TryGetValue(clientIndex, out var connection))
+            connection.Close(linger: true);
     }
 
     public override void Stop()

@@ -115,6 +115,21 @@ static async Task HandleHttpRequest(
             return;
         }
 
+        // A game master from another revision lays the results out differently; the signature
+        // would still verify, so the version has to be checked separately and before parsing.
+        if (req.Headers[Protocol.HeaderName] is not { } declared
+            || !int.TryParse(declared, out var declaredVersion)
+            || declaredVersion != Protocol.Version)
+        {
+            Logging.Warning(
+                $"[Lobby] /race-ended refused: game master version {(req.Headers[Protocol.HeaderName] ?? "none")} vs {Protocol.Version}"
+            );
+            res.StatusCode = 409;
+            res.StatusDescription = $"protocol {Protocol.Version}";
+            res.Close();
+            return;
+        }
+
         if (req.ContentLength64 > maxBodyBytes)
         {
             res.StatusCode = 413;

@@ -10,6 +10,22 @@ public interface IMultiplayerClientTransport
     void SendPacketToServer<T>(T packet, bool reliable = true) where T : IPacketClientToServer<T>;
     void Stop();
 
+    bool HandshakeAccepted => true;
+
+    /// <summary>
+    /// Set when the server refused this build's version. Reconnecting repeats the refusal, so a
+    /// transport stops retrying once it is set.
+    /// </summary>
+    string? HandshakeError => null;
+
+    /// <summary>
+    /// Declares this build's wire version again. Only useful for retrying a handshake the server
+    /// never answered; a transport sends one on connect by itself.
+    /// </summary>
+    void SendHandshake()
+    {
+    }
+
     /// <summary>
     /// True while the transport is trying to restore a dropped connection on its own.
     /// A transport that never retries simply reports <see cref="ClientState.Disconnected"/>.

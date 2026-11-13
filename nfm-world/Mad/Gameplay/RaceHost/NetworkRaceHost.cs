@@ -19,6 +19,7 @@ public sealed class NetworkRaceHost : IRaceHost
     private readonly Guid _joinToken;
     private readonly Dictionary<Guid, int> _playerIndexById = [];
     private bool _sentRaceLoaded;
+    private bool _reportedVersionRefusal;
 
     public NetworkRaceHost(IMultiplayerClientTransport transport, MatchGameplayInfo session, Guid joinToken)
     {
@@ -38,12 +39,19 @@ public sealed class NetworkRaceHost : IRaceHost
         transport.Reconnected += OnReconnected;
     }
 
-    private void OnReconnected() => _sentRaceLoaded = false;
+    private void OnReconnected()
+    {
+        _sentRaceLoaded = false;
+        _reportedVersionRefusal = false;
+    }
 
     public bool IsConnected => _transport.State == ClientState.Connected;
 
     /// <summary>True once the race connection dropped and reconnection gave up.</summary>
     public bool ReconnectFailed => _transport.ReconnectFailed;
+
+    /// <summary>Why the Game Master refused this build, when it did.</summary>
+    public string? VersionError => _transport.HandshakeError;
 
     public event Action? RaceCanStart;
     public event Action? RaceFailedToStart;
@@ -54,10 +62,19 @@ public sealed class NetworkRaceHost : IRaceHost
 
     public void Update()
     {
-        if (!_sentRaceLoaded && IsConnected)
+        // The join token is not presented until the Game Master has confirmed the packet layout:
+        // an older one would read the token's bytes as something else entirely.
+        if (!_sentRaceLoaded && IsConnected && _transport.HandshakeAccepted)
         {
             _sentRaceLoaded = true;
             _transport.SendPacketToServer(new C2S_RaceLoaded { JoinToken = _joinToken });
+        }
+
+        if (!_reportedVersionRefusal && _transport.HandshakeError is { Length: > 0 } versionError)
+        {
+            _reportedVersionRefusal = true;
+            Logging.Warning($"The Game Master refused this build: {versionError}");
+            RaceFailedToStart?.Invoke();
         }
 
         foreach (var packet in _transport.GetNewPackets())

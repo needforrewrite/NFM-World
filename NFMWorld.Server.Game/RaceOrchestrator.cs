@@ -296,6 +296,7 @@ public class RaceOrchestrator : IDisposable
                         Content = new ByteArrayContent(body)
                     };
                     request.Headers.Authorization = System.Net.Http.Headers.AuthenticationHeaderValue.Parse(auth);
+                    request.Headers.Add(Protocol.HeaderName, Protocol.Version.ToString());
 
                     using var response = await client.SendAsync(request);
                     if (!response.IsSuccessStatusCode)
