@@ -267,14 +267,21 @@ public static class DevConsoleCommands
     {
         if (args.Length < 1)
         {
-            Logging.Info($"Connect to a lobby. Usage: connect <host> <port> (default {LobbyEndpoint.Host}:{LobbyEndpoint.Port})");
+            Logging.Info(
+                $"Connect to a lobby. Usage: connect <host> [port] [ws|wss] "
+                + $"(default {LobbyEndpoint.Host}:{LobbyEndpoint.Port}; remote hosts use wss)"
+            );
             return;
         }
 
         if (args.Length < 2 || !ushort.TryParse(args[1], out ushort port))
             port = LobbyEndpoint.Port;
 
-        if (!LobbyConnection.TryOpen(args[0], port, out var error))
+        var insecure = args.Length >= 3
+            ? args[2].Equals("ws", StringComparison.OrdinalIgnoreCase)
+            : LobbyConnection.IsLocal(args[0]);
+
+        if (!LobbyConnection.TryOpen(args[0], port, insecure, out var error))
             Logging.Info(error);
     }
 

@@ -1,0 +1,57 @@
+@page "/asset/{id:int}"
+@model NFMWorld.Archive.Pages.AssetDetailModel
+
+<p><a href="/browse">← Back to browse</a></p>
+
+<header class="asset-header">
+    <h1>@Model.Asset!.Name</h1>
+    <span class="asset-kind">@Model.Asset.Type</span>
+</header>
+
+@if (!string.IsNullOrWhiteSpace(Model.Asset.Description))
+{
+    <p class="asset-description">@Model.Asset.Description</p>
+}
+else
+{
+    <p class="muted">No description.</p>
+}
+
+<dl class="asset-meta">
+    <dt>Creator</dt>
+    <dd>
+        @if (Model.Asset.Owner is { } owner)
+        {
+            @owner.Username
+        }
+        else
+        {
+            <span class="muted">Unknown</span>
+        }
+    </dd>
+
+    <dt>Uploaded</dt>
+    <dd>@Model.Asset.CreatedAt.UtcDateTime.ToString("yyyy-MM-dd HH:mm") UTC</dd>
+
+    <dt>Size</dt>
+    <dd>@AssetDetailModel.FormatSize(Model.Asset.SizeBytes)</dd>
+
+    <dt>Downloads</dt>
+    <dd>@Model.Asset.DownloadCount</dd>
+
+    <dt>SHA-256</dt>
+    <dd><code class="asset-hash">@Model.Asset.ContentHash</code></dd>
+</dl>
+
+<p><a href="/assets/@Model.Asset.ContentHash" role="button">Download @Model.Asset.Type</a></p>
+
+@if (Model.More.Count > 0)
+{
+    <h2>More from @Model.Asset.Owner!.Username</h2>
+    <ul class="asset-list">
+        @foreach (var more in Model.More)
+        {
+            <li><a href="/asset/@more.Id">@more.Name</a> <span class="muted">@more.Type</span></li>
+        }
+    </ul>
+}

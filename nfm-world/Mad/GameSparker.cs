@@ -197,6 +197,9 @@ public static partial class GameSparker
         if (!imguiWantsKeyboard && NFMWorld.UI.Components.SettingsView.HandleKeyPressed(UiRenderer?.ActiveRoot, key))
             return;
 
+        if (!imguiWantsKeyboard && NFMWorld.UI.Routes.AccountView.HandleKeyPressed(UiRenderer?.ActiveRoot, key))
+            return;
+
         var bindings = SettingsMenu.Bindings;
 
         // Global so the toggle works in menus too; a focused text field owns its keys.
@@ -231,11 +234,19 @@ public static partial class GameSparker
 
     public static void KeyRepeated(Key key, Keys keys, bool imguiWantsKeyboard)
     {
-        if (key is not (Key.Up or Key.Down or Key.Left or Key.Right)
-            || imguiWantsKeyboard
-            || devConsole.IsOpen()) return;
-        if (NFMWorld.UI.Components.SettingsView.HandleKeyRepeated(UiRenderer?.ActiveRoot, key, keys)) return;
-        if (CurrentPhase is MainMenuPhase menu) menu.NavigationKeyRepeated(key);
+        if (imguiWantsKeyboard || devConsole.IsOpen()) return;
+
+        if (key is Key.Up or Key.Down or Key.Left or Key.Right)
+        {
+            if (NFMWorld.UI.Components.SettingsView.HandleKeyRepeated(UiRenderer?.ActiveRoot, key, keys)) return;
+            if (NFMWorld.UI.Routes.AccountView.HandleKeyRepeated(UiRenderer?.ActiveRoot, key)) return;
+            if (CurrentPhase is MainMenuPhase menu) menu.NavigationKeyRepeated(key);
+        }
+
+        // SDL reports a held key as repeated key events only, so without this a focused
+        // editor sees a single Backspace however long it is held.
+        if (FocusManager.FocusedNode is TextInput or TextArea)
+            UiRenderer?.HandleKeyPressed(key, keys);
     }
 
     public static void KeyReleased(Key key, Keys keys, bool imguiWantsKeyboard)

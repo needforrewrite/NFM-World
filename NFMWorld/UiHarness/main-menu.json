@@ -1,0 +1,16 @@
+{
+  "width": 1568,
+  "height": 882,
+  "scale": 1,
+  "output": "../../.git/sx-menu-captures",
+  "view": "main-menu",
+  "steps": [
+    { "action": "capture", "capture": "menu" },
+    { "action": "assert-visible", "target": "Main menu account" },
+    { "action": "assert-text", "target": "Main menu account label", "value": "SIGN IN" },
+    { "action": "hover", "target": "Main menu account", "capture": "account-hover" },
+    { "action": "assert-hover", "target": "Main menu account" },
+    { "action": "click", "target": "Main menu account", "capture": "account-open" },
+    { "action": "assert-visible", "target": "Account dialog" }
+  ]
+}

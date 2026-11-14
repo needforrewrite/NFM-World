@@ -35,7 +35,7 @@ else
                 @foreach (var asset in Model.Assets)
                 {
                     <tr>
-                        <td><a href="/assets/@asset.ContentHash">@asset.Name</a></td>
+                        <td><a href="/asset/@asset.Id">@asset.Name</a></td>
                         <td>@asset.Type</td>
                         <td>@((asset.SizeBytes / 1024) + " KB")</td>
                         <td>@asset.DownloadCount</td>

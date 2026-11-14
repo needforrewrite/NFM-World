@@ -21,7 +21,7 @@ public static class MainMenuView
 {
     private const int ItemHeight = 36;
     private const int ItemGap = 11;
-    private const int MenuRows = 7;
+    private const int MenuRows = 6;
 
     public sealed class MenuItem(string label, string description, Action action)
     {
@@ -62,7 +62,6 @@ public static class MainMenuView
             new("GARAGE", "Customize and inspect your vehicles in the garage.", actions.Garage),
             new("WORKSHOP", "Build your own models and stages.", () => PushPage(BuildWorkshopMenu(actions))),
             new("SETTINGS", "Adjust game settings.", () => SettingsOpen.Value = true),
-            new("ACCOUNT", "Sign in, or create an archive account.", actions.Account),
             new("EXTRAS", "View credits, statistics and replays.", () => PushPage(BuildExtrasMenu(actions))),
             new(
                 "QUIT",
@@ -111,6 +110,39 @@ public static class MainMenuView
             )
         );
 
+    private static readonly StyledView AccountChipRow =
+        Styled.StyleView(
+            baseStyle: Sx.Styles(
+                flexDirection: FlexDirection.Row,
+                alignItems: Align.Center,
+                paddingTop: 4,
+                paddingBottom: 4,
+                paddingLeft: 11,
+                paddingRight: 11,
+                backgroundColor: new Color(22, 42, 80, 145),
+                borderTop: 1,
+                borderBottom: 1,
+                borderLeft: 1,
+                borderRight: 1,
+                borderColor: new Color(128, 170, 255, 195),
+                borderRadius: 6
+            ),
+            hoverStyle: Sx.Styles(
+                backgroundColor: new Color(55, 90, 150, 190),
+                borderColor: new Color(205, 227, 255)
+            )
+        );
+
+    private static readonly StyledText AccountChipLabel =
+        Styled.StyleText(
+            textStyle: Sx.TextStyles(
+                fontSize: 14,
+                fontFamily: FontFamily.Adventure,
+                fontStyle: FontStyle.Bold,
+                foregroundColor: MenuBlue
+            )
+        );
+
     public static Node Build(Actions actions, Node logo)
     {
         // Built once, not per read: the items hold lambdas that capture `actions`, so a
@@ -129,10 +161,9 @@ public static class MainMenuView
 
         _currentPage = CurrentPage;
 
-        return Sx.View(
+        var panel = Sx.View(
             style: () => Sx.Styles(
                 visibility: SettingsOpen.Value ? Visibility.Hidden : Visibility.Visible,
-                pointerEvents: !SettingsOpen.Value && !QuitOpen.Value,
                 position: Position.Absolute,
                 left: "7%",
                 bottom: "8%",
@@ -224,6 +255,49 @@ public static class MainMenuView
                     text: () => UiState.MainMenu.StageName.Value
                 )
             ]
+        );
+
+        return Sx.View(
+            style: () => Sx.Styles(
+                position: Position.Absolute,
+                left: 0,
+                top: 0,
+                width: 100.Percent(),
+                height: 100.Percent(),
+                pointerEvents: !SettingsOpen.Value && !QuitOpen.Value
+            ),
+            children:
+            [
+                panel,
+                AccountChip(actions)
+            ]
+        );
+    }
+
+    /// <summary>The signed-in name (or SIGN IN) in the corner, outside the page list.</summary>
+    private static Node AccountChip(Actions actions)
+    {
+        var label = AccountChipLabel(
+            text: () => UiState.MainMenu.IsLoggedIn.Value
+                ? UiState.MainMenu.PlayerName.Value
+                : "SIGN IN"
+        );
+        label.Name = "Main menu account label";
+
+        return AccountChipRow(
+            style: () => Sx.Styles(
+                position: Position.Absolute,
+                top: 20,
+                right: 24,
+                visibility: SettingsOpen.Value ? Visibility.Hidden : Visibility.Visible
+            ),
+            name: "Main menu account",
+            onmousedown: e =>
+            {
+                e.StopPropagation();
+                actions.Account();
+            },
+            children: [label]
         );
     }
 

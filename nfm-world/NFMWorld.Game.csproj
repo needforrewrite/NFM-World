@@ -32,8 +32,10 @@
         <LobbyPort Condition="'$(LobbyPort)' == '' and '$(Configuration)' == 'Release'">443</LobbyPort>
         <LobbyPort Condition="'$(LobbyPort)' == '' and '$(Configuration)' == 'Debug'">443</LobbyPort>
         <LobbyPort Condition="'$(LobbyPort)' == ''">7001</LobbyPort>
-        <LobbyInsecure Condition="'$(LobbyInsecure)' == '' and '$(Configuration)' == 'Release'">false</LobbyInsecure>
-        <LobbyInsecure Condition="'$(LobbyInsecure)' == ''">true</LobbyInsecure>
+        <!-- Plain ws is only for a lobby on this machine; every deployed lobby sits behind TLS. -->
+        <LobbyInsecure
+            Condition="'$(LobbyInsecure)' == '' and ('$(LobbyEndpoint)' == 'localhost' or '$(LobbyEndpoint)' == '127.0.0.1')">true</LobbyInsecure>
+        <LobbyInsecure Condition="'$(LobbyInsecure)' == ''">false</LobbyInsecure>
     </PropertyGroup>
 
     <ItemGroup>

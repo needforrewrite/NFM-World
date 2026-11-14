@@ -65,6 +65,10 @@ public partial class WorldGame
             "stage-select-local" => new FixturePhase(StageSelectLocalFixture),
             "stage-select-compact" => new FixturePhase(StageSelectCompactFixture),
             "lobby-create" => new FixturePhase(LobbyCreateFixture),
+            "main-menu" => new FixturePhase(() => MainMenuFixture(
+                config.TryGetProperty("signedIn", out var signedIn) && signedIn.GetBoolean()
+            )
+            ),
             "text-input" => new FixturePhase(TextInputFixture),
             "text-area" => new FixturePhase(TextAreaFixture),
             "replay-browser" => new FixturePhase(ReplayBrowserFixture),
@@ -348,6 +352,63 @@ public partial class WorldGame
     private sealed class FixturePhase(Func<Node?> build) : NFMWorld.Gameplay.BasePhase
     {
         public override Node? BuildUi() => build();
+    }
+
+    /// <summary>
+    /// The real main menu: the page list plus the account chip in the corner. The stage
+    /// name stands in for the attract stage the phase would load.
+    /// </summary>
+    private static Node MainMenuFixture(bool signedIn)
+    {
+        var state = UiState.MainMenu;
+        state.StageName.Value = "Twisted Magic";
+        state.MenuVisible.Value = true;
+        state.InputEnabled.Value = true;
+        state.GarageOpen.Value = false;
+        state.Set(signedIn ? "twisted_magic" : null, signedIn);
+        MainMenuView.Reset();
+        AccountView.Reset();
+
+        var logo = TheGraphics.G.LoadImage("data/images/logo.svg");
+
+        return Sx.View(
+            style: () => Sx.Styles(width: 100.Percent(), height: 100.Percent()),
+            children:
+            [
+                MainMenuView.Build(
+                    new MainMenuView.Actions(
+                        Play: static () => { },
+                        Garage: static () => { },
+                        ModelEditor: static () => { },
+                        StageEditor: static () => { },
+                        TimeTrials: static () => { },
+                        Unavailable: static _ => { },
+                        Replays: static () => { },
+                        Account: AccountView.Show,
+                        Multiplayer: static () => { }
+                    ),
+                    new NFMWorld.DriverInterface.UI.Image
+                    {
+                        ImageData = logo,
+                        Styles = Sx.Styles(
+                            width: 100.Percent(),
+                            aspectRatio: (float)logo.Width / logo.Height,
+                            flexShrink: 0
+                        )
+                    }
+                ),
+                AccountView.Build(
+                    new AccountView.Actions(
+                        SignIn: static (_, _) => { },
+                        Register: static () => { },
+                        SignOut: AccountView.Hide,
+                        Close: AccountView.Hide
+                    ),
+                    () => state.IsLoggedIn.Value,
+                    () => state.PlayerName.Value
+                )
+            ]
+        );
     }
 
     private static Node GarageFixture()

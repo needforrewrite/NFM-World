@@ -42,3 +42,50 @@ td button {
 .muted {
     color: var(--pico-muted-color);
 }
+
+.asset-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--pico-spacing);
+}
+
+.asset-header h1 {
+    margin-bottom: 0;
+}
+
+.asset-kind {
+    padding: 0.1rem 0.5rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    color: var(--pico-muted-color);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+.asset-description {
+    white-space: pre-line;
+}
+
+.asset-meta {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 0.25rem var(--pico-spacing);
+    margin-block: var(--pico-spacing);
+}
+
+.asset-meta dt {
+    color: var(--pico-muted-color);
+}
+
+.asset-meta dd {
+    margin: 0;
+}
+
+.asset-hash {
+    overflow-wrap: anywhere;
+}
+
+.asset-list {
+    padding-left: 1.25rem;
+}
