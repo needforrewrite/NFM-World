@@ -49,6 +49,13 @@ Native `POST /auth/login` remains password-based and throttled, without a Turnst
 Siteverify has a 10-second timeout; errors, expired/replayed tokens, unexpected actions and hostnames
 all reject the attempt. The login page requires Cloudflare's JavaScript and iframe to load.
 
+Every refusal is logged as a warning naming the reason — the Siteverify `error-codes` entry, the
+action the token was solved for, or the hostname it was solved on together with
+`TURNSTILE_HOSTNAMES` — and a failure on our side (timeout, non-2xx, unparseable body, missing
+setting) is logged as an error and shown to the visitor as "unavailable right now" rather than
+"failed, please try again". Startup also warns when the challenge is misconfigured, because that
+otherwise looks exactly like a failed challenge from the outside.
+
 For local development, `dotnet run --project NFMWorld.Archive/NFMWorld.Archive.csproj` uses the checked-in
 launch profile (`Development`, `http://localhost:5288`). That environment uses Cloudflare's always-pass test
 sitekey and secret automatically; no `TURNSTILE_*` settings are needed. Verification still calls Siteverify

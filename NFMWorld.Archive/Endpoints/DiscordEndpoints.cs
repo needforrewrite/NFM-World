@@ -56,13 +56,14 @@ public static class DiscordEndpoints
                 if (throttle.IsBlocked(ipKey, out _))
                     return Results.StatusCode(StatusCodes.Status429TooManyRequests);
                 var form = await http.Request.ReadFormAsync(ct);
-                if (!await turnstile.VerifyAsync(
-                        form["cf-turnstile-response"],
-                        "discord",
-                        ct,
-                        http.Connection.RemoteIpAddress?.ToString()
-                    ))
-                    return Results.BadRequest(new { error = TurnstileVerifier.Error });
+                var verification = await turnstile.VerifyAsync(
+                    form["cf-turnstile-response"],
+                    "discord",
+                    ct,
+                    http.Connection.RemoteIpAddress?.ToString()
+                );
+                if (!verification.Accepted)
+                    return Results.BadRequest(new { error = verification.Message });
                 throttle.RecordFailure(ipKey);
 
                 // The prefix excludes pending flows created before challenge enforcement.

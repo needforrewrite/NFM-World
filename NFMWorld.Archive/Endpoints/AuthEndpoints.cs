@@ -47,8 +47,9 @@ public static class AuthEndpoints
                         statusCode: StatusCodes.Status429TooManyRequests
                     );
 
-                if (!await turnstile.VerifyAsync(request.TurnstileResponse, "register", ct, Ip(http)))
-                    return Results.BadRequest(new { error = TurnstileVerifier.Error });
+                var challenge = await turnstile.VerifyAsync(request.TurnstileResponse, "register", ct, Ip(http));
+                if (!challenge.Accepted)
+                    return Results.BadRequest(new { error = challenge.Message });
 
                 if (!UsernamePolicy.TryValidate(request.Username, out var nameError))
                     return Results.BadRequest(new { error = nameError });

@@ -139,14 +139,15 @@ public sealed class LoginModel(
 
     private async Task<bool> VerifyTurnstileAsync(string action)
     {
-        if (await turnstile.VerifyAsync(
-                TurnstileResponse,
-                action,
-                HttpContext.RequestAborted,
-                HttpContext.Connection.RemoteIpAddress?.ToString()
-            ))
+        var challenge = await turnstile.VerifyAsync(
+            TurnstileResponse,
+            action,
+            HttpContext.RequestAborted,
+            HttpContext.Connection.RemoteIpAddress?.ToString()
+        );
+        if (challenge.Accepted)
             return true;
-        Error = TurnstileVerifier.Error;
+        Error = challenge.Message;
         return false;
     }
 

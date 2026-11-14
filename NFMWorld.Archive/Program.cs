@@ -59,6 +59,18 @@ if (string.IsNullOrWhiteSpace(options.ValidatorPath) || !File.Exists(options.Val
     );
 }
 
+// A misconfigured challenge refuses every visitor with the same message a failed challenge
+// shows, so it has to be visible in the startup log rather than only at the login form.
+if (TurnstileVerifier.FindConfigurationProblem(builder.Configuration, app.Environment) is { } turnstileProblem)
+{
+    app.Logger.LogWarning(
+        "Turnstile is not configured ({Problem}): every web sign-in, registration and Discord "
+        + "sign-in will be refused with \"{Error}\".",
+        turnstileProblem,
+        TurnstileVerifier.Error
+    );
+}
+
 // TLS terminates at the proxy in the documented deployment, so without this every request
 // looks like local plain HTTP: the login throttle would share one global IP bucket (locking
 // everyone out on one attacker's attempts) and the session cookie would be issued without
