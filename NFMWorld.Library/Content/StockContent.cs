@@ -74,22 +74,44 @@ public static class StockCatalog
     }
 
     /// <summary>The canonical bytes for a stage, so a recording pins the exact course it ran.</summary>
-    public static byte[] PackageStage(string id, StageLoader stage)
+    public static byte[] PackageStage(string id, StageLoader stage, bool includeMusic = false)
     {
-        var writer = new ArrayBufferWriter<byte>();
-        RadpackSerializer.Serialize(
-            new RadpackTrack
+        var music = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+        if (includeMusic)
+        {
+            foreach (var path in new[] { stage.musicPath, stage.remasteredMusicPath }.Where(path => !string.IsNullOrEmpty(path))
+                .Distinct())
             {
-                Metadata = new RadpackMetadata
+                var normalized = path.Replace('\\', '/');
+                if (normalized.StartsWith('/') || normalized.Contains(':') || normalized.Split('/').Contains(".."))
+                    throw new InvalidDataException($"Music '{path}' must be a relative path under data/music.");
+                if (stage.EmbeddedMusic?.TryGetValue(path, out var embedded) == true)
                 {
-                    Name = id,
-                    CreationDate = DateTimeOffset.UnixEpoch,
-                    Type = RadpackType.Track
-                },
-                Stage = stage
-            },
-            writer
-        );
+                    music.Add(path, embedded);
+                    continue;
+                }
+
+                using var source = VFS.OpenRead($"data/music/{path}");
+                using var bytes = new MemoryStream();
+                var buffer = new byte[81920];
+                int read;
+                while ((read = source.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    if (bytes.Length + read > RadpackLimits.MaxCompressedBytes)
+                        throw new InvalidDataException($"Music '{path}' exceeds the package size limit.");
+                    bytes.Write(buffer, 0, read);
+                }
+
+                music.Add(path, bytes.ToArray());
+            }
+        }
+
+        var metadata = new RadpackMetadata { Name = id, CreationDate = DateTimeOffset.UnixEpoch, Type = RadpackType.Track };
+        RadpackStage package = music.Count == 0
+            ? new RadpackTrack { Metadata = metadata, Stage = stage }
+            : new RadpackTrackWithMusic { Metadata = metadata, Stage = stage, Music = music };
+        var writer = new ArrayBufferWriter<byte>();
+        RadpackSerializer.Serialize(package, writer);
         return writer.WrittenSpan.ToArray();
     }
 
@@ -174,7 +196,7 @@ public static class StockCatalog
             {
                 var id = Path.GetRelativePath(directory, file).Replace('\\', '/');
                 id = id[..id.LastIndexOf('.')];
-                if (RadpackReader.Read(file, RadpackType.Track) is not RadpackTrack track)
+                if (RadpackReader.Read(file, RadpackType.Track) is not RadpackStage track)
                     continue;
 
                 var writer = new ArrayBufferWriter<byte>();

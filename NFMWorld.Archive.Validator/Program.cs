@@ -109,7 +109,7 @@ public static class Program
             File.ReadAllBytes(stageRadpackPath),
             RadpackLimits.MaxDecompressedBytes
         );
-        if (stageAsset is not RadpackTrack track)
+        if (stageAsset is not RadpackStage track)
             return Fail("The stage asset is not a track.");
 
         if (carRadpackPath is null)

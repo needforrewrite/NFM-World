@@ -142,6 +142,17 @@ public abstract class BaseStageRenderingPhase : BasePhase
             if (GetMusicTrack() is not { } track) return;
             Logging.Debug($"playing music: {track.Path}");
 
+            if (CurrentStage?.Backend.StageLoader.EmbeddedMusic is { } music
+                && music.TryGetValue(track.Path["data/music/".Length..], out var bytes))
+            {
+                using var stream = new MemoryStream(bytes, writable: false);
+                _stageMusic = OperatingSystem.IsBrowser()
+                    ? new WebAudioMusic(stream, Path.GetExtension(track.Path), track.Tempo)
+                    : new FaudioMusic(stream, track.Path, track.Tempo);
+                _stageMusic.SetFreqMultiplier(track.Frequency);
+                return;
+            }
+
             // The browser's music mount fetches synchronously (see http.js) - there is no thread to
             // await on and the parse has to return immediately - so both paths load inline. The
             // fetch is a few hundred kilobytes for one track rather than the whole archive.

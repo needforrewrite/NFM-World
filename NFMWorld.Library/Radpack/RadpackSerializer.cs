@@ -80,6 +80,8 @@ public static class RadpackSerializer
         // and one payload type (Rad3d) is shared by cars, stage pieces and wheels.
         result.Metadata.Type = declared;
         RadpackTypes.ValidatePayload(result);
+        if (result is RadpackTrackWithMusic track)
+            track.Stage.EmbeddedMusic = track.Music;
         return result;
     }
 
@@ -97,7 +99,7 @@ public static class RadpackTypes
     public static bool MatchesPayload(RadpackType declared, RadpackAsset payload)
         => payload switch
         {
-            RadpackTrack => declared == RadpackType.Track,
+            RadpackStage => declared == RadpackType.Track,
             RadpackRad3d => declared is RadpackType.Car or RadpackType.TrackPiece or RadpackType.Wheel,
             RadpackTexture => declared == RadpackType.Texture,
             RadpackLua => declared == RadpackType.LuaScript,
@@ -138,6 +140,7 @@ public static class RadpackTypes
 [TightPackUnion(3, typeof(RadpackLua))]
 // Appended: older payload tags keep their numbers so existing packages stay readable.
 [TightPackUnion(4, typeof(RadpackGamemode))]
+[TightPackUnion(5, typeof(RadpackTrackWithMusic))]
 public abstract partial class RadpackAsset
 {
     [TightPackOrder(0)] public required RadpackMetadata Metadata { get; set; }
@@ -153,10 +156,20 @@ public partial class RadpackMetadata
     [TightPackIgnore] public RadpackType Type { get; set; }
 }
 
-[TightPackable(GenerateType.VersionTolerant)]
-public partial class RadpackTrack : RadpackAsset
+public abstract class RadpackStage : RadpackAsset
 {
     [TightPackOrder(1)] public required StageLoader Stage;
+}
+
+[TightPackable(GenerateType.VersionTolerant)]
+public partial class RadpackTrack : RadpackStage
+{
+}
+
+[TightPackable(GenerateType.VersionTolerant)]
+public partial class RadpackTrackWithMusic : RadpackStage
+{
+    [TightPackOrder(2)] public required Dictionary<string, byte[]> Music;
 }
 
 [TightPackable(GenerateType.VersionTolerant)]

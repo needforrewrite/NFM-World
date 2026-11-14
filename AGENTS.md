@@ -884,6 +884,11 @@ Added with the archive/content work; read this before touching content loading, 
   radpack with `ExportLocal*`. Both editors show name, description and that the publication is
   public; a failure leaves the document, its dirty flag and its history alone. Packaging failures
   are returned as messages rather than thrown, because the callers are fire-and-forget UI actions.
+- **Packed stage music** — editor exports/publications include both referenced soundtracks in a
+  `RadpackTrackWithMusic` payload. The reader attaches these bytes to `StageLoader.EmbeddedMusic`
+  for stream playback; it does not extract files or overwrite `data/music`. Canonical stock and
+  replay packages keep the existing track format. New music-bearing packages need an updated
+  Archive validator; existing packages must be re-exported to acquire missing music.
 - **Time trials** — the client notifies `IClientCallbacks.TimeTrialCompleted` once per completed run
   (never for simulation), `TimeTrialSubmissions` writes the recording and a TightPack sidecar before
   network work, and `TimeTrialUploader` retries from the replay browser. The archive simulates the

@@ -144,6 +144,8 @@ public partial class StageLoader
     // soundtrackremaster(folder,fileName)
     [TightPackOrder(3), PluginVisible] public string remasteredMusicPath = "";
 
+    [TightPackIgnore] public IReadOnlyDictionary<string, byte[]>? EmbeddedMusic { get; set; }
+
     // soundtrackfreqmul(mul)
     [TightPackOrder(4), PluginVisible] public double musicFreqMul = 1.0d;
     [TightPackOrder(5), PluginVisible] public double musicTempoMul = 1.0d;

@@ -65,16 +65,24 @@ public sealed class FaudioMusic : IRadicalMusic
     /// </summary>
     /// <param name="file">VFS path to the audio file.</param>
     /// <param name="tempomul">Initial tempo multiplier (1.0 = normal speed).</param>
-    public FaudioMusic(string file, double tempomul)
+    public FaudioMusic(string file, double tempomul) : this(() => VFS.OpenRead(file), file, tempomul)
+    {
+    }
+
+    /// <summary>Decodes and disposes an embedded music stream.</summary>
+    public FaudioMusic(Stream stream, string file, double tempomul) : this(() => stream, file, tempomul)
+    {
+    }
+
+    private FaudioMusic(Func<Stream> open, string file, double tempomul)
     {
         ZipArchive? archive = null;
         Stream? entryStream = null;
 
         try
         {
-            // Read file through VFS; the container/tracker/stream decision lives in the decoder so
-            // the browser's music path makes the same one.
-            using var stream = VFS.OpenRead(file);
+            // The shared decoder handles containers, trackers and stream formats.
+            using var stream = open();
             var result = AudioDecoder.DecodeTrack(stream, Path.GetExtension(file));
 
             _decoded = result;
