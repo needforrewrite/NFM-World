@@ -527,6 +527,23 @@ public abstract partial class Component : Node, IAnimationCallback
         set => NodeInternal.AlwaysFormsContainingBlock = value;
     }
 
+    /// <summary>
+    /// Whether this absolutely positioned node stays put when a scrolling ancestor scrolls,
+    /// instead of moving with its content. It is still clipped by that ancestor.
+    /// </summary>
+    /// <remarks>
+    /// For popups anchored to the viewport rather than to the document - a context menu inside a
+    /// text editor, a dropdown inside a list. Without it an absolutely positioned child of an
+    /// <see cref="Overflow.Scroll"/> container does two wrong things: it is offset by the scroll
+    /// amount at paint time, so it slides away from where it was placed, and it counts towards
+    /// the scroll extent, so a menu opened over a long document adds its own height as
+    /// scrollable space.
+    ///
+    /// A popup using this places itself in the container's unscaled viewport space (its padding
+    /// box origin), not in the scrolled content space.
+    /// </remarks>
+    public bool IgnoresScrollOffset { get; set; }
+
     #endregion
 
     #region Scrolling
@@ -673,6 +690,11 @@ public abstract partial class Component : Node, IAnimationCallback
         // Hidden children keep their last layout, which can sit far outside the box (a closed
         // dropdown popup, say) and would otherwise force a scrollbar.
         if (!c.IsDisplayed)
+            return;
+
+        // A popup that ignores the scroll offset is anchored to the viewport, not the content:
+        // it is already inside the box, and counting it would add scrollable space.
+        if (c.IgnoresScrollOffset)
             return;
 
         if (c.Styles.Display == Display.Contents)
@@ -1027,7 +1049,11 @@ public abstract partial class Component : Node, IAnimationCallback
         Vector2 PaddingSize,
         Vector2 ChildOrigin,
         RectangleF? Clip
-    );
+    )
+    {
+        /// <summary>The child origin before the scroll offset, for <see cref="IgnoresScrollOffset"/>.</summary>
+        public Vector2 UnscrolledChildOrigin => PaddingPos;
+    }
 
     private readonly record struct StackEntry(Component Node, Vector2 Origin, RectangleF? Clip, int Z);
 
@@ -1133,7 +1159,12 @@ public abstract partial class Component : Node, IAnimationCallback
         foreach (var visual in VisualChildren)
         {
             if (visual is not Component c || !c.IsDisplayed) continue;
-            if (s.Clip is { } clip && IsOutsideClip(c, s.ChildOrigin, clip))
+
+            // The cull test has to use the same origin the paint will: a popup anchored to the
+            // viewport sits at its unscrolled position, and testing it against the scrolled
+            // origin culls it as off-screen as soon as the container scrolls.
+            var childOrigin = c.IgnoresScrollOffset ? s.UnscrolledChildOrigin : s.ChildOrigin;
+            if (s.Clip is { } clip && IsOutsideClip(c, childOrigin, clip))
             {
                 // Not painted, so Root/ClipRect would go stale; an empty clip also keeps the
                 // skipped node from absorbing a press with its previous-frame bounds.
@@ -1144,11 +1175,11 @@ public abstract partial class Component : Node, IAnimationCallback
             if ((c.Styles.ZIndex ?? 0) != 0)
             {
                 scs ??= new List<StackEntry>();
-                scs.Add(new StackEntry(c, s.ChildOrigin, s.Clip, c.Styles.ZIndex!.Value));
+                scs.Add(new StackEntry(c, childOrigin, s.Clip, c.Styles.ZIndex!.Value));
             }
             else
             {
-                PaintNonStacking(c, s.ChildOrigin, s.OwnOpacity, s.Clip, ref scs);
+                PaintNonStacking(c, childOrigin, s.OwnOpacity, s.Clip, ref scs);
             }
         }
     }

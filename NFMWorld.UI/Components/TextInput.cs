@@ -5,6 +5,7 @@ using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.PluginSystem;
 using MouseButton = NFMWorld.DriverInterface.MouseButton;
+using SxApi = NFMWorld.Reactor.Sx.Sx;
 
 namespace NFMWorld.Reactor;
 
@@ -20,6 +21,7 @@ public partial class TextInput : Component
 
     private readonly Text _text;
     private readonly CursorOverlay _cursorOverlay;
+    private readonly TextEditContextMenu _contextMenu;
 
     // ── Cursor & selection state ──────────────────────────────────
 
@@ -140,6 +142,21 @@ public partial class TextInput : Component
     /// </summary>
     public Action<string>? TextChanged { get; set; }
 
+    /// <summary>Reads the OS clipboard. Falls back to <see cref="DefaultGetClipboardText"/>.</summary>
+    public Func<string>? GetClipboardText { get; set; }
+
+    /// <summary>Writes the OS clipboard. Falls back to <see cref="DefaultSetClipboardText"/>.</summary>
+    public Action<string>? SetClipboardText { get; set; }
+
+    /// <summary>Process-wide clipboard fallback, so the game wires SDL once instead of per field.</summary>
+    public static Func<string>? DefaultGetClipboardText { get; set; }
+
+    /// <summary>Process-wide clipboard fallback, so the game wires SDL once instead of per field.</summary>
+    public static Action<string>? DefaultSetClipboardText { get; set; }
+
+    private Func<string>? ResolveGetClipboard => GetClipboardText ?? DefaultGetClipboardText;
+    private Action<string>? ResolveSetClipboard => SetClipboardText ?? DefaultSetClipboardText;
+
     // ── Proxied TextRun properties ─────────────────────────────────
 
     /// <inheritdoc cref="Reactor.Text.TextContent"/>
@@ -177,6 +194,15 @@ public partial class TextInput : Component
         // setters below call OnTextInvalidated(), which dereferences `_text`.
         _text = new Text { IsFocusable = false };
         _cursorOverlay = new CursorOverlay(this);
+        _contextMenu = new TextEditContextMenu(
+            hasSelection: () => GetSelectionRange() is not null,
+            hasText: () => !string.IsNullOrEmpty(CurrentText),
+            canPaste: () => ResolveGetClipboard is not null,
+            cut: CutSelection,
+            copy: CopySelection,
+            paste: PasteClipboard,
+            selectAll: SelectAll
+        );
 
         Styles = Styles with
         {
@@ -200,7 +226,10 @@ public partial class TextInput : Component
         NodeInternal.InsertChild(_cursorOverlay.Contents, 1);
         _cursorOverlay.VisualParent = this;
 
-        _visualChildren = [_text, _cursorOverlay];
+        NodeInternal.InsertChild(_contextMenu.Contents, 2);
+        _contextMenu.VisualParent = this;
+
+        _visualChildren = [_text, _cursorOverlay, _contextMenu];
         VisualChildren = _visualChildren;
     }
 
@@ -418,6 +447,21 @@ public partial class TextInput : Component
 
         switch (key)
         {
+            case Key.A when ctrl:
+                SelectAll();
+                break;
+            case Key.C when ctrl:
+                CopySelection();
+                break;
+            case Key.X when ctrl:
+                CutSelection();
+                break;
+            case Key.V when ctrl:
+                PasteClipboard();
+                break;
+            case Key.Escape:
+                CloseContextMenu();
+                break;
             case Key.Left:
                 HandleArrow(-1, shift, ctrl);
                 break;
@@ -459,6 +503,44 @@ public partial class TextInput : Component
     private void HandleSubmit()
     {
         Submitted?.Invoke(Text ?? "");
+    }
+
+    private void CopySelection()
+    {
+        if (GetSelectionRange() is { } range)
+            ResolveSetClipboard?.Invoke(CurrentText[range.start..range.end]);
+    }
+
+    private void CutSelection()
+    {
+        if (GetSelectionRange() is { } range)
+        {
+            ResolveSetClipboard?.Invoke(CurrentText[range.start..range.end]);
+            DeleteSelection();
+        }
+    }
+
+    private void PasteClipboard()
+    {
+        if (ResolveGetClipboard?.Invoke() is not { } pasted)
+            return;
+
+        // A single-line field has no line breaks; strip whatever the source carried.
+        pasted = pasted.Replace("\r", "").Replace("\n", "");
+
+        DeleteSelection();
+        var t = CurrentText;
+        var idx = Math.Min(_cursorIndex, t.Length);
+        SetTextFromUserInput(t[..idx] + pasted + t[idx..]);
+        _cursorIndex = idx + pasted.Length;
+    }
+
+    /// <param name="position">Press position, in window pixels.</param>
+    private void OpenContextMenu(Vector2 position) => _contextMenu.ShowAt(this, position);
+
+    private void CloseContextMenu()
+    {
+        _contextMenu.Hide();
     }
 
     private void HandleArrow(int direction, bool shift, bool ctrl)
@@ -566,8 +648,25 @@ public partial class TextInput : Component
     [ClientOnly]
     protected override void OnMousePressed(MouseEvent @event)
     {
+        if (@event.Button == MouseButton.Secondary)
+        {
+            // The menu is the field's own; without this the press also reaches a dialog
+            // backdrop that dismisses on press and the menu closes as it opens.
+            @event.StopPropagation();
+
+            // Browsers keep an existing selection on right-click and place the caret only
+            // when there is none, so Paste/Cut act where the user pointed.
+            if (GetSelectionRange() is null)
+                MoveCursorTo(GetCharIndexForCursorX(@event.RelativePosition.X - LayoutPaddingLeft), false);
+
+            OpenContextMenu(@event.Position);
+            return;
+        }
+
         if (@event.Button != MouseButton.Primary)
             return;
+
+        CloseContextMenu();
 
         var shift = @event.ShiftKey;
         // RelativePosition is padding-box-relative; convert to content-box-relative X
@@ -628,6 +727,16 @@ public partial class TextInput : Component
         {
             _cursorBlinkTimer -= CursorBlinkPeriodMs;
             _cursorVisible = !_cursorVisible;
+        }
+
+        // The menu follows focus: it opens on a secondary press (which also focuses the
+        // field), so a click anywhere that moves focus away closes it.
+        if (_contextMenu.IsOpen)
+        {
+            if (!IsFocused)
+                CloseContextMenu();
+            else
+                _contextMenu.Refresh();
         }
     }
 

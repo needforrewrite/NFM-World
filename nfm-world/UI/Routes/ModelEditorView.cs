@@ -1,5 +1,4 @@
-extern alias SDL3New;
-using System.Globalization;
+﻿using System.Globalization;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
@@ -11,7 +10,6 @@ using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Radpack;
 using SignalsDotnet;
-using SDL = SDL3New::SDL3.SDL;
 
 namespace NFMWorld.UI.Routes;
 
@@ -969,8 +967,6 @@ public sealed class ModelEditorView
             text: text,
             onchange: onchange
         );
-        area.GetClipboardText = SDL.SDL_GetClipboardText;
-        area.SetClipboardText = value => SDL.SDL_SetClipboardText(value);
         area.UseLocalHistory = localHistory;
 
         if (!localHistory)

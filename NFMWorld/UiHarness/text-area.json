@@ -1,0 +1,43 @@
+{
+  "width": 900,
+  "height": 560,
+  "scale": 1,
+  "output": "../../.git/sx-text-area-captures",
+  "view": "text-area",
+  "steps": [
+    {
+      "action": "capture",
+      "capture": "editor"
+    },
+    {
+      "action": "click",
+      "x": 300,
+      "y": 120
+    },
+    {
+      "action": "key",
+      "value": "A",
+      "ctrl": true
+    },
+    {
+      "action": "scroll",
+      "x": 700,
+      "y": 450,
+      "delta": 30
+    },
+    {
+      "action": "click",
+      "x": 300,
+      "y": 120,
+      "button": "secondary",
+      "capture": "menu"
+    },
+    {
+      "action": "scroll",
+      "x": 700,
+      "y": 450,
+      "delta": -5,
+      "capture": "menu-after-scroll"
+    }
+  ]
+}

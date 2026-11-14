@@ -89,6 +89,28 @@ the phase stack puts on top (`ShowPhase`/`HidePhase`). There is no router and no
   live in `Styles.Resolved` (`NFMWorld.UI/Styles.cs`): `FlexDirection.Row`, `Align.Stretch`, `Position.Static`,
   `BoxSizing.BorderBox`, `Display.Flex`, `PointerEvents = true`; `flexShrink` comes from Yoga's web default (1).
 
+### Text fields
+
+`TextInput` (single line) and `TextArea` (multiline) share one clipboard. The game wires it once in
+`WorldGame.Initialize` (`TextInput.DefaultGetClipboardText`/`DefaultSetClipboardText` → `SdlWindow`), so a field needs
+no per-instance wiring; a field-level `GetClipboardText`/`SetClipboardText` still overrides it. SDL's emscripten video
+backend implements no clipboard, so on the browser SDL falls back to its own in-process one: copy/paste works inside
+the game, not against the browser's system clipboard.
+
+Both controls have Ctrl+A/C/X/V, selection keys and a right-click menu (Cut/Copy/Paste/Select All). The menu is one
+shared component, `TextEditContextMenu` (`NFMWorld.UI/Components/`), parameterised by four callbacks and three
+capability probes, so the two editors cannot drift; each owner's keyboard shortcuts call the same methods the menu
+does.
+
+|Gotcha|Rule|
+|---|---|
+|Menu is a child of the field|it is an absolutely positioned child so it follows the field, which means a press on it would otherwise reach the field's own handler and re-open it. The menu and its rows call `StopPropagation`, and a secondary press on the field does too or a dialog backdrop that dismisses on press closes the menu as it opens|
+|Menu geometry is unscaled|`Styles` lengths are multiplied by `G.Scale` at layout, so `TextEditContextMenu.ShowAt` divides the press position and the visible region by the scale. `Height` must include the border, or the placement clamp lets the menu hang 2px past the edge|
+|Menu placement is clamped|to the owner's `ScissorRect`, so a field at the bottom of a dialog opens a menu that is still fully visible|
+|Menu is viewport-anchored|`TextArea` is a scroll container, and an absolutely positioned child of one both slides with the content and adds its height to the scroll extent. The menu sets `Component.IgnoresScrollOffset`, which makes paint use the unscrolled origin and drops it from `UpdateScrollExtent`. **The off-screen cull in `PaintChildren` must use that same origin** — testing against the scrolled one culls the popup as soon as the container scrolls, and every layout assertion still passes while nothing paints (`IgnoresScrollOffset_PopupStaysPaintedAfterScrolling` covers it)|
+|Menu enabled state|is recomputed every frame while open (`GameTick`), so it tracks typing and selection. A disabled row still swallows the press|
+|Right-click keeps the selection|the caret only moves when nothing is selected, so Cut/Copy act on what the user had, and Paste lands at the click point otherwise|
+
 ## Fine-Grained Reactive UI (Sx)
 
 SolidJS-style: signals, per-slot effects, **no vnode and no diffing**. Backed by `SignalsDotnet`.
@@ -129,7 +151,8 @@ SolidJS-style: signals, per-slot effects, **no vnode and no diffing**. Backed by
 | Rows in a scroll container | Yoga's web default `flexShrink: 1` squeezes list rows to their padding, so a long list shows crushed rows (or one solid block) instead of scrolling. List rows need `flexShrink: 0` — the main-menu items and `LobbyView.Row` set it. |
 | Scroll needs a bounded viewport | A `flexGrow: 1` scroll container inside a dialog with no height bound never scrolls: the auto-height panel grows to fit its content, so the list's viewport is the whole list. Give the dialog `maxHeight` + `minHeight: 0` and let it scroll itself (`Overflow.Scroll`) for windows too short for the form, and keep the list's own `minHeight` small enough that the two do not fight. The lobby create dialog's stage list failed exactly this way |
 | Scroll is both axes | `Overflow.Scroll` has no X/Y split in `Styles`, so any direct child wider than the viewport adds a horizontal scrollbar. Put rows and messages in a `width: 100%`, `flexShrink: 0` column inside the scroller; long messages use `Sx.WrappingText` at 100% width. |
-| Off-screen paint | `Component.PaintChildren` skips a child whose border box lies entirely outside the inherited clip, so a scrolled list only pays for its visible rows. Rows still lay out; only painting is skipped. Flow hosts (`Display.Contents`) are never culled by their own box — they have none. |
+| Off-screen paint | `Component.PaintChildren` skips a child whose border box lies entirely outside the inherited clip, so a scrolled list only pays for its visible rows. Rows still lay out; only painting is skipped. Flow hosts (`Display.Contents`) are never culled by their own box — they have none. The test uses the same origin the paint will, so a `IgnoresScrollOffset` popup is not culled by the container's scroll offset. |
+| Popups inside a scroll container | an absolutely positioned child of an `Overflow.Scroll` node is offset by the scroll at paint time and counts towards the scroll extent, so a context menu or dropdown anchored in a scrolling list slides away and adds its own height as scrollable space. Set `Component.IgnoresScrollOffset` on the popup: it then paints at the unscrolled origin and is dropped from `UpdateScrollExtent`. It is still clipped by the container. |
 | Scrollbars overlay content | `RenderScrollbars` draws inside the padding box's right/bottom 6px, over the content. A scroll container holding buttons or fields needs `paddingRight: 8` (and `paddingBottom` for the horizontal bar) or the bar sits on top of them — the stage editor's hierarchy, parts grid, inspector, property panels and dialogs all set it. |
 | Mouse pixels vs styled lengths | `MouseEvent.Position` is in window pixels; `Styles` lengths are multiplied by `G.Scale` at layout. A node placed from a mouse position (menu overlay, rect-selection box, hierarchy context menu) must divide by `G.Scale`, or it lands at `position × scale` and can paint over neighbouring panels. |
 
@@ -883,11 +906,16 @@ Added with the archive/content work; read this before touching content loading, 
   from the repo root. It mounts the actual editor Sx tree with the real Apos/font renderer, sends
   direct UI events (never OS input), renders offscreen, and writes PNGs plus measured node/hover JSON
   under `.git/sx-menu-captures`. The script supports named-target or pixel `click`/`hover`, `text`,
-  `key`, `scroll`, `capture`, `assert-hover`, `assert-visible`, `assert-aligned`, and
-  `assert-vertical-scroll` (the target must have scrollable content); `view` selects
+  `key` (with an optional `"ctrl": true`), `scroll`, `capture`, `assert-hover`, `assert-visible`,
+  `assert-aligned`, and `assert-vertical-scroll` (the target must have scrollable content); a `click`
+  takes `"button": "secondary"` for the right-click paths. `view` selects
   `stage-editor` (default), `model-editor`, `garage`, `stage-select`, `stage-select-local` (the shipped
   stages with their real `name(...)` labels), `stage-select-compact` (the compact selector in a plain
-  dialog), `lobby-create` (the real lobby and its create dialog over the shipped stage list;
+  dialog), `text-input` (a dialog with one `TextInput`, for the editing shortcuts and its right-click
+  menu — the harness installs an in-memory clipboard, since it never runs `WorldGame.Initialize`),
+  `text-area` (a code editor holding more lines than it shows, for the multiline editor's menu and
+  its scroll behaviour),
+  `lobby-create` (the real lobby and its create dialog over the shipped stage list;
   its script also switches LOCAL→ONLINE→pick→LOCAL, and the ONLINE rows are a fixed fixture set
   because the archive search is network work),
   `replay-browser`, `replay-viewer` or `replay-camera`

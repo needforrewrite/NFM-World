@@ -318,11 +318,8 @@ public sealed class SdlWindow : IDisposable
     public bool IsBorderlessEXT
     {
         get => (SDL.SDL_GetWindowFlags(_window) & SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS) != 0;
-        set
-        {
-            if (!SDL.SDL_SetWindowBordered(_window, !value))
-                throw new InvalidOperationException($"SDL_SetWindowBordered failed: {SDL.SDL_GetError()}");
-        }
+        set { if (!SDL.SDL_SetWindowBordered(_window, !value))
+            throw new InvalidOperationException($"SDL_SetWindowBordered failed: {SDL.SDL_GetError()}"); }
     }
 
     public void SetSize(int width, int height)
@@ -534,6 +531,20 @@ public sealed class SdlWindow : IDisposable
 
     /// <summary><c>SDL_GetHint</c> - null when the hint has never been set.</summary>
     public static string? GetHint(string name) => SDL.SDL_GetHint(name);
+
+    /// <summary>
+    /// <c>SDL_GetClipboardText</c>. Wrapped for the same reason as <see cref="SetHint"/>: the UI
+    /// framework is backend-neutral and cannot alias this project's SDL3-CS references.
+    /// </summary>
+    /// <remarks>
+    /// The emscripten video backend implements no clipboard, so SDL falls back to its own
+    /// in-process clipboard there: copy and paste work within the game, but not against the
+    /// browser's system clipboard.
+    /// </remarks>
+    public static string GetClipboardText() => SDL.SDL_GetClipboardText();
+
+    /// <summary><c>SDL_SetClipboardText</c>. See <see cref="GetClipboardText"/>.</summary>
+    public static void SetClipboardText(string text) => SDL.SDL_SetClipboardText(text);
 
     /// <summary>
     /// The window's Win32 <c>HWND</c>, or <see cref="IntPtr.Zero"/> when it has none (a non-Windows

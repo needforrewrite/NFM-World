@@ -1,4 +1,4 @@
-using System.Numerics;
+﻿using System.Numerics;
 using Maxine.Extensions.Mathematics;
 using NFMWorld.ClayDom.Events;
 using NFMWorld.DriverInterface;
@@ -20,6 +20,7 @@ namespace NFMWorld.Reactor;
 public partial class TextArea : View
 {
     private readonly EditableText _text;
+    private readonly TextEditContextMenu _contextMenu;
 
     private string _value = "";
     private int _cursor;
@@ -59,8 +60,16 @@ public partial class TextArea : View
     private const long TypingCoalesceMs = 700;
 
     public Action<string>? TextChanged { get; set; }
+
+    /// <summary>Reads the OS clipboard. Falls back to <see cref="TextInput.DefaultGetClipboardText"/>.</summary>
     public Func<string>? GetClipboardText { get; set; }
+
+    /// <summary>Writes the OS clipboard. Falls back to <see cref="TextInput.DefaultSetClipboardText"/>.</summary>
     public Action<string>? SetClipboardText { get; set; }
+
+    // Shared with TextInput rather than duplicated: the game wires one clipboard at boot.
+    private Func<string>? ResolveGetClipboard => GetClipboardText ?? TextInput.DefaultGetClipboardText;
+    private Action<string>? ResolveSetClipboard => SetClipboardText ?? TextInput.DefaultSetClipboardText;
 
     /// <summary>Raised just before a user edit changes the text. The host can snapshot it.</summary>
     public Action? EditStarted { get; set; }
@@ -133,6 +142,17 @@ public partial class TextArea : View
             TextStyles = _textStyles,
         };
         AddChild(_text);
+
+        _contextMenu = new TextEditContextMenu(
+            hasSelection: () => Selection is not null,
+            hasText: () => _value.Length > 0,
+            canPaste: () => ResolveGetClipboard is not null,
+            cut: CutSelection,
+            copy: CopySelection,
+            paste: PasteClipboard,
+            selectAll: SelectAll
+        );
+        AddChild(_contextMenu);
     }
 
     // ── Text / caret model ─────────────────────────────────────────────
@@ -193,6 +213,50 @@ public partial class TextArea : View
         SetValueFromUser(_value[..range.Start] + _value[range.End..]);
         _cursor = range.Start;
         _selectionAnchor = null;
+    }
+
+    /// <summary>Selects the whole document; also the menu's Select All.</summary>
+    private void SelectAll()
+    {
+        _selectionAnchor = 0;
+        _cursor = _value.Length;
+        _scrollCaretIntoView = true;
+        _lastEditWasTyping = false;
+        ResetBlink();
+    }
+
+    private void CopySelection()
+    {
+        if (Selection is { } copy)
+            ResolveSetClipboard?.Invoke(_value[copy.Start..copy.End]);
+    }
+
+    private void CutSelection()
+    {
+        if (Selection is not { } cut)
+            return;
+
+        ResolveSetClipboard?.Invoke(_value[cut.Start..cut.End]);
+        PushHistory(typing: false);
+        DeleteSelection();
+        _lastEditWasTyping = false;
+    }
+
+    private void PasteClipboard()
+    {
+        if (ResolveGetClipboard?.Invoke() is not { } pasted)
+            return;
+
+        // A multiline editor keeps the line breaks; only CRLF/CR become LF so the
+        // document has one line-ending convention.
+        pasted = pasted.Replace("\r\n", "\n").Replace('\r', '\n');
+        PushHistory(typing: false);
+        DeleteSelection();
+        var pasteAt = Math.Clamp(_cursor, 0, _value.Length);
+        SetValueFromUser(_value[..pasteAt] + pasted + _value[pasteAt..]);
+        _cursor = pasteAt + pasted.Length;
+        _selectionAnchor = null;
+        _lastEditWasTyping = false;
     }
 
     private void PushHistory(bool typing)
@@ -454,6 +518,9 @@ public partial class TextArea : View
 
         switch (@event.KeyCode)
         {
+            case Key.Escape when _contextMenu.IsOpen:
+                CloseContextMenu();
+                break;
             case Key.Left when ctrl:
                 MoveCaret(PreviousWord(_cursor), shift);
                 break;
@@ -553,36 +620,16 @@ public partial class TextArea : View
                 if (UseLocalHistory) Redo();
                 break;
             case Key.A when ctrl:
-                _selectionAnchor = 0;
-                _cursor = _value.Length;
+                SelectAll();
                 break;
             case Key.C when ctrl:
-                if (Selection is { } copy)
-                    SetClipboardText?.Invoke(_value[copy.Start..copy.End]);
+                CopySelection();
                 break;
             case Key.X when ctrl:
-                if (Selection is { } cut)
-                {
-                    SetClipboardText?.Invoke(_value[cut.Start..cut.End]);
-                    PushHistory(typing: false);
-                    DeleteSelection();
-                    _lastEditWasTyping = false;
-                }
-
+                CutSelection();
                 break;
             case Key.V when ctrl:
-                if (GetClipboardText?.Invoke() is { } pasted)
-                {
-                    pasted = pasted.Replace("\r\n", "\n").Replace('\r', '\n');
-                    PushHistory(typing: false);
-                    DeleteSelection();
-                    var pasteAt = Math.Clamp(_cursor, 0, _value.Length);
-                    SetValueFromUser(_value[..pasteAt] + pasted + _value[pasteAt..]);
-                    _cursor = pasteAt + pasted.Length;
-                    _selectionAnchor = null;
-                    _lastEditWasTyping = false;
-                }
-
+                PasteClipboard();
                 break;
         }
     }
@@ -613,8 +660,31 @@ public partial class TextArea : View
 
     protected override void OnMousePressed(MouseEvent @event)
     {
+        if (@event.Button == MouseButton.Secondary)
+        {
+            // The menu is this editor's own; without this the press also reaches a dialog
+            // backdrop that dismisses on press, and the menu closes as it opens.
+            @event.StopPropagation();
+
+            // Keep an existing selection (browsers do), and place the caret only when there is
+            // none, so Cut/Copy act on what the user had and Paste lands where they pointed.
+            if (Selection is null)
+            {
+                var caret = IndexForPoint(LocalTextX(@event.Position), LocalTextY(@event.Position));
+                _cursor = caret;
+                _selectionAnchor = null;
+                _lastEditWasTyping = false;
+                ResetBlink();
+            }
+
+            OpenContextMenu(@event.Position);
+            return;
+        }
+
         if (@event.Button != MouseButton.Primary)
             return;
+
+        CloseContextMenu();
 
         if (TryBeginScrollbarDrag(@event.Position))
             return;
@@ -794,6 +864,11 @@ public partial class TextArea : View
     // The text block starts at this view's content origin and is shifted by the live
     // scroll offset. Reading the Text child's own position would bake in the scroll from
     // the previous paint, so a click right after a wheel event would land on a wrong line.
+    /// <param name="position">Press position, in window pixels.</param>
+    private void OpenContextMenu(Vector2 position) => _contextMenu.ShowAt(this, position);
+
+    private void CloseContextMenu() => _contextMenu.Hide();
+
     private float LocalTextX(Vector2 position) => position.X - (LayoutContentPosition.X - ScrollLeft);
 
     private float LocalTextY(Vector2 position) => position.Y - (LayoutContentPosition.Y - ScrollTop);
@@ -819,6 +894,16 @@ public partial class TextArea : View
         {
             _blinkTimer -= BlinkPeriodMs;
             _caretVisible = !_caretVisible;
+        }
+
+        // The menu follows focus: a press elsewhere closes it, and while it is open its
+        // enabled state tracks edits (a selection, a cleared document).
+        if (_contextMenu.IsOpen)
+        {
+            if (!IsFocused)
+                CloseContextMenu();
+            else
+                _contextMenu.Refresh();
         }
     }
 

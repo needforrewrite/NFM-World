@@ -911,6 +911,11 @@ public partial class WorldGame : IDisposable, IGameHost
         _uiRenderer = new UiRenderer();
         GameSparker.UiRenderer = _uiRenderer;
 
+        // One process-wide clipboard, so no field has to be wired individually. Both heads run
+        // through here, and the emscripten backend's own clipboard is what SDL falls back to.
+        NFMWorld.Reactor.TextInput.DefaultGetClipboardText = SdlWindow.GetClipboardText;
+        NFMWorld.Reactor.TextInput.DefaultSetClipboardText = SdlWindow.SetClipboardText;
+
         _oldKeyState = SdlWindow.GetKeyboardState();
         var (mouseButtons, mouseX, mouseY) = SdlWindow.GetMouseState();
         _oldMouseState = mouseButtons;

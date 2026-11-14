@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Numerics;
 using System.Text.Json;
 using NFMWorld.DriverInterface;
@@ -48,6 +48,13 @@ public partial class WorldGame
         Effects.Initialize(game._device);
         using var ui = new WorldXaml.UI.Yoga.UiRenderer();
         GameSparker.UiRenderer = ui;
+
+        // The harness never runs WorldGame.Initialize, which is where the game wires the
+        // process-wide clipboard, so an in-memory one stands in for captures.
+        var harnessClipboard = "clipboard text";
+        NFMWorld.Reactor.TextInput.DefaultGetClipboardText = () => harnessClipboard;
+        NFMWorld.Reactor.TextInput.DefaultSetClipboardText = value => harnessClipboard = value;
+
         var viewName = config.TryGetProperty("view", out var view) ? view.GetString() : "stage-editor";
         using NFMWorld.Gameplay.BasePhase phase = viewName switch
         {
@@ -58,6 +65,8 @@ public partial class WorldGame
             "stage-select-local" => new FixturePhase(StageSelectLocalFixture),
             "stage-select-compact" => new FixturePhase(StageSelectCompactFixture),
             "lobby-create" => new FixturePhase(LobbyCreateFixture),
+            "text-input" => new FixturePhase(TextInputFixture),
+            "text-area" => new FixturePhase(TextAreaFixture),
             "replay-browser" => new FixturePhase(ReplayBrowserFixture),
             "replay-viewer" => new FixturePhase(ReplayViewerFixture),
             "replay-camera" => new FixturePhase(ReplayCameraFixture),
@@ -157,6 +166,8 @@ public partial class WorldGame
                 node.IsDisplayed,
                 node.ScrollableWidth,
                 node.ScrollableHeight,
+                node.ScrollLeft,
+                node.ScrollTop,
                 ContentWidth = node.LayoutContentSize.X,
                 ContentHeight = node.LayoutContentSize.Y,
                 BorderLeft = node.LayoutBorderLeft,
@@ -187,24 +198,13 @@ public partial class WorldGame
                     NFMWorld.Reactor.Sx.Renderer.Flush();
                     if (step.GetProperty("action").GetString() == "click")
                     {
-                        ui.HandleMousePressed(
-                            (int)point.X,
-                            (int)point.Y,
-                            MouseButton.Primary,
-                            MouseButtons.Primary,
-                            false,
-                            false,
-                            false
-                        );
-                        ui.HandleMouseReleased(
-                            (int)point.X,
-                            (int)point.Y,
-                            MouseButton.Primary,
-                            MouseButtons.None,
-                            false,
-                            false,
-                            false
-                        );
+                        // A step may ask for the secondary button, which is how a context menu opens.
+                        var secondary = step.TryGetProperty("button", out var button)
+                                        && button.GetString() == "secondary";
+                        var pressed = secondary ? MouseButton.Secondary : MouseButton.Primary;
+                        var held = secondary ? MouseButtons.Secondary : MouseButtons.Primary;
+                        ui.HandleMousePressed((int)point.X, (int)point.Y, pressed, held, false, false, false);
+                        ui.HandleMouseReleased((int)point.X, (int)point.Y, pressed, MouseButtons.None, false, false, false);
                     }
 
                     break;
@@ -214,8 +214,12 @@ public partial class WorldGame
                     break;
                 case "key":
                     var key = Enum.Parse<Key>(step.GetProperty("value").GetString()!);
-                    ui.HandleKeyPressed(key, default);
-                    ui.HandleKeyReleased(key, default);
+                    // Modifiers are how the editing shortcuts are reached; without them the
+                    // step can only exercise plain navigation keys.
+                    var ctrl = step.TryGetProperty("ctrl", out var ctrlProp) && ctrlProp.GetBoolean();
+                    var heldKeys = ctrl ? default(Keys) | Key.LControlKey : default(Keys);
+                    ui.HandleKeyPressed(key, heldKeys);
+                    ui.HandleKeyReleased(key, heldKeys);
                     break;
                 case "assert-input-aligned":
                     var field = Find(step.GetProperty("target").GetString()!);
@@ -687,6 +691,117 @@ public partial class WorldGame
                 },
                 OnlineSearch: _ => state.Status.Value =
                     "Could not search the archive: Connection refused (localhost:5288) while requesting assets/search?type=Stage"
+            )
+        );
+    }
+
+    /// <summary>
+    /// A dialog with a text field and its right-click menu, for captures of the editing
+    /// shortcuts and the context menu. The field is near the bottom so the menu's placement
+    /// clamp is exercised by the same fixture.
+    /// </summary>
+    private static Node TextInputFixture()
+    {
+        var text = new SignalsDotnet.Signal<string>("hello world");
+        return Sx.View(
+            style: () => Sx.Styles(
+                width: 100.Percent(),
+                height: 100.Percent(),
+                alignItems: Align.Center,
+                justifyContent: Justify.Center,
+                backgroundColor: Theme.Overlay
+            ),
+            children: Sx.View(
+                name: () => "Text dialog",
+                style: () => Sx.Styles(
+                    width: 420,
+                    flexDirection: FlexDirection.Column,
+                    gapRow: 12,
+                    paddingTop: 18,
+                    paddingBottom: 18,
+                    paddingLeft: 20,
+                    paddingRight: 20,
+                    borderRadius: 10,
+                    borderTop: 1,
+                    borderBottom: 1,
+                    borderLeft: 1,
+                    borderRight: 1,
+                    borderColor: Theme.MenuBorder,
+                    backgroundColor: Theme.MenuPanel
+                ),
+                children:
+                [
+                    Sx.Text(
+                        style: () => Sx.TextStyles(
+                            fontSize: 20,
+                            fontFamily: FontFamily.Adventure,
+                            fontStyle: FontStyle.Bold,
+                            foregroundColor: Theme.MenuBlue
+                        ),
+                        layout: () => Sx.Styles(flexShrink: 0),
+                        text: () => "TEXT FIELD"
+                    ),
+                    Sx.View(
+                        name: () => "Field",
+                        style: () => Sx.Styles(flexShrink: 0),
+                        children: Sx.TextInput(
+                            style: () => Sx.Styles(
+                                width: 100.Percent(),
+                                minHeight: 32,
+                                paddingTop: 7,
+                                paddingBottom: 7,
+                                paddingLeft: 10,
+                                paddingRight: 10,
+                                backgroundColor: new Color(255, 255, 255, 16),
+                                borderTop: 1,
+                                borderBottom: 1,
+                                borderLeft: 1,
+                                borderRight: 1,
+                                borderColor: new Color(128, 170, 255, 90),
+                                borderRadius: 6
+                            ),
+                            text: () => text.Value,
+                            onchange: value => text.Value = value
+                        )
+                    )
+                ]
+            )
+        );
+    }
+
+    /// <summary>
+    /// A code editor with a document longer than its viewport, for the multiline editor's
+    /// right-click menu. The menu must stay put when the document scrolls.
+    /// </summary>
+    private static Node TextAreaFixture()
+    {
+        var source = string.Join(
+            "\n",
+            Enumerable.Range(0, 60).Select(i => $"line {i}: the quick brown fox jumps over the lazy dog")
+        );
+        return Sx.View(
+            style: () => Sx.Styles(
+                width: 100.Percent(),
+                height: 100.Percent(),
+                paddingTop: 16,
+                paddingBottom: 16,
+                paddingLeft: 16,
+                paddingRight: 16,
+                backgroundColor: new Color(12, 18, 30)
+            ),
+            children: Sx.View(
+                name: () => "Code panel",
+                style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexGrow: 1, minHeight: 0),
+                children: Sx.TextArea(
+                    style: () => Sx.Styles(flexGrow: 1, minHeight: 0),
+                    textStyle: () => Sx.TextStyles(
+                        fontFamily: FontFamily.NotoSans,
+                        fontSize: 12,
+                        foregroundColor: new Color(220, 232, 255)
+                    ),
+                    text: () => source,
+                    onchange: _ => { }
+                )
             )
         );
     }

@@ -1,0 +1,43 @@
+{
+  "width": 900,
+  "height": 560,
+  "scale": 1,
+  "output": "../../.git/sx-text-input-captures",
+  "view": "text-input",
+  "steps": [
+    {
+      "action": "capture",
+      "capture": "dialog"
+    },
+    {
+      "action": "click",
+      "target": "Field",
+      "capture": "focused"
+    },
+    {
+      "action": "click",
+      "target": "Field",
+      "button": "secondary",
+      "capture": "menu"
+    },
+    {
+      "action": "click",
+      "target": "Field"
+    },
+    {
+      "action": "key",
+      "value": "A",
+      "ctrl": true
+    },
+    {
+      "action": "click",
+      "target": "Field",
+      "button": "secondary",
+      "capture": "menu-with-selection"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Text dialog"
+    }
+  ]
+}
