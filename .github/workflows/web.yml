@@ -48,7 +48,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '11.0.x'
-          dotnet-quality: 'preview'
 
       # The script takes the Emscripten it builds with from this workload rather than from a
       # system emsdk, so the version matches what the browser head links with.
@@ -85,7 +84,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '11.0.x'
-          dotnet-quality: 'preview'
 
       # Emscripten, the Mono wasm runtime pack and the AOT cross compiler all come from this
       # workload; without it the browser build produces no _framework directory at all.

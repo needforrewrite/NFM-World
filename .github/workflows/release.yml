@@ -74,7 +74,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '11.0.x'
-          dotnet-quality: 'preview'
 
       - name: Test
         run: dotnet test NFMWorld.Library.Test/NFMWorld.Library.Test.csproj -c Debug
@@ -107,7 +106,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '11.0.x'
-          dotnet-quality: 'preview'
 
       - name: Install MGFXC
         run: dotnet tool install -g dotnet-mgfxc
@@ -181,7 +179,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '11.0.x'
-          dotnet-quality: 'preview'
 
       - name: Generate version string
         id: version
@@ -262,7 +259,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '11.0.x'
-          dotnet-quality: 'preview'
 
       - name: Generate version string
         id: version
