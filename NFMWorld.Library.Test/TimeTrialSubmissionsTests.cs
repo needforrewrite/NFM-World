@@ -54,6 +54,82 @@ public class TimeTrialSubmissionsTests
     }
 
     [TestMethod]
+    public void FindRecording_DistinguishesRunsWithTheSameStageAndCar()
+    {
+        var firstBytes = RandomBytes();
+        var secondBytes = RandomBytes();
+        var first = TimeTrialSubmissions.Record(Completion(firstBytes), null, null, "racer", "uploaded");
+        var second = TimeTrialSubmissions.Record(Completion(secondBytes), null, null, "racer", "pending");
+        Assert.IsNotNull(first);
+        Assert.IsNotNull(second);
+
+        PendingSubmission[] submissions = [first, second];
+        Assert.AreSame(second, TimeTrialSubmissions.FindRecording(submissions, secondBytes));
+        Assert.AreSame(first, TimeTrialSubmissions.FindRecording(submissions, firstBytes.ToArray()));
+        Assert.IsNull(TimeTrialSubmissions.FindRecording(submissions, RandomBytes()));
+    }
+
+    [TestMethod]
+    public void DeleteRecording_RemovesExactLocalCopiesAndSidecar_ButKeepsOtherRuns()
+    {
+        var recording = RandomBytes();
+        var different = RandomBytes();
+        var submission = TimeTrialSubmissions.Record(Completion(recording), null, null, "racer");
+        var other = TimeTrialSubmissions.Record(Completion(different), null, null, "racer");
+        Assert.IsNotNull(submission);
+        Assert.IsNotNull(other);
+        var saved = $"data/tts/{Guid.NewGuid():N}.timetrial";
+        using (var stream = TheVFS.VFS.OpenWrite(saved))
+            stream.Write(recording);
+
+        Assert.AreEqual(2, TimeTrialSubmissions.DeleteRecording(saved));
+        Assert.IsFalse(TheVFS.VFS.FileExists(saved));
+        Assert.IsFalse(TheVFS.VFS.FileExists($"{TimeTrialSubmissions.PendingDirectory}/{submission.Digest}.timetrial"));
+        Assert.IsFalse(TheVFS.VFS.FileExists($"{TimeTrialSubmissions.PendingDirectory}/{submission.Digest}.meta"));
+        CollectionAssert.AreEqual(different, TimeTrialSubmissions.ReadRecording(other));
+        Assert.IsTrue(TimeTrialSubmissions.List().Any(s => s.Digest == other.Digest));
+    }
+
+    [TestMethod]
+    public void DeleteWriteFile_RefusesPathsOutsideTheWriteRoot()
+    {
+        Assert.Throws<ArgumentException>(() => TheVFS.VFS.DeleteWriteFile("../outside.timetrial"));
+        Assert.Throws<ArgumentException>(() => TheVFS.VFS.DeleteWriteFile("data/tts/../../../outside.timetrial"));
+        Assert.Throws<InvalidOperationException>(() => TimeTrialSubmissions.DeleteRecording("archive:42"));
+    }
+
+    [TestMethod]
+    public void DeleteWriteFile_PreservesCopiesInReadMounts()
+    {
+        var fs = new NFMWorld.PhysicsFS.VirtualFS();
+        var root = Path.Combine(Root, Guid.NewGuid().ToString("N"));
+        var mountedRoot = Path.Combine(Root, Guid.NewGuid().ToString("N"));
+        var file = "data/tts/run.timetrial";
+        Directory.CreateDirectory(Path.Combine(mountedRoot, "data/tts"));
+        File.WriteAllBytes(Path.Combine(mountedRoot, file), [1, 2, 3]);
+        fs.MountWriteDestination(root);
+        fs.MountDirectory(mountedRoot);
+        using (var stream = fs.OpenWrite(file))
+            stream.Write([4, 5, 6]);
+
+        Assert.IsTrue(fs.DeleteWriteFile(file));
+        Assert.IsFalse(fs.DeleteWriteFile(file));
+        CollectionAssert.AreEqual(new byte[] { 1, 2, 3 }, fs.ReadAllBytes(file));
+    }
+
+    [TestMethod]
+    public void SaveTimestamp_ComesFromTheSavedFile()
+    {
+        var file = $"data/tts/{Guid.NewGuid():N}.timetrial";
+        using (var stream = TheVFS.VFS.OpenWrite(file))
+            stream.Write(RandomBytes());
+        var savedAt = new DateTime(2026, 11, 12, 10, 30, 0, DateTimeKind.Utc);
+        File.SetLastWriteTimeUtc(Path.Combine(Root, file), savedAt);
+
+        Assert.AreEqual(new DateTimeOffset(savedAt), TheVFS.VFS.GetLastWriteTimeUtc(file));
+    }
+
+    [TestMethod]
     public void Recorder_KeepsOneCopyOfIdenticalBytes()
     {
         var recording = RandomBytes();

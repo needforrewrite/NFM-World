@@ -3,6 +3,9 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
+using NFMWorld.Archive.Data;
+using NFMWorldLibrary.Content;
 
 namespace NFMWorld.Archive.Test;
 
@@ -81,6 +84,35 @@ public class TimeTrialEndpointTests
 
         var entries = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.AreEqual(0, entries.GetArrayLength());
+    }
+
+    [TestMethod]
+    public async Task ReplayBrowserClient_ReadsTheArchiveContractIncludingPublicationDate()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = factory.CreateClient();
+        var published = new DateTimeOffset(2026, 11, 12, 10, 30, 0, TimeSpan.Zero);
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+            db.TimeTrials.Add(new TimeTrial
+            {
+                User = new User { Username = "racer", UsernameNormalized = "racer" },
+                StageHash = Hash('a'), CarHash = Hash('b'), StageName = "nfmm/road", CarName = "nfmm/radicalone",
+                StoragePath = "test/replay", TotalTicks = 1234, ReplayVersion = 7, CreatedAt = published
+            });
+            await db.SaveChangesAsync();
+        }
+
+        using var browser = new ArchiveReplayClient(client.BaseAddress!.ToString(), client);
+        var page = await browser.BrowseAsync("nfmm/road", 10, null, CancellationToken.None);
+        var replay = page.Items.Single();
+        Assert.AreEqual("racer", replay.Username);
+        Assert.AreEqual("nfmm/road", replay.StageName);
+        Assert.AreEqual("nfmm/radicalone", replay.CarName);
+        Assert.AreEqual(1234, replay.TotalTicks);
+        Assert.AreEqual(7, replay.ReplayVersion);
+        Assert.AreEqual(published, replay.CreatedAt);
     }
 
     [TestMethod]

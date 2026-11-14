@@ -1,0 +1,18 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../scratch/replay-browser-local-captures",
+  "view": "replay-browser-local",
+  "steps": [
+    { "action": "capture", "capture": "local-recordings" },
+    { "action": "assert-visible", "target": "Replay browser panel" },
+    { "action": "assert-no-horizontal-scroll", "target": "Replay list" },
+    { "action": "click", "target": "Replay search" },
+    { "action": "text", "value": "harness/stage" },
+    { "action": "assert-visible", "target": "Replay row data/tts/harness-valid.timetrial" },
+    { "action": "click", "target": "Replay row data/tts/harness-valid.timetrial" },
+    { "action": "assert-visible", "target": "Replay play" },
+    { "action": "capture", "capture": "valid-recording-after-unreadable" }
+  ]
+}

@@ -146,6 +146,12 @@ public static class TimeTrialSubmissions
         return submissions;
     }
 
+    public static PendingSubmission? FindRecording(IEnumerable<PendingSubmission> submissions, ReadOnlySpan<byte> recording)
+    {
+        var digest = Convert.ToHexStringLower(SHA256.HashData(recording));
+        return submissions.FirstOrDefault(submission => submission.Digest == digest);
+    }
+
     public static byte[]? ReadRecording(PendingSubmission submission)
     {
         var path = $"{PendingDirectory}/{submission.Digest}{RecordingSuffix}";
@@ -154,6 +160,30 @@ public static class TimeTrialSubmissions
 
         var bytes = VFS.ReadAllBytes(path);
         return Convert.ToHexStringLower(SHA256.HashData(bytes)) == submission.Digest ? bytes : null;
+    }
+
+    public static int DeleteRecording(string file)
+    {
+        var files = VFS.EnumerateWriteFiles("data/tts", "*.timetrial", SearchOption.AllDirectories).ToArray();
+        if (!files.Contains(file, StringComparer.Ordinal))
+            throw new InvalidOperationException("Only locally saved recordings can be deleted.");
+
+        string digest;
+        using (var stream = VFS.OpenReadFromWriteRoot(file))
+            digest = Convert.ToHexStringLower(SHA256.HashData(stream));
+
+        var deleted = 0;
+        foreach (var candidate in files)
+        {
+            string candidateDigest;
+            using (var stream = VFS.OpenReadFromWriteRoot(candidate))
+                candidateDigest = Convert.ToHexStringLower(SHA256.HashData(stream));
+            if (candidateDigest == digest && VFS.DeleteWriteFile(candidate))
+                deleted++;
+        }
+
+        VFS.DeleteWriteFile(SidecarPath(digest));
+        return deleted;
     }
 
     private static void WriteSidecar(PendingSubmission submission)

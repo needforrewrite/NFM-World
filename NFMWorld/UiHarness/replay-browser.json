@@ -2,7 +2,7 @@
   "width": 1280,
   "height": 720,
   "scale": 1,
-  "output": "../../.git/sx-replay-captures/browser",
+  "output": "../../scratch/replay-browser-captures",
   "view": "replay-browser",
   "steps": [
     {
@@ -24,12 +24,57 @@
     },
     {
       "action": "hover",
-      "target": "Replay upload",
+      "target": "Replay upload all",
       "capture": "hover-upload"
     },
     {
       "action": "assert-hover",
+      "target": "Replay upload all"
+    },
+    {
+      "action": "click",
+      "target": "Replay row data/tts/b.timetrial",
+      "capture": "selected-local"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Replay play"
+    },
+    {
+      "action": "assert-visible",
       "target": "Replay upload"
+    },
+    {
+      "action": "click",
+      "target": "Replay upload",
+      "capture": "individual-upload"
+    },
+    {
+      "action": "click",
+      "target": "Replay delete",
+      "capture": "delete-confirmation"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Replay delete confirmation"
+    },
+    {
+      "action": "click",
+      "target": "Replay delete cancel",
+      "capture": "delete-cancelled"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Replay row data/tts/b.timetrial"
+    },
+    {
+      "action": "click",
+      "target": "Replay delete"
+    },
+    {
+      "action": "click",
+      "target": "Replay delete confirm",
+      "capture": "delete-confirmed"
     },
     {
       "action": "click",
@@ -43,6 +88,16 @@
     {
       "action": "assert-visible",
       "target": "Replay row archive:101"
+    },
+    {
+      "action": "click",
+      "target": "Replay row archive:101",
+      "capture": "selected-online"
+    },
+    {
+      "action": "click",
+      "target": "Replay play",
+      "capture": "explicit-play"
     },
     {
       "action": "assert-visible",

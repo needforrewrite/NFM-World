@@ -59,6 +59,8 @@ public partial class WorldGame
             "stage-select-compact" => new FixturePhase(StageSelectCompactFixture),
             "lobby-create" => new FixturePhase(LobbyCreateFixture),
             "replay-browser" => new FixturePhase(ReplayBrowserFixture),
+            "replay-browser-local" => ReplayBrowserLocalFixture(),
+            "replay-browser-upload-rejected" => ReplayBrowserUploadFixture(),
             "replay-viewer" => new FixturePhase(ReplayViewerFixture),
             "replay-camera" => new FixturePhase(ReplayCameraFixture),
             _ => throw new InvalidOperationException($"Unknown harness view: {viewName}")
@@ -272,6 +274,12 @@ public partial class WorldGame
                 case "assert-visible":
                     if (!Find(step.GetProperty("target").GetString()!).IsDisplayed)
                         throw new InvalidOperationException($"Expected visible target: {step}");
+                    break;
+                case "assert-text":
+                    var label = Find(step.GetProperty("target").GetString()!);
+                    var actualText = string.Concat(label.VisualChildren.OfType<TextNode>().Select(node => node.Text));
+                    if (!actualText.Contains(step.GetProperty("value").GetString()!, StringComparison.Ordinal))
+                        throw new InvalidOperationException($"Expected text was not shown: {step}; actual: {actualText}");
                     break;
                 case "scroll":
                     var scrollPoint = Point(step);
@@ -691,6 +699,87 @@ public partial class WorldGame
         );
     }
 
+    private static ReplayBrowserPhase ReplayBrowserLocalFixture()
+    {
+        NFMWorldLibrary.Content.ContentCache.MountAt(Path.Combine(VFS.WriteRoot!, "archive-cache"));
+        using (var cached = VFS.OpenWrite("archive-cache/" + new string('a', 64)))
+            cached.Write([1, 2, 3]);
+
+        using (var file = VFS.OpenWrite("data/tts/harness-unreadable.timetrial"))
+        using (var compressed = new System.IO.Compression.DeflateStream(file, System.IO.Compression.CompressionLevel.Fastest))
+            compressed.Write([1]);
+
+        var recording = new NFMWorldLibrary.Files.SavedTimeTrial(
+            "harness/car",
+            "harness/stage",
+            new StageLoader(),
+            new NFMWorldLibrary.Rad.Rad3d([], false, "harness/car")
+        );
+        using (var file = VFS.OpenWrite("data/tts/harness-valid.timetrial"))
+            file.Write(recording.ToBytes());
+
+        return new ReplayBrowserPhase();
+    }
+
+    private static ReplayBrowserPhase ReplayBrowserUploadFixture()
+    {
+        var phase = ReplayBrowserLocalFixture();
+        var recording = VFS.ReadAllBytes("data/tts/harness-valid.timetrial");
+        NFMWorldLibrary.Content.TimeTrialSubmissions.Record(
+            new NFMWorldLibrary.Backend.TimeTrialCompletion(
+                "harness/stage",
+                "harness/car",
+                0,
+                NFMWorldLibrary.Files.SavedTimeTrial.CURRENT_VERSION,
+                recording
+            ),
+            new string('a', 64),
+            new string('b', 64),
+            "harness"
+        );
+
+        var http = new HttpClient(new ReplayUploadHandler());
+        const System.Reflection.BindingFlags fields = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags
+            .NonPublic;
+        var account = new NFMWorld.Accounts.AccountManager();
+        typeof(NFMWorld.Accounts.AccountManager).GetField("_http", fields)!.SetValue(account, http);
+        typeof(NFMWorld.Accounts.AccountManager).GetProperty("ActiveAccount")!
+            .SetValue(account, new NFMWorld.Accounts.Account("harness-token", "harness"));
+        GameSparker.AccountManager = account;
+
+        var content = (Lazy<NFMWorldLibrary.Content.ArchiveContentClient>)typeof(NFMWorld.Accounts.TimeTrialUploader)
+            .GetField("Content", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!
+            .GetValue(null)!;
+        typeof(NFMWorldLibrary.Content.ArchiveContentClient).GetField("_http", fields)!.SetValue(content.Value, http);
+        return phase;
+    }
+
+    private sealed class ReplayUploadHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (request.RequestUri!.AbsolutePath.StartsWith("/assets/meta/", StringComparison.Ordinal))
+                return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(new
+                    {
+                        id = 1, name = "harness", type = "Stage", contentHash = request.RequestUri.Segments[^1],
+                        sizeBytes = 3, eligible = true
+                    }), System.Text.Encoding.UTF8, "application/json")
+                });
+            if (request.RequestUri.AbsolutePath == "/tt/upload")
+                return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest)
+                {
+                    Content = new StringContent(
+                        "{\"error\":\"Replay validation refused (harness).\"}",
+                        System.Text.Encoding.UTF8,
+                        "application/json"
+                    )
+                });
+            throw new InvalidOperationException("Unexpected harness request: " + request.RequestUri.AbsolutePath);
+        }
+    }
+
     private static Node ReplayBrowserFixture()
     {
         var state = new ReplayBrowserState();
@@ -778,16 +867,22 @@ public partial class WorldGame
             ))
         ).ToArray();
 
+        local = local.Select((entry, index) => entry with
+        {
+            SavedAt = new DateTimeOffset(2026, 11, 12, 10, 30, 0, TimeSpan.Zero).AddHours(-index)
+        }).ToArray();
         state.Entries.Value = local;
 
         return ReplayBrowserView.Build(
             state,
             new ReplayBrowserView.Actions(
-                Open: _ => { },
-                Upload: () => state.Status.Value = "Uploading 2 recordings...",
+                Open: id => state.Status.Value = "Playing " + id,
+                Upload: id => state.Status.Value = "Uploading " + id,
+                UploadAll: () => state.Status.Value = "Uploading 2 recordings...",
                 SourceSelected: isOnline =>
                 {
                     state.Online.Value = isOnline;
+                    state.SelectedId.Value = null;
                     state.Entries.Value = isOnline ? online : local;
                     state.HasMore.Value = isOnline;
                     state.Status.Value = isOnline ? $"{online.Length} published replay(s). Pick one to watch it." : "";
@@ -816,7 +911,14 @@ public partial class WorldGame
                         ? "No public replays matched."
                         : $"{state.Entries.Value.Count} published replay(s). Pick one to watch it.";
                 },
-                Back: () => { }
+                Back: () => { },
+                Delete: id =>
+                {
+                    local = local.Where(entry => entry.Id != id).ToArray();
+                    state.Entries.Value = local;
+                    state.SelectedId.Value = null;
+                    state.Status.Value = "Replay deleted from this device.";
+                }
             )
         );
     }
