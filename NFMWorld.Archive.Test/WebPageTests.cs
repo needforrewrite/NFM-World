@@ -1,5 +1,7 @@
 using System.Net;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.DependencyInjection;
+using NFMWorld.Archive.Data;
 
 namespace NFMWorld.Archive.Test;
 
@@ -208,6 +210,101 @@ public class WebPageTests
             browse.StatusCode,
             await browse.Content.ReadAsStringAsync()
         );
+    }
+
+    /// <summary>
+    /// After browsing, an upload opens its own page rather than downloading at once, so the
+    /// description, creator and metadata are readable before anything is fetched.
+    /// </summary>
+    [TestMethod]
+    public async Task AssetPage_ShowsMetadataAndLinksToTheDownload()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = Browser(factory);
+
+        var hash = new string('a', 64);
+        int id, otherId;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+            var owner = new User { Username = "artist", UsernameNormalized = "artist" };
+            var asset = new Asset
+            {
+                Owner = owner,
+                Type = AssetType.Stage,
+                Name = "Prolific Dryland",
+                Description = "A long downhill\nwith a shortcut.",
+                ContentHash = hash,
+                StoragePath = "aa/" + hash,
+                SizeBytes = 54 * 1024,
+                IsPublic = true,
+                IsValidated = true,
+                DownloadCount = 3
+            };
+            var other = new Asset
+            {
+                Owner = owner,
+                Type = AssetType.Car,
+                Name = "Other upload",
+                ContentHash = new string('b', 64),
+                StoragePath = "bb/" + new string('b', 64),
+                SizeBytes = 1024,
+                IsPublic = true,
+                IsValidated = true
+            };
+            db.Assets.AddRange(asset, other);
+            await db.SaveChangesAsync();
+            id = asset.Id;
+            otherId = other.Id;
+        }
+
+        var response = await client.GetAsync($"/asset/{id}");
+        var html = await response.Content.ReadAsStringAsync();
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, html);
+
+        StringAssert.Contains(html, "Prolific Dryland");
+        StringAssert.Contains(html, "A long downhill");
+        StringAssert.Contains(html, "artist");
+        StringAssert.Contains(html, "54 KB");
+        StringAssert.Contains(html, "<dd>3</dd>");
+        StringAssert.Contains(html, $"/assets/{hash}");
+        StringAssert.Contains(html, $"/asset/{otherId}");
+
+        var browse = await client.GetStringAsync("/browse");
+        StringAssert.Contains(browse, $"/asset/{id}");
+    }
+
+    /// <summary>A page is only rendered for a row the download endpoint would also serve.</summary>
+    [TestMethod]
+    public async Task AssetPage_IsNotFoundForAHiddenOrMissingRow()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = Browser(factory);
+
+        int privateId, takedownId;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+            var owner = new User { Username = "artist", UsernameNormalized = "artist" };
+            var hidden = new Asset
+            {
+                Owner = owner, Type = AssetType.Stage, Name = "Private", ContentHash = new string('c', 64),
+                StoragePath = "cc/" + new string('c', 64), IsPublic = false
+            };
+            var takedown = new Asset
+            {
+                Owner = owner, Type = AssetType.Stage, Name = "Removed", ContentHash = new string('d', 64),
+                StoragePath = "dd/" + new string('d', 64), IsPublic = true, IsTakedown = true
+            };
+            db.Assets.AddRange(hidden, takedown);
+            await db.SaveChangesAsync();
+            privateId = hidden.Id;
+            takedownId = takedown.Id;
+        }
+
+        Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync($"/asset/{privateId}")).StatusCode);
+        Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync($"/asset/{takedownId}")).StatusCode);
+        Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync("/asset/999999")).StatusCode);
     }
 
     /// <summary>

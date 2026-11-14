@@ -486,6 +486,11 @@ reference it) but **no NFMWorld code uses it** — treat any MemoryPack referenc
 In-tree replacement for the Rust `nfmw-archive`. ASP.NET Core minimal APIs plus Razor Pages, EF Core on SQLite,
 uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment configuration and the backup drill.
 
+- **Asset pages.** `Pages/AssetDetail.cshtml` is the human-readable page for one upload at `/asset/{id}`
+  (name, kind, description, creator, upload date, size, downloads, SHA-256, download button, and the creator's other
+  public uploads). `/browse` and the account page link there; `/assets/{hash}` stays the download endpoint the game
+  fetches, so the page renders only rows that endpoint would serve (`IsPublic && !IsTakedown`, otherwise 404). No
+  schema change: it reads the existing `Assets` row.
 - **Website styling.** Razor pages use self-hosted Blades CSS 3.1.1 (`wwwroot/lib/blades/`, MIT license included).
   Keep local layout tweaks in `wwwroot/css/archive.css`; use Blades semantic HTML, `.container`, `.grid`, and
   `.overflow-auto` rather than rebuilding its controls. No npm or frontend build step is needed.
@@ -540,9 +545,11 @@ palette). One lobby; whether a race is rated is chosen per race, not by a menu p
 
 - **Endpoint is a build property**, not a setting — `LobbyEndpoint`/`LobbyPort`/`LobbyInsecure` in
   `NFMWorld.Game.csproj`, emitted as `AssemblyMetadata` and read by `LobbyEndpoint.cs`. Debug defaults to
-  `localhost:7001` over `ws` (the release lobby refuses a debug client); Release is `lobby.nfmw.net:443` over `wss`,
-  because the client presents its session token on this socket. `connect <host> [port]` reaches any other lobby, and
-  it always uses plain `ws`.
+  `lobby-dev.nfmw.net:443` (the release lobby refuses a debug client); Release is `lobby.nfmw.net:443`. Both are
+  `wss`, because the client presents its session token on this socket; `LobbyInsecure` is only true when the
+  configured host is loopback, and every deployed lobby therefore sits behind a TLS terminator that answers `ws` on
+  443 with `400`. `connect <host> [port] [ws|wss]` reaches any other lobby and picks the scheme the same way:
+  plain `ws` for a loopback host, `wss` otherwise unless the third argument says which.
 - **The port is the lobby's HTTP/WebSocket listener** (`LOBBY_HTTP_ENDPOINT`, default 7001), not the game master's
   ENet port. A public lobby must sit behind a TLS terminator that proxies `wss` to it.
 - **One transport per phase, and the phase owns it.** `LobbyConnection.TryOpen` is the only entry point (menu item and

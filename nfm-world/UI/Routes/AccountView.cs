@@ -78,8 +78,15 @@ public static class AccountView
 
     private static Node Card(Actions actions, Func<bool> signedIn, Func<string> username)
     {
-        return Sx.View(
-            style: () => Sx.Styles(
+        var navigation = new KeyboardNavigation();
+        KeyboardScope? root = null;
+
+        bool HandleKey(Key key) => root is not null && navigation.HandleKey(root, key);
+
+        root = new KeyboardScope(navigation, HandleKey)
+        {
+            Name = "Account dialog",
+            Styles = Sx.Styles(
                 position: Position.Absolute,
                 left: "50%",
                 top: "50%",
@@ -100,54 +107,68 @@ public static class AccountView
                 borderRight: 1,
                 borderColor: new Color(128, 170, 255, 195),
                 borderRadius: 10
-            ),
-            children:
-            [
-                Sx.Text(
-                    style: () => Sx.TextStyles(
-                        fontSize: 20,
-                        fontFamily: FontFamily.Adventure,
-                        fontStyle: FontStyle.Bold,
-                        foregroundColor: MenuBlue
-                    ),
-                    text: () => signedIn() ? "ACCOUNT" : "SIGN IN"
-                ),
+            )
+        };
 
-                // Signed in: show who it is and offer sign out.
-                Sx.Show(
-                    () => signedIn(),
-                    () => Sx.View(
-                        style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 10),
-                        children:
-                        [
-                            Sx.Text(
-                                style: () => Sx.TextStyles(fontSize: 14, foregroundColor: MenuBlue),
-                                text: () => username()
-                            ),
-                            ButtonRow("SIGN OUT", actions.SignOut, primary: false),
-                            ButtonRow("CLOSE", actions.Close, primary: true)
-                        ]
-                    )
+        root.AddChild(
+            Sx.Text(
+                style: () => Sx.TextStyles(
+                    fontSize: 20,
+                    fontFamily: FontFamily.Adventure,
+                    fontStyle: FontStyle.Bold,
+                    foregroundColor: MenuBlue
                 ),
+                text: () => signedIn() ? "ACCOUNT" : "SIGN IN"
+            )
+        );
 
-                Sx.Show(
-                    () => !signedIn(),
-                    () => Sx.View(
-                        style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 10),
-                        children:
-                        [
-                            Field("USERNAME", Username, password: false),
-                            Field("PASSWORD", Password, password: true),
-                            // Word-wrap: an archive error is a full sentence, and without it the
-                            // line ran out of the card's width.
-                            Sx.Text(
-                                style: () => Sx.WrappingText(
-                                    fontSize: 12,
-                                    foregroundColor: Status.Value.StartsWith("!") ? ErrorRed : MenuBlue
-                                ),
-                                layout: () => Sx.Styles(width: 100.Percent()),
-                                text: () => Status.Value.TrimStart('!')
+        // Signed in: show who it is and offer sign out.
+        root.AddChild(
+            Sx.Show(
+                () => signedIn(),
+                () => Sx.View(
+                    style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 10),
+                    children:
+                    [
+                        Sx.Text(
+                            style: () => Sx.TextStyles(fontSize: 14, foregroundColor: MenuBlue),
+                            text: () => username()
+                        ),
+                        KeyboardNavigation.Row(
+                            Sx.View(
+                                style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10),
+                                children:
+                                [
+                                    ButtonRow("SIGN OUT", actions.SignOut, primary: false, name: "Account sign out"),
+                                    ButtonRow("CLOSE", actions.Close, primary: true, name: "Account close")
+                                ]
+                            )
+                        )
+                    ]
+                )
+            )
+        );
+
+        root.AddChild(
+            Sx.Show(
+                () => !signedIn(),
+                () => Sx.View(
+                    style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 10),
+                    children:
+                    [
+                        Field("USERNAME", Username, password: false, () => Submit(actions)),
+                        Field("PASSWORD", Password, password: true, () => Submit(actions)),
+                        // Word-wrap: an archive error is a full sentence, and without it the
+                        // line ran out of the card's width.
+                        Sx.Text(
+                            style: () => Sx.WrappingText(
+                                fontSize: 12,
+                                foregroundColor: Status.Value.StartsWith("!") ? ErrorRed : MenuBlue
                             ),
+                            layout: () => Sx.Styles(width: 100.Percent()),
+                            text: () => Status.Value.TrimStart('!')
+                        ),
+                        KeyboardNavigation.Row(
                             Sx.View(
                                 style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10),
                                 children:
@@ -159,7 +180,8 @@ public static class AccountView
                                             ButtonRow(
                                                 () => Busy.Value ? "..." : "SIGN IN",
                                                 () => Submit(actions),
-                                                primary: true
+                                                primary: true,
+                                                name: "Account sign in"
                                             )
                                         ]
                                     ),
@@ -169,21 +191,24 @@ public static class AccountView
                                         [
                                             ButtonRow(
                                                 "REGISTER IN BROWSER",
-                                                actions.Register
+                                                actions.Register,
+                                                name: "Account register"
                                             )
                                         ]
                                     ),
                                     Sx.View(
                                         style: () => Sx.Styles(flexGrow: 1),
-                                        children: [ButtonRow("CANCEL", actions.Close)]
+                                        children: [ButtonRow("CANCEL", actions.Close, name: "Account cancel")]
                                     )
                                 ]
                             )
-                        ]
-                    )
+                        )
+                    ]
                 )
-            ]
+            )
         );
+
+        return root;
     }
 
     private static void Submit(Actions actions)
@@ -204,73 +229,139 @@ public static class AccountView
     /// <summary>Room for one line of the field's own font plus its padding.</summary>
     private const float FieldHeight = 34;
 
-    private static Node Field(string label, Signal<string> value, bool password)
+    private static Node Field(string label, Signal<string> value, bool password, Action submit)
     {
-        return Sx.View(
-            style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 4),
-            children:
-            [
-                Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: MenuBlue), text: () => label),
-                Sx.TextInput(
-                    style: () => Sx.Styles(
-                        width: 100.Percent(),
-                        // The inner text collapses to ~0 high when the field is empty, so the
-                        // input's own size has to come from minHeight, not its content.
-                        minHeight: FieldHeight,
-                        paddingTop: 8,
-                        paddingBottom: 8,
-                        paddingLeft: 10,
-                        paddingRight: 10,
-                        backgroundColor: new Color(255, 255, 255, 16),
-                        borderTop: 1,
-                        borderBottom: 1,
-                        borderLeft: 1,
-                        borderRight: 1,
-                        borderColor: new Color(128, 170, 255, 90),
-                        borderRadius: 6
-                    ),
-                    text: () => value.Value,
-                    onchange: v => value.Value = v,
-                    maskCharacter: password ? '*' : null,
-                    // Enter submits, so the form behaves like a form.
-                    onsubmit: _ => value.Value = value.Value
-                )
-            ]
+        var focused = new Signal<bool>(false);
+
+        var input = Sx.TextInput(
+            style: () => Sx.Styles(
+                width: 100.Percent(),
+                // The inner text collapses to ~0 high when the field is empty, so the
+                // input's own size has to come from minHeight, not its content.
+                minHeight: FieldHeight,
+                paddingTop: 8,
+                paddingBottom: 8,
+                paddingLeft: 10,
+                paddingRight: 10,
+                backgroundColor: new Color(255, 255, 255, 16),
+                borderTop: 1,
+                borderBottom: 1,
+                borderLeft: 1,
+                borderRight: 1,
+                borderColor: focused.Value ? new Color(205, 227, 255) : new Color(128, 170, 255, 90),
+                borderRadius: 6
+            ),
+            text: () => value.Value,
+            onchange: v => value.Value = v,
+            maskCharacter: password ? '*' : null,
+            // Enter submits, so the form behaves like a form.
+            onsubmit: _ => submit()
+        );
+        // Arrows belong to the caret; the row's up/down still reaches the other controls.
+        KeyboardNavigation.Bind(input, _ => false, isFocused => focused.Value = isFocused);
+
+        return KeyboardNavigation.Row(
+            Sx.View(
+                style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 4),
+                children:
+                [
+                    Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: MenuBlue), text: () => label),
+                    input
+                ]
+            )
         );
     }
 
-    private static Node ButtonRow(Func<string> label, Action onPress, bool primary = false)
+    private static Node ButtonRow(Func<string> label, Action onPress, bool primary = false, string? name = null)
     {
-        return Sx.View(
+        var hovered = new Signal<bool>(false);
+        var focused = new Signal<bool>(false);
+        var lit = () => hovered.Value || focused.Value;
+
+        var button = Sx.View(
+            name: () => name,
             style: () => Sx.Styles(
                 paddingTop: 8,
                 paddingBottom: 8,
                 paddingLeft: 12,
                 paddingRight: 12,
                 alignItems: Align.Center,
-                backgroundColor: primary ? new Color(50, 90, 160, 220) : new Color(22, 42, 80, 160),
+                backgroundColor: primary
+                    ? lit() ? new Color(70, 115, 190, 230) : new Color(50, 90, 160, 220)
+                    : lit() ? new Color(55, 90, 150, 190) : new Color(22, 42, 80, 160),
                 borderTop: 1,
                 borderBottom: 1,
                 borderLeft: 1,
                 borderRight: 1,
-                borderColor: new Color(128, 170, 255, 170),
+                borderColor: lit() ? new Color(205, 227, 255) : new Color(128, 170, 255, 170),
                 borderRadius: 6
             ),
-            onmousedown: _ => onPress(),
+            onmouseenter: _ => hovered.Value = true,
+            onmouseleave: _ => hovered.Value = false,
+            onmousedown: e =>
+            {
+                e.StopPropagation();
+                onPress();
+            },
             children:
             [
                 Sx.Text(
                     style: () => Sx.TextStyles(
                         fontSize: 13,
                         fontStyle: FontStyle.Bold,
-                        foregroundColor: MenuBlue
+                        foregroundColor: lit() ? new Color(205, 227, 255) : MenuBlue
                     ),
                     text: label
                 )
             ]
         );
+
+        return KeyboardNavigation.Bind(
+            button,
+            key =>
+            {
+                if (key is not (Key.Enter or Key.Space)) return false;
+                onPress();
+                return true;
+            },
+            isFocused => focused.Value = isFocused
+        );
     }
 
-    private static Node ButtonRow(string label, Action onPress, bool primary = false)
-        => ButtonRow(() => label, onPress, primary);
+    private static Node ButtonRow(string label, Action onPress, bool primary = false, string? name = null)
+        => ButtonRow(() => label, onPress, primary, name);
+
+    /// <summary>The dialog's keyboard owner: focus moves inside the card, not the menu behind it.</summary>
+    private sealed class KeyboardScope(KeyboardNavigation navigation, Func<Key, bool> handleKey) : View
+    {
+        public bool HandleKey(Key key) => handleKey(key);
+
+        protected override bool OnPostLayout()
+        {
+            var changed = base.OnPostLayout();
+            navigation.UpdateFocus(this);
+            return changed;
+        }
+    }
+
+    /// <summary>Focus movement and button activation for the open dialog; false lets a key travel on.</summary>
+    public static bool HandleKeyPressed(Node? node, Key key)
+    {
+        if (node is null || node is Component { IsDisplayed: false }) return false;
+        if (node is KeyboardScope scope) return scope.HandleKey(key);
+        foreach (var child in node.VisualChildren)
+            if (HandleKeyPressed(child, key))
+                return true;
+        return false;
+    }
+
+    public static bool HandleKeyRepeated(Node? node, Key key)
+    {
+        if (node is null || node is Component { IsDisplayed: false }) return false;
+        if (node is KeyboardScope scope) return scope.HandleKey(key);
+        foreach (var child in node.VisualChildren)
+            if (HandleKeyRepeated(child, key))
+                return true;
+        return false;
+    }
 }

@@ -49,7 +49,7 @@ else
             <li>
                 @if (asset.IsPublic && !asset.IsTakedown)
                 {
-                    <a href="/assets/@asset.ContentHash">@asset.Name</a>
+                    <a href="/asset/@asset.Id">@asset.Name</a>
                 }
                 else
                 {

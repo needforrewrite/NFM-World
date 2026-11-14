@@ -13,7 +13,7 @@ public sealed record CameraPreset(string Name, float Fov, int FollowY, int Follo
     public const int MinFollowZ = -250;
     public const int MaxFollowZ = 50;
 
-    public static CameraPreset NFMW { get; } = new("World", 80, -98, -250, true);
+    public static CameraPreset NFMW { get; } = new("World", 80, -65, -250, true);
     public static CameraPreset Classic { get; } = new("Classic", 58.715516388168026651329f, 0, 0, false);
 
     public static float ClampFov(float value) => float.IsFinite(value) ? Math.Clamp(value, MinFov, MaxFov) : NFMW.Fov;

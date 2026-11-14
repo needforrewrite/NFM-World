@@ -4,13 +4,22 @@
 #   2. cp .env.example .env, fill it in
 #   3. docker compose up --build
 #
-#   Client (debug build)  ws://localhost:7001        lobby, from the menu or `connect localhost 7001`
+#   Client (debug build)  wss://lobby-dev.nfmw.net   lobby, from the menu or `connect <host>`
+#   Client (local lobby)  ws://localhost:7001        `connect localhost 7001`
 #   Players                udp 7002                  race traffic, straight to the game master
-#   Website / API          http://localhost:8080     archive
+#   Website / API          http://localhost:8069     archive
 #   Game-master API        tcp 7003                  lobby -> GM only, not published
 #
-# Only 7001 and 7002 should ever be exposed to the internet; the archive on 8080 is a web
-# app and needs a TLS terminator in front before it is public.
+# Host ports are variables so a second stack can run beside this one without colliding. The
+# dev stack on the same machine uses its own project name and ports:
+#
+#   COMPOSE_PROJECT_NAME=nfmwdev ARCHIVE_HTTP_PORT=8079 LOBBY_HTTP_PORT=7013 GM_GAME_PORT=7012 \
+#       docker compose up -d --build
+#
+# Only the lobby and the game master's UDP port should ever be exposed to the internet; the
+# archive needs a TLS terminator in front before it is public. The tunnel for
+# lobby-dev.nfmw.net must target the dev stack's LOBBY_HTTP_PORT (7013), not the container's
+# own 7001 - a tunnel pointed at a port nothing publishes answers 502.
 #
 # The lobby reaches the game master as `game-master` on the compose network. Players are told
 # GM_PUBLIC_HOST instead - the name from which the lobby resolves the address put on the wire.
@@ -38,7 +47,7 @@ services:
       TURNSTILE_SECRET: ${TURNSTILE_SECRET:?set TURNSTILE_SECRET in .env}
       TURNSTILE_HOSTNAMES: ${TURNSTILE_HOSTNAMES:?set exact archive hostnames in .env}
     ports:
-      - "8069:8080"
+      - "${ARCHIVE_HTTP_PORT:-8069}:8080"
     volumes:
       # SQLite database and uploaded files. Losing this loses every account and rating.
       - archive-data:/data
@@ -88,7 +97,7 @@ services:
       ARCHIVE_URL: "http://archive:8080/"
       ARCHIVE_SECRET_KEY: ${ARCHIVE_SECRET:?set ARCHIVE_SECRET in .env}
     ports:
-      - "7001:7001"
+      - "${LOBBY_HTTP_PORT:-7001}:7001"
     # No depends_on: the lobby's game-master registry retries resolution on a timer, and
     # GameMasterRegistry throws if it finds nothing at startup - so making the lobby wait
     # would deadlock the stack. Bring it up last, or let `restart: unless-stopped` retry it

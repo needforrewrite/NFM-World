@@ -10,7 +10,7 @@ public class CameraPresetTests
     {
         var camera = CameraPresetConfig.ReadCamera("// New configuration\n\n");
         Assert.AreEqual(80f, camera.Fov);
-        Assert.AreEqual(-98, camera.FollowY);
+        Assert.AreEqual(-65, camera.FollowY);
         Assert.AreEqual(-250, camera.FollowZ);
         Assert.IsTrue(camera.SmoothFov);
     }
@@ -81,7 +81,9 @@ public class CameraPresetTests
     public void BuiltInNamesAndLineBreaksCannotBeUsedForCustomPresets()
     {
         foreach (var name in new[]
-                     { CameraPreset.NFMW.Name, "wOrLd", "classic", " ", "Name\nAnother setting", new string('x', 41) })
+        {
+            CameraPreset.NFMW.Name, "wOrLd", "classic", " ", "Name\nAnother setting", new string('x', 41)
+        })
             Assert.ThrowsExactly<ArgumentException>(() => CameraPreset.ValidateCustomName(name));
     }
 

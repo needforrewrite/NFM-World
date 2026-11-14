@@ -1,0 +1,12 @@
+{
+  "width": 1568,
+  "height": 882,
+  "scale": 1,
+  "output": "../../.git/sx-menu-captures/signed-in",
+  "view": "main-menu",
+  "signedIn": true,
+  "steps": [
+    { "action": "capture", "capture": "menu" },
+    { "action": "assert-text", "target": "Main menu account label", "value": "twisted_magic" }
+  ]
+}

@@ -1,3 +1,4 @@
+using System.Net;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Multiplayer;
 
@@ -10,18 +11,16 @@ namespace NFMWorld.Gameplay;
 public static class LobbyConnection
 {
     /// <summary>
-    /// Joins the build's configured lobby. <c>connect</c> uses the other overload to reach a
-    /// different one.
+    /// Joins the build's configured lobby. <c>connect</c> calls the overload with the host and
+    /// scheme to reach a different one.
     /// </summary>
     public static bool TryOpen(out string error)
         => TryOpen(LobbyEndpoint.Host, LobbyEndpoint.Port, LobbyEndpoint.Insecure, out error);
 
-    /// <summary>
-    /// Joins a lobby over plain <c>ws://</c>. The session token travels on this connection, so
-    /// this is for a lobby on this machine or a trusted network.
-    /// </summary>
-    public static bool TryOpen(string host, ushort port, out string error)
-        => TryOpen(host, port, insecure: true, out error);
+    /// <summary>Loopback is the only host assumed to speak plain <c>ws://</c>.</summary>
+    public static bool IsLocal(string host)
+        => host.Equals("localhost", StringComparison.OrdinalIgnoreCase)
+           || IPAddress.TryParse(host.Trim('[', ']'), out var address) && IPAddress.IsLoopback(address);
 
     public static bool TryOpen(string host, ushort port, bool insecure, out string error)
     {
