@@ -848,6 +848,9 @@ Added with the archive/content work; read this before touching content loading, 
 - **Stock content** — `StockCatalog` builds deterministic packages from an explicit shipped root with
   fixed metadata (`UnixEpoch`, no description). `StockSeeder` inserts them at archive startup when
   `Archive:StockContentPath` is set. A mod shadowing a stock name does not change the catalog hash.
+  The Archive image runs `validator stock-export /stock` during its build to resolve shipped text
+  stages with the validator's piece set, then seeds from `/stock` automatically. Players do not
+  publish built-in stages or cars to submit a replay.
 - **Stage browsing** — `StageSelectView` has LOCAL/ONLINE sources. Local options come from
   `MenuPreferences.GetStages`, labelled by `MenuPreferences.GetStageNames`, which reads each stage's
   `name(...)` line without parsing the stage (packed stages keep their file name). The content
@@ -896,6 +899,12 @@ Added with the archive/content work; read this before touching content loading, 
   replay (public, keyset-paged by id like `/assets/search`, optional `query` over stage, car and
   driver); `ArchiveReplayClient` reads it and fetches `/tt/replay/{id}`. `GET /tt/replay/{id}` and
   the browse list are public because they carry only a username, a stage/car name and a time.
+- **Replay persistence** — Time Trial transfers the finished `SavedTimeTrial` to the host and stops
+  recording into it. `TimeTrialUploader` serializes it once on `SerialWorkQueue`, atomically saves
+  the best run and queue files, then uploads independently of that local queue. Capture the account
+  before dispatching; workers must not read UI signals or use a later login's token. Browser scans
+  run in the background and apply results on `GameThreadContext`. Desktop shutdown drains local
+  writes only; an unavailable archive must not delay the next save or shutdown.
 - **Replay viewer** — `ReplayBrowserPhase` reads bounded recordings and lists published replays
   from the archive (LOCAL/ONLINE tabs, paged, a manual UPLOAD for recordings still owed);
   `ReplayViewerPhase` applies recorded `CarFrame`s directly (no physics, gamemode, save or upload),

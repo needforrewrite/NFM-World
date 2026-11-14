@@ -7,8 +7,10 @@
   "steps": [
     { "action": "click", "target": "Replay search" },
     { "action": "text", "value": "harness/stage" },
+    { "action": "wait-visible", "target": "Replay row data/tts/harness-valid.timetrial" },
     { "action": "click", "target": "Replay row data/tts/harness-valid.timetrial" },
     { "action": "click", "target": "Replay upload" },
+    { "action": "wait-text", "target": "Replay status", "value": "Replay validation refused (harness)." },
     { "action": "assert-text", "target": "Replay status", "value": "Replay validation refused (harness)." },
     { "action": "capture", "capture": "upload-rejected" }
   ]

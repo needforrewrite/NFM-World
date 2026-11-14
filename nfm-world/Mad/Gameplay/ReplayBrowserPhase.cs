@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using NFMWorld.Accounts;
 using NFMWorld.Reactor;
 using NFMWorld.UI.Routes;
@@ -37,7 +38,7 @@ public sealed class ReplayBrowserPhase : BasePhase
 
     public ReplayBrowserPhase()
     {
-        RefreshLocal();
+        _ = RefreshLocalAsync(_onlineGeneration);
     }
 
     public override Node? BuildUi() => ReplayBrowserView.Build(
@@ -76,7 +77,7 @@ public sealed class ReplayBrowserPhase : BasePhase
             return;
         }
 
-        RefreshLocal();
+        _ = RefreshLocalAsync(_onlineGeneration);
     }
 
     /// <summary>Local rows are filtered as you type; only the archive needs to be asked.</summary>
@@ -150,17 +151,52 @@ public sealed class ReplayBrowserPhase : BasePhase
             Deletable: false
         );
 
-    private void RefreshLocal()
+    private async Task<bool> RefreshLocalAsync(int generation)
+    {
+        _state.Busy.Value = true;
+        _state.Status.Value = "Reading recordings...";
+        try
+        {
+            var result = await Task.Run(ReadLocal);
+            if (_disposed || generation != _onlineGeneration)
+                return false;
+            _localEntries = result.Entries;
+            ApplyLocalFilter();
+            _state.HasMore.Value = false;
+            _state.Status.Value = result.Malformed == 0 ? ""
+                : $"{result.Malformed} recording(s) could not be read and were skipped.";
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or TightPackSerializationException)
+        {
+            if (!_disposed && generation == _onlineGeneration)
+                _state.Status.Value = $"Could not read the recordings: {ex.Message}";
+            return false;
+        }
+        finally
+        {
+            if (!_disposed && generation == _onlineGeneration)
+                _state.Busy.Value = false;
+        }
+    }
+
+    private static (IReadOnlyList<ReplayBrowserEntry> Entries, int Malformed) ReadLocal()
     {
         var pending = TimeTrialSubmissions.List();
         var entries = new List<ReplayBrowserEntry>();
         var malformed = 0;
+        var seen = new HashSet<string>(StringComparer.Ordinal);
         var writable = VFS.EnumerateWriteFiles("data/tts", "*.timetrial", SearchOption.AllDirectories)
             .ToHashSet(StringComparer.Ordinal);
 
         if (VFS.DirectoryExists("data/tts"))
         {
             foreach (var file in VFS.EnumerateFiles("data/tts", "*.timetrial", SearchOption.AllDirectories)
+                .OrderBy(file => (writable.Contains(file) ? 0 : 2)
+                                 + (file.StartsWith(TimeTrialSubmissions.PendingDirectory + "/", StringComparison
+                                     .Ordinal
+                                 ) ? 1 : 0)
+                )
                 .Take(MaxListed))
             {
                 SavedTimeTrial? replay;
@@ -168,6 +204,8 @@ public sealed class ReplayBrowserPhase : BasePhase
                 try
                 {
                     recording = VFS.ReadAllBytes(file);
+                    if (!seen.Add(Convert.ToHexStringLower(SHA256.HashData(recording))))
+                        continue;
                     replay = SavedTimeTrial.Load(recording);
                 }
                 catch (Exception ex) when (ex is InvalidDataException or IOException or TightPackSerializationException)
@@ -210,12 +248,7 @@ public sealed class ReplayBrowserPhase : BasePhase
             }
         }
 
-        _localEntries = entries;
-        ApplyLocalFilter();
-        _state.HasMore.Value = false;
-        _state.Status.Value = malformed == 0
-            ? ""
-            : $"{malformed} recording(s) could not be read and were skipped.";
+        return (entries, malformed);
     }
 
     private void ApplyLocalFilter()
@@ -332,7 +365,8 @@ public sealed class ReplayBrowserPhase : BasePhase
             if (_disposed || generation != _onlineGeneration)
                 return;
             _state.SelectedId.Value = null;
-            RefreshLocal();
+            if (!await RefreshLocalAsync(generation))
+                return;
             _state.Status.Value = "Replay deleted from this device.";
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
@@ -373,7 +407,8 @@ public sealed class ReplayBrowserPhase : BasePhase
             if (_disposed || generation != _onlineGeneration)
                 return;
 
-            RefreshLocal();
+            if (!await RefreshLocalAsync(generation))
+                return;
             var submitted = results.Count(result => result.Success);
             var failure = results.FirstOrDefault(result => !result.Success);
             _state.Status.Value = results.Count == 1

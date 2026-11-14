@@ -132,7 +132,7 @@ public static class StockCatalog
             try
             {
                 var rad = Path.GetExtension(file).Equals(".radpack", StringComparison.OrdinalIgnoreCase)
-                    ? RadpackReader.Read(file, AssetKinds.ToRadpackType(kind)!.Value) is RadpackRad3d packed
+                    ? ReadPackage(file, AssetKinds.ToRadpackType(kind)!.Value) is RadpackRad3d packed
                         ? packed.Rad
                         : null
                     : RadParser.ParseRad(File.ReadAllText(file), id);
@@ -183,6 +183,19 @@ public static class StockCatalog
         }
     }
 
+    private static RadpackAsset ReadPackage(string file, RadpackType kind)
+    {
+        var fs = new NFMWorld.PhysicsFS.VirtualFS();
+        fs.MountDirectory(Path.GetDirectoryName(file)!);
+        return RadpackReader.Read(
+            fs,
+            Path.GetFileName(file),
+            kind,
+            RadpackLimits.MaxCompressedBytes,
+            RadpackLimits.MaxDecompressedBytes
+        );
+    }
+
     private static void AddRadpackStages(List<StockPackage> packages, string root)
     {
         var directory = Path.Combine(root, "data", "stages");
@@ -196,7 +209,7 @@ public static class StockCatalog
             {
                 var id = Path.GetRelativePath(directory, file).Replace('\\', '/');
                 id = id[..id.LastIndexOf('.')];
-                if (RadpackReader.Read(file, RadpackType.Track) is not RadpackStage track)
+                if (ReadPackage(file, RadpackType.Track) is not RadpackStage track)
                     continue;
 
                 var writer = new ArrayBufferWriter<byte>();

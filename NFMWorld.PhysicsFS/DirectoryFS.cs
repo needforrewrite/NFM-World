@@ -16,7 +16,7 @@
         {
             var fullPath = Resolve(path);
             return fullPath is not null && File.Exists(fullPath)
-                ? File.OpenRead(fullPath)
+                ? File.Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete)
                 : null;
         }
 

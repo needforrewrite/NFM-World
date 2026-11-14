@@ -5,6 +5,7 @@ using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Radpack;
 using NFMWorldLibrary.Util;
+using NFMWorldLibrary.Content;
 
 namespace NFMWorld.Archive.Validator;
 
@@ -19,6 +20,7 @@ namespace NFMWorld.Archive.Validator;
 ///        validator tt-sim &lt;replay-file&gt; &lt;stageName&gt; &lt;car-name&gt; &lt;stage-radpack&gt; &lt;car-radpack&gt;
 ///        validator radpack &lt;radpack-file&gt;
 ///        validator rad &lt;legacy-rad-file&gt; &lt;asset-kind&gt;
+///        validator stock-export &lt;output-directory&gt;
 ///
 /// Every command prints one JSON object to stdout and exits non-zero on refusal.
 /// </summary>
@@ -27,7 +29,7 @@ public static class Program
     public static int Main(string[] args)
     {
         if (args.Length < 2)
-            return Fail("usage: validator <tt-info|tt-sim|radpack|rad> <file> [stage] [car|kind]");
+            return Fail("usage: validator <tt-info|tt-sim|radpack|rad|stock-export> <file-or-directory> [stage] [car|kind]");
 
         try
         {
@@ -45,6 +47,7 @@ public static class Program
                 ),
                 "radpack" => Radpack(args[1]),
                 "rad" => LegacyRad(args[1], args.Length > 2 ? args[2] : null),
+                "stock-export" => ExportStock(args[1]),
                 _ => Fail($"unknown command {args[0]}")
             };
         }
@@ -52,6 +55,37 @@ public static class Program
         {
             return Fail($"{ex.GetType().Name}: {ex.Message}");
         }
+    }
+
+    private static int ExportStock(string directory)
+    {
+        var packages = StockCatalog.Build(AppContext.BaseDirectory, includeTextStages: true)
+            .DistinctBy(package => (package.Kind, package.Id)).ToArray();
+        if (!packages.Any(package => package.Kind == AssetKind.Stage)
+            || !packages.Any(package => package.Kind == AssetKind.Car))
+            return Fail("The validator's shipped data is missing stock stages or cars.");
+
+        var output = new NFMWorld.PhysicsFS.VirtualFS();
+        output.MountWriteDestination(directory);
+        foreach (var package in packages)
+        {
+            string path;
+            if (package.Kind == AssetKind.Stage)
+                path = $"data/stages/{package.Id}.radpack";
+            else if (package.Kind is AssetKind.Car or AssetKind.StagePiece)
+            {
+                var parts = package.Id.Split('/', 2);
+                path = $"data/models/{parts[0]}/{(package.Kind == AssetKind.Car ? "cars" : "stage")}/{parts[1]}.radpack";
+            }
+            else
+                continue;
+
+            using var stream = output.OpenWrite(path);
+            stream.Write(package.Bytes);
+        }
+
+        Console.WriteLine(JsonSerializer.Serialize(new { ok = true, count = packages.Length }));
+        return 0;
     }
 
     private static int TimeTrialInfo(string path)

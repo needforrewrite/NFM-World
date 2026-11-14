@@ -22,6 +22,10 @@ public sealed class PluginClientCallbacks(IClientCallbacks callbacks) : IClientC
 
     [PluginVisible]
     public void TimeTrialCompleted(TimeTrialCompletion completion) => callbacks.TimeTrialCompleted(completion);
+
+    [PluginVisible]
+    public void TimeTrialCompleted(NFMWorldLibrary.Files.SavedTimeTrial recording, bool saveBest)
+        => callbacks.TimeTrialCompleted(recording, saveBest);
 }
 
 [PluginVisible]

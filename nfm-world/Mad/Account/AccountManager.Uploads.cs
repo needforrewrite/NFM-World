@@ -64,15 +64,25 @@ public sealed partial class AccountManager
     /// Submits a finished time trial under the signed-in account. The archive re-simulates the
     /// replay against its own stored stage and car, so the client's number is never the ranking.
     /// </summary>
-    public async Task<RequestResult> UploadTimeTrialAsync(
+    public Task<RequestResult> UploadTimeTrialAsync(
         byte[] recording,
         string stageHash,
         string carHash,
         string stageName,
         string carName
     )
+        => UploadTimeTrialAsync(recording, stageHash, carHash, stageName, carName, ActiveAccount);
+
+    internal async Task<RequestResult> UploadTimeTrialAsync(
+        byte[] recording,
+        string stageHash,
+        string carHash,
+        string stageName,
+        string carName,
+        Account? account
+    )
     {
-        if (ActiveAccount is not { } account)
+        if (account is null)
             return new RequestResult("Sign in to submit a time trial.", false);
 
         if (recording.Length > RadpackLimits.MaxTimeTrialBytes)
