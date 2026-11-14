@@ -91,7 +91,7 @@ public class AssetEndpointTests
         Assert.AreEqual(1, items.GetArrayLength());
         Assert.AreEqual("Custom stage", items[0].GetProperty("name").GetString());
         var html = await client.GetStringAsync("/browse");
-        StringAssert.DoesNotContain(html, "nfm2/1_introductory");
+        Assert.IsFalse(html.Contains("nfm2/1_introductory", StringComparison.Ordinal));
         StringAssert.Contains(html, "Custom stage");
 
         Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync("/assets/meta/" + stockHash)).StatusCode);

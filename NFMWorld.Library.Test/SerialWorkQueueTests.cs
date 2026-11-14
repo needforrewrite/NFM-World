@@ -50,17 +50,25 @@ public class SerialWorkQueueTests
     }
 
     [TestMethod]
-    public void AtomicSave_KeepsAnOpenReaderOnThePreviousCompleteRecording()
+    [DataRow("write-root")]
+    [DataRow("directory-mount")]
+    [DataRow("async-read")]
+    public void AtomicSave_KeepsAnOpenReaderOnThePreviousCompleteRecording(string readPath)
     {
         var fs = new NFMWorld.PhysicsFS.VirtualFS();
         fs.MountWriteDestination(Path.Combine(Path.GetTempPath(), "nfmw-atomic-replay", Guid.NewGuid().ToString("N")));
+        if (readPath == "directory-mount")
+            fs.MountDirectory(fs.WriteRoot!);
         const string file = "data/tts/run.timetrial";
         fs.WriteAllBytesAtomic(file, [1, 2, 3]);
-        using var previous = fs.OpenRead(file);
+        using var previous = readPath == "async-read"
+            ? fs.OpenReadAsync(file).GetAwaiter().GetResult()
+            : fs.OpenRead(file);
         fs.WriteAllBytesAtomic(file, [4, 5, 6]);
         CollectionAssert.AreEqual(new byte[] { 4, 5, 6 }, fs.ReadAllBytes(file));
         using var copy = new MemoryStream();
         previous.CopyTo(copy);
         CollectionAssert.AreEqual(new byte[] { 1, 2, 3 }, copy.ToArray());
+        Assert.AreEqual(1, fs.EnumerateWriteFiles("data/tts").Count());
     }
 }

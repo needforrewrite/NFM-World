@@ -251,7 +251,11 @@ public class VirtualFS
         try
         {
             File.WriteAllBytes(temporary, bytes);
-            File.Move(temporary, fullPath, overwrite: true);
+            // Windows cannot reliably overwrite an open destination with MoveFileEx.
+            if (File.Exists(fullPath))
+                File.Replace(temporary, fullPath, destinationBackupFileName: null);
+            else
+                File.Move(temporary, fullPath);
         }
         finally
         {
