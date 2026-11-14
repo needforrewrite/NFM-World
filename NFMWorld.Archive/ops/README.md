@@ -34,11 +34,18 @@ uploads and time trials will be refused.
 ### Turnstile
 
 In Production and Staging, set `TURNSTILE_SECRET` to the secret for the existing widget with public sitekey
-`0x4AAAAAAF8y76GGmumUX1_K`, and `TURNSTILE_HOSTNAMES` to a comma-separated exact allowlist
+`0x4AAAAAAF8y76GGmumUX1_K`, and `TURNSTILE_HOSTNAMES` to a comma-separated allowlist
 of archive website hostnames (no schemes, ports, paths or wildcards). Obtain the secret from
 Cloudflare yourself and supply it through deployment secrets; never commit it or expose it to clients.
 Configure the same production hostnames on the existing widget. Do not add localhost to the production
 widget or allowlist; loopback hostnames are refused outside ASP.NET Core Development.
+
+**A listed hostname covers its subdomains**, matching Cloudflare's own rule — adding `nfmw.net` to the
+widget authorizes `dev.nfmw.net` too, and this check accepts it for the same reason. The two lists must
+still agree in scope: a hostname the widget authorizes but `TURNSTILE_HOSTNAMES` does not cover produces a
+solved challenge that is then refused, which the visitor sees as "human verification failed" even though
+the widget passed. Subdomains of a listed name are covered; a sibling domain (`nfmw.dev` next to
+`nfmw.net`) is not, and needs its own entry in both places.
 
 Without either variable outside Development, registration and web sign-in fail closed. Every registration path, including
 `POST /auth/register` (JSON field `cf-turnstile-response`, action `register`) and Discord account creation,

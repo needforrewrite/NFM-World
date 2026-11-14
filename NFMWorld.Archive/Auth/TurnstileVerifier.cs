@@ -104,12 +104,13 @@ public sealed class TurnstileVerifier(
                 return Reject(action, $"the token was solved for action '{result.Action ?? "<none>"}'");
 
             var hostname = result.Hostname;
-            if (hostname is null || !hostnames.Contains(hostname, StringComparer.OrdinalIgnoreCase))
+            if (hostname is null || !HostnameAllowed(hostname, hostnames))
             {
                 return Reject(
                     action,
                     $"the token was solved on '{hostname ?? "<none>"}', which TURNSTILE_HOSTNAMES "
-                    + $"does not list ({string.Join(", ", hostnames)})"
+                    + $"({string.Join(", ", hostnames)}) does not cover. The widget's own hostname list "
+                    + "must agree with it, or Cloudflare issues a token this check then refuses"
                 );
             }
 
@@ -122,6 +123,28 @@ public sealed class TurnstileVerifier(
         {
             return Unavailable(action, "the siteverify request failed: " + ex.Message);
         }
+    }
+
+    /// <summary>
+    /// Mirrors Cloudflare's own rule: listing a hostname authorizes it and all of its subdomains.
+    /// An exact match here would refuse a token the widget legitimately issued for a subdomain of
+    /// a listed name — a solved challenge rejected by our own check, which reads to the visitor as
+    /// a failed challenge.
+    /// </summary>
+    private static bool HostnameAllowed(string hostname, string[] allowed)
+    {
+        hostname = hostname.TrimEnd('.');
+        foreach (var entry in allowed)
+        {
+            var allowedHost = entry.TrimEnd('.');
+            if (hostname.Equals(allowedHost, StringComparison.OrdinalIgnoreCase))
+                return true;
+            // "example.com" covers "sub.example.com", never "notexample.com".
+            if (hostname.EndsWith("." + allowedHost, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>

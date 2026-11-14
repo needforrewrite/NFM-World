@@ -154,6 +154,41 @@ public class TurnstileTests
         Assert.IsFalse((await verifier.VerifyAsync(ArchiveAppFactory.Challenge("register"), "register", default)).Accepted);
     }
 
+    /// <summary>
+    /// Cloudflare authorizes a listed hostname and all of its subdomains, so the widget issues a
+    /// token for `dev.nfmw.net` when only `nfmw.net` is listed. An exact match on our side then
+    /// refused a perfectly good token: the widget passed and the page still said verification
+    /// failed. The server check has to follow the same rule.
+    /// </summary>
+    [TestMethod]
+    [DataRow("archive.example")]
+    [DataRow("dev.archive.example")]
+    [DataRow("a.b.archive.example")]
+    [DataRow("ARCHIVE.EXAMPLE")]
+    [DataRow("dev.archive.example.")]
+    public async Task Verify_AcceptsAListedHostnameAndItsSubdomains(string hostname)
+    {
+        using var factory = new ArchiveAppFactory();
+        factory.Siteverify.Hostname = hostname;
+        var verifier = factory.Services.GetRequiredService<TurnstileVerifier>();
+        Assert.IsTrue((await verifier.VerifyAsync(ArchiveAppFactory.Challenge("register"), "register", default)).Accepted);
+    }
+
+    /// <summary>
+    /// The exact production shape: the widget lists `nfmw.net`, prod's env listed only `nfmw.net`,
+    /// and the dev archive is served from `dev.nfmw.net`. Cloudflare authorizes the subdomain and
+    /// issues the token; this check used to refuse it.
+    /// </summary>
+    [TestMethod]
+    public async Task Verify_AcceptsTheDevSubdomainWhenTheRootIsListed()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var configured = factory.WithWebHostBuilder(builder => builder.UseSetting("TURNSTILE_HOSTNAMES", "nfmw.net"));
+        factory.Siteverify.Hostname = "dev.nfmw.net";
+        var verifier = configured.Services.GetRequiredService<TurnstileVerifier>();
+        Assert.IsTrue((await verifier.VerifyAsync(ArchiveAppFactory.Challenge("register"), "register", default)).Accepted);
+    }
+
     [TestMethod]
     [DataRow("signin")]
     [DataRow("")]

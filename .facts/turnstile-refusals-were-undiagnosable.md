@@ -24,6 +24,15 @@ The 400 case matters: Siteverify answers with the same JSON body for 200 and 400
 judges `IsSuccessStatusCode` before reading the body reports only "HTTP 400" and loses
 `invalid-input-secret`. Read and deserialize the body first, then classify.
 
+## The production cause: exact hostname match vs Cloudflare's subdomain rule
+
+The widget listed `nfmw.net` (plus loopback names), and prod's `TURNSTILE_HOSTNAMES` was exactly
+`nfmw.net`. Cloudflare authorizes **a listed hostname and all of its subdomains**, so the widget
+happily issued a token on `dev.nfmw.net` — and our exact `Contains` match refused it. Widget passes,
+page says "human verification failed". `HostnameAllowed` now applies Cloudflare's rule: exact, or a
+`"." + allowed` suffix (so `notexample.com` is still refused). A sibling domain such as `nfmw.dev`
+is **not** covered by `nfmw.net` and needs its own entry in both the widget and the env var.
+
 `remoteip` is documented as optional/advisory. Community reports (iOS Safari + iCloud Private Relay,
 IPv6/IPv4 egress pairs, proxies) claim a solved token can be refused when `remoteip` disagrees with
 the solving address. This is **unconfirmed** — Cloudflare has not acknowledged it — so `remoteip`
