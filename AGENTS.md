@@ -846,8 +846,11 @@ Added with the archive/content work; read this before touching content loading, 
   `IsValidated`. Legacy `.rad` uploads are validated out of process (`validator rad`), cannot claim
   Stage, and old rows are not trusted for multiplayer.
 - **Stock content** — `StockCatalog` builds deterministic packages from an explicit shipped root with
-  fixed metadata (`UnixEpoch`, no description). `StockSeeder` inserts them at archive startup when
-  `Archive:StockContentPath` is set. A mod shadowing a stock name does not change the catalog hash.
+  fixed metadata (`UnixEpoch`, no description). Stock is never inserted into Archive's asset table
+  or upload storage. For replay validation, `stock:<hash>` asks the validator to resolve the claimed
+  game id from its shipped local files and verify the canonical hash. Custom content still comes
+  from public validated uploads. Startup removes legacy ownerless `Base game content` rows and
+  their unreferenced files; user-owned assets and replay records are preserved.
 - **Stage browsing** — `StageSelectView` has LOCAL/ONLINE sources. Local options come from
   `MenuPreferences.GetStages`, labelled by `MenuPreferences.GetStageNames`, which reads each stage's
   `name(...)` line without parsing the stage (packed stages keep their file name). The content
@@ -884,6 +887,11 @@ Added with the archive/content work; read this before touching content loading, 
   radpack with `ExportLocal*`. Both editors show name, description and that the publication is
   public; a failure leaves the document, its dirty flag and its history alone. Packaging failures
   are returned as messages rather than thrown, because the callers are fire-and-forget UI actions.
+- **Packed stage music** — editor exports/publications include both referenced soundtracks in a
+  `RadpackTrackWithMusic` payload. The reader attaches these bytes to `StageLoader.EmbeddedMusic`
+  for stream playback; it does not extract files or overwrite `data/music`. Canonical stock and
+  replay packages keep the existing track format. New music-bearing packages need an updated
+  Archive validator; existing packages must be re-exported to acquire missing music.
 - **Time trials** — the client notifies `IClientCallbacks.TimeTrialCompleted` once per completed run
   (never for simulation), `TimeTrialSubmissions` writes the recording and a TightPack sidecar before
   network work, and `TimeTrialUploader` retries from the replay browser. The archive simulates the
@@ -891,6 +899,12 @@ Added with the archive/content work; read this before touching content loading, 
   replay (public, keyset-paged by id like `/assets/search`, optional `query` over stage, car and
   driver); `ArchiveReplayClient` reads it and fetches `/tt/replay/{id}`. `GET /tt/replay/{id}` and
   the browse list are public because they carry only a username, a stage/car name and a time.
+- **Replay persistence** — Time Trial transfers the finished `SavedTimeTrial` to the host and stops
+  recording into it. `TimeTrialUploader` serializes it once on `SerialWorkQueue`, atomically saves
+  the best run and queue files, then uploads independently of that local queue. Capture the account
+  before dispatching; workers must not read UI signals or use a later login's token. Browser scans
+  run in the background and apply results on `GameThreadContext`. Desktop shutdown drains local
+  writes only; an unavailable archive must not delay the next save or shutdown.
 - **Replay viewer** — `ReplayBrowserPhase` reads bounded recordings and lists published replays
   from the archive (LOCAL/ONLINE tabs, paged, a manual UPLOAD for recordings still owed);
   `ReplayViewerPhase` applies recorded `CarFrame`s directly (no physics, gamemode, save or upload),

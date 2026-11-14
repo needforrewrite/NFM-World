@@ -10,6 +10,8 @@
     { "action": "assert-no-horizontal-scroll", "target": "Replay list" },
     { "action": "click", "target": "Replay search" },
     { "action": "text", "value": "harness/stage" },
+    { "action": "wait-visible", "target": "Replay row data/tts/harness-valid.timetrial" },
+    { "action": "assert-count", "prefix": "Replay row ", "count": 1 },
     { "action": "assert-visible", "target": "Replay row data/tts/harness-valid.timetrial" },
     { "action": "click", "target": "Replay row data/tts/harness-valid.timetrial" },
     { "action": "assert-visible", "target": "Replay play" },

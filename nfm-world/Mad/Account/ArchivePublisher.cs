@@ -54,7 +54,7 @@ public static class ArchivePublisher
         byte[] bytes;
         try
         {
-            bytes = StockCatalog.PackageStage(name, stage);
+            bytes = StockCatalog.PackageStage(name, stage, includeMusic: true);
         }
         catch (Exception ex)
         {
@@ -90,8 +90,9 @@ public static class ArchivePublisher
         var path = $"data/stages/{name}.radpack";
         try
         {
+            var bytes = StockCatalog.PackageStage(name, stage, includeMusic: true);
             using var stream = VFS.OpenWrite(path);
-            stream.Write(StockCatalog.PackageStage(name, stage));
+            stream.Write(bytes);
         }
         catch (Exception ex)
         {

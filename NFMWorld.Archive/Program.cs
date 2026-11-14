@@ -88,12 +88,9 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
     db.Database.Migrate();
 
-    if (!string.IsNullOrWhiteSpace(options.StockContentPath))
-    {
-        var storage = scope.ServiceProvider.GetRequiredService<FileStorage>();
-        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("StockSeeder");
-        await StockSeeder.SeedAsync(db, storage, options.StockContentPath, logger, CancellationToken.None);
-    }
+    var storage = scope.ServiceProvider.GetRequiredService<FileStorage>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("StockAssetCleanup");
+    await StockAssetCleanup.RunAsync(db, storage, logger, CancellationToken.None);
 }
 
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));

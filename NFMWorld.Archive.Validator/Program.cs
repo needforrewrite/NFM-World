@@ -5,6 +5,7 @@ using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Radpack;
 using NFMWorldLibrary.Util;
+using NFMWorldLibrary.Content;
 
 namespace NFMWorld.Archive.Validator;
 
@@ -54,6 +55,21 @@ public static class Program
         }
     }
 
+    private static RadpackAsset ReadTrialAsset(string path, string id, AssetKind kind)
+    {
+        if (path.StartsWith("stock:", StringComparison.Ordinal))
+        {
+            var stock = StockCatalog.Find(AppContext.BaseDirectory, kind, id);
+            if (stock is null || stock.Hash != path["stock:".Length..])
+                throw new InvalidDataException(
+                    $"The server's shipped {kind.ToString().ToLowerInvariant()} '{id}' does not match this recording."
+                );
+            return RadpackSerializer.Deserialize(stock.Bytes);
+        }
+
+        return RadpackSerializer.Deserialize(File.ReadAllBytes(path));
+    }
+
     private static int TimeTrialInfo(string path)
     {
         var replay = SavedTimeTrial.Load(File.ReadAllBytes(path));
@@ -99,27 +115,20 @@ public static class Program
                 $"The replay is version {replay.Version ?? 0}, this backend is version {SavedTimeTrial.CURRENT_VERSION}."
             );
 
-        // The stage must come from the archive's own stored asset, never from the replay. A
+        // The stage must come from server-owned content, never from the replay. A
         // replay carries its own StageData and the simulator prefers it, which made the tick
         // count circular: a replay of a stage whose finish is at the start reproduces itself.
         if (stageRadpackPath is null)
             return Fail("No stage asset was supplied to simulate against.");
 
-        var stageAsset = RadpackSerializer.Deserialize(
-            File.ReadAllBytes(stageRadpackPath),
-            RadpackLimits.MaxDecompressedBytes
-        );
-        if (stageAsset is not RadpackTrack track)
+        var stageAsset = ReadTrialAsset(stageRadpackPath, stageName, AssetKind.Stage);
+        if (stageAsset is not RadpackStage track)
             return Fail("The stage asset is not a track.");
 
         if (carRadpackPath is null)
             return Fail("No car asset was supplied to simulate against.");
 
-        var carAsset = RadpackSerializer.Deserialize(
-            File.ReadAllBytes(carRadpackPath),
-            RadpackLimits.MaxCompressedBytes,
-            RadpackLimits.MaxDecompressedBytes
-        );
+        var carAsset = ReadTrialAsset(carRadpackPath, carName, AssetKind.Car);
         if (carAsset is not RadpackRad3d car)
             return Fail("The car asset is not a model.");
 

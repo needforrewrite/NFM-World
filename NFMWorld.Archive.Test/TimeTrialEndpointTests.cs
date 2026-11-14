@@ -55,17 +55,17 @@ public class TimeTrialEndpointTests
         using var factory = new ArchiveAppFactory();
         using var client = await SignedInClient(factory);
 
-        var response = await client.PostAsync("/tt/upload", Upload(new byte[64], "stagehash", "carhash"));
+        var response = await client.PostAsync("/tt/upload", Upload(new byte[64], Hash('a'), Hash('b')));
         Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [TestMethod]
-    public async Task Upload_RefusesHashesThatAreNotPublicValidatedContent()
+    public async Task Upload_RefusesContentWithoutAnUploadOrMatchingShippedFiles()
     {
         using var factory = new ArchiveAppFactory();
         using var client = await SignedInClient(factory);
 
-        // Nothing is catalogued under these hashes.
+        // Neither an uploaded package nor shipped content matches these hashes.
         var response = await client.PostAsync("/tt/upload", Upload(new byte[64], Hash('a'), Hash('b')));
 
         Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);

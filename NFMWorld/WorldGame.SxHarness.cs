@@ -125,6 +125,7 @@ public partial class WorldGame
 
         void Render()
         {
+            GameThreadContext.Current.ExecutePendingTasks();
             NFMWorld.Reactor.Sx.Renderer.Flush();
             var cb = game._device.AcquireCommandBuffer();
             cb.SetRenderTarget(target);
@@ -135,6 +136,18 @@ public partial class WorldGame
             ui.Render();
             graphics.Render();
             game._device.Submit(cb);
+        }
+
+        void WaitUntil(Func<bool> ready)
+        {
+            var elapsed = System.Diagnostics.Stopwatch.StartNew();
+            while (!ready())
+            {
+                if (elapsed.Elapsed > TimeSpan.FromSeconds(10))
+                    throw new InvalidOperationException("Timed out waiting for asynchronous UI work.");
+                Render();
+                Thread.Sleep(5);
+            }
         }
 
         void Save(string name)
@@ -275,6 +288,18 @@ public partial class WorldGame
                             $"Popup X={popup.LayoutBorderPosition.X}, anchor X={anchor.LayoutBorderPosition.X}"
                         );
                     break;
+                case "wait-visible":
+                    var visibleName = step.GetProperty("target").GetString()!;
+                    WaitUntil(() => Nodes(ui.ActiveRoot!).Any(node => node.Name == visibleName && node.IsDisplayed));
+                    break;
+                case "wait-text":
+                    var textName = step.GetProperty("target").GetString()!;
+                    var expectedText = step.GetProperty("value").GetString()!;
+                    WaitUntil(() => Nodes(ui.ActiveRoot!).FirstOrDefault(node => node.Name == textName) is { } textNode
+                                    && string.Concat(textNode.VisualChildren.OfType<TextNode>().Select(node => node.Text))
+                        .Contains(expectedText, StringComparison.Ordinal)
+                    );
+                    break;
                 case "assert-visible":
                     if (!Find(step.GetProperty("target").GetString()!).IsDisplayed)
                         throw new InvalidOperationException($"Expected visible target: {step}");
@@ -284,6 +309,14 @@ public partial class WorldGame
                     var actualText = string.Concat(label.VisualChildren.OfType<TextNode>().Select(node => node.Text));
                     if (!actualText.Contains(step.GetProperty("value").GetString()!, StringComparison.Ordinal))
                         throw new InvalidOperationException($"Expected text was not shown: {step}; actual: {actualText}");
+                    break;
+                case "assert-count":
+                    var countPrefix = step.GetProperty("prefix").GetString()!;
+                    var nodeCount = Nodes(ui.ActiveRoot!).Count(
+                        node => node.Name?.StartsWith(countPrefix, StringComparison.Ordinal) == true
+                    );
+                    if (nodeCount != step.GetProperty("count").GetInt32())
+                        throw new InvalidOperationException($"Unexpected node count {nodeCount}: {step}");
                     break;
                 case "scroll":
                     var scrollPoint = Point(step);
@@ -831,6 +864,8 @@ public partial class WorldGame
             new NFMWorldLibrary.Rad.Rad3d([], false, "harness/car")
         );
         using (var file = VFS.OpenWrite("data/tts/harness-valid.timetrial"))
+            file.Write(recording.ToBytes());
+        using (var file = VFS.OpenWrite("data/tts/pending/harness-duplicate.timetrial"))
             file.Write(recording.ToBytes());
 
         return new ReplayBrowserPhase();

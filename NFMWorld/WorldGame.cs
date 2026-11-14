@@ -931,6 +931,9 @@ public partial class WorldGame : IDisposable, IGameHost
         // Dispose all phases before tearing down CEF and graphics.
         GameSparker.Phases.Shutdown();
 
+        if (!OperatingSystem.IsBrowser())
+            NFMWorld.Accounts.TimeTrialUploader.FlushPendingSaves();
+
         _uiRenderer?.Dispose();
         ShadowMapDebugView.Dispose();
         foreach (var shadowRenderTarget in GameSparker.ShadowRenderTargets)

@@ -187,7 +187,7 @@ public class VirtualFS
         {
             var fullPath = Path.Combine(_writeRoot, path);
             if (File.Exists(fullPath))
-                return File.OpenRead(fullPath);
+                return File.Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
         }
 
         throw new FileNotFoundException(
@@ -216,7 +216,7 @@ public class VirtualFS
         {
             var fullPath = Path.Combine(_writeRoot, path);
             if (File.Exists(fullPath))
-                return File.OpenRead(fullPath);
+                return File.Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
         }
 
         throw new FileNotFoundException($"File not found in any mounted filesystem: {path}");
@@ -243,7 +243,29 @@ public class VirtualFS
         return stream is FileStream file ? File.GetLastWriteTimeUtc(file.Name) : null;
     }
 
-    public Stream OpenReadFromWriteRoot(string path) => File.OpenRead(ResolveWritePath(path));
+    public void WriteAllBytesAtomic(string path, byte[] bytes)
+    {
+        var fullPath = ResolveWritePath(path);
+        Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+        var temporary = fullPath + ".tmp-" + Guid.NewGuid().ToString("N");
+        try
+        {
+            File.WriteAllBytes(temporary, bytes);
+            // Windows cannot reliably overwrite an open destination with MoveFileEx.
+            if (File.Exists(fullPath))
+                File.Replace(temporary, fullPath, destinationBackupFileName: null);
+            else
+                File.Move(temporary, fullPath);
+        }
+        finally
+        {
+            if (File.Exists(temporary))
+                File.Delete(temporary);
+        }
+    }
+
+    public Stream OpenReadFromWriteRoot(string path)
+        => File.Open(ResolveWritePath(path), FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
 
     public bool DeleteWriteFile(string path)
     {

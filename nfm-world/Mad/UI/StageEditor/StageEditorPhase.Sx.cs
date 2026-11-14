@@ -1978,7 +1978,9 @@ public partial class StageEditorPhase
         var id = "user/" + ConvertStageNameToFilename(_publishName.Length > 0 ? _publishName : ActiveTab!.TabName);
         try
         {
-            return NFMWorldLibrary.StageLoader.FromLines(id, text.Split('\n'));
+            var stage = NFMWorldLibrary.StageLoader.FromLines(id, text.Split('\n'));
+            stage.EmbeddedMusic = ActiveTab?.Stage?.StageLoader.EmbeddedMusic;
+            return stage;
         }
         catch (Exception ex)
         {

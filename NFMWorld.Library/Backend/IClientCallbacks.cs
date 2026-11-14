@@ -37,4 +37,23 @@ public interface IClientCallbacks
     void TimeTrialCompleted(TimeTrialCompletion completion)
     {
     }
+
+    /// <summary>Takes ownership of a finished recording that will no longer receive ticks.</summary>
+    void TimeTrialCompleted(NFMWorldLibrary.Files.SavedTimeTrial recording, bool saveBest)
+    {
+        var bytes = recording.ToBytes();
+        if (saveBest)
+            TheVFS.VFS.WriteAllBytesAtomic(
+                NFMWorldLibrary.Files.SavedTimeTrial.GetPathName(recording.CarName, recording.StageName),
+                bytes
+            );
+        TimeTrialCompleted(new TimeTrialCompletion(
+            recording.StageName,
+            recording.CarName,
+            recording.DemoData.Ticks.Count,
+            recording.Version ?? 0,
+            bytes
+        )
+        );
+    }
 }

@@ -274,7 +274,6 @@ public class TimeTrialGamemode : PluginGamemode
             return;
 
         _written = true;
-        SaveIfBest();
         NotifyCompleted();
         RenderFinishedText();
     }
@@ -284,6 +283,7 @@ public class TimeTrialGamemode : PluginGamemode
     /// </summary>
     private void SetupPlayer()
     {
+        var previousBest = _best;
         _best = null;
         _current = null;
         HudState.Finished = false;
@@ -304,7 +304,9 @@ public class TimeTrialGamemode : PluginGamemode
         if (_simulation || ClientPlayer?.Car is not { } car)
             return;
 
-        _best = SavedTimeTrial.Load(car.Player.CarName, CurrentStage.Path);
+        _best = previousBest is not null && previousBest.CarName == car.Player.CarName
+                && previousBest.StageName == CurrentStage.Path
+            ? previousBest : SavedTimeTrial.Load(car.Player.CarName, CurrentStage.Path);
         _current = new SavedTimeTrial(car.Player.CarName, CurrentStage.Path, CurrentStage.StageLoader, car.Rad);
     }
 
@@ -385,7 +387,7 @@ public class TimeTrialGamemode : PluginGamemode
     }
 
     /// <summary>
-    /// Hands the host a copy of the completed run. This is every finish, not only a personal
+    /// Transfers the completed run to the host. This is every finish, not only a personal
     /// best: the archive wants a ranking, and the host decides what may be submitted.
     /// </summary>
     private void NotifyCompleted()
@@ -393,29 +395,12 @@ public class TimeTrialGamemode : PluginGamemode
         if (_simulation || _current is null)
             return;
 
-        ClientCallbacks.TimeTrialCompleted(
-            new TimeTrialCompletion(
-                _current.StageName,
-                _current.CarName,
-                _current.DemoData.Ticks.Count,
-                _current.Version ?? 0,
-                _current.ToBytes()
-            )
-        );
-    }
-
-    /// <summary>
-    /// Saves the current run when it beats the previous best (or there is none).
-    /// </summary>
-    private void SaveIfBest()
-    {
-        if (_current is null)
-            return;
-
-        if (_best is null || _current.IsFasterThan(_best))
-        {
-            _current.Save();
-        }
+        var completed = _current;
+        _current = null;
+        var saveBest = _best is null || completed.IsFasterThan(_best);
+        if (saveBest)
+            _best = completed;
+        ClientCallbacks.TimeTrialCompleted(completed, saveBest);
     }
 
     private void RenderFinishedText()

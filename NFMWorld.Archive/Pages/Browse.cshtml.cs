@@ -8,8 +8,10 @@ public sealed class BrowseModel(ArchiveDbContext db) : ArchivePageModel(db)
 {
     [BindProperty(SupportsGet = true)] public string? Query { get; set; }
     [BindProperty(SupportsGet = true)] public string? Type { get; set; }
+    [BindProperty(SupportsGet = true)] public int? After { get; set; }
 
     public IReadOnlyList<Asset> Assets { get; private set; } = [];
+    public int? NextCursor { get; private set; }
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -20,10 +22,14 @@ public sealed class BrowseModel(ArchiveDbContext db) : ArchivePageModel(db)
             q = q.Where(a => a.Name.Contains(Query));
         if (!string.IsNullOrWhiteSpace(Type) && Enum.TryParse<AssetType>(Type, true, out var parsed))
             q = q.Where(a => a.Type == parsed);
+        if (After is { } after)
+            q = q.Where(a => a.Id < after);
 
         // By id, not CreatedAt: SQLite cannot ORDER BY a DateTimeOffset, and insertion order is
         // creation order for assets. Ordering it in LINQ to Objects would load the whole table.
-        Assets = await q.OrderByDescending(a => a.Id).Take(100).ToListAsync();
+        var rows = await q.OrderByDescending(a => a.Id).Take(101).ToListAsync();
+        Assets = rows.Take(100).ToArray();
+        NextCursor = rows.Count > 100 ? Assets[^1].Id : null;
         return Page();
     }
 }

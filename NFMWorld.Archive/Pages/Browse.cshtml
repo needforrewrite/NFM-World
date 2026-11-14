@@ -44,4 +44,8 @@ else
             </tbody>
         </table>
     </div>
+    @if (Model.NextCursor is { } next)
+    {
+        <p><a asp-page="/Browse" asp-route-after="@next" asp-route-query="@Model.Query" asp-route-type="@Model.Type">Older uploads</a></p>
+    }
 }

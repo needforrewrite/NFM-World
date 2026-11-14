@@ -72,8 +72,7 @@ public static class TimeTrialSubmissions
         }
 
         var recordingPath = $"{PendingDirectory}/{digest}{RecordingSuffix}";
-        using (var stream = VFS.OpenWrite(recordingPath))
-            stream.Write(completion.Recording);
+        VFS.WriteAllBytesAtomic(recordingPath, completion.Recording);
 
         var submission = new PendingSubmission
         {
@@ -137,7 +136,7 @@ public static class TimeTrialSubmissions
                 if (submission is not null)
                     submissions.Add(submission);
             }
-            catch (Exception ex) when (ex is InvalidDataException or TightPackSerializationException)
+            catch (Exception ex) when (ex is InvalidDataException or TightPackSerializationException or IOException)
             {
                 // One malformed sidecar must not hide the rest of the browser.
             }
@@ -188,9 +187,8 @@ public static class TimeTrialSubmissions
 
     private static void WriteSidecar(PendingSubmission submission)
     {
-        using var stream = VFS.OpenWrite(SidecarPath(submission.Digest));
         var bytes = TightPackSerializer.Serialize(submission);
-        stream.Write(bytes);
+        VFS.WriteAllBytesAtomic(SidecarPath(submission.Digest), bytes);
     }
 
     private static string SidecarPath(string digest) => $"{PendingDirectory}/{digest}{SidecarSuffix}";

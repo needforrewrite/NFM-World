@@ -976,6 +976,9 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     void IClientCallbacks.TimeTrialCompleted(TimeTrialCompletion completion) =>
         TimeTrialUploader.Enqueue(completion);
 
+    void IClientCallbacks.TimeTrialCompleted(NFMWorldLibrary.Files.SavedTimeTrial recording, bool saveBest) =>
+        TimeTrialUploader.Enqueue(recording, saveBest);
+
     void IClientCallbacks.UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish)
     {
         CurrentStage.Renderer.UpdateCheckpointGlow(currentCheckpoint, isFinish);

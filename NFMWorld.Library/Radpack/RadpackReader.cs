@@ -124,7 +124,7 @@ public static class RadpackReader
 
         try
         {
-            return Read(path, RadpackType.Track) is RadpackTrack track
+            return Read(path, RadpackType.Track) is RadpackStage track
                 ? track.Stage
                 : throw new InvalidDataException($"'{path}' is not a track.");
         }

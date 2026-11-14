@@ -53,6 +53,132 @@ public class AssetEndpointTests
         };
 
     [TestMethod]
+    public async Task StockCleanup_RemovesSeededRowsAndFiles_AndPreservesUserUploads()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = factory.CreateClient();
+        string stockHash;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+            var storage = scope.ServiceProvider.GetRequiredService<FileStorage>();
+            var stored = await storage.PutAsync(new byte[] { 1, 2, 3 }, CancellationToken.None);
+            stockHash = stored.Hash;
+            db.Assets.Add(new Asset
+            {
+                Name = "nfm2/1_introductory", Type = AssetType.Stage, OwnerId = null,
+                Description = StockAssetCleanup.LegacyDescription, ContentHash = stockHash,
+                StoragePath = stored.RelativePath, SizeBytes = 3, IsPublic = true, IsValidated = true
+            });
+            var uploaded = NewAsset("Custom stage", AssetType.Stage, Hash('b'));
+            uploaded.Owner = new User { Username = "artist", UsernameNormalized = "artist" };
+            uploaded.Description = StockAssetCleanup.LegacyDescription;
+            db.Assets.Add(uploaded);
+            await db.SaveChangesAsync();
+            Assert.AreEqual(1, await StockAssetCleanup.RunAsync(
+                db,
+                storage,
+                Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance,
+                CancellationToken.None
+            )
+            );
+            Assert.IsFalse(storage.Exists(stored.RelativePath));
+            Assert.AreEqual(1, db.Assets.Count());
+        }
+
+        var search = await client.GetFromJsonAsync<JsonElement>("/assets/search?type=Stage");
+        var items = search.GetProperty("items");
+        Assert.AreEqual(1, items.GetArrayLength());
+        Assert.AreEqual("Custom stage", items[0].GetProperty("name").GetString());
+        var html = await client.GetStringAsync("/browse");
+        Assert.IsFalse(html.Contains("nfm2/1_introductory", StringComparison.Ordinal));
+        StringAssert.Contains(html, "Custom stage");
+
+        Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync("/assets/meta/" + stockHash)).StatusCode);
+        Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync("/assets/" + stockHash)).StatusCode);
+    }
+
+    [TestMethod]
+    public async Task StockCleanup_PreservesSharedFilesAndReplayRecords()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = factory.CreateClient();
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+        var storage = scope.ServiceProvider.GetRequiredService<FileStorage>();
+        var shared = await storage.PutAsync(new byte[] { 4, 5, 6 }, CancellationToken.None);
+        var replay = await storage.PutAsync(new byte[] { 7, 8, 9 }, CancellationToken.None);
+        var owner = new User { Username = "artist", UsernameNormalized = "artist" };
+        var upload = NewAsset("User upload", AssetType.Stage, shared.Hash);
+        upload.Owner = owner;
+        upload.StoragePath = shared.RelativePath;
+        db.Assets.Add(upload);
+        foreach (var stored in new[] { shared, replay })
+        {
+            var stock = NewAsset("nfm2/test", AssetType.Stage, stored.Hash);
+            stock.StoragePath = stored.RelativePath;
+            stock.Description = StockAssetCleanup.LegacyDescription;
+            db.Assets.Add(stock);
+        }
+
+        db.TimeTrials.Add(new TimeTrial
+        {
+            User = owner, StageHash = shared.Hash, CarHash = Hash('c'),
+            StageName = "nfm2/test", CarName = "nfmm/test", StoragePath = replay.RelativePath
+        });
+        await db.SaveChangesAsync();
+
+        Assert.AreEqual(2, await StockAssetCleanup.RunAsync(
+            db,
+            storage,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance,
+            CancellationToken.None
+        )
+        );
+        Assert.IsTrue(storage.Exists(shared.RelativePath));
+        Assert.IsTrue(storage.Exists(replay.RelativePath));
+        Assert.AreEqual(1, db.Assets.Count());
+        Assert.AreEqual(1, db.TimeTrials.Count());
+    }
+
+    [TestMethod]
+    public async Task OlderUploads_AreLinkedOnTheAccountPage_AndReachableThroughBrowsePaging()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = await SignedInClient(factory);
+        int cursor;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+            var owner = db.Users.Single();
+            var first = NewAsset("My first published stage", AssetType.Stage, Hash('a'));
+            var second = NewAsset("My second published stage", AssetType.Stage, Hash('b'));
+            first.OwnerId = second.OwnerId = owner.Id;
+            db.Assets.AddRange(first, second);
+            await db.SaveChangesAsync();
+            var other = new User { Username = "other", UsernameNormalized = "other" };
+            for (var i = 0; i < 101; i++)
+            {
+                var asset = NewAsset($"Newer upload {i}", AssetType.Stage, i.ToString("x64"));
+                asset.Owner = other;
+                db.Assets.Add(asset);
+            }
+
+            await db.SaveChangesAsync();
+            cursor = db.Assets.OrderByDescending(asset => asset.Id).Skip(99).Select(asset => asset.Id).First();
+        }
+
+        var account = await client.GetStringAsync("/");
+        StringAssert.Contains(account, "My first published stage");
+        StringAssert.Contains(account, "My second published stage");
+        var newest = await client.GetStringAsync("/browse");
+        StringAssert.Contains(newest, "Older uploads");
+        var older = await client.GetStringAsync($"/browse?after={cursor}");
+        StringAssert.Contains(older, "My first published stage");
+        StringAssert.Contains(older, "My second published stage");
+    }
+
+    [TestMethod]
     public async Task Search_PagesWithoutDuplicatesAndReportsAStableCursor()
     {
         using var factory = new ArchiveAppFactory();
@@ -330,24 +456,18 @@ public class AssetEndpointTests
     }
 
     [TestMethod]
-    public async Task StockSeeding_AddsTheBuildsOwnPackagesWithoutAnOwner()
+    public async Task LegacyStockConfiguration_DoesNotCreateArchivedAssets()
     {
-        var shippedRoot = ArchiveAppFactory.ValidatorPath is { } validator
-            ? Path.GetDirectoryName(validator)!
-            : null;
-        if (shippedRoot is null || !Directory.Exists(Path.Combine(shippedRoot, "data", "models")))
-            Assert.Inconclusive("The shipped data tree is not available beside the tests.");
-
         using var factory = new ArchiveAppFactory()
-            .WithWebHostBuilder(builder => builder.UseSetting("Archive:StockContentPath", shippedRoot));
+            .WithWebHostBuilder(builder => builder.UseSetting("Archive:StockContentPath", AppContext.BaseDirectory));
         using var client = factory.CreateClient();
 
         var body = await client.GetFromJsonAsync<JsonElement>("/assets/search?limit=100&type=Car");
         var items = body.GetProperty("items").EnumerateArray().ToList();
 
-        Assert.IsTrue(items.Count > 0);
-        Assert.IsTrue(items.All(i => i.GetProperty("author").ValueKind == JsonValueKind.Null));
-        Assert.IsTrue(items.All(i => i.GetProperty("eligible").GetBoolean()));
+        Assert.IsEmpty(items);
+        using var scope = factory.Services.CreateScope();
+        Assert.AreEqual(0, scope.ServiceProvider.GetRequiredService<ArchiveDbContext>().Assets.Count());
     }
 
     [TestMethod]
