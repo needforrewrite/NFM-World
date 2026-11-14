@@ -20,7 +20,6 @@ namespace NFMWorld.Archive.Validator;
 ///        validator tt-sim &lt;replay-file&gt; &lt;stageName&gt; &lt;car-name&gt; &lt;stage-radpack&gt; &lt;car-radpack&gt;
 ///        validator radpack &lt;radpack-file&gt;
 ///        validator rad &lt;legacy-rad-file&gt; &lt;asset-kind&gt;
-///        validator stock-export &lt;output-directory&gt;
 ///
 /// Every command prints one JSON object to stdout and exits non-zero on refusal.
 /// </summary>
@@ -29,7 +28,7 @@ public static class Program
     public static int Main(string[] args)
     {
         if (args.Length < 2)
-            return Fail("usage: validator <tt-info|tt-sim|radpack|rad|stock-export> <file-or-directory> [stage] [car|kind]");
+            return Fail("usage: validator <tt-info|tt-sim|radpack|rad> <file> [stage] [car|kind]");
 
         try
         {
@@ -47,7 +46,6 @@ public static class Program
                 ),
                 "radpack" => Radpack(args[1]),
                 "rad" => LegacyRad(args[1], args.Length > 2 ? args[2] : null),
-                "stock-export" => ExportStock(args[1]),
                 _ => Fail($"unknown command {args[0]}")
             };
         }
@@ -57,35 +55,19 @@ public static class Program
         }
     }
 
-    private static int ExportStock(string directory)
+    private static RadpackAsset ReadTrialAsset(string path, string id, AssetKind kind)
     {
-        var packages = StockCatalog.Build(AppContext.BaseDirectory, includeTextStages: true)
-            .DistinctBy(package => (package.Kind, package.Id)).ToArray();
-        if (!packages.Any(package => package.Kind == AssetKind.Stage)
-            || !packages.Any(package => package.Kind == AssetKind.Car))
-            return Fail("The validator's shipped data is missing stock stages or cars.");
-
-        var output = new NFMWorld.PhysicsFS.VirtualFS();
-        output.MountWriteDestination(directory);
-        foreach (var package in packages)
+        if (path.StartsWith("stock:", StringComparison.Ordinal))
         {
-            string path;
-            if (package.Kind == AssetKind.Stage)
-                path = $"data/stages/{package.Id}.radpack";
-            else if (package.Kind is AssetKind.Car or AssetKind.StagePiece)
-            {
-                var parts = package.Id.Split('/', 2);
-                path = $"data/models/{parts[0]}/{(package.Kind == AssetKind.Car ? "cars" : "stage")}/{parts[1]}.radpack";
-            }
-            else
-                continue;
-
-            using var stream = output.OpenWrite(path);
-            stream.Write(package.Bytes);
+            var stock = StockCatalog.Find(AppContext.BaseDirectory, kind, id);
+            if (stock is null || stock.Hash != path["stock:".Length..])
+                throw new InvalidDataException(
+                    $"The server's shipped {kind.ToString().ToLowerInvariant()} '{id}' does not match this recording."
+                );
+            return RadpackSerializer.Deserialize(stock.Bytes);
         }
 
-        Console.WriteLine(JsonSerializer.Serialize(new { ok = true, count = packages.Length }));
-        return 0;
+        return RadpackSerializer.Deserialize(File.ReadAllBytes(path));
     }
 
     private static int TimeTrialInfo(string path)
@@ -133,27 +115,20 @@ public static class Program
                 $"The replay is version {replay.Version ?? 0}, this backend is version {SavedTimeTrial.CURRENT_VERSION}."
             );
 
-        // The stage must come from the archive's own stored asset, never from the replay. A
+        // The stage must come from server-owned content, never from the replay. A
         // replay carries its own StageData and the simulator prefers it, which made the tick
         // count circular: a replay of a stage whose finish is at the start reproduces itself.
         if (stageRadpackPath is null)
             return Fail("No stage asset was supplied to simulate against.");
 
-        var stageAsset = RadpackSerializer.Deserialize(
-            File.ReadAllBytes(stageRadpackPath),
-            RadpackLimits.MaxDecompressedBytes
-        );
+        var stageAsset = ReadTrialAsset(stageRadpackPath, stageName, AssetKind.Stage);
         if (stageAsset is not RadpackStage track)
             return Fail("The stage asset is not a track.");
 
         if (carRadpackPath is null)
             return Fail("No car asset was supplied to simulate against.");
 
-        var carAsset = RadpackSerializer.Deserialize(
-            File.ReadAllBytes(carRadpackPath),
-            RadpackLimits.MaxCompressedBytes,
-            RadpackLimits.MaxDecompressedBytes
-        );
+        var carAsset = ReadTrialAsset(carRadpackPath, carName, AssetKind.Car);
         if (carAsset is not RadpackRad3d car)
             return Fail("The car asset is not a model.");
 

@@ -34,12 +34,6 @@ public sealed class ArchiveOptions
     /// <summary>Disables the registration and upload endpoints, for a read-only or private deployment.</summary>
     public bool ReadOnly { get; set; }
 
-    /// <summary>
-    /// Directory of the game's shipped data. When set, startup seeds the archive with the
-    /// deterministic canonical packages for that build, so players never upload stock content.
-    /// </summary>
-    public string? StockContentPath { get; set; }
-
     /// <summary>Path to the validator executable. Time-trial and radpack validation are refused when empty.</summary>
     public string? ValidatorPath { get; set; }
 

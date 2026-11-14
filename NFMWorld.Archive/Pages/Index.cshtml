@@ -41,4 +41,22 @@ else
 
 <h2>Your content</h2>
 <p>@Model.AssetCount uploaded assets · @Model.TimeTrialCount time trials</p>
+@if (Model.Assets.Count > 0)
+{
+    <ul>
+        @foreach (var asset in Model.Assets)
+        {
+            <li>
+                @if (asset.IsPublic && !asset.IsTakedown)
+                {
+                    <a href="/assets/@asset.ContentHash">@asset.Name</a>
+                }
+                else
+                {
+                    @asset.Name <span class="muted">(unavailable)</span>
+                }
+            </li>
+        }
+    </ul>
+}
 <p><a href="/upload" role="button">Upload something</a></p>

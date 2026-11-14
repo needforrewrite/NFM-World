@@ -52,6 +52,26 @@ public class StockCatalogTests
     }
 
     [TestMethod]
+    public void Find_UsesShippedFilesWithoutCreatingAnArchiveCopy()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "nfmw-local-stock", Guid.NewGuid().ToString("N"));
+        var files = new NFMWorld.PhysicsFS.VirtualFS();
+        files.MountWriteDestination(root);
+        var stage = StockCatalog.PackageStage("nfm2/test", new StageLoader { Path = "nfm2/test" });
+        var car = StockCatalog.PackageModel(AssetKind.Car, "nfmm/test", new Rad3d([], false, "nfmm/test"));
+        using (var output = files.OpenWrite("data/stages/nfm2/test.radpack"))
+            output.Write(stage);
+        using (var output = files.OpenWrite("data/models/nfmm/cars/test.radpack"))
+            output.Write(car);
+
+        Assert.AreEqual(StockCatalog.HashOf(stage), StockCatalog.Find(root, AssetKind.Stage, "nfm2/test")?.Hash);
+        Assert.AreEqual(StockCatalog.HashOf(car), StockCatalog.Find(root, AssetKind.Car, "nfmm/test")?.Hash);
+        Assert.IsNull(StockCatalog.Find(root, AssetKind.Stage, "../../outside"));
+        Assert.IsNull(StockCatalog.Find(root, AssetKind.Car, "../../outside"));
+        Assert.AreEqual(2, files.EnumerateWriteFiles("data", "*", SearchOption.AllDirectories).Count());
+    }
+
+    [TestMethod]
     public void Package_IsAReadableRadpackOfTheRightKind()
     {
         var packages = StockCatalog.Build(AppContext.BaseDirectory);

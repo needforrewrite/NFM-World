@@ -846,11 +846,11 @@ Added with the archive/content work; read this before touching content loading, 
   `IsValidated`. Legacy `.rad` uploads are validated out of process (`validator rad`), cannot claim
   Stage, and old rows are not trusted for multiplayer.
 - **Stock content** — `StockCatalog` builds deterministic packages from an explicit shipped root with
-  fixed metadata (`UnixEpoch`, no description). `StockSeeder` inserts them at archive startup when
-  `Archive:StockContentPath` is set. A mod shadowing a stock name does not change the catalog hash.
-  The Archive image runs `validator stock-export /stock` during its build to resolve shipped text
-  stages with the validator's piece set, then seeds from `/stock` automatically. Players do not
-  publish built-in stages or cars to submit a replay.
+  fixed metadata (`UnixEpoch`, no description). Stock is never inserted into Archive's asset table
+  or upload storage. For replay validation, `stock:<hash>` asks the validator to resolve the claimed
+  game id from its shipped local files and verify the canonical hash. Custom content still comes
+  from public validated uploads. Startup removes legacy ownerless `Base game content` rows and
+  their unreferenced files; user-owned assets and replay records are preserved.
 - **Stage browsing** — `StageSelectView` has LOCAL/ONLINE sources. Local options come from
   `MenuPreferences.GetStages`, labelled by `MenuPreferences.GetStageNames`, which reads each stage's
   `name(...)` line without parsing the stage (packed stages keep their file name). The content

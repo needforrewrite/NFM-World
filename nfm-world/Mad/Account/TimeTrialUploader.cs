@@ -217,22 +217,23 @@ public static class TimeTrialUploader
 
             try
             {
-                var stage = await Content.Value.MetadataAsync(stageHash, CancellationToken.None).ConfigureAwait(false);
-                var car = await Content.Value.MetadataAsync(carHash, CancellationToken.None).ConfigureAwait(false);
-                if (stage is null || car is null)
+                var stock = Stock.Value;
+                var stageIsStock = stock.Any(
+                    p => p.Kind == AssetKind.Stage && p.Id == submission.StageName && p.Hash == stageHash
+                );
+                var carIsStock = stock.Any(p => p.Kind == AssetKind.Car && p.Id == submission.CarName && p.Hash == carHash);
+                var stage = stageIsStock ? null : await Content.Value.MetadataAsync(stageHash, CancellationToken.None)
+                    .ConfigureAwait(false);
+                var car = carIsStock ? null : await Content.Value.MetadataAsync(carHash, CancellationToken.None)
+                    .ConfigureAwait(false);
+                if ((!stageIsStock && stage is null) || (!carIsStock && car is null))
                 {
-                    // Stock content is expected to be seeded; a miss there is an archive problem.
-                    // Custom content that is not published cannot be ranked yet.
-                    var stock = Stock.Value;
-                    var stageIsStock = stock.Any(p => p.Kind == AssetKind.Stage && p.Hash == stageHash);
-                    var carIsStock = stock.Any(p => p.Kind == AssetKind.Car && p.Hash == carHash);
-                    var missing = stage is null ? $"stage '{submission.StageName}'" : $"car '{submission.CarName}'";
+                    var missing = !stageIsStock
+                                  && stage is null ? $"stage '{submission.StageName}'" : $"car '{submission.CarName}'";
                     return Finish(
                         submission,
-                        stageIsStock && carIsStock ? "pending" : "publish-required",
-                        $"The {missing} is not available at {ArchiveEndpoint.Url}. "
-                                                                 + (stageIsStock
-                                                                    && carIsStock ? "The archive needs matching stock content." : "Publish the matching content first."),
+                        "publish-required",
+                        $"The custom {missing} is not available at {ArchiveEndpoint.Url}. Publish the matching content first.",
                         false
                     );
                 }

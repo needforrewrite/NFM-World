@@ -18,10 +18,8 @@ public sealed record StockPackage(string Id, AssetKind Kind, byte[] Bytes, strin
 /// instead of the VFS, with fixed metadata and stable serialization, so the same build produces
 /// the same hashes every run and an upload of stock bytes is recognised as stock.
 ///
-/// Stage packages are only produced for stages that shipped as a radpack, which already embed
-/// their resolved piece geometry. A stage shipped as text needs the game's piece lookup to resolve
-/// its geometry, which is not available to the archive process; those are left to the build to
-/// package rather than guessed at here.
+/// Text stages require the game's loaded piece set; the validator loads it before resolving
+/// stock content. The web process does not load or register these packages.
 /// </remarks>
 public static class StockCatalog
 {
@@ -44,6 +42,38 @@ public static class StockCatalog
         if (includeTextStages)
             AddTextStages(packages, shippedRoot);
         return packages;
+    }
+
+    public static StockPackage? Find(string shippedRoot, AssetKind kind, string id)
+    {
+        if (kind == AssetKind.Car)
+        {
+            var prefix = id.Split('/')[0];
+            if (prefix is not ("nfmm" or "world" or "elo" or "football"))
+                return null;
+            var cars = new List<StockPackage>();
+            AddModelDirectory(cars, shippedRoot, $"data/models/{prefix}/cars", AssetKind.Car);
+            return cars.FirstOrDefault(package => package.Id == id);
+        }
+
+        if (kind != AssetKind.Stage)
+            return null;
+        var directory = Path.Combine(shippedRoot, "data", "stages");
+        if (!Directory.Exists(directory))
+            return null;
+        var file = Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories)
+            .Where(path => Path.GetExtension(path) is ".radpack" or ".txt")
+            .OrderBy(path => Path.GetExtension(path) == ".radpack" ? 0 : 1)
+            .FirstOrDefault(path => Path.ChangeExtension(Path.GetRelativePath(directory, path), null).Replace('\\', '/') == id);
+        if (file is null)
+            return null;
+        var stage = Path.GetExtension(file) == ".radpack"
+            ? (ReadPackage(file, RadpackType.Track) as RadpackStage)?.Stage
+            : StageLoader.FromLines(id, File.ReadLines(file));
+        if (stage is null)
+            return null;
+        var bytes = PackageStage(id, stage);
+        return new StockPackage(id, kind, bytes, HashOf(bytes), bytes.Length);
     }
 
     /// <summary>
@@ -153,8 +183,7 @@ public static class StockCatalog
     }
 
     /// <summary>
-    /// Packages stages that ship as text, using the game's loaded piece set. Only the running game
-    /// has that set, so a seeder that never loads the game skips these.
+    /// Packages text stages using the game's loaded piece set.
     /// </summary>
     private static void AddTextStages(List<StockPackage> packages, string root)
     {

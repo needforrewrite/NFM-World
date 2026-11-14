@@ -67,24 +67,25 @@ public static class TimeTrialEndpoints
                 if (file is null || string.IsNullOrEmpty(stageHash) || string.IsNullOrEmpty(carHash))
                     return Results.BadRequest(new { error = "Missing replay, stage hash or car hash." });
 
-                // Both hashes have to name public, validated content of the right kind. They are
-                // the leaderboard's key and the validator's input, so an invented or mismatched
-                // hash must fail here rather than rank a time against something else.
+                if (stageHash.Length != 64 || carHash.Length != 64 || !stageHash.All(Uri.IsHexDigit) || !carHash.All(
+                    Uri.IsHexDigit
+                ))
+                    return Results.BadRequest(new { error = "Invalid stage or car hash." });
+                stageHash = stageHash.ToLowerInvariant();
+                carHash = carHash.ToLowerInvariant();
+
+                // Custom content comes from validated uploads; stock is checked against the
+                // validator's shipped files and canonical hashes.
                 var usable = db.Assets.Where(a => a.IsPublic && !a.IsTakedown && a.IsValidated);
                 var stageAsset = await usable
                     .FirstOrDefaultAsync(a => a.ContentHash == stageHash && a.Type == AssetType.Stage, ct);
                 var carAsset = await usable
                     .FirstOrDefaultAsync(a => a.ContentHash == carHash && a.Type == AssetType.Car, ct);
-                if (stageAsset is null || carAsset is null)
-                    return Results.BadRequest(new { error = "The stage or car is not available in the archive." });
-
                 if (file.Length > RadpackLimits.MaxTimeTrialBytes)
                     return Results.BadRequest(new { error = "Replay exceeds the size limit." });
 
-                // The validator simulates against the archive's stored stage and car, not the
-                // copies the replay carries, so the replay cannot choose what it is verified on.
-                var stagePath = Path.Combine(storage.Root, stageAsset.StoragePath);
-                var carPath = Path.Combine(storage.Root, carAsset.StoragePath);
+                var stagePath = stageAsset is null ? $"stock:{stageHash}" : Path.Combine(storage.Root, stageAsset.StoragePath);
+                var carPath = carAsset is null ? $"stock:{carHash}" : Path.Combine(storage.Root, carAsset.StoragePath);
 
                 await using var received = file.OpenReadStream();
                 var stored = await StoreAndValidateAsync(
@@ -98,6 +99,9 @@ public static class TimeTrialEndpoints
                     carPath,
                     ct
                 );
+
+                if (stored.Error is { } validationError)
+                    return Results.BadRequest(new { error = validationError });
 
                 // The simulation is the authority on the time; a replay that does not reproduce its
                 // own tick count is refused, not stored.
@@ -253,7 +257,7 @@ public static class TimeTrialEndpoints
         );
     }
 
-    private sealed record StoredReplay(string StoragePath, System.Text.Json.JsonElement? ValidatorOutput);
+    private sealed record StoredReplay(string StoragePath, System.Text.Json.JsonElement? ValidatorOutput, string? Error);
 
     /// <summary>
     /// Stores the upload first, then validates the stored bytes, so the file that is simulated is
@@ -285,6 +289,6 @@ public static class TimeTrialEndpoints
         if (!result.Ok)
             await storage.DeleteIfUnreferencedAsync(relative, db, ct);
 
-        return new StoredReplay(relative, result.Output);
+        return new StoredReplay(relative, result.Output, result.Ok ? null : result.Error ?? "The replay could not be validated.");
     }
 }
