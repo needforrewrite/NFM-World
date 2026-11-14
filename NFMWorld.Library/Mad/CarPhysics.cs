@@ -44,6 +44,7 @@ public enum SurfaceType
 [PluginVisible]
 public partial class CarPhysics
 {
+    private int _rampGripTicks;
     private static readonly fix64 _tickRate = Physics.PHYSICS_MULTIPLIER_F64;
     private static readonly fix64 _oneOverTickRate = 1 / _tickRate;
 
@@ -1994,7 +1995,8 @@ public partial class CarPhysics
 
         if (!Mtouch && Wtouch)
         {
-            if (_cntouch == 10)
+            // 10 original frames.
+            if (_cntouch >= 10 * Physics.OriginalTicksPerNewTick)
             {
                 Mtouch = true; //DS-addons: Bad landing hotfix
             }
@@ -2698,6 +2700,7 @@ public partial class CarPhysics
         int touching = 0; //Phy-addons: Fix sliding on floating pieces
         int nWheelsRoadRamp = 0;
         int nWheelsDirtRamp = 0;
+        int nWheelsOverRamp = 0;
         for (int k = 0; k < 4; k++)
         {
             var position = new f64Vector3(wheelx[k], wheely[k] - wheelGround, wheelz[k]);
@@ -3054,6 +3057,10 @@ public partial class CarPhysics
                                     );
                                 }
                             }
+                            else
+                            {
+                                nWheelsOverRamp++;
+                            }
 
                             wheelx[k] = collision.newPosition.X;
                             wheely[k] = collision.newPosition.Y + wheelGround;
@@ -3064,6 +3071,25 @@ public partial class CarPhysics
                     }
                 }
             }
+        }
+
+        // All four wheels on ramps of one surface: the car has grip. A wheel crossing the joint
+        // between two ramp sections hangs over the next one for a tick, which the original's
+        // coarser step mostly skipped, so grip outlasts a gap shorter than one original frame.
+        var onRamp = Math.Max(nWheelsDirtRamp, nWheelsRoadRamp);
+        if (onRamp == 4)
+        {
+            Mtouch = true;
+            _rampGripTicks = Physics.OriginalTicksPerNewTick - 1;
+        }
+        else if (_rampGripTicks > 0 && onRamp > 0 && onRamp + nWheelsOverRamp == 4)
+        {
+            Mtouch = true;
+            _rampGripTicks--;
+        }
+        else
+        {
+            _rampGripTicks = 0;
         }
     }
 
@@ -3358,6 +3384,7 @@ public partial class CarPhysics
         _pmlt = 1;
         _nmlt = 1;
         _dcnt = 0;
+        _rampGripTicks = 0;
         Skid = 0;
         Pushed = false;
         Gtouch = false;
