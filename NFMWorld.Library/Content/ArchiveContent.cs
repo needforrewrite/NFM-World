@@ -101,8 +101,9 @@ public sealed class ArchiveContentClient : IDisposable
             return null;
 
         using var response = await _http.GetAsync(new Uri(_baseUri, $"assets/meta/{hash.ToLowerInvariant()}"), ct);
-        if (!response.IsSuccessStatusCode)
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             return null;
+        response.EnsureSuccessStatusCode();
 
         var item = await response.Content.ReadFromJsonAsync<JsonElement>(ct);
         return new RemoteAsset(
@@ -172,7 +173,8 @@ public sealed record RemoteReplay(
     string StageHash,
     string CarHash,
     int TotalTicks,
-    int ReplayVersion
+    int ReplayVersion,
+    DateTimeOffset? CreatedAt = null
 );
 
 public sealed record RemoteReplayPage(IReadOnlyList<RemoteReplay> Items, int? NextCursor);
@@ -222,7 +224,10 @@ public sealed class ArchiveReplayClient : IDisposable
                     item.GetProperty("stageHash").GetString() ?? "",
                     item.GetProperty("carHash").GetString() ?? "",
                     item.GetProperty("totalTicks").GetInt32(),
-                    item.GetProperty("replayVersion").GetInt32()
+                    item.GetProperty("replayVersion").GetInt32(),
+                    item.TryGetProperty("createdAt", out var createdAt) && createdAt.ValueKind == JsonValueKind.String
+                    && createdAt.TryGetDateTimeOffset(out var date)
+                        ? date : null
                 )
             );
         }
@@ -533,13 +538,20 @@ internal sealed class ArchiveCacheFileSystem(string root) : IVirtualFileSystem
 
     public IEnumerable<string> EnumerateFiles(string path, string searchPattern, SearchOption searchOption)
     {
-        if (!Directory.Exists(root))
+        var directory = path.Replace('\\', '/').Trim('/');
+        while (directory.StartsWith("./", StringComparison.Ordinal))
+            directory = directory[2..];
+        if (directory == ".") directory = "";
+        if (!directory.Equals("archive", StringComparison.OrdinalIgnoreCase)
+            && !(directory.Length == 0 && searchOption == SearchOption.AllDirectories)
+            || !Directory.Exists(root))
             yield break;
 
         foreach (var file in Directory.EnumerateFiles(root, "*"))
         {
             var name = Path.GetFileName(file);
-            if (ContentHashes.IsCanonical(name))
+            if (ContentHashes.IsCanonical(name)
+                && System.IO.Enumeration.FileSystemName.MatchesSimpleExpression(searchPattern, name, ignoreCase: true))
                 yield return Prefix + name.ToLowerInvariant();
         }
     }

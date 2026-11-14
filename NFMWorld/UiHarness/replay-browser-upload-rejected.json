@@ -1,0 +1,15 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../scratch/replay-upload-rejected-captures",
+  "view": "replay-browser-upload-rejected",
+  "steps": [
+    { "action": "click", "target": "Replay search" },
+    { "action": "text", "value": "harness/stage" },
+    { "action": "click", "target": "Replay row data/tts/harness-valid.timetrial" },
+    { "action": "click", "target": "Replay upload" },
+    { "action": "assert-text", "target": "Replay status", "value": "Replay validation refused (harness)." },
+    { "action": "capture", "capture": "upload-rejected" }
+  ]
+}

@@ -29,6 +29,9 @@ public static class TimeTrialUploader
     private static bool _recovered;
 
     public static void Enqueue(TimeTrialCompletion completion)
+        => _ = EnqueueAsync(completion);
+
+    private static async Task<RequestResult> EnqueueAsync(TimeTrialCompletion completion)
     {
         if (!_recovered)
         {
@@ -40,7 +43,7 @@ public static class TimeTrialUploader
         if (replay is null)
         {
             Logging.Warning("[TT] Could not read the completed recording; it will not be submitted.");
-            return;
+            return new RequestResult("That recording could not be read.", false);
         }
 
         var stageHash = replay.StageData is { } stage
@@ -59,9 +62,9 @@ public static class TimeTrialUploader
             account is null ? "pending" : "preparing"
         );
         if (submission is null)
-            return;
+            return new RequestResult("The submission queue is full. The recording is still saved locally.", false);
 
-        _ = UploadAsync(submission, completion.Recording);
+        return await UploadAsync(submission, completion.Recording);
     }
 
     /// <summary>Retries a durable submission from the replay browser.</summary>
@@ -76,27 +79,37 @@ public static class TimeTrialUploader
         _ = UploadAsync(submission, recording);
     }
 
+    public static async Task DeleteAsync(string file)
+    {
+        await Gate.WaitAsync();
+        try
+        {
+            TimeTrialSubmissions.DeleteRecording(file);
+        }
+        finally
+        {
+            Gate.Release();
+        }
+    }
+
     /// <summary>
     /// Manually submits a stored recording that has no durable submission, or retries the one it
     /// has. The replay browser calls this for its UPLOAD button.
     /// </summary>
-    public static bool Upload(string file)
+    public static async Task<RequestResult> UploadAsync(string file)
     {
         var replay = SavedTimeTrial.Load(file);
         if (replay is null)
-            return false;
-
-        var existing = TimeTrialSubmissions.List().FirstOrDefault(s =>
-            s.StageName == replay.StageName && s.CarName == replay.CarName
-        );
-        if (existing is { } submission)
-        {
-            Retry(submission);
-            return true;
-        }
+            return new RequestResult("That recording could not be read.", false);
 
         var recording = VFS.ReadAllBytes(file);
-        Enqueue(
+        var existing = TimeTrialSubmissions.FindRecording(TimeTrialSubmissions.List(), recording);
+        if (existing is { } submission)
+        {
+            return await UploadAsync(submission, recording);
+        }
+
+        return await EnqueueAsync(
             new TimeTrialCompletion(
                 replay.StageName,
                 replay.CarName,
@@ -105,10 +118,9 @@ public static class TimeTrialUploader
                 recording
             )
         );
-        return true;
     }
 
-    private static async Task UploadAsync(PendingSubmission submission, byte[] recording)
+    private static async Task<RequestResult> UploadAsync(PendingSubmission submission, byte[] recording)
     {
         await Gate.WaitAsync();
         try
@@ -116,8 +128,7 @@ public static class TimeTrialUploader
             var account = GameSparker.AccountManager.ActiveAccount;
             if (account is null)
             {
-                TimeTrialSubmissions.UpdateStatus(submission, "pending");
-                return;
+                return Finish(submission, "pending", "Sign in to submit this recording. It is still saved locally.", false);
             }
 
             // A run belongs to the account that finished it. Signing in as somebody else later
@@ -125,19 +136,23 @@ public static class TimeTrialUploader
             if (submission.Account is { } owner
                 && !string.Equals(owner, account.Username, StringComparison.OrdinalIgnoreCase))
             {
-                TimeTrialSubmissions.UpdateStatus(submission, "pending");
-                return;
+                return Finish(
+                    submission,
+                    "pending",
+                    $"This run belongs to {owner}. Sign in to that account to submit it.",
+                    false
+                );
             }
 
             if (submission.StageHash is not { } stageHash || submission.CarHash is not { } carHash)
             {
-                TimeTrialSubmissions.UpdateStatus(submission, "publish-required");
-                return;
+                return Finish(
+                    submission,
+                    "publish-required",
+                    "This recording has no stage or car content identity. Its content must be published before uploading.",
+                    false
+                );
             }
-
-            var stock = Stock.Value;
-            var stageIsStock = stock.Any(p => p.Kind == AssetKind.Stage && p.Hash == stageHash);
-            var carIsStock = stock.Any(p => p.Kind == AssetKind.Car && p.Hash == carHash);
 
             try
             {
@@ -147,17 +162,23 @@ public static class TimeTrialUploader
                 {
                     // Stock content is expected to be seeded; a miss there is an archive problem.
                     // Custom content that is not published cannot be ranked yet.
-                    TimeTrialSubmissions.UpdateStatus(
+                    var stock = Stock.Value;
+                    var stageIsStock = stock.Any(p => p.Kind == AssetKind.Stage && p.Hash == stageHash);
+                    var carIsStock = stock.Any(p => p.Kind == AssetKind.Car && p.Hash == carHash);
+                    var missing = stage is null ? $"stage '{submission.StageName}'" : $"car '{submission.CarName}'";
+                    return Finish(
                         submission,
-                        stageIsStock && carIsStock ? "pending" : "publish-required"
+                        stageIsStock && carIsStock ? "pending" : "publish-required",
+                        $"The {missing} is not available at {ArchiveEndpoint.Url}. "
+                                                                 + (stageIsStock
+                                                                    && carIsStock ? "The archive needs matching stock content." : "Publish the matching content first."),
+                        false
                     );
-                    return;
                 }
             }
-            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
             {
-                TimeTrialSubmissions.UpdateStatus(submission, "pending");
-                return;
+                return Finish(submission, "pending", $"Archive metadata request failed: {ex.Message}", false);
             }
 
             var result = await GameSparker.AccountManager.UploadTimeTrialAsync(
@@ -167,14 +188,26 @@ public static class TimeTrialUploader
                 submission.StageName,
                 submission.CarName
             );
-            TimeTrialSubmissions.UpdateStatus(
+            return Finish(
                 submission,
-                result.Success ? "uploaded" : "pending"
+                result.Success ? "uploaded" : "pending",
+                result.Message ?? (result.Success ? "Submitted." : "The archive refused this recording."),
+                result.Success
             );
         }
         finally
         {
             Gate.Release();
         }
+    }
+
+    private static RequestResult Finish(PendingSubmission submission, string status, string message, bool success)
+    {
+        TimeTrialSubmissions.UpdateStatus(submission, status);
+        if (success)
+            Logging.Info($"[TT] {submission.StageName} / {submission.CarName}: {message}");
+        else
+            Logging.Warning($"[TT] {submission.StageName} / {submission.CarName}: {message}");
+        return new RequestResult(message, success);
     }
 }

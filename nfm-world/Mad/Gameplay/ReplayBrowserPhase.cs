@@ -5,6 +5,8 @@ using NFMWorldLibrary;
 using NFMWorldLibrary.Content;
 using NFMWorldLibrary.Files;
 using NFMWorldLibrary.Radpack;
+using NFMWorldLibrary.Util;
+using TightPack;
 
 namespace NFMWorld.Gameplay;
 
@@ -31,6 +33,7 @@ public sealed class ReplayBrowserPhase : BasePhase
     private int? _nextCursor;
     private string _query = "";
     private IReadOnlyList<ReplayBrowserEntry> _localEntries = [];
+    private bool _disposed;
 
     public ReplayBrowserPhase()
     {
@@ -42,10 +45,12 @@ public sealed class ReplayBrowserPhase : BasePhase
         new ReplayBrowserView.Actions(
             Open: Open,
             Upload: Upload,
+            UploadAll: UploadAll,
             SourceSelected: SelectSource,
             Search: Search,
             LoadMore: () => _ = BrowseAsync(_query, append: true),
-            Back: GameSparker.PopPhase
+            Back: GameSparker.PopPhase,
+            Delete: id => _ = DeleteAsync(id)
         )
     );
 
@@ -57,6 +62,8 @@ public sealed class ReplayBrowserPhase : BasePhase
         _onlineCancellation?.Cancel();
         _onlineGeneration++;
         _state.Online.Value = online;
+        _state.SelectedId.Value = null;
+        _state.DeleteCandidate.Value = null;
         _state.Status.Value = "";
         _state.Busy.Value = false;
         _state.HasMore.Value = false;
@@ -82,7 +89,7 @@ public sealed class ReplayBrowserPhase : BasePhase
             return;
         }
 
-        RefreshLocal();
+        ApplyLocalFilter();
     }
 
     private async Task BrowseAsync(string? query, bool append)
@@ -112,7 +119,7 @@ public sealed class ReplayBrowserPhase : BasePhase
             _state.HasMore.Value = page.NextCursor is not null;
             _state.Status.Value = _state.Entries.Value.Count == 0
                 ? "No public replays matched."
-                : $"{_state.Entries.Value.Count} published replay(s). Pick one to watch it.";
+                : "";
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
@@ -138,7 +145,9 @@ public sealed class ReplayBrowserPhase : BasePhase
             Time: FormatTime(replay.TotalTicks),
             Detail: $"{replay.Username}  ·  replay #{replay.Id}",
             Compatible: replay.ReplayVersion == SavedTimeTrial.CURRENT_VERSION,
-            Uploadable: false
+            Uploadable: false,
+            SavedAt: replay.CreatedAt,
+            Deletable: false
         );
 
     private void RefreshLocal()
@@ -146,6 +155,8 @@ public sealed class ReplayBrowserPhase : BasePhase
         var pending = TimeTrialSubmissions.List();
         var entries = new List<ReplayBrowserEntry>();
         var malformed = 0;
+        var writable = VFS.EnumerateWriteFiles("data/tts", "*.timetrial", SearchOption.AllDirectories)
+            .ToHashSet(StringComparer.Ordinal);
 
         if (VFS.DirectoryExists("data/tts"))
         {
@@ -153,12 +164,15 @@ public sealed class ReplayBrowserPhase : BasePhase
                 .Take(MaxListed))
             {
                 SavedTimeTrial? replay;
+                byte[] recording;
                 try
                 {
-                    replay = SavedTimeTrial.Load(file);
+                    recording = VFS.ReadAllBytes(file);
+                    replay = SavedTimeTrial.Load(recording);
                 }
-                catch (Exception ex) when (ex is InvalidDataException or IOException)
+                catch (Exception ex) when (ex is InvalidDataException or IOException or TightPackSerializationException)
                 {
+                    Logging.Warning($"[Replay] Skipping unreadable recording {file}: {ex.Message}");
                     malformed++;
                     continue;
                 }
@@ -169,9 +183,7 @@ public sealed class ReplayBrowserPhase : BasePhase
                     continue;
                 }
 
-                var submission = pending.FirstOrDefault(s =>
-                    s.StageName == replay.StageName && s.CarName == replay.CarName
-                );
+                var submission = TimeTrialSubmissions.FindRecording(pending, recording);
                 var status = submission?.Status switch
                 {
                     "uploaded" => "Uploaded",
@@ -189,7 +201,10 @@ public sealed class ReplayBrowserPhase : BasePhase
                         Time: FormatTime(replay.DemoData.Ticks.Count),
                         Detail: status,
                         Compatible: IsCompatible(replay),
-                        Uploadable: submission is not { Status: "uploaded" }
+                        Uploadable: IsCompatible(replay) && submission is not { Status: "uploaded" },
+                        SavedAt: VFS.GetLastWriteTimeUtc(file)
+                        ?? (submission is { RecordedAt: var date } && date != default ? date : null),
+                        Deletable: writable.Contains(file)
                     )
                 );
             }
@@ -234,6 +249,9 @@ public sealed class ReplayBrowserPhase : BasePhase
 
     private void Open(string id)
     {
+        if (_state.Busy.Value)
+            return;
+
         if (id.StartsWith(RemotePrefix, StringComparison.Ordinal))
         {
             if (int.TryParse(id.AsSpan(RemotePrefix.Length), out var remoteId))
@@ -287,7 +305,8 @@ public sealed class ReplayBrowserPhase : BasePhase
             _state.Status.Value = "";
             GameSparker.PushPhase(new ReplayViewerPhase(replay));
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidDataException)
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidDataException
+            or TightPackSerializationException)
         {
             _state.Status.Value = $"Could not download replay #{id}: {ex.Message}";
         }
@@ -297,23 +316,81 @@ public sealed class ReplayBrowserPhase : BasePhase
         }
     }
 
-    /// <summary>Submits every local recording the archive has not accepted yet.</summary>
-    private void Upload()
+    private void Upload(string id)
+        => _ = UploadRecordingsAsync(_state.Entries.Value.Where(entry => entry.Id == id && entry.Uploadable).ToArray());
+
+    private async Task DeleteAsync(string id)
     {
-        var uploadable = _localEntries.Where(entry => entry.Uploadable).ToArray();
-        if (uploadable.Length == 0)
+        if (_state.Online.Value || _state.Busy.Value || !_localEntries.Any(entry => entry.Id == id && entry.Deletable))
+            return;
+
+        var generation = ++_onlineGeneration;
+        _state.Busy.Value = true;
+        try
+        {
+            await TimeTrialUploader.DeleteAsync(id);
+            if (_disposed || generation != _onlineGeneration)
+                return;
+            _state.SelectedId.Value = null;
+            RefreshLocal();
+            _state.Status.Value = "Replay deleted from this device.";
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            if (!_disposed && generation == _onlineGeneration)
+                _state.Status.Value = $"Could not delete the replay: {ex.Message}";
+        }
+        finally
+        {
+            if (!_disposed && generation == _onlineGeneration)
+                _state.Busy.Value = false;
+        }
+    }
+
+    private void UploadAll()
+        => _ = UploadRecordingsAsync(_state.Entries.Value.Where(entry => entry.Uploadable).ToArray());
+
+    private async Task UploadRecordingsAsync(IReadOnlyList<ReplayBrowserEntry> uploadable)
+    {
+        if (_state.Online.Value || _state.Busy.Value)
+            return;
+
+        if (uploadable.Count == 0)
         {
             _state.Status.Value = "Every recording has already been submitted.";
             return;
         }
 
-        var submitted = uploadable.Count(entry => TimeTrialUploader.Upload(entry.Id));
-        _state.Status.Value = submitted == 0
-            ? "None of the recordings could be read."
-            : submitted == 1
-                ? "Submitting one recording..."
-                : $"Submitting {submitted} recordings...";
-        RefreshLocal();
+        var generation = ++_onlineGeneration;
+        _state.Busy.Value = true;
+        _state.Status.Value = $"Submitting {uploadable.Count} recording(s)...";
+        try
+        {
+            var results = new List<RequestResult>();
+            foreach (var entry in uploadable)
+                results.Add(await TimeTrialUploader.UploadAsync(entry.Id));
+
+            if (_disposed || generation != _onlineGeneration)
+                return;
+
+            RefreshLocal();
+            var submitted = results.Count(result => result.Success);
+            var failure = results.FirstOrDefault(result => !result.Success);
+            _state.Status.Value = results.Count == 1
+                ? results[0].Message ?? "The archive returned no upload status."
+                : $"Submitted {submitted}/{results.Count} recordings. {failure?.Message}";
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or HttpRequestException or TaskCanceledException
+            or TightPackSerializationException)
+        {
+            if (!_disposed && generation == _onlineGeneration)
+                _state.Status.Value = $"Could not submit the recording: {ex.Message}";
+        }
+        finally
+        {
+            if (!_disposed && generation == _onlineGeneration)
+                _state.Busy.Value = false;
+        }
     }
 
     protected override void Dispose(bool disposing)
@@ -321,6 +398,8 @@ public sealed class ReplayBrowserPhase : BasePhase
         base.Dispose(disposing);
         if (!disposing)
             return;
+
+        _disposed = true;
 
         // A connect still in flight would otherwise outlive the phase and write into a disposed
         // state object's signals.

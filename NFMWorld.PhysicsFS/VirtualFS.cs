@@ -237,6 +237,35 @@ public class VirtualFS
         return File.Open(fullPath, FileMode.Create, FileAccess.Write, FileShare.Read);
     }
 
+    public DateTimeOffset? GetLastWriteTimeUtc(string path)
+    {
+        using var stream = OpenRead(path);
+        return stream is FileStream file ? File.GetLastWriteTimeUtc(file.Name) : null;
+    }
+
+    public Stream OpenReadFromWriteRoot(string path) => File.OpenRead(ResolveWritePath(path));
+
+    public bool DeleteWriteFile(string path)
+    {
+        var fullPath = ResolveWritePath(path);
+        if (!File.Exists(fullPath))
+            return false;
+        File.Delete(fullPath);
+        return true;
+    }
+
+    private string ResolveWritePath(string path)
+    {
+        if (_writeRoot is null)
+            throw new InvalidOperationException("No write destination mounted.");
+
+        var fullPath = Path.GetFullPath(Path.Combine(_writeRoot, path.Replace('\\', '/')));
+        var relative = Path.GetRelativePath(_writeRoot, fullPath).Replace('\\', '/');
+        if (Path.IsPathRooted(relative) || relative == ".." || relative.StartsWith("../", StringComparison.Ordinal))
+            throw new ArgumentException("The path must stay within the write destination.", nameof(path));
+        return fullPath;
+    }
+
     private string? SavedConfigPath(string path)
     {
         if (_writeRoot is null || !path.Replace('\\', '/').StartsWith("data/cfg/", StringComparison.OrdinalIgnoreCase))

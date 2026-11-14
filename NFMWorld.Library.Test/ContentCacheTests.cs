@@ -91,6 +91,52 @@ public class ContentCacheTests
     }
 
     [TestMethod]
+    public async Task Enumeration_RespectsTheRequestedDirectoryAndFilePattern()
+    {
+        var (bytes, hash) = CarRadpack();
+        using var client = Client(new FakeHandler(_ => bytes));
+        Assert.IsTrue((await ContentCache.PrepareAsync(client, hash, AssetKind.Car, CancellationToken.None)).Ok);
+
+        Assert.IsEmpty(TheVFS.VFS.EnumerateFiles("data/tts", "*.timetrial", SearchOption.AllDirectories)
+            .Where(path => path.StartsWith("archive/", StringComparison.Ordinal))
+        );
+        Assert.IsEmpty(TheVFS.VFS.EnumerateFiles("archive", "*.timetrial", SearchOption.AllDirectories));
+        CollectionAssert.Contains(
+            TheVFS.VFS.EnumerateFiles("archive", "*", SearchOption.TopDirectoryOnly).ToArray(),
+            ContentCache.PathForHash(hash)
+        );
+        CollectionAssert.Contains(
+            TheVFS.VFS.EnumerateFiles("", "*", SearchOption.AllDirectories).ToArray(),
+            ContentCache.PathForHash(hash)
+        );
+    }
+
+    [TestMethod]
+    [DataRow(HttpStatusCode.NotFound)]
+    [DataRow(HttpStatusCode.ServiceUnavailable)]
+    [DataRow(HttpStatusCode.Unauthorized)]
+    public async Task Metadata_DistinguishesMissingContentFromServerFailures(HttpStatusCode status)
+    {
+        using var http = new HttpClient(new MetadataFailureHandler(status));
+        using var client = new ArchiveContentClient("https://archive.example/", http);
+        if (status == HttpStatusCode.NotFound)
+            Assert.IsNull(await client.MetadataAsync(new string('a', 64), CancellationToken.None));
+        else
+        {
+            var error = await Assert.ThrowsExactlyAsync<HttpRequestException>(
+                () => client.MetadataAsync(new string('a', 64), CancellationToken.None)
+            );
+            Assert.AreEqual(status, error.StatusCode);
+        }
+    }
+
+    private sealed class MetadataFailureHandler(HttpStatusCode status) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+            => Task.FromResult(new HttpResponseMessage(status));
+    }
+
+    [TestMethod]
     public async Task Prepare_SecondCall_ServesFromTheCache()
     {
         var (bytes, hash) = CarRadpack();

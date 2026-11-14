@@ -16,13 +16,19 @@ public sealed record ReplayBrowserEntry(
     string Time,
     string Detail,
     bool Compatible,
-    bool Uploadable
+    bool Uploadable,
+    DateTimeOffset? SavedAt = null,
+    bool Deletable = true
 );
 
 /// <summary>Reactive state the replay browser renders. The hosting phase owns and writes it.</summary>
 public sealed class ReplayBrowserState
 {
     public Signal<IReadOnlyList<ReplayBrowserEntry>> Entries { get; } = new([]);
+    public Signal<string?> SelectedId { get; } = new(null);
+    public ReplayBrowserEntry? Selected => Entries.Value.FirstOrDefault(entry => entry.Id == SelectedId.Value);
+    public Signal<string> SearchDraft { get; } = new("");
+    public Signal<ReplayBrowserEntry?> DeleteCandidate { get; } = new(null);
 
     /// <summary>True while the list shows published replays instead of local recordings.</summary>
     public Signal<bool> Online { get; } = new(false);
@@ -40,27 +46,21 @@ public sealed class ReplayBrowserState
 /// <summary>
 /// Browse local recordings and published replays, open one, or upload a local one.
 /// </summary>
-/// <remarks>
-/// A centred panel with every button on one row above it: the browser is reached from the menu and
-/// a full-screen sheet would hide the scene behind it for no gain.
-/// </remarks>
 public static class ReplayBrowserView
 {
     public sealed record Actions(
         Action<string> Open,
-        Action Upload,
+        Action<string> Upload,
+        Action UploadAll,
         Action<bool> SourceSelected,
         Action<string> Search,
         Action LoadMore,
-        Action Back
+        Action Back,
+        Action<string>? Delete = null
     );
-
-    private static readonly Signal<string> SearchDraft = new("");
 
     public static Node Build(ReplayBrowserState state, Actions actions)
     {
-        SearchDraft.Value = "";
-
         return Sx.View(
             name: () => "Replay browser",
             style: () => Sx.Styles(
@@ -71,7 +71,14 @@ public static class ReplayBrowserView
                 alignItems: Align.Center,
                 justifyContent: Justify.Center
             ),
-            children: [Panel(state, actions)]
+            children:
+            [
+                Panel(state, actions),
+                Sx.Show(
+                    when: () => state.DeleteCandidate.Value is not null,
+                    then: () => DeleteConfirmation(state, actions)
+                )
+            ]
         );
     }
 
@@ -81,13 +88,15 @@ public static class ReplayBrowserView
             style: () => Sx.Styles(
                 width: 860,
                 maxWidth: 96.Percent(),
-                maxHeight: 78.Percent(),
+                height: 600,
+                maxHeight: 100.Percent(),
+                minHeight: 0,
                 flexDirection: FlexDirection.Column,
                 gapRow: 10,
-                paddingTop: 14,
-                paddingBottom: 14,
-                paddingLeft: 16,
-                paddingRight: 16,
+                paddingTop: 20,
+                paddingBottom: 20,
+                paddingLeft: 20,
+                paddingRight: 20,
                 borderRadius: 10,
                 borderTop: 1,
                 borderBottom: 1,
@@ -98,11 +107,29 @@ public static class ReplayBrowserView
             ),
             children:
             [
+                Header(actions),
                 ButtonRow(state, actions),
                 SearchBox(state, actions),
                 Status(state),
                 List(state, actions),
+                Selection(state, actions),
                 Footer(state, actions)
+            ]
+        );
+
+    private static Node Header(Actions actions)
+        => Sx.View(
+            style: () => Sx.Styles(alignItems: Align.Center, justifyContent: Justify.SpaceBetween, flexShrink: 0),
+            children:
+            [
+                Sx.Text(style: () => Sx.TextStyles(fontSize: 24, fontStyle: FontStyle.Bold), text: () => "REPLAYS"),
+                Button.Create(
+                    label: () => "BACK",
+                    onPress: actions.Back,
+                    variant: ButtonVariant.Ghost,
+                    size: ButtonSize.Sm,
+                    name: () => "Replay back"
+                )
             ]
         );
 
@@ -111,7 +138,7 @@ public static class ReplayBrowserView
             name: () => "Replay browser buttons",
             style: () => Sx.Styles(
                 flexDirection: FlexDirection.Row,
-                justifyContent: Justify.Center,
+                justifyContent: Justify.FlexStart,
                 alignItems: Align.Center,
                 flexShrink: 0,
                 gapColumn: 8
@@ -133,29 +160,17 @@ public static class ReplayBrowserView
                     name: () => "Replay source online"
                 ),
                 Sx.Show(
-                    when: () => !state.Online.Value,
+                    when: () => !state.Online.Value && state.Entries.Value.Any(entry => entry.Uploadable),
                     then: () => Button.Create(
-                        label: () => UploadLabel(state),
-                        onPress: actions.Upload,
+                        label: () => $"UPLOAD ALL ({state.Entries.Value.Count(entry => entry.Uploadable)})",
+                        onPress: actions.UploadAll,
+                        variant: ButtonVariant.Ghost,
                         size: ButtonSize.Sm,
-                        name: () => "Replay upload"
+                        name: () => "Replay upload all"
                     )
-                ),
-                Button.Create(
-                    label: () => "← BACK",
-                    onPress: actions.Back,
-                    variant: ButtonVariant.Ghost,
-                    size: ButtonSize.Sm,
-                    name: () => "Replay back"
                 )
             ]
         );
-
-    private static string UploadLabel(ReplayBrowserState state)
-    {
-        var count = state.Entries.Value.Count(entry => entry.Uploadable);
-        return count > 1 ? $"UPLOAD ALL ({count})" : "UPLOAD";
-    }
 
     private static Node SearchBox(ReplayBrowserState state, Actions actions)
     {
@@ -175,12 +190,17 @@ public static class ReplayBrowserView
                 borderRadius: 6,
                 flexShrink: 0
             ),
-            text: () => SearchDraft.Value,
-            onchange: value => SearchDraft.Value = value,
+            text: () => state.SearchDraft.Value,
+            onchange: value =>
+            {
+                state.SearchDraft.Value = value;
+                if (!state.Online.Value)
+                    actions.Search(value);
+            },
             placeholder: () => state.Online.Value
                 ? "Search published replays, Enter to search..."
                 : "Search your recordings...",
-            onsubmit: _ => actions.Search(SearchDraft.Value)
+            onsubmit: _ => actions.Search(state.SearchDraft.Value)
         );
         input.Name = "Replay search";
         return input;
@@ -189,14 +209,19 @@ public static class ReplayBrowserView
     private static Node Status(ReplayBrowserState state)
         => Sx.Show(
             when: () => state.Status.Value.Length > 0,
-            then: () => Sx.Text(
-                layout: () => Sx.Styles(width: 100.Percent(), flexShrink: 0),
-                style: () => Sx.WrappingText(
-                    fontSize: 11,
-                    foregroundColor: state.Busy.Value ? Theme.Accent : Theme.Warning
-                ),
-                text: () => state.Status.Value
-            )
+            then: () =>
+            {
+                var status = Sx.Text(
+                    layout: () => Sx.Styles(width: 100.Percent(), flexShrink: 0),
+                    style: () => Sx.WrappingText(
+                        fontSize: 11,
+                        foregroundColor: state.Busy.Value ? Theme.Accent : Theme.Warning
+                    ),
+                    text: () => state.Status.Value
+                );
+                status.Name = "Replay status";
+                return status;
+            }
         );
 
     private static Node List(ReplayBrowserState state, Actions actions)
@@ -206,13 +231,12 @@ public static class ReplayBrowserView
                 flexGrow: 1,
                 flexShrink: 1,
                 minHeight: 0,
+                paddingRight: 8,
                 flexDirection: FlexDirection.Column,
                 overflow: Overflow.Scroll
             ),
             children:
             [
-                // A fixed-width column, so long stage or driver names cannot add a horizontal
-                // scrollbar to a container that only ever scrolls vertically.
                 Sx.View(
                     name: () => "Replay list content",
                     style: () => Sx.Styles(
@@ -223,7 +247,7 @@ public static class ReplayBrowserView
                     ),
                     children:
                     [
-                        Sx.For(each: () => state.Entries.Value, row: (entry, _) => Row(entry, actions)),
+                        Sx.For(each: () => state.Entries.Value, row: (entry, _) => Row(entry, state)),
                         Sx.Show(
                             when: () => state.Entries.Value.Count == 0,
                             then: () => Sx.Text(
@@ -239,8 +263,10 @@ public static class ReplayBrowserView
             ]
         );
 
-    private static Node Row(ReplayBrowserEntry entry, Actions actions)
-        => Sx.View(
+    private static Node Row(ReplayBrowserEntry entry, ReplayBrowserState state)
+    {
+        var hovered = new Signal<bool>(false);
+        return Sx.View(
             name: () => "Replay row " + entry.Id,
             style: () => Sx.Styles(
                 flexShrink: 0,
@@ -253,9 +279,14 @@ public static class ReplayBrowserView
                 paddingLeft: 12,
                 paddingRight: 12,
                 borderRadius: 6,
-                backgroundColor: new Color(22, 42, 80, 140)
+                borderLeft: 3,
+                borderColor: state.SelectedId.Value == entry.Id ? Theme.Accent : Theme.Transparent,
+                backgroundColor: state.SelectedId.Value == entry.Id ? Theme.MenuHighlight
+                    : hovered.Value ? Theme.SurfaceHover : Theme.MenuFill
             ),
-            onmousedown: _ => actions.Open(entry.Id),
+            onmousedown: _ => state.SelectedId.Value = entry.Id,
+            onmouseenter: _ => hovered.Value = true,
+            onmouseleave: _ => hovered.Value = false,
             children:
             [
                 Sx.View(
@@ -265,27 +296,214 @@ public static class ReplayBrowserView
                         Sx.Text(
                             layout: () => Sx.Styles(width: 100.Percent()),
                             style: () => Sx.WrappingText(fontSize: 13, fontStyle: FontStyle.Bold),
-                            text: () => $"{entry.Stage}  ·  {entry.Car}"
+                            text: () => entry.Stage
                         ),
                         Sx.Text(
                             layout: () => Sx.Styles(width: 100.Percent()),
                             style: () => Sx.WrappingText(
                                 fontSize: 11,
-                                foregroundColor: entry.Compatible ? Theme.TextFaint : Theme.Warning
+                                foregroundColor: entry.Compatible ? Theme.MenuDim : Theme.Warning
                             ),
-                            text: () => entry.Compatible
-                                ? entry.Detail
-                                : $"Incompatible recording  ·  {entry.Detail}"
+                            text: () => $"{entry.Car}  ·  {(entry.Compatible ? entry.Detail : "Incompatible recording")}"
                         )
                     ]
                 ),
-                Sx.Text(
-                    layout: () => Sx.Styles(flexShrink: 0),
-                    style: () => Sx.TextStyles(fontSize: 13, foregroundColor: Theme.MenuTextBlue),
-                    text: () => entry.Time
+                Sx.View(
+                    style: () => Sx.Styles(
+                        flexShrink: 0,
+                        flexDirection: FlexDirection.Column,
+                        alignItems: Align.FlexEnd,
+                        gapRow: 2
+                    ),
+                    children:
+                    [
+                        Sx.Text(style: () => Sx.TextStyles(
+                            fontSize: 17,
+                            fontStyle: FontStyle.Bold,
+                            foregroundColor: Theme.MenuTextBlue
+                        ), text: () => entry.Time
+                        ),
+                        Sx.Text(
+                            style: () => Sx.TextStyles(fontSize: 10, foregroundColor: Theme.MenuDim),
+                            text: () => DateLabel(entry, state.Online.Value)
+                        )
+                    ]
                 )
             ]
         );
+    }
+
+    private static Node Selection(ReplayBrowserState state, Actions actions)
+        => Sx.View(
+            name: () => "Replay selection",
+            style: () => Sx.Styles(
+                flexDirection: FlexDirection.Column,
+                flexShrink: 0,
+                gapRow: 8,
+                paddingTop: 10,
+                paddingBottom: 10,
+                paddingLeft: 12,
+                paddingRight: 12,
+                backgroundColor: Theme.Surface,
+                borderRadius: 6
+            ),
+            children:
+            [
+                Sx.Text(
+                    layout: () => Sx.Styles(width: 100.Percent()),
+                    style: () => Sx.WrappingText(fontSize: 12, foregroundColor: Theme.TextSecondary),
+                    text: () => state.Selected is { } entry
+                        ? $"{entry.Stage}  ·  {entry.Car}  ·  {entry.Time}  ·  {entry.Detail}  ·  {DateLabel(entry, state.Online.Value)}"
+                        : "Select a recording to watch or upload it."
+                ),
+                Sx.View(
+                    style: () => Sx.Styles(gapColumn: 8, alignItems: Align.Center),
+                    children:
+                    [
+                        Sx.Show(
+                            when: () => state.Selected is { Compatible: true } && !state.Busy.Value,
+                            then: () => Button.Create(
+                                label: () => "PLAY REPLAY",
+                                onPress: () => { if (state.Selected is { } entry) actions.Open(entry.Id); },
+                                variant: ButtonVariant.Primary,
+                                size: ButtonSize.Sm,
+                                name: () => "Replay play"
+                            ),
+                            otherwise: () => Button.Create(
+                                label: () => state.Busy.Value ? "PLEASE WAIT..." : "PLAY REPLAY",
+                                onPress: () => { },
+                                disabled: true,
+                                size: ButtonSize.Sm
+                            )
+                        ),
+                        Sx.Show(
+                            when: () => !state.Online.Value && state.Selected is { Compatible: true, Uploadable: true }
+                                        && !state.Busy.Value,
+                            then: () => Button.Create(
+                                label: () => "UPLOAD REPLAY",
+                                onPress: () => { if (state.Selected is { } entry) actions.Upload(entry.Id); },
+                                size: ButtonSize.Sm,
+                                name: () => "Replay upload"
+                            )
+                        ),
+                        Sx.Show(
+                            when: () => !state.Online.Value && state.Selected is { Deletable: true }
+                                        && !state.Busy.Value && actions.Delete is not null,
+                            then: () => Button.Create(
+                                label: () => "DELETE REPLAY",
+                                onPress: () => state.DeleteCandidate.Value = state.Selected,
+                                variant: ButtonVariant.Danger,
+                                size: ButtonSize.Sm,
+                                name: () => "Replay delete"
+                            )
+                        )
+                    ]
+                )
+            ]
+        );
+
+    private static string DateLabel(ReplayBrowserEntry entry, bool online)
+        => entry.SavedAt is { } date
+            ? $"{(online ? "Published" : "Saved")} {date.ToLocalTime():yyyy-MM-dd HH:mm}"
+            : "Date unavailable";
+
+    private static Node DeleteConfirmation(ReplayBrowserState state, Actions actions)
+    {
+        var entry = state.DeleteCandidate.Value!;
+        void Cancel() => state.DeleteCandidate.Value = null;
+
+        return KeyboardNavigation.Scope(Sx.View(
+            name: () => "Replay delete confirmation",
+            style: () => Sx.Styles(
+                position: Position.Absolute,
+                top: 0,
+                bottom: 0,
+                left: 0,
+                right: 0,
+                alignItems: Align.Center,
+                justifyContent: Justify.Center,
+                backgroundColor: Theme.Overlay,
+                zIndex: 30
+            ),
+            onmousedown: _ => Cancel(),
+            children: Sx.View(
+                style: () => Sx.Styles(
+                    width: 460,
+                    maxWidth: 94.Percent(),
+                    flexDirection: FlexDirection.Column,
+                    gapRow: 16,
+                    paddingTop: 24,
+                    paddingBottom: 24,
+                    paddingLeft: 24,
+                    paddingRight: 24,
+                    backgroundColor: Theme.Panel,
+                    borderRadius: 10
+                ),
+                onmousedown: e => e.StopPropagation(),
+                children:
+                [
+                    Sx.Text(
+                        style: () => Sx.TextStyles(fontSize: 20, fontStyle: FontStyle.Bold),
+                        text: () => "DELETE REPLAY?"
+                    ),
+                    Sx.Text(
+                        layout: () => Sx.Styles(width: 100.Percent()),
+                        style: () => Sx.WrappingText(fontSize: 13, foregroundColor: Theme.TextSecondary),
+                        text: () => $"Are you sure you want to delete this replay?\n\n{entry.Stage} · {entry.Car} · {entry.Time}\n{DateLabel(entry, false)}\n\nThis removes local copies of this run and its pending upload. Published replays stay online."
+                    ),
+                    KeyboardNavigation.Row(Sx.View(
+                        style: () => Sx.Styles(gapColumn: 10, justifyContent: Justify.FlexEnd),
+                        children:
+                        [
+                            KeyboardNavigation.Bind(
+                                Button.Create(
+                                    label: () => "CANCEL",
+                                    onPress: Cancel,
+                                    size: ButtonSize.Sm,
+                                    name: () => "Replay delete cancel"
+                                ),
+                                key =>
+                                {
+                                    if (key is not (Key.Escape or Key.Enter or Key.Space)) return false;
+                                    Cancel();
+                                    return true;
+                                },
+                                _ => { },
+                                preferred: () => true
+                            ),
+                            KeyboardNavigation.Bind(
+                                Button.Create(
+                                    label: () => "DELETE REPLAY",
+                                    onPress: () =>
+                                    {
+                                        Cancel();
+                                        actions.Delete?.Invoke(entry.Id);
+                                    },
+                                    variant: ButtonVariant.Danger,
+                                    size: ButtonSize.Sm,
+                                name: () => "Replay delete confirm"
+                                ),
+                                key =>
+                                {
+                                    if (key == Key.Escape)
+                                    {
+                                        Cancel();
+                                        return true;
+                                    }
+
+                                    if (key is not (Key.Enter or Key.Space)) return false;
+                                    Cancel();
+                                    actions.Delete?.Invoke(entry.Id);
+                                    return true;
+                                },
+                                _ => { }
+                            )
+                        ]
+                    ))
+                ]
+            )
+        ));
+    }
 
     private static Node Footer(ReplayBrowserState state, Actions actions)
         => Sx.View(
@@ -300,7 +518,7 @@ public static class ReplayBrowserView
             [
                 Sx.Text(
                     style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.TextFaint),
-                    text: () => state.Online.Value ? "Published replays" : "Your recordings"
+                    text: () => $"{state.Entries.Value.Count} {(state.Online.Value ? "published replays" : "recordings")}"
                 ),
                 Sx.Show(
                     when: () => state.HasMore.Value,
