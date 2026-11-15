@@ -214,13 +214,20 @@ public static partial class GameSparker
 
         var bindings = SettingsMenu.Bindings;
 
+        if (!imguiWantsKeyboard && CurrentPhase is RacePhase race
+            && (race.HandleChatKey(key) || race.HandleRaceFinishKey(key)))
+        {
+            PhaseKeys.Add(key);
+            return;
+        }
+
         // Global so the toggle works in menus too; a focused text field owns its keys.
         if (!imguiWantsKeyboard
             && FocusManager.FocusedNode is not TextInput
             && key == bindings.ToggleMusic)
             SettingsMenu.ToggleMusicMute();
 
-        if (key == bindings.ToggleDevConsole)
+        if (key == bindings.ToggleDevConsole && FocusManager.FocusedNode is not TextInput and not TextArea)
         {
             devConsole.Toggle();
             var phase = CurrentPhase;

@@ -155,7 +155,7 @@ public static partial class GarageView
         return result;
     }
 
-    public static Node Build(Actions actions)
+    public static Node Build(Actions actions, bool thumbnailPreview = false)
     {
         _compactPreview = false;
         var menu = MenuPanel(actions);
@@ -171,7 +171,10 @@ public static partial class GarageView
                 backgroundColor: UiState.Garage.Page.Value == GaragePage.Cars
                     ? new Color(10, 18, 36, 245) : Theme.Transparent
             ),
-            children: [menu, detail, PreviewHint()]
+            children: [
+                thumbnailPreview ? ThumbnailPreview(MenuWidth + PanelInset + 20) : null,
+                menu, detail,
+                thumbnailPreview ? null : PreviewHint()]
         );
     }
 

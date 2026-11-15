@@ -116,7 +116,8 @@ internal sealed class WorldHud(IHudData race)
                 layout: () => Sx.Styles(marginTop: 4),
                 text: () => Tick() < 0 || race.ArrowTarget.Length == 0
                     ? "CHECKPOINT"
-                    : race.ArrowAtCars || race.Spectating
+                    : race.Spectating ? $"Spectating: {race.ArrowTarget}"
+                    : race.ArrowAtCars
                         ? race.ArrowTarget
                         : "CHECKPOINT"
             )

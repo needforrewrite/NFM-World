@@ -2,6 +2,7 @@ using System.Diagnostics;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
+using NFMWorld.UI.ViewModels;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Hud;
 
@@ -45,7 +46,8 @@ public sealed class RaceMessages : Component
 
     protected override void RenderContent(Vector2 position, Vector2 size)
     {
-        if (_race.IsPreview) return;
+        if (_race.IsPreview || _race is UiState.RaceState state && state.Finished.Value && state.ResultTitle.Value is not null)
+            return;
         var now = Stopwatch.GetTimestamp();
         var dt = Math.Clamp((float)Stopwatch.GetElapsedTime(_lastFrame, now).TotalSeconds, 0, 0.1f);
         _lastFrame = now;

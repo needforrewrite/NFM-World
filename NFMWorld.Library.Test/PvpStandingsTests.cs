@@ -167,14 +167,37 @@ public class PvpStandingsTests
     private static void Finish(BaseGamemodeFactory factory, IServerGamemode server, ServerContext context, Guid player)
         => DriveToFinish(factory, server, context, player, Laps, Checkpoints);
 
+    [TestMethod]
+    [DataRow("racing")]
+    [DataRow("both")]
+    public void OneCarStartingTheRaceMustCompleteTheLapsToWin(string constraint)
+    {
+        var (factory, server, context) = CreateRace(constraint, Alice);
+        try
+        {
+            StartRacing(server);
+            for (var tick = 0; tick < 300; tick++) server.GameTick();
+            Assert.IsNull(server.GetStateSnapshot(), "starting alone is not a survival win");
+            Finish(factory, server, context, Alice);
+            Assert.AreEqual(Alice, Standings(server)[0].PlayerId);
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
+
     /// <summary>
     /// A wasting race is decided by survival: once only one car is still alive the race is over,
     /// and the survivor wins even though nobody crossed a line.
     /// </summary>
     [TestMethod]
-    public void WastingConstraint_EndsWhenOneCarIsLeftAndThatCarWins()
+    [DataRow("racing")]
+    [DataRow("wasting")]
+    [DataRow("both")]
+    public void EveryConstraint_EndsWhenOneCarIsLeftAndThatCarWins(string constraint)
     {
-        var (factory, server, context) = CreateRace("wasting", Alice, Bob, Carol);
+        var (factory, server, context) = CreateRace(constraint, Alice, Bob, Carol);
         try
         {
             StartRacing(server);
@@ -183,7 +206,7 @@ public class PvpStandingsTests
             Wasted(server, context, Bob);
 
             var standings = Standings(server);
-            Assert.AreEqual(Carol, standings[0].PlayerId, "the last car alive wins a wasting race");
+            Assert.AreEqual(Carol, standings[0].PlayerId, "the last car alive wins");
             Assert.AreEqual(Bob, standings[1].PlayerId, "the newest death sorts ahead of the older one");
             Assert.AreEqual(Alice, standings[2].PlayerId);
         }
@@ -193,19 +216,93 @@ public class PvpStandingsTests
         }
     }
 
-    /// <summary>A racing race ignores deaths: everyone can be out and the race still runs.</summary>
+    /// <summary>A simultaneous wipeout ends the race without awarding a finisher.</summary>
     [TestMethod]
-    public void RacingConstraint_DoesNotEndWhenEveryCarIsWasted()
+    public void AllCarsWastedOnTheSameTick_EndWithoutAFinisher()
     {
         var (factory, server, context) = CreateRace("racing", Alice, Bob, Carol);
         try
         {
             StartRacing(server);
-            Wasted(server, context, Alice);
-            Wasted(server, context, Bob);
-            Wasted(server, context, Carol);
+            context.Wasted[Alice] = context.Wasted[Bob] = context.Wasted[Carol] = true;
+            server.GameTick();
 
-            Assert.IsNull(server.GetStateSnapshot(), "a racing race has no survival condition");
+            Assert.IsTrue(Standings(server).All(standing => standing.FinishTime is null));
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
+
+    [TestMethod]
+    [DataRow("racing")]
+    [DataRow("wasting")]
+    [DataRow("both")]
+    public void RepairAfterSurvivalResultReopensTheRace(string constraint)
+    {
+        var (factory, server, context) = CreateRace(constraint, Alice, Bob);
+        try
+        {
+            StartRacing(server);
+            Wasted(server, context, Bob);
+            Assert.IsTrue(server.GetStateSnapshot()!.Value.IsProvisional);
+            Revived(server, context, Bob);
+            Assert.IsNull(server.GetStateSnapshot());
+            Wasted(server, context, Alice);
+            Assert.AreEqual(Bob, Standings(server)[0].PlayerId);
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void ConfirmationChecksForARepairBeforeFinalizing(bool repaired)
+    {
+        var (factory, server, context) = CreateRace(Alice, Bob);
+        try
+        {
+            StartRacing(server);
+            Wasted(server, context, Bob);
+            var type = ((NativeGamemodeFactory)factory).Plugin.Assembly.GetExportedTypes()
+                .Single(t => t.Name == "RaceFinishedEvent");
+            object? outcome = null;
+            TightPackSerializer.DeserializeUntyped(type.BaseType!, server.CaptureState()!.Value.Span, ref outcome);
+            var revision = (int)type.GetProperty("Revision")!.GetValue(outcome)!;
+            if (repaired) context.Wasted[Bob] = false;
+            server.OnClientEvent(Alice, SerializeEvent(factory, "ConfirmFinishEvent", revision).Span);
+            if (repaired)
+                Assert.IsNull(server.GetStateSnapshot());
+            else
+            {
+                Assert.IsFalse(server.GetStateSnapshot()!.Value.IsProvisional);
+                Revived(server, context, Bob);
+                Assert.IsTrue(server.GetStateSnapshot()!.Value.IsFinished);
+            }
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
+
+    [TestMethod]
+    public void LapVictoryCannotBeReopenedByARepair()
+    {
+        var (factory, server, context) = CreateRace(Alice, Bob, Carol);
+        try
+        {
+            StartRacing(server);
+            Wasted(server, context, Bob);
+            Finish(factory, server, context, Alice);
+            Assert.IsFalse(server.GetStateSnapshot()!.Value.IsProvisional);
+            Revived(server, context, Bob);
+            Assert.IsTrue(server.GetStateSnapshot()!.Value.IsFinished);
+            Assert.AreEqual(Alice, Standings(server)[0].PlayerId);
         }
         finally
         {
@@ -360,6 +457,47 @@ public class PvpStandingsTests
         }
     }
 
+    [TestMethod]
+    public void TheActualFinisherRanksAheadOfCarsWithTheSameReportedPosition()
+    {
+        var (factory, server, context) = CreateRace(Alice, Bob, Carol);
+        try
+        {
+            StartRacing(server);
+            Finish(factory, server, context, Bob);
+            Assert.AreEqual(Bob, Standings(server)[0].PlayerId);
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
+
+    [TestMethod]
+    public void LastPlayerAfterDisconnectsWinsWithoutAWastingClaim()
+    {
+        var (factory, server, context) = CreateRace(Alice, Bob, Carol);
+        try
+        {
+            StartRacing(server);
+            server.OnClientDisconnected(Alice);
+            server.OnClientDisconnected(Bob);
+            Assert.AreEqual(Carol, Standings(server)[0].PlayerId);
+            var type = ((NativeGamemodeFactory)factory).Plugin.Assembly.GetExportedTypes()
+                .Single(t => t.Name == "RaceFinishedEvent");
+            object? outcome = null;
+            TightPackSerializer.DeserializeUntyped(type.BaseType!, server.CaptureState()!.Value.Span, ref outcome);
+            Assert.IsNotNull(outcome);
+            Assert.AreEqual(2, type.GetProperty("WinnerSlot")!.GetValue(outcome));
+            Assert.AreEqual(true, type.GetProperty("LastCarStanding")!.GetValue(outcome));
+            Assert.AreEqual(false, type.GetProperty("WastedVictory")!.GetValue(outcome));
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
+
     /// <summary>Claims one checkpoint, at the position the server checks the claim against.</summary>
     private static void OneCheckpoint(
         BaseGamemodeFactory factory,
@@ -391,7 +529,7 @@ public class PvpStandingsTests
     [TestMethod]
     public void RevivedCarIsNoLongerADnf()
     {
-        var (factory, server, context) = CreateRace(Alice, Bob);
+        var (factory, server, context) = CreateRace(Alice, Bob, Carol);
         try
         {
             StartRacing(server);
@@ -402,7 +540,8 @@ public class PvpStandingsTests
 
             var standings = Standings(server);
             Assert.AreEqual(Alice, standings[0].PlayerId, "a revived car can still win");
-            Assert.AreEqual(Bob, standings[1].PlayerId);
+            Assert.AreEqual(Carol, standings[1].PlayerId);
+            Assert.AreEqual(Bob, standings[2].PlayerId);
         }
         finally
         {

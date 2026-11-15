@@ -15,7 +15,7 @@ public static partial class GarageView
     public static Node BuildQuickSelect(Actions actions, string confirmLabel = "Race", bool thumbnailPreview = false)
         => Sx.Show(
             when: () => UiState.Garage.Page.Value == GaragePage.Colors,
-            then: () => Build(actions),
+            then: () => Build(actions, thumbnailPreview),
             otherwise: () => QuickSelectPanels(actions, confirmLabel, thumbnailPreview)
         );
 
@@ -156,27 +156,31 @@ public static partial class GarageView
             name: () => "Quick car select",
             style: () => Sx.Styles(width: 100.Percent(), height: 100.Percent()),
             children: [
-                Sx.Show(() => thumbnailPreview, () => Sx.View(
-                    style: () => Sx.Styles(
-                        position: Position.Absolute,
-                        left: QuickSidebarWidth,
-                        right: 0,
-                        top: 0,
-                        bottom: 210,
-                        alignItems: Align.Center,
-                        justifyContent: Justify.Center
-                    ),
-                    children: [Sx.View(style: () => Sx.Styles(width: 70.Percent()), children: [
-                        Sx.For(
-                            () => UiState.Garage.CurrentCar.Value is { } car ? new[] { car.FileName } : [],
-                            (identity, _) => CarThumbnail(identity)
-                        )
-                    ])]
-                )
-                ),
+                Sx.Show(() => thumbnailPreview, () => ThumbnailPreview(QuickSidebarWidth, 210)),
                 sidebar, dock]
         );
     }
+
+    private static Node ThumbnailPreview(float left, float bottom = 0)
+        => Sx.View(
+            name: () => "Garage thumbnail preview",
+            style: () => Sx.Styles(
+                position: Position.Absolute,
+                left: left,
+                right: 0,
+                top: 0,
+                bottom: bottom,
+                alignItems: Align.Center,
+                justifyContent: Justify.Center,
+                pointerEvents: false
+            ),
+            children: [Sx.View(style: () => Sx.Styles(width: 70.Percent()), children: [
+                Sx.For(
+                    () => UiState.Garage.CurrentCar.Value is { } car ? new[] { car.FileName } : [],
+                    (identity, _) => CarThumbnail(identity)
+                )
+            ])]
+        );
 
     private sealed class QuickCarTile(string identity) : View
     {

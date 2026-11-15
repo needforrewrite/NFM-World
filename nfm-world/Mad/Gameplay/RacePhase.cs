@@ -26,14 +26,19 @@ namespace NFMWorld.Gameplay;
 /// <see cref="IRaceHost"/> connects it to a host: in-process
 /// (<see cref="LocalRaceHost"/>) for singleplayer, remote for multiplayer.
 /// </summary>
-public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallbacks
+public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallbacks
 {
     /// <summary>The in-race HUD, with its pause menu wired to this phase.</summary>
     public override Node BuildUi() => RaceHudView.Build(
         new RaceHudView.Actions(
             Resume: ResumeRace,
             Restart: _host is LocalRaceHost ? RestartRace : null,
-            Quit: QuitRace
+            Quit: QuitRace,
+            Chat: _host is NetworkRaceHost ? _chat : null,
+            SendChat: SendChat,
+            CloseChat: CloseChat,
+            Finish: _finish,
+            ContinueFinish: ContinueRaceFinish
         )
     );
 
@@ -91,6 +96,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         _host = host;
         _spectating = spectating;
         _localPlayerId = players.FirstOrDefault(p => p.IsClientPlayer)?.Id ?? Guid.Empty;
+        if (host is NetworkRaceHost network) network.ChatReceived += ReceiveChat;
 
         try
         {
@@ -169,13 +175,28 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         host.RaceCanStart += () => RaceState = RaceState.InProgress;
         host.RaceFailedToStart += () => RaceState = RaceState.FailedToStart;
         host.PlayerStateReceived += ApplyPlayerState;
-        host.ServerEventReceived += payload => GamemodeInstance?.OnServerEvent(payload.Span);
-        host.ServerStateReceived += payload => GamemodeInstance?.OnServerState(payload.Span);
+        host.ServerEventReceived += payload =>
+        {
+            GamemodeInstance?.OnServerEvent(payload.Span);
+            ResetWithdrawnFinish();
+        };
+        host.ServerStateReceived += payload =>
+        {
+            GamemodeInstance?.OnServerState(payload.Span);
+            ResetWithdrawnFinish();
+        };
         host.GameFinished += results =>
         {
             GamemodeInstance?.SetServerResults(results);
             RaceResults = results;
             RaceState = RaceState.Finished;
+            if (_finishRequested)
+            {
+                _finishRequested = false;
+                CloseChat();
+                _input.Reset(ClientCar?.Control);
+                _finish.TryShowSummary();
+            }
         };
 
         // Singleplayer has no loading sync — start immediately.
@@ -227,6 +248,28 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             return;
 
         UiState.Race.Update(gm.HudState, IsPaused);
+        var defeated = ShowingDeathResult;
+        if (defeated)
+        {
+            UiState.Race.Finished.Value = true;
+            UiState.Race.ClientWon.Value = false;
+            UiState.Race.ClientLost.Value = true;
+            UiState.Race.ResultTitle.Value = "YOU'RE WASTED";
+            UiState.Race.StateText.Value = "You have been wasted!";
+            UiState.Race.StateTextEndsAt.Value = null;
+            UiState.Race.StatusMessage = null;
+            UiState.Race.StuntMessage = null;
+        }
+
+        _finish.Observe(
+            Gamemode.GamemodeId == DefaultGamemodes.PvP && (gm.HudState.Finished || defeated),
+            System.Environment.TickCount64,
+            !defeated && gm.HudState.ClientWon,
+            CurrentStage?.Backend.Name ?? StageName,
+            defeated ? "You have been wasted!" : gm.HudState.StateText ?? "",
+            lost: defeated || gm.HudState.ClientLost
+        );
+        _finish.ContinueSpectating.Value = defeated && _host is NetworkRaceHost;
         UpdateHudPresentation(gm);
         UiState.Race.PresentationRevision.Value++;
     }
@@ -263,13 +306,24 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         hud.ArrowTarget = "";
         hud.ArrowAtCars = false;
         hud.ArrowLocked = false;
-        // A spectator has no own car, so it names whoever it is watching. The digit on that
-        // racer's row is the key that switches away from them.
-        hud.Spectating = _spectating;
-        if (_spectating && SpectateCar() is { } watched)
+        hud.Spectating = WatchingPlayers;
+        if (WatchingPlayers && SpectateCar() is { } watched)
             hud.ArrowTarget = OrderedPlayers(gm).FirstOrDefault(p => ReferenceEquals(p.Car, watched))?.Info.PlayerName ?? "";
         hud.TimeTrial = gm.GamemodeId == "nfmm/timetrial";
-        var client = ClientCar;
+        var client = WatchingPlayers ? SpectateCar() : ClientCar;
+        if (WatchingPlayers && client is not null)
+        {
+            hud.Speed.Value = _watchedHudSpeed;
+            hud.Power.Value = (float)client.CarPhysics.Power / 100f;
+            hud.Damage.Value = client.Stats.Maxmag > 0 ? (float)client.CarPhysics.DamagePoints / client.Stats.Maxmag : 0;
+            hud.Position.Value = client.Placement + 1;
+            hud.Lap.Value = Math.Min(client.CurrentLap + 1, CurrentStage.Backend.Nlaps);
+            hud.TotalLaps.Value = CurrentStage.Backend.Nlaps;
+            hud.TotalRacers.Value = gm.Players.Count;
+            hud.StatusMessage = null;
+            hud.StuntMessage = null;
+        }
+
         InvalidateOrdering();
         // One ordering for the sidebar and the lock keys, so the digit printed on a row is the
         // slot that locks that row's car. Every car is listed here (wasted ones included) so the
@@ -278,6 +332,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         foreach (var player in OrderedPlayers(gm))
         {
             var car = player.Car!;
+            var isViewed = ReferenceEquals(car, client);
             var damage = car.Stats.Maxmag > 0 ? (float)car.CarPhysics.DamagePoints / car.Stats.Maxmag : 0;
             // Opponents are numbered in listing order; that is what the lock keys address.
             var slot = player.Info.IsClientPlayer ? 0 : ++lockSlot;
@@ -288,7 +343,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
                     car.Placement + 1,
                     name,
                     damage,
-                    player.Info.IsClientPlayer,
+                    isViewed,
                     car.Wasted,
                     slot
                 )
@@ -300,11 +355,11 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
                     (float)car.Position.Y,
                     (float)car.Position.Z,
                     car.Placement + 1,
-                    player.Info.IsClientPlayer,
+                    isViewed,
                     car.Wasted
                 )
             );
-            if (player.Info.IsClientPlayer) continue;
+            if (isViewed) continue;
             hud.Opponents++;
             if (car.Wasted) hud.Wasted++;
         }
@@ -325,12 +380,8 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
                 hud.TargetCheckpoint = ((float)next.Position.X, (float)next.Position.Z);
             }
         }
-        else if (_spectating && SpectateCar() is { } followed)
-        {
-            // No car of our own, so the radar follows the one being watched; the client
-            // position stays null, which is what keeps the other overlays off.
-            hud.TrackCenter = ((float)followed.Position.X, (float)followed.Position.Z);
-        }
+
+        if (WatchingPlayers) return;
 
         // If the client is out, or there is no car left to chase, car targeting ends. Losing the
         // locked car alone is not enough - TargetCarFor then falls back to the nearest opponent,
@@ -341,11 +392,6 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             && client.Control.ArrowLock >= 0
             && !OrderedOpponents(gm).Any(p => p.Index == client.Control.ArrowLock && p.Car is { Wasted: false }))
             client.Control.ArrowLock = -1;
-        // Wasted: the camera rides whoever is targeted, so the HUD names them even though the
-        // arrow itself is off (a dead car has no heading to point it from). A spectator's name
-        // was set above and must survive this.
-        if (!_spectating)
-            hud.Spectating = client?.Wasted ?? false;
         hud.ArrowAtCars = client?.Control.Arrace ?? false;
         hud.ArrowLocked = hud.ArrowAtCars && (client?.Control.ArrowLock ?? -1) >= 0;
         if (client is not null && (hud.ArrowAtCars || hud.Spectating))
@@ -393,6 +439,21 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     // for them, and sorting the roster several times a tick is wasted work.
     private ClientSidePlayer[]? _orderedPlayers;
     private ClientSidePlayer[]? _orderedOpponents;
+    private BackendCar? _watchedHudCar;
+    private Vector3 _watchedHudPosition;
+    private float _watchedHudSpeed;
+
+    private void UpdateWatchedHudSpeed()
+    {
+        var car = WatchingPlayers ? SpectateCar() : null;
+        var position = car is null ? Vector3.Zero
+            : new Vector3((float)car.Position.X, (float)car.Position.Y, (float)car.Position.Z);
+        var delta = position - _watchedHudPosition;
+        _watchedHudSpeed = car is not null && ReferenceEquals(car, _watchedHudCar)
+            ? MathF.Sqrt(delta.X * delta.X + delta.Z * delta.Z) : 0;
+        _watchedHudCar = car;
+        _watchedHudPosition = position;
+    }
 
     private void InvalidateOrdering()
     {
@@ -466,19 +527,18 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
     /// <summary>Sidebar slot → player index, for whichever list is being locked.</summary>
     private int LockTargetAt(int slot)
-        => _spectating ? SpectateTargetAt(slot) : OpponentTargetAt(slot);
+        => WatchingPlayers ? SpectateTargetAt(slot) : OpponentTargetAt(slot);
 
     private int SpectateTargetAt(int slot)
     {
         if (GamemodeInstance is not BaseClientGamemode gm) return -1;
-        var players = OrderedPlayers(gm);
-        return slot >= 0 && slot < players.Length ? players[slot].Index : -1;
+        var players = _spectating ? OrderedPlayers(gm) : OrderedOpponents(gm);
+        return slot >= 0 && slot < players.Length && players[slot].Car is { Wasted: false } ? players[slot].Index : -1;
     }
 
     /// <summary>
     /// The car a spectator follows. The lock keys pick it (the same Ctrl+digit a racer uses);
-    /// with nothing locked it is whoever is leading, so the view is never empty. It follows the
-    /// car through a death too - a spectator is watching the racer, not a live car.
+    /// with nothing locked it follows the leading living car.
     /// </summary>
     private BackendCar? SpectateCar()
     {
@@ -487,14 +547,14 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         if (players.Length == 0) return null;
         foreach (var player in players)
         {
-            if (player.Index == _spectateLock && player.Car is { } locked)
+            if (player.Index == _spectateLock && player.Car is { Wasted: false } locked)
                 return locked;
         }
 
         // OrderedPlayers puts the client first, then by placement; with no client, first is the leader.
         foreach (var player in players)
         {
-            if (player.Car is { } car)
+            if (player.Car is { Wasted: false } car)
                 return car;
         }
 
@@ -543,6 +603,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     private void PauseRace()
     {
         if (IsPaused) return;
+        CloseChat();
         _input.Reset(ClientCar?.Control);
         IsPaused = true;
         SoundEffects.SetPaused(true);
@@ -576,6 +637,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         if (_host is not LocalRaceHost localHost) return;
         localHost.Restart();
         RaceResults = null;
+        _finish.Reset();
         RaceState = RaceState.InProgress;
         IsPaused = false;
         _input.Reset(ClientCar?.Control);
@@ -624,6 +686,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
     public override void Exit()
     {
+        CloseChat();
         // Music pause is handled by BaseStageRenderingPhase.Exit().
         // Gamemode teardown (unload, exit cleanup) happens in Dispose().
         base.Exit();
@@ -634,6 +697,9 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         if (disposing)
         {
             _raceDisposed = true;
+            _finish.Reset();
+            if (_host is NetworkRaceHost network) network.ChatReceived -= ReceiveChat;
+            _chat.Clear();
             _host.Dispose();
 
             CurrentStage?.SetPlayers(null); // tears down visuals holding the gamemode's cars
@@ -653,7 +719,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     {
         base.KeyPressed(key, imguiWantsKeyboard, keys);
 
-        if (imguiWantsKeyboard) return;
+        if (imguiWantsKeyboard || _chat.Open.Value || _finish.ShowSummary.Value) return;
 
         if (IsPaused && PauseMenuView.HandleKeyPressed(GameSparker.UiRenderer?.ActiveRoot, key))
             return;
@@ -681,10 +747,10 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             _input.SetFreelook(_cameraDirector.CurrentViewMode == RaceCameraDirector.ViewMode.Freelook, ClientCar?.Control);
         }
 
-        // A spectator has no car and so no Control to write the lock into; the key drives the
-        // spectate target instead. Everyone else locks through the normal arrow path.
-        if (_spectating)
+        // Spectate keys select a living player without changing anyone's car controls.
+        if (WatchingPlayers)
         {
+            if (key == SettingsMenu.Bindings.ToggleArrace) return;
             var slots = SettingsMenu.Bindings.LockSlots;
             for (var slot = 0; slot < slots.Length; slot++)
             {
@@ -711,7 +777,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     {
         base.KeyTyped(character, imguiWantsKeyboard);
 
-        if (imguiWantsKeyboard || IsPaused) return;
+        if (imguiWantsKeyboard || IsPaused || _chat.Open.Value || _finish.ShowSummary.Value) return;
 
         GamemodeInstance?.KeyTyped(character);
     }
@@ -719,6 +785,12 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     public override void KeyHeld(bool imguiWantsKeyboard, in Keys keys)
     {
         base.KeyHeld(imguiWantsKeyboard, keys);
+
+        if (_chat.Open.Value || _finish.ShowSummary.Value || WatchingPlayers || ShowingDeathResult)
+        {
+            _input.Reset(ClientCar?.Control);
+            return;
+        }
 
         if (imguiWantsKeyboard || IsPaused || GameSparker.devConsole.IsOpen()) return;
 
@@ -728,10 +800,11 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     public override void KeyReleased(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
         base.KeyReleased(key, imguiWantsKeyboard, keys);
+        if (_chatOpeningKey == key) _chatOpeningKey = null;
 
         _input.KeyReleased(key, ClientCar?.Control);
 
-        if (IsPaused) return;
+        if (IsPaused || _chat.Open.Value || _finish.ShowSummary.Value) return;
 
         GamemodeInstance?.KeyReleased(key, keys);
     }
@@ -749,7 +822,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     {
         base.MousePressed(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
 
-        if (IsPaused) return;
+        if (IsPaused || _chat.Open.Value || _finish.ShowSummary.Value) return;
 
         GamemodeInstance?.MousePressed(x, y, button, buttons, ctrlKey, shiftKey, altKey);
     }
@@ -767,7 +840,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     {
         base.MouseReleased(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
 
-        if (IsPaused) return;
+        if (IsPaused || _chat.Open.Value || _finish.ShowSummary.Value) return;
 
         GamemodeInstance?.MouseReleased(x, y, button, buttons, ctrlKey, shiftKey, altKey);
     }
@@ -785,7 +858,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     {
         base.MouseScrolled(x, y, delta, imguiWantsMouse, buttons, ctrlKey, shiftKey, altKey);
 
-        if (IsPaused) return;
+        if (IsPaused || _chat.Open.Value || _finish.ShowSummary.Value) return;
 
         GamemodeInstance?.MouseScrolled(x, y, delta, buttons, ctrlKey, shiftKey, altKey);
     }
@@ -802,7 +875,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     {
         base.MouseMoved(x, y, imguiWantsMouse, buttons, ctrlKey, shiftKey, altKey);
 
-        if (IsPaused) return;
+        if (IsPaused || _chat.Open.Value || _finish.ShowSummary.Value) return;
 
         GamemodeInstance?.MouseMoved(x, y, buttons, ctrlKey, shiftKey, altKey);
     }
@@ -911,12 +984,12 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         if (IsPaused && _host is LocalRaceHost)
         {
             InvalidateOrdering();
-            if (ClientCar is { } pausedCar
+            if ((WatchingPlayers ? SpectateCar() : ClientCar) is { } pausedCar
                 && _cameraDirector.CurrentViewMode is RaceCameraDirector.ViewMode.Follow
                     or RaceCameraDirector.ViewMode.FollowStatic
                     or RaceCameraDirector.ViewMode.CarCam)
             {
-                _cameraDirector.ArrowTarget = ArrowTarget(pausedCar, TargetCarFor(pausedCar));
+                _cameraDirector.ArrowTarget = WatchingPlayers ? null : ArrowTarget(pausedCar, TargetCarFor(pausedCar));
                 _cameraDirector.Update(Camera, pausedCar);
             }
 
@@ -927,6 +1000,8 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         }
 
         _host.Update();
+        ResetWithdrawnFinish();
+        if (_finish.ShowSummary.Value) return;
 
         // The Game Master is gone and reconnection gave up. WaitingToStart used to sit on the
         // "waiting for other players" screen forever in this case.
@@ -958,8 +1033,12 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             GamemodeInstance?.GameTick();
         }
 
-        if (_spectating)
+        if (ClientCar is { Wasted: false }) _deathSpectating = false;
+        UpdateWatchedHudSpeed();
+
+        if (WatchingPlayers)
         {
+            _cameraDirector.ArrowTarget = null;
             // Watching a race with no car of our own: the camera rides the chosen car. A race
             // with no cars yet (still loading) leaves the camera where it is.
             _cameraDirector.Navigation = _input.Navigation;
@@ -972,10 +1051,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             // is resolved fresh rather than read from the HUD a frame late.
             _cameraDirector.ArrowTarget = ArrowTarget(car, TargetCarFor(car));
             _cameraDirector.Navigation = _input.Navigation;
-            // A wasted car is spectated, not followed: the lock keys (and the nearest-live
-            // fallback in TargetCarFor) choose who the camera rides. A revive clears Wasted, so
-            // the camera comes back to the client without any further action.
-            _cameraDirector.Update(Camera, car.Wasted ? TargetCarFor(car) ?? car : car);
+            _cameraDirector.Update(Camera, car);
         }
 
         if (RaceState == RaceState.InProgress)
@@ -986,7 +1062,12 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             if (ClientCar is { } myCar)
                 _host.SendPlayerState(PlayerState.CreateFrom(tick, myCar));
 
-            // Only online: singleplayer's local host invents ids of its own and needs no relay.
+            if (_host is LocalRaceHost local && GamemodeInstance is BaseClientGamemode localGamemode)
+                foreach (var player in localGamemode.Players)
+                    if (player.Info.IsBot && !player.IsFake && player.Car is { } localCar)
+                        local.SendPlayerStateForSlot(player.Index, PlayerState.CreateFrom(tick, localCar));
+
+            // Online bots use player ids; local bots use the roster slots above.
             // A spectator owns nothing; with no client id, an ownerless bot would look like one
             // it fielded, and relaying it would fight the client that really drives it.
             if (!_spectating && GamemodeInstance is BaseClientGamemode gm && _host is NetworkRaceHost)

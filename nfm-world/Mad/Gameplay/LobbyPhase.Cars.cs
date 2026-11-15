@@ -36,6 +36,7 @@ public partial class LobbyPhase
                     top: 0,
                     right: 0,
                     bottom: 0,
+                    zIndex: 3000,
                     backgroundColor: new Color(3, 8, 20, 255)
                 ),
                 children: [_carPicker!.BuildUi()]
@@ -48,6 +49,21 @@ public partial class LobbyPhase
 
     public override void KeyRepeated(Key key, bool imguiWantsKeyboard, in Keys keys)
         => _carPicker?.KeyRepeated(key, imguiWantsKeyboard, keys);
+
+    public override void MouseReleased(
+        int x,
+        int y,
+        bool imguiWantsMouse,
+        MouseButton button,
+        MouseButtons buttons,
+        bool ctrlKey,
+        bool shiftKey,
+        bool altKey
+    )
+    {
+        base.MouseReleased(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
+        if (button == MouseButton.Primary) _carPicker?.FinishPaintInteraction();
+    }
 
     public override void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
     {

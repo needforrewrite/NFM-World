@@ -350,6 +350,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
             _carCancellation.Cancel();
             _carCancellation.Dispose();
             _carDetails.Clear();
+            _sessionStageNames.Clear();
             // A preparation outliving the phase would keep downloading for a race this client
             // has left, and its acknowledgement would answer a request nobody is waiting on.
             _preparationCancellation?.Cancel();
@@ -540,7 +541,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
             current = new UiState.LobbySession(
                 s.Id,
                 s.CreatorName,
-                s.StageName,
+                SessionStageName(s.StageName),
                 s.PlayerCount,
                 s.MaxPlayers,
                 s.State,
@@ -563,12 +564,13 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
             .ToArray();
 
         ResolvePlayerCars();
+        ResolveSessionStageNames();
 
         Lobby.Sessions.Value = _activeSessions
             .Select(s => new UiState.LobbySession(
                     s.Id,
                     s.CreatorName,
-                    s.StageName,
+                    SessionStageName(s.StageName),
                     s.PlayerCount,
                     s.MaxPlayers,
                     s.State,

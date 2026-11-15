@@ -70,6 +70,7 @@ public static class UiState
         public HudMessage? StatusMessage { get; set; }
         public HudMessage? StuntMessage { get; set; }
         public Signal<string?> StateText { get; } = new(null);
+        public Signal<string?> ResultTitle { get; } = new(null);
         public Signal<DateTime?> StateTextEndsAt { get; } = new(null);
         public Signal<bool> Finished { get; } = new(false);
         public Signal<bool> ClientWon { get; } = new(false);
@@ -132,6 +133,7 @@ public static class UiState
                     TotalRacers.Value = hud.TotalRacers;
                     CountdownTimer.Value = hud.CountdownTimer;
                     StateText.Value = hud.StateText;
+                    ResultTitle.Value = hud.ResultTitle;
                     StateTextEndsAt.Value = hud.StateTextEndsAt;
                     Finished.Value = hud.Finished;
                     ClientWon.Value = hud.ClientWon;

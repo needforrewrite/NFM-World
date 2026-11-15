@@ -45,6 +45,7 @@ public class SettingsMenu()
         public Key ToggleRadar { get; set; } = Key.S;
         public Key ToggleDevConsole { get; set; } = Key.Oemtilde;
         public Key CycleView { get; set; } = Key.V;
+        public Key OpenChat { get; set; } = Key.Y;
 
         /// <summary>
         /// Locks the guidance arrow (and the car cam) onto the opponent in that sidebar slot.
@@ -664,6 +665,7 @@ public class SettingsMenu()
         sw.WriteLine($"key_togglearrace {(int)Bindings.ToggleArrace}");
         sw.WriteLine($"key_toggleradar {(int)Bindings.ToggleRadar}");
         sw.WriteLine($"key_cycleview {(int)Bindings.CycleView}");
+        sw.WriteLine($"key_chat {(int)Bindings.OpenChat}");
         sw.WriteLine($"key_console {(int)Bindings.ToggleDevConsole}");
         for (var i = 0; i < 10; i++)
             sw.WriteLine($"key_lockslot{i + 1} {(int)Bindings.LockSlots[i]}");
@@ -870,6 +872,9 @@ public class SettingsMenu()
                     break;
                 case "key_cycleview":
                     Bindings.CycleView = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "key_chat":
+                    Bindings.OpenChat = (Key)int.Parse(value, CultureInfo.InvariantCulture);
                     break;
                 case "key_lockslot1": Bindings.LockSlot1 = (Key)int.Parse(value, CultureInfo.InvariantCulture); break;
                 case "key_lockslot2": Bindings.LockSlot2 = (Key)int.Parse(value, CultureInfo.InvariantCulture); break;
@@ -1164,7 +1169,7 @@ public class SettingsMenu()
                 Action = prop.Name,
                 DisplayName = prop.Name.StartsWith("LockSlot", StringComparison.Ordinal)
                     ? $"Lock Arrow on Car {prop.Name["LockSlot".Length..]}"
-                    : prop.Name,
+                    : prop.Name == nameof(KeyBindings.OpenChat) ? "Open Chat" : prop.Name,
                 KeyCode = (int)(prop.GetValue(Bindings) as Key? ?? Key.None)
             };
         }

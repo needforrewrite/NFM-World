@@ -22,17 +22,18 @@ public partial class HudStateData
 
     [PluginVisible] public int TotalRacers { get; set; }
     [PluginVisible] public string? StateText { get; set; }
+    [PluginVisible] public string? ResultTitle { get; set; }
     [PluginVisible] public DateTime? StateTextEndsAt { get; set; }
 
     /// <summary>The race is over; the HUD can show its outcome.</summary>
     [PluginVisible]
     public bool Finished { get; set; }
 
-    /// <summary>The client crossed the line first.</summary>
+    /// <summary>The client won the race.</summary>
     [PluginVisible]
     public bool ClientWon { get; set; }
 
-    /// <summary>Another car crossed the line first.</summary>
+    /// <summary>The client lost the race.</summary>
     [PluginVisible]
     public bool ClientLost { get; set; }
 

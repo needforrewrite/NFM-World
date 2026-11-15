@@ -167,6 +167,7 @@ public class UiRenderer : IDisposable
 
     public void HandleKeyTyped(char character)
     {
+        if (_owner is RacePhase race && race.ConsumeChatOpeningText()) return;
         ActiveRoot?.DispatchKeyTyped(new KeyboardTypingEvent(character));
     }
 

@@ -12,6 +12,42 @@ namespace NFMWorld.Library.Test;
 public class LocalRaceHostTests
 {
     [TestMethod]
+    public void BotStatesAreReportedUsingTheServerRosterSlot()
+    {
+        var factory = new RecordingFactory();
+        using var host = LocalRaceHost.CreateDeferred("empty", factory, new ClientGamemodeParameters
+        {
+            Players = [new ClientSidePlayerInfo("human", "unused", default, false, true),
+                new ClientSidePlayerInfo("bot", "unused", default, true, false)]
+        });
+        host.InitializeStage(new EmptyStage());
+        var state = default(PlayerState);
+        state.CarFrame.TheBitFlags.Wasted = true;
+        host.SendPlayerStateForSlot(1, state);
+        Assert.AreEqual(true, factory.Context!.IsPlayerWasted(factory.Players![1].Id));
+        Assert.IsNull(factory.Context.IsPlayerWasted(factory.Players[0].Id));
+        host.SendPlayerStateForSlot(-1, state);
+        host.SendPlayerStateForSlot(99, state);
+    }
+
+    private sealed class RecordingFactory : BaseGamemodeFactory
+    {
+        public override string GamemodeId => "test/recording";
+        public override bool HasServerGamemode => true;
+        public IServerGamemodeContext? Context;
+        public IReadOnlyList<ServerSidePlayerInfo>? Players;
+        public override IGamemode CreateGameMode(ClientGamemodeParameters parameters, IGamemodeContext context)
+            => throw new NotSupportedException();
+
+        public override IServerGamemode? CreateServerGamemode(ServerGamemodeParameters parameters, IServerGamemodeContext context)
+        {
+            Context = context;
+            Players = parameters.Players;
+            return null;
+        }
+    }
+
+    [TestMethod]
     public void DeferredHostWaitsForAPreparedStageBeforeStarting()
     {
         var factory = new ClientOnlyFactory();

@@ -174,6 +174,11 @@ public abstract class BaseClientGamemode : IGamemode
     {
     }
 
+    [PluginVisible]
+    public virtual void ConfirmFinish()
+    {
+    }
+
     /// <summary>
     /// Invoked when a key is pressed.
     /// </summary>

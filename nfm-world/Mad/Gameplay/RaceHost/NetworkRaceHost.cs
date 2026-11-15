@@ -59,6 +59,7 @@ public sealed class NetworkRaceHost : IRaceHost
     public event Action<ReadOnlyMemory<byte>>? ServerEventReceived;
     public event Action<ReadOnlyMemory<byte>>? ServerStateReceived;
     public event Action<RaceResults>? GameFinished;
+    public event Action<S2C_RaceChat>? ChatReceived;
 
     public void Update()
     {
@@ -81,6 +82,9 @@ public sealed class NetworkRaceHost : IRaceHost
         {
             switch (packet)
             {
+                case S2C_RaceChat chat:
+                    ChatReceived?.Invoke(chat);
+                    break;
                 case S2C_RaceCanStart:
                     RaceCanStart?.Invoke();
                     break;
@@ -125,6 +129,13 @@ public sealed class NetworkRaceHost : IRaceHost
     public void SendServerEvent(ReadOnlyMemory<byte> payload)
         => _transport.SendPacketToServer(new C2S_ClientEvent { Payload = payload.ToArray() }, reliable: true);
 
+    public void SendChat(string message)
+    {
+        var text = RaceChat.Normalize(message);
+        if (IsConnected && _transport.HandshakeAccepted && text.Length > 0)
+            _transport.SendPacketToServer(new C2S_RaceChat { Message = text }, reliable: true);
+    }
+
     public void SendPlayerState(PlayerState state, Guid? playerId = null)
         => _transport.SendPacketToServer(
             new C2S_PlayerState
@@ -138,6 +149,7 @@ public sealed class NetworkRaceHost : IRaceHost
 
     public void Dispose()
     {
+        ChatReceived = null;
         _transport.Reconnected -= OnReconnected;
         _transport.Stop();
     }

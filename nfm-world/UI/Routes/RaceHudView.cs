@@ -11,9 +11,26 @@ namespace NFMWorld.UI.Routes;
 public static class RaceHudView
 {
     /// <summary><paramref name="Restart"/> is null when the host owns the race (online).</summary>
-    public sealed record Actions(Action Resume, Action? Restart, Action Quit);
+    public sealed record Actions(
+        Action Resume,
+        Action? Restart,
+        Action Quit,
+        RaceChatState? Chat = null,
+        Action<string>? SendChat = null,
+        Action? CloseChat = null,
+        RaceFinishState? Finish = null,
+        Action? ContinueFinish = null);
 
     public static Node Build(Actions actions)
+        => Sx.View(style: () => Sx.Styles(width: 100.Percent(), height: 100.Percent()), children: [
+            Sx.Show(() => actions.Finish?.ShowSummary.Value != true, () => BuildHud(actions)),
+            Sx.Show(
+                () => actions.Finish?.ShowSummary.Value == true,
+                () => RaceFinishView.Summary(actions.Finish!, actions.ContinueFinish!)
+            )
+        ]);
+
+    private static Node BuildHud(Actions actions)
     {
         HudSkinRegistry.Refresh();
         var race = UiState.Race;
@@ -31,7 +48,9 @@ public static class RaceHudView
                 ),
                 new RaceMessages(race),
                 Sx.Show(
-                    () => HudSkinRegistry.ShowDefaultMessages(race.Skin.Value) && race.Message.Length > 0,
+                    () => HudSkinRegistry.ShowDefaultMessages(race.Skin.Value) && race.Message.Length > 0
+                          && !(race.Finished.Value && (race.ResultTitle.Value is not null || race.ClientWon.Value || race
+                              .ClientLost.Value)),
                     () => new HudScaleHost(
                         GlassCardUi.CenterText(
                             () => race.Message,
@@ -43,20 +62,15 @@ public static class RaceHudView
                     )
                 ),
                 Sx.Show(
-                    () => race.Finished.Value
-                          && HudSkinRegistry.UsesClassicSkin(race.Skin.Value)
-                          && (race.ClientWon.Value || race.ClientLost.Value),
-                    () => new HudScaleHost(
-                        GlassCardUi.CenterText(
-                            () => race.ClientWon.Value ? "YOU WON!" : "YOU LOST!",
-                            48,
-                            color: new Color(0, 0, 0),
-                            top: 100f,
-                            height: 120f,
-                            fontFamily: FontFamily.Adventure,
-                            fontStyle: FontStyle.Bold | FontStyle.Italic
-                        )
-                    )
+                    () => race.Finished.Value && (race.ResultTitle.Value is not null || race.ClientWon.Value || race.ClientLost.Value),
+                    () => new HudScaleHost(RaceFinishView.Banner(race, actions.Finish))
+                ),
+                Sx.Show(() => actions.Chat is not null, () => RaceChatView.Build(
+                    actions.Chat!,
+                    () => HudSkinRegistry.UsesClassicSkin(race.Skin.Value),
+                    actions.SendChat!,
+                    actions.CloseChat!
+                )
                 ),
                 Sx.Show(() => race.Paused.Value, () => PauseMenuView.Build(actions))
             ]

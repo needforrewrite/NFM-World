@@ -16,6 +16,7 @@ public sealed class LocalRaceHost : IRaceHost
     private IServerGamemode? _serverGamemode;
     private readonly LocalServerContext _context;
     private readonly Guid _localPlayerId;
+    private Guid[] _serverPlayerIds = [];
     private bool _started;
     private bool _finished;
     private BaseGamemodeFactory? _pendingFactory;
@@ -94,6 +95,7 @@ public sealed class LocalRaceHost : IRaceHost
             throw new InvalidOperationException("A local race needs exactly one client player.");
 
         var host = new LocalRaceHost(stageName, parameters, ids[clientPlayerIndex], stageData);
+        host._serverPlayerIds = ids.Select(player => player.Id).ToArray();
 
         host._pendingFactory = factory;
         host._pendingParameters = new ServerGamemodeParameters { Players = ids };
@@ -148,7 +150,7 @@ public sealed class LocalRaceHost : IRaceHost
 
         _serverGamemode.GameTick();
         var snapshot = _serverGamemode.GetStateSnapshot();
-        if (!_finished && snapshot is { IsFinished: true, Results: { } results })
+        if (!_finished && snapshot is { IsFinished: true, IsProvisional: false, Results: { } results })
         {
             _finished = true;
             GameFinished?.Invoke(results);
@@ -176,6 +178,12 @@ public sealed class LocalRaceHost : IRaceHost
             state.CarFrame.CarPosition.Z,
             state.CarFrame.TheBitFlags.Wasted
         );
+
+    public void SendPlayerStateForSlot(int slot, PlayerState state)
+    {
+        if (slot >= 0 && slot < _serverPlayerIds.Length)
+            SendPlayerState(state, _serverPlayerIds[slot]);
+    }
 
     public void Dispose()
     {

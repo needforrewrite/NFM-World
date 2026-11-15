@@ -913,7 +913,8 @@ internal sealed class GarageController
         foreach (var (id, rad) in _changedCarThumbnails)
         {
             CarThumbnails.Invalidate(id);
-            if (UiState.Garage.Page.Value == GaragePage.Cars) CarThumbnails.Request(id, rad);
+            if (UiState.Garage.Page.Value == GaragePage.Cars || _quickSelect && _visualOf is null)
+                CarThumbnails.Request(id, rad);
         }
 
         _changedCarThumbnails.Clear();
@@ -940,6 +941,10 @@ internal sealed class GarageController
         if (_painting) return;
         if (System.Environment.TickCount64 - _lastPaintChange >= 150) FlushThumbnailChanges();
         if (_changedCarThumbnails.Count > 0 || _changedWheelThumbnails.Count > 0) return;
+        var previewIdentity = _quickSelect && _visualOf is null && UiState.Garage.Page.Value == GaragePage.Colors
+            ? CurrentIdentity() : null;
+        if (previewIdentity is not null && _backendCar is { } previewCar)
+            CarThumbnails.Request(previewIdentity, previewCar.Rad);
         if (UiState.Garage.Page.Value == GaragePage.Cars)
         {
             var shown = GarageView.Filter(UiState.Garage.Collections.Value, UiState.Garage.SearchQuery.Value)
@@ -958,11 +963,11 @@ internal sealed class GarageController
                 CarThumbnails.RequestWheel(id, wheelCar.Rad, false);
             }
 
-            CarThumbnails.RenderPending(cb, key => key == CarThumbnails.WheelKey(id, true)
+            CarThumbnails.RenderPending(cb, key => key == previewIdentity || key == CarThumbnails.WheelKey(id, true)
                                                    || key == CarThumbnails.WheelKey(id, false)
             );
         }
-        else CarThumbnails.RenderPending(cb, _ => false);
+        else CarThumbnails.RenderPending(cb, key => key == previewIdentity);
     }
 
     private void MoveColorSlot(int delta)

@@ -144,7 +144,7 @@ public class RaceOrchestrator : IDisposable
             gm.GameTick();
 
             var snapshot = gm.GetStateSnapshot();
-            if (!session.ResultsBroadcasted && snapshot is { IsFinished: true, Results: { } results })
+            if (!session.ResultsBroadcasted && snapshot is { IsFinished: true, IsProvisional: false, Results: { } results })
             {
                 // To this race's clients only: the GM runs many sessions, and a broadcast
                 // would end every other race on the host with these standings.
@@ -332,6 +332,7 @@ public class RaceOrchestrator : IDisposable
         {
             if (!session.Clients.TryRemove(clientIndex, out var clientId))
                 continue;
+            session.LastChat.TryRemove(clientId, out _);
 
             // Only a racer was counted as loaded. A spectator was given a throwaway id and
             // never incremented the count, so decrementing for one would undercount the race.
@@ -365,10 +366,31 @@ public class RaceOrchestrator : IDisposable
             case C2S_ClientEvent clientEvent:
                 HandleClientEvent(e.ClientIndex, clientEvent);
                 break;
+            case C2S_RaceChat chat:
+                HandleRaceChat(e.ClientIndex, chat);
+                break;
         }
     }
 
     // ── Packet handlers ──────────────────────────────────────────────
+
+    private void HandleRaceChat(uint clientIndex, C2S_RaceChat chat)
+    {
+        if (!TryFindSession(clientIndex, out var session, out var clientId)) return;
+        var message = RaceChat.Normalize(chat.Message);
+        if (message.Length == 0) return;
+        var now = Environment.TickCount64;
+        if (session.LastChat.TryGetValue(clientId, out var last) && now - last < 500) return;
+        session.LastChat[clientId] = now;
+        var player = session.PlayerInfos.Values.FirstOrDefault(p => p.Id == clientId);
+        _transport.SendPacketToClients(session.Clients.Keys.ToArray(), new S2C_RaceChat
+        {
+            SenderId = clientId,
+            Sender = player.Id == clientId ? player.PlayerName : "Spectator",
+            Color = player.Id == clientId ? player.Color : new Color3(180, 200, 255),
+            Message = message
+        }, reliable: true);
+    }
 
     private void HandleClientEvent(uint clientIndex, C2S_ClientEvent clientEvent)
     {
@@ -716,6 +738,7 @@ public class RaceOrchestrator : IDisposable
         public int PlayerCount { get; set; }
         public int LoadedCount { get; set; }
         public ConcurrentDictionary<uint, Guid> Clients { get; set; } = [];
+        public ConcurrentDictionary<Guid, long> LastChat { get; } = [];
 
         /// <summary>
         /// Connections that have loaded but not yet been handed the gamemode's state. Handled on

@@ -69,9 +69,11 @@ public class PluginServerGamemode(
     public override GameStateSnapshot? GetStateSnapshot() => _snapshot;
 
     [PluginVisible]
-    public void FinishRace(TimeSpan raceDuration, RaceStanding[] standings) => _snapshot = new GameStateSnapshot()
+    public void FinishRace(TimeSpan raceDuration, RaceStanding[] standings, bool provisional = false) => _snapshot =
+        new GameStateSnapshot()
     {
         IsFinished = true,
+        IsProvisional = provisional,
         Results = new RaceResults()
         {
             GamemodeId = GamemodeId,
@@ -79,4 +81,7 @@ public class PluginServerGamemode(
             Standings = standings
         }
     };
+
+    [PluginVisible]
+    public void ResumeRace() => _snapshot = null;
 }
