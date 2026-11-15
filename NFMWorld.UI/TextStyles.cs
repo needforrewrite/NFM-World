@@ -15,6 +15,7 @@ public struct TextStyles() : IEquatable<TextStyles>
 
     /// <summary>Sets the stroke color of the text. Null disables the stroke.</summary>
     public Color? StrokeColor;
+    public float? StrokeWidth;
 
     public FontFamily? FontFamily;
     public float? FontSize;
@@ -29,6 +30,7 @@ public struct TextStyles() : IEquatable<TextStyles>
     {
         ForegroundColor = ForegroundColor ?? new Color(255, 255, 255),
         StrokeColor = StrokeColor,
+        StrokeWidth = StrokeWidth ?? 1f,
         FontFamily = FontFamily ?? DriverInterface.DriverInterface.FontFamily.NotoSans,
         FontSize = FontSize ?? 12f,
         FontStyle = FontStyle ?? DriverInterface.DriverInterface.FontStyle.Plain,
@@ -43,6 +45,7 @@ public struct TextStyles() : IEquatable<TextStyles>
     {
         ForegroundColor = overlay.ForegroundColor ?? ForegroundColor,
         StrokeColor = overlay.StrokeColor ?? StrokeColor,
+        StrokeWidth = overlay.StrokeWidth ?? StrokeWidth,
         FontFamily = overlay.FontFamily ?? FontFamily,
         FontSize = overlay.FontSize ?? FontSize,
         FontStyle = overlay.FontStyle ?? FontStyle,
@@ -56,6 +59,7 @@ public struct TextStyles() : IEquatable<TextStyles>
     {
         return Nullable.Equals(ForegroundColor, other.ForegroundColor)
                && Nullable.Equals(StrokeColor, other.StrokeColor)
+               && Nullable.Equals(StrokeWidth, other.StrokeWidth)
                && FontFamily == other.FontFamily
                && Nullable.Equals(FontSize, other.FontSize)
                && FontStyle == other.FontStyle
@@ -75,6 +79,7 @@ public struct TextStyles() : IEquatable<TextStyles>
         var hashCode = new HashCode();
         hashCode.Add(ForegroundColor);
         hashCode.Add(StrokeColor);
+        hashCode.Add(StrokeWidth);
         hashCode.Add(FontFamily);
         hashCode.Add(FontSize);
         hashCode.Add(FontStyle);

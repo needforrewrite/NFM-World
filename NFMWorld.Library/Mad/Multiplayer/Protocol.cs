@@ -14,7 +14,7 @@ namespace NFMWorldLibrary.Multiplayer;
 /// </summary>
 public static class Protocol
 {
-    public const int Version = 7;
+    public const int Version = 8;
 
     /// <summary>Opcode of <c>C2S_Handshake</c>. The transactions are in separate number spaces.</summary>
     public const sbyte ClientHandshakeOpcode = 14;

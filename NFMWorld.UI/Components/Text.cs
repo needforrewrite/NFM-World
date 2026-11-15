@@ -246,7 +246,7 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
             G.SetColor(element.Foreground ?? resolved.ForegroundColor!.Value);
             if ((element.Stroke ?? resolved.StrokeColor) is { } stroke)
             {
-                G.DrawStringOutlined(element.Text, x, y, stroke, 1f);
+                G.DrawStringOutlined(element.Text, x, y, stroke, resolved.StrokeWidth!.Value);
             }
             else
             {

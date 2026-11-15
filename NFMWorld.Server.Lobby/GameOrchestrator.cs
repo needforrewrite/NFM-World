@@ -63,7 +63,8 @@ public class GameOrchestrator
         MatchGameplayInfo Info,
         uint SessionId,
         IpAndPort GameAddress,
-        Guid SpectatorToken
+        Guid SpectatorToken,
+        ResolvedGameMaster GameMaster
     );
 
     private Thread? _lobbyThread;
@@ -303,7 +304,7 @@ public class GameOrchestrator
                 break;
 
             case C2S_SpectateSession spectate:
-                HandleSpectateSession(e.ClientIndex, spectate);
+                _ = HandleSpectateSessionAsync(e.ClientIndex, spectate);
                 break;
 
             case C2S_LeaveSession leave:
@@ -538,7 +539,7 @@ public class GameOrchestrator
     /// session's player slots - the race is already under way and its roster is fixed - so this
     /// only hands over the game master's address and the spectator token.
     /// </summary>
-    private void HandleSpectateSession(uint clientId, C2S_SpectateSession spectate)
+    private async Task HandleSpectateSessionAsync(uint clientId, C2S_SpectateSession spectate)
     {
         var player = _players.Get(clientId);
         if (player is null || player.IsInGame) return;
@@ -549,6 +550,23 @@ public class GameOrchestrator
             // The race is not running (or is already over), so there is nothing to watch.
             return;
         }
+
+        Guid joinToken;
+        try
+        {
+            joinToken = await _gmClient.RegisterSpectatorAsync(pending.GameMaster, new Lobby2RaceServer_RegisterSpectator
+            {
+                SessionToken = pending.SpectatorToken, PlayerId = player.Id, Name = player.Name, Color = player.Color
+            });
+        }
+        catch (Exception ex)
+        {
+            Logging.Error($"[Lobby] Spectator registration for client {clientId} failed", exception: ex);
+            return;
+        }
+
+        if (!ReferenceEquals(_players.Get(clientId), player) || player.IsInGame
+            || !_pendingMatches.ContainsKey(matchKey)) return;
 
         _transport.SendPacketToClient(
             player.ClientIndex,
@@ -561,7 +579,7 @@ public class GameOrchestrator
                 JoinInfo = new S2C_RaceStarted.GameJoinInfo
                 {
                     RaceServerIpAddress = pending.GameAddress,
-                    JoinToken = pending.SpectatorToken
+                    JoinToken = joinToken
                 }
             }
         );
@@ -799,7 +817,8 @@ public class GameOrchestrator
                 matchInfo,
                 session.Id,
                 gameAddress,
-                createResponse.SpectatorToken
+                createResponse.SpectatorToken,
+                gm
             );
             _sessionMatches[session.Id] = createRequest.MatchKey;
 

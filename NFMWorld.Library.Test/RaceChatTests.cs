@@ -30,13 +30,31 @@ public class RaceChatTests
         Assert.AreEqual(request.Message, ((C2S_RaceChat)decodedRequest!).Message);
         var response = new S2C_RaceChat
         {
-            SenderId = Guid.NewGuid(), Sender = "Racer", Message = request.Message, Color = new Color3(40, 120, 250)
+            SenderId = Guid.NewGuid(), Sender = "(SPEC) Racer", Message = request.Message,
+            Color = new Color3(40, 120, 250), MessageId = 42
         };
         var decodedResponse = MultiplayerUtils.TryDeserializeS2CPacket(response.Opcode, TightPackSerializer.Serialize(response));
         Assert.IsInstanceOfType<S2C_RaceChat>(decodedResponse);
         Assert.AreEqual(response.SenderId, ((S2C_RaceChat)decodedResponse!).SenderId);
         Assert.AreEqual(response.Sender, ((S2C_RaceChat)decodedResponse!).Sender);
         Assert.AreEqual(response.Color, ((S2C_RaceChat)decodedResponse!).Color);
+        Assert.AreEqual(response.MessageId, ((S2C_RaceChat)decodedResponse!).MessageId);
+    }
+
+    [TestMethod]
+    public void ReplayedHistoryDoesNotDuplicateMessagesAfterReconnect()
+    {
+        var chat = new RaceChatState();
+        chat.Receive("Racer", "first", default, 1);
+        chat.Receive("(SPEC) Viewer", "second", default, 2);
+        chat.Receive("Racer", "first", default, 1);
+        chat.Receive("(SPEC) Viewer", "second", default, 2);
+        chat.Receive("Racer", "third", default, 3);
+        Assert.AreEqual(3, chat.Lines.Value.Count);
+        Assert.AreEqual("(SPEC) Viewer", chat.Lines.Value[1].Sender);
+        chat.Clear();
+        chat.Receive("Racer", "new race", default, 1);
+        Assert.AreEqual(1, chat.Lines.Value.Count);
     }
 
     [TestMethod]

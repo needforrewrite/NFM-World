@@ -69,7 +69,8 @@ public partial class RacePhase
             _chat.Receive(
                 message.Sender,
                 message.Message,
-                new Color((byte)message.Color.R, (byte)message.Color.G, (byte)message.Color.B)
+                new Color((byte)message.Color.R, (byte)message.Color.G, (byte)message.Color.B),
+                message.MessageId
             );
     }
 }

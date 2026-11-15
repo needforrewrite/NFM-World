@@ -379,17 +379,28 @@ public class RaceOrchestrator : IDisposable
         if (!TryFindSession(clientIndex, out var session, out var clientId)) return;
         var message = RaceChat.Normalize(chat.Message);
         if (message.Length == 0) return;
-        var now = Environment.TickCount64;
-        if (session.LastChat.TryGetValue(clientId, out var last) && now - last < 500) return;
-        session.LastChat[clientId] = now;
-        var player = session.PlayerInfos.Values.FirstOrDefault(p => p.Id == clientId);
-        _transport.SendPacketToClients(session.Clients.Keys.ToArray(), new S2C_RaceChat
+        lock (session.ChatLock)
         {
-            SenderId = clientId,
-            Sender = player.Id == clientId ? player.PlayerName : "Spectator",
-            Color = player.Id == clientId ? player.Color : new Color3(180, 200, 255),
-            Message = message
-        }, reliable: true);
+            var now = Environment.TickCount64;
+            if (session.LastChat.TryGetValue(clientId, out var last) && now - last < 500) return;
+            session.LastChat[clientId] = now;
+            var player = session.PlayerInfos.Values.FirstOrDefault(p => p.Id == clientId);
+            var spectator = session.Spectators.TryGetValue(clientId, out var identity);
+            if (!spectator && player.Id != clientId) return;
+            var watching = spectator || session.PlayerWasted.TryGetValue(clientId, out var wasted) && wasted;
+            var name = spectator ? identity.Name : player.PlayerName;
+            var packet = new S2C_RaceChat
+            {
+                SenderId = clientId,
+                Sender = watching ? $"(SPEC) {name}" : name,
+                Color = spectator ? identity.Color : player.Color,
+                Message = message,
+                MessageId = ++session.NextChatId
+            };
+            session.ChatHistory.Enqueue(packet);
+            while (session.ChatHistory.Count > RaceChat.HistoryLimit) session.ChatHistory.Dequeue();
+            _transport.SendPacketToClients(session.Clients.Keys.ToArray(), packet, reliable: true);
+        }
     }
 
     private void HandleClientEvent(uint clientIndex, C2S_ClientEvent clientEvent)
@@ -417,22 +428,17 @@ public class RaceOrchestrator : IDisposable
         }
 
         var session = entry.Session;
-
-        // A spectator attaches under its token but is not a racer: it must not advance
-        // LoadedCount, or the race would start waiting on a player who never drives, and it
-        // owns no player id, so it can never be taken for one of the people racing. It still
-        // goes into Clients, which is the list every S2C_PlayerState is relayed to - that is
-        // how it sees the cars.
-        if (entry.Spectator)
+        if (entry.ClientId == Guid.Empty) return;
+        lock (session.ChatLock)
         {
-            session.Clients[clientIndex] = Guid.NewGuid();
-            Logging.Info($"[GM] Spectator attached on connection {clientIndex}");
-            session.PendingAttach.Enqueue(clientIndex);
-            return;
+            foreach (var message in session.ChatHistory)
+                _transport.SendPacketToClient(clientIndex, message, reliable: true);
+            AttachLoadedClient(session, clientIndex, entry.ClientId, entry.Spectator);
         }
+    }
 
-        var clientId = entry.ClientId;
-
+    private void AttachLoadedClient(RaceSession session, uint clientIndex, Guid clientId, bool spectator)
+    {
         // Already attached under another connection index: this is a reconnect. Move the
         // mapping rather than counting the player as loaded twice. A loop, not FirstOrDefault:
         // the struct default is 0, which is a real slot, so every second player looked
@@ -460,7 +466,7 @@ public class RaceOrchestrator : IDisposable
         }
 
         session.Clients[clientIndex] = clientId;
-        session.LoadedCount++;
+        if (!spectator) session.LoadedCount++;
 
         Logging.Info(
             $"[GM] Client {clientId} loaded ({session.LoadedCount}/{session.PlayerCount})"
@@ -574,6 +580,25 @@ public class RaceOrchestrator : IDisposable
         Logging.Info($"[GM] Prepared {request.Content.Length} asset(s) for {request.MatchKey}");
     }
 
+    public Guid RegisterSpectator(Lobby2RaceServer_RegisterSpectator request)
+    {
+        if (!_joinTokens.TryGetValue(request.SessionToken, out var entry)
+            || !entry.Spectator || entry.ClientId != Guid.Empty || entry.Session.ResultsBroadcasted
+            || request.PlayerId == Guid.Empty || string.IsNullOrWhiteSpace(request.Name))
+            throw new InvalidOperationException("The race is no longer available to watch.");
+        var session = entry.Session;
+        lock (session.ChatLock)
+        {
+            if (session.SpectatorTokens.TryGetValue(request.PlayerId, out var existing)) return existing;
+            var token = Guid.NewGuid();
+            var spectatorId = Guid.NewGuid();
+            session.SpectatorTokens.Add(request.PlayerId, token);
+            session.Spectators.Add(spectatorId, (request.Name, request.Color));
+            _joinTokens.TryAdd(token, (session, 0, spectatorId, true));
+            return token;
+        }
+    }
+
     public Lobby2RaceServer_CreateRaceResponse CreateRace(Lobby2RaceServer_CreateRace raceParams)
     {
         // The lobby is trusted infrastructure, but its roster is still assembled from client
@@ -645,8 +670,7 @@ public class RaceOrchestrator : IDisposable
             $"[GM] Race created: {raceParams.MatchKey}, {joinTokens.Count} players"
         );
 
-        // One token for every onlooker: a spectator takes no slot and speaks for no car, so
-        // there is nothing per-person to keep apart. PlayerIndex is unused for it.
+        // The lobby exchanges this registration token for an individual spectator's join token.
         var spectatorToken = Guid.NewGuid();
         _joinTokens.TryAdd(spectatorToken, (session, 0, Guid.Empty, true));
 
@@ -739,6 +763,11 @@ public class RaceOrchestrator : IDisposable
         public int LoadedCount { get; set; }
         public ConcurrentDictionary<uint, Guid> Clients { get; set; } = [];
         public ConcurrentDictionary<Guid, long> LastChat { get; } = [];
+        public Lock ChatLock { get; } = new();
+        public Queue<S2C_RaceChat> ChatHistory { get; } = new();
+        public long NextChatId;
+        public Dictionary<Guid, (string Name, Color3 Color)> Spectators { get; } = [];
+        public Dictionary<Guid, Guid> SpectatorTokens { get; } = [];
 
         /// <summary>
         /// Connections that have loaded but not yet been handed the gamemode's state. Handled on

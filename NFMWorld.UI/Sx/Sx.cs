@@ -150,12 +150,14 @@ public static class Sx
         BreakType? breakType = null,
         OverflowBehavior? overflowBehavior = null,
         TextHorizontalAlignment? horizontalAlignment = null,
-        TextVerticalAlignment? verticalAlignment = null
+        TextVerticalAlignment? verticalAlignment = null,
+        float? strokeWidth = null
     )
         => new()
         {
             ForegroundColor = foregroundColor,
             StrokeColor = strokeColor,
+            StrokeWidth = strokeWidth,
             FontFamily = fontFamily,
             FontSize = fontSize,
             FontStyle = fontStyle,

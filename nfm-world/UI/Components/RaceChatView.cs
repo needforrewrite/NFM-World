@@ -29,7 +29,8 @@ internal static class RaceChatView
                 borderBottom: chat.Open.Value ? 1 : 0,
                 borderLeft: chat.Open.Value ? 1 : 0,
                 borderRight: chat.Open.Value ? 1 : 0,
-                borderColor: classic() ? new Color(155, 215, 230, 200) : Theme.MenuBorder,
+                borderColor: !chat.Open.Value ? Color.Transparent
+                    : classic() ? new Color(155, 215, 230, 200) : Theme.MenuBorder,
                 borderRadius: classic() ? 3 : 8,
                 paddingLeft: chat.Open.Value ? 8 : 0,
                 paddingRight: chat.Open.Value ? 8 : 0,
@@ -48,7 +49,7 @@ internal static class RaceChatView
                                 fontFamily: classic() ? FontFamily.Adventure : FontFamily.NotoSans,
                             foregroundColor: classic() ? new Color(190, 245, 255) : Theme.MenuBlue
                             ),
-                            text: () => "RACE CHAT"
+                            text: () => "Chat"
                         ),
                         Sx.View(style: () => Sx.Styles(flexGrow: 1)),
                         Button.Create(() => "×", close, size: ButtonSize.Sm)
@@ -111,7 +112,8 @@ internal static class RaceChatView
             style: () => Sx.TextStyles(
                 fontSize: 12 * SettingsMenu.HudScale,
                 foregroundColor: classic() ? new Color(240, 252, 255) : Theme.MenuTextBlue,
-                strokeColor: classic() ? new Color(0, 15, 25, 230) : null,
+                strokeColor: new Color(0, 0, 0),
+                strokeWidth: 2 * SettingsMenu.HudScale,
                 breakType: BreakType.Word,
                 overflowBehavior: OverflowBehavior.ContinueVertically
             ),

@@ -135,6 +135,27 @@ static async Task HandleRequestAsync(
             res.Close();
         }
     }
+    else if (req.Url!.LocalPath == "/register-spectator")
+    {
+        try
+        {
+            var request = TightPackSerializer.Deserialize<Lobby2RaceServer_RegisterSpectator>(bodyArray);
+            var responseBytes = TightPackSerializer.Serialize(new Lobby2RaceServer_RegisterSpectatorResponse
+            {
+                JoinToken = orchestrator.RegisterSpectator(request)
+            });
+            res.ContentType = "application/octet-stream";
+            res.ContentLength64 = responseBytes.Length;
+            res.OutputStream.Write(responseBytes);
+            res.Close();
+        }
+        catch (Exception ex)
+        {
+            Logging.Info($"[GameMaster] RegisterSpectator failed: {ex}");
+            res.StatusCode = 410;
+            res.Close();
+        }
+    }
     else if (req.Url!.LocalPath == "/create-race")
     {
         try

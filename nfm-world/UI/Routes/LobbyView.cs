@@ -500,7 +500,8 @@ public static class LobbyView
                                         ]
                                     )
                                 )
-                            )
+                            ),
+                            latestMessage: () => lobby.Chat.Value.LastOrDefault()?.Id ?? 0
                         )
                     ]
                 ),
@@ -779,8 +780,18 @@ public static class LobbyView
     // ── Shared pieces ───────────────────────────────────────────────
     // ── Shared pieces ───────────────────────────────────────────────
 
-    private static Node Panel(string title, int? width, Func<Node> content)
+    private static Node Panel(string title, int? width, Func<Node> content, Func<long>? latestMessage = null)
     {
+        var list = new PanelList(latestMessage)
+        {
+            Styles = Sx.Styles(
+                flexGrow: 1,
+                flexShrink: 1,
+                flexDirection: FlexDirection.Column,
+                overflow: Overflow.Scroll
+            )
+        };
+        list.AddChild(content());
         return Sx.View(
             style: () => Sx.Styles(
                 flexDirection: FlexDirection.Column,
@@ -814,17 +825,31 @@ public static class LobbyView
                 ),
                 // The panel's height is its parent's, so the list takes the remainder and
                 // scrolls: an unbounded list would push past the panel instead.
-                Sx.View(
-                    style: () => Sx.Styles(
-                        flexGrow: 1,
-                        flexShrink: 1,
-                        flexDirection: FlexDirection.Column,
-                        overflow: Overflow.Scroll
-                    ),
-                    children: [content()]
-                )
+                list
             ]
         );
+    }
+
+    private sealed class PanelList(Func<long>? latestMessage) : View
+    {
+        private long _lastMessage = -1;
+        private float _lastScrollableHeight;
+
+        protected override void RenderContent(Vector2 position, Vector2 size)
+        {
+            if (latestMessage is not null)
+            {
+                var id = latestMessage();
+                var grewAtBottom = ScrollableHeight > _lastScrollableHeight
+                                   && ScrollTop >= _lastScrollableHeight - 0.5f;
+                if (id != _lastMessage || grewAtBottom)
+                    ScrollTop = float.MaxValue;
+                _lastMessage = id;
+                _lastScrollableHeight = ScrollableHeight;
+            }
+
+            base.RenderContent(position, size);
+        }
     }
 
     /// <summary>A clickable row with the menu's hover treatment.</summary>

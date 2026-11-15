@@ -99,6 +99,25 @@ public class GameMasterHttpClient
         );
     }
 
+    public async Task<Guid> RegisterSpectatorAsync(ResolvedGameMaster master, Lobby2RaceServer_RegisterSpectator request)
+    {
+        var body = TightPackSerializer.Serialize(request);
+        const string path = "/register-spectator";
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, new Uri(master.HttpEndpoint, path))
+        {
+            Content = new ByteArrayContent(body)
+        };
+        httpRequest.Headers.Add("Authorization", HmacAuth.Sign("POST", path, body, _keyId, _secretKey));
+        httpRequest.Headers.Add(Protocol.HeaderName, _protocolVersion);
+        httpRequest.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+        using var response = await _httpClient.SendAsync(httpRequest);
+        EnsureProtocolAccepted(response);
+        response.EnsureSuccessStatusCode();
+        return TightPackSerializer.Deserialize<Lobby2RaceServer_RegisterSpectatorResponse>(
+            await response.Content.ReadAsByteArrayAsync()
+        ).JoinToken;
+    }
+
     public async Task NotifyRaceEndedAsync(
         ResolvedGameMaster master,
         RaceServer2Lobby_RaceResults results
