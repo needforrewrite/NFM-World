@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
@@ -318,7 +317,7 @@ public static class ContentHashes
 /// </remarks>
 public static class ContentCache
 {
-    private static readonly ConcurrentDictionary<string, SemaphoreSlim> Gates = new(StringComparer.Ordinal);
+    private static readonly SemaphoreSlim[] Gates = Enumerable.Range(0, 64).Select(_ => new SemaphoreSlim(1, 1)).ToArray();
     private static string? _root;
     private static ArchiveCacheFileSystem? _mounted;
 
@@ -382,7 +381,11 @@ public static class ContentCache
         if (ReadPrepared(normalized, radpackKind.Value, out _))
             return ContentPrepareResult.Success;
 
-        var gate = Gates.GetOrAdd(normalized, _ => new SemaphoreSlim(1, 1));
+        var gate = Gates[byte.Parse(
+            normalized.AsSpan(0, 2),
+            System.Globalization.NumberStyles.HexNumber,
+            System.Globalization.CultureInfo.InvariantCulture
+        ) % Gates.Length];
         await gate.WaitAsync(ct);
         try
         {

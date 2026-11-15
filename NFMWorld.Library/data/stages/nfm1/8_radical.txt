@@ -15,6 +15,7 @@ nlaps(3)
 
 mountains(false)
 clouds(false)
+lightson()
 
 soundtrack(nfm1,stage8.zipo)
 soundtrackfreqmul(1.01)

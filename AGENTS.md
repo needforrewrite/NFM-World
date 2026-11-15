@@ -196,6 +196,33 @@ Gamemodes are compiled `.NET` plugins — the Lua path is gone. Singleplayer and
   Entering a race remembers only its stage; test drives and dev commands must not overwrite the garage choice.
   The ONLINE list shows each public car's publisher (`CarStatsViewModel.Author`, from the archive
   search result) instead of the collection name; it is remembered while that car is previewed.
+- The garage is three pages (`UiState.Garage.Page`): home menu (`CHANGE CAR` / `CUSTOMIZE CAR` / `MANAGE INVENTORY`
+  disabled / `BACK`), the car browser and the paint editor. The UI is two floating panels over the live stage, not a
+  full-height column: the menu is anchored at `PanelInset` and sizes to the home rows (height-capped only on the list
+  pages, which is what lets those lists scroll), and the stats card is anchored to the **opposite** edge so the car is
+  framed in the gap between them. The browser is a two-column card grid (`CardWidth` is (menu content − gap) / 2; keep
+  them in step with `MenuWidth` or the list gains a horizontal scrollbar) whose tabs are
+  `UiState.Garage.Categories` — every installed collection with a drivable car, then `Online`. Local and archive share
+  one picker: the archive tab is just the last tab, and its cards appear as the search returns. Each card shows a
+  baked image of the model (`CarThumbnails`, one or two renders a frame into an offscreen target from a front-right
+  three-quarter view); the paint invalidates that car's image. `CarThumbnails.RenderPending` must be called from the
+  garage phase's `Render` (both `GaragePhase` and the inline garage in `MainMenuPhase`).
+- **Broken models are not cars.** `BackendCar`'s constructor builds a four-wheel contact set from `Wheels[0..3]`, so an
+  unfinished model-editor export with fewer wheels throws. `BackendCar.IsDrivable` gates the picker list, the category
+  tabs and `SetupCurrentCar`, and `MainMenuPhase.SetupMenuCar` falls back when the remembered car is not drivable.
+- The car is the focus: `MenuCameraDirector` fits the garage distance to `BackendCar.MaxRadius`
+  (`clamp(3.2 × radius, 420, 2400)`) and offsets it by `GarageFraming` — a fraction of the viewport half-width, so the
+  car keeps the same screen position whatever its size. `GarageCameraControls` asks `GarageView.OverUi(x, y)`, which
+  tests the panels' **measured rectangles**; don't reintroduce a hardcoded column width there. Keys are routed in
+  `GarageController` (a tree root handler only runs while the root is focused): arrows walk the grid (up/down by
+  `GridColumns`), Enter commits, Esc backs out or clears the search. Held arrows arrive as repeats, which
+  `BasePhase.KeyRepeated` forwards; a focused text field owns the keys, anything else does not.
+- Paint: cars declare up to four colours (`1stColor(..)`…`4thColor(..)`), the parser tags polys with `ColNum`, and
+  `CarPaint` (`NFMWorld.Library/Util/`) rewrites the tagged polys on the shared `Rad3d`. `BackendGameSparker.GetCar`
+  applies the saved overrides, which is what carries the chosen paint into races; the original colours are captured
+  per instance before the first rewrite, so changing or resetting an override restores them. The preview's
+  `CarVisual` copied its polys at construction, so a live paint change copies the colours into that mesh and rebuilds
+  it. Overrides persist in `data/cfg/car-colors.json`.
 - The lobby offers PvP and Time Trial through `GamemodeCatalog.Ids`; config controls follow the selected mode.
   Time Trial has no bots. Real remote racers remain roster players, not `IsFake` replay ghosts; they are drawn
   translucent and driven without inter-car collisions. Saved best-run ghosts remain singleplayer-only.

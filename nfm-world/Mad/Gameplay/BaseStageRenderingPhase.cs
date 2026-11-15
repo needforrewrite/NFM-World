@@ -33,6 +33,16 @@ public abstract class BaseStageRenderingPhase : BasePhase
 
     private IRadicalMusic? _stageMusic;
     protected IRadicalMusic? StageMusic => _stageMusic;
+    private CancellationTokenSource? _stageCancellation;
+    private MusicRequest? _musicRequest;
+    private bool _disposed;
+    private bool _active;
+    protected bool IsStageLoading { get; private set; }
+
+    private sealed class MusicRequest(BaseStageRenderingPhase owner)
+    {
+        public BaseStageRenderingPhase Owner = owner;
+    }
 
     public string? StageName;
 
@@ -41,11 +51,9 @@ public abstract class BaseStageRenderingPhase : BasePhase
     {
         StageName = stageName;
 
-        // Stage loading happens once at construction time, not on every Enter().
-        // This prevents phases from resetting when an overlay (e.g., Settings) is
-        // pushed and popped over them.
+        // Re-entering an overlay resumes the same stage and pending loads.
         if (stageSource != null)
-            TakeStageFrom(stageSource);
+            TakeStageFrom(stageSource, takeMusic: stageSource is not StageSelectPhase);
         else if (StageName != null)
             LoadStage(StageName);
     }
@@ -60,6 +68,9 @@ public abstract class BaseStageRenderingPhase : BasePhase
         {
             _stageMusic = source._stageMusic;
             source._stageMusic = null;
+            _musicRequest = source._musicRequest;
+            if (_musicRequest is not null) _musicRequest.Owner = this;
+            source._musicRequest = null;
         }
 
         Camera = source.Camera;
@@ -74,10 +85,12 @@ public abstract class BaseStageRenderingPhase : BasePhase
 
     public override void Enter()
     {
+        _active = true;
         base.Enter();
 
         Camera.Width = GameSparker.Game.Window.Width;
         Camera.Height = GameSparker.Game.Window.Height;
+        CurrentStage?.Renderer.Activate();
 
         // Resume stage music that was paused by Exit().
         if (_stageMusic != null && !ReferenceEquals(GameSparker.CurrentMusic, _stageMusic))
@@ -86,6 +99,7 @@ public abstract class BaseStageRenderingPhase : BasePhase
 
     public override void Exit()
     {
+        _active = false;
         base.Exit();
 
         CurrentStage?.StopSounds();
@@ -103,10 +117,15 @@ public abstract class BaseStageRenderingPhase : BasePhase
 
         if (disposing)
         {
+            _disposed = true;
+            _stageCancellation?.Cancel();
+            _stageCancellation?.Dispose();
+            _musicRequest = null;
             // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
             CurrentStage?.Dispose();
             CurrentStage = null!;
 
+            if (ReferenceEquals(GameSparker.CurrentMusic, _stageMusic)) GameSparker.CurrentMusic = null;
             _stageMusic?.Dispose();
             _stageMusic = null;
         }
@@ -114,13 +133,80 @@ public abstract class BaseStageRenderingPhase : BasePhase
 
     protected virtual void LoadStage(string stageName, bool loadMusic = true, bool reloadIfLoaded = false)
     {
-        StageName = stageName;
-        CurrentStage?.Dispose();
-        CurrentStage = new ClientStage(stageName, CarsInRace, Camera, LightCameras);
-
-        if (loadMusic)
-            LoadStageMusic(reloadIfLoaded: reloadIfLoaded);
+        BeginStageLoad(stageName, loadMusic, reloadIfLoaded);
     }
+
+    protected void BeginStageLoad(
+        string stageName,
+        bool loadMusic = true,
+        bool reloadIfLoaded = false,
+        StageLoader? stageData = null
+    )
+    {
+        _stageCancellation?.Cancel();
+        _stageCancellation?.Dispose();
+        _stageCancellation = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+        StageName = stageName;
+        IsStageLoading = true;
+        _ = CompleteStageLoadAsync(stageName, loadMusic, reloadIfLoaded, stageData, _stageCancellation.Token);
+    }
+
+    private async Task CompleteStageLoadAsync(
+        string stageName,
+        bool loadMusic,
+        bool reloadIfLoaded,
+        StageLoader? stageData,
+        CancellationToken token
+    )
+    {
+        ClientStage? next = null;
+        try
+        {
+            next = await ClientStage.CreateAsync(stageName, CarsInRace, Camera, LightCameras, token, stageData);
+            await LoadingWork.NextFrame;
+            token.ThrowIfCancellationRequested();
+            if (_disposed)
+            {
+                next.Dispose();
+                return;
+            }
+
+            OnStageReplacing();
+            CurrentStage?.Dispose();
+            CurrentStage = next;
+            CurrentStage.Adopt();
+            next = null;
+            IsStageLoading = false;
+            if (_active) CurrentStage.Renderer.Activate();
+            OnStageLoaded();
+            if (loadMusic) LoadStageMusic(reloadIfLoaded: reloadIfLoaded);
+        }
+        catch (OperationCanceledException)
+        {
+            await LoadingWork.NextFrame;
+            next?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            await LoadingWork.NextFrame;
+            next?.Dispose();
+            if (token.IsCancellationRequested || _disposed) return;
+            IsStageLoading = false;
+            Logging.Error($"Could not load stage '{stageName}': {ex.Message}");
+            OnStageLoadFailed(ex);
+        }
+    }
+
+    protected virtual void OnStageLoaded()
+    {
+    }
+
+    protected virtual void OnStageReplacing()
+    {
+    }
+
+    protected virtual void OnStageLoadFailed(Exception error)
+        => GameSparker.MessageWindow.ShowMessage("Could not load stage", error.Message);
 
     protected virtual (string Path, double Tempo, double Frequency)? GetMusicTrack()
     {
@@ -133,51 +219,54 @@ public abstract class BaseStageRenderingPhase : BasePhase
 
     protected virtual void LoadStageMusic(bool reloadIfLoaded = false)
     {
-        if (reloadIfLoaded || _stageMusic == null)
+        if (!reloadIfLoaded && (_stageMusic is not null || _musicRequest is not null)) return;
+        _musicRequest = null;
+        if (GetMusicTrack() is not { } track)
         {
-            if (ReferenceEquals(GameSparker.CurrentMusic, _stageMusic))
-                GameSparker.CurrentMusic = null;
+            if (ReferenceEquals(GameSparker.CurrentMusic, _stageMusic)) GameSparker.CurrentMusic = null;
             _stageMusic?.Dispose();
             _stageMusic = null;
-            if (GetMusicTrack() is not { } track) return;
-            Logging.Debug($"playing music: {track.Path}");
+            return;
+        }
 
-            if (CurrentStage?.Backend.StageLoader.EmbeddedMusic is { } music
-                && music.TryGetValue(track.Path["data/music/".Length..], out var bytes))
+        byte[]? embedded = null;
+        CurrentStage?.Backend.StageLoader.EmbeddedMusic?.TryGetValue(track.Path["data/music/".Length..], out embedded);
+        var request = _musicRequest = new MusicRequest(this);
+        _ = CompleteMusicLoadAsync(request, track, embedded);
+    }
+
+    private static async Task CompleteMusicLoadAsync(
+        MusicRequest request,
+        (string Path, double Tempo, double Frequency) track,
+        byte[]? embedded
+    )
+    {
+        IRadicalMusic? music = null;
+        try
+        {
+            music = await MusicLoader.LoadAsync(track.Path, track.Tempo, embedded);
+            await LoadingWork.NextFrame;
+            var owner = request.Owner;
+            if (owner._disposed || !ReferenceEquals(owner._musicRequest, request))
             {
-                using var stream = new MemoryStream(bytes, writable: false);
-                _stageMusic = OperatingSystem.IsBrowser()
-                    ? new WebAudioMusic(stream, Path.GetExtension(track.Path), track.Tempo)
-                    : new FaudioMusic(stream, track.Path, track.Tempo);
-                _stageMusic.SetFreqMultiplier(track.Frequency);
+                music.Dispose();
                 return;
             }
 
-            // The browser's music mount fetches synchronously (see http.js) - there is no thread to
-            // await on and the parse has to return immediately - so both paths load inline. The
-            // fetch is a few hundred kilobytes for one track rather than the whole archive.
-            _stageMusic = OperatingSystem.IsBrowser()
-                ? LoadBrowserMusic(track.Path, track.Tempo)
-                : IBackend.Backend.LoadMusic(track.Path, track.Tempo);
-            _stageMusic.SetFreqMultiplier(track.Frequency);
+            music.SetFreqMultiplier(track.Frequency);
+            var previous = owner._stageMusic;
+            owner._stageMusic = music;
+            owner._musicRequest = null;
+            if (owner._active) GameSparker.CurrentMusic = music;
+            previous?.Dispose();
         }
-    }
-
-    /// <summary>
-    /// Loads a track from the browser's music archive. Synchronous because the range fetch is: the
-    /// archive is parsed by ZipArchive, which cannot wait on an asynchronous read.
-    /// </summary>
-    private IRadicalMusic LoadBrowserMusic(string musicPath, double tempoMul)
-    {
-        try
+        catch (Exception ex)
         {
-            using var stream = TheVFS.VFS.OpenRead(musicPath);
-            return new WebAudioMusic(stream, Path.GetExtension(musicPath), tempoMul);
-        }
-        catch (Exception e)
-        {
-            Logging.Error($"Failed to load stage music '{musicPath}': {e.Message}");
-            return new WebAudioMusic();
+            await LoadingWork.NextFrame;
+            music?.Dispose();
+            var owner = request.Owner;
+            if (ReferenceEquals(owner._musicRequest, request)) owner._musicRequest = null;
+            Logging.Error($"Could not load music '{track.Path}': {ex.Message}");
         }
     }
 

@@ -23,6 +23,7 @@ public sealed class SettingsSnapshot
     public int RenderDistance { get; set; }
     public bool LowLatency { get; set; }
     public bool PixelOutlines { get; set; }
+    public bool TransparentGlass { get; set; } = true;
     public float LineWidth { get; set; }
     public int DistantOutlineBehavior { get; set; }
 

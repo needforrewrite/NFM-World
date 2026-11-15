@@ -1,6 +1,7 @@
 using NFMWorld.DriverInterface;
 using NFMWorld.UI.Routes;
 using NFMWorldLibrary;
+using NFMWorldLibrary.Util;
 using SignalsDotnet;
 using NFMWorldLibrary.Hud;
 using NFMWorldLibrary.Multiplayer;
@@ -241,15 +242,68 @@ public static class UiState
     public sealed class GarageState
     {
         public Signal<IReadOnlyList<CarCollectionViewModel>> Collections { get; } = new([]);
-        public Signal<string> CurrentCollection { get; } = new(nameof(NFMWorldLibrary.Collection.User));
         public Signal<CarStatsViewModel?> CurrentCar { get; } = new(null);
 
-        /// <summary>True while the list shows archive search results instead of local collections.</summary>
+        /// <summary>The picker tabs: each installed collection, then the archive.</summary>
+        public Signal<IReadOnlyList<string>> Categories { get; } = new([]);
+
+        /// <summary>The active picker tab.</summary>
+        public Signal<string> Category { get; } = new(nameof(NFMWorldLibrary.Collection.NFMM));
+
+        /// <summary>True while the active tab is the archive rather than an installed collection.</summary>
         public Signal<bool> OnlineSource { get; } = new(false);
 
         /// <summary>Progress, failure or eligibility note shown under the search box.</summary>
         public Signal<string> OnlineStatus { get; } = new("");
+
+        /// <summary>Which garage submenu is showing.</summary>
+        public Signal<GaragePage> Page { get; } = new(GaragePage.Home);
+
+        /// <summary>The car filter. Kept here so the list and the keyboard walk the same rows.</summary>
+        public Signal<string> SearchQuery { get; } = new("");
+
+        /// <summary>Highlighted row on <see cref="GaragePage.Home"/>.</summary>
+        public Signal<int> HomeCursor { get; } = new(0);
+
+        /// <summary>The colour being edited on <see cref="GaragePage.Colors"/>.</summary>
+        public Signal<int> ActiveColorSlot { get; } = new(0);
+
+        /// <summary>0 = hue, 1 = saturation, 2 = brightness.</summary>
+        public Signal<int> ActiveColorChannel { get; } = new(0);
+
+        /// <summary>Editable colour slots of the selected car. Replaced only when the car changes.</summary>
+        public Signal<IReadOnlyList<GarageColorSlot>> ColorSlots { get; } = new([]);
+        public Signal<IReadOnlyList<GarageColorSlot>> WheelColorSlots { get; } = new([]);
+        public Signal<bool> WheelsTab { get; } = new(false);
+        public Signal<bool> HasCustomWheels { get; } = new(false);
+        public Signal<bool> OriginalWheels { get; } = new(false);
+        public Signal<bool> CustomizeTabsFocused { get; } = new(false);
+        public IReadOnlyList<GarageColorSlot> EditingSlots => WheelsTab.Value ? WheelColorSlots.Value : ColorSlots.Value;
     }
+
+    /// <summary>
+    /// One editable colour slot. The values are signals rather than fields so a slider
+    /// updates without remounting the slot's row.
+    /// </summary>
+    public sealed class GarageColorSlot : HsbColorState
+    {
+        public int Slot { get; }
+        public string Name { get; }
+
+        public GarageColorSlot(int slot, Color3 color, string? name = null) : base(color, CarPaint.MinimumChannel)
+        {
+            Slot = slot;
+            Name = name ?? CarPaint.SlotName(slot);
+        }
+    }
+}
+
+/// <summary>The garage's pages: the menu, the car browser and the paint editor.</summary>
+public enum GaragePage
+{
+    Home,
+    Cars,
+    Colors
 }
 
 /// <summary>Car stats shown in the garage.</summary>
@@ -270,6 +324,7 @@ public sealed record CarStatsViewModel(
 {
     /// <summary>The archive account that published a public car; null for a local one.</summary>
     public string? Author { get; init; }
+    public string? Class { get; init; }
 }
 
 /// <summary>A named group of cars in the garage.</summary>

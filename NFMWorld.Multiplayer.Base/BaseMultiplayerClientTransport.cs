@@ -88,7 +88,8 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
 
         // Refuse to talk to a server whose layout cannot be confirmed. An older build ignores the
         // opcode instead of refusing it, so "never answered" is the only thing it can say.
-        HandshakeError = "The server did not answer the game version handshake. It is probably running an older version.";
+        HandshakeError =
+            $"The server did not answer the protocol v{Protocol.Version} handshake. It may be running an older protocol.";
         Logging.Warning($"The server never acknowledged protocol {Protocol.Version}.");
         StopReconnecting();
         State = ClientState.Disconnected;
@@ -119,9 +120,9 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
         }
 
         HandshakeAccepted = false;
-        HandshakeError = handshake.Error is { Length: > 0 } error
-            ? error
-            : $"This server runs game version {handshake.Version}; this build is version {Protocol.Version}.";
+        HandshakeError = handshake.Version != Protocol.Version
+            ? $"This server uses protocol v{handshake.Version}; this build uses protocol v{Protocol.Version}. Update the game and try again."
+            : handshake.Error is { Length: > 0 } error ? error : $"The server refused protocol v{Protocol.Version}.";
         Logging.Warning($"Server refused the connection: {HandshakeError}");
 
         // Reconnecting reaches the same server, which will refuse it again.

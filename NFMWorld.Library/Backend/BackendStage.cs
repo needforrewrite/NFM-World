@@ -50,7 +50,11 @@ public partial class BackendStage
     }
 
     [PluginVisible]
-    public BackendStage(string stageName, StageLoader? stageLoader = null) : this()
+    public BackendStage(string stageName, StageLoader? stageLoader = null) : this(stageName, stageLoader, false)
+    {
+    }
+
+    public BackendStage(string stageName, StageLoader? stageLoader, bool throwOnError) : this()
     {
         Path = stageName;
         try
@@ -80,6 +84,7 @@ public partial class BackendStage
         }
         catch (StageLoadException exception)
         {
+            if (throwOnError) throw;
             SentrySdk.CaptureException(exception);
             Logging.Error(
                 $"Error in stage: {stageName}\nAt line: {exception.Line} (number {exception.LineNumber})\n{exception.ToString()}"
@@ -87,6 +92,7 @@ public partial class BackendStage
         }
         catch (Exception exception)
         {
+            if (throwOnError) throw;
             SentrySdk.CaptureException(exception);
             Logging.Error($"Error in stage: {stageName}\n{exception.ToString()}");
         }

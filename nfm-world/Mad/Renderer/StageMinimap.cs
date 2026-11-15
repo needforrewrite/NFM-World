@@ -173,12 +173,15 @@ public sealed class StageMinimap : IDisposable
         var lighting = new Lighting([], [], RenderPass.Main(0));
 
         var queue = new RenderQueue(GameSparker.GraphicsDevice);
+        var leases = new List<ResourceLease<Mesh>>();
         try
         {
             queue.Begin(camera, lighting);
             foreach (var piece in pieces)
             {
-                var mesh = GameSparker.GetStagePartMesh(piece.Rad);
+                var lease = StageMeshCache.Acquire(piece.Rad);
+                leases.Add(lease);
+                var mesh = lease.Value;
                 var position = (Vector3)piece.Position;
                 var world = Matrix.CreateFromEuler((Euler)piece.Rotation) * Matrix.CreateTranslation(position);
                 mesh.SubmitRenderables(
@@ -198,6 +201,7 @@ public sealed class StageMinimap : IDisposable
         finally
         {
             queue.Dispose();
+            foreach (var lease in leases) lease.Dispose();
             World.FadeFrom = oldFadeFrom;
             World.DistantOutlineBehavior = oldOutline;
             CameraSettings.RenderDistanceSqr = oldRenderDistance;

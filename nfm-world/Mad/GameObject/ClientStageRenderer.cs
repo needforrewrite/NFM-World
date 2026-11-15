@@ -16,6 +16,14 @@ But does NOT hold any information relating to the actual game being played, unle
 public class ClientStageRenderer : GameObject, IDisposable
 {
     private bool _disposed;
+    private int _environmentSeed;
+    private IDisposable? _pendingOwnership;
+
+    internal void Adopt()
+    {
+        _pendingOwnership?.Dispose();
+        _pendingOwnership = null;
+    }
 
     public Sky? sky;
     public Ground? ground;
@@ -34,6 +42,14 @@ public class ClientStageRenderer : GameObject, IDisposable
 
     private int _lastIndex;
     private readonly List<Mesh> _resolvedMeshes = [];
+    private readonly Dictionary<Rad3d, ResourceLease<Mesh>> _sharedMeshes = new(Rad3d.VisualEqualityComparer.Instance);
+
+    private Mesh GetStageMesh(Rad3d model, Mesh.Prepared? prepared = null)
+    {
+        if (!_sharedMeshes.TryGetValue(model, out var lease))
+            _sharedMeshes.Add(model, lease = StageMeshCache.Acquire(model, prepared));
+        return lease.Value;
+    }
 
     // we use the object instance hashcode instead of the value hashcode for performance
     private class StageObjectVisualComparer : IEqualityComparer<StageObject>
@@ -55,6 +71,7 @@ public class ClientStageRenderer : GameObject, IDisposable
         this.backendStage = backendStage;
         Children = _mutableChildren;
         World.ResetValues();
+        _environmentSeed = World.MountainSeed;
         try
         {
             var stageLoader = backendStage.StageLoader;
@@ -109,7 +126,7 @@ public class ClientStageRenderer : GameObject, IDisposable
                 {
                     if (_cachedObjects.ContainsKey(obj)) continue;
 
-                    var mesh = GameSparker.GetStagePartMesh(obj.Rad);
+                    var mesh = GetStageMesh(obj.Rad);
                     if (obj.Kind == AiNodeKind.CheckPoint)
                     {
                         var clientObj = new StageObjectGameObject(mesh, obj)
@@ -159,6 +176,171 @@ public class ClientStageRenderer : GameObject, IDisposable
         ground = new Ground(GameSparker.GraphicsDevice);
     }
 
+    private ClientStageRenderer(BackendStage stage, bool deferred)
+    {
+        backendStage = stage;
+        Children = _mutableChildren;
+    }
+
+    private Environment.GenerationSettings CaptureGenerationSettings()
+    {
+        var saved = (World.HasTexture, World.HasClouds, World.HasPolys, World.CloudCoverage,
+            World.MountainCoverage, World.LightsOn, World.DrawClouds, World.DrawMountains, World.DrawStars,
+            World.DrawPolys, World.MountainSeed, World.FogDensity, World.LightDirection, World.Snap, World.Fog,
+            World.Sky, World.GroundColor, World.GroundPolysColor, World.FadeFrom, World.Clouds, World.CloudColor,
+            World.Texture);
+        try
+        {
+            World.ResetValues();
+            ApplyValues();
+            return Environment.GenerationSettings.Capture();
+        }
+        finally
+        {
+            (World.HasTexture, World.HasClouds, World.HasPolys, World.CloudCoverage,
+                World.MountainCoverage, World.LightsOn, World.DrawClouds, World.DrawMountains, World.DrawStars,
+                World.DrawPolys, World.MountainSeed, World.FogDensity, World.LightDirection, World.Snap, World.Fog,
+                World.Sky, World.GroundColor, World.GroundPolysColor, World.FadeFrom, World.Clouds, World.CloudColor,
+                World.Texture) = saved;
+        }
+    }
+
+    internal static async Task<ClientStageRenderer> CreateAsync(
+        BackendStage stage,
+        CancellationToken token,
+        bool generateEnvironment = true
+    )
+    {
+        await LoadingWork.NextFrame;
+        token.ThrowIfCancellationRequested();
+        var renderer = new ClientStageRenderer(stage, deferred: true);
+        renderer._pendingOwnership = ContentCacheMaintenance.TrackPending(renderer);
+        try
+        {
+            var settings = renderer.CaptureGenerationSettings();
+            renderer._environmentSeed = settings.MountainSeed;
+            var loader = stage.StageLoader;
+            var objects = stage.Pieces.OfType<StageObject>().Select(obj => (Object: obj, Polys: obj.Rad.Polys,
+                World: Matrix.CreateFromEuler((Euler)obj.Rotation) * Matrix.CreateTranslation((Vector3)obj.Position))).ToArray();
+            foreach (var entry in objects)
+                if (!renderer._sharedMeshes.ContainsKey(entry.Object.Rad)
+                    && StageMeshCache.TryAcquire(entry.Object.Rad, out var lease))
+                    renderer._sharedMeshes.Add(entry.Object.Rad, lease!);
+            var cachedModels = new HashSet<Rad3d>(renderer._sharedMeshes.Keys, Rad3d.VisualEqualityComparer.Instance);
+            var prepared = await Task.Run(() =>
+                {
+                    token.ThrowIfCancellationRequested();
+                    var groundPolys = generateEnvironment && loader.DrawPolys ? EnvironmentMeshData.Prepare(
+                        Environment.BuildPolys(
+                            stage,
+                            loader.maxl,
+                    loader.maxr - loader.maxl,
+                            loader.maxb,
+                            loader.maxt - loader.maxb,
+                            stage.StagePartCount,
+                            settings
+                        )
+                    ) : null;
+                    token.ThrowIfCancellationRequested();
+                    var clouds = generateEnvironment && loader.DrawClouds
+                    ? EnvironmentMeshData.Prepare(Environment.BuildClouds(
+                        loader.maxl,
+                        loader.maxr,
+                        loader.maxb,
+                        loader.maxt,
+                        settings
+                    )
+                    ) : null;
+                    token.ThrowIfCancellationRequested();
+                    var mountains = generateEnvironment && loader.DrawMountains
+                    ? EnvironmentMeshData.Prepare(Environment.BuildMountains(
+                        loader.maxl,
+                        loader.maxr,
+                        loader.maxb,
+                        loader.maxt,
+                        settings
+                    )
+                    ) : null;
+                    var resolver = new CoplanarSurfaceResolver();
+                    var pieces = new List<(StageObject Object, Mesh.Prepared? Replacement)>();
+                    var meshes = new Dictionary<Rad3d, Mesh.Prepared>(Rad3d.VisualEqualityComparer.Instance);
+                    foreach (var entry in objects)
+                    {
+                        token.ThrowIfCancellationRequested();
+                        var rad = entry.Object.Rad;
+                        if (!cachedModels.Contains(rad) && !meshes.ContainsKey(rad)) meshes.Add(rad, Mesh.Prepare(rad));
+                        var polygons = StageSurfaceOverlaps.Resolve(resolver, pieces.Count, entry.Polys, entry.World);
+                        var replacement = ReferenceEquals(polygons, entry.Polys) ? null
+                        : Mesh.Prepare(new Rad3d(polygons, rad.CastsShadow, rad.FileName));
+                        pieces.Add((entry.Object, replacement));
+                    }
+
+                    return (groundPolys, clouds, mountains, pieces, meshes);
+                }, token
+            );
+
+            await LoadingWork.NextFrame;
+            token.ThrowIfCancellationRequested();
+            if (prepared.groundPolys is { } polys) renderer.polys = new GroundPolys(GameSparker.GraphicsDevice, polys);
+            await LoadingWork.NextFrame;
+            token.ThrowIfCancellationRequested();
+            if (prepared.clouds is { } clouds) renderer.clouds = new GroundPolys(GameSparker.GraphicsDevice, clouds);
+            await LoadingWork.NextFrame;
+            token.ThrowIfCancellationRequested();
+            if (prepared.mountains is { } mountains) renderer.mountains = new Mountains(GameSparker.GraphicsDevice, mountains);
+            var uploadTimer = System.Diagnostics.Stopwatch.StartNew();
+            foreach (var (obj, replacement) in prepared.pieces)
+            {
+                if (uploadTimer.ElapsedMilliseconds >= 2)
+                {
+                    await LoadingWork.NextFrame;
+                    uploadTimer.Restart();
+                }
+
+                token.ThrowIfCancellationRequested();
+                var mesh = renderer.GetStageMesh(obj.Rad, prepared.meshes.GetValueOrDefault(obj.Rad));
+                if (replacement is not null)
+                {
+                    mesh = new Mesh(replacement);
+                    renderer._resolvedMeshes.Add(mesh);
+                }
+
+                StageObjectGameObject visual = obj.Kind == AiNodeKind.FixHoop
+                    ? new FixHoop(mesh, obj)
+                    : new StageObjectGameObject(mesh, obj);
+                visual.Parent = renderer;
+                visual.Layer = renderer._lastIndex++;
+                renderer._mutableChildren.Add(visual);
+                renderer._cachedObjects.Add(obj, visual);
+            }
+
+            await LoadingWork.NextFrame;
+            token.ThrowIfCancellationRequested();
+            renderer.sky = new Sky(GameSparker.GraphicsDevice, settings.Sky.Snap(settings.Snap), settings.Fog.Snap(settings
+                .Snap
+            )
+            );
+            renderer.ground = new Ground(
+                GameSparker.GraphicsDevice,
+                settings.Ground,
+                (Color)settings.GroundColor.Snap(settings.Snap)
+            );
+            renderer._polysKey = loader.DrawPolys ? (true, loader.maxl, loader.maxr - loader.maxl,
+                loader.maxb, loader.maxt - loader.maxb, stage.StagePartCount) : (false, 0, 0, 0, 0, 0);
+            renderer._cloudsKey = loader.DrawClouds ? (true, loader.maxl, loader.maxr, loader.maxb, loader.maxt) : (false, 0, 0,
+                0, 0);
+            renderer._mountainsKey = loader.DrawMountains ? (true, loader.maxl, loader.maxr, loader.maxb, loader.maxt) : (false,
+                0, 0, 0, 0);
+            return renderer;
+        }
+        catch
+        {
+            await LoadingWork.NextFrame;
+            renderer.Dispose();
+            throw;
+        }
+    }
+
     public void DetectChanges(bool updateEnvironment = false)
     {
         var seenObjects = new List<StageObject>();
@@ -199,26 +381,34 @@ public class ClientStageRenderer : GameObject, IDisposable
 
         if (_polysKey != polysKey)
         {
-            polys = Environment.MakePolys(
+            var nextPolys = stageLoader.DrawPolys ? Environment.MakePolys(
                 backendStage,
                 stageLoader.maxl,
                 stageLoader.maxr - stageLoader.maxl,
                 stageLoader.maxb,
                 stageLoader.maxt - stageLoader.maxb,
                 backendStage.StagePartCount
-            );
+            ) : null;
+            polys?.Dispose();
+            polys = nextPolys;
             _polysKey = polysKey;
         }
 
         if (_cloudsKey != cloudsKey)
         {
-            clouds = Environment.MakeClouds(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt);
+            var nextClouds = stageLoader.DrawClouds
+                ? Environment.MakeClouds(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt) : null;
+            clouds?.Dispose();
+            clouds = nextClouds;
             _cloudsKey = cloudsKey;
         }
 
         if (_mountainsKey != mountainsKey)
         {
-            mountains = Environment.MakeMountains(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt);
+            var nextMountains = stageLoader.DrawMountains
+                ? Environment.MakeMountains(stageLoader.maxl, stageLoader.maxr, stageLoader.maxb, stageLoader.maxt) : null;
+            mountains?.Dispose();
+            mountains = nextMountains;
             _mountainsKey = mountainsKey;
         }
 
@@ -231,7 +421,7 @@ public class ClientStageRenderer : GameObject, IDisposable
                 if (_cachedObjects.ContainsKey(obj)) continue;
                 geometryChanged = true;
 
-                var mesh = GameSparker.GetStagePartMesh(obj.Rad);
+                var mesh = GetStageMesh(obj.Rad);
                 if (obj.Kind == AiNodeKind.CheckPoint)
                 {
                     var clientObj = new StageObjectGameObject(mesh, obj)
@@ -275,6 +465,7 @@ public class ClientStageRenderer : GameObject, IDisposable
             if (!seenObjects.Contains(obj))
             {
                 _mutableChildren.Remove(clientObj);
+                clientObj.Dispose();
                 objsToRemove.Add(obj);
             }
         }
@@ -285,6 +476,12 @@ public class ClientStageRenderer : GameObject, IDisposable
         }
 
         if (geometryChanged || objsToRemove.Count > 0) ResolveSurfaceOverlaps();
+        var neededModels = new HashSet<Rad3d>(_cachedObjects.Keys.Select(obj => obj.Rad), Rad3d.VisualEqualityComparer.Instance);
+        foreach (var model in _sharedMeshes.Keys.Where(model => !neededModels.Contains(model)).ToArray())
+        {
+            _sharedMeshes[model].Dispose();
+            _sharedMeshes.Remove(model);
+        }
     }
 
     private void ResolveSurfaceOverlaps()
@@ -300,7 +497,7 @@ public class ClientStageRenderer : GameObject, IDisposable
                 var (obj, visual) = entries[i];
                 var world = Matrix.CreateFromEuler((Euler)obj.Rotation) * Matrix.CreateTranslation((Vector3)obj.Position);
                 var polygons = StageSurfaceOverlaps.Resolve(resolver, i, obj.Rad.Polys, world);
-                var mesh = GameSparker.GetStagePartMesh(obj.Rad);
+                var mesh = GetStageMesh(obj.Rad);
                 if (!ReferenceEquals(polygons, obj.Rad.Polys))
                 {
                     mesh = new Mesh(new Rad3d(polygons, obj.Rad.CastsShadow, obj.Rad.FileName));
@@ -399,6 +596,13 @@ public class ClientStageRenderer : GameObject, IDisposable
         }
     }
 
+    public void Activate()
+    {
+        World.ResetValues();
+        World.MountainSeed = _environmentSeed;
+        ApplyValues();
+    }
+
     public override void SubmitDraws(RenderQueue queue, Camera camera, Lighting? lighting, RenderPass pass)
     {
         sky?.SubmitDraws(queue, camera, lighting, pass);
@@ -447,10 +651,8 @@ public class ClientStageRenderer : GameObject, IDisposable
             return;
 
         _disposed = true;
+        Adopt();
 
-        // Null out environment references so their finalizers can release GPU resources.
-        // These objects (Sky, Ground, GroundPolys, Mountains) only have finalizers,
-        // not public Dispose methods. Letting them go out of scope allows GC to collect them.
         sky?.Dispose();
         ground?.Dispose();
         polys?.Dispose();
@@ -460,8 +662,11 @@ public class ClientStageRenderer : GameObject, IDisposable
         foreach (var mesh in _resolvedMeshes) mesh.Dispose();
         _resolvedMeshes.Clear();
 
+        foreach (var visual in _cachedObjects.Values) visual.Dispose();
         _cachedObjects.Clear();
         _mutableChildren.Clear();
+        foreach (var lease in _sharedMeshes.Values) lease.Dispose();
+        _sharedMeshes.Clear();
 
         GC.SuppressFinalize(this);
     }

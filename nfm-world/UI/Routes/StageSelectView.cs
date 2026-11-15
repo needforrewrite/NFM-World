@@ -19,6 +19,9 @@ public sealed class StageSelectState
     public Signal<string> Selected { get; } = new("");
     public Signal<string> Search { get; } = new("");
     public Signal<bool> ConfirmEnabled { get; } = new(false);
+    public Signal<string> ConfirmLabel { get; } = new("RACE");
+    public Signal<string> Description { get; } = new("Choose where to race.");
+    public Signal<bool> BrowsingCollections { get; } = new(false);
 
     /// <summary>True while the list shows public archive stages instead of local content.</summary>
     public Signal<bool> OnlineSource { get; } = new(false);
@@ -41,6 +44,9 @@ public sealed class StageSelectState
         Selected.Value = "";
         Search.Value = "";
         ConfirmEnabled.Value = false;
+        ConfirmLabel.Value = "RACE";
+        Description.Value = "Choose where to race.";
+        BrowsingCollections.Value = false;
         OnlineSource.Value = false;
         Busy.Value = false;
         Status.Value = "";
@@ -65,7 +71,8 @@ public static class StageSelectView
         Action Confirm,
         Action Back,
         Action<bool>? SourceSelected = null,
-        Action<string>? OnlineSearch = null
+        Action<string>? OnlineSearch = null,
+        string? SourceControlsHint = null
     );
 
     private static readonly Signal<string> SearchDraft = new("");
@@ -89,24 +96,102 @@ public static class StageSelectView
         return true;
     }
 
+    public static bool HandleKey(StageSelectState state, Actions actions, Key key)
+    {
+        if (FocusManager.FocusedNode is TextInput or TextArea)
+        {
+            if (key != Key.Escape) return false;
+            ClearSearch();
+            actions.SearchChanged("");
+            FocusManager.ClearFocus();
+            return true;
+        }
+
+        switch (key)
+        {
+            case Key.Left:
+                state.BrowsingCollections.Value = !state.OnlineSource.Value;
+                break;
+            case Key.Right:
+                state.BrowsingCollections.Value = false;
+                break;
+            case Key.Up:
+            case Key.Down:
+                var delta = key == Key.Up ? -1 : 1;
+                if (state.BrowsingCollections.Value && !state.OnlineSource.Value)
+                {
+                    var collections = state.Collections.Value;
+                    if (collections.Count == 0) break;
+                    var index = collections.ToList().IndexOf(state.Collection.Value);
+                    var next = index < 0 ? (delta > 0 ? 0 : collections.Count - 1)
+                        : (index + delta + collections.Count) % collections.Count;
+                    actions.CollectionSelected(collections[next]);
+                }
+                else
+                {
+                    var stages = state.Stages.Value;
+                    if (stages.Count == 0) break;
+                    var index = stages.ToList().FindIndex(stage => stage.Id == state.Selected.Value);
+                    var next = index < 0 ? (delta > 0 ? 0 : stages.Count - 1)
+                        : (index + delta + stages.Count) % stages.Count;
+                    actions.StageSelected(stages[next].Id);
+                }
+
+                break;
+            case Key.Enter:
+                if (state.BrowsingCollections.Value) state.BrowsingCollections.Value = false;
+                else if (state.ConfirmEnabled.Value && !state.Busy.Value) actions.Confirm();
+                break;
+            case Key.Escape:
+                if (ClearSearch()) actions.SearchChanged("");
+                else actions.Back();
+                break;
+            default: return false;
+        }
+
+        return true;
+    }
+
+    private sealed class NavigableStageSelect(StageSelectState state) : View
+    {
+        private Component? _lastTarget;
+
+        protected override bool OnPostLayout()
+        {
+            var name = state.BrowsingCollections.Value && !state.OnlineSource.Value
+                ? "Stage collection " + state.Collection.Value : "Stage row " + state.Selected.Value;
+            var target = Find(this, name);
+            if (target is not null && !ReferenceEquals(target, _lastTarget)) target.ScrollIntoView();
+            _lastTarget = target;
+            return base.OnPostLayout();
+        }
+
+        private static Component? Find(Node root, string name)
+        {
+            if (root is Component component && component.Name == name) return component;
+            foreach (var child in root.VisualChildren)
+                if (Find(child, name) is { } found) return found;
+            return null;
+        }
+    }
+
     public static Node Build(StageSelectState state, Actions actions, string title = "Select Stage")
     {
         SearchDraft.Value = state.Search.Value;
 
-        return Sx.View(
-            name: () => "Stage select",
-            style: () => Sx.Styles(
+        var root = new NavigableStageSelect(state)
+        {
+            Name = "Stage select",
+            Styles = Sx.Styles(
                 width: 100.Percent(),
                 height: 100.Percent(),
                 flexDirection: FlexDirection.Row,
                 backgroundColor: new Color(3, 8, 20, 120)
-            ),
-            children:
-            [
-                Sidebar(state, actions, title),
-                Content(state, actions)
-            ]
-        );
+            )
+        };
+        root.AddChild(Sidebar(state, actions, title));
+        root.AddChild(Content(state, actions));
+        return root;
     }
 
     /// <summary>A compact list for a dialog: no page chrome, just source, filter and rows.</summary>
@@ -177,7 +262,7 @@ public static class StageSelectView
                         Sx.Text(
                             style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
                             layout: () => Sx.Styles(flexShrink: 0),
-                            text: () => "Choose where to race."
+                            text: () => state.Description.Value
                         )
                     ]
                 ),
@@ -314,12 +399,16 @@ public static class StageSelectView
                 paddingRight: 10,
                 borderRadius: 6,
                 borderLeft: 3,
-                borderColor: active() ? Theme.Accent : Theme.Transparent,
+                borderColor: active() ? state.BrowsingCollections.Value ? Color.White : Theme.Accent : Theme.Transparent,
                 backgroundColor: active()
                     ? Theme.MenuHighlight
                     : hovered.Value ? new Color(255, 255, 255, 22) : Theme.Transparent
             ),
-            onmousedown: _ => actions.CollectionSelected(collection),
+            onmousedown: _ =>
+            {
+                state.BrowsingCollections.Value = true;
+                actions.CollectionSelected(collection);
+            },
             onmouseenter: _ => hovered.Value = true,
             onmouseleave: _ => hovered.Value = false,
             children: Sx.Text(
@@ -365,6 +454,7 @@ public static class StageSelectView
         => Sx.View(
             name: () => "Stage select header",
             style: () => Sx.Styles(
+                height: 50,
                 flexDirection: FlexDirection.Row,
                 alignItems: Align.Center,
                 justifyContent: Justify.SpaceBetween,
@@ -374,7 +464,13 @@ public static class StageSelectView
             children:
             [
                 Sx.View(
-                    style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 1, minWidth: 0, gapRow: 2),
+                    style: () => Sx.Styles(
+                        flexDirection: FlexDirection.Column,
+                        flexGrow: 1,
+                        flexShrink: 1,
+                        minWidth: 0,
+                        gapRow: 2
+                    ),
                     children:
                     [
                         Sx.Text(
@@ -383,19 +479,10 @@ public static class StageSelectView
                                 fontStyle: FontStyle.Bold,
                                 foregroundColor: Theme.TextFaint
                             ),
+                            layout: () => Sx.Styles(height: 14, flexShrink: 0),
                             text: () => Overline(state)
                         ),
-                        // A long published name wraps here instead of squeezing the count pill.
-                        Sx.Text(
-                            style: () => Sx.WrappingText(
-                                fontSize: 22,
-                                fontFamily: FontFamily.Adventure,
-                                fontStyle: FontStyle.Bold,
-                                foregroundColor: Theme.MenuTextBlue
-                            ),
-                            layout: () => Sx.Styles(width: 100.Percent()),
-                            text: () => Heading(state)
-                        )
+                        new StageHeading(state)
                     ]
                 ),
                 Sx.View(
@@ -419,6 +506,40 @@ public static class StageSelectView
                 )
             ]
         );
+
+    private sealed class StageHeading : View
+    {
+        private readonly StageSelectState _state;
+        private readonly Signal<float> _fontSize = new(22);
+
+        public StageHeading(StageSelectState state)
+        {
+            _state = state;
+            Styles = Sx.Styles(width: 100.Percent(), height: 32, flexShrink: 0, overflow: Overflow.Hidden);
+            AddChild(Sx.Text(
+                style: () => Sx.TextStyles(
+                    fontSize: _fontSize.Value,
+                    fontFamily: FontFamily.Adventure,
+                    fontStyle: FontStyle.Bold,
+                    verticalAlignment: TextVerticalAlignment.Center,
+                    foregroundColor: Theme.MenuTextBlue
+                ),
+                layout: () => Sx.Styles(width: 100.Percent(), height: 100.Percent(), flexShrink: 0),
+                text: () => Heading(state)
+            )
+            );
+        }
+
+        protected override bool OnPostLayout()
+        {
+            var scale = Math.Max(TheGraphics.G.Scale, 0.01f);
+            var width = TheGraphics.G.GetFontMetrics(new Font(FontFamily.Adventure, FontStyle.Bold, 22 * scale))
+                .MeasureText(Heading(_state)).X;
+            if (width > 0 && LayoutContentSize.X > 0)
+                _fontSize.Value = Math.Clamp(22 * (LayoutContentSize.X - 2 * scale) / width, 1, 22);
+            return base.OnPostLayout();
+        }
+    }
 
     /// <summary>Where the list is drawn from: local content, or the public archive.</summary>
     private static string Overline(StageSelectState state)
@@ -456,8 +577,7 @@ public static class StageSelectView
                 ),
                 layout: () => Sx.Styles(width: 100.Percent(), flexShrink: 0),
                 text: () => state.Busy.Value ? "Working…" : state.Status.Value
-            ),
-            otherwise: () => Sx.View(style: () => Sx.Styles(height: 0, flexShrink: 0))
+            )
         );
 
     private static Node SearchBox(StageSelectState state, Actions actions)
@@ -596,12 +716,16 @@ public static class StageSelectView
                 paddingRight: 14,
                 borderRadius: 8,
                 borderLeft: 3,
-                borderColor: active() ? Theme.Accent : Theme.Transparent,
+                borderColor: active() ? !state.BrowsingCollections.Value ? Color.White : Theme.Accent : Theme.Transparent,
                 backgroundColor: active()
                     ? Theme.MenuHighlight
                     : hovered.Value ? RowHover : RowIdle
             ),
-            onmousedown: _ => actions.StageSelected(stage.Id),
+            onmousedown: _ =>
+            {
+                state.BrowsingCollections.Value = false;
+                actions.StageSelected(stage.Id);
+            },
             onmouseenter: _ => hovered.Value = true,
             onmouseleave: _ => hovered.Value = false,
             children:
@@ -672,12 +796,18 @@ public static class StageSelectView
                     ),
                     children:
                     [
-                        Hint("← →  browse"),
-                        Hint("Enter  race")
+                        Hint("← →  category / stages"),
+                        Hint("↑ ↓  navigate"),
+                        Sx.Show(
+                            () => actions.SourceControlsHint is not null,
+                            () => Hint(actions.SourceControlsHint!)
+                        ),
+                        Hint("Enter  select"),
+                        Hint("Esc  back")
                     ]
                 ),
                 Button.Create(
-                    label: () => "RACE",
+                    label: () => state.ConfirmLabel.Value,
                     onPress: actions.Confirm,
                     variant: ButtonVariant.Primary,
                     size: ButtonSize.Lg,
@@ -699,7 +829,6 @@ public static class StageSelectView
                 style: () => Sx.WrappingText(fontSize: 12, foregroundColor: Theme.Warning),
                 layout: () => Sx.Styles(width: 100.Percent(), flexShrink: 0),
                 text: () => state.Restriction.Value
-            ),
-            otherwise: () => Sx.View(style: () => Sx.Styles(height: 0, flexShrink: 0))
+            )
         );
 }

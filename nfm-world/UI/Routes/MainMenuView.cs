@@ -23,11 +23,12 @@ public static class MainMenuView
     private const int ItemGap = 11;
     private const int MenuRows = 6;
 
-    public sealed class MenuItem(string label, string description, Action action)
+    public sealed class MenuItem(string label, string description, Action action, bool enabled = true)
     {
         public string Label { get; } = label;
         public string Description { get; } = description;
-        public Action Action { get; } = action;
+        public bool Enabled { get; } = enabled;
+        public Action Action { get; } = enabled ? action : () => { };
     }
 
     public sealed record MenuPage(string Title, IReadOnlyList<MenuItem> Items);
@@ -143,7 +144,7 @@ public static class MainMenuView
             )
         );
 
-    public static Node Build(Actions actions, Node logo)
+    public static Node Build(Actions actions, Node logo, string exeVersion = "")
     {
         // Built once, not per read: the items hold lambdas that capture `actions`, so a
         // freshly built page never compares equal to the mounted one. `For` keys by value,
@@ -269,7 +270,17 @@ public static class MainMenuView
             children:
             [
                 panel,
-                AccountChip(actions)
+                AccountChip(actions),
+                Sx.Text(
+                    style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuTextBlue),
+                    layout: () => Sx.Styles(
+                        position: Position.Absolute,
+                        left: 16,
+                        bottom: 12,
+                        pointerEvents: false
+                    ),
+                    text: () => exeVersion
+                )
             ]
         );
     }
@@ -303,6 +314,62 @@ public static class MainMenuView
 
     private static View ItemButton(MenuItem item, int index)
     {
+        if (!item.Enabled)
+            return Sx.View(
+                name: () => "Main menu unavailable " + item.Label,
+                style: () => Sx.Styles(
+                    height: ItemHeight,
+                    flexShrink: 0,
+                    alignItems: Align.Center,
+                    paddingLeft: 12,
+                    paddingRight: 12,
+                    gapColumn: 8,
+                    backgroundColor: new Color(22, 42, 80, 145),
+                    borderTop: 1,
+                    borderBottom: 1,
+                    borderLeft: 1,
+                    borderRight: 1,
+                    borderColor: new Color(128, 170, 255, 195),
+                    borderRadius: 6,
+                    opacity: 0.62f
+                ),
+                children:
+                [
+                    Sx.Text(
+                        style: () => Sx.TextStyles(
+                            fontSize: 22,
+                            fontFamily: FontFamily.Adventure,
+                            fontStyle: FontStyle.Bold,
+                            foregroundColor: MenuBlue
+                        ),
+                        layout: () => Sx.Styles(flexGrow: 1, flexShrink: 1, minWidth: 0),
+                        text: () => item.Label
+                    ),
+                    Sx.View(
+                        style: () => Sx.Styles(
+                            paddingLeft: 8,
+                            paddingRight: 8,
+                            paddingTop: 2,
+                            paddingBottom: 2,
+                            borderRadius: 9,
+                            backgroundColor: new Color(255, 179, 0, 60),
+                            flexShrink: 0
+                        ),
+                        children:
+                        [
+                            Sx.Text(
+                                style: () => Sx.TextStyles(
+                                    fontSize: 10,
+                                    fontStyle: FontStyle.Bold,
+                                    foregroundColor: Theme.Warning
+                                ),
+                                text: () => "SOON"
+                            )
+                        ]
+                    )
+                ]
+            );
+
         return Sx.View(
             style: () => Sx.Styles(
                 flexDirection: FlexDirection.Column,
@@ -346,9 +413,14 @@ public static class MainMenuView
     private static MenuPage BuildSpMenu(Actions actions) => new(
         "SINGLEPLAYER",
         [
-            new("NFM1", "Play the original NFM1 singleplayer campaign.", () => actions.Unavailable("playNfm1")),
-            new("NFM2", "Play the original NFM2 singleplayer campaign.", () => actions.Unavailable("playNfm2")),
-            new("COMMUNITY", "Play custom experiences crafted by the community.", () => actions.Unavailable("playCommunity")),
+            new("NFM1", "Play the original NFM1 singleplayer campaign.", () => actions.Unavailable("playNfm1"), enabled: false),
+            new("NFM2", "Play the original NFM2 singleplayer campaign.", () => actions.Unavailable("playNfm2"), enabled: false),
+            new(
+                "COMMUNITY",
+                "Play custom experiences crafted by the community.",
+                () => actions.Unavailable("playCommunity"),
+                enabled: false
+            ),
             new("FREE PLAY", "Play freely without any restrictions.", actions.Play),
             new("BACK", "Return to the previous menu.", PopPage),
         ]
@@ -359,7 +431,7 @@ public static class MainMenuView
         [
             new("MODEL EDITOR", "View and edit custom models.", actions.ModelEditor),
             new("STAGE EDITOR", "Design your own stages.", actions.StageEditor),
-            new("CAMPAIGN EDITOR", "Craft custom experiences.", () => actions.Unavailable("campaignEditor")),
+            new("CAMPAIGN EDITOR", "Craft custom experiences.", () => actions.Unavailable("campaignEditor"), enabled: false),
             new("BACK", "Return to the previous menu.", PopPage),
         ]
     );
@@ -367,8 +439,8 @@ public static class MainMenuView
     private static MenuPage BuildExtrasMenu(Actions actions) => new(
         "EXTRAS",
         [
-            new("CREDITS", "View game credits.", () => actions.Unavailable("credits")),
-            new("STATS", "View your gameplay statistics.", () => actions.Unavailable("stats")),
+            new("CREDITS", "View game credits.", () => actions.Unavailable("credits"), enabled: false),
+            new("STATS", "View your gameplay statistics.", () => actions.Unavailable("stats"), enabled: false),
             new("REPLAYS", "Browse and watch saved replays.", actions.Replays),
             new("BACK", "Return to the previous menu.", PopPage),
         ]
@@ -378,8 +450,13 @@ public static class MainMenuView
         "TRAINING",
         [
             new("TIME TRIALS", "Flex your fastest time against other people.", actions.TimeTrials),
-            new("CHALLENGES", "Complete challenges to sharpen your mechanical skills.", () => actions.Unavailable("challenges")),
-            new("TUTORIAL", "Learn the rules and controls of the game.", () => actions.Unavailable("tutorial")),
+            new(
+                "CHALLENGES",
+                "Complete challenges to sharpen your mechanical skills.",
+                () => actions.Unavailable("challenges"),
+                enabled: false
+            ),
+            new("TUTORIAL", "Learn the rules and controls of the game.", () => actions.Unavailable("tutorial"), enabled: false),
             new("BACK", "Return to the previous menu.", PopPage),
         ]
     );
@@ -400,8 +477,11 @@ public static class MainMenuView
 
     private static void SelectFirst()
     {
-        SelectedIndex.Value = 0;
-        Description.Value = _currentPage?.Invoke().Items.FirstOrDefault()?.Description ?? "Choose your next drive.";
+        var items = _currentPage?.Invoke().Items;
+        var index = items?.ToList().FindIndex(item => item.Enabled) ?? -1;
+        SelectedIndex.Value = Math.Max(0, index);
+        Description.Value = items is { Count: > 0 }
+            ? items[SelectedIndex.Value].Description : "Choose your next drive.";
     }
 
     public static void KeyPressed(Key key)
@@ -425,7 +505,12 @@ public static class MainMenuView
         var items = _currentPage().Items;
         if (key is Key.Up or Key.Down)
         {
-            SelectedIndex.Value = (SelectedIndex.Value + (key == Key.Up ? -1 : 1) + items.Count) % items.Count;
+            for (var step = 0; step < items.Count; step++)
+            {
+                SelectedIndex.Value = (SelectedIndex.Value + (key == Key.Up ? -1 : 1) + items.Count) % items.Count;
+                if (items[SelectedIndex.Value].Enabled) break;
+            }
+
             Description.Value = items[SelectedIndex.Value].Description;
         }
         else if (key == Key.Enter)

@@ -13,19 +13,23 @@ public class Ground : Transform, IRenderable, IImmediateRenderElement, IDisposab
     public override IReadOnlyList<ITransform> ChildTransforms => [];
 
     public Ground(IGraphicsDevice graphicsDevice)
+        : this(graphicsDevice, World.Ground, (Color)World.GroundColor.Snap(World.Snap))
+    {
+    }
+
+    internal Ground(IGraphicsDevice graphicsDevice, int groundHeight, Color color)
     {
         // Generate a quad on World.Ground extending infinitely in X and Z
         _graphicsDevice = graphicsDevice;
         const int size = 1_000_000;
-        var color = (Color)World.GroundColor.Snap(World.Snap);
         Span<PositionColorVertex> data =
         [
-            new(new Vector3(-size, World.Ground, -size), color),
-            new(new Vector3(size, World.Ground, -size), color),
-            new(new Vector3(-size, World.Ground, size), color),
-            new(new Vector3(size, World.Ground, -size), color),
-            new(new Vector3(-size, World.Ground, size), color),
-            new(new Vector3(size, World.Ground, size), color)
+            new(new Vector3(-size, groundHeight, -size), color),
+            new(new Vector3(size, groundHeight, -size), color),
+            new(new Vector3(-size, groundHeight, size), color),
+            new(new Vector3(size, groundHeight, -size), color),
+            new(new Vector3(-size, groundHeight, size), color),
+            new(new Vector3(size, groundHeight, size), color)
         ];
 
         var vertexBytes = MemoryMarshal.AsBytes(data);

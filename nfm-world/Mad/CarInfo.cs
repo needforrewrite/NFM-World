@@ -17,4 +17,12 @@ public class CarMesh : Mesh
         Wheels = rad.Wheels;
         Rims = rad.Rims;
     }
+
+    internal CarMesh(Prepared prepared) : base(prepared)
+    {
+        var rad = prepared.Rad;
+        Stats = CarStats.ValidateStats(rad.Stats, rad.FileName);
+        Wheels = rad.Wheels;
+        Rims = rad.Rims;
+    }
 }

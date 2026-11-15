@@ -251,6 +251,8 @@ public class StageEditorTab
 
 public partial class StageEditorPhase : BasePhase
 {
+    private bool _editorDisposed;
+    private readonly CancellationTokenSource _editorLoading = new();
     private readonly NFMWorld.Graphics.IGraphicsDevice _graphicsDevice;
     private bool _isOpen = false;
 
@@ -667,6 +669,11 @@ public partial class StageEditorPhase : BasePhase
         base.Dispose(disposing);
 
         if (!disposing) return;
+
+        _editorDisposed = true;
+        _editorLoading.Cancel();
+        _editorLoading.Dispose();
+        StopMusicPreview(notify: false);
 
         foreach (var tab in _tabs)
         {

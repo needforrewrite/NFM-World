@@ -54,8 +54,7 @@ public sealed class ReplayViewerPhase : BaseStageRenderingPhase
         {
             if (replay.StageData is { } stageData)
             {
-                CurrentStage = new ClientStage(replay.StageName, CarsInRace, Camera, LightCameras, stageData);
-                LoadStageMusic();
+                BeginStageLoad(replay.StageName, stageData: stageData);
             }
             else if (VFS.FileExists($"data/stages/{replay.StageName}.txt")
                      || VFS.FileExists($"data/stages/{replay.StageName}.radpack"))
@@ -81,13 +80,19 @@ public sealed class ReplayViewerPhase : BaseStageRenderingPhase
             SetMissing("This recording has no frames.");
             return;
         }
+    }
 
-        // The car was added before the stage existed, so ask the stage to build its visual now.
-        CurrentStage.SetCars(CarsInRace);
+    protected override void OnStageLoaded()
+    {
+        if (_state.MissingContent.Value) return;
+        CurrentStage!.SetCars(CarsInRace);
         ApplyFrame(0);
         _playing = true;
         _state.Playing.Value = true;
     }
+
+    protected override void OnStageLoadFailed(Exception error)
+        => SetMissing($"This recording's stage could not be loaded: {error.Message}");
 
     private void SetMissing(string message)
     {
@@ -191,6 +196,7 @@ public sealed class ReplayViewerPhase : BaseStageRenderingPhase
 
     public override void GameTick()
     {
+        if (CurrentStage is null) return;
         if (_state.MissingContent.Value)
             return;
 

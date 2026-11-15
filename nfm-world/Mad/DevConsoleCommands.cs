@@ -79,7 +79,7 @@ public static class DevConsoleCommands
                         inRacePhase.StageName!,
                         factory,
                         inRacePhase.Players,
-                        LocalRaceHost.Create(
+                        LocalRaceHost.CreateDeferred(
                             inRacePhase.StageName!,
                             factory,
                             new ClientGamemodeParameters { Players = inRacePhase.Players }
@@ -398,6 +398,8 @@ public static class DevConsoleCommands
         Logging.Info($"Commit: {build.Commit}");
         var date = build.BuiltAtUtc?.ToString("MMM dd yyyy 'UTC'", CultureInfo.InvariantCulture) ?? "unknown";
         var number = build.BuildNumber?.ToString(CultureInfo.InvariantCulture) ?? "unknown";
+        Logging.Info($"Protocol version {Protocol.Version}");
+        Logging.Info($"Exe version: {GameSparker.ExeVersion}");
         Logging.Info($"Exe build: {date} (build {number})");
         Logging.Info($"Configuration: {build.Configuration}, target: {build.TargetFramework}, RID: {build.RuntimeIdentifier}");
         Logging.Info($"Renderer: {GameSparker.GraphicsDevice?.GetType().FullName ?? "not initialized"}");
@@ -530,7 +532,7 @@ public static class DevConsoleCommands
                 stageName,
                 factory,
                 inRacePhase.Players,
-                LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = inRacePhase.Players })
+                LocalRaceHost.CreateDeferred(stageName, factory, new ClientGamemodeParameters { Players = inRacePhase.Players })
             );
             inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
             GameSparker.SetPhase(inRace);
@@ -578,7 +580,14 @@ public static class DevConsoleCommands
                 inRacePhase.StageName!,
                 factory,
                 newPlayers,
-                LocalRaceHost.Create(inRacePhase.StageName!, factory, new ClientGamemodeParameters { Players = newPlayers })
+                LocalRaceHost.CreateDeferred(
+                    inRacePhase.StageName!,
+                    factory,
+                    new ClientGamemodeParameters
+                    {
+                        Players = newPlayers
+                    }
+                )
             );
             inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
             GameSparker.SetPhase(inRace);

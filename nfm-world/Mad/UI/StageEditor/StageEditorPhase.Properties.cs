@@ -53,14 +53,15 @@ public partial class StageEditorPhase
             name: () => "Stage editor bottom panel",
             style: () => Sx.Styles(
                 position: Position.Absolute,
+                pointerEvents: !CommandMenuOpen,
                 left: 0,
                 right: 0,
                 bottom: 0,
                 height: BottomPanelHeight,
                 flexDirection: FlexDirection.Column,
-                backgroundColor: new Color(8, 16, 32, 235),
+                backgroundColor: EditorBar,
                 borderTop: 1,
-                borderColor: new Color(128, 170, 255, 100)
+                borderColor: EditorBorder
             ),
             children: [BottomTabBar(), BottomContent()]
         );
@@ -631,7 +632,11 @@ public partial class StageEditorPhase
     private static string SanitizeMusicFileName(string name)
         => name.Replace(',', '_').Replace('(', '_').Replace(')', '_').Trim();
 
-    private void PreviewSelectedMusic()
+    private void PreviewSelectedMusic() => _ = PreviewSelectedMusicAsync();
+
+    private int _musicPreviewGeneration;
+
+    private async Task PreviewSelectedMusicAsync()
     {
         if (ActiveTab is not { } tab)
             return;
@@ -650,6 +655,7 @@ public partial class StageEditorPhase
         }
 
         StopMusicPreview(notify: false);
+        var generation = _musicPreviewGeneration;
         var previous = GameSparker.CurrentMusic;
 
         // Only the plain soundtrack is pitch/tempo adjusted; the remaster plays as authored.
@@ -660,15 +666,12 @@ public partial class StageEditorPhase
 
         try
         {
-            IRadicalMusic music;
-            if (OperatingSystem.IsBrowser())
+            var music = await MusicLoader.LoadAsync(vfsPath, tempo);
+            await LoadingWork.NextFrame;
+            if (_editorDisposed || generation != _musicPreviewGeneration || !ReferenceEquals(ActiveTab, tab))
             {
-                using var stream = VFS.OpenRead(vfsPath);
-                music = new WebAudioMusic(stream, Path.GetExtension(vfsPath), tempo);
-            }
-            else
-            {
-                music = IBackend.Backend.LoadMusic(vfsPath, tempo);
+                music.Dispose();
+                return;
             }
 
             music.SetFreqMultiplier(frequency);
@@ -679,6 +682,7 @@ public partial class StageEditorPhase
         }
         catch (Exception exception)
         {
+            await LoadingWork.NextFrame;
             Logging.Warning($"Could not preview '{path}': {exception.Message}");
         }
 
@@ -687,6 +691,7 @@ public partial class StageEditorPhase
 
     private void StopMusicPreview(bool notify = true)
     {
+        _musicPreviewGeneration++;
         if (_previewMusic is { } music)
         {
             var previous = _musicBeforePreview;
@@ -889,33 +894,7 @@ public partial class StageEditorPhase
                         )
                     ]
                 ),
-                ColorChannel("R", () => read().R, value => write(new Color3(value, read().G, read().B))),
-                ColorChannel("G", () => read().G, value => write(new Color3(read().R, value, read().B))),
-                ColorChannel("B", () => read().B, value => write(new Color3(read().R, read().G, value)))
-            ]
-        );
-
-    private Node ColorChannel(string channel, Func<short> read, Action<short> write)
-        => Sx.View(
-            style: () => Sx.Styles(
-                flexDirection: FlexDirection.Row,
-                alignItems: Align.Center,
-                gapColumn: 4,
-                height: 16
-            ),
-            children:
-            [
-                EditorText(
-                    style: () => Sx.TextStyles(fontSize: 9, foregroundColor: new Color(255, 255, 255, 120)),
-                    layout: () => Sx.Styles(width: 8, flexShrink: 0),
-                    text: () => channel
-                ),
-                Controls.Slider(Observe(() => (double)read()), value => write((short)value), 0, 255, 1, compact: true),
-                EditorText(
-                    style: () => Sx.TextStyles(fontSize: 9, foregroundColor: new Color(255, 255, 255, 170)),
-                    layout: () => Sx.Styles(width: 22, flexShrink: 0),
-                    text: () => read().ToString()
-                )
+                new HsbColorPicker(read, write)
             ]
         );
 

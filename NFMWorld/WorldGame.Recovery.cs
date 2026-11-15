@@ -152,6 +152,7 @@ public partial class WorldGame
             Logging.Warning($"Could not relaunch for crash dumps: {ex.Message}");
             return -1;
         }
+
 #endif
     }
 
@@ -297,6 +298,10 @@ public partial class WorldGame
 
                 ImGui.End();
                 var cb = recovery._device.AcquireCommandBuffer();
+                // Present can unbind the D3D11 backbuffer; recovery has no scene to rebind it.
+                cb.SetRenderTarget(null);
+                cb.SetViewport(new Viewport(0, 0, recovery.Window.Width, recovery.Window.Height));
+                recovery.SetFullScreenScissor(cb);
                 cb.Clear(ClearOptions.Color, new ColorRgba(0.025f, 0.04f, 0.08f));
                 recovery.ImguiRenderer.EndLayout(cb);
                 recovery._device.Submit(cb);

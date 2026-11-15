@@ -102,6 +102,9 @@ public partial record struct CarStats
     [JsonPropertyName("turn"), PluginVisible, TightPackOrder(29)]
     public fix64 Turn { get; init; }
 
+    [JsonPropertyName("class"), PluginVisible, TightPackOrder(30)]
+    public string? Class { get; init; }
+
     /// <summary>
     /// Tornado Shark stats, used as a fallback if a car has incomplete or invalid stats in the rad file.
     /// </summary>

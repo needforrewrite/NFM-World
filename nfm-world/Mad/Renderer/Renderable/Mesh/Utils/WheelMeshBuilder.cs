@@ -53,12 +53,14 @@ public class WheelMeshBuilder
 
     public MeshedGameObject BuildGameObject(Transform parent)
     {
-        return new MeshedGameObject(new Mesh(new Rad3d(_planes.ToArray(), true, "wheelMesh")))
+        return new MeshedGameObject(new Mesh(BuildModel()))
         {
             Position = _wheelDef.Position,
             Parent = parent
         };
     }
+
+    public Rad3d BuildModel() => new(_planes.ToArray(), true, "wheelMesh");
 
     private void Make(List<Rad3dPoly> planes, float cx, float cy, float cz, int rotates, float width, float height)
     {

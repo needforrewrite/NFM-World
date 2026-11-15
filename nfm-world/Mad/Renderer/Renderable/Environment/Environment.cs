@@ -12,6 +12,34 @@ using URandom = URandom;
 
 public class Environment
 {
+    public sealed record GenerationSettings(
+        Color3 GroundPolysColor,
+        Color3 GroundColor,
+        Color3 Snap,
+        int[] Clouds,
+        Color3 CloudColor,
+        float CloudCoverage,
+        int MountainSeed,
+        float MountainCoverage,
+        int Ground,
+        Color3 Sky,
+        Color3 Fog)
+    {
+        public static GenerationSettings Capture() => new(
+            World.GroundPolysColor,
+            World.GroundColor,
+            World.Snap,
+            [.. World.Clouds],
+            World.CloudColor,
+            World.CloudCoverage,
+            World.MountainSeed,
+            World.MountainCoverage,
+            World.Ground,
+            World.Sky,
+            World.Fog
+        );
+    }
+
     public static GroundPolys MakePolys(
         BackendStage stage,
         int sx,
@@ -20,11 +48,22 @@ public class Environment
         int ncz,
         int stagePartCount // newpolys
     )
+        => new(GameSparker.GraphicsDevice, BuildPolys(stage, sx, ncx, sz, ncz, stagePartCount, GenerationSettings.Capture()));
+
+    public static Rad3dPoly[] BuildPolys(
+        BackendStage stage,
+        int sx,
+        int ncx,
+        int sz,
+        int ncz,
+        int stagePartCount,
+        GenerationSettings settings
+    )
     {
         var transaction = SentrySdk.StartTransaction("MakePolys", "stageGeneration");
 
-        var cpol = World.GroundPolysColor.Snap(World.Snap);
-        var cgrnd = World.GroundColor.Snap(World.Snap);
+        var cpol = settings.GroundPolysColor.Snap(settings.Snap);
+        var cgrnd = settings.GroundColor.Snap(settings.Snap);
 
         #region newpolys
 
@@ -42,7 +81,7 @@ public class Environment
         {
             var random =
                 new URandom(
-                    (stagePartCount + World.GroundColor[0] + World.GroundColor[1] + World.GroundColor[2]) * 1671
+                    (stagePartCount + settings.GroundColor[0] + settings.GroundColor[1] + settings.GroundColor[2]) * 1671
                 );
 
             var i39 = 0;
@@ -216,7 +255,7 @@ public class Environment
 
         transaction.Finish();
 
-        return new GroundPolys(GameSparker.GraphicsDevice, verts.ToArray());
+        return verts.ToArray();
     }
 
     public static GroundPolys MakeClouds(
@@ -225,11 +264,14 @@ public class Environment
         int maxb,
         int maxt // newclouds
     )
+        => new(GameSparker.GraphicsDevice, BuildClouds(maxl, maxr, maxb, maxt, GenerationSettings.Capture()));
+
+    public static Rad3dPoly[] BuildClouds(int maxl, int maxr, int maxb, int maxt, GenerationSettings settings)
     {
         var transaction = SentrySdk.StartTransaction("MakeClouds", "stageGeneration");
 
-        var cldd = World.Clouds;
-        var clds = World.CloudColor.Snap(World.Snap);
+        var cldd = settings.Clouds;
+        var clds = settings.CloudColor.Snap(settings.Snap);
 
         #region newclouds
 
@@ -237,7 +279,7 @@ public class Environment
         maxr = maxr / 20 + 10000;
         maxb = maxb / 20 - 10000;
         maxt = maxt / 20 + 10000;
-        var noc = (int)(((maxr - maxl) * (maxt - maxb) / 16666667) * World.CloudCoverage);
+        var noc = (int)(((maxr - maxl) * (maxt - maxb) / 16666667) * settings.CloudCoverage);
         var clx = new int[noc];
         var clz = new int[noc];
         var cmx = new int[noc];
@@ -574,7 +616,7 @@ public class Environment
 
         transaction.Finish();
 
-        return new GroundPolys(GameSparker.GraphicsDevice, polys.ToArray());
+        return polys.ToArray();
     }
 
     public static Mountains MakeMountains(
@@ -583,13 +625,16 @@ public class Environment
         int maxb,
         int maxt // newmountains
     )
+        => new(GameSparker.GraphicsDevice, BuildMountains(maxl, maxr, maxb, maxt, GenerationSettings.Capture()));
+
+    public static Rad3dPoly[] BuildMountains(int maxl, int maxr, int maxb, int maxt, GenerationSettings settings)
     {
         var transaction = SentrySdk.StartTransaction("MakeMountains", "stageGeneration");
 
         #region newmountains
 
-        var random = new URandom(World.MountainSeed);
-        var nmt = (int)(20.0 + 10.0 * random.NextDouble() * World.MountainCoverage);
+        var random = new URandom(settings.MountainSeed);
+        var nmt = (int)(20.0 + 10.0 * random.NextDouble() * settings.MountainCoverage);
         var i170 = (maxl + maxr) / 60;
         var i171 = (maxb + maxt) / 60;
         var i172 = Math.Max(maxr - maxl, maxt - maxb) / 60;
@@ -638,24 +683,24 @@ public class Environment
                     (int)(mtx[i174][nmv[i174] - 1] + (100.0 + random.NextDouble() * 600.0) * f);
                 if (i178 == 0 || i178 == nmv[i174] - 1)
                 {
-                    mty[i174][i178] = (int)((-400.0 - 1200.0 * random.NextDouble()) * f176 + World.Ground);
+                    mty[i174][i178] = (int)((-400.0 - 1200.0 * random.NextDouble()) * f176 + settings.Ground);
                 }
 
                 if (i178 == 1 || i178 == nmv[i174] - 2)
                 {
-                    mty[i174][i178] = (int)((-1000.0 - 1450.0 * random.NextDouble()) * f176 + World.Ground);
+                    mty[i174][i178] = (int)((-1000.0 - 1450.0 * random.NextDouble()) * f176 + settings.Ground);
                 }
 
                 if (i178 > 1 && i178 < nmv[i174] - 2)
                 {
-                    mty[i174][i178] = (int)((-1600.0 - 1700.0 * random.NextDouble()) * f176 + World.Ground);
+                    mty[i174][i178] = (int)((-1600.0 - 1700.0 * random.NextDouble()) * f176 + settings.Ground);
                 }
 
-                mty[i174][i178 + nmv[i174]] = World.Ground - 70;
+                mty[i174][i178 + nmv[i174]] = settings.Ground - 70;
                 mtz[i174][i178] = i171 + i172 + ais[i174];
                 mtz[i174][i178 + nmv[i174]] = i171 + i172 + ais[i174];
                 var f179 = (float)(0.5 + random.NextDouble() * 0.5);
-                mtc[i174][i178][0] = (int)(170.0F * f179 + 170.0F * f179 * (World.Snap[0] / 100.0F));
+                mtc[i174][i178][0] = (int)(170.0F * f179 + 170.0F * f179 * (settings.Snap[0] / 100.0F));
                 if (mtc[i174][i178][0] > 255)
                 {
                     mtc[i174][i178][0] = 255;
@@ -666,7 +711,7 @@ public class Environment
                     mtc[i174][i178][0] = 0;
                 }
 
-                mtc[i174][i178][1] = (int)(i175 * f179 + 85.0F * f179 * (World.Snap[1] / 100.0F));
+                mtc[i174][i178][1] = (int)(i175 * f179 + 85.0F * f179 * (settings.Snap[1] / 100.0F));
                 if (mtc[i174][i178][1] > 255)
                 {
                     mtc[i174][i178][1] = 255;
@@ -717,7 +762,7 @@ public class Environment
         var polys = new List<Rad3dPoly>();
         var points = new List<Vector3>();
 
-        var cgrnd = World.GroundColor.Snap(World.Snap);
+        var cgrnd = settings.GroundColor.Snap(settings.Snap);
 
         for (int i = 0; i < nmt; i++)
         {
@@ -764,6 +809,6 @@ public class Environment
 
         transaction.Finish();
 
-        return new Mountains(GameSparker.GraphicsDevice, polys.ToArray());
+        return polys.ToArray();
     }
 }

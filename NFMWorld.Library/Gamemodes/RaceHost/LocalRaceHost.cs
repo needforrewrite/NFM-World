@@ -18,6 +18,8 @@ public sealed class LocalRaceHost : IRaceHost
     private readonly Guid _localPlayerId;
     private bool _started;
     private bool _finished;
+    private BaseGamemodeFactory? _pendingFactory;
+    private ServerGamemodeParameters? _pendingParameters;
 
     public bool IsConnected => true;
 
@@ -52,6 +54,21 @@ public sealed class LocalRaceHost : IRaceHost
         BaseGamemodeFactory factory,
         ClientGamemodeParameters parameters,
         StageLoader? stageData = null
+    ) => CreateCore(stageName, factory, parameters, stageData, deferred: false);
+
+    public static LocalRaceHost CreateDeferred(
+        string stageName,
+        BaseGamemodeFactory factory,
+        ClientGamemodeParameters parameters
+    )
+        => CreateCore(stageName, factory, parameters, null, deferred: true);
+
+    private static LocalRaceHost CreateCore(
+        string stageName,
+        BaseGamemodeFactory factory,
+        ClientGamemodeParameters parameters,
+        StageLoader? stageData,
+        bool deferred
     )
     {
         var ids = new List<ServerSidePlayerInfo>(parameters.Players.Count);
@@ -65,7 +82,9 @@ public sealed class LocalRaceHost : IRaceHost
                     Id = id,
                     PlayerName = player.PlayerName,
                     CarName = player.CarName,
-                    Color = player.Color
+                    Color = player.Color,
+                    CarColors = player.CarColors,
+                    Wheels = player.Wheels
                 }
             );
         }
@@ -76,18 +95,27 @@ public sealed class LocalRaceHost : IRaceHost
 
         var host = new LocalRaceHost(stageName, parameters, ids[clientPlayerIndex], stageData);
 
-        // TODO this is a bit janky and could probably be improved
-        var serverGamemode = factory.CreateServerGamemode(
-            new ServerGamemodeParameters
-            {
-                Players = ids
-            },
-            host._context
-        );
-        host._serverGamemode = serverGamemode;
-        serverGamemode?.Begin();
+        host._pendingFactory = factory;
+        host._pendingParameters = new ServerGamemodeParameters { Players = ids };
+        if (!deferred) host.InitializeServer();
 
         return host;
+    }
+
+    public void InitializeStage(BackendStage stage)
+    {
+        _context.PreparedStage = stage;
+        InitializeServer();
+    }
+
+    private void InitializeServer()
+    {
+        if (_pendingFactory is not { } factory) return;
+        var parameters = _pendingParameters!;
+        _pendingFactory = null;
+        _pendingParameters = null;
+        _serverGamemode = factory.CreateServerGamemode(parameters, _context);
+        _serverGamemode?.Begin();
     }
 
     /// <summary>
@@ -96,6 +124,8 @@ public sealed class LocalRaceHost : IRaceHost
     /// </summary>
     public void Start()
     {
+        if (_pendingFactory is not null)
+            throw new InvalidOperationException("The local race stage is still loading.");
         if (_started)
             return;
 
@@ -149,6 +179,8 @@ public sealed class LocalRaceHost : IRaceHost
 
     public void Dispose()
     {
+        _pendingFactory = null;
+        _pendingParameters = null;
         _serverGamemode?.End();
 
         // The instance's type comes from the gamemode plugin's load context, so this
@@ -169,6 +201,11 @@ public sealed class LocalRaceHost : IRaceHost
         private readonly Dictionary<Guid, f64Vector3> _positions = new();
         private readonly Dictionary<Guid, bool> _wasted = new();
         private BackendStage? _stage;
+
+        public BackendStage? PreparedStage
+        {
+            set => _stage = value;
+        }
 
         public BackendStage CurrentStage => _stage ??= stageData is { } data
             ? new BackendStage(stageName, data)

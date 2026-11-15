@@ -144,6 +144,36 @@ public class RadpackContentTests
     }
 
     [TestMethod]
+    public void RoundTrip_Car_PreservesDeclaredClass()
+    {
+        foreach (var label in new[] { "A", "B", "C-", "BALLER" })
+        {
+            var original = RadParser.ParseRad($"name(class test)\nclass({label})", "class-test");
+            Assert.AreEqual(label, original.Stats.Class);
+            var bytes = Serialize(new RadpackRad3d
+            {
+                Metadata = Metadata("class test", RadpackType.Car),
+                Rad = original
+            });
+            var restored = (RadpackRad3d)RadpackSerializer.Deserialize(
+                bytes,
+                RadpackLimits.MaxCompressedBytes,
+                RadpackLimits.MaxDecompressedBytes
+            );
+            Assert.AreEqual(label, restored.Rad.Stats.Class);
+        }
+    }
+
+    [TestMethod]
+    public void ParseCar_ClassIsOptionalAndSurvivesSecondStatsBlock()
+    {
+        Assert.IsNull(RadParser.ParseRad("name(no class)").Stats.Class);
+        var rad = RadParser.ParseRad("class(A)\nstats()\nname(recharged)");
+        Assert.AreEqual("A", rad.Stats.Class);
+        Assert.AreEqual("A", rad.RechargedStats?.Class);
+    }
+
+    [TestMethod]
     public void Deserialize_CompressedInputOverTheLimit_IsRejectedBeforeDecompressing()
     {
         var bytes = Serialize(

@@ -20,6 +20,7 @@ public class StageSelectViewTests
     public void Setup()
     {
         IBackend.Backend = new MetricsBackend();
+        FocusManager.ClearFocus();
     }
 
     [TestCleanup]
@@ -85,6 +86,126 @@ public class StageSelectViewTests
             "the picker still reserved height, so a local-only host shows a gap it cannot use"
         );
     }
+
+    [TestMethod]
+    public void ArrowsSwitchListsAndNavigateOnlyTheActiveList()
+    {
+        var state = new StageSelectState();
+        state.Collections.Value = ["first", "second", "third"];
+        state.Collection.Value = "first";
+        state.Stages.Value = [new("a", "A"), new("b", "B"), new("c", "C")];
+        state.Selected.Value = "a";
+        state.ConfirmEnabled.Value = true;
+        var confirms = 0;
+        var actions = NavigationActions(state, () => confirms++);
+
+        StageSelectView.HandleKey(state, actions, Key.Left);
+        StageSelectView.HandleKey(state, actions, Key.Up);
+        Assert.AreEqual("third", state.Collection.Value);
+        Assert.AreEqual("a", state.Selected.Value);
+        StageSelectView.HandleKey(state, actions, Key.Down);
+        Assert.AreEqual("first", state.Collection.Value);
+        StageSelectView.HandleKey(state, actions, Key.Enter);
+        Assert.IsFalse(state.BrowsingCollections.Value);
+        Assert.AreEqual(0, confirms);
+        StageSelectView.HandleKey(state, actions, Key.Up);
+        Assert.AreEqual("c", state.Selected.Value);
+        StageSelectView.HandleKey(state, actions, Key.Down);
+        Assert.AreEqual("a", state.Selected.Value);
+        StageSelectView.HandleKey(state, actions, Key.Enter);
+        Assert.AreEqual(1, confirms);
+    }
+
+    [TestMethod]
+    public void EmptyStageListsStillAllowCategoryNavigationAndTextFieldsKeepCaretKeys()
+    {
+        var state = new StageSelectState();
+        state.Collections.Value = ["first", "second"];
+        state.Collection.Value = "first";
+        var actions = NavigationActions(state);
+        StageSelectView.HandleKey(state, actions, Key.Left);
+        StageSelectView.HandleKey(state, actions, Key.Down);
+        Assert.AreEqual("second", state.Collection.Value);
+
+        new TextInput().Focus();
+        Assert.IsFalse(StageSelectView.HandleKey(state, actions, Key.Right));
+        Assert.IsTrue(state.BrowsingCollections.Value);
+        FocusManager.ClearFocus();
+        state.OnlineSource.Value = true;
+        StageSelectView.HandleKey(state, actions, Key.Left);
+        Assert.IsFalse(state.BrowsingCollections.Value);
+    }
+
+    [TestMethod]
+    public void KeyboardSelectionsScrollBothListsIntoView()
+    {
+        var state = new StageSelectState();
+        state.Collections.Value = Enumerable.Range(0, 20).Select(i => $"collection{i}").ToArray();
+        state.Collection.Value = "collection0";
+        state.Stages.Value = Enumerable.Range(0, 20).Select(i => new StageOption($"stage{i}", $"Stage {i}")).ToArray();
+        state.Selected.Value = "stage0";
+        var actions = NavigationActions(state);
+        using var mounted = Renderer.Mount(() => StageSelectView.Build(state, actions));
+        var root = (Component)mounted.Root;
+        root.LayoutAndRender(new Vector2(1280, 480));
+        StageSelectView.HandleKey(state, actions, Key.Left);
+        StageSelectView.HandleKey(state, actions, Key.Up);
+        UiScheduler.Instance.Flush();
+        root.LayoutAndRender(new Vector2(1280, 480));
+        Assert.IsTrue(Find(root, "Stage select collections").ScrollTop > 0);
+
+        StageSelectView.HandleKey(state, actions, Key.Right);
+        StageSelectView.HandleKey(state, actions, Key.Up);
+        UiScheduler.Instance.Flush();
+        root.LayoutAndRender(new Vector2(1280, 480));
+        Assert.IsTrue(Find(root, "Stage select list").ScrollTop > 0);
+    }
+
+    [TestMethod]
+    public void StageTitleLengthDoesNotMoveSearchOrListAndEmptyMessagesLeaveNoExtraGap()
+    {
+        var state = new StageSelectState();
+        state.Collections.Value = ["nfm1"];
+        state.Collection.Value = "nfm1";
+        state.Stages.Value =
+        [
+            new("short", "Short"),
+            new("long", "A very long stage title " + new string('W', 120))
+        ];
+        state.Selected.Value = "short";
+        using var mounted = Renderer.Mount(() => StageSelectView.Build(state, NavigationActions(state)));
+        var root = (Component)mounted.Root;
+        root.LayoutAndRender(new Vector2(1280, 720));
+        var search = Find(root, "Stage select search");
+        var list = Find(root, "Stage select list");
+        var searchTop = search.LayoutBorderPosition.Y;
+        var listTop = list.LayoutBorderPosition.Y;
+        Assert.AreEqual(
+            14 * TheGraphics.G.Scale,
+            listTop - searchTop - search.LayoutBorderSize.Y,
+            0.5f
+        );
+
+        foreach (var selected in new[] { "long", "short" })
+        {
+            state.Selected.Value = selected;
+            UiScheduler.Instance.Flush();
+            root.LayoutAndRender(new Vector2(1280, 720));
+            UiScheduler.Instance.Flush();
+            root.LayoutAndRender(new Vector2(1280, 720));
+            Assert.AreEqual(searchTop, search.LayoutBorderPosition.Y, 0.5f);
+            Assert.AreEqual(listTop, list.LayoutBorderPosition.Y, 0.5f);
+        }
+    }
+
+    private static StageSelectView.Actions NavigationActions(StageSelectState state, Action? confirm = null)
+        => new(
+            collection => state.Collection.Value = collection,
+            stage => state.Selected.Value = stage,
+            query => state.Search.Value = query,
+            confirm ?? (() => { }),
+            () => { }
+        );
 
     /// <summary>
     /// The dialog as the lobby builds it: bounded by the window, with the compact selector as the

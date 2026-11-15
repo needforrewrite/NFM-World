@@ -1560,70 +1560,14 @@ public sealed class ModelEditorView
                     )
                 ]
             ),
-            ColorChannelRow(slot, "R", 0),
-            ColorChannelRow(slot, "G", 1),
-            ColorChannelRow(slot, "B", 2)
-        ]
-    );
-
-    private Node ColorChannelRow(int slot, string label, int channel) => Sx.View(
-        style: () => Sx.Styles(
-            flexDirection: FlexDirection.Row,
-            alignItems: Align.Center,
-            gapColumn: 6,
-            gapRow: 6,
-            height: 20
-        ),
-        children:
-        [
-            Sx.Text(
-                style: () => Sx.TextStyles(fontSize: 10, foregroundColor: TextBlue),
-                layout: () => Sx.Styles(width: 10, flexShrink: 0),
-                text: () => label
-            ),
-            Controls.Slider(
-                () =>
-                {
-                    _ = _revision.Value;
-                    return ColorChannelValue(slot, channel);
-                },
-                value =>
+            new HsbColorPicker(() => SlotColor(slot) ?? default, color =>
                 {
                     PushHistory(coalesce: true);
-                    _phase.SetSlotChannel(
-                        slot,
-                        channel,
-                        (short)Math.Clamp((int)Math.Round(value), 0, 255)
-                    );
-                },
-                0,
-                255,
-                1
-            ),
-            Sx.Text(
-                style: () => Sx.TextStyles(fontSize: 10, foregroundColor: new Color(255, 255, 255, 160)),
-                layout: () => Sx.Styles(width: 28, flexShrink: 0),
-                text: () =>
-                {
-                    _ = _revision.Value;
-                    return ((int)ColorChannelValue(slot, channel)).ToString();
+                    if (_phase.SetSlotColor(slot, color) is { } error) ShowError("Color", error);
                 }
             )
         ]
     );
-
-    private double ColorChannelValue(int slot, int channel)
-    {
-        if (SlotColor(slot) is not { } color)
-            return 0;
-
-        return channel switch
-        {
-            0 => color.R,
-            1 => color.G,
-            _ => color.B
-        };
-    }
 
     private Node RenderTab() => Sx.View(
         style: () => Sx.Styles(
@@ -3452,9 +3396,18 @@ public sealed class ModelEditorView
                     SmallButton("APPLY", () => ApplyRims(), minWidth: 50)
                 ]
             ),
-            RimSliderRow("R", _rimR),
-            RimSliderRow("G", _rimG),
-            RimSliderRow("B", _rimB),
+            new HsbColorPicker(() => new Color3(
+                (short)RimChannel(_rimR),
+                (short)RimChannel(_rimG),
+                (short)RimChannel(_rimB)
+            ), color =>
+                {
+                    _rimR.Value = color.R.ToString();
+                    _rimG.Value = color.G.ToString();
+                    _rimB.Value = color.B.ToString();
+                    ScheduleRimApply();
+                }
+            ),
             Sx.View(
                 style: () => Sx.Styles(
                     flexDirection: FlexDirection.Row,
@@ -3472,48 +3425,6 @@ public sealed class ModelEditorView
                         text: () => "global"
                     )
                 ]
-            )
-        ]
-    );
-
-    private Node RimSliderRow(string label, Signal<string> channel) => Sx.View(
-        style: () => Sx.Styles(
-            flexDirection: FlexDirection.Row,
-            alignItems: Align.Center,
-            gapColumn: 4,
-            gapRow: 4,
-            height: 20
-        ),
-        children:
-        [
-            Sx.Text(
-                style: () => Sx.TextStyles(fontSize: 10, foregroundColor: TextBlue),
-                layout: () => Sx.Styles(width: 10, flexShrink: 0),
-                text: () => label
-            ),
-            Controls.Slider(
-                () =>
-                {
-                    _ = _revision.Value;
-                    return RimChannel(channel);
-                },
-                value =>
-                {
-                    channel.Value = Math.Clamp((int)Math.Round(value), 0, 255).ToString();
-                    ScheduleRimApply();
-                },
-                0,
-                255,
-                1
-            ),
-            Sx.Text(
-                style: () => Sx.TextStyles(fontSize: 10, foregroundColor: new Color(255, 255, 255, 160)),
-                layout: () => Sx.Styles(width: 28, flexShrink: 0),
-                text: () =>
-                {
-                    _ = _revision.Value;
-                    return ((int)RimChannel(channel)).ToString();
-                }
             )
         ]
     );
@@ -3672,10 +3583,12 @@ public sealed class ModelEditorView
     {
         var openInNewTab = _loadOpenInTab.Value;
 
-        void Load()
+        async void Load()
         {
             _loadOpen.Value = false;
-            if (_phase.LoadModel(path, openInNewTab) is { } error)
+            var error = await _phase.LoadModelAsync(path, openInNewTab);
+            await LoadingWork.NextFrame;
+            if (_phase.IsOpen && error is not null)
                 ShowError("Parse Error", error);
         }
 

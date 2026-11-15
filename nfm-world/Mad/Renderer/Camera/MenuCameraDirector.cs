@@ -324,6 +324,12 @@ public sealed class MenuCameraDirector
         }
     }
 
+    /// <summary>
+    /// Sideways offset for the garage's turntable, as a fraction of the viewport's half
+    /// width: the car is framed right of centre so the picker and stats card do not cover it.
+    /// </summary>
+    public const float GarageFraming = 0.42f;
+
     public void ShowCar(
         PerspectiveCamera camera,
         BackendCar car,
@@ -331,14 +337,27 @@ public sealed class MenuCameraDirector
         bool cut = false,
         float garageBlend = 0,
         float garageAngle = 0,
-        float garageHeight = 0
+        float garageHeight = 0,
+        float garageFraming = 0,
+        float garageVerticalFraming = 0
     )
     {
-        var target = ToVector(car.Position) + new Vector3(0, -120 + (car.GroundAt - 60) * garageBlend, 0);
+        // The garage pulls in close and then backs off for a big model: the distance follows
+        // the bounding radius, so every car fills the same share of the screen instead of the
+        // trucks swallowing it.
+        var garageRadius = Math.Clamp(3.2f * car.MaxRadius, 420f, 2400f);
+        var radius = 1300 + (garageRadius - 1300) * garageBlend;
+
+        var lookHeight = -120 * (1 - garageBlend)
+                         + (car.GroundAt - garageRadius * 0.1f) * garageBlend;
+        var target = ToVector(car.Position) + new Vector3(0, lookHeight, 0);
+
         var menuAngle = MathF.PI - 0.65f;
         var angle = menuAngle + (2.35f + garageAngle - menuAngle) * garageBlend;
-        var radius = 1300 - 100 * garageBlend;
-        var height = 410 + (garageHeight - 80) * garageBlend;
+        var garageHeightValue = garageRadius * 0.275f + garageHeight * (garageRadius / 520f);
+        var height = 410 + (garageHeightValue - 410) * garageBlend;
+        if (garageBlend > 0)
+            height = MathF.Max(height, 40 * garageBlend);
         var position = target + new Vector3(MathF.Cos(angle) * radius, -height, MathF.Sin(angle) * radius);
         if (seconds < 4 && garageBlend < 1)
         {
@@ -371,10 +390,18 @@ public sealed class MenuCameraDirector
                     )
                     * settle
                     * (1 - garageBlend);
-        // Keep the car on the right, clear of the main menu. The garage's preview sits
-        // between two equal panels, so its framing is centred.
-        var framing = 335 * (1 - garageBlend);
-        target += new Vector3(MathF.Sin(angle) * framing, 0, -MathF.Cos(angle) * framing);
+        var halfWidth = MathF.Sqrt(radius * radius + height * height)
+                        * MathF.Tan(53f * MathF.PI / 360f)
+                        * (camera.Width / (float)Math.Max(1, camera.Height));
+        var sideways = new Vector3(MathF.Sin(angle), 0, -MathF.Cos(angle));
+        target += sideways * (335 * (1 - garageBlend));
+        // Translate the garage shot without changing its orbit or perspective.
+        var garageOffset = sideways * (garageFraming * halfWidth * garageBlend);
+        var down = Vector3.Normalize(Vector3.Cross(sideways, target - position));
+        garageOffset += down * (garageVerticalFraming * halfWidth
+                                * camera.Height / Math.Max(1f, camera.Width) * garageBlend);
+        target += garageOffset;
+        position += garageOffset;
         camera.Fov = 53;
         if (cut)
         {

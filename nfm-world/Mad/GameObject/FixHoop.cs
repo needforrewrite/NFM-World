@@ -33,24 +33,33 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
         // doc comment.
         _graphicsDevice = GameSparker.GraphicsDevice;
 
-        var maxVertexBytes = _vertices.Length * PositionColorVertex.Stride;
-        var maxIndexBytes = _indices.Length * sizeof(ushort);
-        _vertexBuffer = _graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxVertexBytes),
-            new byte[maxVertexBytes]
-        );
-        _indexBuffer = _graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Index, BufferUsage.Dynamic, maxIndexBytes, IndexFormat.UInt16),
-            new byte[maxIndexBytes]
-        );
+        try
+        {
+            var maxVertexBytes = _vertices.Length * PositionColorVertex.Stride;
+            var maxIndexBytes = _indices.Length * sizeof(ushort);
+            _vertexBuffer = _graphicsDevice.CreateBuffer(
+                new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxVertexBytes),
+                new byte[maxVertexBytes]
+            );
+            _indexBuffer = _graphicsDevice.CreateBuffer(
+                new BufferDesc(BufferKind.Index, BufferUsage.Dynamic, maxIndexBytes, IndexFormat.UInt16),
+                new byte[maxIndexBytes]
+            );
 
-        MakeElectrifiedMesh();
+            MakeElectrifiedMesh();
+        }
+        catch
+        {
+            Dispose();
+            throw;
+        }
     }
 
-    ~FixHoop()
+    protected override void DisposeOwnedResources()
     {
-        _vertexBuffer.Dispose();
-        _indexBuffer.Dispose();
+        _vertexBuffer?.Dispose();
+        _indexBuffer?.Dispose();
+        base.DisposeOwnedResources();
     }
 
     public bool IsSpecial { get; set; }

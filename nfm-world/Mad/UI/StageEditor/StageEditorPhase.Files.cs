@@ -18,7 +18,6 @@ public partial class StageEditorPhase
         tab.TabName = stageName;
         tab.StageFileName = ConvertStageNameToFilename(stageName);
         tab.Stage = new EditorStage();
-        tab.StageRenderer = new ClientStageRenderer(tab.Stage);
 
         // Set default values for properties in the tab
         tab.SkyColor = new Color3(135, 206, 235);
@@ -633,7 +632,11 @@ public partial class StageEditorPhase
         _availableStages.Sort();
     }
 
-    private void LoadStage(string stageFileName)
+    private void LoadStage(string stageFileName) => _ = LoadStageAsync(stageFileName);
+
+    private readonly HashSet<string> _openingStages = new(StringComparer.OrdinalIgnoreCase);
+
+    private async Task LoadStageAsync(string stageFileName)
     {
         // Check if this stage is already open in a tab
         foreach (var tab in _tabs)
@@ -656,14 +659,21 @@ public partial class StageEditorPhase
             }
         }
 
+        if (!_openingStages.Add(stageFileName)) return;
+        using var loading = LoadingWork.Begin("Loading stage in editor...");
+        StageEditorTab? pendingTab = null;
         try
         {
             // Create a new tab
             var tab = new StageEditorTab();
+            pendingTab = tab;
             tab.StageFileName = stageFileName;
 
             // Load the stage using the Stage class (it expects filename without extension)
-            tab.Stage = new BackendStage($"user/{stageFileName}");
+            var token = _editorLoading.Token;
+            tab.Stage = await Task.Run(() => new BackendStage($"user/{stageFileName}", null, throwOnError: true), token);
+            await LoadingWork.NextFrame;
+            token.ThrowIfCancellationRequested();
             tab.TabName = tab.Stage.Name;
 
             // Remove all wall pieces from the stage BEFORE creating the ClientStageRenderer
@@ -682,7 +692,16 @@ public partial class StageEditorPhase
 
             Logging.Info($"Removed {removedCount} wall pieces from stage");
 
-            tab.StageRenderer = new ClientStageRenderer(tab.Stage);
+            tab.StageRenderer = await ClientStageRenderer.CreateAsync(tab.Stage, token);
+            await LoadingWork.NextFrame;
+            token.ThrowIfCancellationRequested();
+            while (!ReferenceEquals(GameSparker.CurrentPhase, this))
+            {
+                await LoadingWork.NextFrame;
+                token.ThrowIfCancellationRequested();
+            }
+
+            tab.StageRenderer.Activate();
 
             var stageLoader = tab.Stage.StageLoader;
 
@@ -830,6 +849,8 @@ public partial class StageEditorPhase
 
             // Add tab and activate it
             _tabs.Add(tab);
+            tab.StageRenderer.Adopt();
+            pendingTab = null;
             _activeTabIndex = _tabs.Count - 1;
 
             // Recreate scene at the very end to ensure it has the final clean pieces array
@@ -842,8 +863,17 @@ public partial class StageEditorPhase
         }
         catch (Exception ex)
         {
+            await LoadingWork.NextFrame;
+            pendingTab?.StageRenderer?.Dispose();
+            pendingTab?.Scene?.Dispose();
+            if (_editorDisposed || ex is OperationCanceledException) return;
             SentrySdk.CaptureException(ex);
             Logging.Error($"Error loading stage: {ex.Message}");
+        }
+        finally
+        {
+            await LoadingWork.NextFrame;
+            _openingStages.Remove(stageFileName);
         }
     }
 

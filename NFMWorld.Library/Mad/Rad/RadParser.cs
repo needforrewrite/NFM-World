@@ -95,6 +95,7 @@ public partial class RadParser
     private fix64 idiv = (fix64)1f, iwid = (fix64)1f, scaleX = (fix64)1f, scaleY = (fix64)1f, scaleZ = (fix64)1f;
 
     private Dictionary<Color3, int> _colors = new();
+    private readonly Dictionary<Color3, int> _wheelColors = new();
 
     private CarStats _stats = new();
 
@@ -194,6 +195,18 @@ public partial class RadParser
             }
         }
 
+        for (var i = 0; i < parser._wheels.Count; i++)
+        {
+            var wheel = parser._wheels[i];
+            parser._wheels[i] = wheel with
+            {
+                Polys = wheel.Polys?.Select(poly => poly with
+                {
+                    ColNum = parser._wheelColors.TryGetValue(poly.Color, out var slot) ? slot : null
+                }).ToArray()
+            };
+        }
+
         var result = RepositionCar(
             new Rad3d(
                 colors: parser._colors.Keys.ToArray(),
@@ -282,6 +295,13 @@ public partial class RadParser
 
     private void ParseLine(ReadOnlySpan<char> line)
     {
+        if (line.StartsWith("1stWheelColor(") || line.StartsWith("2ndWheelColor(")
+            || line.StartsWith("3rdWheelColor(") || line.StartsWith("4thWheelColor("))
+        {
+            _wheelColors[Color3.FromSpan(BracketParser.GetShorts(line, stackalloc short[3]))] = line[0] - '1';
+            return;
+        }
+
         if (line.StartsWith("stonecold") || line.StartsWith("newstone")) _stonecold = true;
         else if (line.StartsWith("road")) _road = true;
         else if (line.StartsWith("notroad")) _road = false;
@@ -312,12 +332,17 @@ public partial class RadParser
             _colors[color] = 3;
         }
 
+        else if (line.StartsWith("class("))
+        {
+            _stats = _stats with { Class = BracketParser.GetString(line).Trim() };
+        }
+
         // A second `stats(` block replaces the base stat definitions with the car's recharged
         // set (phy-addons). The first block keeps filling _stats as usual.
         else if (line.StartsWith("stats("))
         {
             _rechargedStats = _stats;
-            _stats = new CarStats();
+            _stats = new CarStats { Class = _stats.Class };
         }
         else if (line.StartsWith("swits("))
             _stats = _stats with { Swits = Int3.FromSpan(BracketParser.GetNumbers(line, stackalloc int[3])) };

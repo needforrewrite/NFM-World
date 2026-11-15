@@ -48,6 +48,66 @@ public sealed class ReplayBrowserState
 /// </summary>
 public static class ReplayBrowserView
 {
+    internal sealed class InputView(Func<bool> canNavigate) : View
+    {
+        private readonly KeyboardNavigation _navigation = new();
+        public bool HandleKey(Key key) => _navigation.HandleKey(this, key);
+
+        protected override bool OnPostLayout()
+        {
+            if (canNavigate()) _navigation.UpdateFocus(this);
+            return base.OnPostLayout();
+        }
+    }
+
+    private static class Button
+    {
+        public static View Create(
+            Func<string?> label,
+            Action onPress,
+            ButtonVariant variant = ButtonVariant.Default,
+            Func<bool>? active = null,
+            ButtonSize size = ButtonSize.Md,
+            bool disabled = false,
+            Func<string?>? name = null
+        )
+        {
+            var focused = new Signal<bool>(false);
+            var hovered = new Signal<bool>(false);
+            var node = NFMWorld.UI.Components.Button.Create(
+                label,
+                onPress,
+                variant,
+                active,
+                size,
+                disabled: disabled,
+                name: name,
+                style: () => Sx.Styles(
+                    backgroundColor: focused.Value || hovered.Value || active?.Invoke() == true ? Theme.MenuHighlight : Theme.MenuFill,
+                    borderColor: focused.Value || hovered.Value ? new Color(205, 227, 255)
+                        : variant == ButtonVariant.Danger ? Theme.DangerBorder : Theme.MenuBorder,
+                    opacity: disabled ? 0.5f : 1
+                ),
+                textStyle: () => Sx.TextStyles(
+                    fontSize: 15,
+                    fontFamily: FontFamily.NotoSans,
+                    fontStyle: FontStyle.Plain,
+                    foregroundColor: focused.Value || hovered.Value ? new Color(235, 244, 255) : Theme.MenuBlue
+                )
+            );
+            node.MouseEntered += _ => hovered.Value = !disabled;
+            node.MouseLeft += _ => hovered.Value = false;
+            if (disabled) return node;
+            return KeyboardNavigation.Bind(node, key =>
+                {
+                    if (key is not (Key.Enter or Key.Space)) return false;
+                    onPress();
+                    return true;
+                }, value => focused.Value = value
+            );
+        }
+    }
+
     public sealed record Actions(
         Action<string> Open,
         Action<string> Upload,
@@ -59,9 +119,9 @@ public static class ReplayBrowserView
         Action<string>? Delete = null
     );
 
-    public static Node Build(ReplayBrowserState state, Actions actions)
+    public static Node Build(ReplayBrowserState state, Actions actions, Func<bool>? canNavigate = null)
     {
-        return Sx.View(
+        var content = Sx.View(
             name: () => "Replay browser",
             style: () => Sx.Styles(
                 width: 100.Percent(),
@@ -80,6 +140,11 @@ public static class ReplayBrowserView
                 )
             ]
         );
+        return new InputView(canNavigate ?? (() => true))
+        {
+            Styles = Sx.Styles(width: 100.Percent(), height: 100.Percent()),
+            Children = { content }
+        };
     }
 
     private static Node Panel(ReplayBrowserState state, Actions actions)
@@ -103,7 +168,7 @@ public static class ReplayBrowserView
                 borderLeft: 1,
                 borderRight: 1,
                 borderColor: Theme.MenuBorder,
-                backgroundColor: new Color(6, 14, 30, 225)
+                backgroundColor: Theme.MenuPanel
             ),
             children:
             [
@@ -113,7 +178,12 @@ public static class ReplayBrowserView
                 Status(state),
                 List(state, actions),
                 Selection(state, actions),
-                Footer(state, actions)
+                Footer(state, actions),
+                Sx.Text(
+                    style: () => Sx.TextStyles(fontSize: 10, foregroundColor: Theme.TextFaint),
+                    layout: () => Sx.Styles(flexShrink: 0),
+                    text: () => "↑ ↓ navigate · ← → choose control · Enter play / select · Esc back"
+                )
             ]
         );
 
@@ -122,7 +192,13 @@ public static class ReplayBrowserView
             style: () => Sx.Styles(alignItems: Align.Center, justifyContent: Justify.SpaceBetween, flexShrink: 0),
             children:
             [
-                Sx.Text(style: () => Sx.TextStyles(fontSize: 24, fontStyle: FontStyle.Bold), text: () => "REPLAYS"),
+                Sx.Text(style: () => Sx.TextStyles(
+                    fontSize: 32,
+                    fontStyle: FontStyle.Bold,
+                    fontFamily: FontFamily.Adventure,
+                    foregroundColor: Theme.MenuBlue
+                ), text: () => "REPLAYS"
+                ),
                 Button.Create(
                     label: () => "BACK",
                     onPress: actions.Back,
@@ -134,7 +210,7 @@ public static class ReplayBrowserView
         );
 
     private static Node ButtonRow(ReplayBrowserState state, Actions actions)
-        => Sx.View(
+        => KeyboardNavigation.Row(Sx.View(
             name: () => "Replay browser buttons",
             style: () => Sx.Styles(
                 flexDirection: FlexDirection.Row,
@@ -170,7 +246,7 @@ public static class ReplayBrowserView
                     )
                 )
             ]
-        );
+        ));
 
     private static Node SearchBox(ReplayBrowserState state, Actions actions)
     {
@@ -243,11 +319,11 @@ public static class ReplayBrowserView
                         width: 100.Percent(),
                         flexShrink: 0,
                         flexDirection: FlexDirection.Column,
-                        gapRow: 4
+                        gapRow: 8
                     ),
                     children:
                     [
-                        Sx.For(each: () => state.Entries.Value, row: (entry, _) => Row(entry, state)),
+                        Sx.For(each: () => state.Entries.Value, row: (entry, _) => Row(entry, state, actions)),
                         Sx.Show(
                             when: () => state.Entries.Value.Count == 0,
                             then: () => Sx.Text(
@@ -263,10 +339,11 @@ public static class ReplayBrowserView
             ]
         );
 
-    private static Node Row(ReplayBrowserEntry entry, ReplayBrowserState state)
+    private static Node Row(ReplayBrowserEntry entry, ReplayBrowserState state, Actions actions)
     {
         var hovered = new Signal<bool>(false);
-        return Sx.View(
+        var focused = new Signal<bool>(false);
+        var node = Sx.View(
             name: () => "Replay row " + entry.Id,
             style: () => Sx.Styles(
                 flexShrink: 0,
@@ -279,8 +356,11 @@ public static class ReplayBrowserView
                 paddingLeft: 12,
                 paddingRight: 12,
                 borderRadius: 6,
-                borderLeft: 3,
-                borderColor: state.SelectedId.Value == entry.Id ? Theme.Accent : Theme.Transparent,
+                borderTop: 1,
+                borderBottom: 1,
+                borderRight: 1,
+                borderLeft: 1,
+                borderColor: focused.Value ? new Color(205, 227, 255) : Theme.MenuBorder,
                 backgroundColor: state.SelectedId.Value == entry.Id ? Theme.MenuHighlight
                     : hovered.Value ? Theme.SurfaceHover : Theme.MenuFill
             ),
@@ -295,7 +375,12 @@ public static class ReplayBrowserView
                     [
                         Sx.Text(
                             layout: () => Sx.Styles(width: 100.Percent()),
-                            style: () => Sx.WrappingText(fontSize: 13, fontStyle: FontStyle.Bold),
+                            style: () => Sx.WrappingText(
+                                fontSize: 16,
+                                fontStyle: FontStyle.Bold,
+                                fontFamily: FontFamily.Adventure,
+                                foregroundColor: Theme.MenuBlue
+                            ),
                             text: () => entry.Stage
                         ),
                         Sx.Text(
@@ -331,6 +416,18 @@ public static class ReplayBrowserView
                 )
             ]
         );
+        return KeyboardNavigation.Bind(node, key =>
+            {
+                if (key is not (Key.Enter or Key.Space)) return false;
+                state.SelectedId.Value = entry.Id;
+                if (entry.Compatible && !state.Busy.Value) actions.Open(entry.Id);
+                return true;
+            }, value =>
+            {
+                focused.Value = value;
+                if (value) state.SelectedId.Value = entry.Id;
+            }, () => state.SelectedId.Value == entry.Id
+        );
     }
 
     private static Node Selection(ReplayBrowserState state, Actions actions)
@@ -356,7 +453,7 @@ public static class ReplayBrowserView
                         ? $"{entry.Stage}  ·  {entry.Car}  ·  {entry.Time}  ·  {entry.Detail}  ·  {DateLabel(entry, state.Online.Value)}"
                         : "Select a recording to watch or upload it."
                 ),
-                Sx.View(
+                KeyboardNavigation.Row(Sx.View(
                     style: () => Sx.Styles(gapColumn: 8, alignItems: Align.Center),
                     children:
                     [
@@ -398,7 +495,7 @@ public static class ReplayBrowserView
                             )
                         )
                     ]
-                )
+                ))
             ]
         );
 
@@ -422,37 +519,71 @@ public static class ReplayBrowserView
                 right: 0,
                 alignItems: Align.Center,
                 justifyContent: Justify.Center,
-                backgroundColor: Theme.Overlay,
+                backgroundColor: new Color(3, 8, 20, 180),
                 zIndex: 30
             ),
             onmousedown: _ => Cancel(),
             children: Sx.View(
                 style: () => Sx.Styles(
-                    width: 460,
-                    maxWidth: 94.Percent(),
+                    width: 90.Percent(),
+                    maxWidth: 460,
                     flexDirection: FlexDirection.Column,
-                    gapRow: 16,
-                    paddingTop: 24,
-                    paddingBottom: 24,
-                    paddingLeft: 24,
-                    paddingRight: 24,
-                    backgroundColor: Theme.Panel,
+                    gapRow: 18,
+                    paddingTop: 28,
+                    paddingBottom: 28,
+                    paddingLeft: 28,
+                    paddingRight: 28,
+                    backgroundColor: new Color(12, 22, 42, 250),
+                    borderTop: 1,
+                    borderBottom: 1,
+                    borderLeft: 1,
+                    borderRight: 1,
+                    borderColor: Theme.MenuBlue,
                     borderRadius: 10
                 ),
                 onmousedown: e => e.StopPropagation(),
                 children:
                 [
                     Sx.Text(
-                        style: () => Sx.TextStyles(fontSize: 20, fontStyle: FontStyle.Bold),
+                        style: () => Sx.TextStyles(
+                            fontSize: 26,
+                            fontFamily: FontFamily.Adventure,
+                            foregroundColor: Theme.MenuBlue
+                        ),
                         text: () => "DELETE REPLAY?"
                     ),
                     Sx.Text(
                         layout: () => Sx.Styles(width: 100.Percent()),
-                        style: () => Sx.WrappingText(fontSize: 13, foregroundColor: Theme.TextSecondary),
-                        text: () => $"Are you sure you want to delete this replay?\n\n{entry.Stage} · {entry.Car} · {entry.Time}\n{DateLabel(entry, false)}\n\nThis removes local copies of this run and its pending upload. Published replays stay online."
+                        style: () => Sx.WrappingText(fontSize: 14, foregroundColor: new Color(185, 211, 255)),
+                        text: () => "Are you sure you want to delete this replay?"
+                    ),
+                    Sx.View(
+                        style: () => Sx.Styles(
+                            width: 100.Percent(),
+                            flexDirection: FlexDirection.Column,
+                            paddingTop: 10,
+                            paddingBottom: 10,
+                            paddingLeft: 12,
+                            paddingRight: 12,
+                            backgroundColor: Theme.MenuFill,
+                            borderRadius: 6
+                        ),
+                        children:
+                        [
+                            Sx.Text(
+                                layout: () => Sx.Styles(width: 100.Percent()),
+                                style: () => Sx.WrappingText(fontSize: 13, foregroundColor: Theme.MenuTextBlue),
+                                text: () => $"{entry.Stage}\n{entry.Car} · {entry.Time}\n{DateLabel(entry, false)}"
+                            )
+                        ]
+                    ),
+                    Sx.Text(
+                        layout: () => Sx.Styles(width: 100.Percent()),
+                        style: () => Sx.WrappingText(fontSize: 12, foregroundColor: Theme.MenuDim),
+                        text: () => "This removes local copies of this run and its pending upload. Published replays stay online."
                     ),
                     KeyboardNavigation.Row(Sx.View(
-                        style: () => Sx.Styles(gapColumn: 10, justifyContent: Justify.FlexEnd),
+                        style: () => Sx.Styles(gapColumn: 12, justifyContent: Justify.FlexEnd),
                         children:
                         [
                             KeyboardNavigation.Bind(

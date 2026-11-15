@@ -172,6 +172,46 @@ public class ReplayBrowserViewTests
         Renderer.Flush();
     }
 
+    [TestMethod]
+    public void Keyboard_SelectsRecordingsPlaysThemAndSwitchesSource()
+    {
+        var state = new ReplayBrowserState();
+        state.Entries.Value =
+        [
+            new("first", "stage", "car", "1:00.000", "Local only", true, false),
+            new("second", "stage", "car", "1:02.000", "Local only", true, false)
+        ];
+        string? opened = null;
+        bool? online = null;
+        using var mounted = Renderer.Mount(() => ReplayBrowserView.Build(
+            state,
+            new ReplayBrowserView.Actions(
+                id => opened = id,
+                _ => { },
+                () => { },
+                value => online = value,
+                _ => { },
+                () => { },
+                () => { }
+            )
+        )
+        );
+        var navigation = new KeyboardNavigation();
+        navigation.UpdateFocus(mounted.Root);
+        Descendants(mounted.Root).Single(node => node.Name == "Replay row second").Focus();
+        Assert.AreEqual("second", state.SelectedId.Value);
+
+        navigation.HandleKey(mounted.Root, Key.Up);
+        Assert.AreEqual("first", state.SelectedId.Value);
+        navigation.HandleKey(mounted.Root, Key.Enter);
+        Assert.AreEqual("first", opened);
+
+        Descendants(mounted.Root).Single(node => node.Name == "Replay source local").Focus();
+        navigation.HandleKey(mounted.Root, Key.Right);
+        navigation.HandleKey(mounted.Root, Key.Enter);
+        Assert.AreEqual(true, online);
+    }
+
     private static IEnumerable<Component> Descendants(Node root)
     {
         if (root is Component component)

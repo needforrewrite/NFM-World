@@ -18,10 +18,13 @@ Traps that each cost a debugging round:
   from their phase instead of static callbacks (`MainMenuView.Build(actions)`,
   `GarageView.Build(actions)`, `RaceHudView.Build(actions)`). Don't reintroduce a route table:
   that abstraction existed only because the Luau side couldn't build the nodes itself.
-- **A burst of frame work must land in the phase, not the view.** Garage left/right/enter/escape
-  are handled in `GaragePhase.KeyPressed`, not on the tree root: `DispatchKeyPressed` only runs a
+- **A burst of frame work must land in the phase, not the view.** Garage arrows/enter/escape are
+  handled in `GarageController` (called from `GaragePhase.KeyPressed`, and from `MainMenuPhase`
+  which hosts the controller inline), not on the tree root: `DispatchKeyPressed` only runs a
   node's handler while that node is *focused*, so clicking the search box (or anything focusable)
-  would silently stop the garage responding. The phase sees every key.
+  would silently stop the garage responding. A focused `TextInput`/`TextArea` is the only thing
+  that owns the keys; a focused slider must not block navigation. Held arrows arrive as repeats,
+  forwarded through `BasePhase.KeyRepeated`.
 - **Scroll extent must descend into `Display.Contents` flow hosts.** `Component.UpdateScrollExtent`
   measures visual children, but Yoga zeroes a contents host's box, so anything slotted through
   `Sx.For`/`Show`/`Switch` contributes nothing and the container never scrolls. The settings

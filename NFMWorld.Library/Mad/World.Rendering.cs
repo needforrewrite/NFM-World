@@ -20,6 +20,7 @@ public enum DistantOutlineBehavior
 
 public static partial class World
 {
+    public static bool TransparentGlass = true;
     public static DistantOutlineBehavior DistantOutlineBehavior = DistantOutlineBehavior.DistanceFalloffWithCutoff;
 
     // The default follow camera is 838 units from the car, 900 prevents shrinking too early

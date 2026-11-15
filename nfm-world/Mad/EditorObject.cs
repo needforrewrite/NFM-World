@@ -7,6 +7,7 @@ namespace NFMWorld;
 
 public class EditorObject : StaticMeshObject, IDisposable
 {
+    private bool _disposed;
     public IReadOnlyList<Rad3dBoxDef> Boxes { get; }
 
     private readonly CollisionDebugMesh? _collisionDebugMesh;
@@ -17,7 +18,15 @@ public class EditorObject : StaticMeshObject, IDisposable
 
     public IReadOnlyList<Rad3dWheelDef> Wheels { get; }
 
-    public EditorObject(Rad3d rad) : base(rad)
+    public EditorObject(Rad3d rad) : this(rad, new CarMesh(rad))
+    {
+    }
+
+    internal EditorObject(Mesh.Prepared prepared) : this(prepared.Rad, new CarMesh(prepared))
+    {
+    }
+
+    private EditorObject(Rad3d rad, CarMesh mesh) : base(rad, mesh)
     {
         Boxes = rad.Boxes;
         Wheels = rad.Wheels;
@@ -66,6 +75,9 @@ public class EditorObject : StaticMeshObject, IDisposable
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+        Mesh.Dispose();
         _collisionDebugMesh?.Dispose();
         foreach (var wheel in _wheels)
         {

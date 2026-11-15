@@ -28,6 +28,25 @@ public partial class StageEditorPhase
     private const float PartTileSize = 64;
     private const float PartPreviewWidth = 54;
     private const float PartPreviewHeight = 38;
+    private static readonly Color EditorPanel = new(12, 22, 42, 245);
+    private static readonly Color EditorBar = new(8, 16, 32, 235);
+    private static readonly Color EditorBorder = new(128, 170, 255, 100);
+    private static readonly Color EditorBlue = new(128, 170, 255);
+
+    private bool CommandMenuOpen
+    {
+        get
+        {
+            _ = _uiRevision.Value;
+            return _openEditorMenu.Value is not null || _contextMenuOpen;
+        }
+    }
+
+    private void DismissPropertyDropdowns()
+    {
+        if (GameSparker.UiRenderer?.ActiveRoot is View root)
+            Controls.DismissDropdowns(root, new Vector2(-1, -1));
+    }
 
     // Built once. Slots read the live editor fields; Touch() republishes them after an action.
     private readonly Signal<int> _uiRevision = new(0);
@@ -52,11 +71,12 @@ public partial class StageEditorPhase
 
     private void Touch() => _uiRevision.Value = _uiRevision.Value + 1;
 
-    private bool EditorModalOpen() => _showNewStageDialog || _showLoadStageDialog || _showExportDialog
-                                      || _showPublishDialog || _showExitWarningDialog
-                                      || _showCloseTabWarningDialog || _showRenameGroupDialog
-                                      || _showTestDriveSaveDialog || _contextMenuOpen
-                                      || _openEditorMenu.Value is not null;
+    private bool EditorDialogOpen() => _showNewStageDialog || _showLoadStageDialog || _showExportDialog
+                                       || _showPublishDialog || _showExitWarningDialog
+                                       || _showCloseTabWarningDialog || _showRenameGroupDialog
+                                       || _showTestDriveSaveDialog;
+
+    private bool EditorModalOpen() => EditorDialogOpen() || _contextMenuOpen || _openEditorMenu.Value is not null;
 
     private int SelectionStamp()
     {
@@ -69,12 +89,23 @@ public partial class StageEditorPhase
         onmount: view => view.MouseReleased = _ => CommitHierarchyDrag(),
         children:
         [
-            TopBar(),
-            TabStrip(),
-            LeftPanel(),
-            CenterViewport(),
-            RightPanel(),
-            BottomPanel(),
+            Sx.View(
+                name: () => "Stage editor workspace",
+                style: () =>
+                {
+                    _ = _uiRevision.Value;
+                    return Sx.Styles(
+                        position: Position.Absolute,
+                        left: 0,
+                        top: 0,
+                        right: 0,
+                        bottom: 0,
+                        zIndex: 1,
+                        pointerEvents: !EditorDialogOpen()
+                    );
+                },
+                children: [TopBar(), TabStrip(), LeftPanel(), CenterViewport(), RightPanel(), BottomPanel()]
+            ),
             Dialogs(),
             RectSelectionOverlay(),
             MenuOverlay(),
@@ -179,15 +210,20 @@ public partial class StageEditorPhase
                 gapColumn: 4,
                 paddingLeft: 12,
                 paddingRight: 12,
-                backgroundColor: new Color(8, 16, 32),
+                backgroundColor: EditorBar,
                 borderBottom: 1,
-                borderColor: new Color(128, 170, 255, 45),
+                borderColor: EditorBorder,
                 zIndex: 20
             ),
             children:
             [
                 EditorText(
-                    style: () => Sx.TextStyles(fontSize: 11, fontStyle: FontStyle.Bold, foregroundColor: new Color(128, 170, 255)),
+                    style: () => Sx.TextStyles(
+                        fontSize: 11,
+                        fontFamily: FontFamily.Adventure,
+                        fontStyle: FontStyle.Bold,
+                        foregroundColor: EditorBlue
+                    ),
                     layout: () => Sx.Styles(marginRight: 16, flexShrink: 0),
                     text: () => "STAGE EDITOR"
                 ),
@@ -231,7 +267,13 @@ public partial class StageEditorPhase
     {
         var trigger = Button.Create(
             label: () => label + " ▾",
-            onPress: () => _openEditorMenu.Value = _openEditorMenu.Value == label ? null : label,
+            onPress: () =>
+            {
+                DismissPropertyDropdowns();
+                _contextMenuOpen = false;
+                _openEditorMenu.Value = _openEditorMenu.Value == label ? null : label;
+                Touch();
+            },
             active: () => _openEditorMenu.Value == label,
             variant: ButtonVariant.Ghost,
             size: ButtonSize.Sm,
@@ -261,7 +303,7 @@ public partial class StageEditorPhase
             paddingBottom: 2,
             paddingLeft: 8,
             paddingRight: 8,
-            borderRadius: 4
+            borderRadius: 6
         );
 
     private Node MenuOverlay()
@@ -288,12 +330,12 @@ public partial class StageEditorPhase
                         flexDirection: FlexDirection.Column,
                         paddingTop: 6,
                         paddingBottom: 6,
-                        backgroundColor: new Color(15, 28, 50),
+                        backgroundColor: new Color(12, 22, 42, 255),
                         borderTop: 1,
                         borderBottom: 1,
                         borderLeft: 1,
                         borderRight: 1,
-                        borderColor: new Color(128, 170, 255, 85),
+                        borderColor: EditorBorder,
                         borderRadius: 6
                     ),
                     onmousedown: e => e.StopPropagation(),
@@ -415,6 +457,7 @@ public partial class StageEditorPhase
             name: () => "Stage document tabs",
             style: () => Sx.Styles(
                 position: Position.Absolute,
+                pointerEvents: !CommandMenuOpen,
                 left: 0,
                 right: 0,
                 top: MenuBarHeight,
@@ -526,6 +569,7 @@ public partial class StageEditorPhase
         => Sx.View(
             style: () => Sx.Styles(
                 position: Position.Absolute,
+                pointerEvents: !CommandMenuOpen,
                 left: 0,
                 top: ChromeTop,
                 bottom: BottomPanelHeight,
@@ -536,9 +580,9 @@ public partial class StageEditorPhase
                 paddingLeft: 8,
                 paddingRight: 8,
                 gapRow: 6,
-                backgroundColor: new Color(12, 22, 42, 250),
+                backgroundColor: EditorPanel,
                 borderRight: 1,
-                borderColor: new Color(128, 170, 255, 40)
+                borderColor: EditorBorder
             ),
             children:
             [
@@ -546,7 +590,13 @@ public partial class StageEditorPhase
                     style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 6, flexShrink: 0),
                     children:
                     [
-                        EditorText(style: () => Sx.TextStyles(fontSize: 11, fontStyle: FontStyle.Bold), text: () => "Hierarchy"),
+                        EditorText(style: () => Sx.TextStyles(
+                            fontSize: 11,
+                            fontStyle: FontStyle.Bold,
+                            fontFamily: FontFamily.Adventure,
+                            foregroundColor: EditorBlue
+                        ), text: () => "Hierarchy"
+                        ),
                         EditorField(
                             () => _hierarchySearch,
                             value => { _hierarchySearch = value; Touch(); },
@@ -1070,8 +1120,19 @@ public partial class StageEditorPhase
     }
 
     private Node ContextMenuItem(MenuRowVm row)
-        => Sx.View(
-            style: () => Sx.Styles(paddingTop: 5, paddingBottom: 5, paddingLeft: 10, paddingRight: 10),
+    {
+        var hovered = new Signal<bool>(false);
+        return Sx.View(
+            name: () => $"Hierarchy menu item {row.Label}",
+            style: () => Sx.Styles(
+                paddingTop: 5,
+                paddingBottom: 5,
+                paddingLeft: 10,
+                paddingRight: 10,
+                backgroundColor: hovered.Value ? new Color(22, 42, 80, 220) : new Color(0, 0, 0, 0)
+            ),
+            onmouseenter: _ => hovered.Value = true,
+            onmouseleave: _ => hovered.Value = false,
             onmousedown: e =>
             {
                 if (e.Button != MouseButton.Primary)
@@ -1085,6 +1146,7 @@ public partial class StageEditorPhase
                 text: () => row.Label
             )
         );
+    }
 
     private void RunMenuCommand(MenuRowVm row)
     {
@@ -1126,6 +1188,8 @@ public partial class StageEditorPhase
 
     private void OpenHierarchyContextMenu(HierarchyRowVm row)
     {
+        DismissPropertyDropdowns();
+        _openEditorMenu.Value = null;
         if (row.Kind is not (HierarchyRowKind.Piece or HierarchyRowKind.Group))
             return;
 
@@ -1144,6 +1208,7 @@ public partial class StageEditorPhase
 
     private Node ContextMenuOverlay()
         => Sx.View(
+            name: () => "Hierarchy context overlay",
             style: () =>
             {
                 _uiRevision.Value.ToString();
@@ -1153,7 +1218,8 @@ public partial class StageEditorPhase
                     top: 0,
                     right: 0,
                     bottom: 0,
-                    display: _contextMenuOpen ? Display.Flex : Display.None
+                    display: _contextMenuOpen ? Display.Flex : Display.None,
+                    zIndex: 50
                 );
             },
             onmousedown: e =>
@@ -1185,7 +1251,7 @@ public partial class StageEditorPhase
                         borderBottom: 1,
                         borderLeft: 1,
                         borderRight: 1,
-                        borderColor: new Color(128, 170, 255, 90),
+                        borderColor: EditorBorder,
                         borderRadius: 6,
                         zIndex: 20
                     );
@@ -1256,6 +1322,7 @@ public partial class StageEditorPhase
         => Sx.View(
             style: () => Sx.Styles(
                 position: Position.Absolute,
+                pointerEvents: !CommandMenuOpen,
                 right: 0,
                 top: ChromeTop,
                 bottom: BottomPanelHeight,
@@ -1266,13 +1333,19 @@ public partial class StageEditorPhase
                 paddingLeft: 10,
                 paddingRight: 10,
                 gapRow: 6,
-                backgroundColor: new Color(12, 22, 42, 250),
+                backgroundColor: EditorPanel,
                 borderLeft: 1,
-                borderColor: new Color(128, 170, 255, 40)
+                borderColor: EditorBorder
             ),
             children:
             [
-                EditorText(style: () => Sx.TextStyles(fontSize: 11, fontStyle: FontStyle.Bold), text: () => "Inspector"),
+                EditorText(style: () => Sx.TextStyles(
+                    fontSize: 11,
+                    fontStyle: FontStyle.Bold,
+                    fontFamily: FontFamily.Adventure,
+                    foregroundColor: EditorBlue
+                ), text: () => "Inspector"
+                ),
                 Sx.View(
                     style: () => Sx.Styles(
                         flexGrow: 1,
@@ -2057,6 +2130,7 @@ public partial class StageEditorPhase
         => EditorShow(
             when: () => { _uiRevision.Value.ToString(); return open(); },
             then: () => Sx.View(
+                name: () => $"Stage dialog {title}",
                 style: () => Sx.Styles(
                     position: Position.Absolute,
                     left: 0,
@@ -2068,6 +2142,7 @@ public partial class StageEditorPhase
                     alignItems: Align.Center,
                     justifyContent: Justify.Center
                 ),
+                onmousedown: e => e.StopPropagation(),
                 children: Sx.View(
                     style: () => Sx.Styles(
                         width: 460,

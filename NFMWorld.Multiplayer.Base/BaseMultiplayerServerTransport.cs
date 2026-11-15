@@ -86,7 +86,7 @@ public abstract class BaseMultiplayerServerTransport : IMultiplayerServerTranspo
             Logging.Warning($"Client {clientIndex} sent opcode {opcode} before declaring its version");
             RefuseProtocol(
                 clientIndex,
-                "This connection did not declare its game version. Update the game and try again."
+                "This connection did not declare its protocol version. Update the game and try again."
             );
             return;
         }
@@ -141,7 +141,7 @@ public abstract class BaseMultiplayerServerTransport : IMultiplayerServerTranspo
             );
             RefuseProtocol(
                 clientIndex,
-                $"This server runs game version {Protocol.Version} and your build is version {version}. "
+                $"This server uses protocol version{Protocol.Version} and your build uses protocol version{version}. "
                 + "Update the game and try again."
             );
             return;

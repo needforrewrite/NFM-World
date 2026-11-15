@@ -25,8 +25,8 @@ internal sealed class GarageCameraControls
 
     public void Press(int x, int y, bool captured, MouseButton button)
     {
-        if (captured || button != MouseButton.Primary
-            || x <= UI.Routes.GarageView.SidebarWidth * TheGraphics.G.Scale)
+        // The garage's panels are the only UI over the preview; a press on one is not an orbit.
+        if (captured || button != MouseButton.Primary || UI.Routes.GarageView.OverUi(x, y))
             return;
         _lastMouse = new Vector2(x, y);
         _dragging = true;

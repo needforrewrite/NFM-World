@@ -79,6 +79,30 @@ public class Mesh : IDisposable
         CastsShadow = baseMesh.CastsShadow;
     }
 
+    internal sealed record MeshData(
+        (List<VertexPositionNormalColorCentroid> Data, List<uint> Indices)[] Submeshes,
+        LineMesh.Prepared?[] Lines);
+
+    internal sealed record Prepared(Rad3d Rad, Rad3dPoly[] Polygons, MeshData Data);
+
+    internal static Prepared Prepare(Rad3d rad)
+    {
+        var polygons = rad.Polys.Select(static poly => poly.SafeClone()).ToArray();
+        return new(rad, polygons, BuildData(polygons));
+    }
+
+    internal Mesh(Prepared prepared)
+    {
+        var rad = prepared.Rad;
+        OriginalPolys = rad.Polys;
+        Polys = prepared.Polygons;
+        GroundAt = rad.Wheels.FirstOrDefault().Ground;
+        FileName = rad.FileName;
+        MaxRadius = rad.MaxRadius;
+        CastsShadow = rad.CastsShadow;
+        Upload(prepared.Data);
+    }
+
     [MemberNotNull(nameof(Submeshes), nameof(LineMeshes))]
     private void BuildMesh()
     {
@@ -98,6 +122,11 @@ public class Mesh : IDisposable
             }
         }
 
+        Upload(BuildData(Polys));
+    }
+
+    private static MeshData BuildData(Rad3dPoly[] polygons)
+    {
         var submeshes = new (
             List<VertexPositionNormalColorCentroid> Data,
             List<uint> Indices
@@ -120,9 +149,9 @@ public class Mesh : IDisposable
             >(LineEqualityComparer.Instance);
         }
 
-        for (var i = 0; i < Polys.Length; i++)
+        for (var i = 0; i < polygons.Length; i++)
         {
-            var poly = Polys[i];
+            var poly = polygons[i];
 
             var (data, indices) = submeshes[(int)poly.PolyType];
 
@@ -154,6 +183,14 @@ public class Mesh : IDisposable
             }
         }
 
+        return new(submeshes, lines.Select(line => line.Count == 0 ? null : LineMesh.Prepare(line)).ToArray());
+    }
+
+    [MemberNotNull(nameof(Submeshes), nameof(LineMeshes))]
+    private void Upload(MeshData prepared)
+    {
+        var submeshes = prepared.Submeshes;
+        var lines = prepared.Lines;
         Submeshes = new Submesh[submeshes.Length];
         for (var i = 0; i < submeshes.Length; i++)
         {
@@ -174,9 +211,8 @@ public class Mesh : IDisposable
         LineMeshes = new LineMesh[lines.Length];
         for (var i = 0; i < lines.Length; i++)
         {
-            var lineDict = lines[i];
-            if (lineDict.Count == 0) continue;
-            LineMeshes[i] = new LineMesh(this, GameSparker.GraphicsDevice, lineDict, (LineType)i);
+            if (lines[i] is not { } lineData) continue;
+            LineMeshes[i] = new LineMesh(this, GameSparker.GraphicsDevice, lineData, (LineType)i);
         }
     }
 
@@ -268,7 +304,10 @@ public class Mesh : IDisposable
                 queue.AddInstanced(
                     submesh,
                     instanceData,
-                    SortKey.Create(renderBucket, (ushort)(alphaOverride < 1f || submesh.PolyType == PolyType.Glass ? 1 : 0)),
+                    SortKey.Create(
+                        renderBucket,
+                        (ushort)(alphaOverride < 1f || submesh.PolyType == PolyType.Glass && World.TransparentGlass ? 1 : 0)
+                    ),
                     boundingSphere
                 );
             }

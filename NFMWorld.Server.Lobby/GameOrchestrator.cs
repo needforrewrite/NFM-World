@@ -2,6 +2,7 @@
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Multiplayer.Archive;
 using NFMWorldLibrary.Radpack;
+using NFMWorldLibrary.Util;
 using NFMWorldLibrary.Multiplayer.HttpMessages;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
 using NFMWorldLibrary.Multiplayer.Packets.S2C;
@@ -473,6 +474,9 @@ public class GameOrchestrator
         // allowed; anything else (a local path, a URL, a malformed hash) falls back to a stock car.
         client.Vehicle = MultiplayerContentPolicy.CoerceCar(identity.SelectedVehicle);
         client.Color = identity.Color;
+        client.CarColors = client.Vehicle == identity.SelectedVehicle
+            ? CarPaint.NormalizeColors(identity.CarColors) : [];
+        client.Wheels = client.Vehicle == identity.SelectedVehicle ? CarWheels.Normalize(identity.Wheels) : null;
 
         // A selection that changes mid-preparation leaves the frozen roster stale, so the start
         // is called off rather than racing a car nobody downloaded.
@@ -621,6 +625,8 @@ public class GameOrchestrator
                 PlayerName = p.Name,
                 CarName = p.Vehicle,
                 Color = p.Color,
+                CarColors = p.CarColors,
+                Wheels = p.Wheels,
                 AccountId = p.AccountId
             };
         }
