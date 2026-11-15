@@ -72,10 +72,10 @@
         <PackageReference Include="Hexa.NET.ImGui" Version="2.2.9" Condition="'$(NfmwBrowser)' != 'true'"/>
         <ProjectReference Include="..\NFMWorld.ImGui.Browser\NFMWorld.ImGui.Browser.csproj" Condition="'$(NfmwBrowser)' == 'true'"/>
         <PackageReference Include="JetBrains.Profiler.Api" Version="1.4.13"/>
-        <PackageReference Include="LibOpenMPT.NET" Version="0.8.6"/>
         <None Include="data\**\*" CopyToOutputDirectory="Always"/>
         <None Remove="data\html\node_modules\**" CopyToOutputDirectory="Never"/>
         <None Remove="data\html\dist\**" CopyToOutputDirectory="Never"/>
+        <PackageReference Include="Maxine.LibOpenMPT.NET" Version="0.8.10" />
         <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1"/>
         <PackageReference Include="NAudio" Version="3.0.0-preview.18"/>
         <PackageReference Include="NAudio.SoundFile" Version="3.0.0-preview.18"/>
@@ -99,7 +99,6 @@
         <ProjectReference Include="..\HoleyDiver\HoleyDiver.csproj"/>
         <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj"/>
         <ProjectReference Include="..\Maxine.Extensions\RayTech.RayLog.MEL\RayTech.RayLog.MEL.csproj"/>
-        <ProjectReference Include="..\NanoSvgSharp\NanoSvgSharp.csproj"/>
         <ProjectReference Include="..\NAudio.Flac\NAudio.Flac\NAudio.Flac.csproj"/>
         <ProjectReference Include="..\NFMWorld.Api\NFMWorld.Api.csproj"/>
         <ProjectReference Include="..\NFMWorld.Audio.FAudio\NFMWorld.Audio.FAudio.csproj"/>
