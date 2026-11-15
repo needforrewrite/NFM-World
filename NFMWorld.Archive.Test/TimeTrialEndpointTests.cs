@@ -86,6 +86,58 @@ public class TimeTrialEndpointTests
         Assert.AreEqual(0, entries.GetArrayLength());
     }
 
+    private static async Task SeedCurrentAndOutdated(ArchiveAppFactory factory)
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+        foreach (var (name, ticks, version) in new[]
+                 {
+                     ("current", 2000, NFMWorldLibrary.Files.SavedTimeTrial.CURRENT_VERSION),
+                     ("outdated", 1000, NFMWorldLibrary.Files.SavedTimeTrial.CURRENT_VERSION - 1)
+                 })
+        {
+            db.TimeTrials.Add(new TimeTrial
+            {
+                User = new User { Username = name, UsernameNormalized = name },
+                StageHash = Hash('a'), CarHash = Hash('b'), StageName = "nfmm/road", CarName = "nfmm/radicalone",
+                StoragePath = $"test/{name}", TotalTicks = ticks, ReplayVersion = version
+            });
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    [TestMethod]
+    public async Task Leaderboard_RanksOnlyTheCurrentReplayVersion()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = factory.CreateClient();
+        await SeedCurrentAndOutdated(factory);
+
+        // The outdated time is faster, and must still not rank.
+        var entries = await client.GetFromJsonAsync<JsonElement>($"/tt/leaderboard?stageHash={Hash('a')}&carHash={Hash('b')}");
+        Assert.AreEqual(1, entries.GetArrayLength());
+        Assert.AreEqual("current", entries[0].GetProperty("username").GetString());
+
+        // Both stay watchable.
+        var replays = await client.GetFromJsonAsync<JsonElement>("/tt/replays");
+        Assert.AreEqual(2, replays.GetProperty("items").GetArrayLength());
+    }
+
+    [TestMethod]
+    public async Task LeaderboardPage_ListsOutdatedReplaysSeparately()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = factory.CreateClient();
+        await SeedCurrentAndOutdated(factory);
+
+        var html = await client.GetStringAsync($"/leaderboards?stageHash={Hash('a')}&carHash={Hash('b')}");
+        var outdated = html.IndexOf("Outdated replays", StringComparison.Ordinal);
+        Assert.IsGreaterThan(-1, outdated);
+        Assert.IsLessThan(outdated, html.IndexOf(">current<", StringComparison.Ordinal));
+        Assert.IsGreaterThan(outdated, html.IndexOf(">outdated<", StringComparison.Ordinal));
+    }
+
     [TestMethod]
     public async Task ReplayBrowserClient_ReadsTheArchiveContractIncludingPublicationDate()
     {

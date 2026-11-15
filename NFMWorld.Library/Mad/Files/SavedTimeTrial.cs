@@ -12,10 +12,24 @@ namespace NFMWorldLibrary.Files;
 public partial class SavedTimeTrial
 {
     /// <summary>
-    /// Bumped to 7 with the TightPack wire format: recordings written by a MemoryPack build are
-    /// not readable, so an older file is refused rather than misparsed.
+    /// Bumped whenever physics or the file format changes. Only recordings at this version are
+    /// ranked: an older one's inputs may no longer reproduce its frames.
     /// </summary>
-    [PluginVisible] public const int CURRENT_VERSION = 7;
+    [PluginVisible] public const int CURRENT_VERSION = 8;
+
+    /// <summary>
+    /// The oldest version this build can still read and play from its frames. 7 introduced the
+    /// TightPack format; 8 only changed physics. Bump this with any change to the file layout.
+    /// </summary>
+    [PluginVisible] public const int OLDEST_PLAYABLE_VERSION = 7;
+
+    /// <summary>Whether a recording of this version can be opened in the replay viewer.</summary>
+    [PluginVisible]
+    public static bool IsPlayable(int version) => version is >= OLDEST_PLAYABLE_VERSION and <= CURRENT_VERSION;
+
+    /// <summary>Playable, but recorded under older physics: shown with a warning and never ranked.</summary>
+    [PluginVisible]
+    public static bool IsOutdated(int version) => IsPlayable(version) && version != CURRENT_VERSION;
 
     [TightPackOrder(0), PluginVisible] public string CarName;
     [TightPackOrder(1), PluginVisible] public string StageName;

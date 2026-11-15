@@ -9,6 +9,8 @@ namespace NFMWorld.UI.Routes;
 
 /// <summary>One recording in the replay browser, local or published.</summary>
 /// <param name="Id">VFS path for a local recording, or <c>archive:&lt;id&gt;</c> for a remote one.</param>
+/// <param name="Compatible">Whether this build can play the recording at all.</param>
+/// <param name="Outdated">Playable, but recorded under older physics.</param>
 public sealed record ReplayBrowserEntry(
     string Id,
     string Stage,
@@ -18,7 +20,8 @@ public sealed record ReplayBrowserEntry(
     bool Compatible,
     bool Uploadable,
     DateTimeOffset? SavedAt = null,
-    bool Deletable = true
+    bool Deletable = true,
+    bool Outdated = false
 );
 
 /// <summary>Reactive state the replay browser renders. The hosting phase owns and writes it.</summary>
@@ -387,9 +390,9 @@ public static class ReplayBrowserView
                             layout: () => Sx.Styles(width: 100.Percent()),
                             style: () => Sx.WrappingText(
                                 fontSize: 11,
-                                foregroundColor: entry.Compatible ? Theme.MenuDim : Theme.Warning
+                                foregroundColor: entry.Compatible && !entry.Outdated ? Theme.MenuDim : Theme.Warning
                             ),
-                            text: () => $"{entry.Car}  ·  {(entry.Compatible ? entry.Detail : "Incompatible recording")}"
+                            text: () => $"{entry.Car}  ·  {StatusLabel(entry)}"
                         )
                     ]
                 ),
@@ -430,6 +433,13 @@ public static class ReplayBrowserView
         );
     }
 
+    private static string StatusLabel(ReplayBrowserEntry entry) => entry switch
+    {
+        { Compatible: false } => "Incompatible recording",
+        { Outdated: true } => $"{entry.Detail}  ·  Outdated: may not play back correctly",
+        _ => entry.Detail
+    };
+
     private static Node Selection(ReplayBrowserState state, Actions actions)
         => Sx.View(
             name: () => "Replay selection",
@@ -450,7 +460,7 @@ public static class ReplayBrowserView
                     layout: () => Sx.Styles(width: 100.Percent()),
                     style: () => Sx.WrappingText(fontSize: 12, foregroundColor: Theme.TextSecondary),
                     text: () => state.Selected is { } entry
-                        ? $"{entry.Stage}  ·  {entry.Car}  ·  {entry.Time}  ·  {entry.Detail}  ·  {DateLabel(entry, state.Online.Value)}"
+                        ? $"{entry.Stage}  ·  {entry.Car}  ·  {entry.Time}  ·  {StatusLabel(entry)}  ·  {DateLabel(entry, state.Online.Value)}"
                         : "Select a recording to watch or upload it."
                 ),
                 KeyboardNavigation.Row(Sx.View(

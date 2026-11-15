@@ -37,6 +37,7 @@ public sealed class ReplayViewerPhase : BaseStageRenderingPhase
         _totalFrames = replay.DemoData.Ticks.Count;
         _state.TotalFrames.Value = _totalFrames;
         _state.Speed.Value = _speed;
+        _state.Outdated.Value = SavedTimeTrial.IsOutdated(replay.Version ?? 0);
 
         StageName = replay.StageName;
 

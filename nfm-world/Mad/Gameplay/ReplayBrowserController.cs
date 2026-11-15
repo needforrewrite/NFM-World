@@ -170,10 +170,11 @@ internal sealed class ReplayBrowserController : IDisposable
             Car: replay.CarName,
             Time: FormatTime(replay.TotalTicks),
             Detail: $"{replay.Username}  ·  replay #{replay.Id}",
-            Compatible: replay.ReplayVersion == SavedTimeTrial.CURRENT_VERSION,
+            Compatible: SavedTimeTrial.IsPlayable(replay.ReplayVersion),
             Uploadable: false,
             SavedAt: replay.CreatedAt,
-            Deletable: false
+            Deletable: false,
+            Outdated: SavedTimeTrial.IsOutdated(replay.ReplayVersion)
         );
 
     private async Task<bool> RefreshLocalAsync(int generation)
@@ -260,6 +261,7 @@ internal sealed class ReplayBrowserController : IDisposable
                     _ => "Local only"
                 };
 
+                var version = replay.Version ?? 0;
                 entries.Add(
                     new ReplayBrowserEntry(
                         Id: file,
@@ -267,11 +269,13 @@ internal sealed class ReplayBrowserController : IDisposable
                         Car: replay.CarName,
                         Time: FormatTime(replay.DemoData.Ticks.Count),
                         Detail: status,
-                        Compatible: IsCompatible(replay),
-                        Uploadable: IsCompatible(replay) && submission is not { Status: "uploaded" },
+                        Compatible: SavedTimeTrial.IsPlayable(version),
+                        // The archive only ranks the current version, and refuses anything older.
+                        Uploadable: version == SavedTimeTrial.CURRENT_VERSION && submission is not { Status: "uploaded" },
                         SavedAt: VFS.GetLastWriteTimeUtc(file)
                         ?? (submission is { RecordedAt: var date } && date != default ? date : null),
-                        Deletable: writable.Contains(file)
+                        Deletable: writable.Contains(file),
+                        Outdated: SavedTimeTrial.IsOutdated(version)
                     )
                 );
             }
@@ -301,13 +305,6 @@ internal sealed class ReplayBrowserController : IDisposable
         var minutes = (int)(seconds / 60);
         return $"{minutes}:{seconds - minutes * 60:00.000}";
     }
-
-    /// <summary>
-    /// A frame is a fixed-layout snapshot, so a recording from another version cannot be replayed
-    /// as it stands. The list marks these too, but the click still has to refuse them.
-    /// </summary>
-    private static bool IsCompatible(SavedTimeTrial replay)
-        => (replay.Version ?? 0) == SavedTimeTrial.CURRENT_VERSION;
 
     private void Open(string id)
     {
@@ -340,10 +337,10 @@ internal sealed class ReplayBrowserController : IDisposable
                 return;
             }
 
-            if (!IsCompatible(replay))
+            if (!SavedTimeTrial.IsPlayable(replay.Version ?? 0))
             {
                 _state.Status.Value =
-                    $"That recording is version {replay.Version ?? 0}; this build plays {SavedTimeTrial.CURRENT_VERSION}.";
+                    $"That recording is version {replay.Version ?? 0}; this build plays {SavedTimeTrial.OLDEST_PLAYABLE_VERSION}–{SavedTimeTrial.CURRENT_VERSION}.";
                 return;
             }
 
@@ -384,10 +381,10 @@ internal sealed class ReplayBrowserController : IDisposable
                 return;
             }
 
-            if (!IsCompatible(replay))
+            if (!SavedTimeTrial.IsPlayable(replay.Version ?? 0))
             {
                 _state.Status.Value =
-                    $"Replay #{id} is version {replay.Version ?? 0}; this build plays {SavedTimeTrial.CURRENT_VERSION}.";
+                    $"Replay #{id} is version {replay.Version ?? 0}; this build plays {SavedTimeTrial.OLDEST_PLAYABLE_VERSION}–{SavedTimeTrial.CURRENT_VERSION}.";
                 return;
             }
 

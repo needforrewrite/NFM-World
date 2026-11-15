@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using NFMWorld.Archive.Data;
 using NFMWorld.Archive.Validation;
+using NFMWorldLibrary.Files;
 using NFMWorldLibrary.Radpack;
 
 namespace NFMWorld.Archive.Endpoints;
@@ -121,8 +122,10 @@ public static class TimeTrialEndpoints
                     .FirstOrDefaultAsync(t => t.UserId == user.Id && t.StageHash == stageHash && t.CarHash == carHash, ct);
 
                 // One entry per (user, stage, car): a slower retry keeps the old time rather than
-                // replacing it, so a player cannot lose a good time by retrying.
-                if (existing is not null && existing.TotalTicks <= totalTicks)
+                // replacing it, so a player cannot lose a good time by retrying. An outdated entry
+                // is not ranked, so any current run replaces it.
+                if (existing is not null && existing.ReplayVersion == SavedTimeTrial.CURRENT_VERSION
+                    && existing.TotalTicks <= totalTicks)
                 {
                     await storage.DeleteIfUnreferencedAsync(stored.StoragePath, db, ct);
                     return Results.Ok(new { status = "kept existing faster time", existing.TotalTicks });
@@ -137,6 +140,7 @@ public static class TimeTrialEndpoints
                         var previous = existing.StoragePath;
                         existing.TotalTicks = totalTicks;
                         existing.StoragePath = stored.StoragePath;
+                        existing.ReplayVersion = replayVersion.GetInt32();
                         existing.CreatedAt = DateTimeOffset.UtcNow;
                         await db.SaveChangesAsync(ct);
 
@@ -147,6 +151,7 @@ public static class TimeTrialEndpoints
                     else
                     {
                         existing.TotalTicks = totalTicks;
+                        existing.ReplayVersion = replayVersion.GetInt32();
                         existing.CreatedAt = DateTimeOffset.UtcNow;
                     }
                 }
@@ -173,7 +178,7 @@ public static class TimeTrialEndpoints
         );
 
         // Public: a leaderboard is the point of a time trial, and it carries no account data
-        // beyond the username.
+        // beyond the username. Outdated replays stay browsable but are never ranked.
         tt.MapGet(
             "/leaderboard",
             async (
@@ -181,7 +186,9 @@ public static class TimeTrialEndpoints
                 ) =>
                 Results.Ok(
                     await db.TimeTrials
-                        .Where(t => t.StageHash == stageHash && t.CarHash == carHash && t.IsValid)
+                        .Where(t => t.StageHash == stageHash && t.CarHash == carHash && t.IsValid
+                                    && t.ReplayVersion == SavedTimeTrial.CURRENT_VERSION
+                        )
                         .OrderBy(t => t.TotalTicks)
                         .Take(Math.Clamp(limit ?? 100, 1, 100))
                         .Select(t => new TimeTrialEntry(t.User.Username, t.TotalTicks, t.CreatedAt, $"/tt/replay/{t.Id}"))
