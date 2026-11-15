@@ -339,9 +339,8 @@ internal static class CarThumbnails
     private static void Downsample(ICommandBuffer cb, ITexture source, IRenderTarget target, int height)
     {
         var device = GameSparker.GraphicsDevice;
-        var bottom = device.HasBottomLeftFramebufferOrigin ? 0f : 1f;
-        var top = device.HasBottomLeftFramebufferOrigin ? 2f : -1f;
-        float[] vertices = [-1, -1, 0, bottom, 3, -1, 2, bottom, -1, 3, 0, top];
+        // Store the image's top row at V=0 for UI sampling, including on GL.
+        float[] vertices = [-1, -1, 0, 1, 3, -1, 2, 1, -1, 3, 0, -1];
         var bytes = MemoryMarshal.AsBytes(vertices.AsSpan());
         using var buffer = device.CreateBuffer(
             new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, bytes.Length),
