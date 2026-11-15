@@ -192,9 +192,13 @@ public class LobbyHandshakeTests
         Assert.AreEqual("nfmm/other-car", state.Players.Single(p => p.PlayerName == "account-name").CarName);
     }
 
-    /// <summary>A refusal is followed by a disconnect, so it has to be delivered before the close.</summary>
+    /// <summary>
+    /// A second connection on the same account takes the seat over, and the eviction has to reach
+    /// the older socket before it closes - otherwise that client only sees "connection lost" and
+    /// reconnects, taking the seat back from the connection that holds it now.
+    /// </summary>
     [TestMethod]
-    public async Task Refusal_ReachesTheClientBeforeTheSocketCloses()
+    public async Task Takeover_EvictsTheOlderConnection_AndTheRefusalReachesItBeforeTheClose()
     {
         await using var rig = await Rig.Start();
         rig.Client.SendPacketToServer(new C2S_Authenticate { Token = "saved-token" });
@@ -206,10 +210,28 @@ public class LobbyHandshakeTests
             Assert.IsTrue(await second.WaitForStateAsync(ClientState.Connected), "the second client never connected");
             second.SendPacketToServer(new C2S_Authenticate { Token = "saved-token" });
 
-            var reply = await WaitForAsync<S2C_Authenticated>(second);
-            Assert.IsFalse(reply.Accepted);
-            Assert.IsFalse(reply.SessionRejected);
-            Assert.IsNotEmpty(reply.Error);
+            var accepted = await WaitForAsync<S2C_Authenticated>(second);
+            Assert.IsTrue(accepted.Accepted);
+            Assert.AreEqual(42, accepted.AccountId);
+
+            var evicted = await WaitForAsync<S2C_Authenticated>(rig.Client);
+            Assert.IsFalse(evicted.Accepted);
+            Assert.IsFalse(evicted.SessionRejected, "an eviction must not sign the account out");
+            Assert.IsNotEmpty(evicted.Error);
+
+            // The server closes with a policy violation, which the transport must not retry.
+            Assert.IsTrue(
+                await rig.Client.WaitForStateAsync(ClientState.Disconnected),
+                "the evicted client never saw the connection close"
+            );
+            Assert.IsFalse(rig.Client.IsReconnecting, "an eviction must not be retried");
+
+            // The evicted socket has to leave the registry, or it keeps the account seat and the
+            // next connection is refused as a duplicate of a connection nobody is using.
+            var deadline = Environment.TickCount64 + 5000;
+            while (Environment.TickCount64 < deadline && rig.Server.Connections.Count > 1)
+                await Task.Delay(10);
+            Assert.AreEqual(1, rig.Server.Connections.Count, "the evicted connection stayed in the registry");
         }
         finally
         {

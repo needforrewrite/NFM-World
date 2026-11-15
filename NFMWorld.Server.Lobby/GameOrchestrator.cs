@@ -412,10 +412,24 @@ public class GameOrchestrator
             switch (status)
             {
                 case TokenVerification.Valid:
-                    if (_players.All.Any(p => p.Key != clientIndex && p.Value.AccountId == account!.AccountId))
+                    // One account, one seat: the newest connection takes the account over and the
+                    // older one is dropped. Refusing the newcomer instead locked a player out for
+                    // good as soon as the old connection lingered - a socket that died without a
+                    // close stays in the registry until its receive loop ends, which it may never
+                    // do, so the player's own reconnect was refused and every retry after it too.
+                    if (account!.AccountId > 0)
                     {
-                        RefuseAuthentication(clientIndex, "This account is already in the lobby on another connection.");
-                        return;
+                        foreach (var (otherIndex, other) in _players.All)
+                        {
+                            if (otherIndex == clientIndex || !other.IsAuthenticated
+                                || other.AccountId != account.AccountId)
+                                continue;
+
+                            Logging.Info(
+                                $"[Lobby] Account {account.AccountId} moved to connection {clientIndex}; dropping {otherIndex}"
+                            );
+                            RefuseAuthentication(otherIndex, "Your account signed in on another connection.");
+                        }
                     }
 
                     client.AccountId = account!.AccountId;

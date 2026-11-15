@@ -596,7 +596,14 @@ palette). One lobby; whether a race is rated is chosen per race, not by a menu p
   The server refuses missing/invalid tokens and archive outages or missing `ARCHIVE_URL`; there is no guest fallback.
   `S2C_Authenticated.SessionRejected` clears the saved token only when the archive definitively rejects it, not for
   outages or duplicate-account refusals. Unauthenticated connections cannot act or receive lobby snapshots/chat.
-  **One account, one connection**: duplicate account authentication is refused; account changes require reconnecting.
+  **One account, one connection, newest wins**: the connection that authenticates an account takes it over and the
+  older one is refused and closed. Refusing the *newcomer* instead locked a player out for good — a socket that dies
+  without a close stays in the registry until its receive loop ends, so their own reconnect was refused and every
+  retry after it. Account changes still require reconnecting.
+- **An evicted connection is not retried.** The server closes it with `PolicyViolation` after the refusal packet, and
+  `WebSocketMultiplayerClientTransport` treats that status as final: reconnecting would take the seat back and evict
+  the connection holding it now. A send that fails or a close that goes unanswered aborts the socket server-side, or
+  the peer's receive loop never ends and it keeps its account seat for the life of the process.
 - **The handshake waits for an answer, and every request is answered.** `LobbyPhase.UpdateHandshake` re-sends
   `C2S_Authenticate` every 5 s (three attempts) instead of firing it once, and only then says the lobby did not
   answer; REFRESH retries it. On the server, `HandleAuthenticateAsync` wraps the verification so an unexpected
