@@ -54,6 +54,14 @@ public class CarPhysicsLandingTests
         return Math.Min(a, 180 - a);
     }
 
+    private static BackendStage CreateStage()
+    {
+        var stage = new BackendStage("landing-test", new StageLoader(), throwOnError: true);
+        Assert.AreEqual(1f, stage.Physics.Gravity);
+        Assert.AreEqual(0, stage.Pieces.Count);
+        return stage;
+    }
+
     /// <summary>Null when the car came to rest on its wheels, otherwise what went wrong.</summary>
     private static string? Run(BackendStage stage, BackendCar car, bool releaseOnLanding)
     {
@@ -79,7 +87,7 @@ public class CarPhysicsLandingTests
     [TestMethod]
     public void Drive_DroppedOnEnd_SettlesOnItsWheels()
     {
-        var stage = new BackendStage("empty");
+        var stage = CreateStage();
         var failures = new List<string>();
         foreach (var name in Cars)
         foreach (var roll in new[] { 0, 30, 60, 75, 90, 105, 120, 150, 180, 270 })
@@ -103,7 +111,7 @@ public class CarPhysicsLandingTests
     [TestMethod]
     public void Drive_StuntLanding_SettlesOnItsWheels()
     {
-        var stage = new BackendStage("empty");
+        var stage = CreateStage();
         var failures = new List<string>();
         foreach (var name in Cars)
         foreach (var input in new[] { "down", "down+left", "up+right", "down+left+release" })
