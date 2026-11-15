@@ -15,7 +15,7 @@ public partial class SavedTimeTrial
     /// Bumped to 7 with the TightPack wire format: recordings written by a MemoryPack build are
     /// not readable, so an older file is refused rather than misparsed.
     /// </summary>
-    [PluginVisible] public const int CURRENT_VERSION = 7;
+    [PluginVisible] public const int CURRENT_VERSION = 8;
 
     [TightPackOrder(0), PluginVisible] public string CarName;
     [TightPackOrder(1), PluginVisible] public string StageName;
