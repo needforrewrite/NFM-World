@@ -18,7 +18,7 @@ namespace NFMWorld.Gameplay;
 /// The multiplayer lobby. All state lives here and is published into <see cref="UiState.Lobby"/>;
 /// <see cref="LobbyView"/> only reads it.
 /// </summary>
-public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
+public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 {
     private readonly Player _player = new();
     private List<ServerSidePlayerInfo> _players = [];
@@ -95,13 +95,20 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         SetMaxPlayers: count => Lobby.MaxPlayers.Value = count,
         SetBots: count => Lobby.BotCount.Value = count,
         SetConfig: OnSetConfig,
-        SetGamemode: OnSetGamemode
+        SetGamemode: OnSetGamemode,
+        ChangeCar: OpenCarPicker,
+        CopyCar: id => CopyPlayerCar(id, colorsOnly: false),
+        CopyColors: id => CopyPlayerCar(id, colorsOnly: true)
     );
 
-    public override Node BuildUi() => LobbyView.Build(Actions);
+    public override Node BuildUi() => BuildLobbyUi();
 
     public override void Enter()
     {
+        _carCancellation.Cancel();
+        _carCancellation.Dispose();
+        _carCancellation = new CancellationTokenSource();
+        _carsActive = true;
         LobbyView.Reset();
         Lobby.Reset();
         // Reset emptied the status signal, so the cached text would make UpdateStatus a no-op
@@ -338,6 +345,11 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     {
         if (disposing)
         {
+            _carsActive = false;
+            CloseCarPicker();
+            _carCancellation.Cancel();
+            _carCancellation.Dispose();
+            _carDetails.Clear();
             // A preparation outliving the phase would keep downloading for a race this client
             // has left, and its acknowledgement would answer a request nobody is waiting on.
             _preparationCancellation?.Cancel();
@@ -464,6 +476,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 
     private void StartRaceCore(S2C_RaceStarted raceStarted)
     {
+        CloseCarPicker();
         _racedThisSession = true;
 
         // A NEW transport to the Game Master for in-game traffic. The lobby transport stays
@@ -541,12 +554,15 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             .Select(p => new UiState.LobbyPlayer(
                     p.Id,
                     p.PlayerName,
-                    p.CarName,
+                    CarLabel(p.CarName),
                     ToColor(p.Color),
-                    p.Id == _player.Id
+                    p.Id == _player.Id,
+                    PlayerColors(p)
                 )
             )
             .ToArray();
+
+        ResolvePlayerCars();
 
         Lobby.Sessions.Value = _activeSessions
             .Select(s => new UiState.LobbySession(

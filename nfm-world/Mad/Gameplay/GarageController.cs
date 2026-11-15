@@ -49,6 +49,8 @@ internal sealed class GarageController
     private readonly ObservableUnlimitedArray<BackendCar> _sceneCars;
     private readonly Func<BackendCar, CarVisual?>? _visualOf;
     private readonly bool _quickSelect;
+    private readonly string _confirmLabel;
+    private readonly Func<string, bool>? _canSelect;
     private bool _painting;
     private long _lastPaintChange;
     private readonly Dictionary<string, Rad3d> _changedCarThumbnails = new(StringComparer.OrdinalIgnoreCase);
@@ -61,13 +63,17 @@ internal sealed class GarageController
         ObservableUnlimitedArray<BackendCar> sceneCars,
         BackendCar? currentCar = null,
         Func<BackendCar, CarVisual?>? visualOf = null,
-        bool quickSelect = false
+        bool quickSelect = false,
+        string confirmLabel = "Race",
+        Func<string, bool>? canSelect = null
     )
     {
         _sceneCars = sceneCars;
         _backendCar = currentCar;
         _visualOf = visualOf;
         _quickSelect = quickSelect;
+        _confirmLabel = confirmLabel;
+        _canSelect = canSelect;
         if (currentCar == null) return;
         foreach (var (collection, cars) in BackendGameSparker.cars)
         {
@@ -319,7 +325,9 @@ internal sealed class GarageController
                 if (!active) FlushThumbnailChanges();
             }
         );
-        return _quickSelect ? GarageView.BuildQuickSelect(actions) : GarageView.Build(actions);
+        return _quickSelect
+            ? GarageView.BuildQuickSelect(actions, _confirmLabel, thumbnailPreview: _visualOf is null)
+            : GarageView.Build(actions);
     }
 
     public void Enter()
@@ -450,6 +458,9 @@ internal sealed class GarageController
             _ = PrepareOnlineCarAsync(fileName);
             return;
         }
+
+        _onlineCancellation?.Cancel();
+        _onlineGeneration++;
 
         // Search ALL collections, switching if the car lives in another one.
         if (Enum.TryParse<Collection>(collection, out var col)
@@ -1073,6 +1084,10 @@ internal sealed class GarageController
     private async Task PrepareOnlineCarAsync(string hashOrIdentity)
     {
         using var loading = LoadingWork.Begin("Loading car...");
+        _onlineCancellation?.Cancel();
+        _onlineCancellation?.Dispose();
+        _onlineCancellation = new CancellationTokenSource();
+        var cancellation = _onlineCancellation.Token;
         var generation = ++_onlineGeneration;
         UiState.Garage.OnlineStatus.Value = "Preparing car...";
         _selectionReady = false;
@@ -1083,11 +1098,28 @@ internal sealed class GarageController
             .FirstOrDefault(car => car.FileName.Equals(hashOrIdentity, StringComparison.OrdinalIgnoreCase))
             ?.Author;
 
-        var result = await Task.Run(
-            () => ContentCache.PrepareAsync(Content.Value, hashOrIdentity, AssetKind.Car, CancellationToken.None)
-        );
+        ContentPrepareResult result;
+        try
+        {
+            result = await Task.Run(
+                () => ContentCache.PrepareAsync(Content.Value, hashOrIdentity, AssetKind.Car, cancellation),
+                cancellation
+            );
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (Exception ex)
+        {
+            await LoadingWork.NextFrame;
+            if (generation == _onlineGeneration)
+                UiState.Garage.OnlineStatus.Value = $"Could not load the car: {ex.Message}";
+            return;
+        }
+
         await LoadingWork.NextFrame;
-        if (generation != _onlineGeneration)
+        if (cancellation.IsCancellationRequested || generation != _onlineGeneration)
             return;
 
         if (!result.Ok)
@@ -1127,6 +1159,12 @@ internal sealed class GarageController
 
         if (CarSelected == null)
             throw new ArgumentNullException(nameof(CarSelected), "Attempted to invoke CarSelected, but it was null.");
+        if (_canSelect?.Invoke(_selectedCarIdentity ?? _backendCar.Rad.FileName) == false)
+        {
+            UiState.Garage.OnlineStatus.Value = "Pick a stock or published car for multiplayer.";
+            return;
+        }
+
         CarPaint.Flush();
         MenuHistory.Remember(car: _selectedCarIdentity ?? _backendCar!.Rad.FileName);
         SetPage(GaragePage.Home);

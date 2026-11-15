@@ -37,6 +37,7 @@
         <Compile Include="..\nfm-world\UI\ViewModels\HsbColorState.cs" Link="HsbColorState.cs"/>
         <Compile Include="..\nfm-world\Mad\Gameplay\LobbyStageSelection.cs" Link="LobbyStageSelection.cs"/>
         <Compile Include="..\nfm-world\UI\Components\Button.cs" Link="Button.cs"/>
+        <Compile Include="..\nfm-world\UI\Components\LobbyPlayerMenu.cs" Link="LobbyPlayerMenu.cs"/>
         <Compile Include="..\nfm-world\UI\Components\MessageDialog.cs" Link="MessageDialog.cs"/>
         <Compile Include="..\nfm-world\Mad\UI\MessageWindow.cs" Link="MessageWindow.cs"/>
         <Compile Include="..\nfm-world\UI\Theme.cs" Link="Theme.cs"/>

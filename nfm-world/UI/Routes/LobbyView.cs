@@ -48,7 +48,10 @@ public static class LobbyView
         Action<int> SetMaxPlayers,
         Action<int> SetBots,
         Action<string, string> SetConfig,
-        Action<string> SetGamemode
+        Action<string> SetGamemode,
+        Action ChangeCar,
+        Action<Guid> CopyCar,
+        Action<Guid> CopyColors
     );
 
     private static readonly Color Blue = Theme.MenuBlue;
@@ -63,6 +66,8 @@ public static class LobbyView
     public static Node Build(Actions actions)
     {
         var lobby = UiState.Lobby;
+        var contextPlayer = new Signal<Guid?>(null);
+        var contextPosition = new Signal<Vector2>(default);
 
         return Sx.View(
             style: () => Sx.Styles(
@@ -108,16 +113,39 @@ public static class LobbyView
                             ),
                             children:
                             [
-                                PlayersPanel(),
+                                PlayersPanel((id, position) =>
+                                    {
+                                        var scale = Math.Max(G.Scale, 0.01f);
+                                        contextPosition.Value = new Vector2(
+                                        Math.Clamp(position.X / scale, 0, Math.Max(0, G.Viewport.X / scale - 170)),
+                                        Math.Clamp(position.Y / scale, 0, Math.Max(0, G.Viewport.Y / scale - 94))
+                                        );
+                                        contextPlayer.Value = id;
+                                    }
+                                ),
                                 GamesPanel(actions),
                                 ChatPanel(actions)
                             ]
                         )
                     ]
                 ),
-                Sx.Show(() => lobby.ShowCreateDialog.Value, () => CreateDialog(actions))
+                Sx.Show(() => lobby.ShowCreateDialog.Value, () => CreateDialog(actions)),
+                Sx.Show(() => contextPlayer.Value.HasValue, () => LobbyPlayerMenu.Build(
+                    contextPosition.Value,
+                    () => Copy(actions.CopyCar),
+                    () => Copy(actions.CopyColors),
+                    () => contextPlayer.Value = null
+                )
+                )
             ]
         );
+
+        void Copy(Action<Guid> action)
+        {
+            if (contextPlayer.Value is not { } id) return;
+            contextPlayer.Value = null;
+            action(id);
+        }
     }
 
     private static Node Header(Actions actions)
@@ -162,13 +190,14 @@ public static class LobbyView
                         )
                     ]
                 ),
+                SmallButton("CHANGE CAR", actions.ChangeCar),
                 SmallButton("REFRESH", actions.Refresh),
                 SmallButton("BACK", actions.Back)
             ]
         );
     }
 
-    private static Node PlayersPanel()
+    private static Node PlayersPanel(Action<Guid, Vector2> openContextMenu)
     {
         var lobby = UiState.Lobby;
         return Panel(
@@ -177,6 +206,12 @@ public static class LobbyView
             () => Sx.For(
                 each: () => lobby.Players.Value,
                 row: (player, _) => Sx.View(
+                    onmousedown: e =>
+                    {
+                        if (e.Button != MouseButton.Secondary || player.IsSelf) return;
+                        e.StopPropagation();
+                        openContextMenu(player.Id, e.Position);
+                    },
                     style: () => Sx.Styles(
                         flexDirection: FlexDirection.Column,
                         flexShrink: 0,
@@ -187,16 +222,36 @@ public static class LobbyView
                     ),
                     children:
                     [
-                        Sx.Text(
+                        Sx.View(style: () => Sx.Styles(
+                            flexDirection: FlexDirection.Row,
+                            alignItems: Align.Center,
+                            gapColumn: 5
+                        ), children: [Sx.Text(
                             style: () => Sx.TextStyles(
                                 fontSize: 14,
                                 fontStyle: FontStyle.Bold,
                                 foregroundColor: player.IsSelf ? Blue : TextBlue
                             ),
                             text: () => player.Name
+                        ), Sx.For(
+                            () => (player.CarColors ?? []).Select((color, slot) => (color, slot)).ToArray(),
+                            (swatch, _) => Sx.View(
+                            style: () => Sx.Styles(
+                                width: 10,
+                                height: 10,
+                                flexShrink: 0,
+                                backgroundColor: swatch.color,
+                                borderTop: 1,
+                                borderBottom: 1,
+                                borderLeft: 1,
+                                borderRight: 1,
+                                borderColor: Border
+                            )
+                            )
+                        )]
                         ),
                         Sx.Text(
-                            style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                            style: () => Sx.WrappingText(fontSize: 11, foregroundColor: Theme.MenuDim),
                             text: () => player.Car
                         )
                     ]

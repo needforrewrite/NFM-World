@@ -646,7 +646,10 @@ public partial class WorldGame
                 SetMaxPlayers: value => lobby.MaxPlayers.Value = value,
                 SetBots: value => lobby.BotCount.Value = value,
                 SetConfig: (name, value) => { },
-                SetGamemode: id => lobby.SelectedGamemode.Value = id
+                SetGamemode: id => lobby.SelectedGamemode.Value = id,
+                ChangeCar: () => { },
+                CopyCar: _ => { },
+                CopyColors: _ => { }
             )
         );
     }

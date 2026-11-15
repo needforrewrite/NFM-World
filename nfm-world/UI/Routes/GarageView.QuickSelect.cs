@@ -12,14 +12,14 @@ public static partial class GarageView
     private const int QuickSidebarWidth = 220;
     private static bool _compactPreview;
 
-    public static Node BuildQuickSelect(Actions actions)
+    public static Node BuildQuickSelect(Actions actions, string confirmLabel = "Race", bool thumbnailPreview = false)
         => Sx.Show(
             when: () => UiState.Garage.Page.Value == GaragePage.Colors,
             then: () => Build(actions),
-            otherwise: () => QuickSelectPanels(actions)
+            otherwise: () => QuickSelectPanels(actions, confirmLabel, thumbnailPreview)
         );
 
-    private static Node QuickSelectPanels(Actions actions)
+    private static Node QuickSelectPanels(Actions actions, string confirmLabel, bool thumbnailPreview)
     {
         _compactPreview = true;
         var sidebar = Sx.View(
@@ -57,7 +57,7 @@ public static partial class GarageView
                 ),
                 StatsPanel(),
                 Button.Create(
-                    () => "Race",
+                    () => confirmLabel,
                     actions.Confirm,
                     size: ButtonSize.Sm,
                     fullWidth: true,
@@ -155,7 +155,26 @@ public static partial class GarageView
         return Sx.View(
             name: () => "Quick car select",
             style: () => Sx.Styles(width: 100.Percent(), height: 100.Percent()),
-            children: [sidebar, dock]
+            children: [
+                Sx.Show(() => thumbnailPreview, () => Sx.View(
+                    style: () => Sx.Styles(
+                        position: Position.Absolute,
+                        left: QuickSidebarWidth,
+                        right: 0,
+                        top: 0,
+                        bottom: 210,
+                        alignItems: Align.Center,
+                        justifyContent: Justify.Center
+                    ),
+                    children: [Sx.View(style: () => Sx.Styles(width: 70.Percent()), children: [
+                        Sx.For(
+                            () => UiState.Garage.CurrentCar.Value is { } car ? new[] { car.FileName } : [],
+                            (identity, _) => CarThumbnail(identity)
+                        )
+                    ])]
+                )
+                ),
+                sidebar, dock]
         );
     }
 

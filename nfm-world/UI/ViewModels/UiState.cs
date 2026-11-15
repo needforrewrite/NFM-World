@@ -222,7 +222,13 @@ public static class UiState
         }
     }
 
-    public sealed record LobbyPlayer(Guid Id, string Name, string Car, Color Color, bool IsSelf);
+    public sealed record LobbyPlayer(
+        Guid Id,
+        string Name,
+        string Car,
+        Color Color,
+        bool IsSelf,
+        IReadOnlyList<Color>? CarColors = null);
 
     public sealed record LobbySession(
         uint Id,
