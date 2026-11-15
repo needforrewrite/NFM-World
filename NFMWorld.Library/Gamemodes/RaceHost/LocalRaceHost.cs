@@ -65,7 +65,9 @@ public sealed class LocalRaceHost : IRaceHost
                     Id = id,
                     PlayerName = player.PlayerName,
                     CarName = player.CarName,
-                    Color = player.Color
+                    Color = player.Color,
+                    CarColors = player.CarColors,
+                    Wheels = player.Wheels
                 }
             );
         }

@@ -190,4 +190,40 @@ public class KeyboardNavigationTests
         Assert.AreSame(controls[^1], FocusManager.FocusedNode);
         Assert.IsTrue(scroll.ScrollTop > 0);
     }
+
+    [TestMethod]
+    public void PassiveFocusRestorationPreservesMouseScrollPosition()
+    {
+        var root = new View { Styles = Sx.Styles(width: 300, height: 100) };
+        var scroll = new View
+        {
+            Styles = Sx.Styles(width: 300, height: 100, overflow: Overflow.Scroll, flexDirection: FlexDirection.Column)
+        };
+        root.AddChild(scroll);
+        var controls = Enumerable.Range(0, 6).Select(_ => Control()).ToArray();
+        foreach (var control in controls)
+        {
+            control.Styles = Sx.Styles(height: 50, flexShrink: 0);
+            scroll.AddChild(control);
+        }
+
+        root.LayoutAndRender(new Vector2(300, 100));
+        var navigation = new KeyboardNavigation();
+        navigation.UpdateFocus(root);
+        for (var i = 0; i < 4; i++) navigation.HandleKey(root, Key.Down);
+        scroll.ScrollTop = 0;
+        root.LayoutAndRender(new Vector2(300, 100));
+
+        for (var i = 0; i < 3; i++)
+        {
+            FocusManager.ClearFocus();
+            navigation.UpdateFocus(root, scrollIntoView: false);
+            Assert.AreSame(controls[4], FocusManager.FocusedNode);
+            Assert.AreEqual(0f, scroll.ScrollTop);
+        }
+
+        navigation.HandleKey(root, Key.Down);
+        Assert.AreSame(controls[5], FocusManager.FocusedNode);
+        Assert.IsTrue(scroll.ScrollTop > 0);
+    }
 }

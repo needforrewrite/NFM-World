@@ -110,6 +110,8 @@ public class PlayerRegistry
 
         public string Vehicle { get; set; } = "nfmm/radicalone";
         public Color3 Color { get; set; }
+        public Color3?[]? CarColors { get; set; }
+        public NFMWorldLibrary.Util.WheelAppearance? Wheels { get; set; }
         public (byte PlayerIndex, uint SessionIndex)? InSession { get; set; }
         public bool IsInGame { get; set; }
     }

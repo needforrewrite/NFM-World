@@ -95,7 +95,7 @@ public class GameMasterHttpClient
             return;
 
         throw new InvalidOperationException(
-            $"The Game Master runs a different game version ({response.ReasonPhrase}). Update the server and try again."
+            $"The Game Master uses a different protocol version ({response.ReasonPhrase}); this lobby uses protocol v{Protocol.Version}. Update the server and try again."
         );
     }
 

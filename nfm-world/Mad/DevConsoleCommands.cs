@@ -398,6 +398,8 @@ public static class DevConsoleCommands
         Logging.Info($"Commit: {build.Commit}");
         var date = build.BuiltAtUtc?.ToString("MMM dd yyyy 'UTC'", CultureInfo.InvariantCulture) ?? "unknown";
         var number = build.BuildNumber?.ToString(CultureInfo.InvariantCulture) ?? "unknown";
+        Logging.Info($"Protocol version {Protocol.Version}");
+        Logging.Info($"Exe version: {GameSparker.ExeVersion}");
         Logging.Info($"Exe build: {date} (build {number})");
         Logging.Info($"Configuration: {build.Configuration}, target: {build.TargetFramework}, RID: {build.RuntimeIdentifier}");
         Logging.Info($"Renderer: {GameSparker.GraphicsDevice?.GetType().FullName ?? "not initialized"}");

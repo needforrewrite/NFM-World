@@ -63,7 +63,8 @@ public static class GlassCardUi
         string label = "",
         Func<double>? value = null,
         Color? color = null,
-        float height = 8
+        float height = 8,
+        float spacing = 8
     )
     {
         var fillColor = color ?? Theme.Accent;
@@ -78,7 +79,7 @@ public static class GlassCardUi
         );
 
         return Sx.View(
-            style: () => Sx.Styles(marginBottom: 8, flexDirection: FlexDirection.Column, width: 100.Percent()),
+            style: () => Sx.Styles(marginBottom: spacing, flexDirection: FlexDirection.Column, width: 100.Percent()),
             children:
             [
                 Sx.View(

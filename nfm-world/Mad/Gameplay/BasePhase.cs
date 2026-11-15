@@ -114,6 +114,14 @@ public abstract class BasePhase : IDisposable
     {
     }
 
+    /// <summary>
+    /// Invoked when a held key repeats. SDL reports a held key as repeats only, so a list
+    /// that walks on an arrow needs this as well as <see cref="KeyPressed"/>.
+    /// </summary>
+    public virtual void KeyRepeated(Key key, bool imguiWantsKeyboard, in Keys keys)
+    {
+    }
+
     public virtual void KeyTyped(char character, bool imguiWantsKeyboard)
     {
     }

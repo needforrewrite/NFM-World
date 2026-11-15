@@ -22,6 +22,40 @@ namespace NFMWorld.UI.Components;
 /// </remarks>
 public static class SettingsView
 {
+    private static class Controls
+    {
+        public static Node Dropdown(
+            Func<IReadOnlyList<string>> options,
+            Func<int> value,
+            Action<int> onSelect,
+            string unselectedLabel = "",
+            float width = 220
+        )
+            => global::NFMWorld.UI.Components.Controls.Dropdown(
+                options,
+                value,
+                onSelect,
+                unselectedLabel,
+                width,
+                compact: true
+            );
+
+        public static Node Slider(
+            Func<double> value,
+            Action<double> onValue,
+            double min,
+            double max,
+            double step
+        )
+            => global::NFMWorld.UI.Components.Controls.Slider(value, onValue, min, max, step, compact: true);
+
+        public static Node Checkbox(Func<bool> value, Action onToggle, Func<string?>? label = null)
+            => global::NFMWorld.UI.Components.Controls.Checkbox(value, onToggle, label);
+
+        public static Node TextField(Func<string> value, Action<string> onChange, Func<string?>? placeholder = null)
+            => global::NFMWorld.UI.Components.Controls.TextField(value, onChange, placeholder);
+    }
+
     private sealed class FeedbackView : View
     {
         public Signal<bool> Pressed { get; } = new(false);
@@ -83,7 +117,7 @@ public static class SettingsView
         protected override bool OnPostLayout()
         {
             var changed = base.OnPostLayout();
-            if (!GameSparker.devConsole.IsOpen()) navigation.UpdateFocus(this);
+            if (!GameSparker.devConsole.IsOpen()) navigation.UpdateFocus(this, scrollIntoView: false);
             return changed;
         }
     }
@@ -308,30 +342,31 @@ public static class SettingsView
                 width: 90.Percent(),
                 maxWidth: 1000,
                 height: 90.Percent(),
+                minHeight: 0,
                 flexDirection: FlexDirection.Column,
-                backgroundColor: Panel,
+                backgroundColor: Theme.MenuPanel,
                 borderTop: 1,
                 borderBottom: 1,
                 borderLeft: 1,
                 borderRight: 1,
-                borderColor: Border,
-                borderRadius: 12
+                borderColor: Theme.MenuBorder,
+                borderRadius: 10
             ),
             children:
             [
                 Sx.Text(
                     style: () => Sx.TextStyles(
-                        fontSize: 30,
+                        fontSize: 32,
                         fontFamily: FontFamily.Adventure,
                         fontStyle: FontStyle.Bold,
                         foregroundColor: Blue
                     ),
-                    layout: () => Sx.Styles(marginTop: 20, marginLeft: 24, marginBottom: 4, flexShrink: 0),
+                    layout: () => Sx.Styles(marginTop: 16, marginLeft: 20, marginBottom: 2, flexShrink: 0),
                     text: () => "SETTINGS"
                 ),
                 Sx.Text(
-                    style: () => Sx.TextStyles(fontSize: 12, foregroundColor: TextBlue),
-                    layout: () => Sx.Styles(marginLeft: 24, marginBottom: 16, flexShrink: 0),
+                    style: () => Sx.TextStyles(fontSize: 11, foregroundColor: TextBlue),
+                    layout: () => Sx.Styles(marginLeft: 20, marginBottom: 10, flexShrink: 0),
                     text: () => "Controls, display, audio and gameplay."
                 ),
                 TabBar(
@@ -424,21 +459,6 @@ public static class SettingsView
                 zIndex: 20
             )
         };
-        root.AddChild(
-            Sx.View(
-                style: () => Sx.Styles(
-                    position: Position.Absolute,
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    pointerEvents: false,
-                    backgroundColor: cameraPreview.Value || menuPreview.Value || hudPreview.Value
-                        ? Theme.Transparent
-                        : new Color(3, 8, 20, 150)
-                )
-            )
-        );
         root.AddChild(Body());
         root.AddChild(
             Sx.Show(
@@ -595,12 +615,12 @@ public static class SettingsView
         feedback.AddChild(
             Sx.View(
                 style: () => Sx.Styles(
-                    paddingTop: feedback.Pressed.Value ? 9 : 8,
-                    paddingBottom: feedback.Pressed.Value ? 7 : 8,
-                    paddingLeft: 18,
-                    paddingRight: 18,
-                    minWidth: 90,
-                    minHeight: 36,
+                    paddingTop: feedback.Pressed.Value ? 5 : 4,
+                    paddingBottom: feedback.Pressed.Value ? 3 : 4,
+                    paddingLeft: 12,
+                    paddingRight: 12,
+                    minWidth: 80,
+                    minHeight: 28,
                     flexShrink: 0,
                     alignItems: Align.Center,
                     justifyContent: Justify.Center,
@@ -631,7 +651,8 @@ public static class SettingsView
                 children: Sx.Text(
                     style: () => Sx.TextStyles(
                         fontSize: 13,
-                        fontStyle: FontStyle.Bold,
+                        fontFamily: FontFamily.NotoSans,
+                        fontStyle: FontStyle.Plain,
                         foregroundColor: hovered.Value ? new Color(205, 227, 255) : TextBlue
                     ),
                     text: () => feedbackLabel?.Invoke() ?? label
@@ -660,13 +681,13 @@ public static class SettingsView
                 justifyContent: Justify.FlexEnd,
                 gapColumn: 12,
                 gapRow: 12,
-                paddingTop: 16,
-                paddingBottom: 16,
-                paddingLeft: 24,
-                paddingRight: 24,
+                paddingTop: 10,
+                paddingBottom: 12,
+                paddingLeft: 20,
+                paddingRight: 20,
                 borderTop: 1,
                 borderColor: Border,
-                backgroundColor: new Color(7, 14, 28, 180),
+                backgroundColor: Theme.Transparent,
                 flexShrink: 0
             ),
             children:
@@ -683,23 +704,28 @@ public static class SettingsView
         )
     );
 
-    private static Node Content(params object?[] children) => Sx.View(
-        style: () => Sx.Styles(
+    private static Node Content(params object?[] children)
+    {
+        var scroll = new ScrollView
+        {
+            Styles = Sx.Styles(
             flexDirection: FlexDirection.Column,
             flexGrow: 1,
             flexShrink: 1,
             minHeight: 0,
             overflow: Overflow.Scroll,
-            paddingTop: 20,
-            paddingLeft: 24,
-            paddingRight: 24,
-            paddingBottom: 20
-        ),
-        children: Sx.View(
+            paddingTop: 12,
+            paddingLeft: 20,
+            paddingRight: 20,
+            paddingBottom: 12
+        )
+        };
+        scroll.AddChild(Sx.View(
             style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0, width: 100.Percent()),
             children: children
-        )
-    );
+        ));
+        return scroll;
+    }
 
     // ── Tabs ──────────────────────────────────────────────────────────
 
@@ -724,9 +750,9 @@ public static class SettingsView
                     () => !string.IsNullOrEmpty(config.Value?.BorderlessResolution),
                     () => Sx.View(
                         style: () => Sx.Styles(
-                            width: 240,
-                            paddingTop: 8,
-                            paddingBottom: 8,
+                            width: 220,
+                            paddingTop: 2,
+                            paddingBottom: 2,
                             paddingLeft: 12,
                             paddingRight: 12,
                             borderTop: 1,
@@ -834,6 +860,13 @@ public static class SettingsView
                 Value(() => $"{config.Value?.LineWidth ?? 0:F1}")
             ),
             Row(
+                "Transparent Glass",
+                Controls.Checkbox(
+                    () => config.Value?.TransparentGlass ?? true,
+                    () => set("transparentGlass", !(config.Value?.TransparentGlass ?? true), null)
+                )
+            ),
+            Row(
                 "Pixel Outlines",
                 Controls.Checkbox(
                     () => config.Value?.PixelOutlines ?? false,
@@ -905,7 +938,7 @@ public static class SettingsView
                     : ""
             ),
             Sx.View(
-                style: () => Sx.Styles(alignSelf: Align.FlexStart, flexShrink: 0),
+                style: () => Sx.Styles(alignSelf: Align.FlexStart, flexShrink: 0, marginBottom: 8),
                 children: SettingsButton("Preview HUD", previewHud)
             ),
             Row(
@@ -1586,8 +1619,8 @@ public static class SettingsView
     // ── Primitives ────────────────────────────────────────────────────
 
     private static Node Description(Func<string> text) => Sx.Text(
-        style: () => Sx.TextStyles(fontSize: 12, foregroundColor: TextBlue),
-        layout: () => Sx.Styles(flexShrink: 0, marginTop: 4, marginBottom: 12),
+        style: () => Sx.TextStyles(fontSize: 11, foregroundColor: TextBlue),
+        layout: () => Sx.Styles(flexShrink: 0, marginTop: 4, marginBottom: 8),
         text: text
     );
 
@@ -1598,7 +1631,7 @@ public static class SettingsView
             fontStyle: FontStyle.Bold,
             foregroundColor: Blue
         ),
-        layout: () => Sx.Styles(marginBottom: 10, flexShrink: 0),
+        layout: () => Sx.Styles(marginBottom: 6, flexShrink: 0),
         text: () => label
     );
 
@@ -1608,13 +1641,13 @@ public static class SettingsView
                 flexDirection: FlexDirection.Row,
                 alignItems: Align.Center,
                 justifyContent: Justify.SpaceBetween,
-                gapColumn: 16,
-                gapRow: 16,
-                paddingTop: 10,
-                paddingBottom: 10,
-                paddingLeft: 12,
-                paddingRight: 12,
-                marginBottom: 4,
+                gapColumn: 12,
+                gapRow: 8,
+                paddingTop: 6,
+                paddingBottom: 6,
+                paddingLeft: 10,
+                paddingRight: 10,
+                marginBottom: 3,
                 backgroundColor: new Color(22, 42, 80, 80),
                 borderRadius: 6,
                 flexShrink: 0
@@ -1622,8 +1655,8 @@ public static class SettingsView
             children:
             [
                 Sx.Text(
-                    style: () => Sx.TextStyles(fontSize: 14, foregroundColor: TextBlue),
-                    layout: () => Sx.Styles(minWidth: 160, flexShrink: 0),
+                    style: () => Sx.TextStyles(fontSize: 13, foregroundColor: TextBlue),
+                    layout: () => Sx.Styles(minWidth: 145, flexShrink: 0),
                     text: () => label
                 ),
                 Sx.View(
@@ -1651,8 +1684,8 @@ public static class SettingsView
     private static Node Divider() => Sx.View(
         style: () => Sx.Styles(
             height: 1,
-            marginTop: 12,
-            marginBottom: 12,
+            marginTop: 8,
+            marginBottom: 8,
             flexShrink: 0,
             backgroundColor: Border
         )

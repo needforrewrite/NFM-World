@@ -480,6 +480,8 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
                 {
                     CarName = c.CarName,
                     Color = c.Color,
+                    CarColors = c.CarColors,
+                    Wheels = c.Wheels,
                     PlayerName = c.PlayerName,
                     IsBot = c.IsBot,
                     // A spectator is in none of the slots: nobody is the client player, so no car
@@ -604,7 +606,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     private string ConnectionStatus() => transport.State switch
     {
         ClientState.Connected when transport.HandshakeError is { Length: > 0 } => "This build does not match the lobby. Update the game.",
-        ClientState.Connected when !transport.HandshakeAccepted => "Checking game version...",
+        ClientState.Connected when !transport.HandshakeAccepted => $"Checking protocol v{Protocol.Version}...",
         ClientState.Connected when _authenticationFailed => "The lobby did not answer. Press BACK and try again.",
         ClientState.Connected when _authenticated && GameSparker.AccountManager.ActiveAccount is { } account =>
             $"Signed in as {account.Username}",
@@ -906,7 +908,9 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
                 // The canonical selection, not the loaded model's name: an archive identity has
                 // to survive even when the car has not been cached yet, and the lobby re-checks it.
                 SelectedVehicle = MenuHistory.LastPlayed.Car,
-                Color = _player.Color
+                Color = _player.Color,
+                CarColors = NFMWorldLibrary.Util.CarPaint.SavedColors(MenuHistory.LastPlayed.Car),
+                Wheels = NFMWorldLibrary.Util.CarWheels.Get(MenuHistory.LastPlayed.Car)
             }
         );
     }

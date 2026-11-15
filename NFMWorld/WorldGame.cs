@@ -703,7 +703,7 @@ public partial class WorldGame : IDisposable, IGameHost
 
         Window.TextInput += character =>
         {
-            if (GameSparker.devConsole.IsOpen()) return;
+            if (GameSparker.devConsole.IsOpen() || GameSparker.MessageWindow.IsOpen) return;
             var imguiWantsKeyboard = ImguiRenderer is not null && ImGui.GetIO().WantCaptureKeyboard;
             if (!imguiWantsKeyboard)
             {
@@ -1022,7 +1022,7 @@ public partial class WorldGame : IDisposable, IGameHost
 
         // Edge events alone can drop a key that is still held; let the phase re-assert the
         // physical state before the frame's game tick.
-        GameSparker.CurrentPhase.KeyHeld(imguiWantsKeyboard, keys);
+        GameSparker.CurrentPhase.KeyHeld(imguiWantsKeyboard || GameSparker.MessageWindow.IsOpen, keys);
     }
 
     private void UpdateMouseCursor()

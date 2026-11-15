@@ -112,8 +112,9 @@ public class Submesh : IInstancedRenderElement, IDisposable
         p.FogDistance.SetValue(cb, World.FadeFrom);
         p.FogLogDensity.SetValue(cb, World.FogLogDensity);
         p.EnvironmentLight.SetValue(cb, new Vector2(World.BlackPoint, World.WhitePoint));
+        p.LightDirection.SetValue(cb, World.LightDirection);
         p.CameraPosition.SetValue(cb, camera.Position);
-        p.Alpha.SetValue(cb, PolyType is PolyType.Glass ? 0.7f : 1f);
+        p.Alpha.SetValue(cb, PolyType is PolyType.Glass && World.TransparentGlass ? 0.7f : 1f);
         p.Expand.SetValue(cb, _supermesh.Expand);
         p.RandomFloat.SetValue(cb, URandom.Single());
         p.Darken.SetValue(cb, _supermesh.Darken);

@@ -23,6 +23,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
     private readonly string[] _allStages;
     private readonly IReadOnlyDictionary<string, string> _stageNames;
     private readonly StageSelectState _state = new();
+    private readonly StageSelectView.Actions _actions;
     private readonly AroundStageCamera _aroundStageCamera = new();
     private IRadicalMusic _stageSelectMusic;
     private string _loadedStage = "";
@@ -32,6 +33,15 @@ public class StageSelectPhase : BaseStageRenderingPhase
 
     public StageSelectPhase() : base()
     {
+        _actions = new StageSelectView.Actions(
+            CollectionSelected: SelectCollection,
+            StageSelected: SelectStage,
+            SearchChanged: OnSearchChanged,
+            Confirm: Confirm,
+            Back: GameSparker.ReturnToMainMenu,
+            SourceSelected: SetOnlineSource,
+            OnlineSearch: query => _ = SearchOnlineAsync(query)
+        );
         _allStages = MenuPreferences.GetStages(VFS);
         _stageNames = MenuPreferences.GetStageNames(VFS);
 
@@ -55,18 +65,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
         _stageSelectMusic = IBackend.Backend.LoadMusic("data/music/nfm1/stageselectremastered.mp3");
     }
 
-    public override Node? BuildUi() => StageSelectView.Build(
-        _state,
-        new StageSelectView.Actions(
-            CollectionSelected: SelectCollection,
-            StageSelected: SelectStage,
-            SearchChanged: OnSearchChanged,
-            Confirm: Confirm,
-            Back: GameSparker.ReturnToMainMenu,
-            SourceSelected: SetOnlineSource,
-            OnlineSearch: query => _ = SearchOnlineAsync(query)
-        )
-    );
+    public override Node? BuildUi() => StageSelectView.Build(_state, _actions);
 
     public override void Enter()
     {
@@ -100,6 +99,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
         _prepareGeneration++;
 
         _state.OnlineSource.Value = online;
+        _state.BrowsingCollections.Value = false;
         _state.Search.Value = "";
         StageSelectView.ClearSearch();
         _state.Busy.Value = false;
@@ -307,32 +307,13 @@ public class StageSelectPhase : BaseStageRenderingPhase
         if (imguiWantsKeyboard)
             return;
 
-        var stages = _state.Stages.Value;
-        if (stages.Count == 0)
-            return;
+        StageSelectView.HandleKey(_state, _actions, key);
+    }
 
-        var index = 0;
-        for (var i = 0; i < stages.Count; i++)
-        {
-            if (stages[i].Id == _state.Selected.Value)
-            {
-                index = i;
-                break;
-            }
-        }
-
-        switch (key)
-        {
-            case Key.Left:
-                SelectStage(stages[(index - 1 + stages.Count) % stages.Count].Id);
-                break;
-            case Key.Right:
-                SelectStage(stages[(index + 1) % stages.Count].Id);
-                break;
-            case Key.Enter:
-                Confirm();
-                break;
-        }
+    public override void KeyRepeated(Key key, bool imguiWantsKeyboard, in Keys keys)
+    {
+        if (key is Key.Up or Key.Down or Key.Left or Key.Right)
+            KeyPressed(key, imguiWantsKeyboard, keys);
     }
 
     protected override void Dispose(bool disposing)

@@ -1,5 +1,6 @@
 using NFMWorldLibrary;
 using NFMWorldLibrary.Gamemodes;
+using NFMWorldLibrary.Util;
 
 namespace NFMWorld.Gameplay;
 
@@ -28,6 +29,8 @@ public static class FreePlayRoster
         players[0] = new ClientSidePlayerInfo
         {
             CarName = playerCar,
+            CarColors = CarPaint.SavedColors(playerCar),
+            Wheels = CarWheels.Get(playerCar),
             IsClientPlayer = true,
             PlayerName = "MadPlayer",
             Color = default,

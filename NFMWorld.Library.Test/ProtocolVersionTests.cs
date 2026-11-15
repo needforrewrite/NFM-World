@@ -211,7 +211,11 @@ public class ProtocolVersionTests
         );
 
         Assert.IsFalse(client.HandshakeAccepted);
-        Assert.AreEqual("This server runs game version 2 and your build is version 1.", client.HandshakeError);
+        Assert
+            .AreEqual(
+                $"This server uses protocol v{Protocol.Version + 1}; this build uses protocol v{Protocol.Version}. Update the game and try again.",
+                client.HandshakeError
+            );
         Assert.AreEqual(ClientState.Disconnected, client.State);
         Assert.IsFalse(client.IsReconnecting, "the same server would refuse a retry the same way");
     }

@@ -447,34 +447,66 @@ public partial class WorldGame
             });
         var onlineCars = online.ToArray();
 
-        garage.Collections.Value = [new CarCollectionViewModel("NFMM", local), new CarCollectionViewModel("User", user)];
-        garage.CurrentCollection.Value = "NFMM";
+        garage.Categories.Value = ["NFMM", "User", GarageView.OnlineCategory];
+        garage.Category.Value = "NFMM";
+        garage.Collections.Value = [new CarCollectionViewModel("NFMM", local)];
         garage.CurrentCar.Value = WithStats(local[0]);
         garage.OnlineSource.Value = false;
         garage.OnlineStatus.Value = "";
+        garage.Page.Value = GaragePage.Home;
+        garage.HomeCursor.Value = 0;
+        garage.SearchQuery.Value = "";
+        garage.ColorSlots.Value =
+        [
+            new UiState.GarageColorSlot(0, new Color3(41, 41, 41)),
+            new UiState.GarageColorSlot(1, new Color3(215, 215, 215))
+        ];
 
         return GarageView.Build(new GarageView.Actions(
             CarSelected: (collection, fileName) =>
             {
-                var cars = collection == "Online" ? onlineCars : collection == "User" ? user : local;
+                var cars = collection == GarageView.OnlineCategory ? onlineCars : collection == "User" ? user : local;
                 if (cars.FirstOrDefault(car => car.FileName == fileName) is { } picked)
                     garage.CurrentCar.Value = WithStats(picked);
-                garage.CurrentCollection.Value = collection;
             },
-            CollectionSelected: collection => garage.CurrentCollection.Value = collection,
             Confirm: () => { },
             Back: () => { },
-            SourceSelected: isOnline =>
+            CategorySelected: category =>
             {
-                garage.OnlineSource.Value = isOnline;
-                garage.OnlineStatus.Value = isOnline ? "3 public car(s). Select one to preview it." : "";
-                garage.Collections.Value = isOnline
-                    ? [new CarCollectionViewModel("Online", onlineCars)]
-                    : [new CarCollectionViewModel("NFMM", local), new CarCollectionViewModel("User", user)];
+                garage.Category.Value = category;
+                var online = category == GarageView.OnlineCategory;
+                garage.OnlineSource.Value = online;
+                garage.OnlineStatus.Value = online ? "20 public car(s). Select one to preview it." : "";
+                garage.Collections.Value = online
+                    ? [new CarCollectionViewModel(GarageView.OnlineCategory, onlineCars)]
+                    : [new CarCollectionViewModel(category, category == "User" ? user : local)];
             },
             OnlineSearch: _ => garage.OnlineStatus.Value =
-                "Could not search the archive: Connection refused (localhost:5288) while requesting assets/search?type=Car"
-        ));
+                "Could not search the archive: Connection refused (localhost:5288) while requesting assets/search?type=Car",
+            Navigate: page => garage.Page.Value = page,
+            ActivateHome: index =>
+            {
+                if (index < 0 || index >= GarageView.HomeEntries.Count) return;
+                garage.HomeCursor.Value = index;
+                var entry = GarageView.HomeEntries[index];
+                if (!entry.Enabled) return;
+                switch (entry.Action)
+                {
+                    case GarageHomeAction.ChangeCar:
+                        garage.Page.Value = GaragePage.Cars;
+                        break;
+                    case GarageHomeAction.CustomizeCar:
+                        garage.Page.Value = GaragePage.Colors;
+                        break;
+                }
+            },
+            SetColorChannel: (slot, channel, value) =>
+                garage.ColorSlots.Value
+                    .FirstOrDefault(entry => entry.Slot == slot)
+                    ?.SetChannel(channel, value),
+            ResetColors: () => { }
+        )
+        );
     }
 
     /// <summary>

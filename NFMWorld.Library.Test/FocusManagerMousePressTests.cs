@@ -196,6 +196,64 @@ public class FocusManagerMousePressTests
     }
 
     [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void ModalAboveEditorWorkspace_ReceivesButtonsAndBlocksBackground(bool popupVisible)
+    {
+        var root = MakeRoot();
+        var workspace = MakeBox("workspace", 0, 0, 200, 200);
+        workspace.Styles = workspace.Styles with { ZIndex = 1 };
+        var backgroundTab = MakeBox("test drive", 0, 140, 200, 40, focusable: true);
+        var popup = MakeBox("parts dropdown", 0, 0, 200, 200);
+        popup.Styles = popup.Styles with
+        {
+            ZIndex = 1000,
+            Display = popupVisible ? Display.Flex : Display.None
+        };
+        workspace.AddChild(backgroundTab);
+        workspace.AddChild(popup);
+        root.AddChild(workspace);
+
+        var modal = MakeBox("modal backdrop", 0, 0, 200, 200);
+        modal.Styles = modal.Styles with { ZIndex = 60 };
+        var cancel = MakeBox("cancel", 70, 140, 60, 40, focusable: true);
+        modal.AddChild(cancel);
+        root.AddChild(modal);
+        var cancels = 0;
+        var backgroundPresses = 0;
+        cancel.MousePressed = _ => cancels++;
+        backgroundTab.MousePressed = _ => backgroundPresses++;
+        popup.MousePressed = _ => backgroundPresses++;
+        modal.MousePressed = e => e.StopPropagation();
+        root.LayoutAndRender(new Vector2(200, 200));
+
+        CollectionAssert.AreEqual(
+            new Component[] { root, modal, cancel },
+            FocusManager.HitTestChain(root, new Vector2(100, 160))
+        );
+        FocusManager.HandleMousePressed(root, Press(100, 160));
+        root.DispatchMousePressed(Press(100, 160));
+        root.DispatchMousePressed(Press(20, 160));
+
+        Assert.AreEqual(1, cancels);
+        Assert.AreEqual(0, backgroundPresses);
+
+        workspace.Styles = workspace.Styles with { PointerEvents = false };
+        modal.Styles = modal.Styles with { Display = Display.None };
+        root.LayoutAndRender(new Vector2(200, 200));
+        CollectionAssert.AreEqual(
+            new Component[] { root },
+            FocusManager.HitTestChain(root, new Vector2(100, 160))
+        );
+
+        workspace.Styles = workspace.Styles with { PointerEvents = true };
+        popup.Styles = popup.Styles with { Display = Display.None };
+        root.LayoutAndRender(new Vector2(200, 200));
+        root.DispatchMousePressed(Press(100, 160));
+        Assert.AreEqual(1, backgroundPresses);
+    }
+
+    [TestMethod]
     public void HandleMouseReleased_ClearsActiveButKeepsFocus()
     {
         var root = MakeRoot();

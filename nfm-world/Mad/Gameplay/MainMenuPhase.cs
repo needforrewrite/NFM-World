@@ -33,6 +33,8 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private bool _menuVisible;
     private BackendCar? _menuCar;
     private GarageController? _garage;
+    private ReplayBrowserController? _replays;
+    private readonly SignalsDotnet.Signal<bool> _replaysOpen = new(false);
     private BackendCar? _garageEntryCar;
     private float _garageBlend;
     private readonly GarageCameraControls _garageCamera = new();
@@ -89,11 +91,12 @@ public class MainMenuPhase : BaseStageRenderingPhase
                         StageEditor: GameSparker.StartStageEditor,
                         TimeTrials: OnTTClicked,
                         Unavailable: _ => GameSparker.MessageWindow.ShowMessage("Info", "This feature is currently unavailable."),
-                        Replays: () => GameSparker.PushPhase(new ReplayBrowserPhase()),
+                        Replays: OpenReplays,
                         Account: AccountView.Show,
                         Multiplayer: OnMultiplayerClicked
                     ),
-                    logo
+                    logo,
+                    GameSparker.ExeVersion
                 ),
                 AccountView.Build(
                     new AccountView.Actions(
@@ -107,7 +110,9 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 )
             ]
         ),
-        () => _garage!.BuildUi()
+        () => _garage!.BuildUi(),
+        () => _replaysOpen.Value,
+        () => _replays!.BuildUi()
     );
 
     private void OnSignIn(string username, string password)
@@ -154,7 +159,8 @@ public class MainMenuPhase : BaseStageRenderingPhase
         // The page stack and settings overlay live in static signals, so they survive
         // Exit(). Without this, quitting a race from a submenu lands back on that submenu
         // rather than the root.
-        MainMenuView.Reset();
+        if (_replays is null)
+            MainMenuView.Reset();
 
         ApplyMenuPreferences(checkHistory: true);
         CurrentStage!.CarSoundsEnabled = false;
@@ -171,9 +177,20 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void SetupMenuCar()
     {
-        if (MenuHistory.Car is not { } car) return;
+        var car = MenuHistory.Car;
+        if (car is not null && !BackendCar.IsDrivable(car))
+        {
+            // A remembered user model can be an unfinished editor export; the physics
+            // cannot build it, so fall back instead of taking the menu down.
+            Logging.Warning($"Remembered car '{car.FileName}' is not drivable; falling back.");
+            car = BackendGameSparker.GetCar(MenuHistory.DefaultCar).Rad;
+            if (car is not null && !BackendCar.IsDrivable(car))
+                car = BackendGameSparker.cars.Values.SelectMany(cars => cars).FirstOrDefault(BackendCar.IsDrivable);
+        }
+
+        if (car is not { } chosen) return;
         CarsInRace.Clear();
-        _menuCar = new BackendCar(car, 0, 0, 0, true);
+        _menuCar = new BackendCar(chosen, 0, 0, 0, true);
         CarsInRace.Add(_menuCar);
     }
 
@@ -224,6 +241,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
     {
         if (disposing)
         {
+            CloseReplays();
             StopAttractDrive();
             GameSparker.AccountManager.ActiveAccountChanged -= OnActiveAccountChanged;
             (_logo as IDisposable)?.Dispose();
@@ -263,43 +281,24 @@ public class MainMenuPhase : BaseStageRenderingPhase
         {
             PhaseSharedState.SelectedStageName = stageName;
 
-            if (MenuHistory.Car is not { } car)
-            {
-                GameSparker.MessageWindow.ShowMessage("Cars unavailable", "No playable cars are installed.");
-                return;
-            }
-
-            var factory = GamemodeFactory.Create(
-                "nfmm/pvp",
-                new Dictionary<string, object>()
-                {
-                    ["constraint"] = "both"
-                }
-            );
-            var players = FreePlayRoster.Create(car.FileName);
-            LocalRaceHost host;
-            try
-            {
-                host = LocalRaceHost.Create(
-                    stageName,
-                    factory,
-                    new ClientGamemodeParameters { Players = players }
-                );
-            }
-            catch
-            {
-                factory.End();
-                throw;
-            }
-
-            var inRace = new RacePhase(stageName, factory, players, host, stageSource: ssp);
-            inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
-            GameSparker.Phases.ReplaceGroup(inRace, PhaseManager.Groups.Event);
-
-            Logging.Info("Game started!");
+            OpenQuickCarSelect(ssp, stageName, timeTrial: false);
         };
 
         GameSparker.PushPhase(ssp, PhaseManager.Groups.Event);
+    }
+
+    private void OpenReplays()
+    {
+        if (_replays is not null) return;
+        _replays = new ReplayBrowserController(CloseReplays);
+        _replaysOpen.Value = true;
+    }
+
+    private void CloseReplays()
+    {
+        _replaysOpen.Value = false;
+        _replays?.Dispose();
+        _replays = null;
     }
 
     private void OnGarageClicked()
@@ -316,8 +315,12 @@ public class MainMenuPhase : BaseStageRenderingPhase
         _garageEntryCar = _menuCar;
         if (_garageBlend == 0)
             _garageCamera.Reset();
-        _garage = new GarageController(CarsInRace, _menuCar);
-        _garage.CarSelected += (_, _) => CloseGarage(true);
+        _garage = new GarageController(
+            CarsInRace,
+            _menuCar,
+            car => CurrentStage?.GetCarVisual(car)
+        );
+        _garage.CarSelected += (_, _) => _garageEntryCar = _garage!.CurrentCar;
         _garage.CarSelectionCancelled += (_, _) => CloseGarage(false);
         _garage.Enter();
         UiState.MainMenu.GarageOpen.Value = true;
@@ -329,6 +332,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
         _menuCar = commit ? _garage?.CurrentCar : _garageEntryCar;
         if (_menuCar != null && CarsInRace[0] != _menuCar)
             CarsInRace[0] = _menuCar;
+        _garage?.End();
         _garage = null;
         _garageEntryCar = null;
         UiState.MainMenu.GarageOpen.Value = false;
@@ -361,24 +365,39 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
             PhaseSharedState.SelectedStageName = stageName;
 
-            if (MenuHistory.Car is not { } car)
-            {
-                GameSparker.MessageWindow.ShowMessage("Cars unavailable", "No playable cars are installed.");
-                return;
-            }
+            OpenQuickCarSelect(ssp, stageName, timeTrial: true);
+        };
 
-            var factory = GamemodeFactory.Create("nfmm/timetrial");
-            ClientSidePlayerInfo[] players =
-            [
-                new()
+        GameSparker.PushPhase(ssp, PhaseManager.Groups.Event);
+    }
+
+    private static void OpenQuickCarSelect(StageSelectPhase source, string stageName, bool timeTrial)
+    {
+        if (MenuHistory.Car is not { } car || !BackendCar.IsDrivable(car))
+        {
+            GameSparker.MessageWindow.ShowMessage("Cars unavailable", "No playable cars are installed.");
+            return;
+        }
+
+        var picker = new GaragePhase(source, quickSelect: true);
+        picker.CarSelectionCancelled += (_, _) =>
+        {
+            source.TakeStageFrom(picker, takeMusic: false);
+            source.CurrentStage!.FadeFromOverride = 9999999;
+            GameSparker.PopPhase();
+        };
+        picker.CarSelected += (_, _) =>
+        {
+            var identity = MenuHistory.LastPlayed.Car;
+            var factory = timeTrial
+                ? GamemodeFactory.Create("nfmm/timetrial")
+                : GamemodeFactory.Create("nfmm/pvp", new Dictionary<string, object> { ["constraint"] = "both" });
+            ClientSidePlayerInfo[] players = timeTrial
+                ? [new ClientSidePlayerInfo("MadPlayer", identity, default, false, true)
                 {
-                    CarName = car.FileName,
-                    Color = default,
-                    IsBot = false,
-                    IsClientPlayer = true,
-                    PlayerName = "MadPlayer"
-                }
-            ];
+                    CarColors = CarPaint.SavedColors(identity), Wheels = CarWheels.Get(identity)
+                }]
+                : FreePlayRoster.Create(identity);
             LocalRaceHost host;
             try
             {
@@ -390,12 +409,11 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 throw;
             }
 
-            var inRace = new RacePhase(stageName, factory, players, host, stageSource: ssp);
-            inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
-            GameSparker.Phases.ReplaceGroup(inRace, PhaseManager.Groups.Event);
+            var race = new RacePhase(stageName, factory, players, host, stageSource: picker);
+            race.Exited += (_, _) => GameSparker.PopGroup(PhaseManager.Groups.Event);
+            GameSparker.Phases.ReplaceGroup(race, PhaseManager.Groups.Event);
         };
-
-        GameSparker.PushPhase(ssp, PhaseManager.Groups.Event);
+        GameSparker.PushPhase(picker, PhaseManager.Groups.Event);
     }
 
     public override void GameTick()
@@ -426,7 +444,8 @@ public class MainMenuPhase : BaseStageRenderingPhase
                     _menuTime,
                     garageBlend: Smooth(_garageBlend),
                     garageAngle: _garageCamera.Angle,
-                    garageHeight: _garageCamera.Height
+                    garageHeight: _garageCamera.Height,
+                    garageFraming: MenuCameraDirector.GarageFraming
                 );
                 _settingsCamera.Update(Camera, _menuCar, NFMWorld.UI.Components.SettingsView.CameraPreviewActive);
                 if (NFMWorld.UI.Components.SettingsView.MenuHudPreviewData is { } preview)
@@ -548,13 +567,37 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     public void NavigationKeyRepeated(Key key)
     {
-        if (EnableUiInput && _garage is null && !AccountView.IsOpen)
+        if (EnableUiInput && _garage is null && _replays is null && !AccountView.IsOpen)
             MainMenuView.KeyPressed(key);
+    }
+
+    public override void KeyRepeated(Key key, bool imguiWantsKeyboard, in Keys keys)
+    {
+        base.KeyRepeated(key, imguiWantsKeyboard, keys);
+        if (_replays is not null && key is Key.Up or Key.Down or Key.Left or Key.Right)
+            _replays.KeyPressed(key);
+        if (_garage != null)
+            _garage.KeyRepeated(key, imguiWantsKeyboard, keys);
+    }
+
+    public override void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
+    {
+        base.Render(cb, alpha);
+
+        // The garage is inline here, so its card images are baked from the menu's frame.
+        if (_garage != null)
+            _garage.RenderThumbnails(cb);
     }
 
     public override void KeyPressed(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
         base.KeyPressed(key, imguiWantsKeyboard, keys);
+        if (_replays is not null)
+        {
+            _replays.KeyPressed(key);
+            return;
+        }
+
         if (AccountView.IsOpen)
         {
             if (!imguiWantsKeyboard && key == Key.Escape)
@@ -644,5 +687,6 @@ public class MainMenuPhase : BaseStageRenderingPhase
     {
         base.MouseReleased(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
         _garageCamera.Release(button);
+        if (button == MouseButton.Primary) _garage?.FinishPaintInteraction();
     }
 }

@@ -3,6 +3,7 @@ using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Helpers;
 using NFMWorldLibrary.Rad;
+using NFMWorldLibrary.Util;
 using NFMWorld.Sentry;
 
 namespace NFMWorldLibrary.Backend;
@@ -42,6 +43,14 @@ public partial class BackendCar : BackendGameObject
     public event DustFunc? Dusted;
     public event Action? Fixed;
 
+    /// <summary>
+    /// Whether a model can be turned into a car at all. The physics builds a four-wheel
+    /// contact set from <c>Wheels[0..3]</c>, so an unfinished editor model with fewer
+    /// wheels throws in the constructor; the garage must not offer it.
+    /// </summary>
+    public static bool IsDrivable(Rad3d rad)
+        => rad.Wheels.Length >= 4 && rad.Polys.Length > 0;
+
     [PluginVisible] public ClientSidePlayerInfo Player { get; }
 
     private bool _fixing;
@@ -65,7 +74,7 @@ public partial class BackendCar : BackendGameObject
 
     [PluginVisible]
     public BackendCar(ClientSidePlayerInfo player, int im, fix64 x, fix64 z) : this(
-        BackendGameSparker.GetCar(player.CarName).Rad!,
+        CarPaint.CreateInstance(BackendGameSparker.GetCar(player.CarName).Rad!, player.CarColors, player.Wheels),
         im,
         x,
         z,

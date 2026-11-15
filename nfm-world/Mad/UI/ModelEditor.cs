@@ -962,6 +962,13 @@ public class ModelEditorPhase : BasePhase
         return SetSlotColor(tab, slot, old, color);
     }
 
+    internal string? SetSlotColor(int slot, Color3 color)
+    {
+        if (ActiveTab is not { } tab) return "No model open.";
+        if (GetSlotColor(tab, slot) is not { } old) return $"{ColorSlotName(slot)} is not defined.";
+        return SetSlotColor(tab, slot, old, color);
+    }
+
     private string? SetSlotColor(ModelEditorTab tab, int slot, Color3 oldColor, Color3 color)
     {
         if (oldColor == color)

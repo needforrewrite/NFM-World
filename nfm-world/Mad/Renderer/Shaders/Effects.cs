@@ -24,6 +24,10 @@ namespace NFMWorld;
 /// </remarks>
 internal static class Effects
 {
+    public static IShaderModule ThumbnailModule { get; private set; } = null!;
+    public static IPipelineState ThumbnailPipeline { get; private set; } = null!;
+    public static ThumbnailDownsampleParameters ThumbnailParameters { get; private set; }
+
     public static IShaderModule LineModule
     {
         get => CheckNotNull(field);
@@ -323,6 +327,22 @@ internal static class Effects
     )]
     public static void Initialize(IGraphicsDevice graphicsDevice)
     {
+        var thumbnail = ThumbnailDownsample.Create();
+        ThumbnailModule = Module(graphicsDevice, thumbnail.Vertex, thumbnail.Pixel, thumbnail.Reflection);
+        ThumbnailParameters = thumbnail.Bind();
+        ThumbnailPipeline = graphicsDevice.CreatePipeline(new PipelineDesc(
+            VertexShader: ThumbnailModule,
+            PixelShader: ThumbnailModule,
+            VertexLayouts: [new VertexLayoutDesc([
+                new VertexAttributeDesc("POSITION", 0, 0, VertexAttributeFormat.Float2),
+                new VertexAttributeDesc("TEXCOORD", 0, 8, VertexAttributeFormat.Float2)
+            ], StrideInBytes: 16)],
+            BlendState: BlendStateDesc.Opaque,
+            DepthStencilState: DepthStencilStateDesc.None,
+            RasterizerState: ScissorRasterizer
+        )
+        );
+
         // Each bundle is created once and its module is then used for BOTH stages: the GL backend
         // links one program per vertex/pixel entry-point pair and the bundle's reflection describes
         // that linked program rather than either stage alone - see GlGraphicsDevice.LoadProgram.

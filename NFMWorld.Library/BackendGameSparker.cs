@@ -462,7 +462,9 @@ public static class BackendGameSparker
 
         var identity = RadpackReader.Identity(name);
         if (_carFiles.TryGetValue(identity, out var cachedCar))
+        {
             return cachedCar;
+        }
 
         var model = RadpackReader.TryReadModel(name, RadpackType.Car, out var modelError);
         if (modelError is { } carError)

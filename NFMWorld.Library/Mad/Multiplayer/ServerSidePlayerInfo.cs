@@ -55,4 +55,7 @@ public partial struct ServerSidePlayerInfo
     /// </summary>
     [TightPackOrder(6), PluginVisible]
     public Guid OwnerId { get; set; }
+
+    [TightPackOrder(7), PluginVisible] public Color3?[]? CarColors { get; set; }
+    [TightPackOrder(8), PluginVisible] public NFMWorldLibrary.Util.WheelAppearance? Wheels { get; set; }
 }

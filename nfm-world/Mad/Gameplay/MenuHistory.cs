@@ -40,9 +40,25 @@ public static class MenuHistory
         ? LastPlayed.Stage
         : DefaultStage;
 
-    public static Rad3d? Car => BackendGameSparker.GetCar((LastPlayed.Car ?? DefaultCar).Replace('\\', '/')).Rad
-                                ?? BackendGameSparker.GetCar(DefaultCar).Rad
-                                ?? BackendGameSparker.cars.Values.SelectMany(cars => cars).FirstOrDefault();
+    public static Rad3d? Car
+    {
+        get
+        {
+            var identity = (LastPlayed.Car ?? DefaultCar).Replace('\\', '/');
+            var rad = BackendGameSparker.GetCar(identity).Rad;
+            if (rad is null)
+            {
+                rad = BackendGameSparker.GetCar(DefaultCar).Rad
+                      ?? BackendGameSparker.cars.Values.SelectMany(cars => cars).FirstOrDefault();
+                if (rad is not null) identity = rad.FileName;
+            }
+
+            if (rad is null) return null;
+            var instance = CarPaint.CreateInstance(rad);
+            CarPaint.Apply(instance, identity);
+            return instance;
+        }
+    }
 
     public static void Remember(string? stage = null, string? car = null, VirtualFS? fileSystem = null)
     {

@@ -182,6 +182,39 @@ public class LobbyPacketTests
     /// never moved - and what order a dictionary enumerates in is not something to rely on.
     /// </summary>
     [TestMethod]
+    public void PlayerIdentityAndRosterRoundTripIndividualCarColors()
+    {
+        Color3?[] colors = [new(200, 30, 40), null, new(40, 200, 60), null];
+        var identity = new C2S_PlayerIdentity
+        {
+            PlayerName = "painted player", SelectedVehicle = "nfmm/radicalone", Color = default,
+            CarColors = colors,
+            Wheels = new WheelAppearance
+            {
+                OriginalWheels = true, RimColor = new Color3(80, 120, 160), Colors = colors
+            }
+        };
+        var receivedIdentity = RoundTrip(identity, 6);
+        CollectionAssert.AreEqual(colors, receivedIdentity.CarColors);
+        Assert.IsTrue(receivedIdentity.Wheels!.OriginalWheels);
+        Assert.AreEqual(identity.Wheels.RimColor, receivedIdentity.Wheels.RimColor);
+        CollectionAssert.AreEqual(colors, receivedIdentity.Wheels.Colors);
+
+        var player = new ServerSidePlayerInfo
+        {
+            Id = Guid.NewGuid(), PlayerName = identity.PlayerName, CarName = identity.SelectedVehicle,
+            Color = default, CarColors = receivedIdentity.CarColors, Wheels = receivedIdentity.Wheels
+        };
+        var receivedPlayer = TightPack.TightPackSerializer.Deserialize<ServerSidePlayerInfo>(
+            TightPack.TightPackSerializer.Serialize(in player)
+        );
+        CollectionAssert.AreEqual(colors, receivedPlayer.CarColors);
+        Assert.IsTrue(receivedPlayer.Wheels!.OriginalWheels);
+        Assert.AreEqual(identity.Wheels.RimColor, receivedPlayer.Wheels.RimColor);
+        CollectionAssert.AreEqual(colors, receivedPlayer.Wheels.Colors);
+    }
+
+    [TestMethod]
     public void InSlotOrder_LaysPlayersOutBySlotNotEnumerationOrder()
     {
         var info = new MatchGameplayInfo

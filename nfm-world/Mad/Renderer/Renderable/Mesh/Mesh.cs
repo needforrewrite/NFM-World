@@ -268,7 +268,10 @@ public class Mesh : IDisposable
                 queue.AddInstanced(
                     submesh,
                     instanceData,
-                    SortKey.Create(renderBucket, (ushort)(alphaOverride < 1f || submesh.PolyType == PolyType.Glass ? 1 : 0)),
+                    SortKey.Create(
+                        renderBucket,
+                        (ushort)(alphaOverride < 1f || submesh.PolyType == PolyType.Glass && World.TransparentGlass ? 1 : 0)
+                    ),
                     boundingSphere
                 );
             }

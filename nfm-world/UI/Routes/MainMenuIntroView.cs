@@ -7,7 +7,13 @@ namespace NFMWorld.UI.Routes;
 
 public static class MainMenuIntroView
 {
-    public static Node Build(IImage logo, Func<Node, Node> menu, Func<Node> garage)
+    public static Node Build(
+        IImage logo,
+        Func<Node, Node> menu,
+        Func<Node> garage,
+        Func<bool> replaysOpen,
+        Func<Node> replays
+    )
     {
         var state = UiState.MainMenu;
         return Sx.View(
@@ -84,8 +90,9 @@ public static class MainMenuIntroView
                                     pointerEvents: false
                                 )
                             },
-                            Sx.Show(() => !state.GarageOpen.Value, () => menu(Logo(logo))),
+                            Sx.Show(() => !state.GarageOpen.Value && !replaysOpen(), () => menu(Logo(logo))),
                             Sx.Show(() => state.GarageOpen.Value, () => garage()),
+                            Sx.Show(replaysOpen, replays),
                             MainMenuView.SettingsOverlay(),
                             MainMenuView.QuitOverlay()
                         ]

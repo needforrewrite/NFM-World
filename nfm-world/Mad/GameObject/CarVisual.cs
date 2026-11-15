@@ -28,6 +28,16 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
 
     public string FileName => Mesh.FileName;
 
+    public void RebuildWheels()
+    {
+        for (var i = 0; i < _wheels.Length; i++)
+        {
+            var mesh = new Mesh(new WheelMeshBuilder(Car.Rad.Wheels[i], Car.Rad.Rims).BuildModel());
+            _wheels[i].Mesh.Dispose();
+            _wheels[i].Mesh = mesh;
+        }
+    }
+
     public bool VisuallyWasted { get; set; }
 
     public MadSfx? Sfx;
@@ -42,7 +52,7 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
         Bfase = new float[Mesh.Polys.Length];
 
         Car = car;
-        _wheels = car.Wheels
+        _wheels = car.Rad.Wheels
             .Select(wheel => new WheelMeshBuilder(wheel, car.Rad.Rims).BuildGameObject(this))
             .ToArray();
 

@@ -9,4 +9,6 @@ public partial struct C2S_PlayerIdentity : IPacketClientToServer<C2S_PlayerIdent
     [TightPackOrder(0)] public required string PlayerName { get; set; }
     [TightPackOrder(1)] public required string SelectedVehicle { get; set; }
     [TightPackOrder(2)] public required Color3 Color { get; set; }
+    [TightPackOrder(3)] public Color3?[]? CarColors { get; set; }
+    [TightPackOrder(4)] public NFMWorldLibrary.Util.WheelAppearance? Wheels { get; set; }
 }

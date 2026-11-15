@@ -129,6 +129,7 @@ public class SettingsMenu()
     private static DistantOutlineBehavior _distantOutlineBehavior = DistantOutlineBehavior.DistanceFalloffWithCutoff;
     private static bool _lowLatency = false;
     private static bool _pixelOutlines = false;
+    private static bool _transparentGlass = true;
 
     public static readonly string[] RenderDistanceNames = ["Tiny", "Short", "Medium", "Far", "Very Far", "Unlimited"];
 
@@ -542,6 +543,12 @@ public class SettingsMenu()
 
         World.OutlineThickness = _lineWidth;
         World.PixelOutlines = _pixelOutlines;
+        if (World.TransparentGlass != _transparentGlass)
+        {
+            World.TransparentGlass = _transparentGlass;
+            CarThumbnails.InvalidateAll();
+        }
+
         World.DistantOutlineBehavior = _distantOutlineBehavior;
     }
 
@@ -607,6 +614,7 @@ public class SettingsMenu()
         sw.WriteLine($"video_shadow_res {_shadowResolution}");
         sw.WriteLine($"video_low_latency {(_lowLatency ? 1 : 0)}");
         sw.WriteLine($"video_pixel_outlines {(_pixelOutlines ? 1 : 0)}");
+        sw.WriteLine($"video_transparent_glass {(_transparentGlass ? 1 : 0)}");
         sw.WriteLine($"video_render_distance {_renderDistance}");
         sw.WriteLine();
         sw.WriteLine("// Audio Settings");
@@ -744,6 +752,9 @@ public class SettingsMenu()
                     break;
                 case "video_pixel_outlines":
                     _pixelOutlines = int.Parse(value) != 0;
+                    break;
+                case "video_transparent_glass":
+                    _transparentGlass = int.Parse(value) != 0;
                     break;
                 case "video_render_distance":
                     _renderDistance = int.Parse(value, CultureInfo.InvariantCulture);
@@ -1174,6 +1185,7 @@ public class SettingsMenu()
             RenderDistance = _renderDistance,
             LowLatency = _lowLatency,
             PixelOutlines = _pixelOutlines,
+            TransparentGlass = _transparentGlass,
             LineWidth = _lineWidth,
             DistantOutlineBehavior = (int)_distantOutlineBehavior,
             MasterVolume = _masterVolume,
@@ -1209,6 +1221,7 @@ public class SettingsMenu()
         // Console commands can change these directly, so refresh the model before snapshotting or saving it.
         _lineWidth = World.OutlineThickness;
         _pixelOutlines = World.PixelOutlines;
+        _transparentGlass = World.TransparentGlass;
         _distantOutlineBehavior = World.DistantOutlineBehavior;
     }
 
@@ -1296,6 +1309,10 @@ public class SettingsMenu()
             case "pixelOutlines":
                 if (value is bool pixelOutlines)
                     _pixelOutlines = pixelOutlines;
+                break;
+            case "transparentGlass":
+                if (value is bool transparentGlass)
+                    _transparentGlass = transparentGlass;
                 break;
             case "lineWidth":
                 if (AsFloat(value) is { } lineWidth)

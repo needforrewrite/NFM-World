@@ -7,27 +7,66 @@
   "steps": [
     {
       "action": "capture",
-      "capture": "local"
+      "capture": "home"
     },
     {
       "action": "assert-size",
-      "target": "Garage browse",
-      "width": 380
+      "target": "Garage menu",
+      "width": 460
     },
     {
       "action": "assert-size",
       "target": "Garage detail",
-      "width": 380
+      "width": 292
+    },
+    {
+      "action": "hover",
+      "target": "Garage home CHANGE CAR",
+      "capture": "home-hover"
+    },
+    {
+      "action": "assert-hover",
+      "target": "Garage home CHANGE CAR"
+    },
+    {
+      "action": "click",
+      "target": "Garage home CHANGE CAR",
+      "capture": "cars"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Garage car list"
+    },
+    {
+      "action": "assert-size",
+      "target": "Garage menu",
+      "width": 920,
+      "height": 672
+    },
+    {
+      "action": "assert-size",
+      "target": "Garage detail",
+      "width": 292,
+      "height": 672
+    },
+    {
+      "action": "assert-size",
+      "target": "Garage car Monster",
+      "width": 284.667
     },
     {
       "action": "assert-min-height",
       "target": "Garage car list",
-      "height": 240
+      "height": 200
     },
     {
       "action": "assert-min-height",
       "target": "Garage stats",
-      "height": 300
+      "height": 240
+    },
+    {
+      "action": "assert-no-horizontal-scroll",
+      "target": "Garage car list"
     },
     {
       "action": "hover",
@@ -45,16 +84,12 @@
     },
     {
       "action": "click",
-      "target": "Garage source online",
+      "target": "Garage category Online",
       "capture": "online"
     },
     {
       "action": "assert-hover",
-      "target": "Garage source online"
-    },
-    {
-      "action": "assert-no-horizontal-scroll",
-      "target": "Garage car list"
+      "target": "Garage category Online"
     },
     {
       "action": "assert-visible",
@@ -78,16 +113,31 @@
       "target": "Garage car list"
     },
     {
-      "action": "key",
-      "value": "Enter"
+      "action": "capture",
+      "capture": "search-no-match"
     },
     {
-      "action": "capture",
-      "capture": "online-error"
+      "action": "click",
+      "target": "Garage back link",
+      "capture": "back-home"
     },
     {
-      "action": "capture",
-      "capture": "online-no-match"
+      "action": "click",
+      "target": "Garage home CUSTOMIZE CAR",
+      "capture": "colors"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Garage color 0"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Garage reset colors"
+    },
+    {
+      "action": "click",
+      "target": "Garage color 0 Hue",
+      "capture": "painted"
     }
   ]
 }

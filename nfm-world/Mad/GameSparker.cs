@@ -28,6 +28,11 @@ public static partial class GameSparker
 
     public static IGraphicsDevice GraphicsDevice = null!;
     public static readonly string version = GetVersionString();
+    public const string ApplicationVersion = "0.6.1";
+    public static readonly string ExeVersion = ApplicationVersion + "." +
+        (BuildInformation.Read(Assembly.GetEntryAssembly() ?? typeof(GameSparker).Assembly)
+            .BuildNumber?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "unknown");
+
     public static AccountManager AccountManager = new AccountManager();
 
     /// <summary>
@@ -194,6 +199,14 @@ public static partial class GameSparker
             return;
         }
 
+        if (MessageWindow.IsOpen && key == SettingsMenu.Bindings.ToggleDevConsole)
+        {
+            devConsole.Toggle();
+            return;
+        }
+
+        if (!imguiWantsKeyboard && MessageWindow.HandleKey(key)) return;
+
         if (!imguiWantsKeyboard && NFMWorld.UI.Components.SettingsView.HandleKeyPressed(UiRenderer?.ActiveRoot, key))
             return;
 
@@ -235,12 +248,18 @@ public static partial class GameSparker
     public static void KeyRepeated(Key key, Keys keys, bool imguiWantsKeyboard)
     {
         if (imguiWantsKeyboard || devConsole.IsOpen()) return;
+        if (MessageWindow.IsOpen)
+        {
+            if (key is Key.Up or Key.Down or Key.Left or Key.Right) MessageWindow.HandleKey(key);
+            return;
+        }
 
         if (key is Key.Up or Key.Down or Key.Left or Key.Right)
         {
             if (NFMWorld.UI.Components.SettingsView.HandleKeyRepeated(UiRenderer?.ActiveRoot, key, keys)) return;
             if (NFMWorld.UI.Routes.AccountView.HandleKeyRepeated(UiRenderer?.ActiveRoot, key)) return;
             if (CurrentPhase is MainMenuPhase menu) menu.NavigationKeyRepeated(key);
+            CurrentPhase.KeyRepeated(key, false, keys);
         }
 
         // SDL reports a held key as repeated key events only, so without this a focused
@@ -361,7 +380,6 @@ public static partial class GameSparker
     public static void RenderImgui()
     {
         devConsole.Render();
-        MessageWindow.Render();
         CurrentPhase.RenderImgui();
     }
 
@@ -385,12 +403,14 @@ public static partial class GameSparker
     )
     {
         if (devConsole.IsOpen()) return;
+        var messageOpen = MessageWindow.IsOpen;
         if (!wantCaptureMouse)
         {
             UiRenderer?.HandleMousePressed(mouseX, mouseY, nfmButton, buttons, ctrlKey, shiftKey, altKey);
         }
 
-        CurrentPhase.MousePressed(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
+        if (!messageOpen)
+            CurrentPhase.MousePressed(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
     }
 
     public static void MouseReleased(
@@ -410,7 +430,8 @@ public static partial class GameSparker
             UiRenderer?.HandleMouseReleased(mouseX, mouseY, nfmButton, buttons, ctrlKey, shiftKey, altKey);
         }
 
-        CurrentPhase.MouseReleased(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
+        if (!MessageWindow.IsOpen)
+            CurrentPhase.MouseReleased(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
     }
 
     public static void MouseMoved(
@@ -436,7 +457,8 @@ public static partial class GameSparker
             FocusManager.ClearHover();
         }
 
-        CurrentPhase.MouseMoved(mouseX, mouseY, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);
+        if (!MessageWindow.IsOpen)
+            CurrentPhase.MouseMoved(mouseX, mouseY, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);
     }
 
     public static void MouseDragged(
@@ -482,6 +504,7 @@ public static partial class GameSparker
             UiRenderer?.HandleMouseScrolled(mouseX, mouseY, delta, buttons, ctrlKey, shiftKey, altKey);
         }
 
-        CurrentPhase.MouseScrolled(mouseX, mouseY, delta, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);
+        if (!MessageWindow.IsOpen)
+            CurrentPhase.MouseScrolled(mouseX, mouseY, delta, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);
     }
 }

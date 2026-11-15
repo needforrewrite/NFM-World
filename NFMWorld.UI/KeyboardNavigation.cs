@@ -47,7 +47,7 @@ public sealed class KeyboardNavigation
         return control;
     }
 
-    public void UpdateFocus(Node root)
+    public void UpdateFocus(Node root, bool scrollIntoView = true)
     {
         var scope = FindScope(root);
         var controls = Controls(scope).ToArray();
@@ -62,11 +62,12 @@ public sealed class KeyboardNavigation
                     : controls.FirstOrDefault(control =>
                           Settings.TryGetValue(control, out var options) && options.Preferred?.Invoke() == true
                       )
-                      ?? controls.FirstOrDefault()
+                      ?? controls.FirstOrDefault(),
+                scrollIntoView
             );
         }
         else if (!controls.Contains(FocusManager.FocusedNode) && controls.Length > 0)
-            Focus(controls[Math.Clamp(state.LastFocusIndex, 0, controls.Length - 1)]);
+            Focus(controls[Math.Clamp(state.LastFocusIndex, 0, controls.Length - 1)], scrollIntoView);
 
         state.LastFocused = FocusManager.FocusedNode as Component;
         state.LastFocusIndex = Array.IndexOf(controls, state.LastFocused);
@@ -111,11 +112,11 @@ public sealed class KeyboardNavigation
         return true;
     }
 
-    private static void Focus(Component? control)
+    private static void Focus(Component? control, bool scrollIntoView = true)
     {
         if (control is null) return;
         control.Focus();
-        control.ScrollIntoView();
+        if (scrollIntoView) control.ScrollIntoView();
     }
 
     private static Node FindScope(Node root)

@@ -139,7 +139,7 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         p.RandomFloat.SetValue(cb, URandom.Single());
         p.Alpha.SetValue(cb, 1.0f);
 
-        p.Resolution.SetValue(cb, new Vector2(_graphicsDevice.Swapchain.Width, _graphicsDevice.Swapchain.Height));
+        p.Resolution.SetValue(cb, new Vector2(camera.Width, camera.Height));
 
         if (_supermesh.PolyFixState == 2)
         {

@@ -12,6 +12,8 @@ public partial class ClientSidePlayerInfo
     [PluginVisible] public required string PlayerName { get; init; } = "Player";
     [PluginVisible] public required string CarName { get; init; } = "nfmm/radicalone";
     [PluginVisible] public required Color3 Color { get; init; } = new Color3(255, 0, 0);
+    [PluginVisible] public Color3?[]? CarColors { get; init; }
+    [PluginVisible] public NFMWorldLibrary.Util.WheelAppearance? Wheels { get; init; }
 
     /// <summary>
     /// If true, player is controlled by AI.
