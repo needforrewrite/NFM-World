@@ -1054,7 +1054,8 @@ public partial class WorldGame
                 "1:02.140",
                 "Local only",
                 true,
-                false
+                false,
+                Outdated: true
             ),
             new ReplayBrowserEntry(
                 "data/tts/e.timetrial",
@@ -1096,7 +1097,8 @@ public partial class WorldGame
                 "2:04.663",
                 "someone-with-a-long-driver-name  ·  replay #87",
                 true,
-                false
+                false,
+                Outdated: true
             )
         }.Concat(
             Enumerable.Range(1, 12).Select(i => new ReplayBrowserEntry(
@@ -1237,6 +1239,7 @@ public partial class WorldGame
             TimeText = { Value = "0:19.047" }
         };
         state.Playing.Value = true;
+        state.Outdated.Value = true;
 
         return ReplayView.Build(
             state,

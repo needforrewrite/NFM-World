@@ -32,24 +32,58 @@ else
         <button type="submit">Show</button>
     </form>
 
-    <div class="overflow-auto">
-        <table>
-            <thead>
-                <tr><th scope="col">#</th><th scope="col">Player</th><th scope="col">Time</th><th scope="col">Set</th><th scope="col">Replay</th></tr>
-            </thead>
-            <tbody>
-                @for (var i = 0; i < Model.Entries.Count; i++)
-                {
-                    var entry = Model.Entries[i];
-                    <tr>
-                        <td>@(i + 1)</td>
-                        <td>@entry.User.Username</td>
-                        <td>@TimeSpan.FromSeconds(entry.TotalTicks / (double)NFMWorldLibrary.Physics.TargetTps).ToString(@"m\:ss\.fff")</td>
-                        <td>@entry.CreatedAt.ToString("yyyy-MM-dd")</td>
-                        <td><a href="/tt/replay/@entry.Id">Replay</a></td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+    @if (Model.Entries.Count == 0)
+    {
+        <p class="muted">No ranked times on this board yet.</p>
+    }
+    else
+    {
+        <div class="overflow-auto">
+            <table>
+                <thead>
+                    <tr><th scope="col">#</th><th scope="col">Player</th><th scope="col">Time</th><th scope="col">Set</th><th scope="col">Replay</th></tr>
+                </thead>
+                <tbody>
+                    @for (var i = 0; i < Model.Entries.Count; i++)
+                    {
+                        var entry = Model.Entries[i];
+                        <tr>
+                            <td>@(i + 1)</td>
+                            <td>@entry.User.Username</td>
+                            <td>@TimeSpan.FromSeconds(entry.TotalTicks / (double)NFMWorldLibrary.Physics.TargetTps).ToString(@"m\:ss\.fff")</td>
+                            <td>@entry.CreatedAt.ToString("yyyy-MM-dd")</td>
+                            <td><a href="/tt/replay/@entry.Id">Replay</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    @if (Model.OutdatedEntries.Count > 0)
+    {
+        <h2>Outdated replays</h2>
+        <p class="muted">
+            Recorded before a physics update. They are not ranked, and may not play back correctly.
+        </p>
+        <div class="overflow-auto">
+            <table>
+                <thead>
+                    <tr><th scope="col">Player</th><th scope="col">Time</th><th scope="col">Set</th><th scope="col">Version</th><th scope="col">Replay</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in Model.OutdatedEntries)
+                    {
+                        <tr>
+                            <td>@entry.User.Username</td>
+                            <td>@TimeSpan.FromSeconds(entry.TotalTicks / (double)NFMWorldLibrary.Physics.TargetTps).ToString(@"m\:ss\.fff")</td>
+                            <td>@entry.CreatedAt.ToString("yyyy-MM-dd")</td>
+                            <td>v@(entry.ReplayVersion) (outdated)</td>
+                            <td><a href="/tt/replay/@entry.Id">Replay</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 }

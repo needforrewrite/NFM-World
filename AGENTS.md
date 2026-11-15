@@ -484,7 +484,7 @@ reference it) but **no NFMWorld code uses it** — treat any MemoryPack referenc
 | Bit-packed collections | `BitPackFormatter` writes eight elements per byte, so its length header cannot satisfy `TryReadCollectionHeader`'s "one byte per element" bound — use `TryReadPackedCollectionHeader` and bound the group count yourself. |
 | Sandbox formatter list | `PluginPolicy.GeneratedFormatterTypes` must name every formatter `TypeParser.BuildFormatterExpression` can emit, because a plugin that declares such a member constructs the formatter in its own static initializer. `PluginSandboxTests.SerializingAnEventWithProviderResolvedMembers_Works` covers it. |
 | Perf hot path | Generated code writes a **tuple member element by element** (`MemberWriteKind.Tuple`) instead of routing it through `ValueTupleFormatter`, and the tuple/collection formatters cache their element formatters in static fields. Both exist because a provider lookup costs ~2.7ns against ~1.9ns for a cached field and ~1.1ns for a direct write, and a tuple pays it per element. Any new formatter that loops must hoist its element formatter out of the loop the same way. `TightPackBufferWriter` uses a `[ThreadStatic]` free list for the same reason: the lock it used to hold cost ~24ns, more than encoding a small payload. |
-| Version gates | The wire format changed wholesale in the migration, so `SavedTimeTrial.CURRENT_VERSION` is 7 and `Rad3dPoly.CurrentTriangulationVersion` is 3. `RadpackType` byte values and union tags were *not* renumbered. |
+| Version gates | The wire format changed wholesale in the migration, so `SavedTimeTrial.OLDEST_PLAYABLE_VERSION` is 7 and `Rad3dPoly.CurrentTriangulationVersion` is 3. `RadpackType` byte values and union tags were *not* renumbered. |
 | Blittable primitives | `LayoutProver.Primitives` lists only types whose memory image *is* their encoding. `System.DateTime` is deliberately absent: `WriteDateTime` uses `ToBinary()`, which differs from the raw image for `DateTimeKind.Local`. Never add a type there whose writer formats rather than reinterprets. |
 
 ---
@@ -948,8 +948,13 @@ Added with the archive/content work; read this before touching content loading, 
   carries `CameraAngles` (`Cxz`/`StaticXz`) so the replay's follow and follow-static cameras point
   where they did while recording; `ApplyToCar` writes them to `CarPhysics`. `CarFrame` is a
   fixed-layout unmanaged snapshot, so adding a field changes both the recording and the
-  `PlayerState` wire layout: bump `SavedTimeTrial.CURRENT_VERSION` and refuse older recordings
-  (`ReplayBrowserPhase.IsCompatible`), which the archive validator already does.
+  `PlayerState` wire layout: bump `SavedTimeTrial.CURRENT_VERSION` **and**
+  `OLDEST_PLAYABLE_VERSION`. A physics-only change bumps just `CURRENT_VERSION`: older recordings
+  still play from their frames, but `SavedTimeTrial.IsOutdated` marks them — a warning in the
+  browser rows and the viewer band, no UPLOAD. The archive validator refuses non-current uploads;
+  rows already stored at an older `ReplayVersion` stay in `/tt/replays` and `/tt/replay/{id}` but
+  are excluded from `/tt/leaderboard`, listed under "Outdated replays" on `/leaderboards`, and
+  replaced by the player's next current-version upload regardless of time.
 - **Sx visual harness** — run `dotnet run --project NFMWorld -- --backend=d3d11 --sx-harness=NFMWorld/UiHarness/stage-editor-menu.json`
   from the repo root. It mounts the actual editor Sx tree with the real Apos/font renderer, sends
   direct UI events (never OS input), renders offscreen, and writes PNGs plus measured node/hover JSON

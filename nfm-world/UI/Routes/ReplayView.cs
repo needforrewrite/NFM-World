@@ -17,6 +17,9 @@ public sealed class ReplayViewState
     public Signal<string> TimeText { get; } = new("0:00.000");
     public Signal<string> Info { get; } = new("");
     public Signal<bool> MissingContent { get; } = new(false);
+
+    /// <summary>Recorded under older physics, so the playback may not match the original run.</summary>
+    public Signal<bool> Outdated { get; } = new(false);
 }
 
 /// <summary>
@@ -82,6 +85,14 @@ public static class ReplayView
                         layout: () => Sx.Styles(maxWidth: 720),
                         style: () => Sx.WrappingText(fontSize: 12, foregroundColor: Theme.Warning),
                         text: () => state.Info.Value
+                    )
+                ),
+                Sx.Show(
+                    when: () => state.Outdated.Value && !state.MissingContent.Value,
+                    then: () => Sx.Text(
+                        layout: () => Sx.Styles(maxWidth: 720),
+                        style: () => Sx.WrappingText(fontSize: 12, foregroundColor: Theme.Warning),
+                        text: () => "Outdated replay: recorded before a physics update, so it may not play back correctly."
                     )
                 ),
                 ControlRow(state, actions),
