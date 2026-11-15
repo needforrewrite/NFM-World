@@ -19,6 +19,8 @@ public sealed class StageSelectState
     public Signal<string> Selected { get; } = new("");
     public Signal<string> Search { get; } = new("");
     public Signal<bool> ConfirmEnabled { get; } = new(false);
+    public Signal<string> ConfirmLabel { get; } = new("RACE");
+    public Signal<string> Description { get; } = new("Choose where to race.");
     public Signal<bool> BrowsingCollections { get; } = new(false);
 
     /// <summary>True while the list shows public archive stages instead of local content.</summary>
@@ -42,6 +44,8 @@ public sealed class StageSelectState
         Selected.Value = "";
         Search.Value = "";
         ConfirmEnabled.Value = false;
+        ConfirmLabel.Value = "RACE";
+        Description.Value = "Choose where to race.";
         BrowsingCollections.Value = false;
         OnlineSource.Value = false;
         Busy.Value = false;
@@ -67,7 +71,8 @@ public static class StageSelectView
         Action Confirm,
         Action Back,
         Action<bool>? SourceSelected = null,
-        Action<string>? OnlineSearch = null
+        Action<string>? OnlineSearch = null,
+        string? SourceControlsHint = null
     );
 
     private static readonly Signal<string> SearchDraft = new("");
@@ -257,7 +262,7 @@ public static class StageSelectView
                         Sx.Text(
                             style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
                             layout: () => Sx.Styles(flexShrink: 0),
-                            text: () => "Choose where to race."
+                            text: () => state.Description.Value
                         )
                     ]
                 ),
@@ -793,12 +798,16 @@ public static class StageSelectView
                     [
                         Hint("← →  category / stages"),
                         Hint("↑ ↓  navigate"),
+                        Sx.Show(
+                            () => actions.SourceControlsHint is not null,
+                            () => Hint(actions.SourceControlsHint!)
+                        ),
                         Hint("Enter  select"),
                         Hint("Esc  back")
                     ]
                 ),
                 Button.Create(
-                    label: () => "RACE",
+                    label: () => state.ConfirmLabel.Value,
                     onPress: actions.Confirm,
                     variant: ButtonVariant.Primary,
                     size: ButtonSize.Lg,

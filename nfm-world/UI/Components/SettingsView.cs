@@ -97,6 +97,8 @@ public static class SettingsView
         Func<bool> capturing,
         Func<bool> previewActive,
         Func<bool> menuPreviewActive,
+        Func<bool> stagePickerActive,
+        Action tickStagePicker,
         Func<UiState.RaceState?> menuHudPreview,
         Func<bool> hudPreviewActive
     ) : View
@@ -114,10 +116,17 @@ public static class SettingsView
         public UiState.RaceState? MenuHudPreview => menuHudPreview();
         public bool HudPreviewActive => hudPreviewActive();
 
+        protected override void GameTick()
+        {
+            base.GameTick();
+            tickStagePicker();
+        }
+
         protected override bool OnPostLayout()
         {
             var changed = base.OnPostLayout();
-            if (!GameSparker.devConsole.IsOpen()) navigation.UpdateFocus(this, scrollIntoView: false);
+            if (!stagePickerActive() && !GameSparker.devConsole.IsOpen())
+                navigation.UpdateFocus(this, scrollIntoView: false);
             return changed;
         }
     }
@@ -203,6 +212,7 @@ public static class SettingsView
         var restartRequired = new Signal<bool>(false);
         var cameraPreview = new Signal<bool>(false);
         var menuPreview = new Signal<bool>(false);
+        var stagePicker = new Signal<MenuStagePicker?>(null);
         var hudPreview = new Signal<bool>(false);
         var previewData = new UiState.RaceState();
         previewData.IsPreview = true;
@@ -228,6 +238,20 @@ public static class SettingsView
             Refresh();
         }
 
+        void ChooseMenuStage()
+        {
+            FocusManager.ClearFocus();
+            stagePicker.Value?.Dispose();
+            stagePicker.Value = new MenuStagePicker(
+                config.Value?.MenuStage ?? MenuPreferences.LastPlayedStage,
+                stage => Set("menuStage", stage),
+                () => stagePicker.Value = null
+            );
+        }
+
+        var closeSettings = onClose;
+        onClose = () => { stagePicker.Value?.Dispose(); closeSettings(); };
+
         void Refresh()
         {
             config.Value = SettingsMenu.GetCurrentSnapshot();
@@ -247,6 +271,8 @@ public static class SettingsView
 
         bool HandleKey(Key key)
         {
+            if (stagePicker.Value is { } picker)
+                return picker.HandleKey(key);
             if (capturing.Value is { } action)
             {
                 capturing.Value = null;
@@ -338,7 +364,7 @@ public static class SettingsView
             style: () => Sx.Styles(
                 position: Position.Relative,
                 visibility: cameraPreview.Value || menuPreview.Value || hudPreview.Value ? Visibility.Hidden : Visibility.Visible,
-                pointerEvents: !cameraPreview.Value && !menuPreview.Value && !hudPreview.Value,
+                pointerEvents: !cameraPreview.Value && !menuPreview.Value && !hudPreview.Value && stagePicker.Value is null,
                 width: 90.Percent(),
                 maxWidth: 1000,
                 height: 90.Percent(),
@@ -411,7 +437,8 @@ public static class SettingsView
                                 options,
                                 Set,
                                 menuPreviewAvailable,
-                                () => menuPreview.Value = true
+                                () => menuPreview.Value = true,
+                                ChooseMenuStage
                             )
                         )
                     }
@@ -444,6 +471,8 @@ public static class SettingsView
             () => capturing.Value is not null,
             () => cameraPreview.Value || hudPreview.Value,
             () => menuPreview.Value,
+            () => stagePicker.Value is not null,
+            () => stagePicker.Value?.Tick(),
             () => menuPreviewAvailable && hudPreview.Value ? previewData : null,
             () => hudPreview.Value
         )
@@ -483,9 +512,27 @@ public static class SettingsView
         root.AddChild(
             Sx.Show(
                 () => menuPreview.Value,
-                () => KeyboardNavigation.Scope(MenuPreviewPanel(config, options, Set, () => menuPreview.Value = false))
+                () => Sx.View(
+                    style: () => Sx.Styles(
+                        position: Position.Absolute,
+                        top: 0,
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        pointerEvents: stagePicker.Value is null
+                    ),
+                    children: KeyboardNavigation.Scope(MenuPreviewPanel(
+                        config,
+                        options,
+                        Set,
+                        ChooseMenuStage,
+                        () => menuPreview.Value = false
+                    )
+                    )
+                )
             )
         );
+        root.AddChild(Sx.Show(() => stagePicker.Value is not null, () => stagePicker.Value!.Build()));
         root.AddChild(
             Sx.Show(
                 () => hudPreview.Value,
@@ -1105,7 +1152,8 @@ public static class SettingsView
         Signal<AvailableOptions?> options,
         Action<string, object?, string?> set,
         bool previewAvailable,
-        Action preview
+        Action preview,
+        Action chooseStage
     ) => Sx.View(
         style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0),
         children:
@@ -1126,13 +1174,7 @@ public static class SettingsView
                     [
                         Row(
                             "Background Stage",
-                            MenuChoiceDropdown(
-                                () => options.Value?.MenuStages ?? [],
-                                () => config.Value?.MenuStage ?? MenuPreferences.LastPlayedStage,
-                                "Last played stage",
-                                MenuPreferences.LastPlayedStage,
-                                v => set("menuStage", v, null)
-                            )
+                            MenuStageButton(config, chooseStage)
                         ),
                         Row(
                             "Menu Music",
@@ -1153,6 +1195,7 @@ public static class SettingsView
         Signal<SettingsSnapshot?> config,
         Signal<AvailableOptions?> options,
         Action<string, object?, string?> set,
+        Action chooseStage,
         Action back
     ) => Sx.View(
         style: () => Sx.Styles(
@@ -1206,13 +1249,7 @@ public static class SettingsView
                                 style: () => Sx.TextStyles(fontSize: 12, foregroundColor: TextBlue),
                                 text: () => "Background Stage"
                             ),
-                            MenuChoiceDropdown(
-                                () => options.Value?.MenuStages ?? [],
-                                () => config.Value?.MenuStage ?? MenuPreferences.LastPlayedStage,
-                                "Last played stage",
-                                MenuPreferences.LastPlayedStage,
-                                v => set("menuStage", v, null)
-                            )
+                            MenuStageButton(config, chooseStage)
                         ]
                     ),
                     Sx.View(
@@ -1237,6 +1274,28 @@ public static class SettingsView
             SettingsButton("Back to Settings", back)
         ]
     );
+
+    private static Node MenuStageButton(Signal<SettingsSnapshot?> config, Action chooseStage)
+    {
+        var names = MenuPreferences.GetStageNames(NFMWorldLibrary.TheVFS.VFS);
+        return Button.Create(
+            label: () =>
+            {
+                var stage = config.Value?.MenuStage ?? MenuPreferences.LastPlayedStage;
+                return stage == MenuPreferences.LastPlayedStage ? "Last played stage"
+                    : names.GetValueOrDefault(stage) ?? (NFMWorldLibrary.Radpack.RadpackReader.IsArchiveId(stage)
+                        ? "Public stage " + stage[^8..] : stage);
+            },
+            onPress: chooseStage,
+            style: () => Sx.Styles(width: 220, minHeight: 32),
+            textStyle: () => Sx.WrappingText(
+                fontSize: 12,
+                horizontalAlignment: TextHorizontalAlignment.Center,
+                foregroundColor: TextBlue
+            ),
+            name: () => "Choose menu background stage"
+        );
+    }
 
     private static Node MenuChoiceDropdown(
         Func<IReadOnlyList<string>> choices,

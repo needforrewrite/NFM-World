@@ -275,7 +275,7 @@ public static class MainMenuView
                     style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuTextBlue),
                     layout: () => Sx.Styles(
                         position: Position.Absolute,
-                        right: 16,
+                        left: 16,
                         bottom: 12,
                         pointerEvents: false
                     ),

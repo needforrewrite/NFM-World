@@ -69,17 +69,19 @@ namespace NFMWorld.PhysicsFS
 
         public Stream? OpenRead(string path)
         {
-            var normalized = Normalize(path);
-            var entry = _archive.GetEntry(normalized);
-            if (entry is null) return null;
+            lock (_archive)
+            {
+                var normalized = Normalize(path);
+                var entry = _archive.GetEntry(normalized);
+                if (entry is null) return null;
 
-            // Copy to a MemoryStream so callers get an independent, seekable stream.
-            // The ZipArchive entry stream must be disposed promptly.
-            using var src = entry.Open();
-            var ms = new MemoryStream((int)entry.Length);
-            src.CopyTo(ms);
-            ms.Position = 0;
-            return ms;
+                // Zip entries share a seekable backing stream; callers receive independent copies.
+                using var src = entry.Open();
+                var ms = new MemoryStream((int)entry.Length);
+                src.CopyTo(ms);
+                ms.Position = 0;
+                return ms;
+            }
         }
 
         public Stream? OpenWrite(string path) => null; // Read-only

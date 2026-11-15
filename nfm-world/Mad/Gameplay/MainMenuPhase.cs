@@ -8,6 +8,7 @@ using NFMWorld.UI.Routes;
 using NFMWorld.UI.ViewModels;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.Radpack;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Gamemodes.RaceHost;
@@ -47,18 +48,23 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private bool _appliedRemasteredMusic;
     private (string Host, ushort Port, bool Insecure)? _lobbyAfterSignIn;
 
-    public override bool EnableUiInput => _menuVisible
+    public override bool EnableUiInput => CurrentStage is not null && _menuVisible
                                           && (_transitionTime < 0 || (_transitionToMenu && _transitionSwitched));
 
-    public MainMenuPhase(string stageName) : base(MenuPreferences.ResolveStage(TheVFS.VFS, SettingsMenu.MenuStage, stageName))
+    private static string ResolveMenuStage(string lastPlayed)
+        => MenuPreferences.ResolveStage(
+            TheVFS.VFS,
+            SettingsMenu.MenuStage,
+            RadpackReader.IsArchiveId(lastPlayed) && !TheVFS.VFS.FileExists(lastPlayed)
+                ? MenuHistory.DefaultStage : lastPlayed
+        );
+
+    public MainMenuPhase(string stageName) : base(ResolveMenuStage(stageName))
     {
         _appliedMenuStage = SettingsMenu.MenuStage;
         _appliedMenuMusic = SettingsMenu.MenuMusic;
         _appliedRemasteredMusic = GameSparker.UseRemasteredMusic;
         _logo = G.LoadImage("data/images/logo.svg");
-        CurrentStage!.CarSoundsEnabled = false;
-        _cameraDirector.Reset(Camera, CurrentStage!.Backend);
-        CurrentStage.FadeFromOverride = _cameraDirector.ViewDistance;
         UiState.MainMenu.MenuVisible.Value = false;
         UiState.MainMenu.SceneryOnly.Value = false;
         UiState.MainMenu.GarageOpen.Value = false;
@@ -163,7 +169,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
             MainMenuView.Reset();
 
         ApplyMenuPreferences(checkHistory: true);
-        CurrentStage!.CarSoundsEnabled = false;
+        if (CurrentStage is not null) CurrentStage.CarSoundsEnabled = false;
         if (_menuVisible)
         {
             SetupMenuCar();
@@ -171,7 +177,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 _cameraDirector.ShowCar(Camera, _menuCar, _menuTime, true);
         }
 
-        UiState.MainMenu.StageName.Value = CurrentStage!.Backend.Name;
+        if (CurrentStage is not null) UiState.MainMenu.StageName.Value = CurrentStage.Backend.Name;
         base.Enter();
     }
 
@@ -201,41 +207,46 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void ApplyMenuPreferences(bool checkHistory = false)
     {
+        if (CurrentStage is null && IsStageLoading) return;
+        var selection = SettingsMenu.MenuStage == MenuPreferences.LastPlayedStage
+            ? MenuHistory.Stage : SettingsMenu.MenuStage;
         var stageChanged = _appliedMenuStage != SettingsMenu.MenuStage;
         var musicChanged = _appliedMenuMusic != SettingsMenu.MenuMusic
                            || (_appliedRemasteredMusic != GameSparker.UseRemasteredMusic
                                && MenuPreferences.ResolveMusic(TheVFS.VFS, SettingsMenu.MenuMusic) == null);
         _appliedRemasteredMusic = GameSparker.UseRemasteredMusic;
-        if (!stageChanged && !musicChanged && !checkHistory) return;
-
-        var stageName = MenuPreferences.ResolveStage(TheVFS.VFS, SettingsMenu.MenuStage, MenuHistory.Stage);
+        var stageName = RadpackReader.IsArchiveId(selection) ? selection : ResolveMenuStage(MenuHistory.Stage);
+        if (!stageChanged && !musicChanged && !checkHistory && StageName == stageName) return;
         if (StageName != stageName)
         {
-            StopAttractDrive();
-            _settingsCamera.Reset();
-            LoadStage(stageName, loadMusic: false);
-            CurrentStage!.CarSoundsEnabled = false;
-            _cameraDirector.Reset(Camera, CurrentStage.Backend);
-            _attractShot = -1;
-            if (_menuVisible && _menuCar != null)
-            {
-                CurrentStage.GetCarVisual(_menuCar);
-                _cameraDirector.ShowCar(Camera, _menuCar, _menuTime, true);
-            }
-
-            UiState.MainMenu.StageName.Value = CurrentStage.Backend.Name;
-            musicChanged |= MenuPreferences.ResolveMusic(TheVFS.VFS, SettingsMenu.MenuMusic) == null;
+            LoadStage(stageName, reloadIfLoaded: true);
         }
-
-        if (musicChanged)
+        else if (musicChanged)
         {
             LoadStageMusic(reloadIfLoaded: true);
-            if (!checkHistory) GameSparker.CurrentMusic = StageMusic;
         }
 
         _appliedMenuStage = SettingsMenu.MenuStage;
         _appliedMenuMusic = SettingsMenu.MenuMusic;
     }
+
+    protected override void OnStageLoaded()
+    {
+        _settingsCamera.Reset();
+        CurrentStage!.CarSoundsEnabled = false;
+        _cameraDirector.Reset(Camera, CurrentStage.Backend);
+        CurrentStage.FadeFromOverride = _cameraDirector.ViewDistance;
+        _attractShot = -1;
+        if (_menuVisible && _menuCar != null)
+        {
+            CurrentStage.GetCarVisual(_menuCar);
+            _cameraDirector.ShowCar(Camera, _menuCar, _menuTime, true);
+        }
+
+        UiState.MainMenu.StageName.Value = CurrentStage.Backend.Name;
+    }
+
+    protected override void OnStageReplacing() => StopAttractDrive();
 
     protected override void Dispose(bool disposing)
     {
@@ -401,7 +412,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
             LocalRaceHost host;
             try
             {
-                host = LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = players });
+                host = LocalRaceHost.CreateDeferred(stageName, factory, new ClientGamemodeParameters { Players = players });
             }
             catch
             {
@@ -429,6 +440,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
         const float seconds = 1f / Physics.TargetTps;
         _settingsCamera.RestoreNormal(Camera);
         ApplyMenuPreferences();
+        if (CurrentStage is null) return;
         if (_menuVisible)
         {
             _menuTime += seconds;

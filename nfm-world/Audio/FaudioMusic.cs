@@ -74,7 +74,15 @@ public sealed class FaudioMusic : IRadicalMusic
     {
     }
 
-    private FaudioMusic(Func<Stream> open, string file, double tempomul)
+    internal static FaudioMusic Load(string file, double tempo, byte[]? embedded)
+        => new(
+            () => embedded is null ? VFS.OpenRead(file) : new MemoryStream(embedded, writable: false),
+            file,
+            tempo,
+            throwOnError: true
+        );
+
+    private FaudioMusic(Func<Stream> open, string file, double tempomul, bool throwOnError = false)
     {
         ZipArchive? archive = null;
         Stream? entryStream = null;
@@ -110,6 +118,9 @@ public sealed class FaudioMusic : IRadicalMusic
                 _stretchedPcm.Dispose();
                 _stretchedPcm = default;
             }
+
+            _decoded.Dispose();
+            if (throwOnError) throw;
         }
         finally
         {

@@ -734,8 +734,10 @@ public static partial class GarageView
     /// to the one card instead of rebuilding the grid.
     /// </summary>
     private static Node CarThumbnail(string id)
-        => Sx.Show(
-            when: () => CarThumbnails.ReadySignal(id).Value,
+    {
+        var ready = CarThumbnails.ReadySignal(id);
+        return Sx.Show(
+            when: () => ready.Value,
             then: () => new NFMWorld.DriverInterface.UI.Image
             {
                 ImageData = CarThumbnails.Get(id)!,
@@ -746,18 +748,23 @@ public static partial class GarageView
                     borderRadius: 4
                 )
             },
-            otherwise: () => new LoadingSpinner
+            otherwise: () =>
             {
-                Name = "Garage car placeholder " + id,
-                Styles = Sx.Styles(
-                    width: 100.Percent(),
-                    aspectRatio: 2,
-                    flexShrink: 0,
-                    borderRadius: 4,
-                    backgroundColor: new Color(255, 255, 255, 10)
-                )
+                CarThumbnails.RequestKnown(id);
+                return new LoadingSpinner
+                {
+                    Name = "Garage car placeholder " + id,
+                    Styles = Sx.Styles(
+                        width: 100.Percent(),
+                        aspectRatio: 2,
+                        flexShrink: 0,
+                        borderRadius: 4,
+                        backgroundColor: new Color(255, 255, 255, 10)
+                    )
+                };
             }
         );
+    }
 
     // ── Paint ─────────────────────────────────────────────────────────
 

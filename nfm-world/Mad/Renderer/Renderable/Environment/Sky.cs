@@ -13,13 +13,16 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
     public override IReadOnlyList<ITransform> ChildTransforms => [];
 
     public Sky(IGraphicsDevice graphicsDevice)
+        : this(graphicsDevice, World.Sky.Snap(World.Snap), World.Fog.Snap(World.Snap))
+    {
+    }
+
+    internal Sky(IGraphicsDevice graphicsDevice, Vector3 skyColor, Vector3 fogColor)
     {
         _graphicsDevice = graphicsDevice;
 
         const float skyHeight = 1000;
         const float skyDistance = 7000;
-        Vector3 skyColor = World.Sky.Snap(World.Snap);
-        Vector3 fogColor = World.Fog.Snap(World.Snap);
         var layers = new LinkedList<(Vector3 Position, Vector3 Color)>();
         layers.AddLast((new Vector3(0, -skyHeight, skyDistance), skyColor));
 

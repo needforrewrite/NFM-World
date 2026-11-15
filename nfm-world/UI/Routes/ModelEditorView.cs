@@ -3583,10 +3583,12 @@ public sealed class ModelEditorView
     {
         var openInNewTab = _loadOpenInTab.Value;
 
-        void Load()
+        async void Load()
         {
             _loadOpen.Value = false;
-            if (_phase.LoadModel(path, openInNewTab) is { } error)
+            var error = await _phase.LoadModelAsync(path, openInNewTab);
+            await LoadingWork.NextFrame;
+            if (_phase.IsOpen && error is not null)
                 ShowError("Parse Error", error);
         }
 

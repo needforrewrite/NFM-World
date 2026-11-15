@@ -22,9 +22,16 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         IReadOnlyCollection<KeyValuePair<(Vector3 Point0, Vector3 Point1), (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)>>
             lines,
         LineType lineType
+    ) : this(supermesh, graphicsDevice, Prepare(lines), lineType)
+    {
+    }
+
+    internal sealed record Prepared(List<LineMeshVertexAttribute> Vertices, List<int> Indices);
+
+    internal static Prepared Prepare(
+        IReadOnlyCollection<KeyValuePair<(Vector3 Point0, Vector3 Point1), (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)>> lines
     )
     {
-        _lineType = lineType;
         var data = new List<LineMeshVertexAttribute>(LineMeshHelpers.VerticesPerLine * lines.Count);
         var indices = new List<int>(LineMeshHelpers.IndicesPerLine * lines.Count);
 
@@ -52,6 +59,14 @@ public class LineMesh : IInstancedRenderElement, IDisposable
             data.AddRange(verts);
         }
 
+        return new(data, indices);
+    }
+
+    internal LineMesh(Mesh supermesh, IGraphicsDevice graphicsDevice, Prepared prepared, LineType lineType)
+    {
+        _lineType = lineType;
+        var data = prepared.Vertices;
+        var indices = prepared.Indices;
         var vertexBytes = MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(data));
         var lineVertexBuffer = graphicsDevice.CreateBuffer(
             new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length),

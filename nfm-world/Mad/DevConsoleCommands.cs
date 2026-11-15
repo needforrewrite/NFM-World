@@ -79,7 +79,7 @@ public static class DevConsoleCommands
                         inRacePhase.StageName!,
                         factory,
                         inRacePhase.Players,
-                        LocalRaceHost.Create(
+                        LocalRaceHost.CreateDeferred(
                             inRacePhase.StageName!,
                             factory,
                             new ClientGamemodeParameters { Players = inRacePhase.Players }
@@ -532,7 +532,7 @@ public static class DevConsoleCommands
                 stageName,
                 factory,
                 inRacePhase.Players,
-                LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = inRacePhase.Players })
+                LocalRaceHost.CreateDeferred(stageName, factory, new ClientGamemodeParameters { Players = inRacePhase.Players })
             );
             inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
             GameSparker.SetPhase(inRace);
@@ -580,7 +580,14 @@ public static class DevConsoleCommands
                 inRacePhase.StageName!,
                 factory,
                 newPlayers,
-                LocalRaceHost.Create(inRacePhase.StageName!, factory, new ClientGamemodeParameters { Players = newPlayers })
+                LocalRaceHost.CreateDeferred(
+                    inRacePhase.StageName!,
+                    factory,
+                    new ClientGamemodeParameters
+                    {
+                        Players = newPlayers
+                    }
+                )
             );
             inRace.Exited += (sender, args) => { GameSparker.PopGroup(PhaseManager.Groups.Event); };
             GameSparker.SetPhase(inRace);

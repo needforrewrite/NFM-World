@@ -1,6 +1,7 @@
 ﻿using NFMWorldLibrary.Backend;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Rad;
+using NFMWorldLibrary.Util;
 using BoundingSphere = Maxine.Extensions.Mathematics.BoundingSphere;
 
 namespace NFMWorld;
@@ -10,6 +11,8 @@ public class StageObjectGameObject : MeshedGameObject, IDisposable
     private readonly StageObject _obj;
     private readonly CollisionDebugMesh? _collisionDebug;
     private readonly Mesh? _checkpointBounds;
+    private readonly ResourceLease<Mesh>? _checkpointBoundsLease;
+    private bool _disposed;
 
     private static readonly Rad3d CheckpointBoundsModel = new(
         [
@@ -39,7 +42,8 @@ public class StageObjectGameObject : MeshedGameObject, IDisposable
         var modelName = obj.FileName.AsSpan(obj.FileName.LastIndexOf('/') + 1);
         if (obj.Kind == AiNodeKind.CheckPoint && !modelName.Contains("checkpoint", StringComparison.OrdinalIgnoreCase))
         {
-            _checkpointBounds = GameSparker.GetStagePartMesh(CheckpointBoundsModel);
+            _checkpointBoundsLease = StageMeshCache.Acquire(CheckpointBoundsModel);
+            _checkpointBounds = _checkpointBoundsLease.Value;
             _checkpointBounds.OverlayMode = PolyOverlayMode.DepthRead;
         }
     }
@@ -74,7 +78,15 @@ public class StageObjectGameObject : MeshedGameObject, IDisposable
 
     public void Dispose()
     {
-        _collisionDebug?.Dispose();
+        if (_disposed) return;
+        _disposed = true;
+        DisposeOwnedResources();
         GC.SuppressFinalize(this);
+    }
+
+    protected virtual void DisposeOwnedResources()
+    {
+        _collisionDebug?.Dispose();
+        _checkpointBoundsLease?.Dispose();
     }
 }

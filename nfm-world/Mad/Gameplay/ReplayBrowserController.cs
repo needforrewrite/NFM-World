@@ -116,6 +116,7 @@ internal sealed class ReplayBrowserController : IDisposable
 
     private async Task BrowseAsync(string? query, bool append)
     {
+        using var loading = LoadingWork.Begin("Loading replay list...");
         var previous = _onlineCancellation;
         previous?.Cancel();
         previous?.Dispose();
@@ -128,6 +129,7 @@ internal sealed class ReplayBrowserController : IDisposable
         try
         {
             var page = await _client.Value.BrowseAsync(query, RemotePageSize, append ? _nextCursor : null, cancellation.Token);
+            await LoadingWork.NextFrame;
             if (generation != _onlineGeneration)
                 return;
 
@@ -145,6 +147,7 @@ internal sealed class ReplayBrowserController : IDisposable
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
+            await LoadingWork.NextFrame;
             if (generation != _onlineGeneration)
                 return;
 
@@ -154,6 +157,7 @@ internal sealed class ReplayBrowserController : IDisposable
         }
         finally
         {
+            await LoadingWork.NextFrame;
             if (generation == _onlineGeneration)
                 _state.Busy.Value = false;
         }
@@ -174,11 +178,13 @@ internal sealed class ReplayBrowserController : IDisposable
 
     private async Task<bool> RefreshLocalAsync(int generation)
     {
+        using var loading = LoadingWork.Begin("Reading recordings...");
         _state.Busy.Value = true;
         _state.Status.Value = "Reading recordings...";
         try
         {
             var result = await Task.Run(ReadLocal);
+            await LoadingWork.NextFrame;
             if (_disposed || generation != _onlineGeneration)
                 return false;
             _localEntries = result.Entries;
@@ -190,12 +196,14 @@ internal sealed class ReplayBrowserController : IDisposable
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or TightPackSerializationException)
         {
+            await LoadingWork.NextFrame;
             if (!_disposed && generation == _onlineGeneration)
                 _state.Status.Value = $"Could not read the recordings: {ex.Message}";
             return false;
         }
         finally
         {
+            await LoadingWork.NextFrame;
             if (!_disposed && generation == _onlineGeneration)
                 _state.Busy.Value = false;
         }
@@ -313,21 +321,44 @@ internal sealed class ReplayBrowserController : IDisposable
             return;
         }
 
-        var replay = SavedTimeTrial.Load(id);
-        if (replay is null)
-        {
-            _state.Status.Value = "That recording could not be read.";
-            return;
-        }
+        _ = OpenLocalAsync(id);
+    }
 
-        if (!IsCompatible(replay))
+    private async Task OpenLocalAsync(string id)
+    {
+        using var loading = LoadingWork.Begin("Loading replay...");
+        var generation = ++_onlineGeneration;
+        _state.Busy.Value = true;
+        try
         {
-            _state.Status.Value =
-                $"That recording is version {replay.Version ?? 0}; this build plays {SavedTimeTrial.CURRENT_VERSION}.";
-            return;
-        }
+            var replay = await Task.Run(() => SavedTimeTrial.Load(id));
+            await LoadingWork.NextFrame;
+            if (_disposed || generation != _onlineGeneration) return;
+            if (replay is null)
+            {
+                _state.Status.Value = "That recording could not be read.";
+                return;
+            }
 
-        GameSparker.PushPhase(new ReplayViewerPhase(replay));
+            if (!IsCompatible(replay))
+            {
+                _state.Status.Value =
+                    $"That recording is version {replay.Version ?? 0}; this build plays {SavedTimeTrial.CURRENT_VERSION}.";
+                return;
+            }
+
+            GameSparker.PushPhase(new ReplayViewerPhase(replay));
+        }
+        catch (Exception ex)
+        {
+            await LoadingWork.NextFrame;
+            if (!_disposed && generation == _onlineGeneration) _state.Status.Value = "Could not load the replay: " + ex.Message;
+        }
+        finally
+        {
+            await LoadingWork.NextFrame;
+            if (!_disposed && generation == _onlineGeneration) _state.Busy.Value = false;
+        }
     }
 
     /// <summary>
@@ -336,14 +367,17 @@ internal sealed class ReplayBrowserController : IDisposable
     /// </summary>
     private async Task OpenRemoteAsync(int id)
     {
+        using var loading = LoadingWork.Begin("Downloading replay...");
+        var generation = ++_onlineGeneration;
         _state.Busy.Value = true;
         _state.Status.Value = $"Downloading replay #{id}...";
 
         try
         {
             var bytes = await _client.Value.DownloadAsync(id, RadpackLimits.MaxTimeTrialBytes, CancellationToken.None);
-            if (_disposed) return;
-            var replay = SavedTimeTrial.Load(bytes);
+            var replay = await Task.Run(() => SavedTimeTrial.Load(bytes));
+            await LoadingWork.NextFrame;
+            if (_disposed || generation != _onlineGeneration) return;
             if (replay is null)
             {
                 _state.Status.Value = "That replay could not be read.";
@@ -363,12 +397,14 @@ internal sealed class ReplayBrowserController : IDisposable
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidDataException
             or TightPackSerializationException)
         {
-            if (_disposed) return;
+            await LoadingWork.NextFrame;
+            if (_disposed || generation != _onlineGeneration) return;
             _state.Status.Value = $"Could not download replay #{id}: {ex.Message}";
         }
         finally
         {
-            if (!_disposed)
+            await LoadingWork.NextFrame;
+            if (!_disposed && generation == _onlineGeneration)
                 _state.Busy.Value = false;
         }
     }

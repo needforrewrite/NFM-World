@@ -930,6 +930,7 @@ public partial class WorldGame : IDisposable, IGameHost
 
         // Dispose all phases before tearing down CEF and graphics.
         GameSparker.Phases.Shutdown();
+        ContentCacheMaintenance.Shutdown();
 
         if (!OperatingSystem.IsBrowser())
             NFMWorld.Accounts.TimeTrialUploader.FlushPendingSaves();

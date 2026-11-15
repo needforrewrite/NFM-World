@@ -632,7 +632,11 @@ public partial class StageEditorPhase
     private static string SanitizeMusicFileName(string name)
         => name.Replace(',', '_').Replace('(', '_').Replace(')', '_').Trim();
 
-    private void PreviewSelectedMusic()
+    private void PreviewSelectedMusic() => _ = PreviewSelectedMusicAsync();
+
+    private int _musicPreviewGeneration;
+
+    private async Task PreviewSelectedMusicAsync()
     {
         if (ActiveTab is not { } tab)
             return;
@@ -651,6 +655,7 @@ public partial class StageEditorPhase
         }
 
         StopMusicPreview(notify: false);
+        var generation = _musicPreviewGeneration;
         var previous = GameSparker.CurrentMusic;
 
         // Only the plain soundtrack is pitch/tempo adjusted; the remaster plays as authored.
@@ -661,15 +666,12 @@ public partial class StageEditorPhase
 
         try
         {
-            IRadicalMusic music;
-            if (OperatingSystem.IsBrowser())
+            var music = await MusicLoader.LoadAsync(vfsPath, tempo);
+            await LoadingWork.NextFrame;
+            if (_editorDisposed || generation != _musicPreviewGeneration || !ReferenceEquals(ActiveTab, tab))
             {
-                using var stream = VFS.OpenRead(vfsPath);
-                music = new WebAudioMusic(stream, Path.GetExtension(vfsPath), tempo);
-            }
-            else
-            {
-                music = IBackend.Backend.LoadMusic(vfsPath, tempo);
+                music.Dispose();
+                return;
             }
 
             music.SetFreqMultiplier(frequency);
@@ -680,6 +682,7 @@ public partial class StageEditorPhase
         }
         catch (Exception exception)
         {
+            await LoadingWork.NextFrame;
             Logging.Warning($"Could not preview '{path}': {exception.Message}");
         }
 
@@ -688,6 +691,7 @@ public partial class StageEditorPhase
 
     private void StopMusicPreview(bool notify = true)
     {
+        _musicPreviewGeneration++;
         if (_previewMusic is { } music)
         {
             var previous = _musicBeforePreview;

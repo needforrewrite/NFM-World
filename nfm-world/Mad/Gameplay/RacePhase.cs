@@ -41,6 +41,8 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     public readonly IReadOnlyList<ClientSidePlayerInfo> Players;
 
     private readonly IRaceHost _host;
+    private bool _raceDisposed;
+    private bool _initializingRace;
     private uint _ticks;
     private readonly UnlimitedArray<uint> _lastTick = [];
 
@@ -92,8 +94,11 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
         try
         {
-            LoadStageMusic();
-            InitializeRace(host);
+            if (CurrentStage is not null)
+            {
+                LoadStageMusic();
+                _ = InitializeRaceAsync();
+            }
         }
         catch
         {
@@ -110,11 +115,45 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         }
     }
 
+    protected override void OnStageLoaded() => _ = InitializeRaceAsync();
+
+    private async Task InitializeRaceAsync()
+    {
+        if (_initializingRace) return;
+        _initializingRace = true;
+        using var loading = LoadingWork.Begin("Preparing race...");
+        try
+        {
+            if (_host is LocalRaceHost local)
+            {
+                var stage = CurrentStage!.Backend;
+                var serverStage = await Task.Run(() => new BackendStage(stage.Path, stage.StageLoader, throwOnError: true));
+                await LoadingWork.NextFrame;
+                if (_raceDisposed) return;
+                local.InitializeStage(serverStage);
+            }
+            else await LoadingWork.NextFrame;
+
+            if (_raceDisposed) return;
+            InitializeRace(_host);
+        }
+        catch (Exception ex)
+        {
+            await LoadingWork.NextFrame;
+            if (_raceDisposed) return;
+            OnStageLoadFailed(ex);
+        }
+    }
+
+    protected override void OnStageLoadFailed(Exception error)
+    {
+        RaceState = RaceState.FailedToStart;
+        base.OnStageLoadFailed(error);
+    }
+
     private void InitializeRace(IRaceHost host)
     {
-        // Create the gamemode once at construction time. Enter/Exit only handle
-        // display-level activation/deactivation; the gamemode survives across
-        // push/pop cycles (e.g., opening Settings over a race).
+        // Initialize once after loading; overlays keep the same gamemode alive.
         GamemodeInstance = ReloadGamemode();
         GamemodeInstance?.Begin();
 
@@ -566,9 +605,6 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
     public override void Enter()
     {
-        // Gamemode is created in the constructor and survives across push/pop.
-        // Enter/Exit only handle display activation/deactivation (CEF bridge,
-        // camera, music) — no gamemode or stage reload.
         base.Enter();
         var player = Players.FirstOrDefault(p => p.IsClientPlayer);
         if (player != null)
@@ -597,6 +633,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
     {
         if (disposing)
         {
+            _raceDisposed = true;
             _host.Dispose();
 
             CurrentStage?.SetPlayers(null); // tears down visuals holding the gamemode's cars
@@ -780,6 +817,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
     public override void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
     {
+        if (CurrentStage is null) return;
         base.Render(cb, alpha);
 
         if (RaceState == RaceState.WaitingToStart)
@@ -787,7 +825,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
             G.SetFont(new Font(FontFamily.NotoSans, FontStyle.Plain, 26));
             G.SetColor(new Color(255, 255, 255));
             G.DrawStringOutlinedAligned(
-                "Waiting for other players to load...",
+                GamemodeInstance is null ? "Preparing race..." : "Waiting for other players to load...",
                 0,
                 150,
                 (int)G.Viewport.X,
@@ -836,7 +874,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
         // The minimap bake is a separate scene pass, so it goes after the main one and restores
         // the backbuffer itself. One bake per stage; the HUD picks the image up next tick.
-        if (SettingsMenu.HudRadar && CurrentStage.Minimap is { IsAttempted: false } minimap)
+        if (GamemodeInstance is not null && SettingsMenu.HudRadar && CurrentStage.Minimap is { IsAttempted: false } minimap)
             minimap.Bake(cb, GameSparker.Game.Window.Width, GameSparker.Game.Window.Height);
     }
 
@@ -866,6 +904,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
 
     public override void GameTick()
     {
+        if (CurrentStage is null || GamemodeInstance is null) return;
         _settingsCamera.RestoreNormal(Camera);
         // Only a local race actually stops when paused. Online the world keeps ticking: the
         // pause menu just means this client has stopped driving.

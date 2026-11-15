@@ -154,18 +154,7 @@ public static partial class GarageView
             onmouseleave: _ => hovered.Value = false,
             children:
             [
-                Sx.Show(
-                    when: () => CarThumbnails.ReadySignal(key()).Value,
-                    then: () => new NFMWorld.DriverInterface.UI.Image
-                    {
-                        ImageData = CarThumbnails.Get(key())!,
-                        Styles = Sx.Styles(width: 100.Percent(), aspectRatio: 1, flexShrink: 0)
-                    },
-                    otherwise: () => new LoadingSpinner
-                    {
-                        Styles = Sx.Styles(width: 100.Percent(), aspectRatio: 1, flexShrink: 0)
-                    }
-                ),
+                Sx.For<string>(() => [key()], (id, _) => WheelThumbnail(id)),
                 Sx.Text(
                     style: () => Sx.TextStyles(
                         fontSize: 11,
@@ -176,6 +165,23 @@ public static partial class GarageView
                     text: () => label
                 )
             ]
+        );
+    }
+
+    private static Node WheelThumbnail(string id)
+    {
+        var ready = CarThumbnails.ReadySignal(id);
+        return Sx.Show(
+            () => ready.Value,
+            () => new NFMWorld.DriverInterface.UI.Image
+            {
+                ImageData = CarThumbnails.Get(id)!,
+                Styles = Sx.Styles(width: 100.Percent(), aspectRatio: 1, flexShrink: 0)
+            },
+            () => new LoadingSpinner
+            {
+                Styles = Sx.Styles(width: 100.Percent(), aspectRatio: 1, flexShrink: 0)
+            }
         );
     }
 }

@@ -1,9 +1,12 @@
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
+using NFMWorldLibrary.Content;
+using NFMWorldLibrary.Radpack;
 using SignalsDotnet;
 
 namespace NFMWorld;
@@ -13,8 +16,7 @@ namespace NFMWorld;
 /// </summary>
 /// <remarks>
 /// A bake is a scene draw, so it borrows the caller's frame buffer and restores the
-/// backbuffer before returning (same contract as <see cref="StageMinimap"/>). The images are
-/// kept for the process: they only change when the paint does, which invalidates one entry.
+/// backbuffer before returning (same contract as <see cref="StageMinimap"/>).
 /// </remarks>
 internal static class CarThumbnails
 {
@@ -25,32 +27,93 @@ internal static class CarThumbnails
     private const float Fov = 34f;
     private const float NearPlane = 50f;
 
-    private static readonly Dictionary<string, (IRenderTarget Target, IImage Image, Rad3d Rad)> Cache =
+    private sealed record Entry(IRenderTarget Target, IImage Image, Rad3d Rad)
+    {
+        public long Used = Stopwatch.GetTimestamp();
+    }
+
+    private static readonly Dictionary<string, Entry> Cache =
         new(StringComparer.OrdinalIgnoreCase);
 
-    private static readonly Dictionary<string, Signal<bool>> Ready =
+    private static readonly Dictionary<string, WeakReference<Signal<bool>>> Ready =
         new(StringComparer.OrdinalIgnoreCase);
 
-    private static readonly Queue<(string Id, Rad3d Rad, int Version)> Pending = new();
+    private static readonly Queue<(string Id, Rad3d Rad, int Version, long ReadyAfterFrame)> Pending = new();
+    private static readonly List<(IRenderTarget Target, long AfterFrame)> Retired = new();
     private static readonly Dictionary<string, int> Versions = new(StringComparer.OrdinalIgnoreCase);
     private static readonly HashSet<string> Queued = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly HashSet<object> Users = new(ReferenceEqualityComparer.Instance);
+    private static int _nextVersion;
+    private static int _generation;
+    private static readonly HashSet<string> LoadingModels = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Flips when a card's image is (re)rendered. Cards bind to their own signal.</summary>
     public static Signal<bool> ReadySignal(string id)
     {
-        if (!Ready.TryGetValue(id, out var signal))
-            Ready[id] = signal = new Signal<bool>(Cache.ContainsKey(id));
+        if (Ready.TryGetValue(id, out var reference) && reference.TryGetTarget(out var current)) return current;
+        var signal = new Signal<bool>(Cache.ContainsKey(id));
+        Ready[id] = new(signal);
         return signal;
     }
 
-    public static IImage? Get(string id) => Cache.TryGetValue(id, out var entry) ? entry.Image : null;
+    public static IImage? Get(string id)
+    {
+        if (!Cache.TryGetValue(id, out var entry)) return null;
+        entry.Used = Stopwatch.GetTimestamp();
+        return entry.Image;
+    }
+
+    public static void BeginUse(object owner) => Users.Add(owner);
+
+    public static void EndUse(object owner)
+    {
+        Users.Remove(owner);
+        if (Users.Count != 0) return;
+        _generation++;
+        LoadingModels.Clear();
+        Pending.Clear();
+        Queued.Clear();
+        Versions.Clear();
+    }
 
     public static void Request(string id, Rad3d rad)
     {
         if (id.Length == 0 || Cache.ContainsKey(id) || !Queued.Add(id))
             return;
 
-        Pending.Enqueue((id, rad, Versions.GetValueOrDefault(id)));
+        var version = Versions[id] = ++_nextVersion;
+        Pending.Enqueue((id, rad, version, LoadingWork.FrameId + 1));
+    }
+
+    public static void RequestKnown(string id)
+    {
+        if (Cache.ContainsKey(id) || Queued.Contains(id) || LoadingModels.Contains(id)) return;
+        if (BackendGameSparker.FindLoadedCar(id) is { } model) Request(id, model);
+        else if (RadpackReader.IsArchiveId(id) && ContentCache.IsPrepared(id))
+        {
+            LoadingModels.Add(id);
+            _ = LoadPreparedModelAsync(id, _generation);
+        }
+    }
+
+    private static async Task LoadPreparedModelAsync(string id, int generation)
+    {
+        using var loading = LoadingWork.Begin("Loading car preview...");
+        try
+        {
+            var model = await Task.Run(() => RadpackReader.TryReadModel(id, RadpackType.Car, out _));
+            await LoadingWork.NextFrame;
+            if (generation == _generation && Users.Count > 0 && model is not null) Request(id, model);
+        }
+        catch (Exception ex)
+        {
+            Logging.Warning($"Could not load car thumbnail '{id}': {ex.Message}");
+        }
+        finally
+        {
+            await LoadingWork.NextFrame;
+            if (generation == _generation) LoadingModels.Remove(id);
+        }
     }
 
     public static string WheelKey(string id, bool original) => "$wheel/" + id + (original ? "/nfm" : "/model");
@@ -78,11 +141,11 @@ internal static class CarThumbnails
     public static void Invalidate(string id)
     {
         if (Cache.Remove(id, out var entry))
-            entry.Target.Dispose();
+            Retired.Add((entry.Target, LoadingWork.FrameId + 1));
 
         Queued.Remove(id);
-        Versions[id] = Versions.GetValueOrDefault(id) + 1;
-        if (Ready.TryGetValue(id, out var signal))
+        Versions.Remove(id);
+        if (Ready.TryGetValue(id, out var reference) && reference.TryGetTarget(out var signal))
             signal.Value = false;
     }
 
@@ -98,15 +161,23 @@ internal static class CarThumbnails
     /// <summary>Renders at most one queued car. Called from the garage phase's frame.</summary>
     public static void RenderPending(ICommandBuffer cb, Func<string, bool> visible)
     {
-        (string Id, Rad3d Rad, int Version) next = default;
+        TrimUnused(visible);
+        (string Id, Rad3d Rad, int Version, long ReadyAfterFrame) next = default;
         var found = false;
         for (var remaining = Pending.Count; remaining > 0; remaining--)
         {
             var pending = Pending.Dequeue();
             if (pending.Version != Versions.GetValueOrDefault(pending.Id)) continue;
-            if (!visible(pending.Id))
+            if (pending.ReadyAfterFrame > LoadingWork.FrameId)
             {
                 Pending.Enqueue(pending);
+                continue;
+            }
+
+            if (!visible(pending.Id))
+            {
+                Queued.Remove(pending.Id);
+                Versions.Remove(pending.Id);
                 continue;
             }
 
@@ -116,7 +187,7 @@ internal static class CarThumbnails
         }
 
         if (!found) return;
-        var (id, rad, _) = next;
+        var (id, rad, _, _) = next;
         try
         {
             Render(cb, id, rad);
@@ -125,6 +196,56 @@ internal static class CarThumbnails
         {
             // A model that cannot be drawn only costs its card image.
             Logging.Warning($"Could not render a car thumbnail for '{id}': {ex.Message}");
+        }
+        finally
+        {
+            Queued.Remove(id);
+            Versions.Remove(id);
+        }
+    }
+
+    public static void TrimUnused(Func<string, bool>? visible = null, bool clear = false)
+    {
+        if (!clear && visible is null && Users.Count > 0) return;
+        var now = Stopwatch.GetTimestamp();
+        if (visible is not null)
+            foreach (var pair in Cache)
+                if (visible(pair.Key)) pair.Value.Used = now;
+        var unused = Cache.Where(pair => visible is null || !visible(pair.Key))
+            .OrderBy(pair => pair.Value.Used).ToArray();
+        var excess = Math.Max(0, unused.Length - 32);
+        foreach (var pair in unused)
+        {
+            if (!clear && excess <= 0 && Stopwatch.GetElapsedTime(pair.Value.Used, now) < TimeSpan.FromMinutes(2)) continue;
+            Invalidate(pair.Key);
+            excess--;
+        }
+
+        foreach (var pair in Ready.Where(pair => !pair.Value.TryGetTarget(out _)).ToArray()) Ready.Remove(pair.Key);
+        if (clear || (visible is null && Users.Count == 0))
+        {
+            Pending.Clear();
+            Queued.Clear();
+            Versions.Clear();
+            if (clear)
+            {
+                _generation++;
+                LoadingModels.Clear();
+                Users.Clear();
+            }
+        }
+
+        if (clear) ReleaseRetired(force: true);
+    }
+
+    // Image nodes stop referencing retired textures when the UI scheduler flushes.
+    public static void ReleaseRetired(bool force = false)
+    {
+        for (var index = Retired.Count - 1; index >= 0; index--)
+        {
+            if (!force && Retired[index].AfterFrame > LoadingWork.FrameId) continue;
+            Retired[index].Target.Dispose();
+            Retired.RemoveAt(index);
         }
     }
 
@@ -210,7 +331,8 @@ internal static class CarThumbnails
             GameSparker.Game.SetFullScreenScissor(cb);
         }
 
-        Cache[id] = (target, TheGraphics.G.WrapTexture(target.ColorTexture)!, rad);
+        if (Cache.Remove(id, out var previous)) Retired.Add((previous.Target, LoadingWork.FrameId + 1));
+        Cache[id] = new(target, TheGraphics.G.WrapTexture(target.ColorTexture)!, rad);
         ReadySignal(id).Value = true;
     }
 

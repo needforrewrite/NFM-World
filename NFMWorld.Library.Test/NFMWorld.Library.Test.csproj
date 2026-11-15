@@ -30,6 +30,7 @@
 
     <ItemGroup>
         <Compile Include="..\nfm-world\Mad\Gameplay\MenuHistory.cs" Link="MenuHistory.cs"/>
+        <Compile Include="..\nfm-world\Content\LoadingWork.cs" Link="LoadingWork.cs"/>
         <Compile Include="..\nfm-world\UI\Routes\AccountView.cs" Link="AccountView.cs"/>
         <Compile Include="..\nfm-world\UI\Routes\ReplayBrowserView.cs" Link="ReplayBrowserView.cs"/>
         <Compile Include="..\nfm-world\UI\Routes\StageSelectView.cs" Link="StageSelectView.cs"/>

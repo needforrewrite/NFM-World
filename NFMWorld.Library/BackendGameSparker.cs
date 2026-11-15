@@ -27,11 +27,15 @@ public static class BackendGameSparker
 
     // File-backed models, separated by kind and canonical identity so a car and a stage piece
     // with the same name cannot collide.
-    private static readonly Dictionary<string, (int Index, Rad3d Rad)> _carFiles =
-        new(StringComparer.OrdinalIgnoreCase);
+    private static readonly IdleResourceCache<string, (int Index, Rad3d Rad)> _carFiles =
+        new(64, TimeSpan.FromMinutes(5), comparer: StringComparer.OrdinalIgnoreCase);
 
-    private static readonly Dictionary<string, (int Index, Rad3d Rad)> _stagePartFiles =
-        new(StringComparer.OrdinalIgnoreCase);
+    private static int _nextCarFileIndex;
+
+    private static readonly IdleResourceCache<string, (int Index, Rad3d Rad)> _stagePartFiles =
+        new(128, TimeSpan.FromMinutes(5), comparer: StringComparer.OrdinalIgnoreCase);
+
+    private static int _nextStagePartFileIndex;
 
     public static Rad3d error_mesh;
 
@@ -477,8 +481,10 @@ public static class BackendGameSparker
 
         if (model is not null)
         {
-            var index = total + _carFiles.Count + dynamic_models.Count;
-            return _carFiles[identity] = (index, model);
+            return _carFiles.GetOrAdd(
+                identity,
+                _ => (total + dynamic_models.Count + Interlocked.Increment(ref _nextCarFileIndex) - 1, model)
+            );
         }
 
         // Read-only legacy import: a .radq the user dropped in data/legacy/cars first, then the
@@ -488,10 +494,12 @@ public static class BackendGameSparker
         {
             try
             {
-                total += _carFiles.Count + dynamic_models.Count;
                 var rad = RadParser.ParseRad(legacyRad, name);
                 Logging.Info($"Imported legacy car '{name}' from .radq.");
-                return _carFiles[identity] = (total, rad);
+                return _carFiles.GetOrAdd(
+                    identity,
+                    _ => (total + dynamic_models.Count + Interlocked.Increment(ref _nextCarFileIndex) - 1, rad)
+                );
             }
             catch (Exception ex)
             {
@@ -537,8 +545,10 @@ public static class BackendGameSparker
 
         if (model is not null)
         {
-            var index = total + _stagePartFiles.Count;
-            return _stagePartFiles[identity] = (index, model);
+            return _stagePartFiles.GetOrAdd(
+                identity,
+                _ => (total + Interlocked.Increment(ref _nextStagePartFileIndex) - 1, model)
+            );
         }
 
         // Read-only legacy import, same on-demand path as GetCar. Only a phy:/ds:/nfm: label
@@ -548,10 +558,12 @@ public static class BackendGameSparker
         {
             try
             {
-                total += _stagePartFiles.Count;
                 var rad = RadParser.ParseRad(legacyPart, name);
                 Logging.Info($"Imported legacy stage part '{name}'.");
-                return _stagePartFiles[identity] = (total, rad);
+                return _stagePartFiles.GetOrAdd(
+                    identity,
+                    _ => (total + Interlocked.Increment(ref _nextStagePartFileIndex) - 1, rad)
+                );
             }
             catch (Exception ex)
             {
@@ -562,6 +574,21 @@ public static class BackendGameSparker
         SentrySdk.CaptureMessage("No results for GetStagePart: " + name, SentryLevel.Warning);
         Logging.Info("No results for GetStagePart: " + name);
         return (-1, null!);
+    }
+
+    public static void TrimContentCaches(bool clearUnused = false)
+    {
+        _carFiles.Trim(clearUnused);
+        _stagePartFiles.Trim(clearUnused);
+    }
+
+    public static Rad3d? FindLoadedCar(string name)
+    {
+        var installed = cars.Values.SelectMany(collection => collection)
+            .FirstOrDefault(car => string.Equals(car.FileName, name, StringComparison.OrdinalIgnoreCase));
+        if (installed is not null) return installed;
+        if (dynamic_models.TryGetValue(name, out var dynamic)) return dynamic.Rad;
+        return _carFiles.TryGetValue(RadpackReader.Identity(name), out var cached) ? cached.Rad : null;
     }
 
     public static string GetModelName(int index, bool forCar = false)

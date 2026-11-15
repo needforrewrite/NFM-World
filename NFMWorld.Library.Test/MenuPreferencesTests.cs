@@ -34,6 +34,30 @@ public class MenuPreferencesTests
     }
 
     [TestMethod]
+    public void ArchiveBackgroundUsesItsCachedIdentityAndFallsBackWhenMissing()
+    {
+        var id = "archive/" + new string('a', 64);
+        var fs = CreateFileSystem(id);
+        Assert.AreEqual(id, MenuPreferences.NormalizeStage(id.ToUpperInvariant()));
+        Assert.AreEqual(id, MenuPreferences.ResolveStage(fs, id, "nfm1/race"));
+        Assert.AreEqual("nfm1/race", MenuPreferences.ResolveStage(new VirtualFS(), id, "nfm1/race"));
+    }
+
+    [TestMethod]
+    public void MissingArchiveBackgroundDoesNotFetchDuringResolution()
+    {
+        var reads = 0;
+        var fs = new VirtualFS();
+        fs.Mount(new FetchFileSystem(_ => { reads++; return null; }));
+
+        Assert.AreEqual(
+            "nfm1/race",
+            MenuPreferences.ResolveStage(fs, "archive/" + new string('b', 64), "nfm1/race")
+        );
+        Assert.AreEqual(0, reads);
+    }
+
+    [TestMethod]
     public void InterfaceMusicChoicesExcludeOtherFoldersAndNonAudioFiles()
     {
         var fs = CreateFileSystem(

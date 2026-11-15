@@ -90,7 +90,7 @@ public partial class StageEditorPhase
         LocalRaceHost host;
         try
         {
-            host = LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = players });
+            host = LocalRaceHost.CreateDeferred(stageName, factory, new ClientGamemodeParameters { Players = players });
         }
         catch (Exception exception)
         {

@@ -18,6 +18,8 @@ public class StaticMeshObject : MeshedGameObject
         Rad = rad;
     }
 
+    internal StaticMeshObject(Rad3d rad, CarMesh mesh) : base(mesh) => Rad = rad;
+
     public StaticMeshObject(Rad3d rad, f64Vector3 position, f64Euler rotation)
         : base(new CarMesh(rad), position, rotation)
     {

@@ -324,6 +324,7 @@ internal sealed class GarageController
 
     public void Enter()
     {
+        CarThumbnails.BeginUse(this);
         GarageView.NavigatingCategories.Value = false;
         GarageView.ClearSearch();
         _selectionReady = true;
@@ -360,10 +361,13 @@ internal sealed class GarageController
     /// <summary>Persists whatever paint is still pending. The host calls this when it closes the garage.</summary>
     public void End()
     {
+        CarThumbnails.EndUse(this);
+        _onlineGeneration++;
         _painting = false;
         FlushThumbnailChanges();
         CarPaint.Flush();
         _onlineCancellation?.Cancel();
+        _onlineCancellation?.Dispose();
         _onlineCancellation = null;
         UiState.Garage.Page.Value = GaragePage.Home;
     }
@@ -927,15 +931,27 @@ internal sealed class GarageController
         if (_changedCarThumbnails.Count > 0 || _changedWheelThumbnails.Count > 0) return;
         if (UiState.Garage.Page.Value == GaragePage.Cars)
         {
-            if (_backendCar is { } car && CurrentIdentity() is { } identity)
+            var shown = GarageView.Filter(UiState.Garage.Collections.Value, UiState.Garage.SearchQuery.Value)
+                .SelectMany(collection => collection.Cars)
+                .Select(car => car.FileName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (_backendCar is { } car && CurrentIdentity() is { } identity && shown.Contains(identity))
                 CarThumbnails.Request(identity, car.Rad);
-            CarThumbnails.RenderPending(cb, key => !key.StartsWith("$wheel/", StringComparison.Ordinal));
+            CarThumbnails.RenderPending(cb, shown.Contains);
         }
         else if (UiState.Garage.Page.Value == GaragePage.Colors && UiState.Garage.WheelsTab.Value
                  && UiState.Garage.HasCustomWheels.Value && CurrentIdentity() is { } id)
+        {
+            if (_backendCar is { } wheelCar)
+            {
+                CarThumbnails.RequestWheel(id, wheelCar.Rad, true);
+                CarThumbnails.RequestWheel(id, wheelCar.Rad, false);
+            }
+
             CarThumbnails.RenderPending(cb, key => key == CarThumbnails.WheelKey(id, true)
                                                    || key == CarThumbnails.WheelKey(id, false)
             );
+        }
+        else CarThumbnails.RenderPending(cb, _ => false);
     }
 
     private void MoveColorSlot(int delta)
@@ -1001,6 +1017,7 @@ internal sealed class GarageController
 
     private async void SearchOnline(string query)
     {
+        using var loading = LoadingWork.Begin("Searching archive...");
         _onlineCancellation?.Cancel();
         _onlineCancellation = new CancellationTokenSource();
         var cancellation = _onlineCancellation;
@@ -1010,6 +1027,7 @@ internal sealed class GarageController
         try
         {
             var page = await Content.Value.SearchAsync(query, "Car", 30, null, cancellation.Token);
+            await LoadingWork.NextFrame;
             if (generation != _onlineGeneration)
                 return;
 
@@ -1042,6 +1060,7 @@ internal sealed class GarageController
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
+            await LoadingWork.NextFrame;
             if (generation == _onlineGeneration)
                 UiState.Garage.OnlineStatus.Value = $"Could not search the archive: {ex.Message}";
         }
@@ -1053,6 +1072,7 @@ internal sealed class GarageController
     /// </summary>
     private async Task PrepareOnlineCarAsync(string hashOrIdentity)
     {
+        using var loading = LoadingWork.Begin("Loading car...");
         var generation = ++_onlineGeneration;
         UiState.Garage.OnlineStatus.Value = "Preparing car...";
         _selectionReady = false;
@@ -1063,7 +1083,10 @@ internal sealed class GarageController
             .FirstOrDefault(car => car.FileName.Equals(hashOrIdentity, StringComparison.OrdinalIgnoreCase))
             ?.Author;
 
-        var result = await ContentCache.PrepareAsync(Content.Value, hashOrIdentity, AssetKind.Car, CancellationToken.None);
+        var result = await Task.Run(
+            () => ContentCache.PrepareAsync(Content.Value, hashOrIdentity, AssetKind.Car, CancellationToken.None)
+        );
+        await LoadingWork.NextFrame;
         if (generation != _onlineGeneration)
             return;
 

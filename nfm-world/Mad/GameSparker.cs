@@ -173,7 +173,6 @@ public static partial class GameSparker
 
     public static MessageWindow MessageWindow = new();
 
-    public static Dictionary<Rad3d, Mesh> stage_part_meshes = new(Rad3d.VisualEqualityComparer.Instance);
     public static Mesh error_mesh = null!;
 
     public static bool devRenderTrackers = false;
@@ -300,22 +299,6 @@ public static partial class GameSparker
     {
         Game = game;
 
-        foreach (var stageParts in (Span<UnlimitedArray<Rad3d>>)
-                 [BackendGameSparker.stage_parts, BackendGameSparker.vendor_stage_parts, BackendGameSparker.user_stage_parts])
-        foreach (var stagePart in stageParts)
-        {
-            try
-            {
-                var mesh = new Mesh(stagePart);
-                stage_part_meshes[stagePart] = mesh;
-            }
-            catch (Exception ex)
-            {
-                SentrySdk.CaptureException(ex);
-                Logging.Debug($"Error creating mesh for stage part '{stagePart.FileName}': {ex.Message}\n{ex.StackTrace}");
-            }
-        }
-
         error_mesh = new Mesh(BackendGameSparker.error_mesh);
 
         SfxLibrary.LoadSounds();
@@ -327,17 +310,6 @@ public static partial class GameSparker
         MainMenuPhase = new MainMenuPhase(PhaseSharedState.SelectedStageName);
 
         Phases.SetRoot(MainMenuPhase);
-    }
-
-    public static Mesh GetStagePartMesh(Rad3d stagePart)
-    {
-        ref var mesh = ref CollectionsMarshal.GetValueRefOrAddDefault(stage_part_meshes, stagePart, out var exists);
-        if (exists)
-        {
-            return mesh!;
-        }
-
-        return mesh = new Mesh(stagePart);
     }
 
     public static void StartModelViewer()

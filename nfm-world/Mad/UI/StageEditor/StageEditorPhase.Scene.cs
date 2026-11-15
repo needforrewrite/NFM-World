@@ -11,12 +11,14 @@ public partial class StageEditorPhase
         // Create scene with the stage renderer and all current wall meshes
         var sceneObjects = new List<GameObject> { ActiveTab.StageRenderer };
         sceneObjects.AddRange(ActiveTab.WallMeshes);
+        var previousScene = ActiveTab.Scene;
         ActiveTab.Scene = new Scene(
             _graphicsDevice,
             sceneObjects,
             activeCamera,
             [] // No shadow cameras for now
         );
+        previousScene?.Dispose();
     }
 
     /// <summary>
@@ -24,24 +26,66 @@ public partial class StageEditorPhase
     /// then re-applies the tab's World settings and recreates the Scene + walls.
     /// Call this whenever pieces are added or removed.
     /// </summary>
-    private void RebuildClientRenderer()
+    private void RebuildClientRenderer() => _ = RebuildClientRendererAsync();
+
+    private readonly Dictionary<StageEditorTab, CancellationTokenSource> _rendererRequests = new();
+
+    private async Task RebuildClientRendererAsync()
     {
-        if (ActiveTab?.Stage == null) return;
+        if (ActiveTab is not { Stage: not null } tab || _editorDisposed) return;
+        if (_rendererRequests.TryGetValue(tab, out var previous)) previous.Cancel();
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_editorLoading.Token);
+        _rendererRequests[tab] = cancellation;
+        using var loading = LoadingWork.Begin("Preparing editor scene...");
+        ClientStageRenderer? next = null;
+        try
+        {
+            next = await ClientStageRenderer.CreateAsync(tab.Stage, cancellation.Token, generateEnvironment: false);
+            await LoadingWork.NextFrame;
+            while (!_editorDisposed && _tabs.Contains(tab)
+                   && (!ReferenceEquals(ActiveTab, tab) || !ReferenceEquals(GameSparker.CurrentPhase, this)))
+            {
+                cancellation.Token.ThrowIfCancellationRequested();
+                await LoadingWork.NextFrame;
+            }
 
-        if (ActiveTab.StageRenderer == null)
-            ActiveTab.StageRenderer = new ClientStageRenderer(ActiveTab.Stage);
-        else
-            ActiveTab.StageRenderer.DetectChanges(true);
+            cancellation.Token.ThrowIfCancellationRequested();
+            if (_editorDisposed || !_tabs.Contains(tab)) return;
+            var old = tab.StageRenderer;
+            if (old is not null)
+            {
+                next.polys = old.polys;
+                old.polys = null;
+                next.clouds = old.clouds;
+                old.clouds = null;
+                next.mountains = old.mountains;
+                old.mountains = null;
+            }
 
-        // ClientStageRenderer.ctor calls World.ResetValues(), re-apply our tab settings
-        ApplyTabWorldValuesToWorld();
-        RecreateEnvironment();
-        RecreateScene();
-
-        if (_autoUpdateWalls && HasPlaceableStageGeometry())
-            AutoGenerateStageBordersFromGeometry();
-        else
-            RebuildAllWalls();
+            tab.StageRenderer = next;
+            next.Adopt();
+            next = null;
+            old?.Dispose();
+            ApplyTabWorldValuesToWorld();
+            RecreateEnvironment();
+            RecreateScene();
+            if (_autoUpdateWalls && HasPlaceableStageGeometry()) AutoGenerateStageBordersFromGeometry();
+            else RebuildAllWalls();
+            Touch();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            Logging.Warning($"Could not prepare editor scene: {ex.Message}");
+        }
+        finally
+        {
+            await LoadingWork.NextFrame;
+            next?.Dispose();
+            if (_rendererRequests.GetValueOrDefault(tab) == cancellation) _rendererRequests.Remove(tab);
+        }
     }
 
     private void ApplyTabWorldValuesToWorld()
@@ -101,25 +145,13 @@ public partial class StageEditorPhase
 
         if (ActiveTab.PolysEnabled && ActiveTab.Stage != null)
         {
-            if (_autoGeneratePolys)
-            {
-                renderer.polys?.Dispose();
-                renderer.polys = Environment.MakePolys(
-                    ActiveTab.Stage,
-                    -10000,
-                    20000,
-                    -10000,
-                    20000,
-                    ActiveTab.ScenePieces.Count
-                );
-            }
+            if (_autoGeneratePolys) RecreatePolys();
             // else: preserve existing polys (don't touch) so manually-generated polys from the
             //        Properties dialog survive across piece placements when auto-generate is off.
         }
         else
         {
-            renderer.polys?.Dispose();
-            renderer.polys = null;
+            RecreatePolys();
         }
 
         RecreateScenery();
@@ -139,10 +171,16 @@ public partial class StageEditorPhase
     {
         if (ActiveTab?.StageRenderer is not { } renderer || ActiveTab.Stage is null) return;
 
-        renderer.polys?.Dispose();
-        renderer.polys = ActiveTab.PolysEnabled
-            ? Environment.MakePolys(ActiveTab.Stage, -10000, 20000, -10000, 20000, ActiveTab.ScenePieces.Count)
-            : null;
+        var tab = ActiveTab;
+        var settings = Environment.GenerationSettings.Capture();
+        var enabled = tab.PolysEnabled;
+        var count = tab.ScenePieces.Count;
+        _ = RecreateEnvironmentPartAsync(
+            tab,
+            renderer,
+            0,
+            () => enabled ? Environment.BuildPolys(tab.Stage, -10000, 20000, -10000, 20000, count, settings) : null
+        );
     }
 
     /// <summary>The sky gradient bakes the sky and fog colours at construction.</summary>
@@ -159,12 +197,89 @@ public partial class StageEditorPhase
     {
         if (ActiveTab?.StageRenderer is not { } renderer) return;
 
-        renderer.clouds?.Dispose();
-        renderer.clouds = ActiveTab.CloudsEnabled ? Environment.MakeClouds(-10000, 10000, -10000, 10000) : null;
+        var tab = ActiveTab;
+        var settings = Environment.GenerationSettings.Capture();
+        var clouds = tab.CloudsEnabled;
+        var mountains = tab.MountainsEnabled;
+        _ = RecreateEnvironmentPartAsync(
+            tab,
+            renderer,
+            1,
+            () => clouds ? Environment.BuildClouds(-10000, 10000, -10000, 10000, settings) : null
+        );
+        _ = RecreateEnvironmentPartAsync(
+            tab,
+            renderer,
+            2,
+            () => mountains ? Environment.BuildMountains(-10000, 10000, -10000, 10000, settings) : null
+        );
+    }
 
-        renderer.mountains?.Dispose();
-        renderer.mountains =
-            ActiveTab.MountainsEnabled ? Environment.MakeMountains(-10000, 10000, -10000, 10000) : null;
+    private readonly Dictionary<(StageEditorTab Tab, int Part), CancellationTokenSource> _environmentRequests = new();
+    private readonly SemaphoreSlim _environmentGate = new(1, 1);
+
+    private async Task RecreateEnvironmentPartAsync(
+        StageEditorTab tab,
+        ClientStageRenderer renderer,
+        int part,
+        Func<NFMWorldLibrary.Rad.Rad3dPoly[]?> build
+    )
+    {
+        var key = (tab, part);
+        if (_environmentRequests.TryGetValue(key, out var previous)) previous.Cancel();
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_editorLoading.Token);
+        _environmentRequests[key] = cancellation;
+        using var loading = LoadingWork.Begin("Preparing scenery...");
+        try
+        {
+            await _environmentGate.WaitAsync(cancellation.Token);
+            EnvironmentMeshData? polygons;
+            try
+            {
+                polygons = await Task.Run(
+                    () => build() is { } geometry ? EnvironmentMeshData.Prepare(geometry) : null,
+                    cancellation.Token
+                );
+            }
+            finally
+            {
+                _environmentGate.Release();
+            }
+
+            await LoadingWork.NextFrame;
+            cancellation.Token.ThrowIfCancellationRequested();
+            if (_editorDisposed || !ReferenceEquals(tab.StageRenderer, renderer)) return;
+            switch (part)
+            {
+                case 0:
+                    var polys = polygons is null ? null : new GroundPolys(_graphicsDevice, polygons);
+                    renderer.polys?.Dispose();
+                    renderer.polys = polys;
+                    break;
+                case 1:
+                    var clouds = polygons is null ? null : new GroundPolys(_graphicsDevice, polygons);
+                    renderer.clouds?.Dispose();
+                    renderer.clouds = clouds;
+                    break;
+                case 2:
+                    var mountains = polygons is null ? null : new Mountains(_graphicsDevice, polygons);
+                    renderer.mountains?.Dispose();
+                    renderer.mountains = mountains;
+                    break;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            Logging.Warning($"Could not prepare scenery: {ex.Message}");
+        }
+        finally
+        {
+            await LoadingWork.NextFrame;
+            if (_environmentRequests.GetValueOrDefault(key) == cancellation) _environmentRequests.Remove(key);
+        }
     }
 
     private void UpdateCameraPosition()

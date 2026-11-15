@@ -1,4 +1,5 @@
 using NFMWorld.PhysicsFS;
+using NFMWorldLibrary.Radpack;
 
 namespace NFMWorldLibrary.Util;
 
@@ -8,13 +9,17 @@ public static class MenuPreferences
     public const string StageSoundtrack = "stage";
     public const string MusicDirectory = "data/music/interface/";
 
-    public static string NormalizeStage(string selection) => IsRelativeAsset(selection) ? selection : LastPlayedStage;
+    public static string NormalizeStage(string selection) => RadpackReader.IsArchiveId(selection)
+        ? RadpackReader.Identity(selection) : IsRelativeAsset(selection) ? selection : LastPlayedStage;
+
     public static string NormalizeMusic(string selection) => IsRelativeAsset(selection) ? selection : StageSoundtrack;
 
     public static string ResolveStage(VirtualFS fs, string selection, string lastPlayed)
-        => selection != LastPlayedStage
-           && IsRelativeAsset(selection)
-           && (fs.FileExists($"data/stages/{selection}.txt") || fs.FileExists($"data/stages/{selection}.radpack"))
+        => RadpackReader.IsArchiveId(selection)
+            ? fs.FileExists(RadpackReader.Identity(selection)) ? RadpackReader.Identity(selection) : lastPlayed
+            : selection != LastPlayedStage
+              && IsRelativeAsset(selection)
+              && (fs.FileExists($"data/stages/{selection}.txt") || fs.FileExists($"data/stages/{selection}.radpack"))
             ? selection
             : lastPlayed;
 

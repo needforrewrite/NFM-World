@@ -25,11 +25,10 @@ public class StageSelectPhase : BaseStageRenderingPhase
     private readonly StageSelectState _state = new();
     private readonly StageSelectView.Actions _actions;
     private readonly AroundStageCamera _aroundStageCamera = new();
-    private IRadicalMusic _stageSelectMusic;
+    private bool _confirmAfterLoad;
     private string _loadedStage = "";
     private CancellationTokenSource? _onlineCancellation;
     private int _onlineGeneration;
-    private int _prepareGeneration;
 
     public StageSelectPhase() : base()
     {
@@ -62,15 +61,42 @@ public class StageSelectPhase : BaseStageRenderingPhase
         _state.Collection.Value = collection;
         RefreshStages(loadPreview: true);
 
-        _stageSelectMusic = IBackend.Backend.LoadMusic("data/music/nfm1/stageselectremastered.mp3");
+        LoadStageMusic();
     }
 
     public override Node? BuildUi() => StageSelectView.Build(_state, _actions);
 
-    public override void Enter()
+    protected override (string Path, double Tempo, double Frequency)? GetMusicTrack()
+        => ("data/music/nfm1/stageselectremastered.mp3", 1, 1);
+
+    protected override void OnStageLoaded()
     {
-        base.Enter();
-        GameSparker.CurrentMusic = _stageSelectMusic;
+        CurrentStage!.FadeFromOverride = 9999999;
+        _loadedStage = StageName!;
+        if (_state.Selected.Value != StageName)
+        {
+            if (!_state.OnlineSource.Value)
+            {
+                _state.Busy.Value = false;
+                _state.ConfirmEnabled.Value = _state.Selected.Value.Length > 0;
+            }
+
+            return;
+        }
+
+        _state.Busy.Value = false;
+        _state.ConfirmEnabled.Value = true;
+        _state.Status.Value = "";
+        if (_confirmAfterLoad) StageSelected?.Invoke(this, StageName!);
+        _confirmAfterLoad = false;
+    }
+
+    protected override void OnStageLoadFailed(Exception error)
+    {
+        _state.Busy.Value = false;
+        _state.ConfirmEnabled.Value = false;
+        _state.Status.Value = "Could not load the stage: " + error.Message;
+        _confirmAfterLoad = false;
     }
 
     /// <summary>The directory a stage id lives in; ids without one are shown as "stages".</summary>
@@ -96,7 +122,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
 
         _onlineCancellation?.Cancel();
         _onlineGeneration++;
-        _prepareGeneration++;
+        _confirmAfterLoad = false;
 
         _state.OnlineSource.Value = online;
         _state.BrowsingCollections.Value = false;
@@ -122,6 +148,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
 
     private async Task SearchOnlineAsync(string query)
     {
+        using var loading = LoadingWork.Begin("Searching archive...");
         _onlineCancellation?.Cancel();
         var cancellation = _onlineCancellation = new CancellationTokenSource();
         var generation = ++_onlineGeneration;
@@ -131,6 +158,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
         try
         {
             var page = await ContentClient.SearchAsync(query, "Stage", 40, null, cancellation.Token);
+            await LoadingWork.NextFrame;
             if (generation != _onlineGeneration)
                 return;
 
@@ -151,6 +179,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
+            await LoadingWork.NextFrame;
             if (generation != _onlineGeneration)
                 return;
 
@@ -159,6 +188,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
         }
         finally
         {
+            await LoadingWork.NextFrame;
             if (generation == _onlineGeneration)
                 _state.Busy.Value = false;
         }
@@ -192,54 +222,34 @@ public class StageSelectPhase : BaseStageRenderingPhase
         if (RadpackReader.IsArchiveId(stageId))
         {
             // Archive stages have to be downloaded and verified before the preview can read them.
-            _ = PrepareStageAsync(stageId, confirmAfter: false);
+            PrepareStage(stageId, confirmAfter: false);
             return;
         }
 
-        _prepareGeneration++;
+        _confirmAfterLoad = false;
+        _state.Busy.Value = true;
+        _state.ConfirmEnabled.Value = false;
+        _state.Status.Value = "Loading stage...";
         LoadStage(stageId, loadMusic: false, reloadIfLoaded: true);
-        _loadedStage = stageId;
         // ApplyValues re-applies the stage's fadefrom() every frame, so override it after that.
         if (CurrentStage != null)
             CurrentStage.FadeFromOverride = 9999999;
     }
 
     /// <summary>Prepares a public stage, then previews it or starts the race when asked.</summary>
-    private async Task PrepareStageAsync(string stageId, bool confirmAfter)
+    private void PrepareStage(string stageId, bool confirmAfter)
     {
-        var generation = ++_prepareGeneration;
+        _confirmAfterLoad = confirmAfter;
         _state.Busy.Value = true;
+        _state.ConfirmEnabled.Value = false;
         _state.Status.Value = "Downloading stage...";
-
-        var result = await ContentCache.PrepareAsync(ContentClient, stageId, AssetKind.Stage, CancellationToken.None);
-        if (generation != _prepareGeneration)
-            return;
-
-        _state.Busy.Value = false;
-
-        if (!result.Ok)
-        {
-            _state.ConfirmEnabled.Value = false;
-            _state.Status.Value = result.Error ?? "That stage could not be prepared.";
-            return;
-        }
-
         _state.Selected.Value = stageId;
-        _state.ConfirmEnabled.Value = true;
-        _state.Status.Value = "";
-
         LoadStage(stageId, loadMusic: false, reloadIfLoaded: true);
-        _loadedStage = stageId;
-        if (CurrentStage != null)
-            CurrentStage.FadeFromOverride = 9999999;
-
-        if (confirmAfter)
-            StageSelected?.Invoke(this, stageId);
     }
 
     private void Confirm()
     {
-        if (!_state.ConfirmEnabled.Value)
+        if (!_state.ConfirmEnabled.Value || IsStageLoading)
             return;
 
         var selected = _state.Selected.Value;
@@ -249,9 +259,9 @@ public class StageSelectPhase : BaseStageRenderingPhase
             return;
         }
 
-        if (RadpackReader.IsArchiveId(selected) && selected != _loadedStage)
+        if (selected != _loadedStage)
         {
-            _ = PrepareStageAsync(selected, confirmAfter: true);
+            PrepareStage(selected, confirmAfter: true);
             return;
         }
 
@@ -322,11 +332,10 @@ public class StageSelectPhase : BaseStageRenderingPhase
 
         if (disposing)
         {
+            _onlineGeneration++;
             _onlineCancellation?.Cancel();
             _onlineCancellation?.Dispose();
             _onlineCancellation = null;
-            _stageSelectMusic.Dispose();
-            _stageSelectMusic = null!;
         }
     }
 }

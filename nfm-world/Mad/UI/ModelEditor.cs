@@ -20,7 +20,18 @@ namespace NFMWorld.UI;
 public class ModelEditorTab
 {
     public string? ModelPath { get; set; }
-    public EditorObject? Object { get; set; }
+
+    public EditorObject? Object
+    {
+        get;
+        set
+        {
+            if (ReferenceEquals(field, value)) return;
+            var previous = field;
+            field = value;
+            previous?.Dispose();
+        }
+    }
 
     // Text editor state
     public string TextContent { get; set; } = "";
@@ -206,6 +217,7 @@ public class ModelEditorPhase : BasePhase
     internal void SetActiveTab(int index)
     {
         if (index < 0 || index >= _tabs.Count) return;
+        _modelLoadGeneration++;
         _activeTabIndex = index;
         _view?.OnActiveTabChanged();
     }
@@ -289,7 +301,7 @@ public class ModelEditorPhase : BasePhase
         LocalRaceHost host;
         try
         {
-            host = LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = players });
+            host = LocalRaceHost.CreateDeferred(stageName, factory, new ClientGamemodeParameters { Players = players });
         }
         catch (Exception ex)
         {
@@ -361,11 +373,13 @@ public class ModelEditorPhase : BasePhase
 
     public override void Exit()
     {
+        _modelLoadGeneration++;
         base.Exit();
 
         _isOpen = false;
         if (!_preserveTabsOnExit)
         {
+            foreach (var tab in _tabs) tab.Object = null;
             _tabs.Clear();
             _activeTabIndex = -1;
         }
@@ -382,13 +396,33 @@ public class ModelEditorPhase : BasePhase
         return tab;
     }
 
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _modelLoadGeneration++;
+            _isOpen = false;
+            foreach (var tab in _tabs) tab.Object = null;
+            _tabs.Clear();
+            DisposeWheelHighlight();
+            DisposeSelectionOverlay();
+            DisposeWheelSelectionOverlay();
+            scene.Dispose();
+            overlayScene.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+
     internal bool TabHasUnsavedChanges(int index)
         => index >= 0 && index < _tabs.Count && _tabs[index].TextEditorDirty && _tabs[index].ModelPath != null;
 
     internal void PerformCloseTab(int index)
     {
         if (index < 0 || index >= _tabs.Count) return;
+        _modelLoadGeneration++;
 
+        _tabs[index].Object = null;
         _tabs.RemoveAt(index);
 
         // Adjust active tab index
@@ -544,8 +578,24 @@ public class ModelEditorPhase : BasePhase
 ";
     }
 
+    private int _modelLoadGeneration;
+
     internal string? LoadModel(string filePath, bool openInNewTab = false)
     {
+        _ = LoadCreatedModelAsync(filePath, openInNewTab);
+        return null;
+    }
+
+    private async Task LoadCreatedModelAsync(string filePath, bool openInNewTab)
+    {
+        var error = await LoadModelAsync(filePath, openInNewTab);
+        await LoadingWork.NextFrame;
+        if (_isOpen && error is not null) GameSparker.MessageWindow.ShowMessage("Could not load model", error);
+    }
+
+    internal async Task<string?> LoadModelAsync(string filePath, bool openInNewTab = false)
+    {
+        var generation = ++_modelLoadGeneration;
         // Check if already open
         var existingTabIndex = _tabs.FindIndex(t => t.ModelPath == filePath);
         if (existingTabIndex >= 0 && !openInNewTab)
@@ -557,9 +607,30 @@ public class ModelEditorPhase : BasePhase
             return null;
         }
 
+        var target = openInNewTab ? null : ActiveTab;
+        var targetText = target?.TextContent;
+        using var loading = LoadingWork.Begin("Loading model...");
         try
         {
-            var radContent = File.ReadAllText(filePath);
+            var radContent = await Task.Run(() => File.ReadAllText(filePath));
+            var parsed = await Task.Run(() =>
+                {
+                    try
+                    {
+                        return (Mesh: (Mesh.Prepared?)Mesh.Prepare(RadParser.ParseRad(radContent, "editing")),
+                            Error: (string?)null);
+                    }
+                    catch (Exception ex)
+                    {
+                        return (Mesh: (Mesh.Prepared?)null,
+                            Error: $"Error parsing model: {ex.Message}\n\nFile loaded in text editor for correction.");
+                    }
+                }
+            );
+            await LoadingWork.NextFrame;
+            if (!_isOpen || generation != _modelLoadGeneration
+                || (target is not null && (!_tabs.Contains(target) || !ReferenceEquals(ActiveTab, target)
+                                           || target.TextContent != targetText))) return null;
 
             ModelEditorTab tab;
             if (openInNewTab || _activeTabIndex < 0 || _tabs.Count == 0)
@@ -575,13 +646,15 @@ public class ModelEditorPhase : BasePhase
                 tab = ActiveTab!;
             }
 
-            var parseError = LoadModelIntoTab(tab, filePath, radContent);
+            var parseError = LoadModelIntoTab(tab, filePath, radContent, parsed.Mesh, parsed.Error);
             _view?.OnActiveTabChanged();
             _view?.Refresh();
             return parseError;
         }
         catch (Exception ex)
         {
+            await LoadingWork.NextFrame;
+            if (!_isOpen || generation != _modelLoadGeneration) return null;
             SentrySdk.CaptureException(ex);
             var err = $"Error loading file: {ex.Message}";
             Logging.Error(err);
@@ -589,7 +662,13 @@ public class ModelEditorPhase : BasePhase
         }
     }
 
-    private string? LoadModelIntoTab(ModelEditorTab tab, string filePath, string radContent)
+    private string? LoadModelIntoTab(
+        ModelEditorTab tab,
+        string filePath,
+        string radContent,
+        Mesh.Prepared? prepared,
+        string? parseError
+    )
     {
         tab.ModelPath = filePath;
         tab.TextContent = radContent;
@@ -615,9 +694,9 @@ public class ModelEditorPhase : BasePhase
         // Try to parse the model, but keep the file loaded even if it fails
         try
         {
-            tab.Object = new EditorObject(RadParser.ParseRad(radContent, "editing"));
+            tab.Object = prepared is null ? null : new EditorObject(prepared);
             ResetTabView(tab);
-            return null;
+            return parseError;
         }
         catch (Exception parseEx)
         {

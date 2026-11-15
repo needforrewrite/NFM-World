@@ -12,6 +12,37 @@ namespace NFMWorld.Library.Test;
 public class LocalRaceHostTests
 {
     [TestMethod]
+    public void DeferredHostWaitsForAPreparedStageBeforeStarting()
+    {
+        var factory = new ClientOnlyFactory();
+        try
+        {
+            using var host = LocalRaceHost.CreateDeferred(
+                "missing/stage",
+                factory,
+                new ClientGamemodeParameters
+                {
+                    Players = [new ClientSidePlayerInfo("test", "unused/car", new Color3(255, 0, 0), false, true)]
+                }
+            );
+            Assert.Throws<InvalidOperationException>(() => host.Start());
+            host.InitializeStage(new EmptyStage());
+            var starts = 0;
+            host.RaceCanStart += () => starts++;
+            host.Start();
+            Assert.AreEqual(1, starts);
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
+
+    private sealed class EmptyStage : BackendStage
+    {
+    }
+
+    [TestMethod]
     public void ClientOnlyGamemode_StartsAndRestartsWithoutLoadingStageFiles()
     {
         var factory = new ClientOnlyFactory();

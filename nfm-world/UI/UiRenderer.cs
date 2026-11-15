@@ -90,7 +90,8 @@ public class UiRenderer : IDisposable
                         pointerEvents: !GameSparker.MessageWindow.IsOpen
                     ), children: _phaseRoot
                     ),
-                    GameSparker.MessageWindow.BuildUi()
+                    GameSparker.MessageWindow.BuildUi(),
+                    NFMWorld.UI.Components.LoadingOverlay.Build()
                 ]
             );
             }
@@ -132,8 +133,11 @@ public class UiRenderer : IDisposable
 
     public void Update(GameTime gameTime)
     {
+        ContentCacheMaintenance.Update();
+        LoadingWork.Update();
         // Effects queued during the frame run here, so a frame's writes coalesce.
         UiScheduler.Instance.Flush();
+        CarThumbnails.ReleaseRetired();
 
         // Drives per-node per-frame logic (the text cursor's blink); nothing else calls it.
         ActiveRoot?.Update((float)gameTime.ElapsedGameTime.TotalMilliseconds);

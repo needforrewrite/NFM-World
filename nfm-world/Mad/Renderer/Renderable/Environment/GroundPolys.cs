@@ -16,47 +16,27 @@ public class GroundPolys : Transform, IRenderable, IImmediateRenderElement, IDis
     public override IReadOnlyList<ITransform> ChildTransforms => [];
 
     public GroundPolys(IGraphicsDevice graphicsDevice, Rad3dPoly[] polys)
+        : this(graphicsDevice, EnvironmentMeshData.Prepare(polys))
+    {
+    }
+
+    internal GroundPolys(IGraphicsDevice graphicsDevice, EnvironmentMeshData prepared)
     {
         _graphicsDevice = graphicsDevice;
-
-        var data = new List<PositionColorVertex>();
-        var indices = new List<uint>();
-
-        for (var i = 0; i < polys.Length; i++)
-        {
-            var poly = polys[i];
-
-            var baseIndex = (uint)data.Count;
-            var color = (Color)poly.Color;
-            foreach (var point in poly.Points)
-            {
-                data.Add(new PositionColorVertex(point, color));
-            }
-
-            for (var index = 0; index < poly.Triangles.Length; index += 3)
-            {
-                var i0 = poly.Triangles[index];
-                var i1 = poly.Triangles[index + 1];
-                var i2 = poly.Triangles[index + 2];
-
-                indices.AddRange(i0 + baseIndex, i1 + baseIndex, i2 + baseIndex);
-            }
-        }
-
-        var vertexBytes = MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(data));
+        var vertexBytes = MemoryMarshal.AsBytes(prepared.Vertices.AsSpan());
         _vertexBuffer = graphicsDevice.CreateBuffer(
             new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length),
             vertexBytes
         );
 
-        var indexBytes = MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(indices));
+        var indexBytes = MemoryMarshal.AsBytes(prepared.Indices.AsSpan());
         _indexBuffer = graphicsDevice.CreateBuffer(
             new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indexBytes.Length, IndexFormat.UInt32),
             indexBytes
         );
 
-        _triangleCount = indices.Count / 3;
-        _vertexCount = data.Count;
+        _triangleCount = prepared.Indices.Length / 3;
+        _vertexCount = prepared.Vertices.Length;
     }
 
     ~GroundPolys()

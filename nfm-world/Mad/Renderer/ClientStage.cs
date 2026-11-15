@@ -4,6 +4,9 @@ using NFMWorld.Sfx;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Util;
+using NFMWorldLibrary.Content;
+using NFMWorldLibrary.Radpack;
+using NFMWorld.Gameplay;
 
 namespace NFMWorld;
 
@@ -21,6 +24,13 @@ public class ClientStage : IDisposable
     private ObservableUnlimitedArray<ClientSidePlayer>? _players;
     private Scene _scene;
     private bool _disposed;
+    private IDisposable? _pendingOwnership;
+
+    internal void Adopt()
+    {
+        _pendingOwnership?.Dispose();
+        _pendingOwnership = null;
+    }
 
     public BackendStage Backend { get; }
     public ClientStageRenderer Renderer { get; }
@@ -58,15 +68,24 @@ public class ClientStage : IDisposable
         Camera camera,
         IReadOnlyList<Camera> lightCameras,
         StageLoader? stageData
+    ) : this(cars, camera, lightCameras, new BackendStage(stageName, stageData), null)
+    {
+    }
+
+    private ClientStage(
+        ObservableUnlimitedArray<BackendCar> cars,
+        Camera camera,
+        IReadOnlyList<Camera> lightCameras,
+        BackendStage backend,
+        ClientStageRenderer? renderer
     )
     {
         _cars = cars;
         Camera = camera;
         LightCameras = lightCameras;
 
-        Backend = stageData is null ? new BackendStage(stageName) : new BackendStage(stageName, stageData);
-        Renderer = new ClientStageRenderer(Backend);
-        Renderer.ApplyValues();
+        Backend = backend;
+        Renderer = renderer ?? new ClientStageRenderer(Backend);
         Minimap = new StageMinimap(Backend);
 
         // Scene starts with just the stage renderer — car visuals are added lazily in GameTick().
@@ -83,6 +102,52 @@ public class ClientStage : IDisposable
             Logging.Error("No music is defined for this stage!");
 
         _cars.CollectionChanged += CarsOnCollectionChanged;
+    }
+
+    internal static async Task<ClientStage> CreateAsync(
+        string stageName,
+        ObservableUnlimitedArray<BackendCar> cars,
+        Camera camera,
+        IReadOnlyList<Camera> lightCameras,
+        CancellationToken token,
+        StageLoader? stageData = null
+    )
+    {
+        using var loading = LoadingWork.Begin("Loading stage...");
+        var backend = await Task.Run(async () =>
+            {
+                if (stageData is null && RadpackReader.IsArchiveId(stageName))
+                {
+                    loading.Report("Downloading stage...");
+                    var result = await ContentCache.PrepareAsync(
+                        GarageController.ContentClient,
+                        stageName,
+                        AssetKind.Stage,
+                        token
+                    );
+                    if (!result.Ok) throw new InvalidDataException(result.Error);
+                }
+
+                token.ThrowIfCancellationRequested();
+                loading.Report("Preparing scene...");
+                return new BackendStage(stageName, stageData, throwOnError: true);
+            }, token
+        );
+        var renderer = await ClientStageRenderer.CreateAsync(backend, token);
+        await LoadingWork.NextFrame;
+        try
+        {
+            token.ThrowIfCancellationRequested();
+            var stage = new ClientStage(cars, camera, lightCameras, backend, renderer);
+            stage._pendingOwnership = ContentCacheMaintenance.TrackPending(stage);
+            renderer.Adopt();
+            return stage;
+        }
+        catch
+        {
+            renderer.Dispose();
+            throw;
+        }
     }
 
     /// <summary>
@@ -379,6 +444,7 @@ public class ClientStage : IDisposable
             return;
 
         _disposed = true;
+        Adopt();
 
         _cars.CollectionChanged -= CarsOnCollectionChanged;
 
