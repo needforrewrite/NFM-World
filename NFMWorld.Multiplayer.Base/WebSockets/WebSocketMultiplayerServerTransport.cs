@@ -190,20 +190,40 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
             catch (Exception ex)
             {
                 Logging.Warning($"Failed to send data to WS client {Id}", exception: ex);
+                // A send that failed means the peer is gone. Nothing else ends this connection's
+                // receive loop - it blocks until the socket breaks - so without this the client
+                // stays in the registry for ever, holding the account seat it authenticated with.
+                Socket.Abort();
             }
         }
+
+        /// <summary>
+        /// How long a peer gets to answer the closing handshake. Without a bound, a peer that is
+        /// gone without closing leaves this waiting for ever - and its receive loop, its entry in
+        /// the registry and the account it authenticated with along with it.
+        /// </summary>
+        private static readonly TimeSpan CloseTimeout = TimeSpan.FromSeconds(5);
 
         private async Task CloseCoreAsync(byte[]? _)
         {
             try
             {
                 if (Socket.State == WebSocketState.Open)
-                    await Socket.CloseAsync(WebSocketCloseStatus.PolicyViolation, "refused", CancellationToken.None);
+                {
+                    using var timeout = new CancellationTokenSource(CloseTimeout);
+                    await Socket.CloseAsync(WebSocketCloseStatus.PolicyViolation, "refused", timeout.Token);
+                }
             }
             catch (Exception ex)
             {
                 Logging.Warning($"Failed to close WS client {Id}", exception: ex);
             }
+
+            // A peer that never answers the close keeps this receive loop - and the registry
+            // entry, and the account it authenticated with - alive indefinitely. Aborting is the
+            // only way to end it from this side.
+            if (Socket.State != WebSocketState.Closed)
+                Socket.Abort();
         }
     }
 }

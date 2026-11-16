@@ -46,11 +46,17 @@ public class WebSocketMultiplayerClientTransport : BaseMultiplayerClientTranspor
             throw;
         }
 
-        var previous = _receiveCts;
+        var previousCts = _receiveCts;
+        var previousClient = _client;
         _client = client;
         _receiveCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        previous?.Cancel();
-        previous?.Dispose();
+        previousCts?.Cancel();
+        previousCts?.Dispose();
+
+        // The superseded socket has to go, not just its receive loop: the server only drops the
+        // connection - and the account seat it holds - when the socket closes, so a reconnected
+        // client would otherwise be refused as a duplicate of its own previous connection.
+        previousClient?.Dispose();
 
         _ = ReceiveLoop(client, _receiveCts.Token);
         return true;
@@ -66,13 +72,21 @@ public class WebSocketMultiplayerClientTransport : BaseMultiplayerClientTranspor
     {
         var buffer = new byte[4096];
         using var ms = new MemoryStream();
+        var evicted = false;
 
         try
         {
             while (client.State == WebSocketState.Open && !ct.IsCancellationRequested)
             {
                 var result = await client.ReceiveAsync(buffer, ct);
-                if (result.MessageType == WebSocketMessageType.Close) break;
+                if (result.MessageType == WebSocketMessageType.Close)
+                {
+                    // A policy violation is the server refusing this connection for good - an
+                    // account that signed in elsewhere. Reconnecting would take the seat back
+                    // and evict the connection that holds it now, so the two would ping-pong.
+                    evicted = result.CloseStatus == WebSocketCloseStatus.PolicyViolation;
+                    break;
+                }
 
                 ms.Write(buffer, 0, result.Count);
                 if (ms.Length > MaxMessageBytes)
@@ -94,6 +108,10 @@ public class WebSocketMultiplayerClientTransport : BaseMultiplayerClientTranspor
         catch (WebSocketException)
         {
         }
+        catch (ObjectDisposedException)
+        {
+            // ConnectAsync disposes the superseded socket; that ends its loop.
+        }
 
         // Only the live socket may change the state: an older loop finishing after a
         // reconnect must not report the new connection as dropped.
@@ -103,8 +121,16 @@ public class WebSocketMultiplayerClientTransport : BaseMultiplayerClientTranspor
         client.Dispose();
         State = ClientState.Disconnected;
 
+        if (evicted)
+        {
+            // The reason is in the refusal packet the server sent ahead of the close, so the
+            // lobby can still say why; only the retry is pointless.
+            Logging.Info("The lobby closed this connection; not reconnecting.");
+            StopReconnecting();
+        }
+
         // Reconnect unless we were told to stop (a deliberate leave).
-        if (!IsStopping)
+        if (!IsStopping && !evicted)
             BeginReconnect();
     }
 

@@ -93,8 +93,13 @@ public class LobbyAuthenticationTests
         PlayerName = "claimed-name", SelectedVehicle = "nfmm/other-car", Color = default
     };
 
+    /// <summary>
+    /// The last answer to <paramref name="client"/>. A connection can be answered more than once
+    /// (a repeated token replays the acceptance, and a takeover refuses the older connection), so
+    /// the newest reply is the one that decides its state.
+    /// </summary>
     private static S2C_Authenticated Reply(StubTransport transport, uint client = 1) =>
-        transport.Sent.Where(p => p.Client == client).Select(p => p.Packet).OfType<S2C_Authenticated>().Single();
+        transport.Sent.Where(p => p.Client == client).Select(p => p.Packet).OfType<S2C_Authenticated>().Last();
 
     private static S2C_LobbyState Snapshot(StubTransport transport, uint client = 1) =>
         transport.Sent.Where(p => p.Client == client).Select(p => p.Packet).OfType<S2C_LobbyState>().Last();
@@ -182,30 +187,60 @@ public class LobbyAuthenticationTests
         lobby.Stop();
     }
 
+    /// <summary>
+    /// A second connection on an account takes the seat over and the older connection is evicted.
+    /// Refusing the newcomer instead locked the player out for good: a socket that died without a
+    /// close stays in the registry until its receive loop ends, so the player's own reconnect was
+    /// refused and every retry after it too.
+    /// </summary>
     [TestMethod]
-    public void DuplicateAccount_IsRefusedWithoutInvalidatingToken()
+    public void SecondConnection_TakesTheAccountOver_AndEvictsTheFirst()
     {
         var transport = new StubTransport();
         var archive = new StubArchive(() => Task.FromResult(Account()));
         var lobby = new GameOrchestrator(transport, Archive(archive));
         transport.Connect(1);
         transport.Receive(1, new C2S_Authenticate { Token = "first-token" });
-        transport.Receive(1, new C2S_Authenticate { Token = "first-token" });
+        Assert.IsTrue(Reply(transport, 1).Accepted);
+
         transport.Connect(2);
-        transport.Receive(1, new C2S_LobbyChatMessage { Message = "account chat" });
-        transport.Receive(2, Identity());
-        transport.Receive(2, new C2S_JoinSession { SessionId = 1 });
-        Assert.HasCount(1, Snapshot(transport).Players);
-        Assert.IsFalse(transport.Sent.Any(p => p.Client == 2 && p.Packet is S2C_LobbyState or S2C_LobbyChatMessage));
         transport.Receive(2, new C2S_Authenticate { Token = "second-token" });
 
-        // The repeated token is answered again, so take the first acceptance rather than exactly one.
-        Assert.IsTrue(transport.Sent.Select(p => p.Packet).OfType<S2C_Authenticated>().First().Accepted);
-        Assert.IsFalse(Reply(transport, 2).Accepted);
-        Assert.IsFalse(Reply(transport, 2).SessionRejected);
-        CollectionAssert.AreEqual(new uint[] { 2 }, transport.Disconnected.ToArray());
-        Assert.HasCount(1, Snapshot(transport).Players);
-        Assert.AreEqual(2, archive.Requests, "repeated tokens must not trigger more archive requests");
+        Assert.IsTrue(Reply(transport, 2).Accepted);
+        Assert.AreEqual(42, Reply(transport, 2).AccountId);
+        Assert.IsFalse(Reply(transport, 1).Accepted, "the older connection has to lose the account");
+        Assert.IsFalse(Reply(transport, 1).SessionRejected, "an eviction must not invalidate the token");
+        Assert.IsNotEmpty(Reply(transport, 1).Error);
+        CollectionAssert.AreEqual(new uint[] { 1 }, transport.Disconnected.ToArray());
+
+        // One seat, held by the surviving connection.
+        Assert.HasCount(1, Snapshot(transport, 2).Players);
+        Assert.AreEqual(2, archive.Requests, "each connection verifies its token once");
+        lobby.Stop();
+    }
+
+    /// <summary>
+    /// The evicted connection leaves the registry, so the seat is free again and the account is
+    /// not left held by a connection nobody is using.
+    /// </summary>
+    [TestMethod]
+    public void EvictedConnection_NoLongerHoldsTheAccount()
+    {
+        var transport = new StubTransport();
+        var lobby = new GameOrchestrator(transport, Archive(new StubArchive(() => Task.FromResult(Account()))));
+        transport.Connect(1);
+        transport.Receive(1, new C2S_Authenticate { Token = "saved-token" });
+        Assert.IsTrue(Reply(transport, 1).Accepted);
+
+        transport.Connect(2);
+        transport.Receive(2, new C2S_Authenticate { Token = "saved-token" });
+        Assert.IsTrue(Reply(transport, 2).Accepted);
+
+        // A third connection is a third eviction, not a refusal: the ghost of the first one is gone.
+        transport.Connect(3);
+        transport.Receive(3, new C2S_Authenticate { Token = "saved-token" });
+        Assert.IsTrue(Reply(transport, 3).Accepted);
+        Assert.HasCount(1, Snapshot(transport, 3).Players);
         lobby.Stop();
     }
 
