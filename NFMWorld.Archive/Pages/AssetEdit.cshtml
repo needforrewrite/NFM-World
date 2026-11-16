@@ -1,0 +1,92 @@
+@page "/asset/{id:int}/edit"
+@model NFMWorld.Archive.Pages.AssetEditModel
+@{
+    var asset = Model.Asset!;
+}
+
+<p><a href="/asset/@asset.Id">← Back to @asset.Name</a></p>
+
+<header class="asset-header">
+    <h1>Edit @asset.Name</h1>
+    <span class="asset-kind">@asset.Type</span>
+</header>
+
+@if (Model.Error is not null)
+{
+    <p class="error" role="alert">@Model.Error</p>
+}
+@if (Model.Message is not null)
+{
+    <p role="status">@Model.Message</p>
+}
+
+@if (!asset.IsPublic)
+{
+    <p class="muted">This upload is hidden: it is not listed, searched or downloadable until you publish it again.</p>
+}
+@if (asset.IsTakedown)
+{
+    <p class="error">This upload was removed by a moderator and is not served.</p>
+}
+
+<section class="asset-edit">
+    <h2>Details</h2>
+    <form method="post" asp-page-handler="Update" asp-route-id="@asset.Id">
+        <label>Name<input asp-for="Name" maxlength="@NFMWorld.Archive.AssetUpload.MaxNameLength" /></label>
+        <label>Description<textarea asp-for="Description" rows="4" maxlength="@NFMWorld.Archive.AssetUpload.MaxDescriptionLength"></textarea></label>
+        <label>
+            <input asp-for="IsPublic" />
+            Listed publicly
+        </label>
+        @if (Model.Account!.IsAdmin)
+        {
+            <label>
+                <input asp-for="IsTakedown" />
+                Removed by moderation (never served)
+            </label>
+        }
+        <button type="submit">Save changes</button>
+    </form>
+</section>
+
+<section class="asset-edit">
+    <h2>File</h2>
+    <dl class="asset-meta">
+        <dt>Size</dt>
+        <dd>@AssetEditModel.FormatSize(asset.SizeBytes)</dd>
+
+        <dt>Downloads</dt>
+        <dd>@asset.DownloadCount</dd>
+
+        <dt>SHA-256</dt>
+        <dd><code class="asset-hash">@asset.ContentHash</code></dd>
+    </dl>
+
+    @if (Model.IsOwner)
+    {
+        <p class="muted">
+            Replacing the file keeps this page's address and your inventory entry, but every time
+            trial recorded against the old file stops ranking.
+        </p>
+        <form method="post" enctype="multipart/form-data" asp-page-handler="Replace" asp-route-id="@asset.Id">
+            <label>Replacement file<input type="file" asp-for="Replacement" accept=".radpack,.rad" /></label>
+            <button type="submit">Replace file</button>
+        </form>
+    }
+    else
+    {
+        <p class="muted">Only the author can replace this file.</p>
+    }
+</section>
+
+<section class="asset-edit">
+    <h2>Delete</h2>
+    <p class="muted">
+        Deletes the upload and its stored file. Time trials recorded against it stop ranking, and
+        any page that linked to it stops resolving.
+    </p>
+    <form method="post" asp-page-handler="Delete" asp-route-id="@asset.Id"
+          onsubmit="return confirm('Delete this upload permanently?');">
+        <button type="submit" class="secondary">Delete upload</button>
+    </form>
+</section>

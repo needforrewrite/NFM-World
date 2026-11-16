@@ -89,3 +89,15 @@ td button {
 .asset-list {
     padding-left: 1.25rem;
 }
+
+.asset-edit {
+    margin-block: var(--pico-spacing);
+}
+
+.asset-edit h2 {
+    font-size: 1.1rem;
+}
+
+td form {
+    display: inline;
+}

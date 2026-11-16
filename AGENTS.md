@@ -535,9 +535,34 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
   (the website) both publish data assets, and they must refuse the same inputs: signed in, `Archive:ReadOnly`,
   `AssetKinds.IsPublishable`, the `.radpack`/`.rad` extension allowlist, `AssetKinds.IsUploadExtensionAllowed`
   (a bare `.rad` model has no kind of its own, so it can only claim Car/StagePiece/Wheel), the size cap, the
-  out-of-process validator, and the kind-inside-the-file check. Keep new gates in `AssetKinds` and call them from
-  both — the website silently lost its extension check once and would store a `.txt` with no validation at all.
+  out-of-process validator, and the kind-inside-the-file check. Those gates live in one place now — `AssetUpload`
+  (`CheckClaim`, `StoreAndValidateAsync`, `NormalizeName`/`NormalizeDescription`) — so both callers and the edit page
+  cannot drift; the website silently lost its extension check once and stored a `.txt` with no validation at all.
   Replays have no website path: `IsPublishable` excludes them, and only `/tt/upload` ranks a time, after simulating it.
+- **CRUD is owner-scoped.** `GET /assets/mine` lists the account's own rows (hidden and taken-down included, because
+  they are still theirs to fix); `PATCH /assets/{id}` changes name/description/`IsPublic`; `PUT /assets/{id}/content`
+  replaces the bytes; `DELETE /assets/{id}` removes the row and its file. `IsTakedown` is administrators-only — an
+  author resubmitting their own edit form must not un-hide a moderated row — and only the owner may replace content,
+  while an administrator may also rename or delete. `Pages/AssetEdit.cshtml` (`/asset/{id}/edit`) is the website's
+  half and applies exactly the same rules; the account page and the asset page link to it, and the account page has
+  its own inline delete.
+- **A replacement is not an upload.** `AssetUpload.StoreAndValidateReplacementAsync` validates the stored bytes as
+  what they are (radpack first, then legacy `.rad` for a model kind) instead of trusting the submitted file name, so a
+  legacy row can be replaced by the radpack the editors always produce. The row keeps its id and owner, which is why a
+  published link and an inventory entry survive an update; one row per distinct file stays an invariant, so replacing
+  with bytes already published under another name is refused.
+- **Deleting or replacing unranks its replays.** `TimeTrialInvalidation.InvalidateForAssetAsync` clears `IsValid` on
+  every `TimeTrial` that pinned the old hash; invalid rows are excluded from `/tt/leaderboard`, `/tt/replays` and
+  `/tt/replay/{id}`, and a later re-simulation of the same (user, stage, car) restores validity. Never delete a replay
+  row for this: the player's history is theirs, the ranking is what the missing bytes invalidated.
+- **MY CONTENT** is the in-game CRUD surface: WORKSHOP → MY CONTENT, a full-screen overlay
+  (`MyContentView` + `MyContentController`) over `UiState.MyContent`. It lists
+  `AccountManager.ListOwnedAssetsAsync` and renames, hides/re-lists and deletes through the same endpoints. The
+  controller owns the list, the rename modal and the delete prompt (always `MessageWindow.ShowYesNo`), and
+  `MainMenuPhase` only pushes it and routes keys — the same shape as `ReplayBrowserController`. It is deliberately
+  *not* in the garage: the garage's INVENTORY row is a separate, still-disabled feature. Re-publishing a document
+  under a name the account already used replaces that upload (`ArchivePublisher.UploadAsync` →
+  `FindOwnedAssetAsync` + `ReplaceAssetAsync`) rather than creating a duplicate.
 - **Validation is out of process** (`NFMWorld.Archive.Validator`). `TimeTrialSimulator` is synchronous and cannot be
   cancelled, so the archive runs it as a child process with a wall clock and kills it. A time trial is ranked only by
   that simulation's tick count, never by a number the client sends. `Archive:ValidatorPath` must point at the built
@@ -986,6 +1011,9 @@ Added with the archive/content work; read this before touching content loading, 
   because the archive search is network work),
   `replay-browser`, `replay-viewer` or `replay-camera`
   (applies recorded headings through `RaceCameraDirector` and prints the resulting camera).
+  `my-content.json` drives MY CONTENT: its rows are a fixed fixture (the archive is network work) and its
+  script opens the page, the rename dialog and the delete prompt; `main-menu-workshop.json` asserts the WORKSHOP
+  page carries the MY CONTENT row (main-menu rows are named `Main menu item <label>`).
   `--sx-scale=1.25` repeats at a different UI scale.
   This is a UI-only fixture: no gameplay, network, audio, populated stage or scene rendering; writes
   go to an output-local sandbox. Inspect captures with `view_image` and assertions before reporting

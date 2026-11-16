@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Numerics;
 using System.Text.Json;
+using NFMWorld.Accounts;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Gameplay;
@@ -74,6 +75,7 @@ public partial class WorldGame
             "replay-browser" => new FixturePhase(ReplayBrowserFixture),
             "replay-browser-local" => ReplayBrowserLocalFixture(),
             "replay-browser-upload-rejected" => ReplayBrowserUploadFixture(),
+            "my-content" => new FixturePhase(MyContentFixture),
             "replay-viewer" => new FixturePhase(ReplayViewerFixture),
             "replay-camera" => new FixturePhase(ReplayCameraFixture),
             _ => throw new InvalidOperationException($"Unknown harness view: {viewName}")
@@ -385,7 +387,8 @@ public partial class WorldGame
                         Unavailable: static _ => { },
                         Replays: static () => { },
                         Account: AccountView.Show,
-                        Multiplayer: static () => { }
+                        Multiplayer: static () => { },
+                        MyContent: static () => { }
                     ),
                     new NFMWorld.DriverInterface.UI.Image
                     {
@@ -1024,6 +1027,60 @@ public partial class WorldGame
                 });
             throw new InvalidOperationException("Unexpected harness request: " + request.RequestUri.AbsolutePath);
         }
+    }
+
+    /// <summary>
+    /// MY CONTENT over a fixed row set: the archive is network work and the harness has none.
+    /// </summary>
+    private static Node MyContentFixture()
+    {
+        OwnedAsset Owned(string name, string type, char hash, bool isPublic, bool takedown = false) => new(
+            100 + (hash - '0'),
+            name,
+            type,
+            new string(hash, 64),
+            54 * 1024,
+            hash - '0',
+            "Published from the stage editor.",
+            new DateTimeOffset(2026, 11, 1 + (hash - '0'), 12, 0, 0, TimeSpan.Zero),
+            Eligible: true,
+            isPublic,
+            takedown
+        );
+
+        var state = UiState.MyContent;
+        var rows = new[]
+        {
+            Owned("Dryland Sprint", "Stage", '1', isPublic: true),
+            Owned("Sunset Racer", "Car", '2', isPublic: true),
+            Owned("Prototype shell", "Car", '3', isPublic: false),
+            Owned("Removed texture", "Texture", '4', isPublic: false, takedown: true)
+        };
+        state.Reset();
+        state.Items.Value = rows;
+
+        return MyContentView.Build(
+            new MyContentView.Actions(
+                Back: static () => { },
+                Refresh: () => state.Status.Value = $"{rows.Length} upload(s).",
+                Edit: asset =>
+                {
+                    state.Editing.Value = asset;
+                    state.EditName.Value = asset.Name;
+                    state.EditDescription.Value = asset.Description ?? "";
+                    state.EditPublic.Value = asset.IsPublic;
+                },
+                ToggleVisibility: asset =>
+                {
+                    var items = state.Items.Value.ToArray();
+                    items[state.Cursor.Value] = asset with { IsPublic = !asset.IsPublic };
+                    state.Items.Value = items;
+                },
+                Delete: asset => state.Status.Value = $"Delete {asset.Name}?",
+                Save: () => state.Editing.Value = null,
+                CancelEdit: () => state.Editing.Value = null
+            )
+        );
     }
 
     private static Node ReplayBrowserFixture()

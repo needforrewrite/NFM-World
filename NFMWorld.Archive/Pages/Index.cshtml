@@ -43,20 +43,53 @@ else
 <p>@Model.AssetCount uploaded assets · @Model.TimeTrialCount time trials</p>
 @if (Model.Assets.Count > 0)
 {
-    <ul>
-        @foreach (var asset in Model.Assets)
-        {
-            <li>
-                @if (asset.IsPublic && !asset.IsTakedown)
+    <div class="overflow-auto">
+        <table>
+            <thead>
+                <tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Status</th><th scope="col">Downloads</th><th scope="col"></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var asset in Model.Assets)
                 {
-                    <a href="/asset/@asset.Id">@asset.Name</a>
+                    <tr>
+                        <td>
+                            @if (asset.IsPublic && !asset.IsTakedown)
+                            {
+                                <a href="/asset/@asset.Id">@asset.Name</a>
+                            }
+                            else
+                            {
+                                @asset.Name
+                            }
+                        </td>
+                        <td>@asset.Type</td>
+                        <td>
+                            @if (asset.IsTakedown)
+                            {
+                                <span class="muted">Removed by moderation</span>
+                            }
+                            else if (!asset.IsPublic)
+                            {
+                                <span class="muted">Hidden</span>
+                            }
+                            else
+                            {
+                                <span>Listed</span>
+                            }
+                        </td>
+                        <td>@asset.DownloadCount</td>
+                        <td>
+                            <a href="/asset/@asset.Id/edit" role="button" class="secondary outline">Edit</a>
+                            <form method="post" asp-page-handler="Delete" asp-route-id="@asset.Id"
+                                  onsubmit="return confirm('Delete this upload permanently?');">
+                                <button type="submit" class="secondary outline">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
                 }
-                else
-                {
-                    @asset.Name <span class="muted">(unavailable)</span>
-                }
-            </li>
-        }
-    </ul>
+            </tbody>
+        </table>
+    </div>
+    <p class="muted">Showing the @Model.Assets.Count most recent uploads.</p>
 }
 <p><a href="/upload" role="button">Upload something</a></p>

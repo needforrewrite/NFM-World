@@ -123,8 +123,10 @@ public static class TimeTrialEndpoints
 
                 // One entry per (user, stage, car): a slower retry keeps the old time rather than
                 // replacing it, so a player cannot lose a good time by retrying. An outdated entry
-                // is not ranked, so any current run replaces it.
-                if (existing is not null && existing.ReplayVersion == SavedTimeTrial.CURRENT_VERSION
+                // is not ranked, so any current run replaces it. An entry invalidated by a removed
+                // stage or car becomes rankable again now that both resolve.
+                if (existing is not null && existing.IsValid
+                    && existing.ReplayVersion == SavedTimeTrial.CURRENT_VERSION
                     && existing.TotalTicks <= totalTicks)
                 {
                     await storage.DeleteIfUnreferencedAsync(stored.StoragePath, db, ct);
@@ -142,6 +144,7 @@ public static class TimeTrialEndpoints
                         existing.StoragePath = stored.StoragePath;
                         existing.ReplayVersion = replayVersion.GetInt32();
                         existing.CreatedAt = DateTimeOffset.UtcNow;
+                        existing.IsValid = true;
                         await db.SaveChangesAsync(ct);
 
                         // The swap is saved first, so the delete can see the row's new path and
@@ -153,6 +156,7 @@ public static class TimeTrialEndpoints
                         existing.TotalTicks = totalTicks;
                         existing.ReplayVersion = replayVersion.GetInt32();
                         existing.CreatedAt = DateTimeOffset.UtcNow;
+                        existing.IsValid = true;
                     }
                 }
                 else

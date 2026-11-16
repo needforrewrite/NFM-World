@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using NFMWorld.Archive.Data;
@@ -348,6 +348,172 @@ public class WebPageTests
         // The page answers 200 with the error rendered, so the refusal is the message.
         var html = await response.Content.ReadAsStringAsync();
         StringAssert.Contains(html, "Only .radpack and .rad files are accepted");
+    }
+
+    /// <summary>
+    /// The edit page is the website's half of the same CRUD the game drives through the JSON API:
+    /// only the owner (or an administrator) may reach it, and a rename is applied in place.
+    /// </summary>
+    [TestMethod]
+    public async Task EditPage_RenamesTheOwnersUpload()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = Browser(factory);
+        await SignUpAsync(client, "artist");
+        var id = await SeedOwnedAsync(factory, "artist", "old name");
+
+        var page = await client.GetStringAsync($"/asset/{id}/edit");
+        StringAssert.Contains(page, "old name");
+
+        var token = ExtractAntiforgery(page);
+        var response = await client.PostAsync(
+            $"/asset/{id}/edit?handler=Update",
+            new FormUrlEncodedContent(
+                new Dictionary<string, string>
+                {
+                    ["Name"] = "new name",
+                    ["Description"] = "edited on the website",
+                    ["IsPublic"] = "true",
+                    ["__RequestVerificationToken"] = token
+                }
+            )
+        );
+        Assert.AreEqual(HttpStatusCode.Redirect, response.StatusCode);
+
+        var detail = await client.GetStringAsync($"/asset/{id}");
+        StringAssert.Contains(detail, "new name");
+        StringAssert.Contains(detail, "edited on the website");
+    }
+
+    [TestMethod]
+    public async Task EditPage_IsNotFoundForAStranger()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = Browser(factory);
+        await SignUpAsync(client, "artist");
+        var id = await SeedOwnedAsync(factory, "artist", "mine");
+
+        using var stranger = Browser(factory);
+        await SignUpAsync(stranger, "intruder");
+
+        Assert.AreEqual(HttpStatusCode.NotFound, (await stranger.GetAsync($"/asset/{id}/edit")).StatusCode);
+    }
+
+    /// <summary>Hiding an upload removes it from every public surface but keeps it editable.</summary>
+    [TestMethod]
+    public async Task EditPage_CanHideAnUploadAndStillReachIt()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = Browser(factory);
+        await SignUpAsync(client, "artist");
+        var id = await SeedOwnedAsync(factory, "artist", "visible");
+
+        var token = ExtractAntiforgery(await client.GetStringAsync($"/asset/{id}/edit"));
+        await client.PostAsync(
+            $"/asset/{id}/edit?handler=Update",
+            new FormUrlEncodedContent(
+                new Dictionary<string, string>
+                {
+                    ["Name"] = "visible",
+                    ["IsPublic"] = "false",
+                    ["__RequestVerificationToken"] = token
+                }
+            )
+        );
+
+        Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync($"/asset/{id}")).StatusCode);
+        Assert.AreEqual(HttpStatusCode.OK, (await client.GetAsync($"/asset/{id}/edit")).StatusCode);
+
+        var account = await client.GetStringAsync("/");
+        StringAssert.Contains(account, "Hidden");
+    }
+
+    [TestMethod]
+    public async Task EditPage_DeletesTheUpload()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = Browser(factory);
+        await SignUpAsync(client, "artist");
+        var id = await SeedOwnedAsync(factory, "artist", "doomed");
+
+        var token = ExtractAntiforgery(await client.GetStringAsync($"/asset/{id}/edit"));
+        var response = await client.PostAsync(
+            $"/asset/{id}/edit?handler=Delete",
+            new FormUrlEncodedContent(new Dictionary<string, string> { ["__RequestVerificationToken"] = token })
+        );
+        Assert.AreEqual(HttpStatusCode.Redirect, response.StatusCode);
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+        Assert.IsFalse(db.Assets.Any(a => a.Id == id));
+    }
+
+    [TestMethod]
+    public async Task EditPage_RefusesAReplacementFileTheApiRefuses()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = Browser(factory);
+        await SignUpAsync(client, "artist");
+        var id = await SeedOwnedAsync(factory, "artist", "course");
+
+        var token = ExtractAntiforgery(await client.GetStringAsync($"/asset/{id}/edit"));
+        using var form = new MultipartFormDataContent();
+        form.Add(new ByteArrayContent("not a model"u8.ToArray()), "Replacement", "notes.txt");
+        form.Add(new StringContent(token), "__RequestVerificationToken");
+
+        var response = await client.PostAsync($"/asset/{id}/edit?handler=Replace", form);
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        StringAssert.Contains(await response.Content.ReadAsStringAsync(), "Only .radpack and .rad files are accepted");
+    }
+
+    /// <summary>Registers a browser session and returns the signed-in client.</summary>
+    private static async Task SignUpAsync(HttpClient client, string username)
+    {
+        var token = ExtractAntiforgery(
+            await (await client.GetAsync("/account/login?flow=register")).Content.ReadAsStringAsync()
+        );
+        await client.PostAsync(
+            "/account/login?handler=Register",
+            new FormUrlEncodedContent(
+                new Dictionary<string, string>
+                {
+                    ["Username"] = username,
+                    ["RegisterPassword"] = "password123",
+                    ["cf-turnstile-response"] = ArchiveAppFactory.Challenge("register"),
+                    ["__RequestVerificationToken"] = token
+                }
+            )
+        );
+    }
+
+    /// <summary>Seeds a row owned by <paramref name="owner"/>, creating the account when absent.</summary>
+    private static async Task<int> SeedOwnedAsync(ArchiveAppFactory factory, string owner, string name)
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+        var user = db.Users.FirstOrDefault(u => u.UsernameNormalized == owner);
+        if (user is null)
+        {
+            user = new User { Username = owner, UsernameNormalized = owner };
+            db.Users.Add(user);
+            await db.SaveChangesAsync();
+        }
+
+        var hash = new string((char)('a' + db.Assets.Count() % 26), 64);
+        var asset = new Asset
+        {
+            OwnerId = user.Id,
+            Type = AssetType.Stage,
+            Name = name,
+            ContentHash = hash,
+            StoragePath = $"{hash[..2]}/{hash}",
+            SizeBytes = 1024,
+            IsPublic = true,
+            IsValidated = true
+        };
+        db.Assets.Add(asset);
+        await db.SaveChangesAsync();
+        return asset.Id;
     }
 
     private static string ExtractAntiforgery(string html)

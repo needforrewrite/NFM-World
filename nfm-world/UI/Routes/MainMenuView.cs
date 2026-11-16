@@ -1,4 +1,4 @@
-using NFMWorld.ClayDom.Events;
+﻿using NFMWorld.ClayDom.Events;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.DriverInterface;
 using NFMWorld.Reactor;
@@ -43,7 +43,8 @@ public static class MainMenuView
         Action<string> Unavailable,
         Action Replays,
         Action Account,
-        Action Multiplayer
+        Action Multiplayer,
+        Action MyContent
     );
 
     private static readonly Signal<IReadOnlyList<MenuPage>> PageStack = new([]);
@@ -371,6 +372,7 @@ public static class MainMenuView
             );
 
         return Sx.View(
+            name: () => "Main menu item " + item.Label,
             style: () => Sx.Styles(
                 flexDirection: FlexDirection.Column,
                 alignItems: Align.Stretch,
@@ -431,6 +433,7 @@ public static class MainMenuView
         [
             new("MODEL EDITOR", "View and edit custom models.", actions.ModelEditor),
             new("STAGE EDITOR", "Design your own stages.", actions.StageEditor),
+            new("MY CONTENT", "Manage the models and stages you have published.", actions.MyContent),
             new("CAMPAIGN EDITOR", "Craft custom experiences.", () => actions.Unavailable("campaignEditor"), enabled: false),
             new("BACK", "Return to the previous menu.", PopPage),
         ]

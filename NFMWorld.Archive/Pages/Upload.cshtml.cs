@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NFMWorld.Archive.Data;
-using NFMWorld.Archive.Endpoints;
 using NFMWorld.Archive.Validation;
 using NFMWorldLibrary.Radpack;
 
@@ -22,12 +21,6 @@ public sealed class UploadModel(
     public string? Error { get; private set; }
     public string? Message { get; private set; }
 
-    /// <summary>The file formats the publish form accepts; the API applies the same pair.</summary>
-    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".radpack", ".rad"
-    };
-
     /// <summary>The kinds the publish form offers. Code and replays are not published here.</summary>
     public IReadOnlyList<string> PublishableTypes { get; } =
         ["Car", "Stage", "StagePiece", "Wheel", "Texture"];
@@ -46,67 +39,50 @@ public sealed class UploadModel(
             return Page();
         }
 
-        if (File is null || string.IsNullOrWhiteSpace(Name) || !AssetKinds.TryParseName(Type, out var kind))
+        if (File is null || !AssetKinds.TryParseName(Type, out var kind))
         {
             Error = "Choose a file, a name and a type.";
             return Page();
         }
 
-        if (!AssetKinds.IsPublishable(kind))
+        // The same helpers the JSON API uses: the form had its own copy of these rules and
+        // silently lost the extension check, storing a .txt with no validation at all.
+        if (AssetUpload.NormalizeName(Name) is not { } name)
         {
-            Error = $"{AssetKinds.Name(kind)} cannot be published as an asset.";
+            Error = $"Choose a name of at most {AssetUpload.MaxNameLength} characters.";
             return Page();
         }
 
-        var extension = Path.GetExtension(File.FileName);
-        if (!AllowedExtensions.Contains(extension))
+        var description = AssetUpload.NormalizeDescription(Description);
+        if (AssetUpload.DescriptionTooLong(description))
         {
-            Error = "Only .radpack and .rad files are accepted.";
+            Error = $"The description must be at most {AssetUpload.MaxDescriptionLength} characters.";
             return Page();
         }
 
-        if (!AssetKinds.IsUploadExtensionAllowed(kind, extension))
+        if (AssetUpload.CheckClaim(kind, File.FileName, File.Length) is { } claimError)
         {
-            Error = "A legacy .rad file can only be a Car, StagePiece or Wheel.";
-            return Page();
-        }
-
-        if (File.Length > RadpackLimits.MaxCompressedBytes)
-        {
-            Error = "That file is too large.";
+            Error = claimError;
             return Page();
         }
 
         await using var source = File.OpenReadStream();
-        var (hash, relative, size) = await storage.PutAsync(source, RadpackLimits.MaxCompressedBytes, HttpContext.RequestAborted);
-
-        var validation = extension.Equals(".radpack", StringComparison.OrdinalIgnoreCase)
-            ? await validator.RunAsync("radpack", [Path.Combine(storage.Root, relative)], HttpContext.RequestAborted)
-            : await validator.RunAsync(
-                "rad",
-                [Path.Combine(storage.Root, relative), AssetKinds.Name(kind)],
-                HttpContext.RequestAborted
-            );
-        if (!validation.Ok)
+        var stored = await AssetUpload.StoreAndValidateAsync(
+            storage,
+            validator,
+            Db,
+            source,
+            File.FileName,
+            kind,
+            HttpContext.RequestAborted
+        );
+        if (stored.Error is { } validationError)
         {
-            // Content-addressed: another row may already point at these exact bytes, and a failed
-            // re-upload must not delete the file it shares.
-            await storage.DeleteIfUnreferencedAsync(relative, Db, HttpContext.RequestAborted);
-            Error = validation.Error ?? "That file could not be read.";
+            Error = validationError;
             return Page();
         }
 
-        if (validation.Output is { } output
-            && output.TryGetProperty("kind", out var validated)
-            && validated.GetString() is { } validatedKind
-            && !string.Equals(validatedKind, AssetKinds.Name(kind), StringComparison.OrdinalIgnoreCase))
-        {
-            await storage.DeleteIfUnreferencedAsync(relative, Db, HttpContext.RequestAborted);
-            Error = $"That file is a {validatedKind}, not a {AssetKinds.Name(kind)}.";
-            return Page();
-        }
-
-        var existing = await Db.Assets.FirstOrDefaultAsync(a => a.ContentHash == hash);
+        var existing = await Db.Assets.FirstOrDefaultAsync(a => a.ContentHash == stored.Hash);
         if (existing is not null)
         {
             if ((byte)existing.Type != kind)
@@ -121,7 +97,7 @@ public sealed class UploadModel(
                 await Db.SaveChangesAsync();
             }
 
-            Message = $"Already present as {existing.Name} ({hash}).";
+            Message = $"Already present as {existing.Name} ({stored.Hash}).";
             return Page();
         }
 
@@ -130,18 +106,18 @@ public sealed class UploadModel(
             {
                 OwnerId = Account!.Id,
                 Type = (AssetType)kind,
-                Name = Name!,
-                Description = Description,
-                ContentHash = hash,
-                StoragePath = relative,
-                SizeBytes = size,
+                Name = name,
+                Description = description,
+                ContentHash = stored.Hash,
+                StoragePath = stored.RelativePath,
+                SizeBytes = stored.SizeBytes,
                 IsPublic = true,
                 IsValidated = true
             }
         );
         await Db.SaveChangesAsync();
 
-        Message = $"Uploaded. Content hash: {hash}";
+        Message = $"Uploaded. Content hash: {stored.Hash}";
         return Page();
     }
 }

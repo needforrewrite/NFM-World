@@ -1,3 +1,4 @@
+﻿using NFMWorld.Accounts;
 using NFMWorld.DriverInterface;
 using NFMWorld.UI.Routes;
 using NFMWorldLibrary;
@@ -24,6 +25,7 @@ public static class UiState
     public static RaceState Race { get; } = new();
     public static SettingsState Settings { get; } = new();
     public static LobbyState Lobby { get; } = new();
+    public static MyContentState MyContent { get; } = new();
 
     /// <summary>Per-frame HUD values, written by the race phase.</summary>
     public sealed class RaceState : IHudData
@@ -287,6 +289,49 @@ public static class UiState
         public Signal<bool> OriginalWheels { get; } = new(false);
         public Signal<bool> CustomizeTabsFocused { get; } = new(false);
         public IReadOnlyList<GarageColorSlot> EditingSlots => WheelsTab.Value ? WheelColorSlots.Value : ColorSlots.Value;
+    }
+
+    /// <summary>
+    /// MY CONTENT: the signed-in account's own uploads, which the archive lists separately from
+    /// public content because a hidden or taken-down row is still the owner's to edit.
+    /// </summary>
+    public sealed class MyContentState
+    {
+        public Signal<IReadOnlyList<OwnedAsset>> Items { get; } = new([]);
+
+        /// <summary>Highlighted row; the keyboard and the edit/delete actions act on it.</summary>
+        public Signal<int> Cursor { get; } = new(0);
+
+        /// <summary>Progress or failure note above the list.</summary>
+        public Signal<string> Status { get; } = new("");
+
+        /// <summary>True while a list, save, replace or delete is in flight.</summary>
+        public Signal<bool> Busy { get; } = new(false);
+
+        /// <summary>The row being renamed, or null when the editor is closed.</summary>
+        public Signal<OwnedAsset?> Editing { get; } = new(null);
+
+        public Signal<string> EditName { get; } = new("");
+        public Signal<string> EditDescription { get; } = new("");
+
+        /// <summary>Whether the edited row is listed publicly.</summary>
+        public Signal<bool> EditPublic { get; } = new(true);
+
+        public OwnedAsset? Selected => Items.Value.Count == 0
+            ? null
+            : Items.Value[Math.Clamp(Cursor.Value, 0, Items.Value.Count - 1)];
+
+        public void Reset()
+        {
+            Items.Value = [];
+            Cursor.Value = 0;
+            Status.Value = "";
+            Busy.Value = false;
+            Editing.Value = null;
+            EditName.Value = "";
+            EditDescription.Value = "";
+            EditPublic.Value = true;
+        }
     }
 
     /// <summary>

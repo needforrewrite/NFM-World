@@ -12,6 +12,9 @@ public sealed class AssetDetailModel(ArchiveDbContext db) : ArchivePageModel(db)
 {
     public Asset? Asset { get; private set; }
 
+    /// <summary>True for the uploader and for an administrator; the page shows the edit link then.</summary>
+    public bool CanEdit { get; private set; }
+
     /// <summary>Other public uploads by the same creator, newest first.</summary>
     public IReadOnlyList<(int Id, string Name, string Type)> More { get; private set; } = [];
 
@@ -25,6 +28,8 @@ public sealed class AssetDetailModel(ArchiveDbContext db) : ArchivePageModel(db)
             .FirstOrDefaultAsync(a => a.Id == id && a.IsPublic && !a.IsTakedown);
         if (Asset is null)
             return NotFound();
+
+        CanEdit = Account is not null && (Asset.OwnerId == Account.Id || Account.IsAdmin);
 
         ViewData["Title"] = Asset.Name;
 

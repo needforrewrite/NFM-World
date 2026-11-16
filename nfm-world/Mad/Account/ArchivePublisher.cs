@@ -120,6 +120,30 @@ public static class ArchivePublisher
                 null
             );
 
+        // Re-publishing a document under a name the account already published replaces that
+        // upload's bytes instead of creating a second row: the author meant to update it, and a
+        // duplicate would leave the stale copy listed next to the new one.
+        if (await GameSparker.AccountManager.FindOwnedAssetAsync(name, (byte)kind) is { } existing)
+        {
+            var replaced = await GameSparker.AccountManager.ReplaceAssetAsync(existing.Id, bytes);
+            if (!replaced.Success)
+                return replaced;
+
+            var renamed = await GameSparker.AccountManager.UpdateAssetAsync(
+                existing.Id,
+                name,
+                description,
+                isPublic: true
+            );
+            return renamed.Success
+                ? new AssetUploadResult(true, $"Updated \"{name}\".", replaced.ContentHash)
+                : new AssetUploadResult(
+                    false,
+                    renamed.Message ?? "The upload was replaced but not renamed.",
+                    replaced.ContentHash
+                );
+        }
+
         return await GameSparker.AccountManager.UploadAssetAsync(bytes, name, description, kind);
     }
 }

@@ -1,4 +1,4 @@
-using NFMWorld.Accounts;
+﻿using NFMWorld.Accounts;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
@@ -36,6 +36,8 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private GarageController? _garage;
     private ReplayBrowserController? _replays;
     private readonly SignalsDotnet.Signal<bool> _replaysOpen = new(false);
+    private MyContentController? _myContent;
+    private readonly SignalsDotnet.Signal<bool> _myContentOpen = new(false);
     private BackendCar? _garageEntryCar;
     private float _garageBlend;
     private readonly GarageCameraControls _garageCamera = new();
@@ -99,7 +101,8 @@ public class MainMenuPhase : BaseStageRenderingPhase
                         Unavailable: _ => GameSparker.MessageWindow.ShowMessage("Info", "This feature is currently unavailable."),
                         Replays: OpenReplays,
                         Account: AccountView.Show,
-                        Multiplayer: OnMultiplayerClicked
+                        Multiplayer: OnMultiplayerClicked,
+                        MyContent: OpenMyContent
                     ),
                     logo,
                     GameSparker.ExeVersion
@@ -118,7 +121,9 @@ public class MainMenuPhase : BaseStageRenderingPhase
         ),
         () => _garage!.BuildUi(),
         () => _replaysOpen.Value,
-        () => _replays!.BuildUi()
+        () => _replays!.BuildUi(),
+        () => _myContentOpen.Value,
+        () => _myContent!.BuildUi()
     );
 
     private void OnSignIn(string username, string password)
@@ -253,6 +258,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
         if (disposing)
         {
             CloseReplays();
+            CloseMyContent();
             StopAttractDrive();
             GameSparker.AccountManager.ActiveAccountChanged -= OnActiveAccountChanged;
             (_logo as IDisposable)?.Dispose();
@@ -310,6 +316,20 @@ public class MainMenuPhase : BaseStageRenderingPhase
         _replaysOpen.Value = false;
         _replays?.Dispose();
         _replays = null;
+    }
+
+    private void OpenMyContent()
+    {
+        if (_myContent is not null) return;
+        _myContent = new MyContentController(CloseMyContent);
+        _myContentOpen.Value = true;
+    }
+
+    private void CloseMyContent()
+    {
+        _myContentOpen.Value = false;
+        _myContent?.Dispose();
+        _myContent = null;
     }
 
     private void OnGarageClicked()
@@ -579,7 +599,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     public void NavigationKeyRepeated(Key key)
     {
-        if (EnableUiInput && _garage is null && _replays is null && !AccountView.IsOpen)
+        if (EnableUiInput && _garage is null && _replays is null && _myContent is null && !AccountView.IsOpen)
             MainMenuView.KeyPressed(key);
     }
 
@@ -588,6 +608,8 @@ public class MainMenuPhase : BaseStageRenderingPhase
         base.KeyRepeated(key, imguiWantsKeyboard, keys);
         if (_replays is not null && key is Key.Up or Key.Down or Key.Left or Key.Right)
             _replays.KeyPressed(key);
+        if (_myContent is not null && key is Key.Up or Key.Down)
+            _myContent.KeyPressed(key);
         if (_garage != null)
             _garage.KeyRepeated(key, imguiWantsKeyboard, keys);
     }
@@ -607,6 +629,12 @@ public class MainMenuPhase : BaseStageRenderingPhase
         if (_replays is not null)
         {
             _replays.KeyPressed(key);
+            return;
+        }
+
+        if (_myContent is not null)
+        {
+            _myContent.KeyPressed(key);
             return;
         }
 

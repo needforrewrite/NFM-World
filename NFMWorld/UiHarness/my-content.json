@@ -1,0 +1,75 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-my-content-captures",
+  "view": "my-content",
+  "steps": [
+    {
+      "action": "assert-visible",
+      "target": "My content list"
+    },
+    {
+      "action": "assert-min-height",
+      "target": "My content list",
+      "height": 150
+    },
+    {
+      "action": "assert-no-horizontal-scroll",
+      "target": "My content list"
+    },
+    {
+      "action": "assert-visible",
+      "target": "My content row 103"
+    },
+    {
+      "action": "assert-visible",
+      "target": "My content row 101"
+    },
+    {
+      "action": "assert-visible",
+      "target": "My content row 104"
+    },
+    {
+      "action": "hover",
+      "target": "My content row 102",
+      "capture": "content-hover"
+    },
+    {
+      "action": "assert-visible",
+      "target": "My content selection"
+    },
+    {
+      "action": "click",
+      "target": "My content edit",
+      "capture": "content-editor"
+    },
+    {
+      "action": "assert-visible",
+      "target": "My content editor"
+    },
+    {
+      "action": "assert-visible",
+      "target": "My content editor public"
+    },
+    {
+      "action": "click",
+      "target": "My content edit cancel",
+      "capture": "content-editor-closed"
+    },
+    {
+      "action": "assert-visible",
+      "target": "My content list"
+    },
+    {
+      "action": "click",
+      "target": "My content visibility",
+      "capture": "content-hidden"
+    },
+    {
+      "action": "click",
+      "target": "My content delete",
+      "capture": "content-delete"
+    }
+  ]
+}

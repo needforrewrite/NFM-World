@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using NFMWorld.Archive.Data;
 using NFMWorld.Archive.Validation;
 using NFMWorldLibrary.Radpack;
@@ -25,7 +25,30 @@ public sealed record AssetInfo(
 public sealed record AssetSearchPage(IReadOnlyList<AssetInfo> Items, int? NextCursor);
 
 /// <summary>
-/// Radpack asset upload, search, metadata and download.
+/// One of the signed-in account's own uploads. Unlike <see cref="AssetInfo"/> it carries the
+/// row's visibility, because the owner has to be able to see and edit a hidden or taken-down row.
+/// </summary>
+public sealed record OwnedAssetInfo(
+    int Id,
+    string Name,
+    string Type,
+    string ContentHash,
+    long SizeBytes,
+    int DownloadCount,
+    string? Description,
+    DateTimeOffset CreatedAt,
+    bool Eligible,
+    bool IsPublic,
+    bool IsTakedown
+);
+
+public sealed record OwnedAssetPage(IReadOnlyList<OwnedAssetInfo> Items, int? NextCursor);
+
+/// <summary>The fields an owner may change without replacing the bytes.</summary>
+public sealed record AssetUpdate(string? Name, string? Description, bool? IsPublic, bool? IsTakedown);
+
+/// <summary>
+/// Radpack asset upload, search, metadata, download and the owner's edit/delete surface.
 ///
 /// Uploads are validated out of process before being indexed, are addressed by their own hash,
 /// and are served with a download disposition from a separate origin: an SVG or HTML payload
@@ -33,11 +56,6 @@ public sealed record AssetSearchPage(IReadOnlyList<AssetInfo> Items, int? NextCu
 /// </summary>
 public static class AssetEndpoints
 {
-    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".radpack", ".rad"
-    };
-
     private const int MaxSearchLimit = 100;
 
     public static void MapAssetEndpoints(this WebApplication app)
@@ -63,60 +81,49 @@ public static class AssetEndpoints
 
                 var form = await request.ReadFormAsync(ct);
                 var file = form.Files["file"];
-                var name = form["name"].ToString();
-                var description = form["description"].ToString();
+                var name = AssetUpload.NormalizeName(form["name"].ToString());
+                var description = AssetUpload.NormalizeDescription(form["description"].ToString());
                 var typeText = form["type"].ToString();
 
-                if (file is null || string.IsNullOrWhiteSpace(name))
+                if (file is null || name is null)
                     return Results.BadRequest(new { error = "Missing file or name." });
+
+                if (AssetUpload.DescriptionTooLong(description))
+                    return Results.BadRequest(new { error = "The description is too long." });
 
                 if (!AssetKinds.TryParseName(typeText, out var kind))
                     return Results.BadRequest(new { error = "Unknown asset type." });
 
-                // Executable content and replays are not published through the asset API: a
-                // downloaded gamemode/AI package is code, and replay submission has its own
-                // authoritative path.
-                if (!AssetKinds.IsPublishable(kind))
-                    return Results.BadRequest(new { error = $"{AssetKinds.Name(kind)} cannot be published as an asset." });
-
-                var extension = Path.GetExtension(file.FileName);
-                if (!AllowedExtensions.Contains(extension))
-                    return Results.BadRequest(new { error = "Only .radpack and .rad files are accepted." });
-
-                if (!AssetKinds.IsUploadExtensionAllowed(kind, extension))
-                    return Results.BadRequest(new { error = "A legacy .rad file can only be a Car, StagePiece or Wheel." });
-
-                if (file.Length > RadpackLimits.MaxCompressedBytes)
-                    return Results.BadRequest(new { error = "Asset exceeds the size limit." });
+                if (AssetUpload.CheckClaim(kind, file.FileName, file.Length) is { } claimError)
+                    return Results.BadRequest(new { error = claimError });
 
                 await using var source = file.OpenReadStream();
-                var (hash, relative, size) = await storage.PutAsync(source, RadpackLimits.MaxCompressedBytes, ct);
-                var path = Path.Combine(storage.Root, relative);
-
-                var failure = await ValidateAsync(validator, path, extension, kind, ct);
-                if (failure is { } error)
-                {
-                    await storage.DeleteIfUnreferencedAsync(relative, db, ct);
+                var stored = await AssetUpload.StoreAndValidateAsync(
+                    storage,
+                    validator,
+                    db,
+                    source,
+                    file.FileName,
+                    kind,
+                    ct
+                );
+                if (stored.Error is { } error)
                     return Results.BadRequest(new { error });
-                }
 
                 // Identical bytes are one asset. If it is already catalogued, the upload is a
                 // success that reports the canonical hash and metadata rather than a second row.
                 var existing = await db.Assets
                     .Include(a => a.Owner)
-                    .FirstOrDefaultAsync(a => a.ContentHash == hash, ct);
+                    .FirstOrDefaultAsync(a => a.ContentHash == stored.Hash, ct);
                 if (existing is not null)
                 {
                     if ((byte)existing.Type != kind)
-                    {
-                        await storage.DeleteIfUnreferencedAsync(relative, db, ct);
                         return Results.BadRequest(
                             new
                             {
                                 error = $"Those bytes are already catalogued as a {AssetKinds.Name((byte)existing.Type)}."
                             }
                         );
-                    }
 
                     if (!existing.IsValidated)
                     {
@@ -133,9 +140,9 @@ public static class AssetEndpoints
                     Type = (AssetType)kind,
                     Name = name,
                     Description = description,
-                    ContentHash = hash,
-                    StoragePath = relative,
-                    SizeBytes = size,
+                    ContentHash = stored.Hash,
+                    StoragePath = stored.RelativePath,
+                    SizeBytes = stored.SizeBytes,
                     IsPublic = true,
                     IsValidated = true
                 };
@@ -205,6 +212,76 @@ public static class AssetEndpoints
             }
         );
 
+        // The signed-in account's own uploads, including hidden and taken-down rows. Editing needs
+        // to find a row that the public surfaces deliberately do not list.
+        assets.MapGet(
+            "/mine",
+            async (
+                ArchiveDbContext db, string? type, int? limit, int? after, HttpContext http,
+                CancellationToken ct
+            ) =>
+            {
+                var user = await http.GetUserAsync(db, ct);
+                if (user is null)
+                    return Results.Unauthorized();
+
+                byte? kind = null;
+                if (!string.IsNullOrWhiteSpace(type))
+                {
+                    if (!AssetKinds.TryParseName(type, out var parsed))
+                        return Results.BadRequest(new { error = "Unknown asset type." });
+                    kind = parsed;
+                }
+
+                var pageSize = Math.Clamp(limit ?? 50, 1, MaxSearchLimit);
+                var q = db.Assets.Where(a => a.OwnerId == user.Id);
+                if (kind is { } filter)
+                    q = q.Where(a => (byte)a.Type == filter);
+                if (after is { } cursor)
+                    q = q.Where(a => a.Id < cursor);
+
+                var rows = await q
+                    .OrderByDescending(a => a.Id)
+                    .Take(pageSize + 1)
+                    .Select(
+                        a => new
+                        {
+                            a.Id,
+                            a.Name,
+                            Type = (byte)a.Type,
+                            a.ContentHash,
+                            a.SizeBytes,
+                            a.DownloadCount,
+                            a.Description,
+                            a.CreatedAt,
+                            a.IsValidated,
+                            a.IsPublic,
+                            a.IsTakedown
+                        }
+                    )
+                    .ToListAsync(ct);
+
+                var hasMore = rows.Count > pageSize;
+                var items = rows.Take(pageSize).Select(
+                    a => new OwnedAssetInfo(
+                        a.Id,
+                        a.Name,
+                        AssetKinds.Name(a.Type),
+                        a.ContentHash,
+                        a.SizeBytes,
+                        a.DownloadCount,
+                        a.Description,
+                        a.CreatedAt,
+                        a.IsValidated && AssetKinds.IsDataAsset(a.Type),
+                        a.IsPublic,
+                        a.IsTakedown
+                    )
+                ).ToList();
+
+                return Results.Ok(new OwnedAssetPage(items, hasMore ? items[^1].Id : null));
+            }
+        );
+
         // Metadata by hash, for eligibility checks before a download.
         assets.MapGet(
             "/meta/{hash}",
@@ -216,6 +293,184 @@ public static class AssetEndpoints
                 var asset = await Visible(db.Assets).Include(a => a.Owner)
                     .FirstOrDefaultAsync(a => a.ContentHash == hash, ct);
                 return asset is null ? Results.NotFound() : Results.Ok(ToInfo(asset));
+            }
+        );
+
+        // Metadata, visibility and takedown. An owner may hide or re-list their own upload; only
+        // an administrator may take one down or restore it.
+        assets.MapPatch(
+            "/{id:int}",
+            async (
+                int id, AssetUpdate update, ArchiveDbContext db, ArchiveOptions options, HttpContext http,
+                CancellationToken ct
+            ) =>
+            {
+                var user = await http.GetUserAsync(db, ct);
+                if (user is null)
+                    return Results.Unauthorized();
+
+                if (options.ReadOnly)
+                    return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+
+                var asset = await db.Assets.Include(a => a.Owner).FirstOrDefaultAsync(a => a.Id == id, ct);
+                if (asset is null)
+                    return Results.NotFound();
+
+                var isOwner = asset.OwnerId == user.Id;
+                if (!isOwner && !user.IsAdmin)
+                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+
+                if (update.IsTakedown is not null && !user.IsAdmin)
+                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+
+                var changed = false;
+                if (update.Name is not null)
+                {
+                    var name = AssetUpload.NormalizeName(update.Name);
+                    if (name is null)
+                        return Results.BadRequest(new { error = "A name is required and must be short." });
+                    asset.Name = name;
+                    changed = true;
+                }
+
+                if (update.Description is not null)
+                {
+                    var description = AssetUpload.NormalizeDescription(update.Description);
+                    if (AssetUpload.DescriptionTooLong(description))
+                        return Results.BadRequest(new { error = "The description is too long." });
+                    asset.Description = description;
+                    changed = true;
+                }
+
+                if (update.IsPublic is { } isPublic)
+                {
+                    asset.IsPublic = isPublic;
+                    changed = true;
+                }
+
+                if (update.IsTakedown is { } isTakedown)
+                {
+                    asset.IsTakedown = isTakedown;
+                    changed = true;
+                }
+
+                if (changed)
+                    await db.SaveChangesAsync(ct);
+
+                return Results.Ok(new { asset = ToOwnedInfo(asset) });
+            }
+        );
+
+        // Replacing the bytes. The row keeps its id and its owner, so a published link and the
+        // author's inventory entry survive an update; the hash is what changes, and every replay
+        // that ran against the old bytes stops ranking.
+        assets.MapPut(
+            "/{id:int}/content",
+            async (
+                int id, HttpRequest request, ArchiveDbContext db, ArchiveOptions options,
+                ValidatorRunner validator, FileStorage storage, HttpContext http, CancellationToken ct
+            ) =>
+            {
+                var user = await http.GetUserAsync(db, ct);
+                if (user is null)
+                    return Results.Unauthorized();
+
+                if (options.ReadOnly)
+                    return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+
+                var asset = await db.Assets.Include(a => a.Owner).FirstOrDefaultAsync(a => a.Id == id, ct);
+                if (asset is null)
+                    return Results.NotFound();
+
+                // Replacing content is the author's act; a moderator deletes instead of
+                // re-publishing someone else's work under their name.
+                if (asset.OwnerId != user.Id)
+                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+
+                if (!request.HasFormContentType)
+                    return Results.BadRequest(new { error = "Expected a multipart upload." });
+
+                var form = await request.ReadFormAsync(ct);
+                var file = form.Files["file"];
+                if (file is null)
+                    return Results.BadRequest(new { error = "Missing file." });
+
+                var kind = (byte)asset.Type;
+                if (AssetUpload.CheckClaim(kind, file.FileName, file.Length) is { } claimError)
+                    return Results.BadRequest(new { error = claimError });
+
+                await using var source = file.OpenReadStream();
+                var stored = await AssetUpload.StoreAndValidateReplacementAsync(
+                    storage,
+                    validator,
+                    db,
+                    source,
+                    kind,
+                    ct
+                );
+                if (stored.Error is { } error)
+                    return Results.BadRequest(new { error });
+
+                if (string.Equals(stored.Hash, asset.ContentHash, StringComparison.Ordinal))
+                    return Results.Ok(new { status = "unchanged", asset = ToOwnedInfo(asset) });
+
+                // One row per distinct file is the archive's invariant: a second row holding the
+                // same bytes would compete with this one for /assets/{hash}.
+                var other = await db.Assets.FirstOrDefaultAsync(
+                    a => a.ContentHash == stored.Hash && a.Id != asset.Id,
+                    ct
+                );
+                if (other is not null)
+                    return Results.BadRequest(
+                        new { error = $"Those bytes are already published as \"{other.Name}\"." }
+                    );
+
+                var previous = asset.StoragePath;
+                var previousHash = asset.ContentHash;
+                asset.ContentHash = stored.Hash;
+                asset.StoragePath = stored.RelativePath;
+                asset.SizeBytes = stored.SizeBytes;
+                asset.IsValidated = true;
+                await db.SaveChangesAsync(ct);
+
+                // Saved first, so the delete sees the row's new path and leaves the replacement alone.
+                await storage.DeleteIfUnreferencedAsync(previous, db, ct);
+
+                // Every replay pinned the bytes that just stopped being served.
+                await TimeTrialInvalidation.InvalidateForAssetAsync(db, previousHash, ct);
+
+                return Results.Ok(new { status = "replaced", asset = ToOwnedInfo(asset) });
+            }
+        );
+
+        assets.MapDelete(
+            "/{id:int}",
+            async (int id, ArchiveDbContext db, ArchiveOptions options, FileStorage storage, HttpContext http,
+                CancellationToken ct) =>
+            {
+                var user = await http.GetUserAsync(db, ct);
+                if (user is null)
+                    return Results.Unauthorized();
+
+                if (options.ReadOnly)
+                    return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+
+                var asset = await db.Assets.FirstOrDefaultAsync(a => a.Id == id, ct);
+                if (asset is null)
+                    return Results.NotFound();
+
+                if (asset.OwnerId != user.Id && !user.IsAdmin)
+                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+
+                var path = asset.StoragePath;
+                var hash = asset.ContentHash;
+                db.Assets.Remove(asset);
+                await db.SaveChangesAsync(ct);
+
+                await storage.DeleteIfUnreferencedAsync(path, db, ct);
+                await TimeTrialInvalidation.InvalidateForAssetAsync(db, hash, ct);
+
+                return Results.NoContent();
             }
         );
 
@@ -274,20 +529,20 @@ public static class AssetEndpoints
         bool IsValidated
     );
 
-    private static AssetInfo ToInfo(Asset asset) => ToInfo(
-        new AssetRow(
-            asset.Id,
-            asset.Name,
-            (byte)asset.Type,
-            asset.ContentHash,
-            asset.SizeBytes,
-            asset.DownloadCount,
-            asset.Description,
-            asset.Owner?.Username,
-            asset.CreatedAt,
-            asset.IsValidated
-        )
+    private static AssetRow Projection(Asset a) => new(
+        a.Id,
+        a.Name,
+        (byte)a.Type,
+        a.ContentHash,
+        a.SizeBytes,
+        a.DownloadCount,
+        a.Description,
+        a.Owner != null ? a.Owner.Username : null,
+        a.CreatedAt,
+        a.IsValidated
     );
+
+    private static AssetInfo ToInfo(Asset asset) => ToInfo(Projection(asset));
 
     private static AssetInfo ToInfo(AssetRow row) => new(
         row.Id,
@@ -302,40 +557,20 @@ public static class AssetEndpoints
         row.IsValidated && AssetKinds.IsDataAsset(row.Type)
     );
 
+    private static OwnedAssetInfo ToOwnedInfo(Asset asset) => new(
+        asset.Id,
+        asset.Name,
+        AssetKinds.Name((byte)asset.Type),
+        asset.ContentHash,
+        asset.SizeBytes,
+        asset.DownloadCount,
+        asset.Description,
+        asset.CreatedAt,
+        asset.IsValidated && AssetKinds.IsDataAsset((byte)asset.Type),
+        asset.IsPublic,
+        asset.IsTakedown
+    );
+
     private static string EscapeLike(string value)
         => value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
-
-    /// <summary>
-    /// Reads the stored bytes as the claimed kind. Radpacks are checked against their own header;
-    /// a legacy model has no kind, so the validator only proves it parses as a model of a kind it
-    /// could be, which is why legacy content is not treated as an authority for anything else.
-    /// </summary>
-    private static async Task<string?> ValidateAsync(
-        ValidatorRunner validator,
-        string path,
-        string extension,
-        byte kind,
-        CancellationToken ct
-    )
-    {
-        if (!extension.Equals(".radpack", StringComparison.OrdinalIgnoreCase))
-        {
-            var legacy = await validator.RunAsync("rad", [path, AssetKinds.Name(kind)], ct);
-            return legacy.Ok ? null : legacy.Error ?? "The asset is not a readable model.";
-        }
-
-        var result = await validator.RunAsync("radpack", [path], ct);
-        if (!result.Ok)
-            return result.Error ?? "The asset is not a readable radpack.";
-
-        // The kind inside the file has to agree with what the uploader claimed; otherwise a car
-        // could be listed as a stage and downloaded into the wrong slot.
-        if (result.Output is { } output
-            && output.TryGetProperty("kind", out var validated)
-            && validated.GetString() is { } validatedKind
-            && !string.Equals(validatedKind, AssetKinds.Name(kind), StringComparison.OrdinalIgnoreCase))
-            return $"The asset is a {validatedKind}, not a {AssetKinds.Name(kind)}.";
-
-        return null;
-    }
 }

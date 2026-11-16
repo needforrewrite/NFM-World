@@ -45,6 +45,11 @@ else
 
 <p><a href="/assets/@Model.Asset.ContentHash" role="button">Download @Model.Asset.Type</a></p>
 
+@if (Model.CanEdit)
+{
+    <p><a href="/asset/@Model.Asset.Id/edit" role="button" class="secondary">Edit this upload</a></p>
+}
+
 @if (Model.More.Count > 0)
 {
     <h2>More from @Model.Asset.Owner!.Username</h2>

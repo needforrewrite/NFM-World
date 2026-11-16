@@ -1,4 +1,4 @@
-using NFMWorld.DriverInterface.DriverInterface;
+﻿using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
 using NFMWorld.UI.ViewModels;
@@ -12,7 +12,9 @@ public static class MainMenuIntroView
         Func<Node, Node> menu,
         Func<Node> garage,
         Func<bool> replaysOpen,
-        Func<Node> replays
+        Func<Node> replays,
+        Func<bool> myContentOpen,
+        Func<Node> myContent
     )
     {
         var state = UiState.MainMenu;
@@ -90,9 +92,13 @@ public static class MainMenuIntroView
                                     pointerEvents: false
                                 )
                             },
-                            Sx.Show(() => !state.GarageOpen.Value && !replaysOpen(), () => menu(Logo(logo))),
+                            Sx.Show(
+                                () => !state.GarageOpen.Value && !replaysOpen() && !myContentOpen(),
+                                () => menu(Logo(logo))
+                            ),
                             Sx.Show(() => state.GarageOpen.Value, () => garage()),
                             Sx.Show(replaysOpen, replays),
+                            Sx.Show(myContentOpen, myContent),
                             MainMenuView.SettingsOverlay(),
                             MainMenuView.QuitOverlay()
                         ]
