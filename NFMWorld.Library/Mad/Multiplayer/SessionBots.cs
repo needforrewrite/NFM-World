@@ -13,13 +13,15 @@ public static class SessionBots
     public static Dictionary<byte, ServerSidePlayerInfo> Place(
         IEnumerable<byte> occupied,
         int count,
-        Guid ownerId
+        Guid ownerId,
+        int maxPlayers = MatchGameplayInfo.MaxPlayers
     )
     {
         var taken = occupied.ToHashSet();
         var bots = new Dictionary<byte, ServerSidePlayerInfo>();
 
-        for (byte slot = 0; slot < MatchGameplayInfo.MaxPlayers && bots.Count < count; slot++)
+        var limit = Math.Clamp(maxPlayers, 0, MatchGameplayInfo.MaxPlayers);
+        for (byte slot = 0; slot < limit && bots.Count < count; slot++)
         {
             if (taken.Contains(slot))
                 continue;

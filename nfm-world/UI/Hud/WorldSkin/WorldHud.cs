@@ -43,7 +43,10 @@ internal sealed class WorldHud(IHudData race)
                             children:
                             [
                                 Sx.Text(style: () => Label, text: () => $"LAP {race.Lap}/{race.TotalLaps}"),
-                                Sx.Text(style: () => Big(26), text: () => FormatTime(race.LapTimeMs))
+                                Sx.Show(
+                                    () => Tick() >= 0 && race.TimeTrial,
+                                    () => Sx.Text(style: () => Big(26), text: () => FormatTime(race.LapTimeMs))
+                                )
                             ]
                         )
                     ),

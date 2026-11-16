@@ -200,7 +200,7 @@ public static class UiState
         public Signal<string> SelectedGamemode { get; } = new(NFMWorldLibrary.Multiplayer.DefaultGamemodes.PvP);
         public Signal<int> MaxPlayers { get; } = new(4);
 
-        /// <summary>Bots that will fill empty slots. They are filled after the humans join.</summary>
+        /// <summary>Bots reserving slots within the lobby's total capacity.</summary>
         public Signal<int> BotCount { get; } = new(0);
 
         /// <summary>Gamemode config values chosen in the create dialog, keyed by property name.</summary>

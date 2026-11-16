@@ -47,6 +47,72 @@ public class LobbySessionTimeoutTests
         }
     }
 
+    [TestMethod]
+    public void Bots_ReserveLobbySlotsAndRejectJoinsWhenFull()
+    {
+        var transport = new StubTransport();
+        var players = new PlayerRegistry();
+        var creator = players.GetOrAdd(1, ClientState.Connected);
+        players.GetOrAdd(2, ClientState.Connected);
+        var sessions = new SessionManager(transport, players);
+        var session = sessions.CreateSession(1, "nfmm/road", 16, DefaultGamemodes.PvP, bots: 15)!;
+
+        Assert.HasCount(15, session.Bots);
+        Assert.HasCount(1, session.Players);
+        var snapshot = new LobbyStateBroadcaster(transport, players, sessions).BuildSnapshot(creator.Id);
+        Assert.AreEqual(16, snapshot.ActiveSessions.Single().PlayerCount);
+        Assert.IsNull(sessions.JoinSession(2, session.Id).Joined);
+    }
+
+    [TestMethod]
+    public void Humans_JoinOnlyUnreservedSlots_AndStartingPreservesBots()
+    {
+        var players = new PlayerRegistry();
+        players.GetOrAdd(1, ClientState.Connected);
+        players.GetOrAdd(2, ClientState.Connected);
+        players.GetOrAdd(3, ClientState.Connected);
+        var sessions = new SessionManager(new StubTransport(), players);
+        var session = sessions.CreateSession(1, "nfmm/road", 4, DefaultGamemodes.PvP, bots: 2)!;
+        var botIds = session.Bots.Values.Select(bot => bot.Id).ToArray();
+
+        Assert.IsNotNull(sessions.JoinSession(2, session.Id).Joined);
+        Assert.IsFalse(session.Players.Keys.Intersect(session.Bots.Keys).Any());
+        Assert.IsNull(sessions.JoinSession(3, session.Id).Joined);
+        Assert.IsTrue(sessions.StartRace(1, session.Id));
+        Assert.AreEqual(4, session.Players.Count + session.Bots.Count);
+        CollectionAssert.AreEquivalent(botIds, session.Bots.Values.Select(bot => bot.Id).ToArray());
+    }
+
+    [TestMethod]
+    public void BotReservation_ClampsToTotalCapacityAndTimeTrialHasNoBots()
+    {
+        var players = new PlayerRegistry();
+        players.GetOrAdd(1, ClientState.Connected);
+        players.GetOrAdd(2, ClientState.Connected);
+        var sessions = new SessionManager(new StubTransport(), players);
+        var session = sessions.CreateSession(1, "nfmm/road", 4, DefaultGamemodes.PvP, bots: 15)!;
+        Assert.AreEqual(3, session.BotCount);
+        Assert.HasCount(3, session.Bots);
+        Assert.IsTrue(session.Bots.Keys.All(slot => slot < 4));
+        var trial = sessions.CreateSession(2, "nfmm/road", 4, DefaultGamemodes.TimeTrial, bots: 15)!;
+        Assert.AreEqual(0, trial.BotCount);
+        Assert.IsEmpty(trial.Bots);
+    }
+
+    [TestMethod]
+    public void CreatorLeavingBeforeStart_HandsReservedBotsToTheStartingHuman()
+    {
+        var players = new PlayerRegistry();
+        players.GetOrAdd(1, ClientState.Connected);
+        var remaining = players.GetOrAdd(2, ClientState.Connected);
+        var sessions = new SessionManager(new StubTransport(), players);
+        var session = sessions.CreateSession(1, "nfmm/road", 4, DefaultGamemodes.PvP, bots: 2)!;
+        sessions.JoinSession(2, session.Id);
+        sessions.LeaveSession(1, session.Id);
+        Assert.IsTrue(sessions.StartRace(2, session.Id));
+        Assert.IsTrue(session.Bots.Values.All(bot => bot.OwnerId == remaining.Id));
+    }
+
     private static (SessionManager Sessions, PlayerRegistry Players, uint ClientIndex) CreateSession()
     {
         var players = new PlayerRegistry();

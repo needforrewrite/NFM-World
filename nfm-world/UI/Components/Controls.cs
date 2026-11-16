@@ -1,5 +1,7 @@
 ﻿using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
+using System.Numerics;
+using static NFMWorld.DriverInterface.DriverInterface.TheGraphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.Reactor.Sx;
 using MouseEvent = NFMWorld.ClayDom.Events.MouseEvent;
@@ -271,6 +273,16 @@ public static class Controls
         double step,
         bool compact = false
     )
+        => Slider(value, onValue, min, () => max, step, compact);
+
+    public static Node Slider(
+        Func<double> value,
+        Action<double> onValue,
+        double min,
+        Func<double> max,
+        double step,
+        bool compact = false
+    )
     {
         var thumbWidth = compact ? 10f : 14f;
         var thumbHeight = compact ? 10f : 14f;
@@ -279,7 +291,11 @@ public static class Controls
         View? row = null;
         var focused = new Signal<bool>(false);
 
-        double Progress() => max - min <= 0 ? 0 : Math.Clamp((value() - min) / (max - min), 0, 1);
+        double Progress()
+        {
+            var upper = Math.Max(min, max());
+            return upper <= min ? 0 : Math.Clamp((value() - min) / (upper - min), 0, 1);
+        }
 
         // Measured on every read rather than cached: the first layout has no width yet, and
         // the width changes with the window.
@@ -297,9 +313,10 @@ public static class Controls
                 return;
 
             var local = (e.Position.X - row.LayoutPaddingPosition.X - (thumbWidth / 2)) / width;
-            var raw = min + (Math.Clamp(local, 0, 1) * (max - min));
+            var upper = Math.Max(min, max());
+            var raw = min + (Math.Clamp(local, 0, 1) * (upper - min));
             var stepped = Math.Round(raw / step) * step;
-            onValue(Math.Clamp(stepped, min, max));
+            onValue(Math.Clamp(stepped, min, upper));
         }
 
         void SetFromDrag(MouseDragEvent e)
@@ -386,10 +403,11 @@ public static class Controls
             {
                 if (key is Key.Enter or Key.Space) return true;
                 if (key is not (Key.Left or Key.Right or Key.Home or Key.End)) return false;
+                var upper = Math.Max(min, max());
                 var next = key == Key.Home ? min
-                    : key == Key.End ? max
+                    : key == Key.End ? upper
                     : Math.Round((value() + (key == Key.Left ? -step : step)) / step) * step;
-                onValue(Math.Clamp(next, min, max));
+                onValue(Math.Clamp(next, min, upper));
                 return true;
             },
             value => focused.Value = value

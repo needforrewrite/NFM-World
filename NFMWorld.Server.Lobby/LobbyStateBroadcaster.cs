@@ -56,6 +56,8 @@ public class LobbyStateBroadcaster(
             // Copy the live membership dictionary: the packet is serialized off-thread
             // while joins and leaves mutate it.
             var players = new ConcurrentDictionary<byte, Guid>(session.Players);
+            foreach (var (slot, bot) in session.Bots)
+                players[slot] = bot.Id;
 
             sessionList.Add(
                 new S2C_LobbyState.GameSession

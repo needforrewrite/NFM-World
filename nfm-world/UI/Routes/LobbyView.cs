@@ -678,7 +678,7 @@ public static class LobbyView
                                 [
                                     Sx.Text(
                                         style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
-                                        text: () => "Bots (they fill the empty slots)"
+                                        text: () => $"Bots: {lobby.BotCount.Value} (occupy lobby slots)"
                                     ),
                                     Sx.View(
                                         style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6),
@@ -686,7 +686,7 @@ public static class LobbyView
                                             () => lobby.BotCount.Value,
                                             value => actions.SetBots((int)value),
                                             0,
-                                            Math.Max(0, MatchGameplayInfo.MaxPlayers - lobby.MaxPlayers.Value),
+                                            () => Math.Max(0, lobby.MaxPlayers.Value - 1),
                                             1
                                         )
                                     )
@@ -696,7 +696,7 @@ public static class LobbyView
                         Sx.Text(
                             style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
                             layout: () => Sx.Styles(flexShrink: 0),
-                            text: () => $"Field: {lobby.MaxPlayers.Value + lobby.BotCount.Value}"
+                            text: () => $"Field: up to {lobby.MaxPlayers.Value} racers"
                         ),
 
                         (Func<object?>)(() => Sx.View(

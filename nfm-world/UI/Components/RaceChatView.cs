@@ -3,6 +3,7 @@ using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
 using NFMWorld.UI.ViewModels;
 using NFMWorldLibrary.Multiplayer;
+using SignalsDotnet;
 
 namespace NFMWorld.UI.Components;
 
@@ -57,18 +58,8 @@ internal static class RaceChatView
                 ),
                 Sx.Show(
                     () => chat.Open.Value,
-                    () => History(chat, classic),
-                    () => Sx.View(
-                        style: () => Sx.Styles(
-                            flexDirection: FlexDirection.Column,
-                            maxHeight: 140 * SettingsMenu.HudScale,
-                            overflow: Overflow.Hidden,
-                            justifyContent: Justify.FlexEnd,
-                            gapRow: 3,
-                            pointerEvents: false
-                        ),
-                        children: Sx.For(() => chat.Lines.Value.TakeLast(4).ToArray(), (line, _) => Line(line, classic))
-                    )
+                    () => History(chat),
+                    () => new RecentMessages(chat)
                 ),
                 Sx.Show(() => chat.Open.Value, () => Input(chat, classic, send))
             ]
@@ -81,7 +72,31 @@ internal static class RaceChatView
         return scale > 0 ? scale : 1;
     }
 
-    private static Node History(RaceChatState chat, Func<bool> classic)
+    private sealed class RecentMessages : View
+    {
+        private readonly Signal<long> _now = new(System.Environment.TickCount64);
+
+        public RecentMessages(RaceChatState chat)
+        {
+            Styles = Sx.Styles(
+                flexDirection: FlexDirection.Column,
+                maxHeight: 140 * SettingsMenu.HudScale,
+                overflow: Overflow.Hidden,
+                justifyContent: Justify.FlexEnd,
+                gapRow: 3,
+                pointerEvents: false
+            );
+            AddChild(Sx.For(
+                () => chat.Lines.Value.TakeLast(4).Where(line => line.RecentOpacity(_now.Value) > 0).ToArray(),
+                (line, _) => Line(line, () => line.RecentOpacity(_now.Value))
+            )
+            );
+        }
+
+        protected override void GameTick() => _now.Value = System.Environment.TickCount64;
+    }
+
+    private static Node History(RaceChatState chat)
     {
         var history = new ChatHistory(chat)
         {
@@ -101,25 +116,42 @@ internal static class RaceChatView
             flexDirection: FlexDirection.Column,
                 gapRow: 4
             ),
-            children: Sx.For(() => chat.Lines.Value, (line, _) => Line(line, classic))
+            children: Sx.For(() => chat.Lines.Value, (line, _) => Line(line))
         )
         );
         return history;
     }
 
-    private static Node Line(RaceChatLine line, Func<bool> classic)
-        => Sx.Text(
-            style: () => Sx.TextStyles(
-                fontSize: 12 * SettingsMenu.HudScale,
-                foregroundColor: classic() ? new Color(240, 252, 255) : Theme.MenuTextBlue,
-                strokeColor: new Color(0, 0, 0),
-                strokeWidth: SettingsMenu.HudScale,
-                breakType: BreakType.Word,
-                overflowBehavior: OverflowBehavior.ContinueVertically
+    private static Node Line(RaceChatLine line, Func<float>? opacity = null)
+        => Sx.View(
+            style: () => Sx.Styles(
+                width: 100.Percent(),
+                flexShrink: 0,
+                paddingTop: 2,
+                paddingBottom: 2,
+                opacity: opacity?.Invoke() ?? 1f
             ),
-            layout: () => Sx.Styles(width: 100.Percent(), flexShrink: 0),
-            text: () => $"{line.Sender}: {line.Message}"
+            children: Sx.Text(
+                style: () => Sx.TextStyles(
+                    fontSize: 13 * SettingsMenu.HudScale,
+                    foregroundColor: line.IsGame ? new Color(255, 230, 80) : Color.White,
+                    strokeColor: new Color(0, 0, 0),
+                    strokeWidth: ChatOutlineWidth(),
+                    breakType: BreakType.Character,
+                    overflowBehavior: OverflowBehavior.ContinueVertically
+                ),
+                layout: () => Sx.Styles(width: 100.Percent(), flexShrink: 0),
+                text: () => line.IsGame ? $"(GAME) {line.Message}" : $"{line.Sender}: {line.Message}"
+            )
         );
+
+    private static float ChatOutlineWidth()
+    {
+        var scale = SettingsMenu.HudScale * Math.Max(G.Scale, 0.01f);
+        // Keep the outline and its antialiasing inside the glyph's distance field.
+        var available = Math.Max(0, 13 * scale / 6 - 0.75f);
+        return Math.Min(1.5f * scale, available);
+    }
 
     private static Node Input(RaceChatState chat, Func<bool> classic, Action<string> send)
     {

@@ -39,6 +39,7 @@
         <Compile Include="..\nfm-world\UI\ViewModels\RaceFinishState.cs" Link="RaceFinishState.cs"/>
         <Compile Include="..\nfm-world\Mad\Gameplay\LobbyStageSelection.cs" Link="LobbyStageSelection.cs"/>
         <Compile Include="..\nfm-world\UI\Components\Button.cs" Link="Button.cs"/>
+        <Compile Include="..\nfm-world\UI\Components\Controls.cs" Link="Controls.cs"/>
         <Compile Include="..\nfm-world\UI\Components\LoadingSpinner.cs" Link="LoadingSpinner.cs"/>
         <Compile Include="..\nfm-world\UI\Components\LobbyPlayerMenu.cs" Link="LobbyPlayerMenu.cs"/>
         <Compile Include="..\nfm-world\UI\Components\MessageDialog.cs" Link="MessageDialog.cs"/>

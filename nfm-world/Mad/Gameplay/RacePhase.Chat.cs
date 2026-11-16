@@ -71,7 +71,8 @@ public partial class RacePhase
                 message.Sender,
                 message.Message,
                 new Color((byte)message.Color.R, (byte)message.Color.G, (byte)message.Color.B),
-                message.MessageId
+                message.MessageId,
+                isGame: message.SenderId == Guid.Empty
             );
     }
 

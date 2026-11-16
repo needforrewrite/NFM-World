@@ -370,7 +370,7 @@ public class StageSelectViewTests
     }
 
     /// <summary>A backend whose text has a real line height, which row sizing depends on.</summary>
-    private sealed class MetricsBackend : IBackend
+    internal sealed class MetricsBackend : IBackend
     {
         private readonly DummyBackend _inner = new();
         private readonly MetricsGraphics _graphics = new();

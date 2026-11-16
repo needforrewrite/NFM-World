@@ -574,8 +574,8 @@ public class RaceOrchestrator : IDisposable
     {
         var announcement = new S2C_RaceChat
         {
-            SenderId = Guid.Empty, Sender = "Race", Message = message,
-            Color = new Color3(255, 220, 140), MessageId = ++session.NextChatId
+            SenderId = Guid.Empty, Sender = "GAME", Message = message,
+            Color = new Color3(255, 230, 80), MessageId = ++session.NextChatId
         };
         session.ChatHistory.Enqueue(announcement);
         while (session.ChatHistory.Count > RaceChat.HistoryLimit) session.ChatHistory.Dequeue();

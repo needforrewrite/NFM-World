@@ -51,9 +51,12 @@ public sealed class ClassicHud(IHudData race) : Component
             }
 
             if (Race.HasPosition) PositionReadout(left + 30 * scale, top + 18 * scale, scale);
-            var timerY = top + (Race.HasPosition ? 49 : 30) * scale;
-            Text(Race.TimeTrial ? "TIME TRIAL" : "TIME", left + 14 * scale, timerY, scale, adventure: true);
-            Digits(HudText.FormatTime(Race.LapTimeMs), left + 14 * scale, timerY + 16 * scale, 22 * scale);
+            if (Race.TimeTrial)
+            {
+                var timerY = top + (Race.HasPosition ? 49 : 30) * scale;
+                Text("TIME TRIAL", left + 14 * scale, timerY, scale, adventure: true);
+                Digits(HudText.FormatTime(Race.LapTimeMs), left + 14 * scale, timerY + 16 * scale, 22 * scale);
+            }
 
             var speedX = left + size.X / 2;
             var speedY = top + size.Y - 55 * scale;
