@@ -241,6 +241,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     /// Whether gameplay is paused and the pause menu is visible.
     /// </summary>
     public bool IsPaused { get; private set; }
+    public bool WantsMouseCursor => IsPaused || _chat.Open.Value || _finish.ShowSummary.Value;
 
     /// <summary>
     /// Writes this frame's HUD values into the race view's signals.

@@ -159,6 +159,7 @@ public class SettingsMenu()
     private static string _cameraPresetName = CameraPreset.NFMW.Name;
 
     public static string HudSkin { get; private set; } = HudSkinId.Default;
+    public static bool LockMouseInGame { get; private set; } = true;
     public static float HudScale { get; private set; } = HudScaleSettings.Default;
     public static float HudSafeZoneHorizontal { get; private set; } = HudSafeZoneSettings.Default;
     public static float HudSafeZoneVertical { get; private set; } = HudSafeZoneSettings.Default;
@@ -637,6 +638,7 @@ public class SettingsMenu()
         );
         sw.WriteLine();
         sw.WriteLine("// Menu");
+        sw.WriteLine($"lock_mouse_in_game {(LockMouseInGame ? 1 : 0)}");
         sw.WriteLine($"hud_skin {HudSkin}");
         sw.WriteLine($"hud_scale {HudScale.ToString("R", CultureInfo.InvariantCulture)}");
         sw.WriteLine($"hud_safezone_x {HudSafeZoneHorizontal.ToString("R", CultureInfo.InvariantCulture)}");
@@ -678,6 +680,7 @@ public class SettingsMenu()
     /// </summary>
     public static void LoadConfigFromSnapshot(string configString)
     {
+        LockMouseInGame = true;
         HudSkin = HudSkinId.Default;
         HudScale = HudScaleSettings.Default;
         HudSafeZoneHorizontal = HudSafeZoneSettings.Default;
@@ -805,6 +808,9 @@ public class SettingsMenu()
                     break;
                 case "hud_flash":
                     HudFlash = int.Parse(value) != 0;
+                    break;
+                case "lock_mouse_in_game":
+                    LockMouseInGame = int.Parse(value) != 0;
                     break;
                 case "menu_stage":
                     MenuStage = MenuPreferences.NormalizeStage(value);
@@ -1047,6 +1053,7 @@ public class SettingsMenu()
     /// </summary>
     public static void LoadConfigValues()
     {
+        LockMouseInGame = true;
         HudSkin = HudSkinId.Default;
         HudScale = HudScaleSettings.Default;
         HudSafeZoneHorizontal = HudSafeZoneSettings.Default;
@@ -1208,6 +1215,7 @@ public class SettingsMenu()
             SelectedCameraPreset = SelectedCameraPreset(),
             MenuStage = MenuStage,
             HudSkin = HudSkin,
+            LockMouseInGame = LockMouseInGame,
             HudScale = HudScale,
             HudSafeZoneHorizontal = HudSafeZoneHorizontal,
             HudSafeZoneVertical = HudSafeZoneVertical,
@@ -1352,6 +1360,9 @@ public class SettingsMenu()
 
             case "hudSkin":
                 if (value is string skin) HudSkin = HudSkinId.Normalize(skin);
+                break;
+            case "lockMouseInGame":
+                if (value is bool lockMouse) LockMouseInGame = lockMouse;
                 break;
             case "hudScale":
                 if (AsFloat(value) is { } hudScale) HudScale = HudScaleSettings.Normalize(hudScale);

@@ -23,7 +23,6 @@ internal static class RaceChatView
                 maxHeight: 45.Percent(),
                 height: chat.Open.Value ? 220 * SettingsMenu.HudScale : null,
                 flexDirection: FlexDirection.Column,
-                zIndex: 200,
                 backgroundColor: chat.Open.Value
                     ? classic() ? new Color(22, 32, 42, 205) : Theme.MenuPanel : null,
                 borderTop: chat.Open.Value ? 1 : 0,
@@ -127,8 +126,10 @@ internal static class RaceChatView
             style: () => Sx.Styles(
                 width: 100.Percent(),
                 flexShrink: 0,
-                paddingTop: 2,
-                paddingBottom: 2,
+                paddingTop: ChatOutlinePadding(),
+                paddingBottom: ChatOutlinePadding(),
+                paddingLeft: ChatOutlinePadding(),
+                paddingRight: ChatOutlinePadding(),
                 opacity: opacity?.Invoke() ?? 1f
             ),
             children: Sx.Text(
@@ -144,6 +145,9 @@ internal static class RaceChatView
                 text: () => line.IsGame ? $"(GAME) {line.Message}" : $"{line.Sender}: {line.Message}"
             )
         );
+
+    private static float ChatOutlinePadding()
+        => MathF.Ceiling(ChatOutlineWidth() + 1) / Math.Max(G.Scale, 0.01f);
 
     private static float ChatOutlineWidth()
     {

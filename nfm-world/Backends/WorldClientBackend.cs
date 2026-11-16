@@ -833,8 +833,8 @@ internal class AposShapeSvg : AposShape
     private byte _maximumChannel = 255;
     private bool _colorDirty;
     private IRenderTarget? _cache;
-    private int _contentWidth;
-    private int _contentHeight;
+    private float _contentWidth;
+    private float _contentHeight;
 
     public AposShapeSvg(Stream stream, Vector3? rgbMultiplier = null, byte maximumChannel = 255)
     {
@@ -865,8 +865,8 @@ internal class AposShapeSvg : AposShape
     {
         var width = Math.Max(1, device.Swapchain.Width);
         var height = Math.Max(1, device.Swapchain.Height);
-        _contentWidth = Math.Max(1, (int)Math.Ceiling(Math.Min(width * 0.55f, height * _shape.Width / _shape.Height)));
-        _contentHeight = Math.Max(1, Math.Min(height, (int)Math.Ceiling(_contentWidth * _shape.Height / _shape.Width)));
+        _contentWidth = Math.Max(1, Math.Min(width * 0.55f, height * _shape.Width / _shape.Height));
+        _contentHeight = _contentWidth * _shape.Height / _shape.Width;
 
         ReleaseCache();
         _cache = device.CreateRenderTarget(

@@ -1028,7 +1028,7 @@ public partial class WorldGame : IDisposable, IGameHost
 
     private void UpdateMouseCursor()
     {
-        var menuVisible = GameSparker.CurrentPhase is not RacePhase { IsPaused: false }
+        var menuVisible = GameSparker.CurrentPhase is not RacePhase { WantsMouseCursor: false }
                           || GameSparker.devConsole.IsOpen()
                           || GameSparker.MessageWindow.IsOpen;
         var (_, x, y) = SdlWindow.GetMouseState();
@@ -1036,9 +1036,10 @@ public partial class WorldGame : IDisposable, IGameHost
             menuVisible,
             Window.HasFocus,
             new System.Numerics.Vector2(x, y),
-            new System.Numerics.Vector2(Window.Width, Window.Height)
+            new System.Numerics.Vector2(Window.Width, Window.Height),
+            lockDuringGameplay: SettingsMenu.LockMouseInGame
         );
-        if (_mouseCursor.Locked) Window.SetRelativeMouseMode(true);
+        Window.SetRelativeMouseMode(_mouseCursor.Locked);
         if (!visible) _mouseDragging = false;
         if (warpTo is { } position)
         {
@@ -1046,7 +1047,6 @@ public partial class WorldGame : IDisposable, IGameHost
             _oldMousePosition = new Int2((int)MathF.Round(position.X), (int)MathF.Round(position.Y));
         }
 
-        if (!_mouseCursor.Locked) Window.SetRelativeMouseMode(false);
         Window.CursorVisible = visible;
     }
 
