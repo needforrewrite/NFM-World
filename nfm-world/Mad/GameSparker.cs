@@ -28,7 +28,7 @@ public static partial class GameSparker
 
     public static IGraphicsDevice GraphicsDevice = null!;
     public static readonly string version = GetVersionString();
-    public const string ApplicationVersion = "0.6.5";
+    public const string ApplicationVersion = "v0.6.7";
     public static readonly string ExeVersion = ApplicationVersion + "." +
         (BuildInformation.Read(Assembly.GetEntryAssembly() ?? typeof(GameSparker).Assembly)
             .BuildNumber?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "unknown");

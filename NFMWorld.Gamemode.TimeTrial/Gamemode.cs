@@ -225,7 +225,6 @@ public class TimeTrialGamemode : PluginGamemode
                 continue;
 
             FixHoopHelper.HandleFixHoops(CurrentStage, car);
-            CheckPointHelper.HandleCheckPoint(CurrentStage, car);
             // Ghosts still drive against the stage, but never collide with another car.
             car.Drive(CurrentStage);
         }

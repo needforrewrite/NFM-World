@@ -198,6 +198,29 @@ public class StageSelectViewTests
         }
     }
 
+    [TestMethod]
+    public void PreviewLoading_CoversTheViewport_AndClearsWhenWorkEnds()
+    {
+        var state = new StageSelectState();
+        using var mounted = Renderer.Mount(() => StageSelectView.Preview(state, NavigationActions(state)));
+        var root = (Component)mounted.Root;
+        var viewport = new Vector2(1280, 720);
+        foreach (var busy in new[] { true, false, true, false })
+        {
+            state.Busy.Value = busy;
+            UiScheduler.Instance.Flush();
+            root.LayoutAndRender(viewport);
+            var overlay = Descendants(root).SingleOrDefault(node => node.Name == "Stage preview loading");
+            if (busy)
+            {
+                Assert.IsNotNull(overlay);
+                Assert.AreEqual(viewport.X, overlay.LayoutBorderSize.X, 0.5f);
+                Assert.AreEqual(viewport.Y, overlay.LayoutBorderSize.Y, 0.5f);
+            }
+            else Assert.IsNull(overlay);
+        }
+    }
+
     private static StageSelectView.Actions NavigationActions(StageSelectState state, Action? confirm = null)
         => new(
             collection => state.Collection.Value = collection,
@@ -206,6 +229,65 @@ public class StageSelectViewTests
             confirm ?? (() => { }),
             () => { }
         );
+
+    [TestMethod]
+    public void PreviewArrows_CycleStagesAndCategories_AndRespectBusyConfirmation()
+    {
+        var state = new StageSelectState();
+        state.Collections.Value = ["nfm1", "nfm2"];
+        state.Collection.Value = "nfm1";
+        state.Stages.Value = [new("a", "A"), new("b", "B")];
+        state.Selected.Value = "a";
+        state.ConfirmEnabled.Value = true;
+        var confirms = 0;
+        var actions = NavigationActions(state, () => confirms++);
+
+        StageSelectView.HandlePreviewKey(state, actions, Key.Left);
+        Assert.AreEqual("b", state.Selected.Value);
+        StageSelectView.HandlePreviewKey(state, actions, Key.Right);
+        Assert.AreEqual("a", state.Selected.Value);
+        StageSelectView.HandlePreviewKey(state, actions, Key.Up);
+        Assert.AreEqual("nfm2", state.Collection.Value);
+        StageSelectView.HandlePreviewKey(state, actions, Key.Down);
+        Assert.AreEqual("nfm1", state.Collection.Value);
+        state.Busy.Value = true;
+        StageSelectView.HandlePreviewKey(state, actions, Key.Enter);
+        Assert.AreEqual(0, confirms);
+        state.Busy.Value = false;
+        StageSelectView.HandlePreviewKey(state, actions, Key.Enter);
+        Assert.AreEqual(1, confirms);
+    }
+
+    [TestMethod]
+    public void Preview_LeavesTheCourseVisible_AndBoundsTheBrowser()
+    {
+        var state = new StageSelectState();
+        state.Collections.Value = ["nfm1"];
+        state.Collection.Value = "nfm1";
+        state.Stages.Value = Enumerable.Range(1, 30).Select(i => new StageOption($"stage{i}", $"Stage {i}")).ToArray();
+        state.Selected.Value = "stage1";
+        using var mounted = Renderer.Mount(() => StageSelectView.Preview(state, NavigationActions(state)));
+        var root = (Component)mounted.Root;
+        foreach (var viewport in new[] { new Vector2(1280, 720), new Vector2(640, 360) })
+        {
+            root.LayoutAndRender(viewport);
+            var header = Find(root, "Stage preview header");
+            var footer = Find(root, "Stage preview footer");
+            Assert.IsTrue(header.LayoutBorderSize.Y < viewport.Y * 0.5f);
+            Assert.IsTrue(header.LayoutBorderSize.X <= viewport.X * 0.91f);
+            Assert.IsTrue(header.LayoutBorderPosition.Y + header.LayoutBorderSize.Y < footer.LayoutBorderPosition.Y);
+            Assert.IsFalse(Descendants(root).Any(node => node.Name == "Stage select list"));
+        }
+
+        state.BrowserOpen.Value = true;
+        UiScheduler.Instance.Flush();
+        root.LayoutAndRender(new Vector2(1280, 720));
+        var list = Find(root, "Stage select list");
+        Assert.IsTrue(list.LayoutBorderSize.Y > 0);
+        Assert.IsTrue(list.ScrollableHeight > 0);
+        StageSelectView.HandlePreviewKey(state, NavigationActions(state), Key.Escape);
+        Assert.IsFalse(state.BrowserOpen.Value);
+    }
 
     /// <summary>
     /// The dialog as the lobby builds it: bounded by the window, with the compact selector as the

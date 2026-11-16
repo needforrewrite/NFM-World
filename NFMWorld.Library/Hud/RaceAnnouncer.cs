@@ -1,5 +1,6 @@
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
+using NFMWorldLibrary.Multiplayer;
 
 namespace NFMWorldLibrary.Hud;
 
@@ -66,8 +67,10 @@ public sealed class RaceAnnouncer
     private int _lastMissedTotalCheckpoint = -1;
 
     private readonly Dictionary<int, bool> _wasted = [];
+    private readonly HashSet<int> _departures = [];
 
     private bool _badLandingActive;
+    private uint _lastSpectatedStunt;
 
     /// <summary>The status line, or null when nothing is showing.</summary>
     public HudMessage? Status => _status is { TicksLeft: > 0 } s ? new HudMessage(s.Text, s.Kind) : null;
@@ -90,6 +93,8 @@ public sealed class RaceAnnouncer
         _armedTotalCheckpoint = -1;
         _lastMissedTotalCheckpoint = -1;
         _wasted.Clear();
+        _departures.Clear();
+        _lastSpectatedStunt = 0;
     }
 
     /// <summary>Runs one game tick: expires the slots, then posts whatever the state has to say.</summary>
@@ -103,6 +108,40 @@ public sealed class RaceAnnouncer
         CheckOwnState(client, gamemode);
         CheckStunt(client);
         CheckArrow(client, gamemode);
+    }
+
+    internal void TickSpectating(BackendCar? car, BaseClientGamemode gamemode, bool changed)
+    {
+        Expire();
+        if (changed)
+        {
+            _status = null;
+            _stunt = null;
+            _lastTotalCheckpoint = car?.TotalCheckpoint ?? 0;
+            _lastNewcar = car?.CarPhysics.Newcar ?? false;
+            _lastSpectatedStunt = car?.CarPhysics.LatestStunt.Sequence ?? 0;
+            _wrongWayTicks = 0;
+            _powerLowCooldown = 0;
+            _badLandingActive = false;
+            _armedTotalCheckpoint = -1;
+            _lastMissedTotalCheckpoint = -1;
+            _approachedCheckpoint = false;
+        }
+
+        if (_powerLowCooldown > 0) _powerLowCooldown--;
+        if (car is not null)
+        {
+            CheckCheckpoint(car, gamemode);
+            CheckOwnState(car, gamemode);
+            var stunt = car.CarPhysics.LatestStunt;
+            if (stunt.Sequence != _lastSpectatedStunt)
+            {
+                _lastSpectatedStunt = stunt.Sequence;
+                if (stunt.Sequence != 0) ShowStunt(stunt);
+            }
+        }
+
+        CheckOpponents(gamemode, spectating: true);
     }
 
     private void Expire()
@@ -145,11 +184,19 @@ public sealed class RaceAnnouncer
         Show("Checkpoint!", HudMessageKind.Info, 0.5f);
     }
 
-    private void CheckOpponents(BaseClientGamemode gamemode)
+    private void CheckOpponents(BaseClientGamemode gamemode, bool spectating = false)
     {
         foreach (var player in gamemode.Players)
         {
             if (player.Car is not { } car) continue;
+            if (car.DepartureReason is { } reason)
+            {
+                _wasted[player.Index] = true;
+                if (_departures.Add(player.Index) && car.AnnounceDeparture)
+                    Show(PlayerDeparture.Message(player.Info.PlayerName, reason), HudMessageKind.Info);
+                continue;
+            }
+
             var wasted = car.Wasted;
             if (!_wasted.TryGetValue(player.Index, out var wasWasted))
             {
@@ -161,24 +208,33 @@ public sealed class RaceAnnouncer
             _wasted[player.Index] = wasted;
             if (!wasted) continue;
 
-            if (player.Info.IsClientPlayer)
+            if (player.Info.IsClientPlayer && !spectating)
             {
-                Show("You have been wasted!", HudMessageKind.Danger);
+                Show(WastedText(car, gamemode), HudMessageKind.Danger);
                 continue;
             }
 
-            Show(WastedText(car, gamemode), HudMessageKind.Info);
+            Show(WastedText(car, gamemode, spectating), HudMessageKind.Info);
         }
     }
 
-    private string WastedText(BackendCar car, BaseClientGamemode gamemode)
+    private string WastedText(BackendCar car, BaseClientGamemode gamemode, bool spectating = false)
     {
         // Player names, not car names: in a race every car can be the same model.
         var name = NameOf(car, gamemode);
         var killer = car.CarPhysics.LastDamageFrom;
+        if (!spectating && ReferenceEquals(gamemode.ClientPlayer?.Car, car))
+        {
+            foreach (var player in gamemode.Players)
+                if (player.Car is { } other && other != car && other.CarPhysics.Im == killer)
+                    return $"You have been wasted by {NameOf(other, gamemode)}!";
+            return "You have been wasted!";
+        }
+
+        if (killer == car.CarPhysics.Im) killer = -1;
         if (killer < 0) return $"{name} has been wasted!";
-        // A spectator has no client player, so nothing was "wasted by you".
-        if (gamemode.ClientPlayer?.Car is { } own && own.CarPhysics.Im == killer)
+        // Spectators use names even when their own driver is still in the roster.
+        if (!spectating && gamemode.ClientPlayer?.Car is { } own && own.CarPhysics.Im == killer)
             return $"You wasted {name}!";
         foreach (var player in gamemode.Players)
         {
@@ -354,12 +410,20 @@ public sealed class RaceAnnouncer
         // trcnt hits 10 exactly once per combo; the stunt values are still set at that point
         // and cleared after, so this is the one tick the whole combo is readable.
         if (physics.TabletopCounter != 10) return;
-        if (DescribeStunt(physics) is not { } text) return;
-        _stunt = new Slot(text, HudMessageKind.Info, SecondsToTicks(Math.Min(6f, 2f + text.Length / 20f)));
+        ShowStunt(CompletedStunt.Capture(physics), requireDescription: true);
+    }
+
+    private void ShowStunt(CompletedStunt stunt, bool requireDescription = false)
+    {
+        var text = DescribeStunt(stunt);
+        if (text is null && requireDescription) return;
+        if (text is not null)
+            _stunt = new Slot(text, HudMessageKind.Info, SecondsToTicks(Math.Min(6f, 2f + text.Length / 20f)));
 
         // phy posted both at once: the stunt name on its own line and the power it earned on the
         // status line. Full power reads as a max rather than a percentage.
-        var percent = (int)(100f * (float)physics.Powerup / 98f);
+        if (stunt.Powerup <= 0) return;
+        var percent = (int)(100f * (float)stunt.Powerup / 98f);
         Show(percent >= 98 ? "Power To The MAX" : $"Power Up {percent}%", HudMessageKind.Info);
     }
 
@@ -379,6 +443,9 @@ public sealed class RaceAnnouncer
     /// adjective picked by how much power the stunt earned.
     /// </summary>
     public static string? DescribeStunt(CarPhysics physics)
+        => DescribeStunt(CompletedStunt.Capture(physics));
+
+    private static string? DescribeStunt(CompletedStunt physics)
     {
         var body = StuntName(physics);
         if (body.Length == 0) return null;
@@ -388,7 +455,7 @@ public sealed class RaceAnnouncer
         return tier == 3 ? adjective : $"{adjective} {body}{Exclamations[tier]}";
     }
 
-    private static string StuntName(CarPhysics physics)
+    private static string StuntName(CompletedStunt physics)
     {
         var loop = LoopName(physics);
         var spin = SpinName(physics, loop.Length == 0);
@@ -417,7 +484,7 @@ public sealed class RaceAnnouncer
         return text.Trim();
     }
 
-    private static string LoopName(CarPhysics physics)
+    private static string LoopName(CompletedStunt physics)
     {
         var zy = (float)physics.TotalStuntZy;
         var i = 0;
@@ -443,7 +510,7 @@ public sealed class RaceAnnouncer
         return loop;
     }
 
-    private static string SpinName(CarPhysics physics, bool loopEmpty)
+    private static string SpinName(CompletedStunt physics, bool loopEmpty)
     {
         var xy = MathF.Abs((float)physics.TotalStuntXy);
         var i = 0;

@@ -392,7 +392,7 @@ public abstract class BaseClientGamemode : IGamemode
         if (car.CurrentCheckpoint != _lastClientCheckpoint)
         {
             _lastClientCheckpoint = car.CurrentCheckpoint;
-            SfxLibrary.checkpoint?.Play();
+            if (!GamemodeContext.IsSpectating) SfxLibrary.checkpoint?.Play();
         }
 
         GamemodeContext.ClientCallbacks.UpdateCheckpointGlow(

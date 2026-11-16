@@ -9,6 +9,7 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
     private bool _isRunning = true;
     private Thread? _receiveThread;
     private readonly ConcurrentDictionary<uint, Peer> _connectedClients = [];
+    private readonly ConcurrentDictionary<uint, PlayerDepartureReason> _disconnectReasons = [];
     private readonly Host _server;
     private readonly ConcurrentQueue<(uint Peer, Packet? Packet)> _sendPacketQueue = [];
 
@@ -17,6 +18,8 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
     public override event EventHandler<uint>? ClientConnecting;
     public override event EventHandler<uint>? ClientConnected;
     public override event EventHandler<uint>? ClientDisconnected;
+    public override PlayerDepartureReason GetDisconnectReason(uint clientIndex)
+        => _disconnectReasons.GetValueOrDefault(clientIndex, PlayerDepartureReason.Disconnected);
 
     private class ConnectionsList(ENetMultiplayerServerTransport parent) : IReadOnlyCollection<uint>
     {
@@ -115,6 +118,7 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
                 break;
 
             case EventType.Connect:
+                _disconnectReasons.TryRemove(netEvent.Peer.ID, out _);
                 Logging.Info("Client connected - ID: " + netEvent.Peer.ID + ", IP: " + netEvent.Peer.IP);
                 ClientConnecting?.Invoke(this, netEvent.Peer.ID);
                 ClientConnected?.Invoke(this, netEvent.Peer.ID);
@@ -122,6 +126,7 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
                 break;
 
             case EventType.Disconnect:
+                _disconnectReasons[netEvent.Peer.ID] = PlayerDepartureReason.Disconnected;
                 Logging.Info("Client disconnected - ID: " + netEvent.Peer.ID + ", IP: " + netEvent.Peer.IP);
                 ForgetConnection(netEvent.Peer.ID);
                 ClientDisconnected?.Invoke(this, netEvent.Peer.ID);
@@ -129,6 +134,7 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
                 break;
 
             case EventType.Timeout:
+                _disconnectReasons[netEvent.Peer.ID] = PlayerDepartureReason.TimedOut;
                 Logging.Info("Client timeout - ID: " + netEvent.Peer.ID + ", IP: " + netEvent.Peer.IP);
                 ForgetConnection(netEvent.Peer.ID);
                 ClientDisconnected?.Invoke(this, netEvent.Peer.ID);

@@ -113,7 +113,7 @@ internal static class RaceChatView
                 fontSize: 12 * SettingsMenu.HudScale,
                 foregroundColor: classic() ? new Color(240, 252, 255) : Theme.MenuTextBlue,
                 strokeColor: new Color(0, 0, 0),
-                strokeWidth: 2 * SettingsMenu.HudScale,
+                strokeWidth: SettingsMenu.HudScale,
                 breakType: BreakType.Word,
                 overflowBehavior: OverflowBehavior.ContinueVertically
             ),

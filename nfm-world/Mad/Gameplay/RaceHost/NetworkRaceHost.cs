@@ -60,6 +60,7 @@ public sealed class NetworkRaceHost : IRaceHost
     public event Action<ReadOnlyMemory<byte>>? ServerStateReceived;
     public event Action<RaceResults>? GameFinished;
     public event Action<S2C_RaceChat>? ChatReceived;
+    public event Action<S2C_PlayerLeft>? PlayerLeft;
 
     public void Update()
     {
@@ -82,6 +83,9 @@ public sealed class NetworkRaceHost : IRaceHost
         {
             switch (packet)
             {
+                case S2C_PlayerLeft departure:
+                    PlayerLeft?.Invoke(departure);
+                    break;
                 case S2C_RaceChat chat:
                     ChatReceived?.Invoke(chat);
                     break;
@@ -150,6 +154,7 @@ public sealed class NetworkRaceHost : IRaceHost
     public void Dispose()
     {
         ChatReceived = null;
+        PlayerLeft = null;
         _transport.Reconnected -= OnReconnected;
         _transport.Stop();
     }

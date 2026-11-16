@@ -64,7 +64,8 @@ public class StageSelectPhase : BaseStageRenderingPhase
         LoadStageMusic();
     }
 
-    public override Node? BuildUi() => StageSelectView.Build(_state, _actions);
+    public override Node? BuildUi() => StageSelectView.Preview(_state, _actions);
+    internal bool ShowingLoadingOverlay => _state.Busy.Value;
 
     protected override (string Path, double Tempo, double Frequency)? GetMusicTrack()
         => ("data/music/nfm1/stageselectremastered.mp3", 1, 1);
@@ -72,6 +73,8 @@ public class StageSelectPhase : BaseStageRenderingPhase
     protected override void OnStageLoaded()
     {
         CurrentStage!.FadeFromOverride = 9999999;
+        _aroundStageCamera.Reset();
+        _aroundStageCamera.AroundStage(Camera, CurrentStage.Backend);
         _loadedStage = StageName!;
         if (_state.Selected.Value != StageName)
         {
@@ -317,7 +320,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
         if (imguiWantsKeyboard)
             return;
 
-        StageSelectView.HandleKey(_state, _actions, key);
+        StageSelectView.HandlePreviewKey(_state, _actions, key);
     }
 
     public override void KeyRepeated(Key key, bool imguiWantsKeyboard, in Keys keys)

@@ -15,7 +15,7 @@ public partial class PhysicsController(IReadOnlyList<ClientSidePlayer> players, 
         for (var i = 0; i < players.Count; i++)
         {
             var player = players[i];
-            if (player.Bot is { } bot)
+            if (player.Car is not { HasLeftRace: true } && player.Bot is { } bot)
             {
                 bot.RunAi();
             }

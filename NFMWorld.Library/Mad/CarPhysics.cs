@@ -8,6 +8,8 @@ using Maxine.Extensions.Collections;
 using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Collision;
+using NFMWorldLibrary.Hud;
+using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Util;
 
 /*************************************
@@ -114,10 +116,58 @@ public partial class CarPhysics
     [PluginVisible] public int Lastcolido;
 
     /// <summary>
-    /// Index of the car whose contact last damaged this one, or -1 for a stage hit.
-    /// Display only, so it is not part of the rollback frame.
+    /// Car responsible for the current crash chain, or -1 when no car is responsible.
     /// </summary>
     [PluginVisible] public int LastDamageFrom = -1;
+    internal PlayerDepartureReason? DepartureReason { get; private set; }
+
+    internal void MarkDeparted(PlayerDepartureReason reason)
+    {
+        DepartureReason ??= reason;
+        Wasted = true;
+        DamagePoints = Math.Max(DamagePoints, Stat.Maxmag);
+        Cntdest = 7;
+        Halted = true;
+        Newcar = false;
+        ResetDamageCredit();
+    }
+
+    private bool _hasDamageCredit;
+    private int _damageCreditRecovery;
+    private int _damageAtCreditTick;
+    internal const int DamageCreditRecoveryTicks = (int)(2 * Physics.TargetTps);
+
+    internal void RecordDamageSource(int sourceCar)
+    {
+        if (Wasted || Cntdest > 0) return;
+        sourceCar = _crashContact?.OtherCar ?? sourceCar;
+        if (sourceCar < 0 || sourceCar == Im) return;
+        LastDamageFrom = sourceCar;
+        _hasDamageCredit = true;
+        _damageCreditRecovery = 0;
+        _damageAtCreditTick = DamagePoints;
+    }
+
+    internal void UpdateDamageCredit()
+    {
+        if (!_hasDamageCredit || Wasted || DamagePoints >= Stat.Maxmag) return;
+        var pitch = fix64.Abs(Pxy % 360);
+        var roll = fix64.Abs(Pzy % 360);
+        var recovered = Mtouch && Skid == 0 && !BadLanding && CapsizedCounter == 0
+                        && (pitch < 45 || pitch > 315) && (roll < 45 || roll > 315)
+                        && DamagePoints == _damageAtCreditTick;
+        _damageAtCreditTick = DamagePoints;
+        _damageCreditRecovery = recovered ? _damageCreditRecovery + 1 : 0;
+        if (_damageCreditRecovery >= DamageCreditRecoveryTicks) ResetDamageCredit();
+    }
+
+    internal void ResetDamageCredit()
+    {
+        LastDamageFrom = -1;
+        _hasDamageCredit = false;
+        _damageCreditRecovery = 0;
+        _damageAtCreditTick = DamagePoints;
+    }
 
     [PluginVisible] public sbyte StuntState;
 
@@ -205,6 +255,8 @@ public partial class CarPhysics
     [PluginVisible] public fix64 TotalStuntZy;
 
     [PluginVisible] public int TabletopCounter;
+    internal CompletedStunt LatestStunt;
+    internal bool UsesRemoteStuntFeedback;
 
     [PluginVisible] public fix64 Txz;
 
@@ -618,6 +670,8 @@ public partial class CarPhysics
                         }
 
                         othermad.Scy[otherwheel] -= ownStats.Lift;
+                        if (impactMagnitude >= 100 && ownStats.Lift != 0)
+                            othermad.RecordDamageSource(Im);
                     }
                 }
             }
@@ -719,6 +773,8 @@ public partial class CarPhysics
 
     public void Drive(Control control, BackendCar car, BackendStage stage)
     {
+        if (DepartureReason.HasValue) Wasted = true;
+        UpdateDamageCredit();
         // Damage and stage overrides change the collision response, so refresh them first.
         _effective = EffectiveStats.From(Stat, stage.Physics, DamagePoints);
         _hasEffective = true;
@@ -2535,6 +2591,9 @@ public partial class CarPhysics
                                 _xtpower = (int)(100 * _oneOverTickRate);
                             }
                         }
+
+                        if (!UsesRemoteStuntFeedback)
+                            LatestStunt = CompletedStunt.Capture(this, LatestStunt.Sequence + 1);
                     } // CHK17
 
                     if (TabletopCounter == 10)
@@ -3156,7 +3215,7 @@ public partial class CarPhysics
             }
         }
 
-        if (i110 > 0) LastDamageFrom = sourceCar;
+        if (i110 > 0) RecordDamageSource(sourceCar);
         return i110;
     }
 
@@ -3285,7 +3344,7 @@ public partial class CarPhysics
             }
         }
 
-        if (i97 > 0) LastDamageFrom = sourceCar;
+        if (i97 > 0) RecordDamageSource(sourceCar);
         return i97;
     }
 
@@ -3346,12 +3405,14 @@ public partial class CarPhysics
             }
         }
 
-        if (i114 > 0) LastDamageFrom = sourceCar;
+        if (i114 > 0) RecordDamageSource(sourceCar);
         return i114;
     }
 
     public void Reseto(int i, ContO conto)
     {
+        if (DepartureReason.HasValue) return;
+        ResetDamageCredit();
         Cn = i;
         for (var i0 = 0; i0 < 8; i0++)
         {
@@ -3457,6 +3518,8 @@ public partial class CarPhysics
 
     public void FinishedFix()
     {
+        if (DepartureReason.HasValue) return;
+        ResetDamageCredit();
         RoofDamage = 0;
         _numRoofDamage = 0;
         DamagePoints = 0;

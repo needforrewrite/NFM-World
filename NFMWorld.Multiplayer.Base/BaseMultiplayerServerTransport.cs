@@ -21,6 +21,7 @@ public abstract class BaseMultiplayerServerTransport : IMultiplayerServerTranspo
     public abstract event EventHandler<uint>? ClientConnecting;
     public abstract event EventHandler<uint>? ClientConnected;
     public abstract event EventHandler<uint>? ClientDisconnected;
+    public virtual PlayerDepartureReason GetDisconnectReason(uint clientIndex) => PlayerDepartureReason.Disconnected;
 
     public abstract void SendRawPacketToClients(ReadOnlySpan<uint> clientIndices, ReadOnlySpan<byte> span, bool reliable);
 

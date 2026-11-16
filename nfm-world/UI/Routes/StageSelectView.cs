@@ -22,6 +22,7 @@ public sealed class StageSelectState
     public Signal<string> ConfirmLabel { get; } = new("RACE");
     public Signal<string> Description { get; } = new("Choose where to race.");
     public Signal<bool> BrowsingCollections { get; } = new(false);
+    public Signal<bool> BrowserOpen { get; } = new(false);
 
     /// <summary>True while the list shows public archive stages instead of local content.</summary>
     public Signal<bool> OnlineSource { get; } = new(false);
@@ -47,6 +48,7 @@ public sealed class StageSelectState
         ConfirmLabel.Value = "RACE";
         Description.Value = "Choose where to race.";
         BrowsingCollections.Value = false;
+        BrowserOpen.Value = false;
         OnlineSource.Value = false;
         Busy.Value = false;
         Status.Value = "";
@@ -191,6 +193,371 @@ public static class StageSelectView
         };
         root.AddChild(Sidebar(state, actions, title));
         root.AddChild(Content(state, actions));
+        return root;
+    }
+
+    public static bool HandlePreviewKey(StageSelectState state, Actions actions, Key key)
+    {
+        if (FocusManager.FocusedNode is TextInput or TextArea)
+            return HandleKey(state, actions, key);
+        switch (key)
+        {
+            case Key.PageUp when actions.SourceSelected is not null:
+            case Key.PageDown when actions.SourceSelected is not null:
+                actions.SourceSelected(key == Key.PageDown);
+                return true;
+            case Key.Left:
+            case Key.Right:
+                MovePreview(state, actions, key == Key.Left ? -1 : 1, collection: false);
+                return true;
+            case Key.Up:
+            case Key.Down:
+                MovePreview(state, actions, key == Key.Up ? -1 : 1, collection: true);
+                return true;
+            case Key.Escape when state.BrowserOpen.Value:
+                state.BrowserOpen.Value = false;
+                return true;
+            case Key.Enter:
+                if (state.ConfirmEnabled.Value && !state.Busy.Value) actions.Confirm();
+                return true;
+            default:
+                return HandleKey(state, actions, key);
+        }
+    }
+
+    private static void MovePreview(StageSelectState state, Actions actions, int delta, bool collection)
+    {
+        state.BrowsingCollections.Value = collection && !state.OnlineSource.Value;
+        if (collection)
+        {
+            if (state.OnlineSource.Value) return;
+            var items = state.Collections.Value;
+            if (items.Count == 0) return;
+            var index = items.ToList().IndexOf(state.Collection.Value);
+            actions.CollectionSelected(items[(index + delta + items.Count) % items.Count]);
+        }
+        else
+        {
+            var items = state.Stages.Value;
+            if (items.Count == 0) return;
+            var index = items.ToList().FindIndex(stage => stage.Id == state.Selected.Value);
+            var next = index < 0 ? (delta > 0 ? 0 : items.Count - 1) : (index + delta + items.Count) % items.Count;
+            if (items[next].Id != state.Selected.Value) actions.StageSelected(items[next].Id);
+        }
+    }
+
+    public static Node Preview(StageSelectState state, Actions actions)
+    {
+        SearchDraft.Value = state.Search.Value;
+        return Sx.View(
+            name: () => "Stage preview controls",
+            style: () => Sx.Styles(width: 100.Percent(), height: 100.Percent(), flexDirection: FlexDirection.Column),
+            children:
+            [
+                Sx.Show(() => state.Busy.Value, () => Sx.View(
+                    name: () => "Stage preview dimming",
+                    style: () => Sx.Styles(
+                        position: Position.Absolute,
+                        top: 0,
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        backgroundColor: new Color(0, 0, 0, 85),
+                        pointerEvents: false
+                    )
+                )),
+                Sx.Text(
+                    style: () => Sx.TextStyles(
+                        fontFamily: FontFamily.Adventure,
+                        fontSize: 20,
+                        foregroundColor: Theme.MenuBlue,
+                        strokeColor: Color.Black,
+                        strokeWidth: 1
+                    ),
+                    layout: () => Sx.Styles(position: Position.Absolute, top: 14, alignSelf: Align.Center),
+                    text: () => "SELECT STAGE"
+                ),
+                Sx.View(
+                    style: () => Sx.Styles(position: Position.Absolute, top: 12, right: 14),
+                    children: PreviewButtonSurface(Button.Create(
+                        () => state.BrowserOpen.Value ? "CLOSE BROWSER" : "BROWSE / SEARCH",
+                        () => state.BrowserOpen.Value = !state.BrowserOpen.Value,
+                        size: ButtonSize.Sm,
+                        textStyle: () => Sx.TextStyles(foregroundColor: Color.White)
+                    )
+                    )
+                ),
+                Sx.View(
+                    name: () => "Stage preview header",
+                    style: () => Sx.Styles(
+                        position: Position.Absolute,
+                        top: 48,
+                        alignSelf: Align.Center,
+                        width: PreviewPanelWidth(state),
+                        maxWidth: 90.Percent(),
+                        maxHeight: 70.Percent(),
+                        minHeight: 0,
+                        flexDirection: FlexDirection.Column,
+                        gapRow: 5,
+                        paddingTop: 10,
+                        paddingBottom: 10,
+                        paddingLeft: 18,
+                        paddingRight: 18,
+                        overflow: Overflow.Scroll,
+                        backgroundColor: new Color(6, 14, 30, 215),
+                        borderRadius: 8,
+                        borderTop: 1,
+                        borderBottom: 1,
+                        borderLeft: 1,
+                        borderRight: 1,
+                        borderColor: Theme.MenuBorder,
+                        pointerEvents: true
+                    ),
+                    children:
+                    [
+                        Sx.Text(
+                            style: () => Sx.WrappingText(
+                                fontSize: 10,
+                                foregroundColor: Theme.MenuDim,
+                                horizontalAlignment: TextHorizontalAlignment.Center
+                            ),
+                            layout: () => Sx.Styles(width: 100.Percent(), flexShrink: 0),
+                            text: () => state.OnlineSource.Value ? "ONLINE" : state.Collection.Value
+                        ),
+                        Sx.Text(
+                            style: () => Sx.TextStyles(
+                                fontSize: 16,
+                                fontStyle: FontStyle.Bold,
+                                breakType: BreakType.None,
+                                overflowBehavior: OverflowBehavior.None,
+                                foregroundColor: Color.White,
+                                horizontalAlignment: TextHorizontalAlignment.Center
+                            ),
+                            layout: () => Sx.Styles(width: 100.Percent(), flexShrink: 0),
+                            text: () => Heading(state)
+                        ),
+                        Sx.View(
+                            style: () => Sx.Styles(
+                                alignItems: Align.Center,
+                                justifyContent: Justify.Center,
+                                gapColumn: 8,
+                                flexShrink: 0
+                            ),
+                            children:
+                            [
+                                Button.Create(
+                                    () => "‹",
+                                    () => MovePreview(state, actions, -1, collection: false),
+                                    variant: ButtonVariant.Ghost,
+                                    size: ButtonSize.Sm
+                                ),
+                                Sx.Text(
+                                    style: () => Sx.TextStyles(fontSize: 12, foregroundColor: Theme.MenuTextBlue),
+                                    text: () => PreviewCaption(state)
+                                ),
+                                Button.Create(
+                                    () => "›",
+                                    () => MovePreview(state, actions, 1, collection: false),
+                                    variant: ButtonVariant.Ghost,
+                                    size: ButtonSize.Sm
+                                )
+                            ]
+                        ),
+                        Sx.Show(() => !state.Busy.Value, () => Status(state)),
+                        Restriction(state),
+                        Sx.Show(() => state.BrowserOpen.Value, () => PreviewBrowser(state, actions))
+                    ]
+                ),
+                PreviewStep(state, actions, -1),
+                PreviewStep(state, actions, 1),
+                Sx.View(
+                    name: () => "Stage preview footer",
+                    style: () => Sx.Styles(
+                        position: Position.Absolute,
+                        bottom: 14,
+                        alignSelf: Align.Center,
+                        width: 460,
+                        maxWidth: 94.Percent(),
+                        flexDirection: FlexDirection.Column,
+                        alignItems: Align.Center,
+                        gapRow: 6,
+                        pointerEvents: true
+                    ),
+                    children:
+                    [
+                        Sx.View(
+                            style: () => Sx.Styles(gapColumn: 10, alignItems: Align.Center),
+                            children:
+                            [
+                                PreviewButtonSurface(Button.Create(
+                                    () => "BACK",
+                                    actions.Back,
+                                    style: () => Sx.Styles(minWidth: 80, minHeight: 36, borderColor: Theme.MenuBlue),
+                                    textStyle: () => Sx.TextStyles(foregroundColor: Color.White)
+                                )
+                                ),
+                                PreviewButtonSurface(Button.Create(
+                                    () => state.ConfirmLabel.Value,
+                                    () => { if (state.ConfirmEnabled.Value && !state.Busy.Value) actions.Confirm(); },
+                                    variant: ButtonVariant.Primary,
+                                    textStyle: () => Sx.TextStyles(foregroundColor: Color.White),
+                                    style: () => Sx.Styles(
+                                        minWidth: 140,
+                                        minHeight: 36,
+                                        opacity: state.ConfirmEnabled.Value && !state.Busy.Value ? 1f : 0.6f
+                                    )
+                                )
+                                )
+                            ]
+                        ),
+                        Sx.Text(
+                            style: () => Sx.WrappingText(
+                                fontSize: 10,
+                                foregroundColor: Color.White,
+                                horizontalAlignment: TextHorizontalAlignment.Center
+                            )
+                                .Over(Sx.TextStyles(strokeColor: Color.Black, strokeWidth: 1)),
+                            layout: () => Sx.Styles(width: 100.Percent()),
+                            text: () => "← → stage    ↑ ↓ category    Enter race    Esc back"
+                        )
+                    ]
+                ),
+                Sx.Show(() => state.Busy.Value, () => Sx.View(
+                    name: () => "Stage preview loading",
+                    style: () => Sx.Styles(
+                        position: Position.Absolute,
+                        top: 0,
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        alignItems: Align.Center,
+                        justifyContent: Justify.Center,
+                        pointerEvents: false,
+                        zIndex: 900
+                    ),
+                    children: new LoadingSpinner
+                    {
+                        Radius = 22,
+                        Styles = Sx.Styles(width: 88, height: 88, flexShrink: 0)
+                    }
+                ))
+            ]
+        );
+    }
+
+    private static float PreviewPanelWidth(StageSelectState state)
+    {
+        var scale = Math.Max(TheGraphics.G.Scale, 0.01f);
+        var metrics = TheGraphics.G.GetFontMetrics(new Font(FontFamily.NotoSans, FontStyle.Bold, 16 * scale));
+        return Math.Max(350, metrics.MeasureText(Heading(state)).X / scale + 40);
+    }
+
+    private static string PreviewCaption(StageSelectState state)
+    {
+        var stages = state.Stages.Value;
+        var index = stages.ToList().FindIndex(stage => stage.Id == state.Selected.Value);
+        if (index < 0) return stages.Count == 0 ? "No stages found" : $"{stages.Count} stages · Choose a stage";
+        return $"{index + 1}/{stages.Count}";
+    }
+
+    private static Node PreviewButtonSurface(Node button)
+        => Sx.View(
+            style: () => Sx.Styles(backgroundColor: new Color(6, 14, 30, 245), borderRadius: 6),
+            children: button
+        );
+
+    private static Node PreviewStep(StageSelectState state, Actions actions, int delta)
+        => Sx.View(
+            style: () => Sx.Styles(
+                position: Position.Absolute,
+                top: 48.Percent(),
+                left: delta < 0 ? 14 : null,
+                right: delta > 0 ? 14 : null,
+                pointerEvents: true,
+                backgroundColor: new Color(6, 14, 30, 245),
+                borderRadius: 6
+            ),
+            children: Button.Create(
+                () => delta < 0 ? "‹ PREV" : "NEXT ›",
+                () => MovePreview(state, actions, delta, collection: false),
+                size: ButtonSize.Sm,
+                textStyle: () => Sx.TextStyles(foregroundColor: Color.White, fontSize: 14),
+                style: () => Sx.Styles(
+                    minWidth: 94,
+                    minHeight: 36,
+                    borderColor: Theme.MenuBlue,
+                    opacity: state.Stages.Value.Count > 1 ? 1f : 0.6f
+                )
+            )
+        );
+
+    private static Node PreviewBrowser(StageSelectState state, Actions actions)
+    {
+        var browserActions = actions with
+        {
+            CollectionSelected = collection =>
+            {
+                actions.CollectionSelected(collection);
+                state.BrowsingCollections.Value = false;
+            },
+            StageSelected = stage =>
+            {
+                actions.StageSelected(stage);
+                state.BrowserOpen.Value = false;
+                FocusManager.ClearFocus();
+            },
+            SearchChanged = query =>
+            {
+                state.BrowsingCollections.Value = false;
+                actions.SearchChanged(query);
+            }
+        };
+        var root = new NavigableStageSelect(state)
+        {
+            Styles = Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0)
+        };
+        root.AddChild(Sx.View(
+            name: () => "Stage preview browser",
+            style: () => Sx.Styles(
+                flexDirection: FlexDirection.Column,
+                height: 260,
+                flexShrink: 0,
+                gapRow: 6
+            ),
+            children:
+            [
+                SourcePicker(state, browserActions),
+                Sx.View(
+                    style: () => Sx.Styles(gapColumn: 6, flexShrink: 0),
+                    children:
+                    [
+                        Button.Create(
+                            () => "CATEGORIES",
+                            () => state.BrowsingCollections.Value = true,
+                            active: () => state.BrowsingCollections.Value,
+                            size: ButtonSize.Sm
+                        ),
+                        Button.Create(
+                            () => "STAGES",
+                            () => state.BrowsingCollections.Value = false,
+                            active: () => !state.BrowsingCollections.Value,
+                            size: ButtonSize.Sm
+                        )
+                    ]
+                ),
+                Sx.Text(
+                    style: () => Sx.WrappingText(fontSize: 11, foregroundColor: Theme.MenuDim),
+                    layout: () => Sx.Styles(width: 100.Percent(), flexShrink: 0),
+                    text: () => state.OnlineSource.Value ? "Public archive" : "Category: " + state.Collection.Value
+                ),
+                SearchBox(state, browserActions),
+                Sx.Show(
+                    () => state.BrowsingCollections.Value && !state.OnlineSource.Value,
+                    () => CollectionRail(state, browserActions),
+                    () => List(state, browserActions)
+                )
+            ]
+        ));
         return root;
     }
 

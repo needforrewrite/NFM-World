@@ -54,7 +54,13 @@ public class CheckPointHelper
                 }
                 else
                 {
-                    int c = car1.CurrentCheckpoint + 1;
+                    if (currentStage.Checkpoints.Count == 0)
+                    {
+                        car2.Placement++;
+                        continue;
+                    }
+
+                    int c = car1.CurrentCheckpoint;
                     if (c >= currentStage.Checkpoints.Count)
                     {
                         c = 0;

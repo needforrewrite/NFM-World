@@ -4,6 +4,7 @@ using NFMWorld.Reactor;
 using NFMWorld.UI;
 using NFMWorld.UI.ViewModels;
 using NFMWorldLibrary.Multiplayer.Packets.S2C;
+using NFMWorldLibrary.Backend.Gamemodes;
 
 namespace NFMWorld.Gameplay;
 
@@ -72,5 +73,13 @@ public partial class RacePhase
                 new Color((byte)message.Color.R, (byte)message.Color.G, (byte)message.Color.B),
                 message.MessageId
             );
+    }
+
+    private void ReceivePlayerLeft(S2C_PlayerLeft departure)
+    {
+        if (_raceDisposed || GamemodeInstance is not BaseClientGamemode gamemode) return;
+        foreach (var player in gamemode.Players)
+            if (player.Info.Id == departure.PlayerId)
+                player.Car?.MarkDeparted(departure.Reason, departure.Announce);
     }
 }

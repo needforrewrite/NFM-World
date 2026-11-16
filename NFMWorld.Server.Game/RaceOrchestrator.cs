@@ -339,8 +339,25 @@ public class RaceOrchestrator : IDisposable
             var isRacer = session.PlayerInfos.Values.Any(p => p.Id == clientId);
             if (isRacer)
             {
-                session.LoadedCount = Math.Max(0, session.LoadedCount - 1);
-                session.ServerGamemode?.OnClientDisconnected(clientId);
+                lock (session.ChatLock)
+                {
+                    if (session.Departures.ContainsKey(clientId)) return;
+                    var reason = _transport.GetDisconnectReason(clientIndex);
+                    foreach (var info in session.PlayerInfos.Values.Where(
+                        p => p.Id == clientId || (p.IsBot && p.OwnerId == clientId)
+                    ))
+                    {
+                        var departure =
+                            new S2C_PlayerLeft { PlayerId = info.Id, Reason = reason, Announce = info.Id == clientId };
+                        if (!session.Departures.TryAdd(info.Id, departure)) continue;
+                        session.PlayerWasted[info.Id] = true;
+                        _transport.SendPacketToClients(session.Clients.Keys.ToArray(), departure, reliable: true);
+                        if (departure.Announce) SendSystemChat(session, PlayerDeparture.Message(info.PlayerName, reason));
+                    }
+
+                    session.LoadedCount = Math.Max(0, session.LoadedCount - 1);
+                    session.ServerGamemode?.OnClientDisconnected(clientId);
+                }
             }
 
             Logging.Info($"[GM] {(isRacer ? "Client" : "Spectator")} {clientId} left the race");
@@ -408,6 +425,7 @@ public class RaceOrchestrator : IDisposable
         try
         {
             if (!TryFindSession(clientIndex, out var session, out var clientId)) return;
+            if (session.Departures.ContainsKey(clientId)) return;
             session.ServerGamemode?.OnClientEvent(clientId, clientEvent.Payload.Span);
         }
         finally
@@ -433,6 +451,13 @@ public class RaceOrchestrator : IDisposable
         {
             foreach (var message in session.ChatHistory)
                 _transport.SendPacketToClient(clientIndex, message, reliable: true);
+            foreach (var departure in session.Departures.Values)
+            {
+                var history = departure;
+                history.Announce = false;
+                _transport.SendPacketToClient(clientIndex, history, reliable: true);
+            }
+
             AttachLoadedClient(session, clientIndex, entry.ClientId, entry.Spectator);
         }
     }
@@ -466,7 +491,7 @@ public class RaceOrchestrator : IDisposable
         }
 
         session.Clients[clientIndex] = clientId;
-        if (!spectator) session.LoadedCount++;
+        if (!spectator && !session.Departures.ContainsKey(clientId)) session.LoadedCount++;
 
         Logging.Info(
             $"[GM] Client {clientId} loaded ({session.LoadedCount}/{session.PlayerCount})"
@@ -511,8 +536,23 @@ public class RaceOrchestrator : IDisposable
         // frame: the gamemode decides who died when, but only the car's owner knows it died.
         var frame = playerState.State.CarFrame;
         var pos = frame.CarPosition;
-        session.PlayerPositions[reportedId] = new f64Vector3(pos.X, pos.Y, pos.Z);
-        session.PlayerWasted[reportedId] = frame.TheBitFlags.Wasted;
+        if (!session.PlayerInfos.Values.Any(p => p.Id == reportedId)) return;
+        lock (session.ChatLock)
+        {
+            if (session.Departures.ContainsKey(reportedId)) return;
+            if (!session.WastedTracker.TryUpdate(
+                reportedId,
+                playerState.State.Ticks,
+                frame.TheBitFlags.Wasted,
+                    out var newlyWasted
+            )) return;
+            session.PlayerPositions[reportedId] = new f64Vector3(pos.X, pos.Y, pos.Z);
+            session.PlayerWasted[reportedId] = frame.TheBitFlags.Wasted;
+            if (newlyWasted && RaceWastedTracker.Message(session.PlayerInfos, reportedId, playerState.State
+                .DamageSource
+            ) is { } message)
+                SendSystemChat(session, message);
+        }
 
         var others = session.Clients.Keys.Where(idx => idx != clientIndex).ToArray();
         if (others.Length > 0)
@@ -530,11 +570,19 @@ public class RaceOrchestrator : IDisposable
         }
     }
 
-    /// <summary>
-    /// Cheap sanity check on a relayed car state. The angle fields are what the receiving
-    /// physics walks down in 360-degree steps, and speed drives its correction loops, so
-    /// bounds here are what stops one client freezing the others.
-    /// </summary>
+    private void SendSystemChat(RaceSession session, string message)
+    {
+        var announcement = new S2C_RaceChat
+        {
+            SenderId = Guid.Empty, Sender = "Race", Message = message,
+            Color = new Color3(255, 220, 140), MessageId = ++session.NextChatId
+        };
+        session.ChatHistory.Enqueue(announcement);
+        while (session.ChatHistory.Count > RaceChat.HistoryLimit) session.ChatHistory.Dequeue();
+        _transport.SendPacketToClients(session.Clients.Keys.ToArray(), announcement, reliable: true);
+    }
+
+    /// <summary>Rejects state that could freeze a receiving client's physics loops.</summary>
     private static bool IsSanePlayerState(PlayerState state)
     {
         const double maxAngle = 1_000_000;
@@ -542,8 +590,14 @@ public class RaceOrchestrator : IDisposable
 
         var rotation = state.CarFrame.CarRotation;
         var speed = (double)state.CarFrame.Speed;
+        var stunt = state.CompletedStunt;
 
         return double.IsFinite((double)rotation.Xz)
+               && Math.Abs((double)stunt.TotalStuntXz) <= maxAngle
+               && Math.Abs((double)stunt.TotalStuntXy) <= maxAngle
+               && Math.Abs((double)stunt.TotalStuntZy) <= maxAngle
+               && stunt.Powerup >= 0 && (double)stunt.Powerup <= maxAngle
+               && state.DamageSource >= 0 && state.DamageSource <= MatchGameplayInfo.MaxPlayers
                && Math.Abs((double)rotation.Xz) <= maxAngle
                && double.IsFinite((double)rotation.Pzy)
                && Math.Abs((double)rotation.Pzy) <= maxAngle
@@ -765,6 +819,8 @@ public class RaceOrchestrator : IDisposable
         public ConcurrentDictionary<Guid, long> LastChat { get; } = [];
         public Lock ChatLock { get; } = new();
         public Queue<S2C_RaceChat> ChatHistory { get; } = new();
+        public RaceWastedTracker WastedTracker { get; } = new();
+        public ConcurrentDictionary<Guid, S2C_PlayerLeft> Departures { get; } = new();
         public long NextChatId;
         public Dictionary<Guid, (string Name, Color3 Color)> Spectators { get; } = [];
         public Dictionary<Guid, Guid> SpectatorTokens { get; } = [];

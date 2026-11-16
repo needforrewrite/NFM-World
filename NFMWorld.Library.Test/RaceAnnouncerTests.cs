@@ -7,6 +7,7 @@ using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Hud;
 using NFMWorldLibrary.Rad;
+using NFMWorldLibrary.Multiplayer;
 
 namespace NFMWorld.Library.Test;
 
@@ -172,6 +173,19 @@ public class RaceAnnouncerTests
     }
 
     [TestMethod]
+    public void ClientWastedByAnotherCar_NamesTheKiller()
+    {
+        var (announcer, gamemode, car) = Create(opponents: 1);
+        announcer.Tick(car, gamemode);
+        car.CarPhysics.LastDamageFrom = gamemode.Players[1].Car!.CarPhysics.Im;
+        car.CarPhysics.Wasted = true;
+
+        announcer.Tick(car, gamemode);
+
+        Assert.AreEqual($"You have been wasted by {gamemode.Players[1].Info.PlayerName}!", announcer.Status?.Text);
+    }
+
+    [TestMethod]
     public void WastedWithNoKiller_OmitsTheCredit()
     {
         var (announcer, gamemode, car) = Create(opponents: 1);
@@ -323,15 +337,186 @@ public class RaceAnnouncerTests
         announcer.Tick(car, gamemode);
     }
 
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void Spectators_SeeWastedCreditWithoutYouWastedWording(bool joinedAsSpectator)
+    {
+        var (_, gamemode, own) = Create(opponents: 2, spectator: joinedAsSpectator);
+        var viewed = gamemode.Players[1].Car!;
+        var victim = gamemode.Players[2].Car!;
+        if (!joinedAsSpectator) own.CarPhysics.Wasted = true;
+        var feedback = new SpectatorRaceFeedback();
+        feedback.Tick(viewed, gamemode);
+        victim.CarPhysics.LastDamageFrom = own.CarPhysics.Im;
+        victim.CarPhysics.Wasted = true;
+
+        feedback.Tick(viewed, gamemode);
+
+        Assert.AreEqual(
+            $"{gamemode.Players[2].Info.PlayerName} has been wasted by {gamemode.Players[0].Info.PlayerName}!",
+            feedback.Status?.Text
+        );
+    }
+
+    [TestMethod]
+    public void Spectator_AutomaticTargetSwitchDoesNotLoseTheWatchedCarsDeath()
+    {
+        var (_, gamemode, viewed) = Create(opponents: 1, spectator: true);
+        var next = gamemode.Players[1].Car!;
+        var feedback = new SpectatorRaceFeedback();
+        feedback.Tick(viewed, gamemode);
+        viewed.CarPhysics.Wasted = true;
+        viewed.CarPhysics.LastDamageFrom = next.CarPhysics.Im;
+
+        feedback.Tick(next, gamemode);
+
+        Assert.AreEqual("Human has been wasted by Bot1!", feedback.Status?.Text);
+    }
+
+    [TestMethod]
+    public void Spectator_CompletedStuntSurvivesClearedCountersAndDoesNotRepeat()
+    {
+        var (_, gamemode, viewed) = Create(opponents: 0, spectator: true);
+        var feedback = new SpectatorRaceFeedback();
+        feedback.Tick(viewed, gamemode);
+        var physics = viewed.CarPhysics;
+        physics.TotalStuntZy = 720;
+        physics.Powerup = 49;
+        physics.LatestStunt = CompletedStunt.Capture(physics, 1);
+        physics.TotalStuntZy = 0;
+        physics.TabletopCounter = 0;
+        var state = PlayerState.CreateFrom(123, viewed);
+        var received = TightPack.TightPackSerializer.Deserialize<PlayerState>(TightPack.TightPackSerializer.Serialize(state));
+        physics.LatestStunt = default;
+        PlayerState.ApplyTo(received, viewed, 0);
+        Assert.IsTrue(physics.UsesRemoteStuntFeedback);
+
+        feedback.Tick(viewed, gamemode);
+
+        StringAssert.Contains(feedback.Stunt?.Text ?? "", "double Forward");
+        Assert.AreEqual("Power Up 50%", feedback.Status?.Text);
+        for (var tick = 0; tick < 500; tick++) feedback.Tick(viewed, gamemode);
+        Assert.IsNull(feedback.Stunt, "an unchanged owner snapshot must not keep replaying the stunt");
+        Assert.IsNull(feedback.Status);
+        physics.Powerup = 98;
+        physics.LatestStunt = CompletedStunt.Capture(physics, 2);
+        feedback.Tick(viewed, gamemode);
+        Assert.AreEqual("Power To The MAX", feedback.Status?.Text);
+    }
+
+    [TestMethod]
+    public void Spectator_LastCarsDeathStillShowsWithNoRemainingTarget()
+    {
+        var (_, gamemode, viewed) = Create(opponents: 0, spectator: true);
+        var feedback = new SpectatorRaceFeedback();
+        feedback.Tick(viewed, gamemode);
+        viewed.CarPhysics.Wasted = true;
+
+        feedback.Tick(null, gamemode);
+
+        Assert.AreEqual("Human has been wasted!", feedback.Status?.Text);
+        Assert.IsNull(feedback.NextCheckpoint);
+        Assert.IsFalse(feedback.PassedCheckpoint);
+    }
+
+    [TestMethod]
+    public void Spectator_CheckpointsTrackLapWrapAndTheFinishGate()
+    {
+        var (_, gamemode, viewed) = Create(opponents: 0, laps: 3, checkpoints: true, spectator: true);
+        var feedback = new SpectatorRaceFeedback();
+        feedback.Tick(viewed, gamemode);
+        Assert.IsFalse(feedback.PassedCheckpoint);
+        Assert.AreEqual((ushort)0, feedback.NextCheckpoint);
+        viewed.CurrentLap = 1;
+        viewed.TotalCheckpoint = 1;
+        feedback.Tick(viewed, gamemode);
+        Assert.IsTrue(feedback.PassedCheckpoint, "a one-gate lap still crosses a checkpoint");
+        Assert.AreEqual("2 laps to go!", feedback.Status?.Text);
+        feedback.Tick(viewed, gamemode);
+        Assert.IsFalse(feedback.PassedCheckpoint);
+        viewed.CurrentLap = 2;
+        viewed.TotalCheckpoint = 2;
+        feedback.Tick(viewed, gamemode);
+        Assert.IsTrue(feedback.FinishCheckpoint);
+        viewed.CurrentLap = 3;
+        viewed.TotalCheckpoint = 3;
+        feedback.Tick(viewed, gamemode);
+        Assert.IsTrue(feedback.PassedCheckpoint);
+        Assert.IsNull(feedback.NextCheckpoint, "finished cars have no next gate to highlight");
+    }
+
+    [TestMethod]
+    public void Spectator_SwitchingTargetsDoesNotReplayTheirExistingProgressOrStunts()
+    {
+        var (_, gamemode, first) = Create(opponents: 1, checkpoints: true, spectator: true);
+        gamemode.CurrentStage.Checkpoints.Add(new StageObject(first.Rad));
+        var second = gamemode.Players[1].Car!;
+        second.CurrentCheckpoint = 1;
+        second.TotalCheckpoint = 3;
+        second.CurrentLap = 1;
+        second.CarPhysics.Powerup = 98;
+        second.CarPhysics.LatestStunt = CompletedStunt.Capture(second.CarPhysics, 5);
+        var feedback = new SpectatorRaceFeedback();
+        feedback.Tick(first, gamemode);
+
+        feedback.Tick(second, gamemode);
+
+        Assert.IsFalse(feedback.PassedCheckpoint);
+        Assert.AreEqual((ushort)1, feedback.NextCheckpoint);
+        Assert.IsNull(feedback.Stunt);
+        Assert.IsNull(feedback.Status);
+        feedback.Reset();
+        feedback.Tick(second, gamemode);
+        Assert.IsFalse(feedback.PassedCheckpoint, "entering spectate again must also seed a fresh baseline");
+    }
+
+    [TestMethod]
+    public void Departure_AnnouncesAnAlreadyWastedOpponentOnce()
+    {
+        var (announcer, gamemode, car) = Create(opponents: 1);
+        var opponent = gamemode.Players[1].Car!;
+        opponent.CarPhysics.Wasted = true;
+        announcer.Tick(car, gamemode);
+        opponent.MarkDeparted(PlayerDepartureReason.TimedOut);
+        announcer.Tick(car, gamemode);
+        Assert.AreEqual("Bot1 has left the game (timed out)", announcer.Status?.Text);
+        opponent.MarkDeparted(PlayerDepartureReason.Disconnected);
+        for (var i = 0; i < (int)(Physics.TargetTps * 4); i++) announcer.Tick(car, gamemode);
+        Assert.IsNull(announcer.Status);
+        Assert.AreEqual(PlayerDepartureReason.TimedOut, opponent.DepartureReason);
+    }
+
+    [TestMethod]
+    public void SpectatorDeparture_AnnouncesEvenWhenTheLastTargetLeaves()
+    {
+        var (_, gamemode, car) = Create(opponents: 0, spectator: true);
+        var feedback = new SpectatorRaceFeedback();
+        feedback.Tick(car, gamemode);
+        car.MarkDeparted(PlayerDepartureReason.Disconnected);
+        feedback.Tick(null, gamemode);
+        Assert.AreEqual("Human has left the game (disconnected)", feedback.Status?.Text);
+    }
+
+    [TestMethod]
+    public void DepartureHistory_DoesNotReplayOldAnnouncements()
+    {
+        var (announcer, gamemode, car) = Create(opponents: 1);
+        gamemode.Players[1].Car!.MarkDeparted(PlayerDepartureReason.Disconnected, announce: false);
+        announcer.Tick(car, gamemode);
+        Assert.IsNull(announcer.Status);
+    }
+
     private static (RaceAnnouncer Announcer, TestGamemode Gamemode, BackendCar Car) Create(
         int opponents,
         int laps = 3,
-        bool checkpoints = false
+        bool checkpoints = false,
+        bool spectator = false
     )
     {
         var players = new List<ClientSidePlayerInfo>
         {
-            new() { PlayerName = "Human", CarName = CarName, Color = default, IsBot = false, IsClientPlayer = true }
+            new() { PlayerName = "Human", CarName = CarName, Color = default, IsBot = false, IsClientPlayer = !spectator }
         };
         for (var i = 0; i < opponents; i++)
         {
@@ -345,7 +530,7 @@ public class RaceAnnouncerTests
 
         var gamemode = new TestGamemode(players.ToArray(), laps, checkpoints);
         gamemode.Begin();
-        return (new RaceAnnouncer(), gamemode, gamemode.ClientPlayer.Car!);
+        return (new RaceAnnouncer(), gamemode, gamemode.Players[0].Car!);
     }
 
     private sealed class TestGamemode(ClientSidePlayerInfo[] players, int laps, bool checkpoints)
