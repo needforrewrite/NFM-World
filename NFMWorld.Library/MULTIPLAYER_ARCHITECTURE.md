@@ -282,7 +282,8 @@ same listener that takes race results.
 ### 4. Connect the client
 
 The menu's PLAY > MULTIPLAYER item uses the endpoint baked into the build (a Debug build defaults
-to `localhost:7001`). To reach a different lobby, use the dev console:
+to `127.0.0.1:7001`; build with `-c DebugDevServer` for the dev stack). To reach a different
+lobby, use the dev console:
 
 ```
 connect localhost 7001

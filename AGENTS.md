@@ -56,6 +56,8 @@ Key characteristics:
 - **Build / run** (`net11.0`; the shader task needs `dotnet build`, not MSBuild.exe):
   - Solution: `dotnet build nfm-world.slnx -c Debug`
   - Game only: `dotnet build NFMWorld/NFMWorld.csproj`
+  - Dev servers: `dotnet build NFMWorld/NFMWorld.csproj -c DebugDevServer` — Debug with the baked
+    lobby/archive endpoints pointed at `lobby-dev.nfmw.net` / `dev.nfmw.net` instead of loopback.
   - Run: `dotnet run --project NFMWorld/NFMWorld.csproj`
   - Tests: `dotnet test --no-build` from the solution root, or from a test project folder.
   - Browser: `dotnet build NFMWorld.Browser/NFMWorld.Browser.csproj -p:NfmwBrowser=true` (it sets
@@ -571,12 +573,16 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
 palette). One lobby; whether a race is rated is chosen per race, not by a menu page.
 
 - **Endpoint is a build property**, not a setting — `LobbyEndpoint`/`LobbyPort`/`LobbyInsecure` in
-  `NFMWorld.Game.csproj`, emitted as `AssemblyMetadata` and read by `LobbyEndpoint.cs`. Debug defaults to
-  `lobby-dev.nfmw.net:443` (the release lobby refuses a debug client); Release is `lobby.nfmw.net:443`. Both are
-  `wss`, because the client presents its session token on this socket; `LobbyInsecure` is only true when the
-  configured host is loopback, and every deployed lobby therefore sits behind a TLS terminator that answers `ws` on
-  443 with `400`. `connect <host> [port] [ws|wss]` reaches any other lobby and picks the scheme the same way:
-  plain `ws` for a loopback host, `wss` otherwise unless the third argument says which.
+  `NFMWorld.Game.csproj`, emitted as `AssemblyMetadata` and read by `LobbyEndpoint.cs`. `Debug` points at a lobby on
+  this machine (`127.0.0.1:7001`, plain `ws`); `DebugDevServer` is the same kind of build with the dev stack's
+  `lobby-dev.nfmw.net:443`; `Release` is `lobby.nfmw.net:443`. Deployed lobbies are `wss`, because the client presents
+  its session token on this socket; `LobbyInsecure` is only true when the configured host is loopback, and every
+  deployed lobby therefore sits behind a TLS terminator that answers `ws` on 443 with `400`.
+  `connect <host> [port] [ws|wss]` reaches any other lobby and picks the scheme the same way: plain `ws` for a
+  loopback host, `wss` otherwise unless the third argument says which. `NFMWorld.Library`'s `ArchiveEndpoint` follows
+  the same split (`http://127.0.0.1:5000`, `http://dev.nfmw.net`, `https://nfmw.net`), and `DebugDevServer` is
+  declared in `Directory.Build.props` so it also gets `DEBUG`, symbols and `Optimize=false` — the SDK only
+  special-cases the literal name `Debug`.
 - **The port is the lobby's HTTP/WebSocket listener** (`LOBBY_HTTP_ENDPOINT`, default 7001), not the game master's
   ENet port. A public lobby must sit behind a TLS terminator that proxies `wss` to it.
 - **One transport per phase, and the phase owns it.** `LobbyConnection.TryOpen` is the only entry point (menu item and

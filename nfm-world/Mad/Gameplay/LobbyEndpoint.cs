@@ -6,8 +6,9 @@ namespace NFMWorld.Gameplay;
 /// The lobby this build connects to by default.
 ///
 /// The endpoint is baked in at build time (see <c>LobbyEndpoint</c> in the game csproj) rather
-/// than being a setting: a release lobby will not authenticate a debug client, so a Debug build
-/// points at the dev lobby. The <c>connect &lt;host&gt; [port]</c> command still reaches any other.
+/// than being a setting: a Debug build points at a lobby on this machine, and DebugDevServer is
+/// the same kind of build pointed at the dev stack, because the release lobby will not
+/// authenticate a debug client. The <c>connect &lt;host&gt; [port]</c> command still reaches any other.
 /// </summary>
 public static class LobbyEndpoint
 {

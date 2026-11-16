@@ -4,8 +4,8 @@
 #   2. cp .env.example .env, fill it in
 #   3. docker compose up --build
 #
-#   Client (debug build)  wss://lobby-dev.nfmw.net   lobby, from the menu or `connect <host>`
-#   Client (local lobby)  ws://localhost:7001        `connect localhost 7001`
+#   Client (DebugDevServer)  wss://lobby-dev.nfmw.net  lobby, from the menu or `connect <host>`
+#   Client (Debug)           ws://127.0.0.1:7001       local lobby, no `connect` needed
 #   Players                udp 7002                  race traffic, straight to the game master
 #   Website / API          http://localhost:8069     archive
 #   Game-master API        tcp 7003                  lobby -> GM only, not published

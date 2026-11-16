@@ -1,0 +1,22 @@
+<Project>
+
+    <!--
+        DebugDevServer is Debug with the baked endpoints pointed at the dev stack. The SDK only
+        special-cases the literal name "Debug", so without this the configuration would compile
+        without DEBUG, without a PDB and optimised - a release build that happens to talk to the
+        dev servers, which is not what anyone selecting it wants.
+
+        Conditional on the name, so every other configuration is untouched.
+    -->
+    <PropertyGroup>
+        <Configurations Condition="'$(Configurations)' == ''">Debug;Release;DebugDevServer</Configurations>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'DebugDevServer'">
+        <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
+        <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
+        <DefineConstants Condition="'$(DefineConstants)' == ''">DEBUG</DefineConstants>
+        <DefineConstants Condition="'$(DefineConstants)' != 'DEBUG'">$(DefineConstants);DEBUG</DefineConstants>
+    </PropertyGroup>
+
+</Project>

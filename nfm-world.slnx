@@ -1,5 +1,8 @@
 <Solution>
   <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <BuildType Name="DebugDevServer" />
     <Platform Name="Any CPU" />
     <Platform Name="x64" />
     <Platform Name="x86" />

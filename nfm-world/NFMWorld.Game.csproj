@@ -20,17 +20,19 @@
         <DefineConstants Condition="'$(NfmwBrowser)' == 'true'">$(DefineConstants);WEB_AUDIO</DefineConstants>
         <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
 
-        <!-- The lobby the game connects to by default. A Debug build talks to the dev lobby,
-             because the release lobby will not authenticate a debug client. Override with
+        <!-- The lobby the game connects to by default. Debug talks to a lobby on this machine;
+             DebugDevServer is the same kind of build pointed at the dev stack, because the release
+             lobby will not authenticate a debug client. Override with
              -p:LobbyEndpoint=host -p:LobbyPort=port; the `connect` command still reaches others.
              The port is the lobby's HTTP/WebSocket listener (LOBBY_HTTP_ENDPOINT), not the game
              master's ENet port. The session token travels on this connection, so the release
              lobby is wss only. -->
         <LobbyEndpoint Condition="'$(LobbyEndpoint)' == '' and '$(Configuration)' == 'Release'">lobby.nfmw.net</LobbyEndpoint>
-        <LobbyEndpoint Condition="'$(LobbyEndpoint)' == '' and '$(Configuration)' == 'Debug'">lobby-dev.nfmw.net</LobbyEndpoint>
+        <LobbyEndpoint Condition="'$(LobbyEndpoint)' == '' and '$(Configuration)' == 'DebugDevServer'">lobby-dev.nfmw.net</LobbyEndpoint>
+        <LobbyEndpoint Condition="'$(LobbyEndpoint)' == '' and '$(Configuration)' == 'Debug'">127.0.0.1</LobbyEndpoint>
         <LobbyEndpoint Condition="'$(LobbyEndpoint)' == ''">localhost</LobbyEndpoint>
         <LobbyPort Condition="'$(LobbyPort)' == '' and '$(Configuration)' == 'Release'">443</LobbyPort>
-        <LobbyPort Condition="'$(LobbyPort)' == '' and '$(Configuration)' == 'Debug'">443</LobbyPort>
+        <LobbyPort Condition="'$(LobbyPort)' == '' and '$(Configuration)' == 'DebugDevServer'">443</LobbyPort>
         <LobbyPort Condition="'$(LobbyPort)' == ''">7001</LobbyPort>
         <!-- Plain ws is only for a lobby on this machine; every deployed lobby sits behind TLS. -->
         <LobbyInsecure
