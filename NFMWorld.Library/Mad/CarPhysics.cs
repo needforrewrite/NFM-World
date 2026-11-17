@@ -414,6 +414,11 @@ public partial class CarPhysics
         var totalOwnDamage = 0;
         if (_dominate[othermad.Im])
         {
+            // Revlift is the same for every contact this tick; hoist it so both damage
+            // branches use one value (mirrors the original's constant Stat.Revlift).
+            var liftY = ownStats.Revlift * recoil;
+            Span<int> ownLiftCount = stackalloc int[4];
+            Span<int> otherLiftCount = stackalloc int[4];
             var a = (Scz[0] - othermad.Scz[0] + Scz[1] - othermad.Scz[1] + Scz[2] - othermad.Scz[2] + Scz[3] - othermad.Scz[3]);
             var b = (Scx[0] - othermad.Scx[0] + Scx[1] - othermad.Scx[1] + Scx[2] - othermad.Scx[2] + Scx[3] - othermad.Scx[3]);
             var impactMagnitude = (int)((a * a + b * b) / 16);
@@ -495,19 +500,29 @@ public partial class CarPhysics
 
                             Scx[wheel] -= f130;
                             totalOwnDamage += Regx(wheel, -f130 * ownStats.Moment * damageMult, conto, random);
-                            Scy[wheel] -= ownStats.Revlift * recoil;
+                            if (ownLiftCount[wheel] == 0)
+                            {
+                                Scy[wheel] -= liftY;
+                                ownLiftCount[wheel]++;
+                            }
+
                             if (IsClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = true;
                             }
 
-                            totalOtherDamage += othermad.Regy(
-                                otherwheel,
-                                ownStats.Revlift * 7 * recoil,
-                                otherconto,
-                                random,
-                                sourceCar: Im
-                            );
+                            if (otherLiftCount[otherwheel] == 0)
+                            {
+                                totalOtherDamage += othermad.Regy(
+                                    otherwheel,
+                                    liftY * 7,
+                                    otherconto,
+                                    random,
+                                    sourceCar: Im
+                                );
+                                otherLiftCount[otherwheel]++;
+                            }
+
                             if (othermad._collidingWithClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = false;
@@ -574,19 +589,29 @@ public partial class CarPhysics
 
                             Scz[wheel] -= f132;
                             totalOwnDamage += Regz(wheel, -f132 * ownStats.Moment * damageMult, conto, random);
-                            Scy[wheel] -= ownStats.Revlift * recoil;
+                            if (ownLiftCount[wheel] == 0)
+                            {
+                                Scy[wheel] -= liftY;
+                                ownLiftCount[wheel]++;
+                            }
+
                             if (IsClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = true;
                             }
 
-                            totalOtherDamage += othermad.Regy(
-                                otherwheel,
-                                ownStats.Revlift * 7 * recoil,
-                                otherconto,
-                                random,
-                                sourceCar: Im
-                            );
+                            if (otherLiftCount[otherwheel] == 0)
+                            {
+                                totalOtherDamage += othermad.Regy(
+                                    otherwheel,
+                                    liftY * 7,
+                                    otherconto,
+                                    random,
+                                    sourceCar: Im
+                                );
+                                otherLiftCount[otherwheel]++;
+                            }
+
                             if (othermad._collidingWithClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = false;
@@ -617,7 +642,7 @@ public partial class CarPhysics
                             Lastcolido = 70;
                         }
 
-                        othermad.Scy[otherwheel] -= ownStats.Lift;
+                        if (otherLiftCount[otherwheel] == 0) othermad.Scy[otherwheel] -= ownStats.Lift;
                     }
                 }
             }
