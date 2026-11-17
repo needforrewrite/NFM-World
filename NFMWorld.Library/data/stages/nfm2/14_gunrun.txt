@@ -9,6 +9,7 @@ polys(177,176,207)
 fadefrom(5000)
 density(4)
 lightson()
+stars()
 
 name(The Gun Run)
 nlaps(1)

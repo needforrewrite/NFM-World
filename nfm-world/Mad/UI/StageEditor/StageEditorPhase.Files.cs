@@ -157,6 +157,9 @@ public partial class StageEditorPhase
         if (ActiveTab.Texture is { Length: 4 } texture)
             writer.WriteLine($"texture({texture[0]},{texture[1]},{texture[2]},{texture[3]})");
 
+        if (ActiveTab.StarsEnabled)
+            writer.WriteLine("stars()");
+
         if (ActiveTab.LightsOn)
         {
             writer.WriteLine("lightson()");
@@ -840,6 +843,7 @@ public partial class StageEditorPhase
             tab.MusicTempoMul = stageLoader.musicTempoMul;
             tab.FogDensity = stageLoader.FogDensity is { } fogDensity ? Math.Max(0, (fogDensity - 1) / 2) : null;
             tab.LightsOn = stageLoader.LightsOn;
+            tab.StarsEnabled = stageLoader.DrawStars;
             tab.LightDirection = stageLoader.LightDirection ?? new Vector3(0, 1, 0);
             tab.MountainCoverage = stageLoader.MountainCoverage;
             tab.Texture = stageLoader.EnvironmentInstructions

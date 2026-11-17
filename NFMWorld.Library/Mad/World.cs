@@ -75,7 +75,7 @@ public static partial class World
         LightsOn = false;
         DrawClouds = true;
         DrawMountains = true;
-        DrawStars = true;
+        DrawStars = false;
         DrawPolys = true;
         MountainSeed = URandom.Int(0, 100000);
         FogDensity = 0.857f;

@@ -11,6 +11,7 @@ mountains(29346)
 nlaps(3)
 soundtrack(elo,catchtherabbit.mp3)
 lightson()
+stars()
 
 name(Catch the Rabbit)
 

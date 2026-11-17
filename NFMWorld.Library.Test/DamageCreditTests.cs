@@ -20,20 +20,58 @@ public class DamageCreditTests
     }
 
     [TestMethod]
-    public void LongFlight_AndFatalLanding_PreserveCreditUntilWasted()
+    public void RecentHit_AndFatalLanding_PreserveCreditUntilWasted()
     {
         var physics = new CarPhysics(CarStats.Default, 1, false);
         physics.RecordDamageSource(0);
-        for (var tick = 0; tick < (int)(Physics.TargetTps * 60); tick++) physics.UpdateDamageCredit();
-        Assert.AreEqual(0, physics.LastDamageFrom, "flight time must not expire a causal hit");
+        for (var tick = 0; tick < CarPhysics.DamageCreditTimeoutTicks - 1; tick++) physics.UpdateDamageCredit();
+        Assert.AreEqual(0, physics.LastDamageFrom);
 
         physics.Mtouch = true;
         physics.DamagePoints = physics.Stat.Maxmag;
         physics.RecordDamageSource(-1);
-        for (var tick = 0; tick < 8; tick++) physics.UpdateDamageCredit();
+        for (var tick = 0; tick < CarPhysics.DamageCreditTimeoutTicks; tick++) physics.UpdateDamageCredit();
         physics.Wasted = true;
         physics.RecordDamageSource(2);
         Assert.AreEqual(0, physics.LastDamageFrom, "destruction delay and later contacts must not change the killer");
+    }
+
+    [TestMethod]
+    [DataRow(false, 0, 0)]
+    [DataRow(true, 1, 0)]
+    [DataRow(true, 0, 90)]
+    public void OldHit_ExpiresWithoutRecoveredDriving(bool grounded, int skid, int pitch)
+    {
+        var physics = new CarPhysics(CarStats.Default, 1, false) { Mtouch = grounded, Skid = checked((sbyte)skid), Pxy = pitch };
+        physics.RecordDamageSource(0);
+        for (var tick = 0; tick < CarPhysics.DamageCreditTimeoutTicks - 1; tick++) physics.UpdateDamageCredit();
+        Assert.AreEqual(0, physics.LastDamageFrom);
+
+        physics.UpdateDamageCredit();
+        physics.DamagePoints = physics.Stat.Maxmag;
+        physics.RecordDamageSource(-1);
+        physics.Wasted = true;
+        Assert.AreEqual(-1, physics.LastDamageFrom);
+    }
+
+    [TestMethod]
+    public void NewCarHit_RestartsTimeout_ButEnvironmentDamageDoesNot()
+    {
+        var physics = new CarPhysics(CarStats.Default with { Maxmag = 10000 }, 1, false);
+        physics.RecordDamageSource(0);
+        for (var tick = 0; tick < CarPhysics.DamageCreditTimeoutTicks - 1; tick++) physics.UpdateDamageCredit();
+        physics.RecordDamageSource(2);
+        physics.UpdateDamageCredit();
+        Assert.AreEqual(2, physics.LastDamageFrom);
+
+        for (var tick = 1; tick < CarPhysics.DamageCreditTimeoutTicks; tick++)
+        {
+            physics.DamagePoints++;
+            physics.RecordDamageSource(-1);
+            physics.UpdateDamageCredit();
+        }
+
+        Assert.AreEqual(-1, physics.LastDamageFrom);
     }
 
     [TestMethod]

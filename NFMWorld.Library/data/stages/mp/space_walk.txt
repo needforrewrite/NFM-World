@@ -9,6 +9,7 @@ density(5)
 mountains(37382)
 nlaps(3)
 lightson()
+stars()
 
 name(Space Walk)
 

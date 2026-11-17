@@ -58,6 +58,8 @@ public partial class CarPhysics
 
     [PluginVisible] public bool BadLanding;
 
+    public bool IsGroundScraping { get; private set; }
+
     [PluginVisible] public readonly UnlimitedArray<bool> _caught = [];
 
     [PluginVisible] public CarStats Stat;
@@ -133,9 +135,11 @@ public partial class CarPhysics
     }
 
     private bool _hasDamageCredit;
+    private int _damageCreditAge;
     private int _damageCreditRecovery;
     private int _damageAtCreditTick;
     internal const int DamageCreditRecoveryTicks = (int)(2 * Physics.TargetTps);
+    internal const int DamageCreditTimeoutTicks = (int)(10 * Physics.TargetTps);
 
     internal void RecordDamageSource(int sourceCar)
     {
@@ -144,13 +148,20 @@ public partial class CarPhysics
         if (sourceCar < 0 || sourceCar == Im) return;
         LastDamageFrom = sourceCar;
         _hasDamageCredit = true;
+        _damageCreditAge = 0;
         _damageCreditRecovery = 0;
         _damageAtCreditTick = DamagePoints;
     }
 
     internal void UpdateDamageCredit()
     {
-        if (!_hasDamageCredit || Wasted || DamagePoints >= Stat.Maxmag) return;
+        if (!_hasDamageCredit || Wasted || Cntdest > 0 || DamagePoints >= Stat.Maxmag) return;
+        if (++_damageCreditAge >= DamageCreditTimeoutTicks)
+        {
+            ResetDamageCredit();
+            return;
+        }
+
         var pitch = fix64.Abs(Pxy % 360);
         var roll = fix64.Abs(Pzy % 360);
         var recovered = Mtouch && Skid == 0 && !BadLanding && CapsizedCounter == 0
@@ -165,6 +176,7 @@ public partial class CarPhysics
     {
         LastDamageFrom = -1;
         _hasDamageCredit = false;
+        _damageCreditAge = 0;
         _damageCreditRecovery = 0;
         _damageAtCreditTick = DamagePoints;
     }
@@ -798,6 +810,7 @@ public partial class CarPhysics
             $"Travxz: {TotalStuntXz:0.00}, Travxy: {TotalStuntXy:0.00}, Travzy: {TotalStuntZy:0.00}, Surfing: {Surfing}"
         );
         OnGroundPlane = false;
+        IsGroundScraping = false;
 
         var xneg = 1;
         var zneg = 1;
@@ -1790,6 +1803,8 @@ public partial class CarPhysics
                 isWheelGrounded[i49] = true;
                 wheelContactNormal[i49] = Up;
 
+                GroundScrape(conto, i49, wheelx[i49], wheely[i49], wheelz[i49], wheelGround, surfaceType);
+
                 bounceRebound(
                     i49,
                     conto,
@@ -2730,6 +2745,16 @@ public partial class CarPhysics
     }
 
 
+    private void GroundScrape(ContO conto, int wheel, fix64 x, fix64 y, fix64 z, fix64 wheelGround, SurfaceType surface)
+    {
+        if (!BadLanding || surface is not (SurfaceType.Road or SurfaceType.OffTrack)) return;
+        if (Scx[wheel] * Scx[wheel] + Scz[wheel] * Scz[wheel] < 3600) return;
+
+        IsGroundScraping = true;
+        conto.Spark(x, y, z, Scx[wheel], Scy[wheel], Scz[wheel], 1, (int)wheelGround);
+        SfxPlayGscrape?.Invoke(this, ((int)Scx[wheel], (int)Scy[wheel], (int)Scz[wheel]));
+    }
+
     // input: number of grounded wheels to medium
     // output: hitVertical when colliding against a wall
     private void PhyTrackPieceCollision(
@@ -2887,6 +2912,7 @@ public partial class CarPhysics
 
                                     // newY is in local space; RotateXz doesn't affect Y, so just add object Y
                                     wheely[k] = groundHit.newY + boxMesh.GameObjectPosition.Y + wheelGround;
+                                    GroundScrape(conto, k, wheelx[k], wheely[k], wheelz[k], wheelGround, collidable.SurfaceType);
                                     // TODO: this makes going up mesh ramps janky. but we ideally want to allow bouncing on mesh collisions, so we need a better solution 
                                     // bounceRebound(k, conto, random);
                                     isWheelTouchingPiece[k] = true;
@@ -2991,13 +3017,7 @@ public partial class CarPhysics
 
                             wheely[k] = collision.newY + wheelGround; // snap wheel to the surface
 
-                            // sparks and scrape
-                            if (BadLanding && collidable.SurfaceType is SurfaceType.Road or SurfaceType.OffTrack)
-                            {
-                                conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, (int)wheelGround);
-                                //if (Im == /*this.xt.im*/ 0)
-                                SfxPlayGscrape?.Invoke(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
-                            }
+                            GroundScrape(conto, k, wheelx[k], wheely[k], wheelz[k], wheelGround, collidable.SurfaceType);
 
                             bounceRebound(
                                 k,
@@ -3092,12 +3112,15 @@ public partial class CarPhysics
                                 Wtouch = true;
                                 Gtouch = false;
 
-                                // sparks and scrape
-                                if (BadLanding && collidable.SurfaceType is SurfaceType.Road or SurfaceType.OffTrack)
-                                {
-                                    conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, (int)wheelGround);
-                                    SfxPlayGscrape?.Invoke(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
-                                }
+                                GroundScrape(
+                                    conto,
+                                    k,
+                                    wheelx[k],
+                                    collision.newPosition.Y + wheelGround,
+                                    wheelz[k],
+                                    wheelGround,
+                                    collidable.SurfaceType
+                                );
 
                                 if (!wasMtouch && surfaceType != SurfaceType.Road)
                                 {
@@ -3441,6 +3464,7 @@ public partial class CarPhysics
         Mtouch = false;
         Wtouch = false;
         Txz = 0;
+        IsGroundScraping = false;
         _turnXz = 0;
         _pmlt = 1;
         _nmlt = 1;

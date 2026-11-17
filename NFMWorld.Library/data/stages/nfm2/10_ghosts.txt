@@ -9,6 +9,7 @@ polys(194,186,204)
 fadefrom(7000)
 density(4)
 lightson()
+stars()
 
 name(Ghosts and Magic)
 

@@ -132,6 +132,7 @@ public partial class StageEditorPhase
         // density(n) encodes as 2n+1; with no directive the stage keeps ResetValues' default.
         World.FogDensity = ActiveTab.FogDensity is { } fogDensity ? fogDensity * 2 + 1 : 0.857f;
         World.LightsOn = ActiveTab.LightsOn;
+        World.DrawStars = ActiveTab.StarsEnabled;
         World.LightDirection = ActiveTab.LightDirection;
         World.Snap = new Color3((short)ActiveTab.SnapA, (short)ActiveTab.SnapB, (short)ActiveTab.SnapC);
     }

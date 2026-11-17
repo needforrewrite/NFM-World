@@ -10,6 +10,7 @@ density(5)
 nlaps(1)
 soundtrack(custom,purple_dream_5.mod)
 lightson()
+stars()
 
 name(Example Stage - with all the parts used in it)
 
