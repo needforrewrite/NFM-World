@@ -438,8 +438,44 @@ public class AssetCrudTests
         var id = (await upload.Content.ReadFromJsonAsync<JsonElement>())
             .GetProperty("asset").GetProperty("id").GetInt32();
 
-        var response = await ReplaceAsync(client, id, StagePackage("model replaced"), "replacement.radpack");
+        var response = await ReplaceAsync(client, id, CarPackage(legacy), "replacement.radpack");
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, await response.Content.ReadAsStringAsync());
+    }
+
+    /// <summary>
+    /// A radpack that fails as a radpack must not be retried as a legacy text model: doing so read
+    /// a wrong-kind package as something it is not.
+    /// </summary>
+    [TestMethod]
+    public async Task Replace_WithAWrongKindRadpack_IsRefused()
+    {
+        if (ArchiveAppFactory.ValidatorPath is null)
+            Assert.Inconclusive("The validator executable was not built beside the tests.");
+
+        var legacy = Path.Combine(
+            Path.GetDirectoryName(ArchiveAppFactory.ValidatorPath)!,
+            "data",
+            "models",
+            "nfmm",
+            "cars",
+            "2000tornados.rad"
+        );
+        if (!File.Exists(legacy))
+            Assert.Inconclusive("The validator's data tree is not beside its executable.");
+
+        using var factory = new ArchiveAppFactory();
+        var (client, _) = await SignedInClient(factory, "artist");
+
+        var upload = await UploadAsync(client, File.ReadAllBytes(legacy), "legacy.rad", "legacy car", "Car");
+        Assert.AreEqual(HttpStatusCode.OK, upload.StatusCode, await upload.Content.ReadAsStringAsync());
+        var id = (await upload.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("asset").GetProperty("id").GetInt32();
+
+        var response = await ReplaceAsync(client, id, StagePackage("a stage, not a car"), "replacement.radpack");
+        Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+        StringAssert.Contains((await response.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("error").GetString(), "not a Car"
+        );
     }
 
     /// <summary>
@@ -471,6 +507,26 @@ public class AssetCrudTests
             Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(second)),
             rows[0].ContentHash
         );
+    }
+
+    /// <summary>The same car as a radpack, so the replacement only changes the format.</summary>
+    private static byte[] CarPackage(string legacyRadPath)
+    {
+        var writer = new System.Buffers.ArrayBufferWriter<byte>();
+        RadpackSerializer.Serialize(
+            new NFMWorldLibrary.Radpack.RadpackRad3d
+            {
+                Metadata = new NFMWorldLibrary.Radpack.RadpackMetadata
+                {
+                    Name = "model replaced",
+                    CreationDate = DateTimeOffset.UnixEpoch,
+                    Type = NFMWorldLibrary.Radpack.RadpackType.Car
+                },
+                Rad = NFMWorldLibrary.Rad.RadParser.ParseRad(File.ReadAllText(legacyRadPath), "2000tornados")
+            },
+            writer
+        );
+        return writer.WrittenSpan.ToArray();
     }
 
     private static byte[] StagePackage(string name)

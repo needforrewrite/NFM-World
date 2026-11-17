@@ -1,4 +1,4 @@
-using System.Buffers;
+﻿using System.Buffers;
 using System.Net;
 using System.Security.Cryptography;
 using NFMWorldLibrary;
@@ -45,13 +45,57 @@ public class ContentCacheTests
                     CreationDate = DateTimeOffset.UnixEpoch,
                     Type = RadpackType.Car
                 },
-                Rad = new Rad3d([], false, "car")
+                Rad = MinimalCar()
             },
             writer
         );
         var bytes = writer.WrittenSpan.ToArray();
         return (bytes, Convert.ToHexStringLower(SHA256.HashData(bytes)));
     }
+
+    /// <summary>
+    /// A real car, because the cache refuses one the physics cannot drive: four wheels and a
+    /// complete stat set, which <c>new Rad3d([], false, ...)</c> is not.
+    /// </summary>
+    private static Rad3d MinimalCar() => RadParser.ParseRad(
+        """
+        swits(80,200,300)
+        acelf(11.0,7.5,4.0)
+        handb(7)
+        airs(1.3)
+        airc(100)
+        turn(7)
+        grip(25.0)
+        bounce(1.1)
+        simag(0.9)
+        moment(1.5)
+        comprad(0.5)
+        push(2)
+        revpush(2)
+        lift(30)
+        revlift(0)
+        powerloss(3000000)
+        flipy(-63)
+        msquash(3)
+        clrad(5500)
+        dammult(0.38)
+        maxmag(5800)
+        dishandle(1.0)
+        outdam(0.85)
+        name(Test Car)
+        <p>
+        c(120,120,120)
+        p(0,0,0)
+        p(40,0,0)
+        p(0,0,40)
+        </p>
+        w(-42,2,72,11,17,12)
+        w(42,2,72,11,-17,12)
+        w(-42,2,-84,0,17,12)
+        w(42,2,-84,0,-17,12)
+        """,
+        "car"
+    );
 
     private static ArchiveContentClient Client(FakeHandler handler)
         => new("https://archive.example/", new HttpClient(handler));

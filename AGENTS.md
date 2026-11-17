@@ -959,6 +959,17 @@ Added with the archive/content work; read this before touching content loading, 
   radpack with `ExportLocal*`. Both editors show name, description and that the publication is
   public; a failure leaves the document, its dirty flag and its history alone. Packaging failures
   are returned as messages rather than thrown, because the callers are fire-and-forget UI actions.
+- **A published car is checked as a car** — `CarModelValidator` (`NFMWorld.Library/Mad/Rad/`) is the
+  one rule, run by `ArchivePublisher.PublishModelAsync` before packaging and by the validator's
+  `radpack`/`rad` commands before the archive stores it, so a hand-crafted upload cannot bypass it.
+  Its structural half is `HasWheelsAndGeometry` (four wheels for the physics' contact set, polygons
+  to draw) — the garage's `BackendCar.IsDrivable` delegates to it. The rest covers what nothing else
+  checks: every stat defined (`CarStats.InvalidStat`, the silent form of `Validate`), the divisors
+  the physics divides by positive (Simag, Grip, Swits[2], Powerloss), no negative or wrapping
+  magnitudes, finite vertices, and triangle indices inside their own polygon. The same check runs on
+  `ContentCache.TryDecode`, so a client refuses to cache a car it could not drive. Every shipped car
+  passes (`CarModelValidatorTests.EveryShippedCar_IsPublishable`), and `powerloss`/`maxmag` at
+  `int.MaxValue` are legitimate ("no drag", "never breaks") — only `fix64` stats are magnitude-capped.
 - **Packed stage music** — editor exports/publications include both referenced soundtracks in a
   `RadpackTrackWithMusic` payload. The reader attaches these bytes to `StageLoader.EmbeddedMusic`
   for stream playback; it does not extract files or overwrite `data/music`. Canonical stock and

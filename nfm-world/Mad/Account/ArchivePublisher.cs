@@ -32,6 +32,13 @@ public static class ArchivePublisher
         if (kind is not (AssetKind.Car or AssetKind.StagePiece or AssetKind.Wheel))
             return new AssetUploadResult(false, $"{AssetKinds.Name((byte)kind)} cannot be published.", null);
 
+        // A car goes into other players' races, so it is checked here before it is packaged and
+        // again by the archive before it is stored. The garage already refuses to offer a model
+        // that has no four-wheel contact set; publishing is the point where the rest of the
+        // values have to hold up too.
+        if (kind == AssetKind.Car && CarModelValidator.Validate(rad) is { } invalid)
+            return new AssetUploadResult(false, $"This car cannot be published: {invalid}", null);
+
         byte[] bytes;
         try
         {

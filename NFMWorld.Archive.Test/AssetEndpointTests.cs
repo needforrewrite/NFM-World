@@ -1,4 +1,4 @@
-using System.Buffers;
+﻿using System.Buffers;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NFMWorld.Archive;
 using NFMWorld.Archive.Data;
 using NFMWorldLibrary;
+using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Radpack;
 
 namespace NFMWorld.Archive.Test;
@@ -424,6 +425,118 @@ public class AssetEndpointTests
 
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.AreEqual("Car", body.GetProperty("asset").GetProperty("type").GetString());
+    }
+
+    [TestMethod]
+    public async Task Upload_WithTheRealValidator_RefusesACarThePhysicsCannotDrive()
+    {
+        if (ArchiveAppFactory.ValidatorPath is null)
+            Assert.Inconclusive("The validator executable was not built beside the tests.");
+
+        using var factory = new ArchiveAppFactory();
+        using var client = await SignedInClient(factory);
+
+        // Three wheels: the physics builds a four-wheel contact set and throws in the
+        // constructor, so this is not a car however well-formed the radpack is.
+        var writer = new ArrayBufferWriter<byte>();
+        RadpackSerializer.Serialize(
+            new RadpackRad3d
+            {
+                Metadata = new RadpackMetadata
+                {
+                    Name = "trike",
+                    CreationDate = DateTimeOffset.UnixEpoch,
+                    Type = RadpackType.Car
+                },
+                Rad = RadParser.ParseRad(
+                    """
+                    swits(80,200,300)
+                    acelf(11.0,7.5,4.0)
+                    handb(7)
+                    airs(1.3)
+                    airc(100)
+                    turn(7)
+                    grip(25.0)
+                    bounce(1.1)
+                    simag(0.9)
+                    moment(1.5)
+                    comprad(0.5)
+                    push(2)
+                    revpush(2)
+                    lift(30)
+                    revlift(0)
+                    powerloss(3000000)
+                    flipy(-63)
+                    msquash(3)
+                    clrad(5500)
+                    dammult(0.38)
+                    maxmag(5800)
+                    dishandle(1.0)
+                    outdam(0.85)
+                    name(Trike)
+                    <p>
+                    c(120,120,120)
+                    p(0,0,0)
+                    p(40,0,0)
+                    p(0,0,40)
+                    </p>
+                    w(-42,2,72,11,17,12)
+                    w(42,2,72,11,-17,12)
+                    w(-42,2,-84,0,17,12)
+                    """,
+                    "trike"
+                )
+            },
+            writer
+        );
+
+        var response = await UploadAsync(client, writer.WrittenSpan.ToArray(), "trike.radpack", "trike", "Car");
+        Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode, await response.Content.ReadAsStringAsync());
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        StringAssert.Contains(body.GetProperty("error").GetString(), "four wheels");
+    }
+
+    [TestMethod]
+    public async Task Upload_WithTheRealValidator_AcceptsARealCar()
+    {
+        if (ArchiveAppFactory.ValidatorPath is null)
+            Assert.Inconclusive("The validator executable was not built beside the tests.");
+
+        var source = Path.Combine(
+            Path.GetDirectoryName(ArchiveAppFactory.ValidatorPath)!,
+            "data",
+            "models",
+            "nfmm",
+            "cars",
+            "radicalone.rad"
+        );
+        if (!File.Exists(source))
+            Assert.Inconclusive("The validator's data tree is not beside its executable.");
+
+        using var factory = new ArchiveAppFactory();
+        using var client = await SignedInClient(factory);
+
+        var rad = RadParser.ParseRad(File.ReadAllText(source), "radicalone");
+        var writer = new ArrayBufferWriter<byte>();
+        RadpackSerializer.Serialize(
+            new RadpackRad3d
+            {
+                Metadata = new RadpackMetadata
+                {
+                    Name = "radical one",
+                    CreationDate = DateTimeOffset.UnixEpoch,
+                    Type = RadpackType.Car
+                },
+                Rad = rad
+            },
+            writer
+        );
+
+        var response = await UploadAsync(client, writer.WrittenSpan.ToArray(), "radicalone.radpack", "radical one", "Car");
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, await response.Content.ReadAsStringAsync());
+        Assert.AreEqual("Car", (await response.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("asset").GetProperty("type").GetString()
+        );
     }
 
     [TestMethod]

@@ -1,4 +1,4 @@
-using NFMWorld.Archive.Data;
+﻿using NFMWorld.Archive.Data;
 using NFMWorld.Archive.Validation;
 using NFMWorldLibrary.Radpack;
 
@@ -104,14 +104,24 @@ public static class AssetUpload
         var (hash, relative, size) = await storage.PutAsync(source, RadpackLimits.MaxCompressedBytes, ct);
         var path = Path.Combine(storage.Root, relative);
 
-        var error = await ValidateAsync(validator, path, ".radpack", kind, ct);
-        if (error is not null && AssetKinds.IsLegacyRadKind(kind))
-            error = await ValidateAsync(validator, path, ".rad", kind, ct);
+        // The format is decided by the bytes, not by the name: a radpack that fails as a radpack
+        // must not be retried as text, or a wrong-kind package would be read as a legacy model.
+        var radpack = await IsRadpackAsync(path, ct);
+        var error = await ValidateAsync(validator, path, radpack ? ".radpack" : ".rad", kind, ct);
 
         if (error is not null)
             await storage.DeleteIfUnreferencedAsync(relative, db, ct);
 
         return new StoredUpload(hash, relative, size, error);
+    }
+
+    /// <summary>Whether the stored file begins with the radpack magic (<c>RAD&lt;type&gt;</c>).</summary>
+    private static async Task<bool> IsRadpackAsync(string path, CancellationToken ct)
+    {
+        var head = new byte[3];
+        await using var stream = File.OpenRead(path);
+        var read = await stream.ReadAtLeastAsync(head, head.Length, throwOnEndOfStream: false, ct);
+        return read == head.Length && head[0] == 'R' && head[1] == 'A' && head[2] == 'D';
     }
 
     /// <summary>
@@ -133,7 +143,9 @@ public static class AssetUpload
             return legacy.Ok ? null : legacy.Error ?? "The asset is not a readable model.";
         }
 
-        var result = await validator.RunAsync("radpack", [path], ct);
+        // The kind is passed through so the validator knows a car is being published and can
+        // check the values the game will drive it with.
+        var result = await validator.RunAsync("radpack", [path, AssetKinds.Name(kind)], ct);
         if (!result.Ok)
             return result.Error ?? "The asset is not a readable radpack.";
 

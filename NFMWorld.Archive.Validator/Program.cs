@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Files;
 using NFMWorldLibrary.Gamemodes;
@@ -18,7 +18,7 @@ namespace NFMWorld.Archive.Validator;
 ///
 /// Usage: validator tt-info &lt;replay-file&gt;
 ///        validator tt-sim &lt;replay-file&gt; &lt;stageName&gt; &lt;car-name&gt; &lt;stage-radpack&gt; &lt;car-radpack&gt;
-///        validator radpack &lt;radpack-file&gt;
+///        validator radpack &lt;radpack-file&gt; [asset-kind]
 ///        validator rad &lt;legacy-rad-file&gt; &lt;asset-kind&gt;
 ///
 /// Every command prints one JSON object to stdout and exits non-zero on refusal.
@@ -44,7 +44,7 @@ public static class Program
                     args.Length > 4 ? args[4] : null,
                     args.Length > 5 ? args[5] : null
                 ),
-                "radpack" => Radpack(args[1]),
+                "radpack" => Radpack(args[1], args.Length > 2 ? args[2] : null),
                 "rad" => LegacyRad(args[1], args.Length > 2 ? args[2] : null),
                 _ => Fail($"unknown command {args[0]}")
             };
@@ -160,22 +160,32 @@ public static class Program
         return ok ? 0 : 3;
     }
 
-    private static int Radpack(string path)
+    private static int Radpack(string path, string? kindName)
     {
         var data = File.ReadAllBytes(path);
         if (data.Length > RadpackLimits.MaxCompressedBytes)
             return Fail("radpack exceeds the compressed size limit");
 
         var asset = RadpackSerializer.Deserialize(data, RadpackLimits.MaxCompressedBytes, RadpackLimits.MaxDecompressedBytes);
+
+        // A car is downloaded into every player's race, so its values are checked here: an upload
+        // is otherwise only proven to be a well-formed radpack.
+        var assetType = AssetKinds.FromRadpackType(asset.Metadata.Type);
+        var claimedIsCar = kindName is null
+            ? assetType == AssetKinds.Car
+            : AssetKinds.TryParseName(kindName, out var claimed) && claimed == AssetKinds.Car;
+        if (claimedIsCar
+            && asset is RadpackRad3d car
+            && CarModelValidator.Validate(car.Rad) is { } invalid)
+            return Fail(invalid);
+
         Console.WriteLine(
             JsonSerializer.Serialize(
                 new
                 {
                     ok = true,
                     type = asset.Metadata.Type.ToString(),
-                    kind = AssetKinds.FromRadpackType(asset.Metadata.Type) is { } assetType
-                        ? AssetKinds.Name(assetType)
-                        : null,
+                    kind = assetType is { } known ? AssetKinds.Name(known) : null,
                     name = asset.Metadata.Name
                 }
             )
@@ -197,7 +207,11 @@ public static class Program
         if (!AssetKinds.TryParseName(kindName, out var kind) || !AssetKinds.IsLegacyRadKind(kind))
             return Fail("legacy .rad files may only be published as a Car, StagePiece or Wheel.");
 
-        RadParser.ParseRad(System.Text.Encoding.UTF8.GetString(data), Path.GetFileNameWithoutExtension(path));
+        var rad = RadParser.ParseRad(System.Text.Encoding.UTF8.GetString(data), Path.GetFileNameWithoutExtension(path));
+
+        // Same rule as a packed car: a legacy model is published into other players' races too.
+        if (kind == AssetKinds.Car && CarModelValidator.Validate(rad) is { } invalid)
+            return Fail(invalid);
 
         Console.WriteLine(JsonSerializer.Serialize(new { ok = true, type = "Rad3d", kind = AssetKinds.Name(kind) }));
         return 0;

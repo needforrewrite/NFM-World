@@ -1,9 +1,10 @@
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text.Json;
 using NFMWorld.PhysicsFS;
 using NFMWorldLibrary;
+using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Radpack;
 
 namespace NFMWorldLibrary.Content;
@@ -450,13 +451,25 @@ public static class ContentCache
 
         try
         {
-            RadpackReader.Read(
+            var asset = RadpackReader.Read(
                 bytes,
                 RadpackReader.ArchivePrefix + hash,
                 kind,
                 RadpackLimits.MaxCompressedBytes,
                 RadpackLimits.MaxDecompressedBytes
             );
+
+            // A car this build cannot drive must never reach the cache: it would be handed to the
+            // race as a model and throw when the physics built its wheels. The archive refuses
+            // these on upload; this is the same rule on the receiving side, for rows that predate it.
+            if (kind == RadpackType.Car
+                && asset is RadpackRad3d car
+                && CarModelValidator.Validate(car.Rad) is { } invalid)
+            {
+                error = $"The car cannot be driven: {invalid}";
+                return false;
+            }
+
             error = null;
             return true;
         }

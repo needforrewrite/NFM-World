@@ -46,10 +46,10 @@ public partial class BackendCar : BackendGameObject
     /// <summary>
     /// Whether a model can be turned into a car at all. The physics builds a four-wheel
     /// contact set from <c>Wheels[0..3]</c>, so an unfinished editor model with fewer
-    /// wheels throws in the constructor; the garage must not offer it.
+    /// wheels throws in the constructor; the garage must not offer it, and the archive
+    /// must not accept it. See <see cref="CarModelValidator"/> for the full check.
     /// </summary>
-    public static bool IsDrivable(Rad3d rad)
-        => rad.Wheels.Length >= 4 && rad.Polys.Length > 0;
+    public static bool IsDrivable(Rad3d rad) => CarModelValidator.HasWheelsAndGeometry(rad);
 
     [PluginVisible] public ClientSidePlayerInfo Player { get; }
 
