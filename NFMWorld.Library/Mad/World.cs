@@ -5,11 +5,6 @@ namespace NFMWorldLibrary;
 
 public static partial class World
 {
-    /// <summary>
-    /// Adds extra collision radius and damage to compensate for lag.
-    /// </summary>
-    public static bool UseMultiplayerCollisionModifiers = true;
-
     public static float OutlineThickness = 1f;
     public static bool PixelOutlines;
     public static bool IsHyperglidingEnabled = true;

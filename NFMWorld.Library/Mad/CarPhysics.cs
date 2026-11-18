@@ -417,13 +417,7 @@ public partial class CarPhysics
             var a = (Scz[0] - othermad.Scz[0] + Scz[1] - othermad.Scz[1] + Scz[2] - othermad.Scz[2] + Scz[3] - othermad.Scz[3]);
             var b = (Scx[0] - othermad.Scx[0] + Scx[1] - othermad.Scx[1] + Scx[2] - othermad.Scx[2] + Scx[3] - othermad.Scx[3]);
             var impactMagnitude = (int)((a * a + b * b) / 16);
-            var impactExtraRdius = 7000;
-            fix64 damageMult = 1;
-            if (World.UseMultiplayerCollisionModifiers)
-            {
-                impactExtraRdius = 28000;
-                damageMult = (fix64)1.27F;
-            }
+            const int impactExtraRdius = 7000;
 
             for (var wheel = 0; wheel < 4; wheel++)
             {
@@ -483,7 +477,7 @@ public partial class CarPhysics
 
                             totalOtherDamage += othermad.Regx(
                                 otherwheel,
-                                f131 * ownStats.Moment * damageMult,
+                                f131 * ownStats.Moment,
                                 otherconto,
                                 random,
                                 Im
@@ -494,7 +488,7 @@ public partial class CarPhysics
                             }
 
                             Scx[wheel] -= f130;
-                            totalOwnDamage += Regx(wheel, -f130 * ownStats.Moment * damageMult, conto, random);
+                            totalOwnDamage += Regx(wheel, -f130 * ownStats.Moment, conto, random);
                             Scy[wheel] -= ownStats.Revlift * recoil;
                             if (IsClientPlayer)
                             {
@@ -560,7 +554,7 @@ public partial class CarPhysics
 
                             totalOtherDamage += othermad.Regz(
                                 otherwheel,
-                                f133 * ownStats.Moment * damageMult,
+                                f133 * ownStats.Moment,
                                 otherconto,
                                 random,
                                 -1,
@@ -573,7 +567,7 @@ public partial class CarPhysics
                             }
 
                             Scz[wheel] -= f132;
-                            totalOwnDamage += Regz(wheel, -f132 * ownStats.Moment * damageMult, conto, random);
+                            totalOwnDamage += Regz(wheel, -f132 * ownStats.Moment, conto, random);
                             Scy[wheel] -= ownStats.Revlift * recoil;
                             if (IsClientPlayer)
                             {
