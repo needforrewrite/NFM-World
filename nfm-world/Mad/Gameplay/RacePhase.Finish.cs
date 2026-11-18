@@ -61,7 +61,8 @@ public partial class RacePhase
             return;
         }
 
-        if (!_spectating && RaceState != NFMWorldLibrary.RaceState.Finished && GamemodeInstance is BaseClientGamemode gamemode)
+        if (_host is NFMWorld.Gameplay.RaceHost.NetworkRaceHost && !_spectating
+            && RaceState != NFMWorldLibrary.RaceState.Finished && GamemodeInstance is BaseClientGamemode gamemode)
         {
             _finishRequested = true;
             gamemode.ConfirmFinish();
