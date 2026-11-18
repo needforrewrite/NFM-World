@@ -13,7 +13,7 @@ namespace NFMWorld;
 Represents a stage. Holds all information relating to track pices, scenery, etc.
 But does NOT hold any information relating to the actual game being played, unless such game affects the layout or scenery of the stage.
 */
-public class ClientStageRenderer : GameObject, IDisposable
+public partial class ClientStageRenderer : GameObject, IDisposable
 {
     private bool _disposed;
     private int _environmentSeed;
@@ -69,6 +69,7 @@ public class ClientStageRenderer : GameObject, IDisposable
     public ClientStageRenderer(BackendStage backendStage)
     {
         this.backendStage = backendStage;
+        InitializeDestructionRendering();
         Children = _mutableChildren;
         World.ResetValues();
         _environmentSeed = World.MountainSeed;
@@ -179,6 +180,7 @@ public class ClientStageRenderer : GameObject, IDisposable
     private ClientStageRenderer(BackendStage stage, bool deferred)
     {
         backendStage = stage;
+        InitializeDestructionRendering();
         Children = _mutableChildren;
     }
 
@@ -269,7 +271,8 @@ public class ClientStageRenderer : GameObject, IDisposable
                         token.ThrowIfCancellationRequested();
                         var rad = entry.Object.Rad;
                         if (!cachedModels.Contains(rad) && !meshes.ContainsKey(rad)) meshes.Add(rad, Mesh.Prepare(rad));
-                        var polygons = StageSurfaceOverlaps.Resolve(resolver, pieces.Count, entry.Polys, entry.World);
+                        var polygons = entry.Object.Durability > 0 ? entry.Polys
+                            : StageSurfaceOverlaps.Resolve(resolver, pieces.Count, entry.Polys, entry.World);
                         var replacement = ReferenceEquals(polygons, entry.Polys) ? null
                         : Mesh.Prepare(new Rad3d(polygons, rad.CastsShadow, rad.FileName));
                         pieces.Add((entry.Object, replacement));
@@ -496,7 +499,8 @@ public class ClientStageRenderer : GameObject, IDisposable
             {
                 var (obj, visual) = entries[i];
                 var world = Matrix.CreateFromEuler((Euler)obj.Rotation) * Matrix.CreateTranslation((Vector3)obj.Position);
-                var polygons = StageSurfaceOverlaps.Resolve(resolver, i, obj.Rad.Polys, world);
+                var polygons = obj.Durability > 0 ? obj.Rad.Polys
+                    : StageSurfaceOverlaps.Resolve(resolver, i, obj.Rad.Polys, world);
                 var mesh = GetStageMesh(obj.Rad);
                 if (!ReferenceEquals(polygons, obj.Rad.Polys))
                 {
@@ -613,6 +617,7 @@ public class ClientStageRenderer : GameObject, IDisposable
         mountains?.SubmitDraws(queue, camera, lighting, pass);
 
         base.SubmitDraws(queue, camera, lighting, pass);
+        foreach (var debris in _debris) debris.SubmitDraws(queue, camera, lighting, pass);
     }
 
     public void ResetCheckpointGlow()
@@ -652,6 +657,7 @@ public class ClientStageRenderer : GameObject, IDisposable
             return;
 
         _disposed = true;
+        DisposeDestructionRendering();
         Adopt();
 
         sky?.Dispose();

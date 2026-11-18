@@ -61,6 +61,7 @@ public sealed class NetworkRaceHost : IRaceHost
     public event Action<RaceResults>? GameFinished;
     public event Action<S2C_RaceChat>? ChatReceived;
     public event Action<S2C_PlayerLeft>? PlayerLeft;
+    public event Action<StagePieceState, bool>? StagePieceStateReceived;
 
     public void Update()
     {
@@ -83,6 +84,9 @@ public sealed class NetworkRaceHost : IRaceHost
         {
             switch (packet)
             {
+                case S2C_StagePieceState piece:
+                    StagePieceStateReceived?.Invoke(piece.State, !piece.Snapshot);
+                    break;
                 case S2C_PlayerLeft departure:
                     PlayerLeft?.Invoke(departure);
                     break;
@@ -133,6 +137,9 @@ public sealed class NetworkRaceHost : IRaceHost
     public void SendServerEvent(ReadOnlyMemory<byte> payload)
         => _transport.SendPacketToServer(new C2S_ClientEvent { Payload = payload.ToArray() }, reliable: true);
 
+    public void SendStageImpact(Guid playerId, StageImpact impact)
+        => _transport.SendPacketToServer(new C2S_StageImpact { PlayerId = playerId, Impact = impact }, reliable: true);
+
     public void SendChat(string message)
     {
         var text = RaceChat.Normalize(message);
@@ -155,6 +162,7 @@ public sealed class NetworkRaceHost : IRaceHost
     {
         ChatReceived = null;
         PlayerLeft = null;
+        StagePieceStateReceived = null;
         _transport.Reconnected -= OnReconnected;
         _transport.Stop();
     }

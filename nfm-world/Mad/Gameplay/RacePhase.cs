@@ -59,12 +59,6 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     /// <summary>This client's player id in the match, so it can tell which bots it simulates.</summary>
     private readonly Guid _localPlayerId;
 
-    public IGamemode? GamemodeInstance { get; protected set; }
-
-    BackendStage IGamemodeContext.CurrentStage => CurrentStage.Backend;
-    bool IGamemodeContext.IsMultiplayer => _host is NetworkRaceHost;
-    bool IGamemodeContext.IsSpectating => WatchingPlayers;
-
     /// <summary>
     /// Watching a race this client has no car in. There is no client player, so input drives
     /// nothing and the camera rides the watched car.
@@ -83,6 +77,22 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
     /// <summary>How long a race waits to start before it gives up. Matches the server's own deadline.</summary>
     private const int LoadTimeoutMs = 20_000;
+
+    // Both orderings are rebuilt at most once per tick: the HUD push and the camera tick each ask
+    // for them, and sorting the roster several times a tick is wasted work.
+    private ClientSidePlayer[]? _orderedPlayers;
+    private ClientSidePlayer[]? _orderedOpponents;
+    private BackendCar? _watchedHudCar;
+    private Vector3 _watchedHudPosition;
+    private float _watchedHudSpeed;
+    private readonly SpectatorRaceFeedback _spectatorFeedback = new();
+    private bool _spectatorFeedbackActive;
+
+    public IGamemode? GamemodeInstance { get; protected set; }
+
+    BackendStage IGamemodeContext.CurrentStage => CurrentStage.Backend;
+    bool IGamemodeContext.IsMultiplayer => _host is NetworkRaceHost;
+    bool IGamemodeContext.IsSpectating => WatchingPlayers;
 
     public RacePhase(
         string stageName,
@@ -181,6 +191,12 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         host.RaceCanStart += () => RaceState = RaceState.InProgress;
         host.RaceFailedToStart += () => RaceState = RaceState.FailedToStart;
         host.PlayerStateReceived += ApplyPlayerState;
+        if (host is NetworkRaceHost network)
+        {
+            network.StagePieceStateReceived += CurrentStage.Backend.ApplyPieceState;
+            CurrentStage.Backend.ObjectHit += SendStageImpact;
+        }
+
         host.ServerEventReceived += payload =>
         {
             GamemodeInstance?.OnServerEvent(payload.Span);
@@ -215,6 +231,19 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     /// there is no client player at all, which is every spectator.
     /// </summary>
     public BackendCar? ClientCar => (GamemodeInstance as BaseClientGamemode)?.ClientPlayer?.Car;
+
+    private void SendStageImpact(int carIndex, StageImpact impact)
+    {
+        if (_spectating || RaceState != RaceState.InProgress || _host is not NetworkRaceHost network
+            || GamemodeInstance is not BaseClientGamemode gm) return;
+        foreach (var player in gm.Players)
+            if (player.Index == carIndex && !player.IsFake
+                && (player.Info.Id == _localPlayerId || player.Info.IsBot && player.Info.OwnerId == _localPlayerId))
+            {
+                network.SendStageImpact(player.Info.Id, impact);
+                return;
+            }
+    }
 
     public RaceState RaceState
     {
@@ -445,16 +474,6 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         var checkpoint = checkpoints[Math.Clamp((int)client.CurrentCheckpoint, 0, checkpoints.Count - 1)];
         return new Vector3((float)checkpoint.Position.X, (float)checkpoint.Position.Y, (float)checkpoint.Position.Z);
     }
-
-    // Both orderings are rebuilt at most once per tick: the HUD push and the camera tick each ask
-    // for them, and sorting the roster several times a tick is wasted work.
-    private ClientSidePlayer[]? _orderedPlayers;
-    private ClientSidePlayer[]? _orderedOpponents;
-    private BackendCar? _watchedHudCar;
-    private Vector3 _watchedHudPosition;
-    private float _watchedHudSpeed;
-    private readonly SpectatorRaceFeedback _spectatorFeedback = new();
-    private bool _spectatorFeedbackActive;
 
     private void UpdateWatchedFeedback()
     {
@@ -730,6 +749,11 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             {
                 network.ChatReceived -= ReceiveChat;
                 network.PlayerLeft -= ReceivePlayerLeft;
+                if (CurrentStage is { } stage)
+                {
+                    network.StagePieceStateReceived -= stage.Backend.ApplyPieceState;
+                    stage.Backend.ObjectHit -= SendStageImpact;
+                }
             }
 
             _chat.Clear();

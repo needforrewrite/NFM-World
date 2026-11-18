@@ -159,6 +159,7 @@ public sealed class LocalRaceHost : IRaceHost
 
     public void Restart()
     {
+        _context.CurrentStage.ResetDestruction();
         _serverGamemode?.End();
         _context.ClearPlayerPositions();
         _finished = false;

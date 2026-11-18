@@ -79,6 +79,7 @@
   <Project Path="NFMWorld.Ai.ElStupido/NFMWorld.Ai.ElStupido.csproj" />
   <Project Path="NFMWorld.Ai.Classic/NFMWorld.Ai.Classic.csproj" />
   <Project Path="NFMWorld.Gamemode.Pvp/NFMWorld.Gamemode.Pvp.csproj" />
+  <Project Path="NFMWorld.Gamemode.Rocket/NFMWorld.Gamemode.Rocket.csproj" />
   <Project Path="NFMWorld.Gamemode.TimeTrial/NFMWorld.Gamemode.TimeTrial.csproj" />
   <Project Path="NFMWorld.GenerateHmacKey/NFMWorld.GenerateHmacKey.csproj" />
   <Project Path="NFMWorld.Graphics.Abstraction/NFMWorld.Graphics.Abstraction.csproj" />

@@ -46,6 +46,10 @@ public enum SurfaceType
 [PluginVisible]
 public partial class CarPhysics
 {
+    private readonly Dictionary<int, StageImpact> _stageImpacts = [];
+    private readonly Dictionary<int, int> _lastStageImpact = [];
+    private int _stageCollisionTick;
+
     private int _rampGripTicks;
     private static readonly fix64 _tickRate = Physics.PHYSICS_MULTIPLIER_F64;
     private static readonly fix64 _oneOverTickRate = 1 / _tickRate;
@@ -57,8 +61,6 @@ public partial class CarPhysics
     [PluginVisible] public int CapsizedCounter;
 
     [PluginVisible] public bool BadLanding;
-
-    public bool IsGroundScraping { get; private set; }
 
     [PluginVisible] public readonly UnlimitedArray<bool> _caught = [];
 
@@ -121,6 +123,7 @@ public partial class CarPhysics
     /// Car responsible for the current crash chain, or -1 when no car is responsible.
     /// </summary>
     [PluginVisible] public int LastDamageFrom = -1;
+
     internal PlayerDepartureReason? DepartureReason { get; private set; }
 
     internal void MarkDeparted(PlayerDepartureReason reason)
@@ -285,16 +288,6 @@ public partial class CarPhysics
     private BackendStage? _effectiveStage;
 
     /// <summary>
-    /// Summed wheel velocity (X, Y, Z) of the four wheels.
-    /// </summary>
-    [PluginVisible]
-    public f64Vector3 SummedWheelVelocity => new(
-        Scx[0] + Scx[1] + Scx[2] + Scx[3],
-        Scy[0] + Scy[1] + Scy[2] + Scy[3],
-        Scz[0] + Scz[1] + Scz[2] + Scz[3]
-    );
-
-    /// <summary>
     /// Consumed once per tick by <see cref="Drive"/>: a positive value kicks every wheel's
     /// vertical velocity upward (negative <c>Scy</c>, since Y is downward) by that amount,
     /// provided no wheel touched the world last tick. Written by a gamemode's tick before
@@ -315,6 +308,37 @@ public partial class CarPhysics
     /// the same air time.
     /// </summary>
     [PluginVisible] public bool WasGrounded;
+
+    private void RecordStageImpact(CollisionShapeRef shape, f64Vector3 impulse, f64Vector3 velocity)
+    {
+        if (Car is { DamagesStageObjects: false }) return;
+        if (shape.Owner is not { DestructionId: >= 0, IsDestroyed: false } obj) return;
+        if (BackendStage.ImpactDamage(impulse) == 0) return;
+        if (!_stageImpacts.TryGetValue(obj.DestructionId, out var previous)
+            || impulse.LengthNoOverflow() > previous.Impulse.LengthNoOverflow())
+            _stageImpacts[obj.DestructionId] = new StageImpact
+            {
+                PieceId = obj.DestructionId, Impulse = impulse, Velocity = velocity
+            };
+    }
+
+    private void RecordStageSurfaceImpact(CollisionShapeRef shape, f64Vector3 velocity, f64Vector3 normal)
+    {
+        var intoSurface = f64Vector3.Dot(velocity, normal);
+        if (intoSurface < 0) RecordStageImpact(shape, normal * intoSurface, velocity);
+    }
+
+    public bool IsGroundScraping { get; private set; }
+
+    /// <summary>
+    /// Summed wheel velocity (X, Y, Z) of the four wheels.
+    /// </summary>
+    [PluginVisible]
+    public f64Vector3 SummedWheelVelocity => new(
+        Scx[0] + Scx[1] + Scx[2] + Scx[3],
+        Scy[0] + Scy[1] + Scy[2] + Scy[3],
+        Scz[0] + Scz[1] + Scz[2] + Scz[3]
+    );
 
     public event EventHandler<CrashSoundEvent>? SfxPlayCrash;
     public event EventHandler<(SurfaceType i, float f)>? SfxPlaySkid;
@@ -2845,6 +2869,8 @@ public partial class CarPhysics
     )
     {
         hitVertical = false;
+        _stageImpacts.Clear();
+        _stageCollisionTick++;
 
         var isWheelTouchingPiece = new InlineArray4<bool>(); // nwheels
 
@@ -2862,6 +2888,7 @@ public partial class CarPhysics
                 FrameTrace.AddMessage("start wheel");
                 foreach (var collidable in stage.RetrievePointCollidables(wheelx[k], wheelz[k]))
                 {
+                    if (collidable.Owner is { IsDestroyed: true }) continue;
                     if (collidable.TryGetValue(out ShapeMesh boxMesh))
                     {
                         var collisionMesh = boxMesh.CollisionMesh;
@@ -2935,6 +2962,7 @@ public partial class CarPhysics
                                     // normalizedNormal is in object-local XZ space; RotateXz brings it to world space.
                                     // groundness > 0 ⟹ normalizedNormal.Y < 0, which is the -Y (up) direction in Y-down. ✓
                                     wheelContactNormal[k] = normalizedNormal.RotateXz(boxMesh.GameObjectXz);
+                                    RecordStageSurfaceImpact(collidable, velocity, wheelContactNormal[k]);
 
                                     Wtouch = true;
                                     Gtouch = true;
@@ -3001,6 +3029,7 @@ public partial class CarPhysics
                                     // Rotate local-space push/impact back to world space
                                     var worldDelta = wallHit.positionDelta.RotateXz(boxMesh.GameObjectXz);
                                     var worldImpact = wallHit.impactComponent.RotateXz(boxMesh.GameObjectXz);
+                                    RecordStageImpact(collidable, worldImpact, velocity);
 
                                     for (int w = 0; w < 4; w++)
                                     {
@@ -3052,6 +3081,7 @@ public partial class CarPhysics
                     {
                         if (boxRoad.ResolveCollision(position) is { } collision)
                         {
+                            RecordStageSurfaceImpact(collidable, velocity, Up);
                             touching |= 1 << k;
                             ++nGroundedWheels;
                             isWheelGrounded[k] = true;
@@ -3101,6 +3131,7 @@ public partial class CarPhysics
                     {
                         if (boxWall.ResolveCollision(position, velocity) is { } collision)
                         {
+                            RecordStageImpact(collidable, collision.impactComponent, velocity);
                             for (int w = 0; w < 4; w++)
                             {
                                 wheelx[w] += collision.positionDelta.X;
@@ -3168,6 +3199,7 @@ public partial class CarPhysics
                                 .RotateZy((boxRamp.TrackersZy + 90))
                                 .RotateXz(boxRamp.TrackersXz)
                                 .RotateXz(boxRamp.GameObjectXz);
+                            RecordStageSurfaceImpact(collidable, velocity, wheelContactNormal[k]);
 
                             if (collision.zTmp > -30)
                             {
@@ -3220,6 +3252,14 @@ public partial class CarPhysics
                     }
                 }
             }
+        }
+
+        foreach (var (id, impact) in _stageImpacts)
+        {
+            if (_lastStageImpact.TryGetValue(id, out var last) && _stageCollisionTick - last < Physics.TargetTps / 5)
+                continue;
+            _lastStageImpact[id] = _stageCollisionTick;
+            stage.ReportObjectHit(Im, impact);
         }
 
         // All four wheels on ramps of one surface: the car has grip. A wheel crossing the joint
@@ -3501,6 +3541,9 @@ public partial class CarPhysics
 
     public void Reseto(int i, ContO conto)
     {
+        _stageImpacts.Clear();
+        _lastStageImpact.Clear();
+        _stageCollisionTick = 0;
         if (DepartureReason.HasValue) return;
         ResetDamageCredit();
         Cn = i;

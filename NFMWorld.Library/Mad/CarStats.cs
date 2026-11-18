@@ -105,6 +105,9 @@ public partial record struct CarStats
     [JsonPropertyName("class"), PluginVisible, TightPackOrder(30)]
     public string? Class { get; init; }
 
+    [JsonPropertyName("hasMaxmag"), TightPackOrder(31)]
+    public bool HasMaxmag { get; init; }
+
     /// <summary>
     /// Tornado Shark stats, used as a fallback if a car has incomplete or invalid stats in the rad file.
     /// </summary>

@@ -125,6 +125,8 @@ public readonly record struct ShapeHull(f64Vector3 GameObjectPosition, fix64 Gam
 
 public readonly struct CollisionShapeRef : IQuadObject
 {
+    public NFMWorldLibrary.Backend.StageObject? Owner { get; init; }
+
     public readonly int Index;
 
     public readonly SurfaceType SurfaceType;

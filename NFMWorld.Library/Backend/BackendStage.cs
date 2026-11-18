@@ -178,6 +178,7 @@ public partial class BackendStage
         }
 
         SetBounds(stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb);
+        InitializeDestructibles();
     }
 
     private void SetBounds(int sx, int ncx, int sz, int ncz)
@@ -258,7 +259,7 @@ public partial class BackendStage
                     box: box,
                     radius: 0, // bounds are now computed from world-space box position inside the constructor
                     index: _quadTreeInsertionIndex++
-                )
+                ) { Owner = mesh as StageObject }
             );
         }
 
@@ -274,7 +275,7 @@ public partial class BackendStage
                     colMesh: colMesh,
                     maxR,
                     index: _quadTreeInsertionIndex++
-                )
+                ) { Owner = mesh as StageObject }
             );
         }
 
@@ -290,7 +291,7 @@ public partial class BackendStage
                     colHull: colHull,
                     maxR,
                     index: _quadTreeInsertionIndex++
-                )
+                ) { Owner = mesh as StageObject }
             );
         }
     }
@@ -302,6 +303,7 @@ public partial class BackendStage
     {
         _tempTrackers.Clear();
         _collisionQuadTree.RetrievePoint(_tempTrackers, x, z);
+        _tempTrackers.RemoveAll(static shape => shape.Owner is { IsDestroyed: true });
         var span = CollectionsMarshal.AsSpan(_tempTrackers);
         span.Sort(static (a, b) => a.Index.CompareTo(b.Index));
         return span;
@@ -365,6 +367,13 @@ public partial class WallCollision : BackendGameObject, ICollidable
 [PluginVisible]
 public partial class StageObject(Rad3d rad) : BackendGameObject, IAiNode, ICollidable
 {
+    public int DestructionId { get; internal set; } = -1;
+    public int Damage { get; internal set; }
+    public f64Vector3 Deformation { get; internal set; }
+    public bool IsDestroyed => Durability > 0 && Damage >= Durability;
+    public int Durability => OriginalPlacement.Type == PiecePlacementType.CollisionObject && Rad.Stats.HasMaxmag
+        ? Math.Max(0, Rad.Stats.Maxmag) : 0;
+
     [PluginVisible] public PiecePlacement OriginalPlacement { get; set; }
 
     [PluginVisible] public Rad3d Rad { get; } = rad;

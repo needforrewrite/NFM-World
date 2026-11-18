@@ -318,7 +318,7 @@ public class TimeTrialGamemode : PluginGamemode
             return;
 
         var ghostIndex = Players.Count;
-        var ghostCar = new BackendCar(source, ghostIndex, false) { CurrentLap = 0 };
+        var ghostCar = new BackendCar(source, ghostIndex, false) { CurrentLap = 0, DamagesStageObjects = false };
         Players.Add(new ClientSidePlayer(source.Player, ghostIndex, isFake: true) { Car = ghostCar });
         _ghostIndex = ghostIndex;
 
