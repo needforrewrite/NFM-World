@@ -15,7 +15,7 @@ public partial class SavedTimeTrial
     /// Bumped whenever physics or the file format changes. Only recordings at this version are
     /// ranked: an older one's inputs may no longer reproduce its frames.
     /// </summary>
-    [PluginVisible] public const int CURRENT_VERSION = 8;
+    [PluginVisible] public const int CURRENT_VERSION = 9;
 
     /// <summary>
     /// The oldest version this build can still read and play from its frames. 7 introduced the
