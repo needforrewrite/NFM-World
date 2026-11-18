@@ -366,7 +366,8 @@ public partial class RadParser
         else if (line.StartsWith("msquash(")) _stats = _stats with { Msquash = BracketParser.GetNumber<int>(line) };
         else if (line.StartsWith("clrad(")) _stats = _stats with { Clrad = BracketParser.GetNumber<int>(line) };
         else if (line.StartsWith("dammult(")) _stats = _stats with { Dammult = BracketParser.GetNumber<fix64>(line) };
-        else if (line.StartsWith("maxmag(")) _stats = _stats with { Maxmag = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("maxmag("))
+            _stats = _stats with { Maxmag = BracketParser.GetNumber<int>(line), HasMaxmag = true };
         else if (line.StartsWith("dishandle(")) _stats = _stats with { Dishandle = BracketParser.GetNumber<fix64>(line) };
         else if (line.StartsWith("handling(")) /* physhot */
             _stats = _stats with { Dishandle = BracketParser.GetNumber<fix64>(line) / (fix64)200f };

@@ -164,10 +164,12 @@ public sealed class ModelEditorView
         Right = 0,
         Top = 46,
         Height = 32,
+        Overflow = Overflow.Scroll,
         FlexDirection = FlexDirection.Row,
         AlignItems = Align.Stretch,
         PaddingLeft = 8,
         PaddingRight = 8,
+        PaddingBottom = 6,
         GapColumn = 4,
         GapRow = 4,
         BackgroundColor = new Color(6, 12, 24, 220),
@@ -513,6 +515,7 @@ public sealed class ModelEditorView
 
     private Node TabStrip() => Sx.View(
         style: () => TabStripStyle,
+        onmount: view => view.MouseScrolled = e => view.TryScroll(e.Delta.Y, 0),
         // Snapshot: RenderScope.Bind compares the computed value by equality, and the
         // phase's tab list keeps its identity, so returning it directly would never
         // rebuild the rows after a tab was opened.
@@ -3790,44 +3793,56 @@ public sealed class ModelEditorView
                 [
                     Sx.View(
                         style: () => Sx.Styles(
-                            flexDirection: FlexDirection.Row,
-                            alignItems: Align.FlexStart,
-                            gapColumn: 12,
-                            gapRow: 12
+                            flexDirection: FlexDirection.Column,
+                            flexShrink: 0,
+                            gapRow: 10
                         ),
                         children:
                         [
                             Sx.View(
-                                style: () => Sx.Styles(flexGrow: 1),
-                                children: DialogTitle("OPEN MODEL", "Models in data/models/user. Click one to open it.")
+                                style: () => Sx.Styles(
+                                    flexDirection: FlexDirection.Row,
+                                    alignItems: Align.FlexStart,
+                                    gapColumn: 12,
+                                    gapRow: 12
+                                ),
+                                children:
+                                [
+                                    Sx.View(
+                                        style: () => Sx.Styles(flexGrow: 1),
+                                        children: DialogTitle("OPEN MODEL", "Models in data/models/user. Click one to open it.")
+                                    ),
+                                    Button.Create(
+                                        () => "REFRESH",
+                                        RefreshLoadFiles,
+                                        size: ButtonSize.Sm,
+                                        style: () => Sx.Styles(minWidth: 94, flexShrink: 0)
+                                    )
+                                ]
                             ),
-                            Button.Create(
-                                () => "REFRESH",
-                                RefreshLoadFiles,
-                                size: ButtonSize.Sm,
-                                style: () => Sx.Styles(minWidth: 94, flexShrink: 0)
+                            Controls.TextField(
+                                () => _loadSearch.Value,
+                                value => _loadSearch.Value = value,
+                                () => "Search models..."
+                            ),
+                            Controls.Checkbox(
+                                () => _loadOpenInTab.Value,
+                                () => _loadOpenInTab.Value = !_loadOpenInTab.Value,
+                                () => "Open in new tab"
                             )
                         ]
-                    ),
-                    Controls.TextField(
-                        () => _loadSearch.Value,
-                        value => _loadSearch.Value = value,
-                        () => "Search models..."
-                    ),
-                    Controls.Checkbox(
-                        () => _loadOpenInTab.Value,
-                        () => _loadOpenInTab.Value = !_loadOpenInTab.Value,
-                        () => "Open in new tab"
                     ),
                     Sx.View(
                         style: () => Sx.Styles(
                             flexGrow: 1,
+                            height: 0,
                             minHeight: 0,
                             overflow: Overflow.Scroll,
                             flexDirection: FlexDirection.Column,
                             gapRow: 2,
                             paddingTop: 4,
-                            paddingBottom: 4
+                            paddingBottom: 4,
+                            paddingRight: 8
                         ),
                         children:
                         [
@@ -3862,6 +3877,7 @@ public sealed class ModelEditorView
                     Sx.View(
                         style: () => Sx.Styles(
                             flexDirection: FlexDirection.Row,
+                            flexShrink: 0,
                             alignItems: Align.Center,
                             gapColumn: 10,
                             gapRow: 10
@@ -3892,12 +3908,12 @@ public sealed class ModelEditorView
     private Node FileSection(string title, string prefix) => Sx.Show(
         when: () => FilteredFiles(prefix).Count > 0,
         then: () => Sx.View(
-            style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 2),
+            style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0, gapRow: 2),
             children:
             [
                 Sx.Text(
                     style: () => Sx.TextStyles(fontSize: 11, fontStyle: FontStyle.Bold, foregroundColor: Blue),
-                    layout: () => Sx.Styles(marginTop: 6, marginBottom: 2),
+                    layout: () => Sx.Styles(flexShrink: 0, marginTop: 6, marginBottom: 2),
                     text: () => $"{title} · {FilteredFiles(prefix).Count}"
                 ),
                 Sx.For(
@@ -3914,6 +3930,7 @@ public sealed class ModelEditorView
         return Sx.View(
             style: () => Sx.Styles(
                 flexDirection: FlexDirection.Row,
+                flexShrink: 0,
                 alignItems: Align.Center,
                 paddingTop: 7,
                 paddingBottom: 7,

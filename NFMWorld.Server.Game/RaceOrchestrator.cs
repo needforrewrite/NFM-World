@@ -118,12 +118,23 @@ public class RaceOrchestrator : IDisposable
         foreach (var (_, session) in _sessions)
         {
             var gm = session.ServerGamemode;
-            if (gm == null) continue;
+            if (gm == null)
+            {
+                while (session.PendingImpacts.TryDequeue(out _))
+                {
+                }
+
+                while (session.PendingAttach.TryDequeue(out var finishedClient))
+                    SendAttach(session, null, finishedClient);
+                continue;
+            }
 
             // Before the tick, so a baseline goes out ahead of the first delta this tick produces,
             // and on this thread, which is the only one allowed to read or start the gamemode.
             while (session.PendingAttach.TryDequeue(out var clientIndex))
                 SendAttach(session, gm, clientIndex);
+
+            ProcessStageImpacts(session);
 
             // The last racer to load starts the race from here rather than from its attach, so
             // its baseline is sent ahead of the start notice like every other attach.
@@ -194,8 +205,16 @@ public class RaceOrchestrator : IDisposable
     /// go out here rather than at attach time so the baseline is ordered ahead of the first
     /// delta the client would otherwise apply on top of nothing.
     /// </summary>
-    private void SendAttach(RaceSession session, IServerGamemode gm, uint clientIndex)
+    private void SendAttach(RaceSession session, IServerGamemode? gm, uint clientIndex)
     {
+        if (session.Stage is { } stage)
+            foreach (var piece in stage.CaptureDestruction())
+                _transport.SendPacketToClient(
+                    clientIndex,
+                    new S2C_StagePieceState { State = piece, Snapshot = true },
+                    reliable: true
+                );
+
         if (session.ResultsBroadcasted)
         {
             _transport.SendPacketToClient(
@@ -206,7 +225,7 @@ public class RaceOrchestrator : IDisposable
             return;
         }
 
-        if (gm.CaptureState() is { Length: > 0 } state)
+        if (gm?.CaptureState() is { Length: > 0 } state)
             _transport.SendPacketToClient(
                 clientIndex,
                 new S2C_ServerState { Payload = state },
@@ -374,6 +393,11 @@ public class RaceOrchestrator : IDisposable
     {
         switch (e.Packet)
         {
+            case C2S_StageImpact impact:
+                if (TryFindSession(e.ClientIndex, out var hitSession, out var hitClient)
+                    && hitSession.PendingImpacts.Count < 256)
+                    hitSession.PendingImpacts.Enqueue((hitClient, impact));
+                break;
             case C2S_RaceLoaded raceLoaded:
                 HandleRaceLoaded(e.ClientIndex, raceLoaded);
                 break;
@@ -390,6 +414,40 @@ public class RaceOrchestrator : IDisposable
     }
 
     // ── Packet handlers ──────────────────────────────────────────────
+
+    private void ProcessStageImpacts(RaceSession session)
+    {
+        while (session.PendingImpacts.TryDequeue(out var entry))
+        {
+            if (!session.RaceStarted || session.ResultsBroadcasted || session.Stage is not { } stage) continue;
+            var packet = entry.Packet;
+            var playerId = packet.PlayerId == Guid.Empty ? entry.Sender : packet.PlayerId;
+            if (!session.PlayerInfos.Values.Any(p => p.Id == playerId
+                                                     && (p.Id == entry.Sender || p.IsBot && p.OwnerId == entry.Sender)
+            )) continue;
+            if (session.Departures.ContainsKey(playerId)
+                || !session.PlayerPositions.TryGetValue(playerId, out var position)) continue;
+            if (stage.GetDestructible(packet.Impact.PieceId) is not { IsDestroyed: false } obj) continue;
+            var velocity = packet.Impact.Velocity;
+            var impulse = packet.Impact.Impulse;
+            static bool Bounded(f64Vector3 v) => Math.Abs((double)v.X) <= 10_000
+                                                 && Math.Abs((double)v.Y) <= 10_000 && Math.Abs((double)v.Z) <= 10_000;
+
+            if (!Bounded(velocity) || !Bounded(impulse)) continue;
+            if ((position - obj.Position).LengthNoOverflow() > obj.MaxRadius + 1500) continue;
+            if (impulse.LengthNoOverflow() > velocity.LengthNoOverflow() * 2 + 20) continue;
+            var key = (playerId, packet.Impact.PieceId);
+            var now = Environment.TickCount64;
+            if (session.LastImpacts.TryGetValue(key, out var last) && now - last < 150) continue;
+            session.LastImpacts[key] = now;
+            if (stage.DamageObject(packet.Impact) is { } state)
+                _transport.SendPacketToClients(
+                    session.Clients.Keys.ToArray(),
+                    new S2C_StagePieceState { State = state },
+                    reliable: true
+                );
+        }
+    }
 
     private void HandleRaceChat(uint clientIndex, C2S_RaceChat chat)
     {
@@ -705,6 +763,8 @@ public class RaceOrchestrator : IDisposable
             )
         );
 
+        session.Stage = context.CurrentStage;
+
         // TODO this is a bit janky and could probably be improved
         var gm = factory.CreateServerGamemode(
             new ServerGamemodeParameters()
@@ -800,6 +860,10 @@ public class RaceOrchestrator : IDisposable
 
     private class RaceSession
     {
+        public BackendStage? Stage { get; set; }
+        public ConcurrentQueue<(Guid Sender, C2S_StageImpact Packet)> PendingImpacts { get; } = new();
+        public Dictionary<(Guid Player, int Piece), long> LastImpacts { get; } = [];
+
         public uint Id { get; set; }
 
         /// <summary>The lobby's key for this match; the report back to the lobby is identified by it.</summary>

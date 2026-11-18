@@ -36,6 +36,7 @@ public partial class BackendCar : BackendGameObject
     [PluginVisible] public Rad3d Rad { get; }
     [PluginVisible] public CarStats Stats { get; internal set; }
     [PluginVisible] public bool Wasted => CarPhysics.Wasted;
+    [PluginVisible] public bool DamagesStageObjects { get; set; } = true;
     [PluginVisible] public bool HasLeftRace => CarPhysics.DepartureReason.HasValue;
     public PlayerDepartureReason? DepartureReason => CarPhysics.DepartureReason;
     internal bool AnnounceDeparture { get; private set; }

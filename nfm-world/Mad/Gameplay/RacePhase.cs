@@ -181,6 +181,12 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         host.RaceCanStart += () => RaceState = RaceState.InProgress;
         host.RaceFailedToStart += () => RaceState = RaceState.FailedToStart;
         host.PlayerStateReceived += ApplyPlayerState;
+        if (host is NetworkRaceHost network)
+        {
+            network.StagePieceStateReceived += CurrentStage.Backend.ApplyPieceState;
+            CurrentStage.Backend.ObjectHit += SendStageImpact;
+        }
+
         host.ServerEventReceived += payload =>
         {
             GamemodeInstance?.OnServerEvent(payload.Span);
@@ -215,6 +221,19 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     /// there is no client player at all, which is every spectator.
     /// </summary>
     public BackendCar? ClientCar => (GamemodeInstance as BaseClientGamemode)?.ClientPlayer?.Car;
+
+    private void SendStageImpact(int carIndex, StageImpact impact)
+    {
+        if (_spectating || RaceState != RaceState.InProgress || _host is not NetworkRaceHost network
+            || GamemodeInstance is not BaseClientGamemode gm) return;
+        foreach (var player in gm.Players)
+            if (player.Index == carIndex && !player.IsFake
+                && (player.Info.Id == _localPlayerId || player.Info.IsBot && player.Info.OwnerId == _localPlayerId))
+            {
+                network.SendStageImpact(player.Info.Id, impact);
+                return;
+            }
+    }
 
     public RaceState RaceState
     {
@@ -730,6 +749,11 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             {
                 network.ChatReceived -= ReceiveChat;
                 network.PlayerLeft -= ReceivePlayerLeft;
+                if (CurrentStage is { } stage)
+                {
+                    network.StagePieceStateReceived -= stage.Backend.ApplyPieceState;
+                    stage.Backend.ObjectHit -= SendStageImpact;
+                }
             }
 
             _chat.Clear();

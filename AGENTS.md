@@ -174,6 +174,21 @@ the affected function against upstream before debugging the tree. Two that were 
 
 ## Gamemodes (plugins only)
 
+- **Destructible stage pieces** — `BackendStage.Destruction.cs` keeps damage by original piece index;
+  only `set` pieces whose model explicitly declares positive `maxmag` opt in (`CarStats.HasMaxmag`,
+  preserved by radpack serialization). `CarPhysics` reports the strongest contact per piece and car
+  with a short cooldown. Online owners send reliable `C2S_StageImpact`; the GM checks ownership,
+  proximity and bounds, accumulates damage on its tick thread and broadcasts `S2C_StagePieceState`.
+  Attach/reconnect snapshots include partial damage and destroyed pieces without replaying debris.
+  Broken pieces leave `Pieces` and their quadtree shapes are filtered out. Local restart restores them.
+  `ClientStageRenderer.Destruction.cs` owns bounded, short-lived polygon debris (`StageDebris`) driven
+  by the breaking car's velocity. Destructible models bypass coplanar surface removal so breaking one
+  cannot expose a hole in its neighbours. Older radpacks need repacking to record the explicit opt-in.
+  Surviving hits carry cumulative deformation in `StagePieceState`; `StageObjectDamage` rebuilds
+  deterministic dents from pristine polygons, preserving their colours. Each damaged visual owns its mesh.
+  Live surviving hits play spatial `lowcrash1-3`; breaks play `obj1-4`. Snapshots restore geometry
+  silently, and local restart clears dents and owned audio/meshes.
+
 Gamemodes are compiled `.NET` plugins — the Lua path is gone. Singleplayer and multiplayer share one code path.
 
 ### Architecture

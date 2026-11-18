@@ -2,6 +2,7 @@
 using NFMWorldLibrary;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
+using NFMWorldLibrary.Rendering;
 using BoundingSphere = Maxine.Extensions.Mathematics.BoundingSphere;
 
 namespace NFMWorld;
@@ -13,6 +14,9 @@ public class StageObjectGameObject : MeshedGameObject, IDisposable
     private readonly Mesh? _checkpointBounds;
     private readonly ResourceLease<Mesh>? _checkpointBoundsLease;
     private bool _disposed;
+    private Mesh? _damageMesh;
+    private Mesh? _undamagedMesh;
+    private int _visibleDamage;
 
     private static readonly Rad3d CheckpointBoundsModel = new(
         [
@@ -74,6 +78,31 @@ public class StageObjectGameObject : MeshedGameObject, IDisposable
         base.GameTick(stage);
         Position = _obj.Position;
         Rotation = _obj.Rotation;
+        if (_visibleDamage == _obj.Damage) return;
+        _visibleDamage = _obj.Damage;
+        if (_obj.Damage == 0)
+        {
+            if (ReferenceEquals(Mesh, _damageMesh)) Mesh = _undamagedMesh!;
+            _damageMesh?.Dispose();
+            _damageMesh = null;
+            _undamagedMesh = null;
+            return;
+        }
+
+        var polys = StageObjectDamage.Deform(_obj);
+        if (_damageMesh is null)
+        {
+            _undamagedMesh = Mesh;
+            _damageMesh = new Mesh(new Rad3d(polys, _obj.Rad.CastsShadow, _obj.FileName));
+        }
+        else
+        {
+            _damageMesh.Polys = polys;
+            _damageMesh.RebuildMesh();
+        }
+
+        _damageMesh.MaxRadius = _obj.MaxRadius + 240;
+        Mesh = _damageMesh;
     }
 
     public void Dispose()
@@ -88,5 +117,6 @@ public class StageObjectGameObject : MeshedGameObject, IDisposable
     {
         _collisionDebug?.Dispose();
         _checkpointBoundsLease?.Dispose();
+        _damageMesh?.Dispose();
     }
 }

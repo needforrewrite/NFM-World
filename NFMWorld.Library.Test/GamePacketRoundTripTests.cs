@@ -15,6 +15,50 @@ namespace NFMWorld.Library.Test;
 [TestClass]
 public class GamePacketRoundTripTests
 {
+    [TestMethod]
+    public void StageImpact_RoundTripsTheOwnerPieceAndVelocity()
+    {
+        var sent = new C2S_StageImpact
+        {
+            PlayerId = Guid.NewGuid(),
+            Impact = new StageImpact
+            {
+                PieceId = 42,
+                Impulse = new FixedMathSharp.Vector3d(10, 0, 200),
+                Velocity = new FixedMathSharp.Vector3d(20, -30, 250)
+            }
+        };
+        using var writer = new ArrayPoolBufferWriter<byte>();
+        WritePacket(sent, writer);
+        var received = (C2S_StageImpact)MultiplayerUtils.TryDeserializeC2SPacket(16, writer.WrittenMemory)!;
+        Assert.AreEqual(sent.PlayerId, received.PlayerId);
+        Assert.AreEqual(sent.Impact.PieceId, received.Impact.PieceId);
+        Assert.AreEqual(sent.Impact.Impulse, received.Impact.Impulse);
+        Assert.AreEqual(sent.Impact.Velocity, received.Impact.Velocity);
+    }
+
+    [TestMethod]
+    public void StagePieceState_RoundTripsTheDamageAndSnapshotFlag()
+    {
+        var sent = new S2C_StagePieceState
+        {
+            State = new StagePieceState
+            {
+                PieceId = 17, Damage = 250, Velocity = new FixedMathSharp.Vector3d(5, -20, 200),
+                Deformation = new FixedMathSharp.Vector3d(10, -5, 120)
+            },
+            Snapshot = true
+        };
+        using var writer = new ArrayPoolBufferWriter<byte>();
+        WritePacket(sent, writer);
+        var received = (S2C_StagePieceState)MultiplayerUtils.TryDeserializeS2CPacket(-15, writer.WrittenMemory)!;
+        Assert.AreEqual(sent.State.PieceId, received.State.PieceId);
+        Assert.AreEqual(sent.State.Damage, received.State.Damage);
+        Assert.AreEqual(sent.State.Velocity, received.State.Velocity);
+        Assert.AreEqual(sent.State.Deformation, received.State.Deformation);
+        Assert.IsTrue(received.Snapshot);
+    }
+
     private static void WritePacket<T>(T packet, IBufferWriter<byte> writer)
         where T : IReadableWritable<T>, TightPack.ITightPackable<T> => packet.Write(writer);
 
