@@ -5,7 +5,7 @@ newstone()
 grounded(110)
 decorative()
 shadow()
-
+maxmag(100)
 //tracks(4)
 
 atp(0,0)
