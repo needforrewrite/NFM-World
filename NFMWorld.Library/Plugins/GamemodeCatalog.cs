@@ -14,7 +14,6 @@ namespace NFMWorldLibrary.Plugins;
 /// </remarks>
 public static class GamemodeCatalog
 {
-    /// <summary>The gamemodes offered in the lobby, in display order.</summary>
     public static IReadOnlyList<string> Ids { get; } = [DefaultGamemodes.PvP, DefaultGamemodes.TimeTrial];
 
     public static string DisplayName(string id) => id switch

@@ -17,6 +17,12 @@ public partial class Control
 
     [PluginVisible] public int Chatup;
 
+    /// <summary>Held input for the rocket-style jump; consumed by gamemodes that read it.</summary>
+    [PluginVisible] public bool Jump;
+
+    /// <summary>Held input for the rocket-style boost; consumed by gamemodes that read it.</summary>
+    [PluginVisible] public bool Boost;
+
     [PluginVisible] public bool Down;
 
     [PluginVisible] public bool Enter;

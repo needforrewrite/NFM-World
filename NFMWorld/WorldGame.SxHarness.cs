@@ -388,6 +388,7 @@ public partial class WorldGame
                         ModelEditor: static () => { },
                         StageEditor: static () => { },
                         TimeTrials: static () => { },
+                        Rocket: static () => { },
                         Unavailable: static _ => { },
                         Replays: static () => { },
                         Account: AccountView.Show,

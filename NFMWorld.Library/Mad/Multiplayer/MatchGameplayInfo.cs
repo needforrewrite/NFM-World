@@ -49,4 +49,5 @@ public static class DefaultGamemodes
 {
     public const string PvP = "nfmm/pvp";
     public const string TimeTrial = "nfmm/timetrial";
+    public const string Rocket = "nfmm/rocket";
 }

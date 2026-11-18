@@ -36,6 +36,8 @@ public class SettingsMenu()
         public Key Enter { get; set; } = Key.Enter;
         public Key AerialBounce { get; set; } = Key.Q;
         public Key AerialStrafe { get; set; } = Key.E;
+        public Key Jump { get; set; } = Key.F;
+        public Key Boost { get; set; } = Key.LShiftKey;
         public Key LookLeft { get; set; } = Key.Z;
         public Key LookBack { get; set; } = Key.X;
         public Key LookRight { get; set; } = Key.C;
@@ -655,8 +657,9 @@ public class SettingsMenu()
         sw.WriteLine($"key_accelerate {(int)Bindings.Accelerate}");
         sw.WriteLine($"key_ab {(int)Bindings.AerialBounce}");
         sw.WriteLine($"key_smoothturn {(int)Bindings.AerialStrafe}");
+        sw.WriteLine($"key_jump {(int)Bindings.Jump}");
+        sw.WriteLine($"key_boost {(int)Bindings.Boost}");
         sw.WriteLine($"key_brake {(int)Bindings.Brake}");
-        sw.WriteLine($"key_turnleft {(int)Bindings.TurnLeft}");
         sw.WriteLine($"key_turnright {(int)Bindings.TurnRight}");
         sw.WriteLine($"key_handbrake {(int)Bindings.Handbrake}");
         sw.WriteLine($"key_lookback {(int)Bindings.LookBack}");
@@ -839,6 +842,12 @@ public class SettingsMenu()
                     break;
                 case "key_smoothturn":
                     Bindings.AerialStrafe = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "key_jump":
+                    Bindings.Jump = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "key_boost":
+                    Bindings.Boost = (Key)int.Parse(value, CultureInfo.InvariantCulture);
                     break;
                 case "key_brake":
                     Bindings.Brake = (Key)int.Parse(value, CultureInfo.InvariantCulture);
@@ -1176,7 +1185,13 @@ public class SettingsMenu()
                 Action = prop.Name,
                 DisplayName = prop.Name.StartsWith("LockSlot", StringComparison.Ordinal)
                     ? $"Lock Arrow on Car {prop.Name["LockSlot".Length..]}"
-                    : prop.Name == nameof(KeyBindings.OpenChat) ? "Open Chat" : prop.Name,
+                    : prop.Name switch
+                    {
+                        nameof(KeyBindings.OpenChat) => "Open Chat",
+                        nameof(KeyBindings.Jump) => "Jump",
+                        nameof(KeyBindings.Boost) => "Boost",
+                        _ => prop.Name
+                    },
                 KeyCode = (int)(prop.GetValue(Bindings) as Key? ?? Key.None)
             };
         }

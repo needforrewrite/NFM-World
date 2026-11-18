@@ -269,7 +269,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         }
 
         _finish.Observe(
-            Gamemode.GamemodeId == DefaultGamemodes.PvP && (gm.HudState.Finished || defeated),
+            Gamemode.GamemodeId is "nfmm/pvp" or "nfmm/timetrial" && (gm.HudState.Finished || defeated),
             System.Environment.TickCount64,
             !defeated && gm.HudState.ClientWon,
             CurrentStage?.Backend.Name ?? StageName,

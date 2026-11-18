@@ -50,25 +50,38 @@ public class GamemodePluginTests
         Assert.IsTrue(plugin.HasServerGamemode);
     }
 
+    [TestMethod]
+    public void Load_RocketPlugin_ReadsAssemblyAttributes()
+    {
+        var plugin = Load("nfmm/rocket");
+
+        Assert.IsNotNull(plugin);
+        Assert.AreEqual("nfmm/rocket", plugin.Id);
+        Assert.AreEqual("Rocket League", plugin.Name);
+        Assert.IsTrue(!string.IsNullOrWhiteSpace(plugin.Description));
+        // Sandbox-only: no server gamemode, so the lobby must not offer it.
+        Assert.IsFalse(plugin.HasServerGamemode);
+    }
+
     /// <summary>
     /// Both plugins ship with the same file name, so they must not share an
     /// assembly identity - the runtime refuses to load a second assembly under one
     /// identity, which would make the second gamemode of a session unusable.
     /// </summary>
     [TestMethod]
-    public void Load_BothPlugins_GetDistinctAssemblies()
+    public void Load_EveryGamemodePlugin_GetsADistinctAssembly()
     {
         var pvp = Load("nfmm/pvp");
         var timeTrial = Load("nfmm/timetrial");
+        var rocket = Load("nfmm/rocket");
 
         Assert.IsNotNull(pvp);
         Assert.IsNotNull(timeTrial);
+        Assert.IsNotNull(rocket);
 
-        var pvpAssembly = pvp.Assembly;
-        var timeTrialAssembly = timeTrial.Assembly;
-
-        Assert.AreNotEqual(pvpAssembly, timeTrialAssembly);
-        Assert.AreNotEqual(pvpAssembly.GetName().Name, timeTrialAssembly.GetName().Name);
+        var names = new[] { pvp, timeTrial, rocket }.Select(p => p.Assembly.GetName().Name).ToArray();
+        Assert.AreEqual(names.Length, names.Distinct(StringComparer.Ordinal).Count());
+        Assert.AreEqual(names.Length, new[] { pvp, timeTrial, rocket }.Select(p => p.Assembly).Distinct().Count());
     }
 
     /// <summary>

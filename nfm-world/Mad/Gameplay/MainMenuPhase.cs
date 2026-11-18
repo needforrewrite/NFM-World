@@ -99,6 +99,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                         ModelEditor: GameSparker.StartModelViewer,
                         StageEditor: GameSparker.StartStageEditor,
                         TimeTrials: OnTTClicked,
+                        Rocket: OnRocketClicked,
                         Unavailable: _ => GameSparker.MessageWindow.ShowMessage("Info", "This feature is currently unavailable."),
                         Replays: OpenReplays,
                         Account: AccountView.Show,
@@ -430,11 +431,33 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
             OpenQuickCarSelect(ssp, stageName, timeTrial: true);
         };
+        GameSparker.PushPhase(ssp, PhaseManager.Groups.Event);
+    }
+
+    private void OnRocketClicked()
+    {
+        StageSelectPhase ssp;
+        try
+        {
+            ssp = new StageSelectPhase();
+        }
+        catch (DirectoryNotFoundException ex)
+        {
+            Logging.Error(ex.Message);
+            GameSparker.MessageWindow.ShowMessage("Stages unavailable", ex.Message);
+            return;
+        }
+
+        ssp.StageSelected += (sender, stageName) =>
+        {
+            PhaseSharedState.SelectedStageName = stageName;
+            OpenQuickCarSelect(ssp, stageName, timeTrial: false, rocket: true);
+        };
 
         GameSparker.PushPhase(ssp, PhaseManager.Groups.Event);
     }
 
-    private static void OpenQuickCarSelect(StageSelectPhase source, string stageName, bool timeTrial)
+    private static void OpenQuickCarSelect(StageSelectPhase source, string stageName, bool timeTrial, bool rocket = false)
     {
         if (MenuHistory.Car is not { } car || !BackendCar.IsDrivable(car))
         {
@@ -454,13 +477,15 @@ public class MainMenuPhase : BaseStageRenderingPhase
             var identity = MenuHistory.LastPlayed.Car;
             var factory = timeTrial
                 ? GamemodeFactory.Create("nfmm/timetrial")
-                : GamemodeFactory.Create("nfmm/pvp", new Dictionary<string, object> { ["constraint"] = "both" });
+                : rocket
+                    ? GamemodeFactory.Create("nfmm/rocket")
+                    : GamemodeFactory.Create("nfmm/pvp", new Dictionary<string, object> { ["constraint"] = "both" });
             ClientSidePlayerInfo[] players = timeTrial
                 ? [new ClientSidePlayerInfo("MadPlayer", identity, default, false, true)
                 {
                     CarColors = CarPaint.SavedColors(identity), Wheels = CarWheels.Get(identity)
                 }]
-                : FreePlayRoster.Create(identity);
+                : FreePlayRoster.Create(identity, rocket: rocket);
             LocalRaceHost host;
             try
             {

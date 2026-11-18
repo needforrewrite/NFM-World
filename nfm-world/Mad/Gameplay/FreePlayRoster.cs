@@ -13,9 +13,9 @@ public static class FreePlayRoster
 {
     public const int MaxOpponents = 6;
 
-    public static ClientSidePlayerInfo[] Create(string playerCar, bool withOpponents = true)
+    public static ClientSidePlayerInfo[] Create(string playerCar, bool withOpponents = true, bool rocket = false)
     {
-        var opponentCars = withOpponents
+        var opponentCars = withOpponents && !rocket
             ? BackendGameSparker.cars[Collection.NFMM]
                 .Where(car => !string.Equals(car.FileName, playerCar, StringComparison.OrdinalIgnoreCase))
                 .DistinctBy(car => car.FileName, StringComparer.OrdinalIgnoreCase)
@@ -24,7 +24,9 @@ public static class FreePlayRoster
 
         System.Random.Shared.Shuffle(opponentCars);
 
-        var players = new ClientSidePlayerInfo[1 + Math.Min(MaxOpponents, opponentCars.Length)];
+        var players = rocket
+            ? new ClientSidePlayerInfo[1]
+            : new ClientSidePlayerInfo[1 + Math.Min(MaxOpponents, opponentCars.Length)];
         players[0] = new ClientSidePlayerInfo
         {
             CarName = playerCar,

@@ -7,11 +7,10 @@ using NFMWorldLibrary.Rad;
 namespace NFMWorld.Library.Test;
 
 /// <summary>
-/// A dominant car hitting a light one must not take its vertical collision impulse more than
-/// once per wheel per collision. The impulse is subtracted from <see cref="CarPhysics.Scy"/> for
-/// every contacting wheel pair, so a wheel that meets several of the other car's wheels used to
-/// end up far lower than its neighbours; the plane-fit then read that as a tilted surface and
-/// pitched the car onto its nose or tail.
+/// Vertical collision impulses (the dominant car's revlift and the victim's lift) are applied
+/// once per contacting wheel pair, like the original game, so an overlapping wheel takes the
+/// kick more than once. The orientation tilt that uneven kick used to cause is prevented in the
+/// plane fit, which only reads wheels that are actually on a surface.
 /// </summary>
 [TestClass]
 public class CarPhysicsCollisionTests
@@ -55,8 +54,16 @@ public class CarPhysicsCollisionTests
         return stage;
     }
 
+    /// <summary>
+    /// Stock applies the dominant car's revlift once per contacting wheel pair. A wheel that
+    /// overlaps several of the other car's wheels therefore takes the kick several times (the
+    /// overlap the original game produces too). The old once-per-wheel gate capped this to a
+    /// single kick, which the per-tick vertical traction erased before it lifted - "cars glued
+    /// to the ground". The tilt that made the gate tempting is prevented in the plane fit, which
+    /// no longer reads airborne kicked wheels as terrain slope.
+    /// </summary>
     [TestMethod]
-    public void Collide_DominantCarTakesOneVerticalImpulsePerWheel()
+    public void Collide_AppliesRevliftOncePerContactingWheelPair()
     {
         var stage = CreateStage();
         var heavy = CreateCar("drmonster", 0, isClientPlayer: false);
@@ -68,8 +75,8 @@ public class CarPhysicsCollisionTests
         heavy.Drive(stage);
         light.Drive(stage);
 
-        // Heavy rear wheels (Z=-110) overlap the light car's front wheels (Z=+11), so several
-        // wheel pairs are in contact at once; the heavy car is moving, the light one is still.
+        // Heavy rear wheels overlap the light car's front wheels; drmonster's wide rear wheels
+        // meet several of the light car's wheels at once (the overlap the gate used to flatten).
         lightConto.Z = -90;
         heavy.CarPhysics.Speed = 300;
         for (var i = 0; i < 4; i++) heavy.CarPhysics.Scz[i] = 300;
@@ -79,29 +86,25 @@ public class CarPhysicsCollisionTests
 
         heavy.Collide(light, stage);
 
-        // One impulse is Revlift * recoil; the stock stage has recoil 1.
         var impulse = (Fixed64)heavy.Stats.Revlift * (Fixed64)stage.Physics.Recoil;
         Assert.IsTrue(impulse > Fixed64.Zero, "the car under test has no revlift to measure");
 
-        for (var i = 0; i < 4; i++)
-        {
-            var drop = before[i] - heavy.CarPhysics.Scy[i];
-            Assert.IsTrue(
-                drop <= impulse + (Fixed64)0.001f,
-                $"wheel {i} took {drop:0.00} of vertical impulse, more than one {impulse:0.00} kick: "
-                + $"Scy={string.Join(',', Enumerable.Range(0, 4).Select(w => $"{heavy.CarPhysics.Scy[w]:0.00}"))}"
-            );
-        }
+        // Every wheel that contacts takes at least one kick, and an overlapping wheel takes more
+        // than one - the stock per-pair behaviour the per-wheel gate removed.
+        var drops = Enumerable.Range(0, 4).Select(i => before[i] - heavy.CarPhysics.Scy[i]).ToArray();
+        Assert.IsTrue(
+            drops.Any(d => d >= impulse * 2),
+            "overlapping wheels did not take multiple per-pair revlift kicks; "
+            + $"drops={string.Join(',', drops.Select(d => $"{d:0.00}"))}"
+        );
     }
 
     /// <summary>
     /// A dominant car with <c>Lift</c> must lift the victim even when only the Z momentum branch
     /// fires (the victim's x-momentum exceeds the dominant car's, so the X branch is skipped).
-    /// The revlift damage gate and the victim's own <c>Lift</c> gate used to share one per-wheel
-    /// counter; a Z-branch fire consumed it and the <c>Lift</c> impulse was silently skipped.
-    /// This is exactly the "lifts barely anyone, but pushes fine" symptom: the victim's wheels
-    /// that only contact along z (the typical rear- or side-hit case) lost their lift impulse
-    /// because the branch that fired for the shove had already spent the gate.
+    /// The lift impulse is outside the branches, so it must land on every contacting wheel no
+    /// matter which branch fired. This is the "lifts barely anyone, but pushes fine" symptom:
+    /// the wheels that only contact along z lost their lift impulse entirely.
     /// </summary>
     [TestMethod]
     public void Collide_DominantCarLiftsVictimEvenWhenOnlyZBranchFires()
@@ -151,6 +154,8 @@ public class CarPhysicsCollisionTests
         // is the regression's setup - with the shared counter, the Z branch's Regy gate would
         // have consumed the lift gate, so the victim would not be lifted here.
         Assert.AreEqual((Fixed64)300, light.CarPhysics.Scx[2], "X branch fired; this is not a Z-only collision");
+        // The lift impulse is applied per contacting pair, so every contacting wheel (2 and 3)
+        // must have taken its kick even though only the Z branch fired for them.
         var liftedWheels = 0;
         for (var i = 0; i < 4; i++)
         {
@@ -159,20 +164,12 @@ public class CarPhysicsCollisionTests
             {
                 liftedWheels++;
             }
-
-            // No wheel may take more than one lift impulse.
-            Assert.IsTrue(
-                drop <= lift + (Fixed64)0.001f,
-                $"wheel {i} took {drop:0.00} of lift, more than one {lift:0.00} kick: "
-                + $"Scy={string.Join(',', Enumerable.Range(0, 4).Select(w => $"{light.CarPhysics.Scy[w]:0.00}"))}"
-            );
         }
 
         Assert.AreEqual(
             2,
             liftedWheels,
-            $"only {liftedWheels}/2 contacting victim wheels were lifted; the Z branch's "
-            + "Revlift-damage gate consumed the shared lift counter. "
+            $"only {liftedWheels}/2 contacting victim wheels were lifted; "
             + $"drops={string.Join(',', Enumerable.Range(0, 4).Select(w => $"{(before[w] - light.CarPhysics.Scy[w]):0.00}"))}"
         );
     }

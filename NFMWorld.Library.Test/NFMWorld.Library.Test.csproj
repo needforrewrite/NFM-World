@@ -63,6 +63,12 @@
             <PluginDirectory>gamemodes</PluginDirectory>
             <PluginFileName>gamemode</PluginFileName>
         </Plugin>
+        <Plugin Include="Rocket">
+            <Project>$(MSBuildThisFileDirectory)..\NFMWorld.Gamemode.Rocket\NFMWorld.Gamemode.Rocket.csproj</Project>
+            <PluginId>nfmm/rocket</PluginId>
+            <PluginDirectory>gamemodes</PluginDirectory>
+            <PluginFileName>gamemode</PluginFileName>
+        </Plugin>
         <Plugin Include="ElStupido">
             <Project>$(MSBuildThisFileDirectory)..\NFMWorld.Ai.ElStupido\NFMWorld.Ai.ElStupido.csproj</Project>
             <PluginId>el_stupido</PluginId>

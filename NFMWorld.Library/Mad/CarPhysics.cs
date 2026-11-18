@@ -294,6 +294,28 @@ public partial class CarPhysics
         Scz[0] + Scz[1] + Scz[2] + Scz[3]
     );
 
+    /// <summary>
+    /// Consumed once per tick by <see cref="Drive"/>: a positive value kicks every wheel's
+    /// vertical velocity upward (negative <c>Scy</c>, since Y is downward) by that amount,
+    /// provided no wheel touched the world last tick. Written by a gamemode's tick before
+    /// the physics step; the hook zeroes it after use.
+    /// </summary>
+    [PluginVisible] public fix64 JumpImpulse;
+
+    /// <summary>
+    /// Consumed once per tick by <see cref="Drive"/> while the car is airborne: a horizontal
+    /// acceleration applied along the car's yaw in addition to its normal air control. Written
+    /// by a gamemode's tick before the physics step; the hook zeroes it after use.
+    /// </summary>
+    [PluginVisible] public fix64 BoostThrust;
+
+    /// <summary>
+    /// The tick before the last step: whether any wheel was grounded. <see cref="JumpImpulse"/>
+    /// is gated on the previous tick's contact so a held jump key cannot re-trigger a jump in
+    /// the same air time.
+    /// </summary>
+    [PluginVisible] public bool WasGrounded;
+
     public event EventHandler<CrashSoundEvent>? SfxPlayCrash;
     public event EventHandler<(SurfaceType i, float f)>? SfxPlaySkid;
     public event EventHandler<(int i, int i2, int i3)>? SfxPlayScrape;
@@ -481,19 +503,12 @@ public partial class CarPhysics
             // Revlift is the same for every contact this tick; hoist it so both damage
             // branches use one value (mirrors the original's constant Stat.Revlift).
             var liftY = ownStats.Revlift * recoil;
-            // The dominant car's own revlift kick (Scy) and the matching victim revlift damage
-            // (Regy) are one impulse, gated per wheel. The victim's own Lift kick is a separate
-            // impulse, gated per wheel of the victim. The original applies each per contacting
-            // pair; the once-per-wheel gate keeps a car from getting one wheel knocked 2-4x lower
-            // than its neighbours, which the plane fit then read as a tilted surface.
-            // They must not share a counter: the Regy gate sits inside the Scx/Scz-dominant
-            // branches, but those are independent per axis - a wheel can fire only the Z branch
-            // (the victim still holds more x-momentum than the attacker). A shared gate would let
-            // that Z-branch fire consume the Lift gate, silently skipping the victim's Lift
-            // impulse on every wheel that only contacts along one axis.
-            Span<int> ownLiftCount = stackalloc int[4];
-            Span<int> ownRegyCount = stackalloc int[4];
-            Span<int> victimLiftCount = stackalloc int[4];
+            // The original applies every vertical collision impulse once per contacting wheel
+            // pair (Mad.colide), including the uneven 2-4x kicks from overlapping wheels; the
+            // tilt they caused here is prevented in the plane fit below, which only orients
+            // from wheels actually on a surface. Do not gate these per wheel: a gate caps the
+            // kick at 1x, and the per-tick vertical traction (grip) erases a 1x kick before it
+            // lifts, which read as "cars glued to the ground".
             var a = (Scz[0] - othermad.Scz[0] + Scz[1] - othermad.Scz[1] + Scz[2] - othermad.Scz[2] + Scz[3] - othermad.Scz[3]);
             var b = (Scx[0] - othermad.Scx[0] + Scx[1] - othermad.Scx[1] + Scx[2] - othermad.Scx[2] + Scx[3] - othermad.Scx[3]);
             var impactMagnitude = (int)((a * a + b * b) / 16);
@@ -569,28 +584,20 @@ public partial class CarPhysics
 
                             Scx[wheel] -= f130;
                             totalOwnDamage += Regx(wheel, -f130 * ownStats.Moment, conto, random);
-                            if (ownLiftCount[wheel] == 0)
-                            {
-                                Scy[wheel] -= liftY;
-                                ownLiftCount[wheel]++;
-                            }
+                            Scy[wheel] -= liftY;
 
                             if (IsClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = true;
                             }
 
-                            if (ownRegyCount[otherwheel] == 0)
-                            {
-                                totalOtherDamage += othermad.Regy(
-                                    otherwheel,
-                                    liftY * 7,
-                                    otherconto,
-                                    random,
-                                    sourceCar: Im
-                                );
-                                ownRegyCount[otherwheel]++;
-                            }
+                            totalOtherDamage += othermad.Regy(
+                                otherwheel,
+                                liftY * 7,
+                                otherconto,
+                                random,
+                                sourceCar: Im
+                            );
 
                             if (othermad._collidingWithClientPlayer)
                             {
@@ -658,28 +665,20 @@ public partial class CarPhysics
 
                             Scz[wheel] -= f132;
                             totalOwnDamage += Regz(wheel, -f132 * ownStats.Moment, conto, random);
-                            if (ownLiftCount[wheel] == 0)
-                            {
-                                Scy[wheel] -= liftY;
-                                ownLiftCount[wheel]++;
-                            }
+                            Scy[wheel] -= liftY;
 
                             if (IsClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = true;
                             }
 
-                            if (ownRegyCount[otherwheel] == 0)
-                            {
-                                totalOtherDamage += othermad.Regy(
-                                    otherwheel,
-                                    liftY * 7,
-                                    otherconto,
-                                    random,
-                                    sourceCar: Im
-                                );
-                                ownRegyCount[otherwheel]++;
-                            }
+                            totalOtherDamage += othermad.Regy(
+                                otherwheel,
+                                liftY * 7,
+                                otherconto,
+                                random,
+                                sourceCar: Im
+                            );
 
                             if (othermad._collidingWithClientPlayer)
                             {
@@ -711,11 +710,7 @@ public partial class CarPhysics
                             Lastcolido = 70;
                         }
 
-                        if (victimLiftCount[otherwheel] == 0)
-                        {
-                            othermad.Scy[otherwheel] -= ownStats.Lift;
-                            victimLiftCount[otherwheel]++;
-                        }
+                        othermad.Scy[otherwheel] -= ownStats.Lift;
 
                         if (impactMagnitude >= 100 && ownStats.Lift != 0)
                             othermad.RecordDamageSource(Im);
@@ -827,6 +822,33 @@ public partial class CarPhysics
         _hasEffective = true;
         _effectiveStage = stage;
 
+        // Arcade hooks (Rocket-League-style gamemodes). Armed by the owning gamemode before
+        // the physics step and consumed here, before this tick's velocity integration; an
+        // armed value is always dropped, so a stale arm can never fire later. The jump is
+        // gated on the *previous* tick's ground contact: this tick's Wtouch/Mtouch are reset
+        // below, so testing them here would never see a car that is actually grounded.
+        if (JumpImpulse != 0 && WasGrounded)
+        {
+            // Y is positive downward: an upward kick is a negative wheel velocity.
+            for (var i = 0; i < 4; i++)
+                Scy[i] = -JumpImpulse;
+        }
+
+        if (BoostThrust != 0 && !WasGrounded)
+        {
+            var thrust = BoostThrust;
+            Scx[0] += thrust * UMath.Sin(-Mxz);
+            Scx[1] += thrust * UMath.Sin(-Mxz);
+            Scx[2] += thrust * UMath.Sin(-Mxz);
+            Scx[3] += thrust * UMath.Sin(-Mxz);
+            Scz[0] += thrust * UMath.Cos(Mxz);
+            Scz[1] += thrust * UMath.Cos(Mxz);
+            Scz[2] += thrust * UMath.Cos(Mxz);
+            Scz[3] += thrust * UMath.Cos(Mxz);
+        }
+
+        JumpImpulse = 0;
+        BoostThrust = 0;
         // stats(): a stage with recharged stats swaps every car to its second stat set.
         if (stage.Physics.RechargedStats && Car?.Rad.RechargedStats is { } recharged && Stat != recharged)
         {
@@ -1957,26 +1979,32 @@ public partial class CarPhysics
         var fitPxy = Pxy;
         var fitPzy = Pzy;
 
-        // if (Scy[0] != Scy[1] || Scy[0] != Scy[2] || Scy[0] != Scy[3])
+        // A collision can kick one wheel's Scy 2-4x below the others (the original does this too);
+        // fitting the car's orientation to those kicked heights pitched it nose-up/down out of a
+        // plain hit. With three or four wheels on a surface, fit from only the grounded wheels:
+        // their heights are terrain, the airborne wheel's height is collision velocity.
+        // Nose/tail/side balances have only one or two wheels grounded and the all-wheels fit is
+        // what tips them over, so keep the old all-wheels fit for those.
         {
             var wheelpos = new InlineArray4<f64Vector3>();
-
+            var used = 0;
             for (var i = 0; i < 4; i++)
             {
-                wheelpos[i] = new f64Vector3(wheelx[i], wheely[i] - wheelGround, wheelz[i]);
+                if (nWheelsOnSurface >= 3 && !isWheelGrounded[i]) continue;
+                wheelpos[used++] = new f64Vector3(wheelx[i], wheely[i] - wheelGround, wheelz[i]);
             }
 
-            var terrainNormal1 = f64Vector3.Cross(
-                wheelpos[1] - wheelpos[0],
-                wheelpos[2] - wheelpos[0]
-            ).Normal;
-
-            var terrainNormal2 = f64Vector3.Cross(
-                wheelpos[3] - wheelpos[1],
-                wheelpos[2] - wheelpos[1]
-            ).Normal;
-
-            var terrainNormal = (terrainNormal1 + terrainNormal2).Normal;
+            f64Vector3 terrainNormal;
+            if (used == 3)
+            {
+                terrainNormal = f64Vector3.Cross(wheelpos[1] - wheelpos[0], wheelpos[2] - wheelpos[0]).Normal;
+            }
+            else
+            {
+                var terrainNormal1 = f64Vector3.Cross(wheelpos[1] - wheelpos[0], wheelpos[2] - wheelpos[0]).Normal;
+                var terrainNormal2 = f64Vector3.Cross(wheelpos[3] - wheelpos[1], wheelpos[2] - wheelpos[1]).Normal;
+                terrainNormal = (terrainNormal1 + terrainNormal2).Normal;
+            }
 
             // Rotation order: Rx(Pxy)·Rz(Pzy)·Ry(Xz) applied to up=(0,-1,0):
             //   up = (sinP·cosXz + cosP·sinZ·sinXz,  -cosP·cosZ,  sinP·sinXz - cosP·sinZ·cosXz)
@@ -2747,6 +2775,7 @@ public partial class CarPhysics
         {
             Lastcolido--;
         }
+
         /*if (Dest)
         {
             if (CheckPoints.Dested[Im] == 0)
@@ -2777,6 +2806,9 @@ public partial class CarPhysics
                 }
             }
         }*/
+
+        // Ground contact as resolved this tick, for the next tick's jump gate.
+        WasGrounded = Mtouch || Wtouch || Gtouch || OnGroundPlane;
     }
 
 

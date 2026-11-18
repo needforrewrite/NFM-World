@@ -174,7 +174,6 @@ public sealed class RaceInputController
 
         var bindings = SettingsMenu.Bindings;
 
-        // determine base key states
         bool acceleratePressed = _pressedKeys.Contains(bindings.Accelerate);
         bool brakePressed = _pressedKeys.Contains(bindings.Brake);
         bool turnLeftPressed = _pressedKeys.Contains(bindings.TurnLeft);
@@ -189,5 +188,7 @@ public sealed class RaceInputController
         control.Left = !_freelook && (turnLeftPressed || aerialStrafePressed);
         control.Right = !_freelook && (turnRightPressed || aerialStrafePressed);
         control.Handb = handbrakePressed;
+        control.Jump = !_freelook && _pressedKeys.Contains(bindings.Jump);
+        control.Boost = !_freelook && _pressedKeys.Contains(bindings.Boost);
     }
 }

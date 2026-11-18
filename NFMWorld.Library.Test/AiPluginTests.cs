@@ -112,6 +112,7 @@ public class AiPluginTests
     [TestMethod]
     [DataRow("nfmm/pvp")]
     [DataRow("nfmm/timetrial")]
+    [DataRow("nfmm/rocket")]
     public void CreateClient_PassesTheSandbox(string id)
     {
         NFMWorldLibrary.TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
@@ -156,9 +157,13 @@ public class AiPluginTests
                     Players =
                     [
                         new ClientSidePlayerInfo
-                            { PlayerName = "Human", CarName = carName, Color = default, IsBot = false, IsClientPlayer = true },
+                        {
+                            PlayerName = "Human", CarName = carName, Color = default, IsBot = false, IsClientPlayer = true
+                        },
                         new ClientSidePlayerInfo
-                            { PlayerName = "ElStupido", CarName = carName, Color = default, IsBot = true, IsClientPlayer = false }
+                        {
+                            PlayerName = "ElStupido", CarName = carName, Color = default, IsBot = true, IsClientPlayer = false
+                        }
                     ]
                 },
                 new StubContext("empty")
@@ -217,9 +222,13 @@ public class AiPluginTests
                     Players =
                     [
                         new ClientSidePlayerInfo
-                            { PlayerName = "Alice", CarName = carName, Color = default, IsBot = false, IsClientPlayer = false },
+                        {
+                            PlayerName = "Alice", CarName = carName, Color = default, IsBot = false, IsClientPlayer = false
+                        },
                         new ClientSidePlayerInfo
-                            { PlayerName = "Bob", CarName = carName, Color = default, IsBot = false, IsClientPlayer = false }
+                        {
+                            PlayerName = "Bob", CarName = carName, Color = default, IsBot = false, IsClientPlayer = false
+                        }
                     ]
                 },
                 new StubContext("empty")
@@ -230,6 +239,61 @@ public class AiPluginTests
             Assert.IsNull(gamemode.ClientPlayer, "a spectator drives none of the slots");
             foreach (var player in gamemode.Players)
                 Assert.IsNotNull(player.Car, "the cars are still built so they can be watched");
+        }
+        finally
+        {
+            BackendGameSparker.dynamic_models.Remove(carName);
+            try
+            {
+                gamemode?.End();
+            }
+            finally
+            {
+                plugin.Unload();
+            }
+        }
+    }
+
+    /// <summary>
+    /// The Rocket gamemode steps physics through the sandbox: constructing it proves nothing
+    /// about the CarPhysics fields its tick arms through the sandbox.
+    /// </summary>
+    [TestMethod]
+    public void BeginRocket_PassesTheSandbox()
+    {
+        TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
+        var plugin = NFMWorldLibrary.Gamemodes.DotNet.GamemodePlugin.Load(
+            "nfmm/rocket",
+            "data/gamemodes/nfmm/rocket/gamemode.dll"
+        );
+        Assert.IsNotNull(plugin);
+        BaseClientGamemode? gamemode = null;
+        var carName = $"sandbox-test/{Guid.NewGuid():N}";
+        try
+        {
+            var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
+            BackendGameSparker.dynamic_models.Add(carName, (0, car));
+            gamemode = plugin.CreateClient(
+                new ClientGamemodeParameters
+                {
+                    Players =
+                    [
+                        new ClientSidePlayerInfo
+                        {
+                            PlayerName = "Human", CarName = carName, Color = default, IsBot = false, IsClientPlayer = true
+                        }
+                    ]
+                },
+                new StubContext("empty")
+            );
+
+            gamemode.Begin();
+
+            for (var i = 0; i < NFMWorldLibrary.Gamemodes.DotNet.GamemodeUtils.CountdownInterval * 5; i++)
+                gamemode.GameTick();
+
+            // The countdown has run; the car has been driving rather than staying frozen at spawn.
+            Assert.AreEqual(0, gamemode.HudState.CountdownTimer);
         }
         finally
         {

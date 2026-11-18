@@ -1,0 +1,15 @@
+{
+  "width": 1568,
+  "height": 882,
+  "scale": 1,
+  "output": "../../.git/sx-menu-rocket-captures",
+  "view": "main-menu",
+  "steps": [
+    { "action": "capture", "capture": "menu" },
+    { "action": "click", "target": "Main menu item PLAY", "capture": "play" },
+    { "action": "assert-visible", "target": "Main menu item SINGLEPLAYER" },
+    { "action": "click", "target": "Main menu item SINGLEPLAYER", "capture": "singleplayer" },
+    { "action": "assert-visible", "target": "Main menu item FREE PLAY" },
+    { "action": "assert-visible", "target": "Main menu item ROCKET LEAGUE" }
+  ]
+}

@@ -40,6 +40,7 @@ public static class MainMenuView
         Action ModelEditor,
         Action StageEditor,
         Action TimeTrials,
+        Action Rocket,
         Action<string> Unavailable,
         Action Replays,
         Action Account,
@@ -424,6 +425,7 @@ public static class MainMenuView
                 enabled: false
             ),
             new("FREE PLAY", "Play freely without any restrictions.", actions.Play),
+            new("ROCKET LEAGUE", "Free play with jump, boost and aerial control.", actions.Rocket),
             new("BACK", "Return to the previous menu.", PopPage),
         ]
     );
