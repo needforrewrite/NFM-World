@@ -1651,13 +1651,13 @@ public partial class CarPhysics
 
                 if (surfaceType == SurfaceType.Bump || surfaceType == SurfaceType.BumpySides)
                 {
-                    int
-                        k = random.Next(
-                            4
-                        ); // choose 4 wheels randomly to bounce up, usually some wheel will be chosen twice, which means another wheel is not chosen, causing tilt
-                    fix64 bumpLift = surfaceType == SurfaceType.Bump ? -100 : -150;
-                    fix64 rng = (fix64)0.55F;
-                    Scy[k] = bumpLift * rng * Speed / Stat.Swits[2] * (Stat.Bounce - (fix64)0.3F);
+                    // ds-addons: bump all 4 wheels equally
+                    for (var k = 0; k < 4; k++)
+                    {
+                        fix64 bumpLift = surfaceType == SurfaceType.Bump ? -100 : -150;
+                        fix64 rng = (fix64)0.55F;
+                        Scy[k] = bumpLift * rng * Speed / Stat.Swits[2] * (Stat.Bounce - (fix64)0.3F);
+                    }
                 }
             }
 
