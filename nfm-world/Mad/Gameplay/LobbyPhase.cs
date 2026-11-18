@@ -333,13 +333,23 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                     PrepareContent(prepareContent);
                     break;
 
-                // The session's load window elapsed (or the game master refused it). Nothing
-                // else resets the row, so say so rather than leaving it on "LOADING". The lobby
-                // sends this to everyone in the session, including a client that has already
-                // gone back to the lobby after racing, so it must not overwrite a race that
-                // actually ran.
-                case S2C_RaceFailedToStart when !_racedThisSession:
-                    SetStatus("The race could not start. Try again.");
+                case S2C_ModerationNotice notice:
+                    if (notice.Fatal)
+                    {
+                        transport.StopReconnecting();
+                        GameSparker.PopPhase();
+                    }
+
+                    GameSparker.MessageWindow.ShowMessage("Moderation", notice.Message);
+                    break;
+
+                case S2C_ModerationResult result:
+                    SetStatus(result.Message);
+                    break;
+
+                case S2C_ChatPurge purge:
+                    _chatMessages.RemoveAll(l => l.SenderId == purge.SenderId);
+                    Lobby.Chat.Value = _chatMessages.ToArray();
                     break;
             }
         }
@@ -562,7 +572,8 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                     CarLabel(p.CarName),
                     ToColor(p.Color),
                     p.Id == _player.Id,
-                    PlayerColors(p)
+                    PlayerColors(p),
+                    p.Role
                 )
             )
             .ToArray();
@@ -651,7 +662,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         var color = _players.FirstOrDefault(p => p.Id == message.SenderId) is { } sender
             ? ToColor(sender.Color)
             : new Color(185, 211, 255);
-        return new UiState.LobbyChatLine(++_nextChatLineId, message.Sender, message.Message, color, isSystem);
+        return new UiState.LobbyChatLine(++_nextChatLineId, message.SenderId, message.Sender, message.Message, color, isSystem);
     }
 
     // ── Actions ────────────────────────────────────────────────────

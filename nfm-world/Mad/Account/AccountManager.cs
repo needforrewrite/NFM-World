@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using NFMWorld.Gameplay;
 using NFMWorldLibrary;
-using NFMWorldLibrary.Util;
+using NFMWorldLibrary.Multiplayer;
 
 namespace NFMWorld.Accounts;
 
@@ -28,7 +28,7 @@ public sealed partial class AccountManager : IDisposable
         // A token from a previous run is used immediately; the archive confirms it on first use
         // and a rejected token simply behaves as signed out.
         if (AccountStore.Load() is { } stored)
-            ActiveAccount = new Account(stored.Token, stored.Username);
+            ActiveAccount = new Account(stored.Token, stored.Username, stored.Role, stored.DeletionPendingUntil);
     }
 
     public Account? ActiveAccount { get; private set; }
@@ -63,7 +63,7 @@ public sealed partial class AccountManager : IDisposable
 
             var account = await response.Content.ReadFromJsonAsync<AccountResponse>();
             if (account is { Username.Length: > 0 })
-                SetActive(new Account(ActiveAccount.Token, account.Username));
+                SetActive(new Account(ActiveAccount.Token, account.Username, account.Role, account.DeletionPendingUntil));
             return true;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
@@ -75,24 +75,28 @@ public sealed partial class AccountManager : IDisposable
 
     public Uri RegistrationUrl => new(_baseUri, "account/login?flow=register");
 
-    public RequestResult OpenRegistration()
+    public Uri AccountSecurityUrl => new(_baseUri, "account/security");
+
+    public RequestResult OpenRegistration() => OpenBrowserPage(RegistrationUrl);
+
+    public RequestResult OpenAccountSecurity() => OpenBrowserPage(AccountSecurityUrl);
+
+    private RequestResult OpenBrowserPage(Uri url)
     {
         try
         {
 #if WEB_AUDIO
-            OpenBrowser(RegistrationUrl.AbsoluteUri, "_blank", "noopener,noreferrer");
+            OpenBrowser(url.AbsoluteUri, "_blank", "noopener,noreferrer");
 #else
             using var browser = System.Diagnostics.Process.Start(
-                new System.Diagnostics.ProcessStartInfo(
-                    RegistrationUrl.AbsoluteUri
-                ) { UseShellExecute = true }
+                new System.Diagnostics.ProcessStartInfo(url.AbsoluteUri) { UseShellExecute = true }
             );
 #endif
-            return new RequestResult("Complete registration in your browser, then sign in here.", true);
+            return new RequestResult("Opening in your browser.", true);
         }
         catch (Exception ex)
         {
-            return new RequestResult($"Could not open registration: {ex.Message}", false);
+            return new RequestResult($"Could not open the page: {ex.Message}", false);
         }
     }
 
@@ -116,8 +120,8 @@ public sealed partial class AccountManager : IDisposable
             if (body?.Token is not { Length: > 0 })
                 return new RequestResult("The archive returned no session token.", false);
 
-            AccountStore.Save(body.Token, body.Account.Username);
-            SetActive(new Account(body.Token, body.Account.Username));
+            AccountStore.Save(body.Token, body.Account.Username, body.Account.Role, body.Account.DeletionPendingUntil);
+            SetActive(new Account(body.Token, body.Account.Username, body.Account.Role, body.Account.DeletionPendingUntil));
             return new RequestResult("Success", true);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
@@ -155,7 +159,15 @@ public sealed partial class AccountManager : IDisposable
 
     public void Dispose() => _http.Dispose();
 
-    private sealed record AccountResponse(string Username, bool IsAdmin, double Elo, int Wins, int Losses, int Matches);
+    private sealed record AccountResponse(
+        string Username,
+        bool IsAdmin,
+        UserRole Role,
+        DateTimeOffset? DeletionPendingUntil,
+        double Elo,
+        int Wins,
+        int Losses,
+        int Matches);
 
     private sealed record LoginResponse(string Token, AccountResponse Account);
 }

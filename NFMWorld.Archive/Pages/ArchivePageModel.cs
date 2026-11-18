@@ -6,7 +6,7 @@ using NFMWorld.Archive.Endpoints;
 namespace NFMWorld.Archive.Pages;
 
 /// <summary>Per-request view state the layout reads without every page having to pass it.</summary>
-public sealed record ViewerState(string? Username);
+public sealed record ViewerState(string? Username, bool IsStaff, DateTimeOffset? DeletionEraseAt);
 
 /// <summary>
 /// Shared page base: resolves the signed-in account from the session cookie once per request.
@@ -20,6 +20,10 @@ public abstract class ArchivePageModel(ArchiveDbContext db) : PageModel
 
     public bool IsSignedIn => Account is not null;
 
+    public bool IsModerator => Account?.IsModerator == true;
+
+    public bool IsAdmin => Account?.IsAdmin == true;
+
     /// <summary>Resolves the cookie session. Pages that need an account call this and redirect.</summary>
     protected async Task<User?> ResolveAccountAsync()
     {
@@ -29,7 +33,13 @@ public abstract class ArchivePageModel(ArchiveDbContext db) : PageModel
         Account = await HttpContext.GetUserAsync(Db, HttpContext.RequestAborted);
         // The layout renders in the same request and has no account of its own; this is the
         // one place it can learn about the viewer without a second lookup.
-        ViewData["Viewer"] = new ViewerState(Account?.Username);
+        ViewData["Viewer"] = new ViewerState(
+            Account?.Username,
+            Account?.IsModerator == true,
+            Account?.DeletionRequestedAt is { } requested
+                ? requested + HttpContext.RequestServices.GetRequiredService<ArchiveOptions>().DeletionGracePeriod
+                : null
+        );
         return Account;
     }
 

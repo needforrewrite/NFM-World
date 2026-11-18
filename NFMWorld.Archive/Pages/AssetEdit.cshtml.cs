@@ -63,6 +63,15 @@ public sealed class AssetEditModel(
         if (AssetUpload.DescriptionTooLong(description))
             return Refuse($"The description must be at most {AssetUpload.MaxDescriptionLength} characters.");
 
+        // A non-owner moderator may only take a row down or restore it; an admin may change
+        // everything, which is the "full CRUD" the role is meant to have.
+        if (!IsOwner && !Account!.IsAdmin)
+        {
+            Asset!.IsTakedown = IsTakedown;
+            await Db.SaveChangesAsync();
+            return Redirect($"/asset/{Asset.Id}");
+        }
+
         Asset!.Name = name;
         Asset.Description = description;
         Asset.IsPublic = IsPublic;
@@ -71,7 +80,6 @@ public sealed class AssetEditModel(
         // come back just because its author resubmitted the form.
         if (Account!.IsAdmin)
             Asset.IsTakedown = IsTakedown;
-
         await Db.SaveChangesAsync();
         return Redirect($"/asset/{Asset.Id}");
     }
@@ -168,7 +176,7 @@ public sealed class AssetEditModel(
             return NotFound();
 
         IsOwner = Asset.OwnerId == Account!.Id;
-        if (!IsOwner && !Account.IsAdmin)
+        if (!IsOwner && !Account.IsModerator)
             return NotFound();
 
         ViewData["Title"] = "Edit " + Asset.Name;

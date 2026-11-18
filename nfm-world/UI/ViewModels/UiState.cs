@@ -232,7 +232,8 @@ public static class UiState
         string Car,
         Color Color,
         bool IsSelf,
-        IReadOnlyList<Color>? CarColors = null);
+        IReadOnlyList<Color>? CarColors = null,
+        NFMWorldLibrary.Multiplayer.UserRole Role = NFMWorldLibrary.Multiplayer.UserRole.User);
 
     public sealed record LobbySession(
         uint Id,
@@ -246,7 +247,7 @@ public static class UiState
     );
 
     /// <summary>Id keys the row: two identical lines from one sender are still two lines.</summary>
-    public sealed record LobbyChatLine(long Id, string Sender, string Message, Color Color, bool IsSystem);
+    public sealed record LobbyChatLine(long Id, Guid SenderId, string Sender, string Message, Color Color, bool IsSystem);
 
     /// <summary>Garage car list and the selected car's stats.</summary>
     public sealed class GarageState

@@ -24,6 +24,7 @@ Set through the `Archive__*` environment variables (double underscore nests).
 | `Archive__ValidatorWorkingDirectory`                                      | Directory holding the game `data/` tree the validator needs (defaults to the executable's folder) |
 | `Archive__DiscordClientId` / `DiscordClientSecret` / `DiscordRedirectUri` | Discord sign-in                                                                   |
 | `Archive__ReadOnly`                                                       | Disables registration and uploads                                                 |
+| `Archive__DeletionGracePeriod`                                           | Grace between a deletion request and the sweep, `DD.HH:MM:SS` or days (default 30 days) |
 
 Relative validator paths are resolved against the content root. In **Development** only, leaving
 `Archive__ValidatorPath` unset makes the archive use `NFMWorld.Archive.Validator` built beside this
@@ -141,3 +142,44 @@ client's claimed time or file contents. The Docker image publishes the validator
 and sets `Archive__ValidatorPath`, so the compose stack needs no extra configuration; deployments
 outside the image must point the variable at the built executable. A missing validator (or a
 missing file at the configured path) is logged at startup.
+
+## Moderation
+
+Two roles exist, `User`, `Moderator` and `Admin`, stored as an integer in the `Users.Role`
+column. A moderator may kick, ban, mute, unlist and relist another account's content; an admin may
+also rename an account, set its password, change its role and erase it. A moderator cannot act on
+an admin, and nobody can act on their own account.
+
+**Bootstrapping the first admin** — run against the same archive volume, before or while the stack
+is up:
+
+```sh
+docker compose run --rm archive --set-role alice admin
+docker compose run --rm archive --list-roles
+```
+
+The command migrates the database first, so it works on a fresh volume before the server has ever
+started. `--set-role <user> <role>` accepts `admin`, `Admin` or `2`; `--list-roles` prints every
+account. An unparseable role prints the accepted names and exits 2.
+
+### Chat commands
+
+A lobby chat message starting with `/` is a staff-only command; a non-staff sender gets
+"Unknown command." and the text is never relayed. Verbs: `kick`, `ban`, `mute` (a duration such as
+`30m`, `7d`, `12h` selects the temporary form), `unban`, `unmute`, `unlist`, `relist`, `rename`,
+`deleterequest`, `deletecancel`. `setpassword`, `setrole` and `deleteerase` are deliberately not
+chat verbs: those changes belong on the website. A kick purges the target's recent chat and
+disconnects their live connection.
+
+### Ban and deletion semantics
+
+A ban blocks the lobby, race admission and uploads but not website sign-in. A banned account's
+`/auth/verify` reports `banned: true`, so the lobby refuses admission; the website's login and
+security pages do not check `BannedUntil`. A `tempkick` (`KickedUntil`) blocks lobby admission for
+a cooldown without blocking sign-in or uploads.
+
+Account deletion is a grace-period sweep: `/account/deletion` requests it, `Archive__DeletionGracePeriod`
+(default 30 days) elapses, and the hosted sweeper erases the account. Erasure removes the identity —
+name, password, Discord link, sessions, ratings and time-trial replays — while published uploads
+stay online under an anonymous `deleted-<id>` owner, so a stage or car another player saved keeps
+working. The `User` row survives as a tombstone; no password, role, ban, mute or session remains.

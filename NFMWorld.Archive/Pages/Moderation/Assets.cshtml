@@ -1,0 +1,53 @@
+@page "/moderation/assets"
+@model NFMWorld.Archive.Pages.Moderation.AssetsModel
+@{
+    ViewData["Title"] = "Moderation · Assets";
+}
+
+<h1>All assets</h1>
+
+<div class="overflow-auto">
+    <table>
+        <thead>
+            <tr>
+                <th scope="col">Id</th>
+                <th scope="col">Name</th>
+                <th scope="col">Type</th>
+                <th scope="col">Owner</th>
+                <th scope="col">Takedown</th>
+                <th scope="col"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var asset in Model.Rows)
+            {
+                <tr>
+                    <td>@asset.Id</td>
+                    <td><a href="/asset/@asset.Id/edit">@asset.Name</a></td>
+                    <td>@asset.Type</td>
+                    <td>@(asset.Owner?.Username ?? "—")</td>
+                    <td>@(asset.IsTakedown ? "yes" : "no")</td>
+                    <td>
+                        @if (asset.IsTakedown)
+                        {
+                            <form method="post" asp-page-handler="Restore" asp-route-id="@asset.Id" style="display:inline;">
+                                <button type="submit" class="secondary outline">Restore</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <form method="post" asp-page-handler="Takedown" asp-route-id="@asset.Id" style="display:inline;">
+                                <button type="submit" class="secondary outline">Take down</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.NextCursor is { } next)
+{
+    <p><a href="/moderation/assets?after=@next">Next page</a></p>
+}

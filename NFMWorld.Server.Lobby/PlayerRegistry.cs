@@ -114,5 +114,16 @@ public class PlayerRegistry
         public NFMWorldLibrary.Util.WheelAppearance? Wheels { get; set; }
         public (byte PlayerIndex, uint SessionIndex)? InSession { get; set; }
         public bool IsInGame { get; set; }
+
+        public UserRole Role { get; set; }
+        public int ModerationRevision { get; set; }
+        public DateTimeOffset? KickedUntil { get; set; }
+        public bool Muted { get; set; }
+        public DateTimeOffset? MutedUntil { get; set; }
+        public bool Banned { get; set; }
+        public DateTimeOffset? BannedUntil { get; set; }
+        public string? BanReason { get; set; }
+        public string? MuteReason { get; set; }
+        public DateTimeOffset LastModerationPoll { get; set; }
     }
 }

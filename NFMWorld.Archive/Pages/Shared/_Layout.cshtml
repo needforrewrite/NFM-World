@@ -19,14 +19,18 @@
             <li><a href="/leaderboards">Time trials</a></li>
             <li><a href="/clans">Clans</a></li>
             <li><a href="/upload">Upload</a></li>
-        </ul>
-        <ul class="account-menu">
             @{
                 var viewer = ViewData["Viewer"] as NFMWorld.Archive.Pages.ViewerState;
             }
+            @if (viewer?.IsStaff == true)
+            {
+                <li><a href="/moderation">Moderation</a></li>
+            }
+        </ul>
+        <ul class="account-menu">
             @if (viewer?.Username is { } username)
             {
-                <li class="muted">@username</li>
+                <li class="muted"><a href="/account/security">@username</a></li>
                 <li>
                     <form method="post" action="/logout">
                         <button type="submit" class="secondary outline">Sign out</button>
@@ -41,6 +45,15 @@
     </nav>
 </header>
 <main class="container" id="main-content">
+    @if (ViewData["Viewer"] is NFMWorld.Archive.Pages.ViewerState { DeletionEraseAt: { } eraseAt })
+    {
+        <div class="error" role="alert" style="margin-bottom: 1rem;">
+            Account deletion scheduled for @eraseAt.UtcDateTime.ToString("yyyy-MM-dd").
+            <form method="post" action="/account/deletion?handler=Cancel" style="display:inline;">
+                <button type="submit" class="secondary outline">Cancel deletion</button>
+            </form>
+        </div>
+    }
     @RenderBody()
 </main>
 </body>

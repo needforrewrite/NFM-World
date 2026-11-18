@@ -394,23 +394,24 @@ public class RaceOrchestrator : IDisposable
     private void HandleRaceChat(uint clientIndex, C2S_RaceChat chat)
     {
         if (!TryFindSession(clientIndex, out var session, out var clientId)) return;
+        var player = session.PlayerInfos.Values.FirstOrDefault(p => p.Id == clientId);
+        if (player.Banned || player.Muted) return;
         var message = RaceChat.Normalize(chat.Message);
-        if (message.Length == 0) return;
         lock (session.ChatLock)
         {
             var now = Environment.TickCount64;
             if (session.LastChat.TryGetValue(clientId, out var last) && now - last < 500) return;
             session.LastChat[clientId] = now;
-            var player = session.PlayerInfos.Values.FirstOrDefault(p => p.Id == clientId);
+            var chatPlayer = session.PlayerInfos.Values.FirstOrDefault(p => p.Id == clientId);
             var spectator = session.Spectators.TryGetValue(clientId, out var identity);
-            if (!spectator && player.Id != clientId) return;
+            if (!spectator && chatPlayer.Id != clientId) return;
             var watching = spectator || session.PlayerWasted.TryGetValue(clientId, out var wasted) && wasted;
-            var name = spectator ? identity.Name : player.PlayerName;
+            var name = spectator ? identity.Name : chatPlayer.PlayerName;
             var packet = new S2C_RaceChat
             {
                 SenderId = clientId,
                 Sender = watching ? $"(SPEC) {name}" : name,
-                Color = spectator ? identity.Color : player.Color,
+                Color = spectator ? identity.Color : chatPlayer.Color,
                 Message = message,
                 MessageId = ++session.NextChatId
             };
@@ -672,7 +673,7 @@ public class RaceOrchestrator : IDisposable
             MatchKey = raceParams.MatchKey,
             // Only a player with a connection loads. A bot never sends C2S_RaceLoaded, so
             // counting it here would leave the race waiting for a player that cannot arrive.
-            PlayerCount = raceParams.MatchGameplayInfo.Players.Values.Count(p => !p.IsBot),
+            PlayerCount = raceParams.MatchGameplayInfo.Players.Values.Count(p => !p.IsBot && !p.Banned),
             Clients = [],
             PlayerInfos = raceParams.MatchGameplayInfo.Players,
             Gamemode = raceParams.MatchGameplayInfo.Gamemode,
@@ -685,7 +686,7 @@ public class RaceOrchestrator : IDisposable
         {
             // A bot has no client to hand a token to; its state arrives from the client that
             // simulates it, under the bot's own player id.
-            if (playerInfo.IsBot)
+            if (playerInfo.IsBot || playerInfo.Banned)
                 continue;
 
             var token = Guid.NewGuid();

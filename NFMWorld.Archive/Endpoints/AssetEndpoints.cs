@@ -177,7 +177,7 @@ public static class AssetEndpoints
 
                 if (!string.IsNullOrWhiteSpace(query))
                 {
-                    var escaped = EscapeLike(query.Trim());
+                    var escaped = Sql.LikeEscape(query.Trim());
                     q = q.Where(a => EF.Functions.Like(a.Name, "%" + escaped + "%", "\\"));
                 }
 
@@ -317,10 +317,16 @@ public static class AssetEndpoints
                     return Results.NotFound();
 
                 var isOwner = asset.OwnerId == user.Id;
-                if (!isOwner && !user.IsAdmin)
+                if (!isOwner && !user.IsModerator)
                     return Results.StatusCode(StatusCodes.Status403Forbidden);
 
-                if (update.IsTakedown is not null && !user.IsAdmin)
+                // A moderator may only take a row down or restore it; changing a name,
+                // description or visibility is the author's (or an admin's) act.
+                if (!isOwner && !user.IsAdmin
+                    && (update.Name is not null || update.Description is not null || update.IsPublic is not null))
+                    return Results.StatusCode(StatusCodes.Status403Forbidden);
+
+                if (update.IsTakedown is not null && !user.IsModerator)
                     return Results.StatusCode(StatusCodes.Status403Forbidden);
 
                 var changed = false;
@@ -382,9 +388,9 @@ public static class AssetEndpoints
                 if (asset is null)
                     return Results.NotFound();
 
-                // Replacing content is the author's act; a moderator deletes instead of
-                // re-publishing someone else's work under their name.
-                if (asset.OwnerId != user.Id)
+                // Replacing content is the author's act, or an admin repairing a broken upload;
+                // a moderator deletes instead of re-publishing someone else's work.
+                if (asset.OwnerId != user.Id && !user.IsAdmin)
                     return Results.StatusCode(StatusCodes.Status403Forbidden);
 
                 if (!request.HasFormContentType)
@@ -459,7 +465,7 @@ public static class AssetEndpoints
                 if (asset is null)
                     return Results.NotFound();
 
-                if (asset.OwnerId != user.Id && !user.IsAdmin)
+                if (asset.OwnerId != user.Id && !user.IsModerator)
                     return Results.StatusCode(StatusCodes.Status403Forbidden);
 
                 var path = asset.StoragePath;
@@ -570,7 +576,4 @@ public static class AssetEndpoints
         asset.IsPublic,
         asset.IsTakedown
     );
-
-    private static string EscapeLike(string value)
-        => value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
 }

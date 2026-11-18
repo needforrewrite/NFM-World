@@ -233,6 +233,15 @@ public static class LobbyView
                                 foregroundColor: player.IsSelf ? Blue : TextBlue
                             ),
                             text: () => player.Name
+                        ), Sx.Show(
+                            () => player.Role >= NFMWorldLibrary.Multiplayer.UserRole.Moderator,
+                            () => Sx.Text(
+                                style: () => Sx.TextStyles(
+                                    fontSize: 11,
+                                    foregroundColor: Theme.MenuDim
+                                ),
+                                text: () => player.Role == NFMWorldLibrary.Multiplayer.UserRole.Admin ? "[ADMIN]" : "[MOD]"
+                            )
                         ), Sx.For(
                             () => (player.CarColors ?? []).Select((color, slot) => (color, slot)).ToArray(),
                             (swatch, _) => Sx.View(

@@ -1,0 +1,38 @@
+@page "/account/deletion"
+@model NFMWorld.Archive.Pages.Account.DeletionModel
+@{
+    ViewData["Title"] = "Account deletion";
+}
+
+<h1>Delete your account</h1>
+
+<p>
+    Deleting your account removes your identity — name, password, Discord link, sessions,
+    ratings and time-trial replays. Your published uploads stay online under an anonymous
+    <code>deleted-&lt;id&gt;</code> name so other players' saved stages and cars keep working.
+</p>
+
+@if (Model.RequestedAt is { } requested && Model.EraseAt is { } eraseAt)
+{
+    <p class="error" role="alert">
+        Deletion requested on @requested.UtcDateTime.ToString("yyyy-MM-dd").
+        The account will be erased on @eraseAt.UtcDateTime.ToString("yyyy-MM-dd").
+    </p>
+    <form method="post" asp-page-handler="Cancel">
+        <button type="submit" class="secondary">Cancel deletion</button>
+    </form>
+}
+else
+{
+    <p class="muted">
+        Grace period: @((int)Model.EraseAt.GetValueOrDefault().Subtract(DateTimeOffset.UtcNow).TotalDays) days.
+    </p>
+    <form method="post" asp-page-handler="Request">
+        <button type="submit">Request deletion</button>
+    </form>
+}
+
+@if (Model.Status is { } status)
+{
+    <p role="status">@status</p>
+}

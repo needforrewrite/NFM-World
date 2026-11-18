@@ -1,6 +1,6 @@
 using System.Text.Json;
 using NFMWorldLibrary;
-using NFMWorldLibrary.Util;
+using NFMWorldLibrary.Multiplayer;
 
 namespace NFMWorld.Accounts;
 
@@ -16,9 +16,9 @@ public static class AccountStore
 {
     private const string Path = "data/cfg/account.json";
 
-    private sealed record Stored(string Token, string Username);
+    private sealed record Stored(string Token, string Username, UserRole Role, DateTimeOffset? DeletionPendingUntil);
 
-    public static (string Token, string Username)? Load()
+    public static (string Token, string Username, UserRole Role, DateTimeOffset? DeletionPendingUntil)? Load()
     {
         try
         {
@@ -26,7 +26,9 @@ public static class AccountStore
                 return null;
 
             var stored = JsonSerializer.Deserialize<Stored>(TheVFS.VFS.ReadAllText(Path));
-            return stored is { Token.Length: > 0 } ? (stored.Token, stored.Username) : null;
+            return stored is { Token.Length: > 0 }
+                ? (stored.Token, stored.Username, stored.Role, stored.DeletionPendingUntil)
+                : null;
         }
         catch (Exception ex)
         {
@@ -35,12 +37,12 @@ public static class AccountStore
         }
     }
 
-    public static void Save(string token, string username)
+    public static void Save(string token, string username, UserRole role, DateTimeOffset? deletionPendingUntil)
     {
         try
         {
             using var stream = TheVFS.VFS.OpenWrite(Path);
-            JsonSerializer.Serialize(stream, new Stored(token, username));
+            JsonSerializer.Serialize(stream, new Stored(token, username, role, deletionPendingUntil));
         }
         catch (Exception ex)
         {
@@ -57,7 +59,7 @@ public static class AccountStore
         try
         {
             using var stream = TheVFS.VFS.OpenWrite(Path);
-            JsonSerializer.Serialize(stream, new Stored("", ""));
+            JsonSerializer.Serialize(stream, new Stored("", "", UserRole.User, null));
         }
         catch (Exception ex)
         {

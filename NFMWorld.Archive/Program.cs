@@ -5,6 +5,7 @@ using NFMWorld.Archive.Auth;
 using NFMWorld.Archive.Data;
 using NFMWorld.Archive.Endpoints;
 using NFMWorld.Archive.Validation;
+using NFMWorld.Archive.Moderation;
 using NFMWorldLibrary.Multiplayer;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,6 +35,8 @@ if (string.IsNullOrWhiteSpace(options.ValidatorPath)
 }
 
 builder.Services.AddSingleton(options);
+builder.Services.AddScoped<NFMWorld.Archive.Moderation.ModerationService>();
+builder.Services.AddHostedService<NFMWorld.Archive.Moderation.DeletionSweeper>();
 builder.Services.AddSingleton(new FileStorage(options.StorageRoot));
 builder.Services.AddDbContext<ArchiveDbContext>(o => o.UseSqlite(options.Database));
 builder.Services.AddScoped<SessionService>();
@@ -50,6 +53,9 @@ builder.Services.AddRazorPages(options =>
 );
 
 var app = builder.Build();
+
+if (RoleCommand.TryParse(args, out var roleArgs))
+    return await RoleCommand.RunAsync(roleArgs, options, app.Logger, CancellationToken.None);
 
 if (string.IsNullOrWhiteSpace(options.ValidatorPath) || !File.Exists(options.ValidatorPath))
 {
@@ -112,6 +118,7 @@ app.MapDiscordEndpoints();
 app.MapResultEndpoints();
 app.MapTimeTrialEndpoints();
 app.MapAssetEndpoints();
+app.MapModerationEndpoints();
 app.MapRazorPages();
 
 // WAL is a per-database setting, so it is applied once at startup rather than per connection.
@@ -139,6 +146,7 @@ app.Use(async (context, next) =>
 app.UseStaticFiles();
 
 app.Run();
+return 0;
 
 /// <summary>Entry point marker so integration tests can host the real app.</summary>
 public partial class Program;

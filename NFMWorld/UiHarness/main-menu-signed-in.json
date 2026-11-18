@@ -5,8 +5,10 @@
   "output": "../../.git/sx-menu-captures/signed-in",
   "view": "main-menu",
   "signedIn": true,
+  "deletionPending": "ACCOUNT DELETION SCHEDULED FOR 2026-12-17",
   "steps": [
     { "action": "capture", "capture": "menu" },
-    { "action": "assert-text", "target": "Main menu account label", "value": "twisted_magic" }
+    { "action": "assert-text", "target": "Main menu account label", "value": "twisted_magic" },
+    { "action": "assert-text", "target": "Account deletion notice", "value": "ACCOUNT DELETION SCHEDULED FOR 2026-12-17" }
   ]
 }

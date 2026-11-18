@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using NFMWorld.Archive.Data;
 using NFMWorldLibrary.Radpack;
+using NFMWorldLibrary.Multiplayer;
 
 namespace NFMWorld.Archive.Test;
 
@@ -199,7 +200,7 @@ public class AssetCrudTests
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
-            db.Users.Single(u => u.UsernameNormalized == "artist").IsAdmin = true;
+            db.Users.Single(u => u.UsernameNormalized == "artist").Role = UserRole.Admin;
             await db.SaveChangesAsync();
         }
 

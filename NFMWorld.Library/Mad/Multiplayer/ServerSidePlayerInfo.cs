@@ -58,4 +58,16 @@ public partial struct ServerSidePlayerInfo
 
     [TightPackOrder(7), PluginVisible] public Color3?[]? CarColors { get; set; }
     [TightPackOrder(8), PluginVisible] public NFMWorldLibrary.Util.WheelAppearance? Wheels { get; set; }
+
+    /// <summary>True when the lobby saw a ban; the GM uses it to refuse the slot a join token.</summary>
+    [TightPackOrder(9), PluginVisible]
+    public bool Banned { get; set; }
+
+    /// <summary>Chat mute, a plain snapshot refreshed by the next race.</summary>
+    [TightPackOrder(10), PluginVisible]
+    public bool Muted { get; set; }
+
+    /// <summary>Staff level for roster display; <see cref="UserRole.User"/> for everyone else.</summary>
+    [TightPackOrder(11), PluginVisible]
+    public UserRole Role { get; set; }
 }

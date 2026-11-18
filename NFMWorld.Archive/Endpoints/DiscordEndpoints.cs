@@ -106,6 +106,67 @@ public static class DiscordEndpoints
             }
         );
 
+        // Link flow: same PKCE machinery, but the state marks an attach-to-this-session intent
+        // and the caller must already be signed in.
+        app.MapPost(
+            "/auth/discord/link/start",
+            async (
+                ArchiveOptions options, ArchiveDbContext db,
+                Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery, HttpContext http, CancellationToken ct
+            ) =>
+            {
+                if (string.IsNullOrEmpty(options.DiscordClientId) || string.IsNullOrEmpty(options.DiscordRedirectUri))
+                    return Results.NotFound();
+
+                var user = await http.GetUserAsync(db, ct);
+                if (user is null)
+                    return Results.Unauthorized();
+
+                try
+                {
+                    await antiforgery.ValidateRequestAsync(http);
+                }
+                catch (Microsoft.AspNetCore.Antiforgery.AntiforgeryValidationException)
+                {
+                    return Results.BadRequest();
+                }
+
+                var state = "link." + Tokens.Create();
+                var verifier = Tokens.Create();
+                var challenge = Tokens.Base64UrlEncode(SHA256.HashData(System.Text.Encoding.ASCII.GetBytes(verifier)));
+
+                db.OauthPending.Add(
+                    new OauthPending
+                    {
+                        StateHash = Tokens.Hash(state),
+                        CodeVerifier = verifier,
+                        ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(10)
+                    }
+                );
+                await db.SaveChangesAsync(ct);
+
+                http.Response.Cookies.Append(
+                    "nfmw_oauth_state",
+                    state,
+                    new CookieOptions
+                    {
+                        HttpOnly = true,
+                        Secure = http.Request.IsHttps,
+                        SameSite = SameSiteMode.Lax,
+                        Expires = DateTimeOffset.UtcNow.AddMinutes(10)
+                    }
+                );
+
+                var url = $"{AuthorizeUrl}?client_id={Uri.EscapeDataString(options.DiscordClientId)}"
+                          + $"&redirect_uri={Uri.EscapeDataString(options.DiscordRedirectUri)}"
+                          + "&response_type=code&scope=identify"
+                          + $"&state={Uri.EscapeDataString(state)}"
+                          + $"&code_challenge={Uri.EscapeDataString(challenge)}&code_challenge_method=S256";
+
+                return Results.Redirect(url);
+            }
+        );
+
         app.MapGet(
             "/auth/discord/callback",
             async (
@@ -113,9 +174,10 @@ public static class DiscordEndpoints
                 SessionService sessions, IHttpClientFactory clients, HttpContext http, CancellationToken ct
             ) =>
             {
+                var isLink = state.StartsWith("link.", StringComparison.Ordinal);
                 if (string.IsNullOrEmpty(code)
                     || string.IsNullOrEmpty(state)
-                    || !state.StartsWith("turnstile.", StringComparison.Ordinal))
+                    || (!state.StartsWith("turnstile.", StringComparison.Ordinal) && !isLink))
                     return Results.BadRequest(new { error = "Missing code or state." });
 
                 // The state must be the one this browser started with, not merely a live one: a
@@ -174,6 +236,33 @@ public static class DiscordEndpoints
                 var discordUser = await userResponse.Content.ReadFromJsonAsync<DiscordUser>(ct);
                 if (string.IsNullOrEmpty(discordUser?.Id))
                     return Results.BadRequest(new { error = "Discord returned no user id." });
+
+                if (isLink)
+                {
+                    // Attach to the signed-in session, never a sign-in. The caller must still be
+                    // signed in: the state cookie proves this browser started the flow, not that
+                    // the account is the same one that is signed in now.
+                    var linkUser = await http.GetUserAsync(db, ct);
+                    if (linkUser is null)
+                        return Results.BadRequest(new { error = "Sign in before linking Discord." });
+
+                    var existing = await db.ExternalLogins
+                        .AnyAsync(l => l.Provider == "discord" && l.ProviderUserId == discordUser.Id, ct);
+                    if (existing)
+                        return Results.BadRequest(new { error = "That Discord account is already linked." });
+
+                    db.ExternalLogins.Add(
+                        new ExternalLogin
+                        {
+                            UserId = linkUser.Id,
+                            Provider = "discord",
+                            ProviderUserId = discordUser.Id
+                        }
+                    );
+                    await db.SaveChangesAsync(ct);
+                    AuthEndpoints.Audit(db, linkUser.Id, "link_discord", null, http);
+                    return Results.Redirect("/account/security");
+                }
 
                 var login = await db.ExternalLogins
                     .Include(l => l.User)

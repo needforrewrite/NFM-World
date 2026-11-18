@@ -1,0 +1,49 @@
+@page "/moderation"
+@model NFMWorld.Archive.Pages.Moderation.UsersModel
+@{
+    ViewData["Title"] = "Moderation";
+}
+
+<h1>Moderation</h1>
+
+<form method="get" class="moderation-search">
+    <label>Search
+        <input type="search" name="query" value="@Model.Query" />
+    </label>
+    <button type="submit">Search</button>
+</form>
+
+<div class="overflow-auto">
+    <table>
+        <thead>
+            <tr>
+                <th scope="col">Id</th>
+                <th scope="col">Username</th>
+                <th scope="col">Role</th>
+                <th scope="col">Banned</th>
+                <th scope="col">Muted</th>
+                <th scope="col">Assets</th>
+                <th scope="col">Last seen</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Model.Rows)
+            {
+                <tr>
+                    <td>@row.Id</td>
+                    <td><a href="/moderation/user/@row.Id">@row.Username</a>@(row.Deleted ? " (deleted)" : "")</td>
+                    <td>@row.Role</td>
+                    <td>@(row.Banned ? "yes" : "")</td>
+                    <td>@(row.Muted ? "yes" : "")</td>
+                    <td>@row.AssetCount</td>
+                    <td>@row.LastSeenAt</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.NextCursor is { } next)
+{
+    <p><a href="/moderation?query=@Uri.EscapeDataString(Model.Query)&after=@next">Next page</a></p>
+}

@@ -19,7 +19,8 @@ public static class AccountView
         Action<string, string> SignIn,
         Action Register,
         Action SignOut,
-        Action Close
+        Action Close,
+        Action ManageAccount
     );
 
     private static readonly Signal<bool> Open = new(false);
@@ -68,15 +69,15 @@ public static class AccountView
         Busy.Value = false;
     }
 
-    public static Node Build(Actions actions, Func<bool> signedIn, Func<string> username)
+    public static Node Build(Actions actions, Func<bool> signedIn, Func<string> username, Func<string> deletionNotice)
     {
         return Sx.Show(
             when: () => Open.Value,
-            then: () => Card(actions, signedIn, username)
+            then: () => Card(actions, signedIn, username, deletionNotice)
         );
     }
 
-    private static Node Card(Actions actions, Func<bool> signedIn, Func<string> username)
+    private static Node Card(Actions actions, Func<bool> signedIn, Func<string> username, Func<string> deletionNotice)
     {
         var navigation = new KeyboardNavigation();
         KeyboardScope? root = null;
@@ -134,12 +135,25 @@ public static class AccountView
                             style: () => Sx.TextStyles(fontSize: 14, foregroundColor: MenuBlue),
                             text: () => username()
                         ),
+                        Sx.Show(
+                            () => deletionNotice().Length > 0,
+                            () =>
+                            {
+                                var notice = Sx.Text(
+                                    style: () => Sx.TextStyles(fontSize: 12, foregroundColor: ErrorRed),
+                                    text: () => deletionNotice()
+                                );
+                                notice.Name = "Account deletion notice";
+                                return notice;
+                            }
+                        ),
                         KeyboardNavigation.Row(
                             Sx.View(
                                 style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 10),
                                 children:
                                 [
                                     ButtonRow("SIGN OUT", actions.SignOut, primary: false, name: "Account sign out"),
+                                    ButtonRow("MANAGE", actions.ManageAccount, primary: false, name: "Account manage"),
                                     ButtonRow("CLOSE", actions.Close, primary: true, name: "Account close")
                                 ]
                             )

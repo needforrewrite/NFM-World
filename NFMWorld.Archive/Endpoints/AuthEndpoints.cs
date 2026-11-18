@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using NFMWorld.Archive.Auth;
 using NFMWorld.Archive.Data;
+using NFMWorldLibrary.Multiplayer;
 
 namespace NFMWorld.Archive.Endpoints;
 
@@ -14,7 +15,19 @@ public sealed record RegisterRequest(
 
 public sealed record LoginRequest(string? Username, string? Password);
 
-public sealed record AccountResponse(string Username, bool IsAdmin, double Elo, int Wins, int Losses, int Matches);
+public sealed record PasswordRequest(string? CurrentPassword, string? NewPassword);
+
+public sealed record PasswordRemoveRequest(string? CurrentPassword);
+
+public sealed record AccountResponse(
+    string Username,
+    bool IsAdmin,
+    UserRole Role,
+    DateTimeOffset? DeletionPendingUntil,
+    double Elo,
+    int Wins,
+    int Losses,
+    int Matches);
 
 public sealed record TokenResponse(string Token, AccountResponse Account);
 
@@ -78,7 +91,7 @@ public static class AuthEndpoints
                 return Results.Ok(
                     new TokenResponse(
                         token,
-                        new AccountResponse(user.Username, user.IsAdmin, 1500, 0, 0, 0)
+                        new AccountResponse(user.Username, user.IsAdmin, user.Role, null, 1500, 0, 0, 0)
                     )
                 );
             }
@@ -135,6 +148,8 @@ public static class AuthEndpoints
                         new AccountResponse(
                             user.Username,
                             user.IsAdmin,
+                            user.Role,
+                            DeletionPendingUntil(user, options),
                             rating?.Elo ?? 1500,
                             rating?.Wins ?? 0,
                             rating?.Losses ?? 0,
@@ -173,6 +188,8 @@ public static class AuthEndpoints
                     new AccountResponse(
                         user.Username,
                         user.IsAdmin,
+                        user.Role,
+                        DeletionPendingUntil(user, options),
                         rating?.Elo ?? 1500,
                         rating?.Wins ?? 0,
                         rating?.Losses ?? 0,
@@ -182,8 +199,9 @@ public static class AuthEndpoints
             }
         );
 
-        // Called by the lobby with a player's token to learn who they are. Returns only the id
-        // and username, so a compromised lobby learns nothing else about the account.
+        // Called by the lobby with a player's token. The lobby is not the game master: it holds
+        // no archive key, and this returns only what a live lobby connection needs to enforce
+        // bans, mutes and moderation.
         auth.MapGet(
             "/verify",
             async (
@@ -193,7 +211,28 @@ public static class AuthEndpoints
                 var user = await http.GetUserAsync(db, ct);
                 return user is null
                     ? Results.Unauthorized()
-                    : Results.Ok(new { AccountId = user.Id, user.Username });
+                    : Results.Ok(VerifyShape(user));
+            }
+        );
+
+        // Trusted-server only: lets the lobby re-read moderation state without holding a player
+        // token. Signed, because an account's ban/mute state is not public.
+        auth.MapGet(
+            "/account/{id:int}",
+            async (int id, HttpRequest request, ArchiveDbContext db, TrustedServerAuth auth, CancellationToken ct) =>
+            {
+                var error = auth.Verify(
+                    "GET",
+                    $"/auth/account/{id}",
+                    ReadOnlySpan<byte>.Empty,
+                    request.Headers.Authorization,
+                    out _
+                );
+                if (error is not null)
+                    return Results.Json(new { error }, statusCode: StatusCodes.Status401Unauthorized);
+
+                var user = await db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
+                return user is null ? Results.NotFound() : Results.Ok(VerifyShape(user));
             }
         );
 
@@ -214,7 +253,116 @@ public static class AuthEndpoints
                 return Results.NoContent();
             }
         );
+
+        // Adds or changes the password. Bumps the stamp, revokes every session, and re-issues
+        // one so the caller is not signed out by their own change.
+        auth.MapPost(
+            "/password",
+            async (
+                PasswordRequest request, HttpContext http, ArchiveDbContext db, ArchiveOptions options,
+                SessionService sessions, CancellationToken ct
+            ) =>
+            {
+                var user = await http.GetUserAsync(db, ct);
+                if (user is null)
+                    return Results.Unauthorized();
+
+                // A Discord-only account has no hash to verify; anything else must prove the
+                // current password.
+                if (user.PasswordHash is { } hash && !PasswordHasher.Verify(request.CurrentPassword ?? "", hash))
+                    return Results.BadRequest(new { error = "The current password is wrong." });
+
+                if (!PasswordPolicy.TryValidate(request.NewPassword, out var error))
+                    return Results.BadRequest(new { error });
+
+                user.PasswordHash = PasswordHasher.Hash(request.NewPassword!);
+                user.SecurityStamp++;
+                await db.SaveChangesAsync(ct);
+                await sessions.RevokeAllAsync(user.Id, ct);
+
+                var token = await sessions.CreateAsync(user, null, http.Connection.RemoteIpAddress?.ToString(), ct);
+                SetSessionCookie(http, token, options);
+                return Results.Ok(new TokenResponse(token, new AccountResponse(
+                    user.Username,
+                    user.IsAdmin,
+                    user.Role,
+                    DeletionPendingUntil(user, options),
+                    1500,
+                    0,
+                    0,
+                    0
+                )
+                )
+                );
+            }
+        );
+
+        // POST, not DELETE: a JSON body on DELETE is not inferred by minimal APIs, and the
+        // password must not travel in a URL.
+        auth.MapPost(
+            "/password/remove",
+            async (
+                PasswordRemoveRequest request, HttpContext http, ArchiveDbContext db, SessionService sessions,
+                CancellationToken ct
+            ) =>
+            {
+                var user = await http.GetUserAsync(db, ct);
+                if (user is null)
+                    return Results.Unauthorized();
+
+                // Removing the only sign-in method would make the account unreachable.
+                var hasDiscord = await db.ExternalLogins.AnyAsync(l => l.UserId == user.Id, ct);
+                if (!hasDiscord)
+                    return Results.BadRequest(new { error = "Link another sign-in method before removing the password." });
+
+                if (user.PasswordHash is { } hash && !PasswordHasher.Verify(request.CurrentPassword ?? "", hash))
+                    return Results.BadRequest(new { error = "The current password is wrong." });
+
+                user.PasswordHash = null;
+                user.SecurityStamp++;
+                await db.SaveChangesAsync(ct);
+                await sessions.RevokeAllAsync(user.Id, ct);
+                return Results.NoContent();
+            }
+        );
+
+        auth.MapPost(
+            "/discord/unlink",
+            async (HttpContext http, ArchiveDbContext db, SessionService sessions, CancellationToken ct) =>
+            {
+                var user = await http.GetUserAsync(db, ct);
+                if (user is null)
+                    return Results.Unauthorized();
+
+                if (user.PasswordHash is null)
+                    return Results.BadRequest(new { error = "Add a password before unlinking Discord." });
+
+                await db.ExternalLogins
+                .Where(l => l.UserId == user.Id && l.Provider == "discord")
+                .ExecuteDeleteAsync(ct);
+                await db.SaveChangesAsync(ct);
+                return Results.NoContent();
+            }
+        );
     }
+
+    private static object VerifyShape(User user) => new
+    {
+        AccountId = user.Id,
+        user.Username,
+        Role = user.Role,
+        ModerationRevision = user.ModerationRevision,
+        Banned = user.IsBanned(DateTimeOffset.UtcNow),
+        user.BannedUntil,
+        user.BanReason,
+        user.KickedUntil,
+        Muted = user.IsMuted(DateTimeOffset.UtcNow),
+        user.MutedUntil,
+        user.MuteReason
+    };
+
+    private static DateTimeOffset? DeletionPendingUntil(User user, ArchiveOptions options)
+        => user.DeletionRequestedAt is { } requested ? requested + options.DeletionGracePeriod : null;
 
     /// <summary>
     /// Issues the session as an HttpOnly cookie as well as returning it in the body. The game

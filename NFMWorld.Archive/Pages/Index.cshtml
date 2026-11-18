@@ -6,9 +6,9 @@
 
 <h1>@Model.Account!.Username</h1>
 
-@if (Model.Account.IsAdmin)
+@if (Model.Account.Role >= NFMWorldLibrary.Multiplayer.UserRole.Moderator)
 {
-    <p class="muted">Administrator</p>
+    <p class="muted">@Model.Account.Role</p>
 }
 
 <h2>Ratings</h2>

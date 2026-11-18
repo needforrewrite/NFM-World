@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations.Schema;
+using NFMWorldLibrary.Multiplayer;
+
 namespace NFMWorld.Archive.Data;
 
 public sealed class User
@@ -12,7 +15,35 @@ public sealed class User
     /// <summary>Null for accounts that only sign in through Discord.</summary>
     public string? PasswordHash { get; set; }
 
-    public bool IsAdmin { get; set; }
+    /// <summary>Staff level; <see cref="UserRole.User"/> for everyone else.</summary>
+    public UserRole Role { get; set; }
+
+    [NotMapped] public bool IsAdmin => Role == UserRole.Admin;
+
+    [NotMapped] public bool IsModerator => Role >= UserRole.Moderator;
+
+    /// <summary>
+    /// <see cref="DateTimeOffset.MaxValue"/> for a permanent ban, null when never banned: "expired"
+    /// and "never banned" must stay distinguishable.
+    /// </summary>
+    public DateTimeOffset? BannedUntil { get; set; }
+
+    public string? BanReason { get; set; }
+
+    /// <summary>A kick with a cooldown: refused lobby admission, but sign-in and uploads still work.</summary>
+    public DateTimeOffset? KickedUntil { get; set; }
+
+    public DateTimeOffset? MutedUntil { get; set; }
+    public string? MuteReason { get; set; }
+
+    /// <summary>When the account asked to be erased; the sweeper acts after the grace period.</summary>
+    public DateTimeOffset? DeletionRequestedAt { get; set; }
+
+    /// <summary>Set on erasure. The row survives as an anonymous tombstone that owns the uploads.</summary>
+    public DateTimeOffset? DeletedAt { get; set; }
+
+    /// <summary>Bumped by every action a live lobby connection has to notice.</summary>
+    public int ModerationRevision { get; set; }
 
     /// <summary>Bumped to invalidate every existing session, e.g. after a password change.</summary>
     public int SecurityStamp { get; set; }
@@ -25,6 +56,41 @@ public sealed class User
     public List<ExternalLogin> ExternalLogins { get; set; } = [];
     public List<TimeTrial> TimeTrials { get; set; } = [];
     public List<Rating> Ratings { get; set; } = [];
+
+    public bool IsBanned(DateTimeOffset now) => BannedUntil is { } until && until > now;
+
+    public bool IsMuted(DateTimeOffset now) => MutedUntil is { } until && until > now;
+
+    public bool IsKicked(DateTimeOffset now) => KickedUntil is { } until && until > now;
+
+    /// <summary>An erased account keeps its row as a tombstone; it is never offered as a person.</summary>
+    [NotMapped]
+    public bool IsDeleted => DeletedAt is not null;
+}
+
+/// <summary>
+/// One applied moderation action, by web UI or chat command. No foreign key: the log must survive
+/// the erasure of either side, and <see cref="TargetName"/> is the name as it was at the time.
+/// </summary>
+public sealed class ModerationAction
+{
+    public long Id { get; set; }
+
+    public int? ActorUserId { get; set; }
+    public string? ActorName { get; set; }
+
+    public int? TargetUserId { get; set; }
+
+    public required string TargetName { get; set; }
+
+    public ModerationActionKind Action { get; set; }
+
+    public string? Reason { get; set; }
+
+    /// <summary>End of a temporary action; null for a permanent or instant one.</summary>
+    public DateTimeOffset? ExpiresAt { get; set; }
+
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
 /// <summary>

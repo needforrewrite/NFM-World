@@ -20,6 +20,7 @@ public sealed class ArchiveDbContext(DbContextOptions<ArchiveDbContext> options)
     public DbSet<Match> Matches => Set<Match>();
     public DbSet<MatchParticipant> MatchParticipants => Set<MatchParticipant>();
     public DbSet<TimeTrial> TimeTrials => Set<TimeTrial>();
+    public DbSet<ModerationAction> ModerationActions => Set<ModerationAction>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -28,6 +29,8 @@ public sealed class ArchiveDbContext(DbContextOptions<ArchiveDbContext> options)
                 // Case-insensitive uniqueness is enforced with a normalised column, because SQLite's
                 // NOCASE only folds ASCII and usernames may not be.
                 e.HasIndex(u => u.UsernameNormalized).IsUnique();
+                // Public lists skip tombstones; the index keeps that cheap.
+                e.HasIndex(u => u.DeletedAt);
                 e.Property(u => u.Username).HasMaxLength(32);
                 e.Property(u => u.UsernameNormalized).HasMaxLength(32);
             }
@@ -106,6 +109,13 @@ public sealed class ArchiveDbContext(DbContextOptions<ArchiveDbContext> options)
                 e.HasIndex(t => new { t.UserId, t.StageHash, t.CarHash }).IsUnique();
                 e.HasIndex(t => new { t.StageHash, t.CarHash, t.TotalTicks });
                 e.HasOne(t => t.User).WithMany(u => u.TimeTrials).OnDelete(DeleteBehavior.Cascade);
+            }
+        );
+
+        model.Entity<ModerationAction>(e =>
+            {
+                e.HasIndex(a => new { a.TargetUserId, a.Id });
+                e.HasIndex(a => a.CreatedAt);
             }
         );
     }

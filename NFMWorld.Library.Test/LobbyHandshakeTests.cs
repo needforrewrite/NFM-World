@@ -24,7 +24,9 @@ public class LobbyHandshakeTests
             => Task.FromResult(
                 new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = JsonContent.Create(new ArchiveAccount(42, "account-name"))
+                    Content = JsonContent.Create(
+                        new ArchiveAccount(42, "account-name", UserRole.User, 0, false, null, null, null, false, null, null)
+                    )
                 }
             );
     }

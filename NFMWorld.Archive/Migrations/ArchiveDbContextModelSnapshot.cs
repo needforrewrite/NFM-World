@@ -16,7 +16,7 @@ namespace NFMWorld.Archive.Migrations
         // If you encounter a merge conflict in the line below, it means you need to
         // discard one of the migration branches and recreate its migrations on top of
         // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-        public override string LatestMigrationId => "20261111160633_AddAssetValidation";
+        public override string LatestMigrationId => "20261118045058_ModerationRoles";
 
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
@@ -275,6 +275,47 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
+            modelBuilder.Entity("NFMWorld.Archive.Data.ModerationAction", b =>
+                {
+                    b.Property<long>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
+
+                    b.Property<byte>("Action")
+                    .HasColumnType("INTEGER");
+
+                    b.Property<string>("ActorName")
+                    .HasColumnType("TEXT");
+
+                    b.Property<int?>("ActorUserId")
+                    .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                    .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                    .HasColumnType("TEXT");
+
+                    b.Property<string>("Reason")
+                    .HasColumnType("TEXT");
+
+                    b.Property<string>("TargetName")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                    b.Property<int?>("TargetUserId")
+                    .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("TargetUserId", "Id");
+
+                    b.ToTable("ModerationActions");
+                }
+            );
+
             modelBuilder.Entity("NFMWorld.Archive.Data.OauthPending", b =>
                 {
                     b.Property<int>("Id")
@@ -438,17 +479,41 @@ namespace NFMWorld.Archive.Migrations
                     .ValueGeneratedOnAdd()
                     .HasColumnType("INTEGER");
 
+                    b.Property<string>("BanReason")
+                    .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset?>("BannedUntil")
+                    .HasColumnType("TEXT");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                     .HasColumnType("TEXT");
 
-                    b.Property<bool>("IsAdmin")
-                    .HasColumnType("INTEGER");
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                    .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset?>("DeletionRequestedAt")
+                    .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset?>("KickedUntil")
+                    .HasColumnType("TEXT");
 
                     b.Property<DateTimeOffset?>("LastSeenAt")
                     .HasColumnType("TEXT");
 
+                    b.Property<int>("ModerationRevision")
+                    .HasColumnType("INTEGER");
+
+                    b.Property<string>("MuteReason")
+                    .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset?>("MutedUntil")
+                    .HasColumnType("TEXT");
+
                     b.Property<string>("PasswordHash")
                     .HasColumnType("TEXT");
+
+                    b.Property<byte>("Role")
+                    .HasColumnType("INTEGER");
 
                     b.Property<int>("SecurityStamp")
                     .HasColumnType("INTEGER");
@@ -464,6 +529,8 @@ namespace NFMWorld.Archive.Migrations
                     .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DeletedAt");
 
                     b.HasIndex("UsernameNormalized")
                     .IsUnique();

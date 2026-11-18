@@ -25,6 +25,8 @@ public class GameOrchestrator
     private readonly ArchiveClient? _archive;
     private readonly Lock _authenticationLock = new();
 
+    private int _moderationPollRunning;
+
     /// <summary>Matches handed to a game master and not yet reported back, keyed by match key.</summary>
     private readonly ConcurrentDictionary<Guid, PendingMatch> _pendingMatches = new();
 
@@ -200,6 +202,7 @@ public class GameOrchestrator
         {
             _sessions.PruneFinished();
             _broadcaster.BroadcastToAll();
+            PollModeration();
 
             foreach (var session in _sessions.CheckTimeouts())
             {
@@ -216,6 +219,80 @@ public class GameOrchestrator
 
             Thread.Sleep(1000);
         }
+    }
+
+    /// <summary>
+    /// Re-reads moderation state for a bounded batch of due players once per tick, so a web-UI
+    /// ban lands on a live connection within a few seconds without a lobby restart.
+    /// </summary>
+    private void PollModeration()
+    {
+        if (_archive is not { CanModerate: true })
+            return;
+
+        var now = DateTimeOffset.UtcNow;
+        var due = _players.All
+            .Select(p => p.Value)
+            .Where(p => p.IsAuthenticated && p.AccountId > 0 && now - p.LastModerationPoll > TimeSpan.FromSeconds(5))
+            .OrderBy(p => p.LastModerationPoll)
+            .Take(8)
+            .ToArray();
+        if (due.Length == 0)
+            return;
+
+        if (Interlocked.CompareExchange(ref _moderationPollRunning, 1, 0) != 0)
+            return;
+
+        _ = Task.Run(async () =>
+            {
+                try
+                {
+                    foreach (var player in due)
+                    {
+                        player.LastModerationPoll = DateTimeOffset.UtcNow;
+                        var account = await _archive.RevalidateAsync(player.AccountId, CancellationToken.None);
+                        if (account is null)
+                            continue;
+
+                        var changed = account.ModerationRevision != player.ModerationRevision;
+                        player.ModerationRevision = account.ModerationRevision;
+                        player.KickedUntil = account.KickedUntil;
+                        player.Muted = account.Muted;
+                        player.MutedUntil = account.MutedUntil;
+                        player.Banned = account.Banned;
+                        player.BannedUntil = account.BannedUntil;
+                        player.BanReason = account.BanReason;
+                        player.MuteReason = account.MuteReason;
+
+                        if (!changed)
+                            continue;
+
+                        if (account.Banned)
+                        {
+                            _chat.SendNotice(player.Id, "You are banned.", fatal: true);
+                            _transport.DisconnectClient(player.ClientIndex);
+                        }
+                        else if (account.KickedUntil is { } kicked && kicked > DateTimeOffset.UtcNow)
+                        {
+                            _chat.SendNotice(player.Id, "You were kicked.", fatal: true);
+                            _transport.DisconnectClient(player.ClientIndex);
+                        }
+                        else if (account.Muted)
+                        {
+                            _chat.SendNotice(player.Id, "You are muted.", fatal: false);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logging.Warning($"[Lobby] Moderation poll failed: {ex.Message}");
+                }
+                finally
+                {
+                    Interlocked.Exchange(ref _moderationPollRunning, 0);
+                }
+            }
+        );
     }
 
     // ── Transport events ─────────────────────────────────────────────
@@ -434,6 +511,32 @@ public class GameOrchestrator
 
                     client.AccountId = account!.AccountId;
                     client.Name = account.Username;
+                    client.Role = account.Role;
+                    client.ModerationRevision = account.ModerationRevision;
+                    client.KickedUntil = account.KickedUntil;
+                    client.Muted = account.Muted;
+                    client.MutedUntil = account.MutedUntil;
+                    client.Banned = account.Banned;
+                    client.BannedUntil = account.BannedUntil;
+                    client.BanReason = account.BanReason;
+                    client.MuteReason = account.MuteReason;
+                    client.LastModerationPoll = DateTimeOffset.UtcNow;
+
+                    if (account.Banned)
+                    {
+                        var until = account.BannedUntil == DateTimeOffset.MaxValue
+                            ? ""
+                            : $" until {account.BannedUntil:yyyy-MM-dd}";
+                        RefuseAuthentication(clientIndex, "You are banned: " + account.BanReason + until);
+                        return;
+                    }
+
+                    if (account.KickedUntil is { } kicked && kicked > DateTimeOffset.UtcNow)
+                    {
+                        RefuseAuthentication(clientIndex, $"You were kicked; try again after {kicked:yyyy-MM-dd}.");
+                        return;
+                    }
+
                     client.IsAuthenticated = true;
                     SendAuthenticated(clientIndex, true, account.Username, null, account.AccountId);
                     _broadcaster.BroadcastToAll();
@@ -502,8 +605,7 @@ public class GameOrchestrator
     private void HandleCreateSession(uint clientId, C2S_CreateSession create)
     {
         var player = _players.Get(clientId);
-        if (player is null) return;
-
+        if (player is null || player.Banned) return;
         if (!MultiplayerContentPolicy.IsAcceptedStage(create.StageName))
         {
             _chat.BroadcastSystem($"{player.Name} chose a stage that is not available online.");
@@ -535,7 +637,7 @@ public class GameOrchestrator
     private void HandleJoinSession(uint clientId, C2S_JoinSession join)
     {
         var player = _players.Get(clientId);
-        if (player is null) return;
+        if (player is null || player.Banned) return;
 
         var (joined, left) = _sessions.JoinSession(clientId, join.SessionId);
 
@@ -556,7 +658,7 @@ public class GameOrchestrator
     private async Task HandleSpectateSessionAsync(uint clientId, C2S_SpectateSession spectate)
     {
         var player = _players.Get(clientId);
-        if (player is null || player.IsInGame) return;
+        if (player is null || player.IsInGame || player.Banned) return;
 
         if (!_sessionMatches.TryGetValue(spectate.SessionId, out var matchKey)
             || !_pendingMatches.TryGetValue(matchKey, out var pending))
@@ -627,8 +729,126 @@ public class GameOrchestrator
     private void HandleChatMessage(uint clientId, C2S_LobbyChatMessage chat)
     {
         var player = _players.Get(clientId);
-        if (player is not null && !player.IsInGame)
-            _chat.SendChatMessage(player.Id, chat.Message);
+        if (player is null || player.IsInGame)
+            return;
+
+        if (chat.Message.StartsWith('/'))
+        {
+            HandleModerationCommand(clientId, chat.Message);
+            return;
+        }
+
+        if (player.Muted)
+        {
+            _chat.SendNotice(player.Id, "You are muted.", fatal: false);
+            return;
+        }
+
+        _chat.SendChatMessage(player.Id, chat.Message);
+    }
+
+    /// <summary>
+    /// Applies a chat command, fire-and-forget like authentication because the archive call is
+    /// asynchronous and the transport dispatch is synchronous.
+    /// </summary>
+    private void HandleModerationCommand(uint clientIndex, string text)
+        => _ = HandleModerationCommandAsync(clientIndex, text);
+
+    private async Task HandleModerationCommandAsync(uint clientIndex, string text)
+    {
+        var player = _players.Get(clientIndex);
+        if (player is null)
+            return;
+
+        try
+        {
+            if (player.Role < UserRole.Moderator)
+            {
+                _chat.SendNotice(player.Id, "Unknown command.");
+                return;
+            }
+
+            if (!ModerationCommand.TryParse(text, out var request))
+            {
+                _chat.SendNotice(player.Id, "Unknown command.");
+                return;
+            }
+
+            if (_archive is not { CanModerate: true })
+            {
+                _chat.SendResult(player.Id, false, "Moderation is unavailable on this lobby.");
+                return;
+            }
+
+            var target = _players.All
+                .Select(p => p.Value)
+                .FirstOrDefault(p => p.IsAuthenticated
+                                     && string.Equals(p.Name, request.Target, StringComparison.OrdinalIgnoreCase)
+                );
+            if (target is null)
+            {
+                _chat.SendResult(player.Id, false, "No such player is connected.");
+                return;
+            }
+
+            var (ok, error) = await _archive.ModerateAsync(
+                new ModerationEvent(
+                    player.AccountId,
+                    request.Action,
+                    target.AccountId,
+                    target.Name,
+                    request.Reason,
+                    request.Duration is { } d ? (long)d.TotalSeconds : null,
+                    request.Argument
+                ),
+                CancellationToken.None
+            );
+
+            if (!ok)
+            {
+                _chat.SendResult(player.Id, false, error ?? "The archive refused the action.");
+                return;
+            }
+
+            ApplyLocalModeration(target, request.Action);
+            _chat.SendResult(player.Id, true, $"Applied {request.Action} to {target.Name}.");
+            _chat.BroadcastToStaff($"{player.Name} {request.Action.ToString().ToLowerInvariant()}ed {target.Name}");
+        }
+        catch (Exception ex)
+        {
+            Logging.Error($"[Lobby] Moderation command for client {clientIndex} failed", exception: ex);
+            _chat.SendResult(player.Id, false, "The moderation command failed.");
+        }
+    }
+
+    /// <summary>Immediate local effects after the archive accepted an action.</summary>
+    private void ApplyLocalModeration(PlayerRegistry.ClientInfo target, ModerationActionKind action)
+    {
+        switch (action)
+        {
+            case ModerationActionKind.Kick:
+            case ModerationActionKind.TempKick:
+            case ModerationActionKind.Ban:
+            case ModerationActionKind.TempBan:
+                _chat.SendNotice(target.Id, "You were kicked by a moderator.", fatal: true);
+                _chat.PurgeLines(target.Id);
+                _transport.DisconnectClient(target.ClientIndex);
+                break;
+
+            case ModerationActionKind.Mute:
+            case ModerationActionKind.TempMute:
+                target.Muted = true;
+                _chat.PurgeLines(target.Id);
+                break;
+
+            case ModerationActionKind.Unmute:
+                target.Muted = false;
+                break;
+
+            default:
+                _chat.PurgeLines(target.Id);
+                break;
+        }
     }
 
     private void HandlePlayerReady(uint clientId, C2S_LobbyPlayerReadyState ready)
@@ -659,7 +879,9 @@ public class GameOrchestrator
                 Color = p.Color,
                 CarColors = p.CarColors,
                 Wheels = p.Wheels,
-                AccountId = p.AccountId
+                AccountId = p.AccountId,
+                Banned = p.Banned,
+                Muted = p.Muted
             };
         }
 
@@ -675,6 +897,14 @@ public class GameOrchestrator
             Parameters = new(session.GamemodeParameters),
             Players = playerInfos
         };
+
+        // A ban that lands mid-preparation must not hand out a join token to a banned slot.
+        if (playerInfos.Values.Any(p => p.Banned))
+        {
+            _chat.BroadcastSystem("A player in this session is banned.");
+            FailRaceStart(session.Id, "A player in this session is banned.");
+            return;
+        }
 
         // The last word before a race is created: every slot's car and the stage are checked
         // again, because player identities and bots are assembled from what clients sent.

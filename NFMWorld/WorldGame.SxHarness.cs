@@ -67,7 +67,10 @@ public partial class WorldGame
             "stage-select-compact" => new FixturePhase(StageSelectCompactFixture),
             "lobby-create" => new FixturePhase(LobbyCreateFixture),
             "main-menu" => new FixturePhase(() => MainMenuFixture(
-                config.TryGetProperty("signedIn", out var signedIn) && signedIn.GetBoolean()
+                config.TryGetProperty("signedIn", out var signedIn) && signedIn.GetBoolean(),
+                config.TryGetProperty("deletionPending", out var deletionPending)
+                    ? deletionPending.GetString() ?? ""
+                    : ""
             )
             ),
             "text-input" => new FixturePhase(TextInputFixture),
@@ -360,7 +363,7 @@ public partial class WorldGame
     /// The real main menu: the page list plus the account chip in the corner. The stage
     /// name stands in for the attract stage the phase would load.
     /// </summary>
-    private static Node MainMenuFixture(bool signedIn)
+    private static Node MainMenuFixture(bool signedIn, string deletionPending)
     {
         var state = UiState.MainMenu;
         state.StageName.Value = "Twisted Magic";
@@ -369,7 +372,8 @@ public partial class WorldGame
         state.GarageOpen.Value = false;
         state.Set(signedIn ? "twisted_magic" : null, signedIn);
         MainMenuView.Reset();
-        AccountView.Reset();
+        if (signedIn && deletionPending.Length > 0)
+            AccountView.Show();
 
         var logo = TheGraphics.G.LoadImage("data/images/logo.svg");
 
@@ -405,10 +409,12 @@ public partial class WorldGame
                         SignIn: static (_, _) => { },
                         Register: static () => { },
                         SignOut: AccountView.Hide,
-                        Close: AccountView.Hide
+                        Close: AccountView.Hide,
+                        ManageAccount: static () => { }
                     ),
                     () => state.IsLoggedIn.Value,
-                    () => state.PlayerName.Value
+                    () => state.PlayerName.Value,
+                    () => deletionPending
                 )
             ]
         );

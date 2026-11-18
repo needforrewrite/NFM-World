@@ -1,10 +1,23 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using NFMWorldLibrary.Multiplayer;
 
 namespace NFMWorldLibrary.Multiplayer.Archive;
 
-public sealed record ArchiveAccount(int AccountId, string Username);
+public sealed record ArchiveAccount(
+    int AccountId,
+    string Username,
+    UserRole Role,
+    int ModerationRevision,
+    bool Banned,
+    DateTimeOffset? BannedUntil,
+    string? BanReason,
+    DateTimeOffset? KickedUntil,
+    bool Muted,
+    DateTimeOffset? MutedUntil,
+    string? MuteReason
+);
 
 /// <summary>
 /// What the archive said about a token. <see cref="Unavailable"/> is not a rejection: the lobby
@@ -53,6 +66,7 @@ public sealed class ArchiveClient
     }
 
     public bool CanReportResults => _keyId is not null && _secret is not null;
+    public bool CanModerate => _keyId is not null && _secret is not null;
 
     /// <summary>
     /// Resolves an account token to an account. A token the archive refuses is
@@ -121,4 +135,74 @@ public sealed class ArchiveClient
             return false;
         }
     }
+
+    /// <summary>Applies a moderation action, signed with the server key. Returns ok/error.</summary>
+    public async Task<(bool Ok, string? Error)> ModerateAsync(ModerationEvent request, CancellationToken ct)
+    {
+        if (_keyId is null || _secret is null)
+            throw new InvalidOperationException("This archive client has no server key; it cannot moderate.");
+
+        var body = JsonSerializer.SerializeToUtf8Bytes(request, JsonSerializerOptions.Web);
+        var nonce = Guid.NewGuid().ToString("N");
+        var authHeader = HmacAuth.SignWithNonce("POST", "/moderation/events", body, _keyId, _secret, nonce);
+
+        using var http = new HttpRequestMessage(HttpMethod.Post, new Uri(_baseUri, "moderation/events"))
+        {
+            Content = new ByteArrayContent(body)
+        };
+        http.Headers.Authorization = AuthenticationHeaderValue.Parse(authHeader);
+
+        try
+        {
+            using var response = await _http.SendAsync(http, ct);
+            if (!response.IsSuccessStatusCode)
+                return (false, $"The archive refused the action ({(int)response.StatusCode}).");
+
+            var result = await response.Content.ReadFromJsonAsync<ModerationResult>(ct);
+            return result is null ? (false, "The archive returned no answer.") : (result.Ok, result.Error);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            Logging.Warning($"[Archive] Moderation request failed: {ex.Message}");
+            return (false, "The archive could not be reached.");
+        }
+    }
+
+    /// <summary>Re-reads one account's moderation state, signed with the server key.</summary>
+    public async Task<ArchiveAccount?> RevalidateAsync(int accountId, CancellationToken ct)
+    {
+        if (_keyId is null || _secret is null)
+            return null;
+
+        var path = $"auth/account/{accountId}";
+        var authHeader = HmacAuth.Sign("GET", "/" + path, ReadOnlySpan<byte>.Empty, _keyId, _secret);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(_baseUri, path));
+        request.Headers.Authorization = AuthenticationHeaderValue.Parse(authHeader);
+
+        try
+        {
+            using var response = await _http.SendAsync(request, ct);
+            if (!response.IsSuccessStatusCode)
+                return null;
+            return await response.Content.ReadFromJsonAsync<ArchiveAccount>(ct);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            Logging.Warning($"[Archive] Account revalidation failed: {ex.Message}");
+            return null;
+        }
+    }
 }
+
+public sealed record ModerationEvent(
+    int ActorAccountId,
+    ModerationActionKind Action,
+    int TargetAccountId,
+    string TargetUsername,
+    string? Reason,
+    long? DurationSeconds,
+    string? Argument
+);
+
+internal sealed record ModerationResult(bool Ok, string? Error);

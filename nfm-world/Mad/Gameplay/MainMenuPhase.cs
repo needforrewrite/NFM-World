@@ -49,6 +49,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private string _appliedMenuMusic;
     private bool _appliedRemasteredMusic;
     private (string Host, ushort Port, bool Insecure)? _lobbyAfterSignIn;
+    private bool _warnedDeletion;
 
     public override bool EnableUiInput => CurrentStage is not null && _menuVisible
                                           && (_transitionTime < 0 || (_transitionToMenu && _transitionSwitched));
@@ -112,10 +113,14 @@ public class MainMenuPhase : BaseStageRenderingPhase
                         SignIn: OnSignIn,
                         Register: OnRegister,
                         SignOut: OnSignOut,
-                        Close: CloseAccount
+                        Close: CloseAccount,
+                        ManageAccount: OnManageAccount
                     ),
                     () => GameSparker.AccountManager.LoggedIn,
-                    () => GameSparker.AccountManager.ActiveAccount?.Username ?? ""
+                    () => GameSparker.AccountManager.ActiveAccount?.Username ?? "",
+                    () => GameSparker.AccountManager.ActiveAccount?.DeletionPendingUntil is { } d
+                        ? d.UtcDateTime.ToString("yyyy-MM-dd")
+                        : ""
                 )
             ]
         ),
@@ -143,6 +148,12 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private void OnRegister()
     {
         var result = GameSparker.AccountManager.OpenRegistration();
+        AccountView.SetStatus((result.Success ? "" : "!") + result.Message, isError: !result.Success);
+    }
+
+    private void OnManageAccount()
+    {
+        var result = GameSparker.AccountManager.OpenAccountSecurity();
         AccountView.SetStatus((result.Success ? "" : "!") + result.Message, isError: !result.Success);
     }
 
@@ -183,6 +194,9 @@ public class MainMenuPhase : BaseStageRenderingPhase
         }
 
         if (CurrentStage is not null) UiState.MainMenu.StageName.Value = CurrentStage.Backend.Name;
+
+        _ = GameSparker.AccountManager.RefreshAsync();
+        WarnIfDeletionPending();
         base.Enter();
     }
 
@@ -270,6 +284,24 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private void OnActiveAccountChanged(Account? account)
     {
         UiState.MainMenu.Set(account?.Username, account != null);
+        WarnIfDeletionPending();
+    }
+
+    private void WarnIfDeletionPending()
+    {
+        if (_warnedDeletion)
+            return;
+
+        var account = GameSparker.AccountManager.ActiveAccount;
+        if (account?.DeletionPendingUntil is not { } until)
+            return;
+
+        _warnedDeletion = true;
+        GameSparker.MessageWindow.ShowMessage(
+            "Account deletion scheduled",
+            $"Your account is scheduled for deletion on {until.UtcDateTime:yyyy-MM-dd}. "
+            + "Manage it from the account security page in your browser."
+        );
     }
 
     private void OnMultiplayerClicked()

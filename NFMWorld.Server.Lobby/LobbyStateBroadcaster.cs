@@ -46,7 +46,8 @@ public class LobbyStateBroadcaster(
                     CarName = client.Vehicle,
                     Color = client.Color,
                     CarColors = client.CarColors,
-                    Wheels = client.Wheels
+                    Wheels = client.Wheels,
+                    Role = client.Role
                 }
             );
         }

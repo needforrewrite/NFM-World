@@ -1,0 +1,56 @@
+@page "/account/security"
+@model NFMWorld.Archive.Pages.Account.SecurityModel
+@{
+    ViewData["Title"] = "Security";
+    var hasPassword = Model.HasPassword;
+    var hasDiscord = Model.Providers.Any();
+}
+<h1>Security</h1>
+
+@if (Model.Status is { } status)
+{
+    <p class="@(Model.StatusIsError ? "error" : "")" role="status">@status</p>
+}
+
+<section class="asset-edit">
+    <h2>Sign-in methods</h2>
+    <p class="muted">
+        @(hasDiscord ? "Discord is linked." : "Discord is not linked.")
+        @(hasPassword ? "Password is set." : "No password: sign-in is Discord only.")
+    </p>
+</section>
+
+<section class="asset-edit">
+    <h2>Password</h2>
+    <form method="post" asp-page-handler="SavePassword">
+        <label>Current password (leave empty for a Discord-only account)<input type="password" asp-for="CurrentPassword" /></label>
+        <label>New password<input type="password" asp-for="NewPassword" /></label>
+        <label>Confirm new password<input type="password" asp-for="ConfirmPassword" /></label>
+        <button type="submit">@(hasPassword ? "Change password" : "Add password")</button>
+    </form>
+    @if (hasPassword)
+    {
+        <form method="post" asp-page-handler="RemovePassword" style="margin-top: 1rem;">
+            <label>Current password<input type="password" asp-for="CurrentPassword" /></label>
+            <button type="submit" class="secondary">Remove password</button>
+        </form>
+    }
+</section>
+
+<section class="asset-edit">
+    <h2>Discord</h2>
+    @if (hasDiscord)
+    {
+        <form method="post" asp-page-handler="UnlinkDiscord">
+            <button type="submit" class="secondary">Unlink Discord</button>
+        </form>
+    }
+    else
+    {
+        <form method="post" action="/auth/discord/link/start">
+            <button type="submit">Link Discord</button>
+        </form>
+    }
+</section>
+
+<p><a href="/account/deletion">Delete account</a></p>

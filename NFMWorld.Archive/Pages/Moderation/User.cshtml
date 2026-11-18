@@ -1,0 +1,127 @@
+@page "/moderation/user/{id:int}"
+@model NFMWorld.Archive.Pages.Moderation.UserModel
+@{
+    var target = Model.Target!;
+    ViewData["Title"] = "Moderate " + target.Username;
+}
+
+<h1>@target.Username <span class="muted">(#@target.Id)</span></h1>
+
+@if (Model.Status is { } status)
+{
+    <p role="status">@status</p>
+}
+
+<dl class="asset-meta">
+    <dt>Role</dt><dd>@target.Role</dd>
+    <dt>Banned</dt><dd>@(target.IsBanned(DateTimeOffset.UtcNow) ? $"until {target.BannedUntil}" : "no")</dd>
+    <dt>Muted</dt><dd>@(target.IsMuted(DateTimeOffset.UtcNow) ? $"until {target.MutedUntil}" : "no")</dd>
+    <dt>Deletion requested</dt><dd>@(target.DeletionRequestedAt?.UtcDateTime.ToString("yyyy-MM-dd") ?? "—")</dd>
+    <dt>Deleted</dt><dd>@(target.IsDeleted ? "yes" : "no")</dd>
+</dl>
+
+@{
+    async Task Form(string handler, string label, bool admin = false, string? extra = null)
+    {
+        @if (admin && !Model.IsAdmin) { return; }
+        <form method="post" asp-page-handler="@handler" asp-route-id="@target.Id" class="moderation-action">
+            <button type="submit" class="secondary">@label</button>
+            <label>Reason <input asp-for="Reason" /></label>
+            @if (extra is not null)
+            {
+                <label>Duration <input asp-for="Duration" placeholder="@extra" /></label>
+            }
+            <input type="hidden" asp-for="TargetId" value="@target.Id" />
+        </form>
+    }
+}
+
+<section>
+    <h2>Role</h2>
+    @if (Model.IsAdmin)
+    {
+        <form method="post" asp-page-handler="SetRole" asp-route-id="@target.Id">
+            <label>Role <input asp-for="Argument" placeholder="User/Moderator/Admin" /></label>
+            <button type="submit">Set role</button>
+        </form>
+    }
+</section>
+
+<section>
+    <h2>Ban / mute / kick</h2>
+    @{ await Form("Ban", "Ban"); }
+    @{ await Form("TempBan", "Temporary ban", extra: "7d"); }
+    @{ await Form("Unban", "Unban"); }
+    @{ await Form("Mute", "Mute"); }
+    @{ await Form("TempMute", "Temporary mute", extra: "30m"); }
+    @{ await Form("Unmute", "Unmute"); }
+    @{ await Form("Kick", "Kick"); }
+    @{ await Form("TempKick", "Temporary kick", extra: "30m"); }
+</section>
+
+<section>
+    <h2>Content</h2>
+    @{ await Form("Unlist", "Unlist all content"); }
+    @{ await Form("Relist", "Relist all content"); }
+</section>
+
+<section>
+    <h2>Identity</h2>
+    @if (Model.IsAdmin)
+    {
+        <form method="post" asp-page-handler="Rename" asp-route-id="@target.Id">
+            <label>New name <input asp-for="Argument" /></label>
+            <button type="submit">Rename</button>
+        </form>
+        <form method="post" asp-page-handler="SetPassword" asp-route-id="@target.Id">
+            <label>New password <input asp-for="Argument" /></label>
+            <button type="submit">Set password</button>
+        </form>
+    }
+</section>
+
+<section>
+    <h2>Deletion</h2>
+    @{ await Form("DeleteRequest", "Request deletion"); }
+    @{ await Form("DeleteCancel", "Cancel deletion"); }
+    @if (Model.IsAdmin)
+    {
+        <form method="post" asp-page-handler="DeleteErase" asp-route-id="@target.Id"
+              onsubmit="return confirm('Erase this account now?');">
+            <label>Type the name to confirm <input asp-for="ConfirmName" /></label>
+            <button type="submit" class="error">Erase account now</button>
+        </form>
+    }
+</section>
+
+<section>
+    <h2>Assets (@Model.Assets.Count shown)</h2>
+    <ul>
+        @foreach (var asset in Model.Assets)
+        {
+            <li><a href="/asset/@asset.Id/edit">@asset.Name</a> (@asset.Type)</li>
+        }
+    </ul>
+</section>
+
+<section>
+    <h2>Action history</h2>
+    <div class="overflow-auto">
+        <table>
+            <thead>
+                <tr><th scope="col">When</th><th scope="col">Actor</th><th scope="col">Action</th><th scope="col">Reason</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var action in Model.Actions)
+                {
+                    <tr>
+                        <td>@action.CreatedAt</td>
+                        <td>@action.ActorName</td>
+                        <td>@action.Action</td>
+                        <td>@action.Reason</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

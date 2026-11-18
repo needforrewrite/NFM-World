@@ -38,7 +38,7 @@
             <input asp-for="IsPublic" />
             Listed publicly
         </label>
-        @if (Model.Account!.IsAdmin)
+        @if (Model.Account!.IsModerator)
         {
             <label>
                 <input asp-for="IsTakedown" />

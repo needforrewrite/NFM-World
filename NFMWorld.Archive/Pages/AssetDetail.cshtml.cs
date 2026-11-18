@@ -29,7 +29,7 @@ public sealed class AssetDetailModel(ArchiveDbContext db) : ArchivePageModel(db)
         if (Asset is null)
             return NotFound();
 
-        CanEdit = Account is not null && (Asset.OwnerId == Account.Id || Account.IsAdmin);
+        CanEdit = Account is not null && (Asset.OwnerId == Account.Id || Account.IsModerator);
 
         ViewData["Title"] = Asset.Name;
 

@@ -42,4 +42,7 @@ public sealed class ArchiveOptions
 
     /// <summary>Hard wall clock for one validation. The validator is killed when it expires.</summary>
     public TimeSpan ValidationTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>Grace between a deletion request and the sweep that erases the account.</summary>
+    public TimeSpan DeletionGracePeriod { get; set; } = TimeSpan.FromDays(30);
 }

@@ -78,7 +78,9 @@ public class LobbyAuthenticationTests
 
     private static HttpResponseMessage Account() => new(HttpStatusCode.OK)
     {
-        Content = JsonContent.Create(new ArchiveAccount(42, "account-name"))
+        Content = JsonContent.Create(
+            new ArchiveAccount(42, "account-name", UserRole.User, 0, false, null, null, null, false, null, null)
+        )
     };
 
     private static ArchiveClient Archive(StubArchive handler) => new("https://archive.invalid/", http: new HttpClient(handler));

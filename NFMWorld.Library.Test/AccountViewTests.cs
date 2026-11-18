@@ -34,8 +34,9 @@ public class AccountViewTests
     {
         AccountView.Reset();
         using var mounted = Renderer.Mount(() => AccountView.Build(
-                new AccountView.Actions((_, _) => { }, () => { }, () => { }, AccountView.Hide),
+                new AccountView.Actions((_, _) => { }, () => { }, () => { }, AccountView.Hide, () => { }),
                 () => false,
+                () => "",
                 () => ""
             )
         );
@@ -57,8 +58,9 @@ public class AccountViewTests
         AccountView.Reset();
         AccountView.Show();
         using var mounted = Renderer.Mount(() => AccountView.Build(
-                new AccountView.Actions((_, _) => { }, () => { }, () => { }, AccountView.Hide),
+                new AccountView.Actions((_, _) => { }, () => { }, () => { }, AccountView.Hide, () => { }),
                 () => false,
+                () => "",
                 () => ""
             )
         );
@@ -139,8 +141,9 @@ public class AccountViewTests
         Action signOut,
         Action close
     ) => AccountView.Build(
-        new AccountView.Actions(signIn, register, signOut, close),
+        new AccountView.Actions(signIn, register, signOut, close, () => { }),
         () => false,
+        () => "",
         () => ""
     );
 
