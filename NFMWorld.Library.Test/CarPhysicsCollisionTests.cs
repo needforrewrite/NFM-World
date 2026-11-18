@@ -93,4 +93,87 @@ public class CarPhysicsCollisionTests
             );
         }
     }
+
+    /// <summary>
+    /// A dominant car with <c>Lift</c> must lift the victim even when only the Z momentum branch
+    /// fires (the victim's x-momentum exceeds the dominant car's, so the X branch is skipped).
+    /// The revlift damage gate and the victim's own <c>Lift</c> gate used to share one per-wheel
+    /// counter; a Z-branch fire consumed it and the <c>Lift</c> impulse was silently skipped.
+    /// This is exactly the "lifts barely anyone, but pushes fine" symptom: the victim's wheels
+    /// that only contact along z (the typical rear- or side-hit case) lost their lift impulse
+    /// because the branch that fired for the shove had already spent the gate.
+    /// </summary>
+    [TestMethod]
+    public void Collide_DominantCarLiftsVictimEvenWhenOnlyZBranchFires()
+    {
+        var stage = CreateStage();
+        var heavy = CreateCar("radicalone", 0, isClientPlayer: false); // lift(30)
+        var light = CreateCar("2000tornados", 1, isClientPlayer: true); // lift(0)
+
+        // The first Drive populates the effective (stage-adjusted) stats that Collide reads.
+        heavy.Drive(stage);
+        light.Drive(stage);
+
+        var lift = (Fixed64)heavy.Stats.Lift;
+        Assert.IsTrue(lift > Fixed64.Zero, "the dominant car has no lift to measure");
+
+        // Rear-end geometry matching the test above: the light car sits behind the heavy one
+        // (Z = -90), so the heavy car's rear wheels overlap the light car's rear wheels - the
+        // two victim wheels (2 and 3) that contact.
+        ((ContO)light).Z = -90;
+
+        // Set the wheel momenta so the X branch does NOT fire and the Z branch DOES on the
+        // contacting wheels:
+        //   Scx momentum: |heavy 250 * 1.5| = 375 is not > |light 300 * 1.3| = 390 -> X skipped.
+        //   Scz momentum: |heavy 150 * 1.5| = 225 is > |light 100 * 1.3| = 130   -> Z fires.
+        // In the old code the Z branch's Revlift-damage gate and the victim's own Lift gate
+        // shared one per-wheel counter; the Z branch consumed it and the Lift impulse was
+        // silently skipped for wheels that only contact along z.
+        heavy.CarPhysics.Speed = 350;
+        light.CarPhysics.Speed = 100;
+        for (var i = 0; i < 4; i++)
+        {
+            heavy.CarPhysics.Scx[i] = 250;
+            heavy.CarPhysics.Scz[i] = 150;
+            light.CarPhysics.Scx[i] = 300;
+            light.CarPhysics.Scz[i] = 100;
+        }
+
+        var before = new Fixed64[4];
+        for (var i = 0; i < 4; i++) before[i] = light.CarPhysics.Scy[i];
+
+        heavy.Collide(light, stage);
+
+        // The Z branch fired on the contacting victim wheels: they were pushed in +z by the
+        // dominant car's Push (100 + 150 * 2 * 1 = 400, the impulse itself at the 300 clamp).
+        Assert.AreEqual((Fixed64)400, light.CarPhysics.Scz[2], "Z branch did not fire on the victim");
+        // The X branch was skipped on the same wheels: their lateral velocity is untouched. This
+        // is the regression's setup - with the shared counter, the Z branch's Regy gate would
+        // have consumed the lift gate, so the victim would not be lifted here.
+        Assert.AreEqual((Fixed64)300, light.CarPhysics.Scx[2], "X branch fired; this is not a Z-only collision");
+        var liftedWheels = 0;
+        for (var i = 0; i < 4; i++)
+        {
+            var drop = before[i] - light.CarPhysics.Scy[i];
+            if (drop >= lift - (Fixed64)0.001f)
+            {
+                liftedWheels++;
+            }
+
+            // No wheel may take more than one lift impulse.
+            Assert.IsTrue(
+                drop <= lift + (Fixed64)0.001f,
+                $"wheel {i} took {drop:0.00} of lift, more than one {lift:0.00} kick: "
+                + $"Scy={string.Join(',', Enumerable.Range(0, 4).Select(w => $"{light.CarPhysics.Scy[w]:0.00}"))}"
+            );
+        }
+
+        Assert.AreEqual(
+            2,
+            liftedWheels,
+            $"only {liftedWheels}/2 contacting victim wheels were lifted; the Z branch's "
+            + "Revlift-damage gate consumed the shared lift counter. "
+            + $"drops={string.Join(',', Enumerable.Range(0, 4).Select(w => $"{(before[w] - light.CarPhysics.Scy[w]):0.00}"))}"
+        );
+    }
 }

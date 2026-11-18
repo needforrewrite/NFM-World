@@ -481,8 +481,19 @@ public partial class CarPhysics
             // Revlift is the same for every contact this tick; hoist it so both damage
             // branches use one value (mirrors the original's constant Stat.Revlift).
             var liftY = ownStats.Revlift * recoil;
+            // The dominant car's own revlift kick (Scy) and the matching victim revlift damage
+            // (Regy) are one impulse, gated per wheel. The victim's own Lift kick is a separate
+            // impulse, gated per wheel of the victim. The original applies each per contacting
+            // pair; the once-per-wheel gate keeps a car from getting one wheel knocked 2-4x lower
+            // than its neighbours, which the plane fit then read as a tilted surface.
+            // They must not share a counter: the Regy gate sits inside the Scx/Scz-dominant
+            // branches, but those are independent per axis - a wheel can fire only the Z branch
+            // (the victim still holds more x-momentum than the attacker). A shared gate would let
+            // that Z-branch fire consume the Lift gate, silently skipping the victim's Lift
+            // impulse on every wheel that only contacts along one axis.
             Span<int> ownLiftCount = stackalloc int[4];
-            Span<int> otherLiftCount = stackalloc int[4];
+            Span<int> ownRegyCount = stackalloc int[4];
+            Span<int> victimLiftCount = stackalloc int[4];
             var a = (Scz[0] - othermad.Scz[0] + Scz[1] - othermad.Scz[1] + Scz[2] - othermad.Scz[2] + Scz[3] - othermad.Scz[3]);
             var b = (Scx[0] - othermad.Scx[0] + Scx[1] - othermad.Scx[1] + Scx[2] - othermad.Scx[2] + Scx[3] - othermad.Scx[3]);
             var impactMagnitude = (int)((a * a + b * b) / 16);
@@ -569,7 +580,7 @@ public partial class CarPhysics
                                 othermad._collidingWithClientPlayer = true;
                             }
 
-                            if (otherLiftCount[otherwheel] == 0)
+                            if (ownRegyCount[otherwheel] == 0)
                             {
                                 totalOtherDamage += othermad.Regy(
                                     otherwheel,
@@ -578,7 +589,7 @@ public partial class CarPhysics
                                     random,
                                     sourceCar: Im
                                 );
-                                otherLiftCount[otherwheel]++;
+                                ownRegyCount[otherwheel]++;
                             }
 
                             if (othermad._collidingWithClientPlayer)
@@ -658,7 +669,7 @@ public partial class CarPhysics
                                 othermad._collidingWithClientPlayer = true;
                             }
 
-                            if (otherLiftCount[otherwheel] == 0)
+                            if (ownRegyCount[otherwheel] == 0)
                             {
                                 totalOtherDamage += othermad.Regy(
                                     otherwheel,
@@ -667,7 +678,7 @@ public partial class CarPhysics
                                     random,
                                     sourceCar: Im
                                 );
-                                otherLiftCount[otherwheel]++;
+                                ownRegyCount[otherwheel]++;
                             }
 
                             if (othermad._collidingWithClientPlayer)
@@ -700,7 +711,12 @@ public partial class CarPhysics
                             Lastcolido = 70;
                         }
 
-                        if (otherLiftCount[otherwheel] == 0) othermad.Scy[otherwheel] -= ownStats.Lift;
+                        if (victimLiftCount[otherwheel] == 0)
+                        {
+                            othermad.Scy[otherwheel] -= ownStats.Lift;
+                            victimLiftCount[otherwheel]++;
+                        }
+
                         if (impactMagnitude >= 100 && ownStats.Lift != 0)
                             othermad.RecordDamageSource(Im);
                     }
