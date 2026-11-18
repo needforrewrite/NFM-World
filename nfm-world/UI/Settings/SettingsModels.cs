@@ -35,6 +35,7 @@ public sealed class SettingsSnapshot
     public bool RemasteredMusic { get; set; }
 
     // Game (Camera)
+    public bool LockMouseInGame { get; set; } = true;
     public string HudSkin { get; set; } = HudSkinId.Default;
     public float HudScale { get; set; } = HudScaleSettings.Default;
     public float HudSafeZoneHorizontal { get; set; } = HudSafeZoneSettings.Default;

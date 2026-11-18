@@ -17,9 +17,8 @@ public static class FreePlayRoster
     {
         var opponentCars = withOpponents
             ? BackendGameSparker.cars[Collection.NFMM]
-                .Select(car => car.FileName)
-                .Where(name => !string.Equals(name, playerCar, StringComparison.OrdinalIgnoreCase))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Where(car => !string.Equals(car.FileName, playerCar, StringComparison.OrdinalIgnoreCase))
+                .DistinctBy(car => car.FileName, StringComparer.OrdinalIgnoreCase)
                 .ToArray()
             : [];
 
@@ -39,11 +38,12 @@ public static class FreePlayRoster
 
         for (var i = 1; i < players.Length; i++)
         {
+            var car = opponentCars[i - 1];
             players[i] = new ClientSidePlayerInfo
             {
-                CarName = opponentCars[i - 1],
+                CarName = car.FileName,
                 IsClientPlayer = false,
-                PlayerName = $"ElStupido{i}",
+                PlayerName = string.IsNullOrWhiteSpace(car.Stats.Name) ? car.FileName : car.Stats.Name,
                 Color = default,
                 IsBot = true
             };

@@ -14,6 +14,7 @@ public class FixHoopHelper
         BackendCar car
     )
     {
+        if (car.HasLeftRace) return false;
         for (var i = 0; i < currentStage.FixHoops.Count; i++)
         {
             var fixhoop = currentStage.FixHoops[i];

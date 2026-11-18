@@ -11,6 +11,7 @@ mountains(96062)
 nlaps(2)
 soundtrack(custom,breakthsesedited.mp3)
 lightson()
+stars()
 
 name(Bamboo Cascades)
 

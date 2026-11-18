@@ -9,6 +9,7 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
     private readonly IGraphicsDevice _graphicsDevice;
     private readonly IBuffer _vertexBuffer;
     private readonly int _triangleCount;
+    private readonly Stars _stars;
 
     public override IReadOnlyList<ITransform> ChildTransforms => [];
 
@@ -74,6 +75,7 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
         );
 
         _triangleCount = data.Count / 3;
+        _stars = new Stars(graphicsDevice);
     }
 
     ~Sky()
@@ -122,6 +124,7 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
         p.WorldViewProj.SetValue(cb, viewMatrix * camera.ProjectionMatrix);
 
         cb.Draw(startVertex: 0, primitiveCount: _triangleCount);
+        if (World.DrawStars) _stars.Render(cb, camera);
     }
 
     private void ReleaseUnmanagedResources()
@@ -134,6 +137,7 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
         if (disposing)
         {
             _vertexBuffer.Dispose();
+            _stars.Dispose();
         }
     }
 

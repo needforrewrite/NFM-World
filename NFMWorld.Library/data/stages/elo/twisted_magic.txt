@@ -11,6 +11,7 @@ mountains(820)
 nlaps(4)
 soundtrack(elo,rise_up_oteekMix.mod)
 lightson()
+stars()
 
 name(Twisted Magic)
 desc(It's Magic.)

@@ -12,6 +12,7 @@ public partial interface IGamemodeContext
     BackendStage CurrentStage { get; }
     RaceState RaceState { get; }
     bool IsMultiplayer => false;
+    bool IsSpectating => false;
     IClientCallbacks ClientCallbacks { get; }
 
     /// <summary>

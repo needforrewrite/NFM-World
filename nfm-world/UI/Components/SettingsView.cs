@@ -977,6 +977,16 @@ public static class SettingsView
         Func<Node> menuSettings
     )
         => Content(
+            Section("Mouse"),
+            Row(
+                "Lock mouse during games",
+                Controls.Checkbox(
+                    () => config.Value?.LockMouseInGame ?? true,
+                    () => set("lockMouseInGame", !(config.Value?.LockMouseInGame ?? true), null)
+                )
+            ),
+            Description(() => "Turn off to keep the pointer visible and unlocked."),
+            Divider(),
             Section("HUD"),
             Row("Skin", HudSkinDropdown(config, options, set)),
             Description(() => options.Value?.HudSkins.FirstOrDefault(candidate => candidate.Id == config.Value?.HudSkin) is

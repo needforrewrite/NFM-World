@@ -342,6 +342,38 @@ public class TextInputKeyTests
         Assert.IsFalse(Menu(input).IsDisplayed);
     }
 
+    [TestMethod]
+    public void LongSingleLine_ScrollsToCaret_AndResetsAfterDeletingText()
+    {
+        IBackend.Backend = new StageSelectViewTests.MetricsBackend();
+        var root = MenuRoot(out var input);
+        input.Focus();
+        Type(input, new string('f', 200));
+        root.LayoutAndRender(new Vector2(400, 300));
+
+        var offsetField = typeof(TextInput).GetField(
+            "_horizontalOffset",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
+        )!;
+        float Offset() => (float)offsetField.GetValue(input)!;
+        Assert.IsTrue(Offset() > 0, "the caret must follow the end of a long draft");
+        Assert.AreEqual(300f, input.LayoutBorderSize.X, 0.5f);
+        Assert.AreEqual(30f, input.LayoutBorderSize.Y, 0.5f);
+
+        Press(input, Key.Home);
+        root.LayoutAndRender(new Vector2(400, 300));
+        Assert.AreEqual(0f, Offset(), 0.5f);
+        Press(input, Key.End);
+        root.LayoutAndRender(new Vector2(400, 300));
+        Assert.IsTrue(Offset() > 0);
+
+        RightPress(root, input);
+        Assert.IsTrue(Menu(input).IsDisplayed, "horizontal clipping must not clip the context menu");
+        input.SetText("");
+        root.LayoutAndRender(new Vector2(400, 300));
+        Assert.AreEqual(0f, Offset(), 0.5f);
+    }
+
     // ── Helpers ────────────────────────────────────────────────────
 
     private static View MenuRoot(out TextInput input, float height = 300, float inputTop = 20)

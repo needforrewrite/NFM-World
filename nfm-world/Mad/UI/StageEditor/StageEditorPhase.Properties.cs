@@ -235,7 +235,12 @@ public partial class StageEditorPhase
         PropertySection(
             "SKY",
             200,
-            ColorField("Sky", () => tab.SkyColor, color => { tab.SkyColor = color; StageSkyChanged(); })
+            ColorField("Sky", () => tab.SkyColor, color => { tab.SkyColor = color; StageSkyChanged(); }),
+            PropertyCheckbox(
+                "Stars",
+                () => tab.StarsEnabled,
+                () => { tab.StarsEnabled = !tab.StarsEnabled; StagePropertyChanged(); }
+            )
         ),
         PropertySection(
             "FOG",

@@ -91,7 +91,9 @@ public class UiRenderer : IDisposable
                     ), children: _phaseRoot
                     ),
                     GameSparker.MessageWindow.BuildUi(),
-                    NFMWorld.UI.Components.LoadingOverlay.Build()
+                    NFMWorld.UI.Components.LoadingOverlay.Build(
+                        () => phase is NFMWorld.Gameplay.StageSelectPhase stageSelect && stageSelect.ShowingLoadingOverlay
+                    )
                 ]
             );
             }

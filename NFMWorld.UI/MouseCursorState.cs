@@ -13,13 +13,15 @@ public sealed class MouseCursorState
         bool menuVisible,
         bool windowFocused,
         Vector2 position,
-        Vector2 viewport
+        Vector2 viewport,
+        bool lockDuringGameplay = true
     )
     {
-        Locked = windowFocused && !menuVisible;
+        var free = menuVisible || !lockDuringGameplay;
+        Locked = windowFocused && !free;
         if (!windowFocused) return (true, null);
 
-        if (!menuVisible)
+        if (!free)
         {
             if (!_hidden)
             {

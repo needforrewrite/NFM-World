@@ -23,7 +23,7 @@ public partial struct S2C_LobbyState : IPacketServerToClient<S2C_LobbyState>
 
         /// <summary>
         /// Key: player car index
-        /// Value: client ID
+        /// Value: player ID (human or bot)
         /// </summary>
         [TightPackOrder(4)]
         public required IDictionary<byte, Guid> Players { get; set; }

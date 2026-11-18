@@ -82,4 +82,52 @@ public class MouseCursorStateTests
         Assert.AreEqual(new Vector2(400, 300), centered.WarpTo);
         Assert.IsNull(state.Update(false, true, centered.WarpTo!.Value, viewport).WarpTo);
     }
+
+    [TestMethod]
+    public void LockPreferenceOff_KeepsGameplayPointerVisibleWithoutWarping()
+    {
+        var state = new MouseCursorState();
+        foreach (var chatOpen in new[] { false, true, false })
+        {
+            var result = state.Update(chatOpen, true, new Vector2(300, 200), Viewport, lockDuringGameplay: false);
+            Assert.IsTrue(result.Visible);
+            Assert.IsFalse(state.Locked);
+            Assert.IsNull(result.WarpTo);
+        }
+    }
+
+    [TestMethod]
+    public void Chat_ReleasesPointerAndClosingRespectsLockPreference()
+    {
+        foreach (var lockGameplay in new[] { true, false })
+        {
+            var state = new MouseCursorState();
+            var saved = new Vector2(125, 240);
+            var gameplay = state.Update(false, true, saved, Viewport, lockGameplay);
+            var chat = state.Update(true, true, gameplay.WarpTo ?? saved, Viewport, lockGameplay);
+            Assert.IsTrue(chat.Visible);
+            Assert.IsFalse(state.Locked);
+            var closed = state.Update(false, true, chat.WarpTo ?? saved, Viewport, lockGameplay);
+            Assert.AreEqual(!lockGameplay, closed.Visible);
+            Assert.AreEqual(lockGameplay, state.Locked);
+        }
+    }
+
+    [TestMethod]
+    public void ChangingLockPreference_RestoresAndRecapturesPointerImmediately()
+    {
+        var state = new MouseCursorState();
+        var saved = new Vector2(90, 200);
+        state.Update(false, true, saved, Viewport);
+        var unlocked = state.Update(false, true, Viewport / 2, Viewport, lockDuringGameplay: false);
+        Assert.IsTrue(unlocked.Visible);
+        Assert.IsFalse(state.Locked);
+        Assert.AreEqual(saved, unlocked.WarpTo);
+        var moved = new Vector2(250, 300);
+        var locked = state.Update(false, true, moved, Viewport, lockDuringGameplay: true);
+        Assert.IsFalse(locked.Visible);
+        Assert.IsTrue(state.Locked);
+        Assert.AreEqual(Viewport / 2, locked.WarpTo);
+        Assert.AreEqual(moved, state.Update(true, true, Viewport / 2, Viewport).WarpTo);
+    }
 }

@@ -11,7 +11,7 @@ public partial struct C2S_CreateSession : IPacketClientToServer<C2S_CreateSessio
     [TightPackOrder(2)] public required string GameMode { get; set; }
     [TightPackOrder(3)] public required Dictionary<string, string> GameModeParameters { get; set; }
 
-    /// <summary>Bots to fill the empty slots with when the race starts. Not part of the field size.</summary>
+    /// <summary>Bots reserving slots within MaxPlayers, alongside the creator.</summary>
     [TightPackOrder(4)]
     public int Bots { get; set; }
 }

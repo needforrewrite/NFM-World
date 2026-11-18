@@ -4,6 +4,7 @@ using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Helpers;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
+using NFMWorldLibrary.Multiplayer;
 using NFMWorld.Sentry;
 
 namespace NFMWorldLibrary.Backend;
@@ -35,6 +36,19 @@ public partial class BackendCar : BackendGameObject
     [PluginVisible] public Rad3d Rad { get; }
     [PluginVisible] public CarStats Stats { get; internal set; }
     [PluginVisible] public bool Wasted => CarPhysics.Wasted;
+    [PluginVisible] public bool HasLeftRace => CarPhysics.DepartureReason.HasValue;
+    public PlayerDepartureReason? DepartureReason => CarPhysics.DepartureReason;
+    internal bool AnnounceDeparture { get; private set; }
+
+    public void MarkDeparted(PlayerDepartureReason reason, bool announce = true)
+    {
+        if (HasLeftRace) return;
+        AnnounceDeparture = announce;
+        _fixing = false;
+        _fixTick = _fixTimer = 0;
+        Control.Up = Control.Down = Control.Left = Control.Right = Control.Handb = false;
+        CarPhysics.MarkDeparted(reason);
+    }
 
     public event DamageFunc? DamagedX;
     public event RoofDamageFunc? DamagedY;
@@ -125,6 +139,7 @@ public partial class BackendCar : BackendGameObject
 
     private void IterateFix()
     {
+        if (HasLeftRace) return;
         if (_fixing)
         {
             if (++_fixTick == Physics.OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
@@ -156,6 +171,7 @@ public partial class BackendCar : BackendGameObject
     [PluginVisible]
     public void ResetPosition()
     {
+        if (HasLeftRace) return;
         CarPhysics.Reseto(CarPhysics.Im, this);
         Position = new f64Vector3(fix64.Zero, World.Ground - GroundAt, fix64.Zero);
         Rotation = f64Euler.Identity;
@@ -164,6 +180,7 @@ public partial class BackendCar : BackendGameObject
     [PluginVisible]
     public void Fix()
     {
+        if (HasLeftRace) return;
         _fixing = true;
         Fixed?.Invoke();
     }

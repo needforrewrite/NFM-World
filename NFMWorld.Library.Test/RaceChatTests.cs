@@ -72,4 +72,24 @@ public class RaceChatTests
         Assert.AreEqual("", chat.Draft.Value);
         Assert.AreEqual(0, chat.Lines.Value.Count);
     }
+
+    [TestMethod]
+    public void RecentMessages_FadeWithoutRemovingHistory()
+    {
+        var chat = new RaceChatState();
+        chat.Receive("Racer", "hello", default);
+        var line = chat.Lines.Value.Single();
+        var received = line.ReceivedAtMilliseconds;
+        Assert.AreEqual(1f, line.RecentOpacity(received + 5999));
+        Assert.AreEqual(1f, line.RecentOpacity(received + 6000));
+        Assert.AreEqual(0.5f, line.RecentOpacity(received + 7000));
+        Assert.AreEqual(0f, line.RecentOpacity(received + 8000));
+        Assert.AreEqual(0f, line.RecentOpacity(received + 60000));
+
+        chat.Open.Value = true;
+        Assert.AreSame(line, chat.Lines.Value.Single());
+        chat.Open.Value = false;
+        Assert.AreEqual(received, chat.Lines.Value.Single().ReceivedAtMilliseconds);
+        Assert.AreEqual(0f, line.RecentOpacity(received + 60001));
+    }
 }

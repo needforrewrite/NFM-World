@@ -243,8 +243,8 @@ Gamemodes are compiled `.NET` plugins — the Lua path is gone. Singleplayer and
   `GamemodeCatalog.ConfigProperties(id)`, which loads the plugin only to read its schema and releases it again. Nothing
   in the client hardcodes a gamemode's options.
 - **Bots in a session** — the creator's client simulates every bot it fielded, and only that client
-  (`(player.Info.IsBot && player.Info.OwnerId == ClientPlayer.Info.Id)`). Bots take real slots with fresh ids
-  (`SessionBots.Place`, filled at *race start*, so a human joining the lobby first takes the slot), get no join token,
+  (`(player.Info.IsBot && player.Info.OwnerId == ClientPlayer.Info.Id)`). Bots reserve real lobby slots with fresh ids
+  (`SessionBots.Place`, filled at creation within `MaxPlayers`, including the creator), get no join token,
   and are excluded from the GM's `PlayerCount` — a bot never sends `C2S_RaceLoaded`. Their state is relayed by their
   owner under the *bot's* id (`C2S_PlayerState.PlayerId`), and the GM accepts it only when
   `PlayerInfos[id].IsBot && OwnerId == sender`. A receiving client must not apply relayed state to a car it simulates.
@@ -652,6 +652,18 @@ palette). One lobby; whether a race is rated is chosen per race, not by a menu p
   calls `IGamemode.Forfeit()` (PvP sends `ForfeitEvent`) and then drops the ENet transport in `Dispose` — the server
   places the leaver last and carries on for everyone still racing; the race only ends early when every player has
   forfeited.
+- **Wasted credit.** `CarPhysics.LastDamageFrom` survives subsequent stage damage until two seconds of upright,
+  damage-free wheel contact without skidding, or repair/reset. `PlayerState.DamageSource` carries the owner's credited
+  roster index plus one (zero means no attacker), outside replay frames. The GM orders owner snapshots and emits one
+  reliable chat announcement per wasted transition through `RaceWastedTracker`. Protocol 11 requires matching clients,
+  lobby and GM.
+- **Spectator feedback.** `SpectatorRaceFeedback` follows the camera's car independently of the local driver's
+  announcer, including after death. Target changes seed checkpoint/stunt baselines without playing old events.
+  `PlayerState.CompletedStunt` retains the latest awarded combo and sequence after the live counters clear; predicted
+  remote physics must not overwrite it. Watched progress owns checkpoint sounds and model glow while spectating.
+- **Departures.** ENet disconnect/timeout reasons reach clients through reliable `S2C_PlayerLeft` notices and race
+  chat. Departed racers and their bots stay wasted, including after reconnect; fix hoops, pending repairs, resets
+  and late owner state cannot revive them. Attach replays departed state silently alongside chat history.
 
 | Gotcha | Rule |
 |---|---|

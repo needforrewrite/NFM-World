@@ -17,8 +17,6 @@ public class MadSfx : IDisposable
     private int bfscrape = 0;
     private int sturn0 = 0;
     private int sturn1 = 0;
-    private int bfsc1 = 0;
-    private int bfsc2 = 0;
     private int pwait = 7;
     private int stopcnt = 0;
     private bool grrd = false;
@@ -30,6 +28,11 @@ public class MadSfx : IDisposable
     private int _engineSignature;
     private static readonly int DriftConfirmationTicks = Math.Max(1, (int)MathF.Ceiling(Physics.TargetTps * 0.1f));
     private int _driftTicks;
+
+    // scrape_roof.wav is 0.65 seconds long; offset a second loop by half a clip.
+    private static readonly int RoofScrapeOverlapTicks = (int)MathF.Ceiling(Physics.TargetTps * 0.325f);
+    private int _roofScrapeTicks;
+    private ISoundClip? _roofScrapeOverlap;
 
     private CarPhysics _carPhysics;
     private readonly BackendCar _car;
@@ -48,7 +51,6 @@ public class MadSfx : IDisposable
 
         _carPhysics.SfxPlayCrash += SfxPlayCrash;
         _carPhysics.SfxPlayScrape += SfxPlayScrape;
-        _carPhysics.SfxPlayGscrape += SfxPlayGscrape;
         _carPhysics.SfxPlaySkid += SfxPlaySkid;
         _carPhysics.PowerUp += SfxPlayPowerup;
     }
@@ -101,6 +103,8 @@ public class MadSfx : IDisposable
             OptionalSound(SfxLibrary.wastd)?.Stop();
 
         foreach (var sound in _sounds.Values) sound.Stop();
+        _roofScrapeOverlap?.Stop();
+        _roofScrapeTicks = 0;
 
         grrd = false;
         aird = false;
@@ -116,10 +120,11 @@ public class MadSfx : IDisposable
         Stop();
         _carPhysics.SfxPlayCrash -= SfxPlayCrash;
         _carPhysics.SfxPlayScrape -= SfxPlayScrape;
-        _carPhysics.SfxPlayGscrape -= SfxPlayGscrape;
         _carPhysics.SfxPlaySkid -= SfxPlaySkid;
         _carPhysics.PowerUp -= SfxPlayPowerup;
         foreach (var sound in _sounds.Values) sound.Dispose();
+        _roofScrapeOverlap?.Dispose();
+        _roofScrapeOverlap = null;
         _sounds.Clear();
         _finishedSounds.Clear();
     }
@@ -241,6 +246,34 @@ public class MadSfx : IDisposable
 
         foreach (var key in _finishedSounds) _sounds.Remove(key);
         _finishedSounds.Clear();
+        if (SfxLibrary.roofScrape is { } scrape)
+        {
+            if (!Mute && carPhysics.IsGroundScraping)
+            {
+                var sound = Sound(scrape, followPosition: true);
+                if (!sound.IsActive)
+                {
+                    sound.Loop();
+                    _roofScrapeTicks = 0;
+                }
+
+                _roofScrapeOverlap ??= scrape.CreateSpatialInstance(followPosition: true);
+                _roofScrapeOverlap.SetPosition(position);
+                if (_roofScrapeTicks >= RoofScrapeOverlapTicks)
+                {
+                    if (!_roofScrapeOverlap.IsActive) _roofScrapeOverlap.Loop();
+                }
+                else _roofScrapeTicks++;
+            }
+            else
+            {
+                if (_sounds.TryGetValue((scrape, null), out var existingSound) && existingSound.IsActive)
+                    existingSound.Stop();
+                _roofScrapeOverlap?.Stop();
+                _roofScrapeTicks = 0;
+            }
+        }
+
         if (!Mute)
         {
             var lateralSlip = carPhysics.Wtouch && !carPhysics.BadLanding && HasLateralTireSlip();
@@ -441,16 +474,6 @@ public class MadSfx : IDisposable
                 bfscrape--;
             }
 
-            if (bfsc1 != 0)
-            {
-                bfsc1--;
-            }
-
-            if (bfsc2 != 0)
-            {
-                bfsc2--;
-            }
-
             if (bfskid != 0)
             {
                 bfskid--;
@@ -513,27 +536,6 @@ public class MadSfx : IDisposable
             Sound(SfxLibrary.scrape[scrapes]).Play();
             bfscrape = (int)(5 * (1 / Physics.PHYSICS_MULTIPLIER));
         }
-    }
-
-    private void SfxPlayGscrape(object? sender, (int i, int i269, int i270) position)
-    {
-        if (!Mute
-            && (bfsc1 == 0 || bfsc2 == 0)
-            && Math.Sqrt(position.i * position.i + position.i269 * position.i269 + position.i270 * position.i270) / 10.0 > 15.0)
-            if (bfsc1 == 0)
-            {
-                Sound(SfxLibrary.scrape[2]).Stop();
-                Sound(SfxLibrary.scrape[2]).Play();
-                bfsc1 = (int)(12 * (1 / Physics.PHYSICS_MULTIPLIER));
-                bfsc2 = (int)(6 * (1 / Physics.PHYSICS_MULTIPLIER));
-            }
-            else
-            {
-                Sound(SfxLibrary.scrape[3]).Stop();
-                Sound(SfxLibrary.scrape[3]).Play();
-                bfsc2 = (int)(12 * (1 / Physics.PHYSICS_MULTIPLIER));
-                bfsc1 = (int)(6 * (1 / Physics.PHYSICS_MULTIPLIER));
-            }
     }
 
     private void SfxPlayCrash(object? sender, CrashSoundEvent crash)

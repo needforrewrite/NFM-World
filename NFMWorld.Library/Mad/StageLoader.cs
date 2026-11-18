@@ -202,6 +202,8 @@ public partial class StageLoader
 
     [TightPackOrder(41), PluginVisible] public UnlimitedArray<string> unknownParameters = [];
 
+    [TightPackOrder(42), PluginVisible] public bool DrawStars;
+
     // amodel/amodel2 models, resolved while loading only; pieces hold the Rad3d directly.
     [TightPackIgnore] private readonly Dictionary<string, Rad3d> _embeddedModels = new(StringComparer.OrdinalIgnoreCase);
 
@@ -447,6 +449,11 @@ public partial class StageLoader
                 else if (line.StartsWith("lightson"))
                 {
                     LightsOn = true;
+                }
+
+                else if (line.StartsWith("stars("))
+                {
+                    DrawStars = !line.Contains("false", StringComparison.OrdinalIgnoreCase);
                 }
 
                 else if (line.StartsWith("mountains"))

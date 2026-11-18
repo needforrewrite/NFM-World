@@ -10,6 +10,7 @@ public interface IMultiplayerServerTransport
     event EventHandler<uint>? ClientConnecting;
     event EventHandler<uint>? ClientConnected;
     event EventHandler<uint>? ClientDisconnected;
+    PlayerDepartureReason GetDisconnectReason(uint clientIndex) => PlayerDepartureReason.Disconnected;
 
     void SendPacketToClient<T>(uint clientIndex, T packet, bool reliable = true) where T : IPacketServerToClient<T>;
 

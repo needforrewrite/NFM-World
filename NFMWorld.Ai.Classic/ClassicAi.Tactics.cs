@@ -457,9 +457,12 @@ public sealed partial class ClassicAi
                 }
 
                 if (nsp == 0)
+                {
+                    carB.Placement++;
                     continue;
+                }
 
-                var next = carA.CurrentCheckpoint + 1;
+                var next = carA.CurrentCheckpoint;
                 if (next >= nsp)
                     next = 0;
                 var checkpoint = stage.Checkpoints[next];

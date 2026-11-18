@@ -5,8 +5,8 @@ namespace NFMWorld.UI.Components;
 
 internal static class LoadingOverlay
 {
-    public static Node Build() => Sx.Show(
-        () => LoadingWork.Status.Value.Length > 0,
+    public static Node Build(Func<bool>? suppressed = null) => Sx.Show(
+        () => LoadingWork.Status.Value.Length > 0 && suppressed?.Invoke() != true,
         () => Sx.View(
             style: () => Sx.Styles(
                 position: Position.Absolute,

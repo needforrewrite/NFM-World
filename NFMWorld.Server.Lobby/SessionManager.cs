@@ -24,8 +24,7 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
 
     /// <summary>Creates a new session. Returns the created session.</summary>
     /// <param name="bots">
-    /// Bots to place in the empty slots when the race starts. They are filled then, not now, so
-    /// a human joining before the start takes one of those slots instead.
+    /// Bots that reserve lobby slots alongside the creator.
     /// </param>
     public GameSession? CreateSession(
         uint creatorclientIndex,
@@ -40,6 +39,8 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         if (creator is null)
             return null;
 
+        maxPlayers = (byte)Math.Clamp((int)maxPlayers, 2, MatchGameplayInfo.MaxPlayers);
+
         var session = new GameSession
         {
             Id = Interlocked.Increment(ref _maxSessionId),
@@ -50,8 +51,9 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
             Gamemode = gamemode,
             GamemodeParameters = gamemodeParameters is null ? [] : new(gamemodeParameters),
             Players = new ConcurrentDictionary<byte, Guid> { [0] = creator.Id },
-            BotCount = Math.Max(0, bots)
+            BotCount = gamemode == DefaultGamemodes.TimeTrial ? 0 : Math.Clamp(bots, 0, maxPlayers - 1)
         };
+        FillBots(session);
 
         creator.InSession = (0, session.Id);
 
@@ -84,10 +86,12 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
             }
 
             // Join new session
-            if (_sessions.TryGetValue(sessionId, out var target) && target.Players.Count < target.MaxPlayers)
+            if (_sessions.TryGetValue(sessionId, out var target)
+                && target.State == SessionState.NotStarted
+                && target.Players.Count + target.Bots.Count < target.MaxPlayers)
             {
                 byte playerIndex = 0;
-                while (target.Players.ContainsKey(playerIndex))
+                while (target.Players.ContainsKey(playerIndex) || target.Bots.ContainsKey(playerIndex))
                     playerIndex++;
 
                 target.Players[playerIndex] = player.Id;
@@ -141,7 +145,9 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
                     aplayer.IsInGame = true;
                 }
 
-                FillBots(session);
+                if (!session.Players.Values.Contains(session.CreatorId))
+                    foreach (var slot in session.Bots.Keys.ToArray())
+                        session.Bots[slot] = session.Bots[slot] with { OwnerId = player.Id };
 
                 // Past this point the load timeout no longer applies: the session is waiting for
                 // the race to finish, not for players to load. Nothing ever cleared it, so every
@@ -156,11 +162,10 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
     }
 
     /// <summary>
-    /// Places the session's bots in the free slots. Humans take slots first because they can
-    /// join up to the moment the race starts, so this runs at the start, not at creation.
+    /// Reserves bots within the session's total field size.
     /// </summary>
     private static void FillBots(GameSession session)
-        => session.Bots = SessionBots.Place(session.Players.Keys, session.BotCount, session.CreatorId);
+        => session.Bots = SessionBots.Place(session.Players.Keys, session.BotCount, session.CreatorId, session.MaxPlayers);
 
     /// <summary>
     /// Checks for timed-out sessions (WaitingToLoad past StartTime).
@@ -259,7 +264,7 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         /// </summary>
         public Dictionary<byte, ServerSidePlayerInfo> Bots { get; set; } = [];
 
-        /// <summary>How many bots to place in the free slots when the race starts.</summary>
+        /// <summary>Configured number of reserved bot slots.</summary>
         public int BotCount { get; set; }
 
         public DateTimeOffset? StartTime { get; set; }

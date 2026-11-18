@@ -21,13 +21,17 @@ public class AroundStageCamera
     private int _pointCount = 0;
     private int _point = 0;
 
-    private void Reset()
+    public void Reset()
     {
         _hit = 45000f;
         _focus = 1f;
+        _gofocus = 0.33f;
         _pitch = 67f;
         _yaw = 0f;
         _fallen = 0f;
+        _startX = _startZ = 0f;
+        _targetX = _targetY = _targetZ = 0f;
+        _pointCount = _point = 0;
     }
 
     public void AroundStage(PerspectiveCamera camera, BackendStage stage)

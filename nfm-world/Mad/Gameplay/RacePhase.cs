@@ -2,6 +2,7 @@ using NFMWorld.Accounts;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Audio;
+using NFMWorld.Sfx;
 using NFMWorld.Gameplay.RaceHost;
 using NFMWorld.Reactor;
 using NFMWorld.UI;
@@ -62,6 +63,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
     BackendStage IGamemodeContext.CurrentStage => CurrentStage.Backend;
     bool IGamemodeContext.IsMultiplayer => _host is NetworkRaceHost;
+    bool IGamemodeContext.IsSpectating => WatchingPlayers;
 
     /// <summary>
     /// Watching a race this client has no car in. There is no client player, so input drives
@@ -96,7 +98,11 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         _host = host;
         _spectating = spectating;
         _localPlayerId = players.FirstOrDefault(p => p.IsClientPlayer)?.Id ?? Guid.Empty;
-        if (host is NetworkRaceHost network) network.ChatReceived += ReceiveChat;
+        if (host is NetworkRaceHost network)
+        {
+            network.ChatReceived += ReceiveChat;
+            network.PlayerLeft += ReceivePlayerLeft;
+        }
 
         try
         {
@@ -235,6 +241,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     /// Whether gameplay is paused and the pause menu is visible.
     /// </summary>
     public bool IsPaused { get; private set; }
+    public bool WantsMouseCursor => IsPaused || _chat.Open.Value || _finish.ShowSummary.Value;
 
     /// <summary>
     /// Writes this frame's HUD values into the race view's signals.
@@ -255,7 +262,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             UiState.Race.ClientWon.Value = false;
             UiState.Race.ClientLost.Value = true;
             UiState.Race.ResultTitle.Value = "YOU'RE WASTED";
-            UiState.Race.StateText.Value = "You have been wasted!";
+            UiState.Race.StateText.Value = "";
             UiState.Race.StateTextEndsAt.Value = null;
             UiState.Race.StatusMessage = null;
             UiState.Race.StuntMessage = null;
@@ -266,7 +273,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             System.Environment.TickCount64,
             !defeated && gm.HudState.ClientWon,
             CurrentStage?.Backend.Name ?? StageName,
-            defeated ? "You have been wasted!" : gm.HudState.StateText ?? "",
+            defeated ? "" : gm.HudState.StateText ?? "",
             lost: defeated || gm.HudState.ClientLost
         );
         _finish.ContinueSpectating.Value = defeated && _host is NetworkRaceHost;
@@ -320,8 +327,12 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             hud.Lap.Value = Math.Min(client.CurrentLap + 1, CurrentStage.Backend.Nlaps);
             hud.TotalLaps.Value = CurrentStage.Backend.Nlaps;
             hud.TotalRacers.Value = gm.Players.Count;
-            hud.StatusMessage = null;
-            hud.StuntMessage = null;
+        }
+
+        if (WatchingPlayers)
+        {
+            hud.StatusMessage = _spectatorFeedback.Status;
+            hud.StuntMessage = _spectatorFeedback.Stunt;
         }
 
         InvalidateOrdering();
@@ -442,8 +453,10 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     private BackendCar? _watchedHudCar;
     private Vector3 _watchedHudPosition;
     private float _watchedHudSpeed;
+    private readonly SpectatorRaceFeedback _spectatorFeedback = new();
+    private bool _spectatorFeedbackActive;
 
-    private void UpdateWatchedHudSpeed()
+    private void UpdateWatchedFeedback()
     {
         var car = WatchingPlayers ? SpectateCar() : null;
         var position = car is null ? Vector3.Zero
@@ -453,6 +466,21 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             ? MathF.Sqrt(delta.X * delta.X + delta.Z * delta.Z) : 0;
         _watchedHudCar = car;
         _watchedHudPosition = position;
+        if (WatchingPlayers && GamemodeInstance is BaseClientGamemode gamemode)
+        {
+            _spectatorFeedbackActive = true;
+            _spectatorFeedback.Tick(car, gamemode);
+            if (_spectatorFeedback.PassedCheckpoint) SfxLibrary.checkpoint?.Play();
+            if (_spectatorFeedback.NextCheckpoint is { } checkpoint)
+                CurrentStage.Renderer.UpdateCheckpointGlow(checkpoint, _spectatorFeedback.FinishCheckpoint);
+            else
+                CurrentStage.Renderer.ResetCheckpointGlow();
+        }
+        else if (_spectatorFeedbackActive)
+        {
+            _spectatorFeedback.Reset();
+            _spectatorFeedbackActive = false;
+        }
     }
 
     private void InvalidateOrdering()
@@ -698,7 +726,12 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         {
             _raceDisposed = true;
             _finish.Reset();
-            if (_host is NetworkRaceHost network) network.ChatReceived -= ReceiveChat;
+            if (_host is NetworkRaceHost network)
+            {
+                network.ChatReceived -= ReceiveChat;
+                network.PlayerLeft -= ReceivePlayerLeft;
+            }
+
             _chat.Clear();
             _host.Dispose();
 
@@ -967,7 +1000,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         _lastTick[carIndex] = state.Ticks;
 
         if (gm.Players[carIndex].Car is { } car)
-            PlayerState.ApplyTo(state, car);
+            PlayerState.ApplyTo(state, car, CurrentStage.Backend.Checkpoints.Count);
     }
 
     /// <summary>True for the client's own car and any bot it fielded.</summary>
@@ -1034,7 +1067,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         }
 
         if (ClientCar is { Wasted: false }) _deathSpectating = false;
-        UpdateWatchedHudSpeed();
+        UpdateWatchedFeedback();
 
         if (WatchingPlayers)
         {
@@ -1090,7 +1123,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
     void IClientCallbacks.ResetCheckpointGlow()
     {
-        CurrentStage.Renderer.ResetCheckpointGlow();
+        if (!WatchingPlayers) CurrentStage.Renderer.ResetCheckpointGlow();
     }
 
     void IClientCallbacks.TimeTrialCompleted(TimeTrialCompletion completion) =>
@@ -1101,7 +1134,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
     void IClientCallbacks.UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish)
     {
-        CurrentStage.Renderer.UpdateCheckpointGlow(currentCheckpoint, isFinish);
+        if (!WatchingPlayers) CurrentStage.Renderer.UpdateCheckpointGlow(currentCheckpoint, isFinish);
     }
 
     IClientCarCallbacks IClientCallbacks.GetClientCarCallbacks(BackendCar car)

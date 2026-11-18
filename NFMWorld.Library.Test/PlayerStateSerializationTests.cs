@@ -3,6 +3,7 @@ using NFMWorldLibrary.Multiplayer.Packets.S2C;
 using NFMWorldLibrary;
 using TightPack;
 using NFMWorldLibrary.Util;
+using NFMWorldLibrary.Hud;
 using fix64 = FixedMathSharp.Fixed64;
 
 namespace NFMWorld.Library.Test;
@@ -43,6 +44,8 @@ public class PlayerStateSerializationTests
         {
             CarFrame = SampleFrame(),
             Ticks = 12345,
+            DamageSource = 4,
+            CompletedStunt = new CompletedStunt { Sequence = 42, TotalStuntZy = 720, Powerup = 49, ForwardTabletop = true },
             CurrentTime = DateTimeOffset.FromUnixTimeMilliseconds(1_700_000_000_000),
         };
 
@@ -51,6 +54,11 @@ public class PlayerStateSerializationTests
         );
 
         Assert.AreEqual(value.Ticks, result.Ticks);
+        Assert.AreEqual(value.DamageSource, result.DamageSource);
+        Assert.AreEqual(value.CompletedStunt.Sequence, result.CompletedStunt.Sequence);
+        Assert.AreEqual(value.CompletedStunt.TotalStuntZy, result.CompletedStunt.TotalStuntZy);
+        Assert.AreEqual(value.CompletedStunt.Powerup, result.CompletedStunt.Powerup);
+        Assert.IsTrue(result.CompletedStunt.ForwardTabletop);
         Assert.AreEqual(value.CurrentTime, result.CurrentTime);
         Assert.AreEqual(value.CarFrame.Power, result.CarFrame.Power);
         Assert.AreEqual(value.CarFrame.CarPosition, result.CarFrame.CarPosition);
@@ -69,6 +77,7 @@ public class PlayerStateSerializationTests
         {
             CarFrame = SampleFrame(),
             Ticks = 7,
+            DamageSource = 1,
             CurrentTime = DateTimeOffset.FromUnixTimeMilliseconds(1_700_000_000_000),
         };
 
@@ -80,6 +89,7 @@ public class PlayerStateSerializationTests
         C2S_PlayerState result = ReadPacket<C2S_PlayerState>(writer.WrittenMemory);
 
         Assert.AreEqual(7u, result.State.Ticks);
+        Assert.AreEqual(1, result.State.DamageSource);
         Assert.AreEqual(state.CarFrame.CarPosition, result.State.CarFrame.CarPosition);
         Assert.IsTrue(result.State.CarFrame.TheBitFlags.Wasted);
     }

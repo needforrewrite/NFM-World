@@ -580,6 +580,7 @@ public class ClientStageRenderer : GameObject, IDisposable
         }
 
         World.DrawMountains = backendStage.StageLoader.DrawMountains;
+        World.DrawStars = backendStage.StageLoader.DrawStars;
         if (backendStage.StageLoader.MountainSeed is { } mountainSeed)
         {
             World.MountainSeed = mountainSeed;

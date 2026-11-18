@@ -8,6 +8,7 @@ fadefrom(5000)
 density(4)
 mountains(29311)
 lightson()
+stars()
 
 nlaps(1)
 

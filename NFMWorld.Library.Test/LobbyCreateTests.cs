@@ -22,8 +22,7 @@ public class LobbyCreateTests
     };
 
     /// <summary>
-    /// Bots take the slots humans did not, at race start rather than at creation, so a human
-    /// who joins while the lobby is still open takes one of those slots instead.
+    /// Bots take free slots without displacing a human.
     /// </summary>
     [TestMethod]
     public void PlaceBots_FillsOnlyTheSlotsHumansDidNotTake()
@@ -88,8 +87,7 @@ public class LobbyCreateTests
     }
 
     /// <summary>
-    /// The field size and the bot count are separate on the wire: "max players" is how many
-    /// humans may join, and the bots fill whatever is left at the start.
+    /// The bot count is transmitted separately from the total field capacity.
     /// </summary>
     [TestMethod]
     public void CreateSession_RoundTripsTheBotCount()

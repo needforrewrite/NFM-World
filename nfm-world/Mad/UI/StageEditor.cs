@@ -222,6 +222,7 @@ public class StageEditorTab
     public int? FogDensity { get; set; }
 
     public bool LightsOn { get; set; }
+    public bool StarsEnabled { get; set; }
     public Vector3 LightDirection { get; set; } = new(0, 1, 0);
     public float? MountainCoverage { get; set; }
 

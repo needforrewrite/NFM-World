@@ -22,6 +22,7 @@ public partial class TextInput : Component
     private readonly Text _text;
     private readonly CursorOverlay _cursorOverlay;
     private readonly TextEditContextMenu _contextMenu;
+    private float _horizontalOffset;
 
     // ── Cursor & selection state ──────────────────────────────────
 
@@ -69,7 +70,7 @@ public partial class TextInput : Component
             if (field != value)
             {
                 field = value;
-                _text.TextStyles = TextStyles;
+                _text.TextStyles = TextStyles with { BreakType = BreakType.None, OverflowBehavior = OverflowBehavior.Stretch };
                 OnTextInvalidated(false);
             }
         }
@@ -192,7 +193,11 @@ public partial class TextInput : Component
     {
         // Create the internal text/cursor children first: the style property
         // setters below call OnTextInvalidated(), which dereferences `_text`.
-        _text = new Text { IsFocusable = false };
+        _text = new InputText(this)
+        {
+            IsFocusable = false,
+            Styles = SxApi.Styles(minWidth: 0, flexShrink: 1, width: MeasurementWidthHeight.Percent(100))
+        };
         _cursorOverlay = new CursorOverlay(this);
         _contextMenu = new TextEditContextMenu(
             hasSelection: () => GetSelectionRange() is not null,
@@ -657,7 +662,7 @@ public partial class TextInput : Component
             // Browsers keep an existing selection on right-click and place the caret only
             // when there is none, so Paste/Cut act where the user pointed.
             if (GetSelectionRange() is null)
-                MoveCursorTo(GetCharIndexForCursorX(@event.RelativePosition.X - LayoutPaddingLeft), false);
+                MoveCursorTo(GetCharIndexForCursorX(@event.RelativePosition.X - LayoutPaddingLeft + _horizontalOffset), false);
 
             OpenContextMenu(@event.Position);
             return;
@@ -670,7 +675,7 @@ public partial class TextInput : Component
 
         var shift = @event.ShiftKey;
         // RelativePosition is padding-box-relative; convert to content-box-relative X
-        var charIdx = GetCharIndexForCursorX(@event.RelativePosition.X - LayoutPaddingLeft);
+        var charIdx = GetCharIndexForCursorX(@event.RelativePosition.X - LayoutPaddingLeft + _horizontalOffset);
 
         // Count consecutive clicks (same spot, within the interval) for double/triple click.
         var now = Environment.TickCount64;
@@ -710,7 +715,7 @@ public partial class TextInput : Component
         _clickCount = 1; // a drag is not part of a multi-click sequence
 
         // RelativePosition is padding-box-relative; convert to content-box-relative X
-        var charIdx = GetCharIndexForCursorX(@event.RelativePosition.X - LayoutPaddingLeft);
+        var charIdx = GetCharIndexForCursorX(@event.RelativePosition.X - LayoutPaddingLeft + _horizontalOffset);
         // Always extend selection during drag
         _selectionAnchor ??= _cursorIndex;
         _cursorIndex = Math.Clamp(charIdx, 0, CurrentText.Length);
@@ -742,11 +747,33 @@ public partial class TextInput : Component
 
     // ── Cursor overlay (inner class) ───────────────────────────────
 
-    /// <summary>
-    /// Absolutely-positioned child that renders the cursor line and selection highlight
-    /// on top of the text content. Rendered last in the child order so it appears above
-    /// the <see cref="Text"/> child's text.
-    /// </summary>
+    private void EnsureCaretVisible()
+    {
+        var width = Math.Max(0, LayoutContentSize.X - Math.Max(1, G.Scale));
+        var end = GetCursorXForCharIndex(CurrentText.Length);
+        _horizontalOffset = Math.Clamp(_horizontalOffset, 0, Math.Max(0, end - width));
+        if (!IsFocused) return;
+        var caret = GetCursorXForCharIndex(_cursorIndex);
+        if (caret < _horizontalOffset) _horizontalOffset = caret;
+        else if (caret > _horizontalOffset + width) _horizontalOffset = caret - width;
+    }
+
+    private void ClipInputContent()
+        => G.IntersectScissor(LayoutContentPosition.X, LayoutContentPosition.Y, LayoutContentSize.X, LayoutContentSize.Y);
+
+    private sealed class InputText(TextInput owner) : Text
+    {
+        [ClientOnly]
+        protected override void RenderContent(Vector2 position, Vector2 size)
+        {
+            owner.EnsureCaretVisible();
+            G.SaveState();
+            owner.ClipInputContent();
+            base.RenderContent(position - new Vector2(owner._horizontalOffset, 0), size);
+            G.RestoreState();
+        }
+    }
+
     private sealed class CursorOverlay : Component
     {
         private readonly TextInput _owner;
@@ -771,10 +798,13 @@ public partial class TextInput : Component
             if (!_owner.IsFocused)
                 return;
 
+            G.SaveState();
+            _owner.ClipInputContent();
+
             // The overlay is absolutely positioned at the padding box edge,
             // but text starts at the content box edge (after padding).
             // Offset by the owner's padding to align with the text content.
-            var baseX = position.X + _owner.LayoutPaddingLeft;
+            var baseX = position.X + _owner.LayoutPaddingLeft - _owner._horizontalOffset;
             var contentTop = position.Y + _owner.LayoutPaddingTop;
             var contentBottom = position.Y + size.Y - _owner.LayoutPaddingBottom;
 
@@ -809,6 +839,8 @@ public partial class TextInput : Component
                     (int)cursorBottom
                 );
             }
+
+            G.RestoreState();
         }
     }
 }

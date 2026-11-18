@@ -127,6 +127,14 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
     /// </summary>
     private void SyncWasted()
     {
+        if (Car.HasLeftRace && _fixing)
+        {
+            _fixing = false;
+            _fixTick = _fixTimer = 0;
+            Mesh.PolyFixState = 0;
+            FixFlare.DeleteFixFx();
+        }
+
         // Damage keeps re-emitting Distruct until the fix finishes (FinishedFix zeroes
         // DamagePoints), so a car fixed mid-animation would restart the animation it cancelled.
         if (Car.CarPhysics.Wasted)

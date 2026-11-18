@@ -92,8 +92,12 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         SetStageSearch: OnStageSearchChanged,
         SetStageSource: OnStageSourceSelected,
         SearchStagesOnline: query => _ = SearchStagesOnlineAsync(query),
-        SetMaxPlayers: count => Lobby.MaxPlayers.Value = count,
-        SetBots: count => Lobby.BotCount.Value = count,
+        SetMaxPlayers: count =>
+        {
+            Lobby.MaxPlayers.Value = Math.Clamp(count, 2, MatchGameplayInfo.MaxPlayers);
+            Lobby.BotCount.Value = Math.Clamp(Lobby.BotCount.Value, 0, Lobby.MaxPlayers.Value - 1);
+        },
+        SetBots: count => Lobby.BotCount.Value = Math.Clamp(count, 0, Lobby.MaxPlayers.Value - 1),
         SetConfig: OnSetConfig,
         SetGamemode: OnSetGamemode,
         ChangeCar: OpenCarPicker,
@@ -591,7 +595,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         Lobby.BotCount.Value = Math.Clamp(
             Lobby.BotCount.Value,
             0,
-            MatchGameplayInfo.MaxPlayers - Lobby.MaxPlayers.Value
+            Lobby.MaxPlayers.Value - 1
         );
         // A session needs a stage before the dialog can offer one, so start on the first local
         // stage the lobby accepts. The dialog's own list takes over from there.

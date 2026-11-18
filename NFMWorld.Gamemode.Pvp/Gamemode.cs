@@ -145,7 +145,11 @@ public class PvpGamemode : PluginGamemode
                     if (player.Car != null)
                     {
                         FixHoopHelper.HandleFixHoops(CurrentStage, player.Car);
-                        if (CheckPointHelper.HandleCheckPoint(CurrentStage, player.Car) && player == ClientPlayer)
+                        var localProgress = player == ClientPlayer
+                                            || player.Info.IsBot && (player.Info.OwnerId == Guid.Empty
+                                                                     || player.Info.OwnerId == ClientPlayer?.Info.Id);
+                        if (localProgress && CheckPointHelper.HandleCheckPoint(CurrentStage, player.Car) && player
+                            == ClientPlayer)
                             clientCrossed = true;
                     }
                 }

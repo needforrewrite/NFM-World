@@ -36,12 +36,13 @@ internal static class RaceFinishView
                         fontSize: 48,
                     foregroundColor: HudSkinRegistry.UsesClassicSkin(race.Skin.Value) ? new Color(0, 0, 0) : Theme.MenuBlue,
                     strokeColor: new Color(255, 255, 255),
+                    strokeWidth: 1.5f,
                     horizontalAlignment: TextHorizontalAlignment.Center
                     ),
                     layout: () => Sx.Styles(width: 100.Percent(), flexShrink: 0),
                     text: () => race.ResultTitle.Value ?? (race.ClientWon.Value ? "YOU WON!" : "YOU LOST!")
                 ),
-                Sx.Text(
+                Sx.Show(() => !string.IsNullOrWhiteSpace(race.StateText.Value), () => Sx.Text(
                     style: () => Sx.TextStyles(
                         fontSize: 20,
                         fontStyle: FontStyle.Bold,
@@ -53,7 +54,7 @@ internal static class RaceFinishView
                     ),
                     layout: () => Sx.Styles(width: 100.Percent(), flexShrink: 0),
                     text: () => race.StateText.Value ?? ""
-                )
+                ))
                 ]),
                 Sx.Show(() => finish?.CanContinue.Value == true, () => Sx.Text(
                     style: () => Sx.TextStyles(

@@ -8,6 +8,8 @@ using Maxine.Extensions.Collections;
 using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Collision;
+using NFMWorldLibrary.Hud;
+using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Util;
 
 /*************************************
@@ -55,6 +57,8 @@ public partial class CarPhysics
     [PluginVisible] public int CapsizedCounter;
 
     [PluginVisible] public bool BadLanding;
+
+    public bool IsGroundScraping { get; private set; }
 
     [PluginVisible] public readonly UnlimitedArray<bool> _caught = [];
 
@@ -114,10 +118,68 @@ public partial class CarPhysics
     [PluginVisible] public int Lastcolido;
 
     /// <summary>
-    /// Index of the car whose contact last damaged this one, or -1 for a stage hit.
-    /// Display only, so it is not part of the rollback frame.
+    /// Car responsible for the current crash chain, or -1 when no car is responsible.
     /// </summary>
     [PluginVisible] public int LastDamageFrom = -1;
+    internal PlayerDepartureReason? DepartureReason { get; private set; }
+
+    internal void MarkDeparted(PlayerDepartureReason reason)
+    {
+        DepartureReason ??= reason;
+        Wasted = true;
+        DamagePoints = Math.Max(DamagePoints, Stat.Maxmag);
+        Cntdest = 7;
+        Halted = true;
+        Newcar = false;
+        ResetDamageCredit();
+    }
+
+    private bool _hasDamageCredit;
+    private int _damageCreditAge;
+    private int _damageCreditRecovery;
+    private int _damageAtCreditTick;
+    internal const int DamageCreditRecoveryTicks = (int)(2 * Physics.TargetTps);
+    internal const int DamageCreditTimeoutTicks = (int)(10 * Physics.TargetTps);
+
+    internal void RecordDamageSource(int sourceCar)
+    {
+        if (Wasted || Cntdest > 0) return;
+        sourceCar = _crashContact?.OtherCar ?? sourceCar;
+        if (sourceCar < 0 || sourceCar == Im) return;
+        LastDamageFrom = sourceCar;
+        _hasDamageCredit = true;
+        _damageCreditAge = 0;
+        _damageCreditRecovery = 0;
+        _damageAtCreditTick = DamagePoints;
+    }
+
+    internal void UpdateDamageCredit()
+    {
+        if (!_hasDamageCredit || Wasted || Cntdest > 0 || DamagePoints >= Stat.Maxmag) return;
+        if (++_damageCreditAge >= DamageCreditTimeoutTicks)
+        {
+            ResetDamageCredit();
+            return;
+        }
+
+        var pitch = fix64.Abs(Pxy % 360);
+        var roll = fix64.Abs(Pzy % 360);
+        var recovered = Mtouch && Skid == 0 && !BadLanding && CapsizedCounter == 0
+                        && (pitch < 45 || pitch > 315) && (roll < 45 || roll > 315)
+                        && DamagePoints == _damageAtCreditTick;
+        _damageAtCreditTick = DamagePoints;
+        _damageCreditRecovery = recovered ? _damageCreditRecovery + 1 : 0;
+        if (_damageCreditRecovery >= DamageCreditRecoveryTicks) ResetDamageCredit();
+    }
+
+    internal void ResetDamageCredit()
+    {
+        LastDamageFrom = -1;
+        _hasDamageCredit = false;
+        _damageCreditAge = 0;
+        _damageCreditRecovery = 0;
+        _damageAtCreditTick = DamagePoints;
+    }
 
     [PluginVisible] public sbyte StuntState;
 
@@ -195,6 +257,8 @@ public partial class CarPhysics
     [PluginVisible] public fix64 TotalStuntZy;
 
     [PluginVisible] public int TabletopCounter;
+    internal CompletedStunt LatestStunt;
+    internal bool UsesRemoteStuntFeedback;
 
     [PluginVisible] public fix64 Txz;
 
@@ -637,6 +701,8 @@ public partial class CarPhysics
                         }
 
                         if (otherLiftCount[otherwheel] == 0) othermad.Scy[otherwheel] -= ownStats.Lift;
+                        if (impactMagnitude >= 100 && ownStats.Lift != 0)
+                            othermad.RecordDamageSource(Im);
                     }
                 }
             }
@@ -738,6 +804,8 @@ public partial class CarPhysics
 
     public void Drive(Control control, BackendCar car, BackendStage stage)
     {
+        if (DepartureReason.HasValue) Wasted = true;
+        UpdateDamageCredit();
         // Damage and stage overrides change the collision response, so refresh them first.
         _effective = EffectiveStats.From(Stat, stage.Physics, DamagePoints);
         _hasEffective = true;
@@ -761,6 +829,7 @@ public partial class CarPhysics
             $"Travxz: {TotalStuntXz:0.00}, Travxy: {TotalStuntXy:0.00}, Travzy: {TotalStuntZy:0.00}, Surfing: {Surfing}"
         );
         OnGroundPlane = false;
+        IsGroundScraping = false;
 
         var xneg = 1;
         var zneg = 1;
@@ -1753,6 +1822,8 @@ public partial class CarPhysics
                 isWheelGrounded[i49] = true;
                 wheelContactNormal[i49] = Up;
 
+                GroundScrape(conto, i49, wheelx[i49], wheely[i49], wheelz[i49], wheelGround, surfaceType);
+
                 bounceRebound(
                     i49,
                     conto,
@@ -2554,6 +2625,9 @@ public partial class CarPhysics
                                 _xtpower = (int)(100 * _oneOverTickRate);
                             }
                         }
+
+                        if (!UsesRemoteStuntFeedback)
+                            LatestStunt = CompletedStunt.Capture(this, LatestStunt.Sequence + 1);
                     } // CHK17
 
                     if (TabletopCounter == 10)
@@ -2689,6 +2763,16 @@ public partial class CarPhysics
         }*/
     }
 
+
+    private void GroundScrape(ContO conto, int wheel, fix64 x, fix64 y, fix64 z, fix64 wheelGround, SurfaceType surface)
+    {
+        if (!BadLanding || surface is not (SurfaceType.Road or SurfaceType.OffTrack)) return;
+        if (Scx[wheel] * Scx[wheel] + Scz[wheel] * Scz[wheel] < 3600) return;
+
+        IsGroundScraping = true;
+        conto.Spark(x, y, z, Scx[wheel], Scy[wheel], Scz[wheel], 1, (int)wheelGround);
+        SfxPlayGscrape?.Invoke(this, ((int)Scx[wheel], (int)Scy[wheel], (int)Scz[wheel]));
+    }
 
     // input: number of grounded wheels to medium
     // output: hitVertical when colliding against a wall
@@ -2847,6 +2931,7 @@ public partial class CarPhysics
 
                                     // newY is in local space; RotateXz doesn't affect Y, so just add object Y
                                     wheely[k] = groundHit.newY + boxMesh.GameObjectPosition.Y + wheelGround;
+                                    GroundScrape(conto, k, wheelx[k], wheely[k], wheelz[k], wheelGround, collidable.SurfaceType);
                                     // TODO: this makes going up mesh ramps janky. but we ideally want to allow bouncing on mesh collisions, so we need a better solution 
                                     // bounceRebound(k, conto, random);
                                     isWheelTouchingPiece[k] = true;
@@ -2951,13 +3036,7 @@ public partial class CarPhysics
 
                             wheely[k] = collision.newY + wheelGround; // snap wheel to the surface
 
-                            // sparks and scrape
-                            if (BadLanding && collidable.SurfaceType is SurfaceType.Road or SurfaceType.OffTrack)
-                            {
-                                conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, (int)wheelGround);
-                                //if (Im == /*this.xt.im*/ 0)
-                                SfxPlayGscrape?.Invoke(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
-                            }
+                            GroundScrape(conto, k, wheelx[k], wheely[k], wheelz[k], wheelGround, collidable.SurfaceType);
 
                             bounceRebound(
                                 k,
@@ -3052,12 +3131,15 @@ public partial class CarPhysics
                                 Wtouch = true;
                                 Gtouch = false;
 
-                                // sparks and scrape
-                                if (BadLanding && collidable.SurfaceType is SurfaceType.Road or SurfaceType.OffTrack)
-                                {
-                                    conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, (int)wheelGround);
-                                    SfxPlayGscrape?.Invoke(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
-                                }
+                                GroundScrape(
+                                    conto,
+                                    k,
+                                    wheelx[k],
+                                    collision.newPosition.Y + wheelGround,
+                                    wheelz[k],
+                                    wheelGround,
+                                    collidable.SurfaceType
+                                );
 
                                 if (!wasMtouch && surfaceType != SurfaceType.Road)
                                 {
@@ -3175,7 +3257,7 @@ public partial class CarPhysics
             }
         }
 
-        if (i110 > 0) LastDamageFrom = sourceCar;
+        if (i110 > 0) RecordDamageSource(sourceCar);
         return i110;
     }
 
@@ -3304,7 +3386,7 @@ public partial class CarPhysics
             }
         }
 
-        if (i97 > 0) LastDamageFrom = sourceCar;
+        if (i97 > 0) RecordDamageSource(sourceCar);
         return i97;
     }
 
@@ -3365,12 +3447,14 @@ public partial class CarPhysics
             }
         }
 
-        if (i114 > 0) LastDamageFrom = sourceCar;
+        if (i114 > 0) RecordDamageSource(sourceCar);
         return i114;
     }
 
     public void Reseto(int i, ContO conto)
     {
+        if (DepartureReason.HasValue) return;
+        ResetDamageCredit();
         Cn = i;
         for (var i0 = 0; i0 < 8; i0++)
         {
@@ -3399,6 +3483,7 @@ public partial class CarPhysics
         Mtouch = false;
         Wtouch = false;
         Txz = 0;
+        IsGroundScraping = false;
         _turnXz = 0;
         _pmlt = 1;
         _nmlt = 1;
@@ -3476,6 +3561,8 @@ public partial class CarPhysics
 
     public void FinishedFix()
     {
+        if (DepartureReason.HasValue) return;
+        ResetDamageCredit();
         RoofDamage = 0;
         _numRoofDamage = 0;
         DamagePoints = 0;
