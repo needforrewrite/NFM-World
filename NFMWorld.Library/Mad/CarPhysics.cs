@@ -2149,8 +2149,29 @@ public partial class CarPhysics
                 terrainNormal = -terrainNormal;
 
             var (fittedPxy, fittedPzy, gimbalLocked) = FitTerrainAngles(terrainNormal, conto.Xz, Pxy, Pzy);
-            Pxy = fittedPxy;
-            Pzy = fittedPzy;
+            if (nWheelsOnSurface >= 3)
+            {
+                Pxy = fittedPxy;
+                Pzy = fittedPzy;
+            }
+            else
+            {
+                // Off a surface the wheel heights are collision/bounce velocity, not terrain, and
+                // snapping to them flips a car that took an uneven revlift kick onto its nose or
+                // tail. Turn at most as fast as the original's per-pair rule allows: a stretched
+                // pair turns 1° per original tick, a compressed one by acos(length / rest).
+                var pitchStep = fix64.Max(
+                    PairTurnLimit(wheelx, wheely, wheelz, 0, 2, fix64.Abs(conto.Keyz[0]) + fix64.Abs(conto.Keyz[2])),
+                    PairTurnLimit(wheelx, wheely, wheelz, 1, 3, fix64.Abs(conto.Keyz[1]) + fix64.Abs(conto.Keyz[3]))
+                );
+                var rollStep = fix64.Max(
+                    PairTurnLimit(wheelx, wheely, wheelz, 0, 1, fix64.Abs(conto.Keyx[0]) + fix64.Abs(conto.Keyx[1])),
+                    PairTurnLimit(wheelx, wheely, wheelz, 2, 3, fix64.Abs(conto.Keyx[2]) + fix64.Abs(conto.Keyx[3]))
+                );
+                Pxy += ClampTurn(fittedPxy - Pxy, rollStep);
+                Pzy += ClampTurn(fittedPzy - Pzy, pitchStep);
+            }
+
             FrameTrace.AddMessage(
                 $"terrainFit: tn={terrainNormal}, gimbalLocked={gimbalLocked}, → Pxy={Pxy:0.0}°, Pzy={Pzy:0.0}°"
             );
