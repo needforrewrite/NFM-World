@@ -59,8 +59,8 @@ public class GamemodePluginTests
         Assert.AreEqual("nfmm/rocket", plugin.Id);
         Assert.AreEqual("Rocket League", plugin.Name);
         Assert.IsTrue(!string.IsNullOrWhiteSpace(plugin.Description));
-        // Sandbox-only: no server gamemode, so the lobby must not offer it.
-        Assert.IsFalse(plugin.HasServerGamemode);
+        // A scored gamemode: it ships a server side, because completion is tracked server-side.
+        Assert.IsTrue(plugin.HasServerGamemode);
     }
 
     /// <summary>

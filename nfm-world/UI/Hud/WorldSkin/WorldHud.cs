@@ -52,8 +52,7 @@ internal sealed class WorldHud(IHudData race)
                     ),
                     Panel(
                         GlassCardUi.StatBar("POWER", () => race.PowerFraction, Theme.MenuBlue, 8),
-                        GlassCardUi.StatBar("DAMAGE", () => race.DamageFraction, Theme.Danger, 8),
-                        GlassCardUi.StatBar("BOOST", () => race.BoostFraction, Theme.Accent, 8)
+                        GlassCardUi.StatBar("DAMAGE", () => race.DamageFraction, Theme.Danger, 8)
                     )
                 ]
             ),

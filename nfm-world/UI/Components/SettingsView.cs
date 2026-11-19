@@ -218,7 +218,6 @@ public static class SettingsView
         previewData.IsPreview = true;
         previewData.ArrowAngle = 0;
         previewData.Paused.Value = true;
-        previewData.Boost.Value = 0.7f;
         previewData.TotalLaps.Value = 1;
         previewData.Racers.Add(new HudRacer(1, "Opponent", 0.2f, false, false, 1));
         previewData.Racers.Add(new HudRacer(2, "You", 0.1f, true, false));
@@ -585,19 +584,20 @@ public static class SettingsView
             ),
             children:
             [
-                TabButton("Keyboard", () => tab.Value == Tab.Keyboard, () => selectTab(Tab.Keyboard)),
-                TabButton("Video", () => tab.Value == Tab.Video, () => selectTab(Tab.Video)),
-                TabButton("Audio", () => tab.Value == Tab.Audio, () => selectTab(Tab.Audio)),
-                TabButton("Game", () => tab.Value == Tab.Game, () => selectTab(Tab.Game))
+                TabButton("Keyboard", () => tab.Value == Tab.Keyboard, () => selectTab(Tab.Keyboard), "Settings tab Keyboard"),
+                TabButton("Video", () => tab.Value == Tab.Video, () => selectTab(Tab.Video), "Settings tab Video"),
+                TabButton("Audio", () => tab.Value == Tab.Audio, () => selectTab(Tab.Audio), "Settings tab Audio"),
+                TabButton("Game", () => tab.Value == Tab.Game, () => selectTab(Tab.Game), "Settings tab Game")
             ]
         )
     );
 
-    private static Node TabButton(string label, Func<bool> isActive, Action onPress)
+    private static Node TabButton(string label, Func<bool> isActive, Action onPress, string name)
     {
         var hovered = new Signal<bool>(false);
         var focused = new Signal<bool>(false);
         var node = Sx.View(
+            name: () => name,
             style: () => Sx.Styles(
                 position: Position.Relative,
                 paddingTop: 14,
@@ -1663,8 +1663,9 @@ public static class SettingsView
             Divider(),
             Sx.For(
                 each: () => config.Value?.KeyBindings ?? [],
-                row: (binding, _) => Row(
+                row: (binding, _) => BindingRow(
                     binding.DisplayName.Length > 0 ? binding.DisplayName : binding.Action,
+                    $"Settings binding {binding.Action}",
                     CapturingButton(
                         () => capturing.Value == binding.Action,
                         () => capturing.Value == binding.Action ? "Press any key..." : KeyCodeToName(binding.KeyCode),
@@ -1707,6 +1708,47 @@ public static class SettingsView
 
     private static Node Row(string label, params object?[] controls) => KeyboardNavigation.Row(
         Sx.View(
+            style: () => Sx.Styles(
+                flexDirection: FlexDirection.Row,
+                alignItems: Align.Center,
+                justifyContent: Justify.SpaceBetween,
+                gapColumn: 12,
+                gapRow: 8,
+                paddingTop: 6,
+                paddingBottom: 6,
+                paddingLeft: 10,
+                paddingRight: 10,
+                marginBottom: 3,
+                backgroundColor: new Color(22, 42, 80, 80),
+                borderRadius: 6,
+                flexShrink: 0
+            ),
+            children:
+            [
+                Sx.Text(
+                    style: () => Sx.TextStyles(fontSize: 13, foregroundColor: TextBlue),
+                    layout: () => Sx.Styles(minWidth: 145, flexShrink: 0),
+                    text: () => label
+                ),
+                Sx.View(
+                    style: () => Sx.Styles(
+                        flexDirection: FlexDirection.Row,
+                        flexGrow: 1,
+                        minWidth: 0,
+                        maxWidth: 420,
+                        alignItems: Align.Center,
+                        justifyContent: Justify.FlexEnd,
+                        gapColumn: 12
+                    ),
+                    children: controls
+                )
+            ]
+        )
+    );
+
+    private static Node BindingRow(string label, string name, params object?[] controls) => KeyboardNavigation.Row(
+        Sx.View(
+            name: () => name,
             style: () => Sx.Styles(
                 flexDirection: FlexDirection.Row,
                 alignItems: Align.Center,

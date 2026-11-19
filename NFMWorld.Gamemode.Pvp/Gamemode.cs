@@ -64,6 +64,9 @@ public class PvpGamemode : PluginGamemode
         _physics = new PhysicsController(Players, CurrentStage);
     }
 
+    /// <summary>PvP is a scored race, so the host's standard completion UI applies.</summary>
+    public override bool UsesStandardRaceCompletion => true;
+
     private void SetupCars()
     {
         for (var i = 0; i < Players.Count; i++)

@@ -284,6 +284,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             return;
 
         UiState.Race.Update(gm.HudState, IsPaused);
+        UiState.Race.GamemodeWidgets = gm.GetHudWidgets() ?? [];
         var defeated = ShowingDeathResult;
         if (defeated)
         {
@@ -298,7 +299,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         }
 
         _finish.Observe(
-            Gamemode.GamemodeId is "nfmm/pvp" or "nfmm/timetrial" && (gm.HudState.Finished || defeated),
+            UsesStandardRaceCompletion && (gm.HudState.Finished || defeated),
             System.Environment.TickCount64,
             !defeated && gm.HudState.ClientWon,
             CurrentStage?.Backend.Name ?? StageName,

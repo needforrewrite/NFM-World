@@ -1,0 +1,13 @@
+{
+  "width": 1568,
+  "height": 882,
+  "scale": 1,
+  "output": "../../.git/sx-settings-gamemode-captures",
+  "view": "main-menu",
+  "steps": [
+    { "action": "click", "target": "Main menu item SETTINGS", "capture": "settings" },
+    { "action": "click", "target": "Settings tab Keyboard", "capture": "keyboard" },
+    { "action": "assert-visible", "target": "Settings binding GamemodeAction1" },
+    { "action": "assert-visible", "target": "Settings binding GamemodeAction10" }
+  ]
+}

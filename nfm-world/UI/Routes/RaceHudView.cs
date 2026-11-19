@@ -39,7 +39,10 @@ public static class RaceHudView
             style: () => Sx.Styles(width: 100.Percent(), height: 100.Percent(), position: Position.Relative),
             children:
             [
-                Sx.Switch(race.Skin, HudSkinRegistry.Branches(race), () => HudSkinRegistry.BuildDefault(race)),
+                HudSkinRegistry.BuildWithGamemodeWidgets(
+                    race,
+                    () => Sx.Switch(race.Skin, HudSkinRegistry.Branches(race), () => HudSkinRegistry.BuildDefault(race))
+                ),
                 new RaceOverlays(
                     race,
                     () => race.Skin.Value == "world",

@@ -113,7 +113,8 @@ public static class MultiplayerContentPolicy
 /// <summary>The gamemodes this build can run, for both the lobby and the game master.</summary>
 public static class GamemodeIds
 {
-    private static readonly string[] Installed = [DefaultGamemodes.PvP, DefaultGamemodes.TimeTrial];
+    private static readonly string[] Installed =
+        [DefaultGamemodes.PvP, DefaultGamemodes.TimeTrial, DefaultGamemodes.Rocket];
 
     public static bool IsInstalled(string? gamemode)
         => gamemode is not null && Installed.Contains(gamemode, StringComparer.Ordinal);

@@ -73,5 +73,12 @@ public interface IGamemode
 
     void MouseScrolled(int x, int y, int delta, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey);
 
+
+    /// <summary>
+    /// HUD widgets this gamemode wants mounted by the default HUD skins. Null or empty mounts
+    /// nothing. Nodes must be Sx nodes (Yoga <c>Component</c>/<c>Node</c>), positioned at the
+    /// anchor they name; the HUD owns their lifetime and re-mounts them with the skin.
+    /// </summary>
+    IReadOnlyList<NFMWorldLibrary.Backend.GamemodeHudWidget>? GetHudWidgets() => null;
     void Render();
 }

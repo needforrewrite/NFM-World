@@ -5,7 +5,6 @@ public interface IHudData
     int SpeedKmh { get; }
     float PowerFraction { get; }
     float DamageFraction { get; }
-    float BoostFraction => 0f;
     int Lap { get; }
     int TotalLaps { get; }
     int LapTimeMs { get; }

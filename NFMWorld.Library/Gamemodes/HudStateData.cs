@@ -12,7 +12,6 @@ public partial class HudStateData
     [PluginVisible] public float Speed { get; set; }
     [PluginVisible] public float Power { get; set; }
     [PluginVisible] public float Damage { get; set; }
-    [PluginVisible] public float Boost { get; set; }
     [PluginVisible] public int Lap { get; set; }
     [PluginVisible] public int TotalLaps { get; set; }
     [PluginVisible] public int LapTime { get; set; }

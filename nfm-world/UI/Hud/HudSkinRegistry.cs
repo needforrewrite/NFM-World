@@ -3,6 +3,7 @@ using NFMWorld.Reactor.Sx;
 using NFMWorld.UI.Components;
 using NFMWorld.UI.Routes;
 using NFMWorldLibrary;
+using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Hud;
 using NFMWorldLibrary.Util;
 
@@ -81,6 +82,38 @@ public static class HudSkinRegistry
 
     public static IReadOnlyDictionary<string, Func<Node>> Branches(IHudData data)
         => new BranchMap(data);
+
+    /// <summary>
+    /// The chosen skin's tree plus the gamemode's declared widgets. Every skin goes through
+    /// here, so a gamemode's custom UI reaches the classic, world and JSON skins alike; the
+    /// widgets sit above the skin because the immediate-mode classic skin draws from RenderContent.
+    /// </summary>
+    public static Node BuildWithGamemodeWidgets(IHudData data, Func<Node> skin)
+        => Sx.View(
+            style: () => Sx.Styles(width: 100.Percent(), height: 100.Percent(), position: Position.Relative),
+            children:
+            [
+                skin(),
+                AnchoredWidget(GamemodeHudWidgets.Build(data, GamemodeHudAnchor.TopLeft), Sx.Styles(top: 232, left: 16)),
+                AnchoredWidget(
+                    GamemodeHudWidgets.Build(data, GamemodeHudAnchor.TopCenter),
+                    Sx.Styles(top: 120, left: 0, right: 0, alignItems: Align.Center)
+                ),
+                AnchoredWidget(
+                    GamemodeHudWidgets.Build(data, GamemodeHudAnchor.TopRight),
+                    Sx.Styles(top: 300, right: 16, alignItems: Align.End)
+                ),
+                AnchoredWidget(
+                    GamemodeHudWidgets.Build(data, GamemodeHudAnchor.BottomCenter),
+                    Sx.Styles(bottom: 120, left: 0, right: 0, alignItems: Align.Center)
+                )
+            ]
+        );
+
+    private static Node AnchoredWidget(Node widget, Styles placement) => Sx.View(
+        style: () => placement.Over(Sx.Styles(position: Position.Absolute, flexShrink: 0)),
+        children: [widget]
+    );
 
     private static Node Build(string id, IHudData data)
     {

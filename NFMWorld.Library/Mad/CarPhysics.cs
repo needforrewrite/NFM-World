@@ -288,26 +288,53 @@ public partial class CarPhysics
     private BackendStage? _effectiveStage;
 
     /// <summary>
-    /// Consumed once per tick by <see cref="Drive"/>: a positive value kicks every wheel's
-    /// vertical velocity upward (negative <c>Scy</c>, since Y is downward) by that amount,
-    /// provided no wheel touched the world last tick. Written by a gamemode's tick before
-    /// the physics step; the hook zeroes it after use.
+    /// Whether any wheel had ground contact as of the end of the last <see cref="Drive"/>.
+    /// Gamemodes read this to decide when a car can be launched or pushed.
     /// </summary>
-    [PluginVisible] public fix64 JumpImpulse;
+    [PluginVisible]
+    public bool Grounded { get; private set; }
 
     /// <summary>
-    /// Consumed once per tick by <see cref="Drive"/> while the car is airborne: a horizontal
-    /// acceleration applied along the car's yaw in addition to its normal air control. Written
-    /// by a gamemode's tick before the physics step; the hook zeroes it after use.
+    /// Adds a world-space impulse to all four wheels' velocities. Y is positive downward, so a
+    /// positive <paramref name="y"/> pushes the car down. A gamemode calls this from its tick;
+    /// the value survives until the next <see cref="Drive"/> integrates it, so there is nothing
+    /// to clear.
     /// </summary>
-    [PluginVisible] public fix64 BoostThrust;
+    [PluginVisible]
+    public void AddImpulse(fix64 x, fix64 y, fix64 z)
+    {
+        for (var i = 0; i < 4; i++)
+        {
+            Scx[i] += x;
+            Scy[i] += y;
+            Scz[i] += z;
+        }
+    }
 
     /// <summary>
-    /// The tick before the last step: whether any wheel was grounded. <see cref="JumpImpulse"/>
-    /// is gated on the previous tick's contact so a held jump key cannot re-trigger a jump in
-    /// the same air time.
+    /// Adds a horizontal acceleration along the car's current heading: positive drives forward,
+    /// negative reverses. Gamemodes that implement a boost call this once per tick.
     /// </summary>
-    [PluginVisible] public bool WasGrounded;
+    [PluginVisible]
+    public void AddForwardThrust(fix64 amount)
+    {
+        var heading = (fix64)Mxz;
+        var x = amount * UMath.Sin(-heading);
+        var z = amount * UMath.Cos(heading);
+        AddImpulse(x, 0, z);
+    }
+
+    /// <summary>
+    /// Raised at the top of <see cref="Drive"/>, before any physics is applied, so a gamemode
+    /// can arm per-tick state (an impulse, a thrust) from inside the same step that consumes it.
+    /// </summary>
+    public event Action<CarPhysics>? PreStep;
+
+    /// <summary>
+    /// Raised at the end of <see cref="Drive"/>, once contact and position are resolved, so a
+    /// gamemode can observe the outcome of the step (landing, wasted, laps) without polling.
+    /// </summary>
+    public event Action<CarPhysics>? PostStep;
 
     private void RecordStageImpact(CollisionShapeRef shape, f64Vector3 impulse, f64Vector3 velocity)
     {
@@ -846,33 +873,10 @@ public partial class CarPhysics
         _hasEffective = true;
         _effectiveStage = stage;
 
-        // Arcade hooks (Rocket-League-style gamemodes). Armed by the owning gamemode before
-        // the physics step and consumed here, before this tick's velocity integration; an
-        // armed value is always dropped, so a stale arm can never fire later. The jump is
-        // gated on the *previous* tick's ground contact: this tick's Wtouch/Mtouch are reset
-        // below, so testing them here would never see a car that is actually grounded.
-        if (JumpImpulse != 0 && WasGrounded)
-        {
-            // Y is positive downward: an upward kick is a negative wheel velocity.
-            for (var i = 0; i < 4; i++)
-                Scy[i] = -JumpImpulse;
-        }
+        // A gamemode's per-tick arming point, before any physics runs: it can add impulses or
+        // thrust from here and they are consumed by this very step.
+        PreStep?.Invoke(this);
 
-        if (BoostThrust != 0 && !WasGrounded)
-        {
-            var thrust = BoostThrust;
-            Scx[0] += thrust * UMath.Sin(-Mxz);
-            Scx[1] += thrust * UMath.Sin(-Mxz);
-            Scx[2] += thrust * UMath.Sin(-Mxz);
-            Scx[3] += thrust * UMath.Sin(-Mxz);
-            Scz[0] += thrust * UMath.Cos(Mxz);
-            Scz[1] += thrust * UMath.Cos(Mxz);
-            Scz[2] += thrust * UMath.Cos(Mxz);
-            Scz[3] += thrust * UMath.Cos(Mxz);
-        }
-
-        JumpImpulse = 0;
-        BoostThrust = 0;
         // stats(): a stage with recharged stats swaps every car to its second stat set.
         if (stage.Physics.RechargedStats && Car?.Rad.RechargedStats is { } recharged && Stat != recharged)
         {
@@ -2831,8 +2835,9 @@ public partial class CarPhysics
             }
         }*/
 
-        // Ground contact as resolved this tick, for the next tick's jump gate.
-        WasGrounded = Mtouch || Wtouch || Gtouch || OnGroundPlane;
+        // Contact as resolved this tick, so a gamemode reads the outcome rather than a stale flag.
+        Grounded = Mtouch || Wtouch || Gtouch || OnGroundPlane;
+        PostStep?.Invoke(this);
     }
 
 

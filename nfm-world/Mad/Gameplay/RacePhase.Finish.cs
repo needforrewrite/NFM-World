@@ -12,9 +12,17 @@ public partial class RacePhase
     private bool _deathSpectating;
     private bool WatchingPlayers => _spectating || (_deathSpectating && ClientCar is { Wasted: true });
     private bool ShowingDeathResult => !_spectating && !_deathSpectating
-                                       && Gamemode.GamemodeId == NFMWorldLibrary.Multiplayer.DefaultGamemodes.PvP
+                                       && UsesStandardRaceCompletion
                                        && ClientCar is { Wasted: true }
                                        && GamemodeInstance is BaseClientGamemode { HudState.Finished: false };
+
+    /// <summary>
+    /// The gamemode asks for the standard race-completion UI (finish banner, death result)
+    /// instead of opt-in special cases. Time Trial also uses it; a phaseless attract drive or
+    /// any future mode that does not score a race can leave it off.
+    /// </summary>
+    private bool UsesStandardRaceCompletion =>
+        GamemodeInstance is BaseClientGamemode gm && gm.UsesStandardRaceCompletion;
 
     private void ResetWithdrawnFinish()
     {

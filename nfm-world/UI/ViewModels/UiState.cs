@@ -63,7 +63,9 @@ public static class UiState
         public Signal<float> Speed { get; } = new(0);
         public Signal<float> Power { get; } = new(1);
         public Signal<float> Damage { get; } = new(0);
-        public Signal<float> Boost { get; } = new(0);
+
+        /// <summary>Gamemode-declared HUD widgets, mounted by the skin at their named anchor.</summary>
+        public IReadOnlyList<NFMWorldLibrary.Backend.GamemodeHudWidget> GamemodeWidgets { get; set; } = [];
         public Signal<int> Lap { get; } = new(1);
         public Signal<int> TotalLaps { get; } = new(3);
         public Signal<int> LapTimeMs { get; } = new(0);
@@ -86,7 +88,6 @@ public static class UiState
 
         public float PowerFraction => Fraction(Power.Value / 0.98f);
         public float DamageFraction => Fraction(Damage.Value);
-        public float BoostFraction => Fraction(Boost.Value);
         int IHudData.Lap => Lap.Value;
         int IHudData.TotalLaps => TotalLaps.Value;
         int IHudData.LapTimeMs => LapTimeMs.Value;
@@ -130,7 +131,6 @@ public static class UiState
                     Speed.Value = hud.Speed;
                     Power.Value = hud.Power;
                     Damage.Value = hud.Damage;
-                    Boost.Value = hud.Boost;
                     Lap.Value = hud.Lap;
                     TotalLaps.Value = hud.TotalLaps;
                     LapTimeMs.Value = hud.LapTime;

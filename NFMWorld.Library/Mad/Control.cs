@@ -17,11 +17,27 @@ public partial class Control
 
     [PluginVisible] public int Chatup;
 
-    /// <summary>Held input for the rocket-style jump; consumed by gamemodes that read it.</summary>
-    [PluginVisible] public bool Jump;
+    /// <summary>
+    /// Ten generic held actions a gamemode can bind. The host writes them from the matching
+    /// key bindings and relays them with the car frame; what they mean is the gamemode's
+    /// business. Index 0 is <c>GamemodeAction1</c>.
+    /// </summary>
+    [PluginVisible]
+    public bool[] GamemodeActions { get; } = new bool[GamemodeActionCount];
 
-    /// <summary>Held input for the rocket-style boost; consumed by gamemodes that read it.</summary>
-    [PluginVisible] public bool Boost;
+    /// <summary>How many <see cref="GamemodeActions"/> slots exist.</summary>
+    public const int GamemodeActionCount = 10;
+
+    /// <summary>Reads one generic gamemode action; out-of-range indices read false.</summary>
+    [PluginVisible]
+    public bool GamemodeAction(int index) => index >= 0 && index < GamemodeActionCount && GamemodeActions[index];
+
+    /// <summary>Writes one generic gamemode action; out-of-range indices are ignored.</summary>
+    [PluginVisible]
+    public void SetGamemodeAction(int index, bool value)
+    {
+        if (index >= 0 && index < GamemodeActionCount) GamemodeActions[index] = value;
+    }
 
     [PluginVisible] public bool Down;
 

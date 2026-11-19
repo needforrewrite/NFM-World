@@ -140,6 +140,20 @@ public partial struct CarFrame
             readonly get => Values[16];
             set => Values[16] = value;
         }
+
+        /// <summary>
+        /// One of the ten generic gamemode actions, relayed with the car frame so a remote
+        /// client applies the same input its owner pressed. Bits 17-26; 27-31 stay free.
+        /// </summary>
+        [PluginVisible]
+        public bool this[int gamemodeAction]
+        {
+            readonly get => Values[GamemodeActionBit + gamemodeAction];
+            set => Values[GamemodeActionBit + gamemodeAction] = value;
+        }
+
+        /// <summary>Bit index of <c>GamemodeAction(0)</c>; the ten actions occupy 17-26.</summary>
+        public const int GamemodeActionBit = 17;
     }
 
     [PluginVisible] public (fix64 X, fix64 Y, fix64 Z) CarPosition;
@@ -168,6 +182,8 @@ public partial struct CarFrame
         entry.TheBitFlags.Left = car.Control.Left;
         entry.TheBitFlags.Right = car.Control.Right;
         entry.TheBitFlags.Handb = car.Control.Handb;
+        for (var i = 0; i < Control.GamemodeActionCount; i++)
+            entry.TheBitFlags[i] = car.Control.GamemodeAction(i);
         entry.CarPosition.X = car.Position.X;
         entry.CarPosition.Y = car.Position.Y;
         entry.CarPosition.Z = car.Position.Z;
@@ -223,6 +239,8 @@ public partial struct CarFrame
         car.Control.Left = TheBitFlags.Left;
         car.Control.Right = TheBitFlags.Right;
         car.Control.Handb = TheBitFlags.Handb;
+        for (var i = 0; i < Control.GamemodeActionCount; i++)
+            car.Control.SetGamemodeAction(i, TheBitFlags[i]);
 
         f64Vector3 pos = new(CarPosition.X, CarPosition.Y, CarPosition.Z);
         car.Position = pos;

@@ -36,8 +36,16 @@ public class SettingsMenu()
         public Key Enter { get; set; } = Key.Enter;
         public Key AerialBounce { get; set; } = Key.Q;
         public Key AerialStrafe { get; set; } = Key.E;
-        public Key Jump { get; set; } = Key.F;
-        public Key Boost { get; set; } = Key.LShiftKey;
+        public Key GamemodeAction1 { get; set; } = Key.F;
+        public Key GamemodeAction2 { get; set; } = Key.LShiftKey;
+        public Key GamemodeAction3 { get; set; } = Key.None;
+        public Key GamemodeAction4 { get; set; } = Key.None;
+        public Key GamemodeAction5 { get; set; } = Key.None;
+        public Key GamemodeAction6 { get; set; } = Key.None;
+        public Key GamemodeAction7 { get; set; } = Key.None;
+        public Key GamemodeAction8 { get; set; } = Key.None;
+        public Key GamemodeAction9 { get; set; } = Key.None;
+        public Key GamemodeAction10 { get; set; } = Key.None;
         public Key LookLeft { get; set; } = Key.Z;
         public Key LookBack { get; set; } = Key.X;
         public Key LookRight { get; set; } = Key.C;
@@ -71,6 +79,31 @@ public class SettingsMenu()
             LockSlot1, LockSlot2, LockSlot3, LockSlot4, LockSlot5,
             LockSlot6, LockSlot7, LockSlot8, LockSlot9, LockSlot10
         ];
+
+        /// <summary>The ten generic gamemode action keys, index 0 is action 1.</summary>
+        public Key[] GamemodeActionKeys =>
+        [
+            GamemodeAction1, GamemodeAction2, GamemodeAction3, GamemodeAction4, GamemodeAction5,
+            GamemodeAction6, GamemodeAction7, GamemodeAction8, GamemodeAction9, GamemodeAction10
+        ];
+
+        /// <summary>Sets one gamemode action key by zero-based index; out-of-range is ignored.</summary>
+        public void SetGamemodeActionKey(int index, Key key)
+        {
+            switch (index)
+            {
+                case 0: GamemodeAction1 = key; break;
+                case 1: GamemodeAction2 = key; break;
+                case 2: GamemodeAction3 = key; break;
+                case 3: GamemodeAction4 = key; break;
+                case 4: GamemodeAction5 = key; break;
+                case 5: GamemodeAction6 = key; break;
+                case 6: GamemodeAction7 = key; break;
+                case 7: GamemodeAction8 = key; break;
+                case 8: GamemodeAction9 = key; break;
+                case 9: GamemodeAction10 = key; break;
+            }
+        }
     }
 
     public static KeyBindings Bindings = new KeyBindings();
@@ -657,9 +690,10 @@ public class SettingsMenu()
         sw.WriteLine($"key_accelerate {(int)Bindings.Accelerate}");
         sw.WriteLine($"key_ab {(int)Bindings.AerialBounce}");
         sw.WriteLine($"key_smoothturn {(int)Bindings.AerialStrafe}");
-        sw.WriteLine($"key_jump {(int)Bindings.Jump}");
-        sw.WriteLine($"key_boost {(int)Bindings.Boost}");
+        for (var i = 0; i < Bindings.GamemodeActionKeys.Length; i++)
+            sw.WriteLine($"key_gamemode{i + 1} {(int)Bindings.GamemodeActionKeys[i]}");
         sw.WriteLine($"key_brake {(int)Bindings.Brake}");
+        sw.WriteLine($"key_turnleft {(int)Bindings.TurnLeft}");
         sw.WriteLine($"key_turnright {(int)Bindings.TurnRight}");
         sw.WriteLine($"key_handbrake {(int)Bindings.Handbrake}");
         sw.WriteLine($"key_lookback {(int)Bindings.LookBack}");
@@ -843,14 +877,11 @@ public class SettingsMenu()
                 case "key_smoothturn":
                     Bindings.AerialStrafe = (Key)int.Parse(value, CultureInfo.InvariantCulture);
                     break;
-                case "key_jump":
-                    Bindings.Jump = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                    break;
-                case "key_boost":
-                    Bindings.Boost = (Key)int.Parse(value, CultureInfo.InvariantCulture);
-                    break;
-                case "key_brake":
-                    Bindings.Brake = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                case string s when s.StartsWith("key_gamemode", StringComparison.Ordinal) && int.TryParse(
+                    s["key_gamemode".Length..],
+                    out var actionIndex
+                ) && actionIndex is >= 1 and <= 10:
+                    Bindings.SetGamemodeActionKey(actionIndex - 1, (Key)int.Parse(value, CultureInfo.InvariantCulture));
                     break;
                 case "key_turnleft":
                     Bindings.TurnLeft = (Key)int.Parse(value, CultureInfo.InvariantCulture);
@@ -1188,8 +1219,7 @@ public class SettingsMenu()
                     : prop.Name switch
                     {
                         nameof(KeyBindings.OpenChat) => "Open Chat",
-                        nameof(KeyBindings.Jump) => "Jump",
-                        nameof(KeyBindings.Boost) => "Boost",
+                        string n when n.StartsWith("GamemodeAction") => $"Gamemode Action {n["GamemodeAction".Length..]}",
                         _ => prop.Name
                     },
                 KeyCode = (int)(prop.GetValue(Bindings) as Key? ?? Key.None)

@@ -188,7 +188,8 @@ public sealed class RaceInputController
         control.Left = !_freelook && (turnLeftPressed || aerialStrafePressed);
         control.Right = !_freelook && (turnRightPressed || aerialStrafePressed);
         control.Handb = handbrakePressed;
-        control.Jump = !_freelook && _pressedKeys.Contains(bindings.Jump);
-        control.Boost = !_freelook && _pressedKeys.Contains(bindings.Boost);
+        var gamemodeKeys = bindings.GamemodeActionKeys;
+        for (var i = 0; i < gamemodeKeys.Length; i++)
+            control.SetGamemodeAction(i, !_freelook && _pressedKeys.Contains(gamemodeKeys[i]));
     }
 }

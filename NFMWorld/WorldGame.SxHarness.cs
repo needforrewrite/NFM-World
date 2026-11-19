@@ -416,7 +416,8 @@ public partial class WorldGame
                     () => state.IsLoggedIn.Value,
                     () => state.PlayerName.Value,
                     () => deletionPending
-                )
+                ),
+                NFMWorld.UI.Routes.MainMenuView.SettingsOverlay()
             ]
         );
     }

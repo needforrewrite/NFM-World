@@ -14,12 +14,14 @@ namespace NFMWorldLibrary.Plugins;
 /// </remarks>
 public static class GamemodeCatalog
 {
-    public static IReadOnlyList<string> Ids { get; } = [DefaultGamemodes.PvP, DefaultGamemodes.TimeTrial];
+    public static IReadOnlyList<string> Ids { get; } =
+        [DefaultGamemodes.PvP, DefaultGamemodes.TimeTrial, DefaultGamemodes.Rocket];
 
     public static string DisplayName(string id) => id switch
     {
         DefaultGamemodes.PvP => "PvP",
         DefaultGamemodes.TimeTrial => "Time Trial",
+        DefaultGamemodes.Rocket => "Rocket League",
         _ => id
     };
 

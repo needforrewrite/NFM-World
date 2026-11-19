@@ -59,6 +59,9 @@ public class TimeTrialGamemode : PluginGamemode
         _multiplayer = IsMultiplayer;
     }
 
+    /// <summary>A time trial still ends in a scored finish, so the standard completion UI applies.</summary>
+    public override bool UsesStandardRaceCompletion => true;
+
     public override void Begin()
     {
         if (!ValidateStage()) return;

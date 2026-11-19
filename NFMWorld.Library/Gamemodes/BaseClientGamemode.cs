@@ -152,6 +152,21 @@ public abstract class BaseClientGamemode : IGamemode
     }
 
     /// <summary>
+    /// HUD widgets this gamemode wants mounted by the default HUD skins. Null or empty mounts
+    /// nothing; the widget is data (anchor, label, 0..1 accessor) and the host draws it, which
+    /// keeps a plugin's custom UI within the sandbox.
+    /// </summary>
+    public virtual IReadOnlyList<NFMWorldLibrary.Backend.GamemodeHudWidget>? GetHudWidgets() => null;
+
+    /// <summary>
+    /// Whether this gamemode is a scored race that uses the host's standard completion UI
+    /// (finish banner, the wasted-you're-out screen, the restart gate). True for competitive
+    /// gamemodes; an unscored sandbox or attract drive returns false so the host does not
+    /// hardcode which ids qualify.
+    /// </summary>
+    public virtual bool UsesStandardRaceCompletion => false;
+
+    /// <summary>
     /// User-callable reset function that can be used to reset the gamemode state.
     /// </summary>
     /// <remarks>

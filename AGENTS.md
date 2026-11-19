@@ -191,6 +191,33 @@ the affected function against upstream before debugging the tree. Two that were 
 
 Gamemodes are compiled `.NET` plugins — the Lua path is gone. Singleplayer and multiplayer share one code path.
 
+### Gamemode facilities in the host
+
+- **Every gamemode has a server side.** Completion is tracked server-side, so `GamemodeFactory` always
+  constructs one; a client-only plugin cannot run. `NFMWorld.Gamemodes.StandardRace` is the shared
+  completion kit: `TickCountdown` (works at both the client's and the GM's tick rates), `IsPlausibleCheckpoint`
+  (+1 checkpoint exactly, corroborated against the relayed position), `BuildStandings` (winner, then running
+  cars by position, then DNFs newest-death first) and `RaceProgress.TrackWasted`. PvP's server gamemode and the
+  Rocket one both sit on these; keep new gamemodes on them rather than re-deriving the rules.
+- **Generic car inputs** — `Control.GamemodeActions` holds ten held booleans (`GamemodeAction(0..9)` /
+  `SetGamemodeAction`), written each tick by `RaceInputController` from the "Gamemode Action 1..10" bindings
+  and relayed through `CarFrame.TheBitFlags` bits 17–26 (indexed `TheBitFlags[i]`), so remote cars press what
+  their owner pressed. `Control.Encode`/`Decode` still carry only the five vanilla inputs; gamemode actions do
+  not ride them.
+- **Generic physics facilities** (`CarPhysics`) — `Grounded` (contact as resolved at the end of the last step),
+  `AddImpulse(x,y,z)` (world-space, Y positive downward), `AddForwardThrust(amount)` (along the current heading,
+  positive forward), `PreStep`/`PostStep` events. A gamemode arms impulses from its tick or from `PreStep` and
+  they are consumed by that same step. No jump/boost semantics live in the engine; `NFMWorld.Gamemode.Rocket` is
+  the reference for combining them into an arcade layer.
+- **HUD widgets** — a gamemode overrides `GetHudWidgets()` (client) with data records
+  (`GamemodeHudWidget(Anchor, Label, Func<float>)`; anchors in `GamemodeHudAnchor`). The widget is data and the
+  host builds the node (`GamemodeHudWidgets`), which is what keeps a sandboxed plugin's custom UI inside Sx.
+  Every skin passes through `HudSkinRegistry.BuildWithGamemodeWidgets`, so declared widgets reach classic,
+  world and JSON skins. Widgets are re-read against `PresentationRevision`, so a declaration after mount still shows.
+- **Standard-completion UI is opt-in** — `BaseClientGamemode.UsesStandardRaceCompletion` (true for PvP, Time Trial,
+  Rocket) replaces the old hardcoded gamemode-id checks in the race phase; an unscored mode returns false and gets
+  no finish banner or death screen.
+
 ### Architecture
 
 - **One race phase** — `nfm-world/Mad/Gameplay/RacePhase.cs`. It composes `RaceInputController` and
@@ -240,7 +267,8 @@ Gamemodes are compiled `.NET` plugins — the Lua path is gone. Singleplayer and
   per instance before the first rewrite, so changing or resetting an override restores them. The preview's
   `CarVisual` copied its polys at construction, so a live paint change copies the colours into that mesh and rebuilds
   it. Overrides persist in `data/cfg/car-colors.json`.
-- The lobby offers PvP and Time Trial through `GamemodeCatalog.Ids`; config controls follow the selected mode.
+- The lobby offers PvP, Time Trial and Rocket League through `GamemodeCatalog.Ids`; config controls follow the
+  selected mode.
   Time Trial has no bots. Real remote racers remain roster players, not `IsFake` replay ghosts; they are drawn
   translucent and driven without inter-car collisions. Saved best-run ghosts remain singleplayer-only.
 - `IGamemodeContext.IsMultiplayer` distinguishes online sessions, including solo online races, from local play.
