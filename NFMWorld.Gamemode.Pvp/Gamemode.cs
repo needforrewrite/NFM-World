@@ -305,35 +305,16 @@ public class PvpGamemode : PluginGamemode
                 car.CarPhysics.Halted = true;
         }
 
-        if (winner is not null)
-        {
-            // A spectator has no horse in this race: nobody won or lost for them.
-            var spectating = ClientPlayer is null;
-            var clientWon = !spectating && winner.Info.IsClientPlayer;
-            HudState.StateText = clientWon
-                ? wastedVictory ? "You won, all other cars have been wasted!"
-                    : lastCarStanding ? "You won, you're the last car standing!" : "You finished first, nice job!"
-                : lastCarStanding ? $"{winner.Info.PlayerName} is the last car standing, race over!"
-                    : $"{winner.Info.PlayerName} finished first, race over!";
-            HudState.ClientWon = clientWon;
-            HudState.ClientLost = !spectating && !clientWon;
-            HudState.ResultTitle = spectating ? "RACE OVER!"
-                : clientWon ? wastedVictory ? "YOU WASTED 'EM!" : "YOU WON!" : "YOU LOST!";
-        }
-        else
-        {
-            HudState.StateText = "All cars are out, race over!";
-            HudState.ClientWon = false;
-            HudState.ClientLost = ClientPlayer is not null;
-            HudState.ResultTitle = ClientPlayer is null ? "RACE OVER!" : "YOU LOST!";
-        }
-
-        HudState.Finished = true;
-        HudState.StateTextEndsAt = null;
-
-        // The announcer stops ticking with the race, so its lines would otherwise stay up.
-        HudState.StatusMessage = null;
-        HudState.StuntMessage = null;
+        StandardRace.FinishHud(
+            HudState,
+            ClientPlayer,
+            winner,
+            wonMessage: wastedVictory
+                ? "You won, all other cars have been wasted!"
+                : lastCarStanding ? "You won, you're the last car standing!" : null,
+            lostMessage: lastCarStanding ? $"{winner?.Info.PlayerName} is the last car standing, race over!" : null,
+            wonTitle: wastedVictory ? "YOU WASTED 'EM!" : null
+        );
     }
 }
 

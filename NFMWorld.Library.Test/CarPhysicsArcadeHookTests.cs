@@ -74,15 +74,104 @@ public class CarPhysicsArcadeHookTests
         var car = CreateCar();
         car.Position = new Vector3d(0, World.Ground - car.GroundAt - 20_000, 0);
         var physics = car.CarPhysics;
-        var before = physics.SummedWheelVelocity;
+        var before = physics.ForwardSpeed;
 
         physics.AddForwardThrust(12);
         car.Drive(stage);
-        var after = physics.SummedWheelVelocity;
 
-        var planarBefore = Fixed64.Sqrt(before.X * before.X + before.Z * before.Z);
-        var planarAfter = Fixed64.Sqrt(after.X * after.X + after.Z * after.Z);
-        Assert.IsTrue(planarAfter > planarBefore, $"thrust must add planar speed: {planarBefore} -> {planarAfter}");
+        Assert.IsTrue(physics.ForwardSpeed > before, $"thrust must add forward speed: {before} -> {physics.ForwardSpeed}");
+    }
+
+    [TestMethod]
+    public void AddForwardThrust_PitchedUp_HasAnUpwardComponent()
+    {
+        var stage = new BackendStage("arcade-hook", new StageLoader());
+        var car = CreateCar();
+        car.Position = new Vector3d(0, World.Ground - car.GroundAt - 20_000, 0);
+        car.CarPhysics.Pzy = 30; // nose pitched up (Y is down, so positive Pzy is nose-up)
+        var beforeY = car.CarPhysics.SummedWheelVelocity.Y;
+
+        car.CarPhysics.AddForwardThrust(100);
+        var afterY = car.CarPhysics.SummedWheelVelocity.Y;
+
+        Assert.IsTrue(afterY < beforeY, "a nose-up thrust must lift (Y decreases)");
+    }
+
+    [TestMethod]
+    public void AddLocalImpulse_AppliesTowardsTheCarsRight()
+    {
+        var stage = new BackendStage("arcade-hook", new StageLoader());
+        var car = CreateCar();
+        car.Position = new Vector3d(0, World.Ground - car.GroundAt - 20_000, 0);
+        // Facing +Z (yaw 0): the follow camera looks +Z from behind, so screen-right is +X.
+        var beforeX = car.CarPhysics.SummedWheelVelocity.X;
+
+        car.CarPhysics.AddLocalImpulse(50, 0);
+
+        Assert.IsTrue(car.CarPhysics.SummedWheelVelocity.X > beforeX, "right kick must push towards +X at yaw 0");
+    }
+
+    [TestMethod]
+    public void AddLocalImpulse_UpPushesAgainstGravity()
+    {
+        var stage = new BackendStage("arcade-hook", new StageLoader());
+        var car = CreateCar();
+        car.Position = new Vector3d(0, World.Ground - car.GroundAt - 20_000, 0);
+        var beforeY = car.CarPhysics.SummedWheelVelocity.Y;
+
+        car.CarPhysics.AddLocalImpulse(0, 50);
+
+        // Y is positive downward, so "up" must decrease Y.
+        Assert.IsTrue(car.CarPhysics.SummedWheelVelocity.Y < beforeY, "an up kick must push towards -Y");
+    }
+
+    /// <summary>
+    /// Air heading must turn the way the player reads it. The follow camera sits behind the car
+    /// looking +Z, so screen-right is world +X; a positive turn must swing the nose towards +X.
+    /// Yaw increases the other way, which is what made this read inverted.
+    /// </summary>
+    [TestMethod]
+    public void TurnYaw_Positive_TurnsTowardsScreenRight()
+    {
+        var stage = new BackendStage("arcade-hook", new StageLoader());
+        var car = CreateCar();
+        car.Position = new Vector3d(0, World.Ground - car.GroundAt - 20_000, 0);
+        var noseBefore = car.CarPhysics.NoseDirection;
+
+        car.CarPhysics.TurnYaw(30);
+        var noseAfter = car.CarPhysics.NoseDirection;
+
+        // At yaw 0 the nose is +Z; turning right swings it towards +X.
+        Assert.IsTrue(noseAfter.X > noseBefore.X, $"a right turn must swing the nose towards +X: {noseBefore} -> {noseAfter}");
+    }
+
+    /// <summary>
+    /// The two kick axes must not be swapped or mirrored. Before this was pinned, the x axis
+    /// was inverted (left+jump sent the car right).
+    /// </summary>
+    [TestMethod]
+    public void AddLocalImpulse_KickAxesAreIndependent()
+    {
+        var stage = new BackendStage("arcade-hook", new StageLoader());
+
+        static BackendCar Airborne()
+        {
+            var rad = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], CarName);
+            var car = new BackendCar(rad, 0, 0, 0, isClientPlayer: true);
+            car.Position = new Vector3d(0, World.Ground - car.GroundAt - 20_000, 0);
+            return car;
+        }
+
+        var up = Airborne();
+        var right = Airborne();
+        up.CarPhysics.AddLocalImpulse(0, 200);
+        right.CarPhysics.AddLocalImpulse(200, 0);
+        up.Drive(stage);
+        right.Drive(stage);
+
+        Assert.IsTrue(right.Position.X > 0, "a right kick at yaw 0 must move towards +X");
+        Assert.AreEqual(0, up.Position.X.rawValue, "an up kick must not move the car sideways");
+        Assert.IsTrue(up.Position.Y < World.Ground - up.GroundAt - 19_000, "an up kick must lift the car");
     }
 
     [TestMethod]

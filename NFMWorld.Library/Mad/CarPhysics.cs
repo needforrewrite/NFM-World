@@ -312,29 +312,119 @@ public partial class CarPhysics
     }
 
     /// <summary>
-    /// Adds a horizontal acceleration along the car's current heading: positive drives forward,
-    /// negative reverses. Gamemodes that implement a boost call this once per tick.
+    /// Adds an impulse in the car's own frame: <paramref name="forward"/> along the nose,
+    /// <paramref name="right"/> towards the car's right side, <paramref name="up"/> towards its
+    /// roof. Model axes are +X right, +Y down and +Z forward, rotated by
+    /// <see cref="ToWorldAxis"/> - the same transform the wheels use - so a flipped car kicks
+    /// the way it visibly points.
+    /// </summary>
+    [PluginVisible]
+    public void AddLocalImpulse(fix64 forward, fix64 right, fix64 up)
+    {
+        // Model +Z is the nose, +Y is down, and +X is the car's right: the follow camera sits
+        // behind the car looking +Z, so screen-right is world +X. Only up needs negating.
+        var axis = ToWorldAxis(right, -up, forward);
+        AddImpulse(axis.X, axis.Y, axis.Z);
+    }
+
+    /// <summary>Adds a sideways/upward impulse in the car's frame; see the three-argument overload.</summary>
+    [PluginVisible]
+    public void AddLocalImpulse(fix64 right, fix64 up) => AddLocalImpulse(fix64.Zero, right, up);
+
+    /// <summary>
+    /// Rotates the car's heading (yaw) by <paramref name="degrees"/>, for gamemodes whose air
+    /// steering turns the car rather than rolling it. Positive turns the way a player reads as
+    /// "right": the nose swings towards the camera's right, the same direction
+    /// <see cref="Control.Right"/> steers on the ground. Yaw itself increases counter-clockwise
+    /// (the nose swings towards -X at yaw 0), hence the sign flip.
+    /// </summary>
+    [PluginVisible]
+    public void TurnYaw(fix64 degrees)
+    {
+        if (Car is null) return;
+        var yaw = Car.Rotation.Xz.Degrees;
+        Car.Rotation = Car.Rotation with
+        {
+            Xz = NFMWorldLibrary.FixedMath.f64AngleSingle.FromDegrees(yaw - degrees)
+        };
+    }
+
+    /// <summary>
+    /// Adds an acceleration along the car's actual nose, so a pitched or flipped car is pushed
+    /// the way it points rather than the way a flat-car approximation says. Positive drives
+    /// along the nose, negative reverses. <see cref="NoseDirection"/> is the axis it uses.
     /// </summary>
     [PluginVisible]
     public void AddForwardThrust(fix64 amount)
     {
-        var heading = (fix64)Mxz;
-        var x = amount * UMath.Sin(-heading);
-        var z = amount * UMath.Cos(heading);
-        AddImpulse(x, 0, z);
+        var nose = NoseDirection;
+        AddImpulse(amount * nose.X, amount * nose.Y, amount * nose.Z);
+    }
+
+    /// <summary>
+    /// The direction the car's nose points, in world space. Built from the car's rotation, not
+    /// from wheel velocity: <c>Mxz</c> is derived from where the wheels are moving, so after a
+    /// spin or a flip it no longer describes where the car faces, and anything driven along it
+    /// (a boost, a steering assist) ends up pushing the wrong way.
+    /// </summary>
+    [PluginVisible]
+    public f64Vector3 NoseDirection
+    {
+        get
+        {
+            // The nose is model +Z; ToWorldAxis applies the same transform the wheels use, so
+            // this axis cannot disagree with the car's rendered heading.
+            return ToWorldAxis(fix64.Zero, fix64.Zero, fix64.One);
+        }
+    }
+
+    /// <summary>
+    /// Rotates a model-space axis into world space with the same UMath.Rot sequence
+    /// <see cref="Drive"/> uses for the wheel contact points: xy by Pxy, yz by Pzy, then xz by
+    /// yaw. Sharing the transform is what keeps these axes agreeing with what the car renders.
+    /// </summary>
+    private f64Vector3 ToWorldAxis(fix64 modelX, fix64 modelY, fix64 modelZ)
+    {
+        var x = new[] { modelX, modelX, modelX, modelX };
+        var y = new[] { modelY, modelY, modelY, modelY };
+        var z = new[] { modelZ, modelZ, modelZ, modelZ };
+
+        UMath.Rot(x, y, fix64.Zero, fix64.Zero, Pxy, 4);
+        UMath.Rot(y, z, fix64.Zero, fix64.Zero, Pzy, 4);
+        UMath.Rot(x, z, fix64.Zero, fix64.Zero, Car?.Rotation.Xz.Degrees ?? fix64.Zero, 4);
+
+        return new f64Vector3(x[0], y[0], z[0]);
+    }
+
+    /// <summary>
+    /// The average wheel velocity projected onto the nose, signed: negative when moving
+    /// backwards. A gamemode caps a boost against this so thrust stops accelerating at a top
+    /// speed instead of compounding forever.
+    /// </summary>
+    [PluginVisible]
+    public fix64 ForwardSpeed
+    {
+        get
+        {
+            var nose = NoseDirection;
+            var vx = (Scx[0] + Scx[1] + Scx[2] + Scx[3]) * fix64.Quarter;
+            var vy = (Scy[0] + Scy[1] + Scy[2] + Scy[3]) * fix64.Quarter;
+            var vz = (Scz[0] + Scz[1] + Scz[2] + Scz[3]) * fix64.Quarter;
+            return vx * nose.X + vy * nose.Y + vz * nose.Z;
+        }
     }
 
     /// <summary>
     /// Raised at the top of <see cref="Drive"/>, before any physics is applied, so a gamemode
     /// can arm per-tick state (an impulse, a thrust) from inside the same step that consumes it.
     /// </summary>
-    public event Action<CarPhysics>? PreStep;
+    [PluginVisible] public event Action<CarPhysics>? PreStep;
 
     /// <summary>
     /// Raised at the end of <see cref="Drive"/>, once contact and position are resolved, so a
     /// gamemode can observe the outcome of the step (landing, wasted, laps) without polling.
     /// </summary>
-    public event Action<CarPhysics>? PostStep;
+    [PluginVisible] public event Action<CarPhysics>? PostStep;
 
     private void RecordStageImpact(CollisionShapeRef shape, f64Vector3 impulse, f64Vector3 velocity)
     {
@@ -782,10 +872,10 @@ public partial class CarPhysics
         // }
     }
 
-    private static int GetWheelGround(CarPhysics carPhysics, ContO conto, fix64 bottomy)
+    private int GetWheelGround(CarPhysics carPhysics, ContO conto, fix64 bottomy)
     {
         int wheelGround;
-        if (World.IsHyperglidingEnabled)
+        if (World.IsHyperglidingEnabled && IsHyperglidingEnabled)
         {
             wheelGround = (int)((bottomy * _oneOverTickRate) * (fix64.One - _tickRate));
             if (!carPhysics.BadLanding)
@@ -801,10 +891,10 @@ public partial class CarPhysics
         return wheelGround;
     }
 
-    private static fix64 GetBottomY(CarPhysics carPhysics, ContO conto)
+    private fix64 GetBottomY(CarPhysics carPhysics, ContO conto)
     {
         fix64 bottomy;
-        if (World.IsHyperglidingEnabled)
+        if (World.IsHyperglidingEnabled && IsHyperglidingEnabled)
         {
             if (carPhysics.BadLanding)
             {
@@ -823,7 +913,9 @@ public partial class CarPhysics
         return bottomy;
     }
 
-    public event EventHandler? Distruct;
+    [PluginVisible] public bool IsHyperglidingEnabled { get; set; } = true;
+
+    [PluginVisible] public event EventHandler? Distruct;
 
     public void bounceRebound(
         int wi,
@@ -967,7 +1059,6 @@ public partial class CarPhysics
         fix64 bottomy = GetBottomY(this, conto);
 
         control.Zyinv = zyinv;
-        //
 
         fix64 airx = 0;
         fix64 airz = 0;

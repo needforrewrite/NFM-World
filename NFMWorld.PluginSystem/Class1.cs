@@ -8,7 +8,8 @@ namespace NFMWorld.PluginSystem;
     | AttributeTargets.Method
     | AttributeTargets.Property
     | AttributeTargets.Field
-    | AttributeTargets.Constructor,
+    | AttributeTargets.Constructor
+    | AttributeTargets.Event,
     Inherited = false
 )]
 public class PluginVisibleAttribute(Visible visible = Visible.Self) : Attribute

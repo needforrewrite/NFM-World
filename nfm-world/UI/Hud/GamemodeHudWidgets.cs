@@ -27,15 +27,15 @@ public static class GamemodeHudWidgets
             var widgets = Declared(race, anchor) ?? [];
             return Sx.View(
                 style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 8),
-                children: [.. widgets.Select(BuildWidget)]
+                children: [.. widgets.Select(w => BuildWidget(w, race))]
             );
         }
     );
 
     private static List<GamemodeHudWidget>? Declared(IHudData race, string anchor)
     {
-        // Plain-list data: reading the revision re-runs the accessor once per frame, so a widget
-        // declared after the HUD mounted still appears.
+        // Plain-list data: reading the revision re-runs this accessor once per frame, which is
+        // what lets Sx.Show mount widgets the gamemode declared after the HUD was built.
         _ = (race as UiState.RaceState)?.PresentationRevision.Value;
         var widgets = (race as UiState.RaceState)?.GamemodeWidgets;
         if (widgets is null || widgets.Count == 0)
@@ -48,11 +48,18 @@ public static class GamemodeHudWidgets
         return declared;
     }
 
-    private static View BuildWidget(GamemodeHudWidget widget)
+    private static View BuildWidget(GamemodeHudWidget widget, IHudData race)
     {
+        // The gamemode's accessor reads plain fields, not signals, so the bar's style effect
+        // would never re-run on its own. Reading the per-frame revision subscribes it to the
+        // one signal the phase bumps every tick.
         var fill = GlassCardUi.StatBar(
             widget.Label,
-            () => Math.Clamp((double)widget.Value(), 0, 1),
+            () =>
+            {
+                _ = (race as UiState.RaceState)?.PresentationRevision.Value;
+                return Math.Clamp((double)widget.Value(), 0, 1);
+            },
             Theme.Accent,
             8
         );

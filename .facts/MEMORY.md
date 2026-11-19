@@ -9,6 +9,7 @@
 - [UI runtime is Sx, not Preact](ui-runtime-is-sx-not-preact.md) — the UI layer is Sx-based.
 - [C# Sx UI traps](sx-csharp-ui-traps.md) — flow hosts need Display.Contents, Styles fields are nullable on purpose, effects schedule through TimeProvider.
 - [Car paint rewrites the shared Rad3d](car-paint-rewrites-shared-rad.md) — garage colours are poly rewrites on a shared model; capture the original first, and re-sync a live visual's copied mesh colours.
+- [Car coordinate conventions](car-coordinate-conventions.md) — Y down, nose +Z, screen-right +X at yaw 0, yaw increases left, model +X is car-right; derive axes with `ToWorldAxis`/`NoseDirection`, never hand-written trig, and assert with a test.
 - [Silk EGL generated using-trim breaks CS1614](silk-egl-generated-using-trim-breaks-cs1614.md) — stripping "unused" usings from `Maxine.Silk.EGL/*.gen.cs` makes `[Extension]` ambiguous; restore, don't hand-edit.
 - [SignalsDotnet subscription leak](signalsdotnet-subscription-leak.md) — 3.4.1 leaked an observer per compute; vendored fork fixes it, and the slowdown aggregates over time rather than per frame.
 - [sokol/D3D11 HLSL semantic names must match the shader signature](sokol-d3d11-hlsl-semantic-names-must-match-signature.md) — spirv-cross renames every vertex input to TEXCOORD&lt;location&gt;, so source semantics like POSITION0 can never match; upstream shdc hardcodes TEXCOORD.

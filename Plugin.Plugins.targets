@@ -53,6 +53,41 @@
     </ItemGroup>
 
     <!--
+        A real project-reference edge for every plugin, so build systems that decide what to
+        rebuild from the project graph (Rider's build host does; `dotnet build` does not) see a
+        plugin edit as dirtying the host. Without these the plugins are only reached through the
+        MSBuild task in BuildPlugins, which is invisible to that graph: Rider skipped the build
+        entirely ("Build completed in 00:00:00.572") and the game kept running the previous
+        gamemode.dll.
+
+        ReferenceOutputAssembly=true and Private=false: the plugin is loaded at run time from
+        data/gamemodes/<id>/ and never linked against, so false would be the "correct" setting -
+        but false also removes the plugin from the NuGet restore graph, and that graph is what
+        graph-based build hosts use to see the edge. Private=false keeps the plugin's output out
+        of the host's reference list, so nothing is actually consumed.
+
+        @(Plugin->'%(Project)') rather than %(Plugin.Project): a bare metadata reference in an
+        evaluation-time Include does not expand, so it was added as the literal string
+        "%(Plugin.Project)" and silently ignored by the SDK - no edge, no error. The transform
+        copies the Plugin item's metadata onto the reference, and a "Project" value there
+        collides with the SDK's own (MSB3107), so it is cleared below along with the rest.
+    -->
+    <ItemGroup Condition="'$(IsTestProject)' != 'true'">
+        <ProjectReference Include="@(Plugin->'%(Project)')"
+                          ReferenceOutputAssembly="true"
+                          Private="false"
+                          SkipGetTargetFrameworkProperties="true">
+            <!-- The transform carries the Plugin item's metadata across, and a "Project" value
+                 on a ProjectReference collides with the SDK's own (MSB3107). Only the include
+                 path matters here. -->
+            <Project></Project>
+            <PluginId></PluginId>
+            <PluginDirectory></PluginDirectory>
+            <PluginFileName></PluginFileName>
+        </ProjectReference>
+    </ItemGroup>
+
+    <!--
         Before AssignTargetPaths because that is where the SDK's content items are
         given a TargetPath to copy to, and it runs inside PrepareResources - early
         in the build, before the plugins would otherwise have been built at all.

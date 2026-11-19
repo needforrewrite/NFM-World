@@ -1,5 +1,7 @@
 ﻿using JetBrains.Annotations;
+using FixedMathSharp;
 using TightPack;
+using fix64 = FixedMathSharp.Fixed64;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
@@ -29,14 +31,18 @@ internal enum RocketState
 [UsedImplicitly]
 public sealed class RocketGamemode : PluginGamemode
 {
-    // Action 1 jumps (grounded only), action 2 boosts while held. Both are read from
-    // Control.GamemodeActions, which the host fills from the "Gamemode Action N" bindings.
+    // Held actions, written by the host from the "Gamemode Action N" bindings.
     private const int JumpAction = 0;
     private const int BoostAction = 1;
+    private const int RollLeftAction = 2;
+    private const int RollRightAction = 3;
 
-    // Arcade tuning, in per-tick units against the stock gravity.
+    // Arcade tuning. Boost is a top speed, not an acceleration: thrust scales with the gap to
+    // BoostSpeed so the car asymptotes there instead of compounding.
     private const int JumpImpulse = 160;
-    private const int BoostThrust = 12;
+    private const int AirYawRate = 1; // degrees per tick while an air-heading key is held
+    private const int BoostSpeed = 330;
+    private const int BoostAcceleration = 22;
     private const float MaxBoost = 200;
     private const float BoostRegenPerSecond = 6;
     private const float BoostDrainPerSecond = 22;
@@ -50,8 +56,17 @@ public sealed class RocketGamemode : PluginGamemode
     private int _finishRevision;
 
     private PhysicsController _physics = null!;
-    private readonly Dictionary<BackendCar, float> _boost = [];
-    private readonly Dictionary<BackendCar, bool> _jumpHeld = [];
+    private readonly UnlimitedArray<CarState> _cars = new();
+
+    /// <summary>All the per-car arcade state, one object per player indexed by slot.</summary>
+    private sealed class CarState
+    {
+        public float Boost = BoostStart;
+        public bool JumpHeld;
+        public int JumpsLeft = 2;
+        public bool StoredLeft;
+        public bool StoredRight;
+    }
 
     public RocketGamemode(
         ClientGamemodeParameters clientGamemodeParameters,
@@ -75,8 +90,6 @@ public sealed class RocketGamemode : PluginGamemode
         _clientTick = 0;
         _receivedFinish = false;
         _finishRevision = 0;
-        _boost.Clear();
-        _jumpHeld.Clear();
         HudState.StateText = null;
         HudState.ResultTitle = null;
         HudState.StateTextEndsAt = null;
@@ -116,13 +129,18 @@ public sealed class RocketGamemode : PluginGamemode
                 break;
 
             case RocketState.InProgress:
+                foreach (var player in Players)
+                {
+                    ArmArcadeInputs(player);
+                }
+
                 _physics.GameTick();
 
                 var clientCrossed = false;
                 foreach (var player in Players)
                 {
                     if (player.Car is not { } car) continue;
-                    ArmArcadeInputs(car);
+                    TidyArcadeInputs(player);
                     FixHoopHelper.HandleFixHoops(CurrentStage, car);
                     if (!IsLocallySimulated(player)) continue;
                     if (CheckPointHelper.HandleCheckPoint(CurrentStage, car) && player == ClientPlayer)
@@ -147,7 +165,7 @@ public sealed class RocketGamemode : PluginGamemode
                 if (ClientPlayer?.Car is { } ownCar)
                 {
                     UpdateHudAndSounds(ownCar);
-                    _clientBoost = _boost.TryGetValue(ownCar, out var fuel) ? fuel : 0;
+                    _clientBoost = _cars[ClientPlayer.Index].Boost;
                     HudState.Lap = Math.Min(ownCar.CurrentLap + 1, CurrentStage.Nlaps);
                     HudState.Position = ownCar.Placement + 1;
                 }
@@ -172,36 +190,109 @@ public sealed class RocketGamemode : PluginGamemode
         }
     }
 
-    /// <summary>
-    /// The arcade layer: a grounded jump on the rising edge of action 1, and a held forward
-    /// thrust on action 2 that spends boost. Both go through the generic CarPhysics facilities,
-    /// so nothing here is special-cased by the engine.
-    /// </summary>
-    private void ArmArcadeInputs(BackendCar car)
+    private void TidyArcadeInputs(ClientSidePlayer player)
     {
+        var car = player.Car!;
         var physics = car.CarPhysics;
         var control = car.Control;
+        var state = _cars[player.Index];
+
+        if (state.StoredLeft)
+        {
+            control.Left = true;
+            state.StoredLeft = false;
+        }
+
+        if (state.StoredRight)
+        {
+            control.Right = true;
+            state.StoredRight = false;
+        }
+    }
+
+    /// <summary>
+    /// The arcade layer. Action 1 jumps - once from the ground and once more in the air; the
+    /// airborne jump is directional from the steering keys. Actions 3/4 steer the car's yaw in
+    /// the air (Rocket-League heading control) rather than rolling it. Action 2 boosts along the
+    /// nose, capped at a top speed.
+    /// </summary>
+    private void ArmArcadeInputs(ClientSidePlayer player)
+    {
+        var car = player.Car!;
+        var physics = car.CarPhysics;
+        var control = car.Control;
+        var state = _cars[player.Index];
+        // Captured before the yaw block below clears the bits, so an airborne jump can still be
+        // steered on the same tick its keys are consumed for heading.
+        var steerInput = (X: (control.Right ? fix64.One : fix64.Zero) - (control.Left ? fix64.One : fix64.Zero),
+                          Y: (control.Up ? fix64.One : fix64.Zero) - (control.Down ? fix64.One : fix64.Zero));
+
+        // Air heading: yaw left/right, the Q/E-style controls mapped onto heading instead of roll.
+        if (physics.StuntState is 2 or -1)
+        {
+            if (control.Left)
+            {
+                state.StoredLeft = true;
+                control.Left = false;
+                physics.TurnYaw(-AirYawRate * car.Stats.Airs);
+            }
+
+            if (control.Right)
+            {
+                state.StoredRight = true;
+                control.Right = false;
+                physics.TurnYaw(AirYawRate * car.Stats.Airs);
+            }
+
+            if (control.GamemodeAction(RollLeftAction))
+            {
+                control.Left = true;
+            }
+
+            if (control.GamemodeAction(RollRightAction))
+            {
+                control.Right = true;
+            }
+        }
 
         var jump = control.GamemodeAction(JumpAction);
-        _jumpHeld.TryGetValue(car, out var held);
-        if (jump && !held && physics.Grounded)
-            physics.AddImpulse(0, -JumpImpulse, 0);
-        _jumpHeld[car] = jump;
+        var fromGround = physics.Grounded;
+        if (fromGround)
+            state.JumpsLeft = 2;
 
-        var boost = _boost.TryGetValue(car, out var fuel) ? fuel : BoostStart;
+        if (jump && !state.JumpHeld && state.JumpsLeft > 0)
+        {
+            state.JumpsLeft--;
+            var steer = fromGround ? (X: fix64.Zero, Y: fix64.Zero) : steerInput;
+            if (steer.X == 0 && steer.Y == 0)
+                physics.AddImpulse(0, -JumpImpulse, 0);
+            else
+                physics.AddLocalImpulse(steer.X * JumpImpulse, steer.Y * JumpImpulse);
+
+            // Enter the vanilla take-off path directly: clearing the grounded flag stops the
+            // next Drive from zeroing the state, and the jump impulse lifts the car before it
+            // can be re-grounded the same tick.
+            physics.Mtouch = false;
+            physics.StuntState = 1;
+        }
+
+        state.JumpHeld = jump;
+
         var perTickDrain = BoostDrainPerSecond / NFMWorldLibrary.Physics.TargetTps;
         var perTickRegen = BoostRegenPerSecond / NFMWorldLibrary.Physics.TargetTps;
-        if (control.GamemodeAction(BoostAction) && boost > 0)
+        if (control.GamemodeAction(BoostAction) && state.Boost > 0)
         {
-            boost = MathF.Max(0, boost - perTickDrain);
-            physics.AddForwardThrust(BoostThrust);
+            state.Boost = MathF.Max(0, state.Boost - perTickDrain);
+            // Proportional to the gap to the top speed: thrust fades out as BoostSpeed is
+            // reached, so boosting into a slope or off a jump never compounds.
+            var gap = BoostSpeed - physics.ForwardSpeed;
+            if (gap > 0)
+                physics.AddForwardThrust((fix64)(BoostAcceleration * gap / BoostSpeed));
         }
         else
         {
-            boost = MathF.Min(MaxBoost, boost + perTickRegen);
+            state.Boost = MathF.Min(MaxBoost, state.Boost + perTickRegen);
         }
-
-        _boost[car] = boost;
     }
 
     private bool IsLocallySimulated(ClientSidePlayer player)
@@ -266,29 +357,7 @@ public sealed class RocketGamemode : PluginGamemode
             if (player.Car is { } car)
                 car.CarPhysics.Halted = true;
 
-        if (winner is not null)
-        {
-            var spectating = ClientPlayer is null;
-            var clientWon = !spectating && winner.Info.IsClientPlayer;
-            HudState.StateText = clientWon
-                ? "You finished first, nice job!"
-                : $"{winner.Info.PlayerName} finished first, race over!";
-            HudState.ClientWon = clientWon;
-            HudState.ClientLost = !spectating && !clientWon;
-            HudState.ResultTitle = spectating ? "RACE OVER!" : clientWon ? "YOU WON!" : "YOU LOST!";
-        }
-        else
-        {
-            HudState.StateText = "All cars are out, race over!";
-            HudState.ClientWon = false;
-            HudState.ClientLost = ClientPlayer is not null;
-            HudState.ResultTitle = ClientPlayer is null ? "RACE OVER!" : "YOU LOST!";
-        }
-
-        HudState.Finished = true;
-        HudState.StateTextEndsAt = null;
-        HudState.StatusMessage = null;
-        HudState.StuntMessage = null;
+        StandardRace.FinishHud(HudState, ClientPlayer, winner);
     }
 
     /// <summary>
@@ -309,8 +378,10 @@ public sealed class RocketGamemode : PluginGamemode
             var player = Players[i];
             var (x, z) = CurrentStage.GetStartPosition(i);
             player.Car = new BackendCar(player.Info, i, x, z) { CurrentCheckpoint = 0, CurrentLap = 0 };
-            _boost[player.Car] = BoostStart;
-            _jumpHeld[player.Car] = false;
+            player.Car.CarPhysics.Stat = player.Car.CarPhysics.Stat with { Airc = 0 };
+            player.Car.CarPhysics.Stat = player.Car.CarPhysics.Stat with { Airs = player.Car.Stats.Airs / 2 };
+            player.Car.CarPhysics.IsHyperglidingEnabled = false;
+            _cars[player.Index] = new CarState();
         }
     }
 }

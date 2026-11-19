@@ -205,10 +205,15 @@ Gamemodes are compiled `.NET` plugins — the Lua path is gone. Singleplayer and
   their owner pressed. `Control.Encode`/`Decode` still carry only the five vanilla inputs; gamemode actions do
   not ride them.
 - **Generic physics facilities** (`CarPhysics`) — `Grounded` (contact as resolved at the end of the last step),
-  `AddImpulse(x,y,z)` (world-space, Y positive downward), `AddForwardThrust(amount)` (along the current heading,
-  positive forward), `PreStep`/`PostStep` events. A gamemode arms impulses from its tick or from `PreStep` and
-  they are consumed by that same step. No jump/boost semantics live in the engine; `NFMWorld.Gamemode.Rocket` is
-  the reference for combining them into an arcade layer.
+  `AddImpulse(x,y,z)` (world-space, Y positive downward), `AddLocalImpulse(forward,right,up)` (car frame; model +Z
+  nose, +Y down, +X right, rotated by the same `UMath.Rot` sequence `Drive` uses for the wheels), `AddForwardThrust`
+  (along the nose, pitch included), `ForwardSpeed` (velocity projected onto the nose, signed), `TurnYaw` (air
+  heading, positive right), `PreStep`/`PostStep` events. A gamemode arms impulses from its tick or from `PreStep`
+  and they are consumed by that same step. Entering the stunt/air-control path is the gamemode's job: set
+  `Mtouch = false; StuntState = 1` (there is no `BeginStunt`; `Drive` zeroes the state while `Mtouch` is set). No
+  jump/boost semantics live in the engine; `NFMWorld.Gamemode.Rocket` is the reference (double jump, directional
+  airborne jump, Q/E heading control, boost as a top speed, per-car state in an `UnlimitedArray` indexed by
+  `ClientSidePlayer.Index`).
 - **HUD widgets** — a gamemode overrides `GetHudWidgets()` (client) with data records
   (`GamemodeHudWidget(Anchor, Label, Func<float>)`; anchors in `GamemodeHudAnchor`). The widget is data and the
   host builds the node (`GamemodeHudWidgets`), which is what keeps a sandboxed plugin's custom UI inside Sx.
@@ -217,6 +222,35 @@ Gamemodes are compiled `.NET` plugins — the Lua path is gone. Singleplayer and
 - **Standard-completion UI is opt-in** — `BaseClientGamemode.UsesStandardRaceCompletion` (true for PvP, Time Trial,
   Rocket) replaces the old hardcoded gamemode-id checks in the race phase; an unscored mode returns false and gets
   no finish banner or death screen.
+
+### Car coordinate conventions
+
+Read this before touching anything that pushes, steers or orients a car. Every rule here was
+established by measurement, not by reading the trig — the formulas read plausibly either way,
+and getting one wrong ships a control that works backwards. **Assert against
+`CarPhysics.NoseDirection` in a test rather than reasoning about signs**; the existing
+coverage is `CarPhysicsArcadeHookTests` and `RocketArcadeBehaviourTests`.
+
+|Rule|Consequence|
+|---|---|
+|**Y is positive downward**|"Up" is a negative Y impulse; a rising car's position value *decreases*. `World.Ground` is a floor constant.|
+|**At yaw 0 the nose points +Z**|Throttle drives towards +Z.|
+|**Screen-right is +X at yaw 0**|`FollowCamera` sits behind the car looking +Z, so its right is world +X. Check every left/right question against this.|
+|**Yaw (`Rotation.Xz`) increases counter-clockwise**|Adding to yaw swings the nose from +Z towards **-X**, which reads as turning **left**. `control.Right` decreases `WheelXz`/`Xz`, confirming it.|
+|**Model space is +Z nose, +Y down, +X car-right**|Only `up` gets negated when mapping to world. Negating `right` too inverts every sideways kick.|
+
+- **Derive axes with `ToWorldAxis`, never hand-written trig.** It applies the exact `UMath.Rot`
+  sequence `Drive` uses for the wheel contact points (xy by `Pxy`, yz by `Pzy`, then xz by yaw).
+  A trig formula written from scratch disagrees with the rendered car at pitch/roll extremes and
+  on flips — that is what produced three inverted-control bugs in a row.
+- **`TurnYaw(degrees)` is screen-relative**: positive turns the player's right, and it negates
+  internally because yaw increases the other way. Never add to `Xz` directly.
+- **`NoseDirection` is not `Mxz`.** `Mxz` comes from wheel velocity, so after a spin or flip it
+  describes where the car *slides*, not where it *faces*. Boost, steering assists and the
+  `ForwardSpeed` cap all use `NoseDirection`.
+- **A jump starts a stunt only if the gamemode says so**: `Drive` zeroes `StuntState` on every
+  `Mtouch` tick, so set **both** `Mtouch = false` and `StuntState = 1`. There is no engine helper.
+  `StuntState` is 0 grounded, 1 take-off (promoted to 2 next tick), 2 airborne, -1 wall-riding.
 
 ### Architecture
 
@@ -313,7 +347,12 @@ Gamemodes are compiled `.NET` plugins — the Lua path is gone. Singleplayer and
   `RacePhase`s: the replaced phase's `Dispose` is deferred to end-of-frame, so it runs after the replacement is live
   and would unload the plugin out from under it. The `map` and `car` dev commands are the cases that matter; they
   build a fresh factory instead.
-
+- **A running game keeps the plugin it loaded: edit → rebuild → relaunch.** The host copies the built plugin into
+  `bin/.../data/gamemodes/{id}/gamemode.dll`, but an already-running process holds its in-memory copy, and
+  `NFMWorld.Library.Test/bin` is built separately. So a test can pass against new source while the game still runs
+  old source — which once cost a full round of false debugging on a `StuntState` predicate that was correct all
+  along. When behaviour contradicts the source, compare the deployed DLL's timestamp with the `.cs`, or
+  `strings <dll> | grep <new symbol>`, before touching the logic.
 ### Gotchas
 
 | Gotcha | Rule |

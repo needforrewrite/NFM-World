@@ -96,15 +96,55 @@ public static class StandardRace
             .OrderBy(x => winnerId is { } w && x.Progress.PlayerId == w ? -1 : Group(x.Progress))
             .ThenBy(x => Within(x.Progress))
             .Select((x, index) => new RaceStanding
-                        {
-                            PlayerId = x.Progress.PlayerId,
-                            FinishPosition = index,
-                            FinishTime = x.Progress.Forfeited || x.Progress.WastedAt >= 0
-                                ? null
-                                : TimeSpan.Zero
-                        }
-                    )
+            {
+                PlayerId = x.Progress.PlayerId,
+                FinishPosition = index,
+                FinishTime = x.Progress.Forfeited || x.Progress.WastedAt >= 0
+                    ? null
+                    : TimeSpan.Zero
+            })
         ];
+    }
+
+    /// <summary>
+    /// Writes the standard end-of-race HUD state. The caller has already set its own finished
+    /// state and halted the cars; this is the identical winner/loser text every scored gamemode
+    /// shows, with PvP's wasted/last-car variants expressed as optional message overrides.
+    /// </summary>
+    [PluginVisible]
+    public static void FinishHud(
+        NFMWorld.DriverInterface.HudStateData hud,
+        ClientSidePlayer? clientPlayer,
+        ClientSidePlayer? winner,
+        string? wonMessage = null,
+        string? lostMessage = null,
+        string? wonTitle = null
+    )
+    {
+        if (winner is not null)
+        {
+            var spectating = clientPlayer is null;
+            var clientWon = !spectating && winner.Info.IsClientPlayer;
+            hud.StateText = clientWon
+                ? wonMessage ?? "You finished first, nice job!"
+                : lostMessage ?? $"{winner.Info.PlayerName} finished first, race over!";
+            hud.ClientWon = clientWon;
+            hud.ClientLost = !spectating && !clientWon;
+            hud.ResultTitle = spectating ? "RACE OVER!"
+                : clientWon ? wonTitle ?? "YOU WON!" : "YOU LOST!";
+        }
+        else
+        {
+            hud.StateText = "All cars are out, race over!";
+            hud.ClientWon = false;
+            hud.ClientLost = clientPlayer is not null;
+            hud.ResultTitle = clientPlayer is null ? "RACE OVER!" : "YOU LOST!";
+        }
+
+        hud.Finished = true;
+        hud.StateTextEndsAt = null;
+        hud.StatusMessage = null;
+        hud.StuntMessage = null;
     }
 
     private static int Group(RaceProgress progress) => progress.Forfeited || progress.WastedAt >= 0 ? 1 : 0;
@@ -116,9 +156,14 @@ public static class StandardRace
 }
 
 /// <summary>One player's server-side progress in a standard race.</summary>
-[PluginVisible(Visible.IncludingAllMembersOfType)]
 public sealed class RaceProgress
 {
+    /// <summary>Explicit so a sandboxed plugin can construct it: the implicit ctor is not visible.</summary>
+    [PluginVisible]
+    public RaceProgress()
+    {
+    }
+
     [PluginVisible] public required Guid PlayerId { get; init; }
     [PluginVisible] public byte Lap { get; set; }
     [PluginVisible] public ushort Checkpoint { get; set; }

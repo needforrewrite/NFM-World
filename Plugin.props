@@ -41,9 +41,14 @@
     <!--
         Copies this plugin's build output into the host that is building it.
 
-        The host passes PluginOutputRoot (its own output directory) when it builds
-        the plugins; a standalone build of this project leaves it empty and copies
-        nothing.
+        Two paths, because a plugin is built two ways:
+
+        - The host sets PluginOutputRoot and builds us through BuildPlugins: copy there, once.
+        - A build system that decides per project (Rider) may build ONLY this project. Then
+          PluginOutputRoot is empty and the host is never built, so nothing would deploy and the
+          game keeps running the previous gamemode.dll - the failure that motivated this. In that
+          case copy into every host output that already exists, which is exactly the incremental
+          "edit the plugin, press Run" path.
 
         Nothing here is registered as build output. The host cleans its own output
         directory, and registering these paths in *this* project's file list would
@@ -51,9 +56,35 @@
         per-destination, so a second host building the same plugin into a different
         folder would orphan - and then delete - the first host's copy.
     -->
-    <Target Name="CopyPluginToHost" AfterTargets="Build" Condition="'$(PluginOutputRoot)' != ''">
+    <ItemGroup>
+        <!-- Hosts whose output may already carry plugins. Only existing directories are used, so
+             a fresh checkout that never built the game copies nothing. -->
+        <_PluginKnownHost Include="$(MSBuildThisFileDirectory)NFMWorld"/>
+        <_PluginKnownHost Include="$(MSBuildThisFileDirectory)nfm-world"/>
+    </ItemGroup>
+
+    <Target Name="CopyPluginToHost"
+            AfterTargets="Build"
+            Condition="'$(PluginOutputRoot)' != ''">
+        <CallTarget Targets="_CopyPluginToDirectory" />
+    </Target>
+
+    <Target Name="CopyPluginToKnownHosts"
+            AfterTargets="Build"
+            Condition="'$(PluginOutputRoot)' == ''">
+        <ItemGroup>
+            <_PluginHostOutput Include="@(_PluginKnownHost->'%(Identity)\bin\$(Configuration)\$(TargetFramework)\')"
+                              Condition="Exists('%(Identity)\bin\$(Configuration)\$(TargetFramework)')" />
+        </ItemGroup>
+        <MSBuild Projects="$(MSBuildProjectFullPath)"
+                 Targets="_CopyPluginToDirectory"
+                 Properties="PluginOutputRoot=%(_PluginHostOutput.Identity)"
+                 Condition="'@(_PluginHostOutput)' != ''" />
+    </Target>
+
+    <Target Name="_CopyPluginToDirectory">
         <PropertyGroup>
-            <PluginDestination>$(PluginOutputRoot)/data/$(PluginDirectory)/$(PluginId)</PluginDestination>
+            <PluginDestination>$(PluginOutputRoot)data/$(PluginDirectory)/$(PluginId)</PluginDestination>
         </PropertyGroup>
 
         <ItemGroup>

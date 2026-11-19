@@ -38,8 +38,8 @@ public class SettingsMenu()
         public Key AerialStrafe { get; set; } = Key.E;
         public Key GamemodeAction1 { get; set; } = Key.F;
         public Key GamemodeAction2 { get; set; } = Key.LShiftKey;
-        public Key GamemodeAction3 { get; set; } = Key.None;
-        public Key GamemodeAction4 { get; set; } = Key.None;
+        public Key GamemodeAction3 { get; set; } = Key.Q;
+        public Key GamemodeAction4 { get; set; } = Key.E;
         public Key GamemodeAction5 { get; set; } = Key.None;
         public Key GamemodeAction6 { get; set; } = Key.None;
         public Key GamemodeAction7 { get; set; } = Key.None;

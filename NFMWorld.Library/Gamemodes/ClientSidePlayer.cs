@@ -27,12 +27,6 @@ public partial class ClientSidePlayer(ClientSidePlayerInfo info, int index, bool
     public int Index { get; } = index;
 
     /// <summary>
-    /// The one-based index of the player.
-    /// </summary>
-    [PluginVisible]
-    public int LuaIndex => Index + 1;
-
-    /// <summary>
     /// Raised when <see cref="Car"/> is assigned a different car.
     /// The client stage uses this to create/swap the player's visual.
     /// </summary>

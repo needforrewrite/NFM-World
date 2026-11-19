@@ -1,9 +1,13 @@
+using NFMWorld.PluginSystem;
+
 namespace NFMWorld.DriverInterface.DriverInterface;
 
+[PluginVisible]
 public interface IBackend
 {
     public static IBackend Backend
     {
+        [PluginVisible]
         get
         {
             return field ?? ThrowNotInitialized();
@@ -18,17 +22,21 @@ public interface IBackend
         set;
     }
 
+    [PluginVisible]
     [ClientOnly]
     IRadicalMusic LoadMusic(string file, double tempomul = 1);
 
     [ClientOnly]
     void StopAllSounds();
 
+    [PluginVisible]
     [ClientOnly]
     ISoundClip GetSound(string filePath);
 
+    [PluginVisible]
     [ClientOnly] IGraphics Graphics { get; }
 
+    [PluginVisible]
     [ClientOnly] IGraphics3D Graphics3D { get; }
 
     [ClientOnly]
