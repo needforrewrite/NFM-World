@@ -328,7 +328,7 @@ public sealed class SdlImGuiRenderer : IDisposable
         }
 
         int vtxOffset = 0, idxOffset = 0;
-        for (var n = 0; n < drawData.CmdListsCount; n++)
+        for (var n = 0; n < drawData.CmdLists.Size; n++)
         {
             var cmdList = drawData.CmdLists[n];
             fixed (void* vtxDst = &_vertexData![vtxOffset * VertexStride])
@@ -389,7 +389,7 @@ public sealed class SdlImGuiRenderer : IDisposable
         _parameters.Projection.SetValue(cb, projection);
 
         int vtxOffset = 0, idxOffset = 0;
-        for (var n = 0; n < drawData.CmdListsCount; n++)
+        for (var n = 0; n < drawData.CmdLists.Size; n++)
         {
             var cmdList = drawData.CmdLists[n];
             for (var cmdi = 0; cmdi < cmdList.CmdBuffer.Size; cmdi++)
@@ -397,7 +397,7 @@ public sealed class SdlImGuiRenderer : IDisposable
                 var drawCmd = cmdList.CmdBuffer[cmdi];
                 if (drawCmd.ElemCount == 0) continue;
 
-                var texId = drawCmd.TexRef.GetTexID();
+                var texId = drawCmd.TexRef.TexID;
                 if (!_textures.TryGetValue(texId, out var info) || info.Texture == null)
                     continue;
 

@@ -36,13 +36,11 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.0"/>
+        <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.2" />
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2"/>
-        <PackageReference Include="JetBrains.Profiler.Api" Version="1.4.13"/>
+        <PackageReference Include="JetBrains.Profiler.Api" Version="1.4.14" />
         <PackageReference Include="LuzFaltex.Core.Collections" Version="0.1.0"/>
-        <PackageReference Include="MessagePack" Version="3.1.8"/>
-        <PackageReference Include="MessagePack.Experimental" Version="3.1.8"/>
-        <PackageReference Include="Microsoft.Extensions.Logging" Version="11.0.0-preview.5.26302.115"/>
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="11.0.0" />
         <None Include="data\**\*" CopyToOutputDirectory="Always"/>
         <ProjectReference Include="..\CasCore\CasCore\CasCore.csproj"/>
         <ProjectReference Include="..\HoleyDiver\HoleyDiver.csproj"/>
@@ -65,7 +63,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\FixedMathSharp\src\FixedMathSharp\FixedMathSharp.csproj"/>
-        <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.MessagePack\Maxine.Extensions.MessagePack.csproj"/>
         <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj"/>
         <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.Mathematics\Maxine.Extensions.Mathematics.csproj"/>
         <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.UnionGen\Maxine.Extensions.UnionGen.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>

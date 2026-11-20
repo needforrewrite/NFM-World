@@ -16,7 +16,7 @@ namespace NFMWorld.Archive.Migrations
         // If you encounter a merge conflict in the line below, it means you need to
         // discard one of the migration branches and recreate its migrations on top of
         // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-        public override string LatestMigrationId => "20261118045058_ModerationRoles";
+        public override string LastMigrationId => "20261118045058_ModerationRoles";
 
         protected override void BuildModel(ModelBuilder modelBuilder)
         {

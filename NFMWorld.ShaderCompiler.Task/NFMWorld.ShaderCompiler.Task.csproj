@@ -29,8 +29,8 @@
          put two Microsoft.Build.* in the load path, which is what DisableMSBuildAssemblyCopyCheck
          above is tolerating for the SDK's own check. -->
     <ItemGroup>
-        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.10.1" ExcludeAssets="runtime"/>
-        <PackageReference Include="Microsoft.Build.Framework" Version="18.10.1" ExcludeAssets="runtime"/>
+        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.12.2" ExcludeAssets="runtime" />
+        <PackageReference Include="Microsoft.Build.Framework" Version="18.12.2" ExcludeAssets="runtime" />
     </ItemGroup>
 
     <ItemGroup>

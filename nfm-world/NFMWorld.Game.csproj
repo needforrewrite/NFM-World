@@ -71,19 +71,19 @@
         <!-- The browser head builds against a HexaGen DllImport-flavour build of the same API
              instead: the package resolves every entry point through a function pointer, and wasm
              cannot produce one. Same assembly name, so no source here changes. -->
-        <PackageReference Include="Hexa.NET.ImGui" Version="2.2.9" Condition="'$(NfmwBrowser)' != 'true'"/>
+        <PackageReference Include="Hexa.NET.ImGui" Version="3.1.0-experimental" Condition="'$(NfmwBrowser)' != 'true'" />
         <ProjectReference Include="..\NFMWorld.ImGui.Browser\NFMWorld.ImGui.Browser.csproj" Condition="'$(NfmwBrowser)' == 'true'"/>
-        <PackageReference Include="JetBrains.Profiler.Api" Version="1.4.13"/>
+        <PackageReference Include="JetBrains.Profiler.Api" Version="1.4.14" />
         <None Include="data\**\*" CopyToOutputDirectory="Always"/>
         <None Remove="data\html\node_modules\**" CopyToOutputDirectory="Never"/>
         <None Remove="data\html\dist\**" CopyToOutputDirectory="Never"/>
         <PackageReference Include="Maxine.LibOpenMPT.NET" Version="0.8.10" />
-        <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1"/>
-        <PackageReference Include="NAudio" Version="3.0.0-preview.18"/>
-        <PackageReference Include="NAudio.SoundFile" Version="3.0.0-preview.18"/>
-        <PackageReference Include="NAudio.Vorbis" Version="1.5.0"/>
-        <PackageReference Include="NLayer" Version="2.0.1"/>
-        <PackageReference Include="NLayer.NAudioSupport" Version="2.0.1"/>
+        <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="4.0.1" />
+        <PackageReference Include="NAudio" Version="3.4.0-preview.1" />
+        <PackageReference Include="NAudio.SoundFile" Version="3.4.0-preview.1" />
+        <PackageReference Include="NAudio.Vorbis" Version="3.0.0" />
+        <PackageReference Include="NLayer" Version="3.0.1" />
+        <PackageReference Include="NLayer.NAudioSupport" Version="3.0.1" />
         <PackageReference Include="NVorbis" Version="1.0.0-rc.2"/>
         <PackageReference Include="org.sndfile.runtime.linux-arm64" Version="1.2.2.1"/>
         <PackageReference Include="org.sndfile.runtime.linux-x64" Version="1.2.2.1"/>
@@ -93,12 +93,13 @@
         <PackageReference Include="org.sndfile.runtime.win-x64" Version="1.2.2"/>
         <PackageReference Include="SoundTouch.Net" Version="2.3.2"/>
         <PackageReference Include="StbImageSharp" Version="2.30.16"/>
-        <PackageReference Include="System.Reactive" Version="7.0.0-rc.1"/>
+        <PackageReference Include="System.Reactive" Version="7.0.0" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\Apos.Shapes\Source\Apos.Shapes.NFMW.csproj"/>
         <ProjectReference Include="..\FontStashSharp\src\FontStashSharp\FontStashSharp.PlatformAgnostic.csproj"/>
         <ProjectReference Include="..\HoleyDiver\HoleyDiver.csproj"/>
+        <ProjectReference Include="..\LibTessDotNet\LibTessDotNet\LibTessDotNet.csproj"/>
         <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj"/>
         <ProjectReference Include="..\Maxine.Extensions\RayTech.RayLog.MEL\RayTech.RayLog.MEL.csproj"/>
         <ProjectReference Include="..\NAudio.Flac\NAudio.Flac\NAudio.Flac.csproj"/>

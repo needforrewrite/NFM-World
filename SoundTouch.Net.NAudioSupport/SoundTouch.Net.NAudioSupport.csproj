@@ -19,7 +19,7 @@ Features:
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NAudio" Version="3.0.0-preview.18" />
+    <PackageReference Include="NAudio" Version="3.4.0-preview.1" />
     <PackageReference Include="SoundTouch.Net" Version="2.3.2" />
   </ItemGroup>
 

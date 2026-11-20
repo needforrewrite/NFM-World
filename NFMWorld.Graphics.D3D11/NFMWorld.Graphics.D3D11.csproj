@@ -20,7 +20,7 @@
              is a function-pointer table plus structs, while this one is the SDK's vtables as C#
              interfaces, so a call here is written the way the C driver writes it - which is what
              makes FNA3D's driver a usable reference rather than a translation exercise. -->
-        <PackageReference Include="TerraFX.Interop.Windows" Version="10.0.26100.3"/>
+        <PackageReference Include="TerraFX.Interop.Windows" Version="10.0.28000" />
     </ItemGroup>
 
     <ItemGroup>

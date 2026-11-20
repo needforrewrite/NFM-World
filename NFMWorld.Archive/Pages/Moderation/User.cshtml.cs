@@ -22,7 +22,7 @@ public sealed class UserModel(
     [BindProperty] public string? Argument { get; set; }
     [BindProperty] public string? ConfirmName { get; set; }
 
-    public User? Target { get; private set; }
+    public Data.User? Target { get; private set; }
     public string? Status { get; private set; }
     public IReadOnlyList<Asset> Assets { get; private set; } = [];
     public IReadOnlyList<ModerationAction> Actions { get; private set; } = [];
