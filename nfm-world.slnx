@@ -33,7 +33,6 @@
   <Folder Name="/Maxine.Extensions/">
     <Project Path="Maxine.Extensions/Maxine.Extensions.Mathematics.Tests/Maxine.Extensions.Mathematics.Tests.csproj" />
     <Project Path="Maxine.Extensions/Maxine.Extensions.Mathematics/Maxine.Extensions.Mathematics.csproj" />
-    <Project Path="Maxine.Extensions/Maxine.Extensions.MessagePack/Maxine.Extensions.MessagePack.csproj" />
     <Project Path="Maxine.Extensions/Maxine.Extensions.SpanLinq/Maxine.Extensions.SpanLinq.csproj" />
     <Project Path="Maxine.Extensions/Maxine.Extensions.UnionGen.Base/Maxine.Extensions.UnionGen.Base.csproj" />
     <Project Path="Maxine.Extensions/Maxine.Extensions.UnionGen/Maxine.Extensions.UnionGen.csproj" />
