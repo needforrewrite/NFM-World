@@ -57,7 +57,7 @@ public class GamemodePluginTests
 
         Assert.IsNotNull(plugin);
         Assert.AreEqual("nfmm/rocket", plugin.Id);
-        Assert.AreEqual("Rocket League", plugin.Name);
+        Assert.AreEqual("Rocket Madness", plugin.Name);
         Assert.IsTrue(!string.IsNullOrWhiteSpace(plugin.Description));
         // A scored gamemode: it ships a server side, because completion is tracked server-side.
         Assert.IsTrue(plugin.HasServerGamemode);

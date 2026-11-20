@@ -10,6 +10,6 @@
     { "action": "assert-visible", "target": "Main menu item SINGLEPLAYER" },
     { "action": "click", "target": "Main menu item SINGLEPLAYER", "capture": "singleplayer" },
     { "action": "assert-visible", "target": "Main menu item FREE PLAY" },
-    { "action": "assert-visible", "target": "Main menu item ROCKET LEAGUE" }
+    { "action": "assert-visible", "target": "Main menu item ROCKET MADNESS" }
   ]
 }

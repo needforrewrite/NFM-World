@@ -11,7 +11,7 @@ using NFMWorldLibrary.Helpers;
 using NFMWorldLibrary.Util;
 
 [assembly: Gamemode(
-    Name = "Rocket League",
+    Name = "Rocket Madness",
     Description = "Standard racing with jump, boost and aerial control."
 )]
 

@@ -425,7 +425,7 @@ public static class MainMenuView
                 enabled: false
             ),
             new("FREE PLAY", "Play freely without any restrictions.", actions.Play),
-            new("ROCKET LEAGUE", "Free play with jump, boost and aerial control.", actions.Rocket),
+            new("ROCKET MADNESS", "Free play with jump, boost and aerial control.", actions.Rocket),
             new("BACK", "Return to the previous menu.", PopPage),
         ]
     );

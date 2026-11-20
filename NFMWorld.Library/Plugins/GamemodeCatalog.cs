@@ -21,7 +21,7 @@ public static class GamemodeCatalog
     {
         DefaultGamemodes.PvP => "PvP",
         DefaultGamemodes.TimeTrial => "Time Trial",
-        DefaultGamemodes.Rocket => "Rocket League",
+        DefaultGamemodes.Rocket => "Rocket Madness",
         _ => id
     };
 
