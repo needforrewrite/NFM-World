@@ -300,7 +300,7 @@ public partial record struct CarStats
 /// Represents a three dimensional mathematical vector.
 /// </summary>
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
-[PluginVisible]
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public partial struct Int3 : IEquatable<Int3>
 {
     /// <summary>

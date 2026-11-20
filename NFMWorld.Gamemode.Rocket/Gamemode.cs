@@ -1,5 +1,6 @@
 ﻿using JetBrains.Annotations;
 using FixedMathSharp;
+using NFMWorldLibrary;
 using TightPack;
 using fix64 = FixedMathSharp.Fixed64;
 using NFMWorldLibrary.Backend;
@@ -50,10 +51,16 @@ public sealed class RocketGamemode : PluginGamemode
         public double AirYawRate = 1;
 
         /// <summary>The top speed boost thrust asymptotes to, in physics units per tick.</summary>
-        public double BoostSpeed = 70;
+        public double BoostSpeed = 220;
+
+        /// <summary>The top speed boost thrust asymptotes to in the air, in physics units per tick.</summary>
+        public double BoostSpeedInAir = 70;
 
         /// <summary>How hard boost pushes while below its top speed, as a fraction of the gap.</summary>
-        public double BoostAcceleration = 5;
+        public double BoostAcceleration = 20;
+
+        /// <summary>How hard boost pushes while below its top speed in the air, as a fraction of the gap.</summary>
+        public double BoostAccelerationInAir = 5;
 
         /// <summary>Boost tank capacity.</summary>
         public double MaxBoost = 200;
@@ -296,6 +303,34 @@ public sealed class RocketGamemode : PluginGamemode
                 control.Right = true;
             }
         }
+        // air heading (not stunting)
+        else if (!physics.Grounded)
+        {
+            var yawRate = (fix64)(Tuning.AirYawRate * (double)car.Stats.Airs);
+            if (control.Left)
+            {
+                state.StoredLeft = true;
+                control.Left = false;
+                physics.TurnYaw(-yawRate);
+            }
+
+            if (control.Right)
+            {
+                state.StoredRight = true;
+                control.Right = false;
+                physics.TurnYaw(yawRate);
+            }
+
+            if (control.GamemodeAction(RollLeftAction))
+            {
+                control.Left = true;
+            }
+
+            if (control.GamemodeAction(RollRightAction))
+            {
+                control.Right = true;
+            }
+        }
 
         var jump = control.GamemodeAction(JumpAction);
         var fromGround = physics.Grounded;
@@ -312,19 +347,13 @@ public sealed class RocketGamemode : PluginGamemode
             else
                 physics.AddLocalImpulse(steer.X * impulse, steer.Y * impulse);
 
-            // Enter the vanilla take-off path directly: clearing the grounded flag stops the
-            // next Drive from zeroing the state, and the jump impulse lifts the car before it
-            // can be re-grounded the same tick.
-            physics.Mtouch = false;
-            physics.StuntState = 1;
-
             _fx?.PlayJump(car);
         }
 
         state.JumpHeld = jump;
 
-        var perTickDrain = (float)(Tuning.BoostDrainPerSecond / NFMWorldLibrary.Physics.TargetTps);
-        var perTickRegen = (float)(Tuning.BoostRegenPerSecond / NFMWorldLibrary.Physics.TargetTps);
+        var perTickDrain = (float)((Tuning.BoostDrainPerSecond) / Physics.TargetTps);
+        var perTickRegen = (float)((Tuning.BoostRegenPerSecond * (car.Stats.Powerloss / 3500000f)) / Physics.TargetTps);
         var wantsBoost = control.GamemodeAction(BoostAction) && state.Boost > 0;
         // Latch: once the tank runs dry the thrust stays off until the button is released, so
         // regen cannot flicker it back on at one-tick intervals - that restarts the boost loop
@@ -339,10 +368,12 @@ public sealed class RocketGamemode : PluginGamemode
             state.Boost = MathF.Max(0, state.Boost - perTickDrain);
             // Proportional to the gap to the top speed: thrust fades out as the top speed is
             // reached, so boosting into a slope or off a jump never compounds.
-            var topSpeed = Tuning.BoostSpeed;
+            var topSpeed = !physics.Grounded ? Tuning.BoostSpeedInAir : (Tuning.BoostSpeed * car.Stats.Swits[2] / 250f);
             var gap = topSpeed - (double)physics.ForwardSpeed;
             if (gap > 0 && topSpeed > 0)
-                physics.AddForwardThrust((fix64)(Tuning.BoostAcceleration * gap / topSpeed));
+                physics.AddForwardThrust(
+                    (fix64)((!physics.Grounded ? Tuning.BoostAccelerationInAir : Tuning.BoostAcceleration) * gap / topSpeed)
+                );
             if (state.Boost <= 0)
                 state.Boosting = false;
         }
