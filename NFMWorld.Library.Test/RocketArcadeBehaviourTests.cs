@@ -10,9 +10,10 @@ using FixedMathSharp;
 namespace NFMWorld.Library.Test;
 
 /// <summary>
-/// The Rocket arcade layer behaves as intended: a jump enters the stock stunt state, the first
-/// jump is plain (never hijacked by a held throttle/turn key) and only the aerial keys make the
-/// airborne jump directional, and the boost meter's fill follows the fuel actually spent.
+/// The Rocket arcade layer behaves as intended: a jump is a plain impulse that leaves the
+/// vanilla stunt state to the stage, the first jump is never hijacked by a held throttle/turn
+/// key and only the aerial keys make the airborne jump directional, and the boost meter's fill
+/// follows the fuel actually spent.
 /// </summary>
 [TestClass]
 public class RocketArcadeBehaviourTests
@@ -103,18 +104,32 @@ public class RocketArcadeBehaviourTests
         return (new RocketGamemodeHarness(gamemode, plugin, carName), player, gamemode.CurrentStage);
     }
 
+    /// <summary>
+    /// The arcade jump is an impulse only: it lifts the car off the ground but leaves the
+    /// vanilla stunt state alone. Forcing `<see cref="NFMWorldLibrary.Mad.CarPhysics.Mtouch"/>
+    /// = false; StuntState = 1` here would hand the same keys to the stock air controls as well
+    /// as to this gamemode's own heading control.
+    /// </summary>
     [TestMethod]
-    public void Jump_EntersTheStuntState()
+    public void Jump_LiftsTheCar_WithoutEnteringTheVanillaStuntState()
     {
         var (harness, car, stage) = CreateSandboxed();
         try
         {
+            var restingY = car.Position.Y;
             var control = car.Control;
             control.SetGamemodeAction(0, true);
             harness.Tick();
             car.Drive(stage);
 
-            Assert.AreEqual(2, car.CarPhysics.StuntState, "a jump must enter the airborne stunt state");
+            // Y is positive downward, so a rising car's position value decreases.
+            Assert.IsFalse(car.CarPhysics.Grounded, "a jump must leave the ground");
+            Assert.IsLessThan(
+                restingY,
+                car.Position.Y,
+                $"a jump must lift the car, moved {restingY} -> {car.Position.Y}"
+            );
+            Assert.AreEqual(0, car.CarPhysics.StuntState, "an arcade jump must not enter the vanilla stunt state");
         }
         finally
         {
