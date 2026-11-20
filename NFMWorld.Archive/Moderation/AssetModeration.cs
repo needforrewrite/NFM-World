@@ -1,5 +1,6 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using NFMWorld.Archive.Auth;
+using NFMWorld.Archive.Cache;
 using NFMWorld.Archive.Data;
 using NFMWorldLibrary.Multiplayer;
 
@@ -48,6 +49,9 @@ public static class AssetModeration
         );
 
         await db.SaveChangesAsync(ct);
+
+        // The edge copy does not know the row was hidden: its 200 would outlive the takedown.
+        await http.PurgeAssetsAsync([asset.ContentHash]);
         return true;
     }
 }

@@ -42,6 +42,9 @@ public static class ArchivePublisher
         byte[] bytes;
         try
         {
+            // The packaged FileName is the model's identity in a stage file. Parsing from a tab
+            // bakes the author's local path, which no other machine can resolve.
+            rad.FileName = name;
             bytes = StockCatalog.PackageModel(kind, name, rad, description);
         }
         catch (Exception ex)
@@ -80,6 +83,7 @@ public static class ArchivePublisher
         var path = $"data/models/{name}.radpack";
         try
         {
+            rad.FileName = name;
             using var stream = VFS.OpenWrite(path);
             stream.Write(StockCatalog.PackageModel(kind, name, rad));
         }

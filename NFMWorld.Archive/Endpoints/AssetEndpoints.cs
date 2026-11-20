@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using NFMWorld.Archive.Cache;
 using NFMWorld.Archive.Data;
 using NFMWorld.Archive.Validation;
 using NFMWorldLibrary.Radpack;
@@ -361,7 +362,11 @@ public static class AssetEndpoints
                 }
 
                 if (changed)
+                {
                     await db.SaveChangesAsync(ct);
+                    // The edge holds the old 200 (and the old download name).
+                    await http.PurgeAssetsAsync([asset.ContentHash]);
+                }
 
                 return Results.Ok(new { asset = ToOwnedInfo(asset) });
             }
@@ -444,6 +449,7 @@ public static class AssetEndpoints
 
                 // Every replay pinned the bytes that just stopped being served.
                 await TimeTrialInvalidation.InvalidateForAssetAsync(db, previousHash, ct);
+                await http.PurgeAssetsAsync([previousHash]);
 
                 return Results.Ok(new { status = "replaced", asset = ToOwnedInfo(asset) });
             }
@@ -475,6 +481,7 @@ public static class AssetEndpoints
 
                 await storage.DeleteIfUnreferencedAsync(path, db, ct);
                 await TimeTrialInvalidation.InvalidateForAssetAsync(db, hash, ct);
+                await http.PurgeAssetsAsync([hash]);
 
                 return Results.NoContent();
             }
@@ -501,8 +508,11 @@ public static class AssetEndpoints
                 asset.DownloadCount++;
                 await db.SaveChangesAsync(ct);
 
-                // Content-addressed, so it never changes: cache it hard.
+                // Content-addressed, so it never changes: cache it hard. CDN-Cache-Control is the
+                // edge-only half (Cloudflare honours it and does not forward it), which keeps the
+                // edge policy independent of what browsers are told.
                 http.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+                http.Response.Headers["CDN-Cache-Control"] = "max-age=31536000";
                 return Results.File(
                     stream,
                     contentType: "application/octet-stream",

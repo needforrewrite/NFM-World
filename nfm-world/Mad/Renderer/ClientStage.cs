@@ -128,6 +128,25 @@ public class ClientStage : IDisposable
                     if (!result.Ok) throw new InvalidDataException(result.Error);
                 }
 
+                // A text stage resolves its pieces while it is parsed. Public ones are downloaded
+                // first, or the stage would be built around an error mesh.
+                var textPath = $"data/stages/{stageName}.txt";
+                if (stageData is null && VFS.FileExists(textPath))
+                {
+                    foreach (var reference in StageLoader.ReferencedArchiveModels(VFS.ReadAllLines(textPath)))
+                    {
+                        loading.Report("Downloading stage parts...");
+                        var result = await ContentCache.PrepareAsync(
+                            GarageController.ContentClient,
+                            reference,
+                            AssetKind.StagePiece,
+                            token
+                        );
+                        if (!result.Ok)
+                            Logging.Warning($"Could not prepare stage part '{reference}': {result.Error}");
+                    }
+                }
+
                 token.ThrowIfCancellationRequested();
                 loading.Report("Preparing scene...");
                 return new BackendStage(stageName, stageData, throwOnError: true);

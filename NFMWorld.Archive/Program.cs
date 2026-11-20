@@ -46,6 +46,10 @@ builder.Services.AddSingleton<TrustedServerAuth>();
 builder.Services.AddSingleton<ValidatorRunner>();
 builder.Services.AddHttpClient();
 builder.Services.AddHttpClient<TurnstileVerifier>(client => client.Timeout = TimeSpan.FromSeconds(10));
+// Edge purges are opt-in; the client only makes a request when a zone and token are configured.
+builder.Services.AddHttpClient<NFMWorld.Archive.Cache.CloudflareCache>(
+    client => client.Timeout = TimeSpan.FromSeconds(10)
+);
 // Pages carry a form that signs someone in, so the antiforgery token is validated, not just
 // rendered. The JSON endpoints are not covered by it (they are token/bearer based).
 builder.Services.AddRazorPages(options =>

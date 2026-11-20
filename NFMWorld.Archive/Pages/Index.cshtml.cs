@@ -1,5 +1,6 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using NFMWorld.Archive.Cache;
 using NFMWorld.Archive.Data;
 
 namespace NFMWorld.Archive.Pages;
@@ -55,6 +56,7 @@ public sealed class IndexModel(
 
         await storage.DeleteIfUnreferencedAsync(path, Db, HttpContext.RequestAborted);
         await TimeTrialInvalidation.InvalidateForAssetAsync(Db, hash, HttpContext.RequestAborted);
+        await HttpContext.PurgeAssetsAsync([hash]);
 
         return Redirect("/");
     }

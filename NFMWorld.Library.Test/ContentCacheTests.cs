@@ -232,6 +232,54 @@ public class ContentCacheTests
     }
 
     [TestMethod]
+    public void CacheRoots_Desktop_PutsTheCacheInLocalAppData()
+    {
+        // The working directory changes with the launch method and an install folder may be
+        // read-only, so the cache has to live in the player's own app data to survive a restart.
+        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (string.IsNullOrWhiteSpace(local))
+            Assert.Inconclusive("This runner has no local application data folder.");
+
+        CollectionAssert.AreEqual(
+            new[] { Path.Combine(local, "NFMWorld", "cache", "archive") },
+            ContentCache.CacheRoots().Take(1).ToArray()
+        );
+    }
+
+    [TestMethod]
+    public async Task Prepare_StagePiece_ResolvesAsAPlacedPartUnderItsReference()
+    {
+        // The package carries the author's local path, which no other machine can resolve. A
+        // downloaded piece has to be named by its reference, or a stage saved with it points at a
+        // file that only exists on the author's disk.
+        var writer = new ArrayBufferWriter<byte>();
+        RadpackSerializer.Serialize(
+            new RadpackRad3d
+            {
+                Metadata = new RadpackMetadata
+                {
+                    Name = "road piece",
+                    CreationDate = DateTimeOffset.UnixEpoch,
+                    Type = RadpackType.TrackPiece
+                },
+                Rad = new Rad3d([], false, "./data/models/user/stage/piece.rad")
+            },
+            writer
+        );
+        var bytes = writer.WrittenSpan.ToArray();
+        var hash = Convert.ToHexStringLower(SHA256.HashData(bytes));
+        using var client = Client(new FakeHandler(_ => bytes));
+        var reference = RadpackReader.ArchivePrefix + hash;
+
+        var result = await ContentCache.PrepareAsync(client, reference, AssetKind.StagePiece, CancellationToken.None);
+        Assert.IsTrue(result.Ok, result.Error);
+
+        var (_, part) = BackendGameSparker.GetStagePart(reference);
+        Assert.IsNotNull(part);
+        Assert.AreEqual(reference, part.FileName);
+    }
+
+    [TestMethod]
     public async Task Prepare_RefusesBytesWhoseHashDoesNotMatch()
     {
         var (bytes, hash) = CarRadpack();

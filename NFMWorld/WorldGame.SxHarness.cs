@@ -111,6 +111,67 @@ public partial class WorldGame
             typeof(StageEditorPhase).GetField("_activeTabIndex", fields)!.SetValue(phase, 0);
         }
 
+        if (config.TryGetProperty("modelTab", out var modelTab))
+        {
+            if (phase is not ModelEditorPhase modelEditor)
+                throw new InvalidOperationException("modelTab requires the model-editor view.");
+            var isStage = modelTab.GetString() == "stage";
+            const System.Reflection.BindingFlags fields = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags
+                .NonPublic;
+            ((List<NFMWorld.UI.ModelEditorTab>)typeof(ModelEditorPhase).GetField("_tabs", fields)!.GetValue(modelEditor)!)
+                .Add(
+                    new NFMWorld.UI.ModelEditorTab
+                    {
+                        ModelPath = $"./data/models/user/{(isStage ? "stage" : "cars")}/fixture.rad",
+                        TextContent = "// fixture\n",
+                        SavedText = "// fixture\n",
+                        ModelType = isStage
+                            ? NFMWorld.UI.ModelEditorTab.ModelTypeEnum.Stage
+                            : NFMWorld.UI.ModelEditorTab.ModelTypeEnum.Car
+                    }
+                );
+            modelEditor.SetActiveTab(0);
+        }
+
+        if (config.TryGetProperty("onlineParts", out var onlineParts) && onlineParts.GetBoolean())
+        {
+            if (phase is not StageEditorPhase stageEditor)
+                throw new InvalidOperationException("onlineParts requires the stage-editor view.");
+            const System.Reflection.BindingFlags fields = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags
+                .NonPublic;
+            var hash = new string('b', 64);
+            var reference = NFMWorldLibrary.Radpack.RadpackReader.ArchivePrefix + hash;
+            var available = (System.Collections.ObjectModel.KeyedCollection<string, NFMWorldLibrary.Rad.Rad3d>)typeof(
+                    StageEditorPhase
+                )
+                .GetField("_availableParts", fields)!.GetValue(stageEditor)!;
+            available.Add(new NFMWorldLibrary.Rad.Rad3d([], false, reference));
+            ((Dictionary<string, string>)typeof(StageEditorPhase).GetField("_onlinePartNames", fields)!
+                .GetValue(stageEditor)!)[reference] = "Published road";
+            var results = (List<NFMWorldLibrary.Content.RemoteAsset>)typeof(StageEditorPhase)
+                .GetField("_onlinePartResults", fields)!.GetValue(stageEditor)!;
+            results.Add(
+                new NFMWorldLibrary.Content.RemoteAsset(1, "Published road", "StagePiece", hash, 4096, null, "author", true)
+            );
+            results.Add(
+                new NFMWorldLibrary.Content.RemoteAsset(
+                    2,
+                    "Remote ramp",
+                    "StagePiece",
+                    new string('c', 64),
+                    4096,
+                    null,
+                    null,
+                    true
+                )
+            );
+            typeof(StageEditorPhase).GetField("_partsCategory", fields)!.SetValue(stageEditor, 4);
+            typeof(StageEditorPhase).GetField("_onlinePartStatus", fields)!.SetValue(
+                stageEditor,
+                "2 public stage part(s). Click one to download and place it."
+            );
+        }
+
         ui.ShowPhase(phase);
         using var target = game._device.CreateRenderTarget(new RenderTargetDesc(width, height, TextureFormat.Rgba8));
         var pixels = new byte[checked(width * height * 4)];

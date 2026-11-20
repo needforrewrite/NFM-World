@@ -33,6 +33,7 @@ public sealed class ModelEditorView
     private readonly Signal<bool> _newModelOpen = new(false);
     private readonly Signal<bool> _loadOpen = new(false);
     private readonly Signal<bool> _publishOpen = new(false);
+    private readonly Signal<AssetKind> _publishKind = new(AssetKind.Car);
     private readonly Signal<string> _publishName = new("");
     private readonly Signal<string> _publishDescription = new("");
     private readonly Signal<string> _publishStatus = new("");
@@ -505,13 +506,17 @@ public sealed class ModelEditorView
     );
 
     private static View BarButton(string label, Action action, ButtonVariant variant = ButtonVariant.Default)
-        => Button.Create(
+    {
+        var button = Button.Create(
             () => label,
             action,
             variant,
             size: ButtonSize.Sm,
             style: () => Sx.Styles(minWidth: 70, flexShrink: 0)
         );
+        button.Name = "Model editor " + label;
+        return button;
+    }
 
     private Node TabStrip() => Sx.View(
         style: () => TabStripStyle,
@@ -3746,6 +3751,16 @@ public sealed class ModelEditorView
         );
     }
 
+    private Node PublishKindButton(string label, AssetKind kind)
+        => Button.Create(
+            () => label,
+            () => _publishKind.Value = kind,
+            active: () => _publishKind.Value == kind,
+            size: ButtonSize.Sm,
+            style: () => Sx.Styles(minWidth: 100),
+            name: () => "Publish kind " + kind
+        );
+
     private void CreateModel()
     {
         if (_phase.CreateNewModel(
@@ -4395,6 +4410,7 @@ public sealed class ModelEditorView
         // name says nothing about this model.
         var fallbackName = tab.GetDisplayName().TrimEnd('*');
         var statsName = parsed.Stats.Name?.Trim();
+        _publishKind.Value = tab.ModelType == ModelEditorTab.ModelTypeEnum.Car ? AssetKind.Car : AssetKind.StagePiece;
         _publishName.Value = statsName is { Length: > 0 } && statsName != RadParser.DefaultName
             ? statsName
             : fallbackName;
@@ -4433,11 +4449,14 @@ public sealed class ModelEditorView
                 children:
                 [
                     DialogTitle("PUBLISH TO ARCHIVE", "Publication is public and includes unsaved edits."),
-                    Sx.Text(
-                        style: () => Sx.TextStyles(fontSize: 11, foregroundColor: TextBlue),
-                        text: () => _phase.ActiveTab?.ModelType == ModelEditorTab.ModelTypeEnum.Car
-                            ? "KIND: CAR"
-                            : "KIND: STAGE SCENERY"
+                    Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: TextBlue), text: () => "KIND"),
+                    Sx.View(
+                        style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 8),
+                        children:
+                        [
+                            PublishKindButton("CAR", AssetKind.Car),
+                            PublishKindButton("STAGE PART", AssetKind.StagePiece)
+                        ]
                     ),
                     Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: TextBlue), text: () => "NAME"),
                     Controls.TextField(
@@ -4506,7 +4525,7 @@ public sealed class ModelEditorView
             return;
         }
 
-        var kind = tab.ModelType == ModelEditorTab.ModelTypeEnum.Car ? AssetKind.Car : AssetKind.StagePiece;
+        var kind = _publishKind.Value;
         _publishBusy.Value = true;
         _publishStatus.Value = "Publishing...";
         _ = PublishAsync(rad, kind, _publishName.Value.Trim(), _publishDescription.Value.Trim());

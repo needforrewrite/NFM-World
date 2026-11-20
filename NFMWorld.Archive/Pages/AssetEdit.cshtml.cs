@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using NFMWorld.Archive.Cache;
 using NFMWorld.Archive.Data;
 using NFMWorld.Archive.Validation;
 using NFMWorldLibrary.Radpack;
@@ -69,6 +70,7 @@ public sealed class AssetEditModel(
         {
             Asset!.IsTakedown = IsTakedown;
             await Db.SaveChangesAsync();
+            await HttpContext.PurgeAssetsAsync([Asset.ContentHash]);
             return Redirect($"/asset/{Asset.Id}");
         }
 
@@ -81,6 +83,8 @@ public sealed class AssetEditModel(
         if (Account!.IsAdmin)
             Asset.IsTakedown = IsTakedown;
         await Db.SaveChangesAsync();
+        // The download's Content-Disposition carries the name, and the edge holds the old copy.
+        await HttpContext.PurgeAssetsAsync([Asset.ContentHash]);
         return Redirect($"/asset/{Asset.Id}");
     }
 
@@ -138,6 +142,7 @@ public sealed class AssetEditModel(
 
         await storage.DeleteIfUnreferencedAsync(previousPath, Db, HttpContext.RequestAborted);
         await TimeTrialInvalidation.InvalidateForAssetAsync(Db, previousHash, HttpContext.RequestAborted);
+        await HttpContext.PurgeAssetsAsync([previousHash]);
 
         Message = "The file was replaced. Time trials recorded against the old file no longer rank.";
         return Page();
@@ -159,6 +164,7 @@ public sealed class AssetEditModel(
 
         await storage.DeleteIfUnreferencedAsync(path, Db, HttpContext.RequestAborted);
         await TimeTrialInvalidation.InvalidateForAssetAsync(Db, hash, HttpContext.RequestAborted);
+        await HttpContext.PurgeAssetsAsync([hash]);
 
         return Redirect("/");
     }

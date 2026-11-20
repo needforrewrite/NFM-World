@@ -1,6 +1,7 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using NFMWorld.Archive.Auth;
+using NFMWorld.Archive.Cache;
 using NFMWorld.Archive.Data;
 using NFMWorldLibrary.Multiplayer;
 
@@ -166,8 +167,14 @@ public sealed class ModerationService(ArchiveDbContext db, FileStorage storage, 
             case ModerationActionKind.Relist:
             {
                 var isTakedown = request.Action == ModerationActionKind.Unlist;
+                // ExecuteUpdate bypasses the tracked rows, so the hashes are read here: the edge
+                // copy of each upload has to go, not just the origin's visibility bit.
+                var hashes = await db.Assets.Where(a => a.OwnerId == target.Id)
+                    .Select(a => a.ContentHash)
+                    .ToListAsync(ct);
                 await db.Assets.Where(a => a.OwnerId == target.Id)
                     .ExecuteUpdateAsync(s => s.SetProperty(a => a.IsTakedown, isTakedown), ct);
+                await http.PurgeAssetsAsync(hashes);
                 break;
             }
 

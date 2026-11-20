@@ -25,6 +25,7 @@ Set through the `Archive__*` environment variables (double underscore nests).
 | `Archive__DiscordClientId` / `DiscordClientSecret` / `DiscordRedirectUri` | Discord sign-in                                                                   |
 | `Archive__ReadOnly`                                                       | Disables registration and uploads                                                 |
 | `Archive__DeletionGracePeriod`                                           | Grace between a deletion request and the sweep, `DD.HH:MM:SS` or days (default 30 days) |
+| `Archive__CloudflareZoneId` / `Archive__CloudflareApiToken`              | Optional edge purge when an asset is hidden, replaced or deleted (see [Cloudflare caching](#cloudflare-caching)) |
 
 Relative validator paths are resolved against the content root. In **Development** only, leaving
 `Archive__ValidatorPath` unset makes the archive use `NFMWorld.Archive.Validator` built beside this
@@ -115,6 +116,84 @@ Served from this app's own origin, an uploaded SVG or HTML document would run as
 viewer's session cookie attached. `Archive__PublicBaseUrl` should point at a host that serves the
 storage directory with `Content-Disposition: attachment` and `X-Content-Type-Options: nosniff`;
 the in-app `/assets/{hash}` endpoint is a development convenience.
+
+## Cloudflare caching
+
+`GET /assets/<sha256>` is the hot public download: content-addressed, no cookies, no `Vary`, and it
+answers with
+
+```
+Cache-Control: public, max-age=31536000, immutable
+CDN-Cache-Control: max-age=31536000
+```
+
+so an edge may keep it for a year. **The path has no file extension, and Cloudflare's Standard cache
+level only caches by extension — without a Cache Rule Cloudflare never caches these downloads.**
+The rules below are what turn the origin into a one-time fetch per asset.
+
+### Cache Rules (Caching → Cache Rules), in order
+
+The first matching rule wins, so keep this order. `matches` (regex) needs a Business or Enterprise
+plan, so the download rule uses `starts_with` plus a length check; `/assets/` is 8 characters and the
+hash is 64, so a real download is exactly 72 characters.
+
+|#|When|Settings|
+|---|---|---|
+|1|`http.request.method eq "GET" and starts_with(http.request.uri.path, "/assets/") and len(http.request.uri.path) eq 72`|Cache eligibility **Eligible for cache** · Edge TTL **Respect origin TTL** · Browser TTL **Respect origin TTL** · Cache key: query string **Ignore** · Cache Deception Armor **On**|
+|2|`starts_with(http.request.uri.path, "/assets/")`|Cache eligibility **Bypass cache** — search, `/meta/<hash>` and `/mine` must stay live; the metadata check is what sees a takedown|
+|3|`starts_with(http.request.uri.path, "/auth/") or starts_with(http.request.uri.path, "/account") or starts_with(http.request.uri.path, "/moderation") or starts_with(http.request.uri.path, "/results") or http.request.uri.path eq "/logout" or http.request.uri.path eq "/health"`|Cache eligibility **Bypass cache**; these carry or check a session|
+
+The length test accepts any 64 characters after `/assets/`, not only hex; nothing links or requests
+such a path, and the origin answers `400` without a cacheable body. If you add an `/assets/` endpoint
+whose path is exactly 72 characters, move it above rule 1 with its own bypass rule.
+
+Do not add a "Cache Everything" page rule: the HTML and JSON are per-viewer (session cookie,
+antiforgery token, moderation state).
+
+### Zone settings
+
+- Caching → Configuration → **Cache Level: Standard**; the rules above override it per path.
+- **Browser Cache TTL: Respect Existing Headers** — the origin already sends a year.
+- **Origin Cache Control: On**; harmless here because the rule pins the edge TTL.
+- **Tiered Cache: On** — a cold PoP asks the upper tier instead of the origin, so an asset costs one
+  origin fetch for the whole network rather than one per PoP.
+- **Cache Reserve** (paid) if cold assets must survive eviction for the full year. The current asset
+  sizes keep the hot set resident without it.
+- **WAF**: skip bot-fight/challenge rules for `GET /assets/*`. The native client has no JavaScript
+  and sends no cookies, so a challenged download fails for every player.
+
+### Purging when an asset changes
+
+A year-long TTL is only safe because the archive purges. Set `Archive__CloudflareZoneId` and
+`Archive__CloudflareApiToken` (`ARCHIVE_CLOUDFLARE_ZONE_ID`/`ARCHIVE_CLOUDFLARE_API_TOKEN` in the
+compose stack); both empty means no outbound request at all. The token needs only
+**Zone → Cache Purge → Purge** on that zone, and `Archive__PublicBaseUrl` must be the `https://`
+hostname players download from, because purge URLs are built from it.
+
+Purges are per URL (`<origin>/assets/<hash>`), batched at Cloudflare's 30-URL limit, and run after
+the database write for:
+
+- `DELETE /assets/{id}` and the website's delete — the asset's hash;
+- `PUT /assets/{id}/content` and the website's replace — the **previous** hash;
+- `PATCH /assets/{id}` (name, description, `isPublic`, `isTakedown`) and the edit page's save — the
+  hash, because the download's `Content-Disposition` carries the name and a hidden row must stop
+  answering;
+- moderation takedown/restore and the bulk `unlist`/`relist` — every hash the account owns.
+
+A purge failure is logged (`[Cache] Cloudflare refused …`) and never fails the action.
+
+A purge affects the edge only. It cannot recall bytes a player already has: the game's content cache
+is hash-addressed and never revalidates, and a browser that downloaded the file keeps it for a year.
+
+### What the numbers mean
+
+`DownloadCount` is incremented at the origin, so after this it counts **cache misses**, not
+downloads. Use Cloudflare's cache analytics for request volume; the archive's number becomes "first
+fetch, and re-fetch after a purge". Verify with `curl -sI https://<archive>/assets/<hash>`:
+`cf-cache-status: MISS` on the first request, `HIT` afterwards.
+
+`/tt/replay/{id}` is immutable per id but has no purge hook, so cache it with a short edge TTL
+(a day) or leave it uncached; replays are small and far less hot than assets.
 
 ## Backup and restore
 

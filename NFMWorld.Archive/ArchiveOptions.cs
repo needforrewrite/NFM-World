@@ -45,4 +45,15 @@ public sealed class ArchiveOptions
 
     /// <summary>Grace between a deletion request and the sweep that erases the account.</summary>
     public TimeSpan DeletionGracePeriod { get; set; } = TimeSpan.FromDays(30);
+
+    /// <summary>
+    /// Cloudflare zone whose edge caches <c>/assets/&lt;hash&gt;</c>; empty disables purging.
+    /// </summary>
+    public string? CloudflareZoneId { get; set; }
+
+    /// <summary>
+    /// API token with <c>Zone → Cache Purge → Purge</c> on that zone. Never logged. The purge URL is
+    /// built from <see cref="PublicBaseUrl"/>, so it has to be the hostname players download from.
+    /// </summary>
+    public string? CloudflareApiToken { get; set; }
 }

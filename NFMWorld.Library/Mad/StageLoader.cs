@@ -4,6 +4,7 @@ using TightPack;
 using NFMWorld.PluginSystem;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
+using NFMWorldLibrary.Radpack;
 using NFMWorldLibrary.Util;
 using NFMWorld.Sentry;
 
@@ -248,6 +249,50 @@ public partial class StageLoader
     /// </summary>
     public static StageLoader FromLines(string stageName, IEnumerable<string> stageLines)
         => new(stageName, stageName, stageLines);
+
+    /// <summary>
+    /// The <c>archive/&lt;sha256&gt;</c> models a stage's placement lines refer to. A piece is
+    /// resolved while the stage is parsed, so these have to be prepared before its loader is
+    /// constructed.
+    /// </summary>
+    public static IReadOnlyList<string> ReferencedArchiveModels(IEnumerable<string> stageLines)
+    {
+        var references = new List<string>();
+        var length = RadpackReader.ArchivePrefix.Length + 64;
+        foreach (var rawLine in stageLines)
+        {
+            // Only a placement names a model. Anything else (a briefing or a comment) must not be
+            // able to make the client download an asset it does not use.
+            var line = rawLine.AsSpan().TrimStart();
+            if (line.StartsWith("ds:"))
+                line = line[3..];
+            if (line.StartsWith("?"))
+                line = line[1..];
+            if (!line.StartsWith("set(") && !line.StartsWith("fset(") && !line.StartsWith("chk(")
+                && !line.StartsWith("fchk(") && !line.StartsWith("fix("))
+                continue;
+
+            var rest = line;
+            while (true)
+            {
+                var index = rest.IndexOf(RadpackReader.ArchivePrefix, StringComparison.OrdinalIgnoreCase);
+                if (index < 0)
+                    break;
+
+                rest = rest[index..];
+                if (rest.Length >= length && RadpackReader.IsArchiveId(rest[..length].ToString()))
+                {
+                    var reference = rest[..length].ToString().ToLowerInvariant();
+                    if (!references.Contains(reference))
+                        references.Add(reference);
+                }
+
+                rest = rest[RadpackReader.ArchivePrefix.Length..];
+            }
+        }
+
+        return references;
+    }
 
     private StageLoader(string stageName, string path, IEnumerable<string>? providedLines)
     {

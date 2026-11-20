@@ -653,6 +653,43 @@ public partial class StageEditorPhase
         }
     }
 
+    /// <summary>
+    /// Downloads the public stage parts a stage places, so its loader can resolve them. A part is
+    /// looked up while the stage is parsed, and that is synchronous.
+    /// </summary>
+    private async Task PrepareStageArchivePartsAsync(string stageFileName, CancellationToken token)
+    {
+        var path = $"data/stages/user/{stageFileName}.txt";
+        if (!VFS.FileExists(path))
+            return;
+
+        foreach (var reference in NFMWorldLibrary.StageLoader.ReferencedArchiveModels(VFS.ReadAllLines(path)))
+        {
+            var result = await NFMWorldLibrary.Content.ContentCache.PrepareAsync(
+                NFMWorld.Gameplay.GarageController.ContentClient,
+                reference,
+                NFMWorldLibrary.Radpack.AssetKind.StagePiece,
+                token
+            );
+            if (!result.Ok)
+            {
+                Logging.Warning($"Could not prepare stage part '{reference}': {result.Error}");
+                continue;
+            }
+
+            // Keep the part in the library so it can be placed again while the stage is open.
+            if (NFMWorldLibrary.Radpack.RadpackReader.TryReadModel(
+                    reference,
+                    NFMWorldLibrary.Radpack.RadpackType.TrackPiece,
+                    out _
+                ) is { } part)
+            {
+                part.FileName = reference;
+                _availableParts.TryAdd(part);
+            }
+        }
+    }
+
     private void RefreshAvailableStages()
     {
         _availableStages.Clear();
@@ -707,6 +744,7 @@ public partial class StageEditorPhase
 
             // Load the stage using the Stage class (it expects filename without extension)
             var token = _editorLoading.Token;
+            await PrepareStageArchivePartsAsync(stageFileName, token);
             tab.Stage = await Task.Run(() => new BackendStage($"user/{stageFileName}", null, throwOnError: true), token);
             await LoadingWork.NextFrame;
             token.ThrowIfCancellationRequested();

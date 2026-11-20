@@ -4,6 +4,7 @@ using Maxine.Extensions.Collections;
 using NFMWorld.Gameplay;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.Content;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
 
@@ -381,8 +382,18 @@ public partial class StageEditorPhase : BasePhase
     private string _hierarchySearch = "";
 
     // Parts library state
+    private const int OnlinePartsCategory = 4;
     private string _partsSearch = "";
-    private int _partsCategory = 0; // 0=All, 1=nfmm, 2=vendor, 3=user
+    private int _partsCategory = 0; // 0=All, 1=nfmm, 2=vendor, 3=user, 4=online
+
+    // Online parts: archive search results, the parts they downloaded into, and their names.
+    private List<RemoteAsset> _onlinePartResults = [];
+    private readonly Dictionary<string, string> _onlinePartNames = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _onlinePartDownloads = new(StringComparer.Ordinal);
+    private string _onlinePartStatus = "";
+    private bool _onlinePartSearching;
+    private int _onlinePartSearchGeneration;
+    private CancellationTokenSource? _onlinePartSearch;
 
     // Swap piece mode
     private bool _isSwapMode = false;
@@ -690,6 +701,9 @@ public partial class StageEditorPhase : BasePhase
         _editorLoading.Cancel();
         _editorLoading.Dispose();
         StopMusicPreview(notify: false);
+        _onlinePartSearch?.Cancel();
+        _onlinePartSearch?.Dispose();
+        _onlinePartSearch = null;
 
         foreach (var tab in _tabs)
         {

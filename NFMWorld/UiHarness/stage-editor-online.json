@@ -1,0 +1,11 @@
+{
+  "view": "stage-editor",
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-menu-captures",
+  "steps": [
+    { "action": "capture", "capture": "stage-editor-closed" },
+    { "action": "click", "target": "Parts category ONLINE", "capture": "stage-editor-online" }
+  ]
+}

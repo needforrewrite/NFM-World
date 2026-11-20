@@ -661,6 +661,13 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
 - **Content-addressed storage.** Every upload is stored under its own SHA-256 (`FileStorage`), so a re-upload of the
   same bytes resolves to the same path — never delete a rejected upload without checking no row still references the
   hash.
+- **Edge caching.** `GET /assets/{hash}` is `immutable` for a year at both browser and edge
+  (`Cache-Control` plus `CDN-Cache-Control`), so a Cloudflare Cache Rule makes it a one-time origin fetch; the rules
+  and zone settings are in `ops/README.md`. Cloudflare does not cache the path by default (no file extension). Because
+  of the year-long TTL, every surface that changes a hash's visibility, bytes or download name must call
+  `HttpContext.PurgeAssetsAsync(...)` (`Cache/CloudflareCache.cs`): the asset endpoints, the edit/delete pages,
+  `AssetModeration` and the bulk `unlist`/`relist`. The hook is opt-in (`Archive__CloudflareZoneId` /
+  `Archive__CloudflareApiToken`) and never fails the action on a Cloudflare error.
 - **Two upload surfaces, one rule set.** `POST /assets/upload` (the game client) and `Pages/Upload.cshtml`
   (the website) both publish data assets, and they must refuse the same inputs: signed in, `Archive:ReadOnly`,
   `AssetKinds.IsPublishable`, the `.radpack`/`.rad` extension allowlist, `AssetKinds.IsUploadExtensionAllowed`
@@ -1082,8 +1089,12 @@ Added with the archive/content work; read this before touching content loading, 
   cached file is deleted and refetched. Its id arguments take **either** a bare hash or the canonical
   `archive/<sha256>` reference (`ContentHashes.TryResolve`), because search results, the garage, the
   stage picker and the `PreparedContent` entries on the wire all carry the reference form — passing
-  one through unchanged is correct, and slicing off the prefix first is not needed. Browser
-  persistence is the VFS write root (MEMFS), so it is session-only.
+  one through unchanged is correct, and slicing off the prefix first is not needed. Desktop caches to
+  disk at `<LocalApplicationData>/NFMWorld/cache/archive` (`%LOCALAPPDATA%`, `~/Library/Application
+  Support` or `~/.local/share`), not under the working directory, which varies by launch method and
+  may be read-only; the write root is only a fallback when that folder is not writable. Each write
+  uses its own temporary name, so a game and a game master under one account can fetch the same
+  asset at once. Browser persistence is the VFS write root (MEMFS), so it is session-only.
 - **Multiplayer policy** — `MultiplayerContentPolicy` accepts shipped car ids and canonical
   `archive/<hash>` only; `user/` and local paths are refused. The lobby applies it to identities and
   session creation, and the game master applies it again before constructing any stage.
@@ -1191,7 +1202,15 @@ Added with the archive/content work; read this before touching content loading, 
   pieces by a single cursor over `ScenePieces` (value matching collapsed identical pieces), and
   undo prunes ids that no longer exist so a re-used id cannot inherit an old group. Saving and
   publishing both serialize `BuildStageText()`; publishing parses that snapshot and never writes the
-  working document.
+  working document. The parts library's ONLINE category searches the archive for public stage parts
+  (`StageEditorPhase.OnlineParts.cs`): pressing a result downloads it through `ContentCache`, adds it
+  to `_availableParts` under its `archive/<sha256>` reference and starts placement, so the saved line
+  is the reference. `BackendGameSparker.GetStagePart` renames an archive piece to that reference —
+  the package itself carries the author's local path — and `StageLoader.ReferencedArchiveModels`
+  lets the editor and `ClientStage` prepare a stage's referenced parts before parsing, because a
+  part is resolved synchronously. A published stage is self-contained either way: `StageLoader.pieces`
+  serializes the resolved `Rad3d`s. The model editor's PUBLISH dialog chooses CAR or STAGE PART
+  instead of inferring it from the file's folder.
 - **phy/ds stage-format parity** — the remaining phy-addons directives are parsed by `StageLoader`:
   - **Spawn overrides** — `xstart`/`zstart`/`ystart`/`xzstart`/`xystart`/`zystart`, plus ds-addons'
     `angle` (yaw), are kept in `Starts` with the player count they were written for; phy applies a

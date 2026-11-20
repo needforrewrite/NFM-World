@@ -326,12 +326,51 @@ public static class ContentCache
     public static string? Root => _root;
 
     /// <summary>Mounts the cache so cached assets win over the network mount. Idempotent.</summary>
+    /// <remarks>
+    /// Desktop keeps the cache in the player's local app data rather than the game folder: the
+    /// working directory differs between launch methods, and an install folder may not be writable,
+    /// so a cache there repeats every download after a restart. The browser's write root is MEMFS,
+    /// so there it still lasts only for the session.
+    /// </remarks>
     public static void Mount()
     {
-        if (_mounted is not null || TheVFS.VFS.WriteRoot is null)
+        if (_mounted is not null)
             return;
 
-        MountAt(Path.Combine(TheVFS.VFS.WriteRoot, "data", "cache", "archive"));
+        foreach (var root in CacheRoots())
+        {
+            try
+            {
+                MountAt(root);
+                Logging.Info($"[Cache] Archive cache: {_root}");
+                return;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Logging.Warning($"[Cache] Archive cache '{root}' is not writable: {ex.Message}");
+            }
+        }
+
+        Logging.Warning("[Cache] No writable archive cache; downloads will not persist.");
+    }
+
+    /// <summary>The per-user cache first, then the session's write root.</summary>
+    internal static IEnumerable<string> CacheRoots()
+    {
+        if (OperatingSystem.IsBrowser())
+        {
+            if (TheVFS.VFS.WriteRoot is { } browserRoot)
+                yield return Path.Combine(browserRoot, "cache", "archive");
+            yield break;
+        }
+
+        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (!string.IsNullOrWhiteSpace(local))
+            yield return Path.Combine(local, "NFMWorld", "cache", "archive");
+
+        // Read-only profiles and sandboxes still get a cache for this install.
+        if (TheVFS.VFS.WriteRoot is { } writeRoot)
+            yield return Path.Combine(writeRoot, "data", "cache", "archive");
     }
 
     /// <summary>Mounts the cache at an explicit root; used by tests and alternative heads.</summary>
@@ -341,9 +380,11 @@ public static class ContentCache
             return;
 
         Directory.CreateDirectory(root);
-        _root = Path.GetFullPath(root);
-        _mounted = new ArchiveCacheFileSystem(_root);
-        TheVFS.VFS.Mount(_mounted);
+        var full = Path.GetFullPath(root);
+        var mounted = new ArchiveCacheFileSystem(full);
+        TheVFS.VFS.Mount(mounted);
+        _root = full;
+        _mounted = mounted;
     }
 
     /// <summary>Whether a canonical asset is already in the cache. Takes a hash or an <c>archive/</c> id.</summary>
@@ -525,9 +566,27 @@ public static class ContentCache
     private static void Publish(string normalizedHash, byte[] bytes)
     {
         var destination = PathFor(normalizedHash);
-        var temporary = destination + ".tmp";
-        File.WriteAllBytes(temporary, bytes);
-        File.Move(temporary, destination, overwrite: true);
+
+        // A per-attempt name: two processes (a game and a game master under one account) can
+        // download the same asset at once, and a fixed ".tmp" would make one of them fail.
+        var temporary = $"{destination}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            File.WriteAllBytes(temporary, bytes);
+            File.Move(temporary, destination, overwrite: true);
+        }
+        catch
+        {
+            try
+            {
+                File.Delete(temporary);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+            }
+
+            throw;
+        }
     }
 }
 

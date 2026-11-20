@@ -1,0 +1,14 @@
+{
+  "view": "model-editor",
+  "modelTab": "stage",
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-menu-captures",
+  "steps": [
+    { "action": "capture", "capture": "model-editor-closed" },
+    { "action": "click", "target": "Model editor PUBLISH", "capture": "model-editor-publish" },
+    { "action": "click", "target": "Publish kind Car", "capture": "model-editor-publish-car" },
+    { "action": "click", "target": "Publish kind StagePiece", "capture": "model-editor-publish-stage" }
+  ]
+}

@@ -545,6 +545,11 @@ public static class BackendGameSparker
 
         if (model is not null)
         {
+            // An archive piece's only resolvable name is its reference; the package carries the
+            // author's local path, which no other machine can place or save.
+            if (RadpackReader.IsArchiveId(name))
+                model.FileName = identity;
+
             return _stagePartFiles.GetOrAdd(
                 identity,
                 _ => (total + Interlocked.Increment(ref _nextStagePartFileIndex) - 1, model)

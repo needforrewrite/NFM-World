@@ -9,8 +9,10 @@ using NFMWorld.Reactor.Sx;
 using NFMWorld.UI.Components;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.Content;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
+using NFMWorldLibrary.Radpack;
 using NFMWorldLibrary.Util;
 using SignalsDotnet;
 
@@ -157,7 +159,8 @@ public partial class StageEditorPhase
         Func<string> value,
         Action<string> onChange,
         Func<string?>? placeholder = null,
-        float minWidth = 160
+        float minWidth = 160,
+        Action? onSubmit = null
     )
     {
         var input = Sx.TextInput(
@@ -177,7 +180,8 @@ public partial class StageEditorPhase
             ),
             text: Observe(value),
             onchange: onChange,
-            placeholder: placeholder is null ? null : Observe(placeholder)
+            placeholder: placeholder is null ? null : Observe(placeholder),
+            onsubmit: onSubmit is null ? null : _ => onSubmit()
         );
         input.TextStyles = Sx.TextStyles(fontSize: 11);
         return input;
@@ -186,8 +190,14 @@ public partial class StageEditorPhase
     private Node EditorCheckbox(Func<bool> value, Action toggle, Func<string?>? label = null)
         => Controls.Checkbox(Observe(value), toggle, label);
 
-    private static string ShortName(string name)
+    private string ShortName(string name)
     {
+        if (_onlinePartNames.TryGetValue(name, out var label))
+            return label;
+
+        if (RadpackReader.IsArchiveId(name))
+            return "part " + name[RadpackReader.ArchivePrefix.Length..][..8];
+
         var slash = name.LastIndexOf('/');
         return slash < 0 ? name : name[(slash + 1)..];
     }
@@ -292,7 +302,8 @@ public partial class StageEditorPhase
             active: Observe(active),
             size: ButtonSize.Sm,
             style: CompactStyle(),
-            textStyle: () => Sx.TextStyles(fontSize: 10, fontStyle: FontStyle.Bold)
+            textStyle: () => Sx.TextStyles(fontSize: 10, fontStyle: FontStyle.Bold),
+            name: () => "Parts category " + label()
         );
 
     private static Func<Styles> CompactStyle(float minWidth = 0)
@@ -706,7 +717,7 @@ public partial class StageEditorPhase
         return rows;
     }
 
-    private static HierarchyRowVm PieceRow(StagePieceInstance piece, int groupId, int groupIndex)
+    private HierarchyRowVm PieceRow(StagePieceInstance piece, int groupId, int groupIndex)
     {
         var tag = piece.PiecePlacement.Type switch
         {
@@ -1601,7 +1612,15 @@ public partial class StageEditorPhase
     private Node PartsContent()
         => Sx.View(
             style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexGrow: 1, minHeight: 0, gapRow: 6),
-            children: [PartsToolbar(), PartsGrid()]
+            children:
+            [
+                PartsToolbar(),
+                EditorShow(
+                    when: () => _partsCategory == OnlinePartsCategory,
+                    then: () => OnlinePartsGrid(),
+                    otherwise: () => PartsGrid()
+                )
+            ]
         );
 
     private Node PartsToolbar()
@@ -1621,7 +1640,30 @@ public partial class StageEditorPhase
                         ModeButton(() => "NFMM", () => _partsCategory == 1, () => { _partsCategory = 1; Touch(); }),
                         ModeButton(() => "VENDOR", () => _partsCategory == 2, () => { _partsCategory = 2; Touch(); }),
                         ModeButton(() => "USER", () => _partsCategory == 3, () => { _partsCategory = 3; Touch(); }),
-                        EditorField(() => _partsSearch, value => { _partsSearch = value; Touch(); }, () => "Search parts"),
+                        ModeButton(
+                            () => "ONLINE",
+                            () => _partsCategory == OnlinePartsCategory,
+                            () =>
+                            {
+                                _partsCategory = OnlinePartsCategory;
+                                Touch();
+                                SearchOnlinePartsIfNeeded();
+                            }
+                        ),
+                        EditorField(
+                            () => _partsSearch,
+                            value => { _partsSearch = value; Touch(); },
+                            () => "Search parts",
+                            onSubmit: () =>
+                            {
+                                if (_partsCategory == OnlinePartsCategory)
+                                    SearchOnlineParts(_partsSearch);
+                            }
+                        ),
+                        EditorShow(
+                            when: () => { _uiRevision.Value.ToString(); return _partsCategory == OnlinePartsCategory; },
+                            then: () => SmallButton("SEARCH", () => SearchOnlineParts(_partsSearch))
+                        ),
                         SmallButton(() => _snapEnabled ? "SNAP ON" : "SNAP OFF", () => { _snapEnabled = !_snapEnabled; Touch(); }),
                         SmallButton(
                             () => _gridSnapEnabled ? $"GRID {_gridSnapSize:0}" : "GRID OFF",
@@ -1701,7 +1743,8 @@ public partial class StageEditorPhase
             if (query.Length > 0 && !name.Contains(query, StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            var category = name.StartsWith("nfmm/", StringComparison.OrdinalIgnoreCase) ? 1
+            var category = RadpackReader.IsArchiveId(name) ? OnlinePartsCategory
+                : name.StartsWith("nfmm/", StringComparison.OrdinalIgnoreCase) ? 1
                 : name.StartsWith("nfmw/", StringComparison.OrdinalIgnoreCase)
                   || name.StartsWith("vendor/", StringComparison.OrdinalIgnoreCase) ? 2 : 3;
             if (_partsCategory != 0 && category != _partsCategory)
@@ -1762,11 +1805,7 @@ public partial class StageEditorPhase
                     return;
                 }
 
-                _pendingPlacementPartIndex = part.Index;
-                _hasValidPlacementPos = false;
-                _pendingPlacementYaw = 0;
-                _pendingPlacementYOff = 0;
-                Touch();
+                BeginPlacement(part.Part);
             },
             children:
             [
@@ -1802,6 +1841,128 @@ public partial class StageEditorPhase
             ]
         );
     }
+
+    private void BeginPlacement(Rad3d part)
+    {
+        var index = _availableParts.IndexOf(part);
+        if (index < 0)
+            return;
+
+        _pendingPlacementPartIndex = index;
+        _hasValidPlacementPos = false;
+        _pendingPlacementYaw = 0;
+        _pendingPlacementYOff = 0;
+        Touch();
+    }
+
+    private Node OnlinePartsGrid()
+        => Sx.View(
+            style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexGrow: 1, minHeight: 0, gapRow: 4),
+            children:
+            [
+                EditorShow(
+                    when: () => _onlinePartStatus.Length > 0,
+                    then: () => EditorText(
+                        style: () => Sx.TextStyles(fontSize: 10, foregroundColor: new Color(185, 211, 255, 180)),
+                        layout: () => Sx.Styles(flexShrink: 0),
+                        text: () => _onlinePartStatus
+                    )
+                ),
+                Sx.View(
+                    style: () => Sx.Styles(
+                        flexDirection: FlexDirection.Row,
+                        flexWrap: Wrap.Wrap,
+                        gapColumn: 4,
+                        gapRow: 4,
+                        overflow: Overflow.Scroll,
+                        flexGrow: 1,
+                        minHeight: 0,
+                        alignContent: Align.FlexStart,
+                        alignItems: Align.FlexStart,
+                        paddingTop: 4,
+                        paddingBottom: 4,
+                        paddingRight: 8
+                    ),
+                    children: Sx.For(
+                        each: () =>
+                        {
+                            _uiRevision.Value.ToString();
+                            return _onlinePartResults;
+                        },
+                        row: (asset, _) => OnlinePartTile(asset)
+                    )
+                )
+            ]
+        );
+
+    private Node OnlinePartTile(RemoteAsset asset)
+    {
+        var reference = OnlinePartReference(asset);
+        return EditorShow(
+            when: () => _availableParts.Contains(reference),
+            then: () =>
+            {
+                var part = _availableParts.GetValueOrDefault(reference)!;
+                return PartButton((_availableParts.IndexOf(part), part));
+            },
+            otherwise: () => RemotePartTile(asset, reference)
+        );
+    }
+
+    /// <summary>A search result that is not downloaded yet; pressing it fetches the part.</summary>
+    private Node RemotePartTile(RemoteAsset asset, string reference)
+    {
+        var downloading = () =>
+        {
+            _uiRevision.Value.ToString();
+            return _onlinePartDownloads.Contains(reference);
+        };
+        return Sx.View(
+            style: () => Sx.Styles(
+                width: PartTileSize,
+                height: PartTileSize,
+                flexShrink: 0,
+                flexDirection: FlexDirection.Column,
+                alignItems: Align.Center,
+                gapRow: 2,
+                paddingTop: 4,
+                paddingBottom: 4,
+                borderRadius: 4,
+                backgroundColor: downloading() ? new Color(55, 90, 150, 220) : new Color(22, 42, 80, 120)
+            ),
+            onmousedown: _ =>
+            {
+                if (!downloading())
+                    DownloadOnlinePart(asset);
+            },
+            children:
+            [
+                Sx.View(
+                    style: () => Sx.Styles(
+                        width: PartPreviewWidth,
+                        height: PartPreviewHeight,
+                        flexShrink: 0,
+                        borderRadius: 3,
+                        backgroundColor: new Color(30, 60, 105, 220)
+                    ),
+                    children: Sx.Text(
+                        style: () => Sx.TextStyles(fontSize: 9, foregroundColor: new Color(150, 190, 255)),
+                        text: () => downloading() ? "..." : "WEB"
+                    )
+                ),
+                EditorText(
+                    style: () => Sx.TextStyles(
+                        fontSize: 9,
+                        foregroundColor: downloading() ? new Color(128, 170, 255) : new Color(185, 211, 255)
+                    ),
+                    text: () => Clip(asset.Name, 16)
+                )
+            ]
+        );
+    }
+
+    private static string Clip(string text, int length)
+        => text.Length <= length ? text : text[..(length - 1)] + "…";
 
     private static Color PartTileColor(string name)
     {

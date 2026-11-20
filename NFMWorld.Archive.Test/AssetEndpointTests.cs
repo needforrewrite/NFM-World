@@ -305,6 +305,7 @@ public class AssetEndpointTests
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         CollectionAssert.AreEqual(new byte[] { 1, 2, 3 }, await response.Content.ReadAsByteArrayAsync());
         StringAssert.Contains(response.Headers.CacheControl!.ToString(), "immutable");
+        StringAssert.Contains(response.Headers.GetValues("CDN-Cache-Control").Single(), "max-age=31536000");
     }
 
     [TestMethod]
