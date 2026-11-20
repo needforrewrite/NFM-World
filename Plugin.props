@@ -93,12 +93,12 @@
                  and the .deps/.runtimeconfig files because they only describe
                  running the assembly standalone - which never happens, the host
                  loads it in-process - and they name the identity renamed away. -->
-            <PluginExtra Include="$(TargetDir)*"
-                         Exclude="$(TargetPath);$(TargetDir)$(TargetName).pdb;$(TargetDir)*.deps.json;$(TargetDir)*.runtimeconfig.json" />
+            <PluginExtra Include="$(TargetDir)**\*"
+                         Exclude="$(TargetPath);$(TargetDir)$(TargetName).pdb;$(TargetDir)**\*.deps.json;$(TargetDir)**\*.runtimeconfig.json" />
         </ItemGroup>
 
         <Copy SourceFiles="@(PluginExtra)"
-              DestinationFolder="$(PluginDestination)"
+              DestinationFolder="$(PluginDestination)\%(RecursiveDir)"
               SkipUnchangedFiles="true" />
 
         <!-- Renamed rather than named at compile time: the assembly identity

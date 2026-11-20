@@ -60,9 +60,10 @@ public sealed class RocketFx : IDisposable
         for (var i = 0; i < _cars.Count; i++)
             _states[i] = new CarVisualState();
 
-        // Plugin-visible IBackend surface: sounds load from the game's data root.
-        _boostLoop = IBackend.Backend.GetSound("data/sound/rocket_boost.wav");
-        _jumpSound = IBackend.Backend.GetSound("data/sound/rocket_jump.wav");
+        // Plugin-visible IBackend surface: the sounds ship inside this plugin's own folder
+        // (data/gamemodes/<id>/sound/) and load through the game's VFS data root.
+        _boostLoop = IBackend.Backend.GetSound("data/gamemodes/nfmm/rocket/sound/rocket_boost.wav");
+        _jumpSound = IBackend.Backend.GetSound("data/gamemodes/nfmm/rocket/sound/rocket_jump.wav");
     }
 
     /// <summary>

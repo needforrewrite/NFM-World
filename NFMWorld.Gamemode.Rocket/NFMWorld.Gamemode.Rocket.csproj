@@ -10,6 +10,11 @@
 
     <Import Project="..\Plugin.props"/>
 
+    <!-- The plugin's own assets. They land in the plugin's output directory, which Plugin.props
+         copies wholesale into data/gamemodes/<id>/, so a plugin folder is self-contained. -->
+    <ItemGroup>
+        <None Include="sound\**\*" CopyToOutputDirectory="PreserveNewest"/>
+    </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\FixedMathSharp\src\FixedMathSharp\FixedMathSharp.csproj" Private="false" ExcludeAssets="runtime"/>
         <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.Mathematics\Maxine.Extensions.Mathematics.csproj" Private="false" ExcludeAssets="runtime"/>

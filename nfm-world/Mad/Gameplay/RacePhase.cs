@@ -126,6 +126,8 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         {
             _host.Dispose();
             CurrentStage?.SetPlayers(null);
+            // Same pin as Dispose: the widgets' accessors capture the gamemode.
+            UiState.Race.GamemodeWidgets = [];
             GamemodeInstance?.End();
             GamemodeInstance = null;
             if (stageSource != null)
@@ -762,12 +764,13 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
             CurrentStage?.SetPlayers(null); // tears down visuals holding the gamemode's cars
 
+            // The widgets hold the gamemode's value accessors, which capture the gamemode
+            // itself: leaving them here pins the plugin's assembly for the process lifetime,
+            // which the unload verifier reports as a leak.
+            UiState.Race.GamemodeWidgets = [];
+
             GamemodeInstance?.End();
             GamemodeInstance = null;
-
-            // Last, and only after every reference this phase held into the gamemode is
-            // gone: this is what lets the plugin's assembly actually be collected.
-            Gamemode.End();
         }
 
         base.Dispose(disposing);
