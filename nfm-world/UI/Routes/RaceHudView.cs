@@ -45,7 +45,7 @@ public static class RaceHudView
                 ),
                 new RaceOverlays(
                     race,
-                    () => race.Skin.Value == "world",
+                    () => race.Skin.Value == "world" || HudSkinRegistry.DrawsRadar(race.Skin.Value),
                     () => HudSkinRegistry.UsesClassicSkin(race.Skin.Value),
                     () => race.StageSnap.Value
                 ),

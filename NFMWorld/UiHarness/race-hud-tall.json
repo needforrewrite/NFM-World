@@ -1,0 +1,9 @@
+{
+  "width": 800,
+  "height": 1000,
+  "scale": 1,
+  "output": "../../.git/sx-menu-captures/tall",
+  "view": "race-hud",
+  "skin": "s7",
+  "steps": [ { "action": "capture", "capture": "tall-s7" } ]
+}

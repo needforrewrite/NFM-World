@@ -1,0 +1,11 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-menu-captures",
+  "view": "race-hud",
+  "skin": "dsmod2",
+  "steps": [
+    { "action": "capture", "capture": "race-hud-dsmod2" }
+  ]
+}

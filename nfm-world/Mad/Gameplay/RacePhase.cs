@@ -88,6 +88,20 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     private readonly SpectatorRaceFeedback _spectatorFeedback = new();
     private bool _spectatorFeedbackActive;
 
+    // The chronometer and speedometer gadgets read a race clock and per-lap splits that no
+    // gamemode tracks; the phase keeps them from its own tick cadence.
+    private long _raceClockStart;
+    private long _raceClockMs;
+    private long _lapSplitStartMs;
+    private int _trackedLap = -1;
+    private readonly List<int> _lapSplits = [];
+
+    // "Now listening" is an announcement, not a permanent label: it appears when a track starts
+    // and retracts, and stays hidden while nothing is playing.
+    private const long MusicAnnounceMs = 6000;
+    private IRadicalMusic? _announcedMusic;
+    private long _musicAnnounceUntilTick;
+
     public IGamemode? GamemodeInstance { get; protected set; }
 
     BackendStage IGamemodeContext.CurrentStage => CurrentStage.Backend;
@@ -345,6 +359,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         hud.ArrowTarget = "";
         hud.ArrowAtCars = false;
         hud.ArrowLocked = false;
+        hud.ArrowDistanceMeters = null;
         hud.Spectating = WatchingPlayers;
         if (WatchingPlayers && SpectateCar() is { } watched)
             hud.ArrowTarget = OrderedPlayers(gm).FirstOrDefault(p => ReferenceEquals(p.Car, watched))?.Info.PlayerName ?? "";
@@ -360,6 +375,32 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             hud.TotalLaps.Value = CurrentStage.Backend.Nlaps;
             hud.TotalRacers.Value = gm.Players.Count;
         }
+
+        // The gadget skins read data no gamemode tracks: the viewed car's speed over its own top
+        // speed (the analogue needles), the phase's race clock and lap splits (the chronometer),
+        // and the stage's music track (the visor).
+        hud.SpeedFraction = client is { } needleCar && needleCar.Stats.Swits.Z > 0
+            ? (float)needleCar.CarPhysics.Speed / needleCar.Stats.Swits.Z
+            : null;
+        hud.TopSpeed = client is { } speedCar && speedCar.Stats.Swits.Z > 0 ? speedCar.Stats.Swits.Z : null;
+        hud.LapSplits.Clear();
+        hud.LapSplits.AddRange(_lapSplits);
+        hud.LapSplits.Add((int)(_raceClockMs - _lapSplitStartMs));
+        // The visor announces whichever soundtrack is playing right now: it shows for a few
+        // seconds when a track starts (or is replaced) and then retracts. Reading the stage's
+        // configured track instead left "Now listening" on screen for the whole race, and on
+        // screen even when no music was playing at all.
+        var playing = GameSparker.CurrentMusic;
+        if (!ReferenceEquals(playing, _announcedMusic))
+        {
+            _announcedMusic = playing;
+            _musicAnnounceUntilTick = System.Environment.TickCount64 + MusicAnnounceMs;
+        }
+
+        hud.MusicTrack = playing is not null && System.Environment.TickCount64 < _musicAnnounceUntilTick
+                         && GetMusicTrack() is { } musicTrack
+            ? System.IO.Path.GetFileNameWithoutExtension(musicTrack.Path)
+            : null;
 
         if (WatchingPlayers)
         {
@@ -457,7 +498,43 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
                     )
                     * (180 / MathF.PI);
         hud.ArrowAngle = Math.Clamp(angle, hud.ArrowAtCars ? -100 : -130, hud.ArrowAtCars ? 100 : 130);
+        // phy's arrow readout divides world units by 100, so the gadget shows the same number.
+        hud.ArrowDistanceMeters = MathF.Sqrt(direction.X * direction.X + direction.Z * direction.Z) / 100f;
     }
+
+    /// <summary>
+    /// The phase-side race clock the chronometer and speedometer gadgets read: one clock for the
+    /// whole race, plus a per-lap split that rolls over as the viewed car's lap advances. A local
+    /// restart starts a fresh clock; online the clock just keeps running, which is what the
+    /// spectator sees too.
+    /// </summary>
+    private void TickRaceClock()
+    {
+        if (_raceClockStart == 0)
+        {
+            _raceClockStart = System.Environment.TickCount64;
+            _lapSplitStartMs = 0;
+            _trackedLap = -1;
+            _lapSplits.Clear();
+        }
+
+        _raceClockMs = System.Environment.TickCount64 - _raceClockStart;
+        if (GamemodeInstance is not BaseClientGamemode gm)
+            return;
+
+        var lap = gm.HudState.Lap;
+        if (lap < 1)
+            return;
+
+        if (lap != _trackedLap)
+        {
+            if (_trackedLap > 0)
+                _lapSplits.Add((int)(_raceClockMs - _lapSplitStartMs));
+            _trackedLap = lap;
+            _lapSplitStartMs = _raceClockMs;
+        }
+    }
+
 
     /// <summary>
     /// What the guidance arrow points at: the targeted car in arrace mode, else the next
@@ -692,6 +769,11 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         IsPaused = false;
         _input.Reset(ClientCar?.Control);
         _ticks = 0;
+        _raceClockStart = 0;
+        _raceClockMs = 0;
+        _lapSplitStartMs = 0;
+        _trackedLap = -1;
+        _lapSplits.Clear();
         SoundEffects.SetPaused(false);
         UiState.Race.Paused.Value = false;
     }
@@ -1092,6 +1174,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         if (RaceState is RaceState.InProgress or RaceState.Finished)
         {
             GamemodeInstance?.GameTick();
+            TickRaceClock();
         }
 
         if (ClientCar is { Wasted: false }) _deathSpectating = false;

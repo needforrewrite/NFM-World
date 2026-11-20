@@ -9,10 +9,12 @@ using NFMWorld.Graphics;
 using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
 using NFMWorld.UI;
+using NFMWorld.UI.Hud;
 using NFMWorld.UI.Routes;
 using NFMWorld.UI.ViewModels;
 using NFMWorld.Util;
 using NFMWorldLibrary;
+using NFMWorldLibrary.Hud;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorld;
@@ -81,6 +83,7 @@ public partial class WorldGame
             "my-content" => new FixturePhase(MyContentFixture),
             "replay-viewer" => new FixturePhase(ReplayViewerFixture),
             "replay-camera" => new FixturePhase(ReplayCameraFixture),
+            "race-hud" => new FixturePhase(() => RaceHudFixture(config)),
             _ => throw new InvalidOperationException($"Unknown harness view: {viewName}")
         };
         if (config.TryGetProperty("pieceCount", out var count))
@@ -1321,5 +1324,104 @@ public partial class WorldGame
                 Back: () => { }
             )
         );
+    }
+
+    /// <summary>
+    /// The race HUD over fixture data, so every built-in skin can be captured headlessly. The
+    /// `skin` config key selects the skin; the defaults exercise the full gadget set: a moving
+    /// needle, laps, an arrow target, opponents and a track outline.
+    /// </summary>
+    private static Node? RaceHudFixture(JsonElement config)
+    {
+        var race = UiState.Race;
+        var skin = config.TryGetProperty("skin", out var s) ? s.GetString() : "classic";
+        race.Skin.Value = HudSkinId.Normalize(skin);
+        HudSkinRegistry.Refresh();
+
+        race.IsPreview = true;
+        race.TimeTrial = config.TryGetProperty("timeTrial", out var tt) && tt.GetBoolean();
+        race.Speed.Value = 3401f;
+        race.Power.Value = 0.78f * 0.98f;
+        race.Damage.Value = 0.42f;
+        race.Lap.Value = 2;
+        race.TotalLaps.Value = 5;
+        race.LapTimeMs.Value = 63_457;
+        race.Position.Value = 2;
+        race.TotalRacers.Value = 6;
+        race.Wasted = 1;
+        race.Opponents = 5;
+        race.ArrowAngle = -45f;
+        race.ArrowTarget = "Tornado";
+        race.ArrowAtCars = config.TryGetProperty("arrace", out var arrace) && arrace.GetBoolean();
+        race.ArrowDistanceMeters = 2340;
+        race.SpeedFraction = 0.72f;
+        race.TopSpeed = 5000;
+        race.MusicTrack = "The Game";
+        race.LapSplits.Clear();
+        race.LapSplits.AddRange([61_234, 58_913, 63_457]);
+        var solo = config.TryGetProperty("solo", out var so) && so.GetBoolean();
+        race.Racers.Clear();
+        if (solo)
+        {
+            race.Opponents = 0;
+            race.Wasted = 0;
+        }
+        else race.Racers.AddRange(
+            [
+                new HudRacer(1, "DragShot", 0.31f, false, false, 1),
+                new HudRacer(2, "You", 0.42f, true, false, 0),
+                new HudRacer(3, "Tornado", 0.66f, false, false, 2),
+                new HudRacer(4, "Mega", 0.91f, false, true, 3),
+                new HudRacer(5, "Drumstick", 0.12f, false, false, 4),
+                new HudRacer(6, "LaFerrari", 0.55f, false, true, 5)
+            ]
+        );
+
+        race.Markers.Clear();
+        for (var i = 0; i < race.Racers.Count; i++)
+        {
+            var racer = race.Racers[i];
+            var angle = i * MathF.Tau / race.Racers.Count;
+            race.Markers.Add(
+                new HudRacerMarker(
+                    racer.Name,
+                    MathF.Sin(angle) * 2500,
+                    0,
+                    MathF.Cos(angle) * 2500,
+                    racer.Position,
+                    racer.IsClient,
+                    racer.Wasted
+                )
+            );
+        }
+
+        race.ClientPosition = (0, 0, 0);
+        race.ClientHeading = 0.35f;
+        race.TrackCenter = (0, 0);
+        race.TargetCheckpoint = (4000, 0);
+        race.Checkpoints.Clear();
+        for (var i = 0; i < 8; i++)
+        {
+            var angle = i * MathF.Tau / 8;
+            race.Checkpoints.Add((MathF.Sin(angle) * 6000, MathF.Cos(angle) * 6000));
+        }
+
+        race.MapImage = null;
+        race.MapFrame = default;
+        var node = RaceHudView.Build(
+            new RaceHudView.Actions(
+                Resume: () => { },
+                Restart: () => { },
+                Quit: () => { },
+                Chat: null,
+                SendChat: null,
+                CloseChat: null,
+                Finish: null,
+                ContinueFinish: null
+            )
+        );
+        // BuildHud resets the skin from the saved setting; the fixture picks one after mount.
+        race.Skin.Value = HudSkinId.Normalize(skin);
+        return node;
     }
 }

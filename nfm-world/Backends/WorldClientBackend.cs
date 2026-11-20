@@ -178,13 +178,20 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
         private Font _font;
 
         private float _strokeWidth = 0.5f;
+        private float _aaSize = 1.5f;
+        private PathCap _cap = PathCap.Round;
+        private PathJoin _join = PathJoin.Round;
 
         // Canvas tracks whether a point is current for you; this interface doesn't hand one back,
         // so the path builder keeps its own for the Arc overload to join to.
         private bool _hasCurrentPoint;
         private RectangleF? _clipRect;
         private float _clipRounding;
-        private readonly Stack<(RectangleF?, float)> _savedClipRects = [];
+
+        // Everything a nested draw can change and a caller expects back. A HUD that sets a 3px
+        // outline and restores must not leave every later node drawing 3px outlines.
+        private readonly Stack<(RectangleF? Clip, float Rounding, float Stroke, float Aa, PathCap Cap, PathJoin Join,
+            AAStyle Style)> _savedStates = [];
 
         public AposGraphics(ShapeBatch sb, IGraphicsDevice graphicsDevice)
         {
@@ -198,6 +205,8 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             _fonts[FontFamily.Adventure] = LoadFont("./data/fonts/Adventure.otf");
             _fonts[FontFamily.RobotoMono] = LoadFont("./data/fonts/RobotoMono-Regular.ttf");
             _fonts[FontFamily.NotoSans] = LoadFont("./data/fonts/NotoSans-Regular.ttf");
+            _fonts[FontFamily.Digital7] = LoadFont("./data/fonts/Digital7.ttf");
+            _fonts[FontFamily.Yukari] = LoadFont("./data/fonts/Yukari.ttf");
         }
 
         private ShapeFont LoadFont(string fontFile)
@@ -552,13 +561,13 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
         {
             // The width is already a radius here, and the batch takes a radius too, so this does
             // not go through the halving the shape painter's width overload does.
-            _sb.StrokeShapeRadius(_sb.EndShapePath(), _color, _strokeWidth);
+            _sb.StrokeShapeRadius(_sb.EndShapePath(), _color, _strokeWidth, _join, _cap, aaSize: _aaSize);
             _hasCurrentPoint = false;
         }
 
         public void Fill()
         {
-            _sb.FillShape(_sb.EndShapePath(), _color);
+            _sb.FillShape(_sb.EndShapePath(), _color, _aaSize);
             _hasCurrentPoint = false;
         }
 
@@ -615,12 +624,18 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
 
         public void SaveState()
         {
-            _savedClipRects.Push((_clipRect, _clipRounding));
+            _savedStates.Push((_clipRect, _clipRounding, _strokeWidth, _aaSize, _cap, _join, _sb.AAStyle));
         }
 
         public void RestoreState()
         {
-            (_clipRect, _clipRounding) = _savedClipRects.Pop();
+            var state = _savedStates.Pop();
+            (_clipRect, _clipRounding) = (state.Clip, state.Rounding);
+            _strokeWidth = state.Stroke;
+            _aaSize = state.Aa;
+            _cap = state.Cap;
+            _join = state.Join;
+            _sb.AAStyle = state.Style;
             _sb.SetClipRect(_clipRect, _clipRounding, 0f, 1.5f);
         }
 
@@ -657,6 +672,15 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             _strokeWidth = width * 0.5f;
         }
 
+        public void SetExactCoverage(bool exact)
+        {
+            _sb.AAStyle = exact ? AAStyle.Centered : AAStyle.Outside;
+            _aaSize = exact ? 1f : 1.5f;
+            // Java2D's default stroke: square caps, mitre joins.
+            _cap = exact ? PathCap.Square : PathCap.Round;
+            _join = exact ? PathJoin.Miter : PathJoin.Round;
+        }
+
         public void DrawRect(int x1, int y1, int width, int height)
         {
             _sb.DrawRectangle(
@@ -665,7 +689,8 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
                 Color.Transparent,
                 _color,
                 _strokeWidth,
-                new CornerRadii()
+                new CornerRadii(),
+                aaSize: _aaSize
             );
         }
 
@@ -731,7 +756,14 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
 
         public void DrawLine(int x1, int y1, int x2, int y2)
         {
-            _sb.DrawLine(new Vector2(x1, y1), new Vector2(x2, y2), _strokeWidth, _color, _color);
+            if (_cap == PathCap.Round)
+            {
+                _sb.DrawLine(new Vector2(x1, y1), new Vector2(x2, y2), _strokeWidth, _color, _color, aaSize: _aaSize);
+                return;
+            }
+
+            ReadOnlySpan<Vector2> points = [new Vector2(x1, y1), new Vector2(x2, y2)];
+            _sb.DrawPath(points, _strokeWidth, _color, _color, 0f, _join, _cap, _cap, aaSize: _aaSize);
         }
 
         public void DrawRoundedRect(
@@ -751,7 +783,8 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
                 Color.Transparent,
                 _color,
                 _strokeWidth,
-                new CornerRadii(radTopLeft, radTopRight, radBottomRight, radBottomLeft)
+                new CornerRadii(radTopLeft, radTopRight, radBottomRight, radBottomLeft),
+                aaSize: _aaSize
             );
         }
 
@@ -772,13 +805,22 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
                 _color,
                 Color.Transparent,
                 0,
-                new CornerRadii(radTopLeft, radTopRight, radBottomRight, radBottomLeft)
+                new CornerRadii(radTopLeft, radTopRight, radBottomRight, radBottomLeft),
+                aaSize: _aaSize
             );
         }
 
         public void FillRect(int x, int y, int width, int height)
         {
-            _sb.DrawRectangle(new Vector2(x, y), new Vector2(width, height), _color, Color.Transparent, 0, new CornerRadii());
+            _sb.DrawRectangle(
+                new Vector2(x, y),
+                new Vector2(width, height),
+                _color,
+                Color.Transparent,
+                0,
+                new CornerRadii(),
+                aaSize: _aaSize
+            );
         }
 
         public void FillPolygon(ReadOnlySpan<int> x, ReadOnlySpan<int> y, int n)
@@ -799,7 +841,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
                 points[i] = new Vector2(x[i], y[i]);
             }
 
-            _sb.DrawPath(points, 0, Color.Transparent, _color, _strokeWidth, closed: true);
+            _sb.DrawPath(points, 0, Color.Transparent, _color, _strokeWidth, join: _join, closed: true, aaSize: _aaSize);
         }
     }
 
@@ -930,6 +972,8 @@ internal readonly struct AposFontMetrics(ShapeFont font, float size) : IFontMetr
     }
 
     public float LineHeight => font.LineHeight * size;
+
+    public float Ascent => font.Ascent * size;
 }
 
 internal class TextureImage(ITexture texture) : IImage

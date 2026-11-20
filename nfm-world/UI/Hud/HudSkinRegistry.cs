@@ -43,6 +43,55 @@ public static class HudSkinRegistry
             ),
             data => new HudScaleHost(new WorldSkin.WorldHud(data).Build())
         );
+
+        Register(
+            new HudSkinInfo(
+                "dsmod2",
+                "DSmod2",
+                "DragShot (phy addons)",
+                "phy's DSmod2 gadget set: outlined boxes, a big position ordinal and a dial speedometer."
+            ),
+            data => new GadgetSkin.Dsmod2Hud(data)
+            {
+                Styles = Sx.Styles(width: 100.Percent(), height: 100.Percent(), pointerEvents: false)
+            }
+        );
+        Register(
+            new HudSkinInfo(
+                "blackfusion",
+                "Black Fusion",
+                "DragShot (phy addons)",
+                "phy's Black Fusion gadget set: dark panels, a split-arc speedometer and the ring guidance arrow."
+            ),
+            data => new GadgetSkin.BlackFusionHud(data)
+            {
+                Styles = Sx.Styles(width: 100.Percent(), height: 100.Percent(), pointerEvents: false)
+            }
+        );
+        Register(
+            new HudSkinInfo(
+                "digital7",
+                "Digital 7",
+                "DragShot (phy addons)",
+                "phy's Digital 7 gadget set: seven-segment digits, an LED bar speedometer and swept-arc guidance."
+            ),
+            data => new GadgetSkin.Digital7Hud(data)
+            {
+                Styles = Sx.Styles(width: 100.Percent(), height: 100.Percent(), pointerEvents: false)
+            }
+        );
+        Register(
+            new HudSkinInfo(
+                "s7",
+                "S7",
+                "DragShot (phy addons)",
+                "phy's S7 gadget set: skewed panels, a rainbow-rimmed speedometer and the wide chevron arrow."
+            ),
+            data => new GadgetSkin.S7Hud(data)
+            {
+                Styles = Sx.Styles(width: 100.Percent(), height: 100.Percent(), pointerEvents: false)
+            }
+        );
         try
         {
             foreach (var package in HudSkinCatalog.Discover(
@@ -74,6 +123,9 @@ public static class HudSkinRegistry
         => Failed.Contains(id) || !Skins.TryGetValue(id, out var skin) || skin.ShowDefaultMessages;
 
     public static bool UsesClassicSkin(string id) => id == "classic" || Failed.Contains(id) || !Skins.ContainsKey(id);
+
+    /// <summary>Whether the skin draws its own radar, so the shared one must stay out of the way.</summary>
+    public static bool DrawsRadar(string id) => id is "world" or "dsmod2" or "blackfusion" or "digital7" or "s7";
 
     public static Node BuildDefault(IHudData data) => new ClassicHud(data)
     {

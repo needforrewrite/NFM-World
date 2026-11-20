@@ -45,6 +45,16 @@ public static class UiState
         public bool ArrowAtCars { get; set; }
         public bool Spectating { get; set; }
         public bool ArrowLocked { get; set; }
+        public float? SpeedFraction { get; set; }
+        public float? TopSpeed { get; set; }
+        public List<int> LapSplits { get; } = [];
+
+        // The interface member is IReadOnlyList<int>; a List<int> property does not implement it
+        // implicitly, so without this the default (empty) implementation was used and the
+        // chronometer never had any rows.
+        IReadOnlyList<int> IHudData.LapSplits => LapSplits;
+        public float? ArrowDistanceMeters { get; set; }
+        public string? MusicTrack { get; set; }
         public List<HudRacer> Racers { get; } = [];
         public List<HudRacerMarker> Markers { get; } = [];
         public (float X, float Y, float Z)? ClientPosition { get; set; }

@@ -26,6 +26,27 @@ public interface IHudData
     int Wasted { get; }
     int Opponents { get; }
     float? ArrowAngle { get; }
+
+    /// <summary>
+    /// The client's speed as a signed fraction of its top speed (negative when reversing), for the analogue needles.
+    /// Null when the car's top speed is unknown.
+    /// </summary>
+    float? SpeedFraction => null;
+
+    /// <summary>
+    /// Completed lap times in milliseconds, plus the running current lap last. The chronometer
+    /// rows show the finished ones.
+    /// </summary>
+    IReadOnlyList<int> LapSplits => [];
+
+    /// <summary>Distance to the arrow's target, in metres, when the arrow points at one.</summary>
+    float? ArrowDistanceMeters => null;
+
+    /// <summary>The viewed car's top-speed stat, matching <see cref="SpeedFraction"/>'s denominator.</summary>
+    float? TopSpeed => null;
+
+    /// <summary>The name of the music track playing, or null when none.</summary>
+    string? MusicTrack => null;
     string ArrowTarget { get; }
     bool ArrowAtCars { get; }
 

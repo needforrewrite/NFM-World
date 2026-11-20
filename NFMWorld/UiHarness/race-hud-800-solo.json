@@ -1,0 +1,10 @@
+{
+  "width": 800,
+  "height": 450,
+  "scale": 1,
+  "output": "../../.git/sx-menu-captures/ref-800",
+  "view": "race-hud",
+  "skin": "dsmod2",
+  "solo": true,
+  "steps": [ { "action": "capture", "capture": "nfmw-solo" } ]
+}

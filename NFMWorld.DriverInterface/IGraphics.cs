@@ -360,6 +360,15 @@ public interface IGraphics
         // empty
     }
 
+    /// <summary>
+    /// Makes shapes cover exactly the pixels their size asks for, instead of growing by the
+    /// anti-aliasing band. A hairline then stays a hairline, which a port of pixel-exact art needs.
+    /// </summary>
+    void SetExactCoverage(bool exact)
+    {
+        // empty
+    }
+
     void SetStrokeWidth(float width = 1f)
     {
         // empty

@@ -65,5 +65,7 @@ public enum FontFamily : byte
     NotoSans,
     Adventure,
     AdventureHollow,
-    RobotoMono
+    RobotoMono,
+    Digital7,
+    Yukari,
 }
