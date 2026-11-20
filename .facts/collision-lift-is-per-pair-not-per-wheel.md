@@ -22,12 +22,16 @@ The real cause of the tilt the gate was added to fix is the **plane fit**: it re
 car's orientation from all four wheel heights, so a kicked wheel (collision velocity) read as
 terrain slope and pitched the car. The original never fit orientation from wheel heights.
 
-Fix: restore the stock per-pair impulses (no gates at all), and fit orientation from only the
-wheels that are actually on a surface when 3-4 are grounded. With 1-2 grounded (nose/tail/side
-balances) keep the all-wheels fit, because that is what tips those over. Measured after the fix:
-R1 -> Max Revenge rise 472 (was 9), and every landing/stunt test still settles.
+Fix: restore the stock per-pair impulses (no gates at all). With 3-4 wheels on a surface, fit
+orientation from only the grounded wheels. With fewer, the fit still runs (it is what tips
+nose/tail/side balances over), but its per-tick change is clamped to the original's per-pair
+rule (`Mad.java` ~1270): a stretched wheel pair turns at most 1° per original tick, a
+compressed one by `acos(length / rest)`. A revlift kick lifts the contacting end, which only
+stretches the pairs, so it turns slowly. Fitting only grounded wheels was not enough: the
+dominant car's kicked front pair leaves 2 grounded, which fell back to the snapping fit and
+pitched drmonster to 80°; clamped it peaks at 16°. Lift (victim) measured R1 -> Max Revenge
+rise 472 (was 9).
 
-`CarPhysicsCollisionTests` covers both halves: `Collide_AppliesRevliftOncePerContactingWheelPair`
-(an overlapping wheel takes more than one kick) and
-`Collide_DominantCarLiftsVictimEvenWhenOnlyZBranchFires` (the victim is lifted on every
-contacting wheel even when only the Z momentum branch fires).
+`CarPhysicsCollisionTests` covers it: `Collide_AppliesRevliftOncePerContactingWheelPair`,
+`Collide_DominantCarLiftsVictimEvenWhenOnlyZBranchFires`, and
+`Collide_RevliftKickDoesNotStandTheDominantCarOnEnd` (pitch stays under 45°).
