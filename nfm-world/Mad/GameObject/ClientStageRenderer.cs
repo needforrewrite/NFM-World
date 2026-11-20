@@ -599,7 +599,67 @@ public partial class ClientStageRenderer : GameObject, IDisposable
         {
             World.LightDirection = lightDirection;
         }
+
+        if (backendStage.StageLoader.FlameColors is { } flames)
+        {
+            World.FlameOuter = flames.Outer;
+            World.FlameInner = flames.Inner;
+            World.FlameEmber = flames.Ember;
+            World.FlameSnapDiv = new Vector3(flames.SnapDivX, flames.SnapDivY, flames.SnapDivZ);
+        }
+
+        // pulsegrnd scales the colours the ground and its polygons were built with, so keep the
+        // base pair and tint the draw rather than rebuilding any mesh.
+        _pulse = backendStage.StageLoader.Pulse;
+        _pulseGround = World.GroundColor;
+        _pulsePolys = World.GroundPolysColor;
+        _pulseTicks = 0;
+        _pulsePhase = 0f;
+        World.GroundPulseTint = Vector3.One;
     }
+
+    private GroundPulse? _pulse;
+    private Color3 _pulseGround;
+    private Color3 _pulsePolys;
+    private int _pulseTicks;
+    private float _pulsePhase;
+
+    /// <summary>
+    /// Advances <c>pulsegrnd</c> at the original game's rate: phy stepped its ground pulse once
+    /// per 21.4 Hz tick, not once per frame.
+    /// </summary>
+    private void TickGroundPulse()
+    {
+        if (_pulse is not { } pulse) return;
+        if (++_pulseTicks < Physics.OriginalTicksPerNewTick) return;
+        _pulseTicks = 0;
+
+        var t = pulse.A + pulse.B * MathF.Sin(_pulsePhase * pulse.C);
+        _pulsePhase++;
+        World.GroundPulseTint = new Vector3(t, t, t);
+        World.GroundColor = Scale(_pulseGround, t);
+
+        // Ground polygons are baked, so their colour only reaches the shader through the tint;
+        // this pair keeps the CGround polys (which read World.GroundColor) in step.
+        World.GroundPolysColor = Scale(_pulsePolys, t);
+    }
+
+    /// <summary>
+    /// Re-reads the un-pulsed ground colours. The editor changes them live without re-running
+    /// <see cref="ApplyValues"/>, and the pulse must scale the new pair, not the old one.
+    /// </summary>
+    public void RefreshGroundPulseBase()
+    {
+        _pulseGround = World.GroundColor;
+        _pulsePolys = World.GroundPolysColor;
+    }
+
+    private static Color3 Scale(Color3 color, float factor)
+        => new(
+            (short)Math.Clamp((int)(color.R * factor), 0, 255),
+            (short)Math.Clamp((int)(color.G * factor), 0, 255),
+            (short)Math.Clamp((int)(color.B * factor), 0, 255)
+        );
 
     public void Activate()
     {

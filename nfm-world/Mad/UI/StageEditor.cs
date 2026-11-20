@@ -231,6 +231,15 @@ public class StageEditorTab
 
     public StagePhysics Physics { get; set; } = new();
 
+    /// <summary>Spawn overrides, in file order (later lines win, as phy applies them).</summary>
+    public List<StageStart> Starts { get; set; } = [];
+
+    /// <summary>The <c>pulsegrnd</c> directive, or null when the ground is static.</summary>
+    public GroundPulse? Pulse { get; set; }
+
+    /// <summary>The <c>flameColor1/2/3</c> palette, or null for the stock fire.</summary>
+    public FlamePalette? FlameColors { get; set; }
+
     public int GetNextPieceId()
     {
         int maxId = -1;
@@ -449,7 +458,10 @@ public partial class StageEditorPhase : BasePhase
         f64Euler Rotation,
         PiecePlacementType PlacementType,
         AiNodeKind? AiNodeKind,
-        bool IsSpecial
+        bool IsSpecial,
+        int PileSeed,
+        int PileWidth,
+        int PileHeight
     );
 
     private List<ClipboardPiece> _clipboard = new();

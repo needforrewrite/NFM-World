@@ -1192,11 +1192,38 @@ Added with the archive/content work; read this before touching content loading, 
   undo prunes ids that no longer exist so a re-used id cannot inherit an old group. Saving and
   publishing both serialize `BuildStageText()`; publishing parses that snapshot and never writes the
   working document.
+- **phy/ds stage-format parity** — the remaining phy-addons directives are parsed by `StageLoader`:
+  - **Spawn overrides** — `xstart`/`zstart`/`ystart`/`xzstart`/`xystart`/`zystart`, plus ds-addons'
+    `angle` (yaw), are kept in `Starts` with the player count they were written for; phy applies a
+    line only when that count matches the race, and `startheight` is a wildcard for every car.
+    `BackendStage.GetStartTransform(index, playerCount)` resolves them (later lines win), and PvP,
+    Rocket and the garage spawn through it. Its Y is the spawn *plane*: a caller subtracts the car's
+    `GroundAt` and assigns `Rotation` after construction, the same way `HandleAerialFall` repositions.
+  - **`pulsegrnd(a,b,c)`** — the ground and ground-polygon colours scale by `a + b·sin(t·c)` once per
+    original tick. The meshes are baked, so the factor reaches `Ground`/`GroundPolys` as the `Tint`
+    uniform in `Ground.fx`, and `World.GroundColor` is scaled for the `CGround` polys (which read it
+    per draw). The renderer keeps the un-pulsed pair; the editor calls
+    `RefreshGroundPulseBase()` after changing ground colours, or the pulse rescales the old pair.
+  - **`flameColor1/2/3(r,g,b)` + `flameSnapDiv`** — `World.FlameOuter`/`FlameInner`/`FlameEmber` and
+    `FlameSnapDiv`; `Flames` scales each channel by its own divisor (stock 4/3/2, not one shared
+    value). `flameColor3` tints the pre-fire embers, which phy hardcodes.
+  - **`fset`/`fchk`** — phy's float-compat ordering: the *absolute* height is index 3 and the angle
+    index 4, where `set`/`chk` put the angle first and offset the height from the ground plane.
+  - **`pile(seed,w,h,x,z)`** — a procedural tree cluster. `StagePileBuilder` ports phy's seeded blob
+    into a `Rad3d` (five planes, five sloped collision boxes); `URandom(seed)` is the Java LCG, so
+    every peer builds the same shape. Pile placements keep the seed/size so the editor writes
+    `pile(...)` back rather than a `set` for a model that does not exist.
+  - **Converging walls** — the PvP `walls` option (off, 1–10 minutes) drives `ClosingWalls`:
+    phy's shrink curve, the 60/30/10/0-second announcements and out-of-bounds damage in `CarPhysics`.
+    The collision quadtree is built once, so the moving boundaries are appended per query in
+    `RetrievePointCollidables`; the wall *pieces* move as `StageObject` positions, which the renderer
+    re-reads every tick, which is what makes the visuals follow.
+
 - **Bottom dock tabs** — `StageEditorPhase.Properties.cs`. The dock the parts library lives in is
   tabbed: PARTS plus STAGE/ATMOSPHERE/GROUND/SCENERY/MUSIC/PHYSICS. The property tabs edit the
   `StageEditorTab` fields live (no apply button) and `BuildStageText` writes every one of them:
-  `nlaps`, the `soundtrack*` group, `density`, `lightson`/`lightdir`, `aerial`, `mountaincoverage`
-  and the phy-addons physics directives. Anything the tabs do not expose stays in
+  `nlaps`, the spawn overrides, `pulsegrnd`, the flame palette, the `soundtrack*` group, `density`,
+  `lightson`/`lightdir`, `aerial`, `mountaincoverage` and the phy-addons physics directives. Anything the tabs do not expose stays in
   `PreservedDirectives` (`_preservedDirectivePrefixes`), so a save never drops it — remove a prefix
   from that list when a tab starts writing the directive. MUSIC picks a track from a dropdown over
   `data/music` (VFS enumeration) and previews through `GameSparker.CurrentMusic`; the preview is

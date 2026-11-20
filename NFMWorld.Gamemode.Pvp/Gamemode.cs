@@ -4,7 +4,10 @@ using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Gamemodes.DotNet;
+using NFMWorldLibrary;
 using NFMWorldLibrary.Helpers;
+using NFMWorldLibrary.Hud;
+using f64Vector3 = FixedMathSharp.Vector3d;
 
 [assembly: Gamemode(
     Name = "PvP",
@@ -21,6 +24,25 @@ using NFMWorldLibrary.Helpers;
 [assembly: GamemodeConfigPropertyOption("constraint", Label = "Racing", Value = "racing")]
 [assembly: GamemodeConfigPropertyOption("constraint", Label = "Wasting", Value = "wasting")]
 [assembly: GamemodeConfigPropertyOption("constraint", Label = "Both", Value = "both")]
+
+[assembly: GamemodeConfigProperty(
+    Name = "walls",
+    Type = typeof(string),
+    Label = "Converging walls",
+    Description = "Minutes until the stage walls start closing in. Off by default."
+)]
+
+[assembly: GamemodeConfigPropertyOption("walls", Label = "Off", Value = "off")]
+[assembly: GamemodeConfigPropertyOption("walls", Label = "1 min", Value = "1")]
+[assembly: GamemodeConfigPropertyOption("walls", Label = "2 min", Value = "2")]
+[assembly: GamemodeConfigPropertyOption("walls", Label = "3 min", Value = "3")]
+[assembly: GamemodeConfigPropertyOption("walls", Label = "4 min", Value = "4")]
+[assembly: GamemodeConfigPropertyOption("walls", Label = "5 min", Value = "5")]
+[assembly: GamemodeConfigPropertyOption("walls", Label = "6 min", Value = "6")]
+[assembly: GamemodeConfigPropertyOption("walls", Label = "7 min", Value = "7")]
+[assembly: GamemodeConfigPropertyOption("walls", Label = "8 min", Value = "8")]
+[assembly: GamemodeConfigPropertyOption("walls", Label = "9 min", Value = "9")]
+[assembly: GamemodeConfigPropertyOption("walls", Label = "10 min", Value = "10")]
 
 namespace NFMWorld.Gamemode.Pvp;
 
@@ -52,6 +74,13 @@ public class PvpGamemode : PluginGamemode
 
     private RaceConstraint _constraint = RaceConstraint.Both;
 
+    private ConvergingWalls _walls = ConvergingWalls.Off;
+    private bool _wallsBegun;
+    private double _lastWallMinutes = double.MaxValue;
+    private int _outsideWarningCooldown;
+
+    private static readonly int[] WallWarnings = [60, 30, 10, 0];
+
     private PhysicsController _physics;
 
     public PvpGamemode(
@@ -73,9 +102,11 @@ public class PvpGamemode : PluginGamemode
         {
             var player = Players[i];
 
-            var (x, z) = CurrentStage.GetStartPosition(i);
+            var start = CurrentStage.GetStartTransform(i, Players.Count);
 
-            var car = new BackendCar(player.Info, i, x, z);
+            var car = new BackendCar(player.Info, i, start.Position.X, start.Position.Z);
+            car.Position = new f64Vector3(start.Position.X, start.Position.Y - car.GroundAt, start.Position.Z);
+            car.Rotation = start.Rotation;
             player.Car = car;
 
             car.CurrentCheckpoint = 0;
@@ -102,6 +133,10 @@ public class PvpGamemode : PluginGamemode
         _finishRevision = 0;
         _survivalFinish = false;
         _constraint = RaceConstraint.From(Config);
+        _walls = ConvergingWalls.From(Config);
+        _wallsBegun = false;
+        _lastWallMinutes = double.MaxValue;
+        _outsideWarningCooldown = 0;
         HudState.StateText = null;
         HudState.ResultTitle = null;
         HudState.StateTextEndsAt = null;
@@ -117,6 +152,50 @@ public class PvpGamemode : PluginGamemode
     }
 
     public override void Forfeit() => SendServerEvent<ClientToServerEvent>(new ForfeitEvent());
+
+    /// <summary>
+    /// Drives the PvP <c>walls</c> option: the stage's boundary walls close towards their centre
+    /// after the configured number of minutes, and phy's 60/30/10/0-second warnings are announced.
+    /// </summary>
+    private void TickWalls()
+    {
+        if (!_walls.Enabled || !CurrentStage.Walls.Enabled) return;
+
+        if (!_wallsBegun)
+        {
+            CurrentStage.Walls.Begin(_walls.Minutes, CurrentStage.StageLoader);
+            _wallsBegun = true;
+            _lastWallMinutes = _walls.Minutes;
+        }
+
+        var elapsed = _clientTick / (double)Physics.TargetTps / 60.0;
+        CurrentStage.Walls.Update(elapsed);
+
+        var remaining = CurrentStage.Walls.MinutesUntilClosing(elapsed);
+        foreach (var seconds in WallWarnings)
+        {
+            if (_lastWallMinutes * 60 > seconds && remaining * 60 <= seconds)
+            {
+                Announce(
+                    seconds == 0 ? "The walls are closing in!" : $"{seconds} seconds before the walls close!",
+                    seconds == 0 ? HudMessageKind.Danger : HudMessageKind.Warning,
+                    4f
+                );
+            }
+        }
+
+        _lastWallMinutes = remaining;
+
+        if (_outsideWarningCooldown > 0) _outsideWarningCooldown--;
+
+        // phy flashes this at a player left outside, keeping its ~300-tick cooldown.
+        if (CurrentStage.Walls.Closing && _outsideWarningCooldown == 0 && ClientPlayer?.Car is { } car
+            && !CurrentStage.Walls.IsInBounds(car.Position.X, car.Position.Z))
+        {
+            Announce("Get back into the stage area!", HudMessageKind.Danger, 2f);
+            _outsideWarningCooldown = (int)(Physics.TargetTps * 2);
+        }
+    }
 
     public override void ConfirmFinish()
     {
@@ -140,6 +219,7 @@ public class PvpGamemode : PluginGamemode
 
                 break;
             case GamemodeState.InProgress:
+                TickWalls();
                 _physics.GameTick();
 
                 var clientCrossed = false;

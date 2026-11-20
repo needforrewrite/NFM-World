@@ -106,8 +106,9 @@ public class GaragePhase : BaseStageRenderingPhase
     private void PositionPreviewCar()
     {
         if (!_quickSelect || _garage.CurrentCar is not { } car || CurrentStage is null) return;
-        var (x, z) = CurrentStage.Backend.GetStartPosition(0);
-        car.Position = new(x, car.Position.Y, z);
+        var start = CurrentStage.Backend.GetStartTransform(0, 1);
+        car.Position = new(start.Position.X, car.Position.Y, start.Position.Z);
+        car.Rotation = start.Rotation;
     }
 
     public override void MousePressed(

@@ -14,6 +14,8 @@ float4x4 WorldViewProj;
 
 float3 FogColor;
 float FogDistance;
+// pulsegrnd()'s current multiplier; the ground vertices are baked once.
+float3 Tint;
 // log2 of the normalized fog density (see VS_ApplyFog)
 float FogLogDensity;
 
@@ -36,6 +38,7 @@ VertexShaderOutput VertexShaderFunction(
     output.ViewPos = float4(viewPos, 1.0);
     // VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogLogDensity);
     VS_ColorCorrect(color);
+    color *= Tint;
 
     output.Color = float4(color, 1.0);
 

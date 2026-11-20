@@ -1,6 +1,9 @@
+using NFMWorld.PluginSystem;
+
 namespace NFMWorldLibrary.Hud;
 
 /// <summary>How a race message renders: neutral, a caution, or an alarm.</summary>
+[PluginVisible(Visible.IncludingAllMembersOfType)]
 public enum HudMessageKind
 {
     Info,

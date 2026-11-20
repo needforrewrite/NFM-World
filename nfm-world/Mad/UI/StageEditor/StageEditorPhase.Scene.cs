@@ -125,6 +125,9 @@ public partial class StageEditorPhase
         // CloudColor is derived from Sky and Clouds by SetSky; redo it now both are final.
         World.SetSky(World.Sky);
 
+        // pulsegrnd scales whatever pair is current; the tab just replaced World's own.
+        ActiveTab.StageRenderer?.RefreshGroundPulseBase();
+
         World.DrawMountains = ActiveTab.MountainsEnabled;
         if (ActiveTab.MountainsEnabled)
             World.MountainSeed = ActiveTab.MountainsSeed;

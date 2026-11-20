@@ -32,6 +32,18 @@ public static partial class World
     [PluginVisible] public static bool DrawPolys;
     [PluginVisible] public static Color3 GroundPolysColor;
 
+    // Stage-driven wasted-car fire colours (flameColor1/2/3) and their per-channel snap divisors.
+    [PluginVisible] public static Color3 FlameOuter = new(255, 169, 89);
+    [PluginVisible] public static Color3 FlameInner = new(255, 207, 136);
+    [PluginVisible] public static Color3 FlameEmber = new(230, 230, 230);
+    [PluginVisible] public static Vector3 FlameSnapDiv = new(4f, 3f, 2f);
+
+    /// <summary>
+    /// <c>pulsegrnd</c>'s current multiplier, applied to the ground and ground-polygon colours at
+    /// draw time (their vertices are baked once).
+    /// </summary>
+    [PluginVisible] public static Vector3 GroundPulseTint = Vector3.One;
+
     // texture (without snap)
     [PluginVisible] public static int[] Texture = [0, 0, 0, 50];
 
@@ -90,6 +102,11 @@ public static partial class World
         FadeFrom = 8000;
         Clouds = [210, 210, 210, 1, -1000];
         CloudColor = new Color3(210, 210, 210);
+        FlameOuter = new Color3(255, 169, 89);
+        FlameInner = new Color3(255, 207, 136);
+        FlameEmber = new Color3(230, 230, 230);
+        FlameSnapDiv = new Vector3(4f, 3f, 2f);
+        GroundPulseTint = Vector3.One;
     }
 
     public static void GameTick()

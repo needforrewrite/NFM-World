@@ -103,6 +103,19 @@ public partial class StageEditorPhase
         // Write stage parameters from active tab's stored values
         writer.WriteLine($"name({ActiveTab.TabName})");
         writer.WriteLine($"nlaps({ActiveTab.Stage.Nlaps})");
+        WriteStarts(writer);
+        if (ActiveTab.Pulse is { } pulse)
+            writer.WriteLine($"pulsegrnd({Fmt(pulse.A)},{Fmt(pulse.B)},{Fmt(pulse.C)})");
+        if (ActiveTab.FlameColors is { } flames)
+        {
+            writer.WriteLine($"flameColor1({flames.Outer.R},{flames.Outer.G},{flames.Outer.B})");
+            writer.WriteLine($"flameColor2({flames.Inner.R},{flames.Inner.G},{flames.Inner.B})");
+            writer.WriteLine($"flameColor3({flames.Ember.R},{flames.Ember.G},{flames.Ember.B})");
+            writer.WriteLine(
+                $"flameSnapDiv({Fmt(flames.SnapDivX)},{Fmt(flames.SnapDivY)},{Fmt(flames.SnapDivZ)})"
+            );
+        }
+
         writer.WriteLine($"sky({(int)ActiveTab.SkyColor.R},{(int)ActiveTab.SkyColor.G},{(int)ActiveTab.SkyColor.B})");
         writer.WriteLine($"fog({(int)ActiveTab.FogColor.R},{(int)ActiveTab.FogColor.G},{(int)ActiveTab.FogColor.B})");
         writer.WriteLine(
@@ -232,6 +245,17 @@ public partial class StageEditorPhase
             }
             int yCoord = (int)pos.Y;
             int rotX = (int)rot.Xz.Degrees;
+            if (piece.PiecePlacement.Type == PiecePlacementType.Pile)
+            {
+                var pile = piece.PiecePlacement;
+                writer.WriteLine($"pile({pile.PileSeed},{pile.PileWidth},{pile.PileHeight},{(int)pos.X},{(int)pos.Z})");
+                return;
+            }
+
+            // A fractional height only survives as fset/fchk, whose absolute height precedes the
+            // angle. `set`/`chk` carry an integer height, so rounding one would move the piece.
+            double exactY = (double)pos.Y;
+            var fractionalY = Math.Abs(exactY - Math.Round(exactY)) > 0.0005;
             if (piece.PiecePlacement.Type == PiecePlacementType.FixHoop)
             {
                 writer.WriteLine($"fix({pieceId},{(int)pos.X},{(int)pos.Z},{yCoord},{rotX})");
@@ -239,12 +263,20 @@ public partial class StageEditorPhase
             else if (piece.PiecePlacement.Type == PiecePlacementType.CheckPoint)
             {
                 bool isAir = piece.Name.Contains("nfmm/aircheckpoint");
-                if (yCoord == 250) writer.WriteLine($"chk({pieceId},{(int)pos.X},{(int)pos.Z},{rotX})");
+                if (fractionalY)
+                {
+                    writer.WriteLine($"fchk({pieceId},{(int)pos.X},{(int)pos.Z},{Fmt((float)exactY)},{rotX})");
+                }
+                else if (yCoord == 250) writer.WriteLine($"chk({pieceId},{(int)pos.X},{(int)pos.Z},{rotX})");
                 else
                 {
                     int fileY = isAir ? yCoord : 250 - yCoord;
                     writer.WriteLine($"chk({pieceId},{(int)pos.X},{(int)pos.Z},{rotX},{fileY})");
                 }
+            }
+            else if (fractionalY)
+            {
+                writer.WriteLine($"fset({pieceId},{(int)pos.X},{(int)pos.Z},{Fmt((float)exactY)},{rotX})");
             }
             else
             {
@@ -850,6 +882,10 @@ public partial class StageEditorPhase
                 .OfType<TextureInstruction>()
                 .LastOrDefault()?.Texture?.ToArray();
             tab.Physics = stageLoader.Physics;
+            tab.Starts.Clear();
+            tab.Starts.AddRange(stageLoader.Starts);
+            tab.Pulse = stageLoader.Pulse;
+            tab.FlameColors = stageLoader.FlameColors;
 
             // Add tab and activate it
             _tabs.Add(tab);
@@ -928,6 +964,40 @@ public partial class StageEditorPhase
     }
 
     private static string Fmt(float value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+
+    /// <summary>Writes the spawn overrides in file order; later lines override earlier ones.</summary>
+    private void WriteStarts(TextWriter writer)
+    {
+        foreach (var start in ActiveTab!.Starts)
+        {
+            if (start.PlayerCount == 0 && start.Axis == StartAxis.Y && start.Values.Length == 1)
+            {
+                writer.WriteLine($"startheight({Fmt(250f - start.Values[0])})");
+                continue;
+            }
+
+            writer.Write(
+                start.Axis switch
+                {
+                    StartAxis.X => "xstart",
+                    StartAxis.Z => "zstart",
+                    StartAxis.Y => "ystart",
+                    StartAxis.Yaw => "xzstart",
+                    StartAxis.Pitch => "xystart",
+                    _ => "zystart"
+                }
+            );
+            writer.Write('(');
+            writer.Write(start.PlayerCount);
+            foreach (var value in start.Values)
+            {
+                writer.Write(',');
+                writer.Write(Fmt(value));
+            }
+
+            writer.WriteLine(')');
+        }
+    }
 
     private static string Fmt(double value) => value.ToString("0.###", CultureInfo.InvariantCulture);
 

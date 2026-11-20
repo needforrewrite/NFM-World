@@ -10,6 +10,7 @@ using NFMWorldLibrary;
 using NFMWorldLibrary.Plugins;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.FixedMath;
+using TightPack;
 using f64Vector3 = FixedMathSharp.Vector3d;
 
 namespace NFMWorld.Library.Test;
@@ -193,6 +194,76 @@ public class AiPluginTests
             finally
             {
                 plugin.Unload();
+            }
+        }
+    }
+
+    /// <summary>
+    /// The PvP converging-wall option reaches ClosingWalls, the race clock and the announcer
+    /// through the sandbox. Only the wall path is new here, so the config crosses the countdown
+    /// immediately rather than racing for a real minute.
+    /// </summary>
+    [TestMethod]
+    public void BeginPvp_WithConvergingWalls_PassesTheSandbox()
+    {
+        TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
+
+        var loader = new StageLoader();
+        loader.wallDefs.Add(new StageWall(WallDirection.Right, 1, 20000, 0));
+        loader.wallDefs.Add(new StageWall(WallDirection.Left, 1, -20000, 0));
+        loader.wallDefs.Add(new StageWall(WallDirection.Top, 1, 20000, 0));
+        loader.wallDefs.Add(new StageWall(WallDirection.Bottom, 1, -20000, 0));
+        var stage = new BackendStage("walls-test", loader);
+        Assert.IsTrue(stage.Walls.Enabled);
+
+        var plugin = NFMWorldLibrary.Gamemodes.DotNet.GamemodePlugin.Load(
+            "nfmm/pvp",
+            "data/gamemodes/nfmm/pvp/gamemode.dll"
+        );
+        Assert.IsNotNull(plugin);
+        BaseClientGamemode? gamemode = null;
+        var carName = $"sandbox-test/{Guid.NewGuid():N}";
+        try
+        {
+            var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
+            BackendGameSparker.dynamic_models.Add(carName, (0, car));
+
+            gamemode = plugin.CreateClient(
+                new ClientGamemodeParameters
+                {
+                    Players =
+                    [
+                        new ClientSidePlayerInfo
+                        {
+                            PlayerName = "Human", CarName = carName, Color = default, IsBot = false, IsClientPlayer = true
+                        }
+                    ]
+                },
+                new StubContext("walls-test", stage),
+                new Dictionary<string, object> { ["walls"] = "0.001" }
+            );
+
+            gamemode.Begin();
+
+            // The start is the server's call; without it the client stays in Countdown.
+            var go = plugin.Assembly.GetExportedTypes().Single(t => t.Name == "CountdownGoEvent");
+            gamemode.OnServerEvent(TightPackSerializer.SerializeUntyped(go.BaseType!, Activator.CreateInstance(go)));
+
+            for (var i = 0; i < 10; i++)
+                gamemode.GameTick();
+
+            Assert.IsTrue(stage.Walls.Closing);
+        }
+        finally
+        {
+            BackendGameSparker.dynamic_models.Remove(carName);
+            try
+            {
+                gamemode?.End();
+            }
+            finally
+            {
+                plugin!.Unload();
             }
         }
     }

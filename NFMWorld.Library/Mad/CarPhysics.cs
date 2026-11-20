@@ -2934,6 +2934,14 @@ public partial class CarPhysics
             DamagePoints += (int)((fix64)stage.Physics.Lava / 100 * Stat.Maxmag / (fix64)21.276596F * _tickRate);
         }
 
+        // Converging walls: phy damages a car outside the shrinking stage rectangle by
+        // maxmag/800 per original tick, scaled by the stage's track-damage multiplier.
+        if (stage.Walls.Closing && !Wasted && DamagePoints < Stat.Maxmag
+            && !stage.Walls.IsInBounds(conto.X, conto.Z))
+        {
+            DamagePoints += (int)((fix64)Stat.Maxmag / 800 * _tickRate * (fix64)stage.Physics.Damage);
+        }
+
         // Wall touch is a per-tick flag: it feeds `Surfing` above, so every car must
         // clear it or one wall hit leaves it surfing (and earning power) forever.
         if (control.Wall != -1)

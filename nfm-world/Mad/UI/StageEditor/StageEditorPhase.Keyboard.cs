@@ -149,7 +149,10 @@ public partial class StageEditorPhase
                         p.Rotation,
                         p.PiecePlacement.Type,
                         p.PiecePlacement.NodeKind,
-                        p.PiecePlacement.IsSpecial
+                        p.PiecePlacement.IsSpecial,
+                        p.PiecePlacement.PileSeed,
+                        p.PiecePlacement.PileWidth,
+                        p.PiecePlacement.PileHeight
                     )
                 ).ToList();
             }
@@ -207,7 +210,10 @@ public partial class StageEditorPhase
                         worldPos,
                         clip.Rotation,
                         clip.AiNodeKind,
-                        IsSpecial: clip.IsSpecial
+                        IsSpecial: clip.IsSpecial,
+                        PileSeed: clip.PileSeed,
+                        PileWidth: clip.PileWidth,
+                        PileHeight: clip.PileHeight
                     )
                 );
                 ActiveTab.Stage.Pieces[ActiveTab.Stage.StagePartCount] = mesh;

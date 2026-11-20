@@ -366,6 +366,12 @@ public abstract class BaseClientGamemode : IGamemode
 
     private readonly RaceAnnouncer Announcer = new();
 
+    /// <summary>Posts the race's status line; a gamemode uses it for its own warnings.</summary>
+    [PluginVisible]
+    [ClientOnly]
+    protected void Announce(string text, HudMessageKind kind = HudMessageKind.Info, float seconds = 3f)
+        => Announcer.Announce(text, kind, seconds);
+
     private int _lastClientCheckpoint = 0;
     private int _lastCountdownTime = 0;
     private fix64 _lcarx;

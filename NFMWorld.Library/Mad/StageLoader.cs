@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 using TightPack;
 using NFMWorld.PluginSystem;
 using NFMWorldLibrary.FixedMath;
@@ -24,7 +25,17 @@ public readonly partial record struct PiecePlacement(
     [property: TightPackOrder(5), PluginVisible]
     bool IsSpecial = false,
     [property: TightPackOrder(6), PluginVisible]
-    bool IsWall = false
+    bool IsWall = false,
+    // pile(seed,width,height,x,z): the mesh in Object is generated from these three.
+    [property: TightPackOrder(7), PluginVisible]
+    int PileSeed = 0,
+    [property: TightPackOrder(8), PluginVisible]
+    int PileWidth = 0,
+    [property: TightPackOrder(9), PluginVisible]
+    int PileHeight = 0,
+    // Set on the pieces a maxr/maxl/maxt/maxb line generates, so converging walls move their own side.
+    [property: TightPackOrder(10), PluginVisible]
+    WallDirection? WallSide = null
 );
 
 [PluginVisible]
@@ -32,7 +43,8 @@ public enum PiecePlacementType : byte
 {
     CollisionObject,
     CheckPoint,
-    FixHoop
+    FixHoop,
+    Pile
 }
 
 // count = n parameter
@@ -204,6 +216,18 @@ public partial class StageLoader
 
     [TightPackOrder(42), PluginVisible] public bool DrawStars;
 
+    /// <summary>Start-position/angle overrides (<c>xstart</c>/<c>ystart</c>/<c>xzstart</c>/…).</summary>
+    [TightPackOrder(43), PluginVisible] public UnlimitedArray<StageStart> Starts = [];
+
+    /// <summary>The <c>pulsegrnd</c> directive, or null when the ground is static.</summary>
+    [TightPackOrder(44), PluginVisible] public GroundPulse? Pulse;
+
+    /// <summary>The <c>flameColor1/2/3</c> palette and snap divisors, or null for the stock fire.</summary>
+    [TightPackOrder(45), PluginVisible] public FlamePalette? FlameColors;
+
+    /// <summary>Centres a converging-wall race may close towards (<c>set</c> option parts).</summary>
+    [TightPackOrder(46), PluginVisible] public UnlimitedArray<f64Vector3> WallCentres = [];
+
     // amodel/amodel2 models, resolved while loading only; pieces hold the Rad3d directly.
     [TightPackIgnore] private readonly Dictionary<string, Rad3d> _embeddedModels = new(StringComparer.OrdinalIgnoreCase);
 
@@ -240,6 +264,11 @@ public partial class StageLoader
         string? embeddedLabel = null;
         var embeddedLines = 0;
         var embeddedData = new StringBuilder();
+
+        // Running ground colours, so a pile is tinted by the directives above it (phy reads the
+        // medium's live values when it builds the cluster).
+        var pileGround = new Color3(100, 200, 100);
+        var pilePolys = new Color3(120, 180, 120);
 
         try
         {
@@ -332,15 +361,12 @@ public partial class StageLoader
 
                 else if (line.StartsWith("ground"))
                 {
-                    EnvironmentInstructions.Add(
-                        new GroundInstruction(
-                            new Color3(
-                                (short)Utility.GetInt("ground", line, 0),
-                                (short)Utility.GetInt("ground", line, 1),
-                                (short)Utility.GetInt("ground", line, 2)
-                            )
-                        )
+                    pileGround = new Color3(
+                        (short)Utility.GetInt("ground", line, 0),
+                        (short)Utility.GetInt("ground", line, 1),
+                        (short)Utility.GetInt("ground", line, 2)
                     );
+                    EnvironmentInstructions.Add(new GroundInstruction(pileGround));
                 }
 
                 else if (line.StartsWith("polys"))
@@ -351,15 +377,12 @@ public partial class StageLoader
                     }
                     else
                     {
-                        EnvironmentInstructions.Add(
-                            new PolysInstruction(
-                                new Color3(
-                                    (short)Utility.GetInt("polys", line, 0),
-                                    (short)Utility.GetInt("polys", line, 1),
-                                    (short)Utility.GetInt("polys", line, 2)
-                                )
-                            )
+                        pilePolys = new Color3(
+                            (short)Utility.GetInt("polys", line, 0),
+                            (short)Utility.GetInt("polys", line, 1),
+                            (short)Utility.GetInt("polys", line, 2)
                         );
+                        EnvironmentInstructions.Add(new PolysInstruction(pilePolys));
                     }
                 }
 
@@ -386,6 +409,14 @@ public partial class StageLoader
                         Utility.GetInt("texture", line, 3)
                     };
                     EnvironmentInstructions.Add(new TextureInstruction(texture));
+
+                    // phy blends the texture into the polygon colour; piles read the result.
+                    var weight = Math.Clamp(texture[3], 20, 60);
+                    pilePolys = new Color3(
+                        (short)((pileGround.R * weight + texture[0]) / (1 + weight)),
+                        (short)((pileGround.G * weight + texture[1]) / (1 + weight)),
+                        (short)((pileGround.B * weight + texture[2]) / (1 + weight))
+                    );
                 }
 
                 else if (line.StartsWith("clouds"))
@@ -498,40 +529,56 @@ public partial class StageLoader
                     reverseChkY = true;
                 }
 
-                else if (line.StartsWith("set"))
+                else if (line.StartsWith("set") || line.StartsWith("fset"))
                 {
-                    if (!TryGetPieceToPlace(Utility.GetString("set", line, 0), out var set)) continue;
+                    // `fset` is phy's float-compat form: the height is absolute and comes before the
+                    // angle (y at 3, angle at 4), where `set` puts the angle first and offsets the y
+                    // from the ground plane.
+                    var setPrefix = line.StartsWith("fset") ? "fset" : "set";
+                    var setModel = Utility.GetString(setPrefix, line, 0);
+                    if (!TryGetPieceToPlace(setModel, out var set)) continue;
 
-                    var setheight = World.Ground;
+                    // phy marks a handful of part ids as candidates for the converging-wall centre.
+                    if (int.TryParse(setModel, NumberStyles.Integer, CultureInfo.InvariantCulture, out var rawModel)
+                        && IsWallCentre(rawModel))
+                    {
+                        WallCentres.Add(
+                            new f64Vector3(
+                                Utility.GetInt(setPrefix, line, 1),
+                                0,
+                                Utility.GetInt(setPrefix, line, 2)
+                            )
+                        );
+                    }
 
-                    var ymult = -1;
+                    var absoluteY = setPrefix == "fset" || swapYandRot;
+                    var setheight = (double)World.Ground;
 
                     var hasCustomY = line.Split(',').Length >= 5;
                     if (hasCustomY)
                     {
-                        if (swapYandRot)
+                        if (absoluteY)
                         {
-                            setheight = Utility.GetInt("set", line, 3);
+                            setheight = Utility.GetFloat(setPrefix, line, 3);
                         }
                         else
                         {
-                            setheight = Utility.GetInt("set", line, 4) * ymult + World.Ground;
+                            setheight = Utility.GetFloat(setPrefix, line, 4) * -1 + World.Ground;
                         }
                     }
 
-                    var rotPlace = 3;
-
-                    if (swapYandRot)
-                    {
-                        rotPlace = 4;
-                    }
+                    var rotPlace = absoluteY ? 4 : 3;
 
                     var obj = new PiecePlacement(
                         PiecePlacementType.CollisionObject,
                         set,
-                        new f64Vector3(Utility.GetInt("set", line, 1), setheight, Utility.GetInt("set", line, 2)),
+                        new f64Vector3(
+                            Utility.GetInt(setPrefix, line, 1),
+                            setheight,
+                            Utility.GetInt(setPrefix, line, 2)
+                        ),
                         new f64Euler(
-                            f64AngleSingle.FromDegrees(Utility.GetInt("set", line, rotPlace)),
+                            f64AngleSingle.FromDegrees(Utility.GetInt(setPrefix, line, rotPlace)),
                             f64AngleSingle.ZeroAngle,
                             f64AngleSingle.ZeroAngle
                         )
@@ -579,12 +626,14 @@ public partial class StageLoader
 
                     currentGroup.Pieces.Add(obj);
                 }
-                else if (line.StartsWith("chk"))
+                else if (line.StartsWith("chk") || line.StartsWith("fchk"))
                 {
+                    var chkPrefix = line.StartsWith("fchk") ? "fchk" : "chk";
+                    var floatCompat = chkPrefix == "fchk";
                     var ymult = -1;
                     var isAirCheckpoint = false;
 
-                    if (!TryGetPieceToPlace(Utility.GetString("chk", line, 0), out var mesh)) continue;
+                    if (!TryGetPieceToPlace(Utility.GetString(chkPrefix, line, 0), out var mesh)) continue;
 
                     if (mesh.FileName == "nfmm/aircheckpoint")
                     {
@@ -597,35 +646,41 @@ public partial class StageLoader
                         ymult = 1;
                     }
 
-                    var chkheight = World.Ground;
+                    var chkheight = (double)World.Ground;
 
-                    var rotPlace = 3;
-                    if (swapYandRot)
-                    {
-                        rotPlace = 4;
-                    }
+                    var rotPlace = floatCompat || swapYandRot ? 4 : 3;
 
-                    f64AngleSingle rotation = f64AngleSingle.FromDegrees(Utility.GetInt("chk", line, rotPlace));
+                    f64AngleSingle rotation = f64AngleSingle.FromDegrees(Utility.GetInt(chkPrefix, line, rotPlace));
 
                     // Check if optional Y coordinate is provided (5 parameters instead of 4)
                     var hasCustomY = line.Split(',').Length >= 5;
 
                     if (hasCustomY)
                     {
-                        if (swapYandRot)
+                        if (floatCompat)
                         {
-                            chkheight = Utility.GetInt("chk", line, 3) * ymult * -1;
+                            // fchk: the height is absolute and precedes the angle.
+                            chkheight = Utility.GetFloat(chkPrefix, line, 3);
+                        }
+                        else if (swapYandRot)
+                        {
+                            chkheight = Utility.GetFloat(chkPrefix, line, 3) * ymult * -1;
                         }
                         else
                         {
-                            chkheight = Utility.GetInt("chk", line, 4) * ymult + (isAirCheckpoint ? 0 : World.Ground);
+                            chkheight = Utility.GetFloat(chkPrefix, line, 4) * ymult
+                                        + (isAirCheckpoint ? 0 : World.Ground);
                         }
                     }
 
                     var obj = new PiecePlacement(
                         PiecePlacementType.CheckPoint,
                         mesh,
-                        new f64Vector3(Utility.GetInt("chk", line, 1), chkheight, Utility.GetInt("chk", line, 2)),
+                        new f64Vector3(
+                            Utility.GetInt(chkPrefix, line, 1),
+                            chkheight,
+                            Utility.GetInt(chkPrefix, line, 2)
+                        ),
                         new f64Euler(rotation, f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle),
                         AiNodeKind.CheckPoint
                     );
@@ -678,17 +733,86 @@ public partial class StageLoader
 
                     currentGroup.Pieces.Add(fix);
                 }
-                // oteek: FUCK PILES IM NGL
-                // if (!CheckPoints.Notb && astring.StartsWith("pile"))
-                // {
-                //     _stageContos[_nob] = new ContO(Utility.GetInt("pile", astring, 0), Utility.GetInt("pile", astring, 1),
-                //         Utility.GetInt("pile", astring, 2), Utility.GetInt("pile", astring, 3), Utility.GetInt("pile", astring, 4),
-                //         Medium.Ground);
-                //     _nob++;
-                // }
+                else if (line.StartsWith("pile"))
+                {
+                    var seed = Utility.GetInt("pile", line, 0);
+                    var width = Utility.GetInt("pile", line, 1);
+                    var height = Utility.GetInt("pile", line, 2);
+                    var mesh = StagePileBuilder.Build(seed, width, height, pileGround, pilePolys);
+
+                    var pile = new PiecePlacement(
+                        PiecePlacementType.Pile,
+                        mesh,
+                        new f64Vector3(
+                            Utility.GetInt("pile", line, 3),
+                            World.Ground,
+                            Utility.GetInt("pile", line, 4)
+                        ),
+                        f64Euler.Identity,
+                        PileSeed: seed,
+                        PileWidth: width,
+                        PileHeight: height
+                    );
+
+                    pieces.Add(pile);
+                    currentGroup.Pieces.Add(pile);
+                }
                 else if (line.StartsWith("nlaps"))
                 {
                     nlaps = (ushort)Utility.GetInt("nlaps", line, 0);
+                }
+                else if (line.StartsWith("xstart")) ParseStart(line, StartAxis.X);
+                else if (line.StartsWith("zstart")) ParseStart(line, StartAxis.Z);
+                else if (line.StartsWith("ystart")) ParseStart(line, StartAxis.Y);
+                else if (line.StartsWith("xzstart")) ParseStart(line, StartAxis.Yaw);
+                else if (line.StartsWith("xystart")) ParseStart(line, StartAxis.Pitch);
+                else if (line.StartsWith("zystart")) ParseStart(line, StartAxis.Roll);
+                // `angle` is the ds-addons spelling of the yaw tag.
+                else if (line.StartsWith("angle")) ParseStart(line, StartAxis.Yaw);
+                else if (line.StartsWith("startheight"))
+                {
+                    // One height for every car; phy subtracts it from the stock 250.
+                    Starts.Add(
+                        new StageStart(StartAxis.Y, 0, [250f - Utility.GetFloat("startheight", line, 0)])
+                    );
+                }
+                else if (line.StartsWith("pulsegrnd"))
+                {
+                    Pulse = new GroundPulse(
+                        Utility.GetFloat("pulsegrnd", line, 0),
+                        Utility.GetFloat("pulsegrnd", line, 1),
+                        Utility.GetFloat("pulsegrnd", line, 2)
+                    );
+                }
+                else if (line.StartsWith("flameColor1"))
+                {
+                    FlameColors = (FlameColors ?? FlamePalette.Default) with
+                    {
+                        Outer = ReadColor(line, "flameColor1")
+                    };
+                }
+                else if (line.StartsWith("flameColor2"))
+                {
+                    FlameColors = (FlameColors ?? FlamePalette.Default) with
+                    {
+                        Inner = ReadColor(line, "flameColor2")
+                    };
+                }
+                else if (line.StartsWith("flameColor3"))
+                {
+                    FlameColors = (FlameColors ?? FlamePalette.Default) with
+                    {
+                        Ember = ReadColor(line, "flameColor3")
+                    };
+                }
+                else if (line.StartsWith("flameSnapDiv"))
+                {
+                    FlameColors = (FlameColors ?? FlamePalette.Default) with
+                    {
+                        SnapDivX = Utility.GetFloat("flameSnapDiv", line, 0),
+                        SnapDivY = Utility.GetFloat("flameSnapDiv", line, 1),
+                        SnapDivZ = Utility.GetFloat("flameSnapDiv", line, 2)
+                    };
                 }
                 // phy-addons stage properties. `gravity`, `grip`, `dam` etc. are not stock
                 // directives; they are read by phy-addons that scan for these prefixes. The
@@ -847,7 +971,8 @@ public partial class StageLoader
                                 wall,
                                 new f64Vector3(o, World.Ground, q * 4800 + p),
                                 f64Euler.Identity,
-                                IsWall: true
+                                IsWall: true,
+                                WallSide: WallDirection.Right
                             )
                         );
                     }
@@ -884,7 +1009,8 @@ public partial class StageLoader
                                 wall,
                                 new f64Vector3(o, World.Ground, q * 4800 + p),
                                 new f64Euler(f64AngleSingle.FromDegrees(180), f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle),
-                                IsWall: true
+                                IsWall: true,
+                                WallSide: WallDirection.Left
                             )
                         );
                     }
@@ -921,7 +1047,8 @@ public partial class StageLoader
                                 wall,
                                 new f64Vector3(q * 4800 + p, World.Ground, o),
                                 new f64Euler(f64AngleSingle.FromDegrees(90), f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle),
-                                IsWall: true
+                                IsWall: true,
+                                WallSide: WallDirection.Top
                             )
                         );
                     }
@@ -958,7 +1085,8 @@ public partial class StageLoader
                                 wall,
                                 new f64Vector3(q * 4800 + p, World.Ground, o),
                                 new f64Euler(f64AngleSingle.FromDegrees(-90), f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle),
-                                IsWall: true
+                                IsWall: true,
+                                WallSide: WallDirection.Bottom
                             )
                         );
                     }
@@ -1003,6 +1131,46 @@ public partial class StageLoader
     /// user-editable file and drives a loop that allocates one piece per iteration.
     /// </summary>
     private const int MaxWallCount = 10_000;
+
+    /// <summary>
+    /// Reads a start line: <c>tag(count, v0, v1, …)</c>. phy applies the line only when the count
+    /// matches the race's player count, so the count is kept rather than resolved here.
+    /// </summary>
+    private void ParseStart(string line, StartAxis axis)
+    {
+        var open = line.IndexOf('(');
+        if (open < 0) return;
+
+        var close = line.LastIndexOf(')');
+        var args = close > open ? line[(open + 1)..close] : line[(open + 1)..];
+        var parts = args.Split(',');
+
+        if (parts.Length < 2) return;
+        if (!int.TryParse(parts[0].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var count)) return;
+        if (count is <= 0 or > 8) return;
+
+        var values = new List<float>(count);
+        for (var i = 1; i < parts.Length && values.Count < count; i++)
+        {
+            if (float.TryParse(parts[i].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
+                values.Add(value);
+        }
+
+        if (values.Count == 0) return;
+
+        Starts.Add(new StageStart(axis, count, [.. values]));
+    }
+
+    private static Color3 ReadColor(string line, string prefix)
+        => new(
+            (short)Utility.GetInt(prefix, line, 0),
+            (short)Utility.GetInt(prefix, line, 1),
+            (short)Utility.GetInt(prefix, line, 2)
+        );
+
+    /// <summary>phy's <c>Walls.isOption</c>: part ids a converging-wall race may centre on.</summary>
+    private static bool IsWallCentre(int model)
+        => model is 28 or 29 or 33 or 34 or 35 or 53 or 55;
 
     private static int GetWallCount(string command, string line)
         => Math.Clamp(Utility.GetInt(command, line, 0), 0, MaxWallCount);

@@ -20,6 +20,10 @@ public partial class BackendStage
 
     [PluginVisible] public StagePhysics Physics { get; private set; }
 
+    /// <summary>The stage's boundary walls; a converging-wall race drives them from the gamemode.</summary>
+    [PluginVisible]
+    public ClosingWalls Walls { get; private set; } = new();
+
     [PluginVisible] public string Name = "hogan rewish";
 
     [PluginVisible] public readonly string Path;
@@ -105,6 +109,7 @@ public partial class BackendStage
             switch (piece.Type)
             {
                 case PiecePlacementType.CollisionObject:
+                case PiecePlacementType.Pile:
                 {
                     var obj = new StageObject(
                         piece.Object,
@@ -178,6 +183,7 @@ public partial class BackendStage
         }
 
         SetBounds(stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb);
+        Walls = new ClosingWalls(stageLoader, Pieces);
         InitializeDestructibles();
     }
 
@@ -304,35 +310,83 @@ public partial class BackendStage
         _tempTrackers.Clear();
         _collisionQuadTree.RetrievePoint(_tempTrackers, x, z);
         _tempTrackers.RemoveAll(static shape => shape.Owner is { IsDestroyed: true });
+        Walls.AppendCollidables(_tempTrackers, 0);
         var span = CollectionsMarshal.AsSpan(_tempTrackers);
         span.Sort(static (a, b) => a.Index.CompareTo(b.Index));
         return span;
     }
 
+    /// <summary>
+    /// Where and facing which way a car starts. The stock grid is the original game's, and a
+    /// stage's <c>xstart</c>/<c>ystart</c>/<c>xzstart</c> lines override it when their count
+    /// matches <paramref name="playerCount"/> (a count of zero is <c>startheight</c>'s "everyone").
+    /// The y is the stage's spawn plane; a caller subtracts the car's own <c>GroundAt</c>.
+    /// </summary>
     [PluginVisible]
-    public (fix64 X, fix64 Z) GetStartPosition(int index)
+    public StartTransform GetStartTransform(int index, int playerCount)
     {
-        fix64 x = 0, z = 0;
-        int i1 = index % 3;
-        if (i1 == 0)
+        double x = 0, z = 0;
+        var column = index % 3;
+        if (column == 0)
         {
             x = 0;
             z = -760 + index / 3 * 760;
         }
-        else if (i1 == 1)
+        else if (column == 1)
         {
             x = -350;
             z = -380 + index / 3 * 760;
         }
-        else if (i1 == 2)
+        else
         {
             x = 350;
             z = -380 + index / 3 * 760;
         }
 
-        return (x, z);
+        double y = World.Ground;
+        double yaw = 0, pitch = 0, roll = 0;
+
+        foreach (var start in StageLoader.Starts)
+        {
+            if (start.PlayerCount != 0 && start.PlayerCount != playerCount) continue;
+
+            double value;
+            if (start.PlayerCount == 0)
+            {
+                value = start.Values[0];
+            }
+            else
+            {
+                if (index >= start.Values.Length) continue;
+                value = start.Values[index];
+            }
+
+            switch (start.Axis)
+            {
+                case StartAxis.X: x = value; break;
+                case StartAxis.Z: z = value; break;
+                case StartAxis.Y: y = value; break;
+                case StartAxis.Yaw: yaw = value; break;
+                case StartAxis.Pitch: pitch = value; break;
+                case StartAxis.Roll: roll = value; break;
+                default: throw new ArgumentOutOfRangeException(nameof(start.Axis), start.Axis, null);
+            }
+        }
+
+        return new StartTransform(
+            new f64Vector3(x, y, z),
+            new f64Euler(
+                f64AngleSingle.FromDegrees((fix64)yaw),
+                f64AngleSingle.FromDegrees((fix64)pitch),
+                f64AngleSingle.FromDegrees((fix64)roll)
+            )
+        );
     }
 }
+
+/// <summary>A car's spawn: the stage's y is a ground plane, not the car's wheel contact height.</summary>
+[PluginVisible(Visible.IncludingAllMembersOfType)]
+public readonly record struct StartTransform(f64Vector3 Position, f64Euler Rotation);
 
 [PluginVisible]
 public partial class WallCollision : BackendGameObject, ICollidable

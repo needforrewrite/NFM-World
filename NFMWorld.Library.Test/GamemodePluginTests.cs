@@ -147,14 +147,21 @@ public class GamemodePluginTests
 
         Assert.IsNotNull(plugin);
 
-        var property = plugin.ConfigProperties.Single();
-        Assert.AreEqual("constraint", property.Name);
+        var property = plugin.ConfigProperties.Single(p => p.Name == "constraint");
         Assert.AreEqual(typeof(string), property.Type);
         Assert.AreEqual("Race constraint", property.Label);
 
         CollectionAssert.AreEqual(
             new[] { "racing", "wasting", "both" },
             property.Options.Select(o => o.Value).ToArray()
+        );
+
+        var walls = plugin.ConfigProperties.Single(p => p.Name == "walls");
+        Assert.AreEqual(typeof(string), walls.Type);
+        Assert.AreEqual("Converging walls", walls.Label);
+        CollectionAssert.AreEqual(
+            new[] { "off", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" },
+            walls.Options.Select(o => o.Value).ToArray()
         );
     }
 

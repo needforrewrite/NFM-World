@@ -137,6 +137,8 @@ public class Flames : IDisposable, IImmediateRenderElement
 
                 if (_embos >= 16)
                 {
+                    var outerPaletteColor = FlameColor(World.FlameOuter);
+                    var innerPaletteColor = FlameColor(World.FlameInner);
                     var outerX = new InlineArray3<float>();
                     var outerY = new InlineArray3<float>();
                     var outerZ = new InlineArray3<float>();
@@ -212,40 +214,7 @@ public class Flames : IDisposable, IImmediateRenderElement
                         outerY[2] = (outerY[0] + outerY[1]) / 2 - i45 * i46 * i53;
 
 
-                        var r = (int)(255.0F + 255.0F * (World.Snap[0] / 400.0F));
-                        if (r > 255)
-                        {
-                            r = 255;
-                        }
-
-                        if (r < 0)
-                        {
-                            r = 0;
-                        }
-
-                        var g = (int)(169.0F + 169.0F * (World.Snap[1] / 300.0F));
-                        if (g > 255)
-                        {
-                            g = 255;
-                        }
-
-                        if (g < 0)
-                        {
-                            g = 0;
-                        }
-
-                        var b = (int)(89.0F + 89.0F * (World.Snap[2] / 200.0F));
-                        if (b > 255)
-                        {
-                            b = 255;
-                        }
-
-                        if (b < 0)
-                        {
-                            b = 0;
-                        }
-
-                        var outerColor = (Color)new Color3((short)r, (short)g, (short)b);
+                        var outerColor = outerPaletteColor;
 
                         // inner flame
 
@@ -284,40 +253,7 @@ public class Flames : IDisposable, IImmediateRenderElement
                         i53 = (int)(i53 * 0.8);
                         innerY[2] = (innerY[0] + innerY[1]) / 2 - i45 * i46 * i53;
 
-                        r = (int)(255.0F + 255.0F * (World.Snap[0] / 400.0F));
-                        if (r > 255)
-                        {
-                            r = 255;
-                        }
-
-                        if (r < 0)
-                        {
-                            r = 0;
-                        }
-
-                        g = (int)(207.0F + 207.0F * (World.Snap[1] / 300.0F));
-                        if (g > 255)
-                        {
-                            g = 255;
-                        }
-
-                        if (g < 0)
-                        {
-                            g = 0;
-                        }
-
-                        b = (int)(136.0F + 136.0F * (World.Snap[2] / 200.0F));
-                        if (b > 255)
-                        {
-                            b = 255;
-                        }
-
-                        if (b < 0)
-                        {
-                            b = 0;
-                        }
-
-                        var innerColor = (Color)new Color3((short)r, (short)g, (short)b);
+                        var innerColor = innerPaletteColor;
 
                         // We build the outer flame out of two triangles, so that it doesn't overlap with the inner flame.
                         // These triangles share a vertex with the inner flame's center triangle.
@@ -350,9 +286,31 @@ public class Flames : IDisposable, IImmediateRenderElement
         }
     }
 
+    /// <summary>
+    /// phy's <c>Medium.getFlameColors</c>: each channel is scaled by its own snap divisor
+    /// (<c>flameSnapDiv</c>, stock 4/3/2) rather than one shared divisor.
+    /// </summary>
+    private static Color FlameColor(Color3 color)
+    {
+        short Channel(int i)
+        {
+            var div = World.FlameSnapDiv[i];
+            if (div <= 0f) div = 1f;
+            var value = (int)(color[i] + color[i] * (World.Snap[i] / (100f * div)));
+            return (short)Math.Clamp(value, 0, 255);
+        }
+
+        return (Color)new Color3(Channel(0), Channel(1), Channel(2));
+    }
+
     private void BuildWhiteSparks()
     {
-        var color = new Color(230, 230, 230);
+        var ember = World.FlameEmber;
+        var color = (Color)new Color3(
+            (short)Math.Clamp((int)ember.R, 0, 255),
+            (short)Math.Clamp((int)ember.G, 0, 255),
+            (short)Math.Clamp((int)ember.B, 0, 255)
+        );
         foreach (var poly in _car.Mesh.Polys)
         {
             if (poly.PolyType == PolyType.Glass || !URandom.Boolean()) continue;

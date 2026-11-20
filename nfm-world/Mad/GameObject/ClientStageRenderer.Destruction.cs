@@ -35,6 +35,8 @@ public partial class ClientStageRenderer
 
     public override void GameTick(BackendStage? stage = null)
     {
+        TickGroundPulse();
+
         if (_restoreDestructibles)
         {
             _restoreDestructibles = false;

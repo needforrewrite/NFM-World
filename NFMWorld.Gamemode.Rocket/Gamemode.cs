@@ -8,6 +8,7 @@ using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Gamemodes.DotNet;
 using NFMWorldLibrary.Helpers;
+using f64Vector3 = FixedMathSharp.Vector3d;
 using NFMWorldLibrary.Util;
 
 [assembly: Gamemode(
@@ -470,8 +471,17 @@ public sealed class RocketGamemode : PluginGamemode
         for (var i = 0; i < Players.Count; i++)
         {
             var player = Players[i];
-            var (x, z) = CurrentStage.GetStartPosition(i);
-            player.Car = new BackendCar(player.Info, i, x, z) { CurrentCheckpoint = 0, CurrentLap = 0 };
+            var start = CurrentStage.GetStartTransform(i, Players.Count);
+            player.Car = new BackendCar(player.Info, i, start.Position.X, start.Position.Z)
+            {
+                CurrentCheckpoint = 0, CurrentLap = 0
+            };
+            player.Car.Position = new f64Vector3(
+                start.Position.X,
+                start.Position.Y - player.Car.GroundAt,
+                start.Position.Z
+            );
+            player.Car.Rotation = start.Rotation;
             player.Car.CarPhysics.Stat = player.Car.CarPhysics.Stat with { Airc = 0 };
             player.Car.CarPhysics.Stat = player.Car.CarPhysics.Stat with { Airs = 1 };
             player.Car.CarPhysics.IsHyperglidingEnabled = false;

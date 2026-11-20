@@ -97,6 +97,10 @@ public sealed class RaceAnnouncer
         _lastSpectatedStunt = 0;
     }
 
+    /// <summary>Posts a status line on a gamemode's behalf (converging-wall warnings).</summary>
+    public void Announce(string text, HudMessageKind kind = HudMessageKind.Info, float seconds = StatusSeconds)
+        => Show(text, kind, seconds);
+
     /// <summary>Runs one game tick: expires the slots, then posts whatever the state has to say.</summary>
     public void Tick(BackendCar client, BaseClientGamemode gamemode)
     {
