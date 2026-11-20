@@ -69,7 +69,7 @@ public static class MenuPreferences
 
                     if (Utility.GetString("name(", line, 0).Trim() is { Length: > 0 } name)
                     {
-                        names[id] = name;
+                        names[id] = name.Replace('|', ',');
                         break;
                     }
                 }
