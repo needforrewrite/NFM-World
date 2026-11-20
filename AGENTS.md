@@ -427,6 +427,54 @@ from `PhysicsController.GameTick`. Two ship:
   `RaceOverlays` skips the shared one for it (`RaceHudView` passes `race.Skin.Value == "world"`). Racers/arrow are
   plain lists; slots re-read them off `UiState.RaceState.PresentationRevision`, bumped once per frame after
   `RacePhase.UpdateHudPresentation`.
+- **Gadget skins** (`nfm-world/UI/Hud/GadgetSkin/`) are a port of phy-angled-physics's DS-addons HUD pack: `dsmod2`,
+  `blackfusion`, `digital7`, `s7`, each a whole-set replacement drawn in phy's 800×450 frame (speedometer, position,
+  damage/power, guidance arrow, opponent list, radar, chronometer, track visor). `GadgetHud` applies the safe zone and
+  `HudScale` and maps every helper from phy coordinates to screen, so a port reads like the original. All seven
+  gadgets per skin are immediate-mode `RenderContent` draws through the nanovg-style `IGraphics` path API (`Arc`,
+  `BezierTo`, `Ellipse`, polygons, rounded rects) — vector-crisp at any resolution, no sprite art. `GadgetRadar` shares
+  the rotating map and blips. They draw their own radar and opponent list, so `HudSkinRegistry.DrawsRadar` keeps the
+  shared `RaceOverlays` radar out of the way. `digital7`/`s7`/`dsmod2` use the `Digital7`/`Yukari` fonts phy shipped
+  (`data/fonts/`, baked to `.msdf` by the build). The gadget-only data (`SpeedFraction`, `TopSpeed`, `LapSplits`,
+  `ArrowDistanceMeters`, `MusicTrack`) rides `IHudData`, filled by `RacePhase.UpdateHudPresentation` from its own race
+  clock; no gamemode tracks it.
+
+  Porting rules — each of these silently produces a mirrored or shifted HUD:
+
+  |Rule|Why|
+  |---|---|
+  |**Angles**: Java2D `fillArc`/`drawArc` measure y-up (0° at 3 o'clock, positive counter-clockwise); `G.Arc` is y-down. Emit the wedge as a polyline with Java's own `cx + r·cos θ, cy − r·sin θ` rather than converting angles — `G.Arc`'s large-arc/sweep flags disagree with Java2D past a half turn|A straight conversion mirrors every dial|
+  |**Text**: phy's `drawString` anchors at the baseline; `IGraphics.DrawString` anchors at the line-box top. Add `metrics.LineHeight − metrics.Ascent` (the `IFontMetrics.Ascent` member exists for this)|Labels sit a descent high otherwise|
+  |**Fonts**: phy lays out against Arial. `NotoSans` is the closest shipped metric; `DroidSans` is visibly wider and shifts centred/right-aligned text|Jitter in every label|
+  |**`List<T>` does not implement `IReadOnlyList<T>`**|`RaceState.LapSplits` needed an explicit `IHudData.LapSplits => LapSplits`, or the interface's empty default won and the chronometer never drew|
+  |**Overlapping translucent shapes**: Java2D `Area` unions (`BF_pow`, dial pie + closing polygon + skirt) must be one outline, or every overlap blends twice|Build a `ShapeRegion` (LibTessDotNet, positive winding, boundary contours) once and draw it with `FillRegion`/`StrokeRegion`. Flatten arcs at 8° and offset ellipse vertices half a step off the axes; finer steps and axis-aligned vertices leave hairline gaps in the fill|
+  |**Pixel-exact art**: Apos grows every shape by its AA band and rounds caps/joins, so a 1px phy line renders ~1.5px|`GadgetHud` brackets drawing with `G.SetExactCoverage(true)`: centred AA at `aaSize` 1, square caps, mitre joins (Java2D's default stroke). Nothing else should enable it|
+  |**Gauge points**: phy's `px − (int)(sin·r)` truncates toward zero, and its `sin`/`cos` tables are doubles rounded to float|Use `GadgetHud.Gauge`, not `Polar`; a float `MathF.Cos(120°)` truncates a pixel the other way. Needle angles are `(int)` too|
+  |**Speed units**: S7's needle is `120 − (int)(|speed|·2/3)` in raw speed, not a fraction of top speed|`IHudData.TopSpeed` carries the stat; the labels run `0` at −120° to `360` at +120°, coloured by whether the needle has passed them|
+  |**Anchoring**: phy drew on a fixed 800×450 canvas; a plain origin at the safe zone's top-left makes the right-hand and bottom gadgets float off their edges as `hud_scale` changes|`Anchor(HudAnchor.Top/TopRight/BottomLeft/BottomRight)` before each gadget group: the anchor point of the 800×450 frame is pinned to that edge of the safe zone, so the gauge grows away from the edge it belongs to. Left/top stay top-left|
+  |**Thin rings**: a *filled* annulus one or two phy units thick loses chunks to the fill solver and its outer edge tears|Stroke it at the band's mid radius with its exact width. S7's r80..82 and r82..83 rings both are|
+  |**Angle conventions differ**: phy's gadget trig puts 0° at the *top* (`px − sin θ·r, py − cos θ·r`); `IGraphics.Arc`/`ArcStroke` put 0° at 3 o'clock and sweep y-down|An arc ported from phy needs its start reduced by 90° (`-120, 240` becomes `-30, 240`). Getting this wrong draws the arc over the opposite half of the dial|
+  |**Java2D arc width is a diameter**: `fillRoundRect`/`RoundRectangle2D` take the corner arc's *diameter*, so passing phy's number straight through cuts every corner twice as deep|Halve it when building a `ShapeRegion.RoundRect`. `BF_pow` passes 15 and needs 7.5; at 15 the panel's cut corner drops below the half disc beside it, leaving that disc's rim standing proud as a bump|
+  |**Concentric dial parts**: phy's DSmod2 ticks and needle sit at (750,400) while the arc that outlines the dial is drawn about (746,395) at radius 75|Draw both from the arc's centre, with every tick's outer end exactly on its radius. phy's own ticks overrun the rim on one side and stop short of it on the other|
+  |**Do not copy phy's truncation into curved contours**: it applied `(int)` to tick endpoints and ring-band points, which makes a 1px band wander in thickness|`Gauge` is for ticks/needles only. Ring bands use continuous `Polar` points, and a band under a pixel wide is stroked, not filled|
+
+  The ground truth is phy's own painters rendered headlessly: `scratch/gadget-ref/` (gitignored) compiles the
+  decompiled `GadgetPainter.java`/`Chronometer.java` against small stubs and writes `png/ref-<variant>-{dark,bright}.png`
+  at 800×450. Build it with any JDK 17 (`javac -d out src/com/radicalplay/nfmm/*.java`, then
+  `java -cp out com.radicalplay.nfmm.RefMain <1..4> <out.png> <phy-font-dir> [dark|light][solo][scale]`). Capture the
+  NFMW side at the same size with `NFMWorld/UiHarness/race-hud-800-*.json` (or `race-hud-<skin>.json` for 1280×720,
+  which is the same frame at the game's HUD scale). `race-hud-wide.json` (1920×720) and `race-hud-tall.json` (800×1000)
+  are the anchoring fixtures: right-hand and bottom gadgets must stay on their edges in both — after the fixes above
+  every gadget matches phy within ~2 px at the reference size.
+  `IGraphics.SaveState`/`RestoreState` carry the **stroke width and the coverage mode**, not just the
+  clip: a HUD that sets a 3px outline inside a save/restore must not leave every later node drawing 3px
+  outlines. `GadgetHud` and `ClassicHud` both rely on that.
+
+  "Now listening" is an **announcement**, not a state label. `RacePhase` reads `GameSparker.CurrentMusic`
+  and fills `hud.MusicTrack` only for a few seconds after a track starts or is replaced, and leaves it
+  null when nothing plays. Deriving it from the stage's configured soundtrack kept the visor on screen
+  for the whole race, and on screen even with music off.
+
 - `hud_scale` is a 0.5–2 user multiplier (`HudScaleSettings`, default 1), live in the HUD preview; Classic adds a
   1.15 default multiplier (`HudScaleSettings.ClassicDefault`). `HudScaleHost` isolates the skin's scale from menu UI.
 - `hud_safezone_x`/`hud_safezone_y` keep 0.8–1 of each viewport axis (default 1). Skins inset anchors symmetrically via
