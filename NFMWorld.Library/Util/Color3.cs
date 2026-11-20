@@ -38,13 +38,6 @@ public partial record struct Color3(
                 2 => B,
                 _ => ThrowIndexOutOfRangeException(index)
             };
-
-            static short ThrowIndexOutOfRangeException(int index)
-            {
-                throw new IndexOutOfRangeException(
-                    $"Index was out of range. Must be between 0 and 2, inclusive. Received: {index}"
-                );
-            }
         }
         set
         {
@@ -63,23 +56,26 @@ public partial record struct Color3(
                     ThrowIndexOutOfRangeException(index);
                     break;
             }
-
-            static void ThrowIndexOutOfRangeException(int index)
-            {
-                throw new IndexOutOfRangeException(
-                    $"Index was out of range. Must be between 0 and 2, inclusive. Received: {index}"
-                );
-            }
         }
+    }
+
+    [return: System.Diagnostics.CodeAnalysis.MaybeNull]
+    private static short ThrowIndexOutOfRangeException(int index)
+    {
+        throw new IndexOutOfRangeException(
+            $"Index was out of range. Must be between 0 and 2, inclusive. Received: {index}"
+        );
     }
 
     public static Color3 FromSpan(ReadOnlySpan<short> span)
         => new(span[0], span[1], span[2]);
 
+
     public static implicit operator ColorBGRA(Color3 color) => new(color.R, color.G, color.B, 255);
     public static explicit operator Color3(Color color) => new(color.R, color.G, color.B);
     public static explicit operator Color3(ColorBGRA color) => new(color.R, color.G, color.B);
 
+    [PluginVisible]
     public static implicit operator Color(Color3 color) => new(
         (byte)Math.Clamp(color.R, (short)0, (short)255),
         (byte)Math.Clamp(color.G, (short)0, (short)255),

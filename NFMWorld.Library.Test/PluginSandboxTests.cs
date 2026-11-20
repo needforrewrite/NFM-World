@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Security;
+using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorldLibrary.Gamemodes.DotNet;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
@@ -157,6 +158,31 @@ public class PluginSandboxTests
         Assert.AreEqual(0.5f, callbacks.Car.AlphaOverride);
         Assert.AreEqual(true, callbacks.Car.Glow);
         Assert.AreEqual(false, callbacks.Car.Finish);
+    }
+
+    /// <summary>
+    /// A marked interface member admits whatever implements it. The host hands the plugin a
+    /// concrete clip type; without inherited visibility the call lands on that class and is
+    /// refused, which made every implementer need its own marker.
+    /// </summary>
+    [TestMethod]
+    public void SoundClipCallsSucceedThroughTheInterfaceGrant()
+    {
+        // The getter throws when unset, so a previous value cannot be captured. Every other test
+        // method that needs a backend installs its own, so leaving the dummy is fine.
+        IBackend.Backend = new DummyBackend();
+        try
+        {
+            var target = _hostile.GetType("NFMWorld.Gamemode.Hostile.HostileGamemode", throwOnError: true)!
+                .GetMethod("UseASound", BindingFlags.Public | BindingFlags.Static)!;
+
+            // No exception: GetSound, CreateSpatialInstance, SetPosition, Loop, IsActive, Stop
+            // and Dispose are all reached through the concrete DummyBackend/DummySoundClip.
+            target.Invoke(null, null);
+        }
+        finally
+        {
+        }
     }
 
     private sealed class RenderingCallbacks : IClientCallbacks

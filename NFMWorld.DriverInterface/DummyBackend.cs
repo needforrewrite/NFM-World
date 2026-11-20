@@ -1,10 +1,18 @@
 ﻿using System.Numerics;
 using Maxine.Extensions.Mathematics;
+using NFMWorld.PluginSystem;
 
 namespace NFMWorld.DriverInterface.DriverInterface;
 
-public sealed class DummyBackend : IBackend
+/// <summary>
+/// A fake of the plugin-visible <see cref="IBackend"/> used by the test host. Its members need
+/// no markers of their own: PluginPolicy propagates the contract's visibility to whatever
+/// implements it. Unsealed so tests can subclass it to record what reaches the batch.
+/// </summary>
+public class DummyBackend : IBackend
 {
+    public virtual IGraphics3D Graphics3D { get; } = new DummyGraphics3D();
+
     public IRadicalMusic LoadMusic(string file, double tempomul)
     {
         return new DummyMusic();
@@ -21,7 +29,6 @@ public sealed class DummyBackend : IBackend
 
     public IGraphics Graphics { get; } = new DummyGraphics();
 
-    public IGraphics3D Graphics3D { get; } = new DummyGraphics3D();
 
     private sealed class DummyGraphics3D : IGraphics3D
     {
@@ -200,7 +207,8 @@ public sealed class DummyBackend : IBackend
     }
 }
 
-file sealed class DummyMusic : IRadicalMusic
+
+public sealed class DummyMusic : IRadicalMusic
 {
     public void SetPaused(bool p0)
     {
@@ -238,7 +246,8 @@ file sealed class DummyFontMetrics : IFontMetrics
     public float LineHeight => 0;
 }
 
-file sealed class DummySoundClip : ISoundClip
+
+public sealed class DummySoundClip : ISoundClip
 {
     public bool IsActive => false;
     public ISoundClip CreateSpatialInstance(bool followPosition = false) => new DummySoundClip();

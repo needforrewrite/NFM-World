@@ -37,16 +37,38 @@ public sealed class RocketGamemode : PluginGamemode
     private const int RollLeftAction = 2;
     private const int RollRightAction = 3;
 
-    // Arcade tuning. Boost is a top speed, not an acceleration: thrust scales with the gap to
-    // BoostSpeed so the car asymptotes there instead of compounding.
-    private const int JumpImpulse = 160;
-    private const int AirYawRate = 1; // degrees per tick while an air-heading key is held
-    private const int BoostSpeed = 330;
-    private const int BoostAcceleration = 22;
-    private const float MaxBoost = 200;
-    private const float BoostRegenPerSecond = 6;
-    private const float BoostDrainPerSecond = 22;
-    private const float BoostStart = 100;
+    /// <summary>
+    /// Feel tuning for the arcade layer, as instance fields so the dev console (and, later,
+    /// config) can adjust them live. Defaults are the values the mode shipped with.
+    /// </summary>
+    public class RocketTuning
+    {
+        /// <summary>Upward impulse per jump, in physics units.</summary>
+        public double JumpImpulse = 160;
+
+        /// <summary>Degrees per tick of air yaw while a heading key is held, scaled by the car's Airs stat.</summary>
+        public double AirYawRate = 1;
+
+        /// <summary>The top speed boost thrust asymptotes to, in physics units per tick.</summary>
+        public double BoostSpeed = 70;
+
+        /// <summary>How hard boost pushes while below its top speed, as a fraction of the gap.</summary>
+        public double BoostAcceleration = 5;
+
+        /// <summary>Boost tank capacity.</summary>
+        public double MaxBoost = 200;
+
+        /// <summary>Boost refilled per second while not boosting.</summary>
+        public double BoostRegenPerSecond = 6;
+
+        /// <summary>Boost spent per second while boosting.</summary>
+        public double BoostDrainPerSecond = 22;
+
+        /// <summary>Boost tank at race start.</summary>
+        public double BoostStart = 100;
+    }
+
+    public RocketTuning Tuning { get; } = new();
 
     private RocketState _state;
     private int _countdownInner;
@@ -61,11 +83,18 @@ public sealed class RocketGamemode : PluginGamemode
     /// <summary>All the per-car arcade state, one object per player indexed by slot.</summary>
     private sealed class CarState
     {
-        public float Boost = BoostStart;
+        public float Boost;
         public bool JumpHeld;
         public int JumpsLeft = 2;
         public bool StoredLeft;
         public bool StoredRight;
+
+        /// <summary>
+        /// Latched while the tank is not empty. Without it, an empty tank with the button held
+        /// regens one tick's worth and spends it the next, toggling every tick - which restarts
+        /// the boost loop sound 63 times a second and reads as a drum roll.
+        /// </summary>
+        public bool Boosting;
     }
 
     public RocketGamemode(
@@ -98,6 +127,9 @@ public sealed class RocketGamemode : PluginGamemode
         HudState.ClientLost = false;
         SetupCars();
     }
+
+    /// <summary>Boost exhaust, jump sounds. Client-only; null in headless/server use.</summary>
+    private RocketFx? _fx;
 
     public override void Reset()
     {
@@ -170,6 +202,15 @@ public sealed class RocketGamemode : PluginGamemode
                     HudState.Position = ownCar.Placement + 1;
                 }
 
+                // FX step: boosting flags per player, then particles advance. Drawn in Render().
+                if (_fx is { } fx)
+                {
+                    var boosting = new bool[Players.Count];
+                    for (var i = 0; i < Players.Count; i++)
+                        boosting[i] = _cars[i].Boosting;
+                    fx.GameTick(boosting);
+                }
+
                 HudState.TotalLaps = CurrentStage.Nlaps;
                 HudState.TotalRacers = Players.Count;
 
@@ -230,18 +271,19 @@ public sealed class RocketGamemode : PluginGamemode
         // Air heading: yaw left/right, the Q/E-style controls mapped onto heading instead of roll.
         if (physics.StuntState is 2 or -1)
         {
+            var yawRate = (fix64)(Tuning.AirYawRate * (double)car.Stats.Airs);
             if (control.Left)
             {
                 state.StoredLeft = true;
                 control.Left = false;
-                physics.TurnYaw(-AirYawRate * car.Stats.Airs);
+                physics.TurnYaw(-yawRate);
             }
 
             if (control.Right)
             {
                 state.StoredRight = true;
                 control.Right = false;
-                physics.TurnYaw(AirYawRate * car.Stats.Airs);
+                physics.TurnYaw(yawRate);
             }
 
             if (control.GamemodeAction(RollLeftAction))
@@ -263,37 +305,58 @@ public sealed class RocketGamemode : PluginGamemode
         if (jump && !state.JumpHeld && state.JumpsLeft > 0)
         {
             state.JumpsLeft--;
+            var impulse = (fix64)Tuning.JumpImpulse;
             var steer = fromGround ? (X: fix64.Zero, Y: fix64.Zero) : steerInput;
             if (steer.X == 0 && steer.Y == 0)
-                physics.AddImpulse(0, -JumpImpulse, 0);
+                physics.AddImpulse(0, -impulse, 0);
             else
-                physics.AddLocalImpulse(steer.X * JumpImpulse, steer.Y * JumpImpulse);
+                physics.AddLocalImpulse(steer.X * impulse, steer.Y * impulse);
 
             // Enter the vanilla take-off path directly: clearing the grounded flag stops the
             // next Drive from zeroing the state, and the jump impulse lifts the car before it
             // can be re-grounded the same tick.
             physics.Mtouch = false;
             physics.StuntState = 1;
+
+            _fx?.PlayJump(car);
         }
 
         state.JumpHeld = jump;
 
-        var perTickDrain = BoostDrainPerSecond / NFMWorldLibrary.Physics.TargetTps;
-        var perTickRegen = BoostRegenPerSecond / NFMWorldLibrary.Physics.TargetTps;
-        if (control.GamemodeAction(BoostAction) && state.Boost > 0)
+        var perTickDrain = (float)(Tuning.BoostDrainPerSecond / NFMWorldLibrary.Physics.TargetTps);
+        var perTickRegen = (float)(Tuning.BoostRegenPerSecond / NFMWorldLibrary.Physics.TargetTps);
+        var wantsBoost = control.GamemodeAction(BoostAction) && state.Boost > 0;
+        // Latch: once the tank runs dry the thrust stays off until the button is released, so
+        // regen cannot flicker it back on at one-tick intervals - that restarts the boost loop
+        // sound 63 times a second and reads as a drum roll.
+        if (!wantsBoost)
+            state.Boosting = false;
+        else if (!state.Boosting)
+            state.Boosting = true;
+
+        if (state.Boosting)
         {
             state.Boost = MathF.Max(0, state.Boost - perTickDrain);
-            // Proportional to the gap to the top speed: thrust fades out as BoostSpeed is
+            // Proportional to the gap to the top speed: thrust fades out as the top speed is
             // reached, so boosting into a slope or off a jump never compounds.
-            var gap = BoostSpeed - physics.ForwardSpeed;
-            if (gap > 0)
-                physics.AddForwardThrust((fix64)(BoostAcceleration * gap / BoostSpeed));
+            var topSpeed = Tuning.BoostSpeed;
+            var gap = topSpeed - (double)physics.ForwardSpeed;
+            if (gap > 0 && topSpeed > 0)
+                physics.AddForwardThrust((fix64)(Tuning.BoostAcceleration * gap / topSpeed));
+            if (state.Boost <= 0)
+                state.Boosting = false;
         }
         else
         {
-            state.Boost = MathF.Min(MaxBoost, state.Boost + perTickRegen);
+            state.Boost = MathF.Min((float)Tuning.MaxBoost, state.Boost + perTickRegen);
         }
     }
+
+    /// <summary>
+    /// The host flushes the immediate-mode 3D batch right after this returns, so the exhaust
+    /// drawn here lands in the same frame.
+    /// </summary>
+    public override void Render() => _fx?.Render();
 
     private bool IsLocallySimulated(ClientSidePlayer player)
         => player.Info.IsClientPlayer
@@ -366,7 +429,7 @@ public sealed class RocketGamemode : PluginGamemode
     /// </summary>
     public override IReadOnlyList<GamemodeHudWidget>? GetHudWidgets() =>
     [
-        new(GamemodeHudAnchor.TopLeft, "BOOST", () => _clientBoost / MaxBoost)
+        new(GamemodeHudAnchor.TopLeft, "BOOST", () => _clientBoost / (float)Tuning.MaxBoost)
     ];
 
     private float _clientBoost;
@@ -379,9 +442,26 @@ public sealed class RocketGamemode : PluginGamemode
             var (x, z) = CurrentStage.GetStartPosition(i);
             player.Car = new BackendCar(player.Info, i, x, z) { CurrentCheckpoint = 0, CurrentLap = 0 };
             player.Car.CarPhysics.Stat = player.Car.CarPhysics.Stat with { Airc = 0 };
-            player.Car.CarPhysics.Stat = player.Car.CarPhysics.Stat with { Airs = player.Car.Stats.Airs / 2 };
+            player.Car.CarPhysics.Stat = player.Car.CarPhysics.Stat with { Airs = 1 };
             player.Car.CarPhysics.IsHyperglidingEnabled = false;
-            _cars[player.Index] = new CarState();
+            _cars[player.Index] = new CarState { Boost = (float)Tuning.BoostStart };
+        }
+
+        // FX needs the cars and the (client-only) IBackend. Construction throws when the backend
+        // is not installed (headless/server) - the only expected failure. Anything else is logged,
+        // because a broken FX setup otherwise looks identical to "this gamemode has no effects".
+        _fx?.Dispose();
+        _fx = null;
+        if (ClientPlayer is null)
+            return;
+
+        try
+        {
+            _fx = new RocketFx(Players.Select(p => p.Car!));
+        }
+        catch (InvalidOperationException)
+        {
+            // IBackend not installed: no client graphics/audio.
         }
     }
 }

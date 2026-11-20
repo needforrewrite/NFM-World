@@ -17,8 +17,6 @@ namespace NFMWorld.Library.Test;
 [TestClass]
 public class RocketArcadeBehaviourTests
 {
-    private static readonly string CarName = $"rocket-arcade/{Guid.NewGuid():N}";
-
     [ClassInitialize]
     public static void InitSentry(TestContext _)
     {
@@ -68,14 +66,15 @@ public class RocketArcadeBehaviourTests
 
     private static (RocketGamemodeHarness Gamemode, BackendCar Car, BackendStage Stage) CreateSandboxed()
     {
+        var carName = $"rocket-arcade/{Guid.NewGuid():N}";
         TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
         var plugin = NFMWorldLibrary.Gamemodes.DotNet.GamemodePlugin.Load(
             "nfmm/rocket",
             "data/gamemodes/nfmm/rocket/gamemode.dll"
         );
         Assert.IsNotNull(plugin);
-        var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], CarName);
-        BackendGameSparker.dynamic_models.Add(CarName, (0, car));
+        var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
+        BackendGameSparker.dynamic_models.Add(carName, (0, car));
         var gamemode = plugin.CreateClient(
             new ClientGamemodeParameters
             {
@@ -83,7 +82,7 @@ public class RocketArcadeBehaviourTests
                 [
                     new ClientSidePlayerInfo
                     {
-                        PlayerName = "Human", CarName = CarName, Color = default, IsBot = false, IsClientPlayer = true
+                        PlayerName = "Human", CarName = carName, Color = default, IsBot = false, IsClientPlayer = true
                     }
                 ]
             },
@@ -101,7 +100,7 @@ public class RocketArcadeBehaviourTests
             player.Drive(gamemode.CurrentStage);
         Assert.IsTrue(player.CarPhysics.Grounded, "the fixture car must start grounded");
 
-        return (new RocketGamemodeHarness(gamemode, plugin), player, gamemode.CurrentStage);
+        return (new RocketGamemodeHarness(gamemode, plugin, carName), player, gamemode.CurrentStage);
     }
 
     [TestMethod]
@@ -120,6 +119,61 @@ public class RocketArcadeBehaviourTests
         finally
         {
             harness.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// The tuning values must be read at use, not baked in: raising the jump impulse has to
+    /// change how high the same jump goes. This is what makes the dev console's `tune` command
+    /// (and any future config option) mean anything.
+    /// </summary>
+    [TestMethod]
+    public void JumpImpulse_IsReadFromTuning()
+    {
+        static float JumpHeight(RocketGamemodeHarness harness, BackendCar car, BackendStage stage)
+        {
+            var restingY = (float)car.Position.Y;
+            car.Control.SetGamemodeAction(0, true);
+            harness.Tick();
+            car.Drive(stage);
+
+            var lowest = (float)car.Position.Y;
+            for (var i = 0; i < 12; i++)
+            {
+                harness.Tick();
+                car.Drive(stage);
+                lowest = System.MathF.Min(lowest, (float)car.Position.Y);
+            }
+
+            // Y is positive downward, so the peak height is the smallest Y.
+            return restingY - lowest;
+        }
+
+        var (weak, weakCar, weakStage) = CreateSandboxed();
+        try
+        {
+            weak.SetTuning("JumpImpulse", 60);
+            var weakRise = JumpHeight(weak, weakCar, weakStage);
+
+            var (strong, strongCar, strongStage) = CreateSandboxed();
+            try
+            {
+                strong.SetTuning("JumpImpulse", 400);
+                var strongRise = JumpHeight(strong, strongCar, strongStage);
+
+                Assert.IsTrue(
+                    strongRise > weakRise,
+                    $"a stronger jump must rise higher: {weakRise} vs {strongRise}"
+                );
+            }
+            finally
+            {
+                strong.Dispose();
+            }
+        }
+        finally
+        {
+            weak.Dispose();
         }
     }
 
@@ -224,11 +278,76 @@ public class RocketArcadeBehaviourTests
         }
     }
 
+    /// <summary>
+    /// An empty tank with the button held must not flicker the boost on and off. It used to:
+    /// one tick regen made Boost &gt; 0, the next tick spent it back to 0, so the boost loop
+    /// sound restarted 63 times a second - heard as a drum roll ("trrrrr").
+    /// </summary>
+    [TestMethod]
+    public void EmptyTank_HeldBoost_DoesNotFlickerTheBoostState()
+    {
+        var (harness, car, stage) = CreateSandboxed();
+        try
+        {
+            harness.SetBoost(0);
+            car.Control.SetGamemodeAction(1, true);
+
+            var transitions = 0;
+            var wasBoosting = harness.IsBoosting;
+            for (var i = 0; i < 40; i++)
+            {
+                harness.Tick();
+                if (harness.IsBoosting != wasBoosting)
+                {
+                    transitions++;
+                    wasBoosting = harness.IsBoosting;
+                }
+            }
+
+            Assert.IsFalse(harness.IsBoosting, "an empty tank must not latch boost on");
+            Assert.AreEqual(
+                0,
+                transitions,
+                $"boost must not flicker while the tank is empty (saw {transitions} transitions)"
+            );
+        }
+        finally
+        {
+            harness.Dispose();
+        }
+    }
+
     private sealed class RocketGamemodeHarness(
         BaseClientGamemode gamemode,
-        NFMWorldLibrary.Gamemodes.DotNet.GamemodePlugin plugin
+        NFMWorldLibrary.Gamemodes.DotNet.GamemodePlugin plugin,
+        string carName
     ) : IDisposable
     {
+        /// <summary>The gamemode's per-car arcade state object (a private nested type).</summary>
+        private object CarState
+        {
+            get
+            {
+                var cars = gamemode.GetType()
+                    .GetField("_cars", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                    .GetValue(gamemode)!;
+                return cars.GetType().GetProperty("Item")!.GetValue(cars, [0])!;
+            }
+        }
+
+        /// <summary>Sets one arcade tuning value the way the dev console's `tune` command does.</summary>
+        public void SetTuning(string name, double value)
+        {
+            var tuning = gamemode.GetType().GetProperty("Tuning")!.GetValue(gamemode)!;
+            tuning.GetType().GetField(name)!.SetValue(tuning, value);
+        }
+
+        public bool IsBoosting =>
+            (bool)CarState.GetType().GetField("Boosting")!.GetValue(CarState)!;
+
+        public void SetBoost(float value) =>
+            CarState.GetType().GetField("Boost")!.SetValue(CarState, value);
+
         public void Tick()
         {
             for (var i = 0; i < 3; i++)
@@ -243,7 +362,7 @@ public class RocketArcadeBehaviourTests
             }
             finally
             {
-                BackendGameSparker.dynamic_models.Remove(CarName);
+                BackendGameSparker.dynamic_models.Remove(carName);
                 plugin.Unload();
             }
         }

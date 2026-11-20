@@ -44,7 +44,7 @@ public static class DevConsoleCommands
         console.RegisterCommand("breaky", BreakY);
         console.RegisterCommand("breakz", BreakZ);
         console.RegisterCommand("waste", WastePlayer);
-        console.RegisterCommand("connect", Connect);
+        console.RegisterCommand("tune", TuneGamemode);
 
         // rendering
         console.RegisterCommand("r_frametrace", SetFrameTrace);
@@ -452,6 +452,55 @@ public static class DevConsoleCommands
     {
         Logging.Info("Exiting application...");
         System.Environment.Exit(0); // Terminates the application
+    }
+
+    /// <summary>
+    /// Live feel-tuning for gamemode arcade values (e.g. Rocket's jump/boost/air-yaw), without a
+    /// rebuild or a race restart: "tune" lists the current values, "tune <name> <value>" sets
+    /// one. The gamemode type lives in a plugin assembly the host does not reference, so the
+    /// values are reached reflectively through its Tuning object.
+    /// </summary>
+    private static void TuneGamemode(DevConsole console, string[] args)
+    {
+        if (GameSparker.CurrentPhase is not RacePhase inRacePhase)
+        {
+            Logging.Info("Not in a race.");
+            return;
+        }
+
+        var gamemode = inRacePhase.GamemodeInstance;
+        var tuning = gamemode?.GetType().GetProperty("Tuning")?.GetValue(gamemode);
+        if (tuning is null)
+        {
+            Logging.Info($"Gamemode '{gamemode?.GetType().Name ?? "none"}' has no tuning values.");
+            return;
+        }
+
+        if (args.Length == 0)
+        {
+            Logging.Info($"{gamemode!.GetType().Name} tuning (tune <name> <value>):");
+            foreach (var entry in tuning.GetType().GetFields())
+                Logging.Info($"- {entry.Name} = {entry.GetValue(tuning)}");
+            return;
+        }
+
+        var name = args[0];
+        var field = tuning.GetType().GetField(name);
+        if (field is null)
+        {
+            Logging.Info($"Unknown tuning value '{name}'.");
+            return;
+        }
+
+        if (args.Length < 2
+            || !double.TryParse(args[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
+        {
+            Logging.Info($"Usage: tune {name} <number> (current: {field.GetValue(tuning)})");
+            return;
+        }
+
+        field.SetValue(tuning, value);
+        Logging.Info($"{name} = {value}");
     }
 
     private static void SetPos(DevConsole console, string[] args)

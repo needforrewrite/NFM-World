@@ -95,7 +95,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             // Replace the batch's retained texture before rebuilding a cache it may reference.
             _svgCacheGuard ??= _graphicsDevice.CreateTexture(
                 new TextureDesc(1, 1, TextureFormat.Rgba8),
-                new byte[] { 255, 255, 255, 255 }
+                [255, 255, 255, 255]
             );
             batch.Begin(cb);
             batch.Draw(_svgCacheGuard, new RectangleF(-2, -2, 1, 1));

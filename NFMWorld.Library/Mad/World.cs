@@ -5,41 +5,41 @@ namespace NFMWorldLibrary;
 
 public static partial class World
 {
-    public static float OutlineThickness = 1f;
-    public static bool PixelOutlines;
-    public static bool IsHyperglidingEnabled = true;
-    public static int MountainSeed;
-    public static float MountainCoverage;
-    public static float CloudCoverage;
-    public static bool HasPolys;
-    public static bool HasClouds;
-    public static bool HasTexture;
-    public static float FogDensity = 6;
+    [PluginVisible] public static float OutlineThickness = 1f;
+    [PluginVisible] public static bool PixelOutlines;
+    [PluginVisible] public static bool IsHyperglidingEnabled = true;
+    [PluginVisible] public static int MountainSeed;
+    [PluginVisible] public static float MountainCoverage;
+    [PluginVisible] public static float CloudCoverage;
+    [PluginVisible] public static bool HasPolys;
+    [PluginVisible] public static bool HasClouds;
+    [PluginVisible] public static bool HasTexture;
+    [PluginVisible] public static float FogDensity = 6;
 
-    public static Vector3 LightDirection = new Vector3(0, 1, 0);
-    public static int FadeFrom;
-    public static float BlackPoint = 0.37f;
-    public static float WhitePoint = 0.63f;
+    [PluginVisible] public static Vector3 LightDirection = new Vector3(0, 1, 0);
+    [PluginVisible] public static int FadeFrom;
+    [PluginVisible] public static float BlackPoint = 0.37f;
+    [PluginVisible] public static float WhitePoint = 0.63f;
     [PluginVisible] public static int Ground = 250;
-    public static Color3 Snap;
-    public static Color3 Fog;
-    public static bool LightsOn;
-    public static Color3 Sky;
-    public static Color3 GroundColor;
-    public static bool DrawClouds;
-    public static bool DrawMountains;
-    public static bool DrawStars;
-    public static bool DrawPolys;
-    public static Color3 GroundPolysColor;
+    [PluginVisible] public static Color3 Snap;
+    [PluginVisible] public static Color3 Fog;
+    [PluginVisible] public static bool LightsOn;
+    [PluginVisible] public static Color3 Sky;
+    [PluginVisible] public static Color3 GroundColor;
+    [PluginVisible] public static bool DrawClouds;
+    [PluginVisible] public static bool DrawMountains;
+    [PluginVisible] public static bool DrawStars;
+    [PluginVisible] public static bool DrawPolys;
+    [PluginVisible] public static Color3 GroundPolysColor;
 
     // texture (without snap)
-    public static int[] Texture = [0, 0, 0, 50];
+    [PluginVisible] public static int[] Texture = [0, 0, 0, 50];
 
     // clouds (without sky applied)
-    public static int[] Clouds = [210, 210, 210, 1, -1000];
+    [PluginVisible] public static int[] Clouds = [210, 210, 210, 1, -1000];
 
     // clouds (with sky applied)
-    public static Color3 CloudColor;
+    [PluginVisible] public static Color3 CloudColor;
 
     private static int _tick = 0;
 
@@ -55,6 +55,7 @@ public static partial class World
     /// Clamped away from zero because log2(0) is -infinity, which the shader would then multiply
     /// by a depth term of 0 and turn into NaN.
     /// </summary>
+    [PluginVisible]
     public static float FogLogDensity
     {
         get

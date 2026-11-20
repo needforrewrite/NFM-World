@@ -100,6 +100,53 @@ public class CarPhysicsCollisionTests
     }
 
     /// <summary>
+    /// The dominant car's revlift kicks its contacting wheel 4x harder than the rest. Off a
+    /// surface the plane fit used to snap the car to those kicked wheel heights, pitching it to
+    /// ~80° (nose or tail straight up) instead of the original's slight turn.
+    /// </summary>
+    [TestMethod]
+    public void Collide_RevliftKickDoesNotStandTheDominantCarOnEnd()
+    {
+        var stage = CreateStage();
+        var a = CreateCar("drmonster", 0, false);
+        var v = CreateCar("2000tornados", 1, true);
+        for (var t = 0; t < 90; t++)
+        {
+            a.Drive(stage);
+            v.Drive(stage);
+        }
+
+        ((ContO)v).Z = ((ContO)a).Z - 90;
+        ((ContO)v).X = ((ContO)a).X;
+        for (var i = 0; i < 4; i++)
+        {
+            a.CarPhysics.Scz[i] = 300;
+            v.CarPhysics.Scz[i] = 0;
+        }
+
+        a.CarPhysics.Speed = 300;
+        var before = Enumerable.Range(0, 4).Select(w => a.CarPhysics.Scy[w]).ToArray();
+        a.Collide(v, stage);
+        var kick = string.Join(',', Enumerable.Range(0, 4).Select(w => $"{a.CarPhysics.Scy[w] - before[w]:0}"));
+        var maxP = Fixed64.Zero;
+        var maxR = Fixed64.Zero;
+        for (var t = 0; t < 90; t++)
+        {
+            a.Drive(stage);
+            var p = a.CarPhysics.Pzy;
+            while (p > 180) p -= 360;
+            while (p < -180) p += 360;
+            var r = a.CarPhysics.Pxy;
+            while (r > 180) r -= 360;
+            while (r < -180) r += 360;
+            maxP = Fixed64.Max(maxP, Fixed64.Abs(p));
+            maxR = Fixed64.Max(maxR, Fixed64.Abs(r));
+        }
+
+        Assert.IsTrue(maxP < 45, $"revlift kick=[{kick}] pitched the car to {maxP:0.0}° (roll {maxR:0.0}°)");
+    }
+
+    /// <summary>
     /// A dominant car with <c>Lift</c> must lift the victim even when only the Z momentum branch
     /// fires (the victim's x-momentum exceeds the dominant car's, so the X branch is skipped).
     /// The lift impulse is outside the branches, so it must land on every contacting wheel no

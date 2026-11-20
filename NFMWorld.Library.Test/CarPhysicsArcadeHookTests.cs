@@ -4,8 +4,8 @@ using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Rad;
-using NFMWorldLibrary.Util;
 using FixedMathSharp;
+using f64Vector3 = FixedMathSharp.Vector3d;
 
 namespace NFMWorld.Library.Test;
 
@@ -212,5 +212,44 @@ public class CarPhysicsArcadeHookTests
         Assert.AreEqual(1, post);
         Assert.AreEqual(1, impulsesAtPre);
         Assert.IsTrue(car.Position.Y < restingY, "an impulse armed in PreStep must apply to that same step");
+    }
+
+    /// <summary>
+    /// The model-to-world offset is what a gamemode's FX uses to sit particles on the wheels.
+    /// At yaw 0 the axes agree trivially; against a turned car the offset must follow the nose,
+    /// which is what a hand-rolled rotation gets wrong.
+    /// </summary>
+    [TestMethod]
+    public void ModelOffsetToWorld_AgreesWithTheCarFrame()
+    {
+        var stage = new BackendStage("arcade-hook", new StageLoader());
+        var car = CreateCar();
+        car.Position = new Vector3d(0, World.Ground - car.GroundAt - 20_000, 0);
+        var physics = car.CarPhysics;
+
+        // Yaw 0: nose +Z, car-right +X, car-down +Y.
+        Assert.AreEqual(1f, (float)physics.ModelOffsetToWorld(new f64Vector3(0, 0, 1000)).Z / 1000f, 0.01f);
+        Assert.AreEqual(1f, (float)physics.ModelOffsetToWorld(new f64Vector3(1000, 0, 0)).X / 1000f, 0.01f);
+        Assert.AreEqual(1f, (float)physics.ModelOffsetToWorld(new f64Vector3(0, 1000, 0)).Y / 1000f, 0.01f);
+
+        // After a right turn, the model nose must still land where the nose points, and the
+        // model right side must stay perpendicular to it.
+        physics.TurnYaw(30);
+        var nose = physics.NoseDirection;
+        var transformed = physics.ModelOffsetToWorld(new f64Vector3(0, 0, 1000));
+
+        var nx = (float)nose.X;
+        var ny = (float)nose.Y;
+        var nz = (float)nose.Z;
+        var nlen = System.MathF.Sqrt(nx * nx + ny * ny + nz * nz);
+        var tx = (float)transformed.X;
+        var ty = (float)transformed.Y;
+        var tz = (float)transformed.Z;
+        var tlen = System.MathF.Sqrt(tx * tx + ty * ty + tz * tz);
+        var dot = (nx * tx + ny * ty + nz * tz) / (nlen * tlen);
+        Assert.IsTrue(
+            System.MathF.Abs(dot - 1f) < 0.02f,
+            $"the model nose must follow the car heading: nose={nose} offset={transformed} dot={dot}"
+        );
     }
 }

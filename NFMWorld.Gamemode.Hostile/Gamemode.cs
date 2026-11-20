@@ -1,6 +1,7 @@
 ﻿using TightPack;
 using System.Runtime.CompilerServices;
 using NFMWorld.DriverInterface;
+using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Files;
 using NFMWorldLibrary.Backend.Gamemodes;
@@ -122,6 +123,23 @@ public class HostileGamemode : PluginGamemode
         car.AlphaOverride = 0.5f;
         car.Glow = true;
         car.Finish = false;
+    }
+
+    /// <summary>
+    /// Plays and disposes a clip returned as <see cref="ISoundClip"/>. The grant is the
+    /// interface's marker, not the implementer's: whatever class the host hands back must be
+    /// callable, which is what PluginPolicy's inherited-visibility pass exists for.
+    /// </summary>
+    public static void UseASound()
+    {
+        var clip = IBackend.Backend.GetSound("data/sound/powerup.wav");
+        var spatial = clip.CreateSpatialInstance();
+        spatial.SetPosition(new System.Numerics.Vector3(1, 2, 3));
+        spatial.Loop();
+        _ = spatial.IsActive;
+        spatial.Stop();
+        spatial.Dispose();
+        clip.Dispose();
     }
 }
 

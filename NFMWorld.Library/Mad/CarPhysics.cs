@@ -8,6 +8,7 @@ using Maxine.Extensions.Collections;
 using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Collision;
+using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Hud;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Util;
@@ -345,7 +346,7 @@ public partial class CarPhysics
         var yaw = Car.Rotation.Xz.Degrees;
         Car.Rotation = Car.Rotation with
         {
-            Xz = NFMWorldLibrary.FixedMath.f64AngleSingle.FromDegrees(yaw - degrees)
+            Xz = f64AngleSingle.FromDegrees(yaw - degrees)
         };
     }
 
@@ -385,16 +386,24 @@ public partial class CarPhysics
     /// </summary>
     private f64Vector3 ToWorldAxis(fix64 modelX, fix64 modelY, fix64 modelZ)
     {
-        var x = new[] { modelX, modelX, modelX, modelX };
-        var y = new[] { modelY, modelY, modelY, modelY };
-        var z = new[] { modelZ, modelZ, modelZ, modelZ };
+        Span<fix64> x = [modelX];
+        Span<fix64> y = [modelY];
+        Span<fix64> z = [modelZ];
 
-        UMath.Rot(x, y, fix64.Zero, fix64.Zero, Pxy, 4);
-        UMath.Rot(y, z, fix64.Zero, fix64.Zero, Pzy, 4);
-        UMath.Rot(x, z, fix64.Zero, fix64.Zero, Car?.Rotation.Xz.Degrees ?? fix64.Zero, 4);
+        UMath.Rot(x, y, fix64.Zero, fix64.Zero, Pxy, 1);
+        UMath.Rot(y, z, fix64.Zero, fix64.Zero, Pzy, 1);
+        UMath.Rot(x, z, fix64.Zero, fix64.Zero, Car?.Rotation.Xz.Degrees ?? fix64.Zero, 1);
 
         return new f64Vector3(x[0], y[0], z[0]);
     }
+
+    /// <summary>
+    /// Rotates a model-space offset (car frame: +X right, +Y down, +Z nose) into world space with
+    /// the same <see cref="UMath.Rot"/> sequence <see cref="Drive"/> applies to the wheel contact
+    /// points, so the result agrees with where the car renders, including tipped and flipped.
+    /// </summary>
+    [PluginVisible]
+    public f64Vector3 ModelOffsetToWorld(f64Vector3 model) => ToWorldAxis(model.X, model.Y, model.Z);
 
     /// <summary>
     /// The average wheel velocity projected onto the nose, signed: negative when moving
@@ -2189,6 +2198,27 @@ public partial class CarPhysics
             if (fix64.Abs(lean) >= 30) return angle;
             var away = lean > fix64.Zero ? fix64.One : -fix64.One;
             return angle + (a >= fix64.Zero ? away : -away) * 9 * _tickRate;
+        }
+
+        static fix64 PairTurnLimit(
+            in InlineArray4<fix64> x,
+            in InlineArray4<fix64> y,
+            in InlineArray4<fix64> z,
+            int a,
+            int b,
+            fix64 rest
+        )
+        {
+            if (rest <= fix64.Zero) return 180;
+            var ratio = UMath.Hypot3(x[a] - x[b], y[a] - y[b], z[a] - z[b]) / rest;
+            return ratio >= (fix64)0.9998f ? _tickRate : UMath.dAcos(ratio);
+        }
+
+        static fix64 ClampTurn(fix64 delta, fix64 limit)
+        {
+            while (delta > 180) delta -= 360;
+            while (delta <= -180) delta += 360;
+            return fix64.Clamp(delta, -limit, limit);
         }
 
         if (nWheelsOnSurface > 0)

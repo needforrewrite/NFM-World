@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using CommunityToolkit.HighPerformance;
 using Maxine.Extensions.Mathematics;
+using NFMWorld.PluginSystem;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary;
@@ -30,6 +31,7 @@ public static class Extensions
 
     extension(Color3 color3)
     {
+        [PluginVisible]
         public Color3 Snap(Color3 snap)
         {
             var r = (short)(color3[0] + color3[0] * (snap[0] / 100.0F));

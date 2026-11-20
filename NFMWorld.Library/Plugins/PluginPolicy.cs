@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using DouglasDwyer.CasCore;
 using NFMWorld.PluginSystem;
 using NFMWorldLibrary;
@@ -154,6 +155,9 @@ internal static class PluginPolicy
 
         AllowRuntimeReachable(builder);
 
+        var policy = builder.Build();
+        PropagateInheritedVisibility(builder, ref policy);
+
         // Nothing in a plugin needs to reinterpret memory: Unsafe.As/SizeOf has no length,
         // so nothing can check a reinterpretation through it. TightPack does its own unsafe
         // work inside its runtime assembly, so the plugin's generated code never needs it.
@@ -162,7 +166,6 @@ internal static class PluginPolicy
         // Unsafe is a type-forwarder, so reflecting over it returns System.Private.CoreLib
         // methods, and removing those by identity takes unrelated members of the same
         // module with them.
-        var policy = builder.Build();
         var unsafeType = typeof(Unsafe);
         foreach (var method in unsafeType.GetMethods(AllMembers).Where(m => m.DeclaringType == unsafeType))
         {
@@ -171,6 +174,148 @@ internal static class PluginPolicy
         }
 
         return builder.Build();
+    }
+
+    /// <summary>
+    /// A visible contract member admits whatever implements it.
+    /// </summary>
+    /// <remarks>
+    /// The check is made against the member the runtime actually lands on, so a plugin calling
+    /// <c>IBackend.GetSound</c> or <c>ISoundClip.Dispose</c> is judged by the concrete
+    /// implementation - an ANGLE-backed clip in the game, a test double in the test host, any
+    /// future implementer. Making each one repeat <c>[PluginVisible]</c> would drain the
+    /// contract's marker of meaning and fail on the next implementer added anywhere in the tree.
+    /// Marking the base method or the interface is the grant; this pass carries it down the
+    /// override and interface chains.
+    ///
+    /// Iterated to a fixpoint because an implementation can itself be a base for another type.
+    /// Runs once per process, when the first plugin loads.
+    /// </remarks>
+    [RequiresUnreferencedCode("Walks the host assemblies' attributes and types.")]
+    private static void PropagateInheritedVisibility(CasPolicyBuilder builder, ref CasPolicy policy)
+    {
+        var changed = true;
+        while (changed)
+        {
+            changed = false;
+            foreach (var type in ImplementerTypes())
+            {
+                if (type.IsInterface || type.IsGenericTypeDefinition)
+                    continue;
+
+                var interfaces = InterfacesOf(type);
+                foreach (var method in type.GetMethods(AllMembers))
+                {
+                    if (method.DeclaringType != type || policy.CanAccess(method))
+                        continue;
+
+                    if (!ImplementsVisibleMember(method, interfaces, policy))
+                        continue;
+
+                    builder.Allow(method);
+                    changed = true;
+                }
+            }
+
+            if (changed)
+                policy = builder.Build();
+        }
+    }
+
+    /// <summary>True when this method overrides, or implements, a member the policy admits.</summary>
+    private static bool ImplementsVisibleMember(MethodInfo method, Type[] interfaces, CasPolicy policy)
+    {
+        if (method.IsVirtual)
+        {
+            var baseDefinition = method.GetBaseDefinition();
+            if (baseDefinition != method && policy.CanAccess(baseDefinition))
+                return true;
+        }
+
+        foreach (var contract in interfaces)
+        {
+            InterfaceMapping map;
+            try
+            {
+                map = method.DeclaringType!.GetInterfaceMap(contract);
+            }
+            catch (ArgumentException)
+            {
+                // Open generic instantiation, or a type the runtime refuses to map.
+                continue;
+            }
+
+            for (var i = 0; i < map.TargetMethods.Length; i++)
+            {
+                if (map.TargetMethods[i] == method && policy.CanAccess(map.InterfaceMethods[i]))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static Type[] InterfacesOf(Type type)
+    {
+        try
+        {
+            return type.GetInterfaces();
+        }
+        catch (Exception exception) when (exception is TypeLoadException or NotSupportedException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// Every type that could implement a visible contract, from every loaded assembly.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately not <see cref="Hosts"/>: the concrete implementation a plugin ends up calling
+    /// lives wherever the host that supplied it lives - <c>WorldClientBackend</c> is in the game
+    /// assembly, which this library cannot reference, so it can never appear in that static list.
+    /// Scanning what is loaded covers it, a plugin that implements a host interface, and any host
+    /// added later, without this list having to track them.
+    ///
+    /// The policy is built once, on first plugin load, so the set is fixed from then on; that is
+    /// the same point at which the host has finished wiring its backends.
+    /// </remarks>
+    [RequiresUnreferencedCode("Enumerates every loaded assembly's types.")]
+    private static IEnumerable<Type> ImplementerTypes()
+    {
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            if (!CanImplementHostContract(assembly))
+                continue;
+
+            foreach (var type in Types(assembly))
+                yield return type;
+        }
+    }
+
+    /// <summary>
+    /// Whether this assembly could hold a type implementing a visible contract.
+    /// </summary>
+    /// <remarks>
+    /// Either it is a host assembly itself (<c>DummyBackend</c> is defined inside
+    /// <c>NFMWorld.DriverInterface</c>, which does not reference itself), or it references one.
+    /// Skipping the rest is what keeps the scan off the framework.
+    /// </remarks>
+    private static bool CanImplementHostContract(Assembly assembly)
+    {
+        if (Hosts.Any(host => host == assembly))
+            return true;
+
+        foreach (var reference in assembly.GetReferencedAssemblies())
+        {
+            foreach (var host in Hosts)
+            {
+                if (string.Equals(reference.Name, host.GetName().Name, StringComparison.Ordinal))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     [RequiresUnreferencedCode("Walks the host assemblies' attributes and types.")]
@@ -233,6 +378,13 @@ internal static class PluginPolicy
     private static void AllowRuntimeReachable(CasPolicyBuilder builder)
     {
         AllowTightPack(builder);
+
+        // List -> span, for plugins that batch vertices per frame. It is pure managed memory:
+        // the span it returns is bounds-checked by construction (over the list's own backing
+        // array), so the worst it can do is throw on a concurrently mutated list.
+        foreach (var method in typeof(CollectionsMarshal).GetMethods(AllMembers)
+            .Where(m => m.DeclaringType == typeof(CollectionsMarshal)))
+            builder.Allow(method);
     }
 
     /// <summary>
