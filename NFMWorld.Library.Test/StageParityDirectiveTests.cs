@@ -207,6 +207,7 @@ public class StageParityDirectiveTests
     public void StageLoader_NewDirectives_SurviveARadpackRoundTrip()
     {
         var loader = Load(
+            "desc(A briefing\\nwith two lines)",
             "xstart(2,100,200)",
             "pulsegrnd(0.95,0.04,0.845)",
             "flameColor1(1,2,3)",
@@ -221,6 +222,7 @@ public class StageParityDirectiveTests
         var bytes = TightPackSerializer.Serialize(loader);
         var back = TightPackSerializer.Deserialize<StageLoader>(bytes);
 
+        CollectionAssert.AreEqual(new[] { "A briefing", "with two lines" }, back.Description.ToArray());
         Assert.AreEqual(1, back.Starts.Count);
         Assert.AreEqual(StartAxis.X, back.Starts[0].Axis);
         CollectionAssert.AreEqual(new[] { 100f, 200f }, back.Starts[0].Values);
@@ -237,6 +239,43 @@ public class StageParityDirectiveTests
 
         Assert.AreEqual(4, back.wallDefs.Count);
         Assert.IsTrue(back.wallDefs.Any(w => w.Direction == WallDirection.Right));
+    }
+
+    [TestMethod]
+    public void StageLoader_ParsesBothDescriptionForms()
+    {
+        var loader = Load(
+            "desc(First line\\nSecond line\\n\\nFourth line)",
+            "desc(1,Replaced by the indexed form)"
+        );
+
+        CollectionAssert.AreEqual(
+            new[] { "First line", "Replaced by the indexed form", "", "Fourth line" },
+            loader.Description.ToArray()
+        );
+    }
+
+    [TestMethod]
+    public void StageLoader_DescriptionKeepsPhyFiveLineLimit()
+    {
+        var loader = Load("desc(one\\ntwo\\nthree\\nfour\\nfive\\nsix)");
+
+        Assert.AreEqual(5, loader.Description.Count);
+        Assert.AreEqual("five", loader.Description[4]);
+
+        // The indexed form ignores an out-of-range line, as phy did.
+        var indexed = Load("desc(7,ignored)");
+        Assert.AreEqual(0, indexed.Description.Count);
+    }
+
+    [TestMethod]
+    public void ShippedStage_DescriptionParsesFromItsRealFile()
+    {
+        var loader = new StageLoader("challenges/mind_breaker");
+
+        Assert.AreEqual(StageLoader.MaxDescriptionLines, loader.Description.Count);
+        StringAssert.Contains(loader.Description[0], "break your mind");
+        StringAssert.Contains(loader.Description[4], "GlowMaster78");
     }
 
     [TestMethod]

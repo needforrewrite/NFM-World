@@ -1,0 +1,17 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-stage-select-preview-captures",
+  "view": "stage-select-preview",
+  "steps": [
+    {
+      "action": "capture",
+      "capture": "floating"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Stage floating description"
+    }
+  ]
+}

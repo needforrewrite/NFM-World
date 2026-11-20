@@ -240,6 +240,9 @@ public class StageEditorTab
     /// <summary>The <c>flameColor1/2/3</c> palette, or null for the stock fire.</summary>
     public FlamePalette? FlameColors { get; set; }
 
+    /// <summary>The <c>desc()</c> briefing lines, in order; empty when the stage has none.</summary>
+    public List<string> DescriptionLines { get; set; } = [];
+
     public int GetNextPieceId()
     {
         int maxId = -1;

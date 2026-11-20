@@ -103,6 +103,7 @@ public partial class StageEditorPhase
         // Write stage parameters from active tab's stored values
         writer.WriteLine($"name({ActiveTab.TabName})");
         writer.WriteLine($"nlaps({ActiveTab.Stage.Nlaps})");
+        WriteDescription(writer);
         WriteStarts(writer);
         if (ActiveTab.Pulse is { } pulse)
             writer.WriteLine($"pulsegrnd({Fmt(pulse.A)},{Fmt(pulse.B)},{Fmt(pulse.C)})");
@@ -884,6 +885,8 @@ public partial class StageEditorPhase
             tab.Physics = stageLoader.Physics;
             tab.Starts.Clear();
             tab.Starts.AddRange(stageLoader.Starts);
+            tab.DescriptionLines.Clear();
+            tab.DescriptionLines.AddRange(stageLoader.Description);
             tab.Pulse = stageLoader.Pulse;
             tab.FlameColors = stageLoader.FlameColors;
 
@@ -964,6 +967,18 @@ public partial class StageEditorPhase
     }
 
     private static string Fmt(float value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Writes the briefing as one <c>desc()</c> line, escaping the breaks the reader turns back
+    /// into lines. phy reads the whole briefing from a single physical line.
+    /// </summary>
+    private void WriteDescription(TextWriter writer)
+    {
+        if (ActiveTab!.DescriptionLines.Count == 0) return;
+
+        var lines = ActiveTab.DescriptionLines.Select(line => line.Replace("\r", " ").Replace("\n", " "));
+        writer.WriteLine($"desc({string.Join("\\n", lines)})");
+    }
 
     /// <summary>Writes the spawn overrides in file order; later lines override earlier ones.</summary>
     private void WriteStarts(TextWriter writer)

@@ -221,6 +221,50 @@ public class StageSelectViewTests
         }
     }
 
+    [TestMethod]
+    public void PreviewFloatingDescription_FollowsTheStagesBriefing()
+    {
+        var state = new StageSelectState();
+        state.Stages.Value = [new StageOption("stage1", "Stage 1"), new StageOption("stage2", "Stage 2")];
+        state.Selected.Value = "stage1";
+        using var mounted = Renderer.Mount(() => StageSelectView.Preview(state, NavigationActions(state)));
+        var root = (Component)mounted.Root;
+        var viewport = new Vector2(1280, 720);
+
+        root.LayoutAndRender(viewport);
+        var block = Find(root, "Stage floating description");
+        Assert.AreEqual(0f, block.LayoutBorderSize.Y, 0.5f, "a stage with no desc() must not float a blank block");
+
+        state.DescriptionLines.Value = ["A briefing that floats", "", "Second line"];
+        UiScheduler.Instance.Flush();
+        root.LayoutAndRender(viewport);
+
+        block = Find(root, "Stage floating description");
+        // Three 20px rows plus the 2px gaps: the blank line is a gap, not a collapsed row.
+        Assert.AreEqual(64f, block.LayoutBorderSize.Y, 0.5f);
+        Assert.IsLessThan(100f, block.LayoutBorderPosition.X, "the briefing should hug the preview's left edge");
+
+        var footer = Find(root, "Stage preview footer");
+        Assert.IsLessThanOrEqualTo(
+            footer.LayoutBorderPosition.Y + 0.5f,
+            block.LayoutBorderPosition.Y + block.LayoutBorderSize.Y,
+            "the briefing must stay clear of the footer"
+        );
+
+        var lines = Descendants(block)
+            .OfType<Text>()
+            .SelectMany(text => text.Children.OfType<TextNode>())
+            .Select(node => node.Text)
+            .ToArray();
+        CollectionAssert.Contains(lines, "A briefing that floats");
+        CollectionAssert.Contains(lines, "Second line");
+
+        state.DescriptionLines.Value = [];
+        UiScheduler.Instance.Flush();
+        root.LayoutAndRender(viewport);
+        Assert.AreEqual(0f, Find(root, "Stage floating description").LayoutBorderSize.Y, 0.5f);
+    }
+
     private static StageSelectView.Actions NavigationActions(StageSelectState state, Action? confirm = null)
         => new(
             collection => state.Collection.Value = collection,

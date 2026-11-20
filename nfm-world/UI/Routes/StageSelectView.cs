@@ -3,6 +3,7 @@ using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
 using NFMWorld.UI.Components;
+using NFMWorldLibrary;
 using SignalsDotnet;
 
 namespace NFMWorld.UI.Routes;
@@ -21,6 +22,12 @@ public sealed class StageSelectState
     public Signal<bool> ConfirmEnabled { get; } = new(false);
     public Signal<string> ConfirmLabel { get; } = new("RACE");
     public Signal<string> Description { get; } = new("Choose where to race.");
+
+    /// <summary>The selected stage's <c>desc()</c> briefing lines; empty when it has none.</summary>
+    public Signal<IReadOnlyList<string>> DescriptionLines { get; } = new([]);
+
+    /// <summary>Vertical offset of the floating briefing, in pixels; the phase animates it.</summary>
+    public Signal<float> DescriptionFloat { get; } = new(0);
     public Signal<bool> BrowsingCollections { get; } = new(false);
     public Signal<bool> BrowserOpen { get; } = new(false);
 
@@ -47,6 +54,8 @@ public sealed class StageSelectState
         ConfirmEnabled.Value = false;
         ConfirmLabel.Value = "RACE";
         Description.Value = "Choose where to race.";
+        DescriptionLines.Value = [];
+        DescriptionFloat.Value = 0;
         BrowsingCollections.Value = false;
         BrowserOpen.Value = false;
         OnlineSource.Value = false;
@@ -277,6 +286,7 @@ public static class StageSelectView
                     layout: () => Sx.Styles(position: Position.Absolute, top: 14, alignSelf: Align.Center),
                     text: () => "SELECT STAGE"
                 ),
+                FloatingDescription(state),
                 Sx.View(
                     style: () => Sx.Styles(position: Position.Absolute, top: 12, right: 14),
                     children: PreviewButtonSurface(Button.Create(
@@ -444,6 +454,49 @@ public static class StageSelectView
             ]
         );
     }
+
+    /// <summary>
+    /// phy's stage briefing: the <c>desc()</c> lines float over the course preview with no panel
+    /// behind them, so the stage itself stays the backdrop. Lines are positional (a blank line
+    /// spaces the block out), hence one slot each rather than a keyed list.
+    /// </summary>
+    private static Node FloatingDescription(StageSelectState state)
+        => Sx.View(
+            name: () => "Stage floating description",
+            style: () => Sx.Styles(
+                position: Position.Absolute,
+                left: 34,
+                bottom: 104 + state.DescriptionFloat.Value,
+                width: 460,
+                maxWidth: 46.Percent(),
+                flexDirection: FlexDirection.Column,
+                gapRow: 2,
+                pointerEvents: false
+            ),
+            // phy kept five lines; a stage that set fewer leaves the rest hidden.
+            children:
+            [
+                .. Enumerable.Range(0, StageLoader.MaxDescriptionLines)
+                .Select(index => (Node)DescriptionLine(state, index))
+            ]
+        );
+
+    private static Node DescriptionLine(StageSelectState state, int index)
+        => Sx.Show(
+            when: () => index < state.DescriptionLines.Value.Count,
+            then: () => Sx.Text(
+                style: () => Sx.WrappingText(
+                    fontSize: 15,
+                    fontFamily: FontFamily.Adventure,
+                    foregroundColor: Color.White,
+                    horizontalAlignment: TextHorizontalAlignment.Left
+                )
+                    .Over(Sx.TextStyles(strokeColor: Color.Black, strokeWidth: 2)),
+                // A fixed height keeps a blank briefing line as a gap, the way phy's 20px rows did.
+                layout: () => Sx.Styles(width: 100.Percent(), height: 20, flexShrink: 0),
+                text: () => state.DescriptionLines.Value[index]
+            )
+        );
 
     private static float PreviewPanelWidth(StageSelectState state)
     {

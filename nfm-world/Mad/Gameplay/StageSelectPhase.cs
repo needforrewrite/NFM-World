@@ -27,6 +27,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
     private readonly AroundStageCamera _aroundStageCamera = new();
     private bool _confirmAfterLoad;
     private string _loadedStage = "";
+    private int _floatTick;
     private CancellationTokenSource? _onlineCancellation;
     private int _onlineGeneration;
 
@@ -76,6 +77,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
         _aroundStageCamera.Reset();
         _aroundStageCamera.AroundStage(Camera, CurrentStage.Backend);
         _loadedStage = StageName!;
+        ShowDescription(CurrentStage.Backend.StageLoader);
         if (_state.Selected.Value != StageName)
         {
             if (!_state.OnlineSource.Value)
@@ -96,10 +98,20 @@ public class StageSelectPhase : BaseStageRenderingPhase
 
     protected override void OnStageLoadFailed(Exception error)
     {
+        _state.DescriptionLines.Value = [];
         _state.Busy.Value = false;
         _state.ConfirmEnabled.Value = false;
         _state.Status.Value = "Could not load the stage: " + error.Message;
         _confirmAfterLoad = false;
+    }
+
+    /// <summary>The loaded stage's briefing, or nothing when every line is blank.</summary>
+    private void ShowDescription(StageLoader loader)
+    {
+        var lines = loader.Description;
+        _state.DescriptionLines.Value = lines.Any(line => !string.IsNullOrWhiteSpace(line)) ? [.. lines] : [];
+        _floatTick = 0;
+        _state.DescriptionFloat.Value = 0;
     }
 
     /// <summary>The directory a stage id lives in; ids without one are shown as "stages".</summary>
@@ -221,6 +233,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
         _state.Selected.Value = stageId;
         _state.ConfirmEnabled.Value = true;
         _state.Status.Value = "";
+        _state.DescriptionLines.Value = [];
 
         if (RadpackReader.IsArchiveId(stageId))
         {
@@ -247,6 +260,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
         _state.ConfirmEnabled.Value = false;
         _state.Status.Value = "Downloading stage...";
         _state.Selected.Value = stageId;
+        _state.DescriptionLines.Value = [];
         LoadStage(stageId, loadMusic: false, reloadIfLoaded: true);
     }
 
@@ -311,6 +325,13 @@ public class StageSelectPhase : BaseStageRenderingPhase
 
         if (CurrentStage != null)
             _aroundStageCamera.AroundStage(Camera, CurrentStage.Backend);
+
+        if (_state.DescriptionLines.Value.Count == 0)
+            return;
+
+        // A slow bob; the briefing is meant to hover over the course, not sit on it.
+        _floatTick++;
+        _state.DescriptionFloat.Value = MathF.Sin(_floatTick * 0.03f) * 3f;
     }
 
     public override void KeyPressed(Key key, bool imguiWantsKeyboard, in Keys keys)

@@ -228,6 +228,12 @@ public partial class StageLoader
     /// <summary>Centres a converging-wall race may close towards (<c>set</c> option parts).</summary>
     [TightPackOrder(46), PluginVisible] public UnlimitedArray<f64Vector3> WallCentres = [];
 
+    /// <summary>
+    /// The <c>desc()</c> briefing lines, at most <see cref="MaxDescriptionLines"/> as in phy.
+    /// A line the stage did not set is empty rather than absent.
+    /// </summary>
+    [TightPackOrder(47), PluginVisible] public UnlimitedArray<string> Description = [];
+
     // amodel/amodel2 models, resolved while loading only; pieces hold the Rad3d directly.
     [TightPackIgnore] private readonly Dictionary<string, Rad3d> _embeddedModels = new(StringComparer.OrdinalIgnoreCase);
 
@@ -761,6 +767,7 @@ public partial class StageLoader
                 {
                     nlaps = (ushort)Utility.GetInt("nlaps", line, 0);
                 }
+                else if (line.StartsWith("desc")) ParseDescription(line);
                 else if (line.StartsWith("xstart")) ParseStart(line, StartAxis.X);
                 else if (line.StartsWith("zstart")) ParseStart(line, StartAxis.Z);
                 else if (line.StartsWith("ystart")) ParseStart(line, StartAxis.Y);
@@ -1131,6 +1138,43 @@ public partial class StageLoader
     /// user-editable file and drives a loop that allocates one piece per iteration.
     /// </summary>
     private const int MaxWallCount = 10_000;
+
+    /// <summary>phy's <c>xt.desc</c> holds five briefing lines; anything past that was dropped.</summary>
+    [PluginVisible] public const int MaxDescriptionLines = 5;
+
+    /// <summary>
+    /// Reads <c>desc()</c> in both of phy's spellings: <c>desc(index,text)</c> sets one line, and
+    /// <c>desc(text)</c> sets all of them, splitting on the <c>\n</c>/<c>\r</c> escapes a stage
+    /// file uses because the whole briefing is one physical line.
+    /// </summary>
+    private void ParseDescription(string line)
+    {
+        var end = line.LastIndexOf(')');
+        if (end < 0) end = line.Length;
+        if (end <= 5) return;
+
+        var body = line[5..end];
+        if (body.Length >= 2 && body[0] is >= '0' and <= '9' && body[1] == ',')
+        {
+            var comma = body.IndexOf(',');
+            if (!int.TryParse(body[..comma], NumberStyles.Integer, CultureInfo.InvariantCulture, out var index)) return;
+            if (index is < 0 or >= MaxDescriptionLines) return;
+
+            SetDescriptionLine(index, body[(comma + 1)..]);
+            return;
+        }
+
+        var text = body.Replace("\\r", "\r").Replace("\\n", "\n");
+        var lines = text.Replace("\r\n", "\n").Split('\n');
+        for (var i = 0; i < lines.Length && i < MaxDescriptionLines; i++)
+            SetDescriptionLine(i, lines[i]);
+    }
+
+    private void SetDescriptionLine(int index, string text)
+    {
+        while (Description.Count <= index) Description.Add("");
+        Description[index] = text;
+    }
 
     /// <summary>
     /// Reads a start line: <c>tag(count, v0, v1, …)</c>. phy applies the line only when the count

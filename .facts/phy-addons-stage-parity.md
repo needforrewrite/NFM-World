@@ -19,6 +19,14 @@ PvP `walls` option.
   `flameColor3` is an extension: phy hardcodes the pre-fire ember colour at 230,230,230.
 - **`fset`/`fchk`** are not about decimals — phy's `getint` would reject a fractional value. They
   swap the argument order: absolute height at index 3, angle at index 4.
+- **`desc()`** is the briefing shown on the stage-select screen. phy has two spellings in one
+  physical line: `desc(index,text)` sets one of five lines, `desc(text)` sets them all split on
+  literal `\n`/`\r` escapes. `StageLoader.Description` holds the five slots (pad with `""` so a
+  blank line stays a gap), `StageSelectPhase` publishes them when a preview loads, and
+  `StageSelectView.Preview` floats them over the course in `Stage floating description` with a
+  per-frame bob; a blank line is still a row (fixed 20px line height), matching phy's 20px rhythm.
+  The editor writes the briefing back as one `desc(...)` line and replaces embedded breaks with
+  spaces, since a line cannot carry one.
 - **Piles** (`pile(seed,w,h,x,z)`) are procedural clusters, not model files. `StagePileBuilder` ports
   the `ContO` constructor (seeded blob, 4 side planes + canopy, 5 sloped boxes). `URandom(seed)` is
   the Java LCG, so generation is identical across peers and runs; `PiecePlacement` keeps the

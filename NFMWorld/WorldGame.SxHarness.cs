@@ -65,6 +65,7 @@ public partial class WorldGame
             "model-editor" => new ModelEditorPhase(game._device),
             "garage" => new FixturePhase(GarageFixture),
             "stage-select" => new FixturePhase(StageSelectFixture),
+            "stage-select-preview" => new FixturePhase(StageSelectPreviewFixture),
             "stage-select-local" => new FixturePhase(StageSelectLocalFixture),
             "stage-select-compact" => new FixturePhase(StageSelectCompactFixture),
             "lobby-create" => new FixturePhase(LobbyCreateFixture),
@@ -851,6 +852,45 @@ public partial class WorldGame
     /// shortcuts and the context menu. The field is near the bottom so the menu's placement
     /// clamp is exercised by the same fixture.
     /// </summary>
+    /// <summary>
+    /// The live stage-select overlay (the phase's view) with a phy <c>desc()</c> briefing over the
+    /// preview, so the floating text's placement and legibility can be captured.
+    /// </summary>
+    private static Node StageSelectPreviewFixture()
+    {
+        var state = new StageSelectState
+        {
+            Collections = { Value = ["nfmm", "user"] },
+            Collection = { Value = "nfmm" },
+            Selected = { Value = "nfmm/stage1" },
+            ConfirmEnabled = { Value = true }
+        };
+        state.Stages.Value =
+        [
+            new StageOption("nfmm/stage1", "Stage 1"),
+            new StageOption("nfmm/stage2", "Stage 2"),
+            new StageOption("nfmm/stage3", "Stage 3")
+        ];
+        state.DescriptionLines.Value =
+        [
+            "In a forgotten metropolitan civilisation lies an abandoned race track.",
+            "Time is not your ally here, only the fastest will survive.",
+            "",
+            "P.S. Enjoy the scenery :D"
+        ];
+
+        return StageSelectView.Preview(
+            state,
+            new StageSelectView.Actions(
+                CollectionSelected: _ => { },
+                StageSelected: _ => { },
+                SearchChanged: _ => { },
+                Confirm: () => { },
+                Back: () => { }
+            )
+        );
+    }
+
     private static Node TextInputFixture()
     {
         var text = new SignalsDotnet.Signal<string>("hello world");

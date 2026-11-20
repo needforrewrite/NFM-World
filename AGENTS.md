@@ -1155,7 +1155,7 @@ Added with the archive/content work; read this before touching content loading, 
   takes `"button": "secondary"` for the right-click paths. `view` selects
   `stage-editor` (default), `model-editor`, `garage`, `stage-select`, `stage-select-local` (the shipped
   stages with their real `name(...)` labels), `stage-select-compact` (the compact selector in a plain
-  dialog), `text-input` (a dialog with one `TextInput`, for the editing shortcuts and its right-click
+  dialog), `stage-select-preview` (the live preview overlay with a `desc()` briefing floating over it), `text-input` (a dialog with one `TextInput`, for the editing shortcuts and its right-click
   menu — the harness installs an in-memory clipboard, since it never runs `WorldGame.Initialize`),
   `text-area` (a code editor holding more lines than it shows, for the multiline editor's menu and
   its scroll behaviour),
@@ -1213,6 +1213,12 @@ Added with the archive/content work; read this before touching content loading, 
     into a `Rad3d` (five planes, five sloped collision boxes); `URandom(seed)` is the Java LCG, so
     every peer builds the same shape. Pile placements keep the seed/size so the editor writes
     `pile(...)` back rather than a `set` for a model that does not exist.
+  - **`desc()`** — the stage briefing. Both of phy's spellings are read (`desc(index,text)` sets one
+    line, `desc(text)` sets all of them, split on the `\n`/`\r` escapes a stage file uses) and the
+    five-line limit is kept. `StageSelectPhase` publishes the loaded stage's lines to
+    `StageSelectState.DescriptionLines`; `StageSelectView.Preview` floats them over the course in
+    `Stage floating description` (no panel, so the stage stays the backdrop) and the phase bobs it.
+    The editor writes the briefing back as one `desc(...)` line.
   - **Converging walls** — the PvP `walls` option (off, 1–10 minutes) drives `ClosingWalls`:
     phy's shrink curve, the 60/30/10/0-second announcements and out-of-bounds damage in `CarPhysics`.
     The collision quadtree is built once, so the moving boundaries are appended per query in
