@@ -869,7 +869,7 @@ public partial class StageLoader
                 }
                 else if (line.StartsWith("name("))
                 {
-                    Name = Utility.GetString("name(", line, 0);
+                    Name = Utility.GetString("name(", line, 0).Replace('|', ',');
                 }
                 else if (line.StartsWith("aerial("))
                 {
