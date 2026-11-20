@@ -149,6 +149,7 @@ public abstract class BaseMultiplayerServerTransport : IMultiplayerServerTranspo
         }
 
         _handshaked[clientIndex] = 0;
+        Logging.Info($"Client {clientIndex} handshake accepted (protocol {version})");
         SendPacketToClient(
             clientIndex,
             new S2C_Handshake { Version = Protocol.Version, Accepted = true }

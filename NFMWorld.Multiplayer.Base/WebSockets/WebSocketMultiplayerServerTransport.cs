@@ -1,5 +1,6 @@
 ﻿using System.Buffers;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Net;
 using System.Net.WebSockets;
 
@@ -51,11 +52,18 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
         _clients.TryAdd(id, client);
 
         Logging.Info($"WS client connected - ID: {id}, IP: {ctx.Request.RemoteEndPoint}");
-        ClientConnecting?.Invoke(this, id);
-        ClientConnected?.Invoke(this, id);
 
+        // The caller discards this task, so anything thrown here would vanish and leave the
+        // socket open and never read: the client's handshake would simply time out.
         try
         {
+            var started = Stopwatch.GetTimestamp();
+            ClientConnecting?.Invoke(this, id);
+            ClientConnected?.Invoke(this, id);
+            var elapsed = Stopwatch.GetElapsedTime(started);
+            if (elapsed > SlowConnectHandlerThreshold)
+                Logging.Warning($"WS client {id}: connect handlers took {elapsed.TotalMilliseconds:F0} ms");
+
             await ReceiveLoop(client, tokenSource.Token);
         }
         catch (OperationCanceledException)
@@ -64,13 +72,23 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
         catch (Exception ex)
         {
             Logging.Error($"WS client {id} disconnected due to exception", exception: ex);
+            client.Socket.Abort();
         }
 
         _clients.TryRemove(id, out _);
         ForgetConnection(id);
         Logging.Info($"WS client disconnected - ID: {id}");
-        ClientDisconnected?.Invoke(this, id);
+        try
+        {
+            ClientDisconnected?.Invoke(this, id);
+        }
+        catch (Exception ex)
+        {
+            Logging.Error($"WS client {id}: disconnect handler threw", exception: ex);
+        }
     }
+
+    private static readonly TimeSpan SlowConnectHandlerThreshold = TimeSpan.FromSeconds(1);
 
     /// <summary>
     /// Largest message a client may send. Packets are a few dozen bytes; this exists only

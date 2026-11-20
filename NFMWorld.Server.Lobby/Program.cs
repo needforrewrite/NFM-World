@@ -52,6 +52,8 @@ Console.CancelKeyPress += (_, _) =>
     cts.Cancel();
 };
 
+LobbyHeartbeat.Start(transport, cts.Token);
+
 Console.WriteLine($"[Lobby] Accepting connections on {httpEndpoint}");
 Console.WriteLine("[Lobby] Press Ctrl+C to stop.");
 
