@@ -605,6 +605,7 @@ item group to update. Two things that bite:
 |---|---|
 | Task host | the task is `net11.0` and loads out-of-process (`TaskHostFactory`); that is what lets its own project be rebuilt. It will not load under .NET Framework `msbuild.exe` |
 | One-to-many | a `.fx` file can produce several techniques (`Nvg.fx` yields four, `Poly.fx` two), so nothing may name a bundle by `%(Filename)` |
+| Incremental inputs | `CompileShaders` is skipped on a stamp, so anything that can change a bundle's *contents* must be an `Inputs` entry: the shaders, the headers, the task assembly, **`NFMWorld.ShaderCompiler.dll`**, `tint*` beside it, and the targets file itself. Naming only the task assembly meant a compiler change (the whole WGSL stage was one) never invalidated existing bundles — the DebugDevServer tree kept WGSL-less bundles and failed at WebGPU pipeline creation. Point them at genuine files, or wildcards that can match none: a named input that does not exist makes MSBuild run the target on every build |
 
 `NFMWorld.ShaderSourceGen` still exists in the solution for the old FNA-style effect wrappers, but the game does not
 reference it; new shader work goes through `NFMWorld.ShaderCompiler`.
