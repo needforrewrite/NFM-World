@@ -752,7 +752,6 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         => [.. live.Select(standing => new UiState.LobbyStanding(
             standing.PlayerId,
             standing.PlayerName,
-            ToColor(standing.Color),
             standing.Position,
             standing.Lap,
             standing.Wasted,
@@ -768,7 +767,6 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
             .Select(standing => new UiState.LobbyStanding(
                 standing.PlayerId,
                 standing.PlayerName,
-                ToColor(standing.Color),
                 standing.Position,
                 standing.Lap,
                 standing.Wasted,

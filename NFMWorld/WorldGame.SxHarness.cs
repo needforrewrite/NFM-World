@@ -974,9 +974,9 @@ public partial class WorldGame
                 new UiState.LobbySessionSlot(3, "Empty", "Waiting for player...", default, null, false, true, false)
             ],
             [
-                new UiState.LobbyStanding(maxine, "maxine", new Color(255, 170, 50), 0, 1, false, false, 3, 72, 45),
-                new UiState.LobbyStanding(dr, "DR Monstaa", new Color(120, 220, 130), 1, 1, false, false, 3, 33, 14),
-                new UiState.LobbyStanding(self, "tiki", new Color(0, 128, 255), 2, 0, true, false, 3, 20, 100)
+                new UiState.LobbyStanding(maxine, "maxine", 0, 1, false, false, 3, 72, 45),
+                new UiState.LobbyStanding(dr, "DR Monstaa", 1, 1, false, false, 3, 33, 14),
+                new UiState.LobbyStanding(self, "tiki", 2, 0, true, false, 3, 20, 100)
             ],
             [],
             0
@@ -1031,9 +1031,9 @@ public partial class WorldGame
             ],
             [],
             [
-                new UiState.LobbyStanding(maxine, "maxine", new Color(255, 170, 50), 0, 3, false, false, 3, 91, 49),
-                new UiState.LobbyStanding(dr, "DR Monstaa", new Color(120, 220, 130), 1, 2, false, false, 3, 50, 95),
-                new UiState.LobbyStanding(self, "tiki", new Color(0, 128, 255), 2, 1, true, true, 3, 20, 100)
+                new UiState.LobbyStanding(maxine, "maxine", 0, 3, false, false, 3, 91, 49),
+                new UiState.LobbyStanding(dr, "DR Monstaa", 1, 2, false, false, 3, 50, 95),
+                new UiState.LobbyStanding(self, "tiki", 2, 1, true, true, 3, 20, 100)
             ],
             DateTimeOffset.UtcNow.AddSeconds(45).ToUnixTimeMilliseconds()
         );

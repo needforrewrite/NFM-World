@@ -306,7 +306,6 @@ public static class UiState
     public sealed record LobbyStanding(
         Guid PlayerId,
         string Name,
-        Color Color,
         int Position,
         int Lap,
         bool Wasted,

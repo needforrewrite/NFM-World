@@ -586,11 +586,14 @@ public abstract partial class Component : Node, IAnimationCallback
     [PluginVisible]
     public float ScrollableHeight => _scrollableHeight;
 
-    /// <summary>
-    /// Whether this node clips its children to its padding box.
-    /// </summary>
+    /// <summary>Lets popups extend outside a scroll container while all its content fits.</summary>
+    public bool ClipOnlyWhenScrollable { get; set; }
+
+    /// <summary>Whether this node clips its children to its padding box.</summary>
     [PluginVisible]
-    public bool IsClipping => Styles.Overflow is Overflow.Hidden or Overflow.Scroll;
+    public bool IsClipping => Styles.Overflow == Overflow.Hidden
+                              || Styles.Overflow == Overflow.Scroll && (!ClipOnlyWhenScrollable
+                                                                        || ScrollableWidth > 0 || ScrollableHeight > 0);
 
     /// <summary>
     /// The effective clip rectangle (intersection of every clipping ancestor's
@@ -1490,22 +1493,14 @@ public abstract partial class Component : Node, IAnimationCallback
 
     public bool DispatchMouseScrolled(BaseMouseWheelEvent @event)
     {
-        if (ClipRect is { } clip && !clip.Contains(@event.Position.X, @event.Position.Y))
-            return false;
-
-        // Deepest scrollable first: a descendant that scrolls consumes the event.
-        foreach (var child in GetChildSnapshot())
+        var chain = _scrollDispatchChain ??= [];
+        FocusManager.HitTestChain(this, @event.Position, chain);
+        for (var i = chain.Count - 1; i >= 0; i--)
         {
-            if (child is Component cmp && cmp.DispatchMouseScrolled(@event))
-                return true;
-        }
+            var node = chain[i];
+            if (!IsPointWithinPadding(node, @event.Position)) continue;
 
-        if (@event.Position.X > LayoutPaddingPosition.X
-            && @event.Position.Y > LayoutPaddingPosition.Y
-            && @event.Position.X < LayoutPaddingPosition.X + LayoutPaddingSize.X
-            && @event.Position.Y < LayoutPaddingPosition.Y + LayoutPaddingSize.Y)
-        {
-            if (Styles.Overflow == Overflow.Scroll && TryScroll(@event.Delta.X, @event.Delta.Y))
+            if (node.Styles.Overflow == Overflow.Scroll && node.TryScroll(@event.Delta.X, @event.Delta.Y))
                 return true;
 
             var relativeEvent = new MouseWheelEvent(
@@ -1515,14 +1510,19 @@ public abstract partial class Component : Node, IAnimationCallback
                 CtrlKey: @event.CtrlKey,
                 MetaKey: @event.MetaKey,
                 ShiftKey: @event.ShiftKey,
-                RelativePosition: @event.Position - LayoutPaddingPosition
+                RelativePosition: @event.Position - node.LayoutPaddingPosition
             );
-            MouseScrolled?.Invoke(relativeEvent);
-            OnMouseScrolled(relativeEvent);
+            var left = node.ScrollLeft;
+            var top = node.ScrollTop;
+            node.MouseScrolled?.Invoke(relativeEvent);
+            node.OnMouseScrolled(relativeEvent);
+            if (node.ScrollLeft != left || node.ScrollTop != top) return true;
         }
 
         return false;
     }
+
+    [ThreadStatic] private static List<Component>? _scrollDispatchChain;
 
     public virtual void OnKeyPressed(KeyboardEvent @event)
     {

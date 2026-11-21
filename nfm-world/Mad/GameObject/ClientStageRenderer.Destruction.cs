@@ -48,8 +48,8 @@ public partial class ClientStageRenderer
 
         while (_pendingDamage.TryDequeue(out var damaged))
             if (damaged.PlaySound)
-                PlayObjectSound(SfxLibrary.lowcrash[(int)(((long)damaged.Object.DestructionId + damaged.Damage)
-                                                          % SfxLibrary.lowcrash.Length)], damaged.Object
+                PlayStageSound(SfxLibrary.lowcrash[(int)(((long)damaged.Object.DestructionId + damaged.Damage)
+                                                         % SfxLibrary.lowcrash.Length)], damaged.Object
                 );
 
         while (_pendingBreaks.TryDequeue(out var broken))
@@ -61,7 +61,7 @@ public partial class ClientStageRenderer
             }
 
             if (!broken.Shatter) continue;
-            PlayObjectSound(SfxLibrary.objectBreak[broken.Object.DestructionId % SfxLibrary.objectBreak.Length], broken.Object);
+            PlayStageSound(SfxLibrary.objectBreak[broken.Object.DestructionId % SfxLibrary.objectBreak.Length], broken.Object);
             if (_debris.Count >= 8)
             {
                 _debris[0].Dispose();
@@ -106,7 +106,7 @@ public partial class ClientStageRenderer
         ClearObjectSounds();
     }
 
-    private void PlayObjectSound(ISoundClip? sample, StageObject obj)
+    internal void PlayStageSound(ISoundClip? sample, StageObject obj)
     {
         if (sample is null) return;
         var sound = sample.CreateSpatialInstance();

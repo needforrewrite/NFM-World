@@ -5,6 +5,7 @@ using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Gamemodes.DotNet;
+using NFMWorldLibrary.Helpers;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
@@ -53,9 +54,18 @@ public class PvpFinishTests
             AiNodeKind.CheckPoint
         );
 
-    private static BackendStage CreateStage(ushort laps, int checkpoints)
+    private static BackendStage CreateStage(ushort laps, int checkpoints, bool withWalls = false)
     {
-        var stage = new BackendStage("pvp-test", new StageLoader { nlaps = laps });
+        var loader = new StageLoader { nlaps = laps };
+        if (withWalls)
+        {
+            loader.wallDefs.Add(new StageWall(WallDirection.Right, 1, 20000, 0));
+            loader.wallDefs.Add(new StageWall(WallDirection.Left, 1, -20000, 0));
+            loader.wallDefs.Add(new StageWall(WallDirection.Top, 1, 20000, 0));
+            loader.wallDefs.Add(new StageWall(WallDirection.Bottom, 1, -20000, 0));
+        }
+
+        var stage = new BackendStage("pvp-test", loader);
         for (var i = 0; i < checkpoints; i++)
             stage.Checkpoints.Add(CreateCheckpoint(100_000 + i * 20_000));
         return stage;
@@ -121,11 +131,12 @@ public class PvpFinishTests
         ushort laps,
         int checkpoints,
         Dictionary<string, object>? config = null,
-        StageObject? hoop = null
+        StageObject? hoop = null,
+        bool withWalls = false
     )
     {
         var factory = CreateFactory(config);
-        var context = new ServerContext(CreateStage(laps, checkpoints));
+        var context = new ServerContext(CreateStage(laps, checkpoints, withWalls));
         if (hoop is not null)
             context.CurrentStage.FixHoops.Add(hoop);
         var server = factory.CreateServerGamemode(
@@ -144,6 +155,32 @@ public class PvpFinishTests
         server.StartRace();
         for (var i = 0; i < GamemodeUtils.ServerCountdownInterval * 3; i++) server.GameTick();
         return (factory, server, context);
+    }
+
+    [TestMethod]
+    public void WallCountdownBroadcastsEachWarningOnce()
+    {
+        var (factory, server, context) = CreateRace(3, 2, new() { ["walls"] = "1" }, withWalls: true);
+        try
+        {
+            for (var tick = 0; tick < 61 * GamemodeUtils.ServerTps; tick++) server.GameTick();
+            var type = ((NativeGamemodeFactory)factory).Plugin.Assembly.GetExportedTypes()
+                .Single(t => t.Name == "WallWarningEvent");
+            var warnings = new List<int>();
+            foreach (var payload in context.Events)
+            {
+                object? received = null;
+                TightPackSerializer.DeserializeUntyped(type.BaseType!, payload.Span, ref received);
+                if (received?.GetType() == type)
+                    warnings.Add((int)type.GetProperty("Seconds")!.GetValue(received)!);
+            }
+
+            CollectionAssert.AreEqual(new[] { 60, 30, 10, 0 }, warnings.ToArray());
+        }
+        finally
+        {
+            factory.End();
+        }
     }
 
     [TestMethod]
@@ -343,6 +380,7 @@ public class PvpFinishTests
         public RaceState RaceState => RaceState.InProgress;
         public IClientCallbacks ClientCallbacks => this;
         public List<byte[]> SentEvents { get; } = [];
+        public ushort? FinishSoundCheckpoint { get; private set; }
 
         public void RaceRestarted()
         {
@@ -355,6 +393,8 @@ public class PvpFinishTests
         public void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish)
         {
         }
+
+        public void PlayFinishCheckpointSound(ushort checkpoint) => FinishSoundCheckpoint = checkpoint;
 
         public IClientCarCallbacks GetClientCarCallbacks(BackendCar car) => throw new NotSupportedException();
         public void SendServerEvent(ReadOnlySpan<byte> payload) => SentEvents.Add(payload.ToArray());
@@ -387,6 +427,7 @@ public class PvpFinishTests
             var hoop = CreateCheckpoint(5000);
             stage.FixHoops.Add(hoop);
             stage.Pieces.Add(hoop);
+            var context = new ClientContext(stage);
             client = (BaseClientGamemode)factory.CreateGameMode(
                 new ClientGamemodeParameters
                 {
@@ -401,15 +442,19 @@ public class PvpFinishTests
                         )
                     ]
                 },
-                new ClientContext(stage)
+                context
             );
             client.Begin();
             client.OnServerEvent(SerializeEvent(factory, "CountdownGoEvent").Span);
+            client.OnServerEvent(SerializeEvent(factory, "FinishCheckpointSoundEvent", (ushort)0).Span);
+            Assert.AreEqual<ushort?>((ushort)0, context.FinishSoundCheckpoint);
 
             var car = client.ClientPlayer!.Car!;
             if (wastedBeforeFinish)
             {
-                Assert.IsFalse(stage.Pieces.Contains(hoop));
+                Assert.IsTrue(stage.Pieces.Contains(hoop));
+                Assert.IsFalse(hoop.IsFixHoopActive);
+                Assert.AreEqual(-1, FixHoopHelper.FindFixHoop(stage, hoop.Position));
                 car.CurrentLap = 1;
                 car.CarPhysics.Wasted = true;
                 var respawnTick = (int)Math.Ceiling(3 * Physics.TargetTps);

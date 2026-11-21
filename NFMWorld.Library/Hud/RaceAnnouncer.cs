@@ -417,13 +417,14 @@ public sealed class RaceAnnouncer
         // trcnt hits 10 exactly once per combo; the stunt values are still set at that point
         // and cleared after, so this is the one tick the whole combo is readable.
         if (physics.TabletopCounter != 10) return;
-        ShowStunt(CompletedStunt.Capture(physics), requireDescription: true);
+        var stunt = physics.LatestStunt.Sequence != 0 ? physics.LatestStunt : CompletedStunt.Capture(physics);
+        ShowStunt(stunt, requireDescription: true);
     }
 
     private void ShowStunt(CompletedStunt stunt, bool requireDescription = false)
     {
         var text = DescribeStunt(stunt);
-        if (text is null && requireDescription) return;
+        if (text is null && requireDescription && !stunt.AtMaxPower) return;
         if (text is not null)
             _stunt = new Slot(text, HudMessageKind.Info, SecondsToTicks(Math.Min(6f, 2f + text.Length / 20f)));
 
@@ -431,7 +432,7 @@ public sealed class RaceAnnouncer
         // status line. Full power reads as a max rather than a percentage.
         if (stunt.Powerup <= 0) return;
         var percent = (int)(100f * (float)stunt.Powerup / 98f);
-        Show(percent >= 98 ? "Power To The MAX" : $"Power Up {percent}%", HudMessageKind.Info);
+        Show(stunt.AtMaxPower ? "Power to the MAX" : $"Power Up {percent}%", HudMessageKind.Info);
     }
 
     private static readonly string[][] Adjectives =

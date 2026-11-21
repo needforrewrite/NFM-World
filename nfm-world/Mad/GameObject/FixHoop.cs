@@ -3,12 +3,15 @@ using NFMWorld.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Util;
 
 namespace NFMWorld;
 
 public class FixHoop : StageObjectGameObject, IImmediateRenderElement
 {
     private readonly IGraphicsDevice _graphicsDevice;
+    private readonly StageObject _obj;
+    private ResourceLease<Mesh>? _disabledMesh;
 
     private const int CntLines = 4;
 
@@ -28,6 +31,7 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
 
     public FixHoop(Mesh mesh, StageObject obj) : base(mesh, obj)
     {
+        _obj = obj;
         // Mesh.GraphicsDevice is still FNA's XNA-typed GraphicsDevice (Mesh itself isn't fully
         // converted) - use the new static device directly, matching GameSparker.NewGraphicsDevice's
         // doc comment.
@@ -57,12 +61,27 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
 
     protected override void DisposeOwnedResources()
     {
+        _disabledMesh?.Dispose();
         _vertexBuffer?.Dispose();
         _indexBuffer?.Dispose();
         base.DisposeOwnedResources();
     }
 
     public bool IsSpecial { get; set; }
+
+    protected override Mesh RenderMesh
+    {
+        get
+        {
+            if (_obj.IsFixHoopActive) return Mesh;
+            if (_disabledMesh is { } lease && ReferenceEquals(lease.Value.ClonedMesh, Mesh)) return lease.Value;
+
+            var replacement = StageMeshCache.AcquireDisabledFixHoop(Mesh);
+            _disabledMesh?.Dispose();
+            _disabledMesh = replacement;
+            return replacement.Value;
+        }
+    }
 
     public void Render(ICommandBuffer cb, Camera camera, Lighting? _)
     {
@@ -208,7 +227,7 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
     {
         base.SubmitDraws(queue, camera, lighting, pass);
 
-        if (!pass.IsShadow)
+        if (!pass.IsShadow && _obj.IsFixHoopActive)
         {
             queue.AddImmediate(SortKey.Create(RenderBucket.FixHoopElectricity), this);
         }
@@ -230,7 +249,7 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
 
         Rotation = Rotation with { Xy = f64AngleSingle.FromDegrees(Rotation.Xy.Degrees + _rotAccumulator) };
 
-        if (++_tick == Physics.OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
+        if (_obj.IsFixHoopActive && ++_tick == Physics.OriginalTicksPerNewTick)
         {
             MakeElectrifiedMesh();
 

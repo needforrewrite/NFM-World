@@ -45,7 +45,10 @@ public class PlayerStateSerializationTests
             CarFrame = SampleFrame(),
             Ticks = 12345,
             DamageSource = 4,
-            CompletedStunt = new CompletedStunt { Sequence = 42, TotalStuntZy = 720, Powerup = 49, ForwardTabletop = true },
+            CompletedStunt = new CompletedStunt
+            {
+                Sequence = 42, TotalStuntZy = 720, Powerup = 49, ForwardTabletop = true, AtMaxPower = true
+            },
             CurrentTime = DateTimeOffset.FromUnixTimeMilliseconds(1_700_000_000_000),
         };
 
@@ -59,6 +62,7 @@ public class PlayerStateSerializationTests
         Assert.AreEqual(value.CompletedStunt.TotalStuntZy, result.CompletedStunt.TotalStuntZy);
         Assert.AreEqual(value.CompletedStunt.Powerup, result.CompletedStunt.Powerup);
         Assert.IsTrue(result.CompletedStunt.ForwardTabletop);
+        Assert.IsTrue(result.CompletedStunt.AtMaxPower);
         Assert.AreEqual(value.CurrentTime, result.CurrentTime);
         Assert.AreEqual(value.CarFrame.Power, result.CarFrame.Power);
         Assert.AreEqual(value.CarFrame.CarPosition, result.CarFrame.CarPosition);

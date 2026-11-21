@@ -83,6 +83,7 @@ public class RaceAnnouncerTests
         // Both slots are written on the same tick the combo finishes.
         physics.TotalStuntZy = 720;
         physics.Powerup = 49;
+        physics.Power = 70;
         physics.TabletopCounter = 10;
         announcer.Tick(car, gamemode);
 
@@ -98,11 +99,14 @@ public class RaceAnnouncerTests
         announcer.Tick(car, gamemode);
 
         physics.TotalStuntZy = 720;
-        physics.Powerup = 98;
+        physics.Powerup = 12;
+        physics.Power = 98;
+        physics.LatestStunt = CompletedStunt.Capture(physics, 1);
+        physics.Power = 97;
         physics.TabletopCounter = 10;
         announcer.Tick(car, gamemode);
 
-        Assert.AreEqual("Power To The MAX", announcer.Status?.Text);
+        Assert.AreEqual("Power to the MAX", announcer.Status?.Text);
     }
 
     [TestMethod]
@@ -383,6 +387,7 @@ public class RaceAnnouncerTests
         var physics = viewed.CarPhysics;
         physics.TotalStuntZy = 720;
         physics.Powerup = 49;
+        physics.Power = 70;
         physics.LatestStunt = CompletedStunt.Capture(physics, 1);
         physics.TotalStuntZy = 0;
         physics.TabletopCounter = 0;
@@ -399,10 +404,11 @@ public class RaceAnnouncerTests
         for (var tick = 0; tick < 500; tick++) feedback.Tick(viewed, gamemode);
         Assert.IsNull(feedback.Stunt, "an unchanged owner snapshot must not keep replaying the stunt");
         Assert.IsNull(feedback.Status);
-        physics.Powerup = 98;
+        physics.Powerup = 12;
+        physics.Power = 98;
         physics.LatestStunt = CompletedStunt.Capture(physics, 2);
         feedback.Tick(viewed, gamemode);
-        Assert.AreEqual("Power To The MAX", feedback.Status?.Text);
+        Assert.AreEqual("Power to the MAX", feedback.Status?.Text);
     }
 
     [TestMethod]

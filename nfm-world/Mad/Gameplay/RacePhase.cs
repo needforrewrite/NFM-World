@@ -410,6 +410,10 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             hud.StatusMessage = _spectatorFeedback.Status;
             hud.StuntMessage = _spectatorFeedback.Stunt;
         }
+        else if (gm.ActiveRaceWarning is { } warning)
+        {
+            hud.StatusMessage = new HudMessage(warning, HudMessageKind.Danger);
+        }
 
         hud.StatusMessage = gm.RaceNotice ?? hud.StatusMessage;
 
@@ -1268,6 +1272,12 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     void IClientCallbacks.UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish)
     {
         if (!WatchingPlayers) CurrentStage.Renderer.UpdateCheckpointGlow(currentCheckpoint, isFinish);
+    }
+
+    void IClientCallbacks.PlayFinishCheckpointSound(ushort checkpoint)
+    {
+        if (CurrentStage is { } stage && checkpoint < stage.Backend.Checkpoints.Count)
+            stage.Renderer.PlayStageSound(SfxLibrary.finished, stage.Backend.Checkpoints[checkpoint]);
     }
 
     IClientCarCallbacks IClientCallbacks.GetClientCarCallbacks(BackendCar car)

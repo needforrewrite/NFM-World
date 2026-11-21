@@ -222,6 +222,8 @@ public sealed class LocalRaceHost : IRaceHost
             ? new BackendStage(stageName, data)
             : new BackendStage(stageName);
 
+        public double TicksPerSecond => Physics.TargetTps;
+
         public f64Vector3? GetPlayerPosition(Guid playerId)
             => _positions.TryGetValue(playerId, out var pos) ? pos : null;
 

@@ -27,6 +27,7 @@ public class GamemodeConfigPropertyAttribute : Attribute
     public required string Description { get; set; }
     public string? VisibleWhenProperty { get; set; }
     public string? VisibleWhenValue { get; set; }
+    public bool InvertVisibility { get; set; }
 }
 
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]

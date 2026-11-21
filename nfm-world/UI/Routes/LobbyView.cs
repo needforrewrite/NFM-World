@@ -834,7 +834,12 @@ public static class LobbyView
                 ),
                 Sx.Show(
                     () => showRules.Value,
-                    () => MatchOverlayView(() => "GAME RULES", RulesContent(Session, actions), () => showRules.Value = false)
+                    () => MatchOverlayView(
+                        () => "GAME RULES",
+                        RulesContent(Session, actions),
+                        () => showRules.Value = false,
+                        allowDropdownOverflow: true
+                    )
                 ),
                 Sx.Show(
                     () => showInvites.Value,
@@ -1243,20 +1248,13 @@ public static class LobbyView
                         width: 30.Percent(),
                         minWidth: 0,
                         paddingLeft: 6,
-                        alignItems: Align.Center,
-                        gapColumn: 5
+                        alignItems: Align.Center
                     ),
-                    children:
-                    [
-                        Sx.View(
-                            style: () => Sx.Styles(width: 7, height: 7, flexShrink: 0, backgroundColor: standing.Color)
-                        ),
-                        Sx.Text(
-                            style: () => Sx.WrappingText(fontSize: 11, foregroundColor: TextBlue),
-                            layout: () => Sx.Styles(flexGrow: 1, minWidth: 0),
-                            text: () => standing.Name
-                        )
-                    ]
+                    children: Sx.Text(
+                        style: () => Sx.WrappingText(fontSize: 11, foregroundColor: TextBlue),
+                        layout: () => Sx.Styles(flexGrow: 1, minWidth: 0),
+                        text: () => standing.Name
+                    )
                 ),
                 .. (standing.Wasted || standing.Dnf
                     ? new Node[]
@@ -1516,7 +1514,13 @@ public static class LobbyView
     internal static Node StagePreviewWindow(Func<string> title, StageSelectState state, Func<IImage?> image, Action close)
         => MatchOverlayView(title, StageSelectView.ReadOnlyPreview(state, image), close, stagePreview: true);
 
-    private static Node MatchOverlayView(Func<string> title, Node content, Action close, bool stagePreview = false)
+    private static Node MatchOverlayView(
+        Func<string> title,
+        Node content,
+        Action close,
+        bool stagePreview = false,
+        bool allowDropdownOverflow = false
+    )
         => Sx.View(
             name: () => "Lobby match overlay",
             style: () => Sx.Styles(
@@ -1557,6 +1561,7 @@ public static class LobbyView
                         borderRadius: 10
                     ),
                     onmousedown: e => e.StopPropagation(),
+                    onmount: view => view.ClipOnlyWhenScrollable = allowDropdownOverflow,
                     children:
                     [
                         Sx.View(
@@ -1942,7 +1947,8 @@ public static class LobbyView
                     () => MatchOverlayView(
                         () => $"{GamemodeCatalog.DisplayName(lobby.SelectedGamemode.Value)} GAME RULES",
                         CreateRulesContent(actions),
-                        () => showRules.Value = false
+                        () => showRules.Value = false,
+                        allowDropdownOverflow: true
                     )
                 )
             ]

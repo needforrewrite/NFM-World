@@ -22,6 +22,8 @@ public static class SfxLibrary
     public static ISoundClip[] countdown = new ISoundClip[4];
 
     public static ISoundClip? checkpoint;
+    public static ISoundClip? wallTimer;
+    public static ISoundClip? finished;
 
     public static ISoundClip? tires;
     public static ISoundClip? powerup;
@@ -82,6 +84,10 @@ public static class SfxLibrary
         countdown[3] = IBackend.Backend.GetSound("data/sound/count/three.wav");
 
         checkpoint = IBackend.Backend.GetSound("data/sound/checkpoint.wav");
+        wallTimer = IBackend.Backend.GetSound("data/sound/timernotif.wav");
+        const string finishedPath = "data/sound/finished.wav";
+        finished = NFMWorldLibrary.TheVFS.VFS.FileExists(finishedPath)
+            ? IBackend.Backend.GetSound(finishedPath) : null;
 
         powerup = IBackend.Backend.GetSound("data/sound/powerup.wav");
         carfixed = IBackend.Backend.GetSound("data/sound/carfixed.wav");

@@ -167,6 +167,9 @@ public class GamemodePluginTests
         var laps = plugin.ConfigProperties.Single(p => p.Name == "laps");
         Assert.AreEqual("stage", laps.Options[0].Value);
         Assert.AreEqual("20", laps.Options[^1].Value);
+        Assert.AreEqual("constraint", laps.VisibleWhenProperty);
+        Assert.AreEqual("wasting", laps.VisibleWhenValue);
+        Assert.IsTrue(laps.InvertVisibility);
 
         var fixing = plugin.ConfigProperties.Single(p => p.Name == "fixing");
         CollectionAssert.AreEqual(new[] { "unlimited", "limited", "none" }, fixing.Options.Select(o => o.Value).ToArray());

@@ -87,4 +87,59 @@ public class ScrollViewTests
         root.DispatchMouseDragged(Drag(start, new Vector2(197, 90)));
         Assert.AreEqual(0f, scroll.ScrollTop);
     }
+
+    [TestMethod]
+    public void WheelScrollsAnOpenDropdownOutsideTheCardAndKeepsTheListBehindStill()
+    {
+        var (root, background) = Create();
+        var overlay = new View
+        {
+            Styles = Sx.Styles(position: Position.Absolute, left: 0, top: 0, right: 0, bottom: 0, zIndex: 60)
+        };
+        var card = new View
+        {
+            ClipOnlyWhenScrollable = true,
+            Styles = Sx.Styles(width: 120, height: 40, overflow: Overflow.Scroll, flexDirection: FlexDirection.Column)
+        };
+        var anchor = new View { Styles = Sx.Styles(position: Position.Relative, height: 20, flexShrink: 0) };
+        var dropdown = new View
+        {
+            Styles = Sx.Styles(
+                position: Position.Absolute,
+                top: 20,
+                width: 100,
+                height: 65,
+                zIndex: 1000,
+                overflow: Overflow.Scroll,
+                flexDirection: FlexDirection.Column
+            )
+        };
+        dropdown.AddChild(new View { Styles = Sx.Styles(height: 200, flexShrink: 0) });
+        anchor.AddChild(dropdown);
+        card.AddChild(anchor);
+        overlay.AddChild(card);
+        root.AddChild(overlay);
+        root.LayoutAndRender(new Vector2(200, 100));
+
+        Assert.IsFalse(card.IsClipping);
+        var overDropdown = new BaseMouseWheelEvent(
+            new Vector3(0, -300, 0),
+            new Vector2(50, 60),
+            MouseButtons.None,
+            false,
+            false,
+            false
+        );
+        Assert.IsTrue(root.DispatchMouseScrolled(overDropdown));
+        Assert.AreEqual(dropdown.ScrollableHeight, dropdown.ScrollTop, 0.01f);
+
+        root.DispatchMouseScrolled(overDropdown);
+        root.DispatchMouseScrolled(overDropdown with { Position = new Vector2(150, 60) });
+        Assert.AreEqual(0f, background.ScrollTop);
+
+        card.AddChild(new View { Styles = Sx.Styles(height: 60, flexShrink: 0) });
+        root.LayoutAndRender(new Vector2(200, 100));
+        Assert.IsTrue(card.IsClipping);
+        Assert.IsTrue(card.ScrollableHeight > 0);
+    }
 }

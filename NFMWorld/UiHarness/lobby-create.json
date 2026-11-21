@@ -157,6 +157,11 @@
       "capture": "config-wasting"
     },
     {
+      "action": "assert-count",
+      "prefix": "Gamemode config laps",
+      "count": 0
+    },
+    {
       "action": "click",
       "target": "Gamemode config fixing"
     },

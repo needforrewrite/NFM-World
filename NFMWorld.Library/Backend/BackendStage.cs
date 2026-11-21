@@ -19,13 +19,7 @@ public partial class BackendStage
 
     [PluginVisible]
     public void SetFixHoopActive(int index, bool active)
-    {
-        var hoop = FixHoops[index];
-        if (hoop.IsFixHoopActive == active) return;
-        hoop.IsFixHoopActive = active;
-        if (active) Pieces.Add(hoop);
-        else Pieces.Remove(hoop);
-    }
+        => FixHoops[index].IsFixHoopActive = active;
 
     [PluginVisible] public ushort Nlaps { get; set; }
 

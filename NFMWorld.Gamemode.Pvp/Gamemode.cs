@@ -25,8 +25,15 @@ using f64Vector3 = FixedMathSharp.Vector3d;
 [assembly: GamemodeConfigPropertyOption("constraint", Label = "Wasting", Value = "wasting")]
 [assembly: GamemodeConfigPropertyOption("constraint", Label = "Both", Value = "both")]
 
-[assembly: GamemodeConfigProperty(Name = "laps", Type = typeof(string), Label = "Laps", Description =
-    "Laps to finish when checkpoints are enabled.")]
+[assembly: GamemodeConfigProperty(
+    Name = "laps",
+    Type = typeof(string),
+    Label = "Laps",
+    Description = "Laps to finish when checkpoints are enabled.",
+    VisibleWhenProperty = "constraint",
+    VisibleWhenValue = "wasting",
+    InvertVisibility = true
+)]
 [assembly: GamemodeConfigPropertyOption("laps", Label = "Stage default", Value = "stage")]
 [assembly: GamemodeConfigPropertyOption("laps", Label = "1", Value = "1")]
 [assembly: GamemodeConfigPropertyOption("laps", Label = "2", Value = "2")]
@@ -145,10 +152,6 @@ public class PvpGamemode : PluginGamemode
 
     private ConvergingWalls _walls = ConvergingWalls.Off;
     private bool _wallsBegun;
-    private double _lastWallMinutes = double.MaxValue;
-    private int _outsideWarningCooldown;
-
-    private static readonly int[] WallWarnings = [60, 30, 10, 0];
 
     private PhysicsController _physics;
 
@@ -165,6 +168,11 @@ public class PvpGamemode : PluginGamemode
     /// <summary>PvP is a scored race, so the host's standard completion UI applies.</summary>
     public override bool UsesStandardRaceCompletion => true;
     public override bool RespawnsWastedCars => _constraint.Racing && !_constraint.Wasting;
+    public override string? ActiveRaceWarning => _state == GamemodeState.InProgress && _wallsBegun
+                                                 && ClientPlayer?.Car is { HasLeftRace: false } car
+                                                 && !CurrentStage.Walls.IsInBounds(car.Position.X, car.Position.Z)
+            ? "Get back inside the stage"
+            : null;
 
     private void SetupCars()
     {
@@ -212,8 +220,6 @@ public class PvpGamemode : PluginGamemode
         _survivalFinish = false;
         _walls = ConvergingWalls.From(Config);
         _wallsBegun = false;
-        _lastWallMinutes = double.MaxValue;
-        _outsideWarningCooldown = 0;
         HudState.StateText = null;
         HudState.ResultTitle = null;
         HudState.StateTextEndsAt = null;
@@ -240,10 +246,6 @@ public class PvpGamemode : PluginGamemode
 
     public override void Forfeit() => SendServerEvent<ClientToServerEvent>(new ForfeitEvent());
 
-    /// <summary>
-    /// Drives the PvP <c>walls</c> option: the stage's boundary walls close towards their centre
-    /// after the configured number of minutes, and phy's 60/30/10/0-second warnings are announced.
-    /// </summary>
     private void TickWalls()
     {
         if (!_walls.Enabled || !CurrentStage.Walls.Enabled) return;
@@ -252,36 +254,10 @@ public class PvpGamemode : PluginGamemode
         {
             CurrentStage.Walls.Begin(_walls.Minutes, CurrentStage.StageLoader);
             _wallsBegun = true;
-            _lastWallMinutes = _walls.Minutes;
         }
 
         var elapsed = _clientTick / (double)Physics.TargetTps / 60.0;
         CurrentStage.Walls.Update(elapsed);
-
-        var remaining = CurrentStage.Walls.MinutesUntilClosing(elapsed);
-        foreach (var seconds in WallWarnings)
-        {
-            if (_lastWallMinutes * 60 > seconds && remaining * 60 <= seconds)
-            {
-                Announce(
-                    seconds == 0 ? "The walls are closing in!" : $"{seconds} seconds before the walls close!",
-                    seconds == 0 ? HudMessageKind.Danger : HudMessageKind.Warning,
-                    4f
-                );
-            }
-        }
-
-        _lastWallMinutes = remaining;
-
-        if (_outsideWarningCooldown > 0) _outsideWarningCooldown--;
-
-        // phy flashes this at a player left outside, keeping its ~300-tick cooldown.
-        if (CurrentStage.Walls.Closing && _outsideWarningCooldown == 0 && ClientPlayer?.Car is { } car
-            && !CurrentStage.Walls.IsInBounds(car.Position.X, car.Position.Z))
-        {
-            Announce("Get back into the stage area!", HudMessageKind.Danger, 2f);
-            _outsideWarningCooldown = (int)(Physics.TargetTps * 2);
-        }
     }
 
     public override void ConfirmFinish()
@@ -462,6 +438,17 @@ public class PvpGamemode : PluginGamemode
                 HudState.CountdownTimer = 0;
                 _state = GamemodeState.InProgress;
                 break;
+            case WallWarningEvent warning:
+                AnnounceRaceNotice(
+                    warning.Seconds == 0 ? "The walls are closing in!" : $"{warning.Seconds} seconds before the walls close!",
+                    warning.Seconds == 0 ? HudMessageKind.Danger : HudMessageKind.Warning,
+                    4f
+                );
+                PlayWallTimerNotification();
+                break;
+            case FinishCheckpointSoundEvent checkpoint:
+                PlayFinishCheckpointSound(checkpoint.Index);
+                break;
 
             // The baseline. A race already under way must run its physics: no car is driven
             // otherwise, and the camera yaw Drive computes stays at zero.
@@ -478,11 +465,9 @@ public class PvpGamemode : PluginGamemode
             case FixHoopUsedEvent use:
                 if (Players[use.RacerSlot].Car is { } repairedCar) repairedCar.Fix();
                 if (use.Remaining == 0) CurrentStage.SetFixHoopActive(use.Hoop, false);
-                var name = Players[use.RacerSlot].Info.PlayerName;
-                var hoopNumber = use.Hoop + 1;
                 AnnounceRaceNotice(use.Remaining == 0
-                    ? $"{name} used fix hoop {hoopNumber}. It has been removed."
-                    : $"{name} used fix hoop {hoopNumber}. Uses left: {use.Remaining}.");
+                    ? "Fix hoops have expired!"
+                    : $"Fix hoop uses left: {use.Remaining}");
                 break;
         }
     }
@@ -559,6 +544,10 @@ public class PvpServerGamemode(
 
     /// <summary>Server ticks since the race started; DNF order is keyed on it.</summary>
     private int _serverTick;
+    private static readonly int[] WallWarnings = [60, 30, 10, 0];
+    private double _wallCountdownSeconds;
+    private int _wallTicks;
+    private int _nextWallWarning;
 
     private RaceConstraint _constraint = RaceConstraint.Both;
 
@@ -577,6 +566,8 @@ public class PvpServerGamemode(
         _countdown = 3;
         _state = ServerGamemodeState.WaitingToStart;
         _constraint = RaceConstraint.From(Config);
+        _wallCountdownSeconds = CurrentStage.Walls.Enabled ? ConvergingWalls.From(Config).Minutes * 60 : 0;
+        _nextWallWarning = 0;
         CurrentStage.Nlaps = PvpRules.Laps(CurrentStage, _constraint, Config);
         var fixesPerHoop = PvpRules.FixesPerHoop(Config);
         _remainingFixes = fixesPerHoop > 0 ? new int[CurrentStage.FixHoops.Count] : [];
@@ -624,6 +615,7 @@ public class PvpServerGamemode(
         _countdown = 3;
         _inner = GamemodeUtils.ServerCountdownInterval;
         _serverTick = 0;
+        _wallTicks = 0;
     }
 
     public override void GameTick()
@@ -641,12 +633,15 @@ public class PvpServerGamemode(
                     {
                         _state = ServerGamemodeState.InProgress;
                         BroadcastEvent<ServerToClientEvent>(new CountdownGoEvent());
+                        BroadcastWallWarnings();
                     }
                 }
 
                 break;
             case ServerGamemodeState.InProgress:
                 _serverTick++;
+                _wallTicks++;
+                BroadcastWallWarnings();
                 TrackWasted();
                 CheckConstraint();
                 break;
@@ -654,6 +649,19 @@ public class PvpServerGamemode(
                 _serverTick++;
                 TryResumeRace();
                 break;
+        }
+    }
+
+    private void BroadcastWallWarnings()
+    {
+        if (_wallCountdownSeconds <= 0 || _nextWallWarning == WallWarnings.Length) return;
+
+        var remaining = _wallCountdownSeconds - _wallTicks / TicksPerSecond;
+        while (_nextWallWarning < WallWarnings.Length && remaining <= WallWarnings[_nextWallWarning])
+        {
+            var seconds = WallWarnings[_nextWallWarning++];
+            if (seconds <= _wallCountdownSeconds)
+                BroadcastEvent<ServerToClientEvent>(new WallWarningEvent(seconds));
         }
     }
 
@@ -918,6 +926,10 @@ public class PvpServerGamemode(
         info.Lap = progress.Lap;
         info.Checkpoint = progress.Index;
         info.Position = progress.Placement;
+        if (progress.Lap == CurrentStage.Nlaps - 1 && CurrentStage.Checkpoints.Count > 1
+            && progress.Index == CurrentStage.Checkpoints.Count - 1 && Random.Shared.Next(100) == 0)
+            BroadcastEvent<ServerToClientEvent>(new FinishCheckpointSoundEvent((ushort)(progress.Index - 1)));
+
         if (info.Lap >= CurrentStage.Nlaps) EndRace(racer);
     }
 
@@ -1015,6 +1027,8 @@ public partial record ConfirmFinishEvent(int Revision) : ClientToServerEvent;
 [TightPackUnion(3, typeof(RaceResumedEvent))]
 [TightPackUnion(4, typeof(FixHoopUsedEvent))]
 [TightPackUnion(5, typeof(FixHoopSnapshotEvent))]
+[TightPackUnion(6, typeof(WallWarningEvent))]
+[TightPackUnion(7, typeof(FinishCheckpointSoundEvent))]
 public abstract partial record ServerToClientEvent;
 
 [TightPackable]
@@ -1042,3 +1056,9 @@ public partial record FixHoopUsedEvent(int RacerSlot, int Hoop, int Remaining) :
 
 [TightPackable]
 public partial record FixHoopSnapshotEvent(byte[] RaceState, int[] Remaining) : ServerToClientEvent;
+
+[TightPackable]
+public partial record WallWarningEvent(int Seconds) : ServerToClientEvent;
+
+[TightPackable]
+public partial record FinishCheckpointSoundEvent(ushort Index) : ServerToClientEvent;

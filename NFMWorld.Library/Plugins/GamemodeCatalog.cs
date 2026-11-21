@@ -65,7 +65,8 @@ public static class GamemodeCatalog
                 [.. property.Options.Select(option => new GamemodeConfigChoice(option.Label, option.Value))],
                 IntegerInput: property.Type == typeof(int),
                 property.VisibleWhenProperty,
-                property.VisibleWhenValue
+                property.VisibleWhenValue,
+                property.InvertVisibility
             ))];
 }
 
@@ -82,10 +83,14 @@ public sealed record GamemodeConfigField(
     IReadOnlyList<GamemodeConfigChoice> Choices,
     bool IntegerInput = false,
     string? VisibleWhenProperty = null,
-    string? VisibleWhenValue = null
+    string? VisibleWhenValue = null,
+    bool InvertVisibility = false
 )
 {
     public bool IsVisible(Func<string, string?> getValue)
-        => VisibleWhenProperty is not { } property
-           || getValue(property) is { } value && value == VisibleWhenValue;
+    {
+        if (VisibleWhenProperty is not { } property) return true;
+        var matches = getValue(property) is { } value && value == VisibleWhenValue;
+        return matches != InvertVisibility;
+    }
 }

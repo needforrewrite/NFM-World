@@ -372,14 +372,29 @@ public abstract class BaseClientGamemode : IGamemode
     private readonly RaceAnnouncer Announcer = new();
     private int _raceNoticeTicks;
     public HudMessage? RaceNotice { get; private set; }
+    public virtual string? ActiveRaceWarning => null;
 
     [PluginVisible]
     [ClientOnly]
     protected void AnnounceRaceNotice(string text)
+        => AnnounceRaceNotice(text, HudMessageKind.Info, 3f);
+
+    [PluginVisible]
+    [ClientOnly]
+    protected void AnnounceRaceNotice(string text, HudMessageKind kind, float seconds)
     {
-        RaceNotice = new HudMessage(text, HudMessageKind.Info);
-        _raceNoticeTicks = (int)Math.Ceiling(3 * Physics.TargetTps);
+        RaceNotice = new HudMessage(text, kind);
+        _raceNoticeTicks = Math.Max(1, (int)Math.Ceiling(seconds * Physics.TargetTps));
     }
+
+    [PluginVisible]
+    [ClientOnly]
+    protected void PlayWallTimerNotification() => SfxLibrary.wallTimer?.Play();
+
+    [PluginVisible]
+    [ClientOnly]
+    protected void PlayFinishCheckpointSound(ushort checkpoint)
+        => GamemodeContext.ClientCallbacks.PlayFinishCheckpointSound(checkpoint);
 
     /// <summary>Posts the race's status line; a gamemode uses it for its own warnings.</summary>
     [PluginVisible]

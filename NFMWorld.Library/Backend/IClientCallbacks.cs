@@ -61,6 +61,11 @@ public interface IClientCallbacks
 
     void ResetCheckpointGlow();
     void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish);
+
+    void PlayFinishCheckpointSound(ushort checkpoint)
+    {
+    }
+
     IClientCarCallbacks GetClientCarCallbacks(BackendCar car);
 
     /// <summary>

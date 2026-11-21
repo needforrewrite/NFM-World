@@ -249,10 +249,21 @@ public class AiPluginTests
             var go = plugin.Assembly.GetExportedTypes().Single(t => t.Name == "CountdownGoEvent");
             gamemode.OnServerEvent(TightPackSerializer.SerializeUntyped(go.BaseType!, Activator.CreateInstance(go)));
 
+            var playerCar = gamemode.ClientPlayer!.Car!;
+            var start = playerCar.Position;
+            var outside = new f64Vector3(21000, start.Y, 0);
+            playerCar.Position = outside;
+            Assert.IsNull(gamemode.ActiveRaceWarning);
+            playerCar.Position = start;
+
             for (var i = 0; i < 10; i++)
                 gamemode.GameTick();
 
             Assert.IsTrue(stage.Walls.Closing);
+            playerCar.Position = outside;
+            Assert.AreEqual("Get back inside the stage", gamemode.ActiveRaceWarning);
+            playerCar.Position = new f64Vector3(0, start.Y, 0);
+            Assert.IsNull(gamemode.ActiveRaceWarning);
         }
         finally
         {

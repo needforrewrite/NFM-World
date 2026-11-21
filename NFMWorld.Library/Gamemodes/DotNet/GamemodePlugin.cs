@@ -146,7 +146,8 @@ public sealed class GamemodePlugin
                     Label = attribute.Label,
                     Description = attribute.Description,
                     VisibleWhenProperty = attribute.VisibleWhenProperty,
-                    VisibleWhenValue = attribute.VisibleWhenValue
+                    VisibleWhenValue = attribute.VisibleWhenValue,
+                    InvertVisibility = attribute.InvertVisibility
                 }
             );
         }
@@ -178,6 +179,7 @@ public sealed class GamemodeConfigProperty
     public required string Description { get; init; }
     public string? VisibleWhenProperty { get; init; }
     public string? VisibleWhenValue { get; init; }
+    public bool InvertVisibility { get; init; }
     public List<GamemodeConfigPropertyOption> Options { get; } = [];
 }
 

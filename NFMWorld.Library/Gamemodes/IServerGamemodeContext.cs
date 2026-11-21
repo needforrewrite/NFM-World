@@ -10,6 +10,9 @@ public interface IServerGamemodeContext
     /// <summary>The stage being raced on (checkpoints, lap count, geometry).</summary>
     BackendStage CurrentStage { get; }
 
+    /// <summary>Ticks per second in the host that runs the server gamemode.</summary>
+    double TicksPerSecond => DotNet.GamemodeUtils.ServerTps;
+
     /// <summary>
     /// Gets the latest relayed position for a player, or null if not yet received.
     /// Position data flows from <see cref="C2S_PlayerState"/> relay.

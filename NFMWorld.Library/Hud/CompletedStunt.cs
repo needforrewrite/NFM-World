@@ -15,6 +15,7 @@ public partial struct CompletedStunt
     public bool ForwardTabletop;
     public bool BackwardsTabletop;
     public bool RightTabletop;
+    public bool AtMaxPower;
 
     internal static CompletedStunt Capture(CarPhysics physics, uint sequence = 0) => new()
     {
@@ -25,6 +26,7 @@ public partial struct CompletedStunt
         Powerup = physics.Powerup,
         ForwardTabletop = physics.ForwardTabletop,
         BackwardsTabletop = physics.BackwardsTabletop,
-        RightTabletop = physics.RightTabletop
+        RightTabletop = physics.RightTabletop,
+        AtMaxPower = physics.Power >= 98
     };
 }

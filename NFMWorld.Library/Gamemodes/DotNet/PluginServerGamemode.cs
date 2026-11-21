@@ -30,6 +30,8 @@ public class PluginServerGamemode(
     [PluginVisible]
     public BackendStage CurrentStage => context.CurrentStage;
 
+    [PluginVisible] protected double TicksPerSecond => context.TicksPerSecond;
+
     public override void Begin()
     {
         base.Begin();

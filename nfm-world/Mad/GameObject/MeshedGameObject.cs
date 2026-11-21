@@ -47,10 +47,13 @@ public class MeshedGameObject(Mesh mesh) : GameObject
 
     public RenderBucket RenderBucket { get; set; } = RenderBucket.StagePieces;
 
+    protected virtual Mesh RenderMesh => Mesh;
+
     public override void SubmitDraws(RenderQueue queue, Camera camera, Lighting? lighting, RenderPass pass)
     {
-        var boundingSphere = new BoundingSphere(MatrixWorld.Translation, Mesh.MaxRadius);
-        Mesh.SubmitRenderables(
+        var mesh = RenderMesh;
+        var boundingSphere = new BoundingSphere(MatrixWorld.Translation, mesh.MaxRadius);
+        mesh.SubmitRenderables(
             queue,
             lighting,
             Finish ?? false,
