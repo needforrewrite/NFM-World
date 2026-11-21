@@ -22,7 +22,7 @@ public class LobbyStageSelectionTests
     public void LocalStages_OffersOnlyWhatASessionCanUse()
     {
         var stages = LobbyStageSelection.LocalStages(
-            ["nfm1/1_introductory", "user/my_stage"],
+            ["nfm1/1_introductory", "user/my_stage", "archive/" + new string('a', 64)],
             Names
         );
 
@@ -111,45 +111,41 @@ public class LobbyStageSelectionTests
         Assert.AreEqual("nfm1/1_introductory", state.Stages.Value[0].Id);
     }
 
-    /// <summary>
-    /// A public stage stays the session's stage when the player looks at local content again: the
-    /// list grows a row for it, so the highlight never points at nothing.
-    /// </summary>
     [TestMethod]
-    public void ShowLocal_KeepsAPublicStage_AsItsOwnRow()
+    public void SwitchingTabs_KeepsTheArchiveSelectionOnlyInOnlineResults()
     {
         var state = new StageSelectState();
-        var publicStage = "archive/" + new string('a', 64);
-        LobbyStageSelection.Select(state, publicStage);
+        var archive = new StageOption("archive/" + new string('a', 64), "Prolific Dryland", "maxine");
+        LobbyStageSelection.ShowRemote(state, [archive]);
+        Assert.IsTrue(LobbyStageSelection.Select(state, archive.Id));
+        var local = LobbyStageSelection.LocalStages(["nfm1/1_introductory"], Names);
 
-        LobbyStageSelection.ShowLocal(
-            state,
-            LobbyStageSelection.LocalStages(["nfm1/1_introductory"], Names),
-            publicStage
-        );
+        LobbyStageSelection.ShowLocal(state, local, archive.Id);
 
-        Assert.AreEqual(publicStage, state.Selected.Value);
-        Assert.IsTrue(state.Stages.Value.Any(stage => stage.Id == publicStage), "the chosen stage had no row");
+        Assert.AreEqual(archive.Id, state.Selected.Value);
+        Assert.AreEqual(archive, state.SelectedArchiveStage.Value);
+        CollectionAssert.AreEqual(local.ToArray(), state.Stages.Value.ToArray());
         Assert.IsFalse(state.OnlineSource.Value);
         Assert.IsTrue(state.ConfirmEnabled.Value);
+
+        LobbyStageSelection.ShowRemote(state, []);
+
+        Assert.IsTrue(state.OnlineSource.Value);
+        CollectionAssert.AreEqual(new[] { archive }, state.Stages.Value.ToArray());
     }
 
-    /// <summary>A search that no longer matches the chosen stage does not drop it.</summary>
     [TestMethod]
-    public void ApplyFilter_KeepsAChosenPublicStage_WhenTheSearchHidesIt()
+    public void ApplyFilter_LeavesAnArchiveIdOutOfLocalResults()
     {
         var state = new StageSelectState();
         var publicStage = "archive/" + new string('b', 64);
-        LobbyStageSelection.Select(state, publicStage);
+        var local = LobbyStageSelection.LocalStages(["nfm1/1_introductory"], Names);
+        LobbyStageSelection.ShowLocal(state, local, publicStage);
 
-        LobbyStageSelection.ApplyFilter(
-            state,
-            LobbyStageSelection.LocalStages(["nfm1/1_introductory"], Names),
-            "intro"
-        );
+        LobbyStageSelection.ApplyFilter(state, local, publicStage);
 
         Assert.AreEqual(publicStage, state.Selected.Value);
-        Assert.IsTrue(state.Stages.Value.Any(stage => stage.Id == publicStage));
+        Assert.AreEqual(0, state.Stages.Value.Count);
         Assert.IsTrue(state.ConfirmEnabled.Value);
     }
 

@@ -64,7 +64,7 @@ public class PvpStandingsTests
 
     private static (BaseGamemodeFactory Factory, IServerGamemode Server, ServerContext Context) CreateRace(
         params Guid[] players
-    ) => CreateRace("racing", players);
+    ) => CreateRace("both", players);
 
     private static (BaseGamemodeFactory Factory, IServerGamemode Server, ServerContext Context) CreateRace(
         string constraint,
@@ -192,10 +192,9 @@ public class PvpStandingsTests
     /// and the survivor wins even though nobody crossed a line.
     /// </summary>
     [TestMethod]
-    [DataRow("racing")]
     [DataRow("wasting")]
     [DataRow("both")]
-    public void EveryConstraint_EndsWhenOneCarIsLeftAndThatCarWins(string constraint)
+    public void SurvivalTypes_EndWhenOneCarIsLeftAndThatCarWins(string constraint)
     {
         var (factory, server, context) = CreateRace(constraint, Alice, Bob, Carol);
         try
@@ -216,11 +215,30 @@ public class PvpStandingsTests
         }
     }
 
+    [TestMethod]
+    public void RacingContinuesWhileWastedCarsWaitToRespawn()
+    {
+        var (factory, server, context) = CreateRace("racing", Alice, Bob);
+        try
+        {
+            StartRacing(server);
+            Wasted(server, context, Bob);
+            Assert.IsNull(server.GetStateSnapshot());
+            Revived(server, context, Bob);
+            Finish(factory, server, context, Bob);
+            Assert.AreEqual(Bob, Standings(server)[0].PlayerId);
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
+
     /// <summary>A simultaneous wipeout ends the race without awarding a finisher.</summary>
     [TestMethod]
     public void AllCarsWastedOnTheSameTick_EndWithoutAFinisher()
     {
-        var (factory, server, context) = CreateRace("racing", Alice, Bob, Carol);
+        var (factory, server, context) = CreateRace("wasting", Alice, Bob, Carol);
         try
         {
             StartRacing(server);
@@ -236,7 +254,6 @@ public class PvpStandingsTests
     }
 
     [TestMethod]
-    [DataRow("racing")]
     [DataRow("wasting")]
     [DataRow("both")]
     public void RepairAfterSurvivalResultReopensTheRace(string constraint)

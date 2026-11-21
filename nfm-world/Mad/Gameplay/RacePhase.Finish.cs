@@ -14,7 +14,8 @@ public partial class RacePhase
     private bool ShowingDeathResult => !_spectating && !_deathSpectating
                                        && UsesStandardRaceCompletion
                                        && ClientCar is { Wasted: true }
-                                       && GamemodeInstance is BaseClientGamemode { HudState.Finished: false };
+                                       && GamemodeInstance is BaseClientGamemode
+                                           { HudState.Finished: false, RespawnsWastedCars: false };
 
     /// <summary>
     /// The gamemode asks for the standard race-completion UI (finish banner, death result)

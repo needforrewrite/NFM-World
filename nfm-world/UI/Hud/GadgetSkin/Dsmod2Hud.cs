@@ -34,12 +34,16 @@ internal sealed class Dsmod2Hud(IHudData race) : GadgetHud(race)
         RoundedRect(Snap(0, 0, 0, 100), 35, 29, 73, 18, 5);
 
         var white = Snap(250, 250, 250);
-        Text("lap", 19, 20, 15, white, FontFamily.Yukari);
         Text("wasted", 90, 20, 15, white, FontFamily.Yukari);
         Text("position", 41, 42, 15, white, FontFamily.Yukari);
 
         var blue = Snap(30, 70, 150);
-        Text($"{Race.Lap} / {Race.TotalLaps}", 51, 20, 13, blue, FontFamily.Yukari, false);
+        if (Race.TotalLaps > 0)
+        {
+            Text("lap", 19, 20, 15, white, FontFamily.Yukari);
+            Text($"{Race.Lap} / {Race.TotalLaps}", 51, 20, 13, blue, FontFamily.Yukari, false);
+        }
+
         if (!Race.TimeTrial)
             Text($"{Race.Wasted} / {Race.Opponents}", 154, 20, 13, blue, FontFamily.Yukari, false);
 

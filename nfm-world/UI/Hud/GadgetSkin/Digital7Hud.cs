@@ -35,12 +35,16 @@ internal sealed class Digital7Hud(IHudData race) : GadgetHud(race)
         var white = Snap(250, 250, 250, 220);
         RoundedRect(Snap(0, 0, 0, 100), 6, 6, 120, 80, 10);
 
-        Text("Lap:", 12, 20, 11, accent);
+        if (Race.TotalLaps > 0)
+        {
+            Text("Lap:", 12, 20, 11, accent);
+            TextRight($"{Race.Lap} / {Race.TotalLaps}", 120, 21, 13, white, FontFamily.Digital7, false);
+        }
+
         Text("Wasted:", 12, 35, 11, accent);
         Text("Position:", 12, 50, 11, accent);
 
         var pos = Race.HasPosition ? Race.Position : 0;
-        TextRight($"{Race.Lap} / {Race.TotalLaps}", 120, 21, 13, white, FontFamily.Digital7, false);
         if (!Race.TimeTrial)
             TextRight($"{Race.Wasted} / {Race.Opponents}", 120, 36, 13, white, FontFamily.Digital7, false);
         if (pos > 0)

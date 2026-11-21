@@ -54,7 +54,7 @@ public static class GamemodeCatalog
 
     /// <summary>
     /// <see cref="ConfigProperties"/> projected to plain records, keeping only the fields that
-    /// offer a choice - a dropdown cannot render anything else.
+    /// offer valid choices for the editor.
     /// </summary>
     public static IReadOnlyList<GamemodeConfigField> ConfigFields(string gamemodeId) =>
         [.. ConfigProperties(gamemodeId)
@@ -62,7 +62,10 @@ public static class GamemodeCatalog
             .Select(property => new GamemodeConfigField(
                 property.Name,
                 property.Label,
-                [.. property.Options.Select(option => new GamemodeConfigChoice(option.Label, option.Value))]
+                [.. property.Options.Select(option => new GamemodeConfigChoice(option.Label, option.Value))],
+                IntegerInput: property.Type == typeof(int),
+                property.VisibleWhenProperty,
+                property.VisibleWhenValue
             ))];
 }
 
@@ -73,4 +76,16 @@ public sealed record GamemodeConfigChoice(string Label, string Value);
 /// A config field as the create dialog renders it. Copied out of the plugin, so holding one
 /// cannot keep the plugin's assembly loaded.
 /// </summary>
-public sealed record GamemodeConfigField(string Name, string Label, IReadOnlyList<GamemodeConfigChoice> Choices);
+public sealed record GamemodeConfigField(
+    string Name,
+    string Label,
+    IReadOnlyList<GamemodeConfigChoice> Choices,
+    bool IntegerInput = false,
+    string? VisibleWhenProperty = null,
+    string? VisibleWhenValue = null
+)
+{
+    public bool IsVisible(Func<string, string?> getValue)
+        => VisibleWhenProperty is not { } property
+           || getValue(property) is { } value && value == VisibleWhenValue;
+}

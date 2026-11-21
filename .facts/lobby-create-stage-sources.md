@@ -17,9 +17,9 @@ Rules:
 - `LobbyStageSelection.Select` is the gate: it returns false for a local-only (`user/`) stage and
   sets `Restriction`. `LobbyPhase.OnSelectStage` only writes `Lobby.SelectedStage` when it is true,
   so a refused pick cannot become the session's stage.
-- Switching source must not lose the pick. `ShowLocal` appends the chosen archive stage as its own
-  row and `WithSelection` re-adds it after a search filter; otherwise the highlight points at
-  nothing while `Lobby.SelectedStage` still holds that stage.
+- Switching source keeps `Lobby.SelectedStage` and remembers its archive title in
+  `SelectedArchiveStage`. The summary identifies the archive pick, and only the Online list may
+  show its row.
 - Archive search is Enter-only (`OnlineSearch`); typing only stores the text. A typed canonical
   archive id short-circuits the request.
 - The phase's default stage in `Publish` comes from `LocalStages`, not `GameSparker`'s first stage,

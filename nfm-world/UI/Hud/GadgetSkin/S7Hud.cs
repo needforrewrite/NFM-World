@@ -40,12 +40,16 @@ internal sealed class S7Hud(IHudData race) : GadgetHud(race)
         Polygon(Snap(50, 50, 50, 220), xs, ys);
         PolygonOutline(accent, 1, xs, ys);
 
-        Text("Lap:", 15, 22, 14, white, FontFamily.Adventure, false);
         Text("Wasted:", 102, 22, 14, white, FontFamily.Adventure, false);
         Text(Race.HasPosition ? "Position:" : "Pos:", 32, 42, 14, white, FontFamily.Adventure, false);
 
         var blue = Snap(50, 204, 255);
-        Text($"{Race.Lap} / {Race.TotalLaps}", 46, 22, 14, blue, FontFamily.Adventure, false);
+        if (Race.TotalLaps > 0)
+        {
+            Text("Lap:", 15, 22, 14, white, FontFamily.Adventure, false);
+            Text($"{Race.Lap} / {Race.TotalLaps}", 46, 22, 14, blue, FontFamily.Adventure, false);
+        }
+
         if (!Race.TimeTrial)
             Text($"{Race.Wasted} / {Race.Opponents}", 160, 22, 14, blue, FontFamily.Adventure, false);
 

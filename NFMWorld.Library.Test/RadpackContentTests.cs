@@ -1,7 +1,9 @@
 using System.Buffers;
 using System.Numerics;
+using NFMWorldLibrary;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Radpack;
+using TightPack;
 
 namespace NFMWorld.Library.Test;
 
@@ -17,6 +19,26 @@ public class RadpackContentTests
 
     private static RadpackMetadata Metadata(string name, RadpackType type)
         => new() { Name = name, CreationDate = DateTimeOffset.UnixEpoch, Type = type };
+
+    [TestMethod]
+    public void LegacyStage_RestoresMissingStageCollections()
+    {
+        const byte legacyMemberCount = 33;
+        var bytes = TightPackSerializer.Serialize(new StageLoader());
+        var reader = new TightPackReader(bytes);
+        Assert.IsTrue(reader.TryReadObjectReferenceHeader(out var memberCount, out _, out var isReference));
+        Assert.IsFalse(isReference);
+        Assert.IsTrue(memberCount > legacyMemberCount);
+        for (var i = 0; i < legacyMemberCount; i++)
+            reader.Skip((int)reader.ReadVarUInt32());
+        bytes[0] = legacyMemberCount;
+
+        var stage = TightPackSerializer.Deserialize<StageLoader>(bytes.AsSpan(0, reader.Consumed));
+
+        Assert.AreEqual(0, stage.Starts.Count);
+        Assert.AreEqual(0, stage.WallCentres.Count);
+        Assert.AreEqual(0, stage.Description.Count);
+    }
 
     [TestMethod]
     public void RoundTrip_Texture_PreservesKindAndPayload()

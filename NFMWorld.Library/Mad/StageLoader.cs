@@ -1178,6 +1178,15 @@ public partial class StageLoader
         Path = "default_stage";
     }
 
+    [TightPackOnDeserialized]
+    private void RestoreOptionalCollections()
+    {
+        // Older packs omit these fields, and TightPack overwrites the field initializers with null.
+        Starts ??= [];
+        WallCentres ??= [];
+        Description ??= [];
+    }
+
     /// <summary>
     /// The wall-piece count from a <c>maxr/l/t/b</c> line, clamped. The value comes from a
     /// user-editable file and drives a loop that allocates one piece per iteration.

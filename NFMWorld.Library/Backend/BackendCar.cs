@@ -69,6 +69,7 @@ public partial class BackendCar : BackendGameObject
     [PluginVisible] public ClientSidePlayerInfo Player { get; }
 
     private bool _fixing;
+    [PluginVisible] public bool IsFixing => _fixing;
     private byte _fixTimer;
     private int _fixTick = 0;
 
@@ -183,6 +184,19 @@ public partial class BackendCar : BackendGameObject
     {
         if (HasLeftRace) return;
         _fixing = true;
+        Fixed?.Invoke();
+    }
+
+    [PluginVisible]
+    public void RespawnInPlace()
+    {
+        if (!Wasted || HasLeftRace) return;
+        CarPhysics.Reseto(CarPhysics.Im, this);
+        CarPhysics.FinishedFix();
+        Position = new f64Vector3(Position.X, fix64.Min(Position.Y, World.Ground - GroundAt), Position.Z);
+        Rotation = new f64Euler(Rotation.Xz, f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle);
+        _fixing = false;
+        _fixTick = _fixTimer = 0;
         Fixed?.Invoke();
     }
 

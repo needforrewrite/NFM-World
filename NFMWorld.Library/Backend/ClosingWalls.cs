@@ -65,7 +65,8 @@ public sealed class ClosingWalls
         foreach (var piece in pieces)
         {
             if (piece is not StageObject { OriginalPlacement.IsWall: true } wall) continue;
-            switch (wall.OriginalPlacement.WallSide)
+            var placement = wall.OriginalPlacement;
+            switch (placement.WallSide ?? GetLegacyWallSide(placement))
             {
                 case WallDirection.Right: _right.Add(wall); break;
                 case WallDirection.Left: _left.Add(wall); break;
@@ -82,6 +83,19 @@ public sealed class ClosingWalls
         _startTop = _topEdge = _topDef.Position;
         _startBottom = _bottomEdge = _bottomDef.Position;
         Enabled = true;
+    }
+
+    private WallDirection? GetLegacyWallSide(PiecePlacement piece)
+    {
+        // Older radpacks store the generated wall transforms but omit WallSide.
+        return (double)piece.Rotation.Xz.Degrees switch
+        {
+            0 when _rightDef is { } right && piece.Position.X == right.Position => WallDirection.Right,
+            180 when _leftDef is { } left && piece.Position.X == left.Position => WallDirection.Left,
+            90 when _topDef is { } top && piece.Position.Z == top.Position => WallDirection.Top,
+            -90 when _bottomDef is { } bottom && piece.Position.Z == bottom.Position => WallDirection.Bottom,
+            _ => null
+        };
     }
 
     /// <summary>

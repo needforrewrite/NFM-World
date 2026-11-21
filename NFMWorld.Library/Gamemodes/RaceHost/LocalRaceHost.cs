@@ -72,27 +72,29 @@ public sealed class LocalRaceHost : IRaceHost
         bool deferred
     )
     {
+        var clientPlayerIndex = parameters.Players.FindIndex(e => e.IsClientPlayer);
+        if (clientPlayerIndex < 0)
+            throw new InvalidOperationException("A local race needs exactly one client player.");
+
+        var ownerId = Guid.NewGuid();
         var ids = new List<ServerSidePlayerInfo>(parameters.Players.Count);
         for (var i = 0; i < parameters.Players.Count; i++)
         {
             var player = parameters.Players[i];
-            var id = Guid.NewGuid();
             ids.Add(
                 new ServerSidePlayerInfo
                 {
-                    Id = id,
+                    Id = i == clientPlayerIndex ? ownerId : Guid.NewGuid(),
                     PlayerName = player.PlayerName,
                     CarName = player.CarName,
                     Color = player.Color,
                     CarColors = player.CarColors,
-                    Wheels = player.Wheels
+                    Wheels = player.Wheels,
+                    IsBot = player.IsBot,
+                    OwnerId = player.IsBot ? ownerId : Guid.Empty
                 }
             );
         }
-
-        var clientPlayerIndex = parameters.Players.FindIndex(e => e.IsClientPlayer);
-        if (clientPlayerIndex < 0)
-            throw new InvalidOperationException("A local race needs exactly one client player.");
 
         var host = new LocalRaceHost(stageName, parameters, ids[clientPlayerIndex], stageData);
         host._serverPlayerIds = ids.Select(player => player.Id).ToArray();

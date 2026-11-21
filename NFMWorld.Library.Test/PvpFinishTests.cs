@@ -61,10 +61,10 @@ public class PvpFinishTests
         return stage;
     }
 
-    private static BaseGamemodeFactory CreateFactory()
+    private static BaseGamemodeFactory CreateFactory(Dictionary<string, object>? config = null)
     {
         NFMWorldLibrary.TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
-        return GamemodeFactory.Create("nfmm/pvp", new Dictionary<string, object> { ["constraint"] = "racing" });
+        return GamemodeFactory.Create("nfmm/pvp", config ?? new Dictionary<string, object> { ["constraint"] = "racing" });
     }
 
     private static ReadOnlyMemory<byte> SerializeEvent(BaseGamemodeFactory factory, string name, params object[] args)
@@ -79,11 +79,13 @@ public class PvpFinishTests
         public BackendStage CurrentStage { get; } = stage;
         public f64Vector3? Position { get; set; }
         public bool? Wasted { get; set; }
+        public List<ReadOnlyMemory<byte>> Events { get; } = [];
         public f64Vector3? GetPlayerPosition(Guid playerId) => Position;
         public bool? IsPlayerWasted(Guid playerId) => Wasted;
 
         public void BroadcastEvent(ReadOnlyMemory<byte> payload)
         {
+            Events.Add(payload);
         }
     }
 
@@ -117,11 +119,15 @@ public class PvpFinishTests
 
     private static (BaseGamemodeFactory Factory, IServerGamemode Server, ServerContext Context) CreateRace(
         ushort laps,
-        int checkpoints
+        int checkpoints,
+        Dictionary<string, object>? config = null,
+        StageObject? hoop = null
     )
     {
-        var factory = CreateFactory();
+        var factory = CreateFactory(config);
         var context = new ServerContext(CreateStage(laps, checkpoints));
+        if (hoop is not null)
+            context.CurrentStage.FixHoops.Add(hoop);
         var server = factory.CreateServerGamemode(
             new ServerGamemodeParameters
             {
@@ -136,6 +142,7 @@ public class PvpFinishTests
         )!;
         server.Begin();
         server.StartRace();
+        for (var i = 0; i < GamemodeUtils.ServerCountdownInterval * 3; i++) server.GameTick();
         return (factory, server, context);
     }
 
@@ -156,6 +163,83 @@ public class PvpFinishTests
                 server.GetStateSnapshot() is { IsFinished: true },
                 "crossing the last checkpoint on the final lap has to finish the race"
             );
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
+
+    [TestMethod]
+    public void LapRuleOverridesTheStageDefault()
+    {
+        var (factory, server, context) = CreateRace(3, 2, new() { ["constraint"] = "racing", ["laps"] = "1" });
+        try
+        {
+            Assert.AreEqual((ushort)1, context.CurrentStage.Nlaps);
+            ReportCrossing(factory, server, context, crossed: 0, checkpointCount: 2, lap: 0);
+            ReportCrossing(factory, server, context, crossed: 1, checkpointCount: 2, lap: 1);
+            Assert.IsTrue(server.GetStateSnapshot() is { IsFinished: true });
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
+
+    [TestMethod]
+    public void WastingDoesNotCountCheckpointsEvenWithALapOverride()
+    {
+        var (factory, server, context) = CreateRace(3, 2, new() { ["constraint"] = "wasting", ["laps"] = "1" });
+        try
+        {
+            Assert.AreEqual((ushort)0, context.CurrentStage.Nlaps);
+            Assert.AreEqual(2, context.CurrentStage.Checkpoints.Count);
+            ReportCrossing(factory, server, context, crossed: 0, checkpointCount: 2, lap: 0);
+            ReportCrossing(factory, server, context, crossed: 1, checkpointCount: 2, lap: 1);
+            var standing = ((PluginServerGamemode)server).GetLiveState()!.Value.Standings.Single();
+            Assert.AreEqual((ushort)0, standing.Checkpoint);
+            Assert.AreEqual(0, (int)standing.Lap);
+            Assert.IsNull(server.GetStateSnapshot());
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
+
+    [TestMethod]
+    [DataRow("1", 1)]
+    [DataRow("10", 10)]
+    [DataRow("0", 3)]
+    [DataRow("11", 3)]
+    [DataRow(null, 3)]
+    public void LimitedFixHoopBroadcastsUsesUntilItsLimit(string? limit, int expectedUses)
+    {
+        var hoop = CreateCheckpoint(1000);
+        var rules = new Dictionary<string, object> { ["fixing"] = "limited" };
+        if (limit is not null) rules["fix_limit"] = limit;
+        var (factory, server, context) = CreateRace(3, 2, rules, hoop);
+        try
+        {
+            var request = SerializeEvent(factory, "UseFixHoopEvent", 0, 0);
+            var type = ((NativeGamemodeFactory)factory).Plugin.Assembly.GetExportedTypes()
+                .Single(t => t.Name == "FixHoopUsedEvent");
+            context.Position = hoop.Position;
+            context.Events.Clear();
+            for (var use = 0; use <= expectedUses; use++)
+            {
+                server.OnClientEvent(PlayerId, request.Span);
+                for (var tick = 0; tick < GamemodeUtils.ServerTps; tick++) server.GameTick();
+            }
+
+            Assert.HasCount(expectedUses, context.Events);
+            for (var i = 0; i < context.Events.Count; i++)
+            {
+                object? used = null;
+                TightPackSerializer.DeserializeUntyped(type.BaseType!, context.Events[i].Span, ref used);
+                Assert.AreEqual(expectedUses - 1 - i, (int)type.GetProperty("Remaining")!.GetValue(used)!);
+            }
         }
         finally
         {
@@ -285,9 +369,11 @@ public class PvpFinishTests
     /// keeps driving and the lap counter keeps climbing past the stage's lap count.
     /// </summary>
     [TestMethod]
-    public void ClientPassingItsFinalLap_StopsTheRace()
+    [DataRow(false)]
+    [DataRow(true)]
+    public void RacingClientFinishesTheFinalLap(bool wastedBeforeFinish)
     {
-        var factory = CreateFactory();
+        var factory = CreateFactory(wastedBeforeFinish ? new() { ["constraint"] = "racing", ["fixing"] = "none" } : null);
         var carName = $"pvp-test/{Guid.NewGuid():N}";
         BaseClientGamemode? client = null;
         try
@@ -297,6 +383,10 @@ public class PvpFinishTests
                 (0, new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName))
             );
 
+            var stage = CreateStage(laps: 3, checkpoints: 2);
+            var hoop = CreateCheckpoint(5000);
+            stage.FixHoops.Add(hoop);
+            stage.Pieces.Add(hoop);
             client = (BaseClientGamemode)factory.CreateGameMode(
                 new ClientGamemodeParameters
                 {
@@ -311,12 +401,27 @@ public class PvpFinishTests
                         )
                     ]
                 },
-                new ClientContext(CreateStage(laps: 3, checkpoints: 2))
+                new ClientContext(stage)
             );
             client.Begin();
             client.OnServerEvent(SerializeEvent(factory, "CountdownGoEvent").Span);
 
-            client.ClientPlayer.Car!.CurrentLap = 3;
+            var car = client.ClientPlayer!.Car!;
+            if (wastedBeforeFinish)
+            {
+                Assert.IsFalse(stage.Pieces.Contains(hoop));
+                car.CurrentLap = 1;
+                car.CarPhysics.Wasted = true;
+                var respawnTick = (int)Math.Ceiling(3 * Physics.TargetTps);
+                for (var tick = 1; tick < respawnTick; tick++) client.GameTick();
+                Assert.IsTrue(car.Wasted, "the car stays wasted for three seconds");
+
+                client.GameTick();
+                Assert.IsFalse(car.Wasted);
+                Assert.AreEqual((byte)1, car.CurrentLap);
+            }
+
+            car.CurrentLap = 3;
             client.GameTick();
 
             Assert.AreEqual(3, client.HudState.Lap, "the lap counter must stop at the stage's lap count");

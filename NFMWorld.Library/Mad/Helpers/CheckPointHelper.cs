@@ -18,6 +18,7 @@ public class CheckPointHelper
         IReadOnlyList<ClientSidePlayer> players
     )
     {
+        var useCheckpoints = currentStage.Nlaps > 0;
         foreach (var player in players)
         {
             player.Car?.Placement = 0;
@@ -41,7 +42,7 @@ public class CheckPointHelper
                     continue;
                 }
 
-                if (car1.TotalCheckpoint != car2.TotalCheckpoint)
+                if (useCheckpoints && car1.TotalCheckpoint != car2.TotalCheckpoint)
                 {
                     if (car1.TotalCheckpoint < car2.TotalCheckpoint)
                     {
@@ -54,7 +55,7 @@ public class CheckPointHelper
                 }
                 else
                 {
-                    if (currentStage.Checkpoints.Count == 0)
+                    if (!useCheckpoints || currentStage.Checkpoints.Count == 0)
                     {
                         car2.Placement++;
                         continue;

@@ -23,8 +23,10 @@ public static class HudText
         Validate(template);
         var parts = Parse(template).ToArray();
         if (parts.All(part => !part.Token)) return _ => template;
+        var showsLaps = parts.Any(part => part.Token && part.Text is "lap" or "totalLaps");
         return data =>
         {
+            if (showsLaps && data.TotalLaps == 0) return "";
             var text = new StringBuilder();
             foreach (var part in parts) text.Append(part.Token ? Value(part.Text, data) : part.Text);
             return text.ToString();

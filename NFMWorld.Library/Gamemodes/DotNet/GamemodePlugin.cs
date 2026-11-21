@@ -144,7 +144,9 @@ public sealed class GamemodePlugin
                     Name = attribute.Name,
                     Type = attribute.Type,
                     Label = attribute.Label,
-                    Description = attribute.Description
+                    Description = attribute.Description,
+                    VisibleWhenProperty = attribute.VisibleWhenProperty,
+                    VisibleWhenValue = attribute.VisibleWhenValue
                 }
             );
         }
@@ -174,6 +176,8 @@ public sealed class GamemodeConfigProperty
     public required Type Type { get; init; }
     public required string Label { get; init; }
     public required string Description { get; init; }
+    public string? VisibleWhenProperty { get; init; }
+    public string? VisibleWhenValue { get; init; }
     public List<GamemodeConfigPropertyOption> Options { get; } = [];
 }
 

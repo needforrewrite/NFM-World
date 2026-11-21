@@ -25,6 +25,8 @@ public class GamemodeConfigPropertyAttribute : Attribute
     public required Type Type { get; set; }
     public required string Label { get; set; }
     public required string Description { get; set; }
+    public string? VisibleWhenProperty { get; set; }
+    public string? VisibleWhenValue { get; set; }
 }
 
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
