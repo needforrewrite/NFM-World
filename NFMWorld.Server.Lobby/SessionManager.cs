@@ -39,28 +39,36 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         if (creator is null)
             return null;
 
-        maxPlayers = (byte)Math.Clamp((int)maxPlayers, 2, MatchGameplayInfo.MaxPlayers);
-
-        var session = new GameSession
+        lock (_lock)
         {
-            Id = Interlocked.Increment(ref _maxSessionId),
-            CreatorId = creator.Id,
-            CreatorName = creator.Name,
-            StageName = stageName,
-            MaxPlayers = maxPlayers,
-            Gamemode = gamemode,
-            GamemodeParameters = gamemodeParameters is null ? [] : new(gamemodeParameters),
-            Players = new ConcurrentDictionary<byte, Guid> { [0] = creator.Id },
-            BotCount = gamemode == DefaultGamemodes.TimeTrial ? 0 : Math.Clamp(bots, 0, maxPlayers - 1)
-        };
-        FillBots(session);
+            // Creating a second session must not leave the first one behind holding the creator
+            // alone: nobody else could ever start it, and it stays in the list for ever.
+            if (creator.InSession is { } current && _sessions.TryGetValue(current.SessionIndex, out var previous))
+                RemovePlayer(previous, creator);
 
-        creator.InSession = (0, session.Id);
+            maxPlayers = (byte)Math.Clamp((int)maxPlayers, 2, MatchGameplayInfo.MaxPlayers);
 
-        if (!_sessions.TryAdd(session.Id, session))
-            return null;
+            var session = new GameSession
+            {
+                Id = Interlocked.Increment(ref _maxSessionId),
+                CreatorId = creator.Id,
+                CreatorName = creator.Name,
+                StageName = stageName,
+                MaxPlayers = maxPlayers,
+                Gamemode = gamemode,
+                GamemodeParameters = gamemodeParameters is null ? [] : new(gamemodeParameters),
+                Players = new ConcurrentDictionary<byte, Guid> { [0] = creator.Id },
+                BotCount = gamemode == DefaultGamemodes.TimeTrial ? 0 : Math.Clamp(bots, 0, maxPlayers - 1)
+            };
+            FillBots(session);
 
-        return session;
+            creator.InSession = (0, session.Id);
+
+            if (!_sessions.TryAdd(session.Id, session))
+                return null;
+
+            return session;
+        }
     }
 
     /// <summary>
@@ -75,13 +83,16 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         // Two joins arriving at once must not both take the same free slot.
         lock (_lock)
         {
+            // Already in it: re-leaving would end a session that only this player is in.
+            if (player.InSession is { } already && already.SessionIndex == sessionId)
+                return (_sessions.TryGetValue(sessionId, out var joinedCurrent) ? joinedCurrent : null, null);
+
             GameSession? leftSession = null;
 
             // Leave current session if in one
             if (player.InSession is { } current && _sessions.TryGetValue(current.SessionIndex, out var leaving))
             {
-                leaving.Players.TryRemove(KeyValuePair.Create(current.PlayerIndex, player.Id));
-                player.InSession = null;
+                RemovePlayer(leaving, player);
                 leftSession = leaving;
             }
 
@@ -107,16 +118,76 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
     public GameSession? LeaveSession(uint clientIndex, uint sessionId)
     {
         var player = players.Get(clientIndex);
-        if (player?.InSession is { } current
-            && current.SessionIndex == sessionId
-            && _sessions.TryGetValue(sessionId, out var session))
+        if (player is null)
+            return null;
+
+        lock (_lock)
+        {
+            if (player.InSession is not { } current
+                || current.SessionIndex != sessionId
+                || !_sessions.TryGetValue(sessionId, out var session))
+                return null;
+
+            RemovePlayer(session, player);
+            return session;
+        }
+    }
+
+    /// <summary>
+    /// Takes a player out of whichever session it is in, as its connection going away does.
+    /// Returns the session left, or null when it was not in one.
+    /// </summary>
+    public GameSession? RemovePlayer(PlayerRegistry.ClientInfo player)
+    {
+        lock (_lock)
+        {
+            if (player.InSession is not { } current || !_sessions.TryGetValue(current.SessionIndex, out var session))
+                return null;
+
+            RemovePlayer(session, player);
+            return session;
+        }
+    }
+
+    /// <summary>
+    /// Removes a player from a session and keeps the session in a state someone can actually
+    /// start. The caller holds <see cref="_lock"/>.
+    /// </summary>
+    private void RemovePlayer(GameSession session, PlayerRegistry.ClientInfo player)
+    {
+        if (player.InSession is { } current && current.SessionIndex == session.Id)
         {
             session.Players.TryRemove(KeyValuePair.Create(current.PlayerIndex, player.Id));
             player.InSession = null;
-            return session;
         }
 
-        return null;
+        // A session nobody is in can never start and nobody can join it: it is dropped by the
+        // pruner once it is marked finished.
+        if (session.Players.IsEmpty)
+        {
+            session.State = SessionState.Finished;
+            return;
+        }
+
+        // Only the creator may start a race, and the client hides START for everyone else - so
+        // a session that loses its creator while others remain is a dead end that sits in the
+        // list for ever. Hand it to the next human instead. This also covers a race that is
+        // about to fail and be put back to NotStarted, and a running one keeps a live owner.
+        if (session.Players.Values.Contains(session.CreatorId))
+            return;
+
+        var successorId = session.Players.OrderBy(slot => slot.Key).First().Value;
+        var successor = players.Get(successorId);
+        if (successor is null)
+            return;
+
+        session.CreatorId = successor.Id;
+        session.CreatorName = successor.Name;
+
+        // The client that fielded a bot is the one that simulates it, so the bots follow the
+        // creator. Left on the departed id they would be owned by nobody and never move.
+        foreach (var slot in session.Bots.Keys.ToArray())
+            session.Bots[slot] = session.Bots[slot] with { OwnerId = successor.Id };
     }
 
     /// <summary>Marks a session as started/loading and sets the load timeout.</summary>
@@ -144,10 +215,6 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
                         return false;
                     aplayer.IsInGame = true;
                 }
-
-                if (!session.Players.Values.Contains(session.CreatorId))
-                    foreach (var slot in session.Bots.Keys.ToArray())
-                        session.Bots[slot] = session.Bots[slot] with { OwnerId = player.Id };
 
                 // Past this point the load timeout no longer applies: the session is waiting for
                 // the race to finish, not for players to load. Nothing ever cleared it, so every

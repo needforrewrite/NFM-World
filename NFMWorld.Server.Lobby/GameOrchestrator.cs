@@ -335,14 +335,9 @@ public class GameOrchestrator
             {
                 InvalidatePreparation(inSession.SessionIndex, "A player disconnected while the race was preparing.");
 
-                var session = _sessions.Get(inSession.SessionIndex);
-                session?.Players.TryRemove(KeyValuePair.Create(inSession.PlayerIndex, client.Id));
-
-                // Nobody is left in the session, so it can never start and nobody can join it.
-                // Any state, not just the pre-race ones: a started race whose players all left
-                // was left in the list as "1/2 racing" with START greyed out forever.
-                if (session is not null && session.Players.IsEmpty)
-                    _sessions.AbortSession(session.Id);
+                // Removes the player and leaves the session startable: an empty one ends, and one
+                // that lost its creator hands it to whoever is left.
+                _sessions.RemovePlayer(client);
             }
 
             if (client.IsAuthenticated)
@@ -706,6 +701,10 @@ public class GameOrchestrator
         var player = _players.Get(clientId);
         if (player is null) return;
 
+        // Captured before the leave: losing the creator hands the session to someone else, and
+        // the note is about the session being left, not about who runs it afterwards.
+        var host = player.InSession is { } current ? _sessions.Get(current.SessionIndex)?.CreatorName : null;
+
         var session = _sessions.LeaveSession(clientId, leave.SessionId);
         if (session is not null)
         {
@@ -715,12 +714,8 @@ public class GameOrchestrator
             // lobby: keeping IsInGame would leave it unable to start or watch anything again.
             player.IsInGame = false;
 
-            // A session nobody is left in can never start, and nobody can join it either.
-            if (session.Players.IsEmpty)
-                _sessions.AbortSession(session.Id);
-
             _chat.BroadcastSystem(
-                $"{player.Name} has left {session.CreatorName}'s session!"
+                $"{player.Name} has left {(host ?? session.CreatorName)}'s session!"
             );
             _broadcaster.BroadcastToAll();
         }
