@@ -196,11 +196,11 @@ public class CarPhysicsCollisionTests
 
         // The Z branch fired on the contacting victim wheels: they were pushed in +z by the
         // dominant car's Push (100 + 150 * 2 * 1 = 400, the impulse itself at the 300 clamp).
-        Assert.AreEqual((Fixed64)400, light.CarPhysics.Scz[2], "Z branch did not fire on the victim");
+        Assert.AreEqual(400, light.CarPhysics.Scz[2], "Z branch did not fire on the victim");
         // The X branch was skipped on the same wheels: their lateral velocity is untouched. This
         // is the regression's setup - with the shared counter, the Z branch's Regy gate would
         // have consumed the lift gate, so the victim would not be lifted here.
-        Assert.AreEqual((Fixed64)300, light.CarPhysics.Scx[2], "X branch fired; this is not a Z-only collision");
+        Assert.AreEqual(300, light.CarPhysics.Scx[2], "X branch fired; this is not a Z-only collision");
         // The lift impulse is applied per contacting pair, so every contacting wheel (2 and 3)
         // must have taken its kick even though only the Z branch fired for them.
         var liftedWheels = 0;

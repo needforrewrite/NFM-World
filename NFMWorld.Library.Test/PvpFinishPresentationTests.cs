@@ -79,7 +79,7 @@ public class PvpFinishPresentationTests
                 Assert.IsNull(client.HudState.StateText);
                 Assert.IsNull(client.Results);
                 Assert.IsTrue(client.Players.All(player => !player.Car!.CarPhysics.Halted));
-                Assert.AreEqual(2, (int)client.Players[0].Car!.CurrentLap);
+                Assert.AreEqual(2, client.Players[0].Car!.CurrentLap);
             }
         }
         finally

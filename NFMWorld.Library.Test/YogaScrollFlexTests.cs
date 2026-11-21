@@ -63,9 +63,9 @@ public class YogaScrollFlexTests
             ]
         );
 
-        ((Component)root).LayoutAndRender(new Vector2(460, 600));
+        root.LayoutAndRender(new Vector2(460, 600));
 
-        var list = (Component)((Component)root).VisualChildren[0];
+        var list = (Component)root.VisualChildren[0];
         var rows = list.VisualChildren.SelectMany(row => row.VisualChildren).OfType<Component>().ToArray();
 
         Assert.AreEqual(20, rows.Length, "every stage rendered a row");

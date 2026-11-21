@@ -27,13 +27,13 @@ public class PlayerStateSerializationTests
         {
             Power = (fix64)1.5f,
             TheBitFlags = flags,
-            CarPosition = ((fix64)10, (fix64)20, (fix64)30),
-            CarRotation = ((fix64)1, (fix64)2, (fix64)3),
+            CarPosition = (10, 20, 30),
+            CarRotation = (1, 2, 3),
             RacePosition = (2, 7),
-            StuntState = ((sbyte)-1, (fix64)0.5f, (fix64)0.25f, (fix64)0.125f),
-            XzReadings = ((fix64)100, (fix64)(-100)),
-            CameraAngles = ((fix64)45, (fix64)(-45)),
-            AngularVelocities = ((fix64)1, (fix64)2, (fix64)3, (fix64)4),
+            StuntState = (-1, (fix64)0.5f, (fix64)0.25f, (fix64)0.125f),
+            XzReadings = (100, -100),
+            CameraAngles = (45, -45),
+            AngularVelocities = (1, 2, 3, 4),
         };
     }
 

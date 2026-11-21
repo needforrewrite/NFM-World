@@ -260,7 +260,7 @@ public class TextAreaContextMenuTests
     {
         AreaRoot(out var area);
 
-        Assert.IsTrue(((Component)Menu(area)).IgnoresScrollOffset);
+        Assert.IsTrue(Menu(area).IgnoresScrollOffset);
     }
 
     /// <summary>

@@ -322,10 +322,10 @@ public class StageParityDirectiveTests
         stage.Walls.Update(3);
         Assert.AreEqual(afterFirstUpdate, (double)stage.Walls.Right, 0.001);
 
-        Assert.IsFalse(stage.Walls.IsInBounds((fix64)19000, (fix64)0));
-        Assert.IsTrue(stage.Walls.IsInBounds((fix64)0, (fix64)0));
+        Assert.IsFalse(stage.Walls.IsInBounds(19000, 0));
+        Assert.IsTrue(stage.Walls.IsInBounds(0, 0));
 
         // The moving boundary is collision geometry too, ahead of the static quadtree entries.
-        Assert.IsTrue(stage.RetrievePointCollidables((fix64)19000, (fix64)0).Length > 0);
+        Assert.IsTrue(stage.RetrievePointCollidables(19000, 0).Length > 0);
     }
 }

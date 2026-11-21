@@ -45,8 +45,8 @@ public class CarPhysicsOrientationTests
 
             for (var rollDegrees = startRoll; rollDegrees <= endRoll; rollDegrees += 2)
             {
-                var normal = Up((Fixed64)rollDegrees, pitch, (Fixed64)yawDegrees);
-                var result = CarPhysics.FitTerrainAngles(normal, (Fixed64)yawDegrees, fittedRoll, fittedPitch);
+                var normal = Up(rollDegrees, pitch, yawDegrees);
+                var result = CarPhysics.FitTerrainAngles(normal, yawDegrees, fittedRoll, fittedPitch);
                 Assert.IsTrue(
                     Fixed64.Abs(result.Pxy - rollDegrees) < (Fixed64)0.1f,
                     $"roll discontinuity for yaw={yawDegrees}, pitch={pitchDegrees}, roll={rollDegrees}: {result.Pxy}"
@@ -70,10 +70,10 @@ public class CarPhysicsOrientationTests
             const int pitchDegrees = 40;
             const int localYawDegrees = 57;
             var result = CarPhysics.FitTerrainAngles(
-                Up((Fixed64)rollDegrees, (Fixed64)pitchDegrees, (Fixed64)yawDegrees),
-                (Fixed64)yawDegrees,
-                (Fixed64)rollDegrees,
-                (Fixed64)localYawDegrees
+                Up(rollDegrees, pitchDegrees, yawDegrees),
+                yawDegrees,
+                rollDegrees,
+                localYawDegrees
             );
 
             Assert.IsTrue(
@@ -81,7 +81,7 @@ public class CarPhysicsOrientationTests
                 $"expected gimbal lock for yaw={yawDegrees}, roll={rollDegrees}"
             );
             Assert.AreEqual(
-                (Fixed64)localYawDegrees,
+                localYawDegrees,
                 result.Pzy,
                 $"local yaw changed for yaw={yawDegrees}, roll={rollDegrees}"
             );

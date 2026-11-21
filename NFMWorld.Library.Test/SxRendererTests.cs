@@ -164,10 +164,10 @@ public class SxRendererTests
 
         var merged = card.Over(caller);
 
-        Assert.AreEqual(16f, (float)(merged.PaddingTop.PointValue ?? 0), "the card's padding survived");
-        Assert.AreEqual(20f, (float)(merged.PaddingLeft.PointValue ?? 0));
+        Assert.AreEqual(16f, merged.PaddingTop.PointValue ?? 0, "the card's padding survived");
+        Assert.AreEqual(20f, merged.PaddingLeft.PointValue ?? 0);
         Assert.AreEqual(FlexDirection.Column, merged.FlexDirection);
-        Assert.AreEqual(16f, (float)(merged.MarginBottom.PointValue ?? 0));
+        Assert.AreEqual(16f, merged.MarginBottom.PointValue ?? 0);
     }
 
     [TestMethod]
@@ -203,7 +203,7 @@ public class SxRendererTests
 
         Assert.AreEqual(FlexDirection.Column, merged.FlexDirection);
         Assert.AreEqual(Align.FlexStart, merged.AlignItems);
-        Assert.AreEqual(8f, (float)(merged.PaddingTop.PointValue ?? 0));
+        Assert.AreEqual(8f, merged.PaddingTop.PointValue ?? 0);
         Assert.IsNotNull(merged.BackgroundColor);
     }
 
@@ -609,6 +609,83 @@ public class SxRendererTests
             Assert.AreNotSame(first, rows.VisualChildren[0]);
             CollectionAssert.AreEqual(new[] { "New", "Open" }, rows.VisualChildren.Cast<View>().Select(n => n.Name).ToArray());
             Assert.AreEqual(3, builds);
+        }
+        finally
+        {
+            FocusManager.ClearHover();
+        }
+    }
+
+    /// <summary>
+    /// A slot's children bind their own signals. Those binds must not leak into the slot's
+    /// computation: a hovered row re-ran the slot, and the lobby's slot loads the gamemode
+    /// plugin to read its config schema, so hovering unloaded and reloaded the plugin.
+    /// </summary>
+    [TestMethod]
+    public void ChildHover_DoesNotRerunTheSlot()
+    {
+        IBackend.Backend = new DummyBackend();
+        FocusManager.ClearHover();
+        var hovered = new Signal<bool>(false);
+        var builds = 0;
+        var normal = new Maxine.Extensions.Mathematics.Color(20, 30, 40);
+        var highlight = new Maxine.Extensions.Mathematics.Color(70, 80, 90);
+        View? row = null;
+
+        using var mounted = Renderer.Mount(() => Sx.View(
+            style: () => Sx.Styles(width: 200, height: 200),
+            children:
+            [
+                (Func<object?>)(() =>
+                {
+                    builds++;
+                    return row = Sx.View(
+                        name: () => "option",
+                        style: () => Sx.Styles(
+                            width: 100,
+                            height: 30,
+                            backgroundColor: hovered.Value ? highlight : normal
+                        ),
+                        onmouseenter: _ => hovered.Value = true,
+                        onmouseleave: _ => hovered.Value = false
+                    );
+                })
+            ]
+        ));
+
+        var root = (View)mounted.Root;
+        var size = new System.Numerics.Vector2(200, 200);
+
+        void Move(float x, float y)
+        {
+            FocusManager.DispatchMouseMove(root, new NFMWorld.ClayDom.Events.BaseMouseMoveEvent(
+                new System.Numerics.Vector2(x, y),
+                default,
+                false,
+                false,
+                false
+            ));
+            Renderer.Flush();
+            root.LayoutAndRender(size);
+        }
+
+        try
+        {
+            root.LayoutAndRender(size);
+            Assert.AreEqual(1, builds, "the slot should build once on mount");
+            var original = row;
+            Assert.IsNotNull(original);
+
+            Move(50, 15);
+            Assert.IsTrue(original.IsHovered);
+            Assert.AreEqual(highlight, original.Styles.BackgroundColor);
+            Assert.AreSame(original, row);
+            Assert.AreEqual(1, builds, "hovering a child rebuilt the slot and its subtree");
+
+            Move(150, 100);
+            Assert.IsFalse(original.IsHovered);
+            Assert.AreEqual(normal, original.Styles.BackgroundColor);
+            Assert.AreEqual(1, builds);
         }
         finally
         {

@@ -112,8 +112,8 @@ public class CarWheelsTests
         rad.Wheels = [new Rad3dWheelDef(
             new Vector3d(40, 20, 60),
             11,
-            (Fixed64)20,
-            (Fixed64)20,
+            20,
+            20,
             [poly, poly with { ColNum = null }]
         )];
         return rad;

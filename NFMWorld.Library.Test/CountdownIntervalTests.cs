@@ -42,7 +42,7 @@ public class CountdownIntervalTests
     [TestMethod]
     public void BothIntervals_AreAboutTheSameWallClockLength()
     {
-        var clientSeconds = GamemodeUtils.CountdownInterval / (float)Physics.TargetTps;
+        var clientSeconds = GamemodeUtils.CountdownInterval / Physics.TargetTps;
         var serverSeconds = GamemodeUtils.ServerCountdownInterval / (float)GamemodeUtils.ServerTps;
 
         // Within a tick's worth of each other, so the two countdowns stay in step.
