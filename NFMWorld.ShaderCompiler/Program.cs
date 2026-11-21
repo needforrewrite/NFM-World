@@ -21,6 +21,9 @@ if (shaderPath is null)
 
 var outputDir = args.Skip(1).FirstOrDefault(a => !a.StartsWith("--", StringComparison.Ordinal));
 
+if (WgslCompiler.UnavailableReason is { } noWgsl)
+    Console.WriteLine($"{noWgsl}; bundles carry no WGSL.");
+
 try
 {
     var files = Directory.Exists(shaderPath)

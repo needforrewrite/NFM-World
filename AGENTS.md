@@ -585,7 +585,10 @@ before `CoreCompile` and:
    the compile.
 
 WGSL is optional per build: `WgslCompiler.Available` is false where the tint native is missing (a RID the package
-does not ship), and the bundles then carry an empty `Wgsl` string. Three things about the path are not obvious and each
+does not ship) **or on macOS at all** — the package's osx-arm64 `tint` is built without Dawn's SPIR-V reader, so every
+translation would fail with `invalid value 'spirv' for option '--input-format'` — and the bundles then carry an empty
+`Wgsl` string. `WgslCompiler.UnavailableReason` carries the reason the build log prints. WGSL only feeds the WebGPU
+backend, which refuses to run off Windows. Three things about the path are not obvious and each
 was found by a validation failure, not by reading docs — see `WgslCompiler.cs`:
 
 | Gotcha | Rule |

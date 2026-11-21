@@ -52,6 +52,9 @@ public sealed class ShaderCompileTask : Microsoft.Build.Utilities.Task
     {
         NativeLibraries.EnsureLoaded();
 
+        if (WgslCompiler.UnavailableReason is { } noWgsl)
+            Log.LogMessage(MessageImportance.Normal, $"{noWgsl}; bundles carry no WGSL.");
+
         if (Shaders.Length == 0)
         {
             Log.LogMessage(MessageImportance.High, "No shaders to compile.");

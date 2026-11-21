@@ -30,9 +30,27 @@ public static class WgslCompiler
     private const int DecorationDescriptorSet = 34;
 
     /// <summary>
-    /// Whether tint is present, i.e. whether <see cref="Compile"/> can run.
+    /// Whether tint is present and usable, i.e. whether <see cref="Compile"/> can run; when it is
+    /// false, <see cref="UnavailableReason"/> says why and the caller omits WGSL.
     /// </summary>
-    public static bool Available => FindTint() is not null;
+    public static bool Available => UnavailableReason is null;
+
+    /// <summary>
+    /// Why WGSL cannot be produced on this host, or null when it can.
+    ///
+    /// macOS is refused outright rather than probed: the <c>Stride.Dependencies.Tint</c> osx-arm64
+    /// binary is built without Dawn's SPIR-V reader, so its <c>--input-format</c> accepts only
+    /// <c>wgsl</c> and every translation fails with <c>invalid value 'spirv'</c>. WGSL is only
+    /// consumed by the WebGPU backend, which refuses to run off Windows, so a macOS build loses
+    /// nothing by omitting it. Replace this with a capability probe once a macOS tint that carries
+    /// the reader is available.
+    /// </summary>
+    public static string? UnavailableReason =>
+        OperatingSystem.IsMacOS()
+            ? "the macOS tint build has no SPIR-V reader (it reads WGSL only)"
+            : FindTint() is null
+                ? "tint was not found beside the shader compiler"
+                : null;
 
     /// <summary>
     /// Translates one stage.

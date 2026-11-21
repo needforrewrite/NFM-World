@@ -97,11 +97,11 @@ public static class ShaderBuild
         var defines = new Dictionary<string, string> { [DialectDefine] = "1" };
         var bundles = new List<CompiledBundle>(techniques.Count);
 
-        // Probed once per file: a build host without the tint native (a non-x64 RID has no package
-        // asset for it) still produces every other form, and the WebGPU backend reports the missing
-        // WGSL itself rather than the shader build failing for everyone.
-        if (!WgslCompiler.Available)
-            log?.Invoke("    tint was not found beside the shader compiler; WGSL is omitted.");
+        // Probed once per file: a build host whose tint cannot read SPIR-V (no package asset for the
+        // RID, or the macOS binary built without the reader) still produces every other form, and
+        // the WebGPU backend reports the missing WGSL itself rather than the shader build failing
+        // for everyone. The caller reports why, once, rather than this loop repeating it per shader.
+        var emitsWgsl = WgslCompiler.Available;
 
         foreach (var technique in techniques)
         {
@@ -170,7 +170,7 @@ public static class ShaderBuild
                 );
             }
 
-            if (WgslCompiler.Available)
+            if (emitsWgsl)
             {
                 foreach (var (stage, value) in compiled)
                 {
