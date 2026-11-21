@@ -60,7 +60,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
     ///
     /// Null is the state this starts in, and that is the abstraction's contract rather than a
     /// sentinel: <see cref="ICommandBuffer.SetRenderTarget"/> documents null as the back buffer, so a
-    /// caller that never calls it draws there. See the constructor for why "never called" has to mean
+    /// caller that never calls it draws there. See <see cref="RestoreBackBufferBinding"/> for why "never called" has to mean
     /// something on a backend whose output-merger stage begins with nothing bound.
     /// </summary>
     private D3D11RenderTarget? _target;
@@ -139,20 +139,13 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
         _swapchain = device.D3d11Swapchain;
         _targetWidth = _swapchain.Width;
         _targetHeight = _swapchain.Height;
+    }
 
-        // The swapchain's views go on from here, before the caller has asked for anything.
-        //
-        // D3D11's output-merger stage begins with no render target view bound at all, and neither a
-        // clear nor a draw against that empty slot writes anywhere or reports anything - the calls
-        // succeed and the frame is simply discarded. The abstraction's null target means the back
-        // buffer (see ICommandBuffer.SetRenderTarget), so every caller that only ever passes null -
-        // the boot frame, the smoke test's present check, anything drawing before a target exists -
-        // would otherwise render into nothing.
-        //
-        // GL gets this for free: framebuffer 0 is the default framebuffer before any bind call, which
-        // is why the two GL backends have no equivalent and why the omission was invisible until this
-        // backend ran the app.
-        ApplyTargetAndViewport(null);
+    internal void RestoreBackBufferBinding()
+    {
+        // Flip-model Present unbinds the back buffer from the output merger.
+        if (_target is null)
+            ApplyTargetAndViewport(null);
     }
 
     /// <summary>
@@ -350,9 +343,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
     /// <summary>
     /// Binds a target's colour and depth views and re-applies the caller's viewport and scissor.
     ///
-    /// Shared by <see cref="SetRenderTarget"/> and the constructor, because "which surfaces am I
-    /// drawing into" has to be answered the same way whether the caller asked for a target or never
-    /// asked at all - see the constructor for why the second case is not the same as doing nothing.
+    /// Used for explicit target changes and when a new command buffer restores the back buffer.
     /// </summary>
     private void ApplyTargetAndViewport(D3D11RenderTarget? d3dTarget)
     {
@@ -380,9 +371,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
         // here. NanoVG depends on this: it binds a target, sets a uniform and draws, without ever
         // calling SetViewport or SetScissorRect.
         //
-        // Constructing a command buffer is the other case that needs it, and there the caller has set
-        // neither: this is what gives the frame an initial viewport and scissor covering the back
-        // buffer instead of leaving the context's defaults, which a resize may have outgrown.
+        // On the first frame this also supplies a full-target viewport and scissor.
         ApplyViewportAndScissor();
     }
 
