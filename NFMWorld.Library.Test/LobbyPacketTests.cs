@@ -215,6 +215,74 @@ public class LobbyPacketTests
     }
 
     [TestMethod]
+    public void LobbyChat_CarriesTheSessionAndSenderColour()
+    {
+        var sent = new S2C_LobbyChatMessage
+        {
+            SenderId = Guid.NewGuid(),
+            Sender = "alice",
+            Message = "hello game",
+            SessionId = 17,
+            Color = new Color3(10, 20, 30)
+        };
+
+        var received = RoundTrip(sent, -1);
+
+        Assert.AreEqual(17u, received.SessionId);
+        Assert.AreEqual(sent.SenderId, received.SenderId);
+        Assert.AreEqual("hello game", received.Message);
+        Assert.AreEqual(new Color3(10, 20, 30), received.Color);
+
+        var request = RoundTrip(new C2S_LobbyChatMessage { Message = "hi", SessionId = 17 }, 4);
+        Assert.AreEqual(17u, request.SessionId);
+        Assert.AreEqual("hi", request.Message);
+    }
+
+    [TestMethod]
+    public void LobbyState_CarriesSessionOptionsAndBotSlots()
+    {
+        var bot = new ServerSidePlayerInfo
+        {
+            Id = Guid.NewGuid(),
+            PlayerName = "Bot 1",
+            CarName = "nfmm/radicalone",
+            Color = new Color3(200, 60, 60),
+            IsBot = true
+        };
+        var sent = new S2C_LobbyState
+        {
+            ClientId = Guid.NewGuid(),
+            Players = [],
+            ActiveSessions =
+            [
+                new S2C_LobbyState.GameSession
+                {
+                    Id = 9,
+                    CreatorId = Guid.NewGuid(),
+                    CreatorName = "alice",
+                    StageName = "nfmm/road",
+                    MaxPlayers = 4,
+                    Players = new Dictionary<byte, Guid> { [0] = Guid.NewGuid() },
+                    State = SessionState.NotStarted,
+                    Gamemode = DefaultGamemodes.PvP,
+                    GamemodeParameters = new Dictionary<string, string> { ["walls"] = "3" },
+                    Bots = new Dictionary<byte, ServerSidePlayerInfo> { [1] = bot }
+                }
+            ]
+        };
+
+        var received = RoundTrip(sent, -2);
+        var session = received.ActiveSessions[0];
+
+        Assert.AreEqual(DefaultGamemodes.PvP, session.Gamemode);
+        Assert.AreEqual("3", session.GamemodeParameters["walls"]);
+        Assert.AreEqual(1, session.Players.Count);
+        Assert.AreEqual("Bot 1", session.Bots[1].PlayerName);
+        // Occupied slots include bots: a 1/4 row with a bot is 2/4.
+        Assert.AreEqual(2, session.PlayerCount);
+    }
+
+    [TestMethod]
     public void InSlotOrder_LaysPlayersOutBySlotNotEnumerationOrder()
     {
         var info = new MatchGameplayInfo

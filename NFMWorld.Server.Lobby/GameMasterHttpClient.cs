@@ -118,6 +118,26 @@ public class GameMasterHttpClient
         ).JoinToken;
     }
 
+    /// <summary>
+    /// Forwards one match-lobby line to the running race. A failure is only a lost chat line,
+    /// so the caller does not wait on it.
+    /// </summary>
+    public async Task SendChatAsync(ResolvedGameMaster master, Lobby2RaceServer_Chat chat)
+    {
+        var body = TightPackSerializer.Serialize(chat);
+        const string path = "/race-chat";
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, new Uri(master.HttpEndpoint, path))
+        {
+            Content = new ByteArrayContent(body)
+        };
+        httpRequest.Headers.Add("Authorization", HmacAuth.Sign("POST", path, body, _keyId, _secretKey));
+        httpRequest.Headers.Add(Protocol.HeaderName, _protocolVersion);
+        httpRequest.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+        using var response = await _httpClient.SendAsync(httpRequest);
+        EnsureProtocolAccepted(response);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task NotifyRaceEndedAsync(
         ResolvedGameMaster master,
         RaceServer2Lobby_RaceResults results

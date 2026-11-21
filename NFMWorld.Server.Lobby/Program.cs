@@ -110,7 +110,8 @@ static async Task HandleHttpRequest(
 
     try
     {
-        if (req.Url!.LocalPath != "/race-ended" || req.HttpMethod != "POST")
+        if (req.HttpMethod != "POST"
+            || req.Url!.LocalPath is not ("/race-ended" or "/race-chat"))
         {
             res.StatusCode = 404;
             res.Close();
@@ -124,7 +125,7 @@ static async Task HandleHttpRequest(
             || declaredVersion != Protocol.Version)
         {
             Logging.Warning(
-                $"[Lobby] /race-ended refused: game master version {(req.Headers[Protocol.HeaderName] ?? "none")} vs {Protocol.Version}"
+                $"[Lobby] {req.Url!.LocalPath} refused: game master version {(req.Headers[Protocol.HeaderName] ?? "none")} vs {Protocol.Version}"
             );
             res.StatusCode = 409;
             res.StatusDescription = $"protocol {Protocol.Version}";
@@ -163,8 +164,16 @@ static async Task HandleHttpRequest(
         );
         if (authError is not null || !seenNonces.TryUse(keyId ?? "", nonce))
         {
-            Logging.Warning($"[Lobby] /race-ended rejected: {authError ?? "nonce is missing or was already used"}");
+            Logging.Warning($"[Lobby] {req.Url!.LocalPath} rejected: {authError ?? "nonce is missing or was already used"}");
             res.StatusCode = 401;
+            res.Close();
+            return;
+        }
+
+        if (req.Url.LocalPath == "/race-chat")
+        {
+            orchestrator.ReportRaceChat(TightPackSerializer.Deserialize<RaceServer2Lobby_Chat>(body));
+            res.StatusCode = 200;
             res.Close();
             return;
         }

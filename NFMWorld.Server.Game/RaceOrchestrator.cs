@@ -476,7 +476,116 @@ public class RaceOrchestrator : IDisposable
             session.ChatHistory.Enqueue(packet);
             while (session.ChatHistory.Count > RaceChat.HistoryLimit) session.ChatHistory.Dequeue();
             _transport.SendPacketToClients(session.Clients.Keys.ToArray(), packet, reliable: true);
+            ReportChatToLobby(session, packet);
         }
+    }
+
+    /// <summary>
+    /// One match-lobby line arrives from the lobby. Racers see it, and it joins the race's
+    /// history, but it is not reported back - the lobby already typed it.
+    /// </summary>
+    public void HandleLobbyChat(Lobby2RaceServer_Chat chat)
+    {
+        var session = _sessions.Values.FirstOrDefault(s => s.MatchKey == chat.MatchKey);
+        if (session is null)
+            return;
+
+        var packet = new S2C_RaceChat
+        {
+            SenderId = chat.SenderId,
+            Sender = chat.Sender,
+            Message = RaceChat.Normalize(chat.Message),
+            Color = chat.Color
+        };
+        if (packet.Message.Length == 0)
+            return;
+
+        lock (session.ChatLock)
+        {
+            packet.MessageId = ++session.NextChatId;
+            session.ChatHistory.Enqueue(packet);
+            while (session.ChatHistory.Count > RaceChat.HistoryLimit) session.ChatHistory.Dequeue();
+            _transport.SendPacketToClients(session.Clients.Keys.ToArray(), packet, reliable: true);
+        }
+    }
+
+    /// <summary>
+    /// Tells the lobby about a race chat line. Members waiting in the match lobby are the
+    /// audience: they are in the session but not in this race.
+    /// </summary>
+    private static void ReportChatToLobby(RaceSession session, S2C_RaceChat chat)
+    {
+        var lobby = Environment.GetEnvironmentVariable("LOBBY_CHAT_URL");
+        if (string.IsNullOrEmpty(lobby))
+        {
+            var results = Environment.GetEnvironmentVariable("LOBBY_RESULTS_URL");
+            if (string.IsNullOrEmpty(results) || !Uri.TryCreate(results, UriKind.Absolute, out var resultsUri))
+                return;
+            lobby = new Uri(resultsUri.GetLeftPart(UriPartial.Authority) + "/race-chat").ToString();
+        }
+
+        var body = TightPackSerializer.Serialize(
+            new RaceServer2Lobby_Chat
+            {
+                MatchKey = session.MatchKey.ToString(),
+                SenderId = chat.SenderId,
+                Sender = chat.Sender,
+                Message = chat.Message,
+                Color = chat.Color
+            }
+        );
+
+        var keyId = Environment.GetEnvironmentVariable("HMAC_KEY_ID") ?? "primary";
+        var secretText = Environment.GetEnvironmentVariable("HMAC_SECRET_KEY");
+        if (string.IsNullOrEmpty(secretText))
+        {
+            Logging.Warning("[GM] HMAC_SECRET_KEY is not configured; chat is not relayed to the lobby.");
+            return;
+        }
+
+        byte[] secret;
+        try
+        {
+            secret = Convert.FromBase64String(secretText);
+        }
+        catch (FormatException)
+        {
+            Logging.Warning("[GM] HMAC_SECRET_KEY is not valid base64; chat is not relayed to the lobby.");
+            return;
+        }
+
+        var auth = HmacAuth.SignWithNonce(
+            "POST",
+            "/race-chat",
+            body,
+            keyId,
+            secret,
+            Guid.NewGuid().ToString("N")
+        );
+
+        _ = Task.Run(
+            async () =>
+            {
+                try
+                {
+                    using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+                    using var request = new HttpRequestMessage(HttpMethod.Post, lobby)
+                    {
+                        Content = new ByteArrayContent(body)
+                    };
+                    request.Headers.Authorization = System.Net.Http.Headers.AuthenticationHeaderValue.Parse(auth);
+                    request.Headers.Add(Protocol.HeaderName, Protocol.Version.ToString());
+
+                    using var response = await client.SendAsync(request);
+                    if (!response.IsSuccessStatusCode)
+                        Logging.Warning($"[GM] Lobby rejected a chat relay: {(int)response.StatusCode}");
+                }
+                catch (Exception ex)
+                {
+                    Logging.Warning($"[GM] Could not relay chat to the lobby: {ex.Message}");
+                }
+            }
+        );
     }
 
     private void HandleClientEvent(uint clientIndex, C2S_ClientEvent clientEvent)
@@ -639,6 +748,7 @@ public class RaceOrchestrator : IDisposable
         session.ChatHistory.Enqueue(announcement);
         while (session.ChatHistory.Count > RaceChat.HistoryLimit) session.ChatHistory.Dequeue();
         _transport.SendPacketToClients(session.Clients.Keys.ToArray(), announcement, reliable: true);
+        ReportChatToLobby(session, announcement);
     }
 
     /// <summary>Rejects state that could freeze a receiving client's physics loops.</summary>

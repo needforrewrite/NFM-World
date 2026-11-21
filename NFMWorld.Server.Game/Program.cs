@@ -178,6 +178,21 @@ static async Task HandleRequestAsync(
             res.Close();
         }
     }
+    else if (req.Url!.LocalPath == "/race-chat")
+    {
+        try
+        {
+            orchestrator.HandleLobbyChat(TightPackSerializer.Deserialize<Lobby2RaceServer_Chat>(bodyArray));
+            res.StatusCode = 204;
+            res.Close();
+        }
+        catch (Exception ex)
+        {
+            Logging.Info($"[GameMaster] Lobby chat relay failed: {ex.Message}");
+            res.StatusCode = 410;
+            res.Close();
+        }
+    }
     else
     {
         res.StatusCode = 404;

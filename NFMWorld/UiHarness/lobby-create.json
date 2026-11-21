@@ -65,7 +65,7 @@
     },
     {
       "action": "click",
-      "target": "Gamemode",
+      "target": "Create gamemode",
       "capture": "gamemode-open"
     },
     {
@@ -89,7 +89,7 @@
     },
     {
       "action": "click",
-      "target": "Gamemode"
+      "target": "Create gamemode"
     },
     {
       "action": "assert-count",

@@ -48,6 +48,9 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
     private readonly IRaceHost _host;
     private bool _raceDisposed;
+
+    // Gamemode teardown can still query the stage after the menu takes the scene.
+    private BackendStage? _transferredStage;
     private bool _initializingRace;
     private uint _ticks;
     private readonly UnlimitedArray<uint> _lastTick = [];
@@ -104,7 +107,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
     public IGamemode? GamemodeInstance { get; protected set; }
 
-    BackendStage IGamemodeContext.CurrentStage => CurrentStage.Backend;
+    BackendStage IGamemodeContext.CurrentStage => CurrentStage?.Backend ?? _transferredStage!;
     bool IGamemodeContext.IsMultiplayer => _host is NetworkRaceHost;
     bool IGamemodeContext.IsSpectating => WatchingPlayers;
 
@@ -167,18 +170,18 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
                 var stage = CurrentStage!.Backend;
                 var serverStage = await Task.Run(() => new BackendStage(stage.Path, stage.StageLoader, throwOnError: true));
                 await LoadingWork.NextFrame;
-                if (_raceDisposed) return;
+                if (_raceDisposed || CurrentStage is null) return;
                 local.InitializeStage(serverStage);
             }
             else await LoadingWork.NextFrame;
 
-            if (_raceDisposed) return;
+            if (_raceDisposed || CurrentStage is null) return;
             InitializeRace(_host);
         }
         catch (Exception ex)
         {
             await LoadingWork.NextFrame;
-            if (_raceDisposed) return;
+            if (_raceDisposed || CurrentStage is null) return;
             OnStageLoadFailed(ex);
         }
     }
@@ -816,12 +819,31 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         );
     }
 
-    public override void Exit()
+    public override void Exit() => ExitRace(keepMusicPlaying: false);
+
+    private void ExitRace(bool keepMusicPlaying)
     {
         CloseChat();
-        // Music pause is handled by BaseStageRenderingPhase.Exit().
-        // Gamemode teardown (unload, exit cleanup) happens in Dispose().
-        base.Exit();
+        ExitStage(keepMusicPlaying);
+    }
+
+    internal void ExitForMenu(bool keepMusicPlaying)
+    {
+        ExitRace(keepMusicPlaying);
+        var stage = CurrentStage!;
+        _transferredStage = stage.Backend;
+        _host.PlayerStateReceived -= ApplyPlayerState;
+        DetachStageEvents(stage.Backend);
+        stage.SetPlayers(null);
+        stage.Backend.ResetDestruction();
+        stage.Renderer.ResetCheckpointGlow();
+    }
+
+    private void DetachStageEvents(BackendStage stage)
+    {
+        if (_host is not NetworkRaceHost network) return;
+        network.StagePieceStateReceived -= stage.ApplyPieceState;
+        stage.ObjectHit -= SendStageImpact;
     }
 
     protected override void Dispose(bool disposing)
@@ -834,11 +856,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             {
                 network.ChatReceived -= ReceiveChat;
                 network.PlayerLeft -= ReceivePlayerLeft;
-                if (CurrentStage is { } stage)
-                {
-                    network.StagePieceStateReceived -= stage.Backend.ApplyPieceState;
-                    stage.Backend.ObjectHit -= SendStageImpact;
-                }
+                if (CurrentStage is { } stage) DetachStageEvents(stage.Backend);
             }
 
             _chat.Clear();
@@ -853,6 +871,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
             GamemodeInstance?.End();
             GamemodeInstance = null;
+            _transferredStage = null;
         }
 
         base.Dispose(disposing);

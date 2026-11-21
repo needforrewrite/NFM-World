@@ -16,6 +16,7 @@ using NFMWorld.Util;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Hud;
 using NFMWorldLibrary.Util;
+using LobbyPage = NFMWorld.UI.ViewModels.UiState.LobbyPage;
 
 namespace NFMWorld;
 
@@ -69,6 +70,8 @@ public partial class WorldGame
             "stage-select-local" => new FixturePhase(StageSelectLocalFixture),
             "stage-select-compact" => new FixturePhase(StageSelectCompactFixture),
             "lobby-create" => new FixturePhase(LobbyCreateFixture),
+            "lobby-room" => new FixturePhase(LobbyRoomFixture),
+            "lobby-match" => new FixturePhase(LobbyMatchFixture),
             "main-menu" => new FixturePhase(() => MainMenuFixture(
                 config.TryGetProperty("signedIn", out var signedIn) && signedIn.GetBoolean(),
                 config.TryGetProperty("deletionPending", out var deletionPending)
@@ -697,7 +700,7 @@ public partial class WorldGame
         var local = LobbyStageSelectionForHarness();
         lobby.SelectedStage.Value = local.FirstOrDefault()?.Id ?? "";
         LobbyStageSelection.ShowLocal(lobby.CreateStages, local, lobby.SelectedStage.Value);
-        lobby.ShowCreateDialog.Value = true;
+        lobby.Page.Value = LobbyPage.Create;
 
         return LobbyView.Build(
             new LobbyView.Actions(
@@ -708,9 +711,19 @@ public partial class WorldGame
                 Refresh: () => { },
                 SendChat: _ => { },
                 Back: () => { },
-                OpenCreate: () => { },
-                CloseCreate: () => { },
-                Select: _ => { },
+                OpenCreate: () => lobby.Page.Value = LobbyPage.Create,
+                CloseCreate: () => lobby.Page.Value = LobbyPage.Room,
+                OpenSession: id =>
+                {
+                    lobby.SelectedSessionId.Value = id;
+                    lobby.ViewedSessionId.Value = id;
+                    lobby.Page.Value = LobbyPage.Match;
+                },
+                CloseSession: () =>
+                {
+                    lobby.ViewedSessionId.Value = null;
+                    lobby.Page.Value = LobbyPage.Room;
+                },
                 Spectate: _ => { },
                 SetStage: stage =>
                 {
@@ -755,6 +768,200 @@ public partial class WorldGame
             )
         );
     }
+
+    /// <summary>
+    /// The room page: a players rail, a games table, and room chat. Fixed data because the lobby
+    /// protocol is server work; this capture is about the layout and the row states.
+    /// </summary>
+    private static Node LobbyRoomFixture()
+    {
+        var lobby = SeedLobbyRoom();
+        lobby.Page.Value = LobbyPage.Room;
+        return LobbyView.Build(LobbyActions(lobby));
+    }
+
+    /// <summary>
+    /// A created game's match lobby: slots, status, game details and the game chat, including a
+    /// line forwarded out of the race.
+    /// </summary>
+    private static Node LobbyMatchFixture()
+    {
+        var lobby = SeedLobbyRoom();
+        var session = lobby.Sessions.Value[0];
+        lobby.SelectedSessionId.Value = session.Id;
+        lobby.ViewedSessionId.Value = session.Id;
+        lobby.Page.Value = LobbyPage.Match;
+        return LobbyView.Build(LobbyActions(lobby));
+    }
+
+    private static UiState.LobbyState SeedLobbyRoom()
+    {
+        var lobby = UiState.Lobby;
+        lobby.Reset();
+        lobby.Connected.Value = true;
+        lobby.Status.Value = "Signed in as tiki";
+
+        var self = Guid.NewGuid();
+        var maxine = Guid.NewGuid();
+        var dr = Guid.NewGuid();
+
+        lobby.Players.Value =
+        [
+            new UiState.LobbyPlayer(self, "tiki", "The Awesome Radical One · Class X", new Color(0, 128, 255), true),
+            new UiState.LobbyPlayer(maxine, "maxine", "NFM 2 · Class A", new Color(255, 170, 50), false),
+            new UiState.LobbyPlayer(dr, "DR Monstaa", "Ancient · Class B", new Color(120, 220, 130), false)
+        ];
+
+        var open = new UiState.LobbySession(
+            1,
+            "tiki",
+            "The 45 Degree Gun Run",
+            2,
+            4,
+            NFMWorldLibrary.Multiplayer.SessionState.NotStarted,
+            IsMember: true,
+            IsCreator: true,
+            NFMWorldLibrary.Multiplayer.DefaultGamemodes.PvP,
+            "PvP",
+            [
+                new UiState.LobbySessionSetting("Race constraint", "Both"),
+                new UiState.LobbySessionSetting("Converging walls", "Off")
+            ],
+            [
+                new UiState.LobbySessionSlot(
+                    0,
+                    "tiki",
+                    "The Awesome Radical One · Class X",
+                    new Color(0, 128, 255),
+                    [new Color(0, 128, 255)],
+                    false,
+                    false,
+                    true
+                ),
+                new UiState.LobbySessionSlot(
+                    1,
+                    "maxine",
+                    "NFM 2 · Class A",
+                    new Color(255, 170, 50),
+                    [new Color(255, 170, 50), new Color(30, 30, 30)],
+                    false,
+                    false,
+                    false
+                ),
+                new UiState.LobbySessionSlot(2, "Empty", "Waiting for player...", default, null, false, true, false),
+                new UiState.LobbySessionSlot(3, "Rusty", "Bot · Class C", new Color(190, 120, 90), null, true, false, false)
+            ]
+        );
+
+        var racing = new UiState.LobbySession(
+            2,
+            "maxine",
+            "The Hall without a Wall",
+            3,
+            4,
+            NFMWorldLibrary.Multiplayer.SessionState.Started,
+            IsMember: false,
+            IsCreator: false,
+            NFMWorldLibrary.Multiplayer.DefaultGamemodes.PvP,
+            "PvP",
+            [
+                new UiState.LobbySessionSetting("Race constraint", "Racing"),
+                new UiState.LobbySessionSetting("Converging walls", "3 min")
+            ],
+            [
+                new UiState.LobbySessionSlot(
+                    0,
+                    "maxine",
+                    "NFM 2 · Class A",
+                    new Color(255, 170, 50),
+                    [new Color(255, 170, 50)],
+                    false,
+                    false,
+                    false
+                ),
+                new UiState.LobbySessionSlot(
+                    1,
+                    "DR Monstaa",
+                    "Ancient · Class B",
+                    new Color(120, 220, 130),
+                    [new Color(120, 220, 130)],
+                    false,
+                    false,
+                    false
+                ),
+                new UiState.LobbySessionSlot(
+                    2,
+                    "tiki",
+                    "The Awesome Radical One · Class X",
+                    new Color(0, 128, 255),
+                    [new Color(0, 128, 255)],
+                    false,
+                    false,
+                    false
+                ),
+                new UiState.LobbySessionSlot(3, "Empty", "Waiting for player...", default, null, false, true, false)
+            ]
+        );
+
+        lobby.Sessions.Value = [open, racing];
+        lobby.CurrentSession.Value = open;
+        lobby.Chat.Value =
+        [
+            new UiState.LobbyChatLine(1, 0, Guid.Empty, "<System>", "tiki has joined the room.", default, true),
+            new UiState.LobbyChatLine(2, 0, maxine, "maxine", "anyone up for gun run?", new Color(255, 170, 50), false),
+            new UiState.LobbyChatLine(3, 1, self, "tiki", "made one, 2 slots free", new Color(0, 128, 255), false),
+            new UiState.LobbyChatLine(4, 1, maxine, "maxine", "joining", new Color(255, 170, 50), false),
+            new UiState.LobbyChatLine(5, 2, dr, "DR Monstaa", "that wall is closing fast", new Color(120, 220, 130), false)
+        ];
+
+        return lobby;
+    }
+
+    private static LobbyView.Actions LobbyActions(UiState.LobbyState lobby)
+        => new(
+            Join: _ => { },
+            Leave: () => { },
+            StartRace: _ => { },
+            Create: () => { },
+            Refresh: () => { },
+            SendChat: message => lobby.Chat.Value =
+                [.. lobby.Chat.Value, new UiState.LobbyChatLine(
+                    99,
+                    lobby.CurrentSession.Value?.Id ?? 0,
+                    Guid.Empty,
+                    "tiki",
+                    message,
+                    new Color(0, 128, 255),
+                    false
+                )],
+            Back: () => { },
+            OpenCreate: () => lobby.Page.Value = LobbyPage.Create,
+            CloseCreate: () => lobby.Page.Value = LobbyPage.Room,
+            OpenSession: id =>
+            {
+                lobby.SelectedSessionId.Value = id;
+                lobby.ViewedSessionId.Value = id;
+                lobby.Page.Value = LobbyPage.Match;
+            },
+            CloseSession: () =>
+            {
+                lobby.ViewedSessionId.Value = null;
+                lobby.Page.Value = LobbyPage.Room;
+            },
+            Spectate: _ => { },
+            SetStage: _ => { },
+            SetStageSearch: _ => { },
+            SetStageSource: _ => { },
+            SearchStagesOnline: _ => { },
+            SetMaxPlayers: value => lobby.MaxPlayers.Value = value,
+            SetBots: value => lobby.BotCount.Value = value,
+            SetConfig: (name, value) => lobby.GamemodeConfig.Value =
+                new Dictionary<string, string>(lobby.GamemodeConfig.Value) { [name] = value },
+            SetGamemode: id => lobby.SelectedGamemode.Value = id,
+            ChangeCar: () => { },
+            CopyCar: _ => { },
+            CopyColors: _ => { }
+        );
 
     /// <summary>
     /// The local stage list exactly as the lobby builds it. The archive search is network work, so

@@ -60,6 +60,13 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     private CancellationTokenSource? _stageSearchCancellation;
     private int _stageSearchGeneration;
 
+    /// <summary>Opens the game the host just created once the server lists it.</summary>
+    private bool _awaitingCreatedSession;
+    private long _createdSessionDeadline;
+
+    /// <summary>Config schemas read for match details, keyed by gamemode id.</summary>
+    private readonly Dictionary<string, IReadOnlyList<GamemodeConfigField>> _configFields = [];
+
     private IReadOnlyList<StageOption> LocalStages => _localStages ??= LoadLocalStages();
 
     private static IReadOnlyList<StageOption> LoadLocalStages()
@@ -88,7 +95,8 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         Back: OnBack,
         OpenCreate: OnOpenCreate,
         CloseCreate: OnCloseCreate,
-        Select: id => Lobby.SelectedSessionId.Value = id,
+        OpenSession: OnOpenSession,
+        CloseSession: OnCloseSession,
         Spectate: OnSpectate,
         SetStage: OnSelectStage,
         SetStageSearch: OnStageSearchChanged,
@@ -123,6 +131,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         // Enter runs on every return to the lobby, so a race that already happened is stale
         // from here on: the next session's start failure must still be reported.
         _racedThisSession = false;
+        _awaitingCreatedSession = false;
         // Returning from a race re-enters this phase, and the server only resends lobby state
         // on the next change; the transcript this client already received stays put.
         Lobby.Chat.Value = _chatMessages.ToArray();
@@ -152,6 +161,10 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         _player.Id = Guid.Empty;
         _players = [];
         _activeSessions = [];
+        // Session ids restart with the lobby process. Keeping old match lines could show them
+        // in a new game that happens to reuse an id; room chat is process-independent enough.
+        _chatMessages.RemoveAll(line => line.SessionId != 0);
+        Lobby.Chat.Value = _chatMessages.ToArray();
         Publish();
     }
 
@@ -296,8 +309,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
             switch (packet)
             {
                 case S2C_LobbyChatMessage chatMessage:
-                    _chatMessages.Add(ChatLine(chatMessage));
-                    Lobby.Chat.Value = _chatMessages.ToArray();
+                    AddChatLine(ChatLine(chatMessage));
                     break;
 
                 case S2C_Authenticated authenticated:
@@ -362,6 +374,13 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                     Lobby.Chat.Value = _chatMessages.ToArray();
                     break;
             }
+        }
+
+        // A create that never reaches the server gets no state broadcast to expire it.
+        if (_awaitingCreatedSession && System.Environment.TickCount64 > _createdSessionDeadline)
+        {
+            _awaitingCreatedSession = false;
+            SetStatus("The game was not created. Check the connection and try again.");
         }
     }
 
@@ -555,26 +574,6 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
 
     private void Publish()
     {
-        // GameSession is a struct, so FirstOrDefault yields a default that looks like a real
-        // session; the predicate has to be the only source of truth.
-        UiState.LobbySession? current = null;
-        foreach (var s in _activeSessions)
-        {
-            if (!s.Players.Values.Contains(_player.Id))
-                continue;
-            current = new UiState.LobbySession(
-                s.Id,
-                s.CreatorName,
-                SessionStageName(s.StageName),
-                s.PlayerCount,
-                s.MaxPlayers,
-                s.State,
-                IsMember: true,
-                IsCreator: s.CreatorId == _player.Id
-            );
-            break;
-        }
-
         Lobby.Players.Value = _players
             .Select(p => new UiState.LobbyPlayer(
                     p.Id,
@@ -591,26 +590,59 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         ResolvePlayerCars();
         ResolveSessionStageNames();
 
-        Lobby.Sessions.Value = _activeSessions
-            .Select(s => new UiState.LobbySession(
-                    s.Id,
-                    s.CreatorName,
-                    SessionStageName(s.StageName),
-                    s.PlayerCount,
-                    s.MaxPlayers,
-                    s.State,
-                    IsMember: s.Players.Values.Contains(_player.Id),
-                    IsCreator: s.CreatorId == _player.Id
+        var humans = _players.ToDictionary(p => p.Id);
+        var sessions = _activeSessions
+            .Select(s => ToUiSession(
+                    s,
+                    humans,
+                    IsMember(s),
+                    s.CreatorId == _player.Id
                 )
             )
             .ToArray();
+        Lobby.Sessions.Value = sessions;
+
+        // GameSession is a struct, so FirstOrDefault yields a default that looks like a real
+        // session; the predicate has to be the only source of truth.
+        UiState.LobbySession? current = null;
+        foreach (var s in _activeSessions)
+        {
+            if (!IsMember(s))
+                continue;
+            current = sessions.First(session => session.Id == s.Id);
+            break;
+        }
 
         Lobby.CurrentSession.Value = current;
 
-        // A highlight has to point at a row that still exists, or JOIN acts on a stale id.
-        if (Lobby.SelectedSessionId.Value is { } selected
-            && !_activeSessions.Any(s => s.Id == selected))
+        // The host's new game is opened as soon as the server lists it, so CREATE lands in the
+        // waiting room rather than dropping back to the room list.
+        if (_awaitingCreatedSession)
+        {
+            var created = sessions.FirstOrDefault(s => s.IsCreator && s.State == SessionState.NotStarted);
+            if (created is not null)
+            {
+                _awaitingCreatedSession = false;
+                OpenSession(created.Id);
+            }
+            else if (System.Environment.TickCount64 > _createdSessionDeadline)
+            {
+                // The request never reached the server (a dropped socket, a refused mode).
+                _awaitingCreatedSession = false;
+                SetStatus("The game was not created. Check the connection and try again.");
+            }
+        }
+
+        // A highlight or an open match has to point at a row that still exists, or JOIN acts
+        // on a stale id and the match view has nothing to read.
+        if (Lobby.SelectedSessionId.Value is { } selected && sessions.All(s => s.Id != selected))
             Lobby.SelectedSessionId.Value = null;
+
+        if (Lobby.ViewedSessionId.Value is { } viewed && sessions.All(s => s.Id != viewed))
+            Lobby.ViewedSessionId.Value = null;
+
+        if (Lobby.Page.Value == UiState.LobbyPage.Match && Lobby.ViewedSessionId.Value is null)
+            Lobby.Page.Value = UiState.LobbyPage.Room;
 
         Lobby.MaxPlayers.Value = Math.Clamp(Lobby.MaxPlayers.Value, 2, MatchGameplayInfo.MaxPlayers);
         Lobby.BotCount.Value = Math.Clamp(
@@ -618,6 +650,131 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
             0,
             Lobby.MaxPlayers.Value - 1
         );
+    }
+
+    private bool IsMember(S2C_LobbyState.GameSession session)
+        => session.Players.Values.Contains(_player.Id);
+
+    private UiState.LobbySession ToUiSession(
+        S2C_LobbyState.GameSession session,
+        IReadOnlyDictionary<Guid, ServerSidePlayerInfo> humans,
+        bool isMember,
+        bool isCreator
+    ) => new(
+        session.Id,
+        session.CreatorName,
+        SessionStageName(session.StageName),
+        session.PlayerCount,
+        session.MaxPlayers,
+        session.State,
+        isMember,
+        isCreator,
+        session.Gamemode,
+        GamemodeCatalog.DisplayName(session.Gamemode),
+        SessionSettings(session),
+        SessionSlots(session, humans)
+    );
+
+    /// <summary>
+    /// The host's gamemode options, labelled through the schema the create dialog also uses.
+    /// The schema is cached per gamemode: reading it loads and releases a plugin.
+    /// </summary>
+    private IReadOnlyList<UiState.LobbySessionSetting> SessionSettings(S2C_LobbyState.GameSession session)
+    {
+        if (!_configFields.TryGetValue(session.Gamemode, out var fields))
+        {
+            try
+            {
+                fields = GamemodeCatalog.ConfigFields(session.Gamemode);
+            }
+            catch (Exception ex)
+            {
+                // A game can use a mode this client cannot load. Its raw options still show.
+                Logging.Warning($"Could not read {session.Gamemode} options: {ex.Message}");
+                fields = [];
+            }
+
+            _configFields[session.Gamemode] = fields;
+        }
+
+        var settings = new List<UiState.LobbySessionSetting>();
+        foreach (var field in fields)
+        {
+            if (!session.GamemodeParameters.TryGetValue(field.Name, out var value))
+                continue;
+
+            var label = field.Choices.FirstOrDefault(choice => choice.Value == value)?.Label ?? value;
+            settings.Add(new UiState.LobbySessionSetting(field.Label, label));
+        }
+
+        // A value the installed plugin no longer declares is still worth showing, not hiding.
+        foreach (var (name, value) in session.GamemodeParameters)
+        {
+            if (fields.All(field => field.Name != name))
+                settings.Add(new UiState.LobbySessionSetting(name, value));
+        }
+
+        return settings;
+    }
+
+    private IReadOnlyList<UiState.LobbySessionSlot> SessionSlots(
+        S2C_LobbyState.GameSession session,
+        IReadOnlyDictionary<Guid, ServerSidePlayerInfo> humans
+    )
+    {
+        var slots = new List<UiState.LobbySessionSlot>(session.MaxPlayers);
+        for (byte slot = 0; slot < session.MaxPlayers; slot++)
+        {
+            if (session.Players.TryGetValue(slot, out var playerId)
+                && humans.TryGetValue(playerId, out var human))
+            {
+                slots.Add(
+                    new UiState.LobbySessionSlot(
+                        slot,
+                        human.PlayerName,
+                        CarLabel(human.CarName),
+                        ToColor(human.Color),
+                        PlayerColors(human),
+                        IsBot: false,
+                        IsEmpty: false,
+                        IsSelf: playerId == _player.Id
+                    )
+                );
+                continue;
+            }
+
+            if (session.Bots.TryGetValue(slot, out var bot))
+            {
+                slots.Add(
+                    new UiState.LobbySessionSlot(
+                        slot,
+                        bot.PlayerName,
+                        CarLabel(bot.CarName),
+                        ToColor(bot.Color),
+                        PlayerColors(bot),
+                        IsBot: true,
+                        IsEmpty: false,
+                        IsSelf: false
+                    )
+                );
+                continue;
+            }
+
+            slots.Add(
+                new UiState.LobbySessionSlot(
+                    slot,
+                    "Empty",
+                    "Waiting for player...",
+                    default,
+                    null,
+                    IsBot: false,
+                    IsEmpty: true,
+                    IsSelf: false
+                )
+            );
+        }
+
+        return slots;
     }
 
     private void UpdateStatus()
@@ -665,10 +822,32 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     private UiState.LobbyChatLine ChatLine(S2C_LobbyChatMessage message)
     {
         var isSystem = message.SenderId == Guid.Empty;
+        // The packet carries the sender's colour so a line forwarded out of a race keeps it
+        // even though that sender may be a spectator this client never saw in the roster.
+        // A sender that is in the roster is authoritative, including a black car colour.
         var color = _players.FirstOrDefault(p => p.Id == message.SenderId) is { } sender
             ? ToColor(sender.Color)
-            : new Color(185, 211, 255);
-        return new UiState.LobbyChatLine(++_nextChatLineId, message.SenderId, message.Sender, message.Message, color, isSystem);
+            : message.Color.R != 0 || message.Color.G != 0 || message.Color.B != 0
+                ? ToColor(message.Color)
+                : new Color(185, 211, 255);
+        return new UiState.LobbyChatLine(
+            ++_nextChatLineId,
+            message.SessionId,
+            message.SenderId,
+            message.Sender,
+            message.Message,
+            color,
+            isSystem
+        );
+    }
+
+    /// <summary>Keeps one transcript for room and match chat, bounded so a long lobby cannot grow it forever.</summary>
+    private void AddChatLine(UiState.LobbyChatLine line)
+    {
+        _chatMessages.Add(line);
+        if (_chatMessages.Count > 400)
+            _chatMessages.RemoveRange(0, _chatMessages.Count - 400);
+        Lobby.Chat.Value = _chatMessages.ToArray();
     }
 
     // ── Actions ────────────────────────────────────────────────────
@@ -681,6 +860,27 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                            && transport.State == ClientState.Connected
                            && transport.HandshakeAccepted;
 
+    private void OnOpenSession(uint id)
+    {
+        if (!Lobby.Sessions.Value.Any(session => session.Id == id))
+            return;
+
+        OpenSession(id);
+    }
+
+    private void OpenSession(uint id)
+    {
+        Lobby.SelectedSessionId.Value = id;
+        Lobby.ViewedSessionId.Value = id;
+        Lobby.Page.Value = UiState.LobbyPage.Match;
+    }
+
+    private void OnCloseSession()
+    {
+        Lobby.ViewedSessionId.Value = null;
+        Lobby.Page.Value = UiState.LobbyPage.Room;
+    }
+
     private void OnJoin(uint id)
     {
         // Never the session we are already in: joining is what changes membership, so reading
@@ -688,6 +888,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         if (!CanAct || Lobby.CurrentSession.Value?.Id == id)
             return;
 
+        OpenSession(id);
         transport.SendPacketToServer(new C2S_JoinSession { SessionId = id });
     }
 
@@ -697,8 +898,11 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     /// </summary>
     private void OnSpectate(uint id)
     {
-        if (CanAct)
-            transport.SendPacketToServer(new C2S_SpectateSession { SessionId = id });
+        if (!CanAct)
+            return;
+
+        OpenSession(id);
+        transport.SendPacketToServer(new C2S_SpectateSession { SessionId = id });
     }
 
     private void OnLeave()
@@ -716,6 +920,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         Lobby.Sessions.Value = Lobby.Sessions.Value
             .Select(s => s.Id == session.Id ? s with { IsMember = false } : s)
             .ToArray();
+        OnCloseSession();
     }
 
     /// <summary>
@@ -776,33 +981,48 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                 Bots = Lobby.SelectedGamemode.Value == DefaultGamemodes.TimeTrial ? 0 : Lobby.BotCount.Value
             }
         );
-        Lobby.ShowCreateDialog.Value = false;
+        _awaitingCreatedSession = true;
+        _createdSessionDeadline = System.Environment.TickCount64 + 10_000;
+        SetStatus("Creating game...");
         CancelStageSearch();
+        Lobby.CreateStages.Busy.Value = false;
     }
 
     private void OnSendChat(string message)
     {
         if (!CanAct || string.IsNullOrWhiteSpace(message))
             return;
-        transport.SendPacketToServer(new C2S_LobbyChatMessage { Message = message });
+
+        // Room chat only in the room; a match view sends to the game the player is in. A viewer
+        // of some other game has no input, so a stray call must not leak anywhere.
+        var sessionId = Lobby.CurrentSession.Value?.Id ?? 0;
+        if (Lobby.Page.Value == UiState.LobbyPage.Match
+            && (sessionId == 0 || Lobby.ViewedSessionId.Value != sessionId))
+            return;
+
+        transport.SendPacketToServer(new C2S_LobbyChatMessage { Message = message, SessionId = sessionId });
     }
 
     private void OnOpenCreate()
     {
+        // Drop a previous failure notice; the page is a fresh attempt.
+        _lastStatus = null;
+        UpdateStatus();
         OnSetGamemode(Lobby.SelectedGamemode.Value);
         Lobby.BotCount.Value = 0;
         var stages = LocalStages;
         if (string.IsNullOrEmpty(Lobby.SelectedStage.Value))
             Lobby.SelectedStage.Value = stages.FirstOrDefault()?.Id ?? "";
-        // The dialog renders this state, so it has to be filled before it is shown.
+        // The create page renders this state, so it has to be filled before it is shown.
         LobbyStageSelection.ShowLocal(Lobby.CreateStages, stages, Lobby.SelectedStage.Value);
-        Lobby.ShowCreateDialog.Value = true;
+        Lobby.Page.Value = UiState.LobbyPage.Create;
     }
 
-    /// <summary>Closes the dialog and drops anything it was still doing, so a search cannot land later.</summary>
+    /// <summary>Leaves the create page and drops anything it was still doing, so a search cannot land later.</summary>
     private void OnCloseCreate()
     {
-        Lobby.ShowCreateDialog.Value = false;
+        _awaitingCreatedSession = false;
+        Lobby.Page.Value = UiState.LobbyPage.Room;
         CancelStageSearch();
         Lobby.CreateStages.Busy.Value = false;
     }
@@ -923,7 +1143,17 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         Lobby.SelectedGamemode.Value = id;
 
         // Read the plugin's schema once, here, and publish a copy: the view must never load it.
-        var fields = GamemodeCatalog.ConfigFields(id);
+        IReadOnlyList<GamemodeConfigField> fields;
+        try
+        {
+            fields = GamemodeCatalog.ConfigFields(id);
+        }
+        catch (Exception ex)
+        {
+            Logging.Warning($"Could not read {id} options: {ex.Message}");
+            fields = [];
+        }
+
         Lobby.GamemodeFields.Value = fields;
 
         var defaults = new Dictionary<string, string>();

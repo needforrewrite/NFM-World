@@ -318,7 +318,7 @@ coverage is `CarPhysicsArcadeHookTests` and `RocketArcadeBehaviourTests`.
 - **Authoring** — derive from `PluginGamemode` / `PluginServerGamemode` (gamemodes) or `PluginAi` (AI), and mark the
   assembly with `[assembly: Gamemode(Name = ..., Description = ...)]` or `[assembly: Ai(...)]`, plus
   `GamemodeConfigProperty` / `GamemodeConfigPropertyOption`.
-- **Config in the UI** — the lobby's create dialog renders whatever the gamemode declares: one dropdown per property
+- **Config in the UI** — the lobby's create page renders whatever the gamemode declares: one dropdown per property
   with options, labelled from a `GamemodeConfigProperty` and its `GamemodeConfigPropertyOption`s. Nothing in the client
   hardcodes a gamemode's options. The schema is read **once, by `LobbyPhase.OnSetGamemode`**, through
   `GamemodeCatalog.ConfigFields(id)` (a `GamemodeConfigProperty` projection holding plain records), which loads the
@@ -757,14 +757,30 @@ palette). One lobby; whether a race is rated is chosen per race, not by a menu p
   the `connect` command), so the browser guard and `ENetMultiplayer.Init` live in one place. `Dispose` must call
   `transport.Stop()` — otherwise the server keeps a ghost player and the receive loop runs for the process.
 - **The view reads `UiState.Lobby` only.** The phase writes it from `GameTick`. `LobbyView.Actions` carries every
-  callback; JOIN takes the clicked row's id (`Action<uint>`), because a button stops the press reaching its row, so
-  the row's own click handler never runs.
-- **The create dialog's stage list has two sources.** It renders `UiState.Lobby.CreateStages`, which
+  callback; a game row opens `LobbyPage.Match` (`OpenSession`), because a button stops the press reaching its row.
+  The room stays vanilla-shaped: a fixed **ROOM PLAYERS** rail, a games table (`Stage`/`Host`/`Players`/`Status`) and
+  room chat. CREATE and a game's match lobby replace the games/chat area, not the rail.
+- **A game is viewable before joining.** `LobbyPage.Match` renders the selected `LobbySession` (`UiState.Lobby`):
+  its slots, status, gamemode, options and chat, with JOIN before the start and WATCH once it is racing. The server
+  publishes the gamemode, its parameters and bot slots in `S2C_LobbyState.GameSession`, so a non-member can read a
+  game without loading its plugin; the client labels the parameters from `GamemodeCatalog.ConfigFields` (cached per
+  gamemode in the phase, never read by a view slot).
+- **Chat has two channels on one transcript.** `LobbyChatLine.SessionId` is zero for room chat and the game id for
+  match chat. The client sends `C2S_LobbyChatMessage.SessionId` (`0` in the room, its current game in a match view);
+  the server refuses a session the sender is not in, and `ChatManager` routes room chat to everyone but match chat
+  only to members. `GameOrchestrator` forwards a match-lobby line to the running race over `/race-chat`, and
+  `RaceOrchestrator` forwards in-game chat (players and system lines) back over the lobby's `/race-chat`, so people
+  waiting in the match lobby see the race talk. Both directions are HMAC-signed and versioned; neither reports the
+  other's line back (no echo). The GM derives the chat URL from `LOBBY_RESULTS_URL` (same origin, path `/race-chat`);
+  `LOBBY_CHAT_URL` overrides it when the lobby's chat endpoint is elsewhere.
+- **The create page's stage list has two sources.** It renders `UiState.Lobby.CreateStages`, which
   `LobbyPhase` fills on open (`LobbyStageSelection.ShowLocal`) and filters: LOCAL is the shipped stages a session may
   use, ONLINE is the public archive searched on Enter (`GarageController.ContentClient`, `"Stage"`, eligible rows
   only). Selecting a stage that `MultiplayerContentPolicy` refuses sets the selector's restriction and never becomes
   the session's stage. The chosen stage survives a source switch — a public pick is re-added as its own row — so the
-  highlight and `Lobby.SelectedStage` never disagree.
+  highlight and `Lobby.SelectedStage` never disagree. The page is full-area, with the stage browser beside the
+  gamemode/max-players/bots/options column; CREATE keeps the page open until the server lists the new game and then
+  opens its match lobby.
 - **Accounts are required.** `LobbyConnection.TryOpen` prompts for sign-in on the main menu before connecting;
   successful sign-in continues into the requested lobby on the game tick. Identity is sent only after authentication.
   The server refuses missing/invalid tokens and archive outages or missing `ARCHIVE_URL`; there is no guest fallback.
@@ -826,7 +842,7 @@ palette). One lobby; whether a race is rated is chosen per race, not by a menu p
 | Roster order | `MatchGameplayInfo.Players` is keyed by **slot**, but the client gamemode addresses players by **array position**. Always build the array (and the id→index map) through `MatchGameplayInfo.InSlotOrder()`; a dictionary enumerates in no order, and building it as-is put each player in another player's slot, so relayed state landed on the wrong car and opponents never moved |
 | Who is in the roster | `PlayerRegistry.ClientInfo` has an empty `Name` until the client authenticates, and `LobbyStateBroadcaster` skips connections that have not, so a half-open connection is not listed as a player |
 | Names in the HUD | the sidebar, car markers, the arrow target and the announcer show `ClientSidePlayerInfo.PlayerName`, not `car.Stats.Name` — in a race every car can be the same model |
-| Stage list | the create dialog renders `UiState.Lobby.CreateStages`, filled and filtered by `LobbyPhase` (`LobbyStageSelection`) — enumerate once when the dialog opens, never per frame. LOCAL lists only `MultiplayerContentPolicy.IsAcceptedStage` entries and accepts a typed archive id; ONLINE is an Enter-only archive search (`SearchStagesOnline`), not a filter of the LOCAL rows |
+| Stage list | the create page renders `UiState.Lobby.CreateStages`, filled and filtered by `LobbyPhase` (`LobbyStageSelection`) — enumerate once when the page opens, never per frame. LOCAL lists only `MultiplayerContentPolicy.IsAcceptedStage` entries and accepts a typed archive id; ONLINE is an Enter-only archive search (`SearchStagesOnline`), not a filter of the LOCAL rows |
 | Child collections | `Sx` flattens a nested `IEnumerable` child, but an unsupported child throws inside an effect — and the signal machinery swallows it, so the subtree silently fails to mount. Keep the flattened case covered (`SxRendererTests`) |
 | WebSocket sends are serialized | a `WebSocket` allows one outstanding `SendAsync`; a second throws `InvalidOperationException` and that packet is lost. `WsClient` (server) and the client transport chain sends per connection, and the server's close is chained behind them so a refusal sent just before a disconnect still arrives |
 | Archive outage vs rejection | `ArchiveClient.ValidateTokenAsync` returns `Unavailable` for anything it cannot read — HTML from a proxy, a bad charset, a timeout. Only `401` is `Rejected`, because only that may clear the player's saved token |
@@ -1094,7 +1110,7 @@ Added with the archive/content work; read this before touching content loading, 
   come from `ArchiveContentClient.SearchAsync(..., "Stage", ...)`
   and carry `archive/<hash>` ids. Choosing an archive option prepares it with
   `ContentCache.PrepareAsync(..., AssetKind.Stage, ...)` before `LoadStage`, and RACE waits for that
-  prepare. The lobby's create dialog uses the same compact selector over
+  prepare. The lobby's create page uses the same compact selector over
   `UiState.Lobby.CreateStages`, so it offers both sources: LOCAL is the accepted shipped stages,
   ONLINE searches the archive and carries the author; a typed archive id is still accepted.
 - **Content cache** — `ContentCache.Mount()` is called before `ArchiveMount`; prepared assets only
@@ -1184,8 +1200,9 @@ Added with the archive/content work; read this before touching content loading, 
   menu — the harness installs an in-memory clipboard, since it never runs `WorldGame.Initialize`),
   `text-area` (a code editor holding more lines than it shows, for the multiline editor's menu and
   its scroll behaviour),
-  `lobby-create` (the real lobby and its create dialog over the shipped stage list;
-  its script also switches LOCAL→ONLINE→pick→LOCAL, and the ONLINE rows are a fixed fixture set
+  `lobby-room` (the room's players rail, games table and room chat), `lobby-match` (a created game's
+  slot grid, status/details and match chat), and `lobby-create` (the full-area create page over the shipped
+  stage list; its script switches LOCAL→ONLINE→pick→LOCAL, and the ONLINE rows are a fixed fixture set
   because the archive search is network work),
   `replay-browser`, `replay-viewer` or `replay-camera`
   (applies recorded headings through `RaceCameraDirector` and prints the resulting camera).

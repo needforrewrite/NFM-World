@@ -1,0 +1,20 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-lobby-room-captures",
+  "view": "lobby-room",
+  "steps": [
+    { "action": "capture", "capture": "room" },
+    { "action": "assert-visible", "target": "Lobby games list" },
+    { "action": "assert-visible", "target": "Lobby room chat" },
+    { "action": "assert-visible", "target": "Lobby players" },
+    { "action": "hover", "target": "Lobby game 1", "capture": "row-hover" },
+    { "action": "assert-hover", "target": "Lobby game 1" },
+    { "action": "click", "target": "Lobby game 1", "capture": "match" },
+    { "action": "assert-visible", "target": "Lobby match" },
+    { "action": "assert-visible", "target": "Lobby match start" },
+    { "action": "click", "target": "Lobby match back", "capture": "back" },
+    { "action": "assert-visible", "target": "Lobby games list" }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-lobby-match-captures",
+  "view": "lobby-match",
+  "steps": [
+    { "action": "capture", "capture": "match" },
+    { "action": "assert-visible", "target": "Lobby match slots" },
+    { "action": "assert-visible", "target": "Lobby match chat" },
+    { "action": "assert-visible", "target": "Lobby match start" },
+    { "action": "assert-visible", "target": "Lobby match leave" },
+    { "action": "hover", "target": "Lobby match leave", "capture": "leave-hover" },
+    { "action": "assert-hover", "target": "Lobby match leave" }
+  ]
+}

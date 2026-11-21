@@ -110,7 +110,7 @@ public class PhaseManager
         }
 
         var popped = _stack[^1];
-        popped.Phase.Exit();
+        ExitPoppedPhase(popped.Phase, _stack[^2].Phase);
         _stack.RemoveAt(_stack.Count - 1);
 
         QueueDisposal(popped.Phase);
@@ -166,7 +166,7 @@ public class PhaseManager
         while (_stack.Count > 1)
         {
             var popped = _stack[^1];
-            popped.Phase.Exit();
+            ExitPoppedPhase(popped.Phase, _stack[0].Phase);
             _stack.RemoveAt(_stack.Count - 1);
             QueueDisposal(popped.Phase);
         }
@@ -247,5 +247,15 @@ public class PhaseManager
         {
             _disposalQueue.Add(phase);
         }
+    }
+
+    private void ExitPoppedPhase(BasePhase phase, BasePhase destination)
+    {
+        if (phase is RacePhase race && Root is MainMenuPhase menu
+            && (destination == menu || destination is LobbyPhase)
+            && menu.TryTakeLastPlayedRace(race, enteringMenu: destination == menu))
+            return;
+
+        phase.Exit();
     }
 }

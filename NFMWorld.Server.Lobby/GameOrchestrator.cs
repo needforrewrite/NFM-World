@@ -73,6 +73,28 @@ public class GameOrchestrator
     private bool _lobbyIsRunning = true;
 
     /// <summary>
+    /// A game master's in-game chat line, relayed to the members waiting in that game's match
+    /// lobby. Called from the authenticated /race-chat handler.
+    /// </summary>
+    public void ReportRaceChat(RaceServer2Lobby_Chat chat)
+    {
+        if (!Guid.TryParse(chat.MatchKey, out var matchKey)
+            || !_pendingMatches.TryGetValue(matchKey, out var pending))
+            return;
+
+        _chat.SendToSession(
+            pending.SessionId,
+            new S2C_LobbyChatMessage
+            {
+                SenderId = chat.SenderId,
+                Sender = chat.Sender,
+                Message = chat.Message,
+                Color = chat.Color
+            }
+        );
+    }
+
+    /// <summary>
     /// Turns a game master's result report into an archive report and sends it. Called from the
     /// /race-ended HTTP handler, which is the only place a trusted server proves itself.
     /// </summary>
@@ -640,7 +662,13 @@ public class GameOrchestrator
             _chat.BroadcastSystem($"{player.Name} has left {left.CreatorName}'s session!");
 
         if (joined is not null)
+        {
             _chat.BroadcastSystem($"{player.Name} has joined {joined.CreatorName}'s session!");
+            _chat.SendSystemToSession(joined.Id, $"{player.Name} joined the game.");
+        }
+
+        if (left is not null)
+            _chat.SendSystemToSession(left.Id, $"{player.Name} left the game.");
 
         _broadcaster.BroadcastToAll();
     }
@@ -717,6 +745,7 @@ public class GameOrchestrator
             _chat.BroadcastSystem(
                 $"{player.Name} has left {(host ?? session.CreatorName)}'s session!"
             );
+            _chat.SendSystemToSession(session.Id, $"{player.Name} left the game.");
             _broadcaster.BroadcastToAll();
         }
     }
@@ -739,7 +768,50 @@ public class GameOrchestrator
             return;
         }
 
-        _chat.SendChatMessage(player.Id, chat.Message);
+        // The client picks the channel: room chat or the game it is in. A session it is not
+        // in is refused rather than silently redirected into the room.
+        var sessionId = chat.SessionId;
+        if (sessionId != 0 && player.InSession?.SessionIndex != sessionId)
+            return;
+
+        _chat.SendChatMessage(player.Id, chat.Message, sessionId);
+        if (sessionId != 0)
+            ForwardChatToRace(sessionId, player, chat.Message);
+    }
+
+    /// <summary>
+    /// Sends a match-lobby line into the running race, so racers see it. Only a game whose race
+    /// is live has a pending match; before that the line already lives in the lobby transcript.
+    /// </summary>
+    private void ForwardChatToRace(uint sessionId, PlayerRegistry.ClientInfo player, string message)
+    {
+        if (!_sessionMatches.TryGetValue(sessionId, out var matchKey)
+            || !_pendingMatches.TryGetValue(matchKey, out var pending))
+            return;
+
+        _ = Task.Run(
+            async () =>
+            {
+                try
+                {
+                    await _gmClient.SendChatAsync(
+                        pending.GameMaster,
+                        new Lobby2RaceServer_Chat
+                        {
+                            MatchKey = matchKey,
+                            SenderId = player.Id,
+                            Sender = player.Name,
+                            Message = message,
+                            Color = player.Color
+                        }
+                    );
+                }
+                catch (Exception ex)
+                {
+                    Logging.Warning($"[Lobby] Could not relay chat to the race: {ex.Message}");
+                }
+            }
+        );
     }
 
     /// <summary>
@@ -1064,6 +1136,7 @@ public class GameOrchestrator
             _chat.BroadcastSystem(
                 $"{session.CreatorName} has started the race on {session.StageName}!"
             );
+            _chat.SendSystemToSession(session.Id, "The race is starting. Good luck!");
 
             // The frozen roster when there was one: a member who joined after the snapshot has
             // no seat in the race that is being created.
