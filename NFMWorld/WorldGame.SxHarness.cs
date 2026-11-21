@@ -71,7 +71,9 @@ public partial class WorldGame
             "stage-select-compact" => new FixturePhase(StageSelectCompactFixture),
             "lobby-create" => new FixturePhase(LobbyCreateFixture),
             "lobby-room" => new FixturePhase(LobbyRoomFixture),
-            "lobby-match" => new FixturePhase(LobbyMatchFixture),
+            "lobby-match" => new FixturePhase(() => LobbyMatchFixture()),
+            "lobby-match-live" => new FixturePhase(() => LobbyMatchFixture(2)),
+            "lobby-match-finished" => new FixturePhase(() => LobbyMatchFixture(3)),
             "main-menu" => new FixturePhase(() => MainMenuFixture(
                 config.TryGetProperty("signedIn", out var signedIn) && signedIn.GetBoolean(),
                 config.TryGetProperty("deletionPending", out var deletionPending)
@@ -784,10 +786,12 @@ public partial class WorldGame
     /// A created game's match lobby: slots, status, game details and the game chat, including a
     /// line forwarded out of the race.
     /// </summary>
-    private static Node LobbyMatchFixture()
+    private static Node LobbyMatchFixture(uint? sessionId = null)
     {
         var lobby = SeedLobbyRoom();
-        var session = lobby.Sessions.Value[0];
+        var session = sessionId is { } id
+            ? lobby.Sessions.Value.First(candidate => candidate.Id == id)
+            : lobby.Sessions.Value[0];
         lobby.SelectedSessionId.Value = session.Id;
         lobby.ViewedSessionId.Value = session.Id;
         lobby.Page.Value = LobbyPage.Match;
@@ -850,7 +854,11 @@ public partial class WorldGame
                 ),
                 new UiState.LobbySessionSlot(2, "Empty", "Waiting for player...", default, null, false, true, false),
                 new UiState.LobbySessionSlot(3, "Rusty", "Bot · Class C", new Color(190, 120, 90), null, true, false, false)
-            ]
+            ],
+            [],
+            [],
+            0,
+            ["A tight gun run built for four cars.", "Watch the hairpin before the last gate."]
         );
 
         var racing = new UiState.LobbySession(
@@ -900,12 +908,119 @@ public partial class WorldGame
                     false
                 ),
                 new UiState.LobbySessionSlot(3, "Empty", "Waiting for player...", default, null, false, true, false)
-            ]
+            ],
+            [
+                new UiState.LobbyStanding(maxine, "maxine", "NFM 2 · Class A", new Color(255, 170, 50), false, 0, 1, false, false),
+                new UiState.LobbyStanding(
+                    dr,
+                    "DR Monstaa",
+                    "Ancient · Class B",
+                    new Color(120, 220, 130),
+                    false,
+                    1,
+                    1,
+                    false,
+                    false
+                ),
+                new UiState.LobbyStanding(
+                    self,
+                    "tiki",
+                    "The Awesome Radical One · Class X",
+                    new Color(0, 128, 255),
+                    false,
+                    2,
+                    0,
+                    false,
+                    false
+                )
+            ],
+            [],
+            0,
+            ["The wall closes from the outside in.", "Keep the inside line at the final hall."]
         );
 
-        lobby.Sessions.Value = [open, racing];
+        var finished = new UiState.LobbySession(
+            3,
+            "DR Monstaa",
+            "The Hall without a Wall",
+            3,
+            4,
+            NFMWorldLibrary.Multiplayer.SessionState.Finished,
+            IsMember: false,
+            IsCreator: false,
+            NFMWorldLibrary.Multiplayer.DefaultGamemodes.PvP,
+            "PvP",
+            [
+                new UiState.LobbySessionSetting("Race constraint", "Racing"),
+                new UiState.LobbySessionSetting("Converging walls", "3 min")
+            ],
+            [
+                new UiState.LobbySessionSlot(
+                    0,
+                    "maxine",
+                    "NFM 2 · Class A",
+                    new Color(255, 170, 50),
+                    [new Color(255, 170, 50)],
+                    false,
+                    false,
+                    false
+                ),
+                new UiState.LobbySessionSlot(
+                    1,
+                    "DR Monstaa",
+                    "Ancient · Class B",
+                    new Color(120, 220, 130),
+                    [new Color(120, 220, 130)],
+                    false,
+                    false,
+                    false
+                ),
+                new UiState.LobbySessionSlot(
+                    2,
+                    "tiki",
+                    "The Awesome Radical One · Class X",
+                    new Color(0, 128, 255),
+                    [new Color(0, 128, 255)],
+                    false,
+                    false,
+                    false
+                ),
+                new UiState.LobbySessionSlot(3, "Empty", "Waiting for player...", default, null, false, true, false)
+            ],
+            [],
+            [
+                new UiState.LobbyStanding(maxine, "maxine", "NFM 2 · Class A", new Color(255, 170, 50), false, 0, 0, false, false),
+                new UiState.LobbyStanding(
+                    dr,
+                    "DR Monstaa",
+                    "Ancient · Class B",
+                    new Color(120, 220, 130),
+                    false,
+                    1,
+                    0,
+                    false,
+                    false
+                ),
+                new UiState.LobbyStanding(
+                    self,
+                    "tiki",
+                    "The Awesome Radical One · Class X",
+                    new Color(0, 128, 255),
+                    false,
+                    2,
+                    0,
+                    false,
+                    true
+                )
+            ],
+            DateTimeOffset.UtcNow.AddSeconds(45).ToUnixTimeMilliseconds(),
+            ["The wall closes from the outside in.", "Keep the inside line at the final hall."]
+        );
+
+        lobby.NowUnixMs.Value = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        lobby.Sessions.Value = [open, racing, finished];
         lobby.CurrentSession.Value = open;
-        lobby.Chat.Value =
+        List<UiState.LobbyChatLine> chat =
         [
             new UiState.LobbyChatLine(1, 0, Guid.Empty, "<System>", "tiki has joined the room.", default, true),
             new UiState.LobbyChatLine(2, 0, maxine, "maxine", "anyone up for gun run?", new Color(255, 170, 50), false),
@@ -913,6 +1028,13 @@ public partial class WorldGame
             new UiState.LobbyChatLine(4, 1, maxine, "maxine", "joining", new Color(255, 170, 50), false),
             new UiState.LobbyChatLine(5, 2, dr, "DR Monstaa", "that wall is closing fast", new Color(120, 220, 130), false)
         ];
+
+        // Enough room lines that a chat pane which grows with its content would squeeze the
+        // games list; the room capture should show a scrolling transcript instead.
+        for (var i = 0; i < 30; i++)
+            chat.Add(new UiState.LobbyChatLine(100 + i, 0, self, "tiki", $"room message {i + 1}", new Color(0, 128, 255), false));
+
+        lobby.Chat.Value = chat;
 
         return lobby;
     }

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Util;
 
@@ -166,6 +167,15 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         if (session.Players.IsEmpty)
         {
             session.State = SessionState.Finished;
+            // A finished race with placings is still a thing to read. Its existing deadline
+            // stands; one that was emptied before finishing gets no linger window.
+            if (session.ClosesAtUnixMs == 0 && session.FinalStandings.Length > 0)
+            {
+                session.ClosesAtUnixMs = DateTimeOffset.UtcNow
+                    .AddSeconds(FinishedLingerSeconds)
+                    .ToUnixTimeMilliseconds();
+            }
+
             return;
         }
 
@@ -250,6 +260,8 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
                 && DateTimeOffset.UtcNow >= startTime)
             {
                 session.State = SessionState.Finished;
+                // A load timeout has no placings to read; it is dropped on the next prune.
+                session.ClosesAtUnixMs = 0;
                 timedOut.Add(session);
 
                 // Players are keyed by slot to the player *id*, and IsInGame is tracked in the
@@ -273,15 +285,33 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
     /// Removes sessions that are over or empty so the lobby list does not grow forever.
     /// Only sessions in a terminal state are dropped; a race in progress stays visible.
     /// </summary>
-    public void PruneFinished()
+    public bool PruneFinished()
     {
+        var removed = false;
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         foreach (var (id, session) in _sessions)
         {
-            var finished = session.State == SessionState.Finished;
             var empty = session.State == SessionState.NotStarted && session.Players.IsEmpty;
-            if (finished || empty)
-                _sessions.TryRemove(id, out _);
+            // A finished race stays viewable long enough to read the placings. No deadline
+            // means it was emptied rather than finished, so it goes now.
+            var expired = session.State == SessionState.Finished
+                          && (session.ClosesAtUnixMs == 0 || session.ClosesAtUnixMs <= now);
+            if (!empty && !expired)
+                continue;
+
+            foreach (var playerId in session.Players.Values)
+            {
+                var player = players.Get(playerId);
+                if (player?.InSession?.SessionIndex != id)
+                    continue;
+                player.InSession = null;
+                player.IsInGame = false;
+            }
+
+            removed |= _sessions.TryRemove(id, out _);
         }
+
+        return removed;
     }
 
     /// <summary>
@@ -315,6 +345,9 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         return false;
     }
 
+    /// <summary>How long a finished race stays listed with its placings.</summary>
+    public const int FinishedLingerSeconds = 60;
+
     public class GameSession
     {
         public required uint Id { get; set; }
@@ -335,6 +368,13 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         public int BotCount { get; set; }
 
         public DateTimeOffset? StartTime { get; set; }
+
+        /// <summary>Unix ms at which this finished race is dropped; zero means it is not lingering.</summary>
+        public long ClosesAtUnixMs { get; set; }
+
+        /// <summary>The final order reported by the game master; empty if none was reported.</summary>
+        public SessionStanding[] FinalStandings { get; set; } = [];
+
         public SessionState State { get; set; } = SessionState.NotStarted;
         public string Gamemode { get; set; } = DefaultGamemodes.PvP;
         public Dictionary<string, string> GamemodeParameters { get; set; } = [];

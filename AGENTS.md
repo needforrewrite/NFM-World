@@ -765,14 +765,34 @@ palette). One lobby; whether a race is rated is chosen per race, not by a menu p
   publishes the gamemode, its parameters and bot slots in `S2C_LobbyState.GameSession`, so a non-member can read a
   game without loading its plugin; the client labels the parameters from `GamemodeCatalog.ConfigFields` (cached per
   gamemode in the phase, never read by a view slot).
+- **Lobby state is broadcast on change, not on a timer.** `LobbyExec` only publishes after a prune or
+  a timeout; every path that alters visible player/session state (identity, create, join, leave,
+  start, finish, moderation disconnect) must call `LobbyStateBroadcaster.BroadcastToAll`. The
+  countdown itself is client-side (`UiState.Lobby.NowUnixMs`), so a lingering finished game does not
+  need per-second server broadcasts.
+- **Status is the match lobby's main panel.** It shows `WAITING FOR PLAYERS`, `RACE LIVE` or `GAME
+  FINISHED`, with a standings table: final `SessionStanding`s after the race, or a live order while
+  it runs. The old details card is gone; only the **Stage** row remains, and hovering the stage name
+  opens `PREVIEW STAGE` (the stage's `desc()` briefing) and `GAME RULES` (gamemode/host/slots/options)
+  popovers. Live order is PvP's `PvpServerGamemode.GetLiveState`, pushed by the GM to the lobby every
+  two seconds (like chat) and forwarded to everyone not driving that race; the client applies it to
+  the viewed session only, so room rows do not churn.
+- **A finished race lingers for a minute.** `ReportMatchResultsAsync` stores self-contained
+  `SessionStanding`s (names/cars/colours, so a later leave cannot blank a placing) and a
+  `ClosesAtUnixMs` deadline; `PruneFinished` keeps the session until it passes, then clears the
+  players' membership. The room row and match status show the countdown; `LobbyPhase` ticks
+  `UiState.Lobby.NowUnixMs` while any finished session exists. `S2C_SessionLiveState` carries the
+  live order and `S2C_LobbyState.GameSession` carries the final rows + deadline.
 - **Chat has two channels on one transcript.** `LobbyChatLine.SessionId` is zero for room chat and the game id for
   match chat. The client sends `C2S_LobbyChatMessage.SessionId` (`0` in the room, its current game in a match view);
-  the server refuses a session the sender is not in, and `ChatManager` routes room chat to everyone but match chat
-  only to members. `GameOrchestrator` forwards a match-lobby line to the running race over `/race-chat`, and
+  the visible page chooses, not membership — a player who backs out to the room while still in a game must not turn
+  room chat into game chat. The server refuses a session the sender is not in, and `ChatManager` routes room chat to
+  everyone but match chat only to members. `GameOrchestrator` forwards a match-lobby line to the running race over `/race-chat`, and
   `RaceOrchestrator` forwards in-game chat (players and system lines) back over the lobby's `/race-chat`, so people
   waiting in the match lobby see the race talk. Both directions are HMAC-signed and versioned; neither reports the
   other's line back (no echo). The GM derives the chat URL from `LOBBY_RESULTS_URL` (same origin, path `/race-chat`);
-  `LOBBY_CHAT_URL` overrides it when the lobby's chat endpoint is elsewhere.
+  `LOBBY_CHAT_URL` overrides it when the lobby's chat endpoint is elsewhere. Live order uses the same
+  derivation at `/race-live`, with `LOBBY_LIVE_URL` as its override.
 - **The create page's stage list has two sources.** It renders `UiState.Lobby.CreateStages`, which
   `LobbyPhase` fills on open (`LobbyStageSelection.ShowLocal`) and filters: LOCAL is the shipped stages a session may
   use, ONLINE is the public archive searched on Enter (`GarageController.ContentClient`, `"Stage"`, eligible rows
@@ -1201,7 +1221,9 @@ Added with the archive/content work; read this before touching content loading, 
   `text-area` (a code editor holding more lines than it shows, for the multiline editor's menu and
   its scroll behaviour),
   `lobby-room` (the room's players rail, games table and room chat), `lobby-match` (a created game's
-  slot grid, status/details and match chat), and `lobby-create` (the full-area create page over the shipped
+  slot grid, status and match chat), `lobby-match-live` (live order in the status panel plus the Stage
+  hover preview/rules popovers), `lobby-match-finished` (final placings and the close countdown), and
+  `lobby-create` (the full-area create page over the shipped
   stage list; its script switches LOCAL→ONLINE→pick→LOCAL, and the ONLINE rows are a fixed fixture set
   because the archive search is network work),
   `replay-browser`, `replay-viewer` or `replay-camera`

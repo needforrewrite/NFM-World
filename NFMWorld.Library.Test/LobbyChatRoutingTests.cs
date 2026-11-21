@@ -1,3 +1,4 @@
+using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Multiplayer.Packets;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
@@ -194,5 +195,39 @@ public class LobbyChatRoutingTests
         Assert.AreEqual(1, published.Players.Count);
         Assert.AreEqual(2, published.Bots.Count);
         Assert.AreEqual(3, published.PlayerCount);
+    }
+
+    [TestMethod]
+    public void Snapshot_CarriesFinalPlacingsAndCloseDeadline()
+    {
+        var players = new PlayerRegistry();
+        var transport = new RecordingTransport();
+        var sessions = new SessionManager(transport, players);
+        var creator = Join(players, 1, "alice");
+
+        var session = sessions.CreateSession(creator.ClientIndex, "nfmm/road", 4, DefaultGamemodes.PvP)!;
+        session.State = SessionState.Finished;
+        session.ClosesAtUnixMs = 1_700_000_000_000;
+        session.FinalStandings =
+        [
+            new SessionStanding
+            {
+                PlayerId = creator.Id,
+                PlayerName = "alice",
+                CarName = "nfmm/radicalone",
+                Color = new Color3(1, 2, 3),
+                Position = 0,
+                Dnf = false
+            }
+        ];
+
+        var published = new LobbyStateBroadcaster(transport, players, sessions)
+            .BuildSnapshot(creator.Id)
+            .ActiveSessions[0];
+
+        Assert.AreEqual(SessionState.Finished, published.State);
+        Assert.AreEqual(1_700_000_000_000, published.ClosesAtUnixMs);
+        Assert.AreEqual(1, published.FinalStandings.Count);
+        Assert.AreEqual("alice", published.FinalStandings[0].PlayerName);
     }
 }

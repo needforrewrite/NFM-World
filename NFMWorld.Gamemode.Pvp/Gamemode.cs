@@ -644,6 +644,44 @@ public class PvpServerGamemode(
     }
 
     /// <summary>
+    /// The live order for the match lobby: the same grouping and tie-break the final standings
+    /// use, so a waiting member sees the race as it is, not a stale grid.
+    /// </summary>
+    public override RaceLiveState? GetLiveState()
+    {
+        if (_state is ServerGamemodeState.WaitingToStart or ServerGamemodeState.Countdown)
+            return null;
+
+        return new RaceLiveState
+        {
+            Standings =
+            [
+                .. _perPlayer
+                .OrderBy(kv => StandingGroup(kv.Value))
+                .ThenBy(kv => StandingWithin(kv.Value))
+                .Select((kv, index) =>
+                    {
+                        var player = Players.FirstOrDefault(candidate => candidate.Id == kv.Key);
+                        return new RaceLiveStanding
+                        {
+                            PlayerId = kv.Key,
+                            PlayerName = player.PlayerName ?? "Player",
+                            CarName = player.CarName ?? "",
+                            Color = player.Color,
+                            IsBot = player.IsBot,
+                            Position = index,
+                            Lap = kv.Value.Lap,
+                            Checkpoint = kv.Value.Checkpoint,
+                            Wasted = kv.Value.WastedAt >= 0,
+                            Forfeited = kv.Value.Forfeited
+                        };
+                    }
+                )
+            ]
+        };
+    }
+
+    /// <summary>
     /// A client's connection went away. A player who quits drops its transport instead of
     /// sending ForfeitEvent, so this is that same departure arriving by another route.
     /// </summary>

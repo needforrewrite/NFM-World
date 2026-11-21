@@ -218,6 +218,15 @@ public static class UiState
         /// <summary>The game the match view is showing, or null.</summary>
         public Signal<uint?> ViewedSessionId { get; } = new(null);
 
+        /// <summary>
+        /// Unix ms updated a few times a second while a finished race is lingering, so a
+        /// countdown can tick without the server broadcasting the whole lobby every second.
+        /// </summary>
+        public Signal<long> NowUnixMs { get; } = new(0);
+
+        /// <summary>Increments when a live order is replaced, so ordered rows are rebuilt rather than moved in place.</summary>
+        public Signal<int> LiveRevision { get; } = new(0);
+
         public Signal<string> SelectedStage { get; } = new("");
 
         /// <summary>
@@ -253,6 +262,8 @@ public static class UiState
             SelectedSessionId.Value = null;
             Page.Value = LobbyPage.Room;
             ViewedSessionId.Value = null;
+            NowUnixMs.Value = 0;
+            LiveRevision.Value = 0;
             CreateStages.Reset();
             BotCount.Value = 0;
             SelectedGamemode.Value = NFMWorldLibrary.Multiplayer.DefaultGamemodes.PvP;
@@ -282,11 +293,28 @@ public static class UiState
         string Gamemode,
         string GamemodeLabel,
         IReadOnlyList<LobbySessionSetting> Settings,
-        IReadOnlyList<LobbySessionSlot> Slots
+        IReadOnlyList<LobbySessionSlot> Slots,
+        IReadOnlyList<LobbyStanding> LiveStandings,
+        IReadOnlyList<LobbyStanding> FinalStandings,
+        long ClosesAtUnixMs,
+        IReadOnlyList<string> StageBriefing
     )
     {
         public int EmptySlots => Math.Max(0, MaxPlayers - PlayerCount);
     }
+
+    /// <summary>One row of the match lobby's live or final order.</summary>
+    public sealed record LobbyStanding(
+        Guid PlayerId,
+        string Name,
+        string Car,
+        Color Color,
+        bool IsBot,
+        int Position,
+        int Lap,
+        bool Wasted,
+        bool Dnf
+    );
 
     /// <summary>One gamemode option as the match view shows it, already labelled.</summary>
     public sealed record LobbySessionSetting(string Label, string Value);

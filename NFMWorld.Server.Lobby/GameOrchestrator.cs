@@ -73,6 +73,37 @@ public class GameOrchestrator
     private bool _lobbyIsRunning = true;
 
     /// <summary>
+    /// A running race's order, forwarded only to that session's members who are not in the race.
+    /// A racer has the real state; a waiting member is the one looking at a match lobby.
+    /// </summary>
+    public void ReportLiveState(RaceServer2Lobby_LiveState live)
+    {
+        if (!Guid.TryParse(live.MatchKey, out var matchKey)
+            || !_pendingMatches.TryGetValue(matchKey, out var pending))
+            return;
+
+        // Everyone in the room can open a running game's match lobby, and a spectator is
+        // watching the real thing. Only the drivers are excluded; their lobby socket is
+        // busy racing anyway.
+        var racers = pending.Info.Players.Values.Select(player => player.Id).ToHashSet();
+        _transport.SendPacketToClients(
+            _players.All
+                .Where(entry => entry.Value.IsAuthenticated
+                                && entry.Value.AccountId > 0
+                                && !entry.Value.IsInGame
+                                && !racers.Contains(entry.Value.Id)
+                )
+                .Select(entry => entry.Key)
+                .ToArray(),
+            new S2C_SessionLiveState
+            {
+                SessionId = pending.SessionId,
+                Standings = live.State.Standings
+            }
+        );
+    }
+
+    /// <summary>
     /// A game master's in-game chat line, relayed to the members waiting in that game's match
     /// lobby. Called from the authenticated /race-chat handler.
     /// </summary>
@@ -115,12 +146,40 @@ public class GameOrchestrator
         if (session is not null)
         {
             session.State = SessionState.Finished;
+            session.FinalStandings =
+            [
+                .. results.Standings
+                .OrderBy(standing => standing.FinishPosition)
+                .Select(standing =>
+                    {
+                        var info = pending.Info.Players.Values.FirstOrDefault(
+                            player => player.Id == standing.PlayerId
+                        );
+                        return new SessionStanding
+                        {
+                            PlayerId = standing.PlayerId,
+                            PlayerName = info.PlayerName ?? "Player",
+                            CarName = info.CarName ?? "",
+                            Color = info.Color,
+                            IsBot = info.IsBot,
+                            Position = standing.FinishPosition,
+                            Dnf = standing.FinishTime is null
+                        };
+                    }
+                )
+            ];
+            session.ClosesAtUnixMs = DateTimeOffset.UtcNow
+                .AddSeconds(SessionManager.FinishedLingerSeconds)
+                .ToUnixTimeMilliseconds();
             foreach (var (_, id) in session.Players)
             {
                 var participant = _players.Get(id);
                 if (participant is not null)
                     participant.IsInGame = false;
             }
+
+            // The periodic loop no longer broadcasts unchanged state, so publish the finish now.
+            _broadcaster.BroadcastToAll();
         }
 
         if (_archive is not { CanReportResults: true })
@@ -222,22 +281,30 @@ public class GameOrchestrator
     {
         while (_lobbyIsRunning)
         {
-            _sessions.PruneFinished();
-            _broadcaster.BroadcastToAll();
+            // Other paths broadcast when they change something. This loop only has to cover
+            // the time-driven changes, or every client rebuilds the lobby every second.
+            var pruned = _sessions.PruneFinished();
             PollModeration();
 
-            foreach (var session in _sessions.CheckTimeouts())
+            var timedOut = _sessions.CheckTimeouts();
+            if (timedOut.Count > 0)
             {
-                _transport.SendPacketToClients(
-                    session.Players
-                        .Select(kv => _players.Get(kv.Value)?.ClientIndex ?? null)
-                        .Where(ci => ci.HasValue)
-                        .Select(ci => ci!.Value)
-                        .ToArray(),
-                    new S2C_RaceFailedToStart(),
-                    false
-                );
+                foreach (var session in timedOut)
+                {
+                    _transport.SendPacketToClients(
+                        session.Players
+                            .Select(kv => _players.Get(kv.Value)?.ClientIndex ?? null)
+                            .Where(ci => ci.HasValue)
+                            .Select(ci => ci!.Value)
+                            .ToArray(),
+                        new S2C_RaceFailedToStart(),
+                        false
+                    );
+                }
             }
+
+            if (pruned || timedOut.Count > 0)
+                _broadcaster.BroadcastToAll();
 
             Thread.Sleep(1000);
         }
@@ -617,6 +684,9 @@ public class GameOrchestrator
         // is called off rather than racing a car nobody downloaded.
         if (client.InSession is { } session)
             InvalidatePreparation(session.SessionIndex, "A player changed their selection while the race was preparing.");
+
+        // The periodic loop no longer pushes unchanged state; a car/color change is a change.
+        _broadcaster.BroadcastToAll();
     }
 
     private void HandleCreateSession(uint clientId, C2S_CreateSession create)

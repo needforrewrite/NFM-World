@@ -1,0 +1,13 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-lobby-match-finished-captures",
+  "view": "lobby-match-finished",
+  "steps": [
+    { "action": "capture", "capture": "finished" },
+    { "action": "assert-visible", "target": "Lobby match status" },
+    { "action": "assert-visible", "target": "Lobby match final standings" },
+    { "action": "assert-visible", "target": "Lobby match countdown" }
+  ]
+}

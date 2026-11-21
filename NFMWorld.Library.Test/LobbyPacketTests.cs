@@ -1,5 +1,6 @@
 ﻿using System.Buffers;
 using CommunityToolkit.HighPerformance.Buffers;
+using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
 using NFMWorldLibrary.Multiplayer.Packets.S2C;
@@ -266,7 +267,21 @@ public class LobbyPacketTests
                     State = SessionState.NotStarted,
                     Gamemode = DefaultGamemodes.PvP,
                     GamemodeParameters = new Dictionary<string, string> { ["walls"] = "3" },
-                    Bots = new Dictionary<byte, ServerSidePlayerInfo> { [1] = bot }
+                    Bots = new Dictionary<byte, ServerSidePlayerInfo> { [1] = bot },
+                    FinalStandings =
+                    [
+                        new SessionStanding
+                        {
+                            PlayerId = bot.Id,
+                            PlayerName = "Bot 1",
+                            CarName = "nfmm/radicalone",
+                            Color = new Color3(200, 60, 60),
+                            IsBot = true,
+                            Position = 0,
+                            Dnf = false
+                        }
+                    ],
+                    ClosesAtUnixMs = 1_700_000_000_000
                 }
             ]
         };
@@ -280,6 +295,43 @@ public class LobbyPacketTests
         Assert.AreEqual("Bot 1", session.Bots[1].PlayerName);
         // Occupied slots include bots: a 1/4 row with a bot is 2/4.
         Assert.AreEqual(2, session.PlayerCount);
+        Assert.AreEqual("Bot 1", session.FinalStandings[0].PlayerName);
+        Assert.AreEqual(0, session.FinalStandings[0].Position);
+        Assert.AreEqual(1_700_000_000_000, session.ClosesAtUnixMs);
+    }
+
+    [TestMethod]
+    public void SessionLiveState_CarriesOrderAndNames()
+    {
+        var playerId = Guid.NewGuid();
+        var sent = new S2C_SessionLiveState
+        {
+            SessionId = 12,
+            Standings =
+            [
+                new RaceLiveStanding
+                {
+                    PlayerId = playerId,
+                    PlayerName = "alice",
+                    CarName = "nfmm/radicalone",
+                    Color = new Color3(10, 20, 30),
+                    IsBot = false,
+                    Position = 0,
+                    Lap = 2,
+                    Checkpoint = 5,
+                    Wasted = false,
+                    Forfeited = false
+                }
+            ]
+        };
+
+        var received = RoundTrip(sent, -20);
+
+        Assert.AreEqual(12u, received.SessionId);
+        Assert.AreEqual(1, received.Standings.Count);
+        Assert.AreEqual("alice", received.Standings[0].PlayerName);
+        Assert.AreEqual(2, received.Standings[0].Lap);
+        Assert.AreEqual((ushort)5, received.Standings[0].Checkpoint);
     }
 
     [TestMethod]

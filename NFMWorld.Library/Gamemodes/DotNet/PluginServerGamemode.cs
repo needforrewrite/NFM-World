@@ -68,6 +68,13 @@ public class PluginServerGamemode(
 
     public override GameStateSnapshot? GetStateSnapshot() => _snapshot;
 
+    /// <summary>
+    /// The live order for the match lobby, or null when this gamemode has nothing useful to
+    /// publish before the race ends.
+    /// </summary>
+    [PluginVisible]
+    public virtual RaceLiveState? GetLiveState() => null;
+
     [PluginVisible]
     public void FinishRace(TimeSpan raceDuration, RaceStanding[] standings, bool provisional = false) => _snapshot =
         new GameStateSnapshot()

@@ -111,6 +111,26 @@ public class LobbySessionOwnershipTests
     }
 
     /// <summary>
+    /// A finished race is still worth looking at: it stays listed until its close deadline,
+    /// then the pruner drops it.
+    /// </summary>
+    [TestMethod]
+    public void FinishedSession_LingersUntilItsCloseDeadline()
+    {
+        var (sessions, _, _) = Create();
+        var session = sessions.CreateSession(1, "nfmm/road", 4, DefaultGamemodes.PvP)!;
+        session.State = SessionState.Finished;
+        session.ClosesAtUnixMs = DateTimeOffset.UtcNow.AddSeconds(30).ToUnixTimeMilliseconds();
+
+        sessions.PruneFinished();
+        Assert.IsNotNull(sessions.Get(session.Id), "a finished race with placings must stay viewable");
+
+        session.ClosesAtUnixMs = DateTimeOffset.UtcNow.AddSeconds(-1).ToUnixTimeMilliseconds();
+        sessions.PruneFinished();
+        Assert.IsNull(sessions.Get(session.Id), "an expired finished race is dropped");
+    }
+
+    /// <summary>
     /// A repeated join for the session a player is already in. Leaving first and re-joining ends
     /// a session only they were in, so the repeat would destroy the session it just named.
     /// </summary>

@@ -111,7 +111,7 @@ static async Task HandleHttpRequest(
     try
     {
         if (req.HttpMethod != "POST"
-            || req.Url!.LocalPath is not ("/race-ended" or "/race-chat"))
+            || req.Url!.LocalPath is not ("/race-ended" or "/race-chat" or "/race-live"))
         {
             res.StatusCode = 404;
             res.Close();
@@ -173,6 +173,14 @@ static async Task HandleHttpRequest(
         if (req.Url.LocalPath == "/race-chat")
         {
             orchestrator.ReportRaceChat(TightPackSerializer.Deserialize<RaceServer2Lobby_Chat>(body));
+            res.StatusCode = 200;
+            res.Close();
+            return;
+        }
+
+        if (req.Url.LocalPath == "/race-live")
+        {
+            orchestrator.ReportLiveState(TightPackSerializer.Deserialize<RaceServer2Lobby_LiveState>(body));
             res.StatusCode = 200;
             res.Close();
             return;

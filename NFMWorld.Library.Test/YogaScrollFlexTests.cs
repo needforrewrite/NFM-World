@@ -78,6 +78,65 @@ public class YogaScrollFlexTests
         }
     }
 
+    /// <summary>
+    /// A pane whose flex basis is its content height grows with a long transcript and squeezes
+    /// its sibling. The room and match pages give the games and chat panes a zero main size
+    /// instead, so their grow factors decide the split and the transcript scrolls.
+    /// </summary>
+    [TestMethod]
+    public void PanesWithZeroBasis_KeepTheirGrowRatio_WhenOneHasLongScrollContent()
+    {
+        var lines = Enumerable.Range(0, 40).Select(index => "line " + index).ToArray();
+
+        static Node Pane(float grow, IReadOnlyList<string> lines, int visibleRows) => Sx.View(
+            style: () => Sx.Styles(
+                flexDirection: FlexDirection.Column,
+                flexGrow: grow,
+                flexShrink: 1,
+                height: 0,
+                minHeight: 0
+            ),
+            children:
+            [
+                Sx.View(style: () => Sx.Styles(height: 20, flexShrink: 0)),
+                Sx.View(
+                    style: () => Sx.Styles(
+                        flexDirection: FlexDirection.Column,
+                        flexGrow: 1,
+                        flexShrink: 1,
+                        minHeight: 0,
+                        overflow: Overflow.Scroll
+                    ),
+                    children: Sx.For(
+                        each: () => lines.Take(visibleRows).ToArray(),
+                        row: (line, _) => Sx.View(
+                            style: () => Sx.Styles(height: 30, flexShrink: 0),
+                            children: [Sx.Text(style: () => Sx.TextStyles(fontSize: 13), text: () => line)]
+                        )
+                    )
+                )
+            ]
+        );
+
+        var root = Sx.View(
+            style: () => Sx.Styles(flexDirection: FlexDirection.Column, width: 500, height: 600, gapRow: 10),
+            children: [Pane(3, lines, 3), Pane(2, lines, lines.Length)]
+        );
+
+        root.LayoutAndRender(new Vector2(500, 600));
+
+        var games = (Component)root.VisualChildren[0];
+        var chat = (Component)root.VisualChildren[1];
+
+        Assert.IsTrue(games.LayoutHeight > 100f, $"the games pane collapsed to {games.LayoutHeight}px");
+        Assert.AreEqual(
+            1.5f,
+            games.LayoutHeight / chat.LayoutHeight,
+            0.02f,
+            "the panes must keep their 3:2 grow ratio regardless of chat content"
+        );
+    }
+
     /// <summary>A backend whose text has a real line height, which the shrink path needs.</summary>
     private sealed class MetricsBackend : IBackend
     {

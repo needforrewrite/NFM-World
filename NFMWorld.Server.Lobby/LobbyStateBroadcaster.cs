@@ -71,7 +71,9 @@ public class LobbyStateBroadcaster(
                     State = session.State,
                     Gamemode = session.Gamemode,
                     GamemodeParameters = new Dictionary<string, string>(session.GamemodeParameters),
-                    Bots = bots
+                    Bots = bots,
+                    FinalStandings = [.. session.FinalStandings],
+                    ClosesAtUnixMs = session.ClosesAtUnixMs
                 }
             );
         }

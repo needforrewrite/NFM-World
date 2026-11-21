@@ -1,5 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using TightPack;
+using NFMWorldLibrary.Gamemodes;
 
 namespace NFMWorldLibrary.Multiplayer.Packets.S2C;
 
@@ -46,6 +47,14 @@ public partial struct S2C_LobbyState : IPacketServerToClient<S2C_LobbyState>
         [TightPackOrder(9)]
         public required IDictionary<byte, ServerSidePlayerInfo> Bots { get; set; } =
             new Dictionary<byte, ServerSidePlayerInfo>();
+
+        /// <summary>The final order, kept after the race so a match lobby can show placings.</summary>
+        [TightPackOrder(10)]
+        public required IList<SessionStanding> FinalStandings { get; set; } = [];
+
+        /// <summary>Unix ms at which this finished race is dropped; zero when it is not lingering.</summary>
+        [TightPackOrder(11)]
+        public long ClosesAtUnixMs { get; set; }
 
         [TightPackIgnore] public int PlayerCount => Players.Count + Bots.Count;
 

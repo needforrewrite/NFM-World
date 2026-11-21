@@ -404,6 +404,9 @@ public static class LobbyView
                 flexDirection: FlexDirection.Column,
                 flexGrow: 3,
                 flexShrink: 1,
+                // A zero main size keeps the pane on its 3:2 share; without it the
+                // transcript's content height becomes the flex basis and wins.
+                height: 0,
                 minHeight: 0,
                 gapRow: 8,
                 paddingTop: 10,
@@ -589,15 +592,33 @@ public static class LobbyView
                     text: () => $"{session.PlayerCount}/{session.MaxPlayers}"
                 ),
                 Sx.View(
-                    style: () => Sx.Styles(width: 96, flexShrink: 0, alignItems: Align.FlexStart),
-                    children: Sx.Text(
-                        style: () => Sx.TextStyles(
-                            fontSize: 11,
-                            fontStyle: FontStyle.Bold,
-                            foregroundColor: StateColor(session.State)
+                    style: () => Sx.Styles(
+                        width: 96,
+                        flexShrink: 0,
+                        flexDirection: FlexDirection.Column,
+                        alignItems: Align.FlexStart
+                    ),
+                    children:
+                    [
+                        Sx.Text(
+                            style: () => Sx.TextStyles(
+                                fontSize: 11,
+                                fontStyle: FontStyle.Bold,
+                                foregroundColor: StateColor(session.State)
+                            ),
+                            text: () => StateLabel(session.State)
                         ),
-                        text: () => StateLabel(session.State)
-                    )
+                        Sx.Show(
+                            () => session.State == SessionState.Finished && session.ClosesAtUnixMs > 0,
+                            () => Sx.View(
+                                name: () => $"Lobby game {session.Id} countdown",
+                                children: Sx.Text(
+                                    style: () => Sx.TextStyles(fontSize: 10, foregroundColor: Theme.MenuDim),
+                                    text: () => CountdownShort(session)
+                                )
+                            )
+                        )
+                    ]
                 ),
                 Sx.View(
                     style: () => Sx.Styles(width: 62, flexShrink: 0, alignItems: Align.FlexEnd),
@@ -630,15 +651,24 @@ public static class LobbyView
 
     // ── Match lobby ────────────────────────────────────────────────
 
+    private enum MatchOverlay
+    {
+        None,
+        Stage,
+        Rules
+    }
+
     private static Node MatchPage(Actions actions)
     {
         var lobby = UiState.Lobby;
+        var overlay = new Signal<MatchOverlay>(MatchOverlay.None);
         UiState.LobbySession? Session() =>
             lobby.Sessions.Value.FirstOrDefault(session => session.Id == lobby.ViewedSessionId.Value);
 
         return Sx.View(
             name: () => "Lobby match",
             style: () => Sx.Styles(
+                position: Position.Relative,
                 flexDirection: FlexDirection.Column,
                 flexGrow: 1,
                 flexShrink: 1,
@@ -755,8 +785,8 @@ public static class LobbyView
                             ),
                             children:
                             [
-                                StatusCard(Session),
-                                DetailsCard(Session),
+                                StatusPanel(Session),
+                                StageCard(Session, overlay),
                                 ChatPanel(
                                     actions,
                                     () => Session()?.Id ?? 0,
@@ -767,6 +797,10 @@ public static class LobbyView
                             ]
                         )
                     ]
+                ),
+                Sx.Show(
+                    () => overlay.Value != MatchOverlay.None,
+                    () => MatchOverlayView(Session, overlay)
                 )
             ]
         );
@@ -910,52 +944,589 @@ public static class LobbyView
         );
     }
 
-    private static Node StatusCard(Func<UiState.LobbySession?> session)
-        => Card(
-            "STATUS",
-            Sx.Text(
-                style: () => Sx.WrappingText(fontSize: 15, foregroundColor: TextBlue),
-                layout: () => Sx.Styles(width: 100.Percent()),
-                text: () => StatusText(session())
-            )
+    private static Node StatusPanel(Func<UiState.LobbySession?> session)
+        => Sx.View(
+            name: () => "Lobby match status",
+            style: () => Sx.Styles(
+                flexDirection: FlexDirection.Column,
+                flexGrow: 3,
+                flexShrink: 1,
+                height: 0,
+                minHeight: 0,
+                gapRow: 8,
+                paddingTop: 12,
+                paddingBottom: 12,
+                paddingLeft: 14,
+                paddingRight: 14,
+                backgroundColor: new Color(22, 42, 80, 120),
+                borderTop: 1,
+                borderBottom: 1,
+                borderLeft: 1,
+                borderRight: 1,
+                borderColor: new Color(128, 170, 255, 110),
+                borderRadius: 8
+            ),
+            children:
+            [
+                Sx.View(
+                    style: () => Sx.Styles(
+                        flexDirection: FlexDirection.Row,
+                        alignItems: Align.Center,
+                        flexShrink: 0,
+                        gapColumn: 8
+                    ),
+                    children:
+                    [
+                        Sx.Text(
+                            style: () => Sx.TextStyles(
+                                fontSize: 11,
+                                fontStyle: FontStyle.Bold,
+                                foregroundColor: Blue
+                            ),
+                            text: () => "STATUS"
+                        ),
+                        Sx.View(style: () => Sx.Styles(flexGrow: 1)),
+                        Sx.Text(
+                            style: () => Sx.TextStyles(
+                                fontSize: 11,
+                                fontStyle: FontStyle.Bold,
+                                foregroundColor: StatusHeadingColor(session()?.State)
+                            ),
+                            text: () => session() is { } current ? StateLabel(current.State) : "—"
+                        )
+                    ]
+                ),
+                Sx.Text(
+                    style: () => Sx.WrappingText(
+                        fontSize: 20,
+                        fontFamily: FontFamily.Adventure,
+                        fontStyle: FontStyle.Bold,
+                        foregroundColor: StatusHeadingColor(session()?.State)
+                    ),
+                    layout: () => Sx.Styles(width: 100.Percent(), flexShrink: 0),
+                    text: () => StatusHeading(session())
+                ),
+                Sx.Text(
+                    style: () => Sx.WrappingText(fontSize: 13, foregroundColor: TextBlue),
+                    layout: () => Sx.Styles(width: 100.Percent(), flexShrink: 0),
+                    text: () => StatusDetail(session())
+                ),
+                Sx.Show(
+                    () => session() is { State: SessionState.Finished } && session()!.ClosesAtUnixMs > 0,
+                    () => Sx.View(
+                        name: () => "Lobby match countdown",
+                        children: Sx.Text(
+                            style: () => Sx.TextStyles(
+                                fontSize: 13,
+                                fontStyle: FontStyle.Bold,
+                                foregroundColor: Theme.Warning
+                            ),
+                            text: () => CountdownText(session())
+                        )
+                    )
+                ),
+                Sx.Show(
+                    () => session()?.State == SessionState.Finished && session()!.FinalStandings.Count > 0,
+                    () => StandingsTable(session, final: true)
+                ),
+                Sx.Show(
+                    () => session()?.State == SessionState.Started && session()!.LiveStandings.Count > 0,
+                    () => Sx.For(
+                        // Sx.For moves nodes; a live order must be rebuilt in its new order.
+                        each: () => new[] { UiState.Lobby.LiveRevision.Value },
+                        row: (_, _) => StandingsTable(session, final: false)
+                    )
+                ),
+                Sx.Show(
+                    () => session()?.State == SessionState.Finished && session()!.FinalStandings.Count == 0,
+                    () => StatusNote("No results were recorded for this game.")
+                )
+            ]
         );
 
-    private static string StatusText(UiState.LobbySession? session)
+    private static Node StatusNote(string text)
+        => Sx.Text(
+            style: () => Sx.WrappingText(fontSize: 11, foregroundColor: Theme.MenuDim),
+            layout: () => Sx.Styles(width: 100.Percent(), flexShrink: 0),
+            text: () => text
+        );
+
+    private static string StatusHeading(UiState.LobbySession? session) => session?.State switch
+    {
+        SessionState.Finished => "GAME FINISHED",
+        SessionState.Started => "RACE LIVE",
+        SessionState.WaitingToLoad => "RACE STARTING",
+        null => "GAME ENDED",
+        _ => "WAITING FOR PLAYERS"
+    };
+
+    private static Color StatusHeadingColor(SessionState? state) => state switch
+    {
+        SessionState.Started => Theme.Success,
+        SessionState.Finished => Blue,
+        SessionState.WaitingToLoad => Theme.Warning,
+        _ => Theme.MenuDim
+    };
+
+    private static string StatusDetail(UiState.LobbySession? session)
     {
         if (session is null)
             return "This game is no longer listed.";
 
-        return session.State switch
+        if (session.State == SessionState.Finished)
         {
-            SessionState.Finished => "This game has ended.",
-            SessionState.Started => "The race is in progress. Watch it live.",
-            SessionState.WaitingToLoad => "The race is starting. Hang tight.",
-            _ when session.IsCreator && session.EmptySlots == 0 => "You have created this game. Start when ready.",
-            _ when session.IsCreator => $"Waiting for {session.EmptySlots} more player(s) to join to start.",
-            _ when session.IsMember => $"{session.CreatorName} starts the race when everyone is ready.",
-            _ when session.EmptySlots == 0 => "This game is full.",
+            if (session.FinalStandings.FirstOrDefault() is { } winner)
+                return $"Winner: {winner.Name}";
+            return "This game has ended.";
+        }
+
+        if (session.State == SessionState.Started)
+        {
+            if (session.LiveStandings.FirstOrDefault() is { } leader)
+                return $"Leader: {leader.Name}. {session.LiveStandings.Count} car(s) listed.";
+            return "The race is in progress. Watch it live.";
+        }
+
+        if (session.State == SessionState.WaitingToLoad)
+            return "The race is starting. Hang tight.";
+
+        return session switch
+        {
+            { IsCreator: true, EmptySlots: 0 } => "You have created this game. Start when ready.",
+            { IsCreator: true } => $"Waiting for {session.EmptySlots} more player(s) to join to start.",
+            { IsMember: true } => $"{session.CreatorName} starts the race when everyone is ready.",
+            { EmptySlots: 0 } => "This game is full.",
             _ => "Open game. Join to take a free slot."
         };
     }
 
-    private static Node DetailsCard(Func<UiState.LobbySession?> session)
-        => Card(
-            "GAME DETAILS",
-            Sx.View(
-                style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0, gapRow: 4),
-                children:
-                [
-                    DetailRow("Stage", () => session()?.StageName ?? "—"),
-                    DetailRow("Gamemode", () => session()?.GamemodeLabel ?? "—"),
-                    DetailRow("Host", () => session()?.CreatorName ?? "—"),
-                    DetailRow("Players", () => session() is { } s ? $"{s.PlayerCount}/{s.MaxPlayers}" : "—"),
-                    DetailRow("Bots", () => session()?.Slots.Count(slot => slot.IsBot).ToString() ?? "0"),
-                    Sx.For(
-                        each: () => session()?.Settings ?? [],
-                        row: (setting, _) => DetailRow(setting.Label, () => setting.Value)
+    private static Node StandingsTable(Func<UiState.LobbySession?> session, bool final)
+        => Sx.View(
+            name: () => final ? "Lobby match final standings" : "Lobby match live standings",
+            style: () => Sx.Styles(
+                flexDirection: FlexDirection.Column,
+                flexGrow: 1,
+                flexShrink: 1,
+                minHeight: 0,
+                gapRow: 4
+            ),
+            children:
+            [
+                Sx.View(
+                    style: () => Sx.Styles(
+                        flexDirection: FlexDirection.Row,
+                        alignItems: Align.Center,
+                        flexShrink: 0,
+                        gapColumn: 8,
+                        paddingLeft: 8,
+                        paddingRight: 8
+                    ),
+                    children:
+                    [
+                        Sx.Text(
+                            style: () => Sx.TextStyles(fontSize: 10, foregroundColor: Theme.MenuDim),
+                            layout: () => Sx.Styles(width: 26),
+                            text: () => "#"
+                        ),
+                        // Matches the colour swatch in each row.
+                        Sx.View(style: () => Sx.Styles(width: 10, flexShrink: 0)),
+                        Sx.Text(
+                            style: () => Sx.TextStyles(fontSize: 10, foregroundColor: Theme.MenuDim),
+                            layout: () => Sx.Styles(flexGrow: 1),
+                            text: () => "PLAYER"
+                        ),
+                        Sx.Text(
+                            style: () => Sx.TextStyles(fontSize: 10, foregroundColor: Theme.MenuDim),
+                            layout: () => Sx.Styles(width: 90),
+                            text: () => final ? "RESULT" : "LAP"
+                        )
+                    ]
+                ),
+                Sx.View(
+                    style: () => Sx.Styles(
+                        flexDirection: FlexDirection.Column,
+                        flexGrow: 1,
+                        flexShrink: 1,
+                        minHeight: 0,
+                        overflow: Overflow.Scroll,
+                        gapRow: 3,
+                        paddingRight: 8
+                    ),
+                    children: Sx.For(
+                        each: () => final
+                            ? session()?.FinalStandings ?? []
+                            : session()?.LiveStandings ?? [],
+                        row: (standing, _) => StandingRow(standing, final)
                     )
-                ]
-            )
+                )
+            ]
+        );
+
+    private static Node StandingRow(UiState.LobbyStanding standing, bool final)
+    {
+        var result = final
+            ? standing.Dnf ? "DNF" : "FINISHED"
+            : standing.Dnf ? "DNF" : standing.Wasted ? "WASTED" : $"LAP {standing.Lap + 1}";
+
+        return Sx.View(
+            style: () => Sx.Styles(
+                flexDirection: FlexDirection.Row,
+                alignItems: Align.Center,
+                flexShrink: 0,
+                gapColumn: 8,
+                paddingTop: 4,
+                paddingBottom: 4,
+                paddingLeft: 8,
+                paddingRight: 8,
+                borderRadius: 4,
+                backgroundColor: new Color(128, 170, 255, 14)
+            ),
+            children:
+            [
+                Sx.Text(
+                    style: () => Sx.TextStyles(
+                        fontSize: 12,
+                        fontStyle: FontStyle.Bold,
+                        foregroundColor: Theme.MenuDim
+                    ),
+                    layout: () => Sx.Styles(width: 26),
+                    text: () => (standing.Position + 1).ToString()
+                ),
+                Sx.View(
+                    style: () => Sx.Styles(
+                        width: 10,
+                        height: 10,
+                        flexShrink: 0,
+                        backgroundColor: standing.Color,
+                        borderTop: 1,
+                        borderBottom: 1,
+                        borderLeft: 1,
+                        borderRight: 1,
+                        borderColor: Border
+                    )
+                ),
+                Sx.View(
+                    style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexGrow: 1, minWidth: 0),
+                    children:
+                    [
+                        Sx.View(
+                            style: () => Sx.Styles(
+                                flexDirection: FlexDirection.Row,
+                                alignItems: Align.Center,
+                                gapColumn: 5
+                            ),
+                            children:
+                            [
+                                Sx.Text(
+                                    style: () => Sx.WrappingText(
+                                        fontSize: 12,
+                                        fontStyle: FontStyle.Bold,
+                                        foregroundColor: TextBlue
+                                    ),
+                                    text: () => standing.Name
+                                ),
+                                Sx.Show(
+                                    () => standing.IsBot,
+                                    () => Sx.Text(
+                                        style: () => Sx.TextStyles(fontSize: 9, foregroundColor: Theme.Warning),
+                                        text: () => "BOT"
+                                    )
+                                )
+                            ]
+                        ),
+                        Sx.Show(
+                            () => standing.Car.Length > 0,
+                            () => Sx.Text(
+                                style: () => Sx.WrappingText(fontSize: 10, foregroundColor: Theme.MenuDim),
+                                layout: () => Sx.Styles(width: 100.Percent()),
+                                text: () => standing.Car
+                            )
+                        )
+                    ]
+                ),
+                Sx.Text(
+                    style: () => Sx.TextStyles(
+                        fontSize: 10,
+                        fontStyle: FontStyle.Bold,
+                        foregroundColor: standing.Dnf ? Theme.Danger : standing.Wasted ? Theme.Warning : Theme.MenuDim
+                    ),
+                    layout: () => Sx.Styles(width: 90),
+                    text: () => result
+                )
+            ]
+        );
+    }
+
+    private static Node StageCard(Func<UiState.LobbySession?> session, Signal<MatchOverlay> overlay)
+    {
+        var hovered = new Signal<bool>(false);
+
+        return Sx.View(
+            name: () => "Lobby match stage",
+            style: () => Sx.Styles(
+                flexDirection: FlexDirection.Row,
+                alignItems: Align.Center,
+                flexShrink: 0,
+                gapColumn: 12,
+                paddingTop: 8,
+                paddingBottom: 8,
+                paddingLeft: 12,
+                paddingRight: 12,
+                backgroundColor: new Color(22, 42, 80, 90),
+                borderTop: 1,
+                borderBottom: 1,
+                borderLeft: 1,
+                borderRight: 1,
+                borderColor: new Color(128, 170, 255, 70),
+                borderRadius: 8
+            ),
+            children:
+            [
+                Sx.Text(
+                    style: () => Sx.TextStyles(
+                        fontSize: 11,
+                        fontStyle: FontStyle.Bold,
+                        foregroundColor: Blue
+                    ),
+                    layout: () => Sx.Styles(width: 52, flexShrink: 0),
+                    text: () => "STAGE"
+                ),
+                Sx.View(
+                    style: () => Sx.Styles(
+                        position: Position.Relative,
+                        flexDirection: FlexDirection.Column,
+                        flexGrow: 1,
+                        minWidth: 0
+                    ),
+                    onmouseenter: _ => hovered.Value = true,
+                    onmouseleave: _ => hovered.Value = false,
+                    children:
+                    [
+                        Sx.View(
+                            style: () => Sx.Styles(
+                                flexDirection: FlexDirection.Row,
+                                alignItems: Align.Center,
+                                gapColumn: 6
+                            ),
+                            children:
+                            [
+                                Sx.Text(
+                                    style: () => Sx.WrappingText(
+                                        fontSize: 14,
+                                        fontStyle: FontStyle.Bold,
+                                        foregroundColor: TextBlue
+                                    ),
+                                    text: () => session()?.StageName ?? "—"
+                                ),
+                                Sx.Text(
+                                    style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                                    text: () => "▾"
+                                )
+                            ]
+                        ),
+                        Sx.Show(
+                            () => hovered.Value,
+                            () => Sx.View(
+                                name: () => "Lobby stage actions",
+                                style: () => Sx.Styles(
+                                    position: Position.Absolute,
+                                    top: 100.Percent(),
+                                    left: 0,
+                                    zIndex: 1000,
+                                    minWidth: 210,
+                                    flexDirection: FlexDirection.Column,
+                                    gapRow: 4,
+                                    paddingTop: 6,
+                                    paddingBottom: 6,
+                                    paddingLeft: 6,
+                                    paddingRight: 6,
+                                    backgroundColor: new Color(10, 20, 40, 250),
+                                    borderTop: 1,
+                                    borderBottom: 1,
+                                    borderLeft: 1,
+                                    borderRight: 1,
+                                    borderColor: Border,
+                                    borderRadius: 7
+                                ),
+                                onmousedown: e => e.StopPropagation(),
+                                children:
+                                [
+                                    StageActionButton(
+                                        "PREVIEW STAGE",
+                                        () =>
+                                        {
+                                            hovered.Value = false;
+                                            overlay.Value = MatchOverlay.Stage;
+                                        },
+                                        () => "Lobby stage preview button"
+                                    ),
+                                    StageActionButton(
+                                        "GAME RULES",
+                                        () =>
+                                        {
+                                            hovered.Value = false;
+                                            overlay.Value = MatchOverlay.Rules;
+                                        },
+                                        () => "Lobby game rules button"
+                                    )
+                                ]
+                            )
+                        )
+                    ]
+                )
+            ]
+        );
+    }
+
+    private static Node StageActionButton(string label, Action onPress, Func<string> name)
+        => Button.Create(
+            () => label,
+            onPress,
+            size: ButtonSize.Sm,
+            fullWidth: true,
+            style: () => Sx.Styles(
+                justifyContent: Justify.FlexStart,
+                backgroundColor: new Color(128, 170, 255, 26),
+                borderColor: new Color(128, 170, 255, 80)
+            ),
+            textStyle: () => Sx.TextStyles(fontSize: 11, foregroundColor: TextBlue),
+            name: name
+        );
+
+    private static Node MatchOverlayView(
+        Func<UiState.LobbySession?> session,
+        Signal<MatchOverlay> overlay
+    )
+        => Sx.View(
+            name: () => "Lobby match overlay",
+            style: () => Sx.Styles(
+                position: Position.Absolute,
+                left: 0,
+                top: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 2000,
+                backgroundColor: new Color(3, 8, 20, 210),
+                alignItems: Align.Center,
+                justifyContent: Justify.Center
+            ),
+            onmousedown: _ => overlay.Value = MatchOverlay.None,
+            children:
+            [
+                Sx.View(
+                    name: () => "Lobby match overlay card",
+                    style: () => Sx.Styles(
+                        width: 640,
+                        maxWidth: 90.Percent(),
+                        maxHeight: 82.Percent(),
+                        minHeight: 0,
+                        flexDirection: FlexDirection.Column,
+                        gapRow: 10,
+                        paddingTop: 16,
+                        paddingBottom: 16,
+                        paddingLeft: 18,
+                        paddingRight: 28,
+                        overflow: Overflow.Scroll,
+                        backgroundColor: PanelColor,
+                        borderTop: 1,
+                        borderBottom: 1,
+                        borderLeft: 1,
+                        borderRight: 1,
+                        borderColor: Border,
+                        borderRadius: 10
+                    ),
+                    onmousedown: e => e.StopPropagation(),
+                    children:
+                    [
+                        Sx.View(
+                            style: () => Sx.Styles(
+                                flexDirection: FlexDirection.Row,
+                                alignItems: Align.Center,
+                                flexShrink: 0,
+                                gapColumn: 10
+                            ),
+                            children:
+                            [
+                                Sx.Text(
+                                    style: () => Sx.TextStyles(
+                                        fontSize: 20,
+                                        fontFamily: FontFamily.Adventure,
+                                        fontStyle: FontStyle.Bold,
+                                        foregroundColor: Blue
+                                    ),
+                                    layout: () => Sx.Styles(flexGrow: 1),
+                                    text: () => overlay.Value == MatchOverlay.Stage
+                                        ? "STAGE PREVIEW"
+                                        : "GAME RULES"
+                                ),
+                                ActionButton(
+                                    "CLOSE",
+                                    () => overlay.Value = MatchOverlay.None,
+                                    small: true,
+                                    name: () => "Lobby match overlay close"
+                                )
+                            ]
+                        ),
+                        Sx.Show(
+                            () => overlay.Value == MatchOverlay.Stage,
+                            () => StagePreview(session),
+                            () => RulesContent(session)
+                        )
+                    ]
+                )
+            ]
+        );
+
+    private static Node StagePreview(Func<UiState.LobbySession?> session)
+        => Sx.View(
+            name: () => "Lobby stage preview",
+            style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0, gapRow: 6),
+            children:
+            [
+                Sx.Text(
+                    style: () => Sx.WrappingText(
+                        fontSize: 15,
+                        fontStyle: FontStyle.Bold,
+                        foregroundColor: TextBlue
+                    ),
+                    layout: () => Sx.Styles(width: 100.Percent()),
+                    text: () => session()?.StageName ?? "—"
+                ),
+                Sx.Text(
+                    style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                    text: () => "Stage briefing"
+                ),
+                Sx.Text(
+                    style: () => Sx.WrappingText(fontSize: 13, foregroundColor: TextBlue),
+                    layout: () => Sx.Styles(width: 100.Percent(), flexShrink: 0),
+                    text: () => string.Join("\n", session()?.StageBriefing ?? [])
+                ),
+                Sx.Show(
+                    () => session() is null || session()!.StageBriefing.Count == 0,
+                    () => Sx.Text(
+                        style: () => Sx.WrappingText(fontSize: 11, foregroundColor: Theme.MenuDim),
+                        layout: () => Sx.Styles(width: 100.Percent()),
+                        text: () => "No briefing is set for this stage."
+                    )
+                )
+            ]
+        );
+
+    private static Node RulesContent(Func<UiState.LobbySession?> session)
+        => Sx.View(
+            name: () => "Lobby game rules",
+            style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0, gapRow: 4),
+            children:
+            [
+                DetailRow("Gamemode", () => session()?.GamemodeLabel ?? "—"),
+                DetailRow("Host", () => session()?.CreatorName ?? "—"),
+                DetailRow("Players", () => session() is { } s ? $"{s.PlayerCount}/{s.MaxPlayers}" : "—"),
+                DetailRow("Bots", () => session()?.Slots.Count(slot => slot.IsBot).ToString() ?? "0"),
+                Sx.For(
+                    each: () => session()?.Settings ?? [],
+                    row: (setting, _) => DetailRow(setting.Label, () => setting.Value)
+                )
+            ]
         );
 
     private static Node DetailRow(string label, Func<string> value)
@@ -985,38 +1556,39 @@ public static class LobbyView
             ]
         );
 
-    private static Node Card(string title, Node content)
-        => Sx.View(
-            style: () => Sx.Styles(
-                flexDirection: FlexDirection.Column,
-                flexShrink: 0,
-                gapRow: 8,
-                paddingTop: 10,
-                paddingBottom: 10,
-                paddingLeft: 12,
-                paddingRight: 12,
-                backgroundColor: new Color(22, 42, 80, 90),
-                borderTop: 1,
-                borderBottom: 1,
-                borderLeft: 1,
-                borderRight: 1,
-                borderColor: new Color(128, 170, 255, 70),
-                borderRadius: 8
-            ),
-            children:
-            [
-                Sx.Text(
-                    style: () => Sx.TextStyles(
-                        fontSize: 11,
-                        fontStyle: FontStyle.Bold,
-                        foregroundColor: Blue
-                    ),
-                    layout: () => Sx.Styles(flexShrink: 0),
-                    text: () => title
-                ),
-                content
-            ]
-        );
+    private static int RemainingSeconds(UiState.LobbySession? session)
+    {
+        var now = UiState.Lobby.NowUnixMs.Value;
+        if (session is null || session.ClosesAtUnixMs <= 0 || now <= 0)
+            return -1;
+
+        var remaining = session.ClosesAtUnixMs - now;
+        return remaining <= 0 ? 0 : (int)Math.Ceiling(remaining / 1000.0);
+    }
+
+    private static string CountdownText(UiState.LobbySession? session)
+    {
+        var seconds = RemainingSeconds(session);
+        return seconds switch
+        {
+            < 0 => "",
+            0 => "Game closes now...",
+            _ => $"Game closes in {FormatCountdown(seconds)}"
+        };
+    }
+
+    private static string CountdownShort(UiState.LobbySession session)
+    {
+        var seconds = RemainingSeconds(session);
+        return seconds switch
+        {
+            < 0 => "",
+            0 => "closing",
+            _ => FormatCountdown(seconds)
+        };
+    }
+
+    private static string FormatCountdown(int seconds) => $"{seconds / 60}:{seconds % 60:00}";
 
     // ── Create game ────────────────────────────────────────────────
 
@@ -1369,6 +1941,8 @@ public static class LobbyView
                 flexDirection: FlexDirection.Column,
                 flexGrow: 2,
                 flexShrink: 1,
+                // Match the games pane: a long transcript must scroll, not resize the room.
+                height: 0,
                 minHeight: 0,
                 gapRow: 8
             ),
@@ -1405,9 +1979,11 @@ public static class LobbyView
                         ),
                         new PanelList(() => Lines().LastOrDefault()?.Id ?? 0)
                         {
+                            Name = name + " list",
                             Styles = Sx.Styles(
                                 flexGrow: 1,
                                 flexShrink: 1,
+                                minHeight: 0,
                                 flexDirection: FlexDirection.Column,
                                 overflow: Overflow.Scroll,
                                 gapRow: 4,
@@ -1472,7 +2048,7 @@ public static class LobbyView
                     ),
                     () => Sx.Text(
                         style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
-                        text: () => "Join this game to chat with its players."
+                        text: () => "Chat is available to this game's members."
                     )
                 )
             ]

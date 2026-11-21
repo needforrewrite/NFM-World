@@ -173,8 +173,10 @@ public class LobbyHandshakeTests
             rig.Client.SendPacketToServer(new C2S_LobbyChatMessage { Message = $"line {i}" });
 
         // The last chat line coming back proves the server read the whole burst, including the
-        // identity packet that preceded it.
+        // identity packet that preceded it. The state packet can arrive during the burst; keep
+        // it rather than discarding it while draining chat.
         var seen = 0;
+        S2C_LobbyState? state = null;
         var deadline = Environment.TickCount64 + 8000;
         while (Environment.TickCount64 < deadline && seen < count)
         {
@@ -182,6 +184,8 @@ public class LobbyHandshakeTests
             {
                 if (packet is S2C_LobbyChatMessage chat && chat.Message.StartsWith("line "))
                     seen++;
+                else if (packet is S2C_LobbyState lobbyState)
+                    state = lobbyState;
             }
 
             await Task.Delay(10);
@@ -190,8 +194,8 @@ public class LobbyHandshakeTests
         Assert.AreEqual(count, seen, $"{count - seen} of {count} packets were dropped");
 
         // The identity survived the burst: the roster carries the claimed name and car.
-        var state = await WaitForAsync<S2C_LobbyState>(rig.Client);
-        Assert.AreEqual("nfmm/other-car", state.Players.Single(p => p.PlayerName == "account-name").CarName);
+        var finalState = state ?? await WaitForAsync<S2C_LobbyState>(rig.Client);
+        Assert.AreEqual("nfmm/other-car", finalState.Players.Single(p => p.PlayerName == "account-name").CarName);
     }
 
     /// <summary>

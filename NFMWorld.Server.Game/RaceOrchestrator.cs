@@ -27,6 +27,9 @@ public class RaceOrchestrator : IDisposable
     private readonly ConcurrentDictionary<uint, ClientInfo> _clients = new();
     private readonly IMultiplayerServerTransport _transport;
 
+    /// <summary>Live-order posts reuse one client; a new one every two seconds exhausts sockets.</summary>
+    private static readonly HttpClient LobbyHttp = new() { Timeout = TimeSpan.FromSeconds(5) };
+
     // join token → (session, player index, player id, whether this token only watches)
     private readonly ConcurrentDictionary<Guid, (RaceSession Session, byte PlayerIndex, Guid ClientId, bool Spectator)>
         _joinTokens = new();
@@ -153,6 +156,7 @@ public class RaceOrchestrator : IDisposable
             }
 
             gm.GameTick();
+            ReportLiveStateIfDue(session, gm);
 
             var snapshot = gm.GetStateSnapshot();
             if (!session.ResultsBroadcasted && snapshot is { IsFinished: true, IsProvisional: false, Results: { } results })
@@ -509,37 +513,75 @@ public class RaceOrchestrator : IDisposable
         }
     }
 
+    /// <summary>How often a running race's order is pushed to the match lobby.</summary>
+    private const long LiveReportIntervalMs = 2000;
+
+    /// <summary>
+    /// Pushes the live order to the lobby on a slow cadence. The lobby forwards it only to
+    /// session members who are not in the race; people driving already have the real state.
+    /// </summary>
+    private static void ReportLiveStateIfDue(RaceSession session, IServerGamemode gamemode)
+    {
+        if (session.ResultsBroadcasted || gamemode is not PluginServerGamemode plugin)
+            return;
+
+        var now = Environment.TickCount64;
+        if (now - session.LastLiveReport < LiveReportIntervalMs)
+            return;
+
+        session.LastLiveReport = now;
+        if (plugin.GetLiveState() is not { } live)
+            return;
+
+        PostToLobby(
+            "/race-live",
+            "LOBBY_LIVE_URL",
+            TightPackSerializer.Serialize(
+                new RaceServer2Lobby_LiveState { MatchKey = session.MatchKey.ToString(), State = live }
+            )
+        );
+    }
+
     /// <summary>
     /// Tells the lobby about a race chat line. Members waiting in the match lobby are the
     /// audience: they are in the session but not in this race.
     /// </summary>
     private static void ReportChatToLobby(RaceSession session, S2C_RaceChat chat)
+        => PostToLobby(
+            "/race-chat",
+            "LOBBY_CHAT_URL",
+            TightPackSerializer.Serialize(
+                new RaceServer2Lobby_Chat
+                {
+                    MatchKey = session.MatchKey.ToString(),
+                    SenderId = chat.SenderId,
+                    Sender = chat.Sender,
+                    Message = chat.Message,
+                    Color = chat.Color
+                }
+            )
+        );
+
+    /// <summary>
+    /// Posts one signed, versioned body to the lobby. The endpoint comes from the matching
+    /// override variable, or the results URL's origin plus <paramref name="path"/>.
+    /// </summary>
+    private static void PostToLobby(string path, string overrideVariable, byte[] body)
     {
-        var lobby = Environment.GetEnvironmentVariable("LOBBY_CHAT_URL");
-        if (string.IsNullOrEmpty(lobby))
+        var endpoint = Environment.GetEnvironmentVariable(overrideVariable);
+        if (string.IsNullOrEmpty(endpoint))
         {
             var results = Environment.GetEnvironmentVariable("LOBBY_RESULTS_URL");
             if (string.IsNullOrEmpty(results) || !Uri.TryCreate(results, UriKind.Absolute, out var resultsUri))
                 return;
-            lobby = new Uri(resultsUri.GetLeftPart(UriPartial.Authority) + "/race-chat").ToString();
+            endpoint = new Uri(resultsUri.GetLeftPart(UriPartial.Authority) + path).ToString();
         }
-
-        var body = TightPackSerializer.Serialize(
-            new RaceServer2Lobby_Chat
-            {
-                MatchKey = session.MatchKey.ToString(),
-                SenderId = chat.SenderId,
-                Sender = chat.Sender,
-                Message = chat.Message,
-                Color = chat.Color
-            }
-        );
 
         var keyId = Environment.GetEnvironmentVariable("HMAC_KEY_ID") ?? "primary";
         var secretText = Environment.GetEnvironmentVariable("HMAC_SECRET_KEY");
         if (string.IsNullOrEmpty(secretText))
         {
-            Logging.Warning("[GM] HMAC_SECRET_KEY is not configured; chat is not relayed to the lobby.");
+            Logging.Warning("[GM] HMAC_SECRET_KEY is not configured; the lobby relay is off.");
             return;
         }
 
@@ -550,13 +592,13 @@ public class RaceOrchestrator : IDisposable
         }
         catch (FormatException)
         {
-            Logging.Warning("[GM] HMAC_SECRET_KEY is not valid base64; chat is not relayed to the lobby.");
+            Logging.Warning("[GM] HMAC_SECRET_KEY is not valid base64; the lobby relay is off.");
             return;
         }
 
         var auth = HmacAuth.SignWithNonce(
             "POST",
-            "/race-chat",
+            path,
             body,
             keyId,
             secret,
@@ -568,21 +610,20 @@ public class RaceOrchestrator : IDisposable
             {
                 try
                 {
-                    using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-                    using var request = new HttpRequestMessage(HttpMethod.Post, lobby)
+                    using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
                     {
                         Content = new ByteArrayContent(body)
                     };
                     request.Headers.Authorization = System.Net.Http.Headers.AuthenticationHeaderValue.Parse(auth);
                     request.Headers.Add(Protocol.HeaderName, Protocol.Version.ToString());
 
-                    using var response = await client.SendAsync(request);
+                    using var response = await LobbyHttp.SendAsync(request);
                     if (!response.IsSuccessStatusCode)
-                        Logging.Warning($"[GM] Lobby rejected a chat relay: {(int)response.StatusCode}");
+                        Logging.Warning($"[GM] Lobby rejected {path}: {(int)response.StatusCode}");
                 }
                 catch (Exception ex)
                 {
-                    Logging.Warning($"[GM] Could not relay chat to the lobby: {ex.Message}");
+                    Logging.Warning($"[GM] Could not post {path} to the lobby: {ex.Message}");
                 }
             }
         );
@@ -1021,6 +1062,9 @@ public class RaceOrchestrator : IDisposable
 
         /// <summary>Set once every player has loaded and the gamemode has been started.</summary>
         public bool RaceStarted { get; set; }
+
+        /// <summary>Tick timestamp of the last live order pushed to the lobby.</summary>
+        public long LastLiveReport { get; set; }
 
         public bool ResultsBroadcasted { get; set; }
 
