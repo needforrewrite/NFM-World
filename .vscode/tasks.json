@@ -1,0 +1,32 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build NFMWorld (Release)",
+            "type": "process",
+            "command": "dotnet",
+            "args": ["build", "NFMWorld/NFMWorld.csproj", "--configuration", "Release"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build NFMWorld (Debug)",
+            "type": "process",
+            "command": "dotnet",
+            "args": ["build", "NFMWorld/NFMWorld.csproj", "--configuration", "Debug"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build NFMWorld (DebugDevServer)",
+            "type": "process",
+            "command": "dotnet",
+            "args": ["build", "NFMWorld/NFMWorld.csproj", "--configuration", "DebugDevServer"],
+            "options": { "cwd": "${workspaceFolder}" },
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}

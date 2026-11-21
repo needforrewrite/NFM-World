@@ -32,7 +32,8 @@ replay_pid*
 .idea
 *.user
 
-/.vscode
+/.vscode/*
+!/.vscode/tasks.json
 
 /publish
 /tools
