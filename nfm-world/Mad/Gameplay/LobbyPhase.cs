@@ -27,6 +27,8 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     private long _nextChatLineId;
     private bool _sentAuthentication;
     private bool _authenticated;
+    private bool _subscribed;
+    private int _reconnectPending;
     private string? _lastStatus;
 
     /// <summary>
@@ -124,19 +126,26 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         // Returning from a race re-enters this phase, and the server only resends lobby state
         // on the next change; the transcript this client already received stays put.
         Lobby.Chat.Value = _chatMessages.ToArray();
+        if (!_subscribed)
+        {
+            GameSparker.AccountManager.ActiveAccountChanged += OnAccountChanged;
+            transport.Reconnected += OnReconnected;
+            _subscribed = true;
+        }
+
+        ApplyPendingReconnect();
         UpdateStatus();
-        // Signing in from the account screen while sitting in the lobby has to be presented too;
-        // Enter is paired with the Unsubscribe in Dispose, and pop/re-enter is balanced.
-        GameSparker.AccountManager.ActiveAccountChanged += OnAccountChanged;
-        // A reconnected socket is a new session on the server, so the handshake is replayed.
-        transport.Reconnected += OnReconnected;
         if (_authenticated && transport.State == ClientState.Connected)
             SendUpdatePlayerIdentity();
         base.Enter();
     }
 
-    private void OnReconnected()
+    private void OnReconnected() => Interlocked.Exchange(ref _reconnectPending, 1);
+
+    private void ApplyPendingReconnect()
     {
+        if (Interlocked.Exchange(ref _reconnectPending, 0) == 0) return;
+
         // A reconnected transport is a brand-new connection: the lobby knows nothing about
         // this player until it authenticates and identifies itself again.
         ResetHandshake();
@@ -252,6 +261,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     public override void GameTick()
     {
         base.GameTick();
+        ApplyPendingReconnect();
 
         // A refused version is final for this connection: the server will keep refusing it, so
         // say why and leave rather than sitting on a handshake that can never finish.
@@ -608,10 +618,6 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
             0,
             Lobby.MaxPlayers.Value - 1
         );
-        // A session needs a stage before the dialog can offer one, so start on the first local
-        // stage the lobby accepts. The dialog's own list takes over from there.
-        if (string.IsNullOrEmpty(Lobby.SelectedStage.Value))
-            Lobby.SelectedStage.Value = LocalStages.FirstOrDefault()?.Id ?? "";
     }
 
     private void UpdateStatus()
@@ -785,8 +791,11 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     {
         OnSetGamemode(Lobby.SelectedGamemode.Value);
         Lobby.BotCount.Value = 0;
+        var stages = LocalStages;
+        if (string.IsNullOrEmpty(Lobby.SelectedStage.Value))
+            Lobby.SelectedStage.Value = stages.FirstOrDefault()?.Id ?? "";
         // The dialog renders this state, so it has to be filled before it is shown.
-        LobbyStageSelection.ShowLocal(Lobby.CreateStages, LocalStages, Lobby.SelectedStage.Value);
+        LobbyStageSelection.ShowLocal(Lobby.CreateStages, stages, Lobby.SelectedStage.Value);
         Lobby.ShowCreateDialog.Value = true;
     }
 

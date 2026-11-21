@@ -55,32 +55,37 @@ public static class MenuPreferences
             var id = StageIdOf(path);
             if (names.ContainsKey(id)) continue;
 
-            try
-            {
-                using var stream = fs.OpenRead(path);
-                using var reader = new StreamReader(stream);
-                while (reader.ReadLine() is { } raw)
-                {
-                    // Mirrors StageLoader: the directive may sit behind a "ds:"/"?" editor prefix.
-                    var line = raw.Trim();
-                    if (line.StartsWith("ds:")) line = line[3..];
-                    if (line.StartsWith('?')) line = line[1..];
-                    if (!line.StartsWith("name(")) continue;
-
-                    if (Utility.GetString("name(", line, 0).Trim() is { Length: > 0 } name)
-                    {
-                        names[id] = name.Replace('|', ',');
-                        break;
-                    }
-                }
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                Logging.Warning($"Could not read the name of stage '{id}': {ex.Message}");
-            }
+            if (GetStageName(fs, path) is { } name)
+                names[id] = name;
         }
 
         return names;
+    }
+
+    public static string? GetStageName(VirtualFS fs, string path)
+    {
+        try
+        {
+            using var stream = fs.OpenRead(path);
+            using var reader = new StreamReader(stream);
+            while (reader.ReadLine() is { } raw)
+            {
+                // Mirrors StageLoader: the directive may sit behind a "ds:"/"?" editor prefix.
+                var line = raw.Trim();
+                if (line.StartsWith("ds:")) line = line[3..];
+                if (line.StartsWith('?')) line = line[1..];
+                if (!line.StartsWith("name(")) continue;
+
+                if (Utility.GetString("name(", line, 0).Trim() is { Length: > 0 } name)
+                    return name.Replace('|', ',');
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Logging.Warning($"Could not read the name of stage '{path}': {ex.Message}");
+        }
+
+        return null;
     }
 
     private static string[] StageFiles(VirtualFS fs) => fs.EnumerateFiles("data/stages", "*", SearchOption.AllDirectories)
