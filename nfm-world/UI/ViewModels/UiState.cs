@@ -215,6 +215,13 @@ public static class UiState
         public Signal<string> SelectedGamemode { get; } = new(NFMWorldLibrary.Multiplayer.DefaultGamemodes.PvP);
         public Signal<int> MaxPlayers { get; } = new(4);
 
+        /// <summary>
+        /// The selected gamemode's config schema, read by the phase. The view renders these
+        /// records rather than reading the plugin itself, which loads an assembly.
+        /// </summary>
+        public Signal<IReadOnlyList<NFMWorldLibrary.Plugins.GamemodeConfigField>> GamemodeFields { get; } =
+            new([]);
+
         /// <summary>Bots reserving slots within the lobby's total capacity.</summary>
         public Signal<int> BotCount { get; } = new(0);
 
@@ -235,6 +242,7 @@ public static class UiState
             CreateStages.Reset();
             BotCount.Value = 0;
             SelectedGamemode.Value = NFMWorldLibrary.Multiplayer.DefaultGamemodes.PvP;
+            GamemodeFields.Value = [];
             GamemodeConfig.Value = new Dictionary<string, string>();
         }
     }

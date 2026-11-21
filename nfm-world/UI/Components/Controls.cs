@@ -128,6 +128,8 @@ public static class Controls
                     var style = Styles;
                     style.Top = index * RowHeight;
                     Styles = style;
+                    // Named after its option so a harness (and the debugger) can address the row.
+                    Name = option;
                     _text.TextContent = option;
                 }
 
@@ -425,7 +427,8 @@ public static class Controls
         Action<int> onSelect,
         string unselectedLabel = "",
         float width = 240,
-        bool compact = false
+        bool compact = false,
+        string? name = null
     )
     {
         var open = new Signal<bool>(false);
@@ -503,9 +506,13 @@ public static class Controls
 
         root = new DropdownView(() => open.Value = false)
         {
+            Name = name,
             Styles = Sx.Styles(
                 position: Position.Relative,
                 flexDirection: FlexDirection.Column,
+                // A dropdown in a bounded column shrinks to nothing without this, and its
+                // popup would then anchor to a zero-height box.
+                flexShrink: 0,
                 width: width,
                 maxWidth: 100.Percent()
             )

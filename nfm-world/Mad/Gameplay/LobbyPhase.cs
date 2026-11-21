@@ -912,11 +912,16 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     {
         if (!GamemodeCatalog.Ids.Contains(id)) return;
         Lobby.SelectedGamemode.Value = id;
+
+        // Read the plugin's schema once, here, and publish a copy: the view must never load it.
+        var fields = GamemodeCatalog.ConfigFields(id);
+        Lobby.GamemodeFields.Value = fields;
+
         var defaults = new Dictionary<string, string>();
-        foreach (var property in GamemodeCatalog.ConfigProperties(id))
+        foreach (var field in fields)
         {
-            if (property.Options.Count > 0 && !defaults.ContainsKey(property.Name))
-                defaults[property.Name] = property.Options[0].Value;
+            if (!defaults.ContainsKey(field.Name))
+                defaults[field.Name] = field.Choices[0].Value;
         }
 
         Lobby.GamemodeConfig.Value = defaults;

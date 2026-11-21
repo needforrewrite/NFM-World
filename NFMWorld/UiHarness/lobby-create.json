@@ -58,6 +58,71 @@
       "action": "click",
       "target": "Stage select source online",
       "capture": "online-again"
+    },
+    {
+      "action": "click",
+      "target": "Stage select source local"
+    },
+    {
+      "action": "click",
+      "target": "Gamemode",
+      "capture": "gamemode-open"
+    },
+    {
+      "action": "hover",
+      "target": "Time Trial",
+      "capture": "gamemode-hover"
+    },
+    {
+      "action": "assert-hover",
+      "target": "Time Trial"
+    },
+    {
+      "action": "click",
+      "target": "Time Trial",
+      "capture": "time-trial"
+    },
+    {
+      "action": "assert-count",
+      "prefix": "Gamemode config ",
+      "count": 0
+    },
+    {
+      "action": "click",
+      "target": "Gamemode"
+    },
+    {
+      "action": "assert-count",
+      "prefix": "Gamemode config ",
+      "count": 0
+    },
+    {
+      "action": "click",
+      "target": "PvP",
+      "capture": "pvp"
+    },
+    {
+      "action": "assert-count",
+      "prefix": "Gamemode config ",
+      "count": 2
+    },
+    {
+      "action": "click",
+      "target": "Gamemode config constraint"
+    },
+    {
+      "action": "hover",
+      "target": "Wasting",
+      "capture": "config-hover"
+    },
+    {
+      "action": "assert-hover",
+      "target": "Wasting"
+    },
+    {
+      "action": "click",
+      "target": "Wasting",
+      "capture": "config-wasting"
     }
   ]
 }

@@ -29,7 +29,8 @@ public static class SettingsView
             Func<int> value,
             Action<int> onSelect,
             string unselectedLabel = "",
-            float width = 220
+            float width = 220,
+            string? name = null
         )
             => global::NFMWorld.UI.Components.Controls.Dropdown(
                 options,
@@ -37,7 +38,8 @@ public static class SettingsView
                 onSelect,
                 unselectedLabel,
                 width,
-                compact: true
+                compact: true,
+                name
             );
 
         public static Node Slider(

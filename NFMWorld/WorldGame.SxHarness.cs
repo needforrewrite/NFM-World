@@ -672,6 +672,27 @@ public partial class WorldGame
         lobby.Connected.Value = true;
         lobby.Status.Value = "Connected";
 
+        static void SeedGamemodeConfig(UiState.LobbyState state)
+        {
+            // Mirrors LobbyPhase.OnSetGamemode: the phase publishes the schema, and the
+            // defaults are what the dropdowns show.
+            var fields = NFMWorldLibrary.Plugins.GamemodeCatalog.ConfigFields(
+                state.SelectedGamemode.Value
+            );
+            state.GamemodeFields.Value = fields;
+
+            var defaults = new Dictionary<string, string>();
+            foreach (var field in fields)
+            {
+                if (!defaults.ContainsKey(field.Name))
+                    defaults[field.Name] = field.Choices[0].Value;
+            }
+
+            state.GamemodeConfig.Value = defaults;
+        }
+
+        SeedGamemodeConfig(lobby);
+
         // Mirrors LobbyPhase.OnOpenCreate: the phase fills CreateStages, the dialog only renders it.
         var local = LobbyStageSelectionForHarness();
         lobby.SelectedStage.Value = local.FirstOrDefault()?.Id ?? "";
@@ -721,8 +742,13 @@ public partial class WorldGame
                 SearchStagesOnline: _ => { },
                 SetMaxPlayers: value => lobby.MaxPlayers.Value = value,
                 SetBots: value => lobby.BotCount.Value = value,
-                SetConfig: (name, value) => { },
-                SetGamemode: id => lobby.SelectedGamemode.Value = id,
+                SetConfig: (name, value) => lobby.GamemodeConfig.Value =
+                    new Dictionary<string, string>(lobby.GamemodeConfig.Value) { [name] = value },
+                SetGamemode: id =>
+                {
+                    lobby.SelectedGamemode.Value = id;
+                    SeedGamemodeConfig(lobby);
+                },
                 ChangeCar: () => { },
                 CopyCar: _ => { },
                 CopyColors: _ => { }

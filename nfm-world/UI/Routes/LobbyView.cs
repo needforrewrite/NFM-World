@@ -61,6 +61,9 @@ public static class LobbyView
 
     private static readonly Signal<string> ChatInput = new("");
 
+    private static readonly string[] GamemodeIds = [.. GamemodeCatalog.Ids];
+    private static readonly string[] GamemodeLabels = [.. GamemodeIds.Select(GamemodeCatalog.DisplayName)];
+
     public static void Reset() => ChatInput.Value = "";
 
     public static Node Build(Actions actions)
@@ -629,15 +632,17 @@ public static class LobbyView
                             layout: () => Sx.Styles(flexShrink: 0),
                             text: () => "CREATE GAME"
                         ),
-                        Sx.View(
-                            style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6, flexShrink: 0),
-                            children: GamemodeCatalog.Ids.Select(id => ActionButton(
-                                    () => GamemodeCatalog.DisplayName(id),
-                                    () => actions.SetGamemode(id),
-                                    small: true,
-                                    active: () => lobby.SelectedGamemode.Value == id
-                                )
-                            ).ToArray()
+                        Sx.Text(
+                            style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
+                            layout: () => Sx.Styles(flexShrink: 0),
+                            text: () => "Gamemode"
+                        ),
+                        Controls.Dropdown(
+                            () => GamemodeLabels,
+                            () => Array.IndexOf(GamemodeIds, lobby.SelectedGamemode.Value),
+                            index => actions.SetGamemode(GamemodeIds[index]),
+                            width: 260,
+                            name: "Gamemode"
                         ),
                         Sx.Text(
                             style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
@@ -740,50 +745,59 @@ public static class LobbyView
     }
 
     /// <summary>
-    /// One row per config property the gamemode declares, read from the plugin so the dialog
-    /// never has to know what a gamemode's settings are. Empty when the plugin declares none.
+    /// One row per config field the phase read from the selected gamemode's plugin. The view
+    /// only renders <see cref="UiState.LobbyState.GamemodeFields"/>, because reading the plugin
+    /// here would load and unload its assembly every time this slot re-runs.
     /// </summary>
     private static List<Node> GamemodeConfigControls(Actions actions)
     {
         var lobby = UiState.Lobby;
         var controls = new List<Node>();
 
-        foreach (var property in GamemodeCatalog.ConfigProperties(lobby.SelectedGamemode.Value))
+        foreach (var configField in lobby.GamemodeFields.Value)
         {
-            if (property.Options.Count == 0)
-                continue;
+            // The option list is fixed for the field, so only the chosen index is reactive.
+            var options = configField.Choices;
+            var labels = options.Select(option => option.Label).ToArray();
 
             controls.Add(
                 Sx.Text(
                     style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
-                    text: () => property.Label
+                    text: () => configField.Label
                 )
             );
 
-            var options = new List<Node>();
-            foreach (var option in property.Options)
-            {
-                var value = option.Value;
-                options.Add(
-                    ActionButton(
-                        () => option.Label,
-                        () => actions.SetConfig(property.Name, value),
-                        small: true,
-                        active: () => lobby.GamemodeConfig.Value.TryGetValue(property.Name, out var chosen)
-                                      && chosen == value
-                    )
-                );
-            }
-
             controls.Add(
-                Sx.View(
-                    style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 6),
-                    children: [.. options]
+                Controls.Dropdown(
+                    () => labels,
+                    () => SelectedOption(options, lobby.GamemodeConfig.Value, configField.Name),
+                    index => actions.SetConfig(configField.Name, options[index].Value),
+                    width: 260,
+                    name: $"Gamemode config {configField.Name}"
                 )
             );
         }
 
         return controls;
+    }
+
+    /// <summary>The chosen option's index, or -1 when the config holds a value the plugin does not list.</summary>
+    private static int SelectedOption(
+        IReadOnlyList<GamemodeConfigChoice> options,
+        IReadOnlyDictionary<string, string> config,
+        string name
+    )
+    {
+        if (!config.TryGetValue(name, out var chosen))
+            return -1;
+
+        for (var i = 0; i < options.Count; i++)
+        {
+            if (options[i].Value == chosen)
+                return i;
+        }
+
+        return -1;
     }
 
     // ── Shared pieces ───────────────────────────────────────────────

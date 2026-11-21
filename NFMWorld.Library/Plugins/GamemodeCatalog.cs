@@ -1,4 +1,4 @@
-using NFMWorldLibrary.Gamemodes.DotNet;
+﻿using NFMWorldLibrary.Gamemodes.DotNet;
 using NFMWorldLibrary.Multiplayer;
 
 namespace NFMWorldLibrary.Plugins;
@@ -9,8 +9,9 @@ namespace NFMWorldLibrary.Plugins;
 /// </summary>
 /// <remarks>
 /// A gamemode is loaded to read its schema, then released: the plugin belongs to a race, not
-/// to the menu. The cost is one assembly load per dialog open, which is what listing the
-/// options unavoidably needs.
+/// to the menu. Reading it is the lobby phase's job (<see cref="ConfigFields"/>), never a
+/// view's: a view slot re-runs for reasons the schema does not depend on, and each run would
+/// load and unload the plugin again.
 /// </remarks>
 public static class GamemodeCatalog
 {
@@ -50,4 +51,26 @@ public static class GamemodeCatalog
             plugin.Unload();
         }
     }
+
+    /// <summary>
+    /// <see cref="ConfigProperties"/> projected to plain records, keeping only the fields that
+    /// offer a choice - a dropdown cannot render anything else.
+    /// </summary>
+    public static IReadOnlyList<GamemodeConfigField> ConfigFields(string gamemodeId) =>
+        [.. ConfigProperties(gamemodeId)
+            .Where(property => property.Options.Count > 0)
+            .Select(property => new GamemodeConfigField(
+                property.Name,
+                property.Label,
+                [.. property.Options.Select(option => new GamemodeConfigChoice(option.Label, option.Value))]
+            ))];
 }
+
+/// <summary>One value a gamemode's config field offers.</summary>
+public sealed record GamemodeConfigChoice(string Label, string Value);
+
+/// <summary>
+/// A config field as the create dialog renders it. Copied out of the plugin, so holding one
+/// cannot keep the plugin's assembly loaded.
+/// </summary>
+public sealed record GamemodeConfigField(string Name, string Label, IReadOnlyList<GamemodeConfigChoice> Choices);

@@ -3,7 +3,6 @@ using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
 using SignalsDotnet;
-using Maxine.Extensions.Mathematics;
 
 namespace NFMWorld.UI.Routes;
 

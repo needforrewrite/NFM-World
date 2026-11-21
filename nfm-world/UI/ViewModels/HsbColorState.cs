@@ -39,9 +39,9 @@ public class HsbColorState
     }
 
     public Color3 Clamp(Color3 color) => new(
-        (short)Math.Clamp((int)color.R, MinimumChannel, 255),
-        (short)Math.Clamp((int)color.G, MinimumChannel, 255),
-        (short)Math.Clamp((int)color.B, MinimumChannel, 255)
+        (short)Math.Clamp(color.R, MinimumChannel, 255),
+        (short)Math.Clamp(color.G, MinimumChannel, 255),
+        (short)Math.Clamp(color.B, MinimumChannel, 255)
     );
 
     public void SetChannel(int channel, double value)

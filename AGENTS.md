@@ -149,12 +149,14 @@ SolidJS-style: signals, per-slot effects, **no vnode and no diffing**. Backed by
 | Flow hosts | `Show`/`For`/`Switch`/slots insert into a `Display.Contents` host, which Yoga flattens out of layout. Don't give a flow host padding/background and expect it to apply. |
 | `For` keys by value | Rows are keyed by item equality and built **once**; moving them only reorders nodes. So a row remounts whenever `each` yields a new item value (a freshly built record or string does), and the `index` passed to the row is the one it was created with — read position from a signal inside the row, not from that argument. |
 | Scopes own effects | Content mounted by a flow helper lives in its own `RenderScope`; disposing that scope tears down everything created inside it. Reusing a node across mounts without adopting a new scope leaves its effects dead. |
+| A bind's first run is untracked | `RenderScope.Bind` computes the initial value inside `Signal.UntrackedScope()` and only then installs the effect, and `Show`/`For`/`Switch` mount their first branch the same way. Running it eagerly under the caller's computation subscribed that enclosing effect to every signal the child read, so one child's hover re-ran the parent slot and rebuilt its whole subtree — which is what made the create dialog reload its gamemode plugin on hover. |
 | Style structs are nullable | `Styles` fields are `T?` on purpose (merge semantics). Setting a field to its CLR default is not the same as leaving it null. |
 | Rows in a scroll container | Yoga's web default `flexShrink: 1` squeezes list rows to their padding, so a long list shows crushed rows (or one solid block) instead of scrolling. List rows need `flexShrink: 0` — the main-menu items and `LobbyView.Row` set it. |
 | Scroll needs a bounded viewport | A `flexGrow: 1` scroll container inside a dialog with no height bound never scrolls: the auto-height panel grows to fit its content, so the list's viewport is the whole list. Give the dialog `maxHeight` + `minHeight: 0` and let it scroll itself (`Overflow.Scroll`) for windows too short for the form, and keep the list's own `minHeight` small enough that the two do not fight. The lobby create dialog's stage list failed exactly this way |
 | Scroll is both axes | `Overflow.Scroll` has no X/Y split in `Styles`, so any direct child wider than the viewport adds a horizontal scrollbar. Put rows and messages in a `width: 100%`, `flexShrink: 0` column inside the scroller; long messages use `Sx.WrappingText` at 100% width. |
 | Off-screen paint | `Component.PaintChildren` skips a child whose border box lies entirely outside the inherited clip, so a scrolled list only pays for its visible rows. Rows still lay out; only painting is skipped. Flow hosts (`Display.Contents`) are never culled by their own box — they have none. The test uses the same origin the paint will, so a `IgnoresScrollOffset` popup is not culled by the container's scroll offset. |
 | Popups inside a scroll container | an absolutely positioned child of an `Overflow.Scroll` node is offset by the scroll at paint time and counts towards the scroll extent, so a context menu or dropdown anchored in a scrolling list slides away and adds its own height as scrollable space. Set `Component.IgnoresScrollOffset` on the popup: it then paints at the unscrolled origin and is dropped from `UpdateScrollExtent`. It is still clipped by the container. |
+| Hidden nodes have no z | `Component.EscapeZ` ignores a node whose `IsDisplayed` is false, so a closed popup (`display: none`, z 1000) neither presents its own z nor hoists a descendant's. Counting them tied every open popup to the same z as the later of two closed ones, and the later-sibling tie-break handed the hover/press to the wrong column — the create dialog's gamemode dropdown lost every hit to the stage list's search field, whose closed `TextEditContextMenu` sits at z 1000. `ZIndexHitTestTests.HitTest_HiddenZIndexedChild_DoesNotHoistItsSibling` covers it |
 | Scrollbars overlay content | `RenderScrollbars` draws inside the padding box's right/bottom 6px, over the content. A scroll container holding buttons or fields needs `paddingRight: 8` (and `paddingBottom` for the horizontal bar) or the bar sits on top of them — the stage editor's hierarchy, parts grid, inspector, property panels and dialogs all set it. |
 | Mouse pixels vs styled lengths | `MouseEvent.Position` is in window pixels; `Styles` lengths are multiplied by `G.Scale` at layout. A node placed from a mouse position (menu overlay, rect-selection box, hierarchy context menu) must divide by `G.Scale`, or it lands at `position × scale` and can paint over neighbouring panels. |
 
@@ -316,9 +318,13 @@ coverage is `CarPhysicsArcadeHookTests` and `RocketArcadeBehaviourTests`.
 - **Authoring** — derive from `PluginGamemode` / `PluginServerGamemode` (gamemodes) or `PluginAi` (AI), and mark the
   assembly with `[assembly: Gamemode(Name = ..., Description = ...)]` or `[assembly: Ai(...)]`, plus
   `GamemodeConfigProperty` / `GamemodeConfigPropertyOption`.
-- **Config in the UI** — the lobby's create dialog renders whatever the gamemode declares, read through
-  `GamemodeCatalog.ConfigProperties(id)`, which loads the plugin only to read its schema and releases it again. Nothing
-  in the client hardcodes a gamemode's options.
+- **Config in the UI** — the lobby's create dialog renders whatever the gamemode declares: one dropdown per property
+  with options, labelled from a `GamemodeConfigProperty` and its `GamemodeConfigPropertyOption`s. Nothing in the client
+  hardcodes a gamemode's options. The schema is read **once, by `LobbyPhase.OnSetGamemode`**, through
+  `GamemodeCatalog.ConfigFields(id)` (a `GamemodeConfigProperty` projection holding plain records), which loads the
+  plugin, copies what it declares and releases it. It is then published as `UiState.Lobby.GamemodeFields`, and the view
+  renders only that. A view slot must never read the plugin itself: a slot re-runs for reasons the schema does not
+  depend on (a child's hover, a sibling's value), and each run would load and unload the whole assembly.
 - **Bots in a session** — the creator's client simulates every bot it fielded, and only that client
   (`(player.Info.IsBot && player.Info.OwnerId == ClientPlayer.Info.Id)`). Bots reserve real lobby slots with fresh ids
   (`SessionBots.Place`, filled at creation within `MaxPlayers`, including the creator), get no join token,
@@ -772,6 +778,14 @@ palette). One lobby; whether a race is rated is chosen per race, not by a menu p
   `WebSocketMultiplayerClientTransport` treats that status as final: reconnecting would take the seat back and evict
   the connection holding it now. A send that fails or a close that goes unanswered aborts the socket server-side, or
   the peer's receive loop never ends and it keeps its account seat for the life of the process.
+- **A session always has a present owner.** Only the creator may start a race and the client hides START for
+  everyone else, so `SessionManager` never leaves a session holding a departed creator: `RemovePlayer` (used by the
+  disconnect handler, LEAVE and CREATE) drops the player and then either ends the session (nobody left) or hands
+  `CreatorId`/`CreatorName` to the lowest remaining human slot, re-owning every bot to them (a bot is simulated by
+  the client that fielded it). Creating a session leaves the one you were in first, and JOINing the session you are
+  already in is a no-op. Without that, closing the game with a session open left it listed and joinable at
+  `0/4`-with-a-name while nobody could start it — which is what made "close the game, reopen, join your old
+  session" possible.
 - **The handshake waits for an answer, and every request is answered.** `LobbyPhase.UpdateHandshake` re-sends
   `C2S_Authenticate` every 5 s (three attempts) instead of firing it once, and only then says the lobby did not
   answer; REFRESH retries it. On the server, `HandleAuthenticateAsync` wraps the verification so an unexpected
