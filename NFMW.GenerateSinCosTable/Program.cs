@@ -8,7 +8,7 @@ for (int angle = 0; angle < 36000; angle++)
     var actualAngle = angle / 100d;
     var sin = Math.Sin(actualAngle * Math.PI / 180);
     Console.WriteLine(((Fixed64)sin));
-    table.Add(((Fixed64)sin).m_rawValue);
+    table.Add(((Fixed64)sin).rawValue);
 }
 
 using var s = new StreamWriter(File.OpenWrite("SinTable.txt"));
