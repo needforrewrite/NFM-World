@@ -34,6 +34,15 @@ public class LobbyPacketTests
     }
 
     [TestMethod]
+    public void SetGameRule_CarriesTheSessionAndSelectedValue()
+    {
+        var received = RoundTrip(new C2S_SetGameRule { SessionId = 10, Name = "walls", Value = "3" }, 17);
+        Assert.AreEqual(10u, received.SessionId);
+        Assert.AreEqual("walls", received.Name);
+        Assert.AreEqual("3", received.Value);
+    }
+
+    [TestMethod]
     public void CreateSession_CarriesGamemodeParameters()
     {
         var sent = new C2S_CreateSession

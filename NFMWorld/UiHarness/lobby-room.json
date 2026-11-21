@@ -23,6 +23,11 @@
       "target": "Lobby room chat"
     },
     {
+      "action": "assert-same-height",
+      "target": "Lobby games",
+      "anchor": "Lobby room chat"
+    },
+    {
       "action": "assert-vertical-scroll",
       "target": "Lobby room chat list"
     },

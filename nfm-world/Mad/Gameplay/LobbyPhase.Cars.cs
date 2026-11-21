@@ -28,7 +28,7 @@ public partial class LobbyPhase
 
     private Node BuildLobbyUi() => Sx.View(
         style: () => Sx.Styles(position: Position.Absolute, left: 0, top: 0, right: 0, bottom: 0),
-        children: [UI.Routes.LobbyView.Build(Actions, BuildStagePreview),
+        children: [UI.Routes.LobbyView.Build(Actions, BuildStagePreview()),
             Sx.Show(() => _showCarPicker.Value, () => Sx.View(
                 style: () => Sx.Styles(
                     position: Position.Absolute,

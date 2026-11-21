@@ -146,7 +146,7 @@ public sealed class ClassicHud(IHudData race) : Component
         var fillHeight = width * (103.51f - 28.08f) / artWidth * scale;
         G.SetColor(Snap(new Color(190, 225, 230, 90)));
         G.FillRect((int)fillX, (int)fillY, (int)MathF.Ceiling(fillWidth), (int)MathF.Ceiling(fillHeight));
-        G.SetColor(damage ? DamageColor(value) : Snap(value >= 1 ? 64 : 128, (int)(190 + value * 98 * 0.37f), 244));
+        G.SetColor(damage ? DamageColor(value) : Snap(RaceMeterColors.Power(value)));
         if (value > 0)
             G.FillRect((int)fillX, (int)fillY, (int)MathF.Ceiling(fillWidth * value), (int)MathF.Ceiling(fillHeight));
         if (image is not null)
@@ -156,15 +156,15 @@ public sealed class ClassicHud(IHudData race) : Component
     private Color DamageColor(float damage, bool blink = true)
     {
         var amount = (int)(98 * damage);
-        var green = amount > 33 ? (int)(244 - 233f * (amount - 33) / 65) : 244;
         if (blink && amount > 70 && SettingsMenu.HudFlash)
         {
             var period = (168 - amount * 1.5f) / 30;
             var phase = _clock % period;
-            if (phase < 10f / 30 && (int)(phase * 30) % 2 == 0) green = 170;
+            if (phase < 10f / 30 && (int)(phase * 30) % 2 == 0)
+                return Snap(RaceMeterColors.Damage(damage, highlighted: true));
         }
 
-        return Snap(244, green, 11);
+        return Snap(RaceMeterColors.Damage(damage));
     }
 
     private void Arrow(Vector2 position, Vector2 size, float scale, float dt)

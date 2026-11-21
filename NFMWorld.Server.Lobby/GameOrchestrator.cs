@@ -497,6 +497,11 @@ public class GameOrchestrator
                 _ = HandleStartRaceAsync(e.ClientIndex, startRace);
                 break;
 
+            case C2S_SetGameRule rule:
+                if (_sessions.SetGameRule(e.ClientIndex, rule.SessionId, rule.Name, rule.Value))
+                    _broadcaster.BroadcastToAll();
+                break;
+
             case C2S_ContentReady contentReady:
                 HandleContentReady(e.ClientIndex, contentReady);
                 break;

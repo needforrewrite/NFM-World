@@ -15,6 +15,7 @@ using NFMWorld.UI.ViewModels;
 using NFMWorld.Util;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Hud;
+using NFMWorldLibrary.Plugins;
 using NFMWorldLibrary.Util;
 using SignalsDotnet;
 using LobbyPage = NFMWorld.UI.ViewModels.UiState.LobbyPage;
@@ -360,6 +361,12 @@ public partial class WorldGame
                     if (!Find(step.GetProperty("target").GetString()!).IsHovered)
                         throw new InvalidOperationException($"Expected hovered target: {step}");
                     break;
+                case "assert-same-height":
+                    var firstPanel = Find(step.GetProperty("target").GetString()!);
+                    var secondPanel = Find(step.GetProperty("anchor").GetString()!);
+                    if (Math.Abs(firstPanel.LayoutBorderSize.Y - secondPanel.LayoutBorderSize.Y) > 1)
+                        throw new InvalidOperationException($"Expected panels to share the same height: {step}");
+                    break;
                 case "assert-aligned":
                     var popup = Find(step.GetProperty("target").GetString()!);
                     var anchor = Find(step.GetProperty("anchor").GetString()!);
@@ -367,6 +374,22 @@ public partial class WorldGame
                         throw new InvalidOperationException(
                             $"Popup X={popup.LayoutBorderPosition.X}, anchor X={anchor.LayoutBorderPosition.X}"
                         );
+                    break;
+                case "assert-pixel":
+                    var sampleNode = Find(step.GetProperty("target").GetString()!);
+                    var sampleX = (int)(sampleNode.LayoutBorderPosition.X + sampleNode.LayoutBorderSize.X
+                                        * step.GetProperty("u").GetSingle());
+                    var sampleY = (int)(sampleNode.LayoutBorderPosition.Y + sampleNode.LayoutBorderSize.Y
+                                        * step.GetProperty("v").GetSingle());
+                    if (game._device.HasBottomLeftFramebufferOrigin) sampleY = height - 1 - sampleY;
+                    game._device.ReadTexture(target.ColorTexture, sampleX, sampleY, 1, 1, pixels.AsSpan(0, 4));
+                    var rgb = step.GetProperty("rgb");
+                    var matchesColor = Math.Abs(pixels[0] - rgb[0].GetInt32()) <= 4
+                                       && Math.Abs(pixels[1] - rgb[1].GetInt32()) <= 4
+                                       && Math.Abs(pixels[2] - rgb[2].GetInt32()) <= 4;
+                    var excludeColor = step.TryGetProperty("exclude", out var exclude) && exclude.GetBoolean();
+                    if (matchesColor == excludeColor)
+                        throw new InvalidOperationException($"Unexpected pixel ({pixels[0]}, {pixels[1]}, {pixels[2]}): {step}");
                     break;
                 case "wait-visible":
                     var visibleName = step.GetProperty("target").GetString()!;
@@ -760,6 +783,7 @@ public partial class WorldGame
                 SetBots: value => lobby.BotCount.Value = value,
                 SetConfig: (name, value) => lobby.GamemodeConfig.Value =
                     new Dictionary<string, string>(lobby.GamemodeConfig.Value) { [name] = value },
+                SetGameRule: (_, _, _) => { },
                 SetGamemode: id =>
                 {
                     lobby.SelectedGamemode.Value = id;
@@ -806,9 +830,15 @@ public partial class WorldGame
                 PreviewStage = id =>
                     previewName.Value = lobby.Sessions.Value.FirstOrDefault(candidate => candidate.Id == id)?.StageName
             },
-            () => previewName.Value is { } name
-                ? LobbyView.StagePreviewWindow(() => name, preview, () => null, () => previewName.Value = null)
-                : null
+            Sx.Show(
+                () => previewName.Value is not null,
+                () => LobbyView.StagePreviewWindow(
+                    () => previewName.Value!,
+                    preview,
+                    () => null,
+                    () => previewName.Value = null
+                )
+            )
         );
     }
 
@@ -842,7 +872,16 @@ public partial class WorldGame
             NFMWorldLibrary.Multiplayer.DefaultGamemodes.PvP,
             "PvP",
             [
-                new UiState.LobbySessionSetting("Race constraint", "Both"),
+                new UiState.LobbySessionSetting(
+                    "Race constraint",
+                    "Both",
+                    new GamemodeConfigField(
+                        "constraint",
+                        "Race constraint",
+                        [new("Racing", "racing"), new("Wasting", "wasting"), new("Both", "both")]
+                    ),
+                    "both"
+                ),
                 new UiState.LobbySessionSetting("Converging walls", "Off")
             ],
             [
@@ -924,7 +963,7 @@ public partial class WorldGame
             ],
             [
                 new UiState.LobbyStanding(maxine, "maxine", new Color(255, 170, 50), 0, 1, false, false, 3, 72, 45),
-                new UiState.LobbyStanding(dr, "DR Monstaa", new Color(120, 220, 130), 1, 1, false, false, 3, 33, 67),
+                new UiState.LobbyStanding(dr, "DR Monstaa", new Color(120, 220, 130), 1, 1, false, false, 3, 33, 14),
                 new UiState.LobbyStanding(self, "tiki", new Color(0, 128, 255), 2, 0, true, false, 3, 20, 100)
             ],
             [],
@@ -981,7 +1020,7 @@ public partial class WorldGame
             [],
             [
                 new UiState.LobbyStanding(maxine, "maxine", new Color(255, 170, 50), 0, 3, false, false, 3, 91, 49),
-                new UiState.LobbyStanding(dr, "DR Monstaa", new Color(120, 220, 130), 1, 2, false, false, 3, 50, 80),
+                new UiState.LobbyStanding(dr, "DR Monstaa", new Color(120, 220, 130), 1, 2, false, false, 3, 50, 95),
                 new UiState.LobbyStanding(self, "tiki", new Color(0, 128, 255), 2, 1, true, true, 3, 20, 100)
             ],
             DateTimeOffset.UtcNow.AddSeconds(45).ToUnixTimeMilliseconds()
@@ -1049,6 +1088,19 @@ public partial class WorldGame
             SetBots: value => lobby.BotCount.Value = value,
             SetConfig: (name, value) => lobby.GamemodeConfig.Value =
                 new Dictionary<string, string>(lobby.GamemodeConfig.Value) { [name] = value },
+            SetGameRule: (id, name, value) =>
+            {
+                var session = lobby.Sessions.Value.First(match => match.Id == id);
+                var settings = session.Settings.Select(setting =>
+                    {
+                        if (setting.Field is not { } field || field.Name != name) return setting;
+                        var choice = field.Choices.First(option => option.Value == value);
+                        return setting with { RawValue = value, Value = choice.Label };
+                    }
+                ).ToArray();
+                lobby.Sessions.Value = [.. lobby.Sessions.Value.Select(match =>
+                    match.Id == id ? match with { Settings = settings } : match)];
+            },
             SetGamemode: id => lobby.SelectedGamemode.Value = id,
             ChangeCar: () => { },
             CopyCar: _ => { },

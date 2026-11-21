@@ -208,6 +208,24 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
             session.Bots[slot] = session.Bots[slot] with { OwnerId = successor.Id };
     }
 
+    public bool SetGameRule(uint clientIndex, uint sessionId, string name, string value)
+    {
+        lock (_lock)
+        {
+            if (players.Get(clientIndex) is not { Banned: false } host
+                || host.InSession?.SessionIndex != sessionId
+                || !_sessions.TryGetValue(sessionId, out var session)
+                || session.CreatorId != host.Id || session.State != SessionState.NotStarted
+                || name is null || value is null
+                || !session.GamemodeParameters.TryGetValue(name, out var current) || current == value)
+                return false;
+
+            // Lobby snapshots can read the old dictionary while the rule is being updated.
+            session.GamemodeParameters = new(session.GamemodeParameters) { [name] = value };
+            return true;
+        }
+    }
+
     /// <summary>Marks a session as started/loading and sets the load timeout.</summary>
     public bool StartRace(uint clientIndex, uint sessionId)
     {

@@ -113,6 +113,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         },
         SetBots: count => Lobby.BotCount.Value = Math.Clamp(count, 0, Lobby.MaxPlayers.Value - 1),
         SetConfig: OnSetConfig,
+        SetGameRule: OnSetGameRule,
         SetGamemode: OnSetGamemode,
         ChangeCar: OpenCarPicker,
         CopyCar: id => CopyPlayerCar(id, colorsOnly: false),
@@ -798,7 +799,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                 continue;
 
             var label = field.Choices.FirstOrDefault(choice => choice.Value == value)?.Label ?? value;
-            settings.Add(new UiState.LobbySessionSetting(field.Label, label));
+            settings.Add(new UiState.LobbySessionSetting(field.Label, label, field, value));
         }
 
         // A value the installed plugin no longer declares is still worth showing, not hiding.
@@ -1291,6 +1292,19 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         Lobby.GamemodeConfig.Value = defaults;
         if (id == DefaultGamemodes.TimeTrial)
             Lobby.BotCount.Value = 0;
+    }
+
+    private void OnSetGameRule(uint sessionId, string name, string value)
+    {
+        if (!CanAct || Lobby.ViewedSessionId.Value != sessionId
+            || Lobby.Sessions.Value.FirstOrDefault(session => session.Id == sessionId)
+                is not { IsCreator: true, IsMember: true, State: SessionState.NotStarted } match
+            || !match.Settings.Any(setting => setting.Field is { } field && field.Name == name
+                                              && field.Choices.Any(choice => choice.Value == value)
+            ))
+            return;
+
+        transport.SendPacketToServer(new C2S_SetGameRule { SessionId = sessionId, Name = name, Value = value });
     }
 
     private void OnSetConfig(string name, string value)

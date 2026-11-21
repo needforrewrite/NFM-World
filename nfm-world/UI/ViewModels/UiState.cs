@@ -6,6 +6,7 @@ using NFMWorldLibrary.Util;
 using SignalsDotnet;
 using NFMWorldLibrary.Hud;
 using NFMWorldLibrary.Multiplayer;
+using NFMWorldLibrary.Plugins;
 
 namespace NFMWorld.UI.ViewModels;
 
@@ -314,7 +315,12 @@ public static class UiState
     );
 
     /// <summary>One gamemode option as the match view shows it, already labelled.</summary>
-    public sealed record LobbySessionSetting(string Label, string Value);
+    public sealed record LobbySessionSetting(
+        string Label,
+        string Value,
+        GamemodeConfigField? Field = null,
+        string? RawValue = null
+    );
 
     /// <summary>
     /// One slot in a game. Empty slots are kept so the match view draws the same grid the

@@ -88,6 +88,32 @@ public class LobbySessionOwnershipTests
         Assert.IsTrue(sessions.StartRace(2, shared.Id), "the remaining player has to be able to start");
     }
 
+    [TestMethod]
+    public void OnlyTheCreatorCanChangeGameRulesBeforeStarting()
+    {
+        var (sessions, players, creator) = Create();
+        var guest = players.GetOrAdd(2, ClientState.Connected);
+        var session = sessions.CreateSession(
+            creator.ClientIndex,
+            "nfmm/road",
+            4,
+            DefaultGamemodes.PvP,
+            new Dictionary<string, string> { ["constraint"] = "both", ["walls"] = "off" }
+        )!;
+        Assert.IsNotNull(sessions.JoinSession(guest.ClientIndex, session.Id).Joined);
+
+        Assert.IsFalse(sessions.SetGameRule(guest.ClientIndex, session.Id, "constraint", "wasting"));
+        Assert.IsFalse(sessions.SetGameRule(creator.ClientIndex, session.Id, "unknown", "on"));
+        Assert.IsTrue(sessions.SetGameRule(creator.ClientIndex, session.Id, "constraint", "racing"));
+        Assert.AreEqual("racing", session.GamemodeParameters["constraint"]);
+        Assert.AreEqual("off", session.GamemodeParameters["walls"]);
+        Assert.AreEqual(2, session.Players.Count);
+
+        Assert.IsTrue(sessions.StartRace(creator.ClientIndex, session.Id));
+        Assert.IsFalse(sessions.SetGameRule(creator.ClientIndex, session.Id, "constraint", "wasting"));
+        Assert.AreEqual("racing", session.GamemodeParameters["constraint"]);
+    }
+
     /// <summary>
     /// Creating a second game without leaving the first. The first kept the creator's slot and
     /// their id, so after a restart it was still listed and joinable while nobody could start it.

@@ -3,6 +3,7 @@ using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
 using NFMWorld.UI.Components;
+using NFMWorld.UI.Hud;
 using NFMWorld.UI.ViewModels;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Plugins;
@@ -53,6 +54,7 @@ public static class LobbyView
         Action<int> SetMaxPlayers,
         Action<int> SetBots,
         Action<string, string> SetConfig,
+        Action<uint, string, string> SetGameRule,
         Action<string> SetGamemode,
         Action ChangeCar,
         Action<Guid> CopyCar,
@@ -77,7 +79,7 @@ public static class LobbyView
 
     public static void Reset() => ChatInput.Value = "";
 
-    public static Node Build(Actions actions, Func<Node?>? stagePreview = null)
+    public static Node Build(Actions actions, Node? stagePreview = null)
     {
         var lobby = UiState.Lobby;
         var contextPlayer = new Signal<Guid?>(null);
@@ -247,7 +249,11 @@ public static class LobbyView
             ),
             children:
             [
-                GamesPanel(actions),
+                Sx.View(
+                    name: () => "Lobby games",
+                    style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexGrow: 2, height: 0, minHeight: 0),
+                    children: GamesPanel(actions)
+                ),
                 ChatPanel(actions, () => 0, () => true, "ROOM CHAT", "Lobby room chat")
             ]
         );
@@ -404,10 +410,8 @@ public static class LobbyView
         return Sx.View(
             style: () => Sx.Styles(
                 flexDirection: FlexDirection.Column,
-                flexGrow: 3,
+                flexGrow: 1,
                 flexShrink: 1,
-                // A zero main size keeps the pane on its 3:2 share; without it the
-                // transcript's content height becomes the flex basis and wins.
                 height: 0,
                 minHeight: 0,
                 gapRow: 8,
@@ -715,7 +719,7 @@ public static class LobbyView
                         Sx.Show(
                             () => Session() is { IsMember: true, IsCreator: true, State: SessionState.NotStarted },
                             () => ActionButton(
-                                "START RACE",
+                                "START GAME",
                                 () => actions.StartRace(lobby.ViewedSessionId.Value ?? 0),
                                 primary: true,
                                 small: true,
@@ -795,7 +799,7 @@ public static class LobbyView
                 ),
                 Sx.Show(
                     () => showRules.Value,
-                    () => MatchOverlayView(() => "GAME RULES", RulesContent(Session), () => showRules.Value = false)
+                    () => MatchOverlayView(() => "GAME RULES", RulesContent(Session, actions), () => showRules.Value = false)
                 )
             ]
         );
@@ -1150,12 +1154,18 @@ public static class LobbyView
                 .. (standing.Wasted || standing.Dnf
                     ? new Node[]
                     {
-                        StandingLabel(
-                            standing.Wasted ? "WASTED" : "DNF",
-                            70,
-                            Theme.Danger,
-                        background: new Color(172, 44, 54, 55),
-                            name: $"Lobby result {standing.Name}"
+                        Sx.View(
+                            style: () => Sx.Styles(
+                                width: 70.Percent(),
+                                minWidth: 0,
+                                backgroundColor: new Color(172, 44, 54, 55)
+                            ),
+                            children: StandingLabel(
+                                standing.Wasted ? "WASTED" : "DNF",
+                                100,
+                                Theme.Danger,
+                                name: $"Lobby result {standing.Name}"
+                            )
                         )
                     }
                     : new Node[]
@@ -1163,8 +1173,8 @@ public static class LobbyView
                         StandingLabel(PositionLabel(standing.Position + 1), 16, TextBlue),
                         StandingLabel(standing.TotalLaps > 0
                             ? $"{Math.Min(standing.Lap + 1, standing.TotalLaps)}/{standing.TotalLaps}" : "—", 14, TextBlue),
-                        StandingMeter(standing.PowerPercent, Blue, $"Lobby power {standing.Name}"),
-                        StandingMeter(standing.DamagePercent, Theme.Danger, $"Lobby damage {standing.Name}")
+                        StandingMeter(standing.PowerPercent, $"Lobby power {standing.Name}"),
+                        StandingMeter(standing.DamagePercent, $"Lobby damage {standing.Name}", damage: true)
                     })
             ]
         );
@@ -1184,7 +1194,6 @@ public static class LobbyView
         int width,
         Color color,
         bool centered = true,
-        Color? background = null,
         string? name = null
     )
     {
@@ -1198,8 +1207,7 @@ public static class LobbyView
             layout: () => Sx.Styles(
                 width: width.Percent(),
                 minWidth: 0,
-                paddingLeft: centered ? 0 : 6,
-                backgroundColor: background
+                paddingLeft: centered ? 0 : 6
             ),
             text: () => text
         );
@@ -1207,49 +1215,61 @@ public static class LobbyView
         return label;
     }
 
-    private static Node StandingMeter(byte? percent, Color fill, string name)
-        => Sx.View(
+    private static Node StandingMeter(byte? percent, string name, bool damage = false)
+    {
+        var fraction = Math.Min((percent ?? 0) / 100f, 1f);
+        var fill = damage ? RaceMeterColors.Damage(fraction) : RaceMeterColors.Power(fraction);
+        var track = new StandingMeterTrack(fraction, fill)
+        {
+            Name = name + " track",
+            Styles = Sx.Styles(
+                width: 100.Percent(),
+                height: 14,
+                alignItems: Align.Center,
+                justifyContent: Justify.Center,
+                backgroundColor: new Color(8, 17, 36, 190),
+                borderRadius: 3,
+                borderTop: 1,
+                borderBottom: 1,
+                borderLeft: 1,
+                borderRight: 1,
+                borderColor: Border
+            )
+        };
+        track.AddChild(Sx.Text(
+            style: () => Sx.TextStyles(
+                fontSize: 9,
+                fontStyle: FontStyle.Bold,
+                foregroundColor: Color.White,
+                strokeColor: Color.Black,
+                strokeWidth: 1
+            ),
+            text: () => percent is { } value ? $"{value}%" : "—"
+        ));
+
+        return Sx.View(
             name: () => name,
             style: () => Sx.Styles(width: 20.Percent(), minWidth: 0, paddingLeft: 3, paddingRight: 3),
-            children: Sx.View(
-                style: () => Sx.Styles(
-                    width: 100.Percent(),
-                    height: 14,
-                    alignItems: Align.Center,
-                    justifyContent: Justify.Center,
-                    backgroundColor: new Color(8, 17, 36, 190),
-                    borderRadius: 3,
-                    borderTop: 1,
-                    borderBottom: 1,
-                    borderLeft: 1,
-                    borderRight: 1,
-                    borderColor: Border
-                ),
-                children:
-                [
-                    Sx.View(style: () => Sx.Styles(
-                        position: Position.Absolute,
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        width: ((int)(percent ?? 0)).Percent(),
-                        backgroundColor: fill,
-                        borderRadius: 2
-                    )
-                    ),
-                    Sx.Text(
-                        style: () => Sx.TextStyles(
-                            fontSize: 9,
-                            fontStyle: FontStyle.Bold,
-                            foregroundColor: Color.White,
-                            strokeColor: Color.Black,
-                            strokeWidth: 1
-                        ),
-                        text: () => percent is { } value ? $"{value}%" : "—"
-                    )
-                ]
-            )
+            children: track
         );
+    }
+
+    private sealed class StandingMeterTrack(float fraction, Color fill) : View
+    {
+        protected override void RenderContent(Vector2 position, Vector2 size)
+        {
+            var left = (int)MathF.Ceiling(position.X);
+            var top = (int)MathF.Ceiling(position.Y);
+            var width = (int)MathF.Floor(position.X + size.X * fraction) - left;
+            var height = (int)MathF.Floor(position.Y + size.Y) - top;
+            if (width <= 0 || height <= 0) return;
+
+            G.SaveState();
+            G.SetColor(fill);
+            G.FillRect(left, top, width, height);
+            G.RestoreState();
+        }
+    }
 
     private static Node StageCard(Func<UiState.LobbySession?> session, Action<uint> previewStage, Action showRules)
     {
@@ -1465,7 +1485,7 @@ public static class LobbyView
             ]
         );
 
-    private static Node RulesContent(Func<UiState.LobbySession?> session)
+    private static Node RulesContent(Func<UiState.LobbySession?> session, Actions actions)
         => Sx.View(
             name: () => "Lobby game rules",
             style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0, gapRow: 4),
@@ -1477,12 +1497,46 @@ public static class LobbyView
                 DetailRow("Bots", () => session()?.Slots.Count(slot => slot.IsBot).ToString() ?? "0"),
                 Sx.For(
                     each: () => session()?.Settings ?? [],
-                    row: (setting, _) => DetailRow(setting.Label, () => setting.Value)
+                    row: (setting, _) => RuleRow(session, setting, actions)
                 )
             ]
         );
 
-    private static Node DetailRow(string label, Func<string> value)
+    private static Node RuleRow(Func<UiState.LobbySession?> session, UiState.LobbySessionSetting setting, Actions actions)
+    {
+        if (setting.Field is not { Choices.Count: > 0 } field)
+            return DetailRow(setting.Label, () => setting.Value);
+
+        var options = field.Choices.ToArray();
+        var labels = options.Select(option => option.Label).ToArray();
+        var selected = Array.FindIndex(options, option => option.Value == setting.RawValue);
+        bool CanEdit() => UiState.Lobby.Connected.Value
+                          && session() is { IsCreator: true, IsMember: true, State: SessionState.NotStarted };
+
+        return DetailRow(setting.Label, Sx.Show(
+            CanEdit,
+            () => Controls.Dropdown(
+                () => labels,
+                () => selected,
+                index =>
+                {
+                    if (CanEdit() && session() is { } match && index != selected)
+                        actions.SetGameRule(match.Id, field.Name, options[index].Value);
+                },
+                unselectedLabel: setting.Value,
+                compact: true,
+                name: $"Lobby game rule {field.Name}"
+            ),
+            () => DetailValue(() => setting.Value)
+        ));
+    }
+
+    private static Node DetailValue(Func<string> value)
+        => Sx.Text(style: () => Sx.WrappingText(fontSize: 12, foregroundColor: TextBlue), text: value);
+
+    private static Node DetailRow(string label, Func<string> value) => DetailRow(label, DetailValue(value));
+
+    private static Node DetailRow(string label, Node value)
         => Sx.View(
             style: () => Sx.Styles(
                 flexDirection: FlexDirection.Row,
@@ -1501,10 +1555,7 @@ public static class LobbyView
                 ),
                 Sx.View(
                     style: () => Sx.Styles(flexGrow: 1, minWidth: 0),
-                    children: Sx.Text(
-                        style: () => Sx.WrappingText(fontSize: 12, foregroundColor: TextBlue),
-                        text: value
-                    )
+                    children: value
                 )
             ]
         );

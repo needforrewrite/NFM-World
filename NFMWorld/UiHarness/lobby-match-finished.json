@@ -10,6 +10,9 @@
     { "action": "assert-visible", "target": "Lobby match final standings" },
     { "action": "assert-visible", "target": "Lobby match slot 3" },
     { "action": "assert-visible", "target": "Lobby power maxine" },
+    { "action": "assert-pixel", "target": "Lobby damage maxine track", "u": 0.2, "v": 0.5, "rgb": [244, 190, 11] },
+    { "action": "assert-pixel", "target": "Lobby damage DR Monstaa track", "u": 0.2, "v": 0.5, "rgb": [244, 28, 11] },
+    { "action": "assert-pixel", "target": "Lobby standing maxine", "u": 0.25, "v": 0.5, "rgb": [128, 222, 244], "exclude": true },
     { "action": "assert-visible", "target": "Lobby result tiki" },
     { "action": "assert-visible", "target": "Lobby match countdown" }
   ]

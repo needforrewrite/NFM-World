@@ -1,6 +1,7 @@
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Graphics;
 using NFMWorld.Reactor;
+using NFMWorld.Reactor.Sx;
 using NFMWorld.UI.Routes;
 using NFMWorld.UI.ViewModels;
 using NFMWorldLibrary;
@@ -13,16 +14,19 @@ public partial class LobbyPhase
 {
     private readonly Signal<LobbyStagePreview?> _stagePreview = new(null);
 
-    private Node? BuildStagePreview()
-        => _stagePreview.Value is { } preview
-            ? LobbyView.StagePreviewWindow(
+    private Node BuildStagePreview()
+        => Sx.Show(() => _stagePreview.Value is not null, () =>
+            {
+                var preview = _stagePreview.Value!;
+                return LobbyView.StagePreviewWindow(
                 () => Lobby.Sessions.Value.FirstOrDefault(session => session.Id == preview.SessionId)?.StageName
                       ?? "Stage preview",
                 preview.State,
                 () => preview.Image,
                 CloseStagePreview
-            )
-            : null;
+            );
+            }
+        );
 
     private void OpenStagePreview(uint sessionId)
     {
