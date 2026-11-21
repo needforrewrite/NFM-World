@@ -9,6 +9,7 @@ public partial struct Lobby2RaceServer_RegisterSpectator
     [TightPackOrder(1)] public Guid PlayerId { get; set; }
     [TightPackOrder(2)] public required string Name { get; set; }
     [TightPackOrder(3)] public Color3 Color { get; set; }
+    [TightPackOrder(4)] public bool Muted { get; set; }
 }
 
 [TightPackable]

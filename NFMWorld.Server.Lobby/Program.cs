@@ -192,7 +192,7 @@ static async Task HandleHttpRequest(
         Logging.Info($"[Lobby] Race ended: MatchKey={results.MatchKey}, Players={results.Results.Standings?.Length ?? 0}");
 
         if (Guid.TryParse(results.MatchKey, out var matchKey))
-            await orchestrator.ReportMatchResultsAsync(matchKey, results.Results, CancellationToken.None);
+            await orchestrator.ReportMatchResultsAsync(matchKey, results.Results, results.FinalState, CancellationToken.None);
 
         res.StatusCode = 200;
         res.Close();

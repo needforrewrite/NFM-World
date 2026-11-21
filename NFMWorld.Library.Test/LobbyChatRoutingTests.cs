@@ -8,9 +8,7 @@ using NFMWorldLibrary.Util;
 namespace NFMWorld.Library.Test;
 
 /// <summary>
-/// Chat is split: room chat reaches the whole lobby, match chat only the members of that game.
-/// A game master's in-game chat is relayed into the same match transcript, and the lobby state
-/// carries enough of a game (gamemode, options, bots) for the match view to describe it.
+/// Covers room chat, match channels before and during a race, and the lobby's match snapshots.
 /// </summary>
 [TestClass]
 public class LobbyChatRoutingTests
@@ -128,11 +126,33 @@ public class LobbyChatRoutingTests
     }
 
     [TestMethod]
+    public void RunningMatchChat_AcceptsViewersAndKeepsTheMatchChannel()
+    {
+        var (players, transport, chat) = Setup();
+        var racer = Join(players, 1, "racer", 10);
+        var viewer = Join(players, 2, "viewer");
+        var memberOfAnotherGame = Join(players, 3, "another viewer", 11);
+        players.GetOrAdd(4);
+
+        chat.SendChatMessage(viewer.Id, "nice recovery", 10, openToLobby: true);
+
+        CollectionAssert.AreEquivalent(
+            new[] { racer.ClientIndex, viewer.ClientIndex, memberOfAnotherGame.ClientIndex },
+            transport.Chat.Select(entry => entry.ClientIndex).ToArray()
+        );
+        Assert.IsTrue(transport.Chat.All(entry => entry.Message.SessionId == 10
+                                                  && entry.Message.SenderId == viewer.Id && entry.Message.Message
+                                                  == "nice recovery"
+        )
+        );
+    }
+
+    [TestMethod]
     public void ForwardedRaceChat_KeepsItsSenderNameAndColour()
     {
         var (players, transport, chat) = Setup();
         var alice = Join(players, 1, "alice", 10);
-        Join(players, 2, "bob", 11);
+        var viewer = Join(players, 2, "bob");
 
         chat.SendToSession(
             10,
@@ -142,11 +162,14 @@ public class LobbyChatRoutingTests
                 Sender = "(SPEC) watcher",
                 Message = "nice jump",
                 Color = new Color3(200, 60, 60)
-            }
+            },
+            openToLobby: true
         );
 
-        Assert.AreEqual(1, transport.Chat.Count);
-        Assert.AreEqual(alice.ClientIndex, transport.Chat[0].ClientIndex);
+        CollectionAssert.AreEquivalent(
+            new[] { alice.ClientIndex, viewer.ClientIndex },
+            transport.Chat.Select(entry => entry.ClientIndex).ToArray()
+        );
         Assert.AreEqual(10u, transport.Chat[0].Message.SessionId);
         Assert.AreEqual("(SPEC) watcher", transport.Chat[0].Message.Sender);
         Assert.AreEqual(new Color3(200, 60, 60), transport.Chat[0].Message.Color);
@@ -198,7 +221,7 @@ public class LobbyChatRoutingTests
     }
 
     [TestMethod]
-    public void Snapshot_CarriesFinalPlacingsAndCloseDeadline()
+    public void Snapshot_KeepsFinalPlacingsAfterTheLastPlayerLeaves()
     {
         var players = new PlayerRegistry();
         var transport = new RecordingTransport();
@@ -207,7 +230,7 @@ public class LobbyChatRoutingTests
 
         var session = sessions.CreateSession(creator.ClientIndex, "nfmm/road", 4, DefaultGamemodes.PvP)!;
         session.State = SessionState.Finished;
-        session.ClosesAtUnixMs = 1_700_000_000_000;
+        session.ClosesAtUnixMs = DateTimeOffset.UtcNow.AddMinutes(1).ToUnixTimeMilliseconds();
         session.FinalStandings =
         [
             new SessionStanding
@@ -221,13 +244,35 @@ public class LobbyChatRoutingTests
             }
         ];
 
+        sessions.LeaveSession(creator.ClientIndex, session.Id);
+        sessions.PruneFinished();
+
         var published = new LobbyStateBroadcaster(transport, players, sessions)
             .BuildSnapshot(creator.Id)
             .ActiveSessions[0];
 
         Assert.AreEqual(SessionState.Finished, published.State);
-        Assert.AreEqual(1_700_000_000_000, published.ClosesAtUnixMs);
+        Assert.AreEqual(session.ClosesAtUnixMs, published.ClosesAtUnixMs);
+        Assert.AreEqual(0, published.Players.Count);
         Assert.AreEqual(1, published.FinalStandings.Count);
         Assert.AreEqual("alice", published.FinalStandings[0].PlayerName);
+    }
+
+    [TestMethod]
+    public void PruneKeepsEmptyRunningMatchWhileResultsMayStillArrive()
+    {
+        var (players, transport, _) = Setup();
+        var sessions = new SessionManager(transport, players);
+        var creator = Join(players, 1, "alice");
+        var session = sessions.CreateSession(creator.ClientIndex, "nfmm/road", 4, DefaultGamemodes.PvP)!;
+        Assert.IsTrue(sessions.StartRace(creator.ClientIndex, session.Id));
+
+        sessions.LeaveSession(creator.ClientIndex, session.Id);
+        Assert.IsFalse(sessions.PruneFinished());
+        Assert.AreEqual(SessionState.Started, sessions.Get(session.Id)!.State);
+
+        session.ClosesAtUnixMs = 1;
+        Assert.IsTrue(sessions.PruneFinished());
+        Assert.IsNull(sessions.Get(session.Id));
     }
 }

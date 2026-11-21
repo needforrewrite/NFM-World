@@ -4,7 +4,7 @@ using NFMWorldLibrary.Gamemodes;
 namespace NFMWorldLibrary.Multiplayer.Packets.S2C;
 
 /// <summary>
-/// Live order for one session, delivered only to its lobby members who are not in the race.
+/// Live readings and standings for a running match in the lobby.
 /// </summary>
 [TightPackable]
 [PacketServerToClient(-20)]

@@ -17,9 +17,9 @@ public class ChatManager(IMultiplayerServerTransport transport, PlayerRegistry p
 
     /// <summary>
     /// Sends a chat message from a client. Room chat (session zero) reaches the whole lobby;
-    /// match chat only reaches the members of the game it was sent in.
+    /// a running game's chat can also reach the people viewing its match lobby.
     /// </summary>
-    public void SendChatMessage(Guid senderId, string message, uint sessionId)
+    public void SendChatMessage(Guid senderId, string message, uint sessionId, bool openToLobby = false)
     {
         var sender = players.Get(senderId);
         if (sender is not { IsAuthenticated: true, AccountId: > 0 }) return;
@@ -38,8 +38,7 @@ public class ChatManager(IMultiplayerServerTransport transport, PlayerRegistry p
             return;
         }
 
-        // A client can name any session id; only its own game may answer for it.
-        if (sender.InSession?.SessionIndex != sessionId)
+        if (!openToLobby && sender.InSession?.SessionIndex != sessionId)
             return;
 
         SendToSession(
@@ -51,17 +50,23 @@ public class ChatManager(IMultiplayerServerTransport transport, PlayerRegistry p
                 Message = message,
                 SessionId = sessionId,
                 Color = sender.Color
-            }
+            },
+            openToLobby
         );
     }
 
     /// <summary>
-    /// Relays one match-lobby line to that game's members. Used for both member chat and the
-    /// lines a game master forwards out of a running race.
+    /// Relays a line tagged with its match, which the client uses to select its transcript.
     /// </summary>
-    public void SendToSession(uint sessionId, S2C_LobbyChatMessage message)
+    public void SendToSession(uint sessionId, S2C_LobbyChatMessage message, bool openToLobby = false)
     {
         message.SessionId = sessionId;
+        if (openToLobby)
+        {
+            Broadcast(message);
+            return;
+        }
+
         transport.SendPacketToClients(
             players.All
                 .Where(p => p.Value.IsAuthenticated

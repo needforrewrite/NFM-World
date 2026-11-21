@@ -16,6 +16,7 @@ using NFMWorld.Util;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Hud;
 using NFMWorldLibrary.Util;
+using SignalsDotnet;
 using LobbyPage = NFMWorld.UI.ViewModels.UiState.LobbyPage;
 
 namespace NFMWorld;
@@ -766,7 +767,8 @@ public partial class WorldGame
                 },
                 ChangeCar: () => { },
                 CopyCar: _ => { },
-                CopyColors: _ => { }
+                CopyColors: _ => { },
+                PreviewStage: _ => { }
             )
         );
     }
@@ -795,7 +797,19 @@ public partial class WorldGame
         lobby.SelectedSessionId.Value = session.Id;
         lobby.ViewedSessionId.Value = session.Id;
         lobby.Page.Value = LobbyPage.Match;
-        return LobbyView.Build(LobbyActions(lobby));
+        var previewName = new Signal<string?>(null);
+        var preview = new StageSelectState();
+        preview.DescriptionLines.Value = ["Keep the inside line at the final hall."];
+        return LobbyView.Build(
+            LobbyActions(lobby) with
+            {
+                PreviewStage = id =>
+                    previewName.Value = lobby.Sessions.Value.FirstOrDefault(candidate => candidate.Id == id)?.StageName
+            },
+            () => previewName.Value is { } name
+                ? LobbyView.StagePreviewWindow(() => name, preview, () => null, () => previewName.Value = null)
+                : null
+        );
     }
 
     private static UiState.LobbyState SeedLobbyRoom()
@@ -857,8 +871,7 @@ public partial class WorldGame
             ],
             [],
             [],
-            0,
-            ["A tight gun run built for four cars.", "Watch the hairpin before the last gate."]
+            0
         );
 
         var racing = new UiState.LobbySession(
@@ -910,40 +923,19 @@ public partial class WorldGame
                 new UiState.LobbySessionSlot(3, "Empty", "Waiting for player...", default, null, false, true, false)
             ],
             [
-                new UiState.LobbyStanding(maxine, "maxine", "NFM 2 · Class A", new Color(255, 170, 50), false, 0, 1, false, false),
-                new UiState.LobbyStanding(
-                    dr,
-                    "DR Monstaa",
-                    "Ancient · Class B",
-                    new Color(120, 220, 130),
-                    false,
-                    1,
-                    1,
-                    false,
-                    false
-                ),
-                new UiState.LobbyStanding(
-                    self,
-                    "tiki",
-                    "The Awesome Radical One · Class X",
-                    new Color(0, 128, 255),
-                    false,
-                    2,
-                    0,
-                    false,
-                    false
-                )
+                new UiState.LobbyStanding(maxine, "maxine", new Color(255, 170, 50), 0, 1, false, false, 3, 72, 45),
+                new UiState.LobbyStanding(dr, "DR Monstaa", new Color(120, 220, 130), 1, 1, false, false, 3, 33, 67),
+                new UiState.LobbyStanding(self, "tiki", new Color(0, 128, 255), 2, 0, true, false, 3, 20, 100)
             ],
             [],
-            0,
-            ["The wall closes from the outside in.", "Keep the inside line at the final hall."]
+            0
         );
 
         var finished = new UiState.LobbySession(
             3,
             "DR Monstaa",
             "The Hall without a Wall",
-            3,
+            2,
             4,
             NFMWorldLibrary.Multiplayer.SessionState.Finished,
             IsMember: false,
@@ -984,37 +976,15 @@ public partial class WorldGame
                     false,
                     false,
                     false
-                ),
-                new UiState.LobbySessionSlot(3, "Empty", "Waiting for player...", default, null, false, true, false)
+                )
             ],
             [],
             [
-                new UiState.LobbyStanding(maxine, "maxine", "NFM 2 · Class A", new Color(255, 170, 50), false, 0, 0, false, false),
-                new UiState.LobbyStanding(
-                    dr,
-                    "DR Monstaa",
-                    "Ancient · Class B",
-                    new Color(120, 220, 130),
-                    false,
-                    1,
-                    0,
-                    false,
-                    false
-                ),
-                new UiState.LobbyStanding(
-                    self,
-                    "tiki",
-                    "The Awesome Radical One · Class X",
-                    new Color(0, 128, 255),
-                    false,
-                    2,
-                    0,
-                    false,
-                    true
-                )
+                new UiState.LobbyStanding(maxine, "maxine", new Color(255, 170, 50), 0, 3, false, false, 3, 91, 49),
+                new UiState.LobbyStanding(dr, "DR Monstaa", new Color(120, 220, 130), 1, 2, false, false, 3, 50, 80),
+                new UiState.LobbyStanding(self, "tiki", new Color(0, 128, 255), 2, 1, true, true, 3, 20, 100)
             ],
-            DateTimeOffset.UtcNow.AddSeconds(45).ToUnixTimeMilliseconds(),
-            ["The wall closes from the outside in.", "Keep the inside line at the final hall."]
+            DateTimeOffset.UtcNow.AddSeconds(45).ToUnixTimeMilliseconds()
         );
 
         lobby.NowUnixMs.Value = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -1049,7 +1019,7 @@ public partial class WorldGame
             SendChat: message => lobby.Chat.Value =
                 [.. lobby.Chat.Value, new UiState.LobbyChatLine(
                     99,
-                    lobby.CurrentSession.Value?.Id ?? 0,
+                    lobby.Page.Value == LobbyPage.Match ? lobby.ViewedSessionId.Value ?? 0 : 0,
                     Guid.Empty,
                     "tiki",
                     message,
@@ -1082,7 +1052,8 @@ public partial class WorldGame
             SetGamemode: id => lobby.SelectedGamemode.Value = id,
             ChangeCar: () => { },
             CopyCar: _ => { },
-            CopyColors: _ => { }
+            CopyColors: _ => { },
+            PreviewStage: _ => { }
         );
 
     /// <summary>

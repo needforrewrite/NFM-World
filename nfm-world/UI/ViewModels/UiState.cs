@@ -224,9 +224,6 @@ public static class UiState
         /// </summary>
         public Signal<long> NowUnixMs { get; } = new(0);
 
-        /// <summary>Increments when a live order is replaced, so ordered rows are rebuilt rather than moved in place.</summary>
-        public Signal<int> LiveRevision { get; } = new(0);
-
         public Signal<string> SelectedStage { get; } = new("");
 
         /// <summary>
@@ -263,7 +260,6 @@ public static class UiState
             Page.Value = LobbyPage.Room;
             ViewedSessionId.Value = null;
             NowUnixMs.Value = 0;
-            LiveRevision.Value = 0;
             CreateStages.Reset();
             BotCount.Value = 0;
             SelectedGamemode.Value = NFMWorldLibrary.Multiplayer.DefaultGamemodes.PvP;
@@ -296,24 +292,25 @@ public static class UiState
         IReadOnlyList<LobbySessionSlot> Slots,
         IReadOnlyList<LobbyStanding> LiveStandings,
         IReadOnlyList<LobbyStanding> FinalStandings,
-        long ClosesAtUnixMs,
-        IReadOnlyList<string> StageBriefing
+        long ClosesAtUnixMs
     )
     {
         public int EmptySlots => Math.Max(0, MaxPlayers - PlayerCount);
+        public bool CanChat => IsMember || State == SessionState.Started;
     }
 
     /// <summary>One row of the match lobby's live or final order.</summary>
     public sealed record LobbyStanding(
         Guid PlayerId,
         string Name,
-        string Car,
         Color Color,
-        bool IsBot,
         int Position,
         int Lap,
         bool Wasted,
-        bool Dnf
+        bool Dnf,
+        int TotalLaps,
+        byte? PowerPercent,
+        byte? DamagePercent
     );
 
     /// <summary>One gamemode option as the match view shows it, already labelled.</summary>

@@ -2,6 +2,7 @@
 using CommunityToolkit.HighPerformance.Buffers;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Multiplayer;
+using NFMWorldLibrary.Multiplayer.HttpMessages;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
 using NFMWorldLibrary.Multiplayer.Packets.S2C;
 using NFMWorldLibrary.Util;
@@ -278,7 +279,14 @@ public class LobbyPacketTests
                             Color = new Color3(200, 60, 60),
                             IsBot = true,
                             Position = 0,
-                            Dnf = false
+                            Dnf = true,
+                            Slot = 1,
+                            CarColors = [new Color3(90, 70, 30), null],
+                            Lap = 2,
+                            TotalLaps = 3,
+                            Wasted = true,
+                            PowerPercent = 25,
+                            DamagePercent = 100
                         }
                     ],
                     ClosesAtUnixMs = 1_700_000_000_000
@@ -296,12 +304,20 @@ public class LobbyPacketTests
         // Occupied slots include bots: a 1/4 row with a bot is 2/4.
         Assert.AreEqual(2, session.PlayerCount);
         Assert.AreEqual("Bot 1", session.FinalStandings[0].PlayerName);
-        Assert.AreEqual(0, session.FinalStandings[0].Position);
+        var final = session.FinalStandings[0];
+        Assert.AreEqual(0, final.Position);
+        Assert.AreEqual((byte)1, final.Slot);
+        Assert.AreEqual<Color3?>(new Color3(90, 70, 30), final.CarColors?[0]);
+        Assert.AreEqual((byte)2, final.Lap);
+        Assert.AreEqual((ushort)3, final.TotalLaps);
+        Assert.IsTrue(final.Wasted);
+        Assert.AreEqual<byte?>(25, final.PowerPercent);
+        Assert.AreEqual<byte?>(100, final.DamagePercent);
         Assert.AreEqual(1_700_000_000_000, session.ClosesAtUnixMs);
     }
 
     [TestMethod]
-    public void SessionLiveState_CarriesOrderAndNames()
+    public void SessionLiveState_CarriesOrderAndCarReadings()
     {
         var playerId = Guid.NewGuid();
         var sent = new S2C_SessionLiveState
@@ -320,7 +336,10 @@ public class LobbyPacketTests
                     Lap = 2,
                     Checkpoint = 5,
                     Wasted = false,
-                    Forfeited = false
+                    Forfeited = false,
+                    TotalLaps = 3,
+                    PowerPercent = 72,
+                    DamagePercent = 45
                 }
             ]
         };
@@ -332,6 +351,20 @@ public class LobbyPacketTests
         Assert.AreEqual("alice", received.Standings[0].PlayerName);
         Assert.AreEqual(2, received.Standings[0].Lap);
         Assert.AreEqual((ushort)5, received.Standings[0].Checkpoint);
+        Assert.AreEqual((ushort)3, received.Standings[0].TotalLaps);
+        Assert.AreEqual<byte?>(72, received.Standings[0].PowerPercent);
+        Assert.AreEqual<byte?>(45, received.Standings[0].DamagePercent);
+
+        var report = new RaceServer2Lobby_RaceResults
+        {
+            MatchKey = Guid.NewGuid().ToString(),
+            Results = new RaceResults { GamemodeId = DefaultGamemodes.PvP, RaceDuration = TimeSpan.Zero, Standings = [] },
+            FinalState = new RaceLiveState { Standings = sent.Standings.ToArray() }
+        };
+        var receivedReport = TightPack.TightPackSerializer.Deserialize<RaceServer2Lobby_RaceResults>(
+            TightPack.TightPackSerializer.Serialize(report)
+        );
+        Assert.AreEqual<byte?>(45, receivedReport.FinalState?.Standings[0].DamagePercent);
     }
 
     [TestMethod]

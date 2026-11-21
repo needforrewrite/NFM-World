@@ -17,4 +17,11 @@ public readonly partial struct SessionStanding
     [TightPackOrder(4)] public bool IsBot { get; init; }
     [TightPackOrder(5)] public required int Position { get; init; }
     [TightPackOrder(6)] public bool Dnf { get; init; }
+    [TightPackOrder(7)] public byte Slot { get; init; }
+    [TightPackOrder(8)] public Color3?[]? CarColors { get; init; }
+    [TightPackOrder(9)] public byte Lap { get; init; }
+    [TightPackOrder(10)] public ushort TotalLaps { get; init; }
+    [TightPackOrder(11)] public bool Wasted { get; init; }
+    [TightPackOrder(12)] public byte? PowerPercent { get; init; }
+    [TightPackOrder(13)] public byte? DamagePercent { get; init; }
 }

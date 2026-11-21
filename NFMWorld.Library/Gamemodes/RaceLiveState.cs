@@ -27,4 +27,7 @@ public readonly partial struct RaceLiveStanding
     [TightPackOrder(7)] public required ushort Checkpoint { get; init; }
     [TightPackOrder(8)] public bool Wasted { get; init; }
     [TightPackOrder(9)] public bool Forfeited { get; init; }
+    [TightPackOrder(10)] public ushort TotalLaps { get; init; }
+    [TightPackOrder(11)] public byte? PowerPercent { get; init; }
+    [TightPackOrder(12)] public byte? DamagePercent { get; init; }
 }

@@ -644,8 +644,7 @@ public class PvpServerGamemode(
     }
 
     /// <summary>
-    /// The live order for the match lobby: the same grouping and tie-break the final standings
-    /// use, so a waiting member sees the race as it is, not a stale grid.
+    /// The match lobby's live order follows validated checkpoint progress and the latest positions.
     /// </summary>
     public override RaceLiveState? GetLiveState()
     {
@@ -657,8 +656,7 @@ public class PvpServerGamemode(
             Standings =
             [
                 .. _perPlayer
-                .OrderBy(kv => StandingGroup(kv.Value))
-                .ThenBy(kv => StandingWithin(kv.Value))
+                .OrderBy(kv => LiveOrder(kv.Key, kv.Value))
                 .Select((kv, index) =>
                     {
                         var player = Players.FirstOrDefault(candidate => candidate.Id == kv.Key);
@@ -712,6 +710,21 @@ public class PvpServerGamemode(
             EndRace();
         else if (_state == ServerGamemodeState.InProgress)
             CheckConstraint();
+    }
+
+    private (int Group, int Progress, double Distance, int TieBreak) LiveOrder(Guid playerId, PerPlayerGamemodeInfo info)
+    {
+        if (StandingGroup(info) != 0) return (1, 0, 0, StandingWithin(info));
+
+        var checkpoints = CurrentStage.Checkpoints;
+        var progress = info.Lap * checkpoints.Count + info.Checkpoint;
+        if (info.Checkpoint >= checkpoints.Count || GetPlayerPosition(playerId) is not { } position)
+            return (0, -progress, double.PositiveInfinity, info.Position);
+
+        var target = checkpoints[info.Checkpoint].Position;
+        var dx = (double)position.X - (double)target.X;
+        var dz = (double)position.Z - (double)target.Z;
+        return (0, -progress, dx * dx + dz * dz, info.Position);
     }
 
     /// <summary>Running cars are placed by checkpoint progress; the dead and departed sort after them.</summary>

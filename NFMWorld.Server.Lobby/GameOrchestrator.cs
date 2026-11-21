@@ -73,8 +73,7 @@ public class GameOrchestrator
     private bool _lobbyIsRunning = true;
 
     /// <summary>
-    /// A running race's order, forwarded only to that session's members who are not in the race.
-    /// A racer has the real state; a waiting member is the one looking at a match lobby.
+    /// Forwards race stats to the people who can view the running match in the lobby.
     /// </summary>
     public void ReportLiveState(RaceServer2Lobby_LiveState live)
     {
@@ -82,16 +81,11 @@ public class GameOrchestrator
             || !_pendingMatches.TryGetValue(matchKey, out var pending))
             return;
 
-        // Everyone in the room can open a running game's match lobby, and a spectator is
-        // watching the real thing. Only the drivers are excluded; their lobby socket is
-        // busy racing anyway.
-        var racers = pending.Info.Players.Values.Select(player => player.Id).ToHashSet();
         _transport.SendPacketToClients(
             _players.All
                 .Where(entry => entry.Value.IsAuthenticated
                                 && entry.Value.AccountId > 0
                                 && !entry.Value.IsInGame
-                                && !racers.Contains(entry.Value.Id)
                 )
                 .Select(entry => entry.Key)
                 .ToArray(),
@@ -104,8 +98,7 @@ public class GameOrchestrator
     }
 
     /// <summary>
-    /// A game master's in-game chat line, relayed to the members waiting in that game's match
-    /// lobby. Called from the authenticated /race-chat handler.
+    /// A game master's in-game chat line, relayed to everyone who can view the match lobby.
     /// </summary>
     public void ReportRaceChat(RaceServer2Lobby_Chat chat)
     {
@@ -121,7 +114,8 @@ public class GameOrchestrator
                 Sender = chat.Sender,
                 Message = chat.Message,
                 Color = chat.Color
-            }
+            },
+            openToLobby: true
         );
     }
 
@@ -129,7 +123,12 @@ public class GameOrchestrator
     /// Turns a game master's result report into an archive report and sends it. Called from the
     /// /race-ended HTTP handler, which is the only place a trusted server proves itself.
     /// </summary>
-    public async Task<bool> ReportMatchResultsAsync(Guid matchKey, RaceResults results, CancellationToken ct)
+    public async Task<bool> ReportMatchResultsAsync(
+        Guid matchKey,
+        RaceResults results,
+        RaceLiveState? finalState,
+        CancellationToken ct
+    )
     {
         if (!_pendingMatches.TryRemove(matchKey, out var pending))
         {
@@ -145,16 +144,22 @@ public class GameOrchestrator
         var session = _sessions.Get(pending.SessionId);
         if (session is not null)
         {
-            session.State = SessionState.Finished;
+            var finalReadings = finalState?.Standings ?? [];
             session.FinalStandings =
             [
                 .. results.Standings
-                .OrderBy(standing => standing.FinishPosition)
-                .Select(standing =>
+                .Join(
+                    pending.Info.Players,
+                    standing => standing.PlayerId,
+                    slot => slot.Value.Id,
+                    (standing, slot) => (Standing: standing, Slot: slot)
+                )
+                .OrderBy(entry => entry.Standing.FinishPosition)
+                .Select(entry =>
                     {
-                        var info = pending.Info.Players.Values.FirstOrDefault(
-                            player => player.Id == standing.PlayerId
-                        );
+                        var (standing, slot) = entry;
+                        var info = slot.Value;
+                        var reading = Array.Find(finalReadings, row => row.PlayerId == standing.PlayerId);
                         return new SessionStanding
                         {
                             PlayerId = standing.PlayerId,
@@ -163,7 +168,14 @@ public class GameOrchestrator
                             Color = info.Color,
                             IsBot = info.IsBot,
                             Position = standing.FinishPosition,
-                            Dnf = standing.FinishTime is null
+                            Dnf = standing.FinishTime is null,
+                            Slot = slot.Key,
+                            CarColors = info.CarColors,
+                            Lap = reading.Lap,
+                            TotalLaps = reading.TotalLaps,
+                            Wasted = reading.Wasted,
+                            PowerPercent = reading.PowerPercent,
+                            DamagePercent = reading.DamagePercent
                         };
                     }
                 )
@@ -171,6 +183,7 @@ public class GameOrchestrator
             session.ClosesAtUnixMs = DateTimeOffset.UtcNow
                 .AddSeconds(SessionManager.FinishedLingerSeconds)
                 .ToUnixTimeMilliseconds();
+            session.State = SessionState.Finished;
             foreach (var (_, id) in session.Players)
             {
                 var participant = _players.Get(id);
@@ -765,7 +778,8 @@ public class GameOrchestrator
         {
             joinToken = await _gmClient.RegisterSpectatorAsync(pending.GameMaster, new Lobby2RaceServer_RegisterSpectator
             {
-                SessionToken = pending.SpectatorToken, PlayerId = player.Id, Name = player.Name, Color = player.Color
+                SessionToken = pending.SpectatorToken, PlayerId = player.Id, Name = player.Name, Color = player.Color,
+                Muted = player.Muted
             });
         }
         catch (Exception ex)
@@ -823,7 +837,7 @@ public class GameOrchestrator
     private void HandleChatMessage(uint clientId, C2S_LobbyChatMessage chat)
     {
         var player = _players.Get(clientId);
-        if (player is null || player.IsInGame)
+        if (player is null || player.IsInGame || player.Banned)
             return;
 
         if (chat.Message.StartsWith('/'))
@@ -838,27 +852,31 @@ public class GameOrchestrator
             return;
         }
 
-        // The client picks the channel: room chat or the game it is in. A session it is not
-        // in is refused rather than silently redirected into the room.
         var sessionId = chat.SessionId;
-        if (sessionId != 0 && player.InSession?.SessionIndex != sessionId)
+        PendingMatch? runningMatch = null;
+        Guid matchKey = default;
+        if (sessionId != 0 && _sessions.Get(sessionId)?.State == SessionState.Started
+            && _sessionMatches.TryGetValue(sessionId, out matchKey))
+            _pendingMatches.TryGetValue(matchKey, out runningMatch);
+
+        if (sessionId != 0 && runningMatch is null && player.InSession?.SessionIndex != sessionId)
             return;
 
-        _chat.SendChatMessage(player.Id, chat.Message, sessionId);
-        if (sessionId != 0)
-            ForwardChatToRace(sessionId, player, chat.Message);
+        var message = sessionId == 0 ? chat.Message : RaceChat.Normalize(chat.Message);
+        if (message.Length == 0)
+            return;
+
+        _chat.SendChatMessage(player.Id, message, sessionId, openToLobby: runningMatch is not null);
+        if (runningMatch is not null)
+            ForwardChatToRace(runningMatch, matchKey, player, message);
     }
 
     /// <summary>
     /// Sends a match-lobby line into the running race, so racers see it. Only a game whose race
     /// is live has a pending match; before that the line already lives in the lobby transcript.
     /// </summary>
-    private void ForwardChatToRace(uint sessionId, PlayerRegistry.ClientInfo player, string message)
+    private void ForwardChatToRace(PendingMatch pending, Guid matchKey, PlayerRegistry.ClientInfo player, string message)
     {
-        if (!_sessionMatches.TryGetValue(sessionId, out var matchKey)
-            || !_pendingMatches.TryGetValue(matchKey, out var pending))
-            return;
-
         _ = Task.Run(
             async () =>
             {

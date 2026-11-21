@@ -166,6 +166,14 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         // pruner once it is marked finished.
         if (session.Players.IsEmpty)
         {
+            // The race result can arrive after the last client goes back to the lobby.
+            if (session.State == SessionState.Started)
+            {
+                session.ClosesAtUnixMs = DateTimeOffset.UtcNow.AddSeconds(FinishedLingerSeconds)
+                    .ToUnixTimeMilliseconds();
+                return;
+            }
+
             session.State = SessionState.Finished;
             // A finished race with placings is still a thing to read. Its existing deadline
             // stands; one that was emptied before finishing gets no linger window.
@@ -296,7 +304,9 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
             // means it was emptied rather than finished, so it goes now.
             var expired = session.State == SessionState.Finished
                           && (session.ClosesAtUnixMs == 0 || session.ClosesAtUnixMs <= now);
-            if (!empty && !expired)
+            var abandoned = session.State == SessionState.Started && session.Players.IsEmpty
+                            && session.ClosesAtUnixMs > 0 && session.ClosesAtUnixMs <= now;
+            if (!empty && !expired && !abandoned)
                 continue;
 
             foreach (var playerId in session.Players.Values)

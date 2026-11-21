@@ -116,7 +116,8 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         SetGamemode: OnSetGamemode,
         ChangeCar: OpenCarPicker,
         CopyCar: id => CopyPlayerCar(id, colorsOnly: false),
-        CopyColors: id => CopyPlayerCar(id, colorsOnly: true)
+        CopyColors: id => CopyPlayerCar(id, colorsOnly: true),
+        PreviewStage: OpenStagePreview
     );
 
     public override Node BuildUi() => BuildLobbyUi();
@@ -412,6 +413,8 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                 Lobby.NowUnixMs.Value = now;
             }
         }
+
+        _stagePreview.Value?.Tick();
     }
 
     protected override void Dispose(bool disposing)
@@ -420,6 +423,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         {
             _carsActive = false;
             CloseCarPicker();
+            CloseStagePreview();
             _carCancellation.Cancel();
             _carCancellation.Dispose();
             _carDetails.Clear();
@@ -677,8 +681,14 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         if (Lobby.Page.Value == UiState.LobbyPage.Match && Lobby.ViewedSessionId.Value is null)
             Lobby.Page.Value = UiState.LobbyPage.Room;
 
+        if (_stagePreview.Value is { } preview && preview.SessionId != Lobby.ViewedSessionId.Value)
+            CloseStagePreview();
+
         foreach (var id in _liveStates.Keys.Where(id => sessions.All(s => s.Id != id)).ToArray())
             _liveStates.Remove(id);
+
+        if (_chatMessages.RemoveAll(line => line.SessionId != 0 && sessions.All(s => s.Id != line.SessionId)) > 0)
+            Lobby.Chat.Value = _chatMessages.ToArray();
 
         if (sessions.Any(session => session.State == SessionState.Finished))
             Lobby.NowUnixMs.Value = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -716,8 +726,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
             SessionSlots(session, humans),
             LiveStandingsFor(session),
             FinalStandingsFor(session),
-            session.ClosesAtUnixMs,
-            SessionStageBriefing(session.StageName)
+            session.ClosesAtUnixMs
         );
     }
 
@@ -730,32 +739,34 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         return MapLiveStandings(live);
     }
 
-    private IReadOnlyList<UiState.LobbyStanding> MapLiveStandings(IReadOnlyList<RaceLiveStanding> live)
+    private static IReadOnlyList<UiState.LobbyStanding> MapLiveStandings(IReadOnlyList<RaceLiveStanding> live)
         => [.. live.Select(standing => new UiState.LobbyStanding(
             standing.PlayerId,
             standing.PlayerName,
-            CarLabel(standing.CarName),
             ToColor(standing.Color),
-            standing.IsBot,
             standing.Position,
             standing.Lap,
             standing.Wasted,
-            standing.Forfeited
+            standing.Forfeited,
+            standing.TotalLaps,
+            standing.PowerPercent,
+            standing.DamagePercent
         ))];
 
-    private IReadOnlyList<UiState.LobbyStanding> FinalStandingsFor(S2C_LobbyState.GameSession session)
+    private static IReadOnlyList<UiState.LobbyStanding> FinalStandingsFor(S2C_LobbyState.GameSession session)
         => [.. session.FinalStandings
             .OrderBy(standing => standing.Position)
             .Select(standing => new UiState.LobbyStanding(
                 standing.PlayerId,
                 standing.PlayerName,
-                CarLabel(standing.CarName),
                 ToColor(standing.Color),
-                standing.IsBot,
                 standing.Position,
-                0,
-                false,
-                standing.Dnf
+                standing.Lap,
+                standing.Wasted,
+                standing.Dnf,
+                standing.TotalLaps,
+                standing.PowerPercent,
+                standing.DamagePercent
             ))];
 
     /// <summary>
@@ -805,6 +816,21 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         IReadOnlyDictionary<Guid, ServerSidePlayerInfo> humans
     )
     {
+        if (session.State == SessionState.Finished)
+        {
+            return [.. session.FinalStandings.OrderBy(standing => standing.Slot).Select(standing =>
+                new UiState.LobbySessionSlot(
+                    standing.Slot,
+                    standing.PlayerName,
+                    CarLabel(standing.CarName),
+                    ToColor(standing.Color),
+                    PlayerColors(standing.CarName, standing.CarColors),
+                    IsBot: standing.IsBot,
+                    IsEmpty: false,
+                    IsSelf: standing.PlayerId == _player.Id
+                ))];
+        }
+
         var slots = new List<UiState.LobbySessionSlot>(session.MaxPlayers);
         for (byte slot = 0; slot < session.MaxPlayers; slot++)
         {
@@ -905,21 +931,13 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     private UiState.LobbyChatLine ChatLine(S2C_LobbyChatMessage message)
     {
         var isSystem = message.SenderId == Guid.Empty;
-        // The packet carries the sender's colour so a line forwarded out of a race keeps it
-        // even though that sender may be a spectator this client never saw in the roster.
-        // A sender that is in the roster is authoritative, including a black car colour.
-        var color = _players.FirstOrDefault(p => p.Id == message.SenderId) is { } sender
-            ? ToColor(sender.Color)
-            : message.Color.R != 0 || message.Color.G != 0 || message.Color.B != 0
-                ? ToColor(message.Color)
-                : new Color(185, 211, 255);
         return new UiState.LobbyChatLine(
             ++_nextChatLineId,
             message.SessionId,
             message.SenderId,
             message.Sender,
             message.Message,
-            color,
+            ToColor(message.Color),
             isSystem
         );
     }
@@ -928,8 +946,9 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     private void AddChatLine(UiState.LobbyChatLine line)
     {
         _chatMessages.Add(line);
-        if (_chatMessages.Count > 400)
-            _chatMessages.RemoveRange(0, _chatMessages.Count - 400);
+        var roomChat = line.SessionId == 0;
+        if (_chatMessages.Count(entry => (entry.SessionId == 0) == roomChat) > 400)
+            _chatMessages.RemoveAt(_chatMessages.FindIndex(entry => (entry.SessionId == 0) == roomChat));
         Lobby.Chat.Value = _chatMessages.ToArray();
     }
 
@@ -953,6 +972,8 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
 
     private void OpenSession(uint id)
     {
+        if (_stagePreview.Value is { } preview && preview.SessionId != id)
+            CloseStagePreview();
         Lobby.SelectedSessionId.Value = id;
         Lobby.ViewedSessionId.Value = id;
         Lobby.Page.Value = UiState.LobbyPage.Match;
@@ -975,12 +996,11 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                 : session
             )
             .ToArray();
-        // Ordered rows are keyed by value; a new revision makes the live table rebuild.
-        Lobby.LiveRevision.Value++;
     }
 
     private void OnCloseSession()
     {
+        CloseStagePreview();
         Lobby.ViewedSessionId.Value = null;
         Lobby.Page.Value = UiState.LobbyPage.Room;
     }
@@ -1097,12 +1117,13 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         if (!CanAct || string.IsNullOrWhiteSpace(message))
             return;
 
-        // The visible page chooses the channel. Being a member of a game must not turn room
-        // chat into game chat while the player is back on the room page.
-        var inMatch = Lobby.Page.Value == UiState.LobbyPage.Match;
-        var sessionId = inMatch ? Lobby.CurrentSession.Value?.Id ?? 0 : 0;
-        if (inMatch && (sessionId == 0 || Lobby.ViewedSessionId.Value != sessionId))
-            return;
+        uint sessionId = 0;
+        if (Lobby.Page.Value == UiState.LobbyPage.Match)
+        {
+            var match = Lobby.Sessions.Value.FirstOrDefault(session => session.Id == Lobby.ViewedSessionId.Value);
+            if (match is not { CanChat: true }) return;
+            sessionId = match.Id;
+        }
 
         transport.SendPacketToServer(new C2S_LobbyChatMessage { Message = message, SessionId = sessionId });
     }
