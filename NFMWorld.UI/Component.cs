@@ -1018,20 +1018,25 @@ public abstract partial class Component : Node, IAnimationCallback
         if (cache is not null && cache.TryGetValue(node, out var cached))
             return cached;
 
-        int result;
-        if ((node.Styles.ZIndex ?? 0) != 0)
+        int result = 0;
+        // A hidden node paints nothing and takes no press, so it neither presents its own
+        // z-index nor hoists a descendant's. Otherwise a closed popup (display:none, z 1000)
+        // ties every open one to its later sibling and the hit test picks the wrong one.
+        if (node.IsDisplayed)
         {
-            result = node.Styles.ZIndex!.Value;
-        }
-        else
-        {
-            result = 0;
-            foreach (var visual in node.VisualChildren)
+            if ((node.Styles.ZIndex ?? 0) != 0)
             {
-                if (visual is Component c)
+                result = node.Styles.ZIndex!.Value;
+            }
+            else
+            {
+                foreach (var visual in node.VisualChildren)
                 {
-                    int cz = EscapeZ(c, cache);
-                    if (cz > result) result = cz;
+                    if (visual is Component c)
+                    {
+                        int cz = EscapeZ(c, cache);
+                        if (cz > result) result = cz;
+                    }
                 }
             }
         }

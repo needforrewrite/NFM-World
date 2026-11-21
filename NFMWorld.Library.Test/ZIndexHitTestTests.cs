@@ -14,6 +14,9 @@ namespace NFMWorld.Library.Test;
 [TestClass]
 public class ZIndexHitTestTests
 {
+    [TestInitialize]
+    public void Setup() => IBackend.Backend = new DummyBackend();
+
     private static View MakeRoot()
     {
         var root = new View { Name = "root" };
@@ -64,6 +67,32 @@ public class ZIndexHitTestTests
         root.LayoutAndRender(new Vector2(200, 200));
 
         Assert.AreEqual(back, FocusManager.HitTest(root, new Vector2(50, 50)));
+    }
+
+    [TestMethod]
+    public void HitTest_HiddenZIndexedChild_DoesNotHoistItsSibling()
+    {
+        var root = MakeRoot();
+
+        // The earlier column's popup is open, so it must keep winning over the later column.
+        var earlier = MakeBox("earlier", 0, 0, 0, 100, 100);
+        var popup = MakeBox("popup", 1000, 0, 0, 100, 100);
+        earlier.AddChild(popup);
+
+        // A closed popup in the later column presents no z, or it ties the open one and the
+        // later-sibling rule hands it the hit.
+        var later = MakeBox("later", 0, 0, 0, 100, 100);
+        var closed = MakeBox("closed", 1000, 0, 0, 100, 100);
+        closed.Styles = closed.Styles with { Display = Display.None };
+        later.AddChild(closed);
+
+        root.AddChild(earlier);
+        root.AddChild(later);
+
+        IBackend.Backend = new DummyBackend();
+        root.LayoutAndRender(new Vector2(200, 200));
+
+        Assert.AreEqual(popup, FocusManager.HitTest(root, new Vector2(50, 50)));
     }
 
     [TestMethod]
