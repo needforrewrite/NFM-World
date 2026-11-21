@@ -16,43 +16,24 @@ public class ChatManager(IMultiplayerServerTransport transport, PlayerRegistry p
     );
 
     /// <summary>
-    /// Sends a chat message from a client. Room chat (session zero) reaches the whole lobby;
-    /// a running game's chat can also reach the people viewing its match lobby.
+    /// Broadcasts a chat line tagged with its channel and returns it for any race relay.
     /// </summary>
-    public void SendChatMessage(Guid senderId, string message, uint sessionId, bool openToLobby = false)
+    public S2C_LobbyChatMessage? SendChatMessage(Guid senderId, string message, uint sessionId)
     {
         var sender = players.Get(senderId);
-        if (sender is not { IsAuthenticated: true, AccountId: > 0 }) return;
+        if (sender is not { IsAuthenticated: true, AccountId: > 0 }) return null;
 
-        if (sessionId == 0)
+        var isSpectator = sessionId != 0 && sender.InSession?.SessionIndex != sessionId;
+        var line = new S2C_LobbyChatMessage
         {
-            Broadcast(
-                new S2C_LobbyChatMessage
-                {
-                    SenderId = senderId,
-                    Sender = sender.Name,
-                    Message = message,
-                    Color = sender.Color
-                }
-            );
-            return;
-        }
-
-        if (!openToLobby && sender.InSession?.SessionIndex != sessionId)
-            return;
-
-        SendToSession(
-            sessionId,
-            new S2C_LobbyChatMessage
-            {
-                SenderId = senderId,
-                Sender = sender.Name,
-                Message = message,
-                SessionId = sessionId,
-                Color = sender.Color
-            },
-            openToLobby
-        );
+            SenderId = senderId,
+            Sender = isSpectator ? $"(SPEC) {sender.Name}" : sender.Name,
+            Message = message,
+            SessionId = sessionId,
+            Color = sender.Color
+        };
+        Broadcast(line);
+        return line;
     }
 
     /// <summary>

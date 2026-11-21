@@ -175,9 +175,16 @@ public static class LobbyView
                     () => contextPlayer.Value.HasValue,
                     () => LobbyPlayerMenu.Build(
                         contextPosition.Value,
-                        () => Copy(actions.CopyCar),
-                        () => Copy(actions.CopyColors),
-                        () => contextPlayer.Value = null
+                        () => ActOnPlayer(actions.CopyCar),
+                        () => ActOnPlayer(actions.CopyColors),
+                        () => contextPlayer.Value = null,
+                        () => contextPlayer.Value is { } id && InvitableGame(id) is not null,
+                        () => ActOnPlayer(id =>
+                            {
+                                if (InvitableGame(id) is { } game)
+                                    actions.InviteGamePlayer(game.Id, id);
+                            }
+                        )
                     )
                 ),
                 Sx.Show(
@@ -204,7 +211,13 @@ public static class LobbyView
             ]
         );
 
-        void Copy(Action<Guid> action)
+        UiState.LobbySession? InvitableGame(Guid playerId)
+            => lobby.Connected.Value && lobby.CurrentSession.Value is { CanManage: true, EmptySlots: > 0 } game
+               && lobby.Players.Value.Any(player => player.Id == playerId && !player.IsSelf)
+               && game.Slots.All(slot => slot.PlayerId != playerId)
+                ? game : null;
+
+        void ActOnPlayer(Action<Guid> action)
         {
             if (contextPlayer.Value is not { } id) return;
             contextPlayer.Value = null;
@@ -824,7 +837,7 @@ public static class LobbyView
                                 ChatPanel(
                                     actions,
                                     () => Session()?.Id ?? 0,
-                                    () => Session() is { CanChat: true },
+                                    () => Session() is not null,
                                     "GAME CHAT",
                                     "Lobby match chat"
                                 )
@@ -2229,10 +2242,6 @@ public static class LobbyView
                                 name: () => "Lobby chat send"
                             )
                         ]
-                    ),
-                    () => Sx.Text(
-                        style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
-                        text: () => "Chat is available to this game's members."
                     )
                 )
             ]

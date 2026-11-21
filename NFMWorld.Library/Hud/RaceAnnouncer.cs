@@ -114,7 +114,7 @@ public sealed class RaceAnnouncer
         CheckArrow(client, gamemode);
     }
 
-    internal void TickSpectating(BackendCar? car, BaseClientGamemode gamemode, bool changed)
+    internal bool TickSpectating(BackendCar? car, BaseClientGamemode gamemode, bool changed)
     {
         Expire();
         if (changed)
@@ -133,6 +133,7 @@ public sealed class RaceAnnouncer
         }
 
         if (_powerLowCooldown > 0) _powerLowCooldown--;
+        var playPowerUp = false;
         if (car is not null)
         {
             CheckCheckpoint(car, gamemode);
@@ -141,11 +142,12 @@ public sealed class RaceAnnouncer
             if (stunt.Sequence != _lastSpectatedStunt)
             {
                 _lastSpectatedStunt = stunt.Sequence;
-                if (stunt.Sequence != 0) ShowStunt(stunt);
+                playPowerUp = stunt.Sequence != 0 && ShowStunt(stunt);
             }
         }
 
         CheckOpponents(gamemode, spectating: true);
+        return playPowerUp;
     }
 
     private void Expire()
@@ -421,18 +423,19 @@ public sealed class RaceAnnouncer
         ShowStunt(stunt, requireDescription: true);
     }
 
-    private void ShowStunt(CompletedStunt stunt, bool requireDescription = false)
+    private bool ShowStunt(CompletedStunt stunt, bool requireDescription = false)
     {
         var text = DescribeStunt(stunt);
-        if (text is null && requireDescription && !stunt.AtMaxPower) return;
+        if (text is null && (requireDescription || stunt.AtMaxPower)) return false;
         if (text is not null)
             _stunt = new Slot(text, HudMessageKind.Info, SecondsToTicks(Math.Min(6f, 2f + text.Length / 20f)));
 
         // phy posted both at once: the stunt name on its own line and the power it earned on the
         // status line. Full power reads as a max rather than a percentage.
-        if (stunt.Powerup <= 0) return;
+        if (stunt.Powerup <= 0) return false;
         var percent = (int)(100f * (float)stunt.Powerup / 98f);
         Show(stunt.AtMaxPower ? "Power to the MAX" : $"Power Up {percent}%", HudMessageKind.Info);
+        return text is not null;
     }
 
     private static readonly string[][] Adjectives =

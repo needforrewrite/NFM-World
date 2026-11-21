@@ -12,6 +12,7 @@ public sealed class SpectatorRaceFeedback
     public HudMessage? Status => _announcer.Status;
     public HudMessage? Stunt => _announcer.Stunt;
     public bool PassedCheckpoint { get; private set; }
+    public bool PlayPowerUp { get; private set; }
     public ushort? NextCheckpoint { get; private set; }
     public bool FinishCheckpoint { get; private set; }
 
@@ -21,6 +22,7 @@ public sealed class SpectatorRaceFeedback
         _car = null;
         _lastProgress = 0;
         PassedCheckpoint = false;
+        PlayPowerUp = false;
         NextCheckpoint = null;
         FinishCheckpoint = false;
     }
@@ -36,6 +38,6 @@ public sealed class SpectatorRaceFeedback
             ? car.CurrentCheckpoint : null;
         FinishCheckpoint = NextCheckpoint == gamemode.CurrentStage.Checkpoints.Count - 1
                            && car?.CurrentLap == gamemode.CurrentStage.Nlaps - 1;
-        _announcer.TickSpectating(car, gamemode, changed);
+        PlayPowerUp = _announcer.TickSpectating(car, gamemode, changed);
     }
 }

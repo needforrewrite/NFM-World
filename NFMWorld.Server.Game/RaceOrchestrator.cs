@@ -1013,7 +1013,7 @@ public class RaceOrchestrator : IDisposable
         var gm = factory.CreateServerGamemode(
             new ServerGamemodeParameters()
             {
-                Players = raceParams.MatchGameplayInfo.Players.Values.ToArray()
+                Players = raceParams.MatchGameplayInfo.InSlotOrder()
             },
             context
         );

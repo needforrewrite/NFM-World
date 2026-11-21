@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using NFMWorld.Graphics;
-using NFMWorldLibrary;
 
 namespace NFMWorld;
 
@@ -75,7 +74,6 @@ internal sealed class Stars : IDisposable
         var view = camera.ViewMatrix;
         view.Translation = Vector3.Zero;
         var viewProjection = view * camera.ProjectionMatrix;
-        var sky = World.Sky.Snap(World.Snap);
         var time = (float)Stopwatch.GetElapsedTime(_started).TotalSeconds;
         var scale = MathF.Max(1, MathF.Sqrt(camera.Height / 720f));
         _vertexCount = 0;
@@ -88,8 +86,8 @@ internal sealed class Stars : IDisposable
             var y = clip.Y / clip.W;
             if (x < -1 || x > 1 || y < -1 || y > 1) continue;
 
-            var core = (star.Tint * 2 + sky) / 3;
-            var brightness = 0.8f + 0.15f * MathF.Sin(time * star.TwinkleSpeed + star.Phase);
+            var core = Vector3.Lerp(star.Tint, Vector3.One, 0.5f);
+            var brightness = 0.88f + 0.12f * MathF.Sin(time * star.TwinkleSpeed + star.Phase);
             var radius = (star.Large ? 3.2f : 2f) * scale;
             var pixelX = (x + 1) * camera.Width / 2;
             var pixelY = (1 - y) * camera.Height / 2;
@@ -106,8 +104,8 @@ internal sealed class Stars : IDisposable
 
     private void AddGlow(Camera camera, Vector2 center, float radius, Vector3 tint, float brightness)
     {
-        ReadOnlySpan<float> radii = [0, 0.2f, 0.5f, 1];
-        ReadOnlySpan<float> opacity = [1, 0.72f, 0.18f, 0];
+        ReadOnlySpan<float> radii = [0, 0.3f, 0.55f, 1];
+        ReadOnlySpan<float> opacity = [1, 0.86f, 0.28f, 0];
         for (var ring = 0; ring < radii.Length - 1; ring++)
         {
             var inner = radius * radii[ring];

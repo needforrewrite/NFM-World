@@ -100,49 +100,56 @@ public class LobbyChatRoutingTests
     }
 
     [TestMethod]
-    public void MatchChat_ReachesOnlyThatGamesMembers()
+    public void MatchChat_FromAMemberReachesViewersWithTheMembersName()
     {
         var (players, transport, chat) = Setup();
         var alice = Join(players, 1, "alice", 10);
-        Join(players, 2, "bob", 11);
-        Join(players, 3, "carol");
+        var bob = Join(players, 2, "bob", 11);
+        var carol = Join(players, 3, "carol");
 
         chat.SendChatMessage(alice.Id, "we are waiting", 10);
 
-        Assert.AreEqual(1, transport.Chat.Count);
-        Assert.AreEqual(alice.ClientIndex, transport.Chat[0].ClientIndex);
-        Assert.AreEqual(10u, transport.Chat[0].Message.SessionId);
+        CollectionAssert.AreEquivalent(
+            new[] { alice.ClientIndex, bob.ClientIndex, carol.ClientIndex },
+            transport.Chat.Select(entry => entry.ClientIndex).ToArray()
+        );
+        Assert.IsTrue(transport.Chat.All(entry => entry.Message.SessionId == 10 && entry.Message.Sender == "alice"));
     }
 
     [TestMethod]
-    public void MatchChat_RefusesASessionTheSenderIsNotIn()
+    public void MatchChat_RefusesAnUnauthenticatedSender()
     {
         var (players, transport, chat) = Setup();
-        var alice = Join(players, 1, "alice", 10);
+        var guest = players.GetOrAdd(1);
+        Join(players, 2, "bob", 10);
 
-        chat.SendChatMessage(alice.Id, "not mine", 11);
+        Assert.IsNull(chat.SendChatMessage(guest.Id, "hello", 10));
 
         Assert.AreEqual(0, transport.Chat.Count);
     }
 
     [TestMethod]
-    public void RunningMatchChat_AcceptsViewersAndKeepsTheMatchChannel()
+    [DataRow(false)]
+    [DataRow(true)]
+    public void MatchChat_LabelsViewersAsSpectatorsAndKeepsTheMatchChannel(bool inAnotherGame)
     {
         var (players, transport, chat) = Setup();
         var racer = Join(players, 1, "racer", 10);
-        var viewer = Join(players, 2, "viewer");
+        var viewer = Join(players, 2, "viewer", inAnotherGame ? 11u : null);
         var memberOfAnotherGame = Join(players, 3, "another viewer", 11);
         players.GetOrAdd(4);
 
-        chat.SendChatMessage(viewer.Id, "nice recovery", 10, openToLobby: true);
+        var line = chat.SendChatMessage(viewer.Id, "nice recovery", 10);
 
         CollectionAssert.AreEquivalent(
             new[] { racer.ClientIndex, viewer.ClientIndex, memberOfAnotherGame.ClientIndex },
             transport.Chat.Select(entry => entry.ClientIndex).ToArray()
         );
+        Assert.AreEqual("(SPEC) viewer", line?.Sender);
         Assert.IsTrue(transport.Chat.All(entry => entry.Message.SessionId == 10
-                                                  && entry.Message.SenderId == viewer.Id && entry.Message.Message
-                                                  == "nice recovery"
+                                                  && entry.Message.Sender == "(SPEC) viewer"
+                                                  && entry.Message.SenderId == viewer.Id
+                                                  && entry.Message.Message == "nice recovery"
         )
         );
     }

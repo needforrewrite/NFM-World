@@ -1134,7 +1134,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         if (Lobby.Page.Value == UiState.LobbyPage.Match)
         {
             var match = Lobby.Sessions.Value.FirstOrDefault(session => session.Id == Lobby.ViewedSessionId.Value);
-            if (match is not { CanChat: true }) return;
+            if (match is null) return;
             sessionId = match.Id;
         }
 

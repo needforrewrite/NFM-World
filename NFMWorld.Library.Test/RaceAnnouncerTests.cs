@@ -110,6 +110,28 @@ public class RaceAnnouncerTests
     }
 
     [TestMethod]
+    public void UndescribedStunt_AtMaximumPower_DoesNotSayMaxOrCueSpectatorSound()
+    {
+        var (announcer, gamemode, car) = Create(opponents: 0);
+        var feedback = new SpectatorRaceFeedback();
+        feedback.Tick(car, gamemode);
+
+        var physics = car.CarPhysics;
+        physics.Powerup = 30;
+        physics.Power = 98;
+        physics.TabletopCounter = 10;
+        physics.LatestStunt = CompletedStunt.Capture(physics, 1);
+        announcer.Tick(car, gamemode);
+        feedback.Tick(car, gamemode);
+
+        Assert.IsNull(announcer.Stunt);
+        Assert.IsNull(announcer.Status);
+        Assert.IsNull(feedback.Stunt);
+        Assert.IsNull(feedback.Status);
+        Assert.IsFalse(feedback.PlayPowerUp);
+    }
+
+    [TestMethod]
     public void CheckpointPostsAndThenExpires()
     {
         var (announcer, gamemode, car) = Create(opponents: 0);
@@ -401,14 +423,19 @@ public class RaceAnnouncerTests
 
         StringAssert.Contains(feedback.Stunt?.Text ?? "", "double Forward");
         Assert.AreEqual("Power Up 50%", feedback.Status?.Text);
+        Assert.IsTrue(feedback.PlayPowerUp);
+        feedback.Tick(viewed, gamemode);
+        Assert.IsFalse(feedback.PlayPowerUp);
         for (var tick = 0; tick < 500; tick++) feedback.Tick(viewed, gamemode);
         Assert.IsNull(feedback.Stunt, "an unchanged owner snapshot must not keep replaying the stunt");
         Assert.IsNull(feedback.Status);
+        physics.TotalStuntZy = 360;
         physics.Powerup = 12;
         physics.Power = 98;
         physics.LatestStunt = CompletedStunt.Capture(physics, 2);
         feedback.Tick(viewed, gamemode);
         Assert.AreEqual("Power to the MAX", feedback.Status?.Text);
+        Assert.IsTrue(feedback.PlayPowerUp);
     }
 
     [TestMethod]
@@ -461,6 +488,7 @@ public class RaceAnnouncerTests
         second.CurrentCheckpoint = 1;
         second.TotalCheckpoint = 3;
         second.CurrentLap = 1;
+        second.CarPhysics.TotalStuntZy = 360;
         second.CarPhysics.Powerup = 98;
         second.CarPhysics.LatestStunt = CompletedStunt.Capture(second.CarPhysics, 5);
         var feedback = new SpectatorRaceFeedback();
@@ -470,6 +498,7 @@ public class RaceAnnouncerTests
 
         Assert.IsFalse(feedback.PassedCheckpoint);
         Assert.AreEqual((ushort)1, feedback.NextCheckpoint);
+        Assert.IsFalse(feedback.PlayPowerUp);
         Assert.IsNull(feedback.Stunt);
         Assert.IsNull(feedback.Status);
         feedback.Reset();

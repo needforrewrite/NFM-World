@@ -67,7 +67,8 @@ public partial class LobbyPhase
 
     private void OnInviteGamePlayer(uint sessionId, Guid playerId)
     {
-        if (CanManageGame(sessionId))
+        if (CanAct && Lobby.CurrentSession.Value is { CanManage: true, EmptySlots: > 0 } session
+            && session.Id == sessionId)
             Transport.SendPacketToServer(new C2S_InviteGamePlayer { SessionId = sessionId, PlayerId = playerId });
     }
 }

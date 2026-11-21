@@ -811,6 +811,7 @@ public class GameOrchestrator
             CreatorName = invite.CreatorName,
             ExpiresAtUnixMs = invite.ExpiresAtUnixMs
         });
+        _chat.SendSystemToSession(request.SessionId, $"{invite.CreatorName} invited {target.Name} to the game.");
     }
 
     private void SendGameLobbyNotice(uint clientId, string message)
@@ -913,29 +914,25 @@ public class GameOrchestrator
         }
 
         var sessionId = chat.SessionId;
-        PendingMatch? runningMatch = null;
-        Guid matchKey = default;
-        if (sessionId != 0 && _sessions.Get(sessionId)?.State == SessionState.Started
-            && _sessionMatches.TryGetValue(sessionId, out matchKey))
-            _pendingMatches.TryGetValue(matchKey, out runningMatch);
-
-        if (sessionId != 0 && runningMatch is null && player.InSession?.SessionIndex != sessionId)
-            return;
+        var session = sessionId == 0 ? null : _sessions.Get(sessionId);
+        if (sessionId != 0 && session is null) return;
 
         var message = sessionId == 0 ? chat.Message : RaceChat.Normalize(chat.Message);
         if (message.Length == 0)
             return;
 
-        _chat.SendChatMessage(player.Id, message, sessionId, openToLobby: runningMatch is not null);
-        if (runningMatch is not null)
-            ForwardChatToRace(runningMatch, matchKey, player, message);
+        var line = _chat.SendChatMessage(player.Id, message, sessionId);
+        if (line is { } posted && session is { State: SessionState.WaitingToLoad or SessionState.Started }
+            && _sessionMatches.TryGetValue(sessionId, out var matchKey)
+            && _pendingMatches.TryGetValue(matchKey, out var runningMatch))
+            ForwardChatToRace(runningMatch, matchKey, posted);
     }
 
     /// <summary>
     /// Sends a match-lobby line into the running race, so racers see it. Only a game whose race
     /// is live has a pending match; before that the line already lives in the lobby transcript.
     /// </summary>
-    private void ForwardChatToRace(PendingMatch pending, Guid matchKey, PlayerRegistry.ClientInfo player, string message)
+    private void ForwardChatToRace(PendingMatch pending, Guid matchKey, S2C_LobbyChatMessage line)
     {
         _ = Task.Run(
             async () =>
@@ -947,10 +944,10 @@ public class GameOrchestrator
                         new Lobby2RaceServer_Chat
                         {
                             MatchKey = matchKey,
-                            SenderId = player.Id,
-                            Sender = player.Name,
-                            Message = message,
-                            Color = player.Color
+                            SenderId = line.SenderId,
+                            Sender = line.Sender,
+                            Message = line.Message,
+                            Color = line.Color
                         }
                     );
                 }

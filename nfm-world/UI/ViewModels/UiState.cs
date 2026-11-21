@@ -298,7 +298,6 @@ public static class UiState
     )
     {
         public int EmptySlots => Math.Max(0, MaxPlayers - PlayerCount);
-        public bool CanChat => IsMember || State == SessionState.Started;
         public bool CanManage => IsCreator && IsMember && State == SessionState.NotStarted;
     }
 

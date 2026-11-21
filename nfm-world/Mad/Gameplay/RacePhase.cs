@@ -68,8 +68,9 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     /// </summary>
     private readonly bool _spectating;
 
-    /// <summary>Player index a spectator is following, or -1 to follow the leader.</summary>
+    /// <summary>Player index explicitly selected by a spectator, or -1 if unlocked.</summary>
     private int _spectateLock = -1;
+    private int _spectateTarget = -1;
 
     /// <summary>
     /// When an online race started waiting for the other players to load, or null if it never
@@ -580,6 +581,8 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             _spectatorFeedbackActive = true;
             _spectatorFeedback.Tick(car, gamemode);
             if (_spectatorFeedback.PassedCheckpoint) SfxLibrary.checkpoint?.Play();
+            if (_spectatorFeedback.PlayPowerUp && CurrentStage.CarSoundsEnabled)
+                SfxLibrary.powerup?.Play();
             if (_spectatorFeedback.NextCheckpoint is { } checkpoint)
                 CurrentStage.Renderer.UpdateCheckpointGlow(checkpoint, _spectatorFeedback.FinishCheckpoint);
             else
@@ -589,6 +592,8 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         {
             _spectatorFeedback.Reset();
             _spectatorFeedbackActive = false;
+            _spectateTarget = -1;
+            _spectateLock = -1;
         }
     }
 
@@ -674,25 +679,24 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     }
 
     /// <summary>
-    /// The car a spectator follows. The lock keys pick it (the same Ctrl+digit a racer uses);
-    /// with nothing locked it follows the leading living car.
+    /// Picks the leading living car when a target is needed, then keeps following it.
     /// </summary>
     private BackendCar? SpectateCar()
     {
         if (GamemodeInstance is not BaseClientGamemode gm) return null;
         var players = OrderedPlayers(gm);
-        if (players.Length == 0) return null;
-        foreach (var player in players)
-        {
-            if (player.Index == _spectateLock && player.Car is { Wasted: false } locked)
-                return locked;
-        }
+        if (LockTargetHelper.LockedCar(players, _spectateTarget) is { } current)
+            return current;
 
-        // OrderedPlayers puts the client first, then by placement; with no client, first is the leader.
+        _spectateTarget = -1;
+        _spectateLock = -1;
         foreach (var player in players)
         {
             if (player.Car is { Wasted: false } car)
+            {
+                _spectateTarget = player.Index;
                 return car;
+            }
         }
 
         return null;
@@ -926,8 +930,9 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
                 if (key != slots[slot]) continue;
                 var target = SpectateTargetAt(slot);
                 if (target < 0) break;
-                // The same key again releases the lock, falling back to the leader.
+                // Releasing the lock picks a default target again.
                 _spectateLock = _spectateLock == target ? -1 : target;
+                _spectateTarget = _spectateLock;
                 break;
             }
 
