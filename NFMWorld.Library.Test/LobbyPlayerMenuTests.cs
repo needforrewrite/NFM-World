@@ -41,7 +41,15 @@ public class LobbyPlayerMenuTests
         );
         using var mounted = Renderer.Mount(() =>
             {
-                root.AddChild(LobbyPlayerMenu.Build(new Vector2(100, 100), () => { }, () => { }, () => closed++));
+                root.AddChild(LobbyPlayerMenu.Build(
+                    new Vector2(100, 100),
+                    copyCar: () => { },
+                    copyColors: () => { },
+                    close: () => closed++,
+                    canInvite: () => false,
+                    invite: () => { }
+                )
+                );
                 return root;
             }
         );
@@ -63,7 +71,15 @@ public class LobbyPlayerMenuTests
         var closed = 0;
         using var mounted = Renderer.Mount(() =>
             {
-                root.AddChild(LobbyPlayerMenu.Build(new Vector2(100, 100), () => cars++, () => colors++, () => closed++));
+                root.AddChild(LobbyPlayerMenu.Build(
+                    new Vector2(100, 100),
+                    copyCar: () => cars++,
+                    copyColors: () => colors++,
+                    close: () => closed++,
+                    canInvite: () => false,
+                    invite: () => { }
+                )
+                );
                 return root;
             }
         );
