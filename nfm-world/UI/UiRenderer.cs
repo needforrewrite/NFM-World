@@ -27,7 +27,7 @@ public class UiRenderer : IDisposable
     private Node? _phaseRoot;
 
     public View? ActiveRoot { get; private set; }
-    private View? MouseRoot => GameSparker.MessageWindow.IsOpen ? GameSparker.MessageWindow.ActiveView : ActiveRoot;
+    internal NFMWorld.UI.Components.NotificationCenter Notifications { get; } = new();
 
     /// <summary>
     /// Whether the mounted tree has a focused control (a text field, a slider), i.e.
@@ -93,7 +93,8 @@ public class UiRenderer : IDisposable
                     GameSparker.MessageWindow.BuildUi(),
                     NFMWorld.UI.Components.LoadingOverlay.Build(
                         () => phase is NFMWorld.Gameplay.StageSelectPhase stageSelect && stageSelect.ShowingLoadingOverlay
-                    )
+                    ),
+                    Notifications.BuildUi()
                 ]
             );
             }
@@ -137,6 +138,10 @@ public class UiRenderer : IDisposable
     {
         ContentCacheMaintenance.Update();
         LoadingWork.Update();
+        foreach (var (phase, _) in GameSparker.Phases.Stack)
+            if (phase is LobbyPhase lobby && !ReferenceEquals(phase, _owner))
+                lobby.ReadBackgroundNotifications();
+        Notifications.Update();
         // Effects queued during the frame run here, so a frame's writes coalesce.
         UiScheduler.Instance.Flush();
         CarThumbnails.ReleaseRetired();
@@ -155,6 +160,7 @@ public class UiRenderer : IDisposable
     {
         Unmount();
         _owner = null;
+        Notifications.Dispose();
     }
 
     public void HandleKeyPressed(Key key, in Keys keys)
@@ -175,7 +181,7 @@ public class UiRenderer : IDisposable
 
     public void HandleMouseMoved(int x, int y, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
     {
-        if (MouseRoot is not { } root) return;
+        if (ActiveRoot is not { } root) return;
         FocusManager.DispatchMouseMove(
             root,
             new BaseMouseMoveEvent(new Vector2(x, y), buttons, ctrlKey, altKey, shiftKey)
@@ -194,7 +200,7 @@ public class UiRenderer : IDisposable
         bool altKey
     )
     {
-        if (MouseRoot is not { } root) return;
+        if (ActiveRoot is not { } root) return;
         root.DispatchMouseDragged(
             new BaseMouseDragEvent(
                 new Vector2(dragStartX, dragStartY),
@@ -222,7 +228,7 @@ public class UiRenderer : IDisposable
         UiScheduler.Instance.Flush();
         NFMWorld.UI.Components.Controls.DismissDropdowns(ActiveRoot, new Vector2(x, y));
         UiScheduler.Instance.Flush();
-        if (MouseRoot is not { } root) return;
+        if (ActiveRoot is not { } root) return;
         var @event = new BaseMouseEvent(new Vector2(x, y), button, buttons, ctrlKey, altKey, shiftKey);
         // Focus handling lives in FocusManager: it focuses the focusable element
         // under the cursor, or clears focus when the clicked tree has none.
@@ -241,7 +247,7 @@ public class UiRenderer : IDisposable
         bool altKey
     )
     {
-        if (MouseRoot is not { } root) return;
+        if (ActiveRoot is not { } root) return;
         var @event = new BaseMouseEvent(new Vector2(x, y), button, buttons, ctrlKey, altKey, shiftKey);
         FocusManager.HandleMouseReleased();
         root.DispatchMouseReleased(@event);
@@ -249,7 +255,7 @@ public class UiRenderer : IDisposable
 
     public void HandleMouseScrolled(int x, int y, int delta, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
     {
-        MouseRoot?.DispatchMouseScrolled(
+        ActiveRoot?.DispatchMouseScrolled(
             new BaseMouseWheelEvent(
                 new System.Numerics.Vector3(0, delta, 0),
                 new Vector2(x, y),

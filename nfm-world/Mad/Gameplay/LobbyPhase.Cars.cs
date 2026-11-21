@@ -28,7 +28,7 @@ public partial class LobbyPhase
 
     private Node BuildLobbyUi() => Sx.View(
         style: () => Sx.Styles(position: Position.Absolute, left: 0, top: 0, right: 0, bottom: 0),
-        children: [UI.Routes.LobbyView.Build(Actions),
+        children: [UI.Routes.LobbyView.Build(Actions, BuildStagePreview()),
             Sx.Show(() => _showCarPicker.Value, () => Sx.View(
                 style: () => Sx.Styles(
                     position: Position.Absolute,
@@ -45,7 +45,12 @@ public partial class LobbyPhase
     );
 
     public override void KeyPressed(Key key, bool imguiWantsKeyboard, in Keys keys)
-        => _carPicker?.KeyPressed(key, imguiWantsKeyboard, keys);
+    {
+        if (!imguiWantsKeyboard && key == Key.Escape && _stagePreview.Value is not null)
+            CloseStagePreview();
+        else
+            _carPicker?.KeyPressed(key, imguiWantsKeyboard, keys);
+    }
 
     public override void KeyRepeated(Key key, bool imguiWantsKeyboard, in Keys keys)
         => _carPicker?.KeyRepeated(key, imguiWantsKeyboard, keys);
@@ -69,6 +74,7 @@ public partial class LobbyPhase
     {
         base.Render(cb, alpha);
         _carPicker?.RenderThumbnails(cb);
+        _stagePreview.Value?.Render(cb, alpha);
     }
 
     public override void Exit()
@@ -76,6 +82,7 @@ public partial class LobbyPhase
         _carsActive = false;
         _carCancellation.Cancel();
         CloseCarPicker();
+        CloseStagePreview();
         base.Exit();
     }
 
@@ -168,8 +175,11 @@ public partial class LobbyPhase
             : "Loading car...";
 
     private IReadOnlyList<Color> PlayerColors(ServerSidePlayerInfo player)
-        => _carDetails.TryGetValue(player.CarName, out var details)
-            ? EffectiveColors(details, player.CarColors).Select(slot => ToColor(slot.Color)).ToArray()
+        => PlayerColors(player.CarName, player.CarColors);
+
+    private IReadOnlyList<Color> PlayerColors(string carName, IReadOnlyList<Color3?>? overrides)
+        => _carDetails.TryGetValue(carName, out var details)
+            ? EffectiveColors(details, overrides).Select(slot => ToColor(slot.Color)).ToArray()
             : [];
 
     private static CarColorSlot[] EffectiveColors(CarDetails details, IReadOnlyList<Color3?>? overrides)
@@ -180,9 +190,15 @@ public partial class LobbyPhase
         )
         ).ToArray();
 
+    private IEnumerable<string> LobbyCarIdentities()
+        => _players.Select(player => player.CarName)
+            .Concat(_activeSessions.SelectMany(session => session.Bots.Values.Select(bot => bot.CarName)))
+            .Concat(_activeSessions.SelectMany(session => session.FinalStandings.Select(standing => standing.CarName)))
+            .Where(identity => !string.IsNullOrEmpty(identity));
+
     private void ResolvePlayerCars()
     {
-        var identities = _players.Select(p => p.CarName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var identities = LobbyCarIdentities().ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var identity in _carDetails.Keys.Where(id => !identities.Contains(id)).ToArray())
             _carDetails.Remove(identity);
         if (!_carsActive || _resolvingCars || identities.All(_carDetails.ContainsKey)) return;
@@ -197,7 +213,7 @@ public partial class LobbyPhase
             using var loading = LoadingWork.Begin("Loading player cars...");
             while (!cancellation.IsCancellationRequested)
             {
-                var identity = _players.Select(p => p.CarName).FirstOrDefault(id => !_carDetails.ContainsKey(id));
+                var identity = LobbyCarIdentities().FirstOrDefault(id => !_carDetails.ContainsKey(id));
                 if (identity is null) break;
                 CarDetails details;
                 try

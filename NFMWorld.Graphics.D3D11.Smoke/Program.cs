@@ -784,6 +784,14 @@ internal static unsafe class Program
 
         Report("PRESENT", "Present succeeds on the swapchain", presented);
 
+        var nextFrame = device.AcquireCommandBuffer();
+        ID3D11RenderTargetView* boundView = null;
+        device.Context->OMGetRenderTargets(1, &boundView, null);
+        var backBufferBound = boundView is not null && boundView == swapchain.ColorView;
+        D3D11Interop.Release(ref boundView);
+        device.Submit(nextFrame);
+        Report("PRESENT", "The next frame starts with the swapchain's color view bound", backBufferBound);
+
         swapchain.Resize(Width, Height);
         Report(
             "PRESENT",
@@ -1407,7 +1415,7 @@ internal static unsafe class Program
                 bool acrossY = (l >= 247 && r <= 8) || (l <= 8 && r >= 247);
                 bool acrossX = (u >= 247 && d <= 8) || (u <= 8 && d >= 247);
                 if (!acrossY && !acrossX) continue;
-                partial++;
+                partial ++;
                 sum += v;
             }
         }

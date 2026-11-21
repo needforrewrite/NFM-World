@@ -73,10 +73,62 @@ public class GameOrchestrator
     private bool _lobbyIsRunning = true;
 
     /// <summary>
+    /// Forwards race stats to the people who can view the running match in the lobby.
+    /// </summary>
+    public void ReportLiveState(RaceServer2Lobby_LiveState live)
+    {
+        if (!Guid.TryParse(live.MatchKey, out var matchKey)
+            || !_pendingMatches.TryGetValue(matchKey, out var pending))
+            return;
+
+        _transport.SendPacketToClients(
+            _players.All
+                .Where(entry => entry.Value.IsAuthenticated
+                                && entry.Value.AccountId > 0
+                                && !entry.Value.IsInGame
+                )
+                .Select(entry => entry.Key)
+                .ToArray(),
+            new S2C_SessionLiveState
+            {
+                SessionId = pending.SessionId,
+                Standings = live.State.Standings
+            }
+        );
+    }
+
+    /// <summary>
+    /// A game master's in-game chat line, relayed to everyone who can view the match lobby.
+    /// </summary>
+    public void ReportRaceChat(RaceServer2Lobby_Chat chat)
+    {
+        if (!Guid.TryParse(chat.MatchKey, out var matchKey)
+            || !_pendingMatches.TryGetValue(matchKey, out var pending))
+            return;
+
+        _chat.SendToSession(
+            pending.SessionId,
+            new S2C_LobbyChatMessage
+            {
+                SenderId = chat.SenderId,
+                Sender = chat.Sender,
+                Message = chat.Message,
+                Color = chat.Color
+            },
+            openToLobby: true
+        );
+    }
+
+    /// <summary>
     /// Turns a game master's result report into an archive report and sends it. Called from the
     /// /race-ended HTTP handler, which is the only place a trusted server proves itself.
     /// </summary>
-    public async Task<bool> ReportMatchResultsAsync(Guid matchKey, RaceResults results, CancellationToken ct)
+    public async Task<bool> ReportMatchResultsAsync(
+        Guid matchKey,
+        RaceResults results,
+        RaceLiveState? finalState,
+        CancellationToken ct
+    )
     {
         if (!_pendingMatches.TryRemove(matchKey, out var pending))
         {
@@ -92,6 +144,45 @@ public class GameOrchestrator
         var session = _sessions.Get(pending.SessionId);
         if (session is not null)
         {
+            var finalReadings = finalState?.Standings ?? [];
+            session.FinalStandings =
+            [
+                .. results.Standings
+                .Join(
+                    pending.Info.Players,
+                    standing => standing.PlayerId,
+                    slot => slot.Value.Id,
+                    (standing, slot) => (Standing: standing, Slot: slot)
+                )
+                .OrderBy(entry => entry.Standing.FinishPosition)
+                .Select(entry =>
+                    {
+                        var (standing, slot) = entry;
+                        var info = slot.Value;
+                        var reading = Array.Find(finalReadings, row => row.PlayerId == standing.PlayerId);
+                        return new SessionStanding
+                        {
+                            PlayerId = standing.PlayerId,
+                            PlayerName = info.PlayerName ?? "Player",
+                            CarName = info.CarName ?? "",
+                            Color = info.Color,
+                            IsBot = info.IsBot,
+                            Position = standing.FinishPosition,
+                            Dnf = standing.FinishTime is null,
+                            Slot = slot.Key,
+                            CarColors = info.CarColors,
+                            Lap = reading.Lap,
+                            TotalLaps = reading.TotalLaps,
+                            Wasted = reading.Wasted,
+                            PowerPercent = reading.PowerPercent,
+                            DamagePercent = reading.DamagePercent
+                        };
+                    }
+                )
+            ];
+            session.ClosesAtUnixMs = DateTimeOffset.UtcNow
+                .AddSeconds(SessionManager.FinishedLingerSeconds)
+                .ToUnixTimeMilliseconds();
             session.State = SessionState.Finished;
             foreach (var (_, id) in session.Players)
             {
@@ -99,6 +190,9 @@ public class GameOrchestrator
                 if (participant is not null)
                     participant.IsInGame = false;
             }
+
+            // The periodic loop no longer broadcasts unchanged state, so publish the finish now.
+            _broadcaster.BroadcastToAll();
         }
 
         if (_archive is not { CanReportResults: true })
@@ -200,22 +294,30 @@ public class GameOrchestrator
     {
         while (_lobbyIsRunning)
         {
-            _sessions.PruneFinished();
-            _broadcaster.BroadcastToAll();
+            // Other paths broadcast when they change something. This loop only has to cover
+            // the time-driven changes, or every client rebuilds the lobby every second.
+            var pruned = _sessions.PruneFinished();
             PollModeration();
 
-            foreach (var session in _sessions.CheckTimeouts())
+            var timedOut = _sessions.CheckTimeouts();
+            if (timedOut.Count > 0)
             {
-                _transport.SendPacketToClients(
-                    session.Players
-                        .Select(kv => _players.Get(kv.Value)?.ClientIndex ?? null)
-                        .Where(ci => ci.HasValue)
-                        .Select(ci => ci!.Value)
-                        .ToArray(),
-                    new S2C_RaceFailedToStart(),
-                    false
-                );
+                foreach (var session in timedOut)
+                {
+                    _transport.SendPacketToClients(
+                        session.Players
+                            .Select(kv => _players.Get(kv.Value)?.ClientIndex ?? null)
+                            .Where(ci => ci.HasValue)
+                            .Select(ci => ci!.Value)
+                            .ToArray(),
+                        new S2C_RaceFailedToStart(),
+                        false
+                    );
+                }
             }
+
+            if (pruned || timedOut.Count > 0)
+                _broadcaster.BroadcastToAll();
 
             Thread.Sleep(1000);
         }
@@ -375,6 +477,14 @@ public class GameOrchestrator
                 HandleJoinSession(e.ClientIndex, join);
                 break;
 
+            case C2S_KickGamePlayer kick:
+                HandleKickGamePlayer(e.ClientIndex, kick);
+                break;
+
+            case C2S_InviteGamePlayer invite:
+                HandleInviteGamePlayer(e.ClientIndex, invite);
+                break;
+
             case C2S_SpectateSession spectate:
                 _ = HandleSpectateSessionAsync(e.ClientIndex, spectate);
                 break;
@@ -393,6 +503,11 @@ public class GameOrchestrator
 
             case C2S_LobbyStartRace startRace:
                 _ = HandleStartRaceAsync(e.ClientIndex, startRace);
+                break;
+
+            case C2S_SetGameRule rule:
+                if (_sessions.SetGameRule(e.ClientIndex, rule.SessionId, rule.Name, rule.Value))
+                    _broadcaster.BroadcastToAll();
                 break;
 
             case C2S_ContentReady contentReady:
@@ -595,6 +710,9 @@ public class GameOrchestrator
         // is called off rather than racing a car nobody downloaded.
         if (client.InSession is { } session)
             InvalidatePreparation(session.SessionIndex, "A player changed their selection while the race was preparing.");
+
+        // The periodic loop no longer pushes unchanged state; a car/color change is a change.
+        _broadcaster.BroadcastToAll();
     }
 
     private void HandleCreateSession(uint clientId, C2S_CreateSession create)
@@ -634,16 +752,69 @@ public class GameOrchestrator
         var player = _players.Get(clientId);
         if (player is null || player.Banned) return;
 
-        var (joined, left) = _sessions.JoinSession(clientId, join.SessionId);
+        if (player.InSession?.SessionIndex == join.SessionId) return;
+
+        var (joined, left) = _sessions.JoinSession(clientId, join.SessionId, join.InviteId);
+        if (joined is null)
+        {
+            SendGameLobbyNotice(clientId, join.InviteId != Guid.Empty
+                ? "That invite is no longer available."
+                : "You can’t join this game. It may be full, started, or require an invite.");
+            return;
+        }
 
         if (left is not null)
             _chat.BroadcastSystem($"{player.Name} has left {left.CreatorName}'s session!");
 
-        if (joined is not null)
-            _chat.BroadcastSystem($"{player.Name} has joined {joined.CreatorName}'s session!");
+        _chat.BroadcastSystem($"{player.Name} has joined {joined.CreatorName}'s session!");
+        _chat.SendSystemToSession(joined.Id, $"{player.Name} joined the game.");
+
+        if (left is not null)
+            _chat.SendSystemToSession(left.Id, $"{player.Name} left the game.");
 
         _broadcaster.BroadcastToAll();
     }
+
+    private void HandleKickGamePlayer(uint clientId, C2S_KickGamePlayer kick)
+    {
+        if (!_sessions.KickGamePlayer(clientId, kick.SessionId, kick.PlayerId))
+        {
+            SendGameLobbyNotice(clientId, "That slot can no longer be removed.");
+            return;
+        }
+
+        if (_players.Get(kick.PlayerId) is { } removed)
+        {
+            SendGameLobbyNotice(removed.ClientIndex, "The host removed you from the game. You need a new invite to rejoin.");
+            _chat.SendSystemToSession(kick.SessionId, $"{removed.Name} was removed by the host.");
+        }
+
+        _broadcaster.BroadcastToAll();
+    }
+
+    private void HandleInviteGamePlayer(uint clientId, C2S_InviteGamePlayer request)
+    {
+        if (_players.Get(request.PlayerId) is not { } target
+            || _sessions.InviteGamePlayer(clientId, request.SessionId, request.PlayerId) is not { } invite)
+        {
+            SendGameLobbyNotice(
+                clientId,
+                "Could not send the invite. Check that the game has an open slot and the player is still online."
+            );
+            return;
+        }
+
+        _transport.SendPacketToClient(target.ClientIndex, new S2C_GameInvite
+        {
+            SessionId = request.SessionId,
+            InviteId = invite.Id,
+            CreatorName = invite.CreatorName,
+            ExpiresAtUnixMs = invite.ExpiresAtUnixMs
+        });
+    }
+
+    private void SendGameLobbyNotice(uint clientId, string message)
+        => _transport.SendPacketToClient(clientId, new S2C_GameLobbyNotice { Message = message });
 
     /// <summary>
     /// Sends a client to watch a race that is already running. The client is not put in the
@@ -667,7 +838,8 @@ public class GameOrchestrator
         {
             joinToken = await _gmClient.RegisterSpectatorAsync(pending.GameMaster, new Lobby2RaceServer_RegisterSpectator
             {
-                SessionToken = pending.SpectatorToken, PlayerId = player.Id, Name = player.Name, Color = player.Color
+                SessionToken = pending.SpectatorToken, PlayerId = player.Id, Name = player.Name, Color = player.Color,
+                Muted = player.Muted
             });
         }
         catch (Exception ex)
@@ -717,6 +889,7 @@ public class GameOrchestrator
             _chat.BroadcastSystem(
                 $"{player.Name} has left {(host ?? session.CreatorName)}'s session!"
             );
+            _chat.SendSystemToSession(session.Id, $"{player.Name} left the game.");
             _broadcaster.BroadcastToAll();
         }
     }
@@ -724,7 +897,7 @@ public class GameOrchestrator
     private void HandleChatMessage(uint clientId, C2S_LobbyChatMessage chat)
     {
         var player = _players.Get(clientId);
-        if (player is null || player.IsInGame)
+        if (player is null || player.IsInGame || player.Banned)
             return;
 
         if (chat.Message.StartsWith('/'))
@@ -739,7 +912,54 @@ public class GameOrchestrator
             return;
         }
 
-        _chat.SendChatMessage(player.Id, chat.Message);
+        var sessionId = chat.SessionId;
+        PendingMatch? runningMatch = null;
+        Guid matchKey = default;
+        if (sessionId != 0 && _sessions.Get(sessionId)?.State == SessionState.Started
+            && _sessionMatches.TryGetValue(sessionId, out matchKey))
+            _pendingMatches.TryGetValue(matchKey, out runningMatch);
+
+        if (sessionId != 0 && runningMatch is null && player.InSession?.SessionIndex != sessionId)
+            return;
+
+        var message = sessionId == 0 ? chat.Message : RaceChat.Normalize(chat.Message);
+        if (message.Length == 0)
+            return;
+
+        _chat.SendChatMessage(player.Id, message, sessionId, openToLobby: runningMatch is not null);
+        if (runningMatch is not null)
+            ForwardChatToRace(runningMatch, matchKey, player, message);
+    }
+
+    /// <summary>
+    /// Sends a match-lobby line into the running race, so racers see it. Only a game whose race
+    /// is live has a pending match; before that the line already lives in the lobby transcript.
+    /// </summary>
+    private void ForwardChatToRace(PendingMatch pending, Guid matchKey, PlayerRegistry.ClientInfo player, string message)
+    {
+        _ = Task.Run(
+            async () =>
+            {
+                try
+                {
+                    await _gmClient.SendChatAsync(
+                        pending.GameMaster,
+                        new Lobby2RaceServer_Chat
+                        {
+                            MatchKey = matchKey,
+                            SenderId = player.Id,
+                            Sender = player.Name,
+                            Message = message,
+                            Color = player.Color
+                        }
+                    );
+                }
+                catch (Exception ex)
+                {
+                    Logging.Warning($"[Lobby] Could not relay chat to the race: {ex.Message}");
+                }
+            }
+        );
     }
 
     /// <summary>
@@ -1064,6 +1284,7 @@ public class GameOrchestrator
             _chat.BroadcastSystem(
                 $"{session.CreatorName} has started the race on {session.StageName}!"
             );
+            _chat.SendSystemToSession(session.Id, "The race is starting. Good luck!");
 
             // The frozen roster when there was one: a member who joined after the snapshot has
             // no seat in the race that is being created.

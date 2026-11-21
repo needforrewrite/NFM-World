@@ -15,7 +15,10 @@ using NFMWorld.UI.ViewModels;
 using NFMWorld.Util;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Hud;
+using NFMWorldLibrary.Plugins;
 using NFMWorldLibrary.Util;
+using SignalsDotnet;
+using LobbyPage = NFMWorld.UI.ViewModels.UiState.LobbyPage;
 
 namespace NFMWorld;
 
@@ -69,6 +72,10 @@ public partial class WorldGame
             "stage-select-local" => new FixturePhase(StageSelectLocalFixture),
             "stage-select-compact" => new FixturePhase(StageSelectCompactFixture),
             "lobby-create" => new FixturePhase(LobbyCreateFixture),
+            "lobby-room" => new FixturePhase(LobbyRoomFixture),
+            "lobby-match" => new FixturePhase(() => LobbyMatchFixture()),
+            "lobby-match-live" => new FixturePhase(() => LobbyMatchFixture(2)),
+            "lobby-match-finished" => new FixturePhase(() => LobbyMatchFixture(3)),
             "main-menu" => new FixturePhase(() => MainMenuFixture(
                 config.TryGetProperty("signedIn", out var signedIn) && signedIn.GetBoolean(),
                 config.TryGetProperty("deletionPending", out var deletionPending)
@@ -354,6 +361,12 @@ public partial class WorldGame
                     if (!Find(step.GetProperty("target").GetString()!).IsHovered)
                         throw new InvalidOperationException($"Expected hovered target: {step}");
                     break;
+                case "assert-same-height":
+                    var firstPanel = Find(step.GetProperty("target").GetString()!);
+                    var secondPanel = Find(step.GetProperty("anchor").GetString()!);
+                    if (Math.Abs(firstPanel.LayoutBorderSize.Y - secondPanel.LayoutBorderSize.Y) > 1)
+                        throw new InvalidOperationException($"Expected panels to share the same height: {step}");
+                    break;
                 case "assert-aligned":
                     var popup = Find(step.GetProperty("target").GetString()!);
                     var anchor = Find(step.GetProperty("anchor").GetString()!);
@@ -361,6 +374,22 @@ public partial class WorldGame
                         throw new InvalidOperationException(
                             $"Popup X={popup.LayoutBorderPosition.X}, anchor X={anchor.LayoutBorderPosition.X}"
                         );
+                    break;
+                case "assert-pixel":
+                    var sampleNode = Find(step.GetProperty("target").GetString()!);
+                    var sampleX = (int)(sampleNode.LayoutBorderPosition.X + sampleNode.LayoutBorderSize.X
+                                        * step.GetProperty("u").GetSingle());
+                    var sampleY = (int)(sampleNode.LayoutBorderPosition.Y + sampleNode.LayoutBorderSize.Y
+                                        * step.GetProperty("v").GetSingle());
+                    if (game._device.HasBottomLeftFramebufferOrigin) sampleY = height - 1 - sampleY;
+                    game._device.ReadTexture(target.ColorTexture, sampleX, sampleY, 1, 1, pixels.AsSpan(0, 4));
+                    var rgb = step.GetProperty("rgb");
+                    var matchesColor = Math.Abs(pixels[0] - rgb[0].GetInt32()) <= 4
+                                       && Math.Abs(pixels[1] - rgb[1].GetInt32()) <= 4
+                                       && Math.Abs(pixels[2] - rgb[2].GetInt32()) <= 4;
+                    var excludeColor = step.TryGetProperty("exclude", out var exclude) && exclude.GetBoolean();
+                    if (matchesColor == excludeColor)
+                        throw new InvalidOperationException($"Unexpected pixel ({pixels[0]}, {pixels[1]}, {pixels[2]}): {step}");
                     break;
                 case "wait-visible":
                     var visibleName = step.GetProperty("target").GetString()!;
@@ -697,7 +726,7 @@ public partial class WorldGame
         var local = LobbyStageSelectionForHarness();
         lobby.SelectedStage.Value = local.FirstOrDefault()?.Id ?? "";
         LobbyStageSelection.ShowLocal(lobby.CreateStages, local, lobby.SelectedStage.Value);
-        lobby.ShowCreateDialog.Value = true;
+        lobby.Page.Value = LobbyPage.Create;
 
         return LobbyView.Build(
             new LobbyView.Actions(
@@ -708,9 +737,19 @@ public partial class WorldGame
                 Refresh: () => { },
                 SendChat: _ => { },
                 Back: () => { },
-                OpenCreate: () => { },
-                CloseCreate: () => { },
-                Select: _ => { },
+                OpenCreate: () => lobby.Page.Value = LobbyPage.Create,
+                CloseCreate: () => lobby.Page.Value = LobbyPage.Room,
+                OpenSession: id =>
+                {
+                    lobby.SelectedSessionId.Value = id;
+                    lobby.ViewedSessionId.Value = id;
+                    lobby.Page.Value = LobbyPage.Match;
+                },
+                CloseSession: () =>
+                {
+                    lobby.ViewedSessionId.Value = null;
+                    lobby.Page.Value = LobbyPage.Room;
+                },
                 Spectate: _ => { },
                 SetStage: stage =>
                 {
@@ -744,6 +783,9 @@ public partial class WorldGame
                 SetBots: value => lobby.BotCount.Value = value,
                 SetConfig: (name, value) => lobby.GamemodeConfig.Value =
                     new Dictionary<string, string>(lobby.GamemodeConfig.Value) { [name] = value },
+                SetGameRule: (_, _, _) => { },
+                KickGamePlayer: (_, _) => { },
+                InviteGamePlayer: (_, _) => { },
                 SetGamemode: id =>
                 {
                     lobby.SelectedGamemode.Value = id;
@@ -751,10 +793,343 @@ public partial class WorldGame
                 },
                 ChangeCar: () => { },
                 CopyCar: _ => { },
-                CopyColors: _ => { }
+                CopyColors: _ => { },
+                PreviewStage: _ => { }
             )
         );
     }
+
+    /// <summary>
+    /// The room page: a players rail, a games table, and room chat. Fixed data because the lobby
+    /// protocol is server work; this capture is about the layout and the row states.
+    /// </summary>
+    private static Node LobbyRoomFixture()
+    {
+        var lobby = SeedLobbyRoom();
+        lobby.Page.Value = LobbyPage.Room;
+        return LobbyView.Build(LobbyActions(lobby));
+    }
+
+    /// <summary>
+    /// A created game's match lobby: slots, status, game details and the game chat, including a
+    /// line forwarded out of the race.
+    /// </summary>
+    private static Node LobbyMatchFixture(uint? sessionId = null)
+    {
+        var lobby = SeedLobbyRoom();
+        var session = sessionId is { } id
+            ? lobby.Sessions.Value.First(candidate => candidate.Id == id)
+            : lobby.Sessions.Value[0];
+        lobby.SelectedSessionId.Value = session.Id;
+        lobby.ViewedSessionId.Value = session.Id;
+        lobby.Page.Value = LobbyPage.Match;
+        var previewName = new Signal<string?>(null);
+        var preview = new StageSelectState();
+        preview.DescriptionLines.Value = ["Keep the inside line at the final hall."];
+        return LobbyView.Build(
+            LobbyActions(lobby) with
+            {
+                PreviewStage = id =>
+                    previewName.Value = lobby.Sessions.Value.FirstOrDefault(candidate => candidate.Id == id)?.StageName
+            },
+            Sx.Show(
+                () => previewName.Value is not null,
+                () => LobbyView.StagePreviewWindow(
+                    () => previewName.Value!,
+                    preview,
+                    () => null,
+                    () => previewName.Value = null
+                )
+            )
+        );
+    }
+
+    private static UiState.LobbyState SeedLobbyRoom()
+    {
+        var lobby = UiState.Lobby;
+        lobby.Reset();
+        lobby.Connected.Value = true;
+        lobby.Status.Value = "Signed in as tiki";
+
+        var self = Guid.NewGuid();
+        var maxine = Guid.NewGuid();
+        var dr = Guid.NewGuid();
+
+        lobby.Players.Value =
+        [
+            new UiState.LobbyPlayer(self, "tiki", "The Awesome Radical One · Class X", new Color(0, 128, 255), true),
+            new UiState.LobbyPlayer(maxine, "maxine", "NFM 2 · Class A", new Color(255, 170, 50), false),
+            new UiState.LobbyPlayer(dr, "DR Monstaa", "Ancient · Class B", new Color(120, 220, 130), false)
+        ];
+
+        var open = new UiState.LobbySession(
+            1,
+            "tiki",
+            "The 45 Degree Gun Run",
+            2,
+            4,
+            NFMWorldLibrary.Multiplayer.SessionState.NotStarted,
+            IsMember: true,
+            IsCreator: true,
+            NFMWorldLibrary.Multiplayer.DefaultGamemodes.PvP,
+            "PvP",
+            [
+                new UiState.LobbySessionSetting(
+                    "Race constraint",
+                    "Both",
+                    new GamemodeConfigField(
+                        "constraint",
+                        "Race constraint",
+                        [new("Racing", "racing"), new("Wasting", "wasting"), new("Both", "both")]
+                    ),
+                    "both"
+                ),
+                new UiState.LobbySessionSetting("Converging walls", "Off")
+            ],
+            [
+                new UiState.LobbySessionSlot(
+                    0,
+                    "tiki",
+                    "The Awesome Radical One · Class X",
+                    new Color(0, 128, 255),
+                    [new Color(0, 128, 255)],
+                    false,
+                    false,
+                    true
+                ),
+                new UiState.LobbySessionSlot(
+                    1,
+                    "maxine",
+                    "NFM 2 · Class A",
+                    new Color(255, 170, 50),
+                    [new Color(255, 170, 50), new Color(30, 30, 30)],
+                    false,
+                    false,
+                    false
+                ),
+                new UiState.LobbySessionSlot(2, "Empty", "Waiting for player...", default, null, false, true, false),
+                new UiState.LobbySessionSlot(
+                    3,
+                    "Rusty",
+                    "Bot · Class C",
+                    new Color(190, 120, 90),
+                    null,
+                    true,
+                    false,
+                    false,
+                    PlayerId: Guid.NewGuid()
+                )
+            ],
+            [],
+            [],
+            0
+        );
+
+        var racing = new UiState.LobbySession(
+            2,
+            "maxine",
+            "The Hall without a Wall",
+            3,
+            4,
+            NFMWorldLibrary.Multiplayer.SessionState.Started,
+            IsMember: false,
+            IsCreator: false,
+            NFMWorldLibrary.Multiplayer.DefaultGamemodes.PvP,
+            "PvP",
+            [
+                new UiState.LobbySessionSetting("Race constraint", "Racing"),
+                new UiState.LobbySessionSetting("Converging walls", "3 min")
+            ],
+            [
+                new UiState.LobbySessionSlot(
+                    0,
+                    "maxine",
+                    "NFM 2 · Class A",
+                    new Color(255, 170, 50),
+                    [new Color(255, 170, 50)],
+                    false,
+                    false,
+                    false
+                ),
+                new UiState.LobbySessionSlot(
+                    1,
+                    "DR Monstaa",
+                    "Ancient · Class B",
+                    new Color(120, 220, 130),
+                    [new Color(120, 220, 130)],
+                    false,
+                    false,
+                    false
+                ),
+                new UiState.LobbySessionSlot(
+                    2,
+                    "tiki",
+                    "The Awesome Radical One · Class X",
+                    new Color(0, 128, 255),
+                    [new Color(0, 128, 255)],
+                    false,
+                    false,
+                    false
+                ),
+                new UiState.LobbySessionSlot(3, "Empty", "Waiting for player...", default, null, false, true, false)
+            ],
+            [
+                new UiState.LobbyStanding(maxine, "maxine", new Color(255, 170, 50), 0, 1, false, false, 3, 72, 45),
+                new UiState.LobbyStanding(dr, "DR Monstaa", new Color(120, 220, 130), 1, 1, false, false, 3, 33, 14),
+                new UiState.LobbyStanding(self, "tiki", new Color(0, 128, 255), 2, 0, true, false, 3, 20, 100)
+            ],
+            [],
+            0
+        );
+
+        var finished = new UiState.LobbySession(
+            3,
+            "DR Monstaa",
+            "The Hall without a Wall",
+            2,
+            4,
+            NFMWorldLibrary.Multiplayer.SessionState.Finished,
+            IsMember: false,
+            IsCreator: false,
+            NFMWorldLibrary.Multiplayer.DefaultGamemodes.PvP,
+            "PvP",
+            [
+                new UiState.LobbySessionSetting("Race constraint", "Racing"),
+                new UiState.LobbySessionSetting("Converging walls", "3 min")
+            ],
+            [
+                new UiState.LobbySessionSlot(
+                    0,
+                    "maxine",
+                    "NFM 2 · Class A",
+                    new Color(255, 170, 50),
+                    [new Color(255, 170, 50)],
+                    false,
+                    false,
+                    false
+                ),
+                new UiState.LobbySessionSlot(
+                    1,
+                    "DR Monstaa",
+                    "Ancient · Class B",
+                    new Color(120, 220, 130),
+                    [new Color(120, 220, 130)],
+                    false,
+                    false,
+                    false
+                ),
+                new UiState.LobbySessionSlot(
+                    2,
+                    "tiki",
+                    "The Awesome Radical One · Class X",
+                    new Color(0, 128, 255),
+                    [new Color(0, 128, 255)],
+                    false,
+                    false,
+                    false
+                )
+            ],
+            [],
+            [
+                new UiState.LobbyStanding(maxine, "maxine", new Color(255, 170, 50), 0, 3, false, false, 3, 91, 49),
+                new UiState.LobbyStanding(dr, "DR Monstaa", new Color(120, 220, 130), 1, 2, false, false, 3, 50, 95),
+                new UiState.LobbyStanding(self, "tiki", new Color(0, 128, 255), 2, 1, true, true, 3, 20, 100)
+            ],
+            DateTimeOffset.UtcNow.AddSeconds(45).ToUnixTimeMilliseconds()
+        );
+
+        lobby.NowUnixMs.Value = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        lobby.Sessions.Value = [open, racing, finished];
+        lobby.CurrentSession.Value = open;
+        List<UiState.LobbyChatLine> chat =
+        [
+            new UiState.LobbyChatLine(1, 0, Guid.Empty, "<System>", "tiki has joined the room.", default, true),
+            new UiState.LobbyChatLine(2, 0, maxine, "maxine", "anyone up for gun run?", new Color(255, 170, 50), false),
+            new UiState.LobbyChatLine(3, 1, self, "tiki", "made one, 2 slots free", new Color(0, 128, 255), false),
+            new UiState.LobbyChatLine(4, 1, maxine, "maxine", "joining", new Color(255, 170, 50), false),
+            new UiState.LobbyChatLine(5, 2, dr, "DR Monstaa", "that wall is closing fast", new Color(120, 220, 130), false)
+        ];
+
+        // Enough room lines that a chat pane which grows with its content would squeeze the
+        // games list; the room capture should show a scrolling transcript instead.
+        for (var i = 0; i < 30; i++)
+            chat.Add(new UiState.LobbyChatLine(100 + i, 0, self, "tiki", $"room message {i + 1}", new Color(0, 128, 255), false));
+
+        lobby.Chat.Value = chat;
+
+        return lobby;
+    }
+
+    private static LobbyView.Actions LobbyActions(UiState.LobbyState lobby)
+        => new(
+            Join: _ => { },
+            Leave: () => { },
+            StartRace: _ => { },
+            Create: () => { },
+            Refresh: () => { },
+            SendChat: message => lobby.Chat.Value =
+                [.. lobby.Chat.Value, new UiState.LobbyChatLine(
+                    99,
+                    lobby.Page.Value == LobbyPage.Match ? lobby.ViewedSessionId.Value ?? 0 : 0,
+                    Guid.Empty,
+                    "tiki",
+                    message,
+                    new Color(0, 128, 255),
+                    false
+                )],
+            Back: () => { },
+            OpenCreate: () => lobby.Page.Value = LobbyPage.Create,
+            CloseCreate: () => lobby.Page.Value = LobbyPage.Room,
+            OpenSession: id =>
+            {
+                lobby.SelectedSessionId.Value = id;
+                lobby.ViewedSessionId.Value = id;
+                lobby.Page.Value = LobbyPage.Match;
+            },
+            CloseSession: () =>
+            {
+                lobby.ViewedSessionId.Value = null;
+                lobby.Page.Value = LobbyPage.Room;
+            },
+            Spectate: _ => { },
+            SetStage: _ => { },
+            SetStageSearch: _ => { },
+            SetStageSource: _ => { },
+            SearchStagesOnline: _ => { },
+            SetMaxPlayers: value => lobby.MaxPlayers.Value = value,
+            SetBots: value => lobby.BotCount.Value = value,
+            SetConfig: (name, value) => lobby.GamemodeConfig.Value =
+                new Dictionary<string, string>(lobby.GamemodeConfig.Value) { [name] = value },
+            SetGameRule: (id, name, value) =>
+            {
+                var session = lobby.Sessions.Value.First(match => match.Id == id);
+                var settings = session.Settings.Select(setting =>
+                    {
+                        if (setting.Field is not { } field || field.Name != name) return setting;
+                        var choice = field.Choices.First(option => option.Value == value);
+                        return setting with { RawValue = value, Value = choice.Label };
+                    }
+                ).ToArray();
+                lobby.Sessions.Value = [.. lobby.Sessions.Value.Select(match =>
+                    match.Id == id ? match with { Settings = settings } : match)];
+            },
+            KickGamePlayer: (id, playerId) =>
+            {
+                var match = lobby.Sessions.Value.First(session => session.Id == id);
+                var slots = match.Slots.Select(slot => slot.PlayerId == playerId
+                    ? new UiState.LobbySessionSlot(slot.Slot, "Empty", "Waiting for player...", default, null, false, true, false)
+                    : slot).ToArray();
+                lobby.Sessions.Value = [.. lobby.Sessions.Value.Select(session => session.Id == id
+                    ? session with { Slots = slots, PlayerCount = slots.Count(slot => !slot.IsEmpty) }
+                    : session)];
+            },
+            InviteGamePlayer: (_, _) => { },
+            SetGamemode: id => lobby.SelectedGamemode.Value = id,
+            ChangeCar: () => { },
+            CopyCar: _ => { },
+            CopyColors: _ => { },
+            PreviewStage: _ => { }
+        );
 
     /// <summary>
     /// The local stage list exactly as the lobby builds it. The archive search is network work, so

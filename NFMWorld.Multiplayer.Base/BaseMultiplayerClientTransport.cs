@@ -31,6 +31,7 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
 
     /// <summary>True once the server confirmed it reads this build's wire version.</summary>
     public bool HandshakeAccepted { get; private set; }
+    public int? ServerProtocolVersion { get; private set; }
 
     /// <summary>
     /// Why the server refused this build, or null while it may still answer. Set on a refusal
@@ -60,6 +61,7 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
     {
         HandshakeAccepted = false;
         HandshakeError = null;
+        ServerProtocolVersion = null;
 
         var generation = Interlocked.Increment(ref _handshakeGeneration);
         SendHandshake();
@@ -112,6 +114,7 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
             return;
         }
 
+        ServerProtocolVersion = handshake.Version;
         if (handshake.Accepted && handshake.Version == Protocol.Version)
         {
             HandshakeAccepted = true;

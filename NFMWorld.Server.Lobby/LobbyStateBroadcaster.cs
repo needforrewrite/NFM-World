@@ -28,6 +28,7 @@ public class LobbyStateBroadcaster(
     /// <summary>Builds a <see cref="S2C_LobbyState"/> for a specific client.</summary>
     public S2C_LobbyState BuildSnapshot(Guid playerId)
     {
+        var accountId = players.Get(playerId)?.AccountId ?? 0;
         var playerList = new List<ServerSidePlayerInfo>();
         var sessionList = new List<S2C_LobbyState.GameSession>();
 
@@ -54,11 +55,10 @@ public class LobbyStateBroadcaster(
 
         foreach (var (_, session) in sessions.All)
         {
-            // Copy the live membership dictionary: the packet is serialized off-thread
-            // while joins and leaves mutate it.
+            // Copy the live membership dictionaries: the packet is serialized off-thread
+            // while joins and leaves mutate them.
             var players = new ConcurrentDictionary<byte, Guid>(session.Players);
-            foreach (var (slot, bot) in session.Bots)
-                players[slot] = bot.Id;
+            var bots = new Dictionary<byte, ServerSidePlayerInfo>(session.Bots);
 
             sessionList.Add(
                 new S2C_LobbyState.GameSession
@@ -69,7 +69,13 @@ public class LobbyStateBroadcaster(
                     StageName = session.StageName,
                     MaxPlayers = session.MaxPlayers,
                     Players = players,
-                    State = session.State
+                    State = session.State,
+                    Gamemode = session.Gamemode,
+                    GamemodeParameters = new Dictionary<string, string>(session.GamemodeParameters),
+                    Bots = bots,
+                    FinalStandings = [.. session.FinalStandings],
+                    ClosesAtUnixMs = session.ClosesAtUnixMs,
+                    RequiresInvite = session.RemovedAccounts.ContainsKey(accountId)
                 }
             );
         }

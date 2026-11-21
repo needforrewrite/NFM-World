@@ -6,6 +6,7 @@ using NFMWorldLibrary.Util;
 using SignalsDotnet;
 using NFMWorldLibrary.Hud;
 using NFMWorldLibrary.Multiplayer;
+using NFMWorldLibrary.Plugins;
 
 namespace NFMWorld.UI.ViewModels;
 
@@ -182,6 +183,14 @@ public static class UiState
         }
     }
 
+    /// <summary>The lobby's three full-area pages. The room players rail is always beside them.</summary>
+    public enum LobbyPage
+    {
+        Room,
+        Create,
+        Match
+    }
+
     /// <summary>
     /// Lobby state. The phase writes these from <c>GameTick</c>; the view only reads them, so a
     /// lobby packet updates just the slots that changed.
@@ -201,10 +210,21 @@ public static class UiState
         /// <summary>The session the local player is in, or null.</summary>
         public Signal<LobbySession?> CurrentSession { get; } = new(null);
 
-        /// <summary>The row the player has highlighted, which JOIN acts on.</summary>
+        /// <summary>The row the player has highlighted.</summary>
         public Signal<uint?> SelectedSessionId { get; } = new(null);
 
-        public Signal<bool> ShowCreateDialog { get; } = new(false);
+        /// <summary>Which full-area page is showing: the room, the create flow or a game.</summary>
+        public Signal<LobbyPage> Page { get; } = new(LobbyPage.Room);
+
+        /// <summary>The game the match view is showing, or null.</summary>
+        public Signal<uint?> ViewedSessionId { get; } = new(null);
+
+        /// <summary>
+        /// Unix ms updated a few times a second while a finished race is lingering, so a
+        /// countdown can tick without the server broadcasting the whole lobby every second.
+        /// </summary>
+        public Signal<long> NowUnixMs { get; } = new(0);
+
         public Signal<string> SelectedStage { get; } = new("");
 
         /// <summary>
@@ -238,7 +258,9 @@ public static class UiState
             Chat.Value = [];
             CurrentSession.Value = null;
             SelectedSessionId.Value = null;
-            ShowCreateDialog.Value = false;
+            Page.Value = LobbyPage.Room;
+            ViewedSessionId.Value = null;
+            NowUnixMs.Value = 0;
             CreateStages.Reset();
             BotCount.Value = 0;
             SelectedGamemode.Value = NFMWorldLibrary.Multiplayer.DefaultGamemodes.PvP;
@@ -264,11 +286,73 @@ public static class UiState
         int MaxPlayers,
         SessionState State,
         bool IsMember,
-        bool IsCreator
+        bool IsCreator,
+        string Gamemode,
+        string GamemodeLabel,
+        IReadOnlyList<LobbySessionSetting> Settings,
+        IReadOnlyList<LobbySessionSlot> Slots,
+        IReadOnlyList<LobbyStanding> LiveStandings,
+        IReadOnlyList<LobbyStanding> FinalStandings,
+        long ClosesAtUnixMs,
+        bool RequiresInvite = false
+    )
+    {
+        public int EmptySlots => Math.Max(0, MaxPlayers - PlayerCount);
+        public bool CanChat => IsMember || State == SessionState.Started;
+        public bool CanManage => IsCreator && IsMember && State == SessionState.NotStarted;
+    }
+
+    /// <summary>One row of the match lobby's live or final order.</summary>
+    public sealed record LobbyStanding(
+        Guid PlayerId,
+        string Name,
+        Color Color,
+        int Position,
+        int Lap,
+        bool Wasted,
+        bool Dnf,
+        int TotalLaps,
+        byte? PowerPercent,
+        byte? DamagePercent
     );
 
-    /// <summary>Id keys the row: two identical lines from one sender are still two lines.</summary>
-    public sealed record LobbyChatLine(long Id, Guid SenderId, string Sender, string Message, Color Color, bool IsSystem);
+    /// <summary>One gamemode option as the match view shows it, already labelled.</summary>
+    public sealed record LobbySessionSetting(
+        string Label,
+        string Value,
+        GamemodeConfigField? Field = null,
+        string? RawValue = null
+    );
+
+    /// <summary>
+    /// One slot in a game. Empty slots are kept so the match view draws the same grid the
+    /// lobby reserves, like the original game's waiting room.
+    /// </summary>
+    public sealed record LobbySessionSlot(
+        byte Slot,
+        string Name,
+        string Car,
+        Color Color,
+        IReadOnlyList<Color>? CarColors,
+        bool IsBot,
+        bool IsEmpty,
+        bool IsSelf,
+        Guid PlayerId = default
+    );
+
+    /// <summary>
+    /// Id keys the row: two identical lines from one sender are still two lines.
+    /// <see cref="SessionId"/> is zero for room chat and the game's id for match chat.
+    /// </summary>
+    public sealed record LobbyChatLine(
+        long Id,
+        uint SessionId,
+        Guid SenderId,
+        string Sender,
+        string Message,
+        Color Color,
+        bool IsSystem
+    );
 
     /// <summary>Garage car list and the selected car's stats.</summary>
     public sealed class GarageState

@@ -97,7 +97,9 @@ public abstract class BaseStageRenderingPhase : BasePhase
             GameSparker.CurrentMusic = _stageMusic;
     }
 
-    public override void Exit()
+    public override void Exit() => ExitStage(keepMusicPlaying: false);
+
+    protected void ExitStage(bool keepMusicPlaying)
     {
         _active = false;
         base.Exit();
@@ -107,7 +109,7 @@ public abstract class BaseStageRenderingPhase : BasePhase
 
         // Pause music while this phase is not displayed (buried in the stack).
         // Music is resumed in Enter() and unloaded in Dispose().
-        if (_stageMusic != null && ReferenceEquals(GameSparker.CurrentMusic, _stageMusic))
+        if (!keepMusicPlaying && _stageMusic != null && ReferenceEquals(GameSparker.CurrentMusic, _stageMusic))
             GameSparker.CurrentMusic = null;
     }
 
@@ -118,17 +120,28 @@ public abstract class BaseStageRenderingPhase : BasePhase
         if (disposing)
         {
             _disposed = true;
-            _stageCancellation?.Cancel();
-            _stageCancellation?.Dispose();
-            _musicRequest = null;
-            // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
-            CurrentStage?.Dispose();
-            CurrentStage = null!;
-
-            if (ReferenceEquals(GameSparker.CurrentMusic, _stageMusic)) GameSparker.CurrentMusic = null;
-            _stageMusic?.Dispose();
-            _stageMusic = null;
+            UnloadStage();
+            UnloadStageMusic();
         }
+    }
+
+    protected void UnloadStage()
+    {
+        _stageCancellation?.Cancel();
+        _stageCancellation?.Dispose();
+        _stageCancellation = null;
+        IsStageLoading = false;
+        CurrentStage?.Dispose();
+        CurrentStage = null;
+    }
+
+    protected void UnloadStageMusic()
+    {
+        _musicRequest = null;
+        if (_stageMusic != null && ReferenceEquals(GameSparker.CurrentMusic, _stageMusic))
+            GameSparker.CurrentMusic = null;
+        _stageMusic?.Dispose();
+        _stageMusic = null;
     }
 
     protected virtual void LoadStage(string stageName, bool loadMusic = true, bool reloadIfLoaded = false)
@@ -223,9 +236,7 @@ public abstract class BaseStageRenderingPhase : BasePhase
         _musicRequest = null;
         if (GetMusicTrack() is not { } track)
         {
-            if (ReferenceEquals(GameSparker.CurrentMusic, _stageMusic)) GameSparker.CurrentMusic = null;
-            _stageMusic?.Dispose();
-            _stageMusic = null;
+            UnloadStageMusic();
             return;
         }
 

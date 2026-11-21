@@ -27,6 +27,9 @@ public class RaceOrchestrator : IDisposable
     private readonly ConcurrentDictionary<uint, ClientInfo> _clients = new();
     private readonly IMultiplayerServerTransport _transport;
 
+    /// <summary>Reuse the connection pool for live standings and chat relays.</summary>
+    private static readonly HttpClient LobbyHttp = new() { Timeout = TimeSpan.FromSeconds(5) };
+
     // join token → (session, player index, player id, whether this token only watches)
     private readonly ConcurrentDictionary<Guid, (RaceSession Session, byte PlayerIndex, Guid ClientId, bool Spectator)>
         _joinTokens = new();
@@ -153,7 +156,6 @@ public class RaceOrchestrator : IDisposable
             }
 
             gm.GameTick();
-
             var snapshot = gm.GetStateSnapshot();
             if (!session.ResultsBroadcasted && snapshot is { IsFinished: true, IsProvisional: false, Results: { } results })
             {
@@ -167,7 +169,7 @@ public class RaceOrchestrator : IDisposable
                     reliable: true
                 );
 
-                ReportToLobby(session, results);
+                ReportToLobby(session, results, CaptureLiveState(session, gm));
 
                 // The race is over, so the gamemode and the plugin assembly behind it are
                 // done: release both now rather than holding them until shutdown. Sessions
@@ -178,6 +180,8 @@ public class RaceOrchestrator : IDisposable
                 session.Factory = null;
                 continue;
             }
+
+            ReportLiveStateIfDue(session, gm);
 
             // Players never arrived. Without this the race waits on them for the life of the
             // process, and every one of them sits on "waiting for other players to load".
@@ -284,7 +288,7 @@ public class RaceOrchestrator : IDisposable
     /// each player slot belongs to, so it composes the report to the archive; the game master
     /// deliberately has no archive key of its own.
     /// </summary>
-    private void ReportToLobby(RaceSession session, RaceResults results)
+    private void ReportToLobby(RaceSession session, RaceResults results, RaceLiveState? finalState = null)
     {
         var lobby = Environment.GetEnvironmentVariable("LOBBY_RESULTS_URL");
         if (string.IsNullOrEmpty(lobby))
@@ -297,7 +301,8 @@ public class RaceOrchestrator : IDisposable
             new RaceServer2Lobby_RaceResults
             {
                 MatchKey = session.MatchKey.ToString(),
-                Results = results
+                Results = results,
+                FinalState = finalState
             }
         );
 
@@ -452,31 +457,241 @@ public class RaceOrchestrator : IDisposable
     private void HandleRaceChat(uint clientIndex, C2S_RaceChat chat)
     {
         if (!TryFindSession(clientIndex, out var session, out var clientId)) return;
-        var player = session.PlayerInfos.Values.FirstOrDefault(p => p.Id == clientId);
-        if (player.Banned || player.Muted) return;
         var message = RaceChat.Normalize(chat.Message);
+        if (message.Length == 0) return;
         lock (session.ChatLock)
         {
-            var now = Environment.TickCount64;
-            if (session.LastChat.TryGetValue(clientId, out var last) && now - last < 500) return;
-            session.LastChat[clientId] = now;
-            var chatPlayer = session.PlayerInfos.Values.FirstOrDefault(p => p.Id == clientId);
+            var player = session.PlayerInfos.Values.FirstOrDefault(p => p.Id == clientId);
             var spectator = session.Spectators.TryGetValue(clientId, out var identity);
-            if (!spectator && chatPlayer.Id != clientId) return;
+            if (spectator ? identity.Muted : player.Id != clientId || player.Banned || player.Muted) return;
+
+            var senderId = spectator ? identity.PlayerId : clientId;
+            var now = Environment.TickCount64;
+            if (session.LastChat.TryGetValue(senderId, out var last) && now - last < 500) return;
+            session.LastChat[senderId] = now;
             var watching = spectator || session.PlayerWasted.TryGetValue(clientId, out var wasted) && wasted;
-            var name = spectator ? identity.Name : chatPlayer.PlayerName;
+            var name = spectator ? identity.Name : player.PlayerName;
             var packet = new S2C_RaceChat
             {
-                SenderId = clientId,
+                SenderId = senderId,
                 Sender = watching ? $"(SPEC) {name}" : name,
-                Color = spectator ? identity.Color : chatPlayer.Color,
+                Color = spectator ? identity.Color : player.Color,
                 Message = message,
                 MessageId = ++session.NextChatId
             };
             session.ChatHistory.Enqueue(packet);
             while (session.ChatHistory.Count > RaceChat.HistoryLimit) session.ChatHistory.Dequeue();
             _transport.SendPacketToClients(session.Clients.Keys.ToArray(), packet, reliable: true);
+            ReportChatToLobby(session, packet);
         }
+    }
+
+    /// <summary>
+    /// One match-lobby line arrives from the lobby. Racers see it, and it joins the race's
+    /// history, but it is not reported back - the lobby already typed it.
+    /// </summary>
+    public void HandleLobbyChat(Lobby2RaceServer_Chat chat)
+    {
+        var session = _sessions.Values.FirstOrDefault(s => s.MatchKey == chat.MatchKey);
+        if (session is null)
+            return;
+
+        var packet = new S2C_RaceChat
+        {
+            SenderId = chat.SenderId,
+            Sender = chat.Sender,
+            Message = RaceChat.Normalize(chat.Message),
+            Color = chat.Color
+        };
+        if (packet.Message.Length == 0)
+            return;
+
+        lock (session.ChatLock)
+        {
+            packet.MessageId = ++session.NextChatId;
+            session.ChatHistory.Enqueue(packet);
+            while (session.ChatHistory.Count > RaceChat.HistoryLimit) session.ChatHistory.Dequeue();
+            _transport.SendPacketToClients(session.Clients.Keys.ToArray(), packet, reliable: true);
+        }
+    }
+
+    /// <summary>How often a running race's order is pushed to the match lobby.</summary>
+    private const long LiveReportIntervalMs = 5000;
+
+    /// <summary>
+    /// Pushes the latest race stats to the match lobby every five seconds.
+    /// </summary>
+    private static void ReportLiveStateIfDue(RaceSession session, IServerGamemode gamemode)
+    {
+        if (!session.RaceStarted || session.ResultsBroadcasted)
+            return;
+
+        var now = Environment.TickCount64;
+        if (now - session.LastLiveReport < LiveReportIntervalMs)
+            return;
+
+        session.LastLiveReport = now;
+        PostToLobby(
+            "/race-live",
+            "LOBBY_LIVE_URL",
+            TightPackSerializer.Serialize(
+                new RaceServer2Lobby_LiveState
+                {
+                    MatchKey = session.MatchKey.ToString(),
+                    State = CaptureLiveState(session, gamemode)
+                }
+            )
+        );
+    }
+
+    private static RaceLiveState CaptureLiveState(RaceSession session, IServerGamemode gamemode)
+    {
+        var standings = (gamemode as PluginServerGamemode)?.GetLiveState()?.Standings;
+        lock (session.ChatLock)
+        {
+            standings ??= StandingsFromFrames(session);
+            return new RaceLiveState
+            {
+                Standings = [.. standings.Select(standing =>
+                    {
+                        var hasFrame = session.CarReadings.TryGetValue(standing.PlayerId, out var reading);
+                        var maxDamage = session.CarDamageLimits.GetValueOrDefault(standing.CarName);
+                        return standing with
+                    {
+                        TotalLaps = session.Stage?.Nlaps ?? 0,
+                        Wasted = hasFrame ? session.PlayerWasted.GetValueOrDefault(standing.PlayerId)
+                            : standing.Wasted && !standing.Forfeited,
+                        PowerPercent = hasFrame ? reading.Power : null,
+                        DamagePercent = hasFrame && maxDamage > 0
+                            ? (byte)Math.Round(Math.Clamp(reading.Damage * 100d / maxDamage, 0, 100))
+                            : null
+                    };
+                    }
+                )]
+            };
+        }
+    }
+
+    private static RaceLiveStanding[] StandingsFromFrames(RaceSession session)
+        => [.. session.PlayerInfos.OrderBy(slot => slot.Key).Select(slot =>
+            {
+                var player = slot.Value;
+                session.CarReadings.TryGetValue(player.Id, out var reading);
+                return new RaceLiveStanding
+            {
+                PlayerId = player.Id,
+                PlayerName = player.PlayerName,
+                CarName = player.CarName,
+                Color = player.Color,
+                IsBot = player.IsBot,
+                Position = 0,
+                Lap = reading.Lap,
+                Checkpoint = reading.Checkpoint,
+                Wasted = session.PlayerWasted.GetValueOrDefault(player.Id),
+                Forfeited = session.Departures.ContainsKey(player.Id)
+            };
+            }
+        )
+            .OrderBy(standing => standing.Wasted || standing.Forfeited)
+            .ThenByDescending(standing => standing.Lap)
+            .ThenByDescending(standing => standing.Checkpoint)
+            .ThenBy(standing => DistanceToCheckpoint(session, standing))
+            .Select((standing, index) => standing with { Position = index })];
+
+    private static double DistanceToCheckpoint(RaceSession session, RaceLiveStanding standing)
+    {
+        if (session.Stage is not { } stage || standing.Checkpoint >= stage.Checkpoints.Count
+            || !session.PlayerPositions.TryGetValue(standing.PlayerId, out var position))
+            return double.PositiveInfinity;
+
+        var target = stage.Checkpoints[standing.Checkpoint].Position;
+        var dx = (double)position.X - (double)target.X;
+        var dz = (double)position.Z - (double)target.Z;
+        return dx * dx + dz * dz;
+    }
+
+    /// <summary>Relays a race chat line to the lobby's game transcript.</summary>
+    private static void ReportChatToLobby(RaceSession session, S2C_RaceChat chat)
+        => PostToLobby(
+            "/race-chat",
+            "LOBBY_CHAT_URL",
+            TightPackSerializer.Serialize(
+                new RaceServer2Lobby_Chat
+                {
+                    MatchKey = session.MatchKey.ToString(),
+                    SenderId = chat.SenderId,
+                    Sender = chat.Sender,
+                    Message = chat.Message,
+                    Color = chat.Color
+                }
+            )
+        );
+
+    /// <summary>
+    /// Posts one signed, versioned body to the lobby. The endpoint comes from the matching
+    /// override variable, or the results URL's origin plus <paramref name="path"/>.
+    /// </summary>
+    private static void PostToLobby(string path, string overrideVariable, byte[] body)
+    {
+        var endpoint = Environment.GetEnvironmentVariable(overrideVariable);
+        if (string.IsNullOrEmpty(endpoint))
+        {
+            var results = Environment.GetEnvironmentVariable("LOBBY_RESULTS_URL");
+            if (string.IsNullOrEmpty(results) || !Uri.TryCreate(results, UriKind.Absolute, out var resultsUri))
+                return;
+            endpoint = new Uri(resultsUri.GetLeftPart(UriPartial.Authority) + path).ToString();
+        }
+
+        var keyId = Environment.GetEnvironmentVariable("HMAC_KEY_ID") ?? "primary";
+        var secretText = Environment.GetEnvironmentVariable("HMAC_SECRET_KEY");
+        if (string.IsNullOrEmpty(secretText))
+        {
+            Logging.Warning("[GM] HMAC_SECRET_KEY is not configured; the lobby relay is off.");
+            return;
+        }
+
+        byte[] secret;
+        try
+        {
+            secret = Convert.FromBase64String(secretText);
+        }
+        catch (FormatException)
+        {
+            Logging.Warning("[GM] HMAC_SECRET_KEY is not valid base64; the lobby relay is off.");
+            return;
+        }
+
+        var auth = HmacAuth.SignWithNonce(
+            "POST",
+            path,
+            body,
+            keyId,
+            secret,
+            Guid.NewGuid().ToString("N")
+        );
+
+        _ = Task.Run(
+            async () =>
+            {
+                try
+                {
+                    using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
+                    {
+                        Content = new ByteArrayContent(body)
+                    };
+                    request.Headers.Authorization = System.Net.Http.Headers.AuthenticationHeaderValue.Parse(auth);
+                    request.Headers.Add(Protocol.HeaderName, Protocol.Version.ToString());
+
+                    using var response = await LobbyHttp.SendAsync(request);
+                    if (!response.IsSuccessStatusCode)
+                        Logging.Warning($"[GM] Lobby rejected {path}: {(int)response.StatusCode}");
+                }
+                catch (Exception ex)
+                {
+                    Logging.Warning($"[GM] Could not post {path} to the lobby: {ex.Message}");
+                }
+            }
+        );
     }
 
     private void HandleClientEvent(uint clientIndex, C2S_ClientEvent clientEvent)
@@ -607,6 +822,8 @@ public class RaceOrchestrator : IDisposable
             )) return;
             session.PlayerPositions[reportedId] = new f64Vector3(pos.X, pos.Y, pos.Z);
             session.PlayerWasted[reportedId] = frame.TheBitFlags.Wasted;
+            session.CarReadings[reportedId] = (frame.RacePosition.Lap, frame.RacePosition.CheckpointInlap,
+                (byte)Math.Round(Math.Clamp((float)frame.Power, 0, 100)), frame.Damage);
             if (newlyWasted && RaceWastedTracker.Message(session.PlayerInfos, reportedId, playerState.State
                 .DamageSource
             ) is { } message)
@@ -639,6 +856,7 @@ public class RaceOrchestrator : IDisposable
         session.ChatHistory.Enqueue(announcement);
         while (session.ChatHistory.Count > RaceChat.HistoryLimit) session.ChatHistory.Dequeue();
         _transport.SendPacketToClients(session.Clients.Keys.ToArray(), announcement, reliable: true);
+        ReportChatToLobby(session, announcement);
     }
 
     /// <summary>Rejects state that could freeze a receiving client's physics loops.</summary>
@@ -702,13 +920,34 @@ public class RaceOrchestrator : IDisposable
         var session = entry.Session;
         lock (session.ChatLock)
         {
-            if (session.SpectatorTokens.TryGetValue(request.PlayerId, out var existing)) return existing;
+            var identity = (request.PlayerId, request.Name, request.Color, request.Muted);
+            if (session.SpectatorTokens.TryGetValue(request.PlayerId, out var existing)
+                && _joinTokens.TryGetValue(existing, out var registered))
+            {
+                session.Spectators[registered.ClientId] = identity;
+                return existing;
+            }
+
             var token = Guid.NewGuid();
             var spectatorId = Guid.NewGuid();
-            session.SpectatorTokens.Add(request.PlayerId, token);
-            session.Spectators.Add(spectatorId, (request.Name, request.Color));
+            session.SpectatorTokens[request.PlayerId] = token;
+            session.Spectators.Add(spectatorId, identity);
             _joinTokens.TryAdd(token, (session, 0, spectatorId, true));
             return token;
+        }
+    }
+
+    private static int ReadMaxDamage(string carName)
+    {
+        try
+        {
+            var model = BackendGameSparker.FindLoadedCar(carName)
+                        ?? RadpackReader.TryReadModel(carName, RadpackType.Car, out _);
+            return model?.Stats.Maxmag ?? 0;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException)
+        {
+            return 0;
         }
     }
 
@@ -722,6 +961,10 @@ public class RaceOrchestrator : IDisposable
 
         EnsureContentPrepared(raceParams.MatchGameplayInfo);
 
+        var damageLimits = raceParams.MatchGameplayInfo.Players.Values.Select(player => player.CarName)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(name => name, ReadMaxDamage, StringComparer.OrdinalIgnoreCase);
+
         var sessionId = Interlocked.Increment(ref _sessionIdCounter);
         var joinTokens = new Dictionary<byte, Guid>();
 
@@ -734,6 +977,7 @@ public class RaceOrchestrator : IDisposable
             PlayerCount = raceParams.MatchGameplayInfo.Players.Values.Count(p => !p.IsBot && !p.Banned),
             Clients = [],
             PlayerInfos = raceParams.MatchGameplayInfo.Players,
+            CarDamageLimits = damageLimits,
             Gamemode = raceParams.MatchGameplayInfo.Gamemode,
             // From creation, not from the first load: a race whose players never reach this
             // server at all would otherwise wait on them forever.
@@ -887,7 +1131,7 @@ public class RaceOrchestrator : IDisposable
         public RaceWastedTracker WastedTracker { get; } = new();
         public ConcurrentDictionary<Guid, S2C_PlayerLeft> Departures { get; } = new();
         public long NextChatId;
-        public Dictionary<Guid, (string Name, Color3 Color)> Spectators { get; } = [];
+        public Dictionary<Guid, (Guid PlayerId, string Name, Color3 Color, bool Muted)> Spectators { get; } = [];
         public Dictionary<Guid, Guid> SpectatorTokens { get; } = [];
 
         /// <summary>
@@ -908,9 +1152,14 @@ public class RaceOrchestrator : IDisposable
         public ConcurrentDictionary<Guid, bool> PlayerWasted { get; set; } = [];
 
         public IDictionary<byte, ServerSidePlayerInfo> PlayerInfos { get; set; } = new Dictionary<byte, ServerSidePlayerInfo>();
+        public Dictionary<string, int> CarDamageLimits { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<Guid, (byte Lap, ushort Checkpoint, byte Power, int Damage)> CarReadings { get; } = [];
 
         /// <summary>Set once every player has loaded and the gamemode has been started.</summary>
         public bool RaceStarted { get; set; }
+
+        /// <summary>Tick timestamp of the last live order pushed to the lobby.</summary>
+        public long LastLiveReport { get; set; }
 
         public bool ResultsBroadcasted { get; set; }
 

@@ -88,6 +88,102 @@ public class LobbySessionOwnershipTests
         Assert.IsTrue(sessions.StartRace(2, shared.Id), "the remaining player has to be able to start");
     }
 
+    [TestMethod]
+    public void OnlyTheCreatorCanChangeGameRulesBeforeStarting()
+    {
+        var (sessions, players, creator) = Create();
+        var guest = players.GetOrAdd(2, ClientState.Connected);
+        var session = sessions.CreateSession(
+            creator.ClientIndex,
+            "nfmm/road",
+            4,
+            DefaultGamemodes.PvP,
+            new Dictionary<string, string> { ["constraint"] = "both", ["walls"] = "off" }
+        )!;
+        Assert.IsNotNull(sessions.JoinSession(guest.ClientIndex, session.Id).Joined);
+
+        Assert.IsFalse(sessions.SetGameRule(guest.ClientIndex, session.Id, "constraint", "wasting"));
+        Assert.IsFalse(sessions.SetGameRule(creator.ClientIndex, session.Id, "unknown", "on"));
+        Assert.IsTrue(sessions.SetGameRule(creator.ClientIndex, session.Id, "constraint", "racing"));
+        Assert.AreEqual("racing", session.GamemodeParameters["constraint"]);
+        Assert.AreEqual("off", session.GamemodeParameters["walls"]);
+        Assert.AreEqual(2, session.Players.Count);
+
+        Assert.IsTrue(sessions.StartRace(creator.ClientIndex, session.Id));
+        Assert.IsFalse(sessions.SetGameRule(creator.ClientIndex, session.Id, "constraint", "wasting"));
+        Assert.AreEqual("racing", session.GamemodeParameters["constraint"]);
+    }
+
+    [TestMethod]
+    public void RemovedAccountNeedsAValidInviteEvenAfterReconnecting()
+    {
+        var (sessions, players, creator) = Create();
+        var guest = players.GetOrAdd(2, ClientState.Connected);
+        guest.AccountId = 42;
+        guest.IsAuthenticated = true;
+        var game = sessions.CreateSession(creator.ClientIndex, "nfmm/road", 4, DefaultGamemodes.PvP)!;
+        Assert.IsNotNull(sessions.JoinSession(guest.ClientIndex, game.Id).Joined);
+        Assert.IsFalse(sessions.KickGamePlayer(guest.ClientIndex, game.Id, guest.Id));
+        Assert.IsFalse(sessions.KickGamePlayer(creator.ClientIndex, game.Id, creator.Id));
+        Assert.IsTrue(sessions.KickGamePlayer(creator.ClientIndex, game.Id, guest.Id));
+        Assert.IsNull(guest.InSession);
+
+        Assert.IsTrue(players.TryRemove(guest.ClientIndex, out _));
+        var reconnected = players.GetOrAdd(3, ClientState.Connected);
+        reconnected.AccountId = guest.AccountId;
+        reconnected.IsAuthenticated = true;
+        var otherGame = sessions.CreateSession(reconnected.ClientIndex, "nfmm/other", 4, DefaultGamemodes.PvP)!;
+        var broadcaster = new LobbyStateBroadcaster(new StubTransport(), players, sessions);
+        Assert.IsTrue(
+            broadcaster.BuildSnapshot(reconnected.Id).ActiveSessions.Single(session => session.Id == game.Id).RequiresInvite
+        );
+        Assert.IsNull(sessions.JoinSession(reconnected.ClientIndex, game.Id).Joined);
+        Assert.AreEqual(otherGame.Id, reconnected.InSession!.Value.SessionIndex);
+
+        var invitation = sessions.InviteGamePlayer(creator.ClientIndex, game.Id, reconnected.Id);
+        Assert.IsNotNull(invitation);
+        Assert.IsNull(sessions.JoinSession(reconnected.ClientIndex, game.Id).Joined);
+        var otherPlayer = players.GetOrAdd(4, ClientState.Connected);
+        otherPlayer.AccountId = 43;
+        Assert.IsNull(sessions.JoinSession(otherPlayer.ClientIndex, game.Id, invitation.Value.Id).Joined);
+
+        Assert.AreSame(game, sessions.JoinSession(reconnected.ClientIndex, game.Id, invitation.Value.Id).Joined);
+        Assert.IsFalse(
+            broadcaster.BuildSnapshot(reconnected.Id).ActiveSessions.Single(session => session.Id == game.Id).RequiresInvite
+        );
+        sessions.LeaveSession(reconnected.ClientIndex, game.Id);
+        Assert.IsNull(sessions.JoinSession(reconnected.ClientIndex, game.Id, invitation.Value.Id).Joined);
+        Assert.AreSame(game, sessions.JoinSession(reconnected.ClientIndex, game.Id).Joined);
+    }
+
+    [TestMethod]
+    public void CreatorCanRemoveBotsAndInviteOnlyWhileGameIsOpen()
+    {
+        var (sessions, players, creator) = Create();
+        var guest = players.GetOrAdd(2, ClientState.Connected);
+        guest.AccountId = 42;
+        guest.IsAuthenticated = true;
+        var game = sessions.CreateSession(creator.ClientIndex, "nfmm/road", 2, DefaultGamemodes.PvP, bots: 1)!;
+        var bot = game.Bots.Values.Single();
+        Assert.IsNull(sessions.InviteGamePlayer(creator.ClientIndex, game.Id, guest.Id));
+        Assert.IsFalse(sessions.KickGamePlayer(guest.ClientIndex, game.Id, bot.Id));
+        Assert.IsTrue(sessions.KickGamePlayer(creator.ClientIndex, game.Id, bot.Id));
+        Assert.IsEmpty(game.Bots);
+        Assert.AreEqual(0, game.BotCount);
+
+        var invitation = sessions.InviteGamePlayer(creator.ClientIndex, game.Id, guest.Id);
+        Assert.IsNotNull(invitation);
+        var otherPlayer = players.GetOrAdd(3, ClientState.Connected);
+        Assert.AreSame(game, sessions.JoinSession(otherPlayer.ClientIndex, game.Id).Joined);
+        Assert.IsNull(sessions.JoinSession(guest.ClientIndex, game.Id, invitation.Value.Id).Joined);
+        sessions.LeaveSession(otherPlayer.ClientIndex, game.Id);
+
+        Assert.IsTrue(sessions.StartRace(creator.ClientIndex, game.Id));
+        Assert.IsNull(sessions.InviteGamePlayer(creator.ClientIndex, game.Id, guest.Id));
+        Assert.IsNull(sessions.JoinSession(guest.ClientIndex, game.Id, invitation.Value.Id).Joined);
+        Assert.IsFalse(sessions.KickGamePlayer(creator.ClientIndex, game.Id, guest.Id));
+    }
+
     /// <summary>
     /// Creating a second game without leaving the first. The first kept the creator's slot and
     /// their id, so after a restart it was still listed and joinable while nobody could start it.
@@ -108,6 +204,26 @@ public class LobbySessionOwnershipTests
         sessions.PruneFinished();
         Assert.IsNull(sessions.Get(first.Id));
         Assert.IsNotNull(sessions.Get(second.Id));
+    }
+
+    /// <summary>
+    /// A finished race is still worth looking at: it stays listed until its close deadline,
+    /// then the pruner drops it.
+    /// </summary>
+    [TestMethod]
+    public void FinishedSession_LingersUntilItsCloseDeadline()
+    {
+        var (sessions, _, _) = Create();
+        var session = sessions.CreateSession(1, "nfmm/road", 4, DefaultGamemodes.PvP)!;
+        session.State = SessionState.Finished;
+        session.ClosesAtUnixMs = DateTimeOffset.UtcNow.AddSeconds(30).ToUnixTimeMilliseconds();
+
+        sessions.PruneFinished();
+        Assert.IsNotNull(sessions.Get(session.Id), "a finished race with placings must stay viewable");
+
+        session.ClosesAtUnixMs = DateTimeOffset.UtcNow.AddSeconds(-1).ToUnixTimeMilliseconds();
+        sessions.PruneFinished();
+        Assert.IsNull(sessions.Get(session.Id), "an expired finished race is dropped");
     }
 
     /// <summary>

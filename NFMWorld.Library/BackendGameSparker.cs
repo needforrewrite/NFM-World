@@ -86,11 +86,17 @@ public static class BackendGameSparker
 #endif
 
 #if DEBUG
-        // mount live project path for debug
-        if (ProjectUtils.TryGetProjectDirectory() is { } projectDirectory)
+        if (!OperatingSystem.IsBrowser()
+            && (ProjectUtils.TryGetSolutionDirectory() ?? ProjectUtils.TryGetSolutionDirectory(AppContext.BaseDirectory))
+            is { } solutionDirectory)
         {
-            VFS.MountDirectory(projectDirectory);
-            VFS.MountDirectory(Path.GetFullPath(Path.Combine(projectDirectory, "..", "NFMWorld.Library")));
+            var clientDirectory = Path.Combine(solutionDirectory, "nfm-world");
+            if (!isHeadless && Directory.Exists(clientDirectory))
+                VFS.MountDirectory(clientDirectory);
+
+            var libraryDirectory = Path.Combine(solutionDirectory, "NFMWorld.Library");
+            if (Directory.Exists(libraryDirectory))
+                VFS.MountDirectory(libraryDirectory);
         }
 
 #endif

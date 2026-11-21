@@ -15,23 +15,71 @@ public class ChatManager(IMultiplayerServerTransport transport, PlayerRegistry p
         packet
     );
 
-    /// <summary>Sends a chat message from a client to all lobby clients.</summary>
-    public void SendChatMessage(Guid senderId, string message)
+    /// <summary>
+    /// Sends a chat message from a client. Room chat (session zero) reaches the whole lobby;
+    /// a running game's chat can also reach the people viewing its match lobby.
+    /// </summary>
+    public void SendChatMessage(Guid senderId, string message, uint sessionId, bool openToLobby = false)
     {
         var sender = players.Get(senderId);
         if (sender is not { IsAuthenticated: true, AccountId: > 0 }) return;
 
-        Broadcast(
+        if (sessionId == 0)
+        {
+            Broadcast(
+                new S2C_LobbyChatMessage
+                {
+                    SenderId = senderId,
+                    Sender = sender.Name,
+                    Message = message,
+                    Color = sender.Color
+                }
+            );
+            return;
+        }
+
+        if (!openToLobby && sender.InSession?.SessionIndex != sessionId)
+            return;
+
+        SendToSession(
+            sessionId,
             new S2C_LobbyChatMessage
             {
                 SenderId = senderId,
                 Sender = sender.Name,
-                Message = message
-            }
+                Message = message,
+                SessionId = sessionId,
+                Color = sender.Color
+            },
+            openToLobby
         );
     }
 
-    /// <summary>Broadcasts a system message (e.g., join/leave announcements).</summary>
+    /// <summary>
+    /// Relays a line tagged with its match, which the client uses to select its transcript.
+    /// </summary>
+    public void SendToSession(uint sessionId, S2C_LobbyChatMessage message, bool openToLobby = false)
+    {
+        message.SessionId = sessionId;
+        if (openToLobby)
+        {
+            Broadcast(message);
+            return;
+        }
+
+        transport.SendPacketToClients(
+            players.All
+                .Where(p => p.Value.IsAuthenticated
+                            && p.Value.AccountId > 0
+                            && p.Value.InSession?.SessionIndex == sessionId
+                )
+                .Select(p => p.Key)
+                .ToArray(),
+            message
+        );
+    }
+
+    /// <summary>Broadcasts a system message (e.g., join/leave announcements) to the room.</summary>
     public void BroadcastSystem(string message)
     {
         Broadcast(
@@ -43,6 +91,18 @@ public class ChatManager(IMultiplayerServerTransport transport, PlayerRegistry p
             }
         );
     }
+
+    /// <summary>A system line in one game's match transcript.</summary>
+    public void SendSystemToSession(uint sessionId, string message)
+        => SendToSession(
+            sessionId,
+            new S2C_LobbyChatMessage
+            {
+                SenderId = Guid.Empty,
+                Sender = "<System>",
+                Message = message
+            }
+        );
 
     /// <summary>A moderation notice to a single client.</summary>
     public void SendNotice(Guid playerId, string message, bool fatal = false)

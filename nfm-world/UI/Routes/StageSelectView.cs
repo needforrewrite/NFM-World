@@ -1,5 +1,6 @@
 ﻿using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
+using System.Numerics;
 using NFMWorld.Reactor;
 using NFMWorld.Reactor.Sx;
 using NFMWorld.UI.Components;
@@ -455,18 +456,78 @@ public static class StageSelectView
         );
     }
 
+    internal static Node ReadOnlyPreview(StageSelectState state, Func<IImage?> image)
+        => Sx.View(
+            name: () => "Lobby stage preview",
+            style: () => Sx.Styles(
+                position: Position.Relative,
+                flexGrow: 1,
+                minHeight: 0,
+                alignItems: Align.Center,
+                justifyContent: Justify.Center,
+                backgroundColor: new Color(6, 14, 30, 255),
+                overflow: Overflow.Hidden
+            ),
+            children:
+            [
+                new PreviewImage(image)
+                {
+                    Styles = Sx.Styles(
+                        position: Position.Absolute,
+                        left: 0,
+                        top: 0,
+                        right: 0,
+                        bottom: 0,
+                        pointerEvents: false
+                    )
+                },
+                FloatingDescription(state, bottom: 24),
+                Sx.Show(() => state.Busy.Value, () => new LoadingSpinner
+                {
+                    Radius = 16,
+                    Styles = Sx.Styles(width: 48, height: 48, flexShrink: 0)
+                }),
+                Sx.Show(() => state.Status.Value.Length > 0, () => Sx.Text(
+                    style: () => Sx.WrappingText(
+                        fontSize: 13,
+                        foregroundColor: Theme.MenuTextBlue,
+                        horizontalAlignment: TextHorizontalAlignment.Center
+                    ),
+                    layout: () => Sx.Styles(width: 90.Percent()),
+                    text: () => state.Status.Value
+                ))
+            ]
+        );
+
+    private sealed class PreviewImage(Func<IImage?> image) : Component
+    {
+        protected override void RenderContent(Vector2 position, Vector2 size)
+        {
+            if (image() is not { } frame || size.X <= 0 || size.Y <= 0) return;
+            var scale = Math.Min(size.X / frame.Width, size.Y / frame.Height);
+            var displayedSize = new Vector2(frame.Width, frame.Height) * scale;
+            TheGraphics.G.DrawImageTransformed(
+                frame,
+                position + (size - displayedSize) / 2,
+                new Vector2(displayedSize.X, 0),
+                new Vector2(0, displayedSize.Y),
+                Color.White
+            );
+        }
+    }
+
     /// <summary>
     /// phy's stage briefing: the <c>desc()</c> lines float over the course preview with no panel
     /// behind them, so the stage itself stays the backdrop. Lines are positional (a blank line
     /// spaces the block out), hence one slot each rather than a keyed list.
     /// </summary>
-    private static Node FloatingDescription(StageSelectState state)
+    private static Node FloatingDescription(StageSelectState state, float bottom = 104)
         => Sx.View(
             name: () => "Stage floating description",
             style: () => Sx.Styles(
                 position: Position.Absolute,
                 left: 34,
-                bottom: 104 + state.DescriptionFloat.Value,
+                bottom: bottom + state.DescriptionFloat.Value,
                 width: 460,
                 maxWidth: 46.Percent(),
                 flexDirection: FlexDirection.Column,

@@ -270,6 +270,7 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         }
 
         var commandBuffer = _commandBuffer ??= new D3D11CommandBuffer(this);
+        commandBuffer.RestoreBackBufferBinding();
         _activeCommandBuffer = commandBuffer;
         return commandBuffer;
     }

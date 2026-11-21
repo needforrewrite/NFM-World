@@ -1,0 +1,27 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-lobby-match-captures",
+  "view": "lobby-match",
+  "steps": [
+    { "action": "capture", "capture": "match" },
+    { "action": "assert-visible", "target": "Lobby match slots" },
+    { "action": "assert-visible", "target": "Lobby match chat" },
+    { "action": "assert-visible", "target": "Lobby match start" },
+    { "action": "assert-visible", "target": "Lobby match leave" },
+    { "action": "hover", "target": "Lobby match leave", "capture": "leave-hover" },
+    { "action": "assert-hover", "target": "Lobby match leave" },
+    { "action": "hover", "target": "Lobby match stage" },
+    { "action": "click", "target": "Lobby game rules button" },
+    { "action": "click", "target": "Lobby game rule constraint" },
+    { "action": "click", "target": "Racing", "capture": "game-rule-updated" },
+    { "action": "click", "target": "Lobby match overlay close" },
+    { "action": "click", "target": "Lobby match slot 4", "button": "secondary" },
+    { "action": "click", "target": "Remove bot" },
+    { "action": "assert-visible", "target": "Lobby invite slot 4" },
+    { "action": "click", "target": "Lobby invite slot 4" },
+    { "action": "assert-visible", "target": "Lobby invite players" },
+    { "action": "click", "target": "Invite maxine", "capture": "invite-sent" }
+  ]
+}

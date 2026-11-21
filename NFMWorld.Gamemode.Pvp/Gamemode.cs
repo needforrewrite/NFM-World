@@ -644,6 +644,42 @@ public class PvpServerGamemode(
     }
 
     /// <summary>
+    /// The match lobby's live order follows validated checkpoint progress and the latest positions.
+    /// </summary>
+    public override RaceLiveState? GetLiveState()
+    {
+        if (_state is ServerGamemodeState.WaitingToStart or ServerGamemodeState.Countdown)
+            return null;
+
+        return new RaceLiveState
+        {
+            Standings =
+            [
+                .. _perPlayer
+                .OrderBy(kv => LiveOrder(kv.Key, kv.Value))
+                .Select((kv, index) =>
+                    {
+                        var player = Players.FirstOrDefault(candidate => candidate.Id == kv.Key);
+                        return new RaceLiveStanding
+                        {
+                            PlayerId = kv.Key,
+                            PlayerName = player.PlayerName ?? "Player",
+                            CarName = player.CarName ?? "",
+                            Color = player.Color,
+                            IsBot = player.IsBot,
+                            Position = index,
+                            Lap = kv.Value.Lap,
+                            Checkpoint = kv.Value.Checkpoint,
+                            Wasted = kv.Value.WastedAt >= 0,
+                            Forfeited = kv.Value.Forfeited
+                        };
+                    }
+                )
+            ]
+        };
+    }
+
+    /// <summary>
     /// A client's connection went away. A player who quits drops its transport instead of
     /// sending ForfeitEvent, so this is that same departure arriving by another route.
     /// </summary>
@@ -674,6 +710,21 @@ public class PvpServerGamemode(
             EndRace();
         else if (_state == ServerGamemodeState.InProgress)
             CheckConstraint();
+    }
+
+    private (int Group, int Progress, double Distance, int TieBreak) LiveOrder(Guid playerId, PerPlayerGamemodeInfo info)
+    {
+        if (StandingGroup(info) != 0) return (1, 0, 0, StandingWithin(info));
+
+        var checkpoints = CurrentStage.Checkpoints;
+        var progress = info.Lap * checkpoints.Count + info.Checkpoint;
+        if (info.Checkpoint >= checkpoints.Count || GetPlayerPosition(playerId) is not { } position)
+            return (0, -progress, double.PositiveInfinity, info.Position);
+
+        var target = checkpoints[info.Checkpoint].Position;
+        var dx = (double)position.X - (double)target.X;
+        var dz = (double)position.Z - (double)target.Z;
+        return (0, -progress, dx * dx + dz * dz, info.Position);
     }
 
     /// <summary>Running cars are placed by checkpoint progress; the dead and departed sort after them.</summary>

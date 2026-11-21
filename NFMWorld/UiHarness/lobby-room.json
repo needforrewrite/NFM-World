@@ -1,0 +1,82 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-lobby-room-captures",
+  "view": "lobby-room",
+  "steps": [
+    {
+      "action": "capture",
+      "capture": "room"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Lobby games list"
+    },
+    {
+      "action": "assert-min-height",
+      "target": "Lobby games list",
+      "height": 150
+    },
+    {
+      "action": "assert-visible",
+      "target": "Lobby room chat"
+    },
+    {
+      "action": "assert-same-height",
+      "target": "Lobby games",
+      "anchor": "Lobby room chat"
+    },
+    {
+      "action": "assert-vertical-scroll",
+      "target": "Lobby room chat list"
+    },
+    {
+      "action": "assert-no-horizontal-scroll",
+      "target": "Lobby room chat list"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Lobby players"
+    },
+    {
+      "action": "hover",
+      "target": "Lobby game 1",
+      "capture": "row-hover"
+    },
+    {
+      "action": "assert-hover",
+      "target": "Lobby game 1"
+    },
+    {
+      "action": "click",
+      "target": "Lobby game 1",
+      "capture": "match"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Lobby match"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Lobby match start"
+    },
+    {
+      "action": "click",
+      "target": "Lobby match back",
+      "capture": "back"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Lobby game 3"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Lobby game 3 countdown"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Lobby games list"
+    }
+  ]
+}

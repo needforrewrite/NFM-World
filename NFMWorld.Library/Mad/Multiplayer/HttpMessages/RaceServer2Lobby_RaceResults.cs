@@ -16,4 +16,6 @@ public partial struct RaceServer2Lobby_RaceResults
     /// <summary>Player finish results, keyed by player index.</summary>
     [TightPackOrder(1)]
     public required RaceResults Results { get; set; }
+
+    [TightPackOrder(2)] public RaceLiveState? FinalState { get; set; }
 }

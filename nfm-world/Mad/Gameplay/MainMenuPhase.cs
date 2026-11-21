@@ -201,6 +201,33 @@ public class MainMenuPhase : BaseStageRenderingPhase
         base.Enter();
     }
 
+    internal bool TryTakeLastPlayedRace(RacePhase race, bool enteringMenu)
+    {
+        if (SettingsMenu.MenuStage != MenuPreferences.LastPlayedStage
+            || race.CurrentStage is not { } stage
+            || stage.Backend.Path != MenuHistory.Stage
+            || stage.Backend.Path != race.StageName)
+            return false;
+
+        var takeMusic = MenuPreferences.ResolveMusic(TheVFS.VFS, SettingsMenu.MenuMusic) is null;
+        race.ExitForMenu(keepMusicPlaying: enteringMenu && takeMusic);
+
+        OnStageReplacing();
+        UnloadStage();
+        if (takeMusic)
+        {
+            UnloadStageMusic();
+            _appliedMenuMusic = SettingsMenu.MenuMusic;
+        }
+
+        StageName = race.StageName;
+        TakeStageFrom(race, takeMusic);
+        OnStageLoaded();
+        ApplyMenuPreferences();
+        LoadStageMusic();
+        return true;
+    }
+
     private void SetupMenuCar()
     {
         var car = MenuHistory.Car;

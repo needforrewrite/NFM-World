@@ -11,6 +11,7 @@ public interface IMultiplayerClientTransport
     void Stop();
 
     bool HandshakeAccepted => true;
+    int? ServerProtocolVersion => null;
 
     /// <summary>
     /// Set when the server refused this build's version. Reconnecting repeats the refusal, so a
