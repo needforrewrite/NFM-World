@@ -221,7 +221,7 @@ public sealed partial class ClassicAi
 
             void Consider(int index, int approach, int direction, bool road, bool ramp)
             {
-                if (approach < 0)
+                if (approach < 0 || !CurrentStage.FixHoops[index].IsFixHoopActive)
                     return;
 
                 // A hoop in the air with no ramp or explicit fix road cannot be reached.
@@ -297,7 +297,7 @@ public sealed partial class ClassicAi
         {
             for (var i = 0; i < path.FixApproach.Length; i++)
             {
-                if (!path.FixRoad[i] && !path.FixRamp[i])
+                if (!CurrentStage.FixHoops[i].IsFixHoopActive || !path.FixRoad[i] && !path.FixRamp[i])
                     continue;
 
                 var approach = path.FixApproach[i];
@@ -329,7 +329,7 @@ public sealed partial class ClassicAi
 
         for (var i = 0; i < path.FixApproach.Length; i++)
         {
-            if (path.FixAerial[i] && !path.FixRamp[i] && !path.FixRoad[i])
+            if (!CurrentStage.FixHoops[i].IsFixHoopActive || path.FixAerial[i] && !path.FixRamp[i] && !path.FixRoad[i])
                 continue;
 
             var approach = path.FixApproach[i];

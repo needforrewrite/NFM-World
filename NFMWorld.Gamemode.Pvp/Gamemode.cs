@@ -17,13 +17,62 @@ using f64Vector3 = FixedMathSharp.Vector3d;
 [assembly: GamemodeConfigProperty(
     Name = "constraint",
     Type = typeof(string),
-    Label = "Race constraint",
+    Label = "Type",
     Description = "The type of race to play."
 )]
 
 [assembly: GamemodeConfigPropertyOption("constraint", Label = "Racing", Value = "racing")]
 [assembly: GamemodeConfigPropertyOption("constraint", Label = "Wasting", Value = "wasting")]
 [assembly: GamemodeConfigPropertyOption("constraint", Label = "Both", Value = "both")]
+
+[assembly: GamemodeConfigProperty(Name = "laps", Type = typeof(string), Label = "Laps", Description =
+    "Laps to finish when checkpoints are enabled.")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "Stage default", Value = "stage")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "1", Value = "1")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "2", Value = "2")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "3", Value = "3")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "4", Value = "4")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "5", Value = "5")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "6", Value = "6")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "7", Value = "7")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "8", Value = "8")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "9", Value = "9")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "10", Value = "10")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "11", Value = "11")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "12", Value = "12")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "13", Value = "13")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "14", Value = "14")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "15", Value = "15")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "16", Value = "16")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "17", Value = "17")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "18", Value = "18")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "19", Value = "19")]
+[assembly: GamemodeConfigPropertyOption("laps", Label = "20", Value = "20")]
+
+[assembly: GamemodeConfigProperty(Name = "fixing", Type = typeof(string), Label = "Fix hoops", Description =
+    "How many repairs each hoop provides.")]
+[assembly: GamemodeConfigPropertyOption("fixing", Label = "Unlimited", Value = "unlimited")]
+[assembly: GamemodeConfigPropertyOption("fixing", Label = "Limited", Value = "limited")]
+[assembly: GamemodeConfigPropertyOption("fixing", Label = "No Fixing", Value = "none")]
+
+[assembly: GamemodeConfigProperty(
+    Name = "fix_limit",
+    Type = typeof(int),
+    Label = "Uses per hoop (1–10)",
+    Description = "Shared repairs available at each fix hoop.",
+    VisibleWhenProperty = "fixing",
+    VisibleWhenValue = "limited"
+)]
+[assembly: GamemodeConfigPropertyOption("fix_limit", Label = "3", Value = "3")]
+[assembly: GamemodeConfigPropertyOption("fix_limit", Label = "1", Value = "1")]
+[assembly: GamemodeConfigPropertyOption("fix_limit", Label = "2", Value = "2")]
+[assembly: GamemodeConfigPropertyOption("fix_limit", Label = "4", Value = "4")]
+[assembly: GamemodeConfigPropertyOption("fix_limit", Label = "5", Value = "5")]
+[assembly: GamemodeConfigPropertyOption("fix_limit", Label = "6", Value = "6")]
+[assembly: GamemodeConfigPropertyOption("fix_limit", Label = "7", Value = "7")]
+[assembly: GamemodeConfigPropertyOption("fix_limit", Label = "8", Value = "8")]
+[assembly: GamemodeConfigPropertyOption("fix_limit", Label = "9", Value = "9")]
+[assembly: GamemodeConfigPropertyOption("fix_limit", Label = "10", Value = "10")]
 
 [assembly: GamemodeConfigProperty(
     Name = "walls",
@@ -45,6 +94,23 @@ using f64Vector3 = FixedMathSharp.Vector3d;
 [assembly: GamemodeConfigPropertyOption("walls", Label = "10 min", Value = "10")]
 
 namespace NFMWorld.Gamemode.Pvp;
+
+internal static class PvpRules
+{
+    public static int FixesPerHoop(IReadOnlyDictionary<string, object>? config)
+        => config?.GetValueOrDefault("fixing")?.ToString() switch
+        {
+            "limited" => int.TryParse(config?.GetValueOrDefault("fix_limit")?.ToString(), out var limit)
+                         && limit is >= 1 and <= 10 ? limit : 3,
+            "none" => 0,
+            _ => -1
+        };
+
+    public static ushort Laps(BackendStage stage, RaceConstraint constraint, IReadOnlyDictionary<string, object>? config)
+        => !constraint.Racing ? (ushort)0
+            : ushort.TryParse(config?.GetValueOrDefault("laps")?.ToString(), out var laps) && laps is >= 1 and <= 20
+                ? laps : stage.StageLoader.nlaps;
+}
 
 internal enum GamemodeState
 {
@@ -73,6 +139,9 @@ public class PvpGamemode : PluginGamemode
     private bool _survivalFinish;
 
     private RaceConstraint _constraint = RaceConstraint.Both;
+    private int _fixesPerHoop;
+    private int[] _hoopContacts = [];
+    private int[] _respawnTicks = [];
 
     private ConvergingWalls _walls = ConvergingWalls.Off;
     private bool _wallsBegun;
@@ -95,6 +164,7 @@ public class PvpGamemode : PluginGamemode
 
     /// <summary>PvP is a scored race, so the host's standard completion UI applies.</summary>
     public override bool UsesStandardRaceCompletion => true;
+    public override bool RespawnsWastedCars => _constraint.Racing && !_constraint.Wasting;
 
     private void SetupCars()
     {
@@ -124,6 +194,14 @@ public class PvpGamemode : PluginGamemode
     public override void Begin()
     {
         base.Begin();
+        _constraint = RaceConstraint.From(Config);
+        CurrentStage.Nlaps = PvpRules.Laps(CurrentStage, _constraint, Config);
+        _fixesPerHoop = PvpRules.FixesPerHoop(Config);
+        for (var i = 0; i < CurrentStage.FixHoops.Count; i++)
+            CurrentStage.SetFixHoopActive(i, _fixesPerHoop != 0);
+        _hoopContacts = new int[Players.Count];
+        Array.Fill(_hoopContacts, -1);
+        _respawnTicks = new int[Players.Count];
         SetupCars();
         _state = GamemodeState.Countdown;
         _countdown = 3;
@@ -132,7 +210,6 @@ public class PvpGamemode : PluginGamemode
         _receivedFinish = false;
         _finishRevision = 0;
         _survivalFinish = false;
-        _constraint = RaceConstraint.From(Config);
         _walls = ConvergingWalls.From(Config);
         _wallsBegun = false;
         _lastWallMinutes = double.MaxValue;
@@ -143,6 +220,16 @@ public class PvpGamemode : PluginGamemode
         HudState.Finished = false;
         HudState.ClientWon = false;
         HudState.ClientLost = false;
+        HudState.TotalLaps = CurrentStage.Nlaps;
+        HudState.Lap = CurrentStage.Nlaps > 0 ? 1 : 0;
+    }
+
+    public override void End()
+    {
+        for (var i = 0; i < CurrentStage.FixHoops.Count; i++)
+            CurrentStage.SetFixHoopActive(i, true);
+        CurrentStage.Nlaps = CurrentStage.StageLoader.nlaps;
+        base.End();
     }
 
     public override void Reset()
@@ -203,6 +290,42 @@ public class PvpGamemode : PluginGamemode
             SendServerEvent<ClientToServerEvent>(new ConfirmFinishEvent(_finishRevision));
     }
 
+    private bool Owns(ClientSidePlayer player)
+        => ClientPlayer is { } client && (player == client || player.Info.IsBot
+                                          && (player.Info.OwnerId == client.Info.Id || !IsMultiplayer && player.Info.OwnerId
+                                              == Guid.Empty));
+
+    private void TickFixHoop(ClientSidePlayer player, BackendCar car)
+    {
+        if (_fixesPerHoop < 0)
+        {
+            FixHoopHelper.HandleFixHoops(CurrentStage, car);
+            return;
+        }
+
+        if (_fixesPerHoop == 0 || !Owns(player) || car.HasLeftRace) return;
+        var hoop = FixHoopHelper.FindFixHoop(CurrentStage, car.Position);
+        var previous = _hoopContacts[player.Index];
+        _hoopContacts[player.Index] = hoop;
+        if (hoop >= 0 && hoop != previous && !car.IsFixing && (car.Wasted || car.CarPhysics.DamagePoints > 0))
+            SendServerEvent<ClientToServerEvent>(new UseFixHoopEvent(player.Index, hoop));
+    }
+
+    private void TickRespawn(int slot, BackendCar car)
+    {
+        if (!car.Wasted || car.HasLeftRace)
+        {
+            _respawnTicks[slot] = 0;
+            return;
+        }
+
+        if (++_respawnTicks[slot] >= Math.Ceiling(3 * Physics.TargetTps))
+        {
+            _respawnTicks[slot] = 0;
+            car.RespawnInPlace();
+        }
+    }
+
     public override void GameTick()
     {
         base.GameTick();
@@ -222,19 +345,16 @@ public class PvpGamemode : PluginGamemode
                 TickWalls();
                 _physics.GameTick();
 
-                var clientCrossed = false;
+                var crossedSlots = 0;
                 foreach (var player in Players)
                 {
-                    if (player.Car != null)
-                    {
-                        FixHoopHelper.HandleFixHoops(CurrentStage, player.Car);
-                        var localProgress = player == ClientPlayer
-                                            || player.Info.IsBot && (player.Info.OwnerId == Guid.Empty
-                                                                     || player.Info.OwnerId == ClientPlayer?.Info.Id);
-                        if (localProgress && CheckPointHelper.HandleCheckPoint(CurrentStage, player.Car) && player
-                            == ClientPlayer)
-                            clientCrossed = true;
-                    }
+                    if (player.Car is not { } car) continue;
+                    TickFixHoop(player, car);
+                    if (!Owns(player)) continue;
+                    if (RespawnsWastedCars) TickRespawn(player.Index, car);
+                    if (_constraint.Racing && !car.Wasted && !car.HasLeftRace
+                        && CheckPointHelper.HandleCheckPoint(CurrentStage, car))
+                        crossedSlots |= 1 << player.Index;
                 }
 
                 // After the crossings, so a car that just took a checkpoint is ranked on it.
@@ -245,16 +365,17 @@ public class PvpGamemode : PluginGamemode
                 if (Players.Count > 1)
                     CheckPointHelper.CalculatePositions(CurrentStage, Players);
 
-                if (clientCrossed && ClientPlayer?.Car is { } crossedCar)
+                foreach (var player in Players)
                 {
-                    SendServerEvent<ClientToServerEvent>(
-                        new CheckpointEvent(
-                            crossedCar.CurrentCheckpoint,
-                            crossedCar.CurrentLap,
-                            crossedCar.Placement,
-                            _clientTick
-                        )
+                    if ((crossedSlots & (1 << player.Index)) == 0 || player.Car is not { } crossedCar) continue;
+                    var progress = new CheckpointEvent(
+                        crossedCar.CurrentCheckpoint,
+                        crossedCar.CurrentLap,
+                        crossedCar.Placement,
+                        _clientTick
                     );
+                    SendServerEvent<ClientToServerEvent>(player.Info.IsBot
+                        ? new BotCheckpointEvent(player.Index, progress) : progress);
                 }
 
                 _clientTick++;
@@ -282,17 +403,15 @@ public class PvpGamemode : PluginGamemode
                     }
                 }
 
-                if (winner is not null && _constraint.Racing)
+                if (winner is not null && _constraint.Racing && !IsMultiplayer)
                     Finish(winner);
                 break;
             case GamemodeState.Finished:
                 _physics.GameTick();
                 if (_survivalFinish)
                     foreach (var player in Players)
-                        if (player.Car is { } car && (player.Info.IsClientPlayer
-                                                      || player.Info.IsBot && (player.Info.OwnerId == Guid.Empty || player.Info
-                                                          .OwnerId == ClientPlayer?.Info.Id)))
-                            FixHoopHelper.HandleFixHoops(CurrentStage, car);
+                        if (player.Car is { } car && Owns(player))
+                            TickFixHoop(player, car);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -350,6 +469,20 @@ public class PvpGamemode : PluginGamemode
                 _state = state.InProgress ? GamemodeState.InProgress : GamemodeState.Countdown;
                 _countdown = state.Countdown;
                 HudState.CountdownTimer = state.Countdown;
+                break;
+            case FixHoopSnapshotEvent snapshot:
+                for (var i = 0; i < Math.Min(snapshot.Remaining.Length, CurrentStage.FixHoops.Count); i++)
+                    if (snapshot.Remaining[i] == 0) CurrentStage.SetFixHoopActive(i, false);
+                Apply(TightPackSerializer.Deserialize<ServerToClientEvent>(snapshot.RaceState));
+                break;
+            case FixHoopUsedEvent use:
+                if (Players[use.RacerSlot].Car is { } repairedCar) repairedCar.Fix();
+                if (use.Remaining == 0) CurrentStage.SetFixHoopActive(use.Hoop, false);
+                var name = Players[use.RacerSlot].Info.PlayerName;
+                var hoopNumber = use.Hoop + 1;
+                AnnounceRaceNotice(use.Remaining == 0
+                    ? $"{name} used fix hoop {hoopNumber}. It has been removed."
+                    : $"{name} used fix hoop {hoopNumber}. Uses left: {use.Remaining}.");
                 break;
         }
     }
@@ -413,6 +546,7 @@ public class PvpServerGamemode(
         public ushort Checkpoint;
         public int Position;
         public bool Forfeited;
+        public int NextFixTick;
 
         /// <summary>Server tick the car was last seen wasted, or -1 while it is alive.</summary>
         public int WastedAt = -1;
@@ -428,6 +562,7 @@ public class PvpServerGamemode(
 
     private RaceConstraint _constraint = RaceConstraint.Both;
 
+    private int[] _remainingFixes = [];
     private int _winnerSlot = -1;
     private bool _wastedVictory;
     private bool _lastCarStanding;
@@ -442,6 +577,10 @@ public class PvpServerGamemode(
         _countdown = 3;
         _state = ServerGamemodeState.WaitingToStart;
         _constraint = RaceConstraint.From(Config);
+        CurrentStage.Nlaps = PvpRules.Laps(CurrentStage, _constraint, Config);
+        var fixesPerHoop = PvpRules.FixesPerHoop(Config);
+        _remainingFixes = fixesPerHoop > 0 ? new int[CurrentStage.FixHoops.Count] : [];
+        Array.Fill(_remainingFixes, fixesPerHoop);
         _winnerSlot = -1;
         _wastedVictory = false;
         _lastCarStanding = false;
@@ -467,20 +606,15 @@ public class PvpServerGamemode(
         if (_state == ServerGamemodeState.WaitingToStart)
             return null;
 
-        if (_state == ServerGamemodeState.Finished)
-            return TightPackSerializer.Serialize<ServerToClientEvent>(
-                new RaceFinishedEvent(_winnerSlot, _wastedVictory, _lastCarStanding)
-                {
-                    Revision = _finishRevision
-                }
-            );
-
-        return TightPackSerializer.Serialize<ServerToClientEvent>(
-            new RaceStateEvent(
-                InProgress: _state is ServerGamemodeState.InProgress or ServerGamemodeState.Finished,
+        ServerToClientEvent state = _state == ServerGamemodeState.Finished
+            ? new RaceFinishedEvent(_winnerSlot, _wastedVictory, _lastCarStanding) { Revision = _finishRevision }
+            : new RaceStateEvent(
+                InProgress: _state == ServerGamemodeState.InProgress,
                 Countdown: _state == ServerGamemodeState.Countdown ? _countdown : 0
-            )
-        );
+            );
+        var payload = TightPackSerializer.Serialize(state);
+        return _remainingFixes.Length == 0 ? payload
+            : TightPackSerializer.Serialize<ServerToClientEvent>(new FixHoopSnapshotEvent(payload, _remainingFixes));
     }
 
     public override void StartRace()
@@ -523,13 +657,10 @@ public class PvpServerGamemode(
         }
     }
 
-    /// <summary>
-    /// Survival ends every PvP race; the constraint only controls a checkpoint victory.
-    /// </summary>
     private void CheckConstraint()
     {
         // A solo session has nobody to waste; the last car alive is trivially the only car.
-        if (_perPlayer.Count <= 1)
+        if (!_constraint.Wasting || _perPlayer.Count <= 1)
             return;
 
         var alive = 0;
@@ -715,6 +846,7 @@ public class PvpServerGamemode(
     private (int Group, int Progress, double Distance, int TieBreak) LiveOrder(Guid playerId, PerPlayerGamemodeInfo info)
     {
         if (StandingGroup(info) != 0) return (1, 0, 0, StandingWithin(info));
+        if (!_constraint.Racing) return (0, 0, 0, info.Position);
 
         var checkpoints = CurrentStage.Checkpoints;
         var progress = info.Lap * checkpoints.Count + info.Checkpoint;
@@ -767,28 +899,46 @@ public class PvpServerGamemode(
             return;
         }
 
-        if (_state == ServerGamemodeState.Finished) return;
-
-        if (e is CheckpointEvent { Index: var cp, Lap: var lap, Placement: var placement })
+        if (e is UseFixHoopEvent use && (_state == ServerGamemodeState.InProgress || _provisional))
         {
-            if (!_perPlayer.TryGetValue(clientId, out var ps) || ps.Forfeited)
-                return;
-
-            // The client's numbers are only a hint. Accept one only when it advances the
-            // race by exactly one checkpoint and the player's reported position is
-            // actually at the checkpoint they claim - otherwise a client could declare
-            // itself the winner by sending a large lap number.
-            if (!IsPlausibleProgress(clientId, ps, cp, lap))
-                return;
-
-            ps.Lap = lap;
-            ps.Checkpoint = cp;
-            ps.Position = placement;
-
-            // Wasting-only races ignore lap completion.
-            if (lap >= CurrentStage.Nlaps && _constraint.Racing)
-                EndRace(clientId);
+            UseFixHoop(clientId, use);
+            return;
         }
+
+        if (_state != ServerGamemodeState.InProgress || !_constraint.Racing) return;
+        if (e is CheckpointEvent progress) RecordCheckpoint(clientId, progress);
+        if (e is BotCheckpointEvent bot) RecordCheckpoint(OwnedRacer(clientId, bot.RacerSlot), bot.Progress);
+    }
+
+    private void RecordCheckpoint(Guid racer, CheckpointEvent progress)
+    {
+        if (racer == Guid.Empty || !_perPlayer.TryGetValue(racer, out var info) || info.Forfeited
+            || !IsPlausibleProgress(racer, info, progress.Index, progress.Lap)) return;
+
+        info.Lap = progress.Lap;
+        info.Checkpoint = progress.Index;
+        info.Position = progress.Placement;
+        if (info.Lap >= CurrentStage.Nlaps) EndRace(racer);
+    }
+
+    private Guid OwnedRacer(Guid sender, int slot)
+    {
+        if ((uint)slot >= (uint)Players.Count) return Guid.Empty;
+        var racer = Players[slot];
+        return racer.Id == sender || racer.IsBot && racer.OwnerId == sender ? racer.Id : Guid.Empty;
+    }
+
+    private void UseFixHoop(Guid sender, UseFixHoopEvent use)
+    {
+        if ((uint)use.Hoop >= (uint)_remainingFixes.Length || _remainingFixes[use.Hoop] == 0) return;
+        var racer = OwnedRacer(sender, use.RacerSlot);
+        if (racer == Guid.Empty || !_perPlayer.TryGetValue(racer, out var info) || info.Forfeited
+            || _serverTick < info.NextFixTick || GetPlayerPosition(racer) is not { } position
+            || !FixHoopHelper.IsInRange(CurrentStage.FixHoops[use.Hoop], position, 1500)) return;
+
+        info.NextFixTick = _serverTick + GamemodeUtils.ServerTps / 2;
+        var remaining = --_remainingFixes[use.Hoop];
+        BroadcastEvent<ServerToClientEvent>(new FixHoopUsedEvent(use.RacerSlot, use.Hoop, remaining));
     }
 
     /// <summary>
@@ -838,10 +988,18 @@ public class PvpServerGamemode(
 [TightPackUnion(0, typeof(CheckpointEvent))]
 [TightPackUnion(1, typeof(ForfeitEvent))]
 [TightPackUnion(2, typeof(ConfirmFinishEvent))]
+[TightPackUnion(3, typeof(UseFixHoopEvent))]
+[TightPackUnion(4, typeof(BotCheckpointEvent))]
 public abstract partial record ClientToServerEvent;
 
 [TightPackable]
 public partial record CheckpointEvent(ushort Index, byte Lap, int Placement, int Tick) : ClientToServerEvent;
+
+[TightPackable]
+public partial record BotCheckpointEvent(int RacerSlot, CheckpointEvent Progress) : ClientToServerEvent;
+
+[TightPackable]
+public partial record UseFixHoopEvent(int RacerSlot, int Hoop) : ClientToServerEvent;
 
 /// <summary>A player left the race before finishing.</summary>
 [TightPackable]
@@ -855,6 +1013,8 @@ public partial record ConfirmFinishEvent(int Revision) : ClientToServerEvent;
 [TightPackUnion(1, typeof(RaceStateEvent))]
 [TightPackUnion(2, typeof(RaceFinishedEvent))]
 [TightPackUnion(3, typeof(RaceResumedEvent))]
+[TightPackUnion(4, typeof(FixHoopUsedEvent))]
+[TightPackUnion(5, typeof(FixHoopSnapshotEvent))]
 public abstract partial record ServerToClientEvent;
 
 [TightPackable]
@@ -876,3 +1036,9 @@ public partial record RaceFinishedEvent(int WinnerSlot, bool WastedVictory, bool
 
 [TightPackable]
 public partial record RaceResumedEvent : ServerToClientEvent;
+
+[TightPackable]
+public partial record FixHoopUsedEvent(int RacerSlot, int Hoop, int Remaining) : ServerToClientEvent;
+
+[TightPackable]
+public partial record FixHoopSnapshotEvent(byte[] RaceState, int[] Remaining) : ServerToClientEvent;

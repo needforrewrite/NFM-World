@@ -16,6 +16,17 @@ public partial class BackendStage
     [PluginVisible] public UnlimitedArray<StageObject> Nodes { get; } = [];
     [PluginVisible] public UnlimitedArray<StageObject> Checkpoints { get; } = [];
     [PluginVisible] public UnlimitedArray<StageObject> FixHoops { get; } = [];
+
+    [PluginVisible]
+    public void SetFixHoopActive(int index, bool active)
+    {
+        var hoop = FixHoops[index];
+        if (hoop.IsFixHoopActive == active) return;
+        hoop.IsFixHoopActive = active;
+        if (active) Pieces.Add(hoop);
+        else Pieces.Remove(hoop);
+    }
+
     [PluginVisible] public ushort Nlaps { get; set; }
 
     [PluginVisible] public StagePhysics Physics { get; private set; }
@@ -309,7 +320,7 @@ public partial class BackendStage
     {
         _tempTrackers.Clear();
         _collisionQuadTree.RetrievePoint(_tempTrackers, x, z);
-        _tempTrackers.RemoveAll(static shape => shape.Owner is { IsDestroyed: true });
+        _tempTrackers.RemoveAll(static shape => shape.Owner is { IsDestroyed: true } or { IsFixHoopActive: false });
         Walls.AppendCollidables(_tempTrackers, 0);
         var span = CollectionsMarshal.AsSpan(_tempTrackers);
         span.Sort(static (a, b) => a.Index.CompareTo(b.Index));
@@ -421,6 +432,7 @@ public partial class WallCollision : BackendGameObject, ICollidable
 [PluginVisible]
 public partial class StageObject(Rad3d rad) : BackendGameObject, IAiNode, ICollidable
 {
+    [PluginVisible] public bool IsFixHoopActive { get; internal set; } = true;
     public int DestructionId { get; internal set; } = -1;
     public int Damage { get; internal set; }
     public f64Vector3 Deformation { get; internal set; }

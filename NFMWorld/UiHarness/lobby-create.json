@@ -55,9 +55,18 @@
       "target": "Stage select source local"
     },
     {
+      "action": "assert-count",
+      "prefix": "Stage row archive/",
+      "count": 0
+    },
+    {
       "action": "click",
       "target": "Stage select source online",
       "capture": "online-again"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Stage row archive/02aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     },
     {
       "action": "click",
@@ -83,9 +92,22 @@
       "capture": "time-trial"
     },
     {
+      "action": "click",
+      "target": "Lobby create game rules",
+      "capture": "time-trial-rules"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Lobby create no editable rules"
+    },
+    {
       "action": "assert-count",
       "prefix": "Gamemode config ",
       "count": 0
+    },
+    {
+      "action": "click",
+      "target": "Lobby match overlay close"
     },
     {
       "action": "click",
@@ -104,7 +126,17 @@
     {
       "action": "assert-count",
       "prefix": "Gamemode config ",
-      "count": 2
+      "count": 0
+    },
+    {
+      "action": "click",
+      "target": "Lobby create game rules",
+      "capture": "pvp-rules"
+    },
+    {
+      "action": "assert-count",
+      "prefix": "Gamemode config ",
+      "count": 4
     },
     {
       "action": "click",
@@ -123,6 +155,45 @@
       "action": "click",
       "target": "Wasting",
       "capture": "config-wasting"
+    },
+    {
+      "action": "click",
+      "target": "Gamemode config fixing"
+    },
+    {
+      "action": "click",
+      "target": "Limited"
+    },
+    {
+      "action": "assert-visible",
+      "target": "Gamemode config fix_limit"
+    },
+    {
+      "action": "click",
+      "target": "Gamemode config fix_limit"
+    },
+    {
+      "action": "key",
+      "value": "A",
+      "ctrl": true
+    },
+    {
+      "action": "text",
+      "value": "10"
+    },
+    {
+      "action": "key",
+      "value": "Enter",
+      "capture": "config-fix-limit"
+    },
+    {
+      "action": "click",
+      "target": "Lobby match overlay close"
+    },
+    {
+      "action": "assert-count",
+      "prefix": "Gamemode config ",
+      "count": 0
     }
   ]
 }

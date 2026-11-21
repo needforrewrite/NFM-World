@@ -291,8 +291,11 @@ public sealed class RaceAnnouncer
             _powerLowCooldown = PowerLowCooldownTicks;
         }
 
-        CheckWrongWay(client, gamemode);
-        CheckMissedCheckpoint(client, gamemode);
+        if (gamemode.CurrentStage.Nlaps > 0)
+        {
+            CheckWrongWay(client, gamemode);
+            CheckMissedCheckpoint(client, gamemode);
+        }
     }
 
     private void CheckWrongWay(BackendCar client, BaseClientGamemode gamemode)

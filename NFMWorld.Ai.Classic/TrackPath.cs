@@ -204,7 +204,7 @@ internal sealed class TrackPath
                 checkpoints.Add(i);
         }
 
-        _checkpointPath = checkpoints.ToArray();
+        _checkpointPath = stage.Nlaps > 0 ? checkpoints.ToArray() : [];
 
         var hoops = stage.FixHoops;
         FixApproach = new int[hoops.Count];

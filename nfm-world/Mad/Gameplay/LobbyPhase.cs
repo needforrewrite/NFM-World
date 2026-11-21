@@ -803,7 +803,8 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         var settings = new List<UiState.LobbySessionSetting>();
         foreach (var field in fields)
         {
-            if (!session.GamemodeParameters.TryGetValue(field.Name, out var value))
+            if (!field.IsVisible(key => session.GamemodeParameters.TryGetValue(key, out var setting) ? setting : null)
+                || !session.GamemodeParameters.TryGetValue(field.Name, out var value))
                 continue;
 
             var label = field.Choices.FirstOrDefault(choice => choice.Value == value)?.Label ?? value;
@@ -1225,9 +1226,10 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     private async Task SearchStagesOnlineAsync(string query)
     {
         var state = Lobby.CreateStages;
+        if (!state.OnlineSource.Value) return;
 
         // A typed archive id is not a search term: it names one stage exactly.
-        var typed = query.Trim();
+        var typed = RadpackReader.Identity(query.Trim());
         if (MultiplayerContentPolicy.IsCanonicalArchiveId(typed))
         {
             CancelStageSearch();

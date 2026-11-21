@@ -24,7 +24,7 @@ internal static class LobbyStageSelection
         IReadOnlyList<string> stageIds,
         IReadOnlyDictionary<string, string> names
     ) => stageIds
-        .Where(MultiplayerContentPolicy.IsAcceptedStage)
+        .Where(id => MultiplayerContentPolicy.IsStockStage(id) && !RadpackReader.IsArchiveId(id))
         .Select(id => OptionFor(id, names))
         .ToArray();
 
@@ -45,44 +45,29 @@ internal static class LobbyStageSelection
 
     private static string ShortHash(string hash) => hash[..Math.Min(8, hash.Length)];
 
-    /// <summary>Shows the local list, keeping the session's stage when it is still in it.</summary>
+    /// <summary>Shows the local library while keeping any chosen archive stage in the session summary.</summary>
     public static void ShowLocal(StageSelectState state, IReadOnlyList<StageOption> local, string selectedStage)
     {
         state.OnlineSource.Value = false;
         state.Search.Value = "";
         StageSelectView.ClearSearch();
-        Show(state, local, selectedStage);
-        // A stage the list cannot offer (a user/ stage, say) is not left looking chosen.
-        Select(state, state.Stages.Value.Any(option => option.Id == selectedStage) ? selectedStage : "");
+        Show(state, local);
+        Select(state, RadpackReader.IsArchiveId(selectedStage) || local.Any(option => option.Id == selectedStage)
+            ? selectedStage : "");
     }
 
     /// <summary>
-    /// Shows archive search results. The session's stage is kept: it stays the chosen one, and
-    /// <see cref="WithSelection"/> adds its row when the results no longer contain it.
+    /// Shows archive search results and keeps the chosen archive stage available on this tab.
     /// </summary>
     public static void ShowRemote(StageSelectState state, IReadOnlyList<StageOption> remote)
     {
         state.OnlineSource.Value = true;
-        Show(state, remote, state.Selected.Value);
-        Select(state, state.Selected.Value);
-    }
-
-    /// <summary>
-    /// Adds the session's stage back when the visible list does not contain it: a public stage can
-    /// still be the chosen one after switching away from the archive, or after a search that no
-    /// longer matches it. Without the row the highlight would point at nothing and the list would
-    /// look like nothing is chosen. It goes first, where the list starts scrolled to.
-    /// </summary>
-    private static IReadOnlyList<StageOption> WithSelection(
-        IReadOnlyList<StageOption> options,
-        string selectedStage
-    )
-    {
-        if (!MultiplayerContentPolicy.IsCanonicalArchiveId(selectedStage)
-            || options.Any(option => option.Id == selectedStage))
-            return options;
-
-        return [ArchivePlaceholder(selectedStage), .. options];
+        var selected = state.Selected.Value;
+        if (state.SelectedArchiveStage.Value is { } archive && archive.Id == selected
+            && remote.All(option => option.Id != selected))
+            remote = [archive, .. remote];
+        Show(state, remote);
+        Select(state, selected);
     }
 
     /// <summary>Narrows the local list to the search box's text.</summary>
@@ -90,23 +75,13 @@ internal static class LobbyStageSelection
     {
         var search = query.Trim();
         state.Search.Value = query;
-        var matches = search.Length == 0
+        state.Stages.Value = search.Length == 0
             ? local
             : local
                 .Where(option => option.Label.Contains(search, StringComparison.OrdinalIgnoreCase)
                                  || option.Id.Contains(search, StringComparison.OrdinalIgnoreCase)
                 )
                 .ToArray();
-
-        // A published stage has no local file to browse; its archive id is the only handle, so
-        // one typed into search is offered directly.
-        if (MultiplayerContentPolicy.IsCanonicalArchiveId(search))
-            matches = [ArchivePlaceholder(search), .. matches];
-
-        state.Stages.Value = WithSelection(matches, state.Selected.Value);
-        // Filtering the list does not drop the session's stage; it stays chosen even when the
-        // search hides its row.
-        state.ConfirmEnabled.Value = state.Selected.Value.Length > 0;
     }
 
     /// <summary>
@@ -116,6 +91,11 @@ internal static class LobbyStageSelection
     public static bool Select(StageSelectState state, string stageId)
     {
         state.Selected.Value = stageId;
+        state.SelectedArchiveStage.Value = RadpackReader.IsArchiveId(stageId)
+            ? state.Stages.Value.FirstOrDefault(option => option.Id == stageId)
+              ?? (state.SelectedArchiveStage.Value is { } previous && previous.Id == stageId
+                  ? previous : ArchivePlaceholder(stageId))
+            : null;
 
         if (stageId.Length == 0)
         {
@@ -132,15 +112,16 @@ internal static class LobbyStageSelection
         }
 
         state.Restriction.Value = LocalStageRestriction;
+        state.ConfirmEnabled.Value = false;
         return false;
     }
 
-    private static void Show(StageSelectState state, IReadOnlyList<StageOption> options, string selectedStage)
+    private static void Show(StageSelectState state, IReadOnlyList<StageOption> options)
     {
         state.Busy.Value = false;
         state.Status.Value = "";
         state.Restriction.Value = "";
-        state.Stages.Value = WithSelection(options, selectedStage);
+        state.Stages.Value = options;
     }
 
     private static StageOption ArchivePlaceholder(string stageId)

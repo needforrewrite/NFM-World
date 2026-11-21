@@ -44,10 +44,17 @@ public sealed class ClassicHud(IHudData race) : Component
             var left = position.X;
             var top = position.Y;
             var right = position.X + size.X;
-            Text($"LAP: {Race.Lap} / {Race.TotalLaps}", left + 14 * scale, top + 5 * scale, scale, adventure: true);
+            if (Race.TotalLaps > 0)
+                Text($"LAP: {Race.Lap} / {Race.TotalLaps}", left + 14 * scale, top + 5 * scale, scale, adventure: true);
             if (!Race.TimeTrial)
             {
-                Text($"WASTED: {Race.Wasted} / {Race.Opponents}", left + 128 * scale, top + 5 * scale, scale, adventure: true);
+                Text(
+                    $"WASTED: {Race.Wasted} / {Race.Opponents}",
+                    left + (Race.TotalLaps > 0 ? 128 : 14) * scale,
+                    top + 5 * scale,
+                    scale,
+                    adventure: true
+                );
             }
 
             if (Race.HasPosition) PositionReadout(left + 30 * scale, top + 18 * scale, scale);

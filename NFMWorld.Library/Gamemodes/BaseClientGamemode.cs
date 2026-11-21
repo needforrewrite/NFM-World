@@ -149,6 +149,7 @@ public abstract class BaseClientGamemode : IGamemode
     /// </summary>
     public virtual void GameTick()
     {
+        if (_raceNoticeTicks > 0 && --_raceNoticeTicks == 0) RaceNotice = null;
     }
 
     /// <summary>
@@ -166,6 +167,8 @@ public abstract class BaseClientGamemode : IGamemode
     /// </summary>
     public virtual bool UsesStandardRaceCompletion => false;
 
+    public virtual bool RespawnsWastedCars => false;
+
     /// <summary>
     /// User-callable reset function that can be used to reset the gamemode state.
     /// </summary>
@@ -176,6 +179,8 @@ public abstract class BaseClientGamemode : IGamemode
     /// </remarks>
     public virtual void Reset()
     {
+        RaceNotice = null;
+        _raceNoticeTicks = 0;
         ReleaseBots();
         Results = null;
         GamemodeContext.ClientCallbacks.RaceRestarted();
@@ -365,6 +370,16 @@ public abstract class BaseClientGamemode : IGamemode
     }
 
     private readonly RaceAnnouncer Announcer = new();
+    private int _raceNoticeTicks;
+    public HudMessage? RaceNotice { get; private set; }
+
+    [PluginVisible]
+    [ClientOnly]
+    protected void AnnounceRaceNotice(string text)
+    {
+        RaceNotice = new HudMessage(text, HudMessageKind.Info);
+        _raceNoticeTicks = (int)Math.Ceiling(3 * Physics.TargetTps);
+    }
 
     /// <summary>Posts the race's status line; a gamemode uses it for its own warnings.</summary>
     [PluginVisible]
@@ -416,10 +431,11 @@ public abstract class BaseClientGamemode : IGamemode
             if (!GamemodeContext.IsSpectating) SfxLibrary.checkpoint?.Play();
         }
 
-        GamemodeContext.ClientCallbacks.UpdateCheckpointGlow(
-            car.CurrentCheckpoint,
-            car.CurrentCheckpoint == CurrentStage.Checkpoints.Count - 1 && car.CurrentLap == CurrentStage.Nlaps - 1
-        );
+        if (CurrentStage.Nlaps > 0)
+            GamemodeContext.ClientCallbacks.UpdateCheckpointGlow(
+                car.CurrentCheckpoint,
+                car.CurrentCheckpoint == CurrentStage.Checkpoints.Count - 1 && car.CurrentLap == CurrentStage.Nlaps - 1
+            );
 
         Announcer.Tick(car, this);
         HudState.StatusMessage = Announcer.Status;

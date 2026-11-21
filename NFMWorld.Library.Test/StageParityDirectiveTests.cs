@@ -298,6 +298,48 @@ public class StageParityDirectiveTests
     }
 
     [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void ClosingWalls_MovesEveryWallSegmentAfterRadpackRoundTrip(bool legacy)
+    {
+        var loader = Load(
+            "maxl(3,-20000,-4800)",
+            "maxr(3,20000,-4800)",
+            "maxb(3,-20000,-4800)",
+            "maxt(3,20000,-4800)"
+        );
+        var originalSides = loader.pieces.Select(piece => piece.WallSide!.Value).ToArray();
+        if (legacy)
+        {
+            for (var i = 0; i < loader.pieces.Count; i++)
+                loader.pieces[i] = loader.pieces[i] with { WallSide = null };
+        }
+
+        var decoded = TightPackSerializer.Deserialize<StageLoader>(TightPackSerializer.Serialize(loader));
+        var stage = new BackendStage("parity-test", decoded, throwOnError: true);
+        var segments = stage.Pieces.OfType<StageObject>().ToArray();
+        Assert.AreEqual(12, segments.Length);
+
+        stage.Walls.Begin(1, decoded);
+        stage.Walls.Update(3);
+
+        for (var i = 0; i < segments.Length; i++)
+        {
+            var original = decoded.pieces[i].Position;
+            var expected = originalSides[i] switch
+            {
+                WallDirection.Right => new Vector3d(stage.Walls.Right, original.Y, original.Z),
+                WallDirection.Left => new Vector3d(stage.Walls.Left, original.Y, original.Z),
+                WallDirection.Top => new Vector3d(original.X, original.Y, stage.Walls.Top),
+                WallDirection.Bottom => new Vector3d(original.X, original.Y, stage.Walls.Bottom),
+                _ => throw new InvalidOperationException()
+            };
+            Assert.AreNotEqual(original, expected);
+            Assert.AreEqual(expected, segments[i].Position);
+        }
+    }
+
+    [TestMethod]
     public void ClosingWalls_ClosesTowardsTheCentreAndDropsOutOfBoundsCars()
     {
         var stage = new BackendStage(

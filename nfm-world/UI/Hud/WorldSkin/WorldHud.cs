@@ -37,7 +37,7 @@ internal sealed class WorldHud(IHudData race)
             Anchored(
                 Sx.Styles(top: 16, left: 16, width: 190, flexDirection: FlexDirection.Column, gapRow: 8),
                 [
-                    Panel(
+                    Sx.Show(() => race.TotalLaps > 0, () => Panel(
                         Sx.View(
                             style: () => Sx.Styles(flexDirection: FlexDirection.Column),
                             children:
@@ -49,7 +49,7 @@ internal sealed class WorldHud(IHudData race)
                                 )
                             ]
                         )
-                    ),
+                    )),
                     Panel(
                         GlassCardUi.StatBar("POWER", () => race.PowerFraction, Theme.MenuBlue, 8),
                         GlassCardUi.StatBar("DAMAGE", () => race.DamageFraction, Theme.Danger, 8)

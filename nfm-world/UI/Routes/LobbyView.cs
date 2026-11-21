@@ -1619,20 +1619,24 @@ public static class LobbyView
         var selected = Array.FindIndex(options, option => option.Value == setting.RawValue);
         bool CanEdit() => UiState.Lobby.Connected.Value && session() is { CanManage: true };
 
+        void SetValue(string value)
+        {
+            if (CanEdit() && session() is { } match && value != setting.RawValue)
+                actions.SetGameRule(match.Id, field.Name, value);
+        }
+
         return DetailRow(setting.Label, Sx.Show(
             CanEdit,
-            () => Controls.Dropdown(
-                () => labels,
-                () => selected,
-                index =>
-                {
-                    if (CanEdit() && session() is { } match && index != selected)
-                        actions.SetGameRule(match.Id, field.Name, options[index].Value);
-                },
-                unselectedLabel: setting.Value,
-                compact: true,
-                name: $"Lobby game rule {field.Name}"
-            ),
+            () => field.IntegerInput
+                ? IntegerRuleInput(field, setting.RawValue ?? setting.Value, SetValue, $"Lobby game rule {field.Name}")
+                : Controls.Dropdown(
+                    () => labels,
+                    () => selected,
+                    index => SetValue(options[index].Value),
+                    unselectedLabel: setting.Value,
+                    compact: true,
+                    name: $"Lobby game rule {field.Name}"
+                ),
             () => DetailValue(() => setting.Value)
         ));
     }
@@ -1705,9 +1709,11 @@ public static class LobbyView
     private static Node CreatePage(Actions actions)
     {
         var lobby = UiState.Lobby;
+        var showRules = new Signal<bool>(false);
         return Sx.View(
             name: () => "Lobby create",
             style: () => Sx.Styles(
+                position: Position.Relative,
                 flexDirection: FlexDirection.Column,
                 flexGrow: 1,
                 flexShrink: 1,
@@ -1897,14 +1903,11 @@ public static class LobbyView
                                         ]
                                     )
                                 ),
-                                (Func<object?>)(() => Sx.View(
-                                    style: () => Sx.Styles(
-                                        flexDirection: FlexDirection.Column,
-                                        flexShrink: 0,
-                                        gapRow: 10
-                                    ),
-                                    children: [.. GamemodeConfigControls(actions)]
-                                )),
+                                ActionButton(
+                                    "EDIT GAME RULES",
+                                    () => showRules.Value = true,
+                                    name: () => "Lobby create game rules"
+                                ),
                                 Sx.View(
                                     style: () => Sx.Styles(
                                         flexDirection: FlexDirection.Column,
@@ -1933,6 +1936,14 @@ public static class LobbyView
                             ]
                         )
                     ]
+                ),
+                Sx.Show(
+                    () => showRules.Value,
+                    () => MatchOverlayView(
+                        () => $"{GamemodeCatalog.DisplayName(lobby.SelectedGamemode.Value)} GAME RULES",
+                        CreateRulesContent(actions),
+                        () => showRules.Value = false
+                    )
                 )
             ]
         );
@@ -1941,6 +1952,8 @@ public static class LobbyView
         {
             var selected = lobby.SelectedStage.Value;
             if (selected.Length == 0) return "No stage selected";
+            if (lobby.CreateStages.SelectedArchiveStage.Value is { } archive && archive.Id == selected)
+                return $"{archive.Label} · Online archive";
             return lobby.CreateStages.Stages.Value.FirstOrDefault(option => option.Id == selected)?.Label
                    ?? (selected.StartsWith("archive/", StringComparison.OrdinalIgnoreCase)
                        ? "Public stage " + selected[^8..]
@@ -1975,41 +1988,96 @@ public static class LobbyView
             text: () => label
         );
 
-    /// <summary>
-    /// One row per config field the phase read from the selected gamemode's plugin. The view
-    /// only renders <see cref="UiState.LobbyState.GamemodeFields"/>, because reading the plugin
-    /// here would load and unload its assembly every time this slot re-runs.
-    /// </summary>
-    private static List<Node> GamemodeConfigControls(Actions actions)
+    private static Node CreateRulesContent(Actions actions)
     {
         var lobby = UiState.Lobby;
-        var controls = new List<Node>();
+        return Sx.View(
+            style: () => Sx.Styles(
+                flexDirection: FlexDirection.Column,
+                flexShrink: 0,
+                gapRow: 8,
+                minHeight: lobby.GamemodeFields.Value.Count > 0 ? 160 : null
+            ),
+            children:
+            [
+                Sx.For(
+                    each: () => lobby.GamemodeFields.Value,
+                    row: (field, _) => Sx.Show(
+                        () => field.IsVisible(key => lobby.GamemodeConfig.Value.GetValueOrDefault(key)),
+                        () =>
+                        {
+                            var name = $"Gamemode config {field.Name}";
+                            if (field.IntegerInput)
+                                return DetailRow(field.Label, IntegerRuleInput(
+                                    field,
+                                    lobby.GamemodeConfig.Value.GetValueOrDefault(field.Name) ?? field.Choices[0].Value,
+                                    value => actions.SetConfig(field.Name, value),
+                                    name
+                                ));
 
-        foreach (var configField in lobby.GamemodeFields.Value)
+                            var options = field.Choices;
+                            var labels = options.Select(option => option.Label).ToArray();
+                            return DetailRow(field.Label, Controls.Dropdown(
+                                () => labels,
+                                () => SelectedOption(options, lobby.GamemodeConfig.Value, field.Name),
+                                index => actions.SetConfig(field.Name, options[index].Value),
+                                width: 380,
+                                name: name
+                            ));
+                        }
+                    )
+                ),
+                Sx.Show(
+                    () => lobby.GamemodeFields.Value.Count == 0,
+                    () => Sx.View(
+                        name: () => "Lobby create no editable rules",
+                        children: DetailValue(() => "This gamemode has no editable rules.")
+                    )
+                )
+            ]
+        );
+    }
+
+    private static Node IntegerRuleInput(GamemodeConfigField field, string currentValue, Action<string> setValue, string name)
+    {
+        var invalid = new Signal<bool>(false);
+        var input = Sx.TextInput(style: () => Sx.Styles(
+            width: 82,
+            maxWidth: 100.Percent(),
+            paddingTop: 6,
+            paddingBottom: 6,
+            paddingLeft: 10,
+            paddingRight: 10,
+            backgroundColor: Theme.Surface,
+            borderTop: 1,
+            borderBottom: 1,
+            borderLeft: 1,
+            borderRight: 1,
+            borderColor: invalid.Value ? Theme.Danger : Border,
+            borderRadius: 6
+        ));
+        input.Name = name;
+        input.SetText(currentValue);
+        input.TextChanged = text => invalid.Value = text.Length > 0 && !IsAllowed(text);
+        input.Submitted = Commit;
+        input.Unfocused += () => Commit(input.Text ?? "");
+        return input;
+
+        bool IsAllowed(string text) => field.Choices.Any(choice => choice.Value == text);
+
+        void Commit(string text)
         {
-            // The option list is fixed for the field, so only the chosen index is reactive.
-            var options = configField.Choices;
-            var labels = options.Select(option => option.Label).ToArray();
-
-            controls.Add(
-                Sx.Text(
-                    style: () => Sx.TextStyles(fontSize: 11, foregroundColor: Theme.MenuDim),
-                    text: () => configField.Label
-                )
-            );
-
-            controls.Add(
-                Controls.Dropdown(
-                    () => labels,
-                    () => SelectedOption(options, lobby.GamemodeConfig.Value, configField.Name),
-                    index => actions.SetConfig(configField.Name, options[index].Value),
-                    width: 380,
-                    name: $"Gamemode config {configField.Name}"
-                )
-            );
+            if (!IsAllowed(text))
+            {
+                input.SetText(currentValue);
+                invalid.Value = false;
+            }
+            else if (text != currentValue)
+            {
+                currentValue = text;
+                setValue(text);
+            }
         }
-
-        return controls;
     }
 
     /// <summary>The chosen option's index, or -1 when the config holds a value the plugin does not list.</summary>

@@ -149,7 +149,7 @@ public class GamemodePluginTests
 
         var property = plugin.ConfigProperties.Single(p => p.Name == "constraint");
         Assert.AreEqual(typeof(string), property.Type);
-        Assert.AreEqual("Race constraint", property.Label);
+        Assert.AreEqual("Type", property.Label);
 
         CollectionAssert.AreEqual(
             new[] { "racing", "wasting", "both" },
@@ -162,6 +162,23 @@ public class GamemodePluginTests
         CollectionAssert.AreEqual(
             new[] { "off", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" },
             walls.Options.Select(o => o.Value).ToArray()
+        );
+
+        var laps = plugin.ConfigProperties.Single(p => p.Name == "laps");
+        Assert.AreEqual("stage", laps.Options[0].Value);
+        Assert.AreEqual("20", laps.Options[^1].Value);
+
+        var fixing = plugin.ConfigProperties.Single(p => p.Name == "fixing");
+        CollectionAssert.AreEqual(new[] { "unlimited", "limited", "none" }, fixing.Options.Select(o => o.Value).ToArray());
+
+        var fixLimit = plugin.ConfigProperties.Single(p => p.Name == "fix_limit");
+        Assert.AreEqual(typeof(int), fixLimit.Type);
+        Assert.AreEqual("fixing", fixLimit.VisibleWhenProperty);
+        Assert.AreEqual("limited", fixLimit.VisibleWhenValue);
+        Assert.AreEqual("3", fixLimit.Options[0].Value);
+        CollectionAssert.AreEquivalent(
+            Enumerable.Range(1, 10).Select(value => value.ToString()).ToArray(),
+            fixLimit.Options.Select(option => option.Value).ToArray()
         );
     }
 

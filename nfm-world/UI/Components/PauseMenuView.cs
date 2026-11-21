@@ -232,7 +232,7 @@ public static class PauseMenuView
         ),
         children:
         [
-            InfoItem("LAP", () => $"{race.Lap.Value} / {race.TotalLaps.Value}"),
+            Sx.Show(() => race.TotalLaps.Value > 0, () => InfoItem("LAP", () => $"{race.Lap.Value} / {race.TotalLaps.Value}")),
             InfoItem("POSITION", () => $"{race.Position.Value} / {race.TotalRacers.Value}")
         ]
     );

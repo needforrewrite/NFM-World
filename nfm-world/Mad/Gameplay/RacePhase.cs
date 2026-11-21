@@ -411,6 +411,8 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             hud.StuntMessage = _spectatorFeedback.Stunt;
         }
 
+        hud.StatusMessage = gm.RaceNotice ?? hud.StatusMessage;
+
         InvalidateOrdering();
         // One ordering for the sidebar and the lock keys, so the digit printed on a row is the
         // slot that locks that row's car. Every car is listed here (wasted ones included) so the
@@ -461,7 +463,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             // from the declared bounds still map sensibly. Falls back to the stage bounds.
             var checkpoints = CurrentStage.Backend.Checkpoints;
             hud.TrackCenter = checkpoints.Count > 0 ? AverageCheckpoint(checkpoints) : StageCenter();
-            if (checkpoints.Count > 0)
+            if (CurrentStage.Backend.Nlaps > 0 && checkpoints.Count > 0)
             {
                 var next = checkpoints[Math.Clamp((int)client.CurrentCheckpoint, 0, checkpoints.Count - 1)];
                 hud.TargetCheckpoint = ((float)next.Position.X, (float)next.Position.Z);
@@ -552,6 +554,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             return targetCar is null
                 ? null
                 : new Vector3((float)targetCar.Position.X, (float)targetCar.Position.Y, (float)targetCar.Position.Z);
+        if (CurrentStage.Backend.Nlaps == 0) return null;
         var checkpoints = CurrentStage.Backend.Checkpoints;
         if (checkpoints.Count == 0) return null;
         var checkpoint = checkpoints[Math.Clamp((int)client.CurrentCheckpoint, 0, checkpoints.Count - 1)];

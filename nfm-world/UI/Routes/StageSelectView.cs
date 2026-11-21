@@ -19,6 +19,7 @@ public sealed class StageSelectState
     public Signal<string> Collection { get; } = new("");
     public Signal<IReadOnlyList<StageOption>> Stages { get; } = new([]);
     public Signal<string> Selected { get; } = new("");
+    public Signal<StageOption?> SelectedArchiveStage { get; } = new(null);
     public Signal<string> Search { get; } = new("");
     public Signal<bool> ConfirmEnabled { get; } = new(false);
     public Signal<string> ConfirmLabel { get; } = new("RACE");
@@ -51,6 +52,7 @@ public sealed class StageSelectState
         Collection.Value = "";
         Stages.Value = [];
         Selected.Value = "";
+        SelectedArchiveStage.Value = null;
         Search.Value = "";
         ConfirmEnabled.Value = false;
         ConfirmLabel.Value = "RACE";

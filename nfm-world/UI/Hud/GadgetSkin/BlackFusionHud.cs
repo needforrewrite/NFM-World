@@ -38,10 +38,14 @@ internal sealed class BlackFusionHud(IHudData race) : GadgetHud(race)
         RoundedRectOutline(accent, 1, 13, 29, 165, 26, 5);
 
         var white = Snap(250, 250, 250);
-        Text("Lap:", 19, 20, 12, white);
+        if (Race.TotalLaps > 0)
+        {
+            Text("Lap:", 19, 20, 12, white);
+            Text($"{Race.Lap} / {Race.TotalLaps}", 51, 20, 12, white);
+        }
+
         Text("Wasted:", 92, 20, 12, white);
         Text("Position:", 45, 45, 12, white);
-        Text($"{Race.Lap} / {Race.TotalLaps}", 51, 20, 12, white);
         if (!Race.TimeTrial)
             Text($"{Race.Wasted} / {Race.Opponents}", 150, 20, 12, white);
 
