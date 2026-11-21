@@ -64,7 +64,27 @@ public sealed class ShaderReflection
     public required IReadOnlyList<ResourceBinding> Textures { get; init; }
     public required IReadOnlyList<ResourceBinding> Samplers { get; init; }
     public VertexLayoutDesc? ExpectedVertexLayout { get; init; }
+
+    /// <summary>
+    /// The vertex shader's declared inputs, resolved back to the semantics a vertex layout names.
+    ///
+    /// Only WebGPU needs this. D3D11 matches an input layout against the compiled shader's own
+    /// signature and GL binds attributes by name or explicit location, so both can work from the
+    /// semantic they are given; WGSL has no semantics at all, only <c>@location</c> numbers, and the
+    /// caller's layout says <c>TEXCOORD4</c>. This is the table that bridges the two.
+    /// </summary>
+    public IReadOnlyList<ShaderVertexInput> VertexInputs { get; init; } = Array.Empty<ShaderVertexInput>();
 }
+
+/// <summary>
+/// One vertex shader input: the semantic its declaring source used, and the WGSL location it landed
+/// on.
+///
+/// A matrix input is one entry spanning several locations, because that is how it reaches the shader
+/// - one <c>mat4x4</c> attribute at location L occupies L..L+3 - while the caller's layout may still
+/// list the four registers separately, as four <c>TEXCOORD</c> slots.
+/// </summary>
+public readonly record struct ShaderVertexInput(string Semantic, int SemanticIndex, int Location, int Registers);
 
 /// <summary>
 /// A compiled shader module: opaque, backend-specific bytecode plus reflected metadata.
@@ -101,4 +121,22 @@ public sealed record ShaderStageSources(
     string Glsl,
     string GlslEs,
     string Glsl330
-);
+)
+{
+    /// <summary>
+    /// WGSL, as the WebGPU backend hands it to <c>wgpu</c>.
+    ///
+    /// The last form rather than the first, and translated from the same SPIR-V every other form
+    /// comes from, so there is one shader source of truth. Its binding numbers are the backend's
+    /// own (see <c>WgslCompiler</c>), not HLSL's register indices.
+    /// </summary>
+    public string Wgsl { get; init; } = "";
+
+    /// <summary>
+    /// The entry point's name in <see cref="Wgsl"/>.
+    ///
+    /// WebGPU names the stage's entry point explicitly instead of defaulting to <c>main</c>, and the
+    /// name survives from the HLSL function, so the backend cannot know it without being told.
+    /// </summary>
+    public string EntryPoint { get; init; } = "main";
+}

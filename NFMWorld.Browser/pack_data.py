@@ -6,7 +6,7 @@ fetched per track at run time instead of being part of the boot payload. The spl
 `data/music/**` goes to one archive, everything else to the other.
 
 Both archives are stored, not deflated. The art (models, fonts) is already compressed and the music
-is MP3 or tracker modules, so deflate buys almost nothing, and stored entries let the browser's
+is Opus, MP3 or tracker modules, so deflate buys almost nothing, and stored entries let the browser's
 fetch read a whole entry without re-inflating it.
 
 Excluded: preact-luau (41 MB of upstream JS plus checked-in lua*.exe tooling the runtime never

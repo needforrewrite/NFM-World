@@ -16,7 +16,27 @@
              pointing at a side-by-side build - is not forced to have this file rebuild it. -->
         <NFMWorldShaderTaskAssembly Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(NFMWorldShaderTaskAssembly)' == ''">$(MSBuildThisFileDirectory)..\NFMWorld.ShaderCompiler.Task\bin\$(Configuration)\net11.0\NFMWorld.ShaderCompiler.Task.dll</NFMWorldShaderTaskAssembly>
         <NFMWorldShaderBuildTask Condition="'$(NFMWorldShaderBuildTask)' == ''">true</NFMWorldShaderBuildTask>
+
+        <!-- Everything about the bundle that is decided by the compiler rather than by a `.fx` file:
+             the WGSL stage, the binding renumbering, the bundle emitter, the entry-point naming.
+             They live in the assembly beside the task, not in the task itself, so they have to be
+             named separately to invalidate a build - see the Inputs of CompileShaders. Derived from
+             the task assembly's own path so a caller that points at a side-by-side build gets the
+             matching compiler with it. -->
+        <NFMWorldShaderTaskDirectory Condition="'$(NFMWorldShaderTaskDirectory)' == ''">$([System.IO.Path]::GetDirectoryName('$(NFMWorldShaderTaskAssembly)'))</NFMWorldShaderTaskDirectory>
+        <NFMWorldShaderCompilerAssembly Condition="'$(NFMWorldShaderCompilerAssembly)' == ''">$(NFMWorldShaderTaskDirectory)\NFMWorld.ShaderCompiler.dll</NFMWorldShaderCompilerAssembly>
     </PropertyGroup>
+
+    <!-- The external translator the compiler shells out to. Listed as inputs because restoring the
+         package is what turns WGSL on: without this, a tree whose bundles were built while tint was
+         absent keeps them, and the WebGPU backend reports the missing WGSL at pipeline creation.
+         A wildcard, not two named files: MSBuild treats a named input that does not exist as
+         "cannot compare", which makes the target run every build. The glob yields the files that
+         are there (tint.exe on Windows, tint elsewhere) and nothing where tint is not shipped. -->
+    <ItemGroup>
+        <NFMWorldShaderTool Include="$(NFMWorldShaderCompilerAssembly)"/>
+        <NFMWorldShaderTool Include="$(NFMWorldShaderTaskDirectory)\tint*"/>
+    </ItemGroup>
 
     <!-- Loaded out-of-process, which is what makes rebuilding it possible at all.
          MSBuild loads an in-process task by mapping its assembly, and Windows will not let any process
@@ -121,12 +141,24 @@
       files that do not exist and the target would recompile the shaders on every build. The stamp
       is written by the task once the whole batch has succeeded, which is also the only correct
       moment - a partial run must not look up to date.
+
+      The inputs include the compiler and its tools, not just the shaders and the task. A change to
+      what a bundle *contains* - a new target form, a renumbered binding, a corrected emitter - is a
+      change to NFMWorld.ShaderCompiler.dll, and leaving it out of Inputs keeps every stamp valid
+      across it. That is not hypothetical: the WGSL form was added to bundles while trees that had
+      already stamped kept emitting bundles without it, and the failure surfaced at pipeline
+      creation in the WebGPU backend rather than at build time.
+
+      This file is an input too, so the rules above can be corrected in the only way that reaches a
+      tree which has already stamped: the edit changes this file's timestamp, which retires every
+      stamp written under the old rules. Without it a tree heals only once its compiler happens to
+      recompile, which is the case the bug report was.
     -->
     <Target Name="CompileShaders"
             BeforeTargets="CoreCompile"
             DependsOnTargets="ResolveShaderPaths;BuildShaderCompilerTask"
             Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(DesignTimeBuild)' != 'true'"
-            Inputs="@(NFMWorldShaderSource);@(NFMWorldShaderHeader);$(NFMWorldShaderTaskAssembly)"
+            Inputs="@(NFMWorldShaderSource);@(NFMWorldShaderHeader);@(NFMWorldShaderTool);$(NFMWorldShaderTaskAssembly);$(MSBuildThisFileFullPath)"
             Outputs="$(NFMWorldShadersOutputDirectory)shaders.stamp">
 
         <!-- No <Output> here on purpose. The bundles are picked up by IncludeShaders' glob, which

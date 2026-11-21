@@ -103,7 +103,7 @@ public static class MenuPreferences
         .ToArray();
 
     private static bool IsMusicFile(string path) => Path.GetExtension(path).ToLowerInvariant()
-        is ".mp3" or ".ogg" or ".wav" or ".flac" or ".mod" or ".xm" or ".s3m" or ".it";
+        is ".mp3" or ".ogg" or ".opus" or ".wav" or ".flac" or ".mod" or ".xm" or ".s3m" or ".it";
 
     private static bool IsRelativeAsset(string selection) => !string.IsNullOrWhiteSpace(selection)
                                                              && !selection.Any(char.IsControl)

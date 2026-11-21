@@ -71,6 +71,38 @@ public class StageMusicPackagingTests
         Assert.Throws<InvalidDataException>(() => StockCatalog.PackageStage("stage", stage, includeMusic: true));
     }
 
+    /// <summary>
+    /// A remaster directive that names a file which is not shipped plays nothing, with no error:
+    /// the loader only records the path. Re-encoding the OSTs therefore has to keep the stage text
+    /// and the files in step.
+    /// </summary>
+    [TestMethod]
+    public void EveryShippedRemasterTrack_ResolvesToAShippedFile()
+    {
+        TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
+
+        var declared = 0;
+        var missing = new List<string>();
+        foreach (var file in TheVFS.VFS.EnumerateFiles("data/stages", "*.txt", SearchOption.AllDirectories))
+        {
+            foreach (var line in TheVFS.VFS.ReadAllText(file).Split('\n'))
+            {
+                var start = line.IndexOf("soundtrackremaster(", StringComparison.Ordinal);
+                if (start < 0) continue;
+
+                var args = line[(start + "soundtrackremaster(".Length)..].Split(')')[0].Split(',');
+                if (args.Length < 2) continue;
+
+                declared++;
+                var path = $"data/music/{args[0].Trim()}/{args[1].Trim()}";
+                if (!TheVFS.VFS.FileExists(path)) missing.Add($"{file} -> {path}");
+            }
+        }
+
+        Assert.AreNotEqual(0, declared, "no shipped stage declares a remastered track");
+        CollectionAssert.AreEqual(Array.Empty<string>(), missing, string.Join("\n", missing));
+    }
+
     private static void Write(string path, byte[] bytes)
     {
         using var stream = TheVFS.VFS.OpenWrite(path);

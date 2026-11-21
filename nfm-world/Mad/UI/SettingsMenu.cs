@@ -117,11 +117,14 @@ public class SettingsMenu()
         // there. Listing the desktop entries would offer a choice that cannot be honoured, and
         // picking one could only fail to start.
         _ when OperatingSystem.IsBrowser() => ["OpenGL ES"],
-        // windows doesn't do metal or gles, linux doesn't do metal
+        // windows doesn't do metal or gles, linux doesn't do metal. WebGPU is offered on Windows
+        // only: the backend builds its surface from the window's Win32 HWND, and no other
+        // platform's handle is exposed yet, so offering it elsewhere would be a pick that cannot
+        // start.
         _ when RuntimeInformation.IsOSPlatform(OSPlatform.OSX) =>
             ["Auto", "Metal via ANGLE", "OpenGL", "Vulkan via ANGLE", "OpenGL via ANGLE", "OpenGL ES via ANGLE"],
         _ when RuntimeInformation.IsOSPlatform(OSPlatform.Windows) =>
-            ["Auto", "DirectX 11", "OpenGL", "Vulkan via ANGLE", "DirectX 11 via ANGLE", "OpenGL via ANGLE"],
+            ["Auto", "DirectX 11", "WebGPU", "OpenGL", "Vulkan via ANGLE", "DirectX 11 via ANGLE", "OpenGL via ANGLE"],
         _ => ["Auto", "OpenGL", "Vulkan via ANGLE", "OpenGL via ANGLE", "OpenGL ES via ANGLE"]
     };
 
@@ -989,6 +992,9 @@ public class SettingsMenu()
                     return true;
                 case "OpenGL":
                     renderer = Renderer.DesktopGl;
+                    return true;
+                case "WebGPU":
+                    renderer = Renderer.WebGpu;
                     return true;
                 // Deliberately NOT the entry above it. "DirectX 11 via ANGLE" goes through ANGLE's
                 // D3D11 backend and is spelled the same way to the user, which is why both exist -

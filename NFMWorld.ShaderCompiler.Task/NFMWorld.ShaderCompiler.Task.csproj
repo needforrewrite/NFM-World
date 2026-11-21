@@ -47,6 +47,11 @@
     <ItemGroup>
         <PackageReference Include="Silk.NET.Shaderc.Native" Version="2.23.0" GeneratePathProperty="true" ExcludeAssets="all" PrivateAssets="all"/>
         <PackageReference Include="Silk.NET.SPIRV.Cross.Native" Version="2.23.0" GeneratePathProperty="true" ExcludeAssets="all" PrivateAssets="all"/>
+        <!-- Dawn's tint, the WGSL side of the pipeline. It is a tool rather than a library, so it is
+             extracted and copied flat like the two natives above - its own .targets copies beside
+             $(OutDir), which is not where this task looks. Only win-x64, linux-x64 and osx-arm64
+             are in the package; a build on another RID omits WGSL rather than failing. -->
+        <PackageReference Include="Stride.Dependencies.Tint" Version="2026.9.27" GeneratePathProperty="true" ExcludeAssets="all" PrivateAssets="all"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -55,6 +60,8 @@
         <None Include="$(PkgSilk_NET_Shaderc_Native)\runtimes\$(NETCoreSdkRuntimeIdentifier)\native\*"
               Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/>
         <None Include="$(PkgSilk_NET_SPIRV_Cross_Native)\runtimes\$(NETCoreSdkRuntimeIdentifier)\native\*"
+              Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/>
+        <None Include="$(PkgStride_Dependencies_Tint)\runtimes\$(NETCoreSdkRuntimeIdentifier)\native\*"
               Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/>
     </ItemGroup>
 

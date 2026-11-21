@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RootNamespace>NFMWorld.Graphics.WebGPU.Smoke</RootNamespace>
+        <PlatformTarget>x64</PlatformTarget>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj"/>
+        <ProjectReference Include="..\NFMWorld.Graphics.WebGPU\NFMWorld.Graphics.WebGPU.csproj"/>
+        <ProjectReference Include="..\NFMWorld.Shaders.Abstraction\NFMWorld.Shaders.Abstraction.csproj"/>
+    </ItemGroup>
+
+    <!-- The real generated bundles, so the WGSL the smoke parses is the compiler's actual output
+         rather than a hand-written stand-in. This is also the second independent consumer of the
+         shader task, which is what would catch a task that only works from the directory it was
+         developed in. -->
+    <PropertyGroup>
+        <NFMWorldShadersDirectory>$(MSBuildProjectDirectory)\..\nfm-world\data\shaders</NFMWorldShadersDirectory>
+    </PropertyGroup>
+
+    <Import Project="..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.targets"/>
+
+</Project>

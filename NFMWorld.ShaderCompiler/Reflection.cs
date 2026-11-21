@@ -65,7 +65,18 @@ public sealed record UniformBlock(
     int SizeBytes,
     IReadOnlyList<UniformMember> Members,
     int Binding = -1
-);
+)
+{
+    /// <summary>The SPIR-V id of the block variable, which is what its binding decoration hangs on.</summary>
+    public int SpirvId { get; init; }
+}
+
+/// <summary>One vertex input, as the caller's vertex layout has to name it.</summary>
+///
+/// <paramref name="Semantic"/> is the base name and <paramref name="SemanticIndex"/> the number the
+/// source appended, so <c>TEXCOORD3</c> becomes ("TEXCOORD", 3). <paramref name="Registers"/> is how
+/// many locations the input spans, which is 1 for everything but a matrix.
+public sealed record VertexInputDesc(string Semantic, int SemanticIndex, int Location, int Registers = 1);
 
 /// <summary>Everything reflected out of one <c>@program</c>, after slot merging.</summary>
 public sealed record ProgramReflection(
@@ -74,7 +85,11 @@ public sealed record ProgramReflection(
     IReadOnlyList<UniformBlock> UniformBlocks,
     IReadOnlyList<TextureBinding> Textures,
     IReadOnlyList<SamplerBinding> Samplers
-);
+)
+{
+    /// <summary>The vertex stage's inputs, resolved to the semantics they were declared with.</summary>
+    public IReadOnlyList<VertexInputDesc> VertexInputs { get; init; } = Array.Empty<VertexInputDesc>();
+}
 
 /// <summary>
 /// One stage's cross-compiled forms, one per backend sokol can be built against.
@@ -89,4 +104,11 @@ public sealed record ProgramReflection(
 /// not a dialect a driver compiles. <see cref="GlslEs"/> is the OpenGL ES 3.0 form, which ANGLE
 /// and a GLES3 context compile.
 /// </summary>
-public sealed record StageSources(byte[] Spirv, string Hlsl, string Msl, string Glsl, string GlslEs, string Glsl330);
+public sealed record StageSources(byte[] Spirv, string Hlsl, string Msl, string Glsl, string GlslEs, string Glsl330)
+{
+    /// <summary>WGSL, translated from <see cref="Spirv"/> with the backend's own binding numbers.</summary>
+    public string Wgsl { get; init; } = "";
+
+    /// <summary>The entry point's name, as both the SPIR-V and the WGSL spell it.</summary>
+    public string EntryPoint { get; init; } = "main";
+}

@@ -13,6 +13,6 @@ internal static class MusicLoader
 
         await LoadingWork.NextFrame;
         using var stream = embedded is not null ? new MemoryStream(embedded, writable: false) : TheVFS.VFS.OpenRead(path);
-        return new WebAudioMusic(stream, Path.GetExtension(path), tempo);
+        return await WebAudioMusic.LoadAsync(stream, Path.GetExtension(path), tempo);
     }
 }

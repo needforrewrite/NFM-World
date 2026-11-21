@@ -97,6 +97,12 @@ public static class ShaderBuild
         var defines = new Dictionary<string, string> { [DialectDefine] = "1" };
         var bundles = new List<CompiledBundle>(techniques.Count);
 
+        // Probed once per file: a build host without the tint native (a non-x64 RID has no package
+        // asset for it) still produces every other form, and the WebGPU backend reports the missing
+        // WGSL itself rather than the shader build failing for everyone.
+        if (!WgslCompiler.Available)
+            log?.Invoke("    tint was not found beside the shader compiler; WGSL is omitted.");
+
         foreach (var technique in techniques)
         {
             var sourcesByStage = new Dictionary<ShaderStage, StageSources>();
@@ -105,6 +111,8 @@ public static class ShaderBuild
             // The vertex semantics live only in the source text - glslang drops them - so they are
             // read back out here, in declaration order, to be restored into the emitted HLSL.
             var declaredInputs = HlslSemantics.ForEntryPoint(stripped, technique.VertexEntry);
+
+            var compiled = new Dictionary<ShaderStage, (byte[] Spirv, string Entry)>();
 
             foreach (var (stage, entry) in new[]
                      {
@@ -127,6 +135,7 @@ public static class ShaderBuild
                     result.GlslEs,
                     result.Glsl330
                 );
+                compiled[stage] = (spirv, entry);
                 stages.Add(HlslBoolUniforms.Mark(result.Reflection, boolUniforms));
 
                 log?.Invoke(
@@ -151,16 +160,129 @@ public static class ShaderBuild
                 .Select(g => g.First())
                 .ToList();
 
+            if (uniformBlocks.Count > 1)
+            {
+                throw new InvalidOperationException(
+                    $"{path} [technique {technique.Name}]: {uniformBlocks.Count} distinct uniform blocks "
+                    + $"({string.Join(", ", uniformBlocks.Select(b => b.Name))}). WebGPU can bind one block "
+                    + "per pipeline - the abstraction's SetUniform addresses byte offsets inside a single "
+                    + "block - so a second one has nowhere to go."
+                );
+            }
+
+            if (WgslCompiler.Available)
+            {
+                foreach (var (stage, value) in compiled)
+                {
+                    var reflection = stages.First(s => s.Stage == stage);
+                    sourcesByStage[stage] = sourcesByStage[stage] with
+                    {
+                        Wgsl = WgslCompiler.Compile(value.Spirv, BindingsFor(reflection, textures, samplers), value.Entry),
+                        EntryPoint = value.Entry,
+                    };
+                }
+
+                // WebGPU validates the whole interface, so a vertex output the pixel stage does not
+                // read has to be declared there - see WgslStageInterface.
+                var vertexWgsl = sourcesByStage[ShaderStage.Vertex].Wgsl;
+                var pixel = sourcesByStage[ShaderStage.Fragment];
+                sourcesByStage[ShaderStage.Fragment] = pixel with
+                {
+                    Wgsl = WgslStageInterface.Reconcile(vertexWgsl, pixel.Wgsl),
+                };
+            }
+
             // Uniform naming - `{Shader}{Technique}` - rather than a `{Shader}` special case for the
             // single-technique files, so a later technique added to one of them cannot collide with
             // the bundle already named after the file.
             var programName = shaderName + technique.Name;
-            var program = new ProgramReflection(programName, stages, uniformBlocks, textures, samplers);
+            var program = new ProgramReflection(programName, stages, uniformBlocks, textures, samplers)
+            {
+                VertexInputs = ResolveVertexInputs(
+                    declaredInputs,
+                    stages.First(s => s.Stage == ShaderStage.Vertex)
+                ),
+            };
 
             bundles.Add(new CompiledBundle(programName, technique.Name, CSharpBundleEmitter.Emit(program, sourcesByStage)));
         }
 
         return bundles;
+    }
+
+    /// <summary>
+    /// The WGSL binding number for every resource one stage declares.
+    ///
+    /// The order is fixed by the backend: the single uniform block is binding 0, then every merged
+    /// texture, then every merged sampler. Textures and samplers share one binding space in WGSL,
+    /// so they cannot both start at 1 - and in the SPIR-V they do, because glslang numbers a
+    /// <c>t0</c> and an <c>s0</c> independently. That collision is the reason this exists at all.
+    /// </summary>
+    private static Dictionary<int, int> BindingsFor(
+        StageReflection stage,
+        IReadOnlyList<TextureBinding> textures,
+        IReadOnlyList<SamplerBinding> samplers
+    )
+    {
+        var bindings = new Dictionary<int, int>();
+        foreach (var block in stage.UniformBlocks)
+            bindings[block.SpirvId] = 0;
+
+        int IndexOf<T>(IReadOnlyList<T> list, Func<T, string> nameOf, string name)
+        {
+            for (var i = 0; i < list.Count; i++)
+                if (nameOf(list[i]) == name)
+                    return i;
+            return -1;
+        }
+
+        foreach (var texture in stage.Textures)
+        {
+            var index = IndexOf(textures, t => t.Name, texture.Name);
+            if (index >= 0)
+                bindings[texture.SpirvId] = 1 + index;
+        }
+
+        foreach (var sampler in stage.Samplers)
+        {
+            var index = IndexOf(samplers, s => s.Name, sampler.Name);
+            if (index >= 0)
+                bindings[sampler.SpirvId] = 1 + textures.Count + index;
+        }
+
+        return bindings;
+    }
+
+    /// <summary>
+    /// Pairs the source's declared semantics with the locations the SPIR-V put them on.
+    ///
+    /// The same walk <c>ApplySemanticRemap</c> makes, and for the same reason: glslang numbers a
+    /// vertex input by its declaration order, so a declaration's location is the running total of the
+    /// registers before it, and an input the stage never reads still consumes its slot. An input
+    /// that did not survive compilation has no location to bind, so it is dropped here rather than
+    /// becoming an attribute WebGPU would reject.
+    /// </summary>
+    private static IReadOnlyList<VertexInputDesc> ResolveVertexInputs(
+        IReadOnlyList<HlslSemantics.DeclaredInput> declared,
+        StageReflection vertexStage
+    )
+    {
+        var present = vertexStage.Inputs.Select(i => i.Location).ToHashSet();
+        var inputs = new List<VertexInputDesc>();
+
+        var location = 0;
+        foreach (var input in declared)
+        {
+            if (present.Contains(location))
+            {
+                var (semantic, index) = HlslSemantics.SplitSemantic(input.Semantic);
+                inputs.Add(new VertexInputDesc(semantic, index, location, input.Registers));
+            }
+
+            location += input.Registers;
+        }
+
+        return inputs;
     }
 
     private static int LineCount(string text) =>

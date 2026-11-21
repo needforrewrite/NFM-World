@@ -45,6 +45,10 @@ class FakeContext {
         this.panners.push(node);
         return node;
     }
+    async decodeAudioData(data) {
+        if (!data.byteLength) throw new Error('empty');
+        return { duration: data.byteLength / 48000, getChannelData: () => new Float32Array(data.byteLength / 4) };
+    }
 }
 
 const contexts = [];
@@ -114,4 +118,14 @@ test('finished one-shots release their panner and leave other playback alone', (
     assert.equal(musicNode.panner, undefined);
     assert.equal(audio.isSourceActive(music), true);
     audio.stopSource(music);
+});
+
+test('the page decoder turns compressed bytes into a playable buffer handle', async () => {
+    const decoded = await audio.decodeAudio(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]));
+    assert.notEqual(decoded, 0);
+    const source = audio.startBuffer(decoded, 0.5, 1, true);
+    assert.equal(audio.isSourceActive(source), true);
+    assert.equal(context.sources.at(-1).buffer.duration > 0, true);
+    audio.stopSource(source);
+    assert.equal(await audio.decodeAudio(new Uint8Array(0)), 0);
 });

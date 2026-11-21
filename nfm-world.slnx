@@ -88,6 +88,8 @@
   <Project Path="NFMWorld.Graphics.OpenGL/NFMWorld.Graphics.OpenGL.csproj" />
   <Project Path="NFMWorld.Graphics.DesktopGL.Smoke/NFMWorld.Graphics.DesktopGL.Smoke.csproj" />
   <Project Path="NFMWorld.Graphics.DesktopGL/NFMWorld.Graphics.DesktopGL.csproj" />
+  <Project Path="NFMWorld.Graphics.WebGPU.Smoke/NFMWorld.Graphics.WebGPU.Smoke.csproj" />
+  <Project Path="NFMWorld.Graphics.WebGPU/NFMWorld.Graphics.WebGPU.csproj" />
   <Project Path="NFMWorld.Library.Base/NFMWorld.Library.Base.csproj" />
   <Project Path="NFMWorld.Library.Test/NFMWorld.Library.Test.csproj" />
   <Project Path="NFMWorld.Library/NFMWorld.Library.csproj" />

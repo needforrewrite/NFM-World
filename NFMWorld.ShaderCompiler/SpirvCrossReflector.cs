@@ -678,7 +678,7 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
     {
         var type = _cross.CompilerGetTypeHandle(compiler, structTypeId);
         if (type is null)
-            return new UniformBlock(name, name, 0, Array.Empty<UniformMember>(), (int)binding);
+            return new UniformBlock(name, name, 0, Array.Empty<UniformMember>(), (int)binding) { SpirvId = (int)id };
 
         UIntPtr size = 0;
         Check(_cross.CompilerGetDeclaredStructSize(compiler, type, &size), null, "struct size");
@@ -705,7 +705,7 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
             members.Add(new UniformMember(memberName, (int)offset, (int)memberSize, baseType, vectorSize, columns));
         }
 
-        return new UniformBlock(name, name, (int)size, members);
+        return new UniformBlock(name, name, (int)size, members, (int)binding) { SpirvId = (int)id };
     }
 
     private static BaseType MapBaseType(Basetype b) => b switch

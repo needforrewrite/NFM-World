@@ -8,10 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="FixedMathSharp" Version="8.0.0" />
-    </ItemGroup>
-
-    <ItemGroup>
+      <ProjectReference Include="..\FixedMathSharp\src\FixedMathSharp\FixedMathSharp.csproj" />
       <ProjectReference Include="..\nfm-world\NFMWorld.Game.csproj" />
     </ItemGroup>
 

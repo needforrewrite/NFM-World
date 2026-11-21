@@ -24,6 +24,8 @@ public static partial class WebAudioBackend
     public static bool IsAvailable => false;
 
     internal static int CreateBuffer(ReadOnlySpan<byte> pcm16, int sampleRate, int channels) => 0;
+
+    internal static Task<int> DecodeAudioAsync(byte[] encoded) => Task.FromResult(0);
     internal static int StartBuffer(int buffer, double volume, double rate, bool loop) => 0;
     internal static int StartBufferAt(int buffer, double volume, double rate, bool loop, double offset) => 0;
 
@@ -96,8 +98,14 @@ public static partial class WebAudioBackend
     {
         get
         {
-            try { return AudioAvailable(); }
-            catch { return false; }
+            try
+            {
+                return AudioAvailable();
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 
@@ -113,6 +121,14 @@ public static partial class WebAudioBackend
 
     [JSImport("createBuffer", Module)]
     private static partial int CreateBufferNative(byte[] pcm16, int sampleRate, int channels);
+
+    /// <summary>Hands a compressed track to the page's decoder, which is the only way the wasm
+    /// build can read Ogg Vorbis or Opus - libsndfile has no wasm build. Returns a buffer handle,
+    /// or 0 when the page cannot decode it.</summary>
+    internal static Task<int> DecodeAudioAsync(byte[] encoded) => DecodeAudioNative(encoded);
+
+    [JSImport("decodeAudio", Module)]
+    private static partial Task<int> DecodeAudioNative(byte[] encoded);
 
     [JSImport("startBuffer", Module)]
     internal static partial int StartBuffer(int buffer, double volume, double rate, bool loop);
@@ -135,8 +151,17 @@ public static partial class WebAudioBackend
     internal static partial void SetSourcePosition(int source, double x, double y, double z);
 
     [JSImport("setListener", Module)]
-    internal static partial void SetListener(double x, double y, double z, double fx, double fy, double fz,
-        double ux, double uy, double uz);
+    internal static partial void SetListener(
+        double x,
+        double y,
+        double z,
+        double fx,
+        double fy,
+        double fz,
+        double ux,
+        double uy,
+        double uz
+    );
 
     [JSImport("isSourceActive", Module)]
     internal static partial bool IsSourceActive(int source);
@@ -356,6 +381,25 @@ public sealed class WebAudioMusic : IRadicalMusic
     /// <summary>An unplayable instance, for a track that could not be loaded - every call is a
     /// no-op, matching <c>FaudioMusic</c>'s failure state.</summary>
     public WebAudioMusic() => _disposed = true;
+
+    /// <summary>Ogg Vorbis and Opus have no managed decoder on the browser, so those are decoded by
+    /// the page and arrive as a ready AudioBuffer handle.</summary>
+    public static async Task<WebAudioMusic> LoadAsync(Stream stream, string extension, double tempomul)
+    {
+        if (extension.TrimStart('.').ToLowerInvariant() is not ("opus" or "ogg" or "oga"))
+            return new WebAudioMusic(stream, extension, tempomul);
+
+        using var encoded = new MemoryStream();
+        stream.CopyTo(encoded);
+        var buffer = await WebAudioBackend.DecodeAudioAsync(encoded.ToArray());
+        return buffer == 0 ? new WebAudioMusic() : new WebAudioMusic(buffer, tempomul);
+    }
+
+    private WebAudioMusic(int buffer, double tempomul)
+    {
+        _buffer = buffer;
+        _rate = tempomul;
+    }
 
     public void Play()
     {
