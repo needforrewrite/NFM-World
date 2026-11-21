@@ -47,6 +47,8 @@ internal static unsafe class Program
         CheckRenderTarget(device);
         CheckBundlePipelines(device);
         CheckTexturedDraw(device);
+        CheckMidPassTextureRebind(device);
+        CheckUniformRingGrowth(device);
         CheckTranslationUniform(device);
 
         var finalError = device.TakeError();
@@ -355,6 +357,176 @@ internal static unsafe class Program
             "DRAW",
             "the device reported no validation error after the draw" + (drawError is null ? "" : $": {drawError}"),
             drawError is null
+        );
+    }
+
+    /// <summary>
+    /// Rebinding a texture inside one pass must rebuild the bind group without invalidating the one
+    /// the pass already recorded. wgpu resolves a pass's bind-group ids at <c>RenderPassEncoderEnd</c>
+    /// rather than when they are set, so releasing the replaced group before the pass closes makes
+    /// wgpu-core panic ("BindGroup[Id(..)] does not exist") and abort the process.
+    /// </summary>
+    private static void CheckMidPassTextureRebind(WebGpuGraphicsDevice device)
+    {
+        const int size = 64;
+        const int stride = 20;
+
+        var bundle = ImGuiFullbright.Create();
+        var module = device.CreateShaderModule(bundle.Vertex, bundle.Pixel, bundle.Reflection);
+
+        using var pipeline = device.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: module,
+                PixelShader: module,
+                VertexLayouts: [ImGuiLayout],
+                BlendState: BlendStateDesc.Opaque,
+                DepthStencilState: DepthStencilStateDesc.None,
+                RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
+                Topology: PrimitiveTopology.TriangleList
+            )
+        );
+
+        // Two quads, one per half of the target, so each draw's texel is readable on its own.
+        var vertices = new byte[12 * stride];
+        WriteVertex(vertices, 0, -1, -1, 0, 1, 255, 255, 255, 255);
+        WriteVertex(vertices, 1, 0, -1, 1, 1, 255, 255, 255, 255);
+        WriteVertex(vertices, 2, 0, 1, 1, 0, 255, 255, 255, 255);
+        WriteVertex(vertices, 3, -1, -1, 0, 1, 255, 255, 255, 255);
+        WriteVertex(vertices, 4, 0, 1, 1, 0, 255, 255, 255, 255);
+        WriteVertex(vertices, 5, -1, 1, 0, 0, 255, 255, 255, 255);
+        WriteVertex(vertices, 6, 0, -1, 0, 1, 255, 255, 255, 255);
+        WriteVertex(vertices, 7, 1, -1, 1, 1, 255, 255, 255, 255);
+        WriteVertex(vertices, 8, 1, 1, 1, 0, 255, 255, 255, 255);
+        WriteVertex(vertices, 9, 0, -1, 0, 1, 255, 255, 255, 255);
+        WriteVertex(vertices, 10, 1, 1, 1, 0, 255, 255, 255, 255);
+        WriteVertex(vertices, 11, 0, 1, 0, 0, 255, 255, 255, 255);
+
+        byte[] magenta = [255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255];
+        byte[] cyan = [0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255];
+
+        using var first = device.CreateTexture(new TextureDesc(2, 2, TextureFormat.Rgba8), magenta);
+        using var second = device.CreateTexture(new TextureDesc(2, 2, TextureFormat.Rgba8), cyan);
+        using var sampler = device.CreateSampler(new SamplerDesc());
+        using var target = device.CreateRenderTarget(new RenderTargetDesc(size, size, TextureFormat.Rgba8));
+        using var vertexBuffer = device.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertices.Length),
+            vertices
+        );
+
+        var commandBuffer = device.AcquireCommandBuffer();
+        commandBuffer.SetRenderTarget(target);
+        commandBuffer.Clear(ClearOptions.Color, new ColorRgba(0f, 0f, 0f, 1f));
+        commandBuffer.SetPipeline(pipeline);
+        commandBuffer.SetUniform(UniformOffset(pipeline, "Projection"), MemoryMarshal.AsBytes(Identity().AsSpan()));
+        commandBuffer.SetVertexBuffer(0, vertexBuffer, stride);
+
+        commandBuffer.SetShaderResource(0, first, sampler);
+        commandBuffer.Draw(0, 2);
+
+        commandBuffer.SetShaderResource(0, second, sampler);
+        commandBuffer.Draw(6, 2);
+
+        commandBuffer.SetRenderTarget(null);
+        device.Submit(commandBuffer);
+
+        var left = new byte[4];
+        var right = new byte[4];
+        device.ReadTexture(target.ColorTexture, size / 4, size / 2, 1, 1, left);
+        device.ReadTexture(target.ColorTexture, size * 3 / 4, size / 2, 1, 1, right);
+
+        Report(
+            "REBIND",
+            $"a rebind mid-pass keeps both groups alive "
+            + $"(left {left[0]},{left[1]},{left[2]}, right {right[0]},{right[1]},{right[2]})",
+            left[0] == 255 && left[1] == 0 && left[2] == 255
+            && right[0] == 0 && right[1] == 255 && right[2] == 255
+        );
+
+        var rebindError = device.TakeError();
+        Report(
+            "REBIND",
+            "the device reported no validation error after the rebind" + (rebindError is null ? "" : $": {rebindError}"),
+            rebindError is null
+        );
+    }
+
+    /// <summary>
+    /// A frame that outgrows the uniform ring replaces it mid-pass, which invalidates the variant's
+    /// cached bind group while the open pass still names it. This is the busy-frame shape of the
+    /// rebind above (256 KiB of per-draw blocks is not a pathological frame), and it checks that the
+    /// draws recorded before the growth still resolve.
+    /// </summary>
+    private static void CheckUniformRingGrowth(WebGpuGraphicsDevice device)
+    {
+        const int size = 16;
+        const int stride = 20;
+        const int draws = 5000;
+
+        var bundle = ImGuiFullbright.Create();
+        var module = device.CreateShaderModule(bundle.Vertex, bundle.Pixel, bundle.Reflection);
+
+        using var pipeline = device.CreatePipeline(
+            new PipelineDesc(
+                VertexShader: module,
+                PixelShader: module,
+                VertexLayouts: [ImGuiLayout],
+                BlendState: BlendStateDesc.Opaque,
+                DepthStencilState: DepthStencilStateDesc.None,
+                RasterizerState: RasterizerStateDesc.Default with { CullMode = CullMode.None },
+                Topology: PrimitiveTopology.TriangleList
+            )
+        );
+
+        var vertices = new byte[6 * stride];
+        WriteVertex(vertices, 0, -1, -1, 0, 1, 255, 255, 255, 255);
+        WriteVertex(vertices, 1, 1, -1, 1, 1, 255, 255, 255, 255);
+        WriteVertex(vertices, 2, 1, 1, 1, 0, 255, 255, 255, 255);
+        WriteVertex(vertices, 3, -1, -1, 0, 1, 255, 255, 255, 255);
+        WriteVertex(vertices, 4, 1, 1, 1, 0, 255, 255, 255, 255);
+        WriteVertex(vertices, 5, -1, 1, 0, 0, 255, 255, 255, 255);
+
+        byte[] green = [0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255];
+
+        using var texture = device.CreateTexture(new TextureDesc(2, 2, TextureFormat.Rgba8), green);
+        using var sampler = device.CreateSampler(new SamplerDesc());
+        using var target = device.CreateRenderTarget(new RenderTargetDesc(size, size, TextureFormat.Rgba8));
+        using var vertexBuffer = device.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertices.Length),
+            vertices
+        );
+
+        var commandBuffer = device.AcquireCommandBuffer();
+        commandBuffer.SetRenderTarget(target);
+        commandBuffer.Clear(ClearOptions.Color, new ColorRgba(0f, 0f, 0f, 1f));
+        commandBuffer.SetPipeline(pipeline);
+        commandBuffer.SetVertexBuffer(0, vertexBuffer, stride);
+        commandBuffer.SetShaderResource(0, texture, sampler);
+
+        // 5000 draws at the block size the ring aligns to (64 bytes) is ~320 KiB: one ring growth,
+        // and the draws recorded before it still name the old buffer.
+        for (var i = 0; i < draws; i++)
+        {
+            commandBuffer.SetUniform(UniformOffset(pipeline, "Projection"), MemoryMarshal.AsBytes(Identity().AsSpan()));
+            commandBuffer.Draw(0, 2);
+        }
+
+        commandBuffer.SetRenderTarget(null);
+        device.Submit(commandBuffer);
+
+        var pixel = new byte[4];
+        device.ReadTexture(target.ColorTexture, size / 2, size / 2, 1, 1, pixel);
+        Report(
+            "RING",
+            $"{draws} draws across a ring growth leave the last draw's quad intact "
+            + $"(middle {pixel[0]},{pixel[1]},{pixel[2]})",
+            pixel[1] == 255 && pixel[0] == 0
+        );
+
+        var ringError = device.TakeError();
+        Report(
+            "RING",
+            "the device reported no validation error after the ring grew" + (ringError is null ? "" : $": {ringError}"),
+            ringError is null
         );
     }
 

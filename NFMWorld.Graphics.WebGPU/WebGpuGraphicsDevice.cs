@@ -114,16 +114,18 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
     private WebGpuCommandBuffer? _activeCommandBuffer;
 
     /// <summary>
-    /// Destroy calls waiting for the submit that could still reference them.
+    /// Releases and destroys waiting for the submit that could still reference them.
     /// </summary>
     /// <remarks>
-    /// wgpu's destroy is not a refcount drop: it invalidates the resource for every submission made
-    /// after it, and a command buffer that recorded a draw against the resource and is submitted
-    /// afterwards fails validation and panics the process. That happens for real - Apos' glyph atlas
-    /// grows mid-frame, disposes the old atlas texture and keeps drawing, and ImmediateBatch3D
-    /// replaces its vertex buffer the same way. So destruction is deferred to just after the next
-    /// submit, which is the first point at which nothing can be recording against the resource and
-    /// wgpu's own submission refcount keeps the memory valid until the GPU is done with it.
+    /// Two hazards, both from the frame being one command buffer submitted at the end. wgpu's destroy
+    /// is not a refcount drop: it invalidates the resource for every submission made after it, and a
+    /// command buffer that recorded a draw against the resource and is submitted afterwards fails
+    /// validation and panics the process. That happens for real - Apos' glyph atlas grows mid-frame,
+    /// disposes the old atlas texture and keeps drawing, and ImmediateBatch3D replaces its vertex
+    /// buffer the same way. The other is id vacancy: a pass stores a bind group's, texture view's and
+    /// pipeline's id and resolves them when the pass *ends*, so releasing one an open pass already
+    /// recorded panics on a vacant slot. Both are deferred to just after the next submit, when
+    /// nothing can be recording and wgpu's own submission refcount keeps the memory valid.
     /// </remarks>
     private readonly List<Action> _pendingDestroys = [];
 
@@ -787,6 +789,9 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         DummySampler.Dispose();
         Uniforms.Dispose();
         Staging.Dispose();
+
+        // Those disposes queue their own releases behind the submit, which will never come.
+        FlushPendingDestroys();
 
         if (_queue is not null)
         {

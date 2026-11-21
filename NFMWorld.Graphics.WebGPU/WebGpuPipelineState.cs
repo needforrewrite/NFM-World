@@ -498,8 +498,11 @@ internal sealed unsafe class WebGpuPipelineVariant : IDisposable
         if (_cachedBindGroup is null)
             return;
 
-        _device.Api.BindGroupRelease(_cachedBindGroup);
+        // Deferred: a render pass stores the group's id and resolves it when the pass ends, so
+        // releasing a group the open pass already recorded makes wgpu-core panic on a vacant id.
+        var group = _cachedBindGroup;
         _cachedBindGroup = null;
+        _device.DeferDestroy(() => _device.Api.BindGroupRelease(group));
         _cachedTextureCount = -1;
         _cachedGeneration = -1;
     }
@@ -507,7 +510,9 @@ internal sealed unsafe class WebGpuPipelineVariant : IDisposable
     public void Dispose()
     {
         ReleaseCachedBindGroup();
-        _device.Api.RenderPipelineRelease(Pipeline);
+        // The pass holds an id for the pipeline too, resolved at the same point as a bind group's.
+        var pipeline = Pipeline;
+        _device.DeferDestroy(() => _device.Api.RenderPipelineRelease(pipeline));
         _device.Api.BindGroupLayoutRelease(BindGroupLayout);
     }
 }

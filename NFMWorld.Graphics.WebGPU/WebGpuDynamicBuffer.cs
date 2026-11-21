@@ -89,9 +89,10 @@ internal sealed unsafe class WebGpuDynamicBuffer : IDisposable
 
         if (_handle is not null)
         {
-            // Not destroyed: commands already recorded in this frame still read from it, and wgpu
-            // keeps the storage alive on their behalf until the submission completes.
-            _device.Api.BufferRelease(_handle);
+            // Not destroyed, and released only after the next submit: commands already recorded in
+            // this frame still name the old buffer, and wgpu resolves their ids when the pass ends.
+            var previous = _handle;
+            _device.DeferDestroy(() => _device.Api.BufferRelease(previous));
         }
 
         _handle = buffer;

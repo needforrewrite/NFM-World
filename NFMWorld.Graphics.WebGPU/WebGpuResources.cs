@@ -162,8 +162,11 @@ internal sealed unsafe class WebGpuTexture : ITexture
     {
         if (View is not null)
         {
-            _device.Api.TextureViewRelease(View);
+            // Deferred for the same reason a bind group's release is: a pass records the view's id
+            // for its attachment and resolves it when the pass ends.
+            var view = View;
             View = null;
+            _device.DeferDestroy(() => _device.Api.TextureViewRelease(view));
         }
 
         if (Handle is null)
