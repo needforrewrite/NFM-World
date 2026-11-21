@@ -19,7 +19,7 @@ lightson()
 
 soundtrack(nfm1,stage8.zipo)
 soundtrackfreqmul(1.01)
-soundtrackremaster(nfm1,stage8remastered.mp3)
+soundtrackremaster(nfm1,stage8remastered.opus)
 
 set(15,0,0,0)p
 set(15,0,5600,0)p

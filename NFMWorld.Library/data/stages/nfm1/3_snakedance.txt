@@ -15,7 +15,7 @@ clouds(false)
 soundtrack(nfm1,stage3.zipo)
 soundtrackfreqmul(0.94)
 soundtracktempomul(1.16)
-soundtrackremaster(nfm1,stage3remastered.mp3)
+soundtrackremaster(nfm1,stage3remastered.opus)
 
 set(10,0,0,0)p
 set(10,0,5600,0)

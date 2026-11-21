@@ -69,7 +69,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
     internal bool ShowingLoadingOverlay => _state.Busy.Value;
 
     protected override (string Path, double Tempo, double Frequency)? GetMusicTrack()
-        => ("data/music/nfm1/stageselectremastered.mp3", 1, 1);
+        => ("data/music/nfm1/stageselectremastered.opus", 1, 1);
 
     protected override void OnStageLoaded()
     {

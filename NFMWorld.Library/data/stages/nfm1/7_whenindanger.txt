@@ -16,7 +16,7 @@ clouds(false)
 
 soundtrack(nfm1,stage7.zipo)
 soundtrackfreqmul(1.07)
-soundtrackremaster(nfm1,stage7remastered.mp3)
+soundtrackremaster(nfm1,stage7remastered.opus)
 
 set(10,0,0,0)p
 set(10,0,5600,0)p

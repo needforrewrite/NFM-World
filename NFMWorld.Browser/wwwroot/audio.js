@@ -50,6 +50,22 @@ export function createBuffer(pcm, sampleRate, channels) {
     return id;
 }
 
+// Ogg Vorbis and Opus have no managed decoder in the wasm build (libsndfile is desktop-only), so
+// those files are decoded by the page itself and the result kept as an ordinary buffer handle.
+export async function decodeAudio(bytes) {
+    const c = context();
+    if (!c || !bytes || !bytes.length) return 0;
+    try {
+        // decodeAudioData detaches the input, so hand it a copy of the marshalled array.
+        const buffer = await c.decodeAudioData(bytes.slice().buffer);
+        const id = nextId++;
+        buffers.set(id, buffer);
+        return id;
+    } catch {
+        return 0;
+    }
+}
+
 export function startBuffer(buffer, volume, rate, loop) {
     return startBufferAt(buffer, volume, rate, loop, 0);
 }

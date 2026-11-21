@@ -13,7 +13,7 @@ density(3)
 
 soundtrack(nfm2,stage2.radq)
 soundtrackfreqmul(1.11)
-soundtrackremaster(nfm2,stage2remastered.mp3)
+soundtrackremaster(nfm2,stage2remastered.opus)
 
 nlaps(3)
 

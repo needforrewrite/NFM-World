@@ -10,7 +10,7 @@ fadefrom(6000)
 density(5)
 
 soundtrack(nfm2,stage15.radq)
-soundtrackremaster(nfm2,stage15remastered.mp3)
+soundtrackremaster(nfm2,stage15remastered.opus)
 
 name(Dances with Monsters)
 
