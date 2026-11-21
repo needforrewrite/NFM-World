@@ -61,20 +61,28 @@ public sealed class RenderScope : IDisposable
     /// <remarks>
     /// The comparison against the previous value is what keeps a per-frame push cheap:
     /// a HUD write that does not change a given leaf does not touch that node at all.
+    ///
+    /// The first run applies the value; it must not be evaluated eagerly instead, because
+    /// this bind is normally created while an enclosing computation runs (a slot building
+    /// its children). SignalsDotnet attributes every read to the innermost tracking scope,
+    /// so an eager run there subscribes the *enclosing* effect to this node's signals - a
+    /// slot would then re-run, and rebuild its whole subtree, whenever one child's hover
+    /// or value changed. The shield keeps the bind's own first run out of that scope too.
     /// </remarks>
     public Effect Bind<T>(Func<T> compute, Action<T> apply)
     {
-        var initial = compute();
-        apply(initial);
+        var hasValue = false;
+        var current = default(T)!;
 
-        var current = initial;
+        using var _ = Signal.UntrackedScope();
         return Own(
             new Effect(() =>
                 {
                     var next = compute();
-                    if (EqualityComparer<T>.Default.Equals(next, current))
+                    if (hasValue && EqualityComparer<T>.Default.Equals(next, current))
                         return;
 
+                    hasValue = true;
                     current = next;
                     apply(next);
                 }

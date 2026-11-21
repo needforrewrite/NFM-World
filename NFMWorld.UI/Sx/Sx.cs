@@ -386,7 +386,11 @@ public static class Sx
             }
         }
 
-        Mount(when());
+        // The eager mount is what exists at construction time; it must not subscribe the
+        // enclosing computation to `when`, or the parent would rebuild whenever a branch flipped.
+        using (Signal.UntrackedScope())
+            Mount(when());
+
         host.Bind(s => s.Bind(when, Mount));
         host.Own(scope);
         host.Disposing += () => branchScope[0]?.Dispose();
@@ -456,7 +460,11 @@ public static class Sx
             }
         }
 
-        Update();
+        // Untracked: the bind below re-reads `each`, so this first build must not make the
+        // enclosing computation depend on it.
+        using (Signal.UntrackedScope())
+            Update();
+
         host.Bind(scope => scope.Bind(each, _ => Update()));
         host.Own(scope);
 
@@ -516,7 +524,9 @@ public static class Sx
             host.AddChild(Materialize(Renderer.RunInScope(scope, build)));
         }
 
-        Update();
+        using (Signal.UntrackedScope())
+            Update();
+
         host.Bind(b => b.Bind(() => key.Value, _ => Update()));
         host.Own(owner);
         host.Disposing += () => currentScope[0]?.Dispose();
@@ -601,29 +611,38 @@ public static class Sx
         var current = new Node?[] { null };
         var slotScope = new RenderScope?[] { null };
 
-        void Update()
+        // The slot runs inside the bind's own run, so the content it builds is the content
+        // that gets mounted: running it eagerly as well would build (and tear down) the
+        // whole subtree twice per mount.
+        (RenderScope Scope, object? Content) Build()
+        {
+            var next = new RenderScope();
+            return (next, Renderer.RunInScope(next, slot));
+        }
+
+        void Mount((RenderScope Scope, object? Content) built)
         {
             if (scope.IsDisposed)
+            {
+                built.Scope.Dispose();
                 return;
+            }
 
-            var next = new RenderScope();
-            var node = Materialize(Renderer.RunInScope(next, slot));
-
+            var node = Materialize(built.Content);
             if (ReferenceEquals(current[0], node))
             {
-                next.Dispose();
+                built.Scope.Dispose();
                 return;
             }
 
             slotScope[0]?.Dispose();
-            slotScope[0] = next;
+            slotScope[0] = built.Scope;
             current[0] = node;
             Clear(anchor);
             anchor.AddChild(node);
         }
 
-        Update();
-        anchor.Bind(b => b.Bind(slot, _ => Update()));
+        anchor.Bind(b => b.Bind(Build, Mount));
         anchor.Own(scope);
         anchor.Disposing += () => slotScope[0]?.Dispose();
         return anchor;
