@@ -1,85 +1,71 @@
-# Silk.NET.WebGPU backend: what it takes
+---
+name: webgpu-backend-research
+description: "What the Silk.NET.WebGPU backend had to do that D3D11/GL did not: the tint shader path, pipeline variants per attachment format, a dynamic-offset UBO ring, 4-byte copy units, and the uncaptured-error callback that made a silent 870-byte copy failure visible"
+metadata:
+  node_type: memory
+  type: reference
+---
 
-Researched against the tree at `feat/lua-v2-v2` with a throwaway probe (`scratch/WgpuProbe`, gitignored).
-Everything marked verified was run against the real `wgpu_native` shipped by the package and all 26
-shader stages in `obj/*/ShaderCompiler/*.g.cs`.
+`NFMWorld.Graphics.WebGPU` is implemented (opt-in: `--backend=webgpu` or the video setting). Everything
+below was verified against the real `wgpu_native` the package ships and the 26 generated shader bundles.
 
 ## Packages
 
 |Package|What it is|
 |---|---|
-|`Silk.NET.WebGPU` 2.23.0|binding only|
-|`Silk.NET.WebGPU.Native.WGPU` 2.23.0|19 MB; `wgpu_native` for win-x64/x86/arm64, linux-{arm,arm64,x64}, osx-{x64,arm64}. **No wasm build** → desktop-only backend|
-|`Stride.Dependencies.Tint` 2026.9.27|`tint` **CLI**, no .NET API. Runtimes only for win-x64, linux-x64, osx-arm64|
+|`Silk.NET.WebGPU`|binding only|
+|`Silk.NET.WebGPU.Native.WGPU`|`wgpu_native` for win-x64/x86/arm64, linux-{arm,arm64,x64}, osx-{x64,arm64}. **No wasm build** → desktop-only; the browser keeps WebGL2|
+|`Stride.Dependencies.Tint`|the `tint` **CLI**, no .NET API; runtimes only for win-x64, linux-x64, osx-arm64|
 
-## Shader path — verified
+## Shader path — HLSL → SPIR-V (existing) → tint → WGSL
 
-`HLSL -> SPIR-V (existing shaderc step) -> tint --format wgsl`. Three build-time requirements, each
-found by a failing validation, not by reading docs:
+Three build-time fixes, each found by a failing validation rather than by reading docs:
 
-1. `--allow-non-uniform-derivatives`. 6 fragment stages sample under divergent control flow.
-2. Strip the `diagnostic(off, derivative_uniformity);` line tint emits. The naga inside this
-   wgpu-native rejects `diagnostic` directives outright.
-3. Strip the `return;` tint emits after `discard;`. naga rejects instructions after `return`.
+1. `--allow-non-uniform-derivatives` — 6 fragment stages sample under divergent control flow.
+2. Strip tint's `diagnostic(off, derivative_uniformity);` — the naga inside this wgpu-native rejects
+   `diagnostic` directives outright.
+3. Strip the `return;` tint emits after `discard;` — naga rejects instructions after `return`.
 
-Then renumber SPIR-V binding decorations before tint: HLSL `b0`/`t0`/`s0` all land on set 0 binding 0,
-which WebGPU refuses. Uniform → 0, textures → 1..T, samplers → T+1.., one set. After that all 26
-modules validate.
+Plus renumber SPIR-V decorations before tint: HLSL `b0`/`t0`/`s0` all land on set 0 binding 0, which
+WebGPU refuses. Uniform → 0, textures → 1..T, samplers T+1.., one set. After that every module validates.
 
-Rejected alternatives:
+Rejected: **SPIR-V passthrough** (wgpu-native takes it, browsers do not) fails for the three vertex
+shaders with an instance matrix — naga cannot make a matrix an entry-point input. **Tint at runtime** ships
+a native binary per RID, which is not an option for a game install.
 
-- **SPIR-V passthrough** (wgpu-native accepts it, browsers do not) fails for the three vertex shaders
-  that take the instance matrix: naga cannot make a matrix an entry-point input
-  (`Argument 5 varying error ... cannot be used for user-defined entry point inputs or outputs`).
-  Tint's WGSL splits it into four `vec4` locations, which is why WGSL also fixes that.
-- **Tint at runtime** — ships a native binary per RID; not an option for a game install.
+Uniform layout does not diverge: tint's WGSL struct offsets equal the HLSL reflection offsets for every
+member of every module (diff 0), so the merged CPU block uploads verbatim.
 
-### Uniform layout: no divergence (verified)
+## Traps that cost real debugging time
 
-Tint's WGSL struct member offsets equal the HLSL reflection offsets for every member of all 26 modules
-(diff 0). The merged CPU-side block uploads verbatim; the 588-byte max block is well under the 64 KB
-uniform cap.
-
-### Vertex locations are declaration-order, not semantic slots (verified)
-
-Poly_Basic_Vertex's instance matrix arrives as `@location(5..8) vec4`, and the trailing `parameters`
-at 9 — glslang assigns locations in declaration order (`glslang-assigns-vertex-location-in-declaration-order.md`).
-So the backend must map `VertexLayoutDesc.Semantic/Slot` → location via reflection. That mapping does
-not exist in `ShaderReflection` today (only `ExpectedVertexLayout`, unused); D3D11 and GL match by
-semantic name at runtime instead.
-
-## Abstraction seams (no interface change strictly required, one reflection addition)
-
-|Seam|What the backend must do|
+|Trap|Detail|
 |---|---|
-|Pipeline attachments|WebGPU bakes color/depth format + sample count into the pipeline. `Poly` draws into both the swapchain (`Rgba8`) and shadow targets (`Single`). Create variants lazily, cached by (desc, colorFmt, depthFmt, samples)|
-|Per-draw uniforms|`queue.writeBuffer` is ordered only against submits, so N writes to one UBO all land before the submit. Need a dynamic-offset ring (`minUniformBufferOffsetAlignment` 256) or one buffer per draw|
-|`UpdateBuffer`|Same hazard: a buffer rewritten twice in a frame with draws between collapses. Record `copyBufferToBuffer` from a per-frame staging arena instead — copies are ordered inside the recording|
-|Clears|`LoadOp.Clear` at pass start. Valid: every `Clear` follows `SetRenderTarget` and precedes that target's draws (`Scene.cs:72,82`, `StageMinimap.cs:143`, `WorldGame.cs:1247`)|
-|Passes|Begin/end at `SetRenderTarget`/`Submit`; the frame is one `Submit` then `Present` (`WorldGame.cs` ~1247-1300)|
-|Bind groups|Every declared binding must be present. `Nvg*` declare a sampler with no texture state → `PARTIALLY_BOUND` layout or dummy 1×1 texture/sampler|
-|Scissor|Always on. `ScissorTestEnabled = false` ⇒ supply a full-viewport scissor|
-|Spirv reflection|Add semantic→location per stage input, or the vertex layout cannot be built|
+|Copy sizes are 4-byte units|a buffer whose logical size is not a multiple of 4 (an 870-byte index buffer = 435 × `ushort`) is rejected by *both* `queueWriteBuffer` and `copyBufferToBuffer`. wgpu drops the update and keeps drawing, so the only symptom is wrong geometry. Fix: allocate `WebGpuBuffer.GpuSize` rounded up and pad every copy length; the padding always starts past the logical size, so nothing reads it|
+|Uncaptured errors are invisible|wgpu logs validation failures to stderr and carries on. `DeviceSetUncapturedErrorCallback` is the only channel the game sees; `ReportError` forwards each distinct message to `GraphicsDiagnostics.Warning` once (bounded set). This is what found the copy bug: 2,649 dropped updates in one boot with every frame still rendering|
+|`surfaceTexture` is one frame|`BeginFrame` acquires it on the first pass that draws to the surface; `Present` releases the view, presents, *then* releases the texture. Releasing first *discards* the frame, so `SurfacePresent` fails with "Surface image is already acquired" (meaning the slot is empty)|
+|`destroy` is not a refcount drop|wgpu invalidates a destroyed resource for every submission made after it, and the whole frame is one submit. Apos' glyph atlas and `ImmediateBatch3D` replace and dispose mid-frame, so `DeferDestroy` queues destroys until just after the next submit. Without it the process panics inside Rust|
+|Pipelines bake attachments|colour/depth format + sample count are part of the pipeline; `Poly` alone draws into the swapchain and a single-sample shadow cascade, so variants are cached per (desc, formats, samples, filterability)|
+|No multisampled surface|swapchain MSAA needs an offscreen colour texture at N with `resolveTarget` = surface view, plus a matching depth texture|
+|Uniform writes are submit-ordered|`queue.writeBuffer` ordering is against submits only, so N writes to one UBO with draws between them collapse. Per-draw uniforms use a dynamic-offset ring; `UpdateBuffer` records `copyBufferToBuffer` from a staged chunk inside the recording|
+|Bindings must all be present|`Nvg*` declare a sampler with no texture, so a dummy 1×1 texture/sampler fills every declared slot|
+|Vertex locations|glslang assigns them in declaration order, not semantic index — see [[glslang-assigns-vertex-location-in-declaration-order]]|
+|Stage interface|a fragment stage need not declare every vertex output; `WgslStageInterface.Reconcile` appends a dummy `@location(n)` parameter per missing one or pipeline creation fails|
+|Scissor|always on in WebGPU; `ScissorTestEnabled = false` gets a full-viewport scissor|
 
-Format/wire constraints:
+## Format mapping
 
-- `Rgba8` → `Rgba8Unorm`, `Single` → `R32Float` (sampleable unfiltered; `float32-filterable` only for linear),
-  `Depth24Stencil8` → `Depth24PlusStencil8` (attachment only, not sampleable), `Rgba32f` glyph atlas
-  needs `float32-filterable` for its linear sampler, `Dxt1/3/5` → BC1/2/3 needs `texture-compression-bc`.
-- No multisampled surface. Swapchain MSAA needs an offscreen color texture at `sampleCount` N with
-  `resolveTarget` = surface view, plus a depth texture at the same count.
-- `BlendOperation.Min/Max` have no WebGPU equivalent (no callers today); wireframe unsupported;
-  strip topologies need `stripIndexFormat` (none used — only `LineList`/`TriangleList`).
-- `ReadTexture`: `copyTextureToBuffer` with a 256-byte-aligned `bytesPerRow`, `mapAsync`,
-  `DevicePoll(wait)`, then repack.
-- Surface: `SurfaceDescriptorFromWindowsHWnd` from `SdlWindow.NativeWindowHandle` + `GetModuleHandle(null)`.
-  Windows first; Linux/macOS need Xlib/Wayland/MetalLayer handles from `SDL_GetWindowWMInfo`.
-- `HasBottomLeftFramebufferOrigin = false` (same as D3D11); the `Mad.fxh` shadow flip stays correct.
+`Rgba8` → `Rgba8Unorm`, `Single` → `R32Float` (sampleable unfiltered; `float32-filterable` needed for
+linear), `Depth24Stencil8` → `Depth24PlusStencil8` (attachment only), `Rgba32f` glyph atlas needs
+`float32-filterable` for its linear sampler, `Dxt1/3/5` → BC1/2/3 needs `texture-compression-bc`.
+`BlendOperation.Min/Max` and wireframe have no WebGPU equivalent (no callers). `HasBottomLeftFramebufferOrigin
+= false`, same as D3D11, so the `Mad.fxh` shadow flip stays correct.
 
-## Effort shape
+## Verification
 
-D3D11 is 8 files / ~3,400 lines; expect a WebGPU backend at parity (`Device`, `CommandBuffer`,
-`PipelineState`, `Resources`, `Mapping`, `Swapchain`, `ShaderModule`, interop) plus a `.Smoke` harness
-(the D3D11 one is 2,200 lines). Compiler side: WGSL emission + tint invocation + decoration rewrite
-(~300 lines) and reflection locations (~60). Host side: `Renderer` enum arm, window creation without a
-graphics API, settings row.
+`NFMWorld.Graphics.WebGPU.Smoke` brings up a real headless device and checks the things only this backend
+can get wrong: every bundle's WGSL parsing, a 1× and 4× pipeline variant per bundle, a textured draw's
+texel order, two draws reading their own dynamic-offset block, and `CheckUnalignedCopies` for the 4-byte
+copy unit. The Sx harness (`main-menu-workshop.json`) renders pixel-identical to D3D11 at
+`--sx-scale=1.25`; at scale 1 the two differ on ~0.15% of pixels, all on glyph edges (mean delta ~5,
+no sub-pixel shift when one image is resampled onto the other) — coverage rounding where edges land on
+integer pixel boundaries, not a layout, colour or gamma difference.

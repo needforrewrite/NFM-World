@@ -28,7 +28,7 @@ directory. Remove outdated facts when they become irrelevant.
 | `NFMWorld.UI/` | The UI framework itself: Yoga-backed `Component`/`Node`, `Styles`, Sx (`Sx/`), focus/keyboard/mouse, `NodeDebugger`. |
 | `NFMWorld.DriverInterface/` | `IGraphics`, `IGraphics3D`, keys, `TheGraphics`, `DummyBackend`. The platform-neutral surface the game draws against. |
 | `NFMWorld.Graphics.Abstraction` | Backend-neutral GPU API (`IGraphicsDevice`, `ICommandBuffer`, pipelines, buffers). |
-| `NFMWorld.Graphics.OpenGL` | ANGLE/GLES backend (the non-Windows default). `NFMWorld.Graphics.DesktopGL` — desktop core GL. `NFMWorld.Graphics.D3D11` — the Windows default. Each has a `.Smoke` harness. |
+| `NFMWorld.Graphics.OpenGL` | ANGLE/GLES backend (the non-Windows default). `NFMWorld.Graphics.DesktopGL` — desktop core GL. `NFMWorld.Graphics.D3D11` — the Windows default. `NFMWorld.Graphics.WebGPU` — wgpu-native through Silk.NET (opt-in, `--backend=webgpu`). Each has a `.Smoke` harness. |
 | `NFMWorld.Platform.SDL3`, `NFMWorld.Platform.WebGL` | Window/input layer. |
 | `NFMWorld.ShaderCompiler*` | HLSL → SPIR-V → cross-compiled bundles, at build time. |
 | `NFMWorld.Gamemode.Pvp`, `.TimeTrial`, `.Hostile` | Gamemode **plugins** (see below). |
@@ -546,10 +546,25 @@ from `PhysicsController.GameTick`. Two ship:
 
 - **Backends** — `IGraphicsDevice`/`ICommandBuffer` in `NFMWorld.Graphics.Abstraction`; implementations
   `NFMWorld.Graphics.OpenGL` (ANGLE GLES), `NFMWorld.Graphics.DesktopGL` (desktop core profile),
-  `NFMWorld.Graphics.D3D11`, and `NFMWorld.Platform.WebGL` for the browser. Selection is a `switch` on `Renderer` in
-  `WorldGame`'s constructor (`Renderer.Angle` / `D3d11` / `DesktopGl`), and the default branch picks **D3D11 on
-  Windows** and **ANGLE everywhere else**. Each backend has a `.Smoke` project that runs it headless. The ANGLE arm is
-  `#if ANGLE`, which the game and backend projects define.
+  `NFMWorld.Graphics.D3D11`, `NFMWorld.Graphics.WebGPU`, and `NFMWorld.Platform.WebGL` for the browser. Selection is a
+  `switch` on `Renderer` in `WorldGame`'s constructor (`Renderer.Angle` / `D3d11` / `DesktopGl` / `WebGpu`), and the
+  default branch picks **D3D11 on Windows** and **ANGLE everywhere else**. Each desktop backend has a `.Smoke` project
+  that runs it headless. The ANGLE arm is `#if ANGLE`, which the game and backend projects define.
+- **WebGPU** — wgpu-native via `Silk.NET.WebGPU`, opt-in only (`--backend=webgpu`, or the "WebGPU" video setting).
+  Desktop-only: the native package has no wasm build, and the surface is built from the SDL window's Win32 handle, so
+  `ParseRenderer` refuses it off Windows before a window exists. Shaders are the bundles' `Wgsl` form, translated at
+  build time from the same SPIR-V the other backends cross-compile (`tint`, see the shader pipeline below).
+
+  Traps worth keeping in mind when touching it:
+
+  |Trap|Rule|
+  |---|---|
+  |`surfaceTexture` is one frame|`BeginFrame` acquires it on the first pass that draws into the surface and `Present` releases the view, presents, and only then releases the texture. Releasing the texture first **discards** the frame — wgpu-native's texture destructor discards any acquisition whose surface has not presented yet — so `wgpuSurfacePresent` then fails with "Surface image is already acquired" (it means the slot is empty, not that it is occupied). The host presents (`WorldGame` submits, then presents); presenting inside `Submit` acquires the surface twice, and presenting a frame that never opened a surface pass is an error, so `Present` is a no-op unless a frame was acquired|
+  |`destroy` is not a refcount drop|wgpu invalidates a destroyed texture/buffer for every submission made *after* the destroy, and the whole frame is one command buffer submitted at the end. Apos' glyph atlas and `ImmediateBatch3D` legitimately replace and dispose their old texture/buffer mid-frame, so `WebGpuGraphicsDevice.DeferDestroy` queues the destroy until just after the next submit. Without it the process panics inside Rust with `Texture Id(...) is destroyed`|
+  |Pipelines bake attachments|colour/depth format and sample count are part of the pipeline, so `WebGpuPipelineState` builds a variant per (colour format, depth format, samples, filterability) - `Poly` alone draws into both the swapchain and a single-sample shadow cascade|
+  |Uniform and staging writes|`queue.writeBuffer` is ordered only against submits, so two writes to one block with a draw between them would collapse; per-draw uniforms go through a dynamic-offset ring and `UpdateBuffer` records a `copyBufferToBuffer` from a staged chunk, both inside the recording|
+  |Copies move whole words|every queue write and buffer copy is in 4-byte units, so a buffer whose logical size is not a multiple of 4 — an index buffer of an odd number of 16-bit indices, 870 bytes — allocates `WebGpuBuffer.GpuSize` rounded up and pads the copy length. An unaligned size is not clamped: wgpu rejects the copy, the update is silently lost, and the only trace is the uncaptured-error callback (`CheckUnalignedCopies` covers it)|
+  |Validation failures are invisible otherwise|wgpu logs them to stderr and carries on, so `DeviceSetUncapturedErrorCallback` is the only way the game sees one; `ReportError` reports each distinct message to `GraphicsDiagnostics.Warning` (once per device, capped). That is how the copy bug above was found: 2,649 validation errors in one boot — a queue write and a recorded copy per update — while every frame kept rendering|
 - **Text/fonts** — `FontStashSharp` with pre-baked MSDF atlases. `NFMWorld.MsdfCache.targets` bakes
   `data/fonts/*.msdf` at build time (the game loads that file instead of baking ~220 glyphs at startup); adding a font
   means adding it under `data/fonts/`.
@@ -564,9 +579,23 @@ before `CoreCompile` and:
 
 1. compiles HLSL with **shaderc** (`Silk.NET.Shaderc`), targeting Vulkan 1.1 SPIR-V,
 2. reflects and cross-compiles with **spirv-cross** (`Silk.NET.SPIRV.Cross`) to the per-backend sources (HLSL for
-   D3D11, GLSL for GL),
+   D3D11, GLSL for GL), and, when the `tint` CLI is present (`Stride.Dependencies.Tint`), runs the same SPIR-V through
+   **tint** to WGSL for WebGPU,
 3. emits **one C# bundle class per technique** under `obj/…/ShaderCompiler/`, and `IncludeShaders` globs those into
    the compile.
+
+WGSL is optional per build: `WgslCompiler.Available` is false where the tint native is missing (a RID the package
+does not ship), and the bundles then carry an empty `Wgsl` string. Three things about the path are not obvious and each
+was found by a validation failure, not by reading docs — see `WgslCompiler.cs`:
+
+| Gotcha | Rule |
+|---|---|
+| Non-uniform derivatives | the tint invocation passes `--allow-non-uniform-derivatives`; six fragment stages sample under divergent control flow |
+| tint's `diagnostic(off, derivative_uniformity);` | the naga inside the shipped `wgpu_native` rejects `diagnostic` directives outright, so the emitted line is stripped |
+| `return;` after `discard;` | tint emits it and naga rejects an instruction after `return`, so it is stripped too |
+| Bindings | SPIR-V decorations are renumbered before tint (uniform 0, textures 1..T, samplers T+1..), because HLSL's `b0`/`t0`/`s0` all land on set 0 binding 0 and WebGPU refuses that. `WebGpuInterop.TextureBinding`/`SamplerBinding` restate the same numbering for the backend |
+| Vertex locations | glslang assigns them in declaration order, not by semantic slot, so the WebGPU backend maps `Semantic`/`Slot` to `@location` through reflection (`glslang-assigns-vertex-location-in-declaration-order`) |
+| Stage interface | a fragment stage need not declare every vertex output; `WgslStageInterface.Reconcile` appends a dummy `@location(n)` parameter for each missing one, or pipeline creation fails on the interface mismatch |
 
 There are no `.fxb` files, no `fxc.exe`, and no wine path; the old target that copied `.fxb` into publish is commented
 out. To add a shader, drop the `.fx`/`.fxh` into `data/shaders/` — discovery is a glob, there is no `<CompileShader>`

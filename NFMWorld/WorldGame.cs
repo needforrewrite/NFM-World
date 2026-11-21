@@ -8,6 +8,7 @@ using NFMWorld.DriverInterface;
 using NFMWorld.Gameplay;
 using NFMWorld.Graphics;
 using NFMWorld.Graphics.D3D11;
+using NFMWorld.Graphics.WebGPU;
 #if ANGLE
 using NFMWorld.Graphics.OpenGL;
 using Silk.NET.Core.Contexts;
@@ -217,8 +218,25 @@ public partial class WorldGame : IDisposable, IGameHost
             if (value.Equals("desktopgl", StringComparison.OrdinalIgnoreCase))
                 return Renderer.DesktopGl;
 
+            if (value.Equals("webgpu", StringComparison.OrdinalIgnoreCase))
+            {
+                // Only the surface creation is Windows-specific today: it takes the HWND from
+                // SDL, and no other platform's handle accessor exists yet. Reported here rather
+                // than at device creation so the window is never brought up for a run that cannot
+                // present.
+                if (!OperatingSystem.IsWindows())
+                {
+                    throw new ArgumentException(
+                        $"{RendererArgumentPrefix}webgpu needs Windows: the backend builds its surface "
+                        + "from the window's Win32 handle, and SDL only exposes that one."
+                    );
+                }
+
+                return Renderer.WebGpu;
+            }
+
             throw new ArgumentException(
-                $"Unknown {RendererArgumentPrefix}{value}. Valid renderers: sokol, desktopgl, d3d11"
+                $"Unknown {RendererArgumentPrefix}{value}. Valid renderers: sokol, desktopgl, d3d11, webgpu"
                 +
 #if ANGLE
                 ", angle"
@@ -641,6 +659,23 @@ public partial class WorldGame : IDisposable, IGameHost
                     )
                 );
                 _device = d3d11Device;
+                break;
+            }
+
+            case Renderer.WebGpu:
+            {
+                // Like D3D11, nothing here asks SDL for a graphics API: SDL owns the window and the
+                // input, and wgpu-native builds its surface on the HWND.
+                Window = SdlWindow.Create("NFM World", 1280, 720);
+
+                _device = WebGpuGraphicsDevice.Create(
+                    new WebGpuDeviceDescription(
+                        WindowHandle: Window.NativeWindowHandle,
+                        Width: Window.Width,
+                        Height: Window.Height,
+                        MultiSampleCount: SettingsMenu.RequestedMultiSampleCount
+                    )
+                );
                 break;
             }
 

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RootNamespace>NFMWorld.Graphics.WebGPU</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj"/>
+    </ItemGroup>
+
+    <!-- Silk.NET's bindings over wgpu-native. The native package carries wgpu_native.dll for the
+         desktop RIDs; a browser build cannot reach it, which is why this backend is desktop-only. -->
+    <ItemGroup>
+        <PackageReference Include="Silk.NET.WebGPU" Version="2.23.0"/>
+        <PackageReference Include="Silk.NET.WebGPU.Native.WGPU" Version="2.23.0"/>
+        <PackageReference Include="Silk.NET.WebGPU.Extensions.WGPU" Version="2.23.0"/>
+    </ItemGroup>
+
+    <!-- The smoke harness reads the adapter limits, the pipeline variant cache and the device's own
+         validation error, all of which are internal because nothing in the game needs them - and
+         those are exactly the values worth checking against a real device. -->
+    <ItemGroup>
+        <InternalsVisibleTo Include="NFMWorld.Graphics.WebGPU.Smoke"/>
+    </ItemGroup>
+
+</Project>

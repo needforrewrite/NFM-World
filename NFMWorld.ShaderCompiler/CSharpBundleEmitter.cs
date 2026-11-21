@@ -78,7 +78,7 @@ public static class CSharpBundleEmitter
         using (sb.Indent())
         {
             EmitSources(sb, program.Stages, sourcesByStage);
-            EmitCreate(sb, name, program);
+            EmitCreate(sb, name, program, sourcesByStage);
         }
 
         sb.Line("}");
@@ -123,6 +123,8 @@ public static class CSharpBundleEmitter
                 "Desktop GLSL 3.30, compiled by a core-profile desktop GL context",
                 sources.Glsl330
             );
+            if (sources.Wgsl.Length > 0)
+                EmitSource(sb, $"{member}Wgsl", "WGSL, compiled by the WebGPU backend", sources.Wgsl);
         }
     }
 
@@ -166,7 +168,15 @@ public static class CSharpBundleEmitter
         return output.ToArray();
     }
 
-    private static void EmitCreate(IndentedStringBuilder sb, string name, ProgramReflection program)
+    /// <summary>Escapes a short string - an entry point name, a semantic - for a C# literal.</summary>
+    private static string Escape(string text) => text.Replace("\\", "\\\\").Replace("\"", "\\\"");
+
+    private static void EmitCreate(
+        IndentedStringBuilder sb,
+        string name,
+        ProgramReflection program,
+        IReadOnlyDictionary<ShaderStage, StageSources> sourcesByStage
+    )
     {
         sb.Line("/// <summary>");
         sb.Line("/// Builds this program's modules and reflection. The reflection is parsed once here,");
@@ -178,6 +188,7 @@ public static class CSharpBundleEmitter
             foreach (var stage in program.Stages)
             {
                 var member = MemberName(stage.Stage);
+                var sources = sourcesByStage.TryGetValue(stage.Stage, out var s) ? s : null;
                 sb.Line($"new ShaderStageSources(");
                 using (sb.Indent())
                 {
@@ -188,7 +199,20 @@ public static class CSharpBundleEmitter
                     sb.Line("\"\",");
                     sb.Line("\"\",");
                     sb.Line($"{member}GlslEs,");
-                    sb.Line($"{member}Glsl330),");
+                    sb.Line($"{member}Glsl330)");
+                }
+
+                using (sb.Indent())
+                {
+                    var hasWgsl = sources is { Wgsl.Length: > 0 };
+                    sb.Line("{");
+                    using (sb.Indent())
+                    {
+                        sb.Line($"Wgsl = {(hasWgsl ? $"{member}Wgsl" : "\"\"")},");
+                        sb.Line($"EntryPoint = \"{Escape(sources?.EntryPoint ?? "main")}\",");
+                    }
+
+                    sb.Line("},");
                 }
             }
 
@@ -236,6 +260,23 @@ public static class CSharpBundleEmitter
             }
 
             sb.Line("},");
+
+            // The location table WebGPU needs to turn the caller's semantic-named vertex layout into
+            // @location attributes. Empty on a program whose vertex stage declares none.
+            if (program.VertexInputs.Count > 0)
+            {
+                sb.Line("VertexInputs = new ShaderVertexInput[]");
+                sb.Line("{");
+                using (sb.Indent())
+                {
+                    foreach (var input in program.VertexInputs)
+                        sb.Line(
+                            $"new(\"{Escape(input.Semantic)}\", {input.SemanticIndex}, {input.Location}, {input.Registers}),"
+                        );
+                }
+
+                sb.Line("},");
+            }
         }
 
         // No trailing comma: this closes the last argument of Create()'s constructor call.

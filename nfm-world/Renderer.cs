@@ -44,4 +44,14 @@ public enum Renderer
     /// only be named when the define is on - see <see cref="ParseRenderer"/>.
     /// </summary>
     Angle,
+
+    /// <summary>
+    /// WebGPU over wgpu-native, through Silk.NET's bindings.
+    ///
+    /// Desktop only: the native package ships a wgpu_native library for the desktop RIDs, and a
+    /// browser's WebGPU is reached through the page's own JavaScript API rather than through it.
+    /// Its shaders are the bundles' <c>Wgsl</c> form, translated from the same SPIR-V the other
+    /// backends cross-compile, so there is no second shader source to keep in step.
+    /// </summary>
+    WebGpu,
 }

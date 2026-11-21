@@ -100,6 +100,16 @@ public static class HlslSemantics
     private static bool IsSystemValue(string semantic) =>
         semantic.StartsWith("SV_", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Splits <c>TEXCOORD3</c> into ("TEXCOORD", 3). A semantic with no trailing index is all name.
+    /// </summary>
+    public static (string Name, int Index) SplitSemantic(string semantic)
+    {
+        var split = semantic.Length;
+        while (split > 0 && char.IsAsciiDigit(semantic[split - 1])) split--;
+        return split == semantic.Length ? (semantic, 0) : (semantic[..split], int.Parse(semantic[split..]));
+    }
+
     // A matrix type is `<base><rows>x<cols>` (float4x4, float3x3). The qualifier is matched off
     // first so the digits sit at the end of the string, which distinguishes a matrix from the
     // scalar/vector types whose only digits are the component count (float4, half2).
