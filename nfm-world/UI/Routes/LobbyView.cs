@@ -55,6 +55,8 @@ public static class LobbyView
         Action<int> SetBots,
         Action<string, string> SetConfig,
         Action<uint, string, string> SetGameRule,
+        Action<uint, Guid> KickGamePlayer,
+        Action<uint, Guid> InviteGamePlayer,
         Action<string> SetGamemode,
         Action ChangeCar,
         Action<Guid> CopyCar,
@@ -84,6 +86,8 @@ public static class LobbyView
         var lobby = UiState.Lobby;
         var contextPlayer = new Signal<Guid?>(null);
         var contextPosition = new Signal<Vector2>(default);
+        var kickTarget = new Signal<(uint SessionId, Guid PlayerId, bool IsBot)?>(null);
+        var kickPosition = new Signal<Vector2>(default);
 
         return Sx.View(
             style: () => Sx.Styles(
@@ -134,11 +138,7 @@ public static class LobbyView
                             [
                                 PlayersRail((id, position) =>
                                     {
-                                        var scale = Math.Max(G.Scale, 0.01f);
-                                        contextPosition.Value = new Vector2(
-                                            Math.Clamp(position.X / scale, 0, Math.Max(0, G.Viewport.X / scale - 170)),
-                                            Math.Clamp(position.Y / scale, 0, Math.Max(0, G.Viewport.Y / scale - 94))
-                                        );
+                                        contextPosition.Value = ClampMenuPosition(position);
                                         contextPlayer.Value = id;
                                     }
                                 ),
@@ -156,7 +156,12 @@ public static class LobbyView
                                             () => CreatePage(actions),
                                             () => Sx.Show(
                                                 () => lobby.Page.Value == LobbyPage.Match,
-                                                () => MatchPage(actions),
+                                                () => MatchPage(actions, (sessionId, slot, position) =>
+                                                    {
+                                                        kickPosition.Value = ClampMenuPosition(position);
+                                                        kickTarget.Value = (sessionId, slot.PlayerId, slot.IsBot);
+                                                    }
+                                                ),
                                                 () => RoomPage(actions)
                                             )
                                         )
@@ -175,6 +180,26 @@ public static class LobbyView
                         () => contextPlayer.Value = null
                     )
                 ),
+                Sx.Show(
+                    () => kickTarget.Value is { } target && lobby.Connected.Value
+                          && lobby.ViewedSessionId.Value == target.SessionId
+                          && lobby.Sessions.Value.Any(match => match.Id == target.SessionId && match.CanManage
+                                                               && match.Slots.Any(slot => slot.PlayerId == target.PlayerId)
+                          ),
+                    () =>
+                    {
+                        var target = kickTarget.Value.GetValueOrDefault();
+                        return LobbyPlayerMenu.Build(
+                            kickPosition.Value,
+                            () => kickTarget.Value = null,
+                            (target.IsBot ? "Remove bot" : "Kick player", () =>
+                            {
+                                kickTarget.Value = null;
+                                actions.KickGamePlayer(target.SessionId, target.PlayerId);
+                            })
+                        );
+                    }
+                ),
                 stagePreview
             ]
         );
@@ -185,6 +210,15 @@ public static class LobbyView
             contextPlayer.Value = null;
             action(id);
         }
+    }
+
+    private static Vector2 ClampMenuPosition(Vector2 position)
+    {
+        var scale = Math.Max(G.Scale, 0.01f);
+        return new Vector2(
+            Math.Clamp(position.X / scale, 0, Math.Max(0, G.Viewport.X / scale - 170)),
+            Math.Clamp(position.Y / scale, 0, Math.Max(0, G.Viewport.Y / scale - 94))
+        );
     }
 
     private static Node Header(Actions actions)
@@ -657,10 +691,11 @@ public static class LobbyView
 
     // ── Match lobby ────────────────────────────────────────────────
 
-    private static Node MatchPage(Actions actions)
+    private static Node MatchPage(Actions actions, Action<uint, UiState.LobbySessionSlot, Vector2> openKickMenu)
     {
         var lobby = UiState.Lobby;
         var showRules = new Signal<bool>(false);
+        var showInvites = new Signal<bool>(false);
         UiState.LobbySession? Session() =>
             lobby.Sessions.Value.FirstOrDefault(session => session.Id == lobby.ViewedSessionId.Value);
 
@@ -738,7 +773,7 @@ public static class LobbyView
                             )
                         ),
                         Sx.Show(
-                            () => Session() is { IsMember: false, State: SessionState.NotStarted, EmptySlots: > 0 },
+                            () => Session() is { IsMember: false, RequiresInvite: false, State: SessionState.NotStarted, EmptySlots: > 0 },
                             () => ActionButton(
                                 "JOIN GAME",
                                 () => actions.Join(lobby.ViewedSessionId.Value ?? 0),
@@ -772,7 +807,7 @@ public static class LobbyView
                     ),
                     children:
                     [
-                        SlotsPanel(Session),
+                        SlotsPanel(Session, openKickMenu, () => showInvites.Value = true),
                         Sx.View(
                             style: () => Sx.Styles(
                                 flexDirection: FlexDirection.Column,
@@ -800,12 +835,28 @@ public static class LobbyView
                 Sx.Show(
                     () => showRules.Value,
                     () => MatchOverlayView(() => "GAME RULES", RulesContent(Session, actions), () => showRules.Value = false)
+                ),
+                Sx.Show(
+                    () => showInvites.Value,
+                    () => MatchOverlayView(() => "INVITE PLAYER", InvitePlayers(Session, playerId =>
+                        {
+                            if (Session() is not { CanManage: true, EmptySlots: > 0 } game || !lobby.Connected.Value)
+                                return;
+                            showInvites.Value = false;
+                            actions.InviteGamePlayer(game.Id, playerId);
+                        }
+                    ), () => showInvites.Value = false
+                    )
                 )
             ]
         );
     }
 
-    private static Node SlotsPanel(Func<UiState.LobbySession?> session)
+    private static Node SlotsPanel(
+        Func<UiState.LobbySession?> session,
+        Action<uint, UiState.LobbySessionSlot, Vector2> openKickMenu,
+        Action openInvites
+    )
     {
         return Sx.View(
             style: () => Sx.Styles(
@@ -868,14 +919,19 @@ public static class LobbyView
                     ),
                     children: Sx.For(
                         each: () => session()?.Slots ?? [],
-                        row: (slot, _) => SlotRow(slot)
+                        row: (slot, _) => SlotRow(slot, session, openKickMenu, openInvites)
                     )
                 )
             ]
         );
     }
 
-    private static Node SlotRow(UiState.LobbySessionSlot slot)
+    private static Node SlotRow(
+        UiState.LobbySessionSlot slot,
+        Func<UiState.LobbySession?> session,
+        Action<uint, UiState.LobbySessionSlot, Vector2> openKickMenu,
+        Action openInvites
+    )
     {
         return Sx.View(
             name: () => $"Lobby match slot {slot.Slot + 1}",
@@ -894,6 +950,14 @@ public static class LobbyView
                     : slot.IsSelf ? Theme.MenuHighlight : new Color(128, 170, 255, 24),
                 opacity: slot.IsEmpty ? 0.65f : 1f
             ),
+            onmousedown: e =>
+            {
+                if (e.Button != MouseButton.Secondary || slot.IsSelf || slot.PlayerId == Guid.Empty
+                    || !UiState.Lobby.Connected.Value || session() is not { CanManage: true } match)
+                    return;
+                e.StopPropagation();
+                openKickMenu(match.Id, slot, e.Position);
+            },
             children:
             [
                 Sx.Text(
@@ -926,6 +990,15 @@ public static class LobbyView
                         text: () => "BOT"
                     )
                 ),
+                Sx.Show(
+                    () => slot.IsEmpty && UiState.Lobby.Connected.Value && session() is { CanManage: true },
+                    () => ActionButton(
+                        "INVITE",
+                        openInvites,
+                        small: true,
+                        name: () => $"Lobby invite slot {slot.Slot + 1}"
+                    )
+                ),
                 Sx.For(
                     () => (slot.CarColors ?? []).Select((color, index) => (color, index)).ToArray(),
                     (swatch, _) => Sx.View(
@@ -943,6 +1016,39 @@ public static class LobbyView
                     )
                 )
             ]
+        );
+    }
+
+    private static Node InvitePlayers(Func<UiState.LobbySession?> session, Action<Guid> invite)
+    {
+        IReadOnlyList<UiState.LobbyPlayer> Invitees()
+        {
+            if (!UiState.Lobby.Connected.Value || session() is not { CanManage: true, EmptySlots: > 0 } match)
+                return [];
+
+            return [.. UiState.Lobby.Players.Value.Where(player => !player.IsSelf
+                                                                   && match.Slots.All(slot => slot.PlayerId != player.Id)
+            )
+                .OrderBy(player => player.Name, StringComparer.OrdinalIgnoreCase)];
+        }
+
+        return Sx.View(
+            name: () => "Lobby invite players",
+            style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0, gapRow: 6),
+            children: Sx.Show(
+                () => Invitees().Count > 0,
+                () => Sx.For(Invitees, (player, _) => ActionButton(
+                    player.Name,
+                    () => invite(player.Id),
+                    small: true,
+                    name: () => $"Invite {player.Name}"
+                )
+                ),
+                () => Sx.Text(
+                    style: () => Sx.WrappingText(fontSize: 12, foregroundColor: TextBlue),
+                    text: () => "No room players are available to invite."
+                )
+            )
         );
     }
 
@@ -1062,6 +1168,7 @@ public static class LobbyView
             { IsCreator: true, EmptySlots: 0 } => "You have created this game. Start when ready.",
             { IsCreator: true } => $"Waiting for {session.EmptySlots} more player(s) to join to start.",
             { IsMember: true } => $"{session.CreatorName} starts the race when everyone is ready.",
+            { RequiresInvite: true } => "You need an invite from the host to join this game.",
             { EmptySlots: 0 } => "This game is full.",
             _ => "Open game. Join to take a free slot."
         };
@@ -1510,8 +1617,7 @@ public static class LobbyView
         var options = field.Choices.ToArray();
         var labels = options.Select(option => option.Label).ToArray();
         var selected = Array.FindIndex(options, option => option.Value == setting.RawValue);
-        bool CanEdit() => UiState.Lobby.Connected.Value
-                          && session() is { IsCreator: true, IsMember: true, State: SessionState.NotStarted };
+        bool CanEdit() => UiState.Lobby.Connected.Value && session() is { CanManage: true };
 
         return DetailRow(setting.Label, Sx.Show(
             CanEdit,

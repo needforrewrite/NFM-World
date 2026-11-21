@@ -56,6 +56,8 @@ public partial struct S2C_LobbyState : IPacketServerToClient<S2C_LobbyState>
         [TightPackOrder(11)]
         public long ClosesAtUnixMs { get; set; }
 
+        [TightPackOrder(12)] public bool RequiresInvite { get; set; }
+
         [TightPackIgnore] public int PlayerCount => Players.Count + Bots.Count;
 
         public GameSession()

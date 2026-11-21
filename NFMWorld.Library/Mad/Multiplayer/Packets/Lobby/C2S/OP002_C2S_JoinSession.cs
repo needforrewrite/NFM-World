@@ -7,4 +7,5 @@ namespace NFMWorldLibrary.Multiplayer.Packets.C2S;
 public partial struct C2S_JoinSession : IPacketClientToServer<C2S_JoinSession>
 {
     [TightPackOrder(0)] public required uint SessionId { get; set; }
+    [TightPackOrder(1)] public Guid InviteId { get; set; }
 }

@@ -52,6 +52,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     private (S2C_RaceStarted Started, Task<bool> Work)? _pendingSpectate;
 
     private static UiState.LobbyState Lobby => UiState.Lobby;
+    private IMultiplayerClientTransport Transport => transport;
 
     /// <summary>Local stages the create dialog offers, read once so switching source is cheap.</summary>
     private IReadOnlyList<StageOption>? _localStages;
@@ -114,6 +115,8 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         SetBots: count => Lobby.BotCount.Value = Math.Clamp(count, 0, Lobby.MaxPlayers.Value - 1),
         SetConfig: OnSetConfig,
         SetGameRule: OnSetGameRule,
+        KickGamePlayer: OnKickGamePlayer,
+        InviteGamePlayer: OnInviteGamePlayer,
         SetGamemode: OnSetGamemode,
         ChangeCar: OpenCarPicker,
         CopyCar: id => CopyPlayerCar(id, colorsOnly: false),
@@ -164,6 +167,8 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         // A reconnected transport is a brand-new connection: the lobby knows nothing about
         // this player until it authenticates and identifies itself again.
         ResetHandshake();
+        GameSparker.UiRenderer?.Notifications.Clear(this);
+        _deferredLobbyPackets.Clear();
         _player.Id = Guid.Empty;
         _players = [];
         _activeSessions = [];
@@ -317,8 +322,9 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                 SetStatus("The race content could not be downloaded.");
         }
 
-        foreach (var packet in transport.GetNewPackets())
+        foreach (var packet in ReadLobbyPackets())
         {
+            if (HandleLobbyNotification(packet)) continue;
             switch (packet)
             {
                 case S2C_LobbyChatMessage chatMessage:
@@ -425,6 +431,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
             _carsActive = false;
             CloseCarPicker();
             CloseStagePreview();
+            GameSparker.UiRenderer?.Notifications.Clear(this);
             _carCancellation.Cancel();
             _carCancellation.Dispose();
             _carDetails.Clear();
@@ -727,7 +734,8 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
             SessionSlots(session, humans),
             LiveStandingsFor(session),
             FinalStandingsFor(session),
-            session.ClosesAtUnixMs
+            session.ClosesAtUnixMs,
+            session.RequiresInvite
         );
     }
 
@@ -828,7 +836,8 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                     PlayerColors(standing.CarName, standing.CarColors),
                     IsBot: standing.IsBot,
                     IsEmpty: false,
-                    IsSelf: standing.PlayerId == _player.Id
+                    IsSelf: standing.PlayerId == _player.Id,
+                    PlayerId: standing.PlayerId
                 ))];
         }
 
@@ -847,7 +856,8 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                         PlayerColors(human),
                         IsBot: false,
                         IsEmpty: false,
-                        IsSelf: playerId == _player.Id
+                        IsSelf: playerId == _player.Id,
+                        PlayerId: playerId
                     )
                 );
                 continue;
@@ -864,7 +874,8 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                         PlayerColors(bot),
                         IsBot: true,
                         IsEmpty: false,
-                        IsSelf: false
+                        IsSelf: false,
+                        PlayerId: bot.Id
                     )
                 );
                 continue;
@@ -1006,15 +1017,17 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         Lobby.Page.Value = UiState.LobbyPage.Room;
     }
 
-    private void OnJoin(uint id)
+    private void OnJoin(uint id) => JoinGame(id, Guid.Empty);
+
+    private void JoinGame(uint id, Guid inviteId)
     {
         // Never the session we are already in: joining is what changes membership, so reading
         // CurrentSession here would make JOIN a no-op.
-        if (!CanAct || Lobby.CurrentSession.Value?.Id == id)
+        if (!_carsActive || !CanAct || Lobby.CurrentSession.Value?.Id == id)
             return;
 
         OpenSession(id);
-        transport.SendPacketToServer(new C2S_JoinSession { SessionId = id });
+        transport.SendPacketToServer(new C2S_JoinSession { SessionId = id, InviteId = inviteId });
     }
 
     /// <summary>

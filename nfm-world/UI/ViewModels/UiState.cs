@@ -293,11 +293,13 @@ public static class UiState
         IReadOnlyList<LobbySessionSlot> Slots,
         IReadOnlyList<LobbyStanding> LiveStandings,
         IReadOnlyList<LobbyStanding> FinalStandings,
-        long ClosesAtUnixMs
+        long ClosesAtUnixMs,
+        bool RequiresInvite = false
     )
     {
         public int EmptySlots => Math.Max(0, MaxPlayers - PlayerCount);
         public bool CanChat => IsMember || State == SessionState.Started;
+        public bool CanManage => IsCreator && IsMember && State == SessionState.NotStarted;
     }
 
     /// <summary>One row of the match lobby's live or final order.</summary>
@@ -334,7 +336,8 @@ public static class UiState
         IReadOnlyList<Color>? CarColors,
         bool IsBot,
         bool IsEmpty,
-        bool IsSelf
+        bool IsSelf,
+        Guid PlayerId = default
     );
 
     /// <summary>

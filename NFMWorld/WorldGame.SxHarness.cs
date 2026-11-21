@@ -784,6 +784,8 @@ public partial class WorldGame
                 SetConfig: (name, value) => lobby.GamemodeConfig.Value =
                     new Dictionary<string, string>(lobby.GamemodeConfig.Value) { [name] = value },
                 SetGameRule: (_, _, _) => { },
+                KickGamePlayer: (_, _) => { },
+                InviteGamePlayer: (_, _) => { },
                 SetGamemode: id =>
                 {
                     lobby.SelectedGamemode.Value = id;
@@ -906,7 +908,17 @@ public partial class WorldGame
                     false
                 ),
                 new UiState.LobbySessionSlot(2, "Empty", "Waiting for player...", default, null, false, true, false),
-                new UiState.LobbySessionSlot(3, "Rusty", "Bot · Class C", new Color(190, 120, 90), null, true, false, false)
+                new UiState.LobbySessionSlot(
+                    3,
+                    "Rusty",
+                    "Bot · Class C",
+                    new Color(190, 120, 90),
+                    null,
+                    true,
+                    false,
+                    false,
+                    PlayerId: Guid.NewGuid()
+                )
             ],
             [],
             [],
@@ -1101,6 +1113,17 @@ public partial class WorldGame
                 lobby.Sessions.Value = [.. lobby.Sessions.Value.Select(match =>
                     match.Id == id ? match with { Settings = settings } : match)];
             },
+            KickGamePlayer: (id, playerId) =>
+            {
+                var match = lobby.Sessions.Value.First(session => session.Id == id);
+                var slots = match.Slots.Select(slot => slot.PlayerId == playerId
+                    ? new UiState.LobbySessionSlot(slot.Slot, "Empty", "Waiting for player...", default, null, false, true, false)
+                    : slot).ToArray();
+                lobby.Sessions.Value = [.. lobby.Sessions.Value.Select(session => session.Id == id
+                    ? session with { Slots = slots, PlayerCount = slots.Count(slot => !slot.IsEmpty) }
+                    : session)];
+            },
+            InviteGamePlayer: (_, _) => { },
             SetGamemode: id => lobby.SelectedGamemode.Value = id,
             ChangeCar: () => { },
             CopyCar: _ => { },

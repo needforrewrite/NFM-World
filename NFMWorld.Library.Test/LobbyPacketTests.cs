@@ -43,6 +43,21 @@ public class LobbyPacketTests
     }
 
     [TestMethod]
+    public void GameInvite_CarriesATokenForTheJoinRequest()
+    {
+        var invite = RoundTrip(new S2C_GameInvite
+        {
+            SessionId = 10, InviteId = Guid.NewGuid(), CreatorName = "host", ExpiresAtUnixMs = 1_800_000_000_000
+        }, -21);
+        var joined = RoundTrip(new C2S_JoinSession { SessionId = invite.SessionId, InviteId = invite.InviteId }, 2);
+
+        Assert.AreEqual(10u, joined.SessionId);
+        Assert.AreEqual(invite.InviteId, joined.InviteId);
+        Assert.AreEqual("host", invite.CreatorName);
+        Assert.AreEqual(1_800_000_000_000, invite.ExpiresAtUnixMs);
+    }
+
+    [TestMethod]
     public void CreateSession_CarriesGamemodeParameters()
     {
         var sent = new C2S_CreateSession

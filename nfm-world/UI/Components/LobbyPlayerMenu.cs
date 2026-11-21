@@ -10,6 +10,9 @@ namespace NFMWorld.UI.Components;
 internal static class LobbyPlayerMenu
 {
     public static Node Build(Vector2 position, Action copyCar, Action copyColors, Action close)
+        => Build(position, close, ("Copy car", copyCar), ("Copy colors", copyColors));
+
+    public static Node Build(Vector2 position, Action close, params (string Label, Action Press)[] items)
         => Sx.View(
             name: () => "Lobby player menu overlay",
             style: () => Sx.Styles(
@@ -37,7 +40,7 @@ internal static class LobbyPlayerMenu
                     borderRadius: 6
                 ),
                 onmousedown: e => e.StopPropagation(),
-                children: [Item("Copy car", copyCar), Item("Copy colors", copyColors)]
+                children: items.Select(item => Item(item.Label, item.Press)).ToArray()
             )]
         );
 

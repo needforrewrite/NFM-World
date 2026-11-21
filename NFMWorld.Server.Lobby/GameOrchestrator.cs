@@ -477,6 +477,14 @@ public class GameOrchestrator
                 HandleJoinSession(e.ClientIndex, join);
                 break;
 
+            case C2S_KickGamePlayer kick:
+                HandleKickGamePlayer(e.ClientIndex, kick);
+                break;
+
+            case C2S_InviteGamePlayer invite:
+                HandleInviteGamePlayer(e.ClientIndex, invite);
+                break;
+
             case C2S_SpectateSession spectate:
                 _ = HandleSpectateSessionAsync(e.ClientIndex, spectate);
                 break;
@@ -744,22 +752,69 @@ public class GameOrchestrator
         var player = _players.Get(clientId);
         if (player is null || player.Banned) return;
 
-        var (joined, left) = _sessions.JoinSession(clientId, join.SessionId);
+        if (player.InSession?.SessionIndex == join.SessionId) return;
+
+        var (joined, left) = _sessions.JoinSession(clientId, join.SessionId, join.InviteId);
+        if (joined is null)
+        {
+            SendGameLobbyNotice(clientId, join.InviteId != Guid.Empty
+                ? "That invite is no longer available."
+                : "You can’t join this game. It may be full, started, or require an invite.");
+            return;
+        }
 
         if (left is not null)
             _chat.BroadcastSystem($"{player.Name} has left {left.CreatorName}'s session!");
 
-        if (joined is not null)
-        {
-            _chat.BroadcastSystem($"{player.Name} has joined {joined.CreatorName}'s session!");
-            _chat.SendSystemToSession(joined.Id, $"{player.Name} joined the game.");
-        }
+        _chat.BroadcastSystem($"{player.Name} has joined {joined.CreatorName}'s session!");
+        _chat.SendSystemToSession(joined.Id, $"{player.Name} joined the game.");
 
         if (left is not null)
             _chat.SendSystemToSession(left.Id, $"{player.Name} left the game.");
 
         _broadcaster.BroadcastToAll();
     }
+
+    private void HandleKickGamePlayer(uint clientId, C2S_KickGamePlayer kick)
+    {
+        if (!_sessions.KickGamePlayer(clientId, kick.SessionId, kick.PlayerId))
+        {
+            SendGameLobbyNotice(clientId, "That slot can no longer be removed.");
+            return;
+        }
+
+        if (_players.Get(kick.PlayerId) is { } removed)
+        {
+            SendGameLobbyNotice(removed.ClientIndex, "The host removed you from the game. You need a new invite to rejoin.");
+            _chat.SendSystemToSession(kick.SessionId, $"{removed.Name} was removed by the host.");
+        }
+
+        _broadcaster.BroadcastToAll();
+    }
+
+    private void HandleInviteGamePlayer(uint clientId, C2S_InviteGamePlayer request)
+    {
+        if (_players.Get(request.PlayerId) is not { } target
+            || _sessions.InviteGamePlayer(clientId, request.SessionId, request.PlayerId) is not { } invite)
+        {
+            SendGameLobbyNotice(
+                clientId,
+                "Could not send the invite. Check that the game has an open slot and the player is still online."
+            );
+            return;
+        }
+
+        _transport.SendPacketToClient(target.ClientIndex, new S2C_GameInvite
+        {
+            SessionId = request.SessionId,
+            InviteId = invite.Id,
+            CreatorName = invite.CreatorName,
+            ExpiresAtUnixMs = invite.ExpiresAtUnixMs
+        });
+    }
+
+    private void SendGameLobbyNotice(uint clientId, string message)
+        => _transport.SendPacketToClient(clientId, new S2C_GameLobbyNotice { Message = message });
 
     /// <summary>
     /// Sends a client to watch a race that is already running. The client is not put in the

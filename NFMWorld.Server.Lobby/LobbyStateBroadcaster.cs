@@ -28,6 +28,7 @@ public class LobbyStateBroadcaster(
     /// <summary>Builds a <see cref="S2C_LobbyState"/> for a specific client.</summary>
     public S2C_LobbyState BuildSnapshot(Guid playerId)
     {
+        var accountId = players.Get(playerId)?.AccountId ?? 0;
         var playerList = new List<ServerSidePlayerInfo>();
         var sessionList = new List<S2C_LobbyState.GameSession>();
 
@@ -73,7 +74,8 @@ public class LobbyStateBroadcaster(
                     GamemodeParameters = new Dictionary<string, string>(session.GamemodeParameters),
                     Bots = bots,
                     FinalStandings = [.. session.FinalStandings],
-                    ClosesAtUnixMs = session.ClosesAtUnixMs
+                    ClosesAtUnixMs = session.ClosesAtUnixMs,
+                    RequiresInvite = session.RemovedAccounts.ContainsKey(accountId)
                 }
             );
         }
