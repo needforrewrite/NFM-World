@@ -7,6 +7,19 @@
         <Nullable>enable</Nullable>
         <DefineConstants>ANGLE;$(DefineConstants)4</DefineConstants>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <!-- The published game is trimmed. Set here rather than on the release workflow's command
+             line: -p: is a global property, so it also reaches the netstandard2.0 analyzers and
+             generators in this graph and restore fails them with NETSDK1124. Plugins are loaded
+             from data/ into their own AssemblyLoadContext, so what they reach is rooted by
+             PluginTypes.linker.xml and PluginSandbox.linker.xml rather than by a reference the
+             trimmer can see. Release only: trimming a Debug build buys nothing and its trim
+             analysis floods every local build with IL warnings. -->
+        <PublishTrimmed Condition="'$(Configuration)' == 'Release'">true</PublishTrimmed>
+        <!-- Trimming switches System.Text.Json's reflection resolver off by default, which breaks
+             every JsonSerializer call the game already makes (archive responses, HUD skins, the Sx
+             harness' layout dumps) with "Reflection-based serialization has been disabled". None of
+             them has a JsonSerializerContext, so the switch has to stay on. -->
+        <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
     </PropertyGroup>
 
     <ItemGroup>
@@ -59,6 +72,15 @@
                                    Condition="$([MSBuild]::ValueOrDefault('%(RelativePath)', '').EndsWith('.runtimeconfig.json')) and '%(Filename)' != '$(AssemblyName).runtimeconfig'" />
         </ItemGroup>
     </Target>
+
+    <!-- Trimming is on for every publish of this head (PublishTrimmed above). Plugins are loaded
+         from data/ into their own AssemblyLoadContext, so the trimmer sees no reference to what they
+         call: PluginTypes.linker.xml roots the plugin API, and PluginSandbox.linker.xml roots the
+         framework surface CasCore's sandbox admits. Neither is needed while trimming is off. -->
+    <ItemGroup>
+        <TrimmerRootDescriptor Include="..\PluginTypes.linker.xml" />
+        <TrimmerRootDescriptor Include="PluginSandbox.linker.xml" />
+    </ItemGroup>
 
     <!-- The playable exe, so the gamemode plugins this imports land beside it in
          data/gamemodes/ - the game loads them relative to its own binary, which is here

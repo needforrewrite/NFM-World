@@ -1,0 +1,47 @@
+<!--
+    The framework members CasCore's sandbox admits, rooted for a trimmed desktop build.
+
+    PluginPolicy builds its policy from CasCore's DefaultSandbox, which binds framework members by
+    *name* - WithSandboxedSystemConsole resolves Console.get_In, WithSandboxedSystemLinq resolves
+    Expression.Lambda, and a group built over an incoming assembly binds by Assembly.Load("...") -
+    so the trimmer sees no reference to any of them and drops each one the game's own code never
+    uses. Plugin load then fails inside PluginPolicy.Build with "Could not find method get_In to add
+    to binding for System.Console" or a FileNotFoundException for the whole assembly.
+
+    A group needs two things, and both are per-assembly here:
+      - the assembly *file* present, for the Assembly.Load groups and for forwarders;
+      - the type's members kept, for the typeof(...) groups.
+    Rooting the assembly does both.
+
+    This is exactly the set DefaultSandbox() enables. Add a group's assemblies when PluginPolicy
+    starts using one, and drop an entry when a group goes away. PluginPolicy deliberately skips
+    CasCore's JSON group (it throws on this runtime), so System.Text.Json is absent on purpose.
+
+    Desktop only: the sandbox needs dynamic code, so on wasm PluginPolicy.Supported is false and
+    plugins load through the plain PluginLoadContext - that head imports PluginTypes.linker.xml
+    alone. If wasm sandboxing starts working, import this file there too.
+-->
+<linker>
+    <assembly fullname="System.Private.CoreLib" />
+    <assembly fullname="System.Collections" />
+    <assembly fullname="System.Collections.Concurrent" />
+    <assembly fullname="System.Collections.Immutable" />
+    <assembly fullname="System.Collections.NonGeneric" />
+    <assembly fullname="System.Collections.Specialized" />
+    <assembly fullname="System.ComponentModel.TypeConverter" />
+    <assembly fullname="System.Console" />
+    <assembly fullname="System.Diagnostics.DiagnosticSource" />
+    <assembly fullname="System.Linq" />
+    <assembly fullname="System.Linq.Expressions" />
+    <assembly fullname="System.Linq.Parallel" />
+    <assembly fullname="System.Linq.Queryable" />
+    <assembly fullname="System.ObjectModel" />
+    <assembly fullname="System.Reflection.TypeExtensions" />
+    <assembly fullname="System.Runtime.Numerics" />
+    <assembly fullname="System.Runtime.Serialization.Formatters" />
+    <assembly fullname="System.Text.RegularExpressions" />
+    <assembly fullname="System.Threading" />
+    <assembly fullname="System.Threading.Channels" />
+    <assembly fullname="System.Threading.Tasks.Dataflow" />
+    <assembly fullname="System.Threading.Tasks.Parallel" />
+</linker>

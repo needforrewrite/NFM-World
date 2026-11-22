@@ -274,26 +274,12 @@
               StandardOutputImportance="normal" />
     </Target>
 
-    <!-- Gamemode plugins are ordinary desktop-targeted assemblies loaded at run time, and they
-         reference the System.Runtime facade the way any ref-assembly-linked build does. Nothing in
-         this app's own code needs that facade, so trimming drops it and every plugin load then fails
-         with "Could not load file or assembly 'System.Runtime'". Rooting it keeps it in the bundle. -->
+    <!-- The plugin API roots: host assemblies, and the framework facades plus System.Private.CoreLib
+         a plugin's own IL binds against. Shared with the desktop head so the two cannot drift.
+         CasCore's sandbox root set is desktop-only (NFMWorld/PluginSandbox.linker.xml): this head
+         loads plugins through the plain PluginLoadContext today. -->
     <ItemGroup>
-        <TrimmerRootAssembly Include="System.Runtime" />
-        <TrimmerRootAssembly Include="System.Private.CoreLib" />
-        <!-- The facades are pure type-forwarders, and the trimmer drops a forward nothing in this
-             app reaches through it - so a plugin compiled against the ref pack cannot resolve, say,
-             Dictionary`2 out of System.Collections even though the type itself is in CoreLib. These
-             are exactly the facades the two shipped plugins reference. -->
-        <TrimmerRootAssembly Include="System.Collections" />
-        <TrimmerRootAssembly Include="System.Memory" />
-        <TrimmerRootAssembly Include="System.Linq" />
-        <TrimmerRootAssembly Include="System.Reflection" />
-        <TrimmerRootAssembly Include="System.Buffers" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <TrimmerRootDescriptor Include="PluginTypes.linker.xml" />
+        <TrimmerRootDescriptor Include="..\PluginTypes.linker.xml" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,0 +1,55 @@
+<!--
+    The API surface a gamemode or AI plugin reaches at run time.
+
+    A plugin is not a reference of the game: it is loaded from data/<kind>/<id>/ into its own
+    AssemblyLoadContext, so the trimmer sees no call from the game to anything the plugin calls. A
+    removed type or member then surfaces as a missing assembly or a "Method not found" at plugin
+    load rather than as anything about trimming.
+
+    What a plugin may touch is declared by [PluginVisible] / [VendorPluginVisible] and read back by
+    reflection in PluginPolicy, so the roots below name whole assemblies instead of a member list:
+    an API added under an existing marker is preserved without anyone remembering this file. Rooting
+    an assembly keeps every type and member in it - deliberately coarse. The trimming win is the
+    framework and interop assemblies that nothing here roots.
+
+    The sandbox's own framework surface is not here: CasCore binds those members by name and needs
+    dynamic code, so it only runs on desktop. NFMWorld/PluginSandbox.linker.xml roots them, and the
+    browser head does not import it.
+
+    Imported by the heads that publish trimmed: NFMWorld (desktop) and NFMWorld.Browser.
+-->
+<linker>
+    <!-- The host assemblies PluginPolicy reads its markers from, and every base class, interface and
+         attribute a plugin derives from, implements or carries. -->
+    <assembly fullname="NFMWorld.Library" />
+    <assembly fullname="NFMWorld.DriverInterface" />
+    <assembly fullname="NFMWorld.Math" />
+    <assembly fullname="NFMWorld.UI" />
+
+    <!-- Vendor types named by [VendorPluginVisible] in NFMWorld.Library/PluginVisibility.cs: the
+         fixed-point primitives and the inline-array helpers the visible members expose. -->
+    <assembly fullname="FixedMathSharp" />
+    <assembly fullname="Maxine.Extensions" />
+    <assembly fullname="Maxine.Extensions.Mathematics" />
+
+    <!-- A plugin's generated serialization code constructs these formatters and calls the
+         reader/writer primitives directly; PluginPolicy names the same set again for the sandbox. -->
+    <assembly fullname="TightPack" />
+
+    <!-- The framework assemblies a plugin assembly binds against. A plugin is compiled against the
+         ref pack, not against this app, so its IL names facades nothing in the game reaches through:
+         trimming drops the file and every plugin load fails with "Could not load file or assembly
+         'System.Runtime'". Rooting a facade keeps it and the forwarders it holds, which is what lets
+         a plugin resolve, say, Dictionary`2 out of System.Collections. This is the set the shipped
+         plugins reference; add one only when a plugin gains that reference. CoreLib is here because
+         the forwarders land in it and its members are what the plugin actually calls. -->
+    <assembly fullname="System.Private.CoreLib" />
+    <assembly fullname="System.Runtime" />
+    <assembly fullname="System.Collections" />
+    <assembly fullname="System.Memory" />
+    <assembly fullname="System.Linq" />
+    <assembly fullname="System.Reflection" />
+    <assembly fullname="System.Buffers" />
+    <assembly fullname="System.Numerics.Vectors" />
+    <assembly fullname="System.Runtime.InteropServices" />
+</linker>

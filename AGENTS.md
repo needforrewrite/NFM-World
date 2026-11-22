@@ -59,6 +59,12 @@ Key characteristics:
   - Dev servers: `dotnet build NFMWorld/NFMWorld.csproj -c DebugDevServer` — Debug with the baked
     lobby/archive endpoints pointed at `lobby-dev.nfmw.net` / `dev.nfmw.net` instead of loopback.
   - Run: `dotnet run --project NFMWorld/NFMWorld.csproj`
+  - Publish is **trimmed** (`PublishTrimmed` in `NFMWorld/NFMWorld.csproj`, so the release workflow
+    needs no flag; `-p:PublishTrimmed=true` is global and breaks the netstandard2.0 analyzers'
+    restore). Plugins are loaded from `data/` into their own `AssemblyLoadContext`, so the trimmer
+    cannot see what they call: `PluginTypes.linker.xml` roots the plugin API and the facades a plugin
+    binds against, and `NFMWorld/PluginSandbox.linker.xml` roots the framework surface CasCore's
+    name-bound sandbox admits. A trimmed win-x64 publish is ~103 MB against ~245 MB untrimmed.
   - Tests: `dotnet test --no-build` from the solution root, or from a test project folder.
   - Browser: `dotnet build NFMWorld.Browser/NFMWorld.Browser.csproj -p:NfmwBrowser=true` (it sets
     `browser-wasm` itself). The property cannot be set in the csproj: it has to reach referenced
@@ -392,6 +398,7 @@ time — they carry their lengths, `Unsafe` does not.
 | `[UnsafeAccessor]` in probes | a probe reading a private host field this way compiles to a direct `ldfld`, which the policy must refuse; it fails as `InvalidProgramException` from CasCore's IL verifier rather than `SecurityException`, so assert "throws", not the type |
 | Proving the sandbox | `NFMWorld.Gamemode.Hostile` has one probe per forbidden reach; `PluginSandboxTests` loads it like the game does and asserts every probe is refused. `AiPluginTests.CreateClient_PassesTheSandbox` constructs each real plugin's client gamemode, which no server-only path does. The test host declares its own plugin list, so probes never reach release output |
 | Not everywhere | `PluginPolicy.Supported` is false without dynamic code (the wasm head), where loads fall back to the plain `PluginLoadContext` |
+| Trimming | The published game is trimmed, and the sandbox binds framework members **by name** (`Console.get_In`, `Expression.Lambda`) and whole assemblies (`Assembly.Load("System.Linq.Queryable")`), none of which the trimmer can see. Without roots the first plugin load dies inside `PluginPolicy.Build` with "Could not find method get_In to add to binding for System.Console" or `FileNotFoundException`. `NFMWorld/PluginSandbox.linker.xml` roots exactly the assemblies `DefaultSandbox()`'s groups name (desktop only — a new sandbox group needs its assemblies added there), and `PluginTypes.linker.xml` roots the host API plus the facades a plugin's own IL binds against. A trimmed app also disables reflection-based `System.Text.Json`, hence `JsonSerializerIsReflectionEnabledByDefault` in the head |
 | `InlineArray4` element access | indexing one compiles to a BCL `InlineArrayFirstElementRef` helper that the IL verifier rejects (`BadImageFormatException`), so a plugin cannot read `CarPhysics.Scx/Scy/Scz` directly — add a summed accessor on the host instead (`CarPhysics.SummedWheelVelocity`) |
 
 ---
