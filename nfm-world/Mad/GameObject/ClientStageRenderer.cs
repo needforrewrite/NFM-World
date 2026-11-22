@@ -287,7 +287,8 @@ public partial class ClientStageRenderer : GameObject, IDisposable
             if (prepared.groundPolys is { } polys) renderer.polys = new GroundPolys(GameSparker.GraphicsDevice, polys);
             await LoadingWork.NextFrame;
             token.ThrowIfCancellationRequested();
-            if (prepared.clouds is { } clouds) renderer.clouds = new GroundPolys(GameSparker.GraphicsDevice, clouds);
+            if (prepared.clouds is { } clouds)
+                renderer.clouds = new GroundPolys(GameSparker.GraphicsDevice, clouds, applyFog: false);
             await LoadingWork.NextFrame;
             token.ThrowIfCancellationRequested();
             if (prepared.mountains is { } mountains) renderer.mountains = new Mountains(GameSparker.GraphicsDevice, mountains);

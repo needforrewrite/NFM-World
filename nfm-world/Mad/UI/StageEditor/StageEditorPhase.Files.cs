@@ -695,11 +695,12 @@ public partial class StageEditorPhase
         _availableStages.Clear();
 
         // Through the VFS: in the browser the user's stages live in MEMFS, not on disk.
-        foreach (var file in VFS.EnumerateFiles("data/stages/user", "*.txt", SearchOption.TopDirectoryOnly))
+        const string directory = "data/stages/user/";
+        foreach (var file in VFS.EnumerateFiles(directory, "*.txt", SearchOption.AllDirectories))
         {
-            var fileName = Path.GetFileNameWithoutExtension(file);
-            if (fileName.Length > 0)
-                _availableStages.Add(fileName);
+            var stagePath = file[directory.Length..];
+            if (Path.GetFileNameWithoutExtension(stagePath).Length > 0)
+                _availableStages.Add(Path.ChangeExtension(stagePath, null));
         }
 
         _availableStages.Sort();

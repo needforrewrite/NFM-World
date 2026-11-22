@@ -59,6 +59,12 @@ public class GaragePhase : BaseStageRenderingPhase
 
     public override Node BuildUi() => _garage.BuildUi();
 
+    protected override void OnStageLoaded()
+    {
+        PositionPreviewCar();
+        CurrentStage?.SetCars(CarsInRace);
+    }
+
     public override void Enter()
     {
         base.Enter();

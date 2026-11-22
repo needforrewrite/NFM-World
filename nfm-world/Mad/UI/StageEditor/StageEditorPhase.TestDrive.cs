@@ -19,8 +19,7 @@ public partial class StageEditorPhase
     private bool _testDriveLaunched;
 
     /// <summary>
-    /// Test drives the saved stage: garage for the car, then a free-play race, back here on exit.
-    /// Unsaved edits have to reach the file first, because the garage and race load it by name.
+    /// Opens car selection for the saved stage and returns to the editor after the race.
     /// </summary>
     private void LaunchTestDrive()
     {
@@ -48,25 +47,25 @@ public partial class StageEditorPhase
         var stageName = $"user/{fileName}";
 
         // Loads the stage, so a broken document fails here rather than inside the phase stack.
-        GaragePhase garage;
+        GaragePhase picker;
         try
         {
-            garage = new GaragePhase(MenuHistory.Car, stageName);
+            picker = new GaragePhase(MenuHistory.Car, stageName, quickSelect: true);
         }
         catch (Exception exception)
         {
-            Logging.Error($"Unable to open the garage for test drive: {exception.Message}");
+            Logging.Error($"Unable to open car selection for test drive: {exception.Message}");
             GameSparker.MessageWindow.ShowMessage("Test drive unavailable", exception.Message);
             return;
         }
 
         _testDriveLaunched = true;
-        // Pushing the garage calls Exit() on this phase; that must not discard the open documents.
+        // Keep open documents when the picker takes over.
         _preserveTabsOnExit = true;
 
-        garage.CarSelected += (_, car) => StartTestDriveRace(stageName, car.FileName);
-        garage.CarSelectionCancelled += (_, _) => EndTestDrive();
-        GameSparker.PushPhase(garage, PhaseManager.Groups.Event);
+        picker.CarSelected += (_, car) => StartTestDriveRace(stageName, car.FileName);
+        picker.CarSelectionCancelled += (_, _) => EndTestDrive();
+        GameSparker.PushPhase(picker, PhaseManager.Groups.Event);
     }
 
     private void StartTestDriveRace(string stageName, string carName)
@@ -123,7 +122,7 @@ public partial class StageEditorPhase
         EndTestDrive();
     }
 
-    /// <summary>Pops the garage/race event group; the stage editor underneath re-enters.</summary>
+    /// <summary>Closes car selection or the race and returns to the editor.</summary>
     private void EndTestDrive()
     {
         _testDriveLaunched = false;
@@ -154,7 +153,7 @@ public partial class StageEditorPhase
             EditorText(
                 style: () => Sx.TextStyles(fontSize: 9, foregroundColor: new Color(255, 255, 255, 110)),
                 layout: () => Sx.Styles(width: 340, flexShrink: 0),
-                text: () => "Opens the garage, then races this stage. Quitting the race returns here."
+                text: () => "Pick a car to test this stage. Quitting the race returns to the editor."
             ),
             EditorText(
                 style: () => Sx.TextStyles(fontSize: 9, foregroundColor: new Color(255, 255, 255, 90)),
