@@ -542,7 +542,7 @@ public partial class WorldGame : IDisposable, IGameHost
     )
     {
         _browserContext = browserContext;
-        GameThreadContext.Install();
+        GameThreadContext.EnsureInstalled();
 
         // The context belongs to SDL, so there is no GL library to load and no context to create
         // here - this only has to bring up the one SDL makes current. The order around it is not
@@ -908,7 +908,7 @@ public partial class WorldGame : IDisposable, IGameHost
             var transaction = SentrySdk.StartTransaction("GameThreadContext", "gameloop.gamethread");
             var t = new MicroStopwatch();
             t.Start();
-            if (GameThreadContext.Current.ExecutePendingTasks())
+            if (GameThreadContext.EnsureInstalled().ExecutePendingTasks())
                 LastAsyncTime = t.ElapsedTicks * (1000000D / Stopwatch.Frequency);
             transaction.Finish();
         }
@@ -1508,6 +1508,11 @@ public partial class WorldGame : IDisposable, IGameHost
     /// </param>
     public void Tick(Stopwatch stopwatch)
     {
+        // The ambient context is not durable: the browser's ThreadPool runs on the main thread and
+        // leaves Current null behind it, so any queued work during the previous frame - Task.Run in
+        // the content loaders is enough - drops it. Re-establish it before anything reads Current.
+        GameThreadContext.EnsureInstalled();
+
         Window.PumpEvents();
 
         AdvanceElapsedTime(stopwatch);

@@ -70,10 +70,30 @@ public class GameThreadContext : SynchronizationContext
         Scheduler = new(this);
     }
 
-    public static void Install()
+    [ThreadStatic] private static GameThreadContext? _threadContext;
+
+    /// <summary>
+    /// Makes this thread's context the ambient one, and returns it.
+    ///
+    /// Called once at boot and again at the top of every frame, because the context is not durable:
+    /// on wasm the ThreadPool runs its work on the main thread and the runtime's pool pump leaves
+    /// <see cref="SynchronizationContext.Current"/> null behind it - so a single queued work item
+    /// (any `Task.Run`, which the content loaders use) silently drops it and the next read of
+    /// <see cref="Current"/> throws.
+    /// </summary>
+    public static GameThreadContext EnsureInstalled()
     {
-        var context = new GameThreadContext(Thread.CurrentThread);
+        if (SynchronizationContext.Current is GameThreadContext present)
+        {
+            _threadContext = present;
+            return present;
+        }
+
+        // Reused rather than recreated: it owns the queue of posts the frame drains, so losing it
+        // once must not strand work already queued on the previous instance.
+        var context = _threadContext ??= new GameThreadContext(Thread.CurrentThread);
         SetSynchronizationContext(context);
+        return context;
     }
 
     public void Run(Func<Task> action, Action callback)

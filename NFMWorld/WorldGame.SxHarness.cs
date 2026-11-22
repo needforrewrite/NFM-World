@@ -206,7 +206,7 @@ public partial class WorldGame
 
         void Render()
         {
-            GameThreadContext.Current.ExecutePendingTasks();
+            GameThreadContext.EnsureInstalled().ExecutePendingTasks();
             NFMWorld.Reactor.Sx.Renderer.Flush();
             var cb = game._device.AcquireCommandBuffer();
             cb.SetRenderTarget(target);
