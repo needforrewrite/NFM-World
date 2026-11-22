@@ -160,11 +160,9 @@ jobs:
         shell: bash
         run: |
           set -e
-          dotnet publish NFMWorld.Library/NFMWorld.Library.csproj \
           dotnet publish NFMWorld.CrashReporter/NFMWorld.CrashReporter.csproj \
             -c Release \
             -r "${{ matrix.rid }}" \
-            -o "./publish/${{ matrix.rid }}/native" \
             -p:SelfContained=true \
             -p:PublishAot=true \
             -p:DebugType=none \
@@ -227,6 +225,8 @@ jobs:
             -o ./publish/${{ matrix.rid }} \
             -p:SelfContained=true \
             -p:PublishReadyToRun=true \
+            -p:PublishSingleFile=true \
+            -p:DebugType=embedded \
             -p:IncludeNativeLibrariesForSelfExtract=false \
             -p:IncludeAllContentForSelfExtract=false \
             -p:ErrorOnDuplicatePublishOutputFiles=false \
@@ -246,11 +246,9 @@ jobs:
       - name: Publish crash reporter (${{ matrix.rid }})
         run: |
           set -e
-          dotnet publish NFMWorld.Library/NFMWorld.Library.csproj \
           dotnet publish NFMWorld.CrashReporter/NFMWorld.CrashReporter.csproj \
             -c Release \
             -r "${{ matrix.rid }}" \
-            -o "./publish/${{ matrix.rid }}/native" \
             -p:SelfContained=true \
             -p:PublishAot=true \
             -p:DebugType=none \
@@ -343,8 +341,6 @@ jobs:
             # See the Windows job. Unsigned by design, like the game itself.
             dotnet publish NFMWorld.CrashReporter/NFMWorld.CrashReporter.csproj \
               -c Release \
-              -r "$RID" \
-              -o "./publish/$RID/native" \
               -r $RID \
               -p:SelfContained=true \
               -p:PublishAot=true \

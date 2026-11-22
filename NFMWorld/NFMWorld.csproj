@@ -17,6 +17,49 @@
         <ProjectReference Include="..\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New"/>
     </ItemGroup>
 
+    <!--
+        A single-file publish takes every .dll and .exe in the publish output into the bundle and
+        deletes it from the publish folder. That is wrong for every file here that is found by path
+        rather than by assembly resolution:
+
+          - the native libraries placed as project content (libs/<arch>/, ANGLE's libEGL and
+            libGLESv2, the Vulkan loader, steam_api64). They carry no AssetType, so the SDK does not
+            classify them as native and would bundle them; the game loads each one by path from
+            AppContext.BaseDirectory.
+
+        The crash reporter is the one other file, and it is not this target's business: its dll
+        belongs in the bundle like every other assembly (CrashReportLibrary.Hook is an in-process
+        call from NFMWorld.Library), while the executable that hook starts is a second process a
+        bundle cannot hold. A referenced Exe contributes no apphost here, so the release workflows
+        publish the reporter natively into the same publish folder (see release.yml).
+
+        Plugins under data/ are excluded where they are added, in Plugin.Plugins.targets. Content
+        and native package assets are already left alone: IncludeAllContentForSelfExtract and
+        IncludeNativeLibrariesForSelfExtract are false in the release workflows.
+    -->
+    <Target Name="KeepPathLoadedFilesOutOfSingleFile"
+            BeforeTargets="_ComputeFilesToBundle"
+            Condition="'$(PublishSingleFile)' == 'true'">
+        <ItemGroup>
+            <!-- libs/<arch>/: joined by Path.Combine at run time. RelativePath keeps the platform's
+                 separators, so normalise before testing the prefix. -->
+            <ResolvedFileToPublish Update="@(ResolvedFileToPublish)"
+                                   ExcludeFromSingleFile="true"
+                                   Condition="$([MSBuild]::ValueOrDefault('%(RelativePath)', '').Replace('\', '/').StartsWith('libs/'))" />
+            <!-- Loaded by name from the output folder, not from libs/. -->
+            <ResolvedFileToPublish Update="@(ResolvedFileToPublish)"
+                                   ExcludeFromSingleFile="true"
+                                   Condition="'%(Filename)' == 'libEGL' or '%(Filename)' == 'libGLESv2' or '%(Filename)' == 'vulkan-1' or '%(Filename)' == 'steam_api64'" />
+            <!-- The bundler keeps only the entry app's runtimeconfig and drops every other one, which
+                 the SDK's own pre-computation cannot predict: it warns NETSDK1236 for each referenced
+                 Exe (HoleyDiver, the crash reporter). They mean nothing to a referenced Exe, and
+                 excluding them here keeps the pre-computation and the bundler in agreement. -->
+            <ResolvedFileToPublish Update="@(ResolvedFileToPublish)"
+                                   ExcludeFromSingleFile="true"
+                                   Condition="$([MSBuild]::ValueOrDefault('%(RelativePath)', '').EndsWith('.runtimeconfig.json')) and '%(Filename)' != '$(AssemblyName).runtimeconfig'" />
+        </ItemGroup>
+    </Target>
+
     <!-- The playable exe, so the gamemode plugins this imports land beside it in
          data/gamemodes/ - the game loads them relative to its own binary, which is here
          and not the referenced library's output. -->
