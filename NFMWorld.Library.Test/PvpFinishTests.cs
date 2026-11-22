@@ -88,9 +88,12 @@ public class PvpFinishTests
     {
         public BackendStage CurrentStage { get; } = stage;
         public f64Vector3? Position { get; set; }
+        public Dictionary<Guid, f64Vector3> PlayerPositions { get; } = [];
         public bool? Wasted { get; set; }
         public List<ReadOnlyMemory<byte>> Events { get; } = [];
-        public f64Vector3? GetPlayerPosition(Guid playerId) => Position;
+        public f64Vector3? GetPlayerPosition(Guid playerId)
+            => PlayerPositions.TryGetValue(playerId, out var position) ? position : Position;
+
         public bool? IsPlayerWasted(Guid playerId) => Wasted;
 
         public void BroadcastEvent(ReadOnlyMemory<byte> payload)
@@ -302,6 +305,64 @@ public class PvpFinishTests
     }
 
     private static readonly Guid OtherPlayerId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+
+    [TestMethod]
+    public void FinalStandings_UseLiveProgressAndDistanceInsteadOfStaleClientPlaces()
+    {
+        var leading = PlayerId;
+        var parked = OtherPlayerId;
+        var firstChaser = Guid.NewGuid();
+        var secondChaser = Guid.NewGuid();
+        var departed = Guid.NewGuid();
+        var factory = CreateFactory();
+        try
+        {
+            var players = new List<ServerSidePlayerInfo>();
+            foreach (var id in new[] { parked, leading, firstChaser, secondChaser, departed })
+                players.Add(new ServerSidePlayerInfo { Id = id, PlayerName = "test", CarName = "test", Color = default });
+
+            var context = new ServerContext(CreateStage(laps: 1, checkpoints: 2));
+            var server = (PluginServerGamemode)factory.CreateServerGamemode(
+                new ServerGamemodeParameters { Players = players },
+                context
+            )!;
+            server.Begin();
+            server.StartRace();
+            for (var i = 0; i < GamemodeUtils.ServerCountdownInterval * 3; i++) server.GameTick();
+
+            CrossFirstCheckpoint(leading, 0);
+            CrossFirstCheckpoint(firstChaser, 1);
+            CrossFirstCheckpoint(secondChaser, 4);
+            CrossFirstCheckpoint(departed, 2);
+            server.OnClientEvent(departed, SerializeEvent(factory, "ForfeitEvent").Span);
+
+            context.PlayerPositions[leading] = new f64Vector3(119_500, World.Ground, 0);
+            context.PlayerPositions[firstChaser] = new f64Vector3(106_000, World.Ground, 0);
+            context.PlayerPositions[secondChaser] = new f64Vector3(114_000, World.Ground, 0);
+            context.PlayerPositions[parked] = new f64Vector3(119_900, World.Ground, 0);
+
+            var expected = new[] { leading, secondChaser, firstChaser, parked, departed };
+            CollectionAssert.AreEqual(expected, server.GetLiveState()!.Value.Standings.Select(row => row.PlayerId).ToArray());
+
+            context.PlayerPositions[leading] = context.CurrentStage.Checkpoints[1].Position;
+            server.OnClientEvent(leading, SerializeEvent(factory, "CheckpointEvent", (ushort)0, (byte)1, 0, 0).Span);
+
+            var results = server.GetStateSnapshot()?.Results ?? throw new AssertFailedException("The race did not finish.");
+            CollectionAssert.AreEqual(expected, results.Standings.Select(row => row.PlayerId).ToArray());
+            CollectionAssert.AreEqual(new[] { 0, 1, 2, 3, 4 }, results.Standings.Select(row => row.FinishPosition).ToArray());
+            Assert.IsNull(results.Standings[^1].FinishTime);
+
+            void CrossFirstCheckpoint(Guid id, int reportedPlace)
+            {
+                context.PlayerPositions[id] = context.CurrentStage.Checkpoints[0].Position;
+                server.OnClientEvent(id, SerializeEvent(factory, "CheckpointEvent", (ushort)1, (byte)0, reportedPlace, 0).Span);
+            }
+        }
+        finally
+        {
+            factory.End();
+        }
+    }
 
     /// <summary>
     /// Leaving mid-race forfeits: the leaver is placed last but the race carries on, because

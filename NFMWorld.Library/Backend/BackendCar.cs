@@ -247,6 +247,7 @@ public partial class BackendCar : BackendGameObject
     /// <param name="tilt"></param>
     /// <param name="onRoof"></param>
     /// <param name="wheelGround"></param>
+    /// <param name="surface">The track-piece surface, or null for bare ground.</param>
     public void AddDust(
         int wheelidx,
         float x,
@@ -257,10 +258,11 @@ public partial class BackendCar : BackendGameObject
         float simag,
         int tilt,
         bool onRoof,
-        int wheelGround
+        int wheelGround,
+        SurfaceType? surface
     )
     {
-        Dusted?.Invoke(wheelidx, x, y, z, scx, scz, simag, tilt, onRoof, wheelGround);
+        Dusted?.Invoke(wheelidx, x, y, z, scx, scz, simag, tilt, onRoof, wheelGround, surface);
     }
 
     /// <summary>
@@ -341,5 +343,6 @@ public delegate void DustFunc(
     float simag,
     int tilt,
     bool onRoof,
-    int wheelGround
+    int wheelGround,
+    SurfaceType? surface
 );
