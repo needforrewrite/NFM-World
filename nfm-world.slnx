@@ -54,11 +54,6 @@
     <Project Path="SignalsDotnet/SignalsDotnet/SignalsDotnet/SignalsDotnet.csproj" />
     <Project Path="SignalsDotnet/SignalsDotnet/SignalsDotnet.SourceGenerators/SignalsDotnet.SourceGenerators.csproj" />
   </Folder>
-  <Folder Name="/MemoryPack/">
-    <Project Path="MemoryPack/src/MemoryPack.Core/MemoryPack.Core.csproj" />
-    <Project Path="MemoryPack/src/MemoryPack.Generator/MemoryPack.Generator.csproj" />
-    <Project Path="MemoryPack/src/MemoryPack/MemoryPack.csproj" />
-  </Folder>
   <Project Path="LibTessDotNet/LibTessDotNet/LibTessDotNet.csproj" />
   <Project Path="Maxine.Silk.EGL/native/Maxine.Silk.OpenGLES.ANGLE.Native/Maxine.Silk.OpenGLES.ANGLE.Native.csproj" />
   <Project Path="Maxine.Silk.EGL/src/Extensions/Maxine.EGL.Extensions.ANGLE/Maxine.EGL.Extensions.ANGLE.csproj" />
