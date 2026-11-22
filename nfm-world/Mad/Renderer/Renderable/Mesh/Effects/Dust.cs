@@ -39,7 +39,7 @@ public class Dust : IDisposable, IImmediateRenderElement
     private float[] Scz = new float[PuffCapacity];
     private int[] Stg = new int[PuffCapacity];
     private float[] _sbln = new float[PuffCapacity];
-    private int[,] _srgb = new int[PuffCapacity, 3];
+    private readonly SurfaceType?[] _surfaces = new SurfaceType?[PuffCapacity];
     private float[,] _smag = new float[PuffCapacity, CornersPerPuff];
     private readonly Puff[] _puffs = new Puff[PuffCapacity];
     private readonly float[] _puffRadii = new float[PuffCapacity * CornersPerPuff];
@@ -70,7 +70,8 @@ public class Dust : IDisposable, IImmediateRenderElement
         int scz,
         float simag,
         int tilt,
-        int wheelGround
+        int wheelGround,
+        SurfaceType? surface
     )
     {
         var noDust = false;
@@ -105,6 +106,7 @@ public class Dust : IDisposable, IImmediateRenderElement
             Osmag[_ust] = simag * dist;
             Scx[_ust] = scx;
             Scz[_ust] = scz;
+            _surfaces[_ust] = surface;
             Stg[_ust] = 1;
         }
     }
@@ -123,24 +125,9 @@ public class Dust : IDisposable, IImmediateRenderElement
 
     private void TickDust(BackendStage? stage, int dust)
     {
-        Span<int> baseColor = stackalloc int[3];
         if (Stg[dust] == 1)
         {
             _sbln[dust] = 0.6F;
-            var trackersColor = false;
-            for (var i = 0; i < 3; i++)
-            {
-                baseColor[i] = (int)(255.0F + 255.0F * (World.Snap[i] / 100.0F));
-                if (baseColor[i] > 255)
-                {
-                    baseColor[i] = 255;
-                }
-
-                if (baseColor[i] < 0)
-                {
-                    baseColor[i] = 0;
-                }
-            }
 
             if (stage != null)
             {
@@ -156,30 +143,14 @@ public class Dust : IDisposable, IImmediateRenderElement
                         {
                             _sbln[dust] = tracker.SurfaceType switch
                             {
-                                (SurfaceType)0 => 0.2F,
-                                (SurfaceType)1 => 0.4F,
-                                (SurfaceType)2 => 0.45F,
+                                SurfaceType.Road => 0.2F,
+                                SurfaceType.OffTrack => 0.4F,
+                                SurfaceType.OffRoad => 0.45F,
                                 _ => _sbln[dust]
                             };
-
-                            for (var rgb = 0; rgb < 3; rgb++)
-                            {
-                                _srgb[dust, rgb] = (tracker.DustColor[rgb] + baseColor[rgb]) / 2;
-                            }
-
-                            trackersColor = true;
                             break;
                         }
                     }
-                }
-            }
-
-            if (!trackersColor)
-            {
-                for (var i215 = 0; i215 < 3; i215++)
-                {
-                    // TODO this should be Medium.Crgrnd
-                    _srgb[dust, i215] = (World.GroundColor.Snap(World.Snap)[i215] + baseColor[i215]) / 2;
                 }
             }
 
@@ -217,7 +188,14 @@ public class Dust : IDisposable, IImmediateRenderElement
         }
 
         var alpha = _sbln[dust] - Stg[dust] * (_sbln[dust] / 8.0F);
-        var color = new Color(_srgb[dust, 0] / 255f, _srgb[dust, 1] / 255f, _srgb[dust, 2] / 255f, alpha);
+        var tint = _surfaces[dust] switch
+        {
+            null => Vector3.Lerp(World.GroundColor.Snap(World.Snap), Vector3.One, 0.35f),
+            SurfaceType.OffTrack or SurfaceType.OffRoad or SurfaceType.Bump or SurfaceType.BumpySides =>
+                new Vector3(0.90f, 0.61f, 0.32f),
+            _ => Vector3.One
+        };
+        var color = new Color(tint.X, tint.Y, tint.Z, alpha);
         var center = new Vector3(Sx[dust], Sy[dust] - _smag[dust, 7] * PuffSizeScale, Sz[dust]);
         _puffs[_puffCount] = new Puff(center, color);
         for (var corner = 0; corner < CornersPerPuff; corner++)

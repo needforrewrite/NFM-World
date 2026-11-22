@@ -1666,7 +1666,7 @@ public partial class CarPhysics
             wheelz[i29] += (Scz[0] + Scz[1] + Scz[2] + Scz[3]) * fix64.Quarter * _tickRate;
         } //
 
-        var surfaceType = SurfaceType.OffRoad;
+        SurfaceType? trackSurface = null;
         var surfaceTracMul = fix64.One;
         foreach (var collidable in stage.RetrievePointCollidables(conto.X, conto.Z))
         {
@@ -1684,12 +1684,13 @@ public partial class CarPhysics
                 var theBox = new CollisionBox(rad, trackersPosition, contoXz, contoPosition);
                 if (theBox.ResolveCollision(position) is not null)
                 {
-                    surfaceType = collidable.SurfaceType;
+                    trackSurface = collidable.SurfaceType;
                     surfaceTracMul = collidable.TractionMultiplier;
                 }
             }
         }
 
+        var surfaceType = trackSurface ?? SurfaceType.OffRoad;
         // maxine: we counteract the reduced bottomy from hypergliding here
         int wheelGround = GetWheelGround(this, conto, bottomy);
 
@@ -1833,7 +1834,8 @@ public partial class CarPhysics
                                 f42 * Stat.Simag,
                                 (int)_tilt,
                                 BadLanding && Mtouch,
-                                wheelGround
+                                wheelGround,
+                                trackSurface
                             );
                             if (!BadLanding && SkidSoundFilter.HasLateralSlip((float)Scx[j], (float)Scz[j], (float)conto.Xz))
                             {
@@ -1857,7 +1859,8 @@ public partial class CarPhysics
                                 (fix64)1.1F * Stat.Simag,
                                 (int)_tilt,
                                 BadLanding && Mtouch,
-                                wheelGround
+                                wheelGround,
+                                trackSurface
                             );
                         }
 
@@ -1874,7 +1877,8 @@ public partial class CarPhysics
                                 (fix64)1.15F * Stat.Simag,
                                 (int)_tilt,
                                 BadLanding && Mtouch,
-                                wheelGround
+                                wheelGround,
+                                trackSurface
                             );
                         }
                     }
@@ -1979,7 +1983,8 @@ public partial class CarPhysics
                         f50 * Stat.Simag,
                         0,
                         BadLanding && Mtouch,
-                        wheelGround
+                        wheelGround,
+                        trackSurface
                     );
                 } // CHK2
 
@@ -3158,7 +3163,8 @@ public partial class CarPhysics
                                             dustMag * Stat.Simag,
                                             0,
                                             BadLanding && Mtouch,
-                                            (int)wheelGround
+                                            (int)wheelGround,
+                                            collidable.SurfaceType
                                         );
                                     }
 
@@ -3264,7 +3270,8 @@ public partial class CarPhysics
                                     dustMag * Stat.Simag,
                                     0,
                                     BadLanding && Mtouch,
-                                    (int)wheelGround
+                                    (int)wheelGround,
+                                    collidable.SurfaceType
                                 );
                             }
 
@@ -3388,7 +3395,8 @@ public partial class CarPhysics
                                         dustMag * Stat.Simag,
                                         0,
                                         BadLanding && Mtouch,
-                                        (int)wheelGround
+                                        (int)wheelGround,
+                                        collidable.SurfaceType
                                     );
                                 }
                             }
