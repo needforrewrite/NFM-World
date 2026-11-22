@@ -1322,6 +1322,7 @@ public partial class WorldGame
     {
         var state = new StageSelectState
         {
+            BrowserOpen = { Value = true },
             Collections = { Value = ["nfmm", "user"] },
             Collection = { Value = "nfmm" },
             Selected = { Value = "nfmm/stage1" },

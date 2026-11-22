@@ -56,6 +56,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
             .Order(StringComparer.OrdinalIgnoreCase)
             .ToArray();
         _state.Collections.Value = collections;
+        _state.BrowserOpen.Value = true;
 
         // Start somewhere in the middle of the first collection, as the old screen did.
         var collection = collections[new System.Random().Next(0, collections.Length)];
@@ -77,6 +78,8 @@ public class StageSelectPhase : BaseStageRenderingPhase
         _aroundStageCamera.Reset();
         _aroundStageCamera.AroundStage(Camera, CurrentStage.Backend);
         _loadedStage = StageName!;
+        _state.PreviewName.Value = _state.Stages.Value.FirstOrDefault(stage => stage.Id == _loadedStage)?.Label
+                                   ?? CurrentStage.Backend.Name;
         ShowDescription(CurrentStage.Backend.StageLoader);
         if (_state.Selected.Value != StageName)
         {
@@ -168,7 +171,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
         var cancellation = _onlineCancellation = new CancellationTokenSource();
         var generation = ++_onlineGeneration;
         _state.Busy.Value = true;
-        _state.Status.Value = "Searching the archive...";
+        _state.Status.Value = "";
 
         try
         {
@@ -188,9 +191,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
                 .ToArray();
 
             _state.Stages.Value = options;
-            _state.Status.Value = options.Length == 0
-                ? "No public stages matched."
-                : $"{options.Length} public stage(s). Pick one to preview it.";
+            _state.Status.Value = "";
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
@@ -233,6 +234,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
         _state.Selected.Value = stageId;
         _state.ConfirmEnabled.Value = true;
         _state.Status.Value = "";
+        if (stageId == _loadedStage && !IsStageLoading) return;
         _state.DescriptionLines.Value = [];
 
         if (RadpackReader.IsArchiveId(stageId))
@@ -245,7 +247,6 @@ public class StageSelectPhase : BaseStageRenderingPhase
         _confirmAfterLoad = false;
         _state.Busy.Value = true;
         _state.ConfirmEnabled.Value = false;
-        _state.Status.Value = "Loading stage...";
         LoadStage(stageId, loadMusic: false, reloadIfLoaded: true);
         // ApplyValues re-applies the stage's fadefrom() every frame, so override it after that.
         if (CurrentStage != null)
@@ -258,7 +259,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
         _confirmAfterLoad = confirmAfter;
         _state.Busy.Value = true;
         _state.ConfirmEnabled.Value = false;
-        _state.Status.Value = "Downloading stage...";
+        _state.Status.Value = "";
         _state.Selected.Value = stageId;
         _state.DescriptionLines.Value = [];
         LoadStage(stageId, loadMusic: false, reloadIfLoaded: true);
@@ -301,6 +302,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
             .ToArray();
 
         _state.Stages.Value = stages;
+        if (!loadPreview) return;
 
         if (stages.Length == 0)
         {
@@ -315,7 +317,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
         _state.Selected.Value = selected;
         _state.ConfirmEnabled.Value = true;
 
-        if (loadPreview && selected != _loadedStage)
+        if (selected != _loadedStage || IsStageLoading)
             SelectStage(selected);
     }
 
