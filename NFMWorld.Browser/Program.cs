@@ -23,7 +23,6 @@ namespace NFMWorld.Browser;
 
 public static partial class Program
 {
-
     private static WorldGame? _game;
     private static Stopwatch? _clock;
 
@@ -49,35 +48,36 @@ public static partial class Program
         // synchronous (see BrowserHttp) because zip parsing is, and the game is paused meanwhile.
         MusicFetch? fetch = null;
         BrowserBoot.MountMusic(path =>
-        {
-            try
             {
-                fetch ??= MusicFetch.Open(musicUrl);
-                if (fetch is null) return null;
+                try
+                {
+                    fetch ??= MusicFetch.Open(musicUrl);
+                    if (fetch is null) return null;
 
-                var entryPath = path.Replace('\\', '/').TrimStart('/');
-                if (!entryPath.StartsWith("data/", StringComparison.Ordinal))
-                    entryPath = "data/" + entryPath;
-                return fetch.ReadEntry(entryPath);
-            }
-            catch (Exception e)
+                    var entryPath = path.Replace('\\', '/').TrimStart('/');
+                    if (!entryPath.StartsWith("data/", StringComparison.Ordinal))
+                        entryPath = "data/" + entryPath;
+                    return fetch.ReadEntry(entryPath);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"[nfmw] music fetch failed for {path}: {e.Message}");
+                    return null;
+                }
+            }, () =>
             {
-                Console.WriteLine($"[nfmw] music fetch failed for {path}: {e.Message}");
-                return null;
+                try
+                {
+                    fetch ??= MusicFetch.Open(musicUrl);
+                    return fetch?.Paths ?? [];
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"[nfmw] music listing failed: {e.Message}");
+                    return [];
+                }
             }
-        }, () =>
-        {
-            try
-            {
-                fetch ??= MusicFetch.Open(musicUrl);
-                return fetch?.Paths ?? [];
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"[nfmw] music listing failed: {e.Message}");
-                return [];
-            }
-        });
+        );
     }
 
     /// <summary>
@@ -134,10 +134,13 @@ public static partial class Program
 
             Step("CreateForBrowser");
             _game = WorldGame.CreateForBrowser(
-                context, width: Math.Max(1, _bootSize.Width), height: Math.Max(1, _bootSize.Height),
+                context,
+                width: Math.Max(1, _bootSize.Width),
+                height: Math.Max(1, _bootSize.Height),
                 present: WebGlContext.Present,
                 setSwapInterval: WebGlContext.SetSwapInterval,
-                resizeDrawable: WebGlContext.Resize);
+                resizeDrawable: WebGlContext.Resize
+            );
 
             GameSparker.Game = _game;
 
@@ -180,8 +183,34 @@ public static partial class Program
     [JSExport]
     public static void Tick()
     {
-        _game?.Tick(_clock!);
+        try
+        {
+            _game?.Tick(_clock!);
+        }
+        catch (Exception ex)
+        {
+            // The runtime hands an escaping exception to the page as `ManagedError: <message>`,
+            // which for a framework exception is a resource key and no frames at all. Record it
+            // once in full, then let it through: the page's loop keeps calling this, so repeating
+            // the dump every frame would bury the first one.
+            if (!_frameFailureLogged)
+            {
+                _frameFailureLogged = true;
+                Console.WriteLine($"[nfmw] frame failed: {ex.GetType().FullName}: {ex.Message}");
+                for (var frame = ex.StackTrace; frame != null;)
+                {
+                    var nl = frame.IndexOf('\n');
+                    Console.WriteLine("[nfmw]   " + (nl < 0 ? frame : frame[..nl]).TrimEnd('\r'));
+                    if (nl < 0) break;
+                    frame = frame[(nl + 1)..];
+                }
+            }
+
+            throw;
+        }
     }
+
+    private static bool _frameFailureLogged;
 
     /// <summary>
     /// Tells the game the page is now this size in CSS pixels.

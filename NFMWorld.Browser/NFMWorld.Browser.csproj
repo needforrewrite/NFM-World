@@ -1,4 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+         a plugin's own IL binds against. Shared with the desktop head so the two cannot drift.
+         CasCore's sandbox root set is desktop-only (NFMWorld/PluginSandbox.linker.xml): this head
+         loads plugins through the plain PluginLoadContext, because the sandbox needs a JIT. -->
 
     <!-- The browser head. Mirrors NFMWorld/NFMWorld.csproj (the desktop exe), with the
          wasm runtime and the browser equivalents of the SDL platform layer.
