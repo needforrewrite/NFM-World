@@ -14,9 +14,6 @@ public sealed class RaceCameraDirector
         FollowStatic,
         Around,
 
-        /// <summary>Behind the car, aimed at whatever the guidance arrow points to.</summary>
-        CarCam,
-
         /// <summary>Stationary trackside camera that turns to watch the car pass.</summary>
         Watch,
 
@@ -35,36 +32,30 @@ public sealed class RaceCameraDirector
     /// <summary>Navigation keys held, for <see cref="ViewMode.Freelook"/>.</summary>
     public FreelookInput Navigation { get; set; }
 
-    /// <summary>Where the guidance arrow points, for <see cref="ViewMode.CarCam"/>.</summary>
-    public Vector3? ArrowTarget { get; set; }
-
     public void CycleViewMode()
     {
         CurrentViewMode = (ViewMode)(((int)CurrentViewMode + 1) % Enum.GetValues<ViewMode>().Length);
-        // Entering the car cam should start already facing the arrow, not sweep round to it.
-        _playerFollowCamera.ResetAim();
         _watchCamera.Reset();
         _freelookCamera.Reset();
     }
 
-    public void Update(PerspectiveCamera camera, BackendCar car)
+    public void Update(PerspectiveCamera camera, BackendCar car, bool carCamHeld = false, Vector3? arrowTarget = null)
     {
-        switch (CurrentViewMode)
+        if (carCamHeld && arrowTarget is { } target)
         {
-            // No arrow target (stage finished, nothing to aim at): the plain follow view is the
-            // same seat, just looking down the car instead of at the objective.
-            case ViewMode.CarCam when ArrowTarget is { } target:
-                _playerFollowCamera.FollowTarget(
-                    camera,
-                    car,
-                    (float)car.CarPhysics.Cxz,
-                    (float)car.CarPhysics.Speed,
-                    car.Stats.Swits[2],
-                    target,
-                    interpolate: true
-                );
-                break;
-            case ViewMode.CarCam:
+            _playerFollowCamera.FollowTarget(
+                camera,
+                car,
+                (float)car.CarPhysics.Cxz,
+                (float)car.CarPhysics.Speed,
+                car.Stats.Swits[2],
+                target
+            );
+            return;
+        }
+
+        switch (carCamHeld ? ViewMode.Follow : CurrentViewMode)
+        {
             case ViewMode.Follow:
                 _playerFollowCamera.Follow(
                     camera,

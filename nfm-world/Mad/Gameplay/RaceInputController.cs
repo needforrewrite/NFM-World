@@ -14,6 +14,7 @@ public sealed class RaceInputController
     private readonly HashSet<Key> _pressedKeys = new();
 
     private bool _freelook;
+    public bool CarCamHeld { get; private set; }
 
     /// <summary>
     /// Aerial bounce only applies while airborne.
@@ -49,10 +50,18 @@ public sealed class RaceInputController
     public void Reset(Control? control)
     {
         _pressedKeys.Clear();
+        CarCamHeld = false;
         UpdateControlState(control);
         if (control is null) return;
         control.Enter = false;
         control.Lookback = 0;
+    }
+
+    public void SetCarCamHeld(bool held, Control? control)
+    {
+        if (CarCamHeld == held) return;
+        CarCamHeld = held;
+        UpdateControlState(control);
     }
 
     /// <summary>
@@ -181,15 +190,16 @@ public sealed class RaceInputController
         bool aerialBouncePressed = _airborne && _pressedKeys.Contains(bindings.AerialBounce);
         bool aerialStrafePressed = _pressedKeys.Contains(bindings.AerialStrafe);
         bool handbrakePressed = _pressedKeys.Contains(bindings.Handbrake);
+        var driving = !_freelook || CarCamHeld;
 
         // apply Up/Down controls
-        control.Up = !_freelook && (acceleratePressed || aerialBouncePressed);
-        control.Down = !_freelook && (brakePressed || aerialBouncePressed);
-        control.Left = !_freelook && (turnLeftPressed || aerialStrafePressed);
-        control.Right = !_freelook && (turnRightPressed || aerialStrafePressed);
+        control.Up = driving && (acceleratePressed || aerialBouncePressed);
+        control.Down = driving && (brakePressed || aerialBouncePressed);
+        control.Left = driving && (turnLeftPressed || aerialStrafePressed);
+        control.Right = driving && (turnRightPressed || aerialStrafePressed);
         control.Handb = handbrakePressed;
         var gamemodeKeys = bindings.GamemodeActionKeys;
         for (var i = 0; i < gamemodeKeys.Length; i++)
-            control.SetGamemodeAction(i, !_freelook && _pressedKeys.Contains(gamemodeKeys[i]));
+            control.SetGamemodeAction(i, driving && _pressedKeys.Contains(gamemodeKeys[i]));
     }
 }
