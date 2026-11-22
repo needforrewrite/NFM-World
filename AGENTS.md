@@ -568,7 +568,13 @@ from `PhysicsController.GameTick`. Two ship:
   |Validation failures are invisible otherwise|wgpu logs them to stderr and carries on, so `DeviceSetUncapturedErrorCallback` is the only way the game sees one; `ReportError` reports each distinct message to `GraphicsDiagnostics.Warning` (once per device, capped). That is how the copy bug above was found: 2,649 validation errors in one boot — a queue write and a recorded copy per update — while every frame kept rendering|
 - **Text/fonts** — `FontStashSharp` with pre-baked MSDF atlases. `NFMWorld.MsdfCache.targets` bakes
   `data/fonts/*.msdf` at build time (the game loads that file instead of baking ~220 glyphs at startup); adding a font
-  means adding it under `data/fonts/`.
+  means adding it under `data/fonts/`. The baker is built by a **nested** `MSBuild` call that passes
+  `BuildProjectReferences=false`: its properties (`RuntimeIdentifier=`, `PublishReadyToRun=false`) are global, so
+  letting them reach the tool's references builds a second instance of Apos.Shapes and its chain into the same
+  `obj/Release/net11.0` the surrounding build is writing, and the loser fails with `CS2012 ... dll for writing`
+  (the wasm publish died on exactly that). Builds only the tool, so the bake hooks `BeforeTargets="CoreCompile"` -
+  the references exist after `ResolveReferences`. Any other nested build must keep its projects disjoint from the
+  outer graph, or strip the leaking properties.
 - **Audio** — FAudio (`NFMWorld.Audio.FAudio`) plus NAudio/LibOpenMPT for tracker formats, behind
   `NFMWorld.DriverInterface`. There is no BASS path.
 

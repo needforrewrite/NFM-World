@@ -40,13 +40,24 @@
              so the bake would run a file that is not there ("Could not execute because the specified
              command or file was not found"). Clearing the RID then makes the inherited
              PublishReadyToRun unsatisfiable (NETSDK1191), so that goes too. The tool runs on the
-             build host, not on the target RID, and is never published, so neither applies. -->
+             build host, not on the target RID, and is never published, so neither applies.
+
+             BuildProjectReferences=false, because those overrides are global properties: this
+             nested request is then a *different project instance* of everything the tool references
+             - Apos.Shapes, Graphics.Abstraction, Shaders.Abstraction, Mathematics - from the one the
+             surrounding build is already compiling. MSBuild only de-duplicates identical instances,
+             so both compile the same project into the same obj/ directory at once and the one that
+             loses the race fails the build; the wasm publish died with a single
+             "CS2012 Cannot open ... NFMWorld.Shaders.Abstraction.dll for writing" and nothing else
+             in the log. The references are built by the outer graph's ResolveReferences, which is
+             what BakeMsdfCaches waits for; this build only compiles the tool, and RAR still copies
+             the referenced assemblies and their dependencies from their build output. -->
         <MSBuild Projects="$([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', 'NFMWorld.MsdfCache.Tool', 'NFMWorld.MsdfCache.Tool.csproj'))"
                  Targets="Restore"
                  Properties="Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=;PublishReadyToRun=false;ExcludeRestorePackageImports=true" />
         <MSBuild Projects="$([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', 'NFMWorld.MsdfCache.Tool', 'NFMWorld.MsdfCache.Tool.csproj'))"
                  Targets="Build"
-                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=;PublishReadyToRun=false" />
+                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=;PublishReadyToRun=false;BuildProjectReferences=false" />
     </Target>
 
     <!-- Bakes into the fonts directory itself, beside each font, so the output flows through the
@@ -58,7 +69,12 @@
          algorithm has to invalidate as much as a font edit does - and the tool's own DLL is not a
          safe stand-in for that, since a rebuild that only touched the linker would leave it looking
          unchanged. The stamp is written after the tool succeeds, so a failed bake cannot look up to
-         date. -->
+         date.
+
+         Hooked before CoreCompile rather than PrepareForBuild because the tool builds with
+         BuildProjectReferences=false and RAR needs Apos.Shapes and its chain already on disk to copy
+         them into the tool's bin. ResolveReferences has run by then; nothing below that point reads
+         the .msdf files, since the data/** copy happens after Compile. -->
     <ItemGroup>
         <NFMWorldMsdfFont Include="$(NFMWorldMsdfFontsDirectory)\*.ttf" />
         <NFMWorldMsdfFont Include="$(NFMWorldMsdfFontsDirectory)\*.otf" />
@@ -72,7 +88,7 @@
     </ItemGroup>
 
     <Target Name="BakeMsdfCaches"
-            BeforeTargets="PrepareForBuild"
+            BeforeTargets="CoreCompile"
             DependsOnTargets="BuildMsdfCacheTool"
             Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(DesignTimeBuild)' != 'true'"
             Inputs="@(NFMWorldMsdfFont);@(NFMWorldMsdfSource)"
