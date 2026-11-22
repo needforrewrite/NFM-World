@@ -5,11 +5,28 @@ namespace NFMWorld.Gameplay;
 /// <summary>
 /// The archive this build connects to by default.
 ///
-/// The endpoint is baked in at build time (see <c>ArchiveEndpoint</c> in the game csproj).
+/// Desktop clients can override the build default at startup.
 /// </summary>
 public static class ArchiveEndpoint
 {
-    public static string Url { get; } = Metadata("NfmwArchiveEndpoint") ?? "http://localhost:5000";
+    private static readonly string DefaultUrl = Metadata("NfmwArchiveEndpoint") ?? "http://localhost:5000";
+
+    public static string? ClientEnvironment { get; private set; }
+
+    public static string Url => ClientEnvironment switch
+    {
+        "live" => "https://nfmw.net",
+        "dev" => "http://dev.nfmw.net",
+        _ => DefaultUrl
+    };
+
+    public static string? ClientStorageSuffix =>
+        string.Equals(Url.TrimEnd('/'), DefaultUrl.TrimEnd('/'), StringComparison.OrdinalIgnoreCase)
+            ? null
+            : ClientEnvironment;
+
+    public static void SetClientEnvironment(string? environment)
+        => ClientEnvironment = environment is "live" or "dev" ? environment : null;
 
     private static string? Metadata(string key)
         => typeof(ArchiveEndpoint).Assembly

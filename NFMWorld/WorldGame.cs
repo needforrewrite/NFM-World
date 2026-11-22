@@ -517,11 +517,14 @@ public partial class WorldGame : IDisposable, IGameHost
     private static readonly Key[] AllKeys = Enum.GetValues<Key>().Where(k => (uint)k <= 0xFE).Distinct().ToArray();
 
     private bool _disposed;
+    private const string ServerEnvironmentArgumentPrefix = "--server-environment=";
     private bool _restartRequested;
+    private string? _restartServerEnvironment;
     private readonly Queue<(MouseButtons Button, bool Down, int X, int Y)> _mouseButtonEvents = new();
 
-    public void Restart()
+    public void Restart(string? serverEnvironment = null)
     {
+        _restartServerEnvironment = serverEnvironment;
         _restartRequested = true;
         Window.RequestClose();
     }
@@ -1584,6 +1587,9 @@ public partial class WorldGame : IDisposable, IGameHost
             return;
         }
 
+        var serverEnvironmentArgument = args.LastOrDefault(arg =>
+            arg.StartsWith(ServerEnvironmentArgumentPrefix, StringComparison.Ordinal));
+        ArchiveEndpoint.SetClientEnvironment(serverEnvironmentArgument?[ServerEnvironmentArgumentPrefix.Length..]);
         BackendGameSparker.Load(isHeadless: false);
 
         // todo
@@ -1672,6 +1678,15 @@ public partial class WorldGame : IDisposable, IGameHost
         program.Dispose();
         if (program._restartRequested)
         {
+            if (program._restartServerEnvironment is { } environment)
+            {
+                var restartArgs = args.Where(arg =>
+                    !arg.StartsWith(ServerEnvironmentArgumentPrefix, StringComparison.Ordinal));
+                args = environment == "default"
+                    ? restartArgs.ToArray()
+                    : restartArgs.Append(ServerEnvironmentArgumentPrefix + environment).ToArray();
+            }
+
             Relaunch(args);
         }
     }

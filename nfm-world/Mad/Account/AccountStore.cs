@@ -1,5 +1,6 @@
 using System.Text.Json;
 using NFMWorldLibrary;
+using NFMWorld.Gameplay;
 using NFMWorldLibrary.Multiplayer;
 
 namespace NFMWorld.Accounts;
@@ -14,7 +15,9 @@ namespace NFMWorld.Accounts;
 /// </summary>
 public static class AccountStore
 {
-    private const string Path = "data/cfg/account.json";
+    private static string Path => ArchiveEndpoint.ClientStorageSuffix is { } environment
+        ? $"data/cfg/account-{environment}.json"
+        : "data/cfg/account.json";
 
     private sealed record Stored(string Token, string Username, UserRole Role, DateTimeOffset? DeletionPendingUntil);
 

@@ -1,5 +1,6 @@
 ﻿using System.Security.Cryptography;
 using TightPack;
+using NFMWorld.Gameplay;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Util;
 
@@ -42,7 +43,10 @@ public sealed partial class PendingSubmission
 /// </remarks>
 public static class TimeTrialSubmissions
 {
-    public const string PendingDirectory = "data/tts/pending";
+    public static string PendingDirectory => ArchiveEndpoint.ClientStorageSuffix is { } environment
+        ? $"data/tts/pending-{environment}"
+        : "data/tts/pending";
+
     public const int MaxPending = 20;
 
     private const string RecordingSuffix = ".timetrial";
