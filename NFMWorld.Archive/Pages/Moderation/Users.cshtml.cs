@@ -39,7 +39,7 @@ public sealed class UsersModel(ArchiveDbContext db) : ArchivePageModel(db)
         After = after;
         const int page = 50;
 
-        IQueryable<User> q = Db.Users;
+        IQueryable<Data.User> q = Db.Users;
         if (Query.Length > 0)
             q = q.Where(u => EF.Functions.Like(u.Username, "%" + Sql.LikeEscape(Query) + "%", "\\"));
         if (after is { } cursor)
