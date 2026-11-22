@@ -18,7 +18,7 @@ public class WheelMeshBuilder
     public WheelMeshBuilder(Rad3dWheelDef wheelDef, Rad3dRimsDef? rimsN)
     {
         _wheelDef = wheelDef;
-        if (rimsN is { } rims)
+        if ((wheelDef.Rims ?? rimsN) is { } rims)
         {
             _rc[0] = rims.Color.R;
             _rc[1] = rims.Color.G;

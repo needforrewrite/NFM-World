@@ -8,46 +8,56 @@ namespace NFMWorld;
 
 public class Dust : IDisposable, IImmediateRenderElement
 {
-    private readonly CarVisual _car;
-    private readonly IGraphicsDevice _graphicsDevice;
+    private const int PuffCapacity = 20;
+    private const int CornersPerPuff = 8;
+    private const int TrianglesPerPuff = CornersPerPuff - 2;
+    private const float PuffSizeScale = 0.5f;
+
+    private static readonly Vector2[] Corners =
+    [
+        new(0.9238f * 1.5f, -0.3826f * 1.5f),
+        new(0.9238f * 1.5f, 0.3826f * 1.5f),
+        new(0.3826f, 0.9238f),
+        new(-0.3826f, 0.9238f),
+        new(-0.9238f * 1.5f, 0.3826f * 1.5f),
+        new(-0.9238f * 1.5f, -0.3826f * 1.5f),
+        new(-0.3826f * 1.7f, -0.9238f),
+        new(0.3826f * 1.7f, -0.9238f)
+    ];
+
+    private static readonly ushort[] Indices = BuildIndices();
+
+    private readonly record struct Puff(Vector3 Center, Color Color);
 
     private int _ust;
 
-    private float[] Sx = new float[20];
-    private float[] Sy = new float[20];
-    private float[] Sz = new float[20];
-    private float[] Osmag = new float[20];
-    private float[] Scx = new float[20];
-    private float[] Scz = new float[20];
-    private int[] Stg = new int[20];
-    private float[] _sbln = new float[20];
-    private int[,] _srgb = new int[20, 3];
-    private float[,] _smag = new float[20, 8];
-    private PositionColorVertex[] _verts = new PositionColorVertex[20 * 8];
-    private int _vertexCount;
-    private ushort[] _indices = new ushort[20 * 8 * 3];
-
-    private int _indexCount;
-
-    // Upload happens in Render() rather than GameTick() - see Sparks.cs's identical pattern for why.
-    private bool _dirty;
+    private float[] Sx = new float[PuffCapacity];
+    private float[] Sy = new float[PuffCapacity];
+    private float[] Sz = new float[PuffCapacity];
+    private float[] Osmag = new float[PuffCapacity];
+    private float[] Scx = new float[PuffCapacity];
+    private float[] Scz = new float[PuffCapacity];
+    private int[] Stg = new int[PuffCapacity];
+    private float[] _sbln = new float[PuffCapacity];
+    private int[,] _srgb = new int[PuffCapacity, 3];
+    private float[,] _smag = new float[PuffCapacity, CornersPerPuff];
+    private readonly Puff[] _puffs = new Puff[PuffCapacity];
+    private readonly float[] _puffRadii = new float[PuffCapacity * CornersPerPuff];
+    private readonly PositionColorVertex[] _verts = new PositionColorVertex[PuffCapacity * CornersPerPuff];
+    private int _puffCount;
     private readonly IBuffer _vertexBuffer;
     private readonly IBuffer _indexBuffer;
 
-    public Dust(CarVisual car, IGraphicsDevice graphicsDevice)
+    public Dust(IGraphicsDevice graphicsDevice)
     {
-        _car = car;
-        _graphicsDevice = graphicsDevice;
-
         var maxVertexBytes = _verts.Length * PositionColorVertex.Stride;
-        var maxIndexBytes = _indices.Length * sizeof(ushort);
         _vertexBuffer = graphicsDevice.CreateBuffer(
             new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxVertexBytes),
             new byte[maxVertexBytes]
         );
         _indexBuffer = graphicsDevice.CreateBuffer(
-            new BufferDesc(BufferKind.Index, BufferUsage.Dynamic, maxIndexBytes, IndexFormat.UInt16),
-            new byte[maxIndexBytes]
+            new BufferDesc(BufferKind.Index, BufferUsage.Immutable, Indices.Length * sizeof(ushort), IndexFormat.UInt16),
+            MemoryMarshal.AsBytes((ReadOnlySpan<ushort>)Indices)
         );
     }
 
@@ -60,7 +70,6 @@ public class Dust : IDisposable, IImmediateRenderElement
         int scz,
         float simag,
         int tilt,
-        bool onRoof,
         int wheelGround
     )
     {
@@ -84,29 +93,14 @@ public class Dust : IDisposable, IImmediateRenderElement
         if (dist > 0.2 && !noDust)
         {
             _ust++;
-            if (_ust == 20)
+            if (_ust == PuffCapacity)
             {
                 _ust = 0;
             }
 
-            if (!onRoof)
-            {
-                var rand = URandom.Single();
-                Sx[_ust] = ((wheelx + (float)_car.Position.X * rand) / (1.0F + rand));
-                Sz[_ust] = ((wheelz + (float)_car.Position.Z * rand) / (1.0F + rand));
-                Sy[_ust] = ((wheely + ((float)_car.Position.Y - wheelGround) * rand) / (1.0F + rand));
-            }
-            else
-            {
-                Sx[_ust] = ((wheelx + ((float)_car.Position.X + scx)) / 2.0F);
-                Sz[_ust] = ((wheelz + ((float)_car.Position.Z + scz)) / 2.0F);
-                Sy[_ust] = wheely;
-            }
-
-            if (Sy[_ust] > 250)
-            {
-                Sy[_ust] = 250;
-            }
+            Sx[_ust] = wheelx;
+            Sy[_ust] = wheely - wheelGround;
+            Sz[_ust] = wheelz;
 
             Osmag[_ust] = simag * dist;
             Scx[_ust] = scx;
@@ -117,19 +111,13 @@ public class Dust : IDisposable, IImmediateRenderElement
 
     public void GameTick(BackendStage? stage)
     {
-        _vertexCount = 0;
-        _indexCount = 0;
-        for (var dust = 0; dust < 20; dust++)
+        _puffCount = 0;
+        for (var dust = 0; dust < PuffCapacity; dust++)
         {
             if (Stg[dust] != 0)
             {
                 TickDust(stage, dust);
             }
-        }
-
-        if (_vertexCount > 0 && _indexCount > 0)
-        {
-            _dirty = true;
         }
     }
 
@@ -203,21 +191,21 @@ public class Dust : IDisposable, IImmediateRenderElement
 
             Scx[dust] = (Scx[dust] * f);
             Scz[dust] = (Scz[dust] * f);
-            for (var i216 = 0; i216 < 8; i216++)
+            for (var i216 = 0; i216 < CornersPerPuff; i216++)
             {
                 _smag[dust, i216] = Osmag[dust] * URandom.Single() * 50.0F;
             }
 
-            for (var vert = 0; vert < 8; vert++)
+            for (var vert = 0; vert < CornersPerPuff; vert++)
             {
                 var lastVert = vert - 1;
                 if (lastVert == -1)
                 {
-                    lastVert = 7;
+                    lastVert = CornersPerPuff - 1;
                 }
 
                 var nextVert = vert + 1;
-                if (nextVert == 8)
+                if (nextVert == CornersPerPuff)
                 {
                     nextVert = 0;
                 }
@@ -228,128 +216,13 @@ public class Dust : IDisposable, IImmediateRenderElement
             _smag[dust, 6] = _smag[dust, 7];
         }
 
-        var baseIndex = _vertexCount;
-
-        var r = _srgb[dust, 0];
-        var g = _srgb[dust, 1];
-        var b = _srgb[dust, 2];
-        // TODO apply fog here
-
-        var color = new Color3((short)r, (short)g, (short)b);
         var alpha = _sbln[dust] - Stg[dust] * (_sbln[dust] / 8.0F);
-
-        var vertexColor = new Color(color.R / 255f, color.G / 255f, color.B / 255f, alpha);
-
-        // ais = new int[8];
-        // var is223 = new int[8];
-
-        // ais[0] = Xs((int) (i220 + _smag[i, 0] * 0.9238F * 1.5F), i221);
-        // is223[0] = Ys((int) (i222 + _smag[i, 0] * 0.3826F * 1.5F), i221);
-        _verts[_vertexCount++] = (new PositionColorVertex(
-            new Vector3(
-                Sx[dust] + _smag[dust, 0] * 0.9238F * 1.5F,
-                Sy[dust] - _smag[dust, 7],
-                Sz[dust] + _smag[dust, 0] * 0.3826F * 1.5F
-            ),
-            vertexColor
-        ));
-
-        // ais[1] = Xs((int) (i220 + _smag[i, 1] * 0.9238F * 1.5F), i221);
-        // is223[1] = Ys((int) (i222 - _smag[i, 1] * 0.3826F * 1.5F), i221);
-        _verts[_vertexCount++] = (new PositionColorVertex(
-            new Vector3(
-                Sx[dust] + _smag[dust, 1] * 0.9238F * 1.5F,
-                Sy[dust] - _smag[dust, 7],
-                Sz[dust] - _smag[dust, 1] * 0.3826F * 1.5F
-            ),
-            vertexColor
-        ));
-
-        // ais[2] = Xs((int) (i220 + _smag[i, 2] * 0.3826F), i221);
-        // is223[2] = Ys((int) (i222 - _smag[i, 2] * 0.9238F), i221);
-        _verts[_vertexCount++] = (new PositionColorVertex(
-            new Vector3(
-                Sx[dust] + _smag[dust, 2] * 0.3826F,
-                Sy[dust] - _smag[dust, 7],
-                Sz[dust] - _smag[dust, 2] * 0.9238F
-            ),
-            vertexColor
-        ));
-
-        // ais[3] = Xs((int) (i220 - _smag[i, 3] * 0.3826F), i221);
-        // is223[3] = Ys((int) (i222 - _smag[i, 3] * 0.9238F), i221);
-        _verts[_vertexCount++] = (new PositionColorVertex(
-            new Vector3(
-                Sx[dust] - _smag[dust, 3] * 0.3826F,
-                Sy[dust] - _smag[dust, 7],
-                Sz[dust] - _smag[dust, 3] * 0.9238F
-            ),
-            vertexColor
-        ));
-
-        // ais[4] = Xs((int) (i220 - _smag[i, 4] * 0.9238F * 1.5F), i221);
-        // is223[4] = Ys((int) (i222 - _smag[i, 4] * 0.3826F * 1.5F), i221);
-        _verts[_vertexCount++] = (new PositionColorVertex(
-            new Vector3(
-                Sx[dust] - _smag[dust, 4] * 0.9238F * 1.5F,
-                Sy[dust] - _smag[dust, 7],
-                Sz[dust] - _smag[dust, 4] * 0.3826F * 1.5F
-            ),
-            vertexColor
-        ));
-
-        // ais[5] = Xs((int) (i220 - _smag[i, 5] * 0.9238F * 1.5F), i221);
-        // is223[5] = Ys((int) (i222 + _smag[i, 5] * 0.3826F * 1.5F), i221);
-        _verts[_vertexCount++] = (new PositionColorVertex(
-            new Vector3(
-                Sx[dust] - _smag[dust, 5] * 0.9238F * 1.5F,
-                Sy[dust] - _smag[dust, 7],
-                Sz[dust] + _smag[dust, 5] * 0.3826F * 1.5F
-            ),
-            vertexColor
-        ));
-
-        // ais[6] = Xs((int) (i220 - _smag[i, 6] * 0.3826F * 1.7F), i221);
-        // is223[6] = Ys((int) (i222 + _smag[i, 6] * 0.9238F), i221);
-        _verts[_vertexCount++] = (new PositionColorVertex(
-            new Vector3(
-                Sx[dust] - _smag[dust, 6] * 0.3826F * 1.7F,
-                Sy[dust] - _smag[dust, 7],
-                Sz[dust] + _smag[dust, 6] * 0.9238F
-            ),
-            vertexColor
-        ));
-
-        // ais[7] = Xs((int) (i220 + _smag[i, 7] * 0.3826F * 1.7F), i221);
-        // is223[7] = Ys((int) (i222 + _smag[i, 7] * 0.9238F), i221);
-        _verts[_vertexCount++] = (new PositionColorVertex(
-            new Vector3(
-                Sx[dust] + _smag[dust, 7] * 0.3826F * 1.7F,
-                Sy[dust] - _smag[dust, 7],
-                Sz[dust] + _smag[dust, 7] * 0.9238F
-            ),
-            vertexColor
-        ));
-
-        // make indices of polygon
-        _indices[_indexCount++] = (ushort)(baseIndex + 0);
-        _indices[_indexCount++] = (ushort)(baseIndex + 1);
-        _indices[_indexCount++] = (ushort)(baseIndex + 2);
-        _indices[_indexCount++] = (ushort)(baseIndex + 0);
-        _indices[_indexCount++] = (ushort)(baseIndex + 2);
-        _indices[_indexCount++] = (ushort)(baseIndex + 3);
-        _indices[_indexCount++] = (ushort)(baseIndex + 0);
-        _indices[_indexCount++] = (ushort)(baseIndex + 3);
-        _indices[_indexCount++] = (ushort)(baseIndex + 4);
-        _indices[_indexCount++] = (ushort)(baseIndex + 0);
-        _indices[_indexCount++] = (ushort)(baseIndex + 4);
-        _indices[_indexCount++] = (ushort)(baseIndex + 5);
-        _indices[_indexCount++] = (ushort)(baseIndex + 0);
-        _indices[_indexCount++] = (ushort)(baseIndex + 5);
-        _indices[_indexCount++] = (ushort)(baseIndex + 6);
-        _indices[_indexCount++] = (ushort)(baseIndex + 0);
-        _indices[_indexCount++] = (ushort)(baseIndex + 6);
-        _indices[_indexCount++] = (ushort)(baseIndex + 7);
+        var color = new Color(_srgb[dust, 0] / 255f, _srgb[dust, 1] / 255f, _srgb[dust, 2] / 255f, alpha);
+        var center = new Vector3(Sx[dust], Sy[dust] - _smag[dust, 7] * PuffSizeScale, Sz[dust]);
+        _puffs[_puffCount] = new Puff(center, color);
+        for (var corner = 0; corner < CornersPerPuff; corner++)
+            _puffRadii[_puffCount * CornersPerPuff + corner] = _smag[dust, corner] * PuffSizeScale;
+        _puffCount++;
 
         Sx[dust] += Scx[dust] / (Stg[dust] + 1);
         Sz[dust] += Scz[dust] / (Stg[dust] + 1);
@@ -372,14 +245,22 @@ public class Dust : IDisposable, IImmediateRenderElement
 
     public void Render(ICommandBuffer cb, Camera camera, Lighting? _)
     {
-        if (_vertexCount == 0 || _indexCount == 0) return;
+        if (_puffCount == 0) return;
 
-        if (_dirty)
+        // Offset each corner in view space so the puff faces the rendered camera.
+        for (var i = 0; i < _puffCount; i++)
         {
-            cb.UpdateBuffer(_vertexBuffer, MemoryMarshal.AsBytes(_verts.AsSpan(0, _vertexCount)));
-            cb.UpdateBuffer(_indexBuffer, MemoryMarshal.AsBytes(_indices.AsSpan(0, _indexCount)));
-            _dirty = false;
+            var puff = _puffs[i];
+            var center = Vector3.Transform(puff.Center, camera.ViewMatrix);
+            for (var corner = 0; corner < CornersPerPuff; corner++)
+            {
+                var index = i * CornersPerPuff + corner;
+                var offset = Corners[corner] * _puffRadii[index];
+                _verts[index] = new PositionColorVertex(center + new Vector3(offset, 0f), puff.Color);
+            }
         }
+
+        cb.UpdateBuffer(_vertexBuffer, MemoryMarshal.AsBytes(_verts.AsSpan(0, _puffCount * CornersPerPuff)));
 
         var p = Effects.ParticleParameters;
 
@@ -388,10 +269,28 @@ public class Dust : IDisposable, IImmediateRenderElement
         cb.SetIndexBuffer(_indexBuffer);
 
         p.World.SetValue(cb, Matrix.Identity);
-        p.View.SetValue(cb, camera.ViewMatrix);
+        p.View.SetValue(cb, Matrix.Identity);
         p.Projection.SetValue(cb, camera.ProjectionMatrix);
 
-        cb.DrawIndexed(baseVertex: 0, startIndex: 0, primitiveCount: _indexCount / 3);
+        cb.DrawIndexed(baseVertex: 0, startIndex: 0, primitiveCount: _puffCount * TrianglesPerPuff);
+    }
+
+    private static ushort[] BuildIndices()
+    {
+        var indices = new ushort[PuffCapacity * TrianglesPerPuff * 3];
+        var index = 0;
+        for (var puff = 0; puff < PuffCapacity; puff++)
+        {
+            var first = puff * CornersPerPuff;
+            for (var corner = 1; corner < CornersPerPuff - 1; corner++)
+            {
+                indices[index++] = (ushort)first;
+                indices[index++] = (ushort)(first + corner);
+                indices[index++] = (ushort)(first + corner + 1);
+            }
+        }
+
+        return indices;
     }
 
     private void ReleaseUnmanagedResources()

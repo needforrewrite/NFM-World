@@ -122,17 +122,12 @@ internal static class CarThumbnails
     {
         var key = WheelKey(id, original);
         if (Cache.ContainsKey(key) || Queued.Contains(key) || rad.Wheels.Length == 0) return;
-        var source = CarPaint.CreateInstance(rad, wheels: CarWheels.Get(id));
-        if (original) CarWheels.Apply(source, new WheelAppearance
-        {
-            OriginalWheels = true, RimColor = CarWheels.Get(id).RimColor
-        });
-        else CarWheels.Apply(source, new WheelAppearance { Colors = CarWheels.Get(id).Colors });
-        var wheel = source.Wheels.FirstOrDefault(wheel => wheel.Position.X >= 0
-                                                          && (original || wheel.Polys is not null)
-        );
-        if (wheel.Height == 0)
-            wheel = source.Wheels.FirstOrDefault(wheel => original || wheel.Polys is not null);
+        var style = CarWheels.Get(id);
+        style.OriginalWheels = original;
+        var source = CarPaint.CreateInstance(rad, wheels: style);
+        var wheels = source.Wheels.Where(wheel => wheel.Height != 0 && (original || wheel.Polys is not null));
+        var wheel = wheels.FirstOrDefault(wheel => wheel.Position.X >= 0);
+        if (wheel.Height == 0) wheel = wheels.FirstOrDefault();
         if (wheel.Height == 0) wheel = source.Wheels[0];
         Request(key, new WheelMeshBuilder(wheel, source.Rims).BuildModel());
     }

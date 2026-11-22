@@ -244,7 +244,7 @@ internal sealed class GarageController
     private void ColorsKey(Key key, in Keys keys)
     {
         var state = UiState.Garage;
-        if (key == Key.Tab)
+        if (key == Key.Tab && state.HasBodyColors)
         {
             SetCustomizeTab(!state.WheelsTab.Value);
             state.CustomizeTabsFocused.Value = true;
@@ -262,11 +262,11 @@ internal sealed class GarageController
         {
             state.CustomizeTabsFocused.Value = false;
             state.ActiveColorSlot.Value = key == Key.Up ? state.EditingSlots.Count
-                : state.WheelsTab.Value && state.HasCustomWheels.Value ? -1 : 0;
+                : state.EditingWheels && state.HasCustomWheels.Value ? -1 : 0;
             return;
         }
 
-        if (state.WheelsTab.Value && state.ActiveColorSlot.Value == -1
+        if (state.EditingWheels && state.ActiveColorSlot.Value == -1
             && key is (Key.Left or Key.Right or Key.Enter))
         {
             var original = !state.HasCustomWheels.Value || key == Key.Right
@@ -772,6 +772,7 @@ internal sealed class GarageController
 
     private void SetCustomizeTab(bool wheels)
     {
+        if (!UiState.Garage.HasBodyColors) return;
         _painting = false;
         FlushThumbnailChanges();
         CarPaint.Flush();
@@ -789,15 +790,15 @@ internal sealed class GarageController
         UiState.Garage.HasCustomWheels.Value = CarWheels.HasCustomMeshes(car.Rad);
         UiState.Garage.OriginalWheels.Value = style.OriginalWheels || !CarWheels.HasCustomMeshes(car.Rad);
         var slots = CarWheels.Slots(car.Rad).Select(slot => new UiState.GarageColorSlot(slot.Slot, slot.Color)).ToList();
-        if (car.Rad.Wheels.Any(wheel => wheel.Polys is null))
-            slots.Add(new UiState.GarageColorSlot(
-                CarPaint.SlotCount,
-                car.Rad.Rims?.Color ?? new Color3(120, 120, 120),
-                "Rim Color"
-            )
-            );
+        var rims = CarWheels.RimSlots(car.Rad);
+        slots.AddRange(rims.Select((rim, index) => new UiState.GarageColorSlot(
+            rim.Slot,
+            rim.Color,
+            rims.Count == 1 ? "Rim Color" : $"Rim Color {index + 1}"
+        )));
         UiState.Garage.WheelColorSlots.Value = slots;
-        if (UiState.Garage.WheelsTab.Value && UiState.Garage.HasCustomWheels.Value)
+        if (UiState.Garage.Page.Value == GaragePage.Colors && UiState.Garage.EditingWheels
+            && UiState.Garage.HasCustomWheels.Value)
         {
             CarThumbnails.RequestWheel(id, car.Rad, true);
             CarThumbnails.RequestWheel(id, car.Rad, false);
@@ -837,7 +838,9 @@ internal sealed class GarageController
 
         PushWheelSlots();
 
-        UiState.Garage.ActiveColorSlot.Value = 0;
+        if (!UiState.Garage.HasBodyColors)
+            UiState.Garage.CustomizeTabsFocused.Value = false;
+        UiState.Garage.ActiveColorSlot.Value = !UiState.Garage.HasBodyColors && UiState.Garage.HasCustomWheels.Value ? -1 : 0;
         UiState.Garage.ActiveColorChannel.Value = 0;
     }
 
@@ -852,10 +855,17 @@ internal sealed class GarageController
 
         entry.SetChannel(channel, value);
         var color = entry.Color;
-        if (UiState.Garage.WheelsTab.Value)
+        if (UiState.Garage.EditingWheels)
         {
             var style = CarWheels.Get(identity);
-            if (slot == CarPaint.SlotCount) style.RimColor = color;
+            if (slot >= CarPaint.SlotCount)
+            {
+                var group = slot - CarPaint.SlotCount;
+                var colors = style.RimColors ?? [];
+                if (group >= colors.Length) Array.Resize(ref colors, group + 1);
+                colors[group] = color;
+                style.RimColors = colors;
+            }
             else
             {
                 var colors = new Color3?[CarPaint.SlotCount];
@@ -880,11 +890,16 @@ internal sealed class GarageController
         if (_backendCar is not { } car || CurrentIdentity() is not { Length: > 0 } identity)
             return;
 
-        if (UiState.Garage.WheelsTab.Value)
+        if (UiState.Garage.EditingWheels)
         {
             var style = CarWheels.Get(identity);
-            if (UiState.Garage.OriginalWheels.Value) style.RimColor = null;
-            else style.Colors = [];
+            if (!UiState.Garage.OriginalWheels.Value) style.Colors = [];
+            if (CarWheels.RimSlots(car.Rad).Count > 0)
+            {
+                style.RimColor = null;
+                style.RimColors = null;
+            }
+
             CarWheels.Set(identity, style);
             RefreshWheelPaint(car, identity);
             PushWheelSlots();
@@ -921,7 +936,7 @@ internal sealed class GarageController
         foreach (var (key, rad) in _changedWheelThumbnails)
         {
             CarThumbnails.Invalidate(CarThumbnails.WheelKey(key.Id, key.Original));
-            if (UiState.Garage.Page.Value == GaragePage.Colors && UiState.Garage.WheelsTab.Value
+            if (UiState.Garage.Page.Value == GaragePage.Colors && UiState.Garage.EditingWheels
                 && CurrentIdentity() == key.Id)
                 CarThumbnails.RequestWheel(key.Id, rad, key.Original);
         }
@@ -954,7 +969,7 @@ internal sealed class GarageController
                 CarThumbnails.Request(identity, car.Rad);
             CarThumbnails.RenderPending(cb, shown.Contains);
         }
-        else if (UiState.Garage.Page.Value == GaragePage.Colors && UiState.Garage.WheelsTab.Value
+        else if (UiState.Garage.Page.Value == GaragePage.Colors && UiState.Garage.EditingWheels
                  && UiState.Garage.HasCustomWheels.Value && CurrentIdentity() is { } id)
         {
             if (_backendCar is { } wheelCar)
@@ -975,10 +990,10 @@ internal sealed class GarageController
         var state = UiState.Garage;
         var count = state.EditingSlots.Count;
         var next = state.ActiveColorSlot.Value + delta;
-        var minimum = state.WheelsTab.Value && state.HasCustomWheels.Value ? -1 : 0;
+        var minimum = state.EditingWheels && state.HasCustomWheels.Value ? -1 : 0;
         if (next < minimum || next > count)
         {
-            state.CustomizeTabsFocused.Value = true;
+            state.CustomizeTabsFocused.Value = state.HasBodyColors;
             return;
         }
 

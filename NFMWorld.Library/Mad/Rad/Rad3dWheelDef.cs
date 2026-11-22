@@ -18,6 +18,7 @@ public readonly partial record struct Rad3dWheelDef(
     Rad3dPoly[]? Polys
 )
 {
+    [TightPackOrder(5)] public Rad3dRimsDef? Rims { get; init; }
     [TightPackIgnore] public int Sparkat { get; } = (int)fix64.Round((Height / (fix64)10f) * (fix64)24.0F);
     [TightPackIgnore] public int Ground { get; } = (int)fix64.Round(Position.Y + (fix64)13.0F * (Height / (fix64)10f) + 3);
 }

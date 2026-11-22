@@ -103,6 +103,7 @@ public partial class RadParser
     private CarStats? _rechargedStats;
     private List<Rad3dWheelDef> _wheels = [];
     private Rad3dRimsDef? _rims;
+    private int _rimDefinitions;
     private List<Rad3dBoxDef> _boxes = [];
     private List<Rad3dPoly> _mainCarPolys = [];
     private List<Vector3> _points = [];
@@ -200,6 +201,7 @@ public partial class RadParser
             var wheel = parser._wheels[i];
             parser._wheels[i] = wheel with
             {
+                Rims = parser._rimDefinitions > 1 ? wheel.Rims : null,
                 Polys = wheel.Polys?.Select(poly => poly with
                 {
                     ColNum = parser._wheelColors.TryGetValue(poly.Color, out var slot) ? slot : null
@@ -213,7 +215,7 @@ public partial class RadParser
                 stats: parser._stats,
                 rechargedStats: parser._rechargedStats,
                 wheels: parser._wheels.ToArray(),
-                rims: parser._rims,
+                rims: parser._rimDefinitions <= 1 ? parser._rims : null,
                 boxes: parser._boxes.ToArray(),
                 polys: parser._mainCarPolys.ToArray(),
                 castsShadow: parser._castsShadow,
@@ -405,7 +407,7 @@ public partial class RadParser
                         : _wheelMeshes.Count > _wheels.Count
                             ? _wheelMeshes[_wheels.Count].Polys.ToArray()
                             : null
-                )
+                ) { Rims = _rims }
             );
 
             // phy-addons custom wheels
@@ -417,6 +419,7 @@ public partial class RadParser
 
         else if (line.StartsWith("rims("))
         {
+            _rimDefinitions++;
             _rims = new Rad3dRimsDef(
                 Color: new Color3(
                     (byte)BracketParser.GetNumbers(line, stackalloc int[3])[0],

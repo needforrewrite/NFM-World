@@ -804,7 +804,7 @@ public static partial class GarageView
                             children:
                             [
                                 Sx.Show(
-                                    when: () => UiState.Garage.WheelsTab.Value && UiState.Garage.HasCustomWheels.Value,
+                                    when: () => UiState.Garage.EditingWheels && UiState.Garage.HasCustomWheels.Value,
                                     then: () => WheelChoices(actions)
                                 ),
                                 Sx.For(
@@ -825,9 +825,7 @@ public static partial class GarageView
                                     then: () => Sx.Text(
                                         style: () => Sx.WrappingText(fontSize: 13, foregroundColor: Theme.TextFaint),
                                         layout: () => Sx.Styles(width: 100.Percent(), paddingTop: 12),
-                                        text: () => UiState.Garage.WheelsTab.Value
-                                            ? "This wheel mesh does not declare any editable colours."
-                                            : "This car does not declare any editable colours."
+                                        text: () => "This wheel mesh does not declare any editable colours."
                                     )
                                 )
                             ]
@@ -855,7 +853,9 @@ public static partial class GarageView
                         name: () => "Garage reset colors"
                     )
                 ),
-                Hint("Tab tabs · ↑ ↓ navigate · ← → control · Shift + ← → paint · Enter select")
+                Hint(() => (UiState.Garage.HasBodyColors ? "Tab tabs · " : "")
+                           + "↑ ↓ navigate · ← → control · Shift + ← → paint · Enter select"
+                )
             ]
         );
 
@@ -1320,11 +1320,13 @@ public static partial class GarageView
             ]
         );
 
-    private static Node Hint(string text)
+    private static Node Hint(string text) => Hint(() => text);
+
+    private static Node Hint(Func<string> text)
         => Sx.Text(
             style: () => Sx.TextStyles(fontSize: 10, foregroundColor: Theme.TextFaint),
             layout: () => Sx.Styles(marginTop: 8, flexShrink: 0),
-            text: () => text
+            text: text
         );
 
     private static string Subtitle(CarStatsViewModel? car)

@@ -1,6 +1,8 @@
 using System.Numerics;
 using FixedMathSharp;
 using NFMWorld.PhysicsFS;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 
@@ -9,6 +11,59 @@ namespace NFMWorld.Library.Test;
 [TestClass, DoNotParallelize]
 public class CarWheelsTests
 {
+    private const string LayeredWheels = """
+                                         rims(50,50,50,17,20)
+                                         w(-39,2,72,11,17,0)
+                                         w(39,2,72,11,-17,0)
+                                         rims(50,50,50,17,20)
+                                         w(-39,2,-84,0,17,0)
+                                         w(39,2,-84,0,-17,0)
+                                         rims(215,190,105,21,-20)
+                                         w(-42,2,72,11,17,12)
+                                         w(42,2,72,11,-17,12)
+                                         rims(215,190,105,21,-20)
+                                         w(-42,2,-84,0,17,12)
+                                         w(42,2,-84,0,-17,12)
+                                         """;
+
+    [TestMethod]
+    public void LayeredWheels_UseOuterTiresForAllFourContacts()
+    {
+        var rad = RadParser.ParseRad(LayeredWheels);
+        var car = new BackendCar(rad, 0, 0, 0, true);
+        var contact = new ContO(car);
+
+        Assert.AreEqual(8, car.Wheels.Count);
+        Assert.AreEqual(4, car.CollisionWheels.Count);
+        CollectionAssert.AreEqual(
+            new[] { -42, 42, -42, 42 },
+            new[] { contact.Keyx[0], contact.Keyx[1], contact.Keyx[2], contact.Keyx[3] }
+        );
+        Assert.AreEqual(rad.Wheels[4].Ground, car.GroundAt);
+    }
+
+    [TestMethod]
+    public void LayeredWheels_RimSetsSurviveSerializationAndCanBeRecoloredIndependently()
+    {
+        var rad = RadParser.ParseRad(LayeredWheels);
+        var encoded = TightPack.TightPackSerializer.Serialize(rad.Wheels[4]);
+        var decoded = TightPack.TightPackSerializer.Deserialize<Rad3dWheelDef>(encoded);
+        Assert.AreEqual(rad.Wheels[4].Rims, decoded.Rims);
+        var stockColors = CarWheels.RimSlots(rad);
+        Assert.AreEqual(2, stockColors.Count);
+        Assert.AreEqual(new Color3(50, 50, 50), stockColors[0].Color);
+        Assert.AreEqual(new Color3(215, 190, 105), stockColors[1].Color);
+
+        var chosen = new Color3(30, 60, 220);
+        var painted = CarPaint.CreateInstance(rad, wheels: new WheelAppearance { RimColors = [null, chosen] });
+        var paint = CarWheels.RimSlots(painted);
+        Assert.AreEqual(stockColors[0], paint[0]);
+        Assert.AreEqual(chosen, paint[1].Color);
+        Assert.AreEqual(-20f, painted.Wheels[4].Rims!.Value.Depth);
+        CarWheels.Apply(painted, null);
+        CollectionAssert.AreEqual(stockColors.ToArray(), CarWheels.RimSlots(painted).ToArray());
+    }
+
     [TestMethod]
     public void WheelPaintIsIndividualAndDoesNotTouchBodyOrUntaggedPolygons()
     {
