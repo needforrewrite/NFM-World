@@ -137,8 +137,19 @@ internal static class PluginPolicy
         typeof(TightPack.Formatters.ValueTupleFormatter<,,,,,,,>),
     ];
 
-    /// <summary>Whether the sandbox can run here: CasCore rewrites IL and needs a JIT.</summary>
-    public static bool Supported => RuntimeFeature.IsDynamicCodeSupported;
+    /// <summary>
+    /// Whether the sandbox can run here: CasCore rewrites IL and resolves virtual dispatch
+    /// through CoreCLR's internal reflection helpers, so it needs a JIT and, with it, a runtime
+    /// that has them.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="RuntimeFeature.IsDynamicCodeSupported"/> alone is not the test: Mono's wasm
+    /// interpreter reports true (it can build delegate types over its own IL) but has neither a
+    /// JIT nor the Q-calls <c>LateBindingResolver</c> binds to by name, so the first plugin load
+    /// died in that type's initializer instead of falling back. Where this is false, plugins load
+    /// through the plain <c>PluginLoadContext</c> and a downloaded package is refused.
+    /// </remarks>
+    public static bool Supported => RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled;
 
     public static CasPolicy Instance => Policy.Value;
 
