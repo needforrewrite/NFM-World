@@ -37,6 +37,7 @@
         <Compile Include="..\nfm-world\UI\Components\Controls.cs" Link="Controls.cs"/>
         <Compile Include="..\nfm-world\UI\Components\LoadingSpinner.cs" Link="LoadingSpinner.cs"/>
         <Compile Include="..\nfm-world\UI\Components\LobbyPlayerMenu.cs" Link="LobbyPlayerMenu.cs"/>
+        <Compile Include="..\nfm-world\UI\Components\NotificationCenter.cs" Link="NotificationCenter.cs"/>
         <Compile Include="..\nfm-world\UI\Components\MessageDialog.cs" Link="MessageDialog.cs"/>
         <Compile Include="..\nfm-world\Mad\UI\MessageWindow.cs" Link="MessageWindow.cs"/>
         <Compile Include="..\nfm-world\UI\Theme.cs" Link="Theme.cs"/>

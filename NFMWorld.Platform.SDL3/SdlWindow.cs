@@ -170,6 +170,15 @@ public sealed class SdlWindow : IDisposable
     /// <summary>Whether the window currently has input focus. Replaces FNA's <c>Game.IsActive</c>.</summary>
     public bool HasFocus => (SDL.SDL_GetWindowFlags(_window) & SDL.SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS) != 0;
 
+    public void RequestAttention()
+    {
+        if (_disposed || OperatingSystem.IsBrowser() || HasFocus) return;
+
+        _ = SDL.SDL_FlashWindow(_window, OperatingSystem.IsWindows()
+            ? SDL.SDL_FlashOperation.SDL_FLASH_UNTIL_FOCUSED
+            : SDL.SDL_FlashOperation.SDL_FLASH_BRIEFLY);
+    }
+
     public bool CursorVisible
     {
         get;
