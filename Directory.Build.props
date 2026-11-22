@@ -19,4 +19,27 @@
         <DefineConstants Condition="'$(DefineConstants)' != 'DEBUG'">$(DefineConstants);DEBUG</DefineConstants>
     </PropertyGroup>
 
+    <!--
+        The properties every nested build of a build-time tool is given: the shader compiler task
+        (NFMWorld.ShaderCompiler.targets) and the MSDF baker (NFMWorld.MsdfCache.targets). One
+        definition because each is a hand-maintained list handed to a nested MSBuild request, and
+        they had already drifted - both cleared RuntimeIdentifier and PublishReadyToRun, and neither
+        cleared SelfContained, which the release workflows pass globally. A cleared RID with
+        '$(SelfContained)' still true is NETSDK1191 ("a runtime identifier for the property
+        'SelfContained' couldn't be inferred"), raised on a plain Build, so a publish could not
+        compile anything.
+
+        They are cleared, not merely overridden, because they arrive as *global* properties from
+        the command line (-r, -p:SelfContained, -p:PublishSingleFile) and so reach every nested
+        request. The tools run on the build host and are never published, so none applies: a RID
+        would also move an Exe's output to bin/<cfg>/<tfm>/<rid>/ and make the copy to the rid-less
+        path pick up the same incomplete tree twice (MSB3027 on the second copy).
+
+        TargetFramework is pinned rather than inherited: both tools project net11.0 while a
+        consumer may not, and the assembly paths name net11.0 explicitly.
+    -->
+    <PropertyGroup>
+        <NFMWorldBuildHostToolProperties>Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=;SelfContained=false;PublishSingleFile=false;PublishReadyToRun=false</NFMWorldBuildHostToolProperties>
+    </PropertyGroup>
+
 </Project>

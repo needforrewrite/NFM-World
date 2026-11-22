@@ -176,11 +176,16 @@
             <PluginPublish Include="$(PluginOutputRoot)data/%(Plugin.PluginDirectory)/%(Plugin.PluginId)/%(Plugin.PluginFileName).dll">
                 <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
                 <RelativePath>data/%(Plugin.PluginDirectory)/%(Plugin.PluginId)/%(Plugin.PluginFileName).dll</RelativePath>
+                <!-- A single-file publish would gather this into the app's bundle and delete it from
+                     the folder, and none is loadable from there: GamemodeFactory opens the plugin by
+                     path into its own AssemblyLoadContext. -->
+                <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
             </PluginPublish>
             <PluginPublish Include="$(PluginOutputRoot)data/%(Plugin.PluginDirectory)/%(Plugin.PluginId)/%(Plugin.PluginFileName).pdb"
                            Condition="Exists('$(PluginOutputRoot)data/%(Plugin.PluginDirectory)/%(Plugin.PluginId)/%(Plugin.PluginFileName).pdb')">
                 <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
                 <RelativePath>data/%(Plugin.PluginDirectory)/%(Plugin.PluginId)/%(Plugin.PluginFileName).pdb</RelativePath>
+                <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
             </PluginPublish>
             <ResolvedFileToPublish Include="@(PluginPublish)" />
         </ItemGroup>

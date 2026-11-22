@@ -173,7 +173,15 @@ public partial class WorldGame
             WorkingDirectory = System.Environment.CurrentDirectory
         };
         if (string.Equals(Path.GetFileNameWithoutExtension(executable), "dotnet", StringComparison.OrdinalIgnoreCase))
-            start.ArgumentList.Add(Assembly.GetEntryAssembly()!.Location);
+        {
+            // The host needs the assembly path, which Assembly.Location cannot give: it is empty
+            // for a bundled assembly, and a bundled app is never started through the dotnet host.
+            var entry = (Assembly.GetEntryAssembly()
+                         ?? throw new InvalidOperationException("Cannot determine the game assembly for restart."))
+                .GetName().Name;
+            start.ArgumentList.Add(Path.Combine(AppContext.BaseDirectory, entry + ".dll"));
+        }
+
         foreach (var argument in args) start.ArgumentList.Add(argument);
         using var restarted = Process.Start(start)
                               ?? throw new InvalidOperationException("Failed to restart the game.");

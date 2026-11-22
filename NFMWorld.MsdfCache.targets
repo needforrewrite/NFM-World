@@ -34,13 +34,13 @@
              reaches it: without this a clean checkout fails with NETSDK1004 "assets file not
              found", which is what the desktop release builds hit on every platform. Same shape as
              NFMWorld.ShaderCompiler.targets' BuildShaderCompilerTask. -->
-        <!-- RuntimeIdentifier and PublishReadyToRun both cleared: the release workflows publish
-             with a global -r, which travels into this nested build, and an Exe project's output then
-             moves to bin/<cfg>/<tfm>/<rid>/. NFMWorldMsdfToolAssembly above names the rid-less path,
-             so the bake would run a file that is not there ("Could not execute because the specified
-             command or file was not found"). Clearing the RID then makes the inherited
-             PublishReadyToRun unsatisfiable (NETSDK1191), so that goes too. The tool runs on the
-             build host, not on the target RID, and is never published, so neither applies.
+        <!-- NFMWorldBuildHostToolProperties clears the properties a publish leaves on the command
+             line (-r, SelfContained, PublishReadyToRun, PublishSingleFile). Clear the RID alone and
+             the inherited PublishReadyToRun/SelfContained are unsatisfiable (NETSDK1191); keep the
+             RID and an Exe's output moves to bin/<cfg>/<tfm>/<rid>/, while NFMWorldMsdfToolAssembly
+             above names the rid-less path, so the bake runs a file that is not there. The tool runs
+             on the build host, not on the target RID, and is never published, so none applies.
+             See Directory.Build.props.
 
              BuildProjectReferences=false, because those overrides are global properties: this
              nested request is then a *different project instance* of everything the tool references
@@ -54,10 +54,10 @@
              the referenced assemblies and their dependencies from their build output. -->
         <MSBuild Projects="$([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', 'NFMWorld.MsdfCache.Tool', 'NFMWorld.MsdfCache.Tool.csproj'))"
                  Targets="Restore"
-                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=;PublishReadyToRun=false;ExcludeRestorePackageImports=true" />
+                 Properties="$(NFMWorldBuildHostToolProperties);ExcludeRestorePackageImports=true" />
         <MSBuild Projects="$([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', 'NFMWorld.MsdfCache.Tool', 'NFMWorld.MsdfCache.Tool.csproj'))"
                  Targets="Build"
-                 Properties="Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=;PublishReadyToRun=false;BuildProjectReferences=false" />
+                 Properties="$(NFMWorldBuildHostToolProperties);BuildProjectReferences=false" />
     </Target>
 
     <!-- Bakes into the fonts directory itself, beside each font, so the output flows through the

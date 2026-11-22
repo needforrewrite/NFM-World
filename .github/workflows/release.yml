@@ -135,6 +135,8 @@ jobs:
             -o ./publish/${{ matrix.rid }} `
             -p:SelfContained=true `
             -p:PublishReadyToRun=true `
+            -p:PublishSingleFile=true `
+            -p:DebugType=embedded `
             -p:IncludeNativeLibrariesForSelfExtract=false `
             -p:IncludeAllContentForSelfExtract=false `
             -p:ErrorOnDuplicatePublishOutputFiles=false `
@@ -148,6 +150,27 @@ jobs:
             -c Release \
             -r "${{ matrix.rid }}" \
             -o "./publish/${{ matrix.rid }}/native" \
+            -- /maxcpucount:1
+
+      # A referenced Exe contributes its managed dll to this publish, never an apphost, so a
+      # single-file publish leaves nothing for CrashReportLibrary.Hook to start. AOT gives it one
+      # self-contained executable (the game is self-contained, so the child cannot borrow a
+      # runtime). Symbols are dropped with it: its pdb is 20 MB and nothing symbolizes it.
+      - name: Publish crash reporter (${{ matrix.rid }})
+        shell: bash
+        run: |
+          set -e
+          dotnet publish NFMWorld.Library/NFMWorld.Library.csproj \
+          dotnet publish NFMWorld.CrashReporter/NFMWorld.CrashReporter.csproj \
+            -c Release \
+            -r "${{ matrix.rid }}" \
+            -o "./publish/${{ matrix.rid }}/native" \
+            -p:SelfContained=true \
+            -p:PublishAot=true \
+            -p:DebugType=none \
+            -p:DebugSymbols=false \
+            -p:StripSymbols=true \
+            -o "./publish/${{ matrix.rid }}" \
             -- /maxcpucount:1
 
       - name: Upload artifact
@@ -218,6 +241,24 @@ jobs:
             -o "./publish/${{ matrix.rid }}/native" \
             -- /maxcpucount:1
 
+      # See the Windows job: a referenced Exe contributes no apphost, so the single-file publish
+      # has no crash reporter to start unless it is published as its own native executable.
+      - name: Publish crash reporter (${{ matrix.rid }})
+        run: |
+          set -e
+          dotnet publish NFMWorld.Library/NFMWorld.Library.csproj \
+          dotnet publish NFMWorld.CrashReporter/NFMWorld.CrashReporter.csproj \
+            -c Release \
+            -r "${{ matrix.rid }}" \
+            -o "./publish/${{ matrix.rid }}/native" \
+            -p:SelfContained=true \
+            -p:PublishAot=true \
+            -p:DebugType=none \
+            -p:DebugSymbols=false \
+            -p:StripSymbols=true \
+            -o "./publish/${{ matrix.rid }}" \
+            -- /maxcpucount:1
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -286,6 +327,8 @@ jobs:
               -o ./publish/$RID \
               -p:SelfContained=true \
               -p:PublishReadyToRun=true \
+              -p:PublishSingleFile=true \
+              -p:DebugType=embedded \
               -p:IncludeNativeLibrariesForSelfExtract=false \
               -p:IncludeAllContentForSelfExtract=false \
               -p:ErrorOnDuplicatePublishOutputFiles=false \
@@ -295,6 +338,20 @@ jobs:
               -c Release \
               -r "$RID" \
               -o "./publish/$RID/native" \
+              -- /maxcpucount:1
+
+            # See the Windows job. Unsigned by design, like the game itself.
+            dotnet publish NFMWorld.CrashReporter/NFMWorld.CrashReporter.csproj \
+              -c Release \
+              -r "$RID" \
+              -o "./publish/$RID/native" \
+              -r $RID \
+              -p:SelfContained=true \
+              -p:PublishAot=true \
+              -p:DebugType=none \
+              -p:DebugSymbols=false \
+              -p:StripSymbols=true \
+              -o ./publish/$RID \
               -- /maxcpucount:1
           done
 
