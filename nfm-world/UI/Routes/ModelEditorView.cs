@@ -3574,7 +3574,7 @@ public sealed class ModelEditorView
         Refresh();
     }
 
-    /// <summary>Files in a category, filtered by the search box and sorted by name.</summary>
+    /// <summary>Files in a category, filtered by the search box and sorted by relative path.</summary>
     private List<string> FilteredFiles(string prefix)
     {
         _ = _revision.Value;
@@ -3583,7 +3583,7 @@ public sealed class ModelEditorView
         return _loadFiles.Value
             .Where(file => file.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
             .Where(file => query.Length == 0 || file.Contains(query, StringComparison.OrdinalIgnoreCase))
-            .OrderBy(file => System.IO.Path.GetFileName(file), StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
 
@@ -3933,13 +3933,13 @@ public sealed class ModelEditorView
                 ),
                 Sx.For(
                     each: () => FilteredFiles(prefix),
-                    row: (file, _) => FileRow(file)
+                    row: (file, _) => FileRow(file, prefix)
                 )
             ]
         )
     );
 
-    private Node FileRow(string file)
+    private Node FileRow(string file, string prefix)
     {
         var hovered = new Signal<bool>(false);
         return Sx.View(
@@ -3962,7 +3962,7 @@ public sealed class ModelEditorView
                     fontSize: 13,
                     foregroundColor: hovered.Value ? new Color(255, 255, 255) : TextBlue
                 ),
-                text: () => System.IO.Path.GetFileName(file)
+                text: () => file[prefix.Length..]
             )
         );
     }

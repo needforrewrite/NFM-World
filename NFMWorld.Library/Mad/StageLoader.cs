@@ -479,7 +479,7 @@ public partial class StageLoader
                     else
                     {
                         // Support both single seed value and full cloud parameters
-                        var cloudParams = line.Split(',');
+                        var cloudParams = line.Split(')', 2)[0].Split(',');
                         if (cloudParams.Length == 1) // clouds(seed) format
                         {
                             CloudCoverage = Utility.GetInt("clouds", line, 0);
@@ -492,7 +492,7 @@ public partial class StageLoader
                                 Utility.GetInt("clouds", line, 1),
                                 Utility.GetInt("clouds", line, 2),
                                 Utility.GetInt("clouds", line, 3),
-                                Utility.GetInt("clouds", line, 4)
+                                cloudParams.Length > 4 ? Utility.GetInt("clouds", line, 4) : -1000
                             };
                             EnvironmentInstructions.Add(new CloudsInstruction(clouds));
                         }

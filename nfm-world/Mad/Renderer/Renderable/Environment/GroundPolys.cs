@@ -12,17 +12,19 @@ public class GroundPolys : Transform, IRenderable, IImmediateRenderElement, IDis
     private readonly IBuffer _indexBuffer;
     private readonly int _triangleCount;
     private readonly int _vertexCount;
+    private readonly bool _applyFog;
 
     public override IReadOnlyList<ITransform> ChildTransforms => [];
 
-    public GroundPolys(IGraphicsDevice graphicsDevice, Rad3dPoly[] polys)
-        : this(graphicsDevice, EnvironmentMeshData.Prepare(polys))
+    public GroundPolys(IGraphicsDevice graphicsDevice, Rad3dPoly[] polys, bool applyFog = true)
+        : this(graphicsDevice, EnvironmentMeshData.Prepare(polys), applyFog)
     {
     }
 
-    internal GroundPolys(IGraphicsDevice graphicsDevice, EnvironmentMeshData prepared)
+    internal GroundPolys(IGraphicsDevice graphicsDevice, EnvironmentMeshData prepared, bool applyFog = true)
     {
         _graphicsDevice = graphicsDevice;
+        _applyFog = applyFog;
         var vertexBytes = MemoryMarshal.AsBytes(prepared.Vertices.AsSpan());
         _vertexBuffer = graphicsDevice.CreateBuffer(
             new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length),
@@ -62,8 +64,8 @@ public class GroundPolys : Transform, IRenderable, IImmediateRenderElement, IDis
         p.WorldView.SetValue(cb, camera.ViewMatrix);
         p.WorldViewProj.SetValue(cb, camera.ViewMatrix * camera.ProjectionMatrix);
         p.FogColor.SetValue(cb, World.Fog.Snap(World.Snap));
-        p.FogDistance.SetValue(cb, World.FadeFrom);
-        p.FogLogDensity.SetValue(cb, World.FogLogDensity);
+        p.FogDistance.SetValue(cb, _applyFog ? World.FadeFrom : 1f);
+        p.FogLogDensity.SetValue(cb, _applyFog ? World.FogLogDensity : 0f);
         p.Tint.SetValue(cb, World.GroundPulseTint);
 
         // See Submesh.Render: the shader default (0.0005) is too large for this camera's depth

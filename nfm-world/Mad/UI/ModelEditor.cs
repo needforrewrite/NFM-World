@@ -181,26 +181,15 @@ public class ModelEditorPhase : BasePhase
 
     internal void RefreshUserModels()
     {
+        const string userModelsPath = "./data/models/user";
         var modelList = new List<string>();
-
-        // Scan user car models
-        var userCarsPath = "./data/models/user/cars";
-        if (Directory.Exists(userCarsPath))
+        foreach (var category in new[] { "cars", "stage" })
         {
-            foreach (var file in Directory.GetFiles(userCarsPath, "*.rad"))
-            {
-                modelList.Add(Path.GetRelativePath("./data/models/user", file).Replace('\\', '/'));
-            }
-        }
+            var categoryPath = Path.Combine(userModelsPath, category);
+            if (!Directory.Exists(categoryPath)) continue;
 
-        // Scan user stage models
-        var userStagePath = "./data/models/user/stage";
-        if (Directory.Exists(userStagePath))
-        {
-            foreach (var file in Directory.GetFiles(userStagePath, "*.rad"))
-            {
-                modelList.Add(Path.GetRelativePath("./data/models/user", file).Replace('\\', '/'));
-            }
+            foreach (var file in Directory.EnumerateFiles(categoryPath, "*.rad", SearchOption.AllDirectories))
+                modelList.Add(Path.GetRelativePath(userModelsPath, file).Replace('\\', '/'));
         }
 
         _userModelNames = modelList.ToArray();
@@ -675,21 +664,10 @@ public class ModelEditorPhase : BasePhase
         tab.SavedText = radContent;
         tab.TextEditorDirty = false;
 
-        // Determine model type from file path - normalize path separators for comparison
-        var normalizedPath = filePath.Replace('\\', '/').ToLowerInvariant();
-        if (normalizedPath.Contains("/cars/"))
-        {
-            tab.ModelType = ModelEditorTab.ModelTypeEnum.Car;
-        }
-        else if (normalizedPath.Contains("/stage/"))
-        {
-            tab.ModelType = ModelEditorTab.ModelTypeEnum.Stage;
-        }
-        else
-        {
-            // Default to car if we can't determine from path
-            tab.ModelType = ModelEditorTab.ModelTypeEnum.Car;
-        }
+        var modelPath = Path.GetRelativePath("./data/models/user", filePath).Replace('\\', '/');
+        tab.ModelType = modelPath.StartsWith("stage/", StringComparison.OrdinalIgnoreCase)
+            ? ModelEditorTab.ModelTypeEnum.Stage
+            : ModelEditorTab.ModelTypeEnum.Car;
 
         // Try to parse the model, but keep the file loaded even if it fails
         try

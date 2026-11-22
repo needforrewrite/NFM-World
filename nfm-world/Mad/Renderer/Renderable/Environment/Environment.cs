@@ -264,7 +264,7 @@ public class Environment
         int maxb,
         int maxt // newclouds
     )
-        => new(GameSparker.GraphicsDevice, BuildClouds(maxl, maxr, maxb, maxt, GenerationSettings.Capture()));
+        => new(GameSparker.GraphicsDevice, BuildClouds(maxl, maxr, maxb, maxt, GenerationSettings.Capture()), applyFog: false);
 
     public static Rad3dPoly[] BuildClouds(int maxl, int maxr, int maxb, int maxt, GenerationSettings settings)
     {

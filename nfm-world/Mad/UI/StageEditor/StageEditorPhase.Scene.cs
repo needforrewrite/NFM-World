@@ -261,7 +261,7 @@ public partial class StageEditorPhase
                     renderer.polys = polys;
                     break;
                 case 1:
-                    var clouds = polygons is null ? null : new GroundPolys(_graphicsDevice, polygons);
+                    var clouds = polygons is null ? null : new GroundPolys(_graphicsDevice, polygons, applyFog: false);
                     renderer.clouds?.Dispose();
                     renderer.clouds = clouds;
                     break;

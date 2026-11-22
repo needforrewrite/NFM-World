@@ -49,6 +49,19 @@ public class StageParityDirectiveTests
     private static StageLoader Load(params string[] lines) => StageLoader.FromLines("parity-test", lines);
 
     [TestMethod]
+    [DataRow("clouds(210,210,210,1)", -1000)]
+    [DataRow("clouds(210,210,210,1,-1000)", -1000)]
+    [DataRow("clouds(210,210,210,1,-2400)", -2400)]
+    public void StageLoader_CloudHeightIsOptional(string directive, int expectedHeight)
+    {
+        var loader = Load(directive, "name(Cloud test)");
+        var clouds = loader.EnvironmentInstructions.OfType<CloudsInstruction>().Single();
+
+        CollectionAssert.AreEqual(new[] { 210, 210, 210, 1, expectedHeight }, clouds.Clouds.ToArray());
+        Assert.AreEqual("Cloud test", loader.Name);
+    }
+
+    [TestMethod]
     public void StageLoader_ParsesStartOverrides()
     {
         var loader = Load(
