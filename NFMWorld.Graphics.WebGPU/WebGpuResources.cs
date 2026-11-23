@@ -9,8 +9,8 @@
 // sampled view and a render attachment are all this one object in every case this tree produces.
 
 using NFMWorld.Shaders;
-using Wg = Silk.NET.WebGPU;
-using WgpuBuffer = Silk.NET.WebGPU.Buffer;
+using Wg = Maxine.WebGPU;
+using WgpuBuffer = Maxine.WebGPU.Buffer;
 
 namespace NFMWorld.Graphics.WebGPU;
 
@@ -312,10 +312,10 @@ internal sealed unsafe class WebGpuShaderModule : IShaderModule
         }
 
         using var code = new WebGpuInterop.Utf8(wgsl);
-        var wgslDescriptor = new Wg.ShaderModuleWGSLDescriptor
+        var wgslDescriptor = new Wg.ShaderSourceWGSL
         {
-            Chain = new Wg.ChainedStruct { SType = Wg.SType.ShaderModuleWgslDescriptor },
-            Code = code.Pointer,
+            Chain = new Wg.ChainedStruct { SType = Wg.SType.ShaderSourceWgsl },
+            Code = code.View,
         };
 
         var descriptor = new Wg.ShaderModuleDescriptor

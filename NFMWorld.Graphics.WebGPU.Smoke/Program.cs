@@ -17,7 +17,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using NFMWorld.Shaders;
 using NFMWorld.Shaders.Generated;
-using Wg = Silk.NET.WebGPU;
+using Wg = Maxine.WebGPU;
 
 namespace NFMWorld.Graphics.WebGPU.Smoke;
 
@@ -163,7 +163,7 @@ internal static unsafe class Program
 
         // Validation of a recorded copy may be reported when the device is polled rather than at
         // submit, and the callback is the only place either kind of failure is visible.
-        device.Ext.DevicePoll(device.Device, 1, null);
+        device.Poll(true);
 
         Report(
             "BUFFER",

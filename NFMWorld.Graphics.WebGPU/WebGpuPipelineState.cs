@@ -14,7 +14,7 @@
 // one mesh, every path of one NanoVG frame).
 
 using NFMWorld.Shaders;
-using Wg = Silk.NET.WebGPU;
+using Wg = Maxine.WebGPU;
 
 namespace NFMWorld.Graphics.WebGPU;
 
@@ -257,7 +257,7 @@ internal sealed unsafe class WebGpuPipelineState : IPipelineState
         var vertexState = new Wg.VertexState
         {
             Module = _vertex.VertexModule,
-            EntryPoint = vertexEntry.Pointer,
+            EntryPoint = vertexEntry.View,
             BufferCount = (nuint)Desc.VertexLayouts.Count,
             Buffers = buffers,
         };
@@ -288,7 +288,7 @@ internal sealed unsafe class WebGpuPipelineState : IPipelineState
         var fragment = new Wg.FragmentState
         {
             Module = pixelModule.PixelModule,
-            EntryPoint = pixelEntry.Pointer,
+            EntryPoint = pixelEntry.View,
             TargetCount = 1,
             Targets = &target,
         };
@@ -348,7 +348,7 @@ internal sealed unsafe class WebGpuPipelineState : IPipelineState
         return new Wg.DepthStencilState
         {
             Format = format,
-            DepthWriteEnabled = state.DepthWriteEnabled ? 1u : 0u,
+            DepthWriteEnabled = state.DepthWriteEnabled ? Wg.OptionalBool.True : Wg.OptionalBool.False,
             DepthCompare = depthCompare,
             StencilFront = front,
             StencilBack = back,

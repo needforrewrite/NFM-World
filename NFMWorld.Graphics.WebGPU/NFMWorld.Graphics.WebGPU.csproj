@@ -6,18 +6,28 @@
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RootNamespace>NFMWorld.Graphics.WebGPU</RootNamespace>
+        <!-- wgpu-native is a native library, so the host must match it. -->
+        <PlatformTarget>x64</PlatformTarget>
     </PropertyGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj"/>
     </ItemGroup>
 
-    <!-- Silk.NET's bindings over wgpu-native. The native package carries wgpu_native.dll for the
-         desktop RIDs; a browser build cannot reach it, which is why this backend is desktop-only. -->
+    <!-- The bindings are generated from the current webgpu.h rather than taken from Silk.NET's
+         `Silk.NET.WebGPU` 2.23.0, whose structs predate WGPUStringView labels and whose native
+         package lacks 47 of the entry points the header declares. `Maxine.Silk.WebGPU` is a
+         companion package with the same shape, so the call sites read the same; see its README.
+
+         The native package carries wgpu_native for the desktop RIDs; a browser build cannot reach
+         it, which is why this backend is desktop-only. The RID cannot be read off this project's
+         $(RuntimeIdentifier) inside the referenced project, whose properties are stripped when the
+         SDK collects copy-to-output items, so the target platform is passed explicitly. -->
     <ItemGroup>
-        <PackageReference Include="Silk.NET.WebGPU" Version="2.23.0"/>
-        <PackageReference Include="Silk.NET.WebGPU.Native.WGPU" Version="2.23.0"/>
-        <PackageReference Include="Silk.NET.WebGPU.Extensions.WGPU" Version="2.23.0"/>
+        <ProjectReference Include="..\Maxine.Silk.WebGPU\src\Maxine.WebGPU\Maxine.WebGPU.csproj"/>
+        <ProjectReference Include="..\Maxine.Silk.WebGPU\src\Extensions\Maxine.WebGPU.Extensions.WGPU\Maxine.WebGPU.Extensions.WGPU.csproj"/>
+        <ProjectReference Include="..\Maxine.Silk.WebGPU\native\Maxine.Silk.WebGPU.Native.WGPU\Maxine.Silk.WebGPU.Native.WGPU.csproj"
+                          AdditionalProperties="WgpuNativeRid=$(RuntimeIdentifier)"/>
     </ItemGroup>
 
     <!-- The smoke harness reads the adapter limits, the pipeline variant cache and the device's own
