@@ -604,6 +604,15 @@ from `PhysicsController.GameTick`. Two ship:
   (71–167 ms) makes it the slower option. The browser stays on WebGL2 because wgpu-native has no wasm build, and
   because the WGSL these bundles carry does not validate under Chrome's Tint (next section).
 
+  Browser reachability, if that is ever revisited — neither Silk.NET choice is the lever:
+
+  |Fact|Consequence|
+  |---|---|
+  |`Maxine.Silk.EGL/tools/SilkGenerate` builds bindings from any `generator.json`; pointed at the current `webgpu.h` it writes 184 files in ~6 s. The one compile blocker is `silk_touch_sealed_vtable_creation = true` in `.editorconfig` — without it SilkTouch emits 0 of 572 bodies (572 × `CS8795` + `ST0002 FORCE-USE-VTABLE`)|do not wait on Silk.NET 3.x, whose WebGPU bindings are Pri 3 and whose wasm support is untracked. Regenerate locally; 2.23's structs cannot be passed to a current Dawn because every `Byte* label` became `WGPUStringView` (offsets shift 8 bytes) and 16 of the 55 entry points the backend calls changed shape|
+  |Dawn's `emdawnwebgpu` port *(not* wgpu-native, whose wasm surface is unimplemented — gfx-rs/wgpu-native#298)* links with the workload's Emscripten 6.0.3. Set `EM_CACHE` on the same drive as the port sources, `EMSDK_PYTHON` to the workload's python, and link with `-sDEFAULT_TO_CXX`|the symbol set is reachable; the canvas surface is the Dawn-only `WGPUEmscriptenSurfaceSourceCanvasHTMLSelector` (`0x00040000`, `selector = {"canvas", WGPU_STRLEN}`)|
+  |`emwgpuWaitAny` is `Asyncify.handleAsync`, and .NET wasm has no JSPI|device creation and buffer mapping must become `WGPUCallbackMode_AllowProcessEvents` + per-frame `wgpuInstanceProcessEvents`, not the 10 s `ManualResetEventSlim` block at `WebGpuGraphicsDevice.cs:257-320`|
+  |One `Wgsl` string serves desktop naga and Chrome's Tint|naga rejects `diagnostic(off, derivative_uniformity)`, Chrome requires it under non-uniform control flow. A browser build needs per-target WGSL; see `.facts/webgpu-binding-regeneration-and-wasm-linkage.md`|
+
   Traps worth keeping in mind when touching it:
 
   |Trap|Rule|
