@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using NFMWorld.ClayDom.Events;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Reactor;
@@ -208,6 +209,7 @@ public class StageSelectViewTests
         foreach (var busy in new[] { true, false, true, false })
         {
             state.Busy.Value = busy;
+            state.Status.Value = busy ? "Loading stage..." : "";
             UiScheduler.Instance.Flush();
             root.LayoutAndRender(viewport);
             var overlay = Descendants(root).SingleOrDefault(node => node.Name == "Stage preview loading");
@@ -216,6 +218,10 @@ public class StageSelectViewTests
                 Assert.IsNotNull(overlay);
                 Assert.AreEqual(viewport.X, overlay.LayoutBorderSize.X, 0.5f);
                 Assert.AreEqual(viewport.Y, overlay.LayoutBorderSize.Y, 0.5f);
+                Assert.IsTrue(overlay.Styles.BackgroundColor is { A: > 0 });
+                Assert.IsFalse(Descendants(root).OfType<Text>().SelectMany(text => text.Children.OfType<TextNode>())
+                    .Any(node => node.Text == state.Status.Value)
+                );
             }
             else Assert.IsNull(overlay);
         }
@@ -242,14 +248,10 @@ public class StageSelectViewTests
         block = Find(root, "Stage floating description");
         // Three 20px rows plus the 2px gaps: the blank line is a gap, not a collapsed row.
         Assert.AreEqual(64f, block.LayoutBorderSize.Y, 0.5f);
-        Assert.IsLessThan(100f, block.LayoutBorderPosition.X, "the briefing should hug the preview's left edge");
-
-        var footer = Find(root, "Stage preview footer");
-        Assert.IsLessThanOrEqualTo(
-            footer.LayoutBorderPosition.Y + 0.5f,
-            block.LayoutBorderPosition.Y + block.LayoutBorderSize.Y,
-            "the briefing must stay clear of the footer"
-        );
+        var browser = Find(root, "Stage preview browser");
+        var start = Find(root, "Stage preview start");
+        Assert.IsTrue(block.LayoutBorderPosition.X >= browser.LayoutBorderPosition.X + browser.LayoutBorderSize.X);
+        Assert.IsTrue(block.LayoutBorderPosition.Y + block.LayoutBorderSize.Y < start.LayoutBorderPosition.Y);
 
         var lines = Descendants(block)
             .OfType<Text>()
@@ -258,6 +260,12 @@ public class StageSelectViewTests
             .ToArray();
         CollectionAssert.Contains(lines, "A briefing that floats");
         CollectionAssert.Contains(lines, "Second line");
+
+        state.DescriptionLines.Value = [string.Join(" ", Enumerable.Repeat("Long stage briefing", 12)), "Second line"];
+        UiScheduler.Instance.Flush();
+        root.LayoutAndRender(new Vector2(640, 360));
+        Assert.IsTrue(block.LayoutBorderSize.Y > 42f, "wrapped text should reserve more than two lines");
+        Assert.IsTrue(block.LayoutBorderPosition.Y + block.LayoutBorderSize.Y < start.LayoutBorderPosition.Y);
 
         state.DescriptionLines.Value = [];
         UiScheduler.Instance.Flush();
@@ -294,6 +302,16 @@ public class StageSelectViewTests
         Assert.AreEqual("nfm2", state.Collection.Value);
         StageSelectView.HandlePreviewKey(state, actions, Key.Down);
         Assert.AreEqual("nfm1", state.Collection.Value);
+        state.BrowserOpen.Value = true;
+        StageSelectView.HandlePreviewKey(state, actions, Key.Down);
+        Assert.AreEqual("a", state.Selected.Value);
+        Assert.AreEqual("nfm2", state.Collection.Value);
+        StageSelectView.HandlePreviewKey(state, actions, Key.Right);
+        Assert.AreEqual("b", state.Selected.Value);
+        state.OnlineSource.Value = true;
+        StageSelectView.HandlePreviewKey(state, actions, Key.Down);
+        Assert.AreEqual("a", state.Selected.Value);
+        Assert.AreEqual("nfm2", state.Collection.Value);
         state.Busy.Value = true;
         StageSelectView.HandlePreviewKey(state, actions, Key.Enter);
         Assert.AreEqual(0, confirms);
@@ -303,34 +321,89 @@ public class StageSelectViewTests
     }
 
     [TestMethod]
-    public void Preview_LeavesTheCourseVisible_AndBoundsTheBrowser()
+    public void Preview_DocksCategoriesLeftAndStagesBelowTheScene()
     {
         var state = new StageSelectState();
-        state.Collections.Value = ["nfm1"];
+        state.Collections.Value = ["nfm1", "user"];
         state.Collection.Value = "nfm1";
         state.Stages.Value = Enumerable.Range(1, 30).Select(i => new StageOption($"stage{i}", $"Stage {i}")).ToArray();
         state.Selected.Value = "stage1";
-        using var mounted = Renderer.Mount(() => StageSelectView.Preview(state, NavigationActions(state)));
+        var actions = NavigationActions(state) with { SourceSelected = _ => { }, OnlineSearch = _ => { } };
+        using var mounted = Renderer.Mount(() => StageSelectView.Preview(state, actions));
         var root = (Component)mounted.Root;
         foreach (var viewport in new[] { new Vector2(1280, 720), new Vector2(640, 360) })
         {
             root.LayoutAndRender(viewport);
             var header = Find(root, "Stage preview header");
-            var footer = Find(root, "Stage preview footer");
-            Assert.IsTrue(header.LayoutBorderSize.Y < viewport.Y * 0.5f);
-            Assert.IsTrue(header.LayoutBorderSize.X <= viewport.X * 0.91f);
-            Assert.IsTrue(header.LayoutBorderPosition.Y + header.LayoutBorderSize.Y < footer.LayoutBorderPosition.Y);
+            var browser = Find(root, "Stage preview browser");
+            Assert.IsTrue(browser.LayoutBorderPosition.X + browser.LayoutBorderSize.X < header.LayoutBorderPosition.X);
+            var covered = CoveredArea(browser) + CoveredArea(header);
+            Assert.IsTrue(covered <= viewport.X * viewport.Y * 0.1f);
             Assert.IsFalse(Descendants(root).Any(node => node.Name == "Stage select list"));
         }
 
-        state.BrowserOpen.Value = true;
+        StageSelectView.HandlePreviewKey(state, actions, Key.Tab);
+        Assert.IsTrue(state.BrowserOpen.Value);
         UiScheduler.Instance.Flush();
         root.LayoutAndRender(new Vector2(1280, 720));
+        var dock = Find(root, "Stage preview browser");
+        Assert.AreEqual(0f, dock.LayoutBorderPosition.X, 0.5f);
+        Assert.AreEqual(0f, dock.LayoutBorderPosition.Y, 0.5f);
+        Assert.AreEqual(720, dock.LayoutBorderSize.Y, 0.5f);
+        Assert.IsTrue(dock.LayoutBorderSize.X < 1280 * 0.2f);
+        var tray = Find(root, "Stage preview tray");
+        Assert.AreEqual(720, tray.LayoutBorderPosition.Y + tray.LayoutBorderSize.Y, 0.5f);
+        Assert.AreEqual(1280, tray.LayoutBorderPosition.X + tray.LayoutBorderSize.X, 0.5f);
+        Assert.AreEqual(dock.LayoutBorderSize.X, tray.LayoutBorderPosition.X, 0.5f);
+        Assert.IsTrue(tray.LayoutBorderSize.Y <= 108);
+        var title = Find(root, "Stage preview title");
+        Assert.AreEqual(640, title.LayoutBorderPosition.X + title.LayoutBorderSize.X / 2, 0.5f);
+        Assert.AreEqual(16, title.LayoutBorderPosition.Y, 0.5f);
         var list = Find(root, "Stage select list");
-        Assert.IsTrue(list.LayoutBorderSize.Y > 0);
-        Assert.IsTrue(list.ScrollableHeight > 0);
-        StageSelectView.HandlePreviewKey(state, NavigationActions(state), Key.Escape);
+        var start = Find(root, "Stage preview start");
+        var labels = Descendants(start).OfType<Text>().SelectMany(text => text.Children.OfType<TextNode>());
+        Assert.IsTrue(labels.Any(node => node.Text == "START"));
+        Assert.IsTrue(start.LayoutBorderPosition.Y < list.LayoutBorderPosition.Y);
+        Assert.IsTrue(list.LayoutBorderSize.X >= Find(root, "Stage row stage1").LayoutBorderSize.X * 5);
+        Assert.IsTrue(list.ScrollableWidth > 0);
+        Assert.AreEqual(0, list.ScrollableHeight, 0.5f);
+        var rail = Find(root, "Stage select collections");
+        Assert.IsTrue(rail.LayoutBorderPosition.X + rail.LayoutBorderSize.X < list.LayoutBorderPosition.X);
+        Find(root, "Stage select source local");
+        Find(root, "Stage select source online");
+        Click("Stage collection user");
+        Assert.AreEqual("user", state.Collection.Value);
+        Click("Stage row stage2");
+        Assert.AreEqual("stage2", state.Selected.Value);
+        Assert.IsTrue(state.BrowserOpen.Value);
+        var wheelPoint = list.LayoutBorderPosition + list.LayoutBorderSize / 2;
+        var wheel = new BaseMouseWheelEvent(new Vector3(0, -90, 0), wheelPoint, MouseButtons.None, false, false, false);
+        root.DispatchMouseScrolled(wheel);
+        Assert.IsTrue(list.ScrollLeft > 0);
+        state.Selected.Value = "stage30";
+        UiScheduler.Instance.Flush();
+        root.LayoutAndRender(new Vector2(1280, 720));
+        Assert.AreEqual(list.ScrollableWidth, list.ScrollLeft, 0.5f);
+        root.LayoutAndRender(new Vector2(640, 360));
+        Assert.IsTrue(Find(root, "Stage select list").LayoutBorderSize.Y > 0);
+        var second = Find(root, "Stage row stage2");
+        Assert.IsTrue(second.LayoutBorderSize.X > 0);
+        state.OnlineSource.Value = true;
+        UiScheduler.Instance.Flush();
+        root.LayoutAndRender(new Vector2(640, 360));
+        Assert.IsFalse(Descendants(root).Any(node => node.Name == "Stage select collections"));
+        Assert.IsTrue(Find(root, "Stage select list").LayoutBorderSize.Y > 0);
+        StageSelectView.HandlePreviewKey(state, actions, Key.Escape);
         Assert.IsFalse(state.BrowserOpen.Value);
+
+        static float CoveredArea(Component node) => node.LayoutBorderSize.X * node.LayoutBorderSize.Y;
+
+        void Click(string name)
+        {
+            var node = Find(root, name);
+            var point = node.LayoutBorderPosition + node.LayoutBorderSize / 2;
+            root.DispatchMousePressed(new BaseMouseEvent(point, MouseButton.Primary, MouseButtons.Primary, false, false, false));
+        }
     }
 
     /// <summary>

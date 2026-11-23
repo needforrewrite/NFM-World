@@ -32,7 +32,10 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
     {
         for (var i = 0; i < _wheels.Length; i++)
         {
-            var mesh = new Mesh(new WheelMeshBuilder(Car.Rad.Wheels[i], Car.Rad.Rims).BuildModel());
+            var mesh = new Mesh(new WheelMeshBuilder(Car.Rad.Wheels[i], Car.Rad.Rims).BuildModel())
+            {
+                PolyFixState = Mesh.PolyFixState
+            };
             _wheels[i].Mesh.Dispose();
             _wheels[i].Mesh = mesh;
         }
@@ -113,10 +116,11 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
         float simag,
         int tilt,
         bool _,
-        int wheelGround
+        int wheelGround,
+        SurfaceType? surface
     )
     {
-        Dust.AddDust(wheelidx, wheelx, wheely, wheelz, scx, scz, simag, tilt, wheelGround);
+        Dust.AddDust(wheelidx, wheelx, wheely, wheelz, scx, scz, simag, tilt, wheelGround, surface);
     }
 
     /// <summary>
@@ -131,7 +135,7 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
         {
             _fixing = false;
             _fixTick = _fixTimer = 0;
-            Mesh.PolyFixState = 0;
+            SetPolyFixState(0);
             FixFlare.DeleteFixFx();
         }
 
@@ -204,30 +208,14 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
             {
                 _fixTick = 0;
 
-                if (Mesh.PolyFixState == 1)
+                SetPolyFixState(_fixTimer switch
                 {
-                    Mesh.PolyFixState = 2;
-                }
-
-                if (Mesh.PolyFixState == 3)
-                {
-                    Mesh.PolyFixState = 2;
-                }
-
-                if (_fixTimer == 1)
-                {
-                    Mesh.PolyFixState = 1;
-                }
-
-                if (_fixTimer == 2)
-                {
-                    Mesh.PolyFixState = 1;
-                }
-
-                if (_fixTimer == 4)
-                {
-                    Mesh.PolyFixState = 3;
-                }
+                    1 or 2 => 1,
+                    4 => 3,
+                    > 7 => 0,
+                    _ when Mesh.PolyFixState is 1 or 3 => 2,
+                    _ => Mesh.PolyFixState
+                });
 
                 if ((_fixTimer == 1 || _fixTimer > 2) && _fixTimer != 9)
                 {
@@ -240,7 +228,6 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
 
                 if (_fixTimer > 7)
                 {
-                    Mesh.PolyFixState = 0;
                     _fixTimer = 0;
                     _fixing = false;
                     FixFlare.DeleteFixFx();
@@ -252,6 +239,13 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
                 }
             }
         }
+    }
+
+    private void SetPolyFixState(byte state)
+    {
+        Mesh.PolyFixState = state;
+        foreach (var wheel in _wheels)
+            wheel.Mesh.PolyFixState = state;
     }
 
     public override void SubmitDraws(RenderQueue queue, Camera camera, Lighting? lighting, RenderPass pass)

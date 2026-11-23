@@ -529,7 +529,6 @@ public class PvpServerGamemode(
     {
         public byte Lap;
         public ushort Checkpoint;
-        public int Position;
         public bool Forfeited;
         public int NextFixTick;
 
@@ -580,12 +579,7 @@ public class PvpServerGamemode(
 
         foreach (var player in Players)
         {
-            _perPlayer[player.Id] = new PerPlayerGamemodeInfo
-            {
-                Lap = 0,
-                Checkpoint = 0,
-                Position = 0
-            };
+            _perPlayer[player.Id] = new PerPlayerGamemodeInfo();
         }
     }
 
@@ -758,9 +752,7 @@ public class PvpServerGamemode(
     }
 
     /// <summary>
-    /// Finishes the race with a canonical standing order: finishers by position, then everyone
-    /// still alive but unfinished, then DNFs newest-death first. A player who was revived is
-    /// alive again, so they sort with the running rather than the dead.
+    /// Finishes the race with the winner first, then active racers by progress, then DNFs newest first.
     /// </summary>
     public void CompleteRace()
     {
@@ -768,8 +760,7 @@ public class PvpServerGamemode(
             TimeSpan.Zero,
             [
                 .. _perPlayer
-                .OrderBy(kv => _winnerSlot >= 0 && Players[_winnerSlot].Id == kv.Key ? -1 : StandingGroup(kv.Value))
-                .ThenBy(kv => StandingWithin(kv.Value))
+                .OrderBy(kv => StandingOrder(kv.Key, kv.Value))
                 .Select((kv, index) => new RaceStanding
                         {
                             PlayerId = kv.Key,
@@ -795,7 +786,7 @@ public class PvpServerGamemode(
             Standings =
             [
                 .. _perPlayer
-                .OrderBy(kv => LiveOrder(kv.Key, kv.Value))
+                .OrderBy(kv => StandingOrder(kv.Key, kv.Value))
                 .Select((kv, index) =>
                     {
                         var player = Players.FirstOrDefault(candidate => candidate.Id == kv.Key);
@@ -842,7 +833,6 @@ public class PvpServerGamemode(
 
         forfeiter.Forfeited = true;
         forfeiter.WastedAt = _serverTick;
-        forfeiter.Position = Players.Count;
 
         // Nobody left to race: end it rather than ticking an empty session forever.
         if (_perPlayer.Values.All(p => p.Forfeited))
@@ -851,32 +841,22 @@ public class PvpServerGamemode(
             CheckConstraint();
     }
 
-    private (int Group, int Progress, double Distance, int TieBreak) LiveOrder(Guid playerId, PerPlayerGamemodeInfo info)
+    private (int Group, int Progress, double Distance) StandingOrder(Guid playerId, PerPlayerGamemodeInfo info)
     {
-        if (StandingGroup(info) != 0) return (1, 0, 0, StandingWithin(info));
-        if (!_constraint.Racing) return (0, 0, 0, info.Position);
+        if (_winnerSlot >= 0 && Players[_winnerSlot].Id == playerId) return (-1, 0, 0);
+        if (info.Forfeited || info.WastedAt >= 0) return (1, -Math.Max(info.WastedAt, 0), 0);
+        if (!_constraint.Racing) return (0, 0, 0);
 
         var checkpoints = CurrentStage.Checkpoints;
         var progress = info.Lap * checkpoints.Count + info.Checkpoint;
         if (info.Checkpoint >= checkpoints.Count || GetPlayerPosition(playerId) is not { } position)
-            return (0, -progress, double.PositiveInfinity, info.Position);
+            return (0, -progress, double.PositiveInfinity);
 
         var target = checkpoints[info.Checkpoint].Position;
         var dx = (double)position.X - (double)target.X;
         var dz = (double)position.Z - (double)target.Z;
-        return (0, -progress, dx * dx + dz * dz, info.Position);
+        return (0, -progress, dx * dx + dz * dz);
     }
-
-    /// <summary>Running cars are placed by checkpoint progress; the dead and departed sort after them.</summary>
-    private static int StandingGroup(PerPlayerGamemodeInfo info)
-        => info.Forfeited || info.WastedAt >= 0 ? 1 : 0;
-
-    /// <summary>
-    /// Within a group: running cars by race position, lower first; DNFs by death time, most
-    /// recent first, so the tick is negated to sort that way ascending.
-    /// </summary>
-    private static int StandingWithin(PerPlayerGamemodeInfo info)
-        => info.Forfeited || info.WastedAt >= 0 ? -Math.Max(info.WastedAt, 0) : info.Position;
 
     public override void OnClientEvent(Guid clientId, ReadOnlySpan<byte> payload)
     {
@@ -925,7 +905,6 @@ public class PvpServerGamemode(
 
         info.Lap = progress.Lap;
         info.Checkpoint = progress.Index;
-        info.Position = progress.Placement;
         if (progress.Lap == CurrentStage.Nlaps - 1 && CurrentStage.Checkpoints.Count > 1
             && progress.Index == CurrentStage.Checkpoints.Count - 1 && Random.Shared.Next(100) == 0)
             BroadcastEvent<ServerToClientEvent>(new FinishCheckpointSoundEvent((ushort)(progress.Index - 1)));

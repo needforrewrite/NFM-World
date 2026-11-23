@@ -106,10 +106,23 @@ public readonly struct ContO
         fix64 simag,
         int tilt,
         bool onRoof,
-        int wheelGround
+        int wheelGround,
+        SurfaceType? surface
     )
     {
-        _car.AddDust(wheelidx, (float)wheelx, (float)wheely, (float)wheelz, scx, scz, (float)simag, tilt, onRoof, wheelGround);
+        _car.AddDust(
+            wheelidx,
+            (float)wheelx,
+            (float)wheely,
+            (float)wheelz,
+            scx,
+            scz,
+            (float)simag,
+            tilt,
+            onRoof,
+            wheelGround,
+            surface
+        );
     }
 
     public void Spark(fix64 wheelx, fix64 wheely, fix64 wheelz, fix64 scx, fix64 scy, fix64 scz, int type, int wheelGround)
