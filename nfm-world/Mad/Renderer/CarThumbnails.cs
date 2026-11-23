@@ -26,6 +26,7 @@ internal static class CarThumbnails
     private const int RenderWidth = Width * Supersampling;
     private const float Fov = 34f;
     private const float NearPlane = 50f;
+    private const float FrameFill = 0.88f;
 
     private sealed record Entry(IRenderTarget Target, IImage Image, Rad3d Rad)
     {
@@ -284,11 +285,10 @@ internal static class CarThumbnails
                 body.Children = wheels.ToArray();
                 body.OnBeforeRender(1f);
 
-                var points = mesh.Polys.SelectMany(poly => poly.Points).ToList();
+                var points = new List<Vector3>();
+                AddMeshPoints(body, points);
                 foreach (var wheel in wheels)
-                    points.AddRange(wheel.Mesh.Polys.SelectMany(poly => poly.Points)
-                        .Select(point => point + (Vector3)wheel.Position)
-                    );
+                    AddMeshPoints(wheel, points);
                 var camera = FitCamera(points, height);
 
                 World.Snap = new Color3(0, 0, 0);
@@ -357,11 +357,19 @@ internal static class CarThumbnails
         cb.Draw(0, 1);
     }
 
+    private static void AddMeshPoints(MeshedGameObject obj, List<Vector3> points)
+    {
+        var transform = obj.MatrixWorld;
+        foreach (var poly in obj.Mesh.Polys)
+        foreach (var point in poly.Points)
+            points.Add(Vector3.Transform(point, transform));
+    }
+
     private static PerspectiveCamera FitCamera(IReadOnlyList<Vector3> points, int height)
     {
-        var minimum = points.Aggregate(Vector3.Min);
-        var maximum = points.Aggregate(Vector3.Max);
-        var center = (minimum + maximum) * 0.5f;
+        var center = points.Count > 0
+            ? (points.Aggregate(Vector3.Min) + points.Aggregate(Vector3.Max)) * 0.5f
+            : Vector3.Zero;
         var direction = Vector3.Normalize(new Vector3(0.85f, -0.24f, 0.46f));
         var right = Vector3.Normalize(Vector3.Cross(-direction, -Vector3.UnitY));
         var up = Vector3.Cross(right, -direction);
@@ -380,7 +388,7 @@ internal static class CarThumbnails
             );
         }
 
-        var camera = new PerspectiveCamera
+        var camera = new ThumbnailCamera(points)
         {
             Fov = Fov, Width = RenderWidth, Height = height * Supersampling, Near = NearPlane,
             PositionWithoutInterpolation = center + direction * distance,
@@ -389,5 +397,34 @@ internal static class CarThumbnails
         };
         camera.OnBeforeRender(1f);
         return camera;
+    }
+
+    private sealed class ThumbnailCamera(IReadOnlyList<Vector3> points) : PerspectiveCamera
+    {
+        public override void OnBeforeRender(float alpha)
+        {
+            base.OnBeforeRender(alpha);
+            if (points.Count == 0) return;
+
+            var minimum = new Vector2(float.PositiveInfinity);
+            var maximum = new Vector2(float.NegativeInfinity);
+            foreach (var point in points)
+            {
+                var clip = Vector4.Transform(new Vector4(point, 1f), ViewProjectionMatrix);
+                var projected = new Vector2(clip.X, clip.Y) / clip.W;
+                minimum = Vector2.Min(minimum, projected);
+                maximum = Vector2.Max(maximum, projected);
+            }
+
+            var midpoint = (minimum + maximum) * 0.5f;
+            var halfSize = (maximum - minimum) * 0.5f;
+            var extent = MathF.Max(halfSize.X, halfSize.Y);
+            var zoom = extent > 0f ? FrameFill / extent : 1f;
+
+            // Shift and scale the projected silhouette while keeping the perspective and clip depths.
+            ProjectionMatrix *= Matrix.CreateTranslation(-midpoint.X, -midpoint.Y, 0f)
+                                * Matrix.CreateScale(zoom, zoom, 1f);
+            ViewProjectionMatrix = ViewMatrix * ProjectionMatrix;
+        }
     }
 }
