@@ -44,10 +44,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # The nightly SDK, not the GA one: the head is net12.0/CoreCLR and its Emscripten packs come
+      # from this workload. The version is pinned because 12.0.1xx is a nightly channel that moves
+      # daily; bump it together with the one in the build job below.
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '11.0.x'
+          dotnet-version: '12.0.100-alpha.1.26571.109'
 
       # The script takes the Emscripten it builds with from this workload rather than from a
       # system emsdk, so the version matches what the browser head links with.
@@ -80,13 +83,14 @@ jobs:
         with:
           submodules: 'recursive'
 
+      # The same nightly pin as the libopenmpt job, and for the same reason.
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '11.0.x'
+          dotnet-version: '12.0.100-alpha.1.26571.109'
 
-      # Emscripten, the Mono wasm runtime pack and the AOT cross compiler all come from this
-      # workload; without it the browser build produces no _framework directory at all.
+      # Emscripten, the CoreCLR wasm runtime pack and the ReadyToRun cross-compiler all come from
+      # this workload; without it the browser build produces no _framework directory at all.
       - name: Install wasm-tools
         run: dotnet workload install wasm-tools
 
@@ -99,10 +103,9 @@ jobs:
 
       - name: Publish
         shell: bash
-        # NfmwBrowser gates the Lua compiler features the Mono wasm runtime needs, and the project
-        # fails the build without it. AOT is on: one assembly (SDL3.Core) is skipped inside the
-        # project because mono-aot-cross cannot compile it (see the comment in
-        # NFMWorld.Browser.csproj); the other 122 are compiled ahead of time.
+        # NfmwBrowser gates the browser-only references (the desktop ImGui binding would not link)
+        # and the project fails the build without it. ReadyToRun is a project property here, so the
+        # publish needs no AOT switch.
         run: |
           dotnet publish NFMWorld.Browser/NFMWorld.Browser.csproj \
             -c Release \
@@ -113,7 +116,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p site
-          cp -r NFMWorld.Browser/bin/Release/net11.0/publish/wwwroot/. site/
+          cp -r NFMWorld.Browser/bin/Release/net12.0/publish/wwwroot/. site/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

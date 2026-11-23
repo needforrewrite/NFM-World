@@ -271,8 +271,9 @@ public sealed class SdlWindow : IDisposable
             return;
         var width = logicalWidth;
         var height = logicalHeight;
-        if (!OperatingSystem.IsBrowser()
-            && (!SDL.SDL_GetWindowSizeInPixels(_window, out width, out height) || width <= 0 || height <= 0))
+        // SDL's emscripten backend scales the canvas by the device pixel ratio, so the drawable is
+        // larger than the CSS size there too; reporting the CSS size leaves the viewport short.
+        if (!SDL.SDL_GetWindowSizeInPixels(_window, out width, out height) || width <= 0 || height <= 0)
             return;
         _logicalWidth = logicalWidth;
         _logicalHeight = logicalHeight;

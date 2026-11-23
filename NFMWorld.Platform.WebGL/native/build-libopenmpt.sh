@@ -9,9 +9,11 @@
 #
 #   - It MUST be .NET's Emscripten, not a system one. Different Emscripten versions produce
 #     objects that fail to link or misbehave in the final module.
-#   - It MUST build unmodified. Upstream's config-emscripten.mk uses the legacy JS exception
-#     model, which is the model the head links with (WasmEnableExceptionHandling=false);
-#     switching the archive to -fwasm-exceptions links cleanly and then aborts at run time.
+#   - It MUST build with wasm exception handling. Upstream's config-emscripten.mk asks for the
+#     legacy JS model (DISABLE_EXCEPTION_CATCHING=0), and the CoreCLR head cannot link that:
+#     the runtime requires -fwasm-exceptions, and a legacy archive in that module crashes
+#     wasm-ld during instruction selection of any function with a landing pad. The one build
+#     flag this script changes is that exception model.
 #
 # Requires: git, make, nproc, and the wasm-tools workload (dotnet workload install wasm-tools).
 #
@@ -32,6 +34,15 @@ trap 'rm -rf "$work"' EXIT
 echo "==> cloning openmpt $LIBOPENMPT_TAG"
 git clone --depth 1 --branch "$LIBOPENMPT_TAG" https://github.com/OpenMPT/openmpt.git "$work/openmpt"
 cd "$work/openmpt"
+
+# Upstream's emscripten config asks for the legacy JS exception model in every one of its flag
+# groups, and emcc refuses to combine that with -fwasm-exceptions. Rewrite the setting itself
+# rather than layering flags on top, since the config's own flags win over an environment one for
+# the same setting. Only the static library target is built, so the LDFLAGS occurrences are
+# rewritten for consistency.
+config_mk=build/make/config-emscripten.mk
+sed -i 's/-s DISABLE_EXCEPTION_CATCHING=0/-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0/g' "$config_mk"
+grep -c -- '-fwasm-exceptions' "$config_mk" | xargs -I{} echo "==> exception flags rewritten: {} occurrences"
 
 # A caller may point at a toolchain directly; otherwise use the one the wasm-tools workload
 # installed, which is the version the runtime is built against. Kept separately because
@@ -135,8 +146,6 @@ fi
 command -v em++ >/dev/null || { echo "em++ not on PATH after emsdk_env.sh" >&2; exit 1; }
 em++ --version | head -1
 
-# A bare `make` builds the examples and the shared library instead of the archive, silently
-# producing a different object set, so the target is named explicitly.
 echo "==> building bin/libopenmpt.a"
 make -j"$(nproc)" bin/libopenmpt.a \
     CONFIG=emscripten EMSCRIPTEN_TARGET=wasm \
@@ -166,8 +175,8 @@ fi
 personality="$("$nm" "$archive" 2>/dev/null | grep -c '__gxx_personality_v0' || true)"
 wasm_personality="$("$nm" "$archive" 2>/dev/null | grep -c '__gxx_wasm_personality_v0' || true)"
 echo "==> exception model: legacy=$personality wasm=$wasm_personality"
-[ "$personality" -gt 0 ] || { echo "archive is not the legacy-exception build" >&2; exit 1; }
-[ "$wasm_personality" -eq 0 ] || { echo "archive is a -fwasm-exceptions build" >&2; exit 1; }
+[ "$wasm_personality" -gt 0 ] || { echo "archive is not a -fwasm-exceptions build" >&2; exit 1; }
+[ "$personality" -eq 0 ] || { echo "archive still carries the legacy JS exception model" >&2; exit 1; }
 
 cp "$archive" "$out_dir/libopenmpt.a"
 echo "==> wrote $out_dir/libopenmpt.a ($(du -h "$out_dir/libopenmpt.a" | cut -f1))"

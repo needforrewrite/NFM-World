@@ -5,14 +5,20 @@
 Locally, run the same script:
 
 ```sh
-NFMWorld.Platform.WebGL/native/build-libopenmpt.sh NFMWorld.Platform.WebGL/native
+bash NFMWorld.Platform.WebGL/native/build-libopenmpt.sh NFMWorld.Platform.WebGL/native
 ```
 
-It must be built with **.NET 11's own Emscripten (6.0.2)**, not a system one: the archive is
-linked into the same module as the .NET runtime, and objects from a different Emscripten version
-can fail at link time or misbehave afterwards. The script takes the toolchain from the
-`wasm-tools` workload's pack, so `dotnet workload install wasm-tools` has to have run. Set
-`EMSDK` to point it at a different checkout (that is how it was validated locally).
+Through `bash` rather than executed directly, the same as `web.yml`: the executable bit is a git
+mode bit, and a Windows checkout drops it. A bare `./build-libopenmpt.sh` then fails as exit 126
+("Permission denied"), which says nothing about the cause.
+
+It must be built with the **Emscripten the `wasm-tools` workload ships (6.0.2)**, not a system
+one: the archive is linked into the same module as the .NET runtime, and objects from a different
+Emscripten version can fail at link time or misbehave afterwards. The script takes the toolchain
+from the workload's pack, so `dotnet workload install wasm-tools` has to have run. Set `EMSDK` to
+point it at a different checkout (that is how it was validated locally). The Emscripten pack the
+CoreCLR head uses is the one for the 12.0 nightly; the archive only has to match the version that
+links the final module.
 
 ## What the script does, and why
 
@@ -38,18 +44,24 @@ link.
 `miniz.o` ends up in the archive and supplies `mz_*`. That is what makes it self-contained. It
 also pulls in `minimp3`/`stb_vorbis`, which is harmless.
 
-## Two traps, both silent
+## The exception model has to match the runtime
 
-**The module's exception model.** `.NET` links the final module itself. Native wasm exception
-handling (`-fwasm-exceptions`) is not usable here: Emscripten 6.0.2 emits a module the browser
-refuses to instantiate (`invalid value type 'rtt'`, which is gated behind the garbage-collection
-proposal), and linking a wasm-exception archive crashes `wasm-ld` outright. So the head sets
-`WasmEnableExceptionHandling=false`, which links with the legacy model, and the archive must be
-built the same way. Mixing the two is **not** a link error — the module loads and then aborts the
-first time the C++ throws, with no message.
+The CoreCLR head requires **wasm exception handling**: `BrowserWasmApp.CoreCLR.targets` errors on
+`WasmEnableExceptionHandling != true` and links `-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0`.
+Upstream's `build/make/config-emscripten.mk` asks for the legacy JS model
+(`-s DISABLE_EXCEPTION_CATCHING=0`) in every flag group, and emcc refuses to combine the two, so
+the script rewrites the setting itself before building.
 
-**`openmpt_module_create_from_memory2` aborts; `openmpt_module_create_from_memory` does not.**
-Under the legacy exception model, the v2 entry point throws internally and never reaches its
-error return; the v1 entry point loads the same files through the same parser and returns
-normally. `TrackerDecoder` therefore calls v1. Do not "upgrade" it back to v2 without re-testing
-tracker playback in a browser.
+Mixing them is **not a link error**. A legacy archive linked into the wasm-EH module takes
+`wasm-ld` down with Exception Code `0x80000003` inside `WebAssembly Instruction Selection`, on the
+first function with a landing pad (`openmpt_could_open_probability2`, then
+`GlobalLogger::SendLogMessage`). Linking the same legacy archive without `-fwasm-exceptions`
+succeeds, which is what makes it read as a compiler bug rather than a configuration mismatch.
+
+The build script asserts the result is wasm-EH after the fact (`__gxx_wasm_personality_v0` in the
+archive, `__gxx_personality_v0` absent).
+
+`TrackerDecoder` calls `openmpt_module_create_from_memory` (v1). v2 was re-tested against the
+wasm-EH archive and works (it creates the module and reports the right duration), but it only adds
+an error code and message nothing reads; v1 is used everywhere rather than branching on the
+platform.

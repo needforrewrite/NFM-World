@@ -10,7 +10,9 @@
          Only referenced by the browser head, but it builds for any RID - the P/Invokes simply
          fail to resolve off-wasm, which is the same shape SDL3-CS has. -->
     <PropertyGroup>
-        <TargetFramework>net11.0</TargetFramework>
+        <!-- net12.0 for the same reason as NFMWorld.Platform.SDL3.Browser: the workload manifest
+             gates the Emscripten packs on TargetFrameworkVersion >= 12.0. No managed code ships. -->
+        <TargetFramework>net12.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -55,7 +57,7 @@
     <Target Name="BuildWebGlShim"
             Condition="'$(RuntimeIdentifier)' == 'browser-wasm'"
             BeforeTargets="PrepareForBuild;_WasmWriteRspForCompilingNativeSourceFiles"
-            DependsOnTargets="_SetupEmscripten">
+            DependsOnTargets="_CoreCLRSetupEmscripten">
         <!-- Both come from the wasm SDK's own EmSdkRepo.Defaults.props, which derives them from
              the workload pack - so this is the same emscripten that will link the result. -->
         <Error Condition="'$(EmscriptenUpstreamEmscriptenPath)' == '' Or !Exists('$(EmscriptenUpstreamEmscriptenPath)emcc.bat')"

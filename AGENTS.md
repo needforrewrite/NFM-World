@@ -66,9 +66,31 @@ Key characteristics:
     binds against, and `NFMWorld/PluginSandbox.linker.xml` roots the framework surface CasCore's
     name-bound sandbox admits. A trimmed win-x64 publish is ~103 MB against ~245 MB untrimmed.
   - Tests: `dotnet test --no-build` from the solution root, or from a test project folder.
-  - Browser: `dotnet build NFMWorld.Browser/NFMWorld.Browser.csproj -p:NfmwBrowser=true` (it sets
-    `browser-wasm` itself). The property cannot be set in the csproj: it has to reach referenced
-    projects, and only a command-line property does.
+  - Browser: `dotnet publish NFMWorld.Browser/NFMWorld.Browser.csproj -c Release -p:NfmwBrowser=true`
+    (it sets `browser-wasm` itself). The property cannot be set in the csproj: it has to reach
+    referenced projects, and only a command-line property does. **Only this build needs the .NET 12
+    nightly** (`12.0.1xx` + the `wasm-tools` workload); everything else stays `net11.0` on the GA
+    SDK, and a `net12.0` project may reference `net11.0` ones. Exactly three projects target
+    `net12.0`: the head and the two that build a native archive
+    (`NFMWorld.Platform.SDL3.Browser`, `NFMWorld.Platform.WebGL`). The nightly gates the Emscripten
+    packs on `VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '12.0')`, so a `net11.0`
+    project under that SDK silently gets an empty `EmscriptenSdkToolsPath` and builds nothing.
+  - The head runs on **CoreCLR**, not Mono: `UseMonoRuntime=false` plus
+    `PublishReadyToRun(+Composite)`. That is what gives it a collectible `AssemblyLoadContext`
+    (Mono wasm has none, so a gamemode plugin never unloaded) and real AOT. `RunAOTCompilation`,
+    `WasmStripILAfterAOT`, `WasmDedup` and the jiterpreter switch are Mono concepts and are gone;
+    so is the gsharedvt signature-mismatch workaround they existed for.
+  - **Wasm exception handling is not optional**: CoreCLR refuses `WasmEnableExceptionHandling=false`,
+    so the module links `-fwasm-exceptions` and every native archive has to be built that way too.
+    libopenmpt is the one archive that throws — `native/build-libopenmpt.sh` rewrites upstream's
+    `DISABLE_EXCEPTION_CATCHING=0` and asserts the archive's personality symbol. A legacy archive in
+    this module does not fail to link either: it crashes `wasm-ld` in instruction selection, on
+    whichever function happens to have a landing pad.
+  - The emscripten cache must stay the workload's **Cache pack**
+    (`WasmCachePath=$(EmscriptenCacheSdkCacheDir)`). Emscripten resolves system libraries with
+    `os.path.relpath` against the SDK tree, so a cache on another drive throws "path is on mount
+    C:, start on mount W:" the first time one is missing; the pack's copy is complete and prebuilt
+    (`sysroot_install.stamp` included), and the SDK freezes it only while it is that directory.
 
 - **Compile symbols**: `ANGLE` is defined in the game project and the backends; `WEB_AUDIO` is set only by the browser
   head (which passes `NfmwBrowser=true` through its references). Keep both when touching compilation logic.
@@ -397,8 +419,9 @@ time — they carry their lengths, `Unsafe` does not.
 | Visibility levels | `Visible.Self` on a type exposes the type and members carrying their own `[PluginVisible]` — never private members. `IncludingAllMembersOfType` exposes the type's **public** members without a marker each; use it for a base class plugins derive from |
 | `[UnsafeAccessor]` in probes | a probe reading a private host field this way compiles to a direct `ldfld`, which the policy must refuse; it fails as `InvalidProgramException` from CasCore's IL verifier rather than `SecurityException`, so assert "throws", not the type |
 | Proving the sandbox | `NFMWorld.Gamemode.Hostile` has one probe per forbidden reach; `PluginSandboxTests` loads it like the game does and asserts every probe is refused. `AiPluginTests.CreateClient_PassesTheSandbox` constructs each real plugin's client gamemode, which no server-only path does. The test host declares its own plugin list, so probes never reach release output |
-| Not everywhere | the sandbox needs a **JIT**: `PluginPolicy.Supported` is `IsDynamicCodeSupported && IsDynamicCodeCompiled`. The wasm head reports the first and not the second (Mono's interpreter), and it has neither the Q-calls CasCore binds by name nor collectible contexts, so there loads fall back to the plain `PluginLoadContext` and a downloaded package is refused. Testing only `IsDynamicCodeSupported` sent the browser into the sandbox, where `LateBindingResolver`'s type initializer threw on the missing internals — every plugin load failed, so no gamemode could start |
-| Trimming | The published game is trimmed, and the sandbox binds framework members **by name** (`Console.get_In`, `Expression.Lambda`) and whole assemblies (`Assembly.Load("System.Linq.Queryable")`), none of which the trimmer can see. Without roots the first plugin load dies inside `PluginPolicy.Build` with "Could not find method get_In to add to binding for System.Console" or `FileNotFoundException`. `NFMWorld/PluginSandbox.linker.xml` roots exactly the assemblies `DefaultSandbox()`'s groups name (desktop only — a new sandbox group needs its assemblies added there), and `PluginTypes.linker.xml` roots the host API plus the facades a plugin's own IL binds against. A trimmed app also disables reflection-based `System.Text.Json`, hence `JsonSerializerIsReflectionEnabledByDefault` in the head |
+| Runs on the interpreter | the sandbox needs **dynamic code**, not a JIT. `PluginPolicy.Supported` is `IsDynamicCodeSupported`. Verification is not a JIT pass: `JitIlVerification` emits a call to a managed IL importer that walks `MethodBase.GetMethodBody()`, so Mono's wasm interpreter runs it. Measured in the browser under trimming: a real plugin loads, verifies, calls an admitted host member, throws `SecurityException` on `File.ReadAllText`, resolves an interface virtual call, and rejects a body corrupted into a stack underflow with `InvalidProgramException`. `IsDynamicCodeCompiled` is deliberately **not** part of the test — it is false on Mono wasm but only means "compiles code it did not see at build time" |
+| Not everywhere | `LateBindingResolver` used to bind `RuntimeTypeHandle.GetInterfaceMethodImplementation` and `RuntimeMethodHandle.GetMethodFromCanonical` through `GetFunctionPointer()` in its static initializer; Mono provides neither, so the first `callvirt` threw `TypeInitialization_Type` and took every plugin load with it. It now answers dispatch through reflection (`Type.GetInterfaceMap`, a base-definition walk, the delegate trick for arrays), memoised per runtime type, so no runtime internals are needed. Collectible contexts are still desktop-only (`PluginLoadContext.IsCollectibleSupported`), so on wasm a plugin stays resident and one context per id is reused — which is why the sandbox context's `isCollectible` follows that flag rather than being hardcoded |
+| Trimming | The published game is trimmed, and the sandbox binds framework members **by name** (`Console.get_In`, `Expression.Lambda`) and whole assemblies (`Assembly.Load("System.Linq.Queryable")`), none of which the trimmer can see. Without roots the first plugin load dies inside `PluginPolicy.Build` with "Could not find method get_In to add to binding for System.Console" or `FileNotFoundException`. `NFMWorld/PluginSandbox.linker.xml` roots exactly the assemblies `DefaultSandbox()`'s groups name and is imported by **both** heads (a new sandbox group needs its assemblies added there), and `PluginTypes.linker.xml` roots the host API plus the facades a plugin's own IL binds against. A trimmed app also disables reflection-based `System.Text.Json`, hence `JsonSerializerIsReflectionEnabledByDefault` in the head |
 | `InlineArray4` element access | indexing one compiles to a BCL `InlineArrayFirstElementRef` helper that the IL verifier rejects (`BadImageFormatException`), so a plugin cannot read `CarPhysics.Scx/Scy/Scz` directly — add a summed accessor on the host instead (`CarPhysics.SummedWheelVelocity`) |
 
 ---

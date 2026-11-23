@@ -19,7 +19,10 @@
          It is invoked with the workload's emscripten, never whatever is on PATH. -->
 
     <PropertyGroup>
-        <TargetFramework>net11.0</TargetFramework>
+        <!-- net12.0 because the workload manifest only imports the Emscripten packs for
+             TargetFrameworkVersion >= 12.0; below that every Emscripten*Path stays empty and the
+             build below cannot run. This project never ships managed code. -->
+        <TargetFramework>net12.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <RootNamespace>NFMWorld.Platform.SDL3.Browser</RootNamespace>
@@ -35,7 +38,7 @@
     <Target Name="BuildSDL3"
             Condition="'$(RuntimeIdentifier)' == 'browser-wasm'"
             BeforeTargets="PrepareForBuild"
-            DependsOnTargets="_SetupEmscripten">
+            DependsOnTargets="_CoreCLRSetupEmscripten">
 
         <Error Condition="'$(EmscriptenPythonToolsPath)' == ''"
                Text="No emscripten python in this build (EmscriptenPythonToolsPath is empty). SDL3 has to be compiled with the workload's own toolchain - see NFMWorld.Platform.SDL3.Browser.csproj." />

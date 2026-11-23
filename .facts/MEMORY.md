@@ -34,7 +34,7 @@
 - [MSBuild: compiling C to wasm bitcode in a target](wasm-msbuild-emscripten-toolchain.md) — which properties hold emcc, the env vars emcc needs, and why `IntermediateOutputPath` silently puts objects in the project dir.
 - [WASM runtime-async and RID propagation](wasm-runtime-async-and-rid-propagation.md) - the RID is stripped from referenced libraries, so gate wasm compiler differences on a global property.
 - [Hexa.NET.ImGui on wasm](hexa-imgui-on-wasm.md) - its function-table binding cannot work on wasm; rebuild it with ImportType=DllImport, CIMGUI_VARGS0, and no DisableRuntimeMarshalling.
-- [libopenmpt on wasm: legacy exceptions only, and use the v1 create API](libopenmpt-wasm-legacy-exceptions-and-v1-api.md) — `-fwasm-exceptions` emits an uninstantiable module and `create_from_memory2` aborts; only v1 + legacy links work, both failures silent.
+- [libopenmpt on wasm: build it with wasm-EH](libopenmpt-wasm-wasm-eh-and-v1-api.md) — the CoreCLR head requires `-fwasm-exceptions`, and a legacy archive crashes `wasm-ld` in instruction selection; `TrackerDecoder` uses the v1 create API.
 - [WASM AOT crashes only on SDL3.Core](wasm-aot-crashes-only-on-sdl3-core.md) — 108 of 109 assemblies AOT fine; the SDK's documented skip hook is dead code, so skip it by pulling it from `_WasmAssembliesInternal`.
 - [Browser build: route game file I/O through TheVFS.VFS](browser-build-vfs-routing-rule.md) — direct System.IO hits an empty MEMFS in the browser; writes must go to the `/tmp/nfmw` write root, and the head must call LoadConfigValues itself.
 - [Mono wasm has no collectible ALC](mono-wasm-has-no-collectible-alc.md) — ALC works, collectible ALC does not, so gamemode plugins are cached per id and never unload on browser.

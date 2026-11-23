@@ -48,10 +48,8 @@ public static unsafe class TrackerDecoder
         {
             fixed (byte* pData = fileData)
             {
-                // The v2 entry point takes two extra out-parameters and, in the browser build, the
-                // link's C++ exception support makes it abort instead of returning an error. v1
-                // loads the same files through the same parser and works there, so it is used
-                // everywhere rather than branching on the platform.
+                // v1 rather than v2: same parser, fewer out-parameters, and no platform branch.
+                // v2's extra error code/message are not surfaced anywhere, so it buys nothing.
                 mod = NativeMethods.module_create_from_memory(
                     pData,
                     (nuint)fileData.Length,

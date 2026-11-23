@@ -6,9 +6,13 @@
          The SDK has to be Microsoft.NET.Sdk.WebAssembly rather than Microsoft.NET.Sdk: the
          plain one leaves SelfContained/UseMonoRuntime unset for browser-wasm, so no runtime pack
          resolves at all, and it does not generate the _framework bundle. -->
+    <!-- The browser head is the only project on net12.0, and it is the only one that needs the
+         nightly SDK. CoreCLR's wasm runtime is what gives this build ReadyToRun images and a
+         collectible AssemblyLoadContext; the Mono runtime gave neither. Everything else stays on
+         net11.0 and builds with the stable SDK - a net12.0 project may reference net11.0 ones. -->
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net11.0</TargetFramework>
+        <TargetFramework>net12.0</TargetFramework>
         <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
@@ -19,51 +23,39 @@
         <WasmBuildNative>true</WasmBuildNative>
         <InvariantGlobalization>true</InvariantGlobalization>
 
-        <!-- Native wasm exception handling is off because libopenmpt cannot be built with it:
-             Emscripten 6.0.2 emits a module the browser refuses to instantiate (an `rtt` type,
-             gated behind the garbage-collection proposal). The head therefore links with
-             -fexceptions, the legacy JS model, and libopenmpt's archive must use the same one.
-             Mixing the two is not a link error: the module loads and then aborts the first time
-             the C++ throws, with no message. -->
-        <WasmEnableExceptionHandling>false</WasmEnableExceptionHandling>
+        <!-- CoreCLR only runs with wasm exception handling, and it is also the only model the
+             toolchain offers here: -fwasm-exceptions at link, so every native archive must be
+             built with it too. Mixing the two is not a link error: the module loads and then
+             aborts the first time C++ throws, with no message. libopenmpt is the one archive that
+             throws, and native/build-libopenmpt.sh builds it to match. -->
+        <WasmEnableExceptionHandling>true</WasmEnableExceptionHandling>
 
-        <!-- AOT is on for everything except SDL3.Core, which mono-aot-cross cannot compile. It
-             aborts in the LLVM backend with "Assertion at sgen-alloc.c:409, condition `*p == NULL'
-             not met" (exit -1073740791) under every option set - with and without no-opt, static,
-             direct-icalls, interp, determinism and dwarf debug - while the interpreter-only path
-             for the same file succeeds. It is the only assembly of the 109 that fails; skipping it
-             leaves it interpreted, so the SDL binding runs slower but nothing else pays for it.
-             The module it produces is 53 MB (9.6 MB brotli), against 5.9 MB interpreted.
+        <!-- CoreCLR instead of Mono. Two things come with it: a collectible AssemblyLoadContext,
+             so a gamemode plugin actually unloads (Mono wasm has none), and ReadyToRun, which the
+             Mono runtime has no support for here - the GA SDK rejects the property outright with
+             NETSDK1095. Composite rather than per-assembly: a per-assembly image pays a
+             cross-assembly call through a stub costlier than the interpreted call it replaces. -->
+        <UseMonoRuntime>false</UseMonoRuntime>
+        <PublishReadyToRun>true</PublishReadyToRun>
+        <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
 
-             The jiterpreter stays on regardless: it is the runtime tier that makes an interpreted
-             build usable, and Sokol.NET's examples disable it, which is the opposite of what a
-             physics-heavy game wants. -->
-        <RunAOTCompilation>true</RunAOTCompilation>
-        <WasmEnableJiterpreter>true</WasmEnableJiterpreter>
-
-        <!-- writable, and on the same drive as the SDK: the workload's own cache is under
-             Program Files, and emscripten refuses a cache on another drive. -->
-        <WasmCachePath>$(LOCALAPPDATA)\nfmw-emscripten-cache\</WasmCachePath>
+        <!-- The workload's Cache pack, not a directory of our own: emscripten resolves system
+             libraries with os.path.relpath against the SDK tree, which throws "path is on mount
+             W:, start on mount C:" when the cache lives on another drive, and the pack's copy is
+             complete and prebuilt (its emscripten/cache/sysroot_install.stamp included). The SDK
+             freezes the cache only while it is this one, which is what makes it read-only. -->
+        <WasmCachePath>$(EmscriptenCacheSdkCacheDir)</WasmCachePath>
 
         <!-- Native debug symbols: the emscripten stack in a trap log is otherwise a list of
-             indices. Note WasmEmitSymbolMap does NOT regenerate the .symbols file for a Mono build
-             - it stays whatever a previous build left there - so don't decode a trap against it. -->
+             indices, and a CoreCLR relink regenerates dotnet.native.wasm's symbol map with the
+             module. -->
         <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
 
-        <!-- AOT is only supported on a trimmed build, so this is a precondition rather than a
-             size decision. It is also the usual source of "worked in Debug" reflection failures,
+        <!-- The game is trimmed; the plugin API is rooted by the linker descriptors at the end
+             of this file. It is also the usual source of "worked in Debug" reflection failures,
              which is why the first playable milestone is checked with trimming on rather than
              deferred to the end. -->
         <PublishTrimmed>true</PublishTrimmed>
-
-        <!-- Off, or the app does not start. Dedup builds a generated aot-instances assembly holding
-             the generic instantiations shared between AOT'd assemblies, and AOT fails on it in a way
-             that leaves the entry type unresolvable: the first [JSExport] call throws
-             "TypeLoadException: Attempting to load invalid type 'NFMWorld.Browser.Program'" before any
-             managed code runs, and because WasmStripILAfterAOT has already removed the IL there is
-             nothing to fall back to. The cost is a larger module (the generic instances are compiled
-             once per assembly instead of once). -->
-        <WasmDedup>false</WasmDedup>
 
         <!-- HoleyDiver and NFMWorld.CrashReporter are OutputType=Exe (they double as tools), and a
              self-contained app may not reference a non-self-contained exe (NETSDK1150). The SDK's
@@ -83,17 +75,19 @@
          because a property set here does not reach referenced projects either. -->
     <Target Name="_RequireBrowserMarker" BeforeTargets="PrepareForBuild">
         <Error Condition="'$(NfmwBrowser)' != 'true'"
-               Text="Publish with -p:NfmwBrowser=true. Without it Lua is compiled with runtime-async, which Mono's wasm runtime rejects at the first await." />
+               Text="Publish with -p:NfmwBrowser=true. Without it the game project references the desktop ImGui binding and compiles without WEB_AUDIO, which does not link here." />
     </Target>
 
+    <!-- Link sizes are CoreCLR SDK properties, not raw emscripten flags: the CoreCLR link step
+         already emits -sINITIAL_MEMORY / -sMAXIMUM_MEMORY / -sALLOW_MEMORY_GROWTH from these, and
+         a second copy in EmccFlags would be one more place for them to disagree. 2 GB maximum is
+         the SDK default; only the initial heap is raised. -->
     <PropertyGroup>
+        <WasmInitialHeapSize>134217728</WasmInitialHeapSize>
         <EmccFlags>
             -sFULL_ES3
             -sMIN_WEBGL_VERSION=2
             -sMAX_WEBGL_VERSION=2
-            -sALLOW_MEMORY_GROWTH=1
-            -sINITIAL_MEMORY=134217728
-            -sMAXIMUM_MEMORY=2147483648
             -sGL_ENABLE_GET_PROC_ADDRESS=1
         </EmccFlags>
     </PropertyGroup>
@@ -161,33 +155,9 @@
         </EmccExtraLDFlags>
     </PropertyGroup>
 
-    <ItemGroup>
-        <!-- Supplies _WebAssemblyPropsFile/_WebAssemblyTargetsFile, which is how the
-             _framework bundle and the boot manifest get generated. This SDK's
-             `dotnet workload install wasm-tools` installs the Mono/Emscripten packs but not this
-             one; until the workload is repaired the package is the difference between a
-             publishable app and no _framework directory at all. -->
-        <PackageReference Include="Microsoft.NET.Sdk.WebAssembly.Pack" Version="11.0.0-rc.3.26522.148" PrivateAssets="all" />
-    </ItemGroup>
-
-    <!-- The one assembly mono-aot-cross cannot compile (see RunAOTCompilation above). The SDK has
-         an `_AOT_InternalForceInterpretAssemblies` skip list, but its Condition tests whether the
-         list is non-empty rather than whether this assembly is in it, so populating it turns AOT
-         off for everything; and the AOT task ignores the metadata anyway. This instead lifts the
-         assembly out of the input list for the length of the AOT target and puts it back after, so
-         it is bundled as IL and run by the interpreter. -->
-    <Target Name="_SkipAotForSdl3" BeforeTargets="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
-        <ItemGroup>
-            <_AotSkippedAssembly Include="@(_WasmAssembliesInternal)" Condition="'%(Filename)' == 'SDL3.Core'" />
-            <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" Condition="'%(Filename)' == 'SDL3.Core'" />
-        </ItemGroup>
-    </Target>
-
-    <Target Name="_RestoreSkippedAotAssembly" AfterTargets="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
-        <ItemGroup>
-            <_WasmAssembliesInternal Include="@(_AotSkippedAssembly)" />
-        </ItemGroup>
-    </Target>
+    <!-- No Microsoft.NET.Sdk.WebAssembly.Pack reference: the nightly SDK ships that SDK in the
+         dotnet/sdk directory, so the pin the GA-era build needed (the 11.0.0-rc.3 package, whose
+         Mono-era props the 12.0 workload manifest would shadow anyway) is gone. -->
 
     <!-- The two native archives are built by the platform projects, but they have to be declared
          here: NativeFileReference is read by whichever project does the link, and items from a
@@ -237,7 +207,7 @@
     <Target Name="BuildCImgui"
             Condition="'$(RuntimeIdentifier)' == 'browser-wasm'"
             BeforeTargets="PrepareForBuild;_WasmWriteRspForCompilingNativeSourceFiles"
-            DependsOnTargets="_SetupEmscripten">
+            DependsOnTargets="_CoreCLRSetupEmscripten">
         <PropertyGroup>
             <CImguiDir>$(BaseIntermediateOutputPath)cimgui</CImguiDir>
             <!-- Frozen only when EM_CACHE is the SDK's own (read-only) cache dir. The SDK's

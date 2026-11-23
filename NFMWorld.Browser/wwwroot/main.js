@@ -8,18 +8,13 @@ const boot = document.getElementById('boot');
 
 boot.textContent = 'loading runtime…';
 
-// The jiterpreter compiles its jit-call wrappers with wasm-EH try_table blocks whenever the
-// browser supports exception handling, but this module is linked with Emscripten's legacy
-// catching (-fexceptions), so it has no wasm tag to point them at and every wrapper fails to
-// compile. Two failures disable the jiterpreter for the rest of the session, so it has to be
-// off. The browser feature check in dotnet.runtime.js only asks the engine, not the module.
-//
-// dotnet.instance only exists once the runtime is created, so the canvas is handed over after.
-const { getAssemblyExports, getConfig } =
-    await dotnet.withRuntimeOptions(['--no-jiterpreter-wasm-eh-enabled']).create();
+// CoreCLR: the runtime object is what carries the interop surface (getAssemblyExports,
+// setModuleImports and the emscripten Module), not the `dotnet` namespace. Mono's `dotnet.instance`
+// does not exist here, so everything below goes through this object.
+const runtime = await dotnet.create();
 
 // SDL's emscripten backend and Silk.NET's extension query both look for the canvas by this name.
-dotnet.instance.Module['canvas'] = canvas;
+runtime.Module['canvas'] = canvas;
 
 // WebGL2 has no glGetStringi, so the extension list Silk.NET probes during GetApi comes from here.
 window.__nfmwGlExtensions = () => {
@@ -27,17 +22,17 @@ window.__nfmwGlExtensions = () => {
     return gl ? gl.getSupportedExtensions() : [];
 };
 
-// The game's audio plays through Web Audio. The runtime resolves [JSImport] against modules it has
-// imported itself, so this registers the file with it rather than a plain ES import.
+// The game's audio plays through Web Audio. The runtime resolves [JSImport] against modules it
+// has imported itself, so this registers the file with it rather than a plain ES import.
 const audio = await import('./audio.js');
-dotnet.instance.setModuleImports('audio.js', audio);
+runtime.setModuleImports('audio.js', audio);
 
 // The music archive is parsed by ZipArchive, which is synchronous - see http.js.
 const http = await import('./http.js');
-dotnet.instance.setModuleImports('http.js', http);
+runtime.setModuleImports('http.js', http);
 
-const config = getConfig();
-const exports = await getAssemblyExports(config.mainAssemblyName);
+const config = runtime.getConfig();
+const exports = await runtime.getAssemblyExports(config.mainAssemblyName);
 
 boot.textContent = 'loading assets…';
 
