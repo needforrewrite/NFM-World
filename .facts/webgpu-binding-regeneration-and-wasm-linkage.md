@@ -106,11 +106,12 @@ So a browser port needs `GlNativeContext`'s shape and nothing from `dotnet/Silk.
 `Maxine.Silk.WebGPU` (namespace `Maxine.WebGPU`) is the only reason to publish anything, and it is a
 companion package, not a repo fork.
 
-**Callbacks are the one place the package's convenience API does not port.** `Pfn*Callback.From(d)`
-calls `SilkMarshal.DelegateToPtr`, which resolves a static target through
-`Delegate.Method.MethodHandle.GetFunctionPointer()` and anything else through
-`Marshal.GetFunctionPointerForDelegate` — neither yields a callable address for ordinary managed code
-on wasm, which is the same constraint `GlNativeContext` documents. Each `Pfn*Callback` has an
-`op_Explicit` from `IntPtr`, so a browser build should build the wrapper from a
-`[UnmanagedCallersOnly]` trampoline's pointer instead of `.From`. The backend has four `.From` sites,
-all in `WebGpuGraphicsDevice.cs`.
+**Callbacks are where `.From` is the wrong route.** `Pfn*Callback.From(d)` calls `SilkMarshal.DelegateToPtr`,
+which resolves a static target through `Delegate.Method.MethodHandle.GetFunctionPointer()` and anything else
+through `Marshal.GetFunctionPointerForDelegate`. Both hand out a code address that the native side calls
+back through, and this tree's established wasm constraint (recorded in
+`wasm-pinvoke-table-and-gl-proc-addresses`, and the reason `GlNativeContext` exists) is that only a managed
+`[UnmanagedCallersOnly]` address is callable that way. Each `Pfn*Callback` has an `op_Explicit` from
+`IntPtr`, so a browser build builds the wrapper from a `[UnmanagedCallersOnly]` trampoline instead. The
+backend has four `.From` sites, all in `WebGpuGraphicsDevice.cs`; all four wrappers reach `DelegateToPtr`
+from their only constructor, and all four expose an `IntPtr` conversion.
