@@ -49,7 +49,7 @@ namespace NFMWorldLibrary.Plugins;
 /// <see cref="AllowTightPack"/>.
 ///
 /// Only built once a plugin is actually loaded. Not supported where the runtime cannot
-/// JIT the instrumented IL.
+/// run dynamically written IL.
 /// </remarks>
 internal static class PluginPolicy
 {
@@ -138,18 +138,25 @@ internal static class PluginPolicy
     ];
 
     /// <summary>
-    /// Whether the sandbox can run here: CasCore rewrites IL and resolves virtual dispatch
-    /// through CoreCLR's internal reflection helpers, so it needs a JIT and, with it, a runtime
-    /// that has them.
+    /// Whether the sandbox can run here: CasCore rewrites IL and then verifies it with
+    /// JitIlVerification. Everything that needs is managed - the rewrite is Cecil, and
+    /// verification is an emitted call to a managed IL importer - so an interpreter is
+    /// enough and no JIT is required.
     /// </summary>
     /// <remarks>
-    /// <see cref="RuntimeFeature.IsDynamicCodeSupported"/> alone is not the test: Mono's wasm
-    /// interpreter reports true (it can build delegate types over its own IL) but has neither a
-    /// JIT nor the Q-calls <c>LateBindingResolver</c> binds to by name, so the first plugin load
-    /// died in that type's initializer instead of falling back. Where this is false, plugins load
-    /// through the plain <c>PluginLoadContext</c> and a downloaded package is refused.
+    /// Measured in the browser (interpreter, no AOT): a sandboxed plugin loads, its
+    /// instrumented methods verify, a call to an admitted host member succeeds, one to
+    /// <c>File.ReadAllText</c> throws <see cref="System.Security.SecurityException"/>, and
+    /// synthesized unverifiable IL is rejected with <see cref="BadImageFormatException"/>.
+    ///
+    /// Two things the runtime must have. <see cref="RuntimeFeature.IsDynamicCodeSupported"/>
+    /// gates whether Cecil's rewritten IL can run at all. <c>RuntimeFeature.IsDynamicCodeCompiled</c>
+    /// is deliberately *not* part of the test - it is false on Mono wasm, but it only says the
+    /// runtime compiles code it did not see at build time, which verification does not do.
+    /// Where this is false, plugins load through the plain <c>PluginLoadContext</c> and a
+    /// downloaded package is refused.
     /// </remarks>
-    public static bool Supported => RuntimeFeature.IsDynamicCodeSupported && RuntimeFeature.IsDynamicCodeCompiled;
+    public static bool Supported => RuntimeFeature.IsDynamicCodeSupported;
 
     public static CasPolicy Instance => Policy.Value;
 

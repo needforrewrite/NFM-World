@@ -12,9 +12,8 @@
     an assembly keeps every type and member in it - deliberately coarse. The trimming win is the
     framework and interop assemblies that nothing here roots.
 
-    The sandbox's own framework surface is not here: CasCore binds those members by name and needs
-    dynamic code, so it only runs on desktop. NFMWorld/PluginSandbox.linker.xml roots them, and the
-    browser head does not import it.
+    The sandbox's own framework surface is not here: CasCore binds those members by name, which the
+    trimmer cannot see. NFMWorld/PluginSandbox.linker.xml roots them, and both heads import it.
 
     Imported by the heads that publish trimmed: NFMWorld (desktop) and NFMWorld.Browser.
 -->

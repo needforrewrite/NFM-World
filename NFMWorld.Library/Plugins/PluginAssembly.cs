@@ -120,7 +120,11 @@ public sealed class PluginAssembly
             {
                 // Sandboxed load: CasCore rewrites the plugin's IL so every reach outside
                 // the policy throws. Nothing outside that context can see the plugin.
-                var sandbox = new CasAssemblyLoader(PluginPolicy.Instance, $"Plugin:{id}", isCollectible: true);
+                var sandbox = new CasAssemblyLoader(
+                    PluginPolicy.Instance,
+                    $"Plugin:{id}",
+                    isCollectible: PluginLoadContext.IsCollectibleSupported
+                );
                 loaded = (sandbox.LoadFromStream(buffer), sandbox.Unload);
             }
             else

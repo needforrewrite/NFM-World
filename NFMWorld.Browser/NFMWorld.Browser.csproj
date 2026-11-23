@@ -246,10 +246,13 @@
 
     <!-- The plugin API roots: host assemblies, and the framework facades plus System.Private.CoreLib
          a plugin's own IL binds against. Shared with the desktop head so the two cannot drift.
-         CasCore's sandbox root set is desktop-only (NFMWorld/PluginSandbox.linker.xml): this head
-         loads plugins through the plain PluginLoadContext, because the sandbox needs a JIT. -->
+         CasCore's own framework surface (NFMWorld/PluginSandbox.linker.xml) is imported too: the
+         sandbox runs here as well, and its groups bind framework members by name, so the trimmer
+         would otherwise drop every one the game's own code never reaches - the probe build failed
+         with "Could not load file or assembly 'System.Collections.Concurrent'" without it. -->
     <ItemGroup>
         <TrimmerRootDescriptor Include="..\PluginTypes.linker.xml" />
+        <TrimmerRootDescriptor Include="..\NFMWorld\PluginSandbox.linker.xml" />
     </ItemGroup>
 
     <ItemGroup>

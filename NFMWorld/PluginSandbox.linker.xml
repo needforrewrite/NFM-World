@@ -1,5 +1,5 @@
 <!--
-    The framework members CasCore's sandbox admits, rooted for a trimmed desktop build.
+    The framework members CasCore's sandbox admits, rooted for a trimmed build.
 
     PluginPolicy builds its policy from CasCore's DefaultSandbox, which binds framework members by
     *name* - WithSandboxedSystemConsole resolves Console.get_In, WithSandboxedSystemLinq resolves
@@ -17,9 +17,10 @@
     starts using one, and drop an entry when a group goes away. PluginPolicy deliberately skips
     CasCore's JSON group (it throws on this runtime), so System.Text.Json is absent on purpose.
 
-    Desktop only: the sandbox needs dynamic code, so on wasm PluginPolicy.Supported is false and
-    plugins load through the plain PluginLoadContext - that head imports PluginTypes.linker.xml
-    alone. If wasm sandboxing starts working, import this file there too.
+    Imported by both heads. The sandbox needs dynamic code but not a JIT, so it also runs on the
+    browser's interpreter - and there the roots matter just as much: without them the probe build
+    failed at policy construction with "Could not load file or assembly
+    'System.Collections.Concurrent'".
 -->
 <linker>
     <assembly fullname="System.Private.CoreLib" />
