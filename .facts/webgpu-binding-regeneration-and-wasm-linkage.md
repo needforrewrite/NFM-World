@@ -87,3 +87,30 @@ The canvas surface is a Dawn extension, not core:
 `gfx-rs/wgpu-native#298` (open) is why compiling wgpu-native for wasm is not the route: its
 emscripten target has no `map_surface` and fails with `Unsupported Surface` then `No suitable
 adapter`; wgpu's own emscripten backend is WebGL2-only, i.e. the path the browser already ships.
+
+## Why this needs no Silk.NET fork
+
+The binding half is configuration, not source. `Maxine.Silk.EGL` already establishes the pattern:
+generate from a `generator.json` with `tools/SilkGenerate`, publish under a `Maxine.Silk.` package
+prefix while the C# namespace keeps no `Silk` segment (generated code names `Silk.NET.Core` types
+in full, so a namespace containing `Silk` shadows them and fails to compile).
+
+Two properties of the 2.23 package make a fork unnecessary for the browser:
+
+|Property|Evidence|
+|---|---|
+|`WebGPU`'s only public constructor takes an `INativeContext`, and dispatch is lazy per call|`new WebGPU(ctx)` over a stub context that records names: nothing is resolved at construction, the first `CreateInstance` asks for exactly `wgpuCreateInstance`, and the value that stub returned comes back out. Same seam `GL.GetApi(INativeContext)` uses in `NFMWorld.Graphics.OpenGL`|
+|`WebGPULibraryNameContainer` has no browser entry at all (`Linux`/`MacOS`/`Android`/`IOS`/`Windows64`/`Windows86`)|it is only consulted by `GetApi()`; a browser build constructs the API over the shimmed context and never calls it, exactly as `WebGlContext.Create()` already does for GLES|
+
+So a browser port needs `GlNativeContext`'s shape and nothing from `dotnet/Silk.NET`. A versioned
+`Maxine.Silk.WebGPU` (namespace `Maxine.WebGPU`) is the only reason to publish anything, and it is a
+companion package, not a repo fork.
+
+**Callbacks are the one place the package's convenience API does not port.** `Pfn*Callback.From(d)`
+calls `SilkMarshal.DelegateToPtr`, which resolves a static target through
+`Delegate.Method.MethodHandle.GetFunctionPointer()` and anything else through
+`Marshal.GetFunctionPointerForDelegate` — neither yields a callable address for ordinary managed code
+on wasm, which is the same constraint `GlNativeContext` documents. Each `Pfn*Callback` has an
+`op_Explicit` from `IntPtr`, so a browser build should build the wrapper from a
+`[UnmanagedCallersOnly]` trampoline's pointer instead of `.From`. The backend has four `.From` sites,
+all in `WebGpuGraphicsDevice.cs`.
