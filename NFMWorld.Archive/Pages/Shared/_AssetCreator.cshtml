@@ -1,0 +1,14 @@
+@model NFMWorld.Archive.Data.User
+
+@if (Model is { IsDeleted: false } creator)
+{
+    <a asp-page="/Profile" asp-route-id="@creator.Id">@creator.Username</a>
+    @if (creator.IsVerifiedUploader)
+    {
+        <partial name="_VerifiedUploader" />
+    }
+}
+else
+{
+    <span class="muted">@(Model is null ? "Unknown" : "Deleted account")</span>
+}

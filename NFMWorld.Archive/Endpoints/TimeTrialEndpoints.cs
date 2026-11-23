@@ -77,7 +77,7 @@ public static class TimeTrialEndpoints
 
                 // Custom content comes from validated uploads; stock is checked against the
                 // validator's shipped files and canonical hashes.
-                var usable = db.Assets.Where(a => a.IsPublic && !a.IsTakedown && a.IsValidated);
+                var usable = db.Assets.Listed().Where(a => a.IsValidated);
                 var stageAsset = await usable
                     .FirstOrDefaultAsync(a => a.ContentHash == stageHash && a.Type == AssetType.Stage, ct);
                 var carAsset = await usable

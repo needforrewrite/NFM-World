@@ -1,5 +1,6 @@
 ﻿using NFMWorld.Archive.Data;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.EntityFrameworkCore;
 using NFMWorld.Archive.Validation;
 using NFMWorldLibrary.Radpack;
 
@@ -25,6 +26,22 @@ public static class AssetUpload
 
     public static string SizeLimitMessage(int maxBytes)
         => $"The file exceeds this Archive's {maxBytes / ArchiveSettings.BytesPerMiB} MiB upload limit.";
+
+    public static async Task<AssetReviewStatus> ReviewStatusForUploadAsync(
+        ArchiveDbContext db,
+        int uploaderId,
+        CancellationToken ct
+    )
+        => await db.Users.AnyAsync(user => user.Id == uploaderId && user.IsVerifiedUploader && user.DeletedAt == null, ct)
+            ? AssetReviewStatus.Verified
+            : AssetReviewStatus.Pending;
+
+    public static void SetReplacementReview(ArchiveDbContext db, Asset asset, AssetReviewStatus status)
+    {
+        asset.ReviewStatus = status;
+        // A moderator may have reviewed the previous file while the replacement was validating.
+        db.Entry(asset).Property(row => row.ReviewStatus).IsModified = true;
+    }
 
     public static async Task<IFormCollection?> ReadFormWithinLimitAsync(HttpRequest request, int maxBytes, CancellationToken ct)
     {

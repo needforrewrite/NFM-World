@@ -190,7 +190,7 @@ internal sealed class MenuStagePicker : IDisposable
                         .Select(item => new StageOption(
                             RadpackReader.ArchivePrefix + item.ContentHash.ToLowerInvariant(),
                         item.Name,
-                            item.Author
+                            item.AuthorByline
                         )
                         ).ToArray();
                     _state.Status.Value = _state.Stages.Value.Count == 0 ? "No public stages matched." : "";

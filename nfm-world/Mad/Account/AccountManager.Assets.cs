@@ -18,8 +18,18 @@ public sealed record OwnedAsset(
     DateTimeOffset CreatedAt,
     bool Eligible,
     bool IsPublic,
-    bool IsTakedown
-);
+    bool IsTakedown,
+    string? ReviewStatus = null
+)
+{
+    public string? ReviewLabel => ReviewStatus switch
+    {
+        "Pending" => "Pending verification",
+        "Rejected" => "Rejected",
+        "Verified" => "Verified",
+        _ => null
+    };
+}
 
 public sealed record OwnedAssetPage(IReadOnlyList<OwnedAsset> Items, int? NextCursor);
 
@@ -165,7 +175,10 @@ public sealed partial class AccountManager
                        && asset.TryGetProperty("contentHash", out var contentHash)
                 ? contentHash.GetString()
                 : null;
-            return new AssetUploadResult(true, $"Updated \"{name}\".", hash);
+            var message = IsAwaitingAssetVerification(asset)
+                ? $"Updated \"{name}\". Awaiting verification."
+                : $"Updated \"{name}\".";
+            return new AssetUploadResult(true, message, hash);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
@@ -210,6 +223,11 @@ public sealed partial class AccountManager
             : DateTimeOffset.UtcNow,
         item.TryGetProperty("eligible", out var eligible) && eligible.GetBoolean(),
         !item.TryGetProperty("isPublic", out var isPublic) || isPublic.GetBoolean(),
-        item.TryGetProperty("isTakedown", out var takedown) && takedown.GetBoolean()
+        item.TryGetProperty("isTakedown", out var takedown) && takedown.GetBoolean(),
+        item.TryGetProperty("reviewStatus", out var reviewStatus) ? reviewStatus.GetString() : null
     );
+
+    private static bool IsAwaitingAssetVerification(JsonElement asset)
+        => asset.ValueKind == JsonValueKind.Object && asset.TryGetProperty("reviewStatus", out var status)
+           && status.GetString() == "Pending";
 }

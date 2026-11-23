@@ -17,7 +17,7 @@ public sealed class BrowseModel(ArchiveDbContext db) : ArchivePageModel(db)
     {
         await ResolveAccountAsync();
 
-        var q = Db.Assets.Where(a => a.IsPublic && !a.IsTakedown);
+        var q = Db.Assets.Listed().Include(asset => asset.Owner).AsQueryable();
         if (!string.IsNullOrWhiteSpace(Query))
             q = q.Where(a => a.Name.Contains(Query));
         if (!string.IsNullOrWhiteSpace(Type) && Enum.TryParse<AssetType>(Type, true, out var parsed))

@@ -62,6 +62,7 @@ public class AssetCrudTests
         var contentHash = hash ?? Hash('a');
         var asset = new Asset
         {
+            ReviewStatus = AssetReviewStatus.Legacy,
             OwnerId = ownerId,
             Type = type,
             Name = name,
@@ -480,6 +481,7 @@ public class AssetCrudTests
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         var asset = body.GetProperty("asset");
         Assert.AreEqual(id, asset.GetProperty("id").GetInt32());
+        Assert.AreEqual("Pending", asset.GetProperty("reviewStatus").GetString());
         Assert.AreEqual(
             Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(bytes)),
             asset.GetProperty("contentHash").GetString()
@@ -654,6 +656,45 @@ public class AssetCrudTests
             writer
         );
         return writer.WrittenSpan.ToArray();
+    }
+
+    [TestMethod]
+    public async Task VerifiedUploader_AutoVerifiesNewAndReplacementFilesUntilRevoked()
+    {
+        if (ArchiveAppFactory.ValidatorPath is null)
+            Assert.Inconclusive("The validator executable was not built beside the tests.");
+
+        using var factory = new ArchiveAppFactory();
+        var (client, _) = await SignedInClient(factory, "artist");
+        await SetUploaderVerification(true);
+        using var uploaded = await UploadAsync(client, StagePackage("approved"), "stage.radpack", "stage", "Stage");
+        Assert.AreEqual(HttpStatusCode.OK, uploaded.StatusCode, await uploaded.Content.ReadAsStringAsync());
+        var asset = (await uploaded.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("asset");
+        Assert.AreEqual("Verified", asset.GetProperty("reviewStatus").GetString());
+        var hash = asset.GetProperty("contentHash").GetString();
+        Assert.AreEqual(HttpStatusCode.OK, (await client.GetAsync($"/assets/meta/{hash}")).StatusCode);
+
+        var id = asset.GetProperty("id").GetInt32();
+        using var approvedReplacement = await ReplaceAsync(client, id, StagePackage("auto"), "stage.radpack");
+        Assert.AreEqual(HttpStatusCode.OK, approvedReplacement.StatusCode);
+        asset = (await approvedReplacement.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("asset");
+        Assert.AreEqual("Verified", asset.GetProperty("reviewStatus").GetString());
+
+        await SetUploaderVerification(false);
+        using var pendingReplacement = await ReplaceAsync(client, id, StagePackage("manual"), "stage.radpack");
+        Assert.AreEqual(HttpStatusCode.OK, pendingReplacement.StatusCode);
+        asset = (await pendingReplacement.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("asset");
+        Assert.AreEqual("Pending", asset.GetProperty("reviewStatus").GetString());
+        hash = asset.GetProperty("contentHash").GetString();
+        Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync($"/assets/meta/{hash}")).StatusCode);
+
+        async Task SetUploaderVerification(bool verified)
+        {
+            using var scope = factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+            db.Users.Single(user => user.UsernameNormalized == "artist").IsVerifiedUploader = verified;
+            await db.SaveChangesAsync();
+        }
     }
 
     private static async Task<HttpResponseMessage> UploadAsync(

@@ -54,6 +54,18 @@ td button {
     margin-bottom: 0;
 }
 
+.verified-uploader {
+    display: inline-grid;
+    place-items: center;
+    width: 1.2em;
+    height: 1.2em;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    color: var(--pico-primary);
+    font-size: 0.85em;
+    vertical-align: 0.05em;
+}
+
 .asset-kind {
     padding: 0.1rem 0.5rem;
     border: 1px solid var(--pico-muted-border-color);

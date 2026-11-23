@@ -232,6 +232,7 @@ public class WebPageTests
             var owner = new User { Username = "artist", UsernameNormalized = "artist" };
             var asset = new Asset
             {
+                ReviewStatus = AssetReviewStatus.Legacy,
                 Owner = owner,
                 Type = AssetType.Stage,
                 Name = "Prolific Dryland",
@@ -245,6 +246,7 @@ public class WebPageTests
             };
             var other = new Asset
             {
+                ReviewStatus = AssetReviewStatus.Legacy,
                 Owner = owner,
                 Type = AssetType.Car,
                 Name = "Other upload",
@@ -290,11 +292,13 @@ public class WebPageTests
             var owner = new User { Username = "artist", UsernameNormalized = "artist" };
             var hidden = new Asset
             {
+                ReviewStatus = AssetReviewStatus.Legacy,
                 Owner = owner, Type = AssetType.Stage, Name = "Private", ContentHash = new string('c', 64),
                 StoragePath = "cc/" + new string('c', 64), IsPublic = false
             };
             var takedown = new Asset
             {
+                ReviewStatus = AssetReviewStatus.Legacy,
                 Owner = owner, Type = AssetType.Stage, Name = "Removed", ContentHash = new string('d', 64),
                 StoragePath = "dd/" + new string('d', 64), IsPublic = true, IsTakedown = true
             };
@@ -504,6 +508,7 @@ public class WebPageTests
         var hash = new string((char)('a' + db.Assets.Count() % 26), 64);
         var asset = new Asset
         {
+            ReviewStatus = AssetReviewStatus.Legacy,
             OwnerId = user.Id,
             Type = AssetType.Stage,
             Name = name,
@@ -582,6 +587,170 @@ public class WebPageTests
     private static FormUrlEncodedContent LimitForm(string token, string limit) => new(
         new Dictionary<string, string> { ["__RequestVerificationToken"] = token, ["UploadLimitMiB"] = limit }
     );
+
+    [TestMethod]
+    public async Task AssetReview_BlocksPublicAccessUntilModeratorVerifiesTheCurrentFile()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var owner = Browser(factory);
+        using var moderator = Browser(factory);
+        await SignUpAsync(owner, "artist");
+        await SignUpAsync(moderator, "reviewer");
+        var id = await SeedOwnedAsync(factory, "artist", "Pending course");
+        string hash;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+            var storage = scope.ServiceProvider.GetRequiredService<FileStorage>();
+            var stored = await storage.PutAsync("RAD-test"u8.ToArray(), CancellationToken.None);
+            var asset = db.Assets.Single(row => row.Id == id);
+            asset.ReviewStatus = AssetReviewStatus.Pending;
+            asset.StoragePath = stored.RelativePath;
+            asset.ContentHash = hash = stored.Hash;
+            db.Users.Single(user => user.UsernameNormalized == "reviewer").Role = NFMWorldLibrary.Multiplayer.UserRole.Moderator;
+            await db.SaveChangesAsync();
+        }
+
+        Assert.AreEqual(HttpStatusCode.NotFound, (await owner.GetAsync($"/asset/{id}")).StatusCode);
+        Assert.AreEqual(HttpStatusCode.NotFound, (await owner.GetAsync($"/assets/meta/{hash}")).StatusCode);
+        Assert.AreEqual(HttpStatusCode.NotFound, (await owner.GetAsync($"/assets/{hash}")).StatusCode);
+        Assert.IsFalse((await owner.GetStringAsync("/browse")).Contains("Pending course"));
+        Assert.IsFalse((await owner.GetStringAsync("/assets/search?query=Pending")).Contains(hash));
+
+        var reviewLink = $"/moderation/assets?handler=ReviewFile&id={id}&hash={hash}";
+        Assert.AreEqual(HttpStatusCode.NotFound, (await owner.GetAsync(reviewLink)).StatusCode);
+        using var downloaded = await moderator.GetAsync(reviewLink);
+        Assert.AreEqual(HttpStatusCode.OK, downloaded.StatusCode);
+        Assert.IsTrue(downloaded.Headers.CacheControl?.NoStore == true);
+        Assert.AreEqual("RAD-test", await downloaded.Content.ReadAsStringAsync());
+
+        var page = await moderator.GetStringAsync("/moderation/assets?pending=true");
+        StringAssert.Contains(page, "Pending course");
+        var moderatorToken = ExtractAntiforgery(page);
+        var ownerToken = ExtractAntiforgery(await owner.GetStringAsync($"/asset/{id}/edit"));
+        Assert.AreEqual(HttpStatusCode.NotFound, (await Review(owner, ownerToken, "Verify", hash)).StatusCode);
+
+        Assert.AreEqual(
+            HttpStatusCode.Redirect,
+            (await Review(moderator, moderatorToken, "Verify", new string('0', 64))).StatusCode
+        );
+        Assert.AreEqual(HttpStatusCode.NotFound, (await owner.GetAsync($"/asset/{id}")).StatusCode);
+
+        Assert.AreEqual(HttpStatusCode.Redirect, (await Review(moderator, moderatorToken, "Verify", hash)).StatusCode);
+        Assert.AreEqual(HttpStatusCode.OK, (await owner.GetAsync($"/asset/{id}")).StatusCode);
+        Assert.AreEqual(HttpStatusCode.OK, (await owner.GetAsync($"/assets/{hash}")).StatusCode);
+        StringAssert.Contains(await owner.GetStringAsync("/assets/search?query=Pending"), hash);
+
+        Assert.AreEqual(HttpStatusCode.Redirect, (await Review(moderator, moderatorToken, "Reject", hash)).StatusCode);
+        Assert.AreEqual(HttpStatusCode.NotFound, (await owner.GetAsync($"/assets/{hash}")).StatusCode);
+        Assert.IsFalse((await owner.GetStringAsync("/assets/search?query=Pending")).Contains(hash));
+        StringAssert.Contains(await owner.GetStringAsync($"/asset/{id}/edit"), "Rejected");
+
+        Task<HttpResponseMessage> Review(HttpClient client, string token, string action, string version)
+            => client.PostAsync($"/moderation/assets?handler={action}&id={id}", new FormUrlEncodedContent(
+                new Dictionary<string, string> { ["__RequestVerificationToken"] = token, ["hash"] = version }
+            )
+            );
+    }
+
+    [TestMethod]
+    public async Task VerifiedUploader_OnlyAdministratorsCanGrantOrRevoke()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var admin = Browser(factory);
+        using var moderator = Browser(factory);
+        using var artist = Browser(factory);
+        await SignUpAsync(admin, "adminuser");
+        await SignUpAsync(moderator, "moduser");
+        await SignUpAsync(artist, "artist");
+        int id;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+            db.Users.Single(u => u.UsernameNormalized == "adminuser").Role = NFMWorldLibrary.Multiplayer.UserRole.Admin;
+            db.Users.Single(u => u.UsernameNormalized == "moduser").Role = NFMWorldLibrary.Multiplayer.UserRole.Moderator;
+            id = db.Users.Single(u => u.UsernameNormalized == "artist").Id;
+            await db.SaveChangesAsync();
+        }
+
+        var url = $"/moderation/user/{id}";
+        var modToken = ExtractAntiforgery(await moderator.GetStringAsync(url));
+        using var denied = await SetVerification(moderator, modToken, "VerifyUploader");
+        StringAssert.Contains(await denied.Content.ReadAsStringAsync(), "This needs an administrator.");
+        var adminToken = ExtractAntiforgery(await admin.GetStringAsync(url));
+        using var granted = await SetVerification(admin, adminToken, "VerifyUploader");
+        StringAssert.Contains(await granted.Content.ReadAsStringAsync(), "VerifyUploader applied.");
+        using var revoked = await SetVerification(admin, adminToken, "RevokeUploaderVerification");
+        StringAssert.Contains(await revoked.Content.ReadAsStringAsync(), "RevokeUploaderVerification applied.");
+
+        using var verifyScope = factory.Services.CreateScope();
+        var saved = verifyScope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+        Assert.IsFalse(saved.Users.Single(user => user.Id == id).IsVerifiedUploader);
+        Assert.AreEqual(2, saved.ModerationActions.Count(action => action.TargetUserId == id));
+
+        Task<HttpResponseMessage> SetVerification(HttpClient client, string token, string handler)
+            => client.PostAsync($"{url}?handler={handler}", new FormUrlEncodedContent(
+                new Dictionary<string, string> { ["__RequestVerificationToken"] = token }
+            )
+            );
+    }
+
+    [TestMethod]
+    public async Task PublicProfiles_LinkVerifiedCreatorsAndListOnlyPublicUploads()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var visitor = Browser(factory);
+        var publicId = await SeedOwnedAsync(factory, "artist", "Visible course");
+        var privateId = await SeedOwnedAsync(factory, "artist", "Hidden course");
+        var pendingId = await SeedOwnedAsync(factory, "artist", "Pending course");
+        var deletedAssetId = await SeedOwnedAsync(factory, "erased", "Old course");
+        var ordinaryAssetId = await SeedOwnedAsync(factory, "ordinary", "Ordinary course");
+        int profileId, deletedId, ordinaryId;
+        string hash;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+            var creator = db.Users.Single(user => user.UsernameNormalized == "artist");
+            creator.IsVerifiedUploader = true;
+            profileId = creator.Id;
+            var deleted = db.Users.Single(user => user.UsernameNormalized == "erased");
+            deleted.DeletedAt = DateTimeOffset.UtcNow;
+            deleted.IsVerifiedUploader = true;
+            deletedId = deleted.Id;
+            ordinaryId = db.Users.Single(user => user.UsernameNormalized == "ordinary").Id;
+            hash = db.Assets.Single(asset => asset.Id == publicId).ContentHash;
+            db.Assets.Single(asset => asset.Id == privateId).IsPublic = false;
+            db.Assets.Single(asset => asset.Id == pendingId).ReviewStatus = AssetReviewStatus.Pending;
+            await db.SaveChangesAsync();
+        }
+
+        var profile = await visitor.GetStringAsync($"/profile/{profileId}");
+        StringAssert.Contains(profile, "Verified uploader");
+        StringAssert.Contains(profile, "Visible course");
+        Assert.IsFalse(profile.Contains("Hidden course"));
+        Assert.IsFalse(profile.Contains("Pending course"));
+
+        var detail = await visitor.GetStringAsync($"/asset/{publicId}");
+        StringAssert.Contains(detail, $"href=\"/profile/{profileId}\"");
+        StringAssert.Contains(detail, "Verified uploader");
+        var browse = await visitor.GetStringAsync("/browse?query=Visible");
+        StringAssert.Contains(browse, $"href=\"/profile/{profileId}\"");
+        StringAssert.Contains(browse, "Verified uploader");
+
+        var directory = await visitor.GetStringAsync("/profiles?query=ARTIST");
+        StringAssert.Contains(directory, $"href=\"/profile/{profileId}\"");
+        Assert.IsFalse(directory.Contains($"href=\"/profile/{ordinaryId}\""));
+        Assert.AreEqual(HttpStatusCode.NotFound, (await visitor.GetAsync($"/profile/{deletedId}")).StatusCode);
+        var deletedDetail = await visitor.GetStringAsync($"/asset/{deletedAssetId}");
+        StringAssert.Contains(deletedDetail, "Deleted account");
+        Assert.IsFalse(deletedDetail.Contains($"href=\"/profile/{deletedId}\""));
+        Assert.IsFalse((await visitor.GetStringAsync($"/asset/{ordinaryAssetId}")).Contains("Verified uploader"));
+
+        var assetInfo = await visitor.GetFromJsonAsync<JsonElement>($"/assets/meta/{hash}");
+        Assert.IsTrue(assetInfo.GetProperty("authorVerified").GetBoolean());
+        var search = await visitor.GetFromJsonAsync<JsonElement>("/assets/search?query=Visible");
+        Assert.IsTrue(search.GetProperty("items")[0].GetProperty("authorVerified").GetBoolean());
+    }
 
     private static string ExtractAntiforgery(string html)
     {

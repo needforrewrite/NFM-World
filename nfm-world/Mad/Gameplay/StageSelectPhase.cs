@@ -185,7 +185,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
                 .Select(item => new StageOption(
                         RadpackReader.ArchivePrefix + item.ContentHash.ToLowerInvariant(),
                         item.Name,
-                        item.Author
+                        item.AuthorByline
                     )
                 )
                 .ToArray();

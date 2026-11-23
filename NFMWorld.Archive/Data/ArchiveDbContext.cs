@@ -60,6 +60,7 @@ public sealed class ArchiveDbContext(DbContextOptions<ArchiveDbContext> options)
                 // Content-addressed: one row per distinct file, however many names point at it.
                 e.HasIndex(a => a.ContentHash);
                 e.HasIndex(a => new { a.Type, a.OwnerId });
+                e.HasIndex(a => new { a.ReviewStatus, a.Id });
                 e.HasOne(a => a.Owner).WithMany().OnDelete(DeleteBehavior.SetNull);
             }
         );

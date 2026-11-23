@@ -6,6 +6,10 @@
 <header class="asset-header">
     <h1>@Model.Asset!.Name</h1>
     <span class="asset-kind">@Model.Asset.Type</span>
+    @if (Model.Asset.ReviewStatus == NFMWorld.Archive.Data.AssetReviewStatus.Verified)
+    {
+        <span class="asset-kind">Verified</span>
+    }
 </header>
 
 @if (!string.IsNullOrWhiteSpace(Model.Asset.Description))
@@ -20,14 +24,7 @@ else
 <dl class="asset-meta">
     <dt>Creator</dt>
     <dd>
-        @if (Model.Asset.Owner is { } owner)
-        {
-            @owner.Username
-        }
-        else
-        {
-            <span class="muted">Unknown</span>
-        }
+        <partial name="_AssetCreator" model="@Model.Asset.Owner" />
     </dd>
 
     <dt>Uploaded</dt>
@@ -52,7 +49,7 @@ else
 
 @if (Model.More.Count > 0)
 {
-    <h2>More from @Model.Asset.Owner!.Username</h2>
+    <h2>More from <partial name="_AssetCreator" model="@Model.Asset.Owner" /></h2>
     <ul class="asset-list">
         @foreach (var more in Model.More)
         {

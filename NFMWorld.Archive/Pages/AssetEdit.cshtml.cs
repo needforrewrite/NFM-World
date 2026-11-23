@@ -139,7 +139,9 @@ public sealed class AssetEditModel(
             HttpContext.RequestAborted
         );
         if (other is not null)
-            return Refuse($"Those bytes are already published as \"{other.Name}\".");
+            return Refuse(other.IsListed || other.OwnerId == Account!.Id
+                ? $"Those bytes are already uploaded as \"{other.Name}\"."
+                : "These bytes are already in the Archive.");
 
         var previousPath = Asset.StoragePath;
         var previousHash = Asset.ContentHash;
@@ -147,13 +149,17 @@ public sealed class AssetEditModel(
         Asset.StoragePath = stored.RelativePath;
         Asset.SizeBytes = stored.SizeBytes;
         Asset.IsValidated = true;
+        var review = await AssetUpload.ReviewStatusForUploadAsync(Db, Account!.Id, HttpContext.RequestAborted);
+        AssetUpload.SetReplacementReview(Db, Asset, review);
         await Db.SaveChangesAsync();
 
         await storage.DeleteIfUnreferencedAsync(previousPath, Db, HttpContext.RequestAborted);
         await TimeTrialInvalidation.InvalidateForAssetAsync(Db, previousHash, HttpContext.RequestAborted);
         await HttpContext.PurgeAssetsAsync([previousHash]);
 
-        Message = "The file was replaced. Time trials recorded against the old file no longer rank.";
+        Message = review == AssetReviewStatus.Pending
+            ? "The replacement is awaiting verification. Time trials recorded against the old file no longer rank."
+            : "The file was replaced. Time trials recorded against the old file no longer rank.";
         return Page();
     }
 

@@ -102,6 +102,12 @@ public sealed class UploadModel(
         var existing = await Db.Assets.FirstOrDefaultAsync(a => a.ContentHash == stored.Hash);
         if (existing is not null)
         {
+            if (!existing.IsListed && existing.OwnerId != Account!.Id)
+            {
+                Error = "These bytes are already in the Archive.";
+                return Page();
+            }
+
             if ((byte)existing.Type != kind)
             {
                 Error = $"Those bytes are already catalogued as a {AssetKinds.Name((byte)existing.Type)}.";
@@ -118,6 +124,7 @@ public sealed class UploadModel(
             return Page();
         }
 
+        var review = await AssetUpload.ReviewStatusForUploadAsync(Db, Account!.Id, HttpContext.RequestAborted);
         Db.Assets.Add(
             new Asset
             {
@@ -129,12 +136,15 @@ public sealed class UploadModel(
                 StoragePath = stored.RelativePath,
                 SizeBytes = stored.SizeBytes,
                 IsPublic = true,
-                IsValidated = true
+                IsValidated = true,
+                ReviewStatus = review
             }
         );
         await Db.SaveChangesAsync();
 
-        Message = $"Uploaded. Content hash: {stored.Hash}";
+        Message = review == AssetReviewStatus.Pending
+            ? "Uploaded and awaiting verification. The file will be listed after staff approve it."
+            : $"Uploaded and verified. Content hash: {stored.Hash}";
         return Page();
     }
 }

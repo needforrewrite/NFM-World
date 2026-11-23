@@ -20,7 +20,9 @@ public sealed record AssetInfo(
     string? Description,
     string? Author,
     DateTimeOffset CreatedAt,
-    bool Eligible
+    bool Eligible,
+    string ReviewStatus,
+    bool AuthorVerified
 );
 
 public sealed record AssetSearchPage(IReadOnlyList<AssetInfo> Items, int? NextCursor);
@@ -40,7 +42,8 @@ public sealed record OwnedAssetInfo(
     DateTimeOffset CreatedAt,
     bool Eligible,
     bool IsPublic,
-    bool IsTakedown
+    bool IsTakedown,
+    string ReviewStatus
 );
 
 public sealed record OwnedAssetPage(IReadOnlyList<OwnedAssetInfo> Items, int? NextCursor);
@@ -134,6 +137,9 @@ public static class AssetEndpoints
                     .FirstOrDefaultAsync(a => a.ContentHash == stored.Hash, ct);
                 if (existing is not null)
                 {
+                    if (!existing.IsListed && existing.OwnerId != user.Id)
+                        return Results.Conflict(new { error = "These bytes are already in the Archive." });
+
                     if ((byte)existing.Type != kind)
                         return Results.BadRequest(
                             new
@@ -161,7 +167,8 @@ public static class AssetEndpoints
                     StoragePath = stored.RelativePath,
                     SizeBytes = stored.SizeBytes,
                     IsPublic = isPublic,
-                    IsValidated = true
+                    IsValidated = true,
+                    ReviewStatus = await AssetUpload.ReviewStatusForUploadAsync(db, user.Id, ct)
                 };
                 db.Assets.Add(asset);
                 await db.SaveChangesAsync(ct);
@@ -189,7 +196,7 @@ public static class AssetEndpoints
 
                 var pageSize = Math.Clamp(limit ?? 50, 1, MaxSearchLimit);
 
-                var q = Visible(db.Assets);
+                var q = db.Assets.Listed();
                 if (kind is { } filter)
                     q = q.Where(a => (byte)a.Type == filter);
 
@@ -219,7 +226,9 @@ public static class AssetEndpoints
                             a.Description,
                             a.Owner != null ? a.Owner.Username : null,
                             a.CreatedAt,
-                            a.IsValidated
+                            a.IsValidated,
+                            a.ReviewStatus,
+                            a.Owner != null && a.Owner.DeletedAt == null && a.Owner.IsVerifiedUploader
                         )
                     )
                     .ToListAsync(ct);
@@ -274,7 +283,8 @@ public static class AssetEndpoints
                             a.CreatedAt,
                             a.IsValidated,
                             a.IsPublic,
-                            a.IsTakedown
+                            a.IsTakedown,
+                            a.ReviewStatus
                         }
                     )
                     .ToListAsync(ct);
@@ -290,9 +300,11 @@ public static class AssetEndpoints
                         a.DownloadCount,
                         a.Description,
                         a.CreatedAt,
-                        a.IsValidated && AssetKinds.IsDataAsset(a.Type),
+                        a.IsValidated && AssetKinds.IsDataAsset(a.Type)
+                        && a.ReviewStatus is AssetReviewStatus.Verified or AssetReviewStatus.Legacy,
                         a.IsPublic,
-                        a.IsTakedown
+                        a.IsTakedown,
+                        a.ReviewStatus.ToString()
                     )
                 ).ToList();
 
@@ -308,7 +320,7 @@ public static class AssetEndpoints
                 if (!IsHash(hash))
                     return Results.BadRequest(new { error = "Not a content hash." });
 
-                var asset = await Visible(db.Assets).Include(a => a.Owner)
+                var asset = await db.Assets.Listed().Include(a => a.Owner)
                     .FirstOrDefaultAsync(a => a.ContentHash == hash, ct);
                 return asset is null ? Results.NotFound() : Results.Ok(ToInfo(asset));
             }
@@ -479,7 +491,12 @@ public static class AssetEndpoints
                 );
                 if (other is not null)
                     return Results.BadRequest(
-                        new { error = $"Those bytes are already published as \"{other.Name}\"." }
+                        new
+                        {
+                            error = other.IsListed || other.OwnerId == user.Id
+                            ? $"Those bytes are already uploaded as \"{other.Name}\"."
+                            : "These bytes are already in the Archive."
+                        }
                     );
 
                 var previous = asset.StoragePath;
@@ -491,6 +508,10 @@ public static class AssetEndpoints
                 asset.StoragePath = stored.RelativePath;
                 asset.SizeBytes = stored.SizeBytes;
                 asset.IsValidated = true;
+                var review = asset.OwnerId == user.Id
+                    ? await AssetUpload.ReviewStatusForUploadAsync(db, user.Id, ct)
+                    : AssetReviewStatus.Pending;
+                AssetUpload.SetReplacementReview(db, asset, review);
                 await db.SaveChangesAsync(ct);
 
                 // Saved first, so the delete sees the row's new path and leaves the replacement alone.
@@ -547,7 +568,7 @@ public static class AssetEndpoints
                 if (!IsHash(hash))
                     return Results.BadRequest();
 
-                var asset = await Visible(db.Assets).FirstOrDefaultAsync(a => a.ContentHash == hash, ct);
+                var asset = await db.Assets.Listed().FirstOrDefaultAsync(a => a.ContentHash == hash, ct);
                 if (asset is null)
                     return Results.NotFound();
 
@@ -579,9 +600,6 @@ public static class AssetEndpoints
         statusCode: StatusCodes.Status413PayloadTooLarge
     );
 
-    private static IQueryable<Asset> Visible(IQueryable<Asset> assets)
-        => assets.Where(a => a.IsPublic && !a.IsTakedown);
-
     private static bool IsHash(string hash) => hash.Length == 64 && hash.All(Uri.IsHexDigit);
 
     // Stored bytes are extensionless, so the download name gets the format's own extension.
@@ -597,7 +615,9 @@ public static class AssetEndpoints
         string? Description,
         string? Author,
         DateTimeOffset CreatedAt,
-        bool IsValidated
+        bool IsValidated,
+        AssetReviewStatus ReviewStatus,
+        bool AuthorVerified
     );
 
     private static AssetRow Projection(Asset a) => new(
@@ -610,7 +630,9 @@ public static class AssetEndpoints
         a.Description,
         a.Owner != null ? a.Owner.Username : null,
         a.CreatedAt,
-        a.IsValidated
+        a.IsValidated,
+        a.ReviewStatus,
+        a.Owner is { IsDeleted: false, IsVerifiedUploader: true }
     );
 
     private static AssetInfo ToInfo(Asset asset) => ToInfo(Projection(asset));
@@ -626,6 +648,9 @@ public static class AssetEndpoints
         row.Author,
         row.CreatedAt,
         row.IsValidated && AssetKinds.IsDataAsset(row.Type)
+        && row.ReviewStatus is AssetReviewStatus.Verified or AssetReviewStatus.Legacy,
+        row.ReviewStatus.ToString(),
+        row.AuthorVerified
     );
 
     private static OwnedAssetInfo ToOwnedInfo(Asset asset) => new(
@@ -637,8 +662,10 @@ public static class AssetEndpoints
         asset.DownloadCount,
         asset.Description,
         asset.CreatedAt,
-        asset.IsValidated && AssetKinds.IsDataAsset((byte)asset.Type),
+        asset.IsValidated && AssetKinds.IsDataAsset((byte)asset.Type)
+        && asset.ReviewStatus is AssetReviewStatus.Verified or AssetReviewStatus.Legacy,
         asset.IsPublic,
-        asset.IsTakedown
+        asset.IsTakedown,
+        asset.ReviewStatus.ToString()
     );
 }

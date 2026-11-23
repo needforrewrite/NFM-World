@@ -18,8 +18,12 @@ public sealed record RemoteAsset(
     long SizeBytes,
     string? Description,
     string? Author,
-    bool Eligible
-);
+    bool Eligible,
+    bool AuthorVerified = false
+)
+{
+    public string? AuthorByline => string.IsNullOrWhiteSpace(Author) ? null : AuthorVerified ? $"{Author} ✓" : Author;
+}
 
 public sealed record RemoteAssetPage(IReadOnlyList<RemoteAsset> Items, int? NextCursor);
 
@@ -82,7 +86,8 @@ public sealed class ArchiveContentClient : IDisposable
                     item.GetProperty("sizeBytes").GetInt64(),
                     item.TryGetProperty("description", out var description) ? description.GetString() : null,
                     item.TryGetProperty("author", out var author) ? author.GetString() : null,
-                    item.TryGetProperty("eligible", out var eligible) && eligible.GetBoolean()
+                    item.TryGetProperty("eligible", out var eligible) && eligible.GetBoolean(),
+                    item.TryGetProperty("authorVerified", out var verified) && verified.ValueKind == JsonValueKind.True
                 )
             );
         }
@@ -114,7 +119,8 @@ public sealed class ArchiveContentClient : IDisposable
             item.GetProperty("sizeBytes").GetInt64(),
             item.TryGetProperty("description", out var description) ? description.GetString() : null,
             item.TryGetProperty("author", out var author) ? author.GetString() : null,
-            item.TryGetProperty("eligible", out var eligible) && eligible.GetBoolean()
+            item.TryGetProperty("eligible", out var eligible) && eligible.GetBoolean(),
+            item.TryGetProperty("authorVerified", out var verified) && verified.ValueKind == JsonValueKind.True
         );
     }
 

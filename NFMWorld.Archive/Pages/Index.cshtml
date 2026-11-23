@@ -5,6 +5,7 @@
 }
 
 <h1>@Model.Account!.Username</h1>
+<p><a asp-page="/Profile" asp-route-id="@Model.Account.Id">View public profile</a></p>
 
 @if (Model.Account.Role >= NFMWorldLibrary.Multiplayer.UserRole.Moderator)
 {
@@ -53,7 +54,7 @@ else
                 {
                     <tr>
                         <td>
-                            @if (asset.IsPublic && !asset.IsTakedown)
+                            @if (asset.IsListed)
                             {
                                 <a href="/asset/@asset.Id">@asset.Name</a>
                             }
@@ -67,6 +68,10 @@ else
                             @if (asset.IsTakedown)
                             {
                                 <span class="muted">Removed by moderation</span>
+                            }
+                            else if (asset.ReviewStatus is NFMWorld.Archive.Data.AssetReviewStatus.Pending or NFMWorld.Archive.Data.AssetReviewStatus.Rejected)
+                            {
+                                <span class="muted">@(asset.ReviewStatus == NFMWorld.Archive.Data.AssetReviewStatus.Pending ? "Pending verification" : "Rejected")</span>
                             }
                             else if (!asset.IsPublic)
                             {

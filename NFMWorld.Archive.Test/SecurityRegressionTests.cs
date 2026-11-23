@@ -73,6 +73,7 @@ public class SecurityRegressionTests
         db.Assets.Add(
             new Asset
             {
+                ReviewStatus = AssetReviewStatus.Legacy,
                 OwnerId = db.Users.Single(u => u.UsernameNormalized == "alice").Id,
                 Type = AssetType.Car,
                 Name = "existing",

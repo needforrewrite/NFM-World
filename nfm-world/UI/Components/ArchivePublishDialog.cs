@@ -187,6 +187,8 @@ internal sealed class ArchivePublishDialog
     {
         var hovered = new Signal<bool>(false);
         var visibility = asset.IsTakedown ? "Taken down" : asset.IsPublic ? "Public" : "Hidden";
+        if (!asset.IsTakedown && asset.ReviewStatus is "Pending" or "Rejected")
+            visibility = asset.ReviewLabel!;
         return Sx.View(
             style: () => Sx.Styles(
                 width: 100.Percent(),

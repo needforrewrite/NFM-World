@@ -72,7 +72,10 @@ public sealed partial class AccountManager
                     hash
                 );
 
-            return new AssetUploadResult(true, $"Published \"{name}\".", hash);
+            var message = IsAwaitingAssetVerification(asset)
+                ? $"Uploaded \"{name}\". Awaiting verification."
+                : $"Published \"{name}\".";
+            return new AssetUploadResult(true, message, hash);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {

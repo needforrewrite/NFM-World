@@ -1,0 +1,36 @@
+@page "/profiles"
+@model NFMWorld.Archive.Pages.ProfilesModel
+@{
+    ViewData["Title"] = "Profiles";
+}
+
+<h1>Profiles</h1>
+
+<form method="get" class="grid filter-form">
+    <label>Username<input type="search" asp-for="Query" /></label>
+    <button type="submit">Search</button>
+</form>
+
+@if (Model.Profiles.Count == 0)
+{
+    <p class="muted">No matching profiles.</p>
+}
+else
+{
+    <ul class="asset-list">
+        @foreach (var profile in Model.Profiles)
+        {
+            <li>
+                <a asp-page="/Profile" asp-route-id="@profile.Id">@profile.Username</a>
+                @if (profile.IsVerifiedUploader)
+                {
+                    <partial name="_VerifiedUploader" />
+                }
+            </li>
+        }
+    </ul>
+    @if (Model.NextCursor is { } next)
+    {
+        <p><a asp-page="/Profiles" asp-route-after="@next" asp-route-query="@Model.Query">More profiles</a></p>
+    }
+}
