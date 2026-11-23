@@ -1,4 +1,6 @@
 ﻿using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using NFMWorld.Archive.Data;
@@ -515,6 +517,71 @@ public class WebPageTests
         await db.SaveChangesAsync();
         return asset.Id;
     }
+
+    [TestMethod]
+    public async Task Administration_OnlyAdminsCanSetTheLimitUsedByWebUploads()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var admin = Browser(factory);
+        using var moderator = Browser(factory);
+        using var anonymous = Browser(factory);
+        await SignUpAsync(admin, "adminuser");
+        await SignUpAsync(moderator, "moduser");
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+            db.Users.Single(user => user.UsernameNormalized == "adminuser").Role = NFMWorldLibrary.Multiplayer.UserRole.Admin;
+            db.Users.Single(user => user.UsernameNormalized == "moduser").Role = NFMWorldLibrary.Multiplayer.UserRole.Moderator;
+            await db.SaveChangesAsync();
+        }
+
+        Assert.AreEqual(HttpStatusCode.NotFound, (await moderator.GetAsync("/administration")).StatusCode);
+        var modToken = ExtractAntiforgery(await moderator.GetStringAsync("/upload"));
+        using var forbidden = await moderator.PostAsync("/administration", LimitForm(modToken, "1"));
+        Assert.AreEqual(HttpStatusCode.NotFound, forbidden.StatusCode);
+
+        using var initialResponse = await anonymous.GetAsync("/assets/limits");
+        Assert.AreEqual(HttpStatusCode.OK, initialResponse.StatusCode);
+        Assert.IsTrue(initialResponse.Headers.CacheControl?.NoStore == true);
+        var initial = await initialResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.AreEqual(
+            ArchiveSettings.DefaultUploadMiB * ArchiveSettings.BytesPerMiB,
+            initial.GetProperty("maxUploadBytes").GetInt32()
+        );
+        var page = await admin.GetStringAsync("/administration");
+        var token = ExtractAntiforgery(page);
+        StringAssert.Contains(page, "Maximum upload size (MiB)");
+        using var invalid = await admin.PostAsync("/administration", LimitForm(token, "65"));
+        StringAssert.Contains(await invalid.Content.ReadAsStringAsync(), "Enter a whole number between 1 and 64 MiB.");
+
+        using var saved = await admin.PostAsync("/administration", LimitForm(token, "1"));
+        Assert.AreEqual(HttpStatusCode.Redirect, saved.StatusCode);
+        var limits = await admin.GetFromJsonAsync<JsonElement>("/assets/limits");
+        Assert.AreEqual(ArchiveSettings.BytesPerMiB, limits.GetProperty("maxUploadBytes").GetInt32());
+
+        var uploadPage = await moderator.GetStringAsync("/upload");
+        StringAssert.Contains(uploadPage, "Maximum upload size: 1 MiB.");
+        using var upload = new MultipartFormDataContent();
+        upload.Add(new ByteArrayContent(new byte[ArchiveSettings.BytesPerMiB + 1]), "File", "large.radpack");
+        upload.Add(new StringContent("Large asset"), "Name");
+        upload.Add(new StringContent("Stage"), "Type");
+        upload.Add(new StringContent(ExtractAntiforgery(uploadPage)), "__RequestVerificationToken");
+        using var uploadResponse = await moderator.PostAsync("/upload", upload);
+        Assert.AreEqual(HttpStatusCode.RequestEntityTooLarge, uploadResponse.StatusCode);
+
+        var assetId = await SeedOwnedAsync(factory, "moduser", "old stage");
+        var editPage = await moderator.GetStringAsync($"/asset/{assetId}/edit");
+        StringAssert.Contains(editPage, "Maximum replacement size: 1 MiB.");
+        using var replacement = new MultipartFormDataContent();
+        replacement.Add(new ByteArrayContent(new byte[ArchiveSettings.BytesPerMiB + 1]), "Replacement", "large.radpack");
+        replacement.Add(new StringContent(ExtractAntiforgery(editPage)), "__RequestVerificationToken");
+        using var replacementResponse = await moderator.PostAsync($"/asset/{assetId}/edit?handler=Replace", replacement);
+        Assert.AreEqual(HttpStatusCode.RequestEntityTooLarge, replacementResponse.StatusCode);
+    }
+
+    private static FormUrlEncodedContent LimitForm(string token, string limit) => new(
+        new Dictionary<string, string> { ["__RequestVerificationToken"] = token, ["UploadLimitMiB"] = limit }
+    );
 
     private static string ExtractAntiforgery(string html)
     {

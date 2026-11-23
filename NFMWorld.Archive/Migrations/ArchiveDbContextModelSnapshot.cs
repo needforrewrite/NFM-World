@@ -16,12 +16,21 @@ namespace NFMWorld.Archive.Migrations
         // If you encounter a merge conflict in the line below, it means you need to
         // discard one of the migration branches and recreate its migrations on top of
         // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-        public override string LastMigrationId => "20261118045058_ModerationRoles";
+        public override string LastMigrationId => "20261123223000_ArchiveUploadLimit";
 
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "11.0.0-preview.3.26207.106");
+
+            modelBuilder.Entity("NFMWorld.Archive.Data.ArchiveSettings", b =>
+                {
+                    b.Property<int>("Id").HasColumnType("INTEGER");
+                    b.Property<int>("UploadLimitMiB").HasColumnType("INTEGER");
+                    b.HasKey("Id");
+                    b.ToTable("Settings");
+                }
+            );
 
             modelBuilder.Entity("NFMWorld.Archive.Data.Asset", b =>
                 {

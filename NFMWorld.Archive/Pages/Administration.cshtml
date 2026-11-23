@@ -1,0 +1,21 @@
+@page "/administration"
+@model NFMWorld.Archive.Pages.AdministrationModel
+@using NFMWorld.Archive.Data
+@{
+    ViewData["Title"] = "Administration";
+}
+
+<h1>Administration</h1>
+
+@if (Model.Message is { } message)
+{
+    <p role="status">@message</p>
+}
+
+<form method="post">
+    <label asp-for="UploadLimitMiB">Maximum upload size (MiB)</label>
+    <input asp-for="UploadLimitMiB" type="number" min="1" max="@ArchiveSettings.MaxUploadMiB" step="1" required aria-describedby="upload-limit-help" />
+    <span asp-validation-for="UploadLimitMiB" class="error"></span>
+    <p id="upload-limit-help" class="muted">The limit applies to new uploads and replacement files. Existing files stay available at their current size.</p>
+    <button type="submit">Save settings</button>
+</form>

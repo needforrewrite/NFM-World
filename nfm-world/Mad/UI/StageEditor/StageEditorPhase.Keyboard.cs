@@ -29,6 +29,12 @@ public partial class StageEditorPhase
             return;
         }
 
+        if (key == Key.Escape && _publish.IsOpen)
+        {
+            _publish.Close();
+            return;
+        }
+
         if (imguiWantsKeyboard || UiWantsKeyboard() || EditorModalOpen()) return;
         if (!_isOpen) return;
 

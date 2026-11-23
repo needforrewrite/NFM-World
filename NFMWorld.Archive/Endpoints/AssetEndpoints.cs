@@ -62,10 +62,16 @@ public static class AssetEndpoints
     public static void MapAssetEndpoints(this WebApplication app)
     {
         var assets = app.MapGroup("/assets");
+        var requestLimit = new Microsoft.AspNetCore.Mvc.RequestSizeLimitAttribute(AssetUpload.MaxRequestBytes);
 
-        assets.MapPost(
-            "/upload",
-            async (
+        assets.MapGet("/limits", async (ArchiveDbContext db, HttpContext http, CancellationToken ct) =>
+            {
+                http.Response.Headers.CacheControl = "no-store";
+                return Results.Ok(new { maxUploadBytes = await ArchiveSettings.ReadUploadLimitBytesAsync(db, ct) });
+            }
+        );
+
+        var upload = async Task<IResult>(
                 HttpRequest request, ArchiveDbContext db, ArchiveOptions options, ValidatorRunner validator,
                 FileStorage storage, HttpContext http, CancellationToken ct
             ) =>
@@ -80,7 +86,10 @@ public static class AssetEndpoints
                 if (!request.HasFormContentType)
                     return Results.BadRequest(new { error = "Expected a multipart upload." });
 
-                var form = await request.ReadFormAsync(ct);
+                var maxBytes = await ArchiveSettings.ReadUploadLimitBytesAsync(db, ct);
+                if (await AssetUpload.ReadFormWithinLimitAsync(request, maxBytes, ct) is not { } form)
+                    return UploadTooLarge(maxBytes);
+
                 var file = form.Files["file"];
                 var name = AssetUpload.NormalizeName(form["name"].ToString());
                 var description = AssetUpload.NormalizeDescription(form["description"].ToString());
@@ -92,10 +101,16 @@ public static class AssetEndpoints
                 if (AssetUpload.DescriptionTooLong(description))
                     return Results.BadRequest(new { error = "The description is too long." });
 
+                var isPublic = true;
+                if (form.ContainsKey("isPublic") && !bool.TryParse(form["isPublic"], out isPublic))
+                    return Results.BadRequest(new { error = "Invalid publication visibility." });
+
                 if (!AssetKinds.TryParseName(typeText, out var kind))
                     return Results.BadRequest(new { error = "Unknown asset type." });
 
-                if (AssetUpload.CheckClaim(kind, file.FileName, file.Length) is { } claimError)
+                if (file.Length > maxBytes)
+                    return UploadTooLarge(maxBytes);
+                if (AssetUpload.CheckClaim(kind, file.FileName) is { } claimError)
                     return Results.BadRequest(new { error = claimError });
 
                 await using var source = file.OpenReadStream();
@@ -106,6 +121,7 @@ public static class AssetEndpoints
                     source,
                     file.FileName,
                     kind,
+                    maxBytes,
                     ct
                 );
                 if (stored.Error is { } error)
@@ -144,7 +160,7 @@ public static class AssetEndpoints
                     ContentHash = stored.Hash,
                     StoragePath = stored.RelativePath,
                     SizeBytes = stored.SizeBytes,
-                    IsPublic = true,
+                    IsPublic = isPublic,
                     IsValidated = true
                 };
                 db.Assets.Add(asset);
@@ -152,8 +168,9 @@ public static class AssetEndpoints
 
                 asset.Owner = user;
                 return Results.Ok(new { status = "stored", asset = ToInfo(asset) });
-            }
-        );
+            };
+        assets.MapPost("/upload", upload).WithMetadata(requestLimit);
+        assets.MapPost("/publish", upload).WithMetadata(requestLimit);
 
         assets.MapGet(
             "/search",
@@ -375,9 +392,7 @@ public static class AssetEndpoints
         // Replacing the bytes. The row keeps its id and its owner, so a published link and the
         // author's inventory entry survive an update; the hash is what changes, and every replay
         // that ran against the old bytes stops ranking.
-        assets.MapPut(
-            "/{id:int}/content",
-            async (
+        var replace = async Task<IResult>(
                 int id, HttpRequest request, ArchiveDbContext db, ArchiveOptions options,
                 ValidatorRunner validator, FileStorage storage, HttpContext http, CancellationToken ct
             ) =>
@@ -401,13 +416,33 @@ public static class AssetEndpoints
                 if (!request.HasFormContentType)
                     return Results.BadRequest(new { error = "Expected a multipart upload." });
 
-                var form = await request.ReadFormAsync(ct);
+                var maxBytes = await ArchiveSettings.ReadUploadLimitBytesAsync(db, ct);
+                if (await AssetUpload.ReadFormWithinLimitAsync(request, maxBytes, ct) is not { } form)
+                    return UploadTooLarge(maxBytes);
+
                 var file = form.Files["file"];
                 if (file is null)
                     return Results.BadRequest(new { error = "Missing file." });
+                if (file.Length > maxBytes)
+                    return UploadTooLarge(maxBytes);
+
+                var hasName = form.ContainsKey("name");
+                var name = hasName ? AssetUpload.NormalizeName(form["name"].ToString()) : asset.Name;
+                if (name is null)
+                    return Results.BadRequest(new { error = "A name is required and must be short." });
+
+                var description = form.ContainsKey("description")
+                    ? AssetUpload.NormalizeDescription(form["description"].ToString())
+                    : asset.Description;
+                if (AssetUpload.DescriptionTooLong(description))
+                    return Results.BadRequest(new { error = "The description is too long." });
+
+                var isPublic = asset.IsPublic;
+                if (form.ContainsKey("isPublic") && !bool.TryParse(form["isPublic"], out isPublic))
+                    return Results.BadRequest(new { error = "Invalid publication visibility." });
 
                 var kind = (byte)asset.Type;
-                if (AssetUpload.CheckClaim(kind, file.FileName, file.Length) is { } claimError)
+                if (AssetUpload.CheckClaim(kind, file.FileName) is { } claimError)
                     return Results.BadRequest(new { error = claimError });
 
                 await using var source = file.OpenReadStream();
@@ -417,13 +452,24 @@ public static class AssetEndpoints
                     db,
                     source,
                     kind,
+                    maxBytes,
                     ct
                 );
                 if (stored.Error is { } error)
                     return Results.BadRequest(new { error });
 
                 if (string.Equals(stored.Hash, asset.ContentHash, StringComparison.Ordinal))
-                    return Results.Ok(new { status = "unchanged", asset = ToOwnedInfo(asset) });
+                {
+                    if (asset.Name == name && asset.Description == description && asset.IsPublic == isPublic)
+                        return Results.Ok(new { status = "unchanged", asset = ToOwnedInfo(asset) });
+
+                    asset.Name = name;
+                    asset.Description = description;
+                    asset.IsPublic = isPublic;
+                    await db.SaveChangesAsync(ct);
+                    await http.PurgeAssetsAsync([asset.ContentHash]);
+                    return Results.Ok(new { status = "updated", asset = ToOwnedInfo(asset) });
+                }
 
                 // One row per distinct file is the archive's invariant: a second row holding the
                 // same bytes would compete with this one for /assets/{hash}.
@@ -438,6 +484,9 @@ public static class AssetEndpoints
 
                 var previous = asset.StoragePath;
                 var previousHash = asset.ContentHash;
+                asset.Name = name;
+                asset.Description = description;
+                asset.IsPublic = isPublic;
                 asset.ContentHash = stored.Hash;
                 asset.StoragePath = stored.RelativePath;
                 asset.SizeBytes = stored.SizeBytes;
@@ -452,8 +501,9 @@ public static class AssetEndpoints
                 await http.PurgeAssetsAsync([previousHash]);
 
                 return Results.Ok(new { status = "replaced", asset = ToOwnedInfo(asset) });
-            }
-        );
+            };
+        assets.MapPut("/{id:int}/content", replace).WithMetadata(requestLimit);
+        assets.MapPut("/{id:int}/publication", replace).WithMetadata(requestLimit);
 
         assets.MapDelete(
             "/{id:int}",
@@ -524,6 +574,11 @@ public static class AssetEndpoints
     }
 
     /// <summary>The one visibility rule every read surface applies.</summary>
+    private static IResult UploadTooLarge(int maxBytes) => Results.Json(
+        new { error = AssetUpload.SizeLimitMessage(maxBytes), maxUploadBytes = maxBytes },
+        statusCode: StatusCodes.Status413PayloadTooLarge
+    );
+
     private static IQueryable<Asset> Visible(IQueryable<Asset> assets)
         => assets.Where(a => a.IsPublic && !a.IsTakedown);
 

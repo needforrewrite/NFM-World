@@ -1,8 +1,4 @@
 ﻿using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Text.Json;
-using NFMWorld.Gameplay;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Content;
 using NFMWorldLibrary.Rad;
@@ -11,6 +7,8 @@ using NFMWorldLibrary.Radpack;
 namespace NFMWorld.Accounts;
 
 public sealed record AssetUploadResult(bool Success, string Message, string? ContentHash);
+
+internal sealed record ArchivePublication(string Name, string Description, bool IsPublic, int? AssetId);
 
 /// <summary>
 /// Publishes editor documents as canonical radpacks and uploads them under the signed-in account.
@@ -22,11 +20,10 @@ public sealed record AssetUploadResult(bool Success, string Message, string? Con
 /// </remarks>
 public static class ArchivePublisher
 {
-    public static async Task<AssetUploadResult> PublishModelAsync(
+    internal static async Task<AssetUploadResult> PublishModelAsync(
         Rad3d rad,
         AssetKind kind,
-        string name,
-        string? description
+        ArchivePublication publication
     )
     {
         if (kind is not (AssetKind.Car or AssetKind.StagePiece or AssetKind.Wheel))
@@ -44,48 +41,47 @@ public static class ArchivePublisher
         {
             // The packaged FileName is the model's identity in a stage file. Parsing from a tab
             // bakes the author's local path, which no other machine can resolve.
-            rad.FileName = name;
-            bytes = StockCatalog.PackageModel(kind, name, rad, description);
+            rad.FileName = publication.Name;
+            bytes = StockCatalog.PackageModel(kind, publication.Name, rad, publication.Description);
         }
         catch (Exception ex)
         {
             return new AssetUploadResult(false, $"The model could not be packaged: {ex.Message}", null);
         }
 
-        return await UploadAsync(bytes, name, description ?? "", kind);
+        return await UploadAsync(bytes, kind, publication);
     }
 
-    public static async Task<AssetUploadResult> PublishStageAsync(
+    internal static async Task<AssetUploadResult> PublishStageAsync(
         StageLoader stage,
-        string name,
-        string? description
+        ArchivePublication publication
     )
     {
         byte[] bytes;
         try
         {
-            bytes = StockCatalog.PackageStage(name, stage, includeMusic: true);
+            bytes = StockCatalog.PackageStage(publication.Name, stage, includeMusic: true);
         }
         catch (Exception ex)
         {
             return new AssetUploadResult(false, $"The stage could not be packaged: {ex.Message}", null);
         }
 
-        return await UploadAsync(bytes, name, description ?? "", AssetKind.Stage);
+        return await UploadAsync(bytes, AssetKind.Stage, publication);
     }
 
-    /// <summary>Writes a radpack beside the local content, so publishing is not required to keep it.</summary>
+    /// <summary>Writes a model pack to the local radpack directory.</summary>
     public static string? ExportLocalModel(Rad3d rad, AssetKind kind, string name)
     {
         if (!AssetKinds.IsPublishable((byte)kind))
             return null;
 
-        var path = $"data/models/{name}.radpack";
+        if (GetExportPath(name) is not { } path)
+            return null;
         try
         {
             rad.FileName = name;
-            using var stream = VFS.OpenWrite(path);
-            stream.Write(StockCatalog.PackageModel(kind, name, rad));
+            VFS.WriteAllBytesAtomic(path, StockCatalog.PackageModel(kind, name, rad));
         }
         catch (Exception ex)
         {
@@ -98,12 +94,12 @@ public static class ArchivePublisher
 
     public static string? ExportLocalStage(StageLoader stage, string name)
     {
-        var path = $"data/stages/{name}.radpack";
+        if (GetExportPath(name) is not { } path)
+            return null;
         try
         {
             var bytes = StockCatalog.PackageStage(name, stage, includeMusic: true);
-            using var stream = VFS.OpenWrite(path);
-            stream.Write(bytes);
+            VFS.WriteAllBytesAtomic(path, bytes);
         }
         catch (Exception ex)
         {
@@ -114,47 +110,28 @@ public static class ArchivePublisher
         return path;
     }
 
-    private static async Task<AssetUploadResult> UploadAsync(
-        byte[] bytes,
-        string name,
-        string description,
-        AssetKind kind
-    )
+    private static string? GetExportPath(string name)
     {
-        if (bytes.Length > RadpackLimits.MaxCompressedBytes)
-            return new AssetUploadResult(false, "The package is too large to publish.", null);
-
-        if (!GameSparker.AccountManager.LoggedIn)
-            return new AssetUploadResult(
-                false,
-                "Sign in from the main menu to publish. Your local document is unchanged.",
-                null
-            );
-
-        // Re-publishing a document under a name the account already published replaces that
-        // upload's bytes instead of creating a second row: the author meant to update it, and a
-        // duplicate would leave the stale copy listed next to the new one.
-        if (await GameSparker.AccountManager.FindOwnedAssetAsync(name, (byte)kind) is { } existing)
-        {
-            var replaced = await GameSparker.AccountManager.ReplaceAssetAsync(existing.Id, bytes);
-            if (!replaced.Success)
-                return replaced;
-
-            var renamed = await GameSparker.AccountManager.UpdateAssetAsync(
-                existing.Id,
-                name,
-                description,
-                isPublic: true
-            );
-            return renamed.Success
-                ? new AssetUploadResult(true, $"Updated \"{name}\".", replaced.ContentHash)
-                : new AssetUploadResult(
-                    false,
-                    renamed.Message ?? "The upload was replaced but not renamed.",
-                    replaced.ContentHash
-                );
-        }
-
-        return await GameSparker.AccountManager.UploadAssetAsync(bytes, name, description, kind);
+        var fileName = Path.GetFileName(name.Replace('\\', '/'));
+        return string.IsNullOrWhiteSpace(fileName) || fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0
+            ? null
+            : $"data/radpacks/{fileName}.radpack";
     }
+
+    private static Task<AssetUploadResult> UploadAsync(byte[] bytes, AssetKind kind, ArchivePublication publication)
+        => publication.AssetId is { } id
+            ? GameSparker.AccountManager.ReplaceAssetAsync(
+                id,
+                bytes,
+                publication.Name,
+                publication.Description,
+                publication.IsPublic
+            )
+            : GameSparker.AccountManager.UploadAssetAsync(
+                bytes,
+                publication.Name,
+                publication.Description,
+                kind,
+                publication.IsPublic
+            );
 }

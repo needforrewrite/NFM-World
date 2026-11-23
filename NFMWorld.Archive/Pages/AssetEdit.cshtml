@@ -69,6 +69,7 @@
             trial recorded against the old file stops ranking.
         </p>
         <form method="post" enctype="multipart/form-data" asp-page-handler="Replace" asp-route-id="@asset.Id">
+            <p class="muted">Maximum replacement size: @(Model.MaxUploadBytes / NFMWorld.Archive.Data.ArchiveSettings.BytesPerMiB) MiB.</p>
             <label>Replacement file<input type="file" asp-for="Replacement" accept=".radpack,.rad" /></label>
             <button type="submit">Replace file</button>
         </form>

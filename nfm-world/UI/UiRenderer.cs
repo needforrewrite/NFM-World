@@ -25,6 +25,7 @@ public class UiRenderer : IDisposable
     private MountedUi? _mounted;
     private object? _owner;
     private Node? _phaseRoot;
+    private readonly HashSet<MouseButton> _consumedMouseButtons = [];
 
     public View? ActiveRoot { get; private set; }
     internal NFMWorld.UI.Components.NotificationCenter Notifications { get; } =
@@ -201,7 +202,7 @@ public class UiRenderer : IDisposable
         bool altKey
     )
     {
-        if (ActiveRoot is not { } root) return;
+        if (_consumedMouseButtons.Contains(button) || ActiveRoot is not { } root) return;
         root.DispatchMouseDragged(
             new BaseMouseDragEvent(
                 new Vector2(dragStartX, dragStartY),
@@ -215,7 +216,7 @@ public class UiRenderer : IDisposable
         );
     }
 
-    public void HandleMousePressed(
+    public bool HandleMousePressed(
         int x,
         int y,
         MouseButton button,
@@ -225,33 +226,44 @@ public class UiRenderer : IDisposable
         bool altKey
     )
     {
-        if (ActiveRoot == null) return;
+        _consumedMouseButtons.Remove(button);
+        if (ActiveRoot == null) return false;
         UiScheduler.Instance.Flush();
         NFMWorld.UI.Components.Controls.DismissDropdowns(ActiveRoot, new Vector2(x, y));
         UiScheduler.Instance.Flush();
-        if (ActiveRoot is not { } root) return;
+        if (ActiveRoot is not { } root) return false;
         var @event = new BaseMouseEvent(new Vector2(x, y), button, buttons, ctrlKey, altKey, shiftKey);
         // Focus handling lives in FocusManager: it focuses the focusable element
         // under the cursor, or clears focus when the clicked tree has none.
         FocusManager.HandleMousePressed(root, @event);
-        root.DispatchMousePressed(@event);
+        var consumed = root.DispatchMousePressed(@event);
+        if (consumed) _consumedMouseButtons.Add(button);
         UiScheduler.Instance.Flush();
+        return consumed;
     }
 
-    public void HandleMouseReleased(
+    public bool HandleMouseReleased(
         int x,
         int y,
         MouseButton button,
         MouseButtons buttons,
         bool ctrlKey,
         bool shiftKey,
-        bool altKey
+        bool altKey,
+        bool dispatchToUi = true
     )
     {
-        if (ActiveRoot is not { } root) return;
+        if (_consumedMouseButtons.Remove(button))
+        {
+            FocusManager.HandleMouseReleased();
+            return true;
+        }
+
+        if (!dispatchToUi || ActiveRoot is not { } root) return false;
         var @event = new BaseMouseEvent(new Vector2(x, y), button, buttons, ctrlKey, altKey, shiftKey);
         FocusManager.HandleMouseReleased();
         root.DispatchMouseReleased(@event);
+        return false;
     }
 
     public void HandleMouseScrolled(int x, int y, int delta, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)

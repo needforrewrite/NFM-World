@@ -31,6 +31,26 @@ public sealed partial class AccountManager
 {
     private const int OwnedPageSize = 100;
 
+    public async Task<int?> GetAssetUploadLimitAsync()
+    {
+        try
+        {
+            using var response = await _http.GetAsync(new Uri(_baseUri, "assets/limits"));
+            if (!response.IsSuccessStatusCode) return null;
+
+            var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+            return body.ValueKind == JsonValueKind.Object && body.TryGetProperty("maxUploadBytes", out var limit)
+                   && limit.ValueKind == JsonValueKind.Number && limit.TryGetInt32(out var bytes)
+                   && bytes is > 0 and <= RadpackLimits.MaxCompressedBytes
+                ? bytes
+                : null;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            return null;
+        }
+    }
+
     /// <summary>Every upload of the signed-in account, newest first, hidden and taken-down included.</summary>
     public async Task<IReadOnlyList<OwnedAsset>> ListOwnedAssetsAsync(string? type = null)
     {
@@ -52,7 +72,7 @@ public sealed partial class AccountManager
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", account.Token);
             using var response = await _http.SendAsync(request);
             if (!response.IsSuccessStatusCode)
-                return items;
+                throw new HttpRequestException(await ReadErrorAsync(response, assetRequest: true), null, response.StatusCode);
 
             var body = await response.Content.ReadFromJsonAsync<JsonElement>();
             foreach (var item in body.GetProperty("items").EnumerateArray())
@@ -100,7 +120,13 @@ public sealed partial class AccountManager
     /// Replaces one upload's bytes, keeping its id and inventory entry. The archive re-validates
     /// the file and refuses bytes already published under another name.
     /// </summary>
-    public async Task<AssetUploadResult> ReplaceAssetAsync(int id, byte[] radpack)
+    public async Task<AssetUploadResult> ReplaceAssetAsync(
+        int id,
+        byte[] radpack,
+        string name,
+        string description,
+        bool isPublic
+    )
     {
         if (ActiveAccount is not { } account)
             return new AssetUploadResult(false, "Sign in to edit your uploads.", null);
@@ -114,29 +140,41 @@ public sealed partial class AccountManager
             var file = new ByteArrayContent(radpack);
             file.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
             form.Add(file, "file", "replacement.radpack");
+            form.Add(new StringContent(name), "name");
+            form.Add(new StringContent(description), "description");
+            form.Add(new StringContent(isPublic.ToString()), "isPublic");
 
-            using var request = new HttpRequestMessage(HttpMethod.Put, new Uri(_baseUri, $"assets/{id}/content"))
+            using var request = new HttpRequestMessage(HttpMethod.Put, new Uri(_baseUri, $"assets/{id}/publication"))
             {
                 Content = form
             };
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", account.Token);
 
             using var response = await _http.SendAsync(request);
+            if (IsPublicationRouteUnavailable(response))
+                return new AssetUploadResult(
+                    false,
+                    "The upload is unavailable or this Archive does not support editor updates yet.",
+                    null
+                );
             if (!response.IsSuccessStatusCode)
-                return new AssetUploadResult(false, await ReadErrorAsync(response), null);
+                return new AssetUploadResult(false, await ReadErrorAsync(response, assetRequest: true), null);
 
             var body = await response.Content.ReadFromJsonAsync<JsonElement>();
             var hash = body.TryGetProperty("asset", out var asset)
                        && asset.TryGetProperty("contentHash", out var contentHash)
                 ? contentHash.GetString()
                 : null;
-            return new AssetUploadResult(true, "The file was replaced.", hash);
+            return new AssetUploadResult(true, $"Updated \"{name}\".", hash);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             return new AssetUploadResult(false, $"Could not reach the archive: {ex.Message}", null);
         }
     }
+
+    private static bool IsPublicationRouteUnavailable(HttpResponseMessage response)
+        => response.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.MethodNotAllowed;
 
     /// <summary>Deletes one upload. The archive stops serving it and unranks replays that used it.</summary>
     public async Task<RequestResult> DeleteAssetAsync(int id)
@@ -157,22 +195,6 @@ public sealed partial class AccountManager
         {
             return new RequestResult($"Could not reach the archive: {ex.Message}", false);
         }
-    }
-
-    /// <summary>
-    /// The account's own upload of this kind with this name, if it has one. Publishing a document
-    /// again under the same name updates that row instead of creating a duplicate.
-    /// </summary>
-    public async Task<OwnedAsset?> FindOwnedAssetAsync(string name, byte kind)
-    {
-        var type = AssetKinds.Name(kind);
-        foreach (var asset in await ListOwnedAssetsAsync(type))
-        {
-            if (string.Equals(asset.Name, name.Trim(), StringComparison.OrdinalIgnoreCase))
-                return asset;
-        }
-
-        return null;
     }
 
     private static OwnedAsset ReadOwned(JsonElement item) => new(

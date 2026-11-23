@@ -1378,7 +1378,7 @@ public abstract partial class Component : Node, IAnimationCallback
         OnMouseLeft(relativeEvent);
     }
 
-    public void DispatchMousePressed(BaseMouseEvent @event)
+    public bool DispatchMousePressed(BaseMouseEvent @event)
     {
         // Occlusion-aware: only the topmost hit-test chain under the cursor (the deepest
         // element + its ancestors) receives the press. The previous implementation walked
@@ -1415,6 +1415,7 @@ public abstract partial class Component : Node, IAnimationCallback
         }
 
         _pressDispatchChain = chain;
+        return dispatch.GestureConsumed;
     }
 
     /// <summary>Reused hit-test chain for press/release dispatch, so a mouse event allocates no list.</summary>

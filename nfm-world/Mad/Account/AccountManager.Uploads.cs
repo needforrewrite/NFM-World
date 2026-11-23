@@ -14,7 +14,8 @@ public sealed partial class AccountManager
         byte[] radpack,
         string name,
         string description,
-        AssetKind kind
+        AssetKind kind,
+        bool isPublic
     )
     {
         if (ActiveAccount is not { } account)
@@ -26,25 +27,37 @@ public sealed partial class AccountManager
         if (radpack.Length > RadpackLimits.MaxCompressedBytes)
             return new AssetUploadResult(false, "The package is too large to publish.", null);
 
-        try
+        async Task<HttpResponseMessage> SendUploadAsync(string route)
         {
             using var form = new MultipartFormDataContent();
             var file = new ByteArrayContent(radpack);
             file.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-            form.Add(file, "file", $"{name}.radpack");
+            form.Add(file, "file", "publication.radpack");
             form.Add(new StringContent(name), "name");
             form.Add(new StringContent(description), "description");
             form.Add(new StringContent(AssetKinds.Name((byte)kind)), "type");
+            form.Add(new StringContent(isPublic.ToString()), "isPublic");
 
-            using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(_baseUri, "assets/upload"))
+            using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(_baseUri, route))
             {
                 Content = form
             };
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", account.Token);
 
-            using var response = await _http.SendAsync(request);
+            return await _http.SendAsync(request);
+        }
+
+        try
+        {
+            using var publish = await SendUploadAsync("assets/publish");
+            var routeUnavailable = IsPublicationRouteUnavailable(publish);
+            if (routeUnavailable && !isPublic)
+                return new AssetUploadResult(false, "This Archive needs an update before it can publish hidden uploads.", null);
+
+            using var legacy = routeUnavailable ? await SendUploadAsync("assets/upload") : null;
+            var response = legacy ?? publish;
             if (!response.IsSuccessStatusCode)
-                return new AssetUploadResult(false, await ReadErrorAsync(response), null);
+                return new AssetUploadResult(false, await ReadErrorAsync(response, assetRequest: true), null);
 
             var body = await response.Content.ReadFromJsonAsync<JsonElement>();
             var hash = body.TryGetProperty("asset", out var asset)
@@ -52,7 +65,14 @@ public sealed partial class AccountManager
                 ? contentHash.GetString()
                 : null;
 
-            return new AssetUploadResult(true, hash is null ? "Published." : $"Published as {hash}.", hash);
+            if (body.TryGetProperty("status", out var status) && status.GetString() == "already present")
+                return new AssetUploadResult(
+                    false,
+                    "These bytes are already in the Archive. Select your existing upload to update it.",
+                    hash
+                );
+
+            return new AssetUploadResult(true, $"Published \"{name}\".", hash);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {

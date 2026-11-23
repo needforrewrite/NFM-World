@@ -21,9 +21,12 @@ public sealed class ArchiveDbContext(DbContextOptions<ArchiveDbContext> options)
     public DbSet<MatchParticipant> MatchParticipants => Set<MatchParticipant>();
     public DbSet<TimeTrial> TimeTrials => Set<TimeTrial>();
     public DbSet<ModerationAction> ModerationActions => Set<ModerationAction>();
+    public DbSet<ArchiveSettings> Settings => Set<ArchiveSettings>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
+        model.Entity<ArchiveSettings>().Property(setting => setting.Id).ValueGeneratedNever();
+
         model.Entity<User>(e =>
             {
                 // Case-insensitive uniqueness is enforced with a normalised column, because SQLite's

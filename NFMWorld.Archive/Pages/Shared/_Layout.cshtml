@@ -26,6 +26,10 @@
             {
                 <li><a href="/moderation">Moderation</a></li>
             }
+            @if (viewer?.IsAdmin == true)
+            {
+                <li><a href="/administration">Administration</a></li>
+            }
         </ul>
         <ul class="account-menu">
             @if (viewer?.Username is { } username)

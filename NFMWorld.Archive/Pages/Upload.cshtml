@@ -6,6 +6,7 @@
 
 <h1>Upload</h1>
 <p class="muted">Radpacks (or legacy .rad models). The file's own type must match the type you choose.</p>
+<p class="muted">Maximum upload size: @(Model.MaxUploadBytes / NFMWorld.Archive.Data.ArchiveSettings.BytesPerMiB) MiB.</p>
 
 @if (Model.Error is not null)
 {

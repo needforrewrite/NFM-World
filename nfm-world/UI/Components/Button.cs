@@ -40,7 +40,8 @@ public static class Button
         bool disabled = false,
         Func<Styles>? style = null,
         Func<TextStyles>? textStyle = null,
-        Func<string?>? name = null
+        Func<string?>? name = null,
+        bool consumeGesture = false
     )
     {
         var hovered = new Signal<bool>(false);
@@ -96,7 +97,8 @@ public static class Button
             onmousedown: e =>
             {
                 // Handled here: a modal backdrop behind the button must not also see it.
-                e.StopPropagation();
+                if (consumeGesture) e.ConsumeGesture();
+                else e.StopPropagation();
                 if (!disabled)
                     onPress();
             },

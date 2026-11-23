@@ -6,7 +6,7 @@ using NFMWorld.Archive.Endpoints;
 namespace NFMWorld.Archive.Pages;
 
 /// <summary>Per-request view state the layout reads without every page having to pass it.</summary>
-public sealed record ViewerState(string? Username, bool IsStaff, DateTimeOffset? DeletionEraseAt);
+public sealed record ViewerState(string? Username, bool IsStaff, bool IsAdmin, DateTimeOffset? DeletionEraseAt);
 
 /// <summary>
 /// Shared page base: resolves the signed-in account from the session cookie once per request.
@@ -36,6 +36,7 @@ public abstract class ArchivePageModel(ArchiveDbContext db) : PageModel
         ViewData["Viewer"] = new ViewerState(
             Account?.Username,
             Account?.IsModerator == true,
+            IsAdmin,
             Account?.DeletionRequestedAt is { } requested
                 ? requested + HttpContext.RequestServices.GetRequiredService<ArchiveOptions>().DeletionGracePeriod
                 : null

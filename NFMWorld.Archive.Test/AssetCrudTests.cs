@@ -357,6 +357,113 @@ public class AssetCrudTests
     }
 
     [TestMethod]
+    public async Task UploadLimit_RejectsNewFilesAndReplacementsWithoutRemovingExistingFiles()
+    {
+        using var factory = new ArchiveAppFactory();
+        var (client, _) = await SignedInClient(factory, "artist");
+        var id = await SeedAssetAsync(factory, "artist", "existing stage");
+        var oversized = new byte[ArchiveSettings.BytesPerMiB + 1];
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+            var existing = db.Assets.Single(asset => asset.Id == id);
+            existing.SizeBytes = oversized.Length;
+            var storage = scope.ServiceProvider.GetRequiredService<FileStorage>();
+            var stored = await storage.PutAsync(oversized, CancellationToken.None);
+            existing.StoragePath = stored.RelativePath;
+            existing.ContentHash = stored.Hash;
+            db.Settings.Single().UploadLimitMiB = 1;
+            await db.SaveChangesAsync();
+        }
+
+        foreach (var route in new[] { "/assets/upload", "/assets/publish" })
+        {
+            using var form = PublicationForm(oversized, "new stage", "", true);
+            form.Add(new StringContent("Stage"), "type");
+            using var response = await client.PostAsync(route, form);
+            Assert.AreEqual(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+            var error = await response.Content.ReadFromJsonAsync<JsonElement>();
+            Assert.AreEqual(ArchiveSettings.BytesPerMiB, error.GetProperty("maxUploadBytes").GetInt32());
+        }
+
+        foreach (var route in new[] { $"/assets/{id}/content", $"/assets/{id}/publication" })
+        {
+            using var form = PublicationForm(oversized, "must not rename", "", false);
+            using var response = await client.PutAsync(route, form);
+            Assert.AreEqual(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+        }
+
+        using var renamed = await client.PatchAsJsonAsync($"/assets/{id}", new { Name = "renamed stage" });
+        Assert.AreEqual(HttpStatusCode.OK, renamed.StatusCode);
+        using var verifyScope = factory.Services.CreateScope();
+        var saved = verifyScope.ServiceProvider.GetRequiredService<ArchiveDbContext>().Assets.Single();
+        Assert.AreEqual(id, saved.Id);
+        Assert.AreEqual("renamed stage", saved.Name);
+        Assert.AreEqual(oversized.LongLength, saved.SizeBytes);
+        Assert.IsTrue(saved.IsPublic);
+        Assert.IsTrue(verifyScope.ServiceProvider.GetRequiredService<FileStorage>().Exists(saved.StoragePath));
+        Assert.AreEqual(HttpStatusCode.OK, (await client.GetAsync($"/assets/meta/{saved.ContentHash}")).StatusCode);
+    }
+
+    [TestMethod]
+    public async Task EditorPublication_PublishesHiddenAndUpdatesTheSameListing()
+    {
+        if (ArchiveAppFactory.ValidatorPath is null)
+            Assert.Inconclusive("The validator executable was not built beside the tests.");
+
+        using var factory = new ArchiveAppFactory();
+        var (client, _) = await SignedInClient(factory, "artist");
+        using var initial = PublicationForm(StagePackage("initial stage"), "First listing", "initial description", false);
+        initial.Add(new StringContent("Stage"), "type");
+        using var published = await client.PostAsync("/assets/publish", initial);
+        Assert.AreEqual(HttpStatusCode.OK, published.StatusCode, await published.Content.ReadAsStringAsync());
+
+        var mine = await client.GetFromJsonAsync<JsonElement>("/assets/mine?type=Stage");
+        var original = mine.GetProperty("items").EnumerateArray().Single();
+        var id = original.GetProperty("id").GetInt32();
+        var originalHash = original.GetProperty("contentHash").GetString();
+        Assert.IsFalse(original.GetProperty("isPublic").GetBoolean());
+        Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync($"/assets/meta/{originalHash}")).StatusCode);
+
+        var updatedBytes = StagePackage("updated stage");
+        using var invalid = PublicationForm(updatedBytes, "", "Rejected description", true);
+        using var rejected = await client.PutAsync($"/assets/{id}/publication", invalid);
+        Assert.AreEqual(HttpStatusCode.BadRequest, rejected.StatusCode);
+        mine = await client.GetFromJsonAsync<JsonElement>("/assets/mine?type=Stage");
+        Assert.AreEqual(original.GetRawText(), mine.GetProperty("items").EnumerateArray().Single().GetRawText());
+
+        using var revision = PublicationForm(updatedBytes, "New listing name", "Updated description", true);
+        using var updated = await client.PutAsync($"/assets/{id}/publication", revision);
+        Assert.AreEqual(HttpStatusCode.OK, updated.StatusCode, await updated.Content.ReadAsStringAsync());
+        mine = await client.GetFromJsonAsync<JsonElement>("/assets/mine?type=Stage");
+        var updatedAsset = mine.GetProperty("items").EnumerateArray().Single();
+        Assert.AreEqual(id, updatedAsset.GetProperty("id").GetInt32());
+        Assert.AreEqual("New listing name", updatedAsset.GetProperty("name").GetString());
+        Assert.AreEqual("Updated description", updatedAsset.GetProperty("description").GetString());
+        Assert.IsTrue(updatedAsset.GetProperty("isPublic").GetBoolean());
+        var updatedHash = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(updatedBytes));
+        Assert.AreEqual(updatedHash, updatedAsset.GetProperty("contentHash").GetString());
+
+        using var metadata = PublicationForm(updatedBytes, "New listing name", "", false);
+        using var hidden = await client.PutAsync($"/assets/{id}/publication", metadata);
+        Assert.AreEqual(HttpStatusCode.OK, hidden.StatusCode, await hidden.Content.ReadAsStringAsync());
+        var hiddenAsset = (await hidden.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("asset");
+        Assert.AreEqual(updatedHash, hiddenAsset.GetProperty("contentHash").GetString());
+        Assert.IsFalse(hiddenAsset.GetProperty("isPublic").GetBoolean());
+        Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync($"/assets/meta/{updatedHash}")).StatusCode);
+    }
+
+    private static MultipartFormDataContent PublicationForm(byte[] bytes, string name, string description, bool isPublic)
+    {
+        var form = new MultipartFormDataContent();
+        form.Add(new ByteArrayContent(bytes), "file", "stage.radpack");
+        form.Add(new StringContent(name), "name");
+        form.Add(new StringContent(description), "description");
+        form.Add(new StringContent(isPublic.ToString()), "isPublic");
+        return form;
+    }
+
+    [TestMethod]
     public async Task Replace_RequiresTheRealValidatorAndKeepsTheRowId()
     {
         if (ArchiveAppFactory.ValidatorPath is null)
