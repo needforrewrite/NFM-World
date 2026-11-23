@@ -33,7 +33,13 @@ public static partial class GameSparker
         (BuildInformation.Read(Assembly.GetEntryAssembly() ?? typeof(GameSparker).Assembly)
             .BuildNumber?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "unknown");
 
-    public static AccountManager AccountManager = new AccountManager();
+    private static AccountManager? _accountManager;
+
+    public static AccountManager AccountManager
+    {
+        get => _accountManager ??= new AccountManager();
+        set => _accountManager = value;
+    }
 
     /// <summary>
     /// The shared UI renderer. Set by WorldGame.Initialize(). Phases access

@@ -392,7 +392,9 @@ public static class UiState
         public Signal<bool> HasCustomWheels { get; } = new(false);
         public Signal<bool> OriginalWheels { get; } = new(false);
         public Signal<bool> CustomizeTabsFocused { get; } = new(false);
-        public IReadOnlyList<GarageColorSlot> EditingSlots => WheelsTab.Value ? WheelColorSlots.Value : ColorSlots.Value;
+        public bool HasBodyColors => ColorSlots.Value.Count > 0;
+        public bool EditingWheels => !HasBodyColors || WheelsTab.Value;
+        public IReadOnlyList<GarageColorSlot> EditingSlots => EditingWheels ? WheelColorSlots.Value : ColorSlots.Value;
     }
 
     /// <summary>

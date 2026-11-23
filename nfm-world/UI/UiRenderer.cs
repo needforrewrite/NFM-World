@@ -27,7 +27,8 @@ public class UiRenderer : IDisposable
     private Node? _phaseRoot;
 
     public View? ActiveRoot { get; private set; }
-    internal NFMWorld.UI.Components.NotificationCenter Notifications { get; } = new();
+    internal NFMWorld.UI.Components.NotificationCenter Notifications { get; } =
+        new(() => GameSparker.Game?.Window.RequestAttention());
 
     /// <summary>
     /// Whether the mounted tree has a focused control (a text field, a slider), i.e.

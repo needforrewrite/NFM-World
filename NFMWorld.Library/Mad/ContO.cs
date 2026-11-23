@@ -76,8 +76,8 @@ public readonly struct ContO
 
         for (var i = 0; i < 4; i++)
         {
-            Keyx[i] = (int)car.Wheels[i].Position.X;
-            Keyz[i] = (int)car.Wheels[i].Position.Z;
+            Keyx[i] = (int)car.CollisionWheels[i].Position.X;
+            Keyz[i] = (int)car.CollisionWheels[i].Position.Z;
         }
     }
 

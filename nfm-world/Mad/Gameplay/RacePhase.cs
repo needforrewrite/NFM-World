@@ -58,6 +58,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     private readonly RaceInputController _input = new();
     private readonly RaceCameraDirector _cameraDirector = new();
     private readonly SettingsCameraPreview _settingsCamera = new();
+    private BackendCar? _carCamOpponent;
 
     /// <summary>This client's player id in the match, so it can tell which bots it simulates.</summary>
     private readonly Guid _localPlayerId;
@@ -459,7 +460,11 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         }
 
         hud.Racers.Sort(static (a, b) => a.Position.CompareTo(b.Position));
-        var targetCar = client is null ? null : TargetCarFor(client);
+        var targetCar = client is null
+            ? null
+            : _input.CarCamHeld && !IsPaused && client.Control.Arrace
+                ? _carCamOpponent
+                : TargetCarFor(client);
         if (client is not null)
         {
             hud.ClientPosition = ((float)client.Position.X, (float)client.Position.Y, (float)client.Position.Z);
@@ -555,10 +560,8 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     {
         if (client is null || client.Wasted) return null;
         if (CurrentStage.Backend.Physics.NoArrow) return null;
-        if (client.Control.Arrace)
-            return targetCar is null
-                ? null
-                : new Vector3((float)targetCar.Position.X, (float)targetCar.Position.Y, (float)targetCar.Position.Z);
+        if (client.Control.Arrace && targetCar is not null)
+            return new Vector3((float)targetCar.Position.X, (float)targetCar.Position.Y, (float)targetCar.Position.Z);
         if (CurrentStage.Backend.Nlaps == 0) return null;
         var checkpoints = CurrentStage.Backend.Checkpoints;
         if (checkpoints.Count == 0) return null;
@@ -897,8 +900,8 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         if (IsPaused && PauseMenuView.HandleKeyPressed(GameSparker.UiRenderer?.ActiveRoot, key))
             return;
 
-        // ── Pause toggle (Escape) ──────────────────────────────────
-        if (key == Key.Escape)
+        // Enter opens pause during gameplay and selects an item once the menu is open.
+        if (key == Key.Escape || (!IsPaused && key == Key.Enter))
         {
             if (IsPaused)
                 ResumeRace();
@@ -966,9 +969,16 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             return;
         }
 
-        if (imguiWantsKeyboard || IsPaused || GameSparker.devConsole.IsOpen()) return;
+        var car = ClientCar;
+        if (imguiWantsKeyboard || IsPaused || GameSparker.devConsole.IsOpen())
+        {
+            _input.SetCarCamHeld(false, car?.Control);
+            return;
+        }
 
-        _input.Refresh(in keys, ClientCar?.Control, ClientCar?.CarPhysics.Mtouch == false);
+        var binding = SettingsMenu.Bindings.CarCam;
+        _input.SetCarCamHeld(GameSparker.Game.IsActive && binding != Key.None && keys[binding], car?.Control);
+        _input.Refresh(in keys, car?.Control, car?.CarPhysics.Mtouch == false);
     }
 
     public override void KeyReleased(Key key, bool imguiWantsKeyboard, in Keys keys)
@@ -1160,10 +1170,8 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             InvalidateOrdering();
             if ((WatchingPlayers ? SpectateCar() : ClientCar) is { } pausedCar
                 && _cameraDirector.CurrentViewMode is RaceCameraDirector.ViewMode.Follow
-                    or RaceCameraDirector.ViewMode.FollowStatic
-                    or RaceCameraDirector.ViewMode.CarCam)
+                    or RaceCameraDirector.ViewMode.FollowStatic)
             {
-                _cameraDirector.ArrowTarget = WatchingPlayers ? null : ArrowTarget(pausedCar, TargetCarFor(pausedCar));
                 _cameraDirector.Update(Camera, pausedCar);
             }
 
@@ -1210,10 +1218,10 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
         if (ClientCar is { Wasted: false }) _deathSpectating = false;
         UpdateWatchedFeedback();
+        _carCamOpponent = null;
 
         if (WatchingPlayers)
         {
-            _cameraDirector.ArrowTarget = null;
             // Watching a race with no car of our own: the camera rides the chosen car. A race
             // with no cars yet (still loading) leaves the camera where it is.
             _cameraDirector.Navigation = _input.Navigation;
@@ -1222,11 +1230,16 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         }
         else if (ClientCar is { } car)
         {
-            // Per tick, not per UI push: the camera runs here, before PushUiState, so the target
-            // is resolved fresh rather than read from the HUD a frame late.
-            _cameraDirector.ArrowTarget = ArrowTarget(car, TargetCarFor(car));
+            var carCamHeld = !IsPaused && _input.CarCamHeld;
+            if (carCamHeld && car.Control.Arrace)
+                _carCamOpponent = TargetCarFor(car);
             _cameraDirector.Navigation = _input.Navigation;
-            _cameraDirector.Update(Camera, car);
+            _cameraDirector.Update(
+                Camera,
+                car,
+                carCamHeld,
+                carCamHeld ? ArrowTarget(car, _carCamOpponent) : null
+            );
         }
 
         if (RaceState == RaceState.InProgress)

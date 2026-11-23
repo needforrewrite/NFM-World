@@ -140,6 +140,7 @@ jobs:
             -p:IncludeNativeLibrariesForSelfExtract=false `
             -p:IncludeAllContentForSelfExtract=false `
             -p:ErrorOnDuplicatePublishOutputFiles=false `
+            -p:GeneratePackageOnBuild=false `
             -- /maxcpucount:1
 
       - name: Publish NFMWorld.Library native DLL (${{ matrix.rid }})
@@ -150,6 +151,7 @@ jobs:
             -c Release \
             -r "${{ matrix.rid }}" \
             -o "./publish/${{ matrix.rid }}/native" \
+            -p:GeneratePackageOnBuild=false \
             -- /maxcpucount:1
 
       # A referenced Exe contributes its managed dll to this publish, never an apphost, so a
@@ -169,6 +171,7 @@ jobs:
             -p:DebugSymbols=false \
             -p:StripSymbols=true \
             -o "./publish/${{ matrix.rid }}" \
+            -p:GeneratePackageOnBuild=false \
             -- /maxcpucount:1
 
       - name: Upload artifact
@@ -230,6 +233,7 @@ jobs:
             -p:IncludeNativeLibrariesForSelfExtract=false \
             -p:IncludeAllContentForSelfExtract=false \
             -p:ErrorOnDuplicatePublishOutputFiles=false \
+            -p:GeneratePackageOnBuild=false \
             -- /maxcpucount:1
 
       - name: Publish NFMWorld.Library native library (${{ matrix.rid }})
@@ -239,6 +243,7 @@ jobs:
             -c Release \
             -r "${{ matrix.rid }}" \
             -o "./publish/${{ matrix.rid }}/native" \
+            -p:GeneratePackageOnBuild=false \
             -- /maxcpucount:1
 
       # See the Windows job: a referenced Exe contributes no apphost, so the single-file publish
@@ -255,6 +260,7 @@ jobs:
             -p:DebugSymbols=false \
             -p:StripSymbols=true \
             -o "./publish/${{ matrix.rid }}" \
+            -p:GeneratePackageOnBuild=false \
             -- /maxcpucount:1
 
       - name: Upload artifact
@@ -330,12 +336,14 @@ jobs:
               -p:IncludeNativeLibrariesForSelfExtract=false \
               -p:IncludeAllContentForSelfExtract=false \
               -p:ErrorOnDuplicatePublishOutputFiles=false \
+              -p:GeneratePackageOnBuild=false \
               -- /maxcpucount:1
 
             dotnet publish NFMWorld.Library/NFMWorld.Library.csproj \
               -c Release \
               -r "$RID" \
               -o "./publish/$RID/native" \
+              -p:GeneratePackageOnBuild=false \
               -- /maxcpucount:1
 
             # See the Windows job. Unsigned by design, like the game itself.
@@ -348,6 +356,7 @@ jobs:
               -p:DebugSymbols=false \
               -p:StripSymbols=true \
               -o ./publish/$RID \
+              -p:GeneratePackageOnBuild=false \
               -- /maxcpucount:1
           done
 

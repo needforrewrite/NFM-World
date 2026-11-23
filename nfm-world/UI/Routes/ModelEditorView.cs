@@ -2924,7 +2924,7 @@ public sealed class ModelEditorView
 
     private void LoadRimsFields(ModelEditorTab tab)
     {
-        var rims = _phase.GetRimsSpec(tab);
+        var rims = _phase.GetRimsSpec(tab, _selectedWheelIndex.Value);
         _rimR.Value = rims.R.ToString();
         _rimG.Value = rims.G.ToString();
         _rimB.Value = rims.B.ToString();
@@ -2974,7 +2974,11 @@ public sealed class ModelEditorView
 
     private Node WheelListButton(ModelEditorPhase.WheelSpec spec, int index) => Button.Create(
         () => spec.Custom ? $"W{index + 1}*" : $"W{index + 1}",
-        () => _selectedWheelIndex.Value = index,
+        () =>
+        {
+            if (_rimApplyPending && ReferenceEquals(_phase.ActiveTab, _rimApplyTab)) ApplyRims(live: true);
+            _selectedWheelIndex.Value = index;
+        },
         active: () => _selectedWheelIndex.Value == index,
         size: ButtonSize.Sm,
         style: () => Sx.Styles(
@@ -3384,7 +3388,7 @@ public sealed class ModelEditorView
                 [
                     Sx.Text(
                         style: () => Sx.TextStyles(fontSize: 10, fontStyle: FontStyle.Bold, foregroundColor: Blue),
-                        text: () => "RIMS"
+                        text: () => $"WHEEL {_selectedWheelIndex.Value + 1} RIMS"
                     ),
                     Sx.View(
                         style: () => Sx.Styles(
@@ -3427,11 +3431,7 @@ public sealed class ModelEditorView
                 children:
                 [
                     WheelField("SIZE", _rimSize, 30, ScheduleRimApply),
-                    WheelField("DEPTH", _rimDepth, 34, ScheduleRimApply),
-                    Sx.Text(
-                        style: () => Sx.TextStyles(fontSize: 10, foregroundColor: new Color(255, 255, 255, 120)),
-                        text: () => "global"
-                    )
+                    WheelField("DEPTH", _rimDepth, 34, ScheduleRimApply)
                 ]
             )
         ]
@@ -3450,6 +3450,7 @@ public sealed class ModelEditorView
 
     private void ApplyRims(bool live = false)
     {
+        _rimApplyPending = false;
         if (!int.TryParse(_rimR.Value, out var r)
             || !int.TryParse(_rimG.Value, out var g)
             || !int.TryParse(_rimB.Value, out var b)
@@ -3462,7 +3463,7 @@ public sealed class ModelEditorView
         }
 
         PushHistory(coalesce: live);
-        if (_phase.SetRims(r, g, b, size, depth) is { } error)
+        if (_phase.SetRims(_selectedWheelIndex.Value, r, g, b, size, depth) is { } error)
         {
             if (!live)
                 ShowError("Rims", error);

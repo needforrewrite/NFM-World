@@ -6,24 +6,42 @@ using SignalsDotnet;
 
 namespace NFMWorld.UI.Components;
 
-internal sealed class NotificationCenter : IDisposable
+internal sealed class NotificationCenter(Action? requestAttention = null, TimeProvider? clock = null) : IDisposable
 {
     private const string SoundPath = "data/sound/ui/notif.wav";
+    private const int MaxVisible = 3;
+    private const float FlashDurationMs = 300f;
+    private const float FadeDurationMs = 1000f;
+    private static readonly TimeSpan DisplayDuration = TimeSpan.FromSeconds(8);
+    private static readonly Color CardFill = new(12, 22, 42);
+    private readonly TimeProvider _clock = clock ?? TimeProvider.System;
     private readonly Signal<IReadOnlyList<Notification>> _visible = new([]);
+    private readonly List<Notification> _pending = [];
     private ISoundClip? _sound;
-    private long _nextId;
     private bool _soundChecked;
 
     public sealed record NotificationAction(string Label, Action Invoke, Func<bool> IsAvailable, string UnavailableMessage);
 
-    private sealed record Notification(
-        long Id,
-        object Owner,
-        string Title,
-        string Message,
-        string? Key,
-        long ExpiresAtUnixMs,
-        NotificationAction? Action);
+    // Sx.For keys cards by notification identity. The flash signal's hash changes as it fades.
+    private sealed class Notification(
+        object owner,
+        string title,
+        string message,
+        string? key,
+        long? expiresAtUnixMs,
+        NotificationAction? action)
+    {
+        public object Owner { get; } = owner;
+        public string Title { get; } = title;
+        public string Message { get; } = message;
+        public string? Key { get; } = key;
+        public long? ExpiresAtUnixMs { get; } = expiresAtUnixMs;
+        public NotificationAction? Action { get; } = action;
+        public long ShownAt { get; set; }
+        public long? FadeStartedAt { get; set; }
+        public Signal<float> Flash { get; } = new(1f);
+        public Signal<float> Opacity { get; } = new(1f);
+    }
 
     public void Show(
         object owner,
@@ -34,20 +52,66 @@ internal sealed class NotificationCenter : IDisposable
         NotificationAction? action = null
     )
     {
-        var now = DateTimeOffset.UtcNow;
-        var expiry = expiresAtUnixMs ?? now.AddSeconds(8).ToUnixTimeMilliseconds();
-        if (expiry <= now.ToUnixTimeMilliseconds()) return;
+        if (expiresAtUnixMs <= _clock.GetUtcNow().ToUnixTimeMilliseconds()) return;
 
-        var notice = new Notification(++_nextId, owner, title, message, key, expiry, action);
-        var previous = _visible.Value.Where(item => key is null || item.Owner != owner || item.Key != key);
-        _visible.Value = [notice, .. previous.Take(2)];
+        var notice = new Notification(owner, title, message, key, expiresAtUnixMs, action);
+        if (key is not null)
+        {
+            bool Matches(Notification item) => ReferenceEquals(item.Owner, owner) && item.Key == key;
+            if (_visible.Value.Any(Matches))
+            {
+                notice.ShownAt = _clock.GetTimestamp();
+                _visible.Value = _visible.Value.Select(item => Matches(item) ? notice : item).ToArray();
+                Alert();
+                return;
+            }
+
+            var queuedIndex = _pending.FindIndex(Matches);
+            if (queuedIndex >= 0)
+            {
+                _pending[queuedIndex] = notice;
+                return;
+            }
+        }
+
+        _pending.Add(notice);
+        FillVisible();
+    }
+
+    private void FillVisible()
+    {
+        if (_pending.Count == 0 || _visible.Value.Count >= MaxVisible) return;
+
+        var now = _clock.GetUtcNow().ToUnixTimeMilliseconds();
+        var visible = _visible.Value.ToList();
+        var consumed = 0;
+        var shown = 0;
+        while (consumed < _pending.Count && visible.Count < MaxVisible)
+        {
+            var notice = _pending[consumed++];
+            if (notice.ExpiresAtUnixMs <= now) continue;
+
+            notice.ShownAt = _clock.GetTimestamp();
+            visible.Insert(0, notice);
+            shown++;
+        }
+
+        _pending.RemoveRange(0, consumed);
+        if (shown == 0) return;
+        _visible.Value = visible;
+        Alert();
+    }
+
+    private void Alert()
+    {
+        requestAttention?.Invoke();
 
         if (!_soundChecked)
         {
             _soundChecked = true;
             try
             {
-                if (VFS.FileExists(SoundPath)) _sound = IBackend.Backend.GetSound(SoundPath);
+                if (TheVFS.VFS.FileExists(SoundPath)) _sound = IBackend.Backend.GetSound(SoundPath);
             }
             catch (Exception error)
             {
@@ -59,13 +123,34 @@ internal sealed class NotificationCenter : IDisposable
     }
 
     public void Clear(object owner)
-        => RemoveWhere(notice => ReferenceEquals(notice.Owner, owner));
+    {
+        _pending.RemoveAll(notice => ReferenceEquals(notice.Owner, owner));
+        RemoveWhere(notice => ReferenceEquals(notice.Owner, owner));
+        FillVisible();
+    }
 
     public void Update()
     {
         if (_visible.Value.Count == 0) return;
-        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        RemoveWhere(notice => notice.ExpiresAtUnixMs <= now);
+        var now = _clock.GetUtcNow().ToUnixTimeMilliseconds();
+        var tick = _clock.GetTimestamp();
+        foreach (var notice in _visible.Value)
+        {
+            var elapsed = _clock.GetElapsedTime(notice.ShownAt, tick);
+            if (notice.Flash.Value > 0f)
+                notice.Flash.Value = Math.Max(0f, 1f - (float)elapsed.TotalMilliseconds / FlashDurationMs);
+
+            if (notice.ExpiresAtUnixMs is { } expiry ? expiry <= now : elapsed >= DisplayDuration)
+                notice.FadeStartedAt ??= tick;
+            if (notice.FadeStartedAt is { } fade)
+                notice.Opacity.Value = Math.Max(
+                    0f,
+                    1f - (float)_clock.GetElapsedTime(fade, tick).TotalMilliseconds / FadeDurationMs
+                );
+        }
+
+        RemoveWhere(notice => notice.Opacity.Value == 0f);
+        FillVisible();
     }
 
     private void RemoveWhere(Func<Notification, bool> predicate)
@@ -77,7 +162,7 @@ internal sealed class NotificationCenter : IDisposable
     public Node BuildUi() => Sx.View(
         style: () => Sx.Styles(
             position: Position.Absolute,
-            top: 16,
+            top: 60,
             right: 16,
             width: 320,
             maxWidth: 90.Percent(),
@@ -99,13 +184,15 @@ internal sealed class NotificationCenter : IDisposable
                 paddingBottom: 12,
                 paddingLeft: 14,
                 paddingRight: 14,
-                backgroundColor: new Color(12, 22, 42),
+                opacity: notice.Opacity.Value,
+                pointerEvents: notice.Opacity.Value >= 1f,
+                backgroundColor: Color.Lerp(CardFill, Color.White, notice.Flash.Value),
                 borderRadius: 8,
                 borderTop: 1,
                 borderRight: 1,
                 borderBottom: 1,
                 borderLeft: 1,
-                borderColor: Theme.MenuBorder
+                borderColor: Color.Lerp(Theme.MenuBorder, Color.White, notice.Flash.Value)
             ),
             onmousedown: e => e.StopPropagation(),
             children:
@@ -113,11 +200,14 @@ internal sealed class NotificationCenter : IDisposable
                 Sx.Text(style: () => Sx.TextStyles(
                     fontSize: 14,
                     fontStyle: FontStyle.Bold,
-                    foregroundColor: Theme.MenuBlue
+                    foregroundColor: notice.Flash.Value > 0.45f ? CardFill : Theme.MenuBlue
                 ), text: () => notice.Title
                 ),
                 Sx.Text(
-                    style: () => Sx.WrappingText(fontSize: 12, foregroundColor: Theme.MenuTextBlue),
+                    style: () => Sx.WrappingText(
+                        fontSize: 12,
+                        foregroundColor: notice.Flash.Value > 0.45f ? CardFill : Theme.MenuTextBlue
+                    ),
                     layout: () => Sx.Styles(width: 100.Percent()),
                     text: () => notice.Message
                 ),
@@ -143,7 +233,7 @@ internal sealed class NotificationCenter : IDisposable
                         ),
                         Button.Create(
                             () => "DISMISS",
-                            () => RemoveWhere(item => ReferenceEquals(item, notice)),
+                            () => StartFade(notice),
                             size: ButtonSize.Sm,
                             name: () => "Dismiss notification"
                         )
@@ -154,15 +244,19 @@ internal sealed class NotificationCenter : IDisposable
 
     private void Complete(Notification notice)
     {
-        if (notice.Action is not { } action || !action.IsAvailable()
-            || notice.ExpiresAtUnixMs <= DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())
+        if (notice.FadeStartedAt.HasValue || !_visible.Value.Contains(notice)
+            || notice.Action is not { } action || !action.IsAvailable()
+            || notice.ExpiresAtUnixMs <= _clock.GetUtcNow().ToUnixTimeMilliseconds())
             return;
-        RemoveWhere(item => ReferenceEquals(item, notice));
+        StartFade(notice);
         action.Invoke();
     }
 
+    private void StartFade(Notification notice) => notice.FadeStartedAt ??= _clock.GetTimestamp();
+
     public void Dispose()
     {
+        _pending.Clear();
         _visible.Value = [];
         _sound?.Dispose();
     }

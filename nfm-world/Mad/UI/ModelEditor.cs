@@ -1542,19 +1542,38 @@ public class ModelEditorPhase : BasePhase
         return specs;
     }
 
-    internal RimsSpec GetRimsSpec(ModelEditorTab tab)
+    internal RimsSpec GetRimsSpec(ModelEditorTab tab, int wheelIndex)
     {
-        var result = new RimsSpec(140, 140, 140, 20, 20);
-        foreach (var raw in tab.TextContent.Split('\n'))
-        {
-            var line = raw.Trim();
-            if (!TryParseIntCall(line, "rims(", 5, out var values))
-                continue;
+        var lines = tab.TextContent.Split('\n');
+        var index = FindRimsLine(lines, wheelIndex, out _);
+        return index >= 0 && TryParseIntCall(lines[index].Trim(), "rims(", 5, out var values)
+            ? new RimsSpec(values[0], values[1], values[2], values[3], values[4])
+            : new RimsSpec(120, 120, 120, 20, 30);
+    }
 
-            result = new RimsSpec(values[0], values[1], values[2], values[3], values[4]);
+    private static int FindRimsLine(string[] lines, int wheelIndex, out int firstWheel)
+    {
+        firstWheel = -1;
+        var lastRims = -1;
+        var selectedRims = -1;
+        var rimCount = 0;
+        var wheel = 0;
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var line = lines[i].TrimStart();
+            if (line.StartsWith("rims(", StringComparison.Ordinal))
+            {
+                lastRims = i;
+                rimCount++;
+            }
+            else if (line.StartsWith("w(", StringComparison.Ordinal))
+            {
+                if (firstWheel < 0) firstWheel = i;
+                if (wheel++ == wheelIndex) selectedRims = lastRims;
+            }
         }
 
-        return result;
+        return rimCount == 1 ? lastRims : selectedRims;
     }
 
     /// <summary>Adds a default front/rear pair of wheels for a model that defines none.</summary>
@@ -1792,7 +1811,7 @@ public class ModelEditorPhase : BasePhase
         );
     }
 
-    internal string? SetRims(int r, int g, int b, int size, int depth)
+    internal string? SetRims(int wheelIndex, int r, int g, int b, int size, int depth)
     {
         if (ActiveTab is not { } tab)
             return "No model open.";
@@ -1803,27 +1822,28 @@ public class ModelEditorPhase : BasePhase
 
         var replacement = $"rims({r},{g},{b},{size},{depth})";
         var lines = tab.TextContent.Split('\n');
-        var replaced = false;
-
-        for (var i = 0; i < lines.Length; i++)
+        var index = FindRimsLine(lines, wheelIndex, out var firstWheel);
+        if (index >= 0 && TryParseIntCall(lines[index].Trim(), "rims(", 5, out var selected))
         {
-            var raw = lines[i];
-            var carriageReturn = raw.EndsWith('\r');
-            var line = carriageReturn ? raw[..^1] : raw;
-            var trimmed = line.TrimStart();
-            if (!trimmed.StartsWith("rims(", StringComparison.Ordinal))
-                continue;
+            for (var i = 0; i < lines.Length; i++)
+            {
+                var line = lines[i];
+                var trimmed = line.TrimStart();
+                if (!TryParseIntCall(trimmed, "rims(", 5, out var current) || !current.SequenceEqual(selected))
+                    continue;
 
-            var close = trimmed.IndexOf(')');
-            var suffix = close >= 0 ? trimmed[(close + 1)..] : "";
-            var indent = line[..^trimmed.Length];
-            lines[i] = $"{indent}{replacement}{suffix}" + (carriageReturn ? "\r" : "");
-            replaced = true;
+                var suffix = trimmed[(trimmed.IndexOf(')') + 1)..];
+                lines[i] = line[..^trimmed.Length] + replacement + suffix;
+            }
+        }
+        else if (firstWheel >= 0)
+        {
+            var newline = tab.TextContent.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+            lines[firstWheel] = replacement + newline + lines[firstWheel];
         }
 
-        var text = string.Join("\n", lines);
-        if (!replaced)
-            text = InsertBeforeFirstPoly(text, [replacement]);
+        var text = index >= 0 || firstWheel >= 0 ? string.Join("\n", lines)
+            : InsertBeforeFirstPoly(tab.TextContent, [replacement]);
 
         return ApplyEditedText(tab, text, clearAlignBaseline: false);
     }

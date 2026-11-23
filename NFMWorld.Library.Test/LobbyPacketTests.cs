@@ -217,7 +217,8 @@ public class LobbyPacketTests
             CarColors = colors,
             Wheels = new WheelAppearance
             {
-                OriginalWheels = true, RimColor = new Color3(80, 120, 160), Colors = colors
+                OriginalWheels = true, RimColor = new Color3(80, 120, 160), Colors = colors,
+                RimColors = [null, new Color3(215, 190, 105)]
             }
         };
         var receivedIdentity = RoundTrip(identity, 6);
@@ -225,6 +226,7 @@ public class LobbyPacketTests
         Assert.IsTrue(receivedIdentity.Wheels!.OriginalWheels);
         Assert.AreEqual(identity.Wheels.RimColor, receivedIdentity.Wheels.RimColor);
         CollectionAssert.AreEqual(colors, receivedIdentity.Wheels.Colors);
+        CollectionAssert.AreEqual(identity.Wheels.RimColors, receivedIdentity.Wheels.RimColors);
 
         var player = new ServerSidePlayerInfo
         {
@@ -238,6 +240,7 @@ public class LobbyPacketTests
         Assert.IsTrue(receivedPlayer.Wheels!.OriginalWheels);
         Assert.AreEqual(identity.Wheels.RimColor, receivedPlayer.Wheels.RimColor);
         CollectionAssert.AreEqual(colors, receivedPlayer.Wheels.Colors);
+        CollectionAssert.AreEqual(identity.Wheels.RimColors, receivedPlayer.Wheels.RimColors);
     }
 
     [TestMethod]

@@ -1972,7 +1972,7 @@ public partial class CarPhysics
                     conto.Dust(
                         i49,
                         wheelx[i49],
-                        wheely[i49],
+                        groundY,
                         wheelz[i49],
                         (int)Scx[i49],
                         (int)Scz[i49],
@@ -3137,6 +3137,8 @@ public partial class CarPhysics
                                         Scy[k] -= zTmp / liftDivider;
                                     }
 
+                                    // newY is in local space; RotateXz doesn't affect Y, so just add object Y
+                                    wheely[k] = groundHit.newY + boxMesh.GameObjectPosition.Y + wheelGround;
                                     if (!wasMtouch && Scy[k] != 7 * gravity * _tickRate)
                                     {
                                         fix64 dustMag = Scy[k] / (fix64)(333.33F);
@@ -3160,8 +3162,6 @@ public partial class CarPhysics
                                         );
                                     }
 
-                                    // newY is in local space; RotateXz doesn't affect Y, so just add object Y
-                                    wheely[k] = groundHit.newY + boxMesh.GameObjectPosition.Y + wheelGround;
                                     GroundScrape(conto, k, wheelx[k], wheely[k], wheelz[k], wheelGround, collidable.SurfaceType);
                                     // TODO: this makes going up mesh ramps janky. but we ideally want to allow bouncing on mesh collisions, so we need a better solution 
                                     // bounceRebound(k, conto, random);
@@ -3244,6 +3244,7 @@ public partial class CarPhysics
                             Wtouch = true;
                             Gtouch = true;
 
+                            wheely[k] = collision.newY + wheelGround; // snap wheel to the surface
                             if (!wasMtouch && Scy[k] != 7 * gravity * _tickRate)
                             {
                                 fix64 dustMag = Scy[k] / (fix64)(333.33F);
@@ -3266,8 +3267,6 @@ public partial class CarPhysics
                                     (int)wheelGround
                                 );
                             }
-
-                            wheely[k] = collision.newY + wheelGround; // snap wheel to the surface
 
                             GroundScrape(conto, k, wheelx[k], wheely[k], wheelz[k], wheelGround, collidable.SurfaceType);
 
@@ -3381,9 +3380,9 @@ public partial class CarPhysics
                                     fix64 dustMag = (fix64)1.4F;
                                     conto.Dust(
                                         k,
-                                        wheelx[k],
-                                        wheely[k],
-                                        wheelz[k],
+                                        collision.newPosition.X,
+                                        collision.newPosition.Y + wheelGround,
+                                        collision.newPosition.Z,
                                         (int)Scx[k],
                                         (int)Scz[k],
                                         dustMag * Stat.Simag,

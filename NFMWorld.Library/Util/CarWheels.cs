@@ -14,6 +14,7 @@ public sealed partial class WheelAppearance
     [TightPackOrder(0), PluginVisible] public bool OriginalWheels { get; set; }
     [TightPackOrder(1), PluginVisible] public Color3? RimColor { get; set; }
     [TightPackOrder(2), PluginVisible] public Color3?[]? Colors { get; set; }
+    [TightPackOrder(3)] public Color3?[]? RimColors { get; set; }
 }
 
 public static class CarWheels
@@ -33,7 +34,9 @@ public static class CarWheels
     {
         OriginalWheels = appearance?.OriginalWheels ?? false,
         RimColor = appearance?.RimColor is { } color ? CarPaint.ClampColor(color) : null,
-        Colors = CarPaint.NormalizeColors(appearance?.Colors)
+        Colors = CarPaint.NormalizeColors(appearance?.Colors),
+        RimColors = appearance?.RimColors?.Select(color => color.HasValue
+            ? (Color3?)CarPaint.ClampColor(color.Value) : null).ToArray()
     };
 
     public static WheelAppearance Get(string id)
@@ -115,14 +118,54 @@ public static class CarWheels
         var style = Normalize(appearance);
         rad.Rims = stock.Rims;
         if (style.RimColor is { } rim)
-            rad.Rims = (stock.Rims ?? new Rad3dRimsDef(new Color3(120, 120, 120), 20, 30)) with { Color = rim };
-        rad.Wheels = stock.Wheels.Select(wheel => wheel with
+            rad.Rims = (stock.Rims ?? Rad3dRimsDef.Default) with { Color = rim };
+        var groups = RimGroups(stock);
+        rad.Wheels = stock.Wheels.Select((wheel, index) => wheel with
         {
+            Rims = ApplyRimColor(wheel.Rims, stock.Rims, style, groups[index]),
             Polys = style.OriginalWheels ? null : wheel.Polys?.Select(poly =>
                 poly.ColNum is { } slot && slot >= 0 && slot < (style.Colors?.Length ?? 0)
                 && style.Colors![slot] is { } color ? poly with { Color = color } : poly
             ).ToArray()
         }).ToArray();
+    }
+
+    private static Rad3dRimsDef? ApplyRimColor(
+        Rad3dRimsDef? rims,
+        Rad3dRimsDef? fallback,
+        WheelAppearance style,
+        int group
+    )
+    {
+        if (style.RimColors is { } colors && group < colors.Length && colors[group] is { } color)
+            return (rims ?? fallback ?? Rad3dRimsDef.Default) with { Color = color };
+        return rims is { } defined && style.RimColor is { } legacy ? defined with { Color = legacy } : rims;
+    }
+
+    private static int[] RimGroups(Baseline stock)
+    {
+        var groups = new Dictionary<Rad3dRimsDef, int>();
+        return stock.Wheels.Select(wheel =>
+            {
+                var rims = wheel.Rims ?? stock.Rims ?? Rad3dRimsDef.Default;
+                if (!groups.TryGetValue(rims, out var group)) groups.Add(rims, group = groups.Count);
+                return group;
+            }
+        ).ToArray();
+    }
+
+    public static IReadOnlyList<CarColorSlot> RimSlots(Rad3d rad)
+    {
+        var groups = RimGroups(Stock(rad));
+        return rad.Wheels.Select((wheel, index) => (Wheel: wheel, Group: groups[index]))
+            .Where(entry => entry.Wheel.Polys is null)
+            .DistinctBy(entry => entry.Group)
+            .Select(entry => new CarColorSlot(
+                CarPaint.SlotCount + entry.Group,
+                (entry.Wheel.Rims ?? rad.Rims ?? Rad3dRimsDef.Default).Color
+            )
+            )
+            .ToArray();
     }
 
     public static IReadOnlyList<CarColorSlot> Slots(Rad3d rad)

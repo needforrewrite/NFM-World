@@ -51,7 +51,7 @@ public class Sparks : IDisposable, IImmediateRenderElement
         _visual = visual;
         _graphicsDevice = graphicsDevice;
 
-        _sprkat = car.Wheels[0].Sparkat;
+        _sprkat = car.CollisionWheels[0].Sparkat;
 
         // Zero-initialized (rather than left uninitialized) to prevent rendering garbage GPU
         // memory before the first GameTick's upload.

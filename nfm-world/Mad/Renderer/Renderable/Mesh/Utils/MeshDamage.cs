@@ -28,7 +28,7 @@ public static class MeshDamage
         float damageFactor
     )
     {
-        var wheel = car.Wheels[wheelIdx];
+        var wheel = car.CollisionWheels[wheelIdx];
 
         damageFactor *= (float)stat.Dammult;
         if (Math.Abs(damageFactor) > 100.0f)
@@ -132,7 +132,7 @@ public static class MeshDamage
         ref int squash
     )
     {
-        var wheel = car.Wheels[wheelIdx];
+        var wheel = car.CollisionWheels[wheelIdx];
 
         damageFactor *= (float)stat.Dammult;
         if (Math.Abs(damageFactor) > 100.0f)
@@ -319,7 +319,7 @@ public static class MeshDamage
         float damageFactor
     )
     {
-        var wheel = car.Wheels[wheelIdx];
+        var wheel = car.CollisionWheels[wheelIdx];
 
         damageFactor *= (float)stat.Dammult;
         if (Math.Abs(damageFactor) > 100.0f)

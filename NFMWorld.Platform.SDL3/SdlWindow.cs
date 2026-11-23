@@ -34,6 +34,13 @@ public sealed class SdlWindow : IDisposable
     private bool _borderlessDesktop;
     private bool _borderlessPending;
 
+    // Cumulative scroll accumulator, mirroring XNA's MouseState.ScrollWheelValue (120 units per
+    // notch, i.e. WHEEL_DELTA) - static since there is only ever one live SdlWindow per process,
+    // matching GetKeyboardState/GetMouseState's existing static-polling pattern. Only the vertical
+    // axis accumulates here (XNA's legacy MouseState has no horizontal scroll value); consumers
+    // that want the raw per-event x/y delta (e.g. ImGui) should subscribe to MouseWheel directly.
+    private static int _scrollWheelValue;
+
     public bool BorderlessDesktop
     {
         get => _borderlessDesktop;
@@ -83,13 +90,6 @@ public sealed class SdlWindow : IDisposable
 
     /// <summary>Raised on SDL_EVENT_MOUSE_WHEEL with (x, y) scroll amounts.</summary>
     public event Action<float, float>? MouseWheel;
-
-    // Cumulative scroll accumulator, mirroring XNA's MouseState.ScrollWheelValue (120 units per
-    // notch, i.e. WHEEL_DELTA) - static since there is only ever one live SdlWindow per process,
-    // matching GetKeyboardState/GetMouseState's existing static-polling pattern. Only the vertical
-    // axis accumulates here (XNA's legacy MouseState has no horizontal scroll value); consumers
-    // that want the raw per-event x/y delta (e.g. ImGui) should subscribe to MouseWheel directly.
-    private static int _scrollWheelValue;
 
     private SdlWindow(IntPtr window, int width, int height)
     {
@@ -169,6 +169,15 @@ public sealed class SdlWindow : IDisposable
 
     /// <summary>Whether the window currently has input focus. Replaces FNA's <c>Game.IsActive</c>.</summary>
     public bool HasFocus => (SDL.SDL_GetWindowFlags(_window) & SDL.SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS) != 0;
+
+    public void RequestAttention()
+    {
+        if (_disposed || OperatingSystem.IsBrowser() || HasFocus) return;
+
+        _ = SDL.SDL_FlashWindow(_window, OperatingSystem.IsWindows()
+            ? SDL.SDL_FlashOperation.SDL_FLASH_UNTIL_FOCUSED
+            : SDL.SDL_FlashOperation.SDL_FLASH_BRIEFLY);
+    }
 
     public bool CursorVisible
     {

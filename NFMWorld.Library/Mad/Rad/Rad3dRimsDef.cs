@@ -12,4 +12,7 @@ public readonly partial record struct Rad3dRimsDef(
     float Size,
     [property: JsonPropertyName("depth"), TightPackOrder(2), PluginVisible]
     float Depth
-);
+)
+{
+    public static Rad3dRimsDef Default => new(new Color3(120, 120, 120), 20, 30);
+}

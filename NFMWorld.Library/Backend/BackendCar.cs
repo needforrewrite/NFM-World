@@ -17,6 +17,7 @@ public partial class BackendCar : BackendGameObject
     [PluginVisible] public f64Euler WheelAngle { get; set; }
     [PluginVisible] public f64Euler TurningWheelAngle { get; set; }
     [PluginVisible] public IReadOnlyList<Rad3dWheelDef> Wheels { get; }
+    public IReadOnlyList<Rad3dWheelDef> CollisionWheels { get; }
 
     [PluginVisible] public CarPhysics CarPhysics { get; }
     [PluginVisible] public Control Control { get; }
@@ -60,7 +61,7 @@ public partial class BackendCar : BackendGameObject
 
     /// <summary>
     /// Whether a model can be turned into a car at all. The physics builds a four-wheel
-    /// contact set from <c>Wheels[0..3]</c>, so an unfinished editor model with fewer
+    /// contact set, so an unfinished editor model with fewer
     /// wheels throws in the constructor; the garage must not offer it, and the archive
     /// must not accept it. See <see cref="CarModelValidator"/> for the full check.
     /// </summary>
@@ -105,9 +106,10 @@ public partial class BackendCar : BackendGameObject
         Rad = rad;
         Stats = CarStats.ValidateStats(rad.Stats, "hogan rewish");
 
-        GroundAt = rad.Wheels.FirstOrDefault().Ground;
         MaxRadius = rad.MaxRadius;
         Wheels = rad.Wheels;
+        CollisionWheels = SelectCollisionWheels(rad.Wheels);
+        GroundAt = rad.Wheels.Length > 4 ? CollisionWheels.Max(wheel => wheel.Ground) : rad.Wheels.FirstOrDefault().Ground;
 
         CarPhysics = new CarPhysics(Stats, im, isClientPlayer);
         CarPhysics.Car = this;
@@ -125,6 +127,38 @@ public partial class BackendCar : BackendGameObject
             IsBot = false,
             PlayerName = "hogan rewish"
         };
+    }
+
+    private static Rad3dWheelDef[] SelectCollisionWheels(Rad3dWheelDef[] wheels)
+    {
+        if (wheels.Length <= 4) return wheels;
+
+        // Keep the four physics slots in their authored order. Extra wheels compete at the nearest slot.
+        var contacts = wheels[..4];
+        foreach (var wheel in wheels.AsSpan(4))
+        {
+            if (wheel.Height == 0) continue;
+            var slot = 0;
+            var closest = double.PositiveInfinity;
+            for (var i = 0; i < contacts.Length; i++)
+            {
+                var dx = (double)wheel.Position.X - (double)wheels[i].Position.X;
+                var dz = (double)wheel.Position.Z - (double)wheels[i].Position.Z;
+                var distance = dx * dx + dz * dz;
+                if (distance >= closest) continue;
+                closest = distance;
+                slot = i;
+            }
+
+            var current = contacts[slot];
+            if (current.Height == 0 || wheel.Ground > current.Ground
+                || wheel.Ground == current.Ground &&
+                fix64.Abs(wheel.Position.X) + fix64.Abs(wheel.Width) * (fix64)0.4
+                > fix64.Abs(current.Position.X) + fix64.Abs(current.Width) * (fix64)0.4)
+                contacts[slot] = wheel;
+        }
+
+        return contacts;
     }
 
     [PluginVisible]

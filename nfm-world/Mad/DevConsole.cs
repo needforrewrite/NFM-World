@@ -1,3 +1,4 @@
+using System.Text;
 using Hexa.NET.ImGui;
 using NFMWorld.UI;
 using NFMWorldLibrary;
@@ -9,14 +10,17 @@ public class DevConsole
     private bool _isOpen = false;
     private bool _focusInput;
     private string _currentInput = string.Empty;
-    private readonly Dictionary<string, Action<DevConsole, string[]>> _commands = new();
+    private readonly byte[] _commandBuffer = new byte[256];
+    private readonly Dictionary<string, (Action<DevConsole, string[]> Action, bool Hidden)> _commands = new();
 
     // UI Windows
     private readonly DebugCameraWindow _cameraSettings = new();
+    private readonly DevConsoleOutput _output = new();
 
     private readonly List<string> _commandHistory = new();
     private int _historyIndex = -1;
-    private string? _pendingInput = null;
+    private int _inputRevision;
+    private bool _refocusCommand;
 
     // Autocomplete state
     private List<string> _autocompleteMatches = new();
@@ -33,6 +37,7 @@ public class DevConsole
     {
         _isOpen = !_isOpen;
         _focusInput = _isOpen;
+        if (!_isOpen) _output.Blur();
     }
 
     public bool IsOpen()
@@ -53,9 +58,9 @@ public class DevConsole
         var command = parts[0];
         var args = parts.Length > 1 ? parts[1..] : Array.Empty<string>();
 
-        if (_commands.TryGetValue(command, out var action))
+        if (_commands.TryGetValue(command, out var entry))
         {
-            action(this, args);
+            entry.Action(this, args);
         }
         else
         {
@@ -63,9 +68,9 @@ public class DevConsole
         }
     }
 
-    public void RegisterCommand(string name, Action<DevConsole, string[]> action)
+    public void RegisterCommand(string name, Action<DevConsole, string[]> action, bool hidden = false)
     {
-        _commands[name] = action;
+        _commands[name] = (action, hidden);
     }
 
     public void RegisterArgumentAutocompleter(string commandName, Func<string[], int, IReadOnlyList<string>?> autocompleter)
@@ -75,7 +80,7 @@ public class DevConsole
 
     public IEnumerable<string> GetCommandNames()
     {
-        return _commands.Keys;
+        return _commands.Where(entry => !entry.Value.Hidden).Select(entry => entry.Key);
     }
 
     public void ClearLog()
@@ -105,6 +110,7 @@ public class DevConsole
         // console pos on screen so autocomplete window moves with it
         Vector2 consolePos = default;
         Vector2 consoleSize = default;
+        bool commandActive = false;
 
         bool isOpen = _isOpen;
         if (ImGui.Begin(
@@ -116,43 +122,14 @@ public class DevConsole
                 | ImGuiWindowFlags.NoNavFocus
             ))
         {
-            // output log
             if (ImGui.BeginChild(
                     "ScrollingRegion",
-                    new Vector2(0, -ImGui.GetFrameHeightWithSpacing()),
+                    new Vector2(0, -ImGui.GetFrameHeight() - 1 - 3 * ImGui.GetStyle().ItemSpacing.Y),
                     ImGuiChildFlags.None,
-                    ImGuiWindowFlags.None
+                    ImGuiWindowFlags.AlwaysVerticalScrollbar
                 ))
             {
-                foreach (var (message, level) in NfmwLoggerProvider.GetLogs())
-                {
-                    // Set color based on log level
-                    switch (level)
-                    {
-                        case "warning":
-                            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1.0f, 1.0f, 0.0f, 1.0f)); // Yellow
-                            break;
-                        case "error":
-                            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1.0f, 0.4f, 0.4f, 1.0f)); // Red
-                            break;
-                        case "info":
-                            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.34f, 0.8f, 1.0f, 1.0f)); // Aqua Blue
-                            break;
-                        case "debug":
-                            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.612f, 1f, 0f, 1.0f)); // Green
-                            break;
-                        default:
-                            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1f, 1f, 1f, 1f)); // Default (White)
-                            break;
-                    }
-
-                    ImGui.TextUnformatted(message);
-                    ImGui.PopStyleColor();
-                }
-
-                // auto-scroll to bottom
-                if (ImGui.GetScrollY() >= ImGui.GetScrollMaxY())
-                    ImGui.SetScrollHereY(1.0f);
+                _output.Render();
             }
 
             ImGui.EndChild();
@@ -164,136 +141,11 @@ public class DevConsole
             if (_focusInput || ImGui.IsWindowAppearing())
             {
                 ImGui.SetWindowFocus();
-                ImGui.SetKeyboardFocusHere();
+                _refocusCommand = true;
                 _focusInput = false;
             }
 
-            if (ImGui.IsWindowFocused())
-            {
-                for (int key = (int)ImGuiKey.Tab; key <= (int)ImGuiKey.Menu; key++)
-                {
-                    if (ImGui.IsKeyPressed((ImGuiKey)key))
-                    {
-                        //Console.WriteLine($"Key pressed: {(ImGuiKey)key}");
-                    }
-                }
-            }
-
-            ImGui.PushItemWidth(-1);
-
-            // Apply any pending input from previous frame's history navigation
-            if (_pendingInput != null)
-            {
-                _currentInput = _pendingInput;
-                _pendingInput = null;
-                Logging.Debug($"Applied pending input: {_currentInput}");
-            }
-
-            // Store previous input to detect changes
-            string previousInput = _currentInput;
-
-            // input field
-            ImGui.InputText("##Command", ref _currentInput, 256);
-
-            // Check for keys while input has focus
-            bool upPressed = ImGui.IsKeyPressed(ImGuiKey.UpArrow);
-            bool downPressed = ImGui.IsKeyPressed(ImGuiKey.DownArrow);
-            bool tabPressed = ImGui.IsKeyPressed(ImGuiKey.Tab);
-            bool enterPressed = ImGui.IsKeyPressed(ImGuiKey.Enter);
-
-
-            // Update autocomplete matches when input changes
-            if (_currentInput != previousInput)
-            {
-                UpdateAutocomplete();
-            }
-
-            // Handle autocomplete first (higher priority)
-            if (_autocompleteMatches.Count > 0)
-            {
-                if (tabPressed && _autocompleteIndex >= 0 && _autocompleteIndex < _autocompleteMatches.Count)
-                {
-                    ImGui.SetNextWindowFocus();
-                    _currentInput = _autocompleteMatches[_autocompleteIndex];
-                    _autocompleteMatches.Clear();
-                    _autocompleteIndex = -1;
-                    ImGui.SetKeyboardFocusHere(-1); // Refocus input after tab completion
-                }
-                else if (downPressed || upPressed)
-                {
-                    ImGui.SetNextWindowFocus();
-
-                    if (downPressed)
-                    {
-                        _autocompleteIndex = (_autocompleteIndex + 1) % _autocompleteMatches.Count;
-                    }
-                    else // upPressed
-                    {
-                        _autocompleteIndex--;
-                        if (_autocompleteIndex < 0)
-                            _autocompleteIndex = _autocompleteMatches.Count - 1;
-                    }
-                }
-            }
-            // command history (only when no autocomplete active)
-            else if (_commandHistory.Count > 0)
-            {
-                if (upPressed)
-                {
-                    ImGui.SetNextWindowFocus();
-                    if (_historyIndex < 0 || _historyIndex >= _commandHistory.Count)
-                        _historyIndex = _commandHistory.Count;
-                    if (_historyIndex > 0)
-                    {
-                        _historyIndex--;
-                        _currentInput = _commandHistory[_historyIndex];
-                    }
-
-                    ImGui.SetKeyboardFocusHere(-1);
-                }
-                else if (downPressed)
-                {
-                    ImGui.SetNextWindowFocus();
-                    if (_historyIndex < _commandHistory.Count - 1)
-                    {
-                        _historyIndex++;
-                        _currentInput = _commandHistory[_historyIndex];
-                    }
-                    else if (_historyIndex >= 0)
-                    {
-                        _historyIndex = _commandHistory.Count;
-                        _currentInput = string.Empty;
-                    }
-
-                    ImGui.SetKeyboardFocusHere(-1);
-                }
-            }
-
-            // command execution
-            if (enterPressed)
-            {
-                if (!string.IsNullOrWhiteSpace(_currentInput))
-                {
-                    Logging.Info($"> {_currentInput}"); // Show command in log
-
-                    // Add to history BEFORE executing
-                    if (_commandHistory.Count == 0 || _commandHistory[^1] != _currentInput)
-                    {
-                        _commandHistory.Add(_currentInput);
-                        if (_commandHistory.Count > 50) _commandHistory.RemoveAt(0);
-                    }
-
-                    _historyIndex = _commandHistory.Count;
-
-                    ExecuteCommand(_currentInput);
-                    _currentInput = string.Empty;
-                    _autocompleteMatches.Clear();
-                    _autocompleteIndex = -1;
-
-                    ImGui.SetKeyboardFocusHere(-1);
-                    //_shouldRefocusInput = true;
-                }
-            }
+            commandActive = RenderCommandInput();
 
             // Capture console window position BEFORE ending it
             consolePos = ImGui.GetWindowPos();
@@ -303,9 +155,10 @@ public class DevConsole
         ImGui.End();
 
         _isOpen = isOpen; // Update open state if user closed window
+        if (!_isOpen) _output.Blur();
 
         // Render autocomplete popup as separate window
-        if (_autocompleteMatches.Count > 0 && !string.IsNullOrWhiteSpace(_currentInput) && _isOpen)
+        if (_isOpen && commandActive && _autocompleteMatches.Count > 0)
         {
             // Position popup below the console input field using captured position
             var popupPos = new Vector2(consolePos.X, consolePos.Y + consoleSize.Y + 5);
@@ -366,6 +219,84 @@ public class DevConsole
         }
     }
 
+    private unsafe bool RenderCommandInput()
+    {
+        if (_refocusCommand)
+        {
+            ImGui.SetKeyboardFocusHere();
+            _refocusCommand = false;
+            _output.Blur();
+        }
+
+        var previousInput = _currentInput;
+        ImGui.PushID(_inputRevision);
+        ImGui.SetNextItemWidth(-1);
+        bool submitted;
+        fixed (byte* buffer = _commandBuffer)
+            submitted = ImGui.InputText("##Command", buffer, (nuint)_commandBuffer.Length, ImGuiInputTextFlags.EnterReturnsTrue);
+        var active = ImGui.IsItemActive();
+        ImGui.PopID();
+        if (active || submitted) _output.Blur();
+        _currentInput = Encoding.UTF8.GetString(_commandBuffer.AsSpan(0, Array.IndexOf(_commandBuffer, (byte)0)));
+        if (_currentInput != previousInput) UpdateAutocomplete();
+        if (!active && !submitted) return false;
+
+        var up = ImGui.IsKeyPressed(ImGuiKey.UpArrow);
+        var down = ImGui.IsKeyPressed(ImGuiKey.DownArrow);
+        if (_autocompleteIndex >= 0)
+        {
+            if (submitted || ImGui.IsKeyPressed(ImGuiKey.Tab, false))
+                ReplaceCommandInput(_autocompleteMatches[_autocompleteIndex]);
+            else if (up || down)
+                _autocompleteIndex = (_autocompleteIndex + (down ? 1 : -1) + _autocompleteMatches.Count)
+                                     % _autocompleteMatches.Count;
+        }
+        else if (submitted)
+        {
+            if (!string.IsNullOrWhiteSpace(_currentInput))
+            {
+                Logging.Info($"> {_currentInput}");
+                if (_commandHistory.Count == 0 || _commandHistory[^1] != _currentInput)
+                {
+                    _commandHistory.Add(_currentInput);
+                    if (_commandHistory.Count > 50) _commandHistory.RemoveAt(0);
+                }
+
+                _historyIndex = _commandHistory.Count;
+                ExecuteCommand(_currentInput);
+            }
+
+            ReplaceCommandInput(string.Empty);
+        }
+        else if ((up || down) && _commandHistory.Count > 0)
+        {
+            var current = _historyIndex < 0 ? _commandHistory.Count : _historyIndex;
+            _historyIndex = Math.Clamp(current + (up ? -1 : 1), 0, _commandHistory.Count);
+            ReplaceCommandInput(_historyIndex == _commandHistory.Count ? string.Empty : _commandHistory[_historyIndex]);
+        }
+
+        return active;
+    }
+
+    private void ReplaceCommandInput(string text)
+    {
+        Encoding.UTF8.GetEncoder().Convert(
+            text,
+            _commandBuffer.AsSpan(0, _commandBuffer.Length - 1),
+            true,
+            out _,
+            out var length,
+            out _
+        );
+        _commandBuffer[length] = 0;
+        _currentInput = Encoding.UTF8.GetString(_commandBuffer.AsSpan(0, length));
+        _autocompleteMatches.Clear();
+        _autocompleteIndex = -1;
+        // Give the changed text a fresh widget ID to discard ImGui's active edit buffer.
+        _inputRevision++;
+        _refocusCommand = true;
+    }
+
     private void UpdateAutocomplete()
     {
         _autocompleteMatches.Clear();
@@ -384,7 +315,7 @@ public class DevConsole
             var prefix = parts.Length > 0 ? parts[0] : string.Empty;
 
             // Find all matching commands
-            foreach (var cmd in _commands.Keys)
+            foreach (var cmd in GetCommandNames())
             {
                 if (cmd.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                 {
@@ -406,7 +337,8 @@ public class DevConsole
             int argPosition = _currentInput.EndsWith(' ') ? args.Length : Math.Max(0, args.Length - 1);
 
             // Check if this command has an argument autocompleter
-            if (_argumentAutocompleters.TryGetValue(command, out var autocompleter))
+            if (_commands.TryGetValue(command, out var entry) && !entry.Hidden
+                && _argumentAutocompleters.TryGetValue(command, out var autocompleter))
             {
                 var suggestions = autocompleter(args, argPosition);
 
@@ -438,7 +370,11 @@ public class DevConsole
         }
 
         // Set initial selection to first match
-        if (_autocompleteMatches.Count > 0)
+        var input = _currentInput.TrimEnd();
+        var exactMatch = _autocompleteMatches.RemoveAll(match => match == input) != 0;
+        if (exactMatch)
+            _autocompleteMatches.Clear();
+        else if (_autocompleteMatches.Count > 0)
         {
             _autocompleteIndex = 0;
         }

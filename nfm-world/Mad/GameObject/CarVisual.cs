@@ -62,7 +62,7 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
             w.RenderBucket = RenderBucket.Cars;
 
         Flames = new Flames(this, GameSparker.GraphicsDevice);
-        Dust = new Dust(this, GameSparker.GraphicsDevice);
+        Dust = new Dust(GameSparker.GraphicsDevice);
         Chips = new Chips(this, GameSparker.GraphicsDevice);
         Sparks = new Sparks(car, this, GameSparker.GraphicsDevice);
         FixFlare = new FixFlare(this, _wheels, GameSparker.GraphicsDevice);
@@ -112,11 +112,11 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
         int scz,
         float simag,
         int tilt,
-        bool onRoof,
+        bool _,
         int wheelGround
     )
     {
-        Dust.AddDust(wheelidx, wheelx, wheely, wheelz, scx, scz, simag, tilt, onRoof, wheelGround);
+        Dust.AddDust(wheelidx, wheelx, wheely, wheelz, scx, scz, simag, tilt, wheelGround);
     }
 
     /// <summary>

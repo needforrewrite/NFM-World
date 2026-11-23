@@ -150,6 +150,85 @@ public class SxRendererTests
         mounted.Dispose();
     }
 
+    [TestMethod]
+    public void Notifications_FlashDoesNotLeaveOrphanedCards()
+    {
+        var clock = new NotificationClock();
+        using var notifications = new NFMWorld.UI.Components.NotificationCenter(clock: clock);
+        using var mounted = Renderer.Mount(notifications.BuildUi);
+        var cards = mounted.Root.VisualChildren.Single().VisualChildren;
+        var owner = new object();
+        notifications.Show(owner, "Test", "Test notification");
+        Renderer.Flush();
+
+        clock.Advance(20);
+        notifications.Update();
+
+        for (var i = 0; i < 6; i++)
+        {
+            notifications.Show(owner, "Test", "Test notification");
+            Renderer.Flush();
+        }
+
+        Assert.AreEqual(3, cards.Count);
+        notifications.Clear(owner);
+        Renderer.Flush();
+        Assert.AreEqual(0, cards.Count);
+    }
+
+    [TestMethod]
+    public void Notifications_QueueUntilTheFadeCompletesAndStartTheirLifetimeWhenShown()
+    {
+        var clock = new NotificationClock();
+        using var notifications = new NFMWorld.UI.Components.NotificationCenter(clock: clock);
+        using var mounted = Renderer.Mount(notifications.BuildUi);
+        var cards = mounted.Root.VisualChildren.Single().VisualChildren;
+        var owner = new object();
+
+        notifications.Show(owner, "First", "Test");
+        clock.Advance(1000);
+        notifications.Show(owner, "Second", "Test");
+        notifications.Show(owner, "Third", "Test");
+        notifications.Show(owner, "Expired", "Test", expiresAtUnixMs: 2000);
+        notifications.Show(owner, "Fourth", "Test");
+        notifications.Show(owner, "Fifth", "Test");
+        Renderer.Flush();
+
+        clock.Advance(7000);
+        notifications.Update();
+        clock.Advance(500);
+        notifications.Update();
+        Renderer.Flush();
+        Assert.AreEqual(0.5f, ((Component)cards[2]).Styles.Opacity);
+        Assert.AreEqual(3, cards.Count);
+
+        clock.Advance(500);
+        notifications.Update();
+        Renderer.Flush();
+        CollectionAssert.AreEqual(
+            new[] { "Notification Fourth", "Notification Third", "Notification Second" },
+            cards.Cast<Component>().Select(card => card.Name).ToArray()
+        );
+
+        clock.Advance(1000);
+        notifications.Update();
+        Renderer.Flush();
+        CollectionAssert.AreEqual(
+            new[] { "Notification Fifth", "Notification Fourth" },
+            cards.Cast<Component>().Select(card => card.Name).ToArray()
+        );
+        Assert.AreEqual(1f, ((Component)cards[1]).Styles.Opacity);
+    }
+
+    private sealed class NotificationClock : TimeProvider
+    {
+        private long _milliseconds;
+        public override long TimestampFrequency => 1000;
+        public override long GetTimestamp() => _milliseconds;
+        public override DateTimeOffset GetUtcNow() => DateTimeOffset.FromUnixTimeMilliseconds(_milliseconds);
+        public void Advance(long milliseconds) => _milliseconds += milliseconds;
+    }
+
     /// <summary>
     /// A card style that mentions only layout must not wipe the card's own padding. The
     /// old merge copied every field unconditionally, so an unset PaddingTop reset it to 0

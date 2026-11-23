@@ -62,13 +62,17 @@ public static partial class GarageView
                 borderBottom: 1,
                 borderColor: Theme.MenuBorder
             ),
-            children: new[] { CustomizeTab("Body", false, actions), CustomizeTab("Wheels", true, actions) }
+            children:
+            [
+                Sx.Show(() => UiState.Garage.HasBodyColors, () => CustomizeTab("Body", false, actions)),
+                CustomizeTab("Wheels", true, actions)
+            ]
         );
 
     private static Node CustomizeTab(string label, bool wheels, Actions actions)
     {
         var hovered = new Signal<bool>(false);
-        var active = () => UiState.Garage.WheelsTab.Value == wheels;
+        var active = () => UiState.Garage.EditingWheels == wheels;
         return Sx.View(
             name: () => "Garage customize tab " + label,
             style: () => Sx.Styles(

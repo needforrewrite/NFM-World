@@ -91,10 +91,12 @@ public static class DevConsoleCommands
             }
         );
         console.RegisterCommand("disconnect", (c, args) => Disconnect(c));
+        console.RegisterCommand("server", SelectServer, hidden: true);
 
         //ui
         console.RegisterCommand("ui_open_devcam", (c, args) => ToggleCameraSettings(c));
         console.RegisterCommand("ui_open_devmsg", ShowMessageTest);
+        console.RegisterCommand("ui_test_notification", ShowNotificationTest);
 
         console.RegisterCommand("music_remastered", RemasteredMusic);
 
@@ -261,6 +263,32 @@ public static class DevConsoleCommands
         {
             inRacePhase.GetCarVisual(0).VisuallyWasted = true;
         }
+    }
+
+    private static void SelectServer(DevConsole console, string[] args)
+    {
+        if (OperatingSystem.IsBrowser())
+        {
+            Logging.Info("Server switching is available in the desktop client.");
+            return;
+        }
+
+        var environment = args.Length == 1 ? args[0].ToLowerInvariant() : "";
+        if (environment is not ("live" or "dev" or "default"))
+        {
+            Logging.Info($"Current archive: {ArchiveEndpoint.Url}. Lobby: {LobbyEndpoint.Host}:{LobbyEndpoint.Port}.");
+            Logging.Info("Usage: server <live|dev|default>");
+            return;
+        }
+
+        if (GameSparker.CurrentPhase is not MainMenuPhase)
+        {
+            Logging.Info("Return to the main menu before switching server environments.");
+            return;
+        }
+
+        Logging.Info($"Restarting NFM World with server environment '{environment}'.");
+        GameSparker.Game.Restart(environment);
     }
 
     private static void Connect(DevConsole console, string[] args)
@@ -679,6 +707,30 @@ public static class DevConsoleCommands
         }
 
         FollowCamera.FollowZOffset = zoff;
+    }
+
+    private static void ShowNotificationTest(DevConsole console, string[] args)
+    {
+        var seconds = 5;
+        if (args.Length > 1 || (args.Length == 1 && !int.TryParse(args[0], out seconds)) || seconds is < 0 or > 60)
+        {
+            Logging.Info("Usage: ui_test_notification [delay in seconds, 0–60]");
+            return;
+        }
+
+        if (seconds > 0) Logging.Info($"Test notification in {seconds}s.");
+        _ = ShowAfterDelay();
+
+        async Task ShowAfterDelay()
+        {
+            if (seconds > 0)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(seconds));
+                await LoadingWork.NextFrame;
+            }
+
+            GameSparker.UiRenderer?.Notifications.Show(console, "Test notification", "This is a test notification.");
+        }
     }
 
     private static void ShowMessageTest(DevConsole console, string[] args)
