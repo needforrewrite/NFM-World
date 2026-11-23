@@ -586,10 +586,23 @@ from `PhysicsController.GameTick`. Two ship:
   shape shader's pixel stage is most of it) and the boot message covers it; a warm one is ~0.1 s. Reads check the
   install directory and then `<LocalApplicationData>/NFMWorld/cache/shadercache`, and writes go to whichever can be
   written, because an install under Program Files would otherwise recompile every launch.
+- **GL compiles the shape shader on every cold cache, and that is the whole cost of a first launch.**
+  `GlProgramCache` (`NFMWorld.Graphics.OpenGL`) writes linked programs through `OES_get_program_binary` and reloads
+  them in ~1 ms; the apos-shapes boot variant is 3.3 s cold and a dash variant 64–127 s. Desktop needs the cache
+  because the bundled ANGLE has none. Chromium has its own, keyed by source text and surviving restarts, but exposes
+  no `program_binary` extension, so the browser build can only benefit from it: a first launch (new install, GPU
+  driver update, cleared profile, changed shader text) pays the full link and the dash variants trip the ~100 s GPU
+  watchdog, while later launches are 1–5 ms. **Never measure browser link cost on fixed source text** — append a
+  nonce and pair it with a warm run, or the number is Chromium's cache. See
+  `.facts/browser-shader-link-blows-the-gpu-watchdog.md`.
 - **WebGPU** — wgpu-native via `Silk.NET.WebGPU`, opt-in only (`--backend=webgpu`, or the "WebGPU" video setting).
   Desktop-only: the native package has no wasm build, and the surface is built from the SDL window's Win32 handle, so
   `ParseRenderer` refuses it off Windows before a window exists. Shaders are the bundles' `Wgsl` form, translated at
-  build time from the same SPIR-V the other backends cross-compile (`tint`, see the shader pipeline below).
+  build time from the same SPIR-V the other backends cross-compile (`tint`, see the shader pipeline below). On shader
+  cost it wins only on a cold cache: an RTX 4070 SUPER builds its boot/dash/all-features pipelines in 107/426/819 ms
+  against 2.9 s / 64 s / 127 s of ANGLE link, but warm both are single-digit ms and `requestAdapter`+`requestDevice`
+  (71–167 ms) makes it the slower option. The browser stays on WebGL2 because wgpu-native has no wasm build, and
+  because the WGSL these bundles carry does not validate under Chrome's Tint (next section).
 
   Traps worth keeping in mind when touching it:
 
@@ -637,7 +650,7 @@ was found by a validation failure, not by reading docs — see `WgslCompiler.cs`
 | Gotcha | Rule |
 |---|---|
 | Non-uniform derivatives | the tint invocation passes `--allow-non-uniform-derivatives`; six fragment stages sample under divergent control flow |
-| tint's `diagnostic(off, derivative_uniformity);` | the naga inside the shipped `wgpu_native` rejects `diagnostic` directives outright, so the emitted line is stripped |
+| tint's `diagnostic(off, derivative_uniformity);` | the naga inside the shipped `wgpu_native` rejects `diagnostic` directives outright, so the emitted line is stripped — a **desktop-only** concession. Chrome's Tint needs it, and without it every one of the 16 `Shapes` pixel modules is refused with `'textureSample' must only be called from uniform control flow` (`select` evaluates both arms). So the WGSL these bundles carry is not loadable by a browser, and `NFMWorld.Graphics.WebGPU.Smoke` cannot see it (it runs naga). A web WGSL flavour has to keep the directive or restructure the dither sample |
 | `return;` after `discard;` | tint emits it and naga rejects an instruction after `return`, so it is stripped too |
 | Bindings | SPIR-V decorations are renumbered before tint (uniform 0, textures 1..T, samplers T+1..), because HLSL's `b0`/`t0`/`s0` all land on set 0 binding 0 and WebGPU refuses that. `WebGpuInterop.TextureBinding`/`SamplerBinding` restate the same numbering for the backend |
 | Vertex locations | glslang assigns them in declaration order, not by semantic slot, so the WebGPU backend maps `Semantic`/`Slot` to `@location` through reflection (`glslang-assigns-vertex-location-in-declaration-order`) |
