@@ -5,10 +5,10 @@
 }
 
 <header class="asset-header">
-    <h1>@Model.Profile.Username</h1>
+    <h1 class="username">@Model.Profile.Username</h1>
     @if (Model.Profile.IsVerifiedUploader)
     {
-        <span><partial name="_VerifiedUploader" /> <span aria-hidden="true">Verified uploader</span></span>
+        <span class="verification-label"><partial name="_VerifiedUploader" /> <span aria-hidden="true">Verified uploader</span></span>
     }
 </header>
 

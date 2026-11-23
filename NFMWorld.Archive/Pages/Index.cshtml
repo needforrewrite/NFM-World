@@ -4,13 +4,14 @@
     ViewData["Title"] = "Account";
 }
 
-<h1>@Model.Account!.Username</h1>
-<p><a asp-page="/Profile" asp-route-id="@Model.Account.Id">View public profile</a></p>
-
-@if (Model.Account.Role >= NFMWorldLibrary.Multiplayer.UserRole.Moderator)
-{
-    <p class="muted">@Model.Account.Role</p>
-}
+<header class="asset-header">
+    <h1 class="username">@Model.Account!.Username</h1>
+    @if (Model.Account.Role >= NFMWorldLibrary.Multiplayer.UserRole.Moderator)
+    {
+        <span class="asset-kind">@Model.Account.Role</span>
+    }
+    <a asp-page="/Profile" asp-route-id="@Model.Account.Id" role="button" class="secondary outline header-action">View public profile</a>
+</header>
 
 <h2>Ratings</h2>
 @if (Model.Ratings.Count == 0)
@@ -40,14 +41,19 @@ else
     </div>
 }
 
-<h2>Your content</h2>
-<p>@Model.AssetCount uploaded assets · @Model.TimeTrialCount time trials</p>
+<div class="section-toolbar">
+    <div>
+        <h2>Your content</h2>
+        <p class="muted">@Model.AssetCount uploaded assets · @Model.TimeTrialCount time trials</p>
+    </div>
+    <a href="/upload" role="button">Upload asset</a>
+</div>
 @if (Model.Assets.Count > 0)
 {
     <div class="overflow-auto">
         <table>
             <thead>
-                <tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Status</th><th scope="col">Downloads</th><th scope="col"></th></tr>
+                <tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Status</th><th scope="col">Downloads</th><th scope="col">Actions</th></tr>
             </thead>
             <tbody>
                 @foreach (var asset in Model.Assets)
@@ -83,7 +89,7 @@ else
                             }
                         </td>
                         <td>@asset.DownloadCount</td>
-                        <td>
+                        <td class="table-actions">
                             <a href="/asset/@asset.Id/edit" role="button" class="secondary outline">Edit</a>
                             <form method="post" asp-page-handler="Delete" asp-route-id="@asset.Id"
                                   onsubmit="return confirm('Delete this upload permanently?');">
@@ -95,6 +101,8 @@ else
             </tbody>
         </table>
     </div>
-    <p class="muted">Showing the @Model.Assets.Count most recent uploads.</p>
+    @if (Model.AssetCount > Model.Assets.Count)
+    {
+        <p class="muted">Showing the @Model.Assets.Count most recent uploads.</p>
+    }
 }
-<p><a href="/upload" role="button">Upload something</a></p>
