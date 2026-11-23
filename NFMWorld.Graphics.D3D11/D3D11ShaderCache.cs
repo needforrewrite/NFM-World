@@ -62,9 +62,14 @@ internal sealed class D3D11ShaderCache
     /// </summary>
     private static ReadOnlySpan<byte> Magic => "DXBC"u8;
 
-    private readonly string _directory;
+    private readonly string[] _directories;
+    private readonly string? _writeDirectory;
 
-    private D3D11ShaderCache(string directory) => _directory = directory;
+    private D3D11ShaderCache(string[] directories, string? writeDirectory)
+    {
+        _directories = directories;
+        _writeDirectory = writeDirectory;
+    }
 
     /// <summary>
     /// The cache the device should use, or null when it should compile every shader itself.
@@ -74,13 +79,60 @@ internal sealed class D3D11ShaderCache
         if (!enabled)
             return null;
 
-        var shaderCacheDir = Path.Combine(AppContext.BaseDirectory, "data", "cfg", "shadercache");
-        Directory.CreateDirectory(shaderCacheDir);
-        return new D3D11ShaderCache(shaderCacheDir);
+        var directories = CandidateDirectories();
+        return new D3D11ShaderCache(directories, ResolveWriteDirectory(directories));
     }
 
     /// <summary>
-    /// Where entries are kept, for the diagnostic line the device prints at startup.
+    /// The install's own directory first, then a per-user one.
+    /// </summary>
+    /// <remarks>
+    /// A published install can sit where its account cannot write - under Program Files, on a
+    /// read-only image - and a cache that only ever misses costs the shape shader's compile on every
+    /// launch. Reads check both, so an install that shipped a warm cache still uses it while writes
+    /// land wherever they are accepted. A read-only install must not fail to start over its cache,
+    /// which is what an unguarded <c>CreateDirectory</c> in the device's constructor used to do.
+    /// </remarks>
+    private static string[] CandidateDirectories()
+    {
+        var directories = new List<string>(2)
+        {
+            Path.Combine(AppContext.BaseDirectory, "data", "cfg", "shadercache")
+        };
+
+        var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (!string.IsNullOrWhiteSpace(local))
+            directories.Add(Path.Combine(local, "NFMWorld", "cache", "shadercache"));
+
+        return directories.ToArray();
+    }
+
+    /// <summary>The first candidate that can be created and written to; null when none can.</summary>
+    private static string? ResolveWriteDirectory(string[] directories)
+    {
+        foreach (var directory in directories)
+        {
+            try
+            {
+                Directory.CreateDirectory(directory);
+                var probe = Path.Combine(directory, "." + Environment.ProcessId + ".probe");
+                File.WriteAllBytes(probe, []);
+                File.Delete(probe);
+                return directory;
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                GraphicsDiagnostics.Warning?.Invoke(
+                    $"The shader cache at {directory} is not writable ({e.GetType().Name}: {e.Message})."
+                );
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Where entries are written, for the diagnostic line the device prints at startup.
     ///
     /// Deliberately not called <c>Directory</c> or <c>Path</c>, either of which shadows the
     /// <see cref="System.IO"/> type of the same name for every unqualified use inside this class - so
@@ -88,7 +140,7 @@ internal sealed class D3D11ShaderCache
     /// property instead of the framework, with errors that name an unrelated ACL extension method and
     /// a missing <c>Combine</c>.
     /// </summary>
-    internal string Location => _directory;
+    internal string Location => _writeDirectory ?? _directories[0];
 
     /// <summary>
     /// The cache's filename for a source blob: the hash of everything that determines the compile's
@@ -133,31 +185,37 @@ internal sealed class D3D11ShaderCache
     /// </summary>
     internal byte[]? TryRead(string hlsl, string profile)
     {
-        try
+        var name = KeyFor(hlsl, profile);
+        foreach (var directory in _directories)
         {
-            var path = Path.Combine(_directory, KeyFor(hlsl, profile));
-            if (!File.Exists(path))
-                return null;
+            try
+            {
+                var path = Path.Combine(directory, name);
+                if (!File.Exists(path))
+                    continue;
 
-            var bytes = File.ReadAllBytes(path);
+                var bytes = File.ReadAllBytes(path);
 
-            // Header: the magic, the format version, then the payload. A file too short to hold the
-            // header is one written by something else, or truncated by a crash mid-write.
-            if (bytes.Length <= Magic.Length + 1 || !bytes.AsSpan(0, Magic.Length).SequenceEqual(Magic))
-                return null;
+                // Header: the magic, the format version, then the payload. A file too short to hold the
+                // header is one written by something else, or truncated by a crash mid-write.
+                if (bytes.Length <= Magic.Length + 1 || !bytes.AsSpan(0, Magic.Length).SequenceEqual(Magic))
+                    continue;
 
-            if (bytes[Magic.Length] != FormatVersion)
-                return null;
+                if (bytes[Magic.Length] != FormatVersion)
+                    continue;
 
-            return bytes[(Magic.Length + 1)..];
+                return bytes[(Magic.Length + 1)..];
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                GraphicsDiagnostics.Warning?.Invoke(
+                    $"The shader cache at {directory} could not be read ({e.GetType().Name}: {e.Message}); " + "recompiling."
+                );
+                continue;
+            }
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or NotSupportedException)
-        {
-            GraphicsDiagnostics.Warning?.Invoke(
-                $"The shader cache at {_directory} could not be read ({e.GetType().Name}: {e.Message}); " + "recompiling."
-            );
-            return null;
-        }
+
+        return null;
     }
 
     /// <summary>
@@ -171,11 +229,12 @@ internal sealed class D3D11ShaderCache
     /// </remarks>
     internal void Store(string hlsl, string profile, byte[] dxbc)
     {
+        if (_writeDirectory is not { } directory)
+            return;
+
         try
         {
-            Directory.CreateDirectory(_directory);
-
-            var path = Path.Combine(_directory, KeyFor(hlsl, profile));
+            var path = Path.Combine(directory, KeyFor(hlsl, profile));
             if (File.Exists(path))
                 return;
 
@@ -191,7 +250,7 @@ internal sealed class D3D11ShaderCache
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or NotSupportedException)
         {
             GraphicsDiagnostics.Warning?.Invoke(
-                $"The shader cache at {_directory} could not be written ({e.GetType().Name}: {e.Message}); "
+                $"The shader cache at {directory} could not be written ({e.GetType().Name}: {e.Message}); "
                 + "the shader will be recompiled next launch."
             );
         }

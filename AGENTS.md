@@ -581,6 +581,11 @@ from `PhysicsController.GameTick`. Two ship:
   `switch` on `Renderer` in `WorldGame`'s constructor (`Renderer.Angle` / `D3d11` / `DesktopGl` / `WebGpu`), and the
   default branch picks **D3D11 on Windows** and **ANGLE everywhere else**. Each desktop backend has a `.Smoke` project
   that runs it headless. The ANGLE arm is `#if ANGLE`, which the game and backend projects define.
+- **D3D11 compiles shaders at launch**, so `D3D11ShaderCache` keeps the DXBC under `data/cfg/shadercache` beside the
+  binary, keyed by a hash of the HLSL + profile + compiler version. A cold cache is ~1.8 s of the first frame (the
+  shape shader's pixel stage is most of it) and the boot message covers it; a warm one is ~0.1 s. Reads check the
+  install directory and then `<LocalApplicationData>/NFMWorld/cache/shadercache`, and writes go to whichever can be
+  written, because an install under Program Files would otherwise recompile every launch.
 - **WebGPU** — wgpu-native via `Silk.NET.WebGPU`, opt-in only (`--backend=webgpu`, or the "WebGPU" video setting).
   Desktop-only: the native package has no wasm build, and the surface is built from the SDL window's Win32 handle, so
   `ParseRenderer` refuses it off Windows before a window exists. Shaders are the bundles' `Wgsl` form, translated at
