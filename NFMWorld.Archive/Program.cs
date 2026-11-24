@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using NFMWorld.Archive;
@@ -59,21 +60,23 @@ builder.Services.AddRazorPages(options =>
 // Cross-origin reads of the public asset routes, for pages on another origin (the standalone
 // radpack preview). Applying the policy is opt-in per endpoint rather than global, so the site's
 // own pages and the signed-in endpoints are not readable from a third-party origin.
-builder.Services.AddCors(cors => cors.AddPolicy(AssetEndpoints.CorsPolicy, policy =>
-    {
-        var origins = (options.CorsOrigins ?? "")
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (origins.Length == 0 || origins is ["*"])
-            policy.AllowAnyOrigin();
-        else
-            policy.WithOrigins(origins);
+builder.Services.AddCors(cors =>
+    cors.AddPolicy(AssetEndpoints.CorsPolicy, policy => ApplyAssetCors(policy, options.CorsOrigins))
+);
 
-        policy.WithMethods("GET", "HEAD")
+static void ApplyAssetCors(CorsPolicyBuilder policy, string? configured)
+{
+    var origins = (configured ?? "")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    if (origins.Length == 0 || origins is ["*"])
+        policy.AllowAnyOrigin();
+    else
+        policy.WithOrigins(origins);
+
+    policy.WithMethods("GET", "HEAD")
         .WithHeaders("Range", "If-Range")
         .WithExposedHeaders("Content-Length", "Content-Range", "Accept-Ranges", "Content-Disposition");
-    }
-)
-);
+}
 
 var app = builder.Build();
 
