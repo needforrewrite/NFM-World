@@ -356,15 +356,8 @@ tbody tr:last-child :is(td, th) {
 }
 
 .verified-uploader {
-    display: inline-grid;
-    place-items: center;
-    width: 1.2em;
-    height: 1.2em;
-    border: 1px solid currentColor;
-    border-radius: 50%;
     color: #83d8fb;
-    font-size: 0.85em;
-    vertical-align: 0.05em;
+    vertical-align: -0.15em;
 }
 
 .asset-kind {
