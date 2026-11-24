@@ -187,7 +187,8 @@ public class ModerationTests
         Assert.AreEqual(HttpStatusCode.OK, download.StatusCode);
 
         var page = await factory.CreateClient().GetStringAsync($"/asset/{DbAssetId(factory, contentHash)}");
-        StringAssert.Contains(page, $"deleted-{artistId}");
+        StringAssert.Contains(page, "Deleted account");
+        Assert.IsFalse(page.Contains($"deleted-{artistId}", StringComparison.Ordinal));
     }
 
     private static int DbAssetId(ArchiveAppFactory factory, string hash)
