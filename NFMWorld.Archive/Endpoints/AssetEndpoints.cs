@@ -60,6 +60,12 @@ public sealed record AssetUpdate(string? Name, string? Description, bool? IsPubl
 /// </summary>
 public static class AssetEndpoints
 {
+    /// <summary>
+    /// The CORS policy the public reads carry, so a page on another origin can fetch an asset
+    /// (see the standalone radpack preview). Registered in Program.cs.
+    /// </summary>
+    public const string CorsPolicy = "asset-download";
+
     private const int MaxSearchLimit = 100;
 
     public static void MapAssetEndpoints(this WebApplication app)
@@ -324,7 +330,7 @@ public static class AssetEndpoints
                     .FirstOrDefaultAsync(a => a.ContentHash == hash, ct);
                 return asset is null ? Results.NotFound() : Results.Ok(ToInfo(asset));
             }
-        );
+        ).RequireCors(CorsPolicy);
 
         // Metadata, visibility and takedown. An owner may hide or re-list their own upload; only
         // an administrator may take one down or restore it.
@@ -591,7 +597,7 @@ public static class AssetEndpoints
                     enableRangeProcessing: true
                 );
             }
-        );
+        ).RequireCors(CorsPolicy);
     }
 
     /// <summary>The one visibility rule every read surface applies.</summary>

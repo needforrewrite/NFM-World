@@ -47,6 +47,13 @@ public sealed class ArchiveOptions
     public TimeSpan DeletionGracePeriod { get; set; } = TimeSpan.FromDays(30);
 
     /// <summary>
+    /// Origins allowed to fetch asset downloads cross-origin, comma separated; <c>*</c> allows any
+    /// page. Assets are public, credential-free downloads, so a page elsewhere - the standalone
+    /// radpack preview - can read them without exposing anything a direct request would not.
+    /// </summary>
+    public string CorsOrigins { get; set; } = "*";
+
+    /// <summary>
     /// Cloudflare zone whose edge caches <c>/assets/&lt;hash&gt;</c>; empty disables purging.
     /// </summary>
     public string? CloudflareZoneId { get; set; }

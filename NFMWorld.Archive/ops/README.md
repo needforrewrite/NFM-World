@@ -26,6 +26,7 @@ Set through the `Archive__*` environment variables (double underscore nests).
 | `Archive__ReadOnly`                                                       | Disables registration and uploads                                                 |
 | `Archive__DeletionGracePeriod`                                           | Grace between a deletion request and the sweep, `DD.HH:MM:SS` or days (default 30 days) |
 | `Archive__CloudflareZoneId` / `Archive__CloudflareApiToken`              | Optional edge purge when an asset is hidden, replaced or deleted (see [Cloudflare caching](#cloudflare-caching)) |
+| `Archive__CorsOrigins`                                                    | Comma-separated origins allowed to read `/assets/{hash}` and `/assets/meta/{hash}`; default `*` (the browser's standalone preview page reads them cross-origin) |
 
 Relative validator paths are resolved against the content root. In **Development** only, leaving
 `Archive__ValidatorPath` unset makes the archive use `NFMWorld.Archive.Validator` built beside this

@@ -311,6 +311,46 @@ public class AssetEndpointTests
     }
 
     [TestMethod]
+    public async Task Cors_Download_AllowsACrossOriginPage()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = factory.CreateClient();
+        string relative;
+        using (var scope = factory.Services.CreateScope())
+            relative = (await scope.ServiceProvider.GetRequiredService<FileStorage>().PutAsync(new byte[] { 1, 2, 3 }, default))
+                .RelativePath;
+
+        var asset = NewAsset("public", AssetType.Car, Hash('0'));
+        asset.StoragePath = relative;
+        await SeedAsync(factory, asset);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"/assets/{Hash('0')}");
+        request.Headers.Add("Origin", "https://example.test");
+        var response = await client.SendAsync(request);
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.AreEqual("*", response.Headers.GetValues("Access-Control-Allow-Origin").Single());
+    }
+
+    [TestMethod]
+    public async Task Cors_Preflight_AllowsGetWithRange()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = factory.CreateClient();
+
+        using var request = new HttpRequestMessage(HttpMethod.Options, $"/assets/{Hash('0')}");
+        request.Headers.Add("Origin", "https://example.test");
+        request.Headers.Add("Access-Control-Request-Method", "GET");
+        request.Headers.Add("Access-Control-Request-Headers", "range");
+        var response = await client.SendAsync(request);
+
+        Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+        StringAssert.Contains(response.Headers.GetValues("Access-Control-Allow-Methods").Single(), "GET");
+        StringAssert.Contains(response.Headers.GetValues("Access-Control-Allow-Methods").Single(), "HEAD");
+        StringAssert.Contains(response.Headers.GetValues("Access-Control-Allow-Headers").Single(), "Range");
+    }
+
+    [TestMethod]
     public async Task Download_OfATakenDownAsset_IsNotFound()
     {
         using var factory = new ArchiveAppFactory();
