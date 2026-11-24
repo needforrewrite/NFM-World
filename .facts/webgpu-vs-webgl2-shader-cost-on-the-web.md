@@ -1,22 +1,24 @@
 ---
 name: webgpu-vs-webgl2-shader-cost-on-the-web
-description: "Measured on one real GPU with cold and warm caches separated: WebGPU costs 138–167 ms to create a device plus 107–819 ms for a cold pipeline against 2.9–127 s for the same shader in WebGL2 — so WebGPU is 10–150× faster on a cold cache, and the reason it is not usable is the shipped WGSL failing Chrome's validator"
+description: "Measured on one real GPU with cold and warm caches separated: WebGPU costs 138–167 ms to create a device plus 107–819 ms for a cold pipeline against 2.9–127 s for the same shader in WebGL2 — 10–150× faster cold, slower warm; both blockers (browser WGSL flavour, wasm-capable binding) have since been fixed and the browser now uses it"
 metadata:
   node_type: memory
   type: reference
 ---
 
-Answer to "would WebGPU on the web be faster, since we ship WGSL?" — **on shader cost, yes, by an
-order of magnitude; but the shipped WGSL does not validate, and the browser cannot switch to it
-anyway.** Both halves were measured on one RTX 4070 SUPER headless Chromium, ANGLE/D3D11 for GL.
+Answer to "would WebGPU on the web be faster, since we ship WGSL?" — **on cold shader cost, yes, by an
+order of magnitude; warm, it is slightly slower.** Both halves were measured on one RTX 4070 SUPER
+headless Chromium, ANGLE/D3D11 for GL. Since then the two blockers were fixed and the browser defaults
+to WebGPU (see the closing section and
+[[webgpu-binding-regeneration-and-wasm-linkage]]).
 
-## The browser is WebGL2 today, and that is not a flag
+## The browser was WebGL2 when this was measured
 
-`NFMWorld.Browser/Program.cs` calls `WebGlContext.Create()`; `WorldGame`'s constructor takes
+`NFMWorld.Browser/Program.cs` called `WebGlContext.Create()` only; `WorldGame`'s constructor took
 `case Renderer.Angle when _browserContext is not null` into `GlGraphicsDevice`. `--backend=webgpu`
-cannot be used either way: `Silk.NET.WebGPU.Native.WGPU` ships no wasm runtime, and the surface is
+was not an option either way: `Silk.NET.WebGPU.Native.WGPU` ships no wasm runtime, and the surface is
 built from the SDL window's Win32 handle, so `ParseRenderer` refuses it before a window exists.
-`navigator.gpu` is present in the page; nothing in the game touches it.
+`navigator.gpu` was present in the page; nothing in the game touched it.
 
 ## Measured costs, cold and warm separated
 
@@ -62,7 +64,15 @@ let v_622 = ((select(textureSample(BlueNoiseTex, BlueNoiseSampler, (v_620 * vec2
 `wgpu_native` rejects it: the desktop consumer needs the line gone and the browser consumer needs it
 present. `NFMWorld.Graphics.WebGPU.Smoke` cannot catch it — it runs naga, not Tint.
 
-**How to apply:** if web WebGPU is pursued, the shader cost argument is now in its favour, but the
-work is a wasm-capable wgpu binding, a surface off wasm canvas, a browser WGSL flavour that keeps
-the directive, and a Tint validation step in the build or smoke. Do not quote a warm-cache GL
-number to argue either way.
+## Outcome: both blockers fixed, the browser runs WebGPU
+
+`WgslCompiler` now returns both flavours (`PostProcess(source, keepDiagnostic)`), `IShaderModule`
+carries `WgslBrowser`, and `WebGpuResources.WgslFor` picks by `IsBrowser`. The wasm-capable binding
+is Dawn's `emdawnwebgpu` port compiled in `NFMWorld.Platform.WebGPU`; the page creates the device
+and the module imports it. Verified in Chromium (SwiftShader Vulkan): the splash and the main menu
+render, the canvas is `getContext('webgpu')` and not `webgl2`, and shadowing `navigator.gpu` falls
+back to the WebGL2 path unchanged.
+
+**How to apply:** the shader-cost argument is why this was worth doing — a cold first launch is the
+case that made WebGL2 unusable, and it is exactly the case WebGPU is 27–150× faster at. Do not quote
+a warm-cache GL number to argue either way.

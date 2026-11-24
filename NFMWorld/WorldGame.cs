@@ -220,15 +220,17 @@ public partial class WorldGame : IDisposable, IGameHost
 
             if (value.Equals("webgpu", StringComparison.OrdinalIgnoreCase))
             {
-                // Only the surface creation is Windows-specific today: it takes the HWND from
-                // SDL, and no other platform's handle accessor exists yet. Reported here rather
-                // than at device creation so the window is never brought up for a run that cannot
-                // present.
-                if (!OperatingSystem.IsWindows())
+                // Both platforms that can present it need naming here, because the surface is
+                // built from a window handle and each exposes a different one: a Win32 HWND from
+                // SDL, or the page's canvas by selector (the browser's own emdawnwebgpu path).
+                // Reported here rather than at device creation so the window is never brought up
+                // for a run that cannot present.
+                if (!OperatingSystem.IsWindows() && !OperatingSystem.IsBrowser())
                 {
                     throw new ArgumentException(
-                        $"{RendererArgumentPrefix}webgpu needs Windows: the backend builds its surface "
-                        + "from the window's Win32 handle, and SDL only exposes that one."
+                        $"{RendererArgumentPrefix}webgpu needs Windows or the browser: the backend builds "
+                        + "its surface from the window's Win32 handle, or from the page's canvas, and SDL "
+                        + "exposes no other platform's handle."
                     );
                 }
 
@@ -541,7 +543,8 @@ public partial class WorldGame : IDisposable, IGameHost
         int browserHeight = 0,
         Action? browserPresent = null,
         Action<int>? browserSetSwapInterval = null,
-        Action<int, int>? browserResizeDrawable = null
+        Action<int, int>? browserResizeDrawable = null,
+        nint browserWebGpuDevice = 0
     )
     {
         _browserContext = browserContext;
@@ -662,6 +665,27 @@ public partial class WorldGame : IDisposable, IGameHost
                     )
                 );
                 _device = d3d11Device;
+                break;
+            }
+
+            case Renderer.WebGpu when _browserContext is not null:
+            {
+                // The browser's WebGPU arm. `_browserContext` is the WGPU entry-point source rather
+                // than GL's here - the device is wgpu's, and the page created it before boot - but
+                // it plays the same role, which is why this test is the same one the GL arm uses.
+                //
+                // SDL still owns the canvas and the events. It re-sizes the canvas element from the
+                // window, and the surface then picks that up when the swapchain reconfigures on the
+                // resize event, so the present and swap-interval callbacks have nothing to do.
+                Window = SdlWindow.Create("NFM World", browserWidth, browserHeight);
+
+                _device = WebGpuGraphicsDevice.CreateForBrowser(
+                    _browserContext,
+                    browserWebGpuDevice,
+                    browserWidth,
+                    browserHeight,
+                    SettingsMenu.RequestedMultiSampleCount
+                );
                 break;
             }
 
@@ -1475,26 +1499,41 @@ public partial class WorldGame : IDisposable, IGameHost
     }
 
     /// <summary>
-    /// Builds the game with the browser's GL context, for the head in NFMWorld.Browser.
+    /// Builds the game for the browser head in NFMWorld.Browser.
     ///
     /// The constructor is private because <see cref="Main"/> is the only desktop entry point, and
     /// this is the second one: on browser the host is a page rather than a process, so the context,
-    /// the present callback and the swap interval all come from <c>NFMWorld.Platform.WebGL</c> and
-    /// the frame loop is requestAnimationFrame's. Everything after the device exists is the same
-    /// code either way, which is why this delegates to the constructor rather than reimplementing it.
+    /// the present callback and the swap interval all come from the platform layer and the frame
+    /// loop is requestAnimationFrame's. Everything after the device exists is the same code either
+    /// way, which is why this delegates to the constructor rather than reimplementing it.
     /// </summary>
-    /// <param name="getProcAddress">The browser GL entry-point source, from <c>WebGlContext.Create</c>.</param>
+    /// <param name="renderer">
+    /// Which backend the head chose. <see cref="Renderer.WebGpu"/> needs
+    /// <paramref name="webGpuDevice"/>; <see cref="Renderer.Angle"/> is WebGL2 on this path.
+    /// </param>
+    /// <param name="getProcAddress">
+    /// The browser's entry-point source: <c>WebGlContext.Create</c> for WebGL2, or
+    /// <c>WgpuNativeContext.Instance</c> for WebGPU.
+    /// </param>
+    /// <param name="webGpuDevice">
+    /// The page's <c>GPUDevice</c>, from <c>WgpuNativeContext.AcquireDevice</c>. The page has to
+    /// create it: adapter and device requests answer through promises, which a synchronous boot
+    /// never runs.
+    /// </param>
     public static WorldGame CreateForBrowser(
+        Renderer renderer,
         INativeContext getProcAddress,
         int width,
         int height,
-        Action present,
-        Action<int> setSwapInterval,
-        Action<int, int>? resizeDrawable = null
+        Action? present = null,
+        Action<int>? setSwapInterval = null,
+        Action<int, int>? resizeDrawable = null,
+        nint webGpuDevice = 0
     )
     {
         ArgumentNullException.ThrowIfNull(getProcAddress);
-        return new WorldGame(getProcAddress, width, height, present, setSwapInterval, resizeDrawable);
+        _renderer = renderer;
+        return new WorldGame(getProcAddress, width, height, present, setSwapInterval, resizeDrawable, webGpuDevice);
     }
 
     /// <summary>

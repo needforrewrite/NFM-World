@@ -1,0 +1,83 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- The browser's WebGPU platform layer: emdawnwebgpu (Dawn's webgpu.h for Emscripten) plus
+         the INativeContext that lets NFMWorld.Graphics.WebGPU drive it.
+
+         wgpu-native has no wasm build, so the browser cannot use the desktop backend's library.
+         emdawnwebgpu is the same C API implemented on top of the browser's own navigator.gpu, so
+         the backend's calls are unchanged - what differs is where the device comes from (the page
+         creates it; see WgpuNativeContext) and which entry points have a wasm body at all.
+
+         Only referenced by the browser head, but it builds for any RID - the P/Invokes simply
+         fail to resolve off-wasm. -->
+    <PropertyGroup>
+        <!-- net12.0 for the same reason as NFMWorld.Platform.WebGL: the workload manifest gates
+             the Emscripten packs on TargetFrameworkVersion >= 12.0. No managed code ships. -->
+        <TargetFramework>net12.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RootNamespace>NFMWorld.Platform.WebGPU</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Maxine.Silk.WebGPU\src\Maxine.WebGPU\Maxine.WebGPU.csproj" />
+    </ItemGroup>
+
+    <!--
+      The package is source, not a library: webgpu.cpp has to be compiled for wasm with the
+      workload's own Emscripten, and the four JS libraries cannot be compiled at all - they are
+      link-time inputs, so the browser head passes them as js-library options.
+
+      Downloaded rather than checked in (834 KB of Dawn's text), pinned by release tag and
+      SHA-512 in native/fetch_emdawnwebgpu.py.
+    -->
+    <PropertyGroup>
+        <!-- BaseIntermediateOutputPath, not IntermediateOutputPath: the latter is empty at
+             evaluation time, which silently puts the output in the project directory. -->
+        <!-- No trailing separator on the directory properties: a quoted argument ending in `\`
+             loses the closing quote to the C runtime's escape handling, which turned the package
+             path into a name with an embedded quote. -->
+        <WebGpuShimDir>$(BaseIntermediateOutputPath)wgpu-shim</WebGpuShimDir>
+        <WebGpuPackageDir>$(WebGpuShimDir)\emdawnwebgpu</WebGpuPackageDir>
+        <WebGpuShimArchive>$(WebGpuShimDir)\wgpu_native.a</WebGpuShimArchive>
+        <WebGpuShimSource>$(MSBuildThisFileDirectory)native\wgpu_shim.c</WebGpuShimSource>
+        <!-- The JS half of the package, for the head to pass to the link. Published as a
+             property because an item from a ProjectReference does not reach the referencing
+             project's item list. -->
+        <WebGpuJsLibraryDir>$(MSBuildThisFileDirectory)$(WebGpuPackageDir)\webgpu\src\</WebGpuJsLibraryDir>
+    </PropertyGroup>
+
+    <!-- Deliberately no Inputs/Outputs, for the reason given in NFMWorld.Platform.WebGL: with
+         them MSBuild skips the whole target - including the steps that would refresh its
+         outputs - whenever it thinks they are current. The steps are idempotent. -->
+    <!-- Invoked by the browser head's BuildNativeArchives target, which passes RuntimeIdentifier
+         explicitly - MSBuild strips it from every project reference. -->
+    <Target Name="BuildWebGpuShim"
+            Condition="'$(RuntimeIdentifier)' == 'browser-wasm'"
+            BeforeTargets="PrepareForBuild;_WasmWriteRspForCompilingNativeSourceFiles"
+            DependsOnTargets="_CoreCLRSetupEmscripten">
+        <Error Condition="'$(EmscriptenUpstreamEmscriptenPath)' == '' Or !Exists('$(EmscriptenUpstreamEmscriptenPath)emcc.bat')"
+               Text="Could not find the workload's emscripten (EmscriptenUpstreamEmscriptenPath='$(EmscriptenUpstreamEmscriptenPath)'). The WebGPU shim must be built with the same toolchain that links it." />
+
+        <PropertyGroup>
+            <!-- Frozen only when EM_CACHE is the SDK's own read-only cache dir; a fresh cache
+                 elsewhere fails every compile with "FROZEN_CACHE is set, but cache file is
+                 missing". See the same note in NFMWorld.Platform.WebGL. -->
+            <_WebGpuFrozenCache Condition="'$(WasmCachePath)' == '$(EmscriptenCacheSdkCacheDir)'">1</_WebGpuFrozenCache>
+            <_WebGpuFrozenCache Condition="'$(WasmCachePath)' != '$(EmscriptenCacheSdkCacheDir)'">0</_WebGpuFrozenCache>
+        </PropertyGroup>
+
+        <MakeDir Directories="$(WebGpuShimDir)" />
+
+        <Exec Command="&quot;$(EmscriptenPythonToolsPath)python.exe&quot; &quot;$(MSBuildThisFileDirectory)native\fetch_emdawnwebgpu.py&quot; &quot;$(WebGpuPackageDir)&quot;"
+              StandardOutputImportance="normal" />
+
+        <!-- The workload's emscripten reads its toolchain locations from these variables; the
+             node path needs its bin/ segment, which a hand-written list tends to omit. -->
+        <Exec Command="&quot;$(EmscriptenPythonToolsPath)python.exe&quot; &quot;$(MSBuildThisFileDirectory)native\build_wgpu.py&quot; &quot;$(WebGpuShimArchive)&quot; &quot;$(WebGpuShimDir)&quot; &quot;$(WebGpuPackageDir)&quot; &quot;$(WebGpuShimSource)&quot;"
+              EnvironmentVariables="EMSDK=$(EmscriptenSdkToolsPath);EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe;PYTHONHOME=;PYTHONPATH=$(EmscriptenSdkToolsPath)python;DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin;DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath);DOTNET_EMSCRIPTEN_NODE_JS=$(EmscriptenNodeToolsPath)bin/node.exe;EM_CACHE=$(WasmCachePath);EM_FROZEN_CACHE=$(_WebGpuFrozenCache)"
+              StandardOutputImportance="normal" />
+    </Target>
+
+</Project>

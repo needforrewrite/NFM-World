@@ -26,6 +26,10 @@
     <ItemGroup>
         <ProjectReference Include="..\Maxine.Silk.WebGPU\src\Maxine.WebGPU\Maxine.WebGPU.csproj"/>
         <ProjectReference Include="..\Maxine.Silk.WebGPU\src\Extensions\Maxine.WebGPU.Extensions.WGPU\Maxine.WebGPU.Extensions.WGPU.csproj"/>
+        <!-- The canvas surface source struct and its SType are Dawn's, not core WebGPU's. Only the
+             browser path constructs them, but a conditional reference would put the type in one
+             build and not another for no gain - it is two fields. -->
+        <ProjectReference Include="..\Maxine.Silk.WebGPU\src\Extensions\Maxine.WebGPU.Extensions.Dawn\Maxine.WebGPU.Extensions.Dawn.csproj"/>
         <ProjectReference Include="..\Maxine.Silk.WebGPU\native\Maxine.Silk.WebGPU.Native.WGPU\Maxine.Silk.WebGPU.Native.WGPU.csproj"
                           AdditionalProperties="WgpuNativeRid=$(RuntimeIdentifier)"/>
     </ItemGroup>

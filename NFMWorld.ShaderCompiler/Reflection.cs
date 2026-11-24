@@ -109,6 +109,12 @@ public sealed record StageSources(byte[] Spirv, string Hlsl, string Msl, string 
     /// <summary>WGSL, translated from <see cref="Spirv"/> with the backend's own binding numbers.</summary>
     public string Wgsl { get; init; } = "";
 
+    /// <summary>
+    /// The same WGSL with tint's <c>diagnostic(off, derivative_uniformity);</c> left in place, which is
+    /// the only form the browser's Tint accepts. See <c>WgslCompiler.Compile</c>.
+    /// </summary>
+    public string WgslBrowser { get; init; } = "";
+
     /// <summary>The entry point's name, as both the SPIR-V and the WGSL spell it.</summary>
     public string EntryPoint { get; init; } = "main";
 }

@@ -53,7 +53,7 @@ public static class WgslCompiler
                 : null;
 
     /// <summary>
-    /// Translates one stage.
+    /// Translates one stage, producing both WGSL flavours.
     /// </summary>
     /// <param name="spirv">The stage's SPIR-V, as shaderc emitted it.</param>
     /// <param name="bindings">
@@ -62,7 +62,17 @@ public static class WgslCompiler
     /// another, which WebGPU reports at pipeline creation with nothing to say which shader.
     /// </param>
     /// <param name="entryPoint">The SPIR-V entry point to translate.</param>
-    public static string Compile(byte[] spirv, IReadOnlyDictionary<int, int> bindings, string entryPoint)
+    /// <returns>
+    /// <c>Desktop</c> is what naga (wgpu-native) reads; <c>Browser</c> keeps the
+    /// <c>diagnostic(off, derivative_uniformity);</c> directive the browser's Tint requires. Only that
+    /// line differs, and tint runs once for both, so carrying the pair costs build time and a
+    /// compressed member, not a second translation.
+    /// </returns>
+    public static (string Desktop, string Browser) Compile(
+        byte[] spirv,
+        IReadOnlyDictionary<int, int> bindings,
+        string entryPoint
+    )
     {
         var tint = FindTint()
                    ?? throw new InvalidOperationException(
@@ -88,8 +98,8 @@ public static class WgslCompiler
             start.ArgumentList.Add("--format");
             start.ArgumentList.Add("wgsl");
             // The derivative-uniformity rule is a WGSL 1.1 restriction that predates the shaders in
-            // this tree; the directive that silences it is itself rejected by the naga this
-            // wgpu-native links, so it is stripped again in PostProcess.
+            // this tree; the directive that silences it is rejected by desktop naga and required by
+            // the browser's Tint, so it is stripped for one flavour and kept for the other.
             start.ArgumentList.Add("--allow-non-uniform-derivatives");
             start.ArgumentList.Add("--entry-point");
             start.ArgumentList.Add(entryPoint);
@@ -109,7 +119,7 @@ public static class WgslCompiler
                 );
             }
 
-            return PostProcess(stdout);
+            return (PostProcess(stdout, keepDiagnostic: false), PostProcess(stdout, keepDiagnostic: true));
         }
         finally
         {
@@ -125,18 +135,23 @@ public static class WgslCompiler
     }
 
     /// <summary>
-    /// Removes the two constructs this naga will not read.
+    /// Removes the two constructs desktop naga will not read.
     ///
     /// <c>diagnostic(off, derivative_uniformity);</c> is what <c>--allow-non-uniform-derivatives</c>
     /// emits instead of failing, and it is a directive the naga inside the pinned wgpu-native does not
-    /// know at all. The <c>return;</c> after a <c>discard;</c> is tint's demote-to-helper expansion
-    /// leaving the rest of the helper body unreachable, which is valid WGSL and rejected by that same
-    /// naga as "instruction after return". Dropping it only ever lets a discarded invocation run code
-    /// whose stores go nowhere, which is what a discarded invocation is.
+    /// know at all - but the Tint inside the browser's emdawnwebgpu does, and without it every pixel
+    /// stage with divergent sampling fails to translate there. So the two flavours differ only in
+    /// this line, and <paramref name="keepDiagnostic"/> picks which one is being produced.
+    /// The <c>return;</c> after a <c>discard;</c> is tint's demote-to-helper expansion
+    /// leaving the rest of the helper body unreachable, which is valid WGSL and rejected by both
+    /// compilers as "instruction after return". Dropping it only ever lets a discarded invocation run
+    /// code whose stores go nowhere, which is what a discarded invocation is.
     /// </summary>
-    private static string PostProcess(string wgsl)
+    private static string PostProcess(string wgsl, bool keepDiagnostic)
     {
-        var text = Regex.Replace(wgsl, @"^[ \t]*diagnostic\([^)]*\);[ \t]*\r?\n", "", RegexOptions.Multiline);
+        var text = keepDiagnostic
+            ? wgsl
+            : Regex.Replace(wgsl, @"^[ \t]*diagnostic\([^)]*\);[ \t]*\r?\n", "", RegexOptions.Multiline);
         text = Regex.Replace(text, @"(?m)^([ \t]*)discard;[ \t]*\r?\n[ \t]*return;[ \t]*\r?\n", "$1discard;\n");
         return text;
     }

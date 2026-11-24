@@ -15,7 +15,9 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.JavaScript;
 using NFMWorld.Platform;
 using NFMWorld.Platform.WebGL;
+using NFMWorld.Platform.WebGPU;
 using NFMWorldLibrary;
+using Silk.NET.Core.Contexts;
 using SDL3New::SDL3;
 using static SDL3New::SDL3.SDL;
 
@@ -91,6 +93,13 @@ public static partial class Program
     private static (int Width, int Height) _bootSize = (1280, 720);
 
     /// <summary>
+    /// Whether the page created a WebGPU device before boot. Set by <see cref="SetWebGpuAvailable"/>
+    /// rather than probed: <c>emscripten_webgpu_get_device</c> asserts (or, in a release build, hands
+    /// the JS side a null to import) when the page parked nothing, so asking is not a test.
+    /// </summary>
+    private static bool _webGpuAvailable;
+
+    /// <summary>
     /// TEMP: names the boot step that is about to run. A trap in native code kills the module
     /// before any managed catch can report it, so the last line of the log is the only record of
     /// how far the boot got.
@@ -115,6 +124,12 @@ public static partial class Program
         // which is what actually resolves SDL, the WebGL shim and cimgui.
         NativeLibrary.SetDllImportResolver(typeof(Program).Assembly, (_, _, _) => IntPtr.Zero);
 
+        // The desktop head wires this in WorldGame.Main, which never runs here. Information rather
+        // than the Debug the exe uses: a Release page's minimum level is Information, and the
+        // backend's boot line ("webgpu: <device>, surface Bgra8Unorm, ...") plus its surface errors
+        // are the only record a web build leaves about which path it took.
+        NFMWorld.Graphics.GraphicsDiagnostics.Warning = message => Logging.Info(message);
+
         try
         {
             // SDL still owns the window and the events: its emscripten video backend creates the
@@ -123,8 +138,13 @@ public static partial class Program
             if (!SDL_Init(SDL_InitFlags.SDL_INIT_VIDEO))
                 throw new InvalidOperationException($"SDL_Init failed: {SDL_GetError()}");
 
-            Step("WebGlContext.Create");
-            var context = WebGlContext.Create();
+            // The page reports whether it had a WebGPU device to give us, and that answer decides
+            // the whole graphics path: it gates the renderer list, which the saved choice indexes
+            // into, so it has to land before the config is read. On the WebGL2 path nothing
+            // changes; on the WebGPU path the canvas must not be handed to WebGL first, because a
+            // canvas holds one context type and a successful `getContext('webgl2')` locks WebGPU
+            // out of it for good.
+            NFMWorld.UI.SettingsMenu.BrowserWebGpuAvailable = _webGpuAvailable;
 
             // The desktop head parses the persisted settings in Main, before the game is built;
             // this path skips that, and the assets are already mounted by the time this runs, so
@@ -132,14 +152,46 @@ public static partial class Program
             Step("LoadConfigValues");
             NFMWorld.UI.SettingsMenu.LoadConfigValues();
 
+            var renderer = NFMWorld.UI.SettingsMenu.BrowserRenderer;
+
+            INativeContext context;
+            Action? present = null;
+            Action<int>? setSwapInterval = null;
+            Action<int, int>? resizeDrawable = null;
+            nint device = 0;
+
+            if (renderer == Renderer.WebGpu)
+            {
+                // Imported, not requested: adapter and device requests answer through promises a
+                // synchronous boot never runs, so the page creates the device and parks it for
+                // this call. See WgpuNativeContext.
+                Step("WgpuNativeContext.AcquireDevice");
+                device = WgpuNativeContext.AcquireDevice();
+                if (device == 0)
+                    throw new InvalidOperationException("The page reported a WebGPU device but none was parked for the module.");
+                Console.WriteLine($"[nfmw] webgpu device {device:x}");
+
+                context = WgpuNativeContext.Instance;
+            }
+            else
+            {
+                Step("WebGlContext.Create");
+                context = WebGlContext.Create();
+                present = WebGlContext.Present;
+                setSwapInterval = WebGlContext.SetSwapInterval;
+                resizeDrawable = WebGlContext.Resize;
+            }
+
             Step("CreateForBrowser");
             _game = WorldGame.CreateForBrowser(
+                renderer,
                 context,
                 width: Math.Max(1, _bootSize.Width),
                 height: Math.Max(1, _bootSize.Height),
-                present: WebGlContext.Present,
-                setSwapInterval: WebGlContext.SetSwapInterval,
-                resizeDrawable: WebGlContext.Resize
+                present: present,
+                setSwapInterval: setSwapInterval,
+                resizeDrawable: resizeDrawable,
+                webGpuDevice: device
             );
 
             GameSparker.Game = _game;
@@ -240,4 +292,12 @@ public static partial class Program
     {
         if (width > 0 && height > 0) _bootSize = (width, height);
     }
+
+    /// <summary>
+    /// Records whether the page created a WebGPU device and parked it for
+    /// <c>emscripten_webgpu_get_device</c>. Called immediately before <see cref="Main"/>, because
+    /// the answer decides the renderer list and the renderer itself.
+    /// </summary>
+    [JSExport]
+    public static void SetWebGpuAvailable(bool available) => _webGpuAvailable = available;
 }

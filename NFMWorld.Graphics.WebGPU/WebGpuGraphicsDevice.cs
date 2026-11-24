@@ -17,6 +17,7 @@
 using System.Runtime.InteropServices;
 using NFMWorld.Shaders;
 using Silk.NET.Core.Contexts;
+using Maxine.WebGPU.Extensions.Dawn;
 using Maxine.WebGPU.Extensions.WGPU;
 using Wg = Maxine.WebGPU;
 using WgpuBuffer = Maxine.WebGPU.Buffer;
@@ -69,8 +70,21 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
     /// <summary>The API surface, shared by every object in this assembly.</summary>
     internal Wg.WebGPU Api { get; }
 
-    /// <summary>wgpu-native's own extension surface; <see cref="Poll"/> is the only user.</summary>
-    private readonly Wgpu _ext;
+    /// <summary>
+    /// wgpu-native's own extension surface; <see cref="Poll"/> is the only user. Null on the browser,
+    /// where emdawnwebgpu does not export <c>wgpuDevicePoll</c> and there is nothing to poll.
+    /// </summary>
+    private readonly Wgpu? _ext;
+
+    /// <summary>
+    /// True when this device runs over emdawnwebgpu in a browser. It changes four things: no adapter
+    /// object exists, the surface is created from a canvas selector rather than a window handle,
+    /// there is no uncaptured-error callback, and a present is the surface texture simply being
+    /// released.
+    /// </summary>
+    internal bool IsBrowser => _browser;
+
+    private readonly bool _browser;
 
     internal Wg.Instance* Instance;
     internal Wg.Adapter* Adapter;
@@ -195,7 +209,13 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
     /// <see cref="NFMWorld.Graphics.Abstraction.IGraphicsDevice"/>: the abstraction has no notion of a
     /// queue that needs draining.
     /// </summary>
-    internal void Poll(bool waitForWork) => _ext.DevicePoll(_device, waitForWork, null);
+    internal void Poll(bool waitForWork)
+    {
+        if (_ext is null)
+            return;
+
+        _ext.DevicePoll(_device, waitForWork, null);
+    }
 
     private void ReportError(string message)
     {
@@ -224,7 +244,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
 
     private WebGpuGraphicsDevice(
         Wg.WebGPU api,
-        Wgpu ext,
+        Wgpu? ext,
         Wg.Instance* instance,
         Wg.Adapter* adapter,
         WgpuDevice* device,
@@ -237,11 +257,13 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         bool textureCompressionBc,
         ErrorRouter? errorRouter,
         Wg.PfnUncapturedErrorCallback errorCallback,
+        bool browser,
         in WebGpuDeviceDescription description
     )
     {
         Api = api;
         _ext = ext;
+        _browser = browser;
         Instance = instance;
         Adapter = adapter;
         _device = device;
@@ -470,8 +492,140 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
             wantsBc,
             errorRouter,
             errorCallback,
+            browser: false,
             description
         );
+    }
+
+    /// <summary>
+    /// Brings the backend up over emdawnwebgpu in a browser.
+    ///
+    /// Nothing is requested here. Adapter and device calls answer through futures completed from a
+    /// JS microtask, which a synchronous wait never runs, so the page creates the device with
+    /// <c>navigator.gpu</c> before the runtime starts and <see cref="WgpuNativeContext.AcquireDevice"/>
+    /// hands it over. Two consequences follow from that: there is no adapter object (every query the
+    /// desktop path makes of one it makes of the device, and the surface queries ignore the argument
+    /// entirely), and there is no uncaptured-error callback to install - emdawnwebgpu has no such
+    /// entry point, so <see cref="TakeError"/> stays empty and only <see cref="CheckCreated"/> carries
+    /// a failure reason.
+    /// </summary>
+    /// <param name="context">
+    /// The browser's WebGPU entry points, from <c>NFMWorld.Platform.WebGPU.WgpuNativeContext.Instance</c>.
+    /// Passed in rather than resolved here because that trampoline table lives in the project that
+    /// builds against the nightly SDK, which this one does not.
+    /// </param>
+    /// <param name="deviceHandle">
+    /// The device the page created, from <c>WgpuNativeContext.AcquireDevice()</c>. Adopted, not
+    /// requested - see the remarks.
+    /// </param>
+    /// <param name="width">Back buffer width in pixels.</param>
+    /// <param name="height">Back buffer height in pixels.</param>
+    /// <param name="multiSampleCount">Sample count for the offscreen colour attachment.</param>
+    /// <param name="depthStencilFormat">The swapchain's automatic depth buffer's format.</param>
+    public static WebGpuGraphicsDevice CreateForBrowser(
+        INativeContext context,
+        nint deviceHandle,
+        int width,
+        int height,
+        int multiSampleCount = 0,
+        TextureFormat depthStencilFormat = TextureFormat.Depth24Stencil8
+    )
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        if (width <= 0 || height <= 0)
+            throw new ArgumentOutOfRangeException(nameof(width), $"A {width}x{height} back buffer cannot be created.");
+
+        var api = new Wg.WebGPU(context);
+        var instance = WebGpuInterop.CreateInstance(api);
+        if (instance is null)
+            throw new InvalidOperationException("emdawnwebgpu could not create an instance.");
+
+        var device = (WgpuDevice*)deviceHandle;
+        if (device is null)
+        {
+            api.InstanceRelease(instance);
+            throw new InvalidOperationException(
+                "The page did not hand over a WebGPU device. main.js requests one from navigator.gpu and "
+                + "parks it on Module.preinitializedWebGPUDevice before the runtime starts."
+            );
+        }
+
+        var queue = api.DeviceGetQueue(device);
+
+        var adapterInfo = default(Wg.AdapterInfo);
+        var hasInfo = api.DeviceGetAdapterInfo(device, &adapterInfo) == Wg.Status.Success;
+        var adapterName = WebGpuInterop.Read(adapterInfo.Description)
+                          ?? WebGpuInterop.Read(adapterInfo.Device)
+                          ?? WebGpuInterop.Read(adapterInfo.Architecture)
+                          ?? "browser device";
+        if (hasInfo)
+            api.AdapterInfoFreeMembers(adapterInfo);
+
+        var limits = default(Wg.Limits);
+        if (api.DeviceGetLimits(device, &limits) != Wg.Status.Success)
+            throw new InvalidOperationException("emdawnwebgpu did not report the device's limits.");
+
+        // BC textures are absent in every browser today, so that arm of the format mapping never
+        // runs. Float32 filtering is not optional for us: the shadow cascade is a Single-format
+        // texture, and a filterable float32 device is the only way to sample it.
+        var hasBc = api.DeviceHasFeature(device, Wg.FeatureName.TextureCompressionBC);
+        var hasFloat32Filterable = api.DeviceHasFeature(device, Wg.FeatureName.Float32filterable);
+
+        // The surface is created after the device: wgpuInstanceCreateSurface is the JS library's own
+        // function here, and it resolves the canvas's 'webgpu' context, which the page's device
+        // request has already produced.
+        var surface = CreateCanvasSurface(api, instance);
+
+        var surfaceFormat = surface is null
+            ? Wg.TextureFormat.Bgra8Unorm
+            : WebGpuSwapchain.PickSurfaceFormat(api, surface, null, Wg.TextureFormat.Bgra8Unorm);
+
+        GraphicsDiagnostics.Warning?.Invoke(
+            $"webgpu: {adapterName} (browser), surface {surfaceFormat}"
+            + $", bc={(hasBc ? "yes" : "no")}, float32-filterable={(hasFloat32Filterable ? "yes" : "no")}"
+            + $", uniform alignment {limits.MinUniformBufferOffsetAlignment}"
+        );
+
+        return new WebGpuGraphicsDevice(
+            api,
+            ext: null,
+            instance,
+            adapter: null,
+            device,
+            queue,
+            surface,
+            surfaceFormat,
+            adapterName,
+            limits.MinUniformBufferOffsetAlignment,
+            hasFloat32Filterable,
+            hasBc,
+            errorRouter: null,
+            errorCallback: default,
+            browser: true,
+            new WebGpuDeviceDescription(0, width, height, multiSampleCount, EnableValidation: false, depthStencilFormat)
+        );
+    }
+
+    /// <summary>
+    /// The surface over the page's canvas. Returns null when the canvas has no WebGPU context, in
+    /// which case the device still renders, into an offscreen attachment.
+    /// </summary>
+    private static WgpuSurface* CreateCanvasSurface(Wg.WebGPU api, Wg.Instance* instance)
+    {
+        using var selector = new WebGpuInterop.Utf8("#canvas");
+        var fromCanvas = new EmscriptenSurfaceSourceCanvasHTMLSelector
+        {
+            Chain = new Wg.ChainedStruct { SType = DawnSType.EmscriptenSurfaceSourceCanvasHTMLSelector },
+            Selector = selector.View,
+        };
+
+        var descriptor = new Wg.SurfaceDescriptor
+        {
+            NextInChain = (Wg.ChainedStruct*)&fromCanvas,
+        };
+
+        return api.InstanceCreateSurface(instance, &descriptor);
     }
 
     private static WgpuSurface* CreateSurface(Wg.WebGPU api, Wg.Instance* instance, in WebGpuDeviceDescription description)
@@ -730,6 +884,17 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         if (texture is not WebGpuTexture webGpuTexture)
             throw new ArgumentException($"{nameof(ReadTexture)} needs a texture this backend created.", nameof(texture));
 
+        if (_browser)
+        {
+            // A readback needs a MapRead buffer and a mapped-range callback. emdawnwebgpu implements
+            // neither (wgpuBufferMapAsync returns a future, and its JS side has no mapAsync path at
+            // all), so this fails at buffer creation rather than here unless it is refused.
+            throw new NotSupportedException(
+                "Reading a texture back is not available on the browser's WebGPU backend: it needs "
+                + "wgpuBufferMapAsync, which emdawnwebgpu does not implement."
+            );
+        }
+
         if (webGpuTexture.Format.IsDepthFormat())
         {
             throw new NotSupportedException(
@@ -896,8 +1061,14 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
             _surface = null;
         }
 
-        Api.AdapterRelease(Adapter);
-        Adapter = null;
+        // Null on the browser, where there is no adapter object at all - and the release is
+        // unconditional, so passing null aborts inside the native library.
+        if (Adapter is not null)
+        {
+            Api.AdapterRelease(Adapter);
+            Adapter = null;
+        }
+
         Api.InstanceRelease(Instance);
         Instance = null;
 

@@ -231,9 +231,16 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
         // Present before releasing the acquired texture, not after: wgpu-native's texture destructor
         // discards the frame when the surface has not been presented yet, so releasing first leaves
         // present with nothing to hand to the compositor.
-        var status = _device.Api.SurfacePresent(_surface);
-        if (status != Wg.Status.Success)
-            _device.ReportSurfaceError($"presenting the frame failed ({status})");
+        //
+        // A browser has no present call at all: wgpuSurfacePresent aborts, and the canvas shows the
+        // screen at the end of the animation frame that wrote it. Releasing the texture is the whole
+        // of a present there.
+        if (!_device.IsBrowser)
+        {
+            var status = _device.Api.SurfacePresent(_surface);
+            if (status != Wg.Status.Success)
+                _device.ReportSurfaceError($"presenting the frame failed ({status})");
+        }
 
         if (_surfaceTexture is not null)
         {

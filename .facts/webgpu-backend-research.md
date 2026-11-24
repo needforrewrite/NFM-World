@@ -6,15 +6,17 @@ metadata:
   type: reference
 ---
 
-`NFMWorld.Graphics.WebGPU` is implemented (opt-in: `--backend=webgpu` or the video setting). Everything
-below was verified against the real `wgpu_native` the package ships and the 26 generated shader bundles.
+`NFMWorld.Graphics.WebGPU` is implemented (opt-in on the desktop: `--backend=webgpu` or the video setting;
+the browser's default when the page has a device). Everything below was verified against the real
+`wgpu_native` the package ships and the 26 generated shader bundles; the browser arm swaps that native
+library for Dawn's `emdawnwebgpu` and differs where noted.
 
 ## Packages
 
 |Package|What it is|
 |---|---|
 |`Silk.NET.WebGPU`|binding only|
-|`Silk.NET.WebGPU.Native.WGPU`|`wgpu_native` for win-x64/x86/arm64, linux-{arm,arm64,x64}, osx-{x64,arm64}. **No wasm build** → desktop-only; the browser keeps WebGL2|
+|`Silk.NET.WebGPU.Native.WGPU`|`wgpu_native` for win-x64/x86/arm64, linux-{arm,arm64,x64}, osx-{x64,arm64}. **No wasm build** — the browser links Dawn's `emdawnwebgpu` port instead (see [[webgpu-binding-regeneration-and-wasm-linkage]])|
 |`Stride.Dependencies.Tint`|the `tint` **CLI**, no .NET API; runtimes only for win-x64, linux-x64, osx-arm64|
 
 ## Shader path — HLSL → SPIR-V (existing) → tint → WGSL

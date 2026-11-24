@@ -125,6 +125,13 @@ public static class CSharpBundleEmitter
             );
             if (sources.Wgsl.Length > 0)
                 EmitSource(sb, $"{member}Wgsl", "WGSL, compiled by the WebGPU backend", sources.Wgsl);
+            if (sources.WgslBrowser.Length > 0)
+                EmitSource(
+                    sb,
+                    $"{member}WgslBrowser",
+                    "WGSL for the browser's Tint, which keeps the derivative-uniformity directive",
+                    sources.WgslBrowser
+                );
         }
     }
 
@@ -205,10 +212,12 @@ public static class CSharpBundleEmitter
                 using (sb.Indent())
                 {
                     var hasWgsl = sources is { Wgsl.Length: > 0 };
+                    var hasWgslBrowser = sources is { WgslBrowser.Length: > 0 };
                     sb.Line("{");
                     using (sb.Indent())
                     {
                         sb.Line($"Wgsl = {(hasWgsl ? $"{member}Wgsl" : "\"\"")},");
+                        sb.Line($"WgslBrowser = {(hasWgslBrowser ? $"{member}WgslBrowser" : "\"\"")},");
                         sb.Line($"EntryPoint = \"{Escape(sources?.EntryPoint ?? "main")}\",");
                     }
 

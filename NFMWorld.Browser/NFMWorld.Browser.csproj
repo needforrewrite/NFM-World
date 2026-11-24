@@ -92,6 +92,21 @@
         </EmccFlags>
     </PropertyGroup>
 
+    <!-- emdawnwebgpu's JS half. The four libraries are link inputs, not compilable sources, so they
+         arrive as js-library options; the order matters (library_webgpu.js depends on the three
+         generated tables and must come last), and it is the package's own port.py order. The path
+         is restated here rather than read from NFMWorld.Platform.WebGPU: a property does not flow
+         across a ProjectReference, so that project publishes it as a plain property for exactly
+         this, and a copy is what both heads can see. -->
+    <PropertyGroup>
+        <WebGpuShimDir>$(MSBuildThisFileDirectory)..\NFMWorld.Platform.WebGPU\obj\wgpu-shim\</WebGpuShimDir>
+        <!-- Forward slashes, not the native separators EmccExtraLDFlags otherwise tolerates: emcc
+             hands its argument to node for the JS preprocessor, which reads a backslash as an escape
+             and drops it - the path arrived as "W:projectsNFM-World..." and the link failed with a
+             JS compiler internal error naming a file that never existed. -->
+        <WebGpuJsLibraryDir>$([System.String]::Copy('$(WebGpuShimDir)emdawnwebgpu\webgpu\src\').Replace('\','/'))</WebGpuJsLibraryDir>
+    </PropertyGroup>
+
     <!-- What the game P/Invokes and this head must therefore export from the module. The
          browser P/Invoke table resolves against the module itself (the game's ImportResolver
          answers every browser import with GetMainProgramHandle), so these have to be real
@@ -105,6 +120,10 @@
              linked when C++ is detected, which an archive does not trigger, so name them here. -->
         <EmccExtraLDFlags>
             -lc++ -lc++abi
+            --js-library=$(WebGpuJsLibraryDir)library_webgpu_enum_tables.js
+            --js-library=$(WebGpuJsLibraryDir)library_webgpu_generated_struct_info.js
+            --js-library=$(WebGpuJsLibraryDir)library_webgpu_generated_sig_info.js
+            --js-library=$(WebGpuJsLibraryDir)library_webgpu.js
             -Wl,--export=SDL_CreateWindow -Wl,--export=SDL_DestroyWindow -Wl,--export=SDL_EGL_SetAttributeCallbacks
             -Wl,--export=SDL_GL_CreateContext -Wl,--export=SDL_GL_DestroyContext -Wl,--export=SDL_GL_GetAttribute
             -Wl,--export=SDL_GL_GetProcAddress -Wl,--export=SDL_GL_LoadLibrary -Wl,--export=SDL_GL_SetAttribute
@@ -152,6 +171,40 @@
             -Wl,--export=nfmw_glUniform1uiv -Wl,--export=nfmw_glUniformBlockBinding -Wl,--export=nfmw_glUseProgram
             -Wl,--export=nfmw_glVertexAttribDivisor -Wl,--export=nfmw_glVertexAttribIPointer -Wl,--export=nfmw_glVertexAttribPointer
             -Wl,--export=nfmw_glViewport 
+            <!-- emdawnwebgpu's forwarders, one per symbol in
+                 NFMWorld.Platform.WebGPU/native/wgpu_shim.c. Same rule as the shim above: an
+                 export is the only way the P/Invoke table can see them, and a missing one is a
+                 link error rather than a run-time resolution failure, which is why all of them
+                 are listed even though the WebGPU path only runs when the page has a device. -->
+            -Wl,--export=nfmw_AdapterGetInfo -Wl,--export=nfmw_AdapterGetLimits -Wl,--export=nfmw_AdapterHasFeature
+            -Wl,--export=nfmw_AdapterInfoFreeMembers -Wl,--export=nfmw_AdapterRelease
+            -Wl,--export=nfmw_BindGroupLayoutRelease -Wl,--export=nfmw_BindGroupRelease -Wl,--export=nfmw_BufferDestroy
+            -Wl,--export=nfmw_BufferGetConstMappedRange -Wl,--export=nfmw_BufferRelease -Wl,--export=nfmw_BufferUnmap
+            -Wl,--export=nfmw_CommandBufferRelease -Wl,--export=nfmw_CommandEncoderBeginRenderPass
+            -Wl,--export=nfmw_CommandEncoderCopyBufferToBuffer -Wl,--export=nfmw_CommandEncoderCopyBufferToTexture
+            -Wl,--export=nfmw_CommandEncoderCopyTextureToBuffer -Wl,--export=nfmw_CommandEncoderFinish
+            -Wl,--export=nfmw_CommandEncoderRelease -Wl,--export=nfmw_CreateInstance
+            -Wl,--export=nfmw_DeviceCreateBindGroup -Wl,--export=nfmw_DeviceCreateBindGroupLayout
+            -Wl,--export=nfmw_DeviceCreateBuffer -Wl,--export=nfmw_DeviceCreateCommandEncoder
+            -Wl,--export=nfmw_DeviceCreatePipelineLayout -Wl,--export=nfmw_DeviceCreateRenderPipeline
+            -Wl,--export=nfmw_DeviceCreateSampler -Wl,--export=nfmw_DeviceCreateShaderModule
+            -Wl,--export=nfmw_DeviceCreateTexture -Wl,--export=nfmw_DeviceGetAdapterInfo
+            -Wl,--export=nfmw_DeviceGetLimits -Wl,--export=nfmw_DeviceGetQueue -Wl,--export=nfmw_DeviceHasFeature
+            -Wl,--export=nfmw_DeviceRelease -Wl,--export=nfmw_InstanceCreateSurface
+            -Wl,--export=nfmw_InstanceProcessEvents -Wl,--export=nfmw_InstanceRelease
+            -Wl,--export=nfmw_PipelineLayoutRelease -Wl,--export=nfmw_QueueRelease -Wl,--export=nfmw_QueueSubmit
+            -Wl,--export=nfmw_QueueWriteBuffer -Wl,--export=nfmw_QueueWriteTexture
+            -Wl,--export=nfmw_RenderPassEncoderDraw -Wl,--export=nfmw_RenderPassEncoderDrawIndexed
+            -Wl,--export=nfmw_RenderPassEncoderEnd -Wl,--export=nfmw_RenderPassEncoderRelease
+            -Wl,--export=nfmw_RenderPassEncoderSetBindGroup -Wl,--export=nfmw_RenderPassEncoderSetIndexBuffer
+            -Wl,--export=nfmw_RenderPassEncoderSetPipeline -Wl,--export=nfmw_RenderPassEncoderSetScissorRect
+            -Wl,--export=nfmw_RenderPassEncoderSetVertexBuffer -Wl,--export=nfmw_RenderPassEncoderSetViewport
+            -Wl,--export=nfmw_RenderPipelineRelease -Wl,--export=nfmw_SamplerRelease
+            -Wl,--export=nfmw_ShaderModuleRelease -Wl,--export=nfmw_SurfaceCapabilitiesFreeMembers
+            -Wl,--export=nfmw_SurfaceConfigure -Wl,--export=nfmw_SurfaceGetCapabilities
+            -Wl,--export=nfmw_SurfaceGetCurrentTexture -Wl,--export=nfmw_SurfacePresent -Wl,--export=nfmw_SurfaceRelease
+            -Wl,--export=nfmw_TextureCreateView -Wl,--export=nfmw_TextureDestroy -Wl,--export=nfmw_TextureRelease
+            -Wl,--export=nfmw_TextureViewRelease -Wl,--export=nfmw_emscripten_webgpu_get_device
         </EmccExtraLDFlags>
     </PropertyGroup>
 
@@ -167,6 +220,9 @@
         <NativeFileReference Include="$(MSBuildThisFileDirectory)..\NFMWorld.Platform.SDL3.Browser\obj\sdl3\SDL3.a" />
         <NativeFileReference Include="$(MSBuildThisFileDirectory)..\NFMWorld.Platform.WebGL\obj\webgl-shim\webgl_shim.a" />
         <NativeFileReference Include="$(MSBuildThisFileDirectory)..\NFMWorld.Browser\obj\cimgui\cimgui.a" />
+        <!-- emdawnwebgpu plus wgpu_shim.c. Built to LLVM bitcode like the others, so the .NET
+             native build's LTO keeps its symbols; see NFMWorld.Platform.WebGPU/native. -->
+        <NativeFileReference Include="$(WebGpuShimDir)wgpu_native.a" />
         <!-- libopenmpt, built for wasm with the workload's emscripten. Not checked in: the build
              needs make and a POSIX toolchain, so web.yml builds it in a Linux job and hands the
              archive to the Windows one. Locally, run
@@ -189,6 +245,9 @@
                  Properties="Configuration=$(Configuration);RuntimeIdentifier=browser-wasm" />
         <MSBuild Projects="$(MSBuildThisFileDirectory)..\NFMWorld.Platform.WebGL\NFMWorld.Platform.WebGL.csproj"
                  Targets="BuildWebGlShim"
+                 Properties="Configuration=$(Configuration);RuntimeIdentifier=browser-wasm" />
+        <MSBuild Projects="$(MSBuildThisFileDirectory)..\NFMWorld.Platform.WebGPU\NFMWorld.Platform.WebGPU.csproj"
+                 Targets="BuildWebGpuShim"
                  Properties="Configuration=$(Configuration);RuntimeIdentifier=browser-wasm" />
     </Target>
 
@@ -271,6 +330,7 @@
              property. -->
         <ProjectReference Include="..\NFMWorld.Platform.SDL3.Browser\NFMWorld.Platform.SDL3.Browser.csproj" />
         <ProjectReference Include="..\NFMWorld.Platform.WebGL\NFMWorld.Platform.WebGL.csproj" />
+        <ProjectReference Include="..\NFMWorld.Platform.WebGPU\NFMWorld.Platform.WebGPU.csproj" />
         <ProjectReference Include="..\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
     </ItemGroup>
 

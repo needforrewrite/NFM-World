@@ -175,20 +175,24 @@ public static class ShaderBuild
                 foreach (var (stage, value) in compiled)
                 {
                     var reflection = stages.First(s => s.Stage == stage);
+                    var wgsl = WgslCompiler.Compile(value.Spirv, BindingsFor(reflection, textures, samplers), value.Entry);
                     sourcesByStage[stage] = sourcesByStage[stage] with
                     {
-                        Wgsl = WgslCompiler.Compile(value.Spirv, BindingsFor(reflection, textures, samplers), value.Entry),
+                        Wgsl = wgsl.Desktop,
+                        WgslBrowser = wgsl.Browser,
                         EntryPoint = value.Entry,
                     };
                 }
 
                 // WebGPU validates the whole interface, so a vertex output the pixel stage does not
-                // read has to be declared there - see WgslStageInterface.
-                var vertexWgsl = sourcesByStage[ShaderStage.Vertex].Wgsl;
+                // read has to be declared there - see WgslStageInterface. Both flavours are paired
+                // with the vertex stage of their own flavour.
+                var vertex = sourcesByStage[ShaderStage.Vertex];
                 var pixel = sourcesByStage[ShaderStage.Fragment];
                 sourcesByStage[ShaderStage.Fragment] = pixel with
                 {
-                    Wgsl = WgslStageInterface.Reconcile(vertexWgsl, pixel.Wgsl),
+                    Wgsl = WgslStageInterface.Reconcile(vertex.Wgsl, pixel.Wgsl),
+                    WgslBrowser = WgslStageInterface.Reconcile(vertex.WgslBrowser, pixel.WgslBrowser),
                 };
             }
 

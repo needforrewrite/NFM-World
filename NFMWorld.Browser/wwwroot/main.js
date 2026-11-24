@@ -8,6 +8,26 @@ const boot = document.getElementById('boot');
 
 boot.textContent = 'loading runtime…';
 
+// The WebGPU device is requested here, before the game boots, because a request answers through a
+// promise and the game's boot is synchronous: it can await nothing. The device is parked on the
+// module below and `emscripten_webgpu_get_device` imports it with no future to wait on.
+//
+// Float32 filtering is requested rather than optional - the shadow cascade is a Single-format
+// texture, and without the feature its sampler is unfilterable. Browsers that do not offer it
+// still get a device; the backend reports the shortfall in its boot line.
+let webgpu = null;
+if (navigator.gpu) {
+    try {
+        const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+        if (adapter) {
+            const requiredFeatures = ['float32-filterable'].filter(f => adapter.features.has(f));
+            webgpu = await adapter.requestDevice({ requiredFeatures });
+        }
+    } catch (e) {
+        console.warn('[nfmw] no WebGPU device:', e);
+    }
+}
+
 // CoreCLR: the runtime object is what carries the interop surface (getAssemblyExports,
 // setModuleImports and the emscripten Module), not the `dotnet` namespace. Mono's `dotnet.instance`
 // does not exist here, so everything below goes through this object.
@@ -16,7 +36,15 @@ const runtime = await dotnet.create();
 // SDL's emscripten backend and Silk.NET's extension query both look for the canvas by this name.
 runtime.Module['canvas'] = canvas;
 
+if (webgpu) {
+    // Read by emscripten_webgpu_get_device on the first call, which is the game's boot.
+    runtime.Module['preinitializedWebGPUDevice'] = webgpu;
+}
+
 // WebGL2 has no glGetStringi, so the extension list Silk.NET probes during GetApi comes from here.
+// Lazy on purpose: this is only called when the game actually takes the WebGL2 path. Calling it at
+// load would bind the canvas to WebGL2, and a canvas holds one context type - the WebGPU surface
+// would then find `getContext('webgpu')` returning null.
 window.__nfmwGlExtensions = () => {
     const gl = canvas.getContext('webgl2');
     return gl ? gl.getSupportedExtensions() : [];
@@ -56,6 +84,8 @@ try {
     // page again. Main itself stays parameterless - it is the assembly entry point, and the runtime
     // calls it with no arguments.
     exports.NFMWorld.Browser.Program.SetBootSize(innerWidth, innerHeight);
+    // The renderer list and the renderer itself both come from this, so it lands before Main.
+    exports.NFMWorld.Browser.Program.SetWebGpuAvailable(webgpu !== null);
     exports.NFMWorld.Browser.Program.Main();
 } catch (e) {
     boot.textContent = `boot failed: ${e}`;

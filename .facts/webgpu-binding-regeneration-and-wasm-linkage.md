@@ -82,6 +82,9 @@ Traps, all hit:
 |`emscripten requires python 3.10 or above (C:\Python39\python.exe)`|the port's inner `em++.bat` picks up `PATH`'s python. Set `EMSDK_PYTHON` to the workload's python and put it first on `PATH`|
 |`emdawnwebgpu requires C++`|link with `-sDEFAULT_TO_CXX` (or em++); the browser head's `EmccExtraLDFlags` already carries `-lc++ -lc++abi`|
 |`clang executable not found`|`DOTNET_EMSCRIPTEN_LLVM_ROOT` is the pack's `tools/bin`, not `tools/emscripten/bin`; binaryen root is `tools`; node is `...Node.win-x64/.../tools/bin/node.exe`|
+|`--use-port=emdawnwebgpu.port.py` fails under the SDK's `emcc`|its `linker_setup` asserts `LINK_AS_CXX`, which the SDK's `emcc` does not set. Drive the build directly: `NFMWorld.Platform.WebGPU/native/build_wgpu.py` compiles `webgpu.cpp` and the `nfmw_*` shim to `-emit-llvm` bitcode and archives it as `wgpu_native.a` (the name the P/Invoke table and `[DllImport("wgpu_native")]` key on). `-fno-exceptions` is upstream's own flag there and is also what keeps the object out of the legacy exception model, which crashes `wasm-ld` in instruction selection|
+|The four JS libraries must be `--js-library` in port order|`enum_tables`, `generated_struct_info`, `generated_sig_info`, `library_webgpu`. They cannot be compiled; pass them after the generated tables. On their way from an MSBuild property a **backslash in the path is dropped** by node's `readFileSync` (`W:projectsNFM-World…`), so the csproj rewrites `\` to `/` with `System.String.Copy(...).Replace('\','/')`|
+|`-sUSE_WEBGPU` looks like the right switch|`tools/settings.py:258` marks it "No longer supported; replaced by `--use-port=emdawnwebgpu`, which implements a newer (but incompatible) version of `webgpu.h`", so emcc refuses it. This project takes neither: the port's sources are compiled here and its four JS libraries passed to the link|
 
 The canvas surface is a Dawn extension, not core: `WGPUEmscriptenSurfaceSourceCanvasHTMLSelector`
 (`0x00040000`) with `selector = { "canvas", WGPU_STRLEN }` chained into `wgpuInstanceCreateSurface`.
@@ -89,13 +92,58 @@ The generator drops Dawn's duplicate `SType`/`FeatureName` tokens (the bakery ad
 and `CheckForDuplicates` keeps the first by name), so those four members live in a hand-written
 `DawnSType.cs` that regeneration leaves alone.
 
-## The two blockers a Silk.NET version choice does not remove
+## Shipped: the browser runs WebGPU (resolved 2026-11-24)
 
-1. **Async.** `emwgpuWaitAny` is `Asyncify.handleAsync`; the non-asyncify build aborts with
-   `TODO: Implement asyncify-free WaitAny for timeout=0`. `.NET` wasm has no JSPI. The escape hatch is
-   `WGPUCallbackMode_AllowProcessEvents` + per-frame `wgpuInstanceProcessEvents` — which is now what
-   the desktop backend does anyway for wgpu-native's own reasons, so the browser and desktop paths
-   agree.
+Both blockers below were solved and the browser head now defaults to WebGPU, with WebGL2 as the other entry in the
+same renderer list. What the solution looks like:
+
+- **The page creates the device.** `NFMWorld.Browser/wwwroot/main.js` calls `requestAdapter`/`requestDevice` before
+  `dotnet.create()` and parks the result on `Module['preinitializedWebGPUDevice']`; `NFMWorld.Platform.WebGPU`'s
+  `WgpuNativeContext.AcquireDevice()` calls `emscripten_webgpu_get_device()` and holds the reference. Nothing on the
+  managed side waits on a future. Measured: `wgpuInstanceProcessEvents` spun 6.6M times and the `.then` never ran.
+- **Per-target WGSL.** `IShaderModule.WgslBrowser` is a second member; `WgslCompiler` emits the desktop flavour with
+  `diagnostic(off, derivative_uniformity)` stripped (naga rejects it) and the browser flavour with it kept (Tint
+  requires it). `WebGpuResources.WgslFor` picks by `IsBrowser`.
+
+## The two blockers a Silk.NET version choice did not remove
+
+1. **Async — the blocking wait does not work, and `emscripten_webgpu_get_device` is what replaces it.**
+   `emwgpuWaitAny` is `Asyncify.handleAsync`; the non-asyncify build aborts with
+   `TODO: Implement asyncify-free WaitAny for timeout=0`. `.NET` wasm has no JSPI, so
+   `wgpuInstanceWaitAny` is unusable.
+
+   `CallbackMode.AllowProcessEvents` + `WebGpuInterop.WaitFor` does **not** substitute for it on the
+   web. `wgpuInstanceProcessEvents` only dispatches futures already flagged ready
+   (`webgpu.cpp:510-545`, `if (mMode == AllowProcessEvents && mIsReady)`), and `mIsReady` is set from
+   the promise's `.then` (`library_webgpu.js:2079`). A `.then` is a microtask, so it runs only once
+   the JS stack unwinds; a synchronous spin never lets it run. Measured in Node: a 400 ms busy-wait
+   after `Promise.resolve().then(...)` saw `false` with 6.6M iterations. The browser head also drives
+   `Tick` synchronously from `requestAnimationFrame` (`NFMWorld.Browser/Program.cs:186`), so blocking
+   there would freeze the page anyway. Each `WaitFor` site (`WebGpuGraphicsDevice.cs:348` adapter,
+   `:434` device, `:843` buffer map) would therefore burn its timeout and throw.
+
+   **The browser arm must import a device instead of requesting one.** `webgpu.h:2345` declares
+   `WGPUDevice emscripten_webgpu_get_device(void)`; it wraps whatever JS the page put in
+   `Module['preinitializedWebGPUDevice']` (`library_webgpu.js:656-669`) through
+   `emwgpuCreateQueue`/`emwgpuCreateDevice`. Measured: linking a caller that calls it against
+   `webgpu.o` + the four JS libraries and running under Node prints a live device and queue pointer.
+   So the page does `adapter = await navigator.gpu.requestAdapter(); device = await adapter.requestDevice()`
+   before calling into .NET, and the backend's adapter/device request is skipped entirely.
+
+   Consequences for the backend, all cheap:
+   - `emscripten_webgpu_import_adapter` is **declared in `library_webgpu_generated_sig_info.js` but
+     implemented nowhere** — a caller fails to link (`undefined symbol`). So there is no adapter, and
+     `WebGpuGraphicsDevice.Adapter` stays null on the web.
+   - Every adapter query the backend makes has a device-level equivalent that *is* implemented:
+     `wgpuDeviceGetAdapterInfo`, `wgpuDeviceGetLimits`, `wgpuDeviceHasFeature`, `wgpuDeviceGetFeatures`
+     (all JS-backed, so all need `nfmw_*` forwarders). Use those off the imported device.
+   - `SurfaceGetCapabilities` takes the adapter but ignores it on this implementation
+     (`webgpu.cpp:2159`: the parameters are unnamed), so a null adapter is fine there.
+   - `SurfacePresent` aborts unconditionally (`library_webgpu.js:2622`), and `wgpuDevicePoll` does not
+     exist at all — `Present` and `Poll` both have to become no-ops on the web. The canvas is
+     composited when the rAF callback returns.
+   - `BufferMapAsync` cannot be waited on either, so any `ReadTexture` readback is unavailable on the
+     web (its only non-smoke callers are the stage editor's PNG export and the shadow-map debug view).
 2. **WGSL.** One bundle cannot satisfy both: naga (desktop wgpu-native) rejects
    `diagnostic(off, derivative_uniformity)`, Chrome's Tint *requires* it under non-uniform control
    flow. A per-target WGSL string is needed. See [[webgpu-vs-webgl2-shader-cost-on-the-web]].

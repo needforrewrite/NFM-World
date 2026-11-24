@@ -133,6 +133,13 @@ public sealed record ShaderStageSources(
     public string Wgsl { get; init; } = "";
 
     /// <summary>
+    /// The same WGSL with tint's <c>diagnostic(off, derivative_uniformity);</c> line left in, which is
+    /// the only form the browser's Tint accepts. Desktop naga rejects that directive, so the two are
+    /// carried separately; the WebGPU backend picks by target.
+    /// </summary>
+    public string WgslBrowser { get; init; } = "";
+
+    /// <summary>
     /// The entry point's name in <see cref="Wgsl"/>.
     ///
     /// WebGPU names the stage's entry point explicitly instead of defaulting to <c>main</c>, and the

@@ -112,11 +112,24 @@ public class SettingsMenu()
     private int _selectedBindingIndex = -1;
 
     // Video settings
-    public static readonly string[] Renderers = false switch
+    /// <summary>
+    /// Whether the page could hand the game a WebGPU device. Written by the browser head before
+    /// anything reads a setting; the desktop never sets it, and <see cref="Renderers"/> is a
+    /// property rather than a field for exactly this reason - the type initialiser runs on the
+    /// first touch of any member, which is before the page has answered.
+    /// </summary>
+    public static bool BrowserWebGpuAvailable { get; set; }
+
+    private static string[]? _renderers;
+
+    public static string[] Renderers => _renderers ??= BuildRenderers();
+
+    private static string[] BuildRenderers() => false switch
     {
-        // The browser has exactly one renderer: WebGL2 is ES 3.0 and nothing else can be created
-        // there. Listing the desktop entries would offer a choice that cannot be honoured, and
-        // picking one could only fail to start.
+        // Two renderers on the browser, and the page decides which is on offer: it requests a WebGPU
+        // device before boot, and a browser without navigator.gpu (or one that refuses the request)
+        // has only WebGL2. Listing both regardless would offer a choice that can only fall back.
+        _ when OperatingSystem.IsBrowser() && BrowserWebGpuAvailable => ["WebGPU", "OpenGL ES"],
         _ when OperatingSystem.IsBrowser() => ["OpenGL ES"],
         // windows doesn't do metal or gles, linux doesn't do metal. WebGPU is offered on Windows
         // only: the backend builds its surface from the window's Win32 HWND, and no other
@@ -131,6 +144,13 @@ public class SettingsMenu()
 
     private static int _selectedRenderer = 0;
     public static string SelectedRendererName => Renderers[_selectedRenderer];
+
+    /// <summary>
+    /// The renderer the browser head builds, from the saved choice. Only ever the two names its
+    /// list can hold, so the mapping is total - <see cref="TrySelectRenderer"/> is the desktop's
+    /// resolver and does not know either browser entry.
+    /// </summary>
+    public static Renderer BrowserRenderer => SelectedRendererName == "WebGPU" ? Renderer.WebGpu : Renderer.Angle;
     public static void PrepareStartupRecovery() => _antialias = 0;
     private static int _originalRenderer = _selectedRenderer;
     private static string[] _resolutions = GetSupportedResolutions();

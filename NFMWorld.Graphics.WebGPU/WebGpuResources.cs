@@ -296,18 +296,29 @@ internal sealed unsafe class WebGpuShaderModule : IShaderModule
         VertexEntry = vertex.EntryPoint;
         PixelEntry = pixel.EntryPoint;
 
-        VertexModule = CreateModule(device, vertex.Wgsl, "vertex");
-        PixelModule = pixel.Wgsl.Length > 0 ? CreateModule(device, pixel.Wgsl, "pixel") : null;
+        VertexModule = CreateModule(device, vertex, "vertex");
+        PixelModule = WgslFor(device, pixel).Length > 0 ? CreateModule(device, pixel, "pixel") : null;
     }
 
-    private static Wg.ShaderModule* CreateModule(WebGpuGraphicsDevice device, string wgsl, string stage)
+    /// <summary>
+    /// The WGSL flavour this target compiles. They differ only in whether tint's
+    /// derivative-uniformity directive is present: desktop naga rejects it, the browser's Tint
+    /// requires it on the pixel stages that sample under divergent control flow.
+    /// </summary>
+    private static string WgslFor(WebGpuGraphicsDevice device, ShaderStageSources sources) =>
+        device.IsBrowser ? sources.WgslBrowser : sources.Wgsl;
+
+    private static Wg.ShaderModule* CreateModule(WebGpuGraphicsDevice device, ShaderStageSources sources, string stage)
     {
+        var wgsl = WgslFor(device, sources);
+
         if (wgsl.Length == 0)
         {
             throw new NotSupportedException(
-                $"This build's shader bundles carry no WGSL for the {stage} stage, so the WebGPU backend "
-                + "cannot create the pipeline. Rebuild with the tint package restored (see "
-                + "NFMWorld.ShaderCompiler/WgslCompiler.cs)."
+                $"This build's shader bundles carry no WGSL for the {stage} stage"
+                + (device.IsBrowser ? " in the browser's flavour" : "")
+                + ", so the WebGPU backend cannot create the pipeline. Rebuild with the tint package "
+                + "restored (see NFMWorld.ShaderCompiler/WgslCompiler.cs)."
             );
         }
 

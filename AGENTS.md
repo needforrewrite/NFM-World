@@ -28,8 +28,8 @@ directory. Remove outdated facts when they become irrelevant.
 | `NFMWorld.UI/` | The UI framework itself: Yoga-backed `Component`/`Node`, `Styles`, Sx (`Sx/`), focus/keyboard/mouse, `NodeDebugger`. |
 | `NFMWorld.DriverInterface/` | `IGraphics`, `IGraphics3D`, keys, `TheGraphics`, `DummyBackend`. The platform-neutral surface the game draws against. |
 | `NFMWorld.Graphics.Abstraction` | Backend-neutral GPU API (`IGraphicsDevice`, `ICommandBuffer`, pipelines, buffers). |
-| `NFMWorld.Graphics.OpenGL` | ANGLE/GLES backend (the non-Windows default). `NFMWorld.Graphics.DesktopGL` — desktop core GL. `NFMWorld.Graphics.D3D11` — the Windows default. `NFMWorld.Graphics.WebGPU` — wgpu-native v29 through `Maxine.Silk.WebGPU` (opt-in, `--backend=webgpu`). Each has a `.Smoke` harness. |
-| `NFMWorld.Platform.SDL3`, `NFMWorld.Platform.WebGL` | Window/input layer. |
+| `NFMWorld.Graphics.OpenGL` | ANGLE/GLES backend (the non-Windows default). `NFMWorld.Graphics.DesktopGL` — desktop core GL. `NFMWorld.Graphics.D3D11` — the Windows default. `NFMWorld.Graphics.WebGPU` — wgpu-native v29 through `Maxine.Silk.WebGPU` on desktop, Dawn's `emdawnwebgpu` in the browser (default there when the page has a device). Each has a `.Smoke` harness. |
+| `NFMWorld.Platform.SDL3`, `NFMWorld.Platform.WebGL`, `NFMWorld.Platform.WebGPU` | Window/input layer, plus the browser's WebGL2 shim and the browser's WebGPU shim (`net12.0`: Emscripten port library + `nfmw_*` C forwarders). |
 | `NFMWorld.ShaderCompiler*` | HLSL → SPIR-V → cross-compiled bundles, at build time. |
 | `NFMWorld.Gamemode.Pvp`, `.TimeTrial`, `.Hostile` | Gamemode **plugins** (see below). |
 | `NFMWorld.Ai.Classic`, `NFMWorld.Ai.ElStupido` | AI **plugins**. |
@@ -71,11 +71,16 @@ Key characteristics:
     (it sets `browser-wasm` itself). The property cannot be set in the csproj: it has to reach
     referenced projects, and only a command-line property does. **Only this build needs the .NET 12
     nightly** (`12.0.1xx` + the `wasm-tools` workload); everything else stays `net11.0` on the GA
-    SDK, and a `net12.0` project may reference `net11.0` ones. Exactly three projects target
-    `net12.0`: the head and the two that build a native archive
-    (`NFMWorld.Platform.SDL3.Browser`, `NFMWorld.Platform.WebGL`). The nightly gates the Emscripten
+    SDK, and a `net12.0` project may reference `net11.0` ones. Exactly four projects target
+    `net12.0`: the head and the three that build a native archive
+    (`NFMWorld.Platform.SDL3.Browser`, `NFMWorld.Platform.WebGL`, `NFMWorld.Platform.WebGPU`). The nightly gates the Emscripten
     packs on `VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '12.0')`, so a `net11.0`
     project under that SDK silently gets an empty `EmscriptenSdkToolsPath` and builds nothing.
+    To get that nightly locally without replacing the machine's SDK, run
+    `dotnet-nightly-local`'s `install.ps1` into `scratch/dotnet12` with `-Channel 12.0.1xx
+    -Workloads wasm-tools -NoGlobalJson`, then invoke `scratch/dotnet12/dotnet.exe`. `-NoGlobalJson`
+    matters or every `dotnet` command in the repo starts resolving the nightly. CI pins the exact
+    version instead (`web.yml`). See `.facts/dotnet12-nightly-local-sdk.md`.
   - The head runs on **CoreCLR**, not Mono: `UseMonoRuntime=false` plus
     `PublishReadyToRun(+Composite)`. That is what gives it a collectible `AssemblyLoadContext`
     (Mono wasm has none, so a gamemode plugin never unloaded) and real AOT. `RunAOTCompilation`,
@@ -86,7 +91,9 @@ Key characteristics:
     libopenmpt is the one archive that throws — `native/build-libopenmpt.sh` rewrites upstream's
     `DISABLE_EXCEPTION_CATCHING=0` and asserts the archive's personality symbol. A legacy archive in
     this module does not fail to link either: it crashes `wasm-ld` in instruction selection, on
-    whichever function happens to have a landing pad.
+    whichever function happens to have a landing pad. Dawn's `emdawnwebgpu` is compiled
+    `-fno-exceptions` (upstream's own flag for the package), so it emits no landing pads and needs
+    no rewrite; that flag is load-bearing, not a preference.
   - The emscripten cache must stay the workload's **Cache pack**
     (`WasmCachePath=$(EmscriptenCacheSdkCacheDir)`). Emscripten resolves system libraries with
     `os.path.relpath` against the SDK tree, so a cache on another drive throws "path is on mount
@@ -580,8 +587,10 @@ from `PhysicsController.GameTick`. Two ship:
   `NFMWorld.Graphics.OpenGL` (ANGLE GLES), `NFMWorld.Graphics.DesktopGL` (desktop core profile),
   `NFMWorld.Graphics.D3D11`, `NFMWorld.Graphics.WebGPU`, and `NFMWorld.Platform.WebGL` for the browser. Selection is a
   `switch` on `Renderer` in `WorldGame`'s constructor (`Renderer.Angle` / `D3d11` / `DesktopGl` / `WebGpu`), and the
-  default branch picks **D3D11 on Windows** and **ANGLE everywhere else**. Each desktop backend has a `.Smoke` project
-  that runs it headless. The ANGLE arm is `#if ANGLE`, which the game and backend projects define.
+  default branch picks **D3D11 on Windows** and **ANGLE everywhere else**. The browser head picks
+  `Renderer.WebGpu` or `Renderer.Angle` from `SettingsMenu.BrowserRenderer` instead, and hands it a
+  `WgpuNativeContext` or a `WebGlContext`. Each desktop backend has a `.Smoke` project that runs it headless. The
+  ANGLE arm is `#if ANGLE`, which the game and backend projects define.
 - **D3D11 compiles shaders at launch**, so `D3D11ShaderCache` keeps the DXBC under `data/cfg/shadercache` beside the
   binary, keyed by a hash of the HLSL + profile + compiler version. A cold cache is ~1.8 s of the first frame (the
   shape shader's pixel stage is most of it) and the boot message covers it; a warm one is ~0.1 s. Reads check the
@@ -596,15 +605,15 @@ from `PhysicsController.GameTick`. Two ship:
   watchdog, while later launches are 1–5 ms. **Never measure browser link cost on fixed source text** — append a
   nonce and pair it with a warm run, or the number is Chromium's cache. See
   `.facts/browser-shader-link-blows-the-gpu-watchdog.md`.
-- **WebGPU** — wgpu-native **v29** via **`Maxine.Silk.WebGPU`** (the `Maxine.Silk.WebGPU/` submodule), opt-in only
-  (`--backend=webgpu`, or the "WebGPU" video setting). Desktop-only: the native package has no wasm build, and the
-  surface is built from the SDL window's Win32 handle, so `ParseRenderer` refuses it off Windows before a window
-  exists. Shaders are the bundles' `Wgsl` form, translated at build time from the same SPIR-V the other backends
-  cross-compile (`tint`, see the shader pipeline below). On shader cost it wins only on a cold cache: an RTX 4070
-  SUPER builds its boot/dash/all-features pipelines in 107/426/819 ms against 2.9 s / 64 s / 127 s of ANGLE link, but
-  warm both are single-digit ms and `requestAdapter`+`requestDevice` (71–167 ms) makes it the slower option. The
-  browser stays on WebGL2 because wgpu-native has no wasm build, and because the WGSL these bundles carry does not
-  validate under Chrome's Tint (next section).
+- **WebGPU** — wgpu-native **v29** on the desktop, Dawn's **`emdawnwebgpu`** in the browser, both through
+  **`Maxine.Silk.WebGPU`** (the `Maxine.Silk.WebGPU/` submodule). Opt-in on the desktop (`--backend=webgpu`, or the
+  "WebGPU" video setting); **the browser defaults to it whenever the page can hand over a device**, with WebGL2 as
+  the other entry in the same renderer list. Shaders are the bundles' WGSL, translated at build time from the same
+  SPIR-V the other backends cross-compile (`tint`, see the shader pipeline below). On desktop shader cost it wins
+  only on a cold cache: an RTX 4070 SUPER builds its boot/dash/all-features pipelines in 107/426/819 ms against
+  2.9 s / 64 s / 127 s of ANGLE link, but warm both are single-digit ms and `requestAdapter`+`requestDevice`
+  (71–167 ms) makes it the slower option; in the browser the link time it saves is what the WebGL2 path spends
+  against a ~100 s GPU watchdog (see `.facts/browser-shader-link-blows-the-gpu-watchdog.md`).
 
   **The bindings are ours.** `Silk.NET.WebGPU` 2.23.0 is gone: its structs predate `WGPUStringView` labels (which
   shift every descriptor by 8 bytes) and its native package ships 250 exports against the header's 206 declared
@@ -625,14 +634,23 @@ from `PhysicsController.GameTick`. Two ship:
   |`SurfaceGetCurrentTextureStatus`|`SuccessOptimal` and `SuccessSuboptimal` both draw; `Timeout`/`Error` leave the texture's ownership with wgpu (never release it); only `Outdated`/`Lost` are released and reconfigured|
   |Surface format|`SurfaceGetPreferredFormat` is gone. `WebGpuSwapchain.PickSurfaceFormat` walks `SurfaceCapabilities.Formats` (Bgra8 → Rgba8 → first → fallback) and frees the capabilities; the boot log and `Configure` share it so they cannot disagree|
 
-  Browser reachability, if that is ever revisited:
+  The browser arm is `NFMWorld.Platform.WebGPU` (`net12.0` — the workload gates its Emscripten packs on
+  `TargetFrameworkVersion >= 12.0`) plus the same backend compiled with `_ext` widened to `Wgpu?`. `WgpuNativeContext`
+  emits the 64 entry points the backend calls through `nfmw_*` C forwarders and `[UnmanagedCallersOnly]`
+  trampolines; `native/build_wgpu.py` builds Dawn's `emdawnwebgpu` port against the workload toolchain and links its
+  archive into the module. What differs from the desktop:
 
-  |Fact|Consequence|
+  |Fact|Rule|
   |---|---|
-  |Dawn's `emdawnwebgpu` port *(not* wgpu-native, whose wasm surface is unimplemented — gfx-rs/wgpu-native#298)* links with the workload's Emscripten 6.0.3. Set `EM_CACHE` on the same drive as the port sources, `EMSDK_PYTHON` to the workload's python, and link with `-sDEFAULT_TO_CXX`|the symbol set is reachable; the canvas surface is the Dawn-only `WGPUEmscriptenSurfaceSourceCanvasHTMLSelector` (`0x00040000`, `selector = {"canvas", WGPU_STRLEN}`)|
-  |`WebGPU`'s only public constructor takes an `INativeContext` and resolves entry points lazily per call (a stub context sees exactly `wgpuCreateInstance` on the first `CreateInstance`), and `WebGPULibraryNameContainer` — which has no browser entry — is only consulted by `GetApi()`|a browser port is `GlNativeContext`'s shape plus Dawn's port, and needs no fork of `dotnet/Silk.NET`|
-  |`Pfn*Callback.From(d)` goes through `SilkMarshal.DelegateToPtr` → `MethodHandle.GetFunctionPointer()` / `Marshal.GetFunctionPointerForDelegate`|a delegate-derived code address is not callable back from native code on wasm — only a `[UnmanagedCallersOnly]` one is (see `.facts/wasm-pinvoke-table-and-gl-proc-addresses.md`). Build the wrapper from a `[UnmanagedCallersOnly]` trampoline via the `op_Explicit(IntPtr)` each `Pfn*Callback` has; all four `.From` sites are in `WebGpuGraphicsDevice.cs`|
-  |One `Wgsl` string serves desktop naga and Chrome's Tint|naga rejects `diagnostic(off, derivative_uniformity)`, Chrome requires it under non-uniform control flow. A browser build needs per-target WGSL; see `.facts/webgpu-binding-regeneration-and-wasm-linkage.md`|
+  |The page creates the **device**, not the module|adapter/device requests answer through promises, and a `.then` microtask never runs inside a synchronous boot (measured: `wgpuInstanceProcessEvents` spun 6.6M times, never fired). `main.js` does `requestAdapter`+`requestDevice` *before* `dotnet.create()` and parks the device on `Module['preinitializedWebGPUDevice']`; `emscripten_webgpu_get_device()` imports it with no future. `WgpuNativeContext.AcquireDevice()` is that call|
+  |There is no adapter|`emscripten_webgpu_import_adapter` is declared but implemented nowhere, so `Adapter` stays null and every adapter query goes to its device-level equivalent (`DeviceGetAdapterInfo`/`GetLimits`/`HasFeature`). `SurfaceGetCapabilities` ignores its adapter argument here, so a null is fine|
+  |No uncaptured-error callback, no `DevicePoll`, no `SurfacePresent`|`emdawnwebgpu` exports none of the three. `Present` releases the view and texture and stops (the canvas is composited when the rAF callback returns); `Poll` is a no-op; `ReadTexture` throws|
+  |WGSL is per-target|naga rejects `diagnostic(off, derivative_uniformity)`, Tint requires it. `IShaderModule.WgslBrowser` is a second member, emitted only when a browser flavour exists|
+  |The canvas holds one context type|`getContext('webgl2')` locks WebGPU out of the canvas for good, so `main.js` defines `__nfmwGlExtensions` as a lazy function and only the GL branch calls `WebGlContext.Create()`|
+  |`BrowserWebGpuAvailable` gates the renderer list|`SettingsMenu.Renderers` is a property (not a field) so the page's answer, arriving before `Main` but after type initialisation could have run, still shapes it: `WebGPU`/`OpenGL ES` or `OpenGL ES` alone. `BrowserRenderer` maps the name back to `Renderer.WebGpu`/`Renderer.Angle`|
+  |JS libraries need forward-slash paths|`--js-library=` on a wrapper path with backslashes reaches node, whose `readFileSync` drops them (`W:projectsNFM-World…`). The csproj rewrites them with `System.String.Copy(...).Replace('\','/')`, and port order matters: `enum_tables`, `generated_struct_info`, `generated_sig_info`, `library_webgpu`|
+  |`--use-port=emdawnwebgpu.port.py` is a trap|its `linker_setup` requires `LINK_AS_CXX`, which errors under the SDK's `emcc`; drive `native/build_wgpu.py` (its own `EM_CACHE`, `EMSDK_PYTHON`, `DEFAULT_TO_CXX`) instead|
+  |`Pfn*Callback.From(d)` builds a callable through `SilkMarshal.DelegateToPtr`|a delegate-derived code address is not callable back from native code on wasm — only a `[UnmanagedCallersOnly]` one is (see `.facts/wasm-pinvoke-table-and-gl-proc-addresses.md`). The browser arm sidesteps it by not using a callback at all: no adapter or device request, no uncaptured-error callback, and `ReadTexture` throws, so all four `.From` sites in `WebGpuGraphicsDevice.cs` are desktop-only. The trampolines in `WgpuNativeContext` are the other half — `[UnmanagedCallersOnly]` bodies for the entry points `calli` takes addresses of|
 
   Traps worth keeping in mind when touching it:
 
@@ -672,15 +690,16 @@ before `CoreCompile` and:
 
 WGSL is optional per build: `WgslCompiler.Available` is false where the tint native is missing (a RID the package
 does not ship) **or on macOS at all** — the package's osx-arm64 `tint` is built without Dawn's SPIR-V reader, so every
-translation would fail with `invalid value 'spirv' for option '--input-format'` — and the bundles then carry an empty
-`Wgsl` string. `WgslCompiler.UnavailableReason` carries the reason the build log prints. WGSL only feeds the WebGPU
-backend, which refuses to run off Windows. Three things about the path are not obvious and each
-was found by a validation failure, not by reading docs — see `WgslCompiler.cs`:
+translation would fail with `invalid value 'spirv' for option '--input-format'` — and the bundles then carry empty
+`Wgsl`/`WgslBrowser` strings. `WgslCompiler.UnavailableReason` carries the reason the build log prints. WGSL feeds the
+WebGPU backend on both the desktop (wgpu-native) and the browser (Dawn). It is emitted as **two flavours** — see the
+`diagnostic` row below; `WebGpuResources.WgslFor` picks by `IsBrowser`. Three things about the path are not obvious
+and each was found by a validation failure, not by reading docs — see `WgslCompiler.cs`:
 
 | Gotcha | Rule |
 |---|---|
 | Non-uniform derivatives | the tint invocation passes `--allow-non-uniform-derivatives`; six fragment stages sample under divergent control flow |
-| tint's `diagnostic(off, derivative_uniformity);` | the naga inside the shipped `wgpu_native` rejects `diagnostic` directives outright, so the emitted line is stripped — a **desktop-only** concession. Chrome's Tint needs it, and without it every one of the 16 `Shapes` pixel modules is refused with `'textureSample' must only be called from uniform control flow` (`select` evaluates both arms). So the WGSL these bundles carry is not loadable by a browser, and `NFMWorld.Graphics.WebGPU.Smoke` cannot see it (it runs naga). A web WGSL flavour has to keep the directive or restructure the dither sample |
+| tint's `diagnostic(off, derivative_uniformity);` | the naga inside the shipped `wgpu_native` rejects `diagnostic` directives outright, while Chrome's Tint *requires* it (`select` evaluates both arms, so the dither sample sits under non-uniform control flow and every one of the 16 `Shapes` pixel modules is refused without it). Hence two members: `Wgsl` has the line stripped, `WgslBrowser` keeps it. `NFMWorld.Graphics.WebGPU.Smoke` only runs naga, so it cannot see the browser flavour break |
 | `return;` after `discard;` | tint emits it and naga rejects an instruction after `return`, so it is stripped too |
 | Bindings | SPIR-V decorations are renumbered before tint (uniform 0, textures 1..T, samplers T+1..), because HLSL's `b0`/`t0`/`s0` all land on set 0 binding 0 and WebGPU refuses that. `WebGpuInterop.TextureBinding`/`SamplerBinding` restate the same numbering for the backend |
 | Vertex locations | glslang assigns them in declaration order, not by semantic slot, so the WebGPU backend maps `Semantic`/`Slot` to `@location` through reflection (`glslang-assigns-vertex-location-in-declaration-order`) |
