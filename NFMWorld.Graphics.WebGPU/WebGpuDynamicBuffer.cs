@@ -8,8 +8,8 @@
 // every draw that reads a value has to own a distinct region of it - hence a ring, reset on submit
 // and grown, never recycled mid-frame.
 
-using Wg = Silk.NET.WebGPU;
-using WgpuBuffer = Silk.NET.WebGPU.Buffer;
+using Wg = Maxine.WebGPU;
+using WgpuBuffer = Maxine.WebGPU.Buffer;
 
 namespace NFMWorld.Graphics.WebGPU;
 

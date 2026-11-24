@@ -2,8 +2,8 @@
 //
 // A disk cache of linked GL program binaries, keyed by the GLSL that produced them.
 //
-// This exists because of one shader. The apos-shapes pixel program takes around two minutes to link
-// under ANGLE - measured, see the smoke test's MeasureAposCompile - against 15 ms for every other
+// This exists because of one shader. The apos-shapes pixel program takes ~3.3 s to link under
+// ANGLE - measured, see the smoke test's MeasureAposCompile - against a few ms for every other
 // program in the tree combined, and it is recompiled from scratch on every launch. ANGLE hands back
 // its translated form through OES_get_program_binary, so a launch that finds a valid binary never
 // pays that cost at all.

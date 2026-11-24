@@ -28,7 +28,7 @@ directory. Remove outdated facts when they become irrelevant.
 | `NFMWorld.UI/` | The UI framework itself: Yoga-backed `Component`/`Node`, `Styles`, Sx (`Sx/`), focus/keyboard/mouse, `NodeDebugger`. |
 | `NFMWorld.DriverInterface/` | `IGraphics`, `IGraphics3D`, keys, `TheGraphics`, `DummyBackend`. The platform-neutral surface the game draws against. |
 | `NFMWorld.Graphics.Abstraction` | Backend-neutral GPU API (`IGraphicsDevice`, `ICommandBuffer`, pipelines, buffers). |
-| `NFMWorld.Graphics.OpenGL` | ANGLE/GLES backend (the non-Windows default). `NFMWorld.Graphics.DesktopGL` — desktop core GL. `NFMWorld.Graphics.D3D11` — the Windows default. `NFMWorld.Graphics.WebGPU` — wgpu-native through Silk.NET (opt-in, `--backend=webgpu`). Each has a `.Smoke` harness. |
+| `NFMWorld.Graphics.OpenGL` | ANGLE/GLES backend (the non-Windows default). `NFMWorld.Graphics.DesktopGL` — desktop core GL. `NFMWorld.Graphics.D3D11` — the Windows default. `NFMWorld.Graphics.WebGPU` — wgpu-native v29 through `Maxine.Silk.WebGPU` (opt-in, `--backend=webgpu`). Each has a `.Smoke` harness. |
 | `NFMWorld.Platform.SDL3`, `NFMWorld.Platform.WebGL` | Window/input layer. |
 | `NFMWorld.ShaderCompiler*` | HLSL → SPIR-V → cross-compiled bundles, at build time. |
 | `NFMWorld.Gamemode.Pvp`, `.TimeTrial`, `.Hostile` | Gamemode **plugins** (see below). |
@@ -42,6 +42,7 @@ directory. Remove outdated facts when they become irrelevant.
 | `CasCore/` (submodule) | The plugin sandbox. |
 | `SignalsDotnet/` (submodule) | The Sx signal library. A fork on `uwx/SignalsDotnet` branch `nfmw`, carrying the subscription-leak fix described under [Fine-Grained Reactive UI](#fine-grained-reactive-ui-sx). |
 | `Apos.Shapes/` (submodule) | 2D shapes and SVG rendering (Classic HUD, `ShapeSvg`). |
+| `Maxine.Silk.WebGPU/` (submodule) | Hand-maintained WebGPU bindings — C# for `webgpu.h`/`wgpu.h`/`dawn-webgpu.h` plus the `wgpu-native` v29 binaries — published as `Maxine.Silk.WebGPU*`, namespace `Maxine.WebGPU`. It owns what the generator cannot know; see *WebGPU* under Graphics & audio. Regenerate it with `tools/SilkGenerate`, never by editing `*.gen.cs`. |
 | `HoleyDiver/` | Offline polygon triangulator used by the RAD asset pipeline. |
 
 Key characteristics:
@@ -581,10 +582,57 @@ from `PhysicsController.GameTick`. Two ship:
   `switch` on `Renderer` in `WorldGame`'s constructor (`Renderer.Angle` / `D3d11` / `DesktopGl` / `WebGpu`), and the
   default branch picks **D3D11 on Windows** and **ANGLE everywhere else**. Each desktop backend has a `.Smoke` project
   that runs it headless. The ANGLE arm is `#if ANGLE`, which the game and backend projects define.
-- **WebGPU** — wgpu-native via `Silk.NET.WebGPU`, opt-in only (`--backend=webgpu`, or the "WebGPU" video setting).
-  Desktop-only: the native package has no wasm build, and the surface is built from the SDL window's Win32 handle, so
-  `ParseRenderer` refuses it off Windows before a window exists. Shaders are the bundles' `Wgsl` form, translated at
-  build time from the same SPIR-V the other backends cross-compile (`tint`, see the shader pipeline below).
+- **D3D11 compiles shaders at launch**, so `D3D11ShaderCache` keeps the DXBC under `data/cfg/shadercache` beside the
+  binary, keyed by a hash of the HLSL + profile + compiler version. A cold cache is ~1.8 s of the first frame (the
+  shape shader's pixel stage is most of it) and the boot message covers it; a warm one is ~0.1 s. Reads check the
+  install directory and then `<LocalApplicationData>/NFMWorld/cache/shadercache`, and writes go to whichever can be
+  written, because an install under Program Files would otherwise recompile every launch.
+- **GL compiles the shape shader on every cold cache, and that is the whole cost of a first launch.**
+  `GlProgramCache` (`NFMWorld.Graphics.OpenGL`) writes linked programs through `OES_get_program_binary` and reloads
+  them in ~1 ms; the apos-shapes boot variant is 3.3 s cold and a dash variant 64–127 s. Desktop needs the cache
+  because the bundled ANGLE has none. Chromium has its own, keyed by source text and surviving restarts, but exposes
+  no `program_binary` extension, so the browser build can only benefit from it: a first launch (new install, GPU
+  driver update, cleared profile, changed shader text) pays the full link and the dash variants trip the ~100 s GPU
+  watchdog, while later launches are 1–5 ms. **Never measure browser link cost on fixed source text** — append a
+  nonce and pair it with a warm run, or the number is Chromium's cache. See
+  `.facts/browser-shader-link-blows-the-gpu-watchdog.md`.
+- **WebGPU** — wgpu-native **v29** via **`Maxine.Silk.WebGPU`** (the `Maxine.Silk.WebGPU/` submodule), opt-in only
+  (`--backend=webgpu`, or the "WebGPU" video setting). Desktop-only: the native package has no wasm build, and the
+  surface is built from the SDL window's Win32 handle, so `ParseRenderer` refuses it off Windows before a window
+  exists. Shaders are the bundles' `Wgsl` form, translated at build time from the same SPIR-V the other backends
+  cross-compile (`tint`, see the shader pipeline below). On shader cost it wins only on a cold cache: an RTX 4070
+  SUPER builds its boot/dash/all-features pipelines in 107/426/819 ms against 2.9 s / 64 s / 127 s of ANGLE link, but
+  warm both are single-digit ms and `requestAdapter`+`requestDevice` (71–167 ms) makes it the slower option. The
+  browser stays on WebGL2 because wgpu-native has no wasm build, and because the WGSL these bundles carry does not
+  validate under Chrome's Tint (next section).
+
+  **The bindings are ours.** `Silk.NET.WebGPU` 2.23.0 is gone: its structs predate `WGPUStringView` labels (which
+  shift every descriptor by 8 bytes) and its native package ships 250 exports against the header's 206 declared
+  functions — **47 missing**. `Maxine.Silk.WebGPU` is generated from a pinned `webgpu.h`/`wgpu.h`/`dawn-webgpu.h` with
+  the same `tools/SilkGenerate` passthrough `Maxine.Silk.EGL` uses, and ships wgpu-native v29.0.1.1 binaries beside it
+  (228 exports, nothing missing). Regenerate with `dotnet run --project tools/SilkGenerate -- generator.json`; it is
+  a no-op against the committed output.
+
+  |Gotcha|Rule|
+  |---|---|
+  |Namespace has no `Silk` segment|generated code names `Silk.NET.Core.Bool32` in full, and a namespace containing `Silk` shadows it (CS0234). Package ids keep `Maxine.Silk.`, the C# namespace is `Maxine.WebGPU`|
+  |Flag sets are `typedef WGPUFlags`|`webgpu.h` declares them `typedef uint64_t WGPUFlags WGPUBufferUsage;` with the bits as `static const`, so the typemap keys are the header's **real typedef names** (`WGPUBufferUsage`, not `WGPUBufferUsageFlags`) and the hand-written enums are `: ulong` — a narrower enum shifts every struct carrying one|
+  |Regeneration needs four things|`libclang.dll`+`libClangSharp.dll` beside the generator host, an existing `output.licenseFile`, `bakery.profileNames` naming the header's base name, and `silk_touch_sealed_vtable_creation = true` in `.editorconfig` (without it SilkTouch emits 0 of 572 bodies)|
+  |Dawn's duplicate `SType`/`FeatureName` tokens|the bakery adds core enums first and keeps the first token by name, so Dawn's copies never land. They live in the hand-written `src/Extensions/…Dawn/DawnSType.cs`, which regeneration leaves alone|
+  |wgpu-native stubs **abort the process**|`wgpuInstanceWaitAny`, `wgpuGetInstanceFeatures`, `wgpuHasInstanceFeature` and the `TimedWaitAny` instance feature are all `panic!` stubs in v29. Requesting the feature makes `wgpuCreateInstance` panic; asking whether it exists panics too. So all async uses `CallbackMode.AllowProcessEvents` driven by `wgpuInstanceProcessEvents` (the callback then runs on the waiting thread, so captured locals need no lock), and the instance asks for nothing. `Maxine.WebGPU.Extensions.WGPU` is referenced only for `DevicePoll`|
+  |A 2D colour attachment must declare no depth slice|`RenderPassColorAttachment.DepthSlice` 0 is *slice 0*, not "none" — submit fails with "Depth slice was provided but the color attachment's view is not 3D". Use `WebGPU.DepthSliceUndefined`|
+  |`TextureViewDescriptor.Usage`|new field; the surface view needs `TextureUsage.RenderAttachment`|
+  |`SurfaceGetCurrentTextureStatus`|`SuccessOptimal` and `SuccessSuboptimal` both draw; `Timeout`/`Error` leave the texture's ownership with wgpu (never release it); only `Outdated`/`Lost` are released and reconfigured|
+  |Surface format|`SurfaceGetPreferredFormat` is gone. `WebGpuSwapchain.PickSurfaceFormat` walks `SurfaceCapabilities.Formats` (Bgra8 → Rgba8 → first → fallback) and frees the capabilities; the boot log and `Configure` share it so they cannot disagree|
+
+  Browser reachability, if that is ever revisited:
+
+  |Fact|Consequence|
+  |---|---|
+  |Dawn's `emdawnwebgpu` port *(not* wgpu-native, whose wasm surface is unimplemented — gfx-rs/wgpu-native#298)* links with the workload's Emscripten 6.0.3. Set `EM_CACHE` on the same drive as the port sources, `EMSDK_PYTHON` to the workload's python, and link with `-sDEFAULT_TO_CXX`|the symbol set is reachable; the canvas surface is the Dawn-only `WGPUEmscriptenSurfaceSourceCanvasHTMLSelector` (`0x00040000`, `selector = {"canvas", WGPU_STRLEN}`)|
+  |`WebGPU`'s only public constructor takes an `INativeContext` and resolves entry points lazily per call (a stub context sees exactly `wgpuCreateInstance` on the first `CreateInstance`), and `WebGPULibraryNameContainer` — which has no browser entry — is only consulted by `GetApi()`|a browser port is `GlNativeContext`'s shape plus Dawn's port, and needs no fork of `dotnet/Silk.NET`|
+  |`Pfn*Callback.From(d)` goes through `SilkMarshal.DelegateToPtr` → `MethodHandle.GetFunctionPointer()` / `Marshal.GetFunctionPointerForDelegate`|a delegate-derived code address is not callable back from native code on wasm — only a `[UnmanagedCallersOnly]` one is (see `.facts/wasm-pinvoke-table-and-gl-proc-addresses.md`). Build the wrapper from a `[UnmanagedCallersOnly]` trampoline via the `op_Explicit(IntPtr)` each `Pfn*Callback` has; all four `.From` sites are in `WebGpuGraphicsDevice.cs`|
+  |One `Wgsl` string serves desktop naga and Chrome's Tint|naga rejects `diagnostic(off, derivative_uniformity)`, Chrome requires it under non-uniform control flow. A browser build needs per-target WGSL; see `.facts/webgpu-binding-regeneration-and-wasm-linkage.md`|
 
   Traps worth keeping in mind when touching it:
 
@@ -596,7 +644,7 @@ from `PhysicsController.GameTick`. Two ship:
   |Pipelines bake attachments|colour/depth format and sample count are part of the pipeline, so `WebGpuPipelineState` builds a variant per (colour format, depth format, samples, filterability) - `Poly` alone draws into both the swapchain and a single-sample shadow cascade|
   |Uniform and staging writes|`queue.writeBuffer` is ordered only against submits, so two writes to one block with a draw between them would collapse; per-draw uniforms go through a dynamic-offset ring and `UpdateBuffer` records a `copyBufferToBuffer` from a staged chunk, both inside the recording|
   |Copies move whole words|every queue write and buffer copy is in 4-byte units, so a buffer whose logical size is not a multiple of 4 — an index buffer of an odd number of 16-bit indices, 870 bytes — allocates `WebGpuBuffer.GpuSize` rounded up and pads the copy length. An unaligned size is not clamped: wgpu rejects the copy, the update is silently lost, and the only trace is the uncaptured-error callback (`CheckUnalignedCopies` covers it)|
-  |Validation failures are invisible otherwise|wgpu logs them to stderr and carries on, so `DeviceSetUncapturedErrorCallback` is the only way the game sees one; `ReportError` reports each distinct message to `GraphicsDiagnostics.Warning` (once per device, capped). That is how the copy bug above was found: 2,649 validation errors in one boot — a queue write and a recorded copy per update — while every frame kept rendering|
+  |Validation failures are invisible otherwise|wgpu logs them to stderr and carries on, so the device's `UncapturedErrorCallbackInfo` (installed by `DeviceDescriptor`, since `wgpuDeviceSetUncapturedErrorCallback` no longer exists) is the only way the game sees one; `ReportError` reports each distinct message to `GraphicsDiagnostics.Warning` (once per device, capped). That is how the copy bug above was found: 2,649 validation errors in one boot — a queue write and a recorded copy per update — while every frame kept rendering|
 - **Text/fonts** — `FontStashSharp` with pre-baked MSDF atlases. `NFMWorld.MsdfCache.targets` bakes
   `data/fonts/*.msdf` at build time (the game loads that file instead of baking ~220 glyphs at startup); adding a font
   means adding it under `data/fonts/`. The baker is built by a **nested** `MSBuild` call that passes
@@ -632,7 +680,7 @@ was found by a validation failure, not by reading docs — see `WgslCompiler.cs`
 | Gotcha | Rule |
 |---|---|
 | Non-uniform derivatives | the tint invocation passes `--allow-non-uniform-derivatives`; six fragment stages sample under divergent control flow |
-| tint's `diagnostic(off, derivative_uniformity);` | the naga inside the shipped `wgpu_native` rejects `diagnostic` directives outright, so the emitted line is stripped |
+| tint's `diagnostic(off, derivative_uniformity);` | the naga inside the shipped `wgpu_native` rejects `diagnostic` directives outright, so the emitted line is stripped — a **desktop-only** concession. Chrome's Tint needs it, and without it every one of the 16 `Shapes` pixel modules is refused with `'textureSample' must only be called from uniform control flow` (`select` evaluates both arms). So the WGSL these bundles carry is not loadable by a browser, and `NFMWorld.Graphics.WebGPU.Smoke` cannot see it (it runs naga). A web WGSL flavour has to keep the directive or restructure the dither sample |
 | `return;` after `discard;` | tint emits it and naga rejects an instruction after `return`, so it is stripped too |
 | Bindings | SPIR-V decorations are renumbered before tint (uniform 0, textures 1..T, samplers T+1..), because HLSL's `b0`/`t0`/`s0` all land on set 0 binding 0 and WebGPU refuses that. `WebGpuInterop.TextureBinding`/`SamplerBinding` restate the same numbering for the backend |
 | Vertex locations | glslang assigns them in declaration order, not by semantic slot, so the WebGPU backend maps `Semantic`/`Slot` to `@location` through reflection (`glslang-assigns-vertex-location-in-declaration-order`) |

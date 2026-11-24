@@ -52,3 +52,6 @@
 	path = SignalsDotnet
 	url = https://github.com/uwx/SignalsDotnet.git
 	branch = nfmw
+[submodule "Maxine.Silk.WebGPU"]
+	path = Maxine.Silk.WebGPU
+	url = https://github.com/uwx/Maxine.Silk.WebGPU

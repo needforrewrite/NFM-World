@@ -23,7 +23,10 @@ Three build-time fixes, each found by a failing validation rather than by readin
 
 1. `--allow-non-uniform-derivatives` — 6 fragment stages sample under divergent control flow.
 2. Strip tint's `diagnostic(off, derivative_uniformity);` — the naga inside this wgpu-native rejects
-   `diagnostic` directives outright.
+   `diagnostic` directives outright. That is a desktop-only concession: Chrome's Tint instead
+   *requires* it here, and without it every one of the 16 pixel modules is refused with
+   `'textureSample' must only be called from uniform control flow`. See
+   [[webgpu-vs-webgl2-shader-cost-on-the-web]].
 3. Strip the `return;` tint emits after `discard;` — naga rejects instructions after `return`.
 
 Plus renumber SPIR-V decorations before tint: HLSL `b0`/`t0`/`s0` all land on set 0 binding 0, which
@@ -51,6 +54,7 @@ member of every module (diff 0), so the merged CPU block uploads verbatim.
 |Vertex locations|glslang assigns them in declaration order, not semantic index — see [[glslang-assigns-vertex-location-in-declaration-order]]|
 |Stage interface|a fragment stage need not declare every vertex output; `WgslStageInterface.Reconcile` appends a dummy `@location(n)` parameter per missing one or pipeline creation fails|
 |Scissor|always on in WebGPU; `ScissorTestEnabled = false` gets a full-viewport scissor|
+|Shader cost is where it wins, on a cold cache only|measured against WebGL2 on one RTX 4070 SUPER: 71–167 ms of device creation plus a 107 / 426 / 819 ms pipeline for the boot / dash / all-features bundles, against 2 940 / 64 437 / 126 558 ms of ANGLE link for the same GLSL ES. Warm, both are single-digit ms and the device cost makes WebGPU slower. See [[webgpu-vs-webgl2-shader-cost-on-the-web]]|
 
 ## Format mapping
 

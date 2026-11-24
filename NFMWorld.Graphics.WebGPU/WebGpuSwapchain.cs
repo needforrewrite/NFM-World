@@ -8,8 +8,8 @@
 // one frame and reclaims it when it is released after present, so the swapchain keeps it and the
 // view it made rather than wrapping it in a WebGpuTexture it would then try to destroy.
 
-using Wg = Silk.NET.WebGPU;
-using WgpuTexture = Silk.NET.WebGPU.Texture;
+using Wg = Maxine.WebGPU;
+using WgpuTexture = Maxine.WebGPU.Texture;
 
 namespace NFMWorld.Graphics.WebGPU;
 
@@ -135,13 +135,13 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
 
         switch (surfaceTexture.Status)
         {
-            case Wg.SurfaceGetCurrentTextureStatus.Success:
+            // Suboptimal means the surface would rather be reconfigured but this frame is usable;
+            // dropping it would show a stall for a change the next Configure picks up anyway.
+            case Wg.SurfaceGetCurrentTextureStatus.SuccessOptimal:
+            case Wg.SurfaceGetCurrentTextureStatus.SuccessSuboptimal:
                 break;
             case Wg.SurfaceGetCurrentTextureStatus.Outdated:
             case Wg.SurfaceGetCurrentTextureStatus.Lost:
-            case Wg.SurfaceGetCurrentTextureStatus.DeviceLost:
-            case Wg.SurfaceGetCurrentTextureStatus.OutOfMemory:
-            case Wg.SurfaceGetCurrentTextureStatus.Timeout:
                 // Reconfigure and skip this frame: presenting a stale size is worse than one missed
                 // frame, and the next AcquireCommandBuffer tries again.
                 if (surfaceTexture.Texture is not null)
@@ -149,8 +149,8 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
                 Configure();
                 return false;
             default:
-                if (surfaceTexture.Texture is not null)
-                    _device.Api.TextureRelease(surfaceTexture.Texture);
+                // Timeout and Error. Both leave the texture's ownership with wgpu, so releasing it
+                // here would be a double free; only the frame is lost.
                 return false;
         }
 
@@ -164,6 +164,9 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
             BaseArrayLayer = 0,
             ArrayLayerCount = 1,
             Aspect = Wg.TextureAspect.All,
+            // The view must be usable for what the passes do with it, which is drawing into it,
+            // and sampling from it when it is the resolve source of a multisampled frame.
+            Usage = Wg.TextureUsage.RenderAttachment,
         };
 
         _surfaceView = _device.Api.TextureCreateView(_surfaceTexture, &descriptor);
@@ -228,7 +231,9 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
         // Present before releasing the acquired texture, not after: wgpu-native's texture destructor
         // discards the frame when the surface has not been presented yet, so releasing first leaves
         // present with nothing to hand to the compositor.
-        _device.Api.SurfacePresent(_surface);
+        var status = _device.Api.SurfacePresent(_surface);
+        if (status != Wg.Status.Success)
+            _device.ReportSurfaceError($"presenting the frame failed ({status})");
 
         if (_surfaceTexture is not null)
         {
@@ -290,31 +295,47 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
             return;
 
         var capabilities = default(Wg.SurfaceCapabilities);
-        _device.Api.SurfaceGetCapabilities(_surface, _device.Adapter, &capabilities);
-
-        // The preferred format can be an sRGB variant, which no TextureFormat maps to. Choosing the
-        // linear one from the same capability list keeps the multisampled buffer and the resolve
-        // target on one format, which WebGPU requires of a pass.
-        if (HasFormat(capabilities, Wg.TextureFormat.Bgra8Unorm))
-            _format = Wg.TextureFormat.Bgra8Unorm;
-        else if (HasFormat(capabilities, Wg.TextureFormat.Rgba8Unorm))
-            _format = Wg.TextureFormat.Rgba8Unorm;
-
-        var presentMode = VSync ? Wg.PresentMode.Fifo : Wg.PresentMode.Immediate;
-        var supported = false;
-        for (nuint i = 0; i < capabilities.PresentModeCount; i++)
+        if (_device.Api.SurfaceGetCapabilities(_surface, _device.Adapter, &capabilities) != Wg.Status.Success)
         {
-            if (capabilities.PresentModes[i] == presentMode)
-                supported = true;
+            // An unconfigured surface still needs a configuration; without capabilities the current
+            // format is the only sane guess, so configure with it and let the next acquisition fail
+            // loudly rather than silently reusing a stale size.
+            ConfigureWith(_format, VSync ? Wg.PresentMode.Fifo : Wg.PresentMode.Immediate);
+            return;
         }
 
-        if (!supported)
-            presentMode = Wg.PresentMode.Fifo;
+        try
+        {
+            // The preferred format can be an sRGB variant, which no TextureFormat maps to. Choosing the
+            // linear one from the same capability list keeps the multisampled buffer and the resolve
+            // target on one format, which WebGPU requires of a pass.
+            _format = ChooseFormat(capabilities, _format);
 
+            var presentMode = VSync ? Wg.PresentMode.Fifo : Wg.PresentMode.Immediate;
+            var supported = false;
+            for (nuint i = 0; i < capabilities.PresentModeCount; i++)
+            {
+                if (capabilities.PresentModes[i] == presentMode)
+                    supported = true;
+            }
+
+            if (!supported)
+                presentMode = Wg.PresentMode.Fifo;
+
+            ConfigureWith(_format, presentMode);
+        }
+        finally
+        {
+            _device.Api.SurfaceCapabilitiesFreeMembers(capabilities);
+        }
+    }
+
+    private void ConfigureWith(Wg.TextureFormat format, Wg.PresentMode presentMode)
+    {
         var configuration = new Wg.SurfaceConfiguration
         {
             Device = _device.Device,
-            Format = _format,
+            Format = format,
             Usage = Wg.TextureUsage.RenderAttachment,
             Width = (uint)_width,
             Height = (uint)_height,
@@ -323,7 +344,46 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
         };
 
         _device.Api.SurfaceConfigure(_surface, &configuration);
-        _device.Api.SurfaceCapabilitiesFreeMembers(capabilities);
+    }
+
+    /// <summary>
+    /// The surface format to configure and render with. Queried by <see cref="WebGpuGraphicsDevice.Create"/>
+    /// before the swapchain exists, which is why it is static, and reused by <see cref="Configure"/>
+    /// so the boot log and the configured surface can never disagree.
+    /// </summary>
+    internal static Wg.TextureFormat PickSurfaceFormat(
+        Wg.WebGPU api,
+        Wg.Surface* surface,
+        Wg.Adapter* adapter,
+        Wg.TextureFormat fallback
+    )
+    {
+        var capabilities = default(Wg.SurfaceCapabilities);
+        if (api.SurfaceGetCapabilities(surface, adapter, &capabilities) != Wg.Status.Success)
+            return fallback;
+
+        try
+        {
+            return ChooseFormat(capabilities, fallback);
+        }
+        finally
+        {
+            api.SurfaceCapabilitiesFreeMembers(capabilities);
+        }
+    }
+
+    /// <summary>
+    /// Picks the linear format the rest of the backend can match: Bgra8 first because RAD art is BGRA,
+    /// then Rgba8, then whatever the surface lists, and only then the caller's guess.
+    /// </summary>
+    private static Wg.TextureFormat ChooseFormat(in Wg.SurfaceCapabilities capabilities, Wg.TextureFormat fallback)
+    {
+        if (HasFormat(capabilities, Wg.TextureFormat.Bgra8Unorm))
+            return Wg.TextureFormat.Bgra8Unorm;
+        if (HasFormat(capabilities, Wg.TextureFormat.Rgba8Unorm))
+            return Wg.TextureFormat.Rgba8Unorm;
+
+        return capabilities.FormatCount > 0 ? capabilities.Formats[0] : fallback;
     }
 
     private static bool HasFormat(in Wg.SurfaceCapabilities capabilities, Wg.TextureFormat format)

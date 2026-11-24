@@ -576,36 +576,21 @@ internal static class Program
     }
 
     /// <summary>
-    /// Where the apos-shapes shader's compile time actually lands.
-    ///
-    /// Reported rather than asserted, and split into three numbers on purpose, because ANGLE
-    /// defers: glCompileShader/glLinkProgram return in a fraction of a millisecond and the real
-    /// translation happens when the program is first made current for a draw. Timing the
-    /// constructor alone would therefore measure nothing and read as though this shader were
-    /// cheap. The draw is the number that matters - it is what a shader cache has to remove.
-    /// </summary>
-    /// <summary>
-    /// How long Apos.Shapes' shader takes to compile on this driver. Reported, never asserted.
-    ///
-    /// The number is not a property of this backend, which is why it must not gate the run: on ANGLE
-    /// over D3D11 it is 130 seconds *per* stage translation - ANGLE's HLSL translator is quadratic
-    /// enough on this shader's unrolled loops that it dominates the whole test, and a run that took
-    /// ~1 s before is minutes with it. Treating that as a failure would make this suite unpassable on
-    /// a correct driver, so the check is the timer line and nothing else.
-    ///
-    /// It is also why the GL error drain below ignores what it finds. The budget, not the shader, is
-    /// what fails here, so a drained error says the compile was cut short and not that the backend
-    /// misissued a call - and asserting on it would report the timeout as a backend bug.
-    /// </summary>
-    /// <summary>
     /// The cache's two-run story, through the real <see cref="GlProgramCache"/> rather than a
     /// reimplementation of it: the first <c>ShapeBatch</c> on a cold cache pays the full link and
     /// writes a binary, the second one - a fresh batch, a fresh program - loads it instead.
     ///
-    /// Reported rather than asserted because both runs are legitimate: a cold run has to be slow, a
-    /// warm one fast, and the test is what makes the difference visible. The numbers this produced
-    /// are the reason the cache exists - roughly 140 s cold against 1 ms restored - and the warmup
-    /// figure in the middle is what rules out ANGLE simply deferring the work to the first draw.
+    /// Reported rather than asserted, and split into three numbers on purpose, because ANGLE
+    /// defers: glCompileShader/glLinkProgram return in a fraction of a millisecond and the real
+    /// translation happens when the program is first made current for a draw. All three runs are
+    /// legitimate - a cold one has to be slow, a warm one fast - so the check is the timer line and
+    /// nothing else; gating the run on it would fail this suite on a correct driver. The apos-shapes
+    /// variant 0 link is 3.3 s cold here against a few ms restored, which is the whole reason the
+    /// cache exists, and the draw figure in the middle is what rules out ANGLE simply deferring the
+    /// work to the first draw.
+    ///
+    /// It is also why the GL error drain below ignores what it finds: a drained error says the
+    /// compile was cut short, not that the backend misissued a call.
     /// </summary>
     private static void MeasureAposCompile(GlGraphicsDevice device)
     {

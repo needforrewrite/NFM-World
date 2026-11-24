@@ -19,9 +19,11 @@ namespace NFMWorld.Gameplay;
 
 public class MainMenuPhase : BaseStageRenderingPhase
 {
-    private const float IntroFadeStart = 3;
-    private const float LogoFadeStart = 5.2f;
-    private const float LogoFadeDuration = 2.2f;
+    // The intro is a beat, not a wait: the scene is already up when the clock starts (GameTick
+    // returns until the stage is adopted), so this is black-to-prompt time and nothing else.
+    private const float IntroFadeStart = 1;
+    private const float LogoFadeStart = 2f;
+    private const float LogoFadeDuration = 1.4f;
     private const float TransitionDuration = 2f;
     private const float PromptFadeStart = LogoFadeStart + LogoFadeDuration + 0.2f;
     private readonly MenuCameraDirector _cameraDirector = new();
@@ -636,7 +638,13 @@ public class MainMenuPhase : BaseStageRenderingPhase
         }
         else if (!_menuVisible)
         {
-            UiState.MainMenu.BlackOpacity.Value = Math.Max(1 - Smooth((_introTime - IntroFadeStart) / 2), _cameraDirector.Fade);
+            // The curtain lifts across the whole pre-logo span, so backing out of the menu (which
+            // resets the clock to LogoFadeStart) returns with no black left over.
+            var blackFade = LogoFadeStart - IntroFadeStart;
+            UiState.MainMenu.BlackOpacity.Value = Math.Max(
+                1 - Smooth((_introTime - IntroFadeStart) / blackFade),
+                _cameraDirector.Fade
+            );
         }
 
         if (!_menuVisible)
@@ -753,16 +761,18 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
         if (!imguiWantsKeyboard && EnableUiInput)
             MainMenuView.KeyPressed(key);
-        if (!imguiWantsKeyboard && !_menuVisible && _introTime >= IntroFadeStart && _transitionTime < 0)
-        {
-            if (key == Key.Escape)
-            {
-                UiState.MainMenu.SceneryOnly.Value = !UiState.MainMenu.SceneryOnly.Value;
-                return;
-            }
+        if (imguiWantsKeyboard || _menuVisible || _transitionTime >= 0 || _introTime < IntroFadeStart)
+            return;
 
-            BeginTransition(true);
+        // Escape stays the scenery-only toggle for the whole intro; every other key skips straight
+        // in, which is what "PRESS ANY BUTTON" promises.
+        if (key == Key.Escape)
+        {
+            UiState.MainMenu.SceneryOnly.Value = !UiState.MainMenu.SceneryOnly.Value;
+            return;
         }
+
+        BeginTransition(true);
     }
 
     public override void MousePressed(
@@ -779,8 +789,10 @@ public class MainMenuPhase : BaseStageRenderingPhase
         base.MousePressed(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
         if (_garage != null && EnableUiInput)
             _garageCamera.Press(x, y, imguiWantsMouse, button);
-        if (!imguiWantsMouse && !_menuVisible && _introTime >= IntroFadeStart && _transitionTime < 0)
-            BeginTransition(true);
+        if (imguiWantsMouse || _menuVisible || _transitionTime >= 0 || _introTime < IntroFadeStart)
+            return;
+
+        BeginTransition(true);
     }
 
     public override void MouseMoved(

@@ -14,7 +14,7 @@
 
 using System.Numerics;
 using System.Runtime.InteropServices;
-using Wg = Silk.NET.WebGPU;
+using Wg = Maxine.WebGPU;
 
 namespace NFMWorld.Graphics.WebGPU;
 
@@ -297,7 +297,7 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
             staging.Write(offset, padded);
         }
 
-        var destination = new Wg.ImageCopyTexture
+        var destination = new Wg.TexelCopyTextureInfo
         {
             Texture = webGpu.Handle,
             MipLevel = 0,
@@ -305,14 +305,14 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
             Aspect = Wg.TextureAspect.All,
         };
 
-        var layout = new Wg.TextureDataLayout
+        var layout = new Wg.TexelCopyBufferLayout
         {
             Offset = offset,
             BytesPerRow = (uint)pitch,
             RowsPerImage = (uint)rows,
         };
 
-        var source = new Wg.ImageCopyBuffer { Buffer = staging.Handle, Layout = layout };
+        var source = new Wg.TexelCopyBufferInfo { Buffer = staging.Handle, Layout = layout };
         var extent = new Wg.Extent3D { Width = (uint)width, Height = (uint)height, DepthOrArrayLayers = 1 };
         EndPass();
         _device.Api.CommandEncoderCopyBufferToTexture(_encoder, &source, &destination, &extent);
@@ -465,6 +465,9 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
         var colorAttachment = new Wg.RenderPassColorAttachment
         {
             View = colorView,
+            // Required to be the sentinel for a 2D view: wgpu validates that a pass whose colour
+            // attachment is not 3D declares no depth slice at all, and zero is a slice, not "none".
+            DepthSlice = Wg.WebGPU.DepthSliceUndefined,
             ResolveTarget = resolveView,
             LoadOp = wantsColorClear ? Wg.LoadOp.Clear : Wg.LoadOp.Load,
             StoreOp = Wg.StoreOp.Store,
@@ -495,9 +498,9 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
         // wgpu-native caps how many draws one pass may record, and the cap is a chained struct
         // rather than a descriptor field. A pass here holds a whole scene's draws, so the bound is
         // generous rather than counted - the draw count is not known before recording them.
-        var maxDrawCount = new Wg.RenderPassDescriptorMaxDrawCount
+        var maxDrawCount = new Wg.RenderPassMaxDrawCount
         {
-            Chain = new Wg.ChainedStruct { SType = Wg.SType.RenderPassDescriptorMaxDrawCount },
+            Chain = new Wg.ChainedStruct { SType = Wg.SType.RenderPassMaxDrawCount },
             MaxDrawCount = 1_000_000,
         };
 

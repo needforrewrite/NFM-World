@@ -4,7 +4,7 @@
 // binding-order table the shader compiler and this backend have to agree on.
 
 using System.Runtime.InteropServices;
-using Wg = Silk.NET.WebGPU;
+using Wg = Maxine.WebGPU;
 
 namespace NFMWorld.Graphics.WebGPU;
 
@@ -21,10 +21,18 @@ internal static unsafe class WebGpuInterop
     {
         private readonly nint _memory;
 
-        internal Utf8(string? text) =>
+        internal Utf8(string? text)
+        {
             _memory = text is null ? 0 : Marshal.StringToCoTaskMemUTF8(text);
+            Length = text is null ? 0 : System.Text.Encoding.UTF8.GetByteCount(text);
+        }
 
         internal byte* Pointer => (byte*)_memory;
+
+        /// <summary>The string as the API takes one: a pointer and a byte count, no terminator.</summary>
+        internal Wg.StringView View => new() { Data = Pointer, Length = (nuint)Length };
+
+        internal int Length { get; }
 
         public void Dispose()
         {
@@ -34,6 +42,14 @@ internal static unsafe class WebGpuInterop
     }
 
     internal static string? Read(byte* text) => text is null ? null : Marshal.PtrToStringUTF8((nint)text);
+
+    /// <summary>
+    /// Reads one of the API's borrowed string slices - a label, an adapter description, a callback's
+    /// error message. wgpu copies these itself when it takes one, so the slice is only ever read
+    /// inside the call that handed it over.
+    /// </summary>
+    internal static string? Read(Wg.StringView text) =>
+        text.Data is null || text.Length == 0 ? null : Marshal.PtrToStringUTF8((nint)text.Data, (int)text.Length);
 
     /// <summary>
     /// Rounds <paramref name="value"/> up to a multiple of <paramref name="alignment"/>.
@@ -46,6 +62,46 @@ internal static unsafe class WebGpuInterop
 
     internal static int Align(int value, int alignment) =>
         alignment <= 1 ? value : (value + alignment - 1) / alignment * alignment;
+
+    /// <summary>
+    /// Blocks until <paramref name="completed"/> is set by a callback, or <paramref name="timeout"/>
+    /// passes, and returns whether it was.
+    ///
+    /// WebGPU's async entry points are answered through a future, and the callback attached to one
+    /// runs from a wait. The only wait this wgpu-native build implements is
+    /// <c>wgpuInstanceProcessEvents</c>: <c>wgpuInstanceWaitAny</c> is a stub that aborts the
+    /// process, and so is every instance-feature query, so the future itself is never waited on.
+    /// Callbacks registered with <see cref="Wg.CallbackMode.AllowProcessEvents"/> run on this thread
+    /// inside that call, which is what keeps the captured locals safe without a lock.
+    /// </summary>
+    internal static bool WaitFor(Wg.WebGPU api, Wg.Instance* instance, Func<bool> completed, TimeSpan timeout)
+    {
+        var deadline = DateTime.UtcNow + timeout;
+
+        while (!completed())
+        {
+            if (DateTime.UtcNow >= deadline)
+                return false;
+
+            api.InstanceProcessEvents(instance);
+            Thread.Sleep(1);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Creates the instance.
+    ///
+    /// It asks for nothing: wgpu-native's instance-level features (<c>TimedWaitAny</c>,
+    /// <c>ShaderSourceSPIRV</c>) are not implemented by the build this ships with - requesting one
+    /// panics inside <c>wgpuCreateInstance</c>, and so does both ways of asking whether one exists.
+    /// </summary>
+    internal static Wg.Instance* CreateInstance(Wg.WebGPU api)
+    {
+        var descriptor = default(Wg.InstanceDescriptor);
+        return api.CreateInstance(&descriptor);
+    }
 
     /// <summary>
     /// The binding numbers the shader compiler assigns, restated for the backend: the single uniform

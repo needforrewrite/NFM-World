@@ -7,7 +7,7 @@
 // the two vocabularies differ in both directions, and the one place they silently disagree -
 // blend operations - is checked rather than translated.
 
-using Wg = Silk.NET.WebGPU;
+using Wg = Maxine.WebGPU;
 using BlendFactor = NFMWorld.Graphics.BlendFactor;
 using BlendOperation = NFMWorld.Graphics.BlendOperation;
 using ColorWriteMask = NFMWorld.Graphics.ColorWriteMask;

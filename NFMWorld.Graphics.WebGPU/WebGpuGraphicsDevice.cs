@@ -17,12 +17,12 @@
 using System.Runtime.InteropServices;
 using NFMWorld.Shaders;
 using Silk.NET.Core.Contexts;
-using Silk.NET.WebGPU.Extensions.WGPU;
-using Wg = Silk.NET.WebGPU;
-using WgpuBuffer = Silk.NET.WebGPU.Buffer;
-using WgpuDevice = Silk.NET.WebGPU.Device;
-using WgpuSurface = Silk.NET.WebGPU.Surface;
-using WgpuTexture = Silk.NET.WebGPU.Texture;
+using Maxine.WebGPU.Extensions.WGPU;
+using Wg = Maxine.WebGPU;
+using WgpuBuffer = Maxine.WebGPU.Buffer;
+using WgpuDevice = Maxine.WebGPU.Device;
+using WgpuSurface = Maxine.WebGPU.Surface;
+using WgpuTexture = Maxine.WebGPU.Texture;
 
 namespace NFMWorld.Graphics.WebGPU;
 
@@ -69,8 +69,8 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
     /// <summary>The API surface, shared by every object in this assembly.</summary>
     internal Wg.WebGPU Api { get; }
 
-    /// <summary>wgpu-native's own extension, needed for <c>DevicePoll</c>.</summary>
-    internal Wgpu Ext { get; }
+    /// <summary>wgpu-native's own extension surface; <see cref="Poll"/> is the only user.</summary>
+    private readonly Wgpu _ext;
 
     internal Wg.Instance* Instance;
     internal Wg.Adapter* Adapter;
@@ -141,8 +141,34 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         _pendingDestroys.Clear();
     }
 
-    private readonly Wg.ErrorCallback? _errorCallback;
-    private readonly Wg.PfnErrorCallback? _errorCallbackPointer;
+    /// <summary>
+    /// Where wgpu's uncaptured errors land. It exists before the device does, because the callback is
+    /// part of the descriptor that creates it, so anything reported in between is held until the
+    /// constructor can record it.
+    /// </summary>
+    private sealed class ErrorRouter
+    {
+        internal WebGpuGraphicsDevice? Target;
+        internal readonly List<string> Early = [];
+
+        internal void Report(Wg.ErrorType type, Wg.StringView message)
+        {
+            var text = $"{type}: {WebGpuInterop.Read(message)}";
+
+            lock (this)
+            {
+                if (Target is { } target)
+                    target.ReportError(text);
+                else
+                    Early.Add(text);
+            }
+        }
+    }
+
+    private readonly ErrorRouter? _errorRouter;
+
+    /// <summary>The error thunk the descriptor handed over, released with the device.</summary>
+    private readonly Wg.PfnUncapturedErrorCallback _errorCallback;
 
     private readonly HashSet<string> _reportedErrors = [];
     private byte[] _copyPadding = new byte[64];
@@ -161,12 +187,28 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
     /// message: a draw that fails validation fails it every frame, and a per-frame log line would
     /// drown the boot log it is there to explain.
     /// </summary>
+    /// <summary>
+    /// Drains the device's pending work.
+    ///
+    /// Most validation is reported when the work executes rather than when it is recorded, and a
+    /// headless caller - the smoke harness above all - has no present to drive that. Not part of
+    /// <see cref="NFMWorld.Graphics.Abstraction.IGraphicsDevice"/>: the abstraction has no notion of a
+    /// queue that needs draining.
+    /// </summary>
+    internal void Poll(bool waitForWork) => _ext.DevicePoll(_device, waitForWork, null);
+
     private void ReportError(string message)
     {
         if (_reportedErrors.Count < 64 && _reportedErrors.Add(message))
             GraphicsDiagnostics.Warning?.Invoke($"webgpu: {message}");
         _lastError = message;
     }
+
+    /// <summary>
+    /// Surface operations report through a status rather than an uncaptured error, so the swapchain
+    /// needs its own way in. Same de-duplication: a surface that stays lost would log every frame.
+    /// </summary>
+    internal void ReportSurfaceError(string message) => ReportError($"surface: {message}");
 
     public ISwapchain Swapchain => _swapchain;
 
@@ -193,11 +235,13 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         ulong uniformAlignment,
         bool float32Filterable,
         bool textureCompressionBc,
+        ErrorRouter? errorRouter,
+        Wg.PfnUncapturedErrorCallback errorCallback,
         in WebGpuDeviceDescription description
     )
     {
         Api = api;
-        Ext = ext;
+        _ext = ext;
         Instance = instance;
         Adapter = adapter;
         _device = device;
@@ -208,15 +252,19 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         UniformAlignment = uniformAlignment;
         Float32Filterable = float32Filterable;
         TextureCompressionBc = textureCompressionBc;
+        _errorRouter = errorRouter;
+        _errorCallback = errorCallback;
 
-        // Installed after the device exists because that is when wgpu-native starts validating.
-        if (description.EnableValidation)
+        // The callback is installed by the descriptor that created the device, so anything wgpu
+        // reported before this point was held by the router.
+        if (_errorRouter is { } router)
         {
-            _errorCallback = (type, message, _) => ReportError($"{type}: {WebGpuInterop.Read(message)}");
-            if (Wg.PfnErrorCallback.From(_errorCallback) is { } callbackPointer)
+            lock (router)
             {
-                _errorCallbackPointer = callbackPointer;
-                Api.DeviceSetUncapturedErrorCallback(_device, callbackPointer, null);
+                router.Target = this;
+                foreach (var early in router.Early)
+                    ReportError(early);
+                router.Early.Clear();
             }
         }
 
@@ -255,10 +303,9 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         }
 
         var api = Wg.WebGPU.GetApi();
-        var ext = new Wgpu(Wg.WebGPU.CreateDefaultContext(new[] { "wgpu_native" }));
+        var ext = new Wgpu(api.Context);
 
-        var instanceDescriptor = default(Wg.InstanceDescriptor);
-        var instance = api.CreateInstance(&instanceDescriptor);
+        var instance = WebGpuInterop.CreateInstance(api);
         if (instance is null)
             throw new InvalidOperationException("wgpu-native could not create an instance.");
 
@@ -277,19 +324,29 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
 
         Wg.Adapter* adapter = null;
         string? adapterError = null;
-        using var adapterReady = new ManualResetEventSlim(false);
-        var adapterCallback = Wg.PfnRequestAdapterCallback.From((status, candidate, message, _) =>
-            {
-                if (status == Wg.RequestAdapterStatus.Success)
-                    adapter = candidate;
-                else
-                    adapterError = WebGpuInterop.Read(message) ?? status.ToString();
-                adapterReady.Set();
-            }
+        var adapterDone = false;
+        var adapterCallback = Wg.PfnRequestAdapterCallback.From((Wg.RequestAdapterCallback)((status, candidate, message, _, _) =>
+        {
+            if (status == Wg.RequestAdapterStatus.Success)
+                adapter = candidate;
+            else
+                adapterError = WebGpuInterop.Read(message) ?? status.ToString();
+            adapterDone = true;
+        })
         );
 
-        api.InstanceRequestAdapter(instance2, &adapterOptions, adapterCallback, null);
-        adapterReady.Wait(TimeSpan.FromSeconds(10));
+        // AllowProcessEvents, not WaitAnyOnly: this build's wgpuInstanceWaitAny aborts, so a
+        // wait-any-only callback would never run. This mode runs it on the thread that calls
+        // wgpuInstanceProcessEvents, which is the one waiting below, so the writes still need no
+        // lock.
+        api.InstanceRequestAdapter(instance2, &adapterOptions, new Wg.RequestAdapterCallbackInfo
+        {
+            Mode = Wg.CallbackMode.AllowProcessEvents,
+            Callback = adapterCallback,
+        });
+
+        if (!WebGpuInterop.WaitFor(api, instance2, () => adapterDone, TimeSpan.FromSeconds(10)))
+            adapterError ??= "the request timed out";
 
         if (adapter is null)
         {
@@ -301,12 +358,18 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
             );
         }
 
-        var properties = default(Wg.AdapterProperties);
-        api.AdapterGetProperties(adapter, &properties);
-        var adapterName = WebGpuInterop.Read(properties.Name) ?? "unknown adapter";
+        var adapterInfo = default(Wg.AdapterInfo);
+        if (api.AdapterGetInfo(adapter, &adapterInfo) != Wg.Status.Success)
+            throw new InvalidOperationException("wgpu-native did not report the adapter's identity.");
 
-        var supportedLimits = default(Wg.SupportedLimits);
-        if (!api.AdapterGetLimits(adapter, &supportedLimits))
+        var adapterName = WebGpuInterop.Read(adapterInfo.Description)
+                          ?? WebGpuInterop.Read(adapterInfo.Device)
+                          ?? "unknown adapter";
+        var backendType = adapterInfo.BackendType;
+        api.AdapterInfoFreeMembers(adapterInfo);
+
+        var limits = default(Wg.Limits);
+        if (api.AdapterGetLimits(adapter, &limits) != Wg.Status.Success)
             throw new InvalidOperationException("wgpu-native did not report the adapter's limits.");
 
         // BC textures are how every RAD model carries its art, and float32 filtering is what the
@@ -315,39 +378,61 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         var wantsBc = api.AdapterHasFeature(adapter, Wg.FeatureName.TextureCompressionBC);
         var wantsFloat32Filterable = api.AdapterHasFeature(adapter, Wg.FeatureName.Float32filterable);
 
-        var features = stackalloc Wg.FeatureName[2];
-        var featureCount = 0;
+        var deviceFeatures = stackalloc Wg.FeatureName[2];
+        var deviceFeatureCount = 0;
         if (wantsBc)
-            features[featureCount++] = Wg.FeatureName.TextureCompressionBC;
+            deviceFeatures[deviceFeatureCount++] = Wg.FeatureName.TextureCompressionBC;
         if (wantsFloat32Filterable)
-            features[featureCount++] = Wg.FeatureName.Float32filterable;
+            deviceFeatures[deviceFeatureCount++] = Wg.FeatureName.Float32filterable;
 
-        // The adapter's own limits are requested back, which is the documented way to ask for
-        // everything it can do without naming each field.
-        var requiredLimits = new Wg.RequiredLimits { Limits = supportedLimits.Limits };
+        // The device's limits are the adapter's own, requested back: the documented way to ask for
+        // everything it can do without naming each field. RequiredLimits is the struct itself, not
+        // the old one-member wrapper.
+        var errorRouter = description.EnableValidation ? new ErrorRouter() : null;
+        var errorCallback = default(Wg.PfnUncapturedErrorCallback);
+
+        Wg.UncapturedErrorCallbackInfo errorCallbackInfo = default;
+        if (errorRouter is not null)
+        {
+            // An uncaptured error has no wait behind it, so the callback has to stay callable for the
+            // device's whole life. SilkMarshal pins the delegate, and the device frees the thunk when
+            // it releases the device.
+            errorCallback = Wg.PfnUncapturedErrorCallback.From(
+                (Wg.UncapturedErrorCallback)((_, type, message, _, _) => errorRouter.Report(type, message))
+            );
+
+            errorCallbackInfo = new Wg.UncapturedErrorCallbackInfo { Callback = errorCallback };
+        }
 
         var deviceDescriptor = new Wg.DeviceDescriptor
         {
-            RequiredFeatureCount = (nuint)featureCount,
-            RequiredFeatures = features,
-            RequiredLimits = &requiredLimits,
+            RequiredFeatureCount = (nuint)deviceFeatureCount,
+            RequiredFeatures = deviceFeatures,
+            RequiredLimits = &limits,
+            UncapturedErrorCallbackInfo = errorCallbackInfo,
         };
 
         WgpuDevice* device = null;
         string? deviceError = null;
-        using var deviceReady = new ManualResetEventSlim(false);
-        var deviceCallback = Wg.PfnRequestDeviceCallback.From((status, created, message, _) =>
-            {
-                if (status == Wg.RequestDeviceStatus.Success)
-                    device = created;
-                else
-                    deviceError = WebGpuInterop.Read(message) ?? status.ToString();
-                deviceReady.Set();
-            }
+        var deviceDone = false;
+        var deviceCallback = Wg.PfnRequestDeviceCallback.From((Wg.RequestDeviceCallback)((status, created, message, _, _) =>
+        {
+            if (status == Wg.RequestDeviceStatus.Success)
+                device = created;
+            else
+                deviceError = WebGpuInterop.Read(message) ?? status.ToString();
+            deviceDone = true;
+        })
         );
 
-        api.AdapterRequestDevice(adapter, &deviceDescriptor, deviceCallback, null);
-        deviceReady.Wait(TimeSpan.FromSeconds(20));
+        api.AdapterRequestDevice(adapter, &deviceDescriptor, new Wg.RequestDeviceCallbackInfo
+        {
+            Mode = Wg.CallbackMode.AllowProcessEvents,
+            Callback = deviceCallback,
+        });
+
+        if (!WebGpuInterop.WaitFor(api, instance2, () => deviceDone, TimeSpan.FromSeconds(20)))
+            deviceError ??= "the request timed out";
 
         if (device is null)
         {
@@ -360,12 +445,14 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         }
 
         var queue = api.DeviceGetQueue(device);
-        var surfaceFormat = surface2 is null ? Wg.TextureFormat.Bgra8Unorm : api.SurfaceGetPreferredFormat(surface2, adapter);
+        var surfaceFormat = surface2 is null
+            ? Wg.TextureFormat.Bgra8Unorm
+            : WebGpuSwapchain.PickSurfaceFormat(api, surface2, adapter, Wg.TextureFormat.Bgra8Unorm);
 
         GraphicsDiagnostics.Warning?.Invoke(
-            $"webgpu: {adapterName} ({properties.BackendType}), surface {surfaceFormat}"
+            $"webgpu: {adapterName} ({backendType}), surface {surfaceFormat}"
             + $", bc={(wantsBc ? "yes" : "no")}, float32-filterable={(wantsFloat32Filterable ? "yes" : "no")}"
-            + $", uniform alignment {supportedLimits.Limits.MinUniformBufferOffsetAlignment}"
+            + $", uniform alignment {limits.MinUniformBufferOffsetAlignment}"
         );
 
         return new WebGpuGraphicsDevice(
@@ -378,9 +465,11 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
             surface2,
             surfaceFormat,
             adapterName,
-            supportedLimits.Limits.MinUniformBufferOffsetAlignment,
+            limits.MinUniformBufferOffsetAlignment,
             wantsFloat32Filterable,
             wantsBc,
+            errorRouter,
+            errorCallback,
             description
         );
     }
@@ -399,9 +488,9 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
             );
         }
 
-        var fromHwnd = new Wg.SurfaceDescriptorFromWindowsHWND
+        var fromHwnd = new Wg.SurfaceSourceWindowsHWND
         {
-            Chain = new Wg.ChainedStruct { SType = Wg.SType.SurfaceDescriptorFromWindowsHwnd },
+            Chain = new Wg.ChainedStruct { SType = Wg.SType.SurfaceSourceWindowsHwnd },
             Hinstance = (void*)GetModuleHandleW(null),
             Hwnd = (void*)description.WindowHandle,
         };
@@ -613,7 +702,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
             source = padded;
         }
 
-        var destination = new Wg.ImageCopyTexture
+        var destination = new Wg.TexelCopyTextureInfo
         {
             Texture = texture.Handle,
             MipLevel = (uint)level,
@@ -621,7 +710,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
             Aspect = Wg.TextureAspect.All,
         };
 
-        var layout = new Wg.TextureDataLayout
+        var layout = new Wg.TexelCopyBufferLayout
         {
             Offset = 0,
             BytesPerRow = (uint)pitch,
@@ -706,7 +795,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
             var encoderDescriptor = default(Wg.CommandEncoderDescriptor);
             var encoder = Api.DeviceCreateCommandEncoder(_device, &encoderDescriptor);
 
-            var source = new Wg.ImageCopyTexture
+            var source = new Wg.TexelCopyTextureInfo
             {
                 Texture = webGpuTexture.Handle,
                 MipLevel = 0,
@@ -714,10 +803,10 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
                 Aspect = Wg.TextureAspect.All,
             };
 
-            var copyDestination = new Wg.ImageCopyBuffer
+            var copyDestination = new Wg.TexelCopyBufferInfo
             {
                 Buffer = buffer,
-                Layout = new Wg.TextureDataLayout
+                Layout = new Wg.TexelCopyBufferLayout
                 {
                     Offset = 0,
                     BytesPerRow = (uint)pitch,
@@ -735,26 +824,25 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
             Api.QueueSubmit(_queue, 1, &commands);
             Api.CommandBufferRelease(commands);
 
-            using var mapped = new ManualResetEventSlim(false);
-            var status = Wg.BufferMapAsyncStatus.Unknown;
-            var mapCallback = Wg.PfnBufferMapCallback.From((result, _) =>
+            var status = Wg.MapAsyncStatus.Error;
+            var mapped = false;
+            var mapCallback = Wg.PfnBufferMapCallback.From(
+                (Wg.BufferMapCallback)((result, _, _, _) =>
                 {
                     status = result;
-                    mapped.Set();
-                }
+                    mapped = true;
+                })
             );
 
-            Api.BufferMapAsync(buffer, Wg.MapMode.Read, 0, (nuint)stagingSize, mapCallback, null);
-            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
-            while (!mapped.IsSet && DateTime.UtcNow < deadline)
+            Api.BufferMapAsync(buffer, Wg.MapMode.Read, 0, (nuint)stagingSize, new Wg.BufferMapCallbackInfo
             {
-                // Null rather than a zeroed WrappedSubmissionIndex: wgpu-native treats a non-null
-                // index with a null queue as "a different queue's submission" and panics in Rust,
-                // which takes the process with it. Null polls everything submitted so far.
-                Ext.DevicePoll(_device, 1, null);
-            }
+                Mode = Wg.CallbackMode.AllowProcessEvents,
+                Callback = mapCallback,
+            });
 
-            if (!mapped.IsSet || status != Wg.BufferMapAsyncStatus.Success)
+            var mappedInTime = WebGpuInterop.WaitFor(Api, Instance, () => mapped, TimeSpan.FromSeconds(10));
+
+            if (!mappedInTime || status != Wg.MapAsyncStatus.Success)
             {
                 throw new InvalidOperationException(
                     $"Mapping the readback buffer failed ({status}){(_lastError is null ? "" : ": " + _lastError)}."
@@ -812,5 +900,10 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         Adapter = null;
         Api.InstanceRelease(Instance);
         Instance = null;
+
+        // Frees the GCHandle SilkMarshal pinned for the error thunk. Doing it after the device is
+        // released is what makes it safe: nothing can call the callback any more.
+        if (_errorCallback.Handle != null)
+            _errorCallback.Dispose();
     }
 }
