@@ -77,6 +77,11 @@ exports.NFMWorld.Browser.Program.MountAssets(new Uint8Array(await assets.arrayBu
 
 boot.textContent = 'starting…';
 
+// `?hash=<sha256>` boots a single archive asset instead of the game: `preview=stage|model` picks
+// the view, otherwise the radpack's own kind decides, and `archive=<url>` names another host.
+const query = new URLSearchParams(location.search);
+const previewHash = query.get('hash') ?? '';
+
 try {
     // The size is handed over before boot rather than applied afterwards: the first phase sizes its
     // camera from the window when it is entered, so a window created at the default 1280x720 and
@@ -86,12 +91,17 @@ try {
     exports.NFMWorld.Browser.Program.SetBootSize(innerWidth, innerHeight);
     // The renderer list and the renderer itself both come from this, so it lands before Main.
     exports.NFMWorld.Browser.Program.SetWebGpuAvailable(webgpu !== null);
+    exports.NFMWorld.Browser.Program.SetPreview(
+        query.get('preview'), previewHash, query.get('archive')
+    );
     exports.NFMWorld.Browser.Program.Main();
 } catch (e) {
     boot.textContent = `boot failed: ${e}`;
     throw e;
 }
 
+// From here the game's own loading pill reports progress, which is what a preview needs while its
+// asset is still downloading.
 boot.remove();
 
 // The canvas is laid out by CSS but its backing store is not, so the game has to be told the page

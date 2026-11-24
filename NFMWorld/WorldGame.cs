@@ -1030,6 +1030,20 @@ public partial class WorldGame : IDisposable, IGameHost
     /// reason as <see cref="Initialize"/>.</summary>
     public void LoadContent()
     {
+        LoadContentCore(null);
+    }
+
+    /// <summary>
+    /// Loads effects and content for a single-asset preview instead of the game. The device, the
+    /// effects and the cascades come up identically; only what owns the screen differs.
+    /// </summary>
+    public void LoadContentPreview(ArchivePreviewRequest request)
+    {
+        LoadContentCore(request);
+    }
+
+    private void LoadContentCore(ArchivePreviewRequest? preview)
+    {
         ImguiRenderer?.RebuildFontAtlas();
         // Theme lives in the ImGui context the renderer above owns, so it goes where that does.
         if (ImguiRenderer is not null)
@@ -1045,7 +1059,10 @@ public partial class WorldGame : IDisposable, IGameHost
         Effects.Initialize(_device);
         GameSparker.RebuildCascades();
 
-        GameSparker.Load(this);
+        if (preview is null)
+            GameSparker.Load(this);
+        else
+            GameSparker.LoadPreview(this, preview);
 
         // Only the application half - the config was parsed in Main, before the window existed. See
         // ApplyLoadedSettings, and Main for why the two halves have to happen where they do.

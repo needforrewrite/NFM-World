@@ -100,6 +100,25 @@ public static partial class Program
     private static bool _webGpuAvailable;
 
     /// <summary>
+    /// One archive asset to show instead of the game, from the page's query string. Null boots the
+    /// game as usual.
+    /// </summary>
+    private static NFMWorld.Gameplay.ArchivePreviewRequest? _preview;
+
+    /// <summary>
+    /// Records the preview page's request. Called immediately before <see cref="Main"/>, like
+    /// <see cref="SetBootSize"/>: the wasm entry point takes no arguments.
+    /// </summary>
+    /// <param name="mode">"stage", "model", or anything else for the radpack's own kind.</param>
+    /// <param name="hash">The asset's SHA-256; empty boots the game.</param>
+    /// <param name="archiveUrl">An archive host to fetch from, or null for the baked endpoint.</param>
+    [JSExport]
+    public static void SetPreview(string? mode, string? hash, string? archiveUrl)
+    {
+        _preview = NFMWorld.Gameplay.ArchivePreviewRequest.Parse(mode, hash, archiveUrl);
+    }
+
+    /// <summary>
     /// TEMP: names the boot step that is about to run. A trap in native code kills the module
     /// before any managed catch can report it, so the last line of the log is the only record of
     /// how far the boot got.
@@ -199,13 +218,28 @@ public static partial class Program
             // The desktop head does this in Main, before the game exists: it fills in the model
             // tables GameSparker.Load reads (error_mesh and the stage/car parts) and picks the
             // backend. Nothing else does it on this path, so the models would all be null.
-            Step("BackendGameSparker.Load");
-            BackendGameSparker.Load(isHeadless: false);
+            //
+            // A preview loads one archive asset from its own bytes, so it needs neither the model
+            // tables nor the plugin loader; only error_mesh is shared, since a stage whose piece
+            // fails to resolve still falls back to it.
+            if (_preview is null)
+            {
+                Step("BackendGameSparker.Load");
+                BackendGameSparker.Load(isHeadless: false);
+            }
+            else
+            {
+                Step("BackendGameSparker.LoadForPreview");
+                BackendGameSparker.LoadForPreview();
+            }
 
             Step("Initialize");
             _game.Initialize();
-            Step("LoadContent");
-            _game.LoadContent();
+            Step(_preview is null ? "LoadContent" : "LoadContentPreview");
+            if (_preview is null)
+                _game.LoadContent();
+            else
+                _game.LoadContentPreview(_preview);
 
             Step("booted");
             _clock = Stopwatch.StartNew();

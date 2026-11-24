@@ -101,36 +101,7 @@ public static class BackendGameSparker
 
 #endif
 
-        // The browser has no install directory and no writable one: the head mounts the asset
-        // archive and a MEMFS write root before calling this, and every path below resolves
-        // through those. See NFMWorld.Platform.BrowserBoot in the game project.
-        if (!OperatingSystem.IsBrowser())
-        {
-            VFS.MountDirectory(AppDomain.CurrentDomain.BaseDirectory);
-            VFS.MountDirectory(Directory.GetCurrentDirectory());
-            if (OperatingSystem.IsMacOS() && !isHeadless)
-            {
-                var applicationData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
-                if (string.IsNullOrWhiteSpace(applicationData))
-                    applicationData = Path.Combine(
-                        System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile),
-                        "Library",
-                        "Application Support"
-                    );
-                var userDirectory = Path.Combine(applicationData, "NFMWorld");
-                VFS.MountWriteDestination(userDirectory);
-                VFS.MountDirectory(userDirectory, prepend: true);
-                Logging.Info($"User data directory: {userDirectory}");
-            }
-            else
-            {
-                VFS.MountWriteDestination(Directory.GetCurrentDirectory());
-            }
-
-            var modsFolder = Path.Combine(Directory.GetCurrentDirectory(), "mods");
-            if (Directory.Exists(modsFolder))
-                VFS.MountDirectory(modsFolder);
-        }
+        MountContentRoots(isHeadless);
 
         // After the write root exists, and before any network mount, so a prepared asset is never
         // fetched again. Both only answer archive/<hash> paths. The browser keeps its cache in
@@ -261,6 +232,71 @@ public static class BackendGameSparker
                 throw new Exception("No valid ContO (Vehicle) has been assigned to ID " + i + " (" + StageRads[i] + ")");
             }
         }
+    }
+
+    /// <summary>
+    /// The minimum a single-asset preview needs: the backend, the content mounts and the error
+    /// mesh a stage falls back to. No model directories, no completeness checks, no Sentry.
+    /// </summary>
+    /// <remarks>
+    /// The browser preview runs this instead of <see cref="Load"/> so a page showing one archive
+    /// radpack never pays for the shipped car and stage-piece tables.
+    /// </remarks>
+    public static void LoadForPreview()
+    {
+        if (_loaded)
+            return;
+        _loaded = true;
+
+        IBackend.Backend = new ServerBackend();
+        MountContentRoots(isHeadless: false);
+        ContentCache.Mount();
+        if (!OperatingSystem.IsBrowser())
+            ArchiveMount.MountIfConfigured(ArchiveEndpoint.Url);
+
+        error_mesh = RadParser.ParseRad(
+            Encoding.UTF8.GetString(VFS.ReadAllBytes("./data/models/error.rad")),
+            "error.rad"
+        );
+    }
+
+    /// <summary>
+    /// Mounts the install, working and user directories.
+    /// </summary>
+    /// <remarks>
+    /// The browser has no install directory and no writable one: the head mounts the asset
+    /// archive and a MEMFS write root before this runs, and every path resolves through those.
+    /// See <c>NFMWorld.Platform.BrowserBoot</c> in the game project.
+    /// </remarks>
+    private static void MountContentRoots(bool isHeadless)
+    {
+        if (OperatingSystem.IsBrowser())
+            return;
+
+        VFS.MountDirectory(AppDomain.CurrentDomain.BaseDirectory);
+        VFS.MountDirectory(Directory.GetCurrentDirectory());
+        if (OperatingSystem.IsMacOS() && !isHeadless)
+        {
+            var applicationData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
+            if (string.IsNullOrWhiteSpace(applicationData))
+                applicationData = Path.Combine(
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile),
+                    "Library",
+                    "Application Support"
+                );
+            var userDirectory = Path.Combine(applicationData, "NFMWorld");
+            VFS.MountWriteDestination(userDirectory);
+            VFS.MountDirectory(userDirectory, prepend: true);
+            Logging.Info($"User data directory: {userDirectory}");
+        }
+        else
+        {
+            VFS.MountWriteDestination(Directory.GetCurrentDirectory());
+        }
+
+        var modsFolder = Path.Combine(Directory.GetCurrentDirectory(), "mods");
+        if (Directory.Exists(modsFolder))
+            VFS.MountDirectory(modsFolder);
     }
 
     /// <summary>

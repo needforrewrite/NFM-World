@@ -18,19 +18,24 @@ public class EditorObject : StaticMeshObject, IDisposable
 
     public IReadOnlyList<Rad3dWheelDef> Wheels { get; }
 
-    public EditorObject(Rad3d rad) : this(rad, new CarMesh(rad))
+    public EditorObject(Rad3d rad) : this(rad, new CarMesh(rad), showCollision: true)
     {
     }
 
-    internal EditorObject(Mesh.Prepared prepared) : this(prepared.Rad, new CarMesh(prepared))
+    /// <summary>An editor view of a model, optionally without the collision-box wireframe.</summary>
+    public EditorObject(Rad3d rad, bool showCollision) : this(rad, new CarMesh(rad), showCollision)
     {
     }
 
-    private EditorObject(Rad3d rad, CarMesh mesh) : base(rad, mesh)
+    internal EditorObject(Mesh.Prepared prepared) : this(prepared.Rad, new CarMesh(prepared), showCollision: true)
+    {
+    }
+
+    private EditorObject(Rad3d rad, CarMesh mesh, bool showCollision) : base(rad, mesh)
     {
         Boxes = rad.Boxes;
         Wheels = rad.Wheels;
-        if (rad.Boxes.Length > 0)
+        if (showCollision && rad.Boxes.Length > 0)
         {
             _collisionDebugMesh = new CollisionDebugMesh(rad.Boxes)
             {

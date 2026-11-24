@@ -112,6 +112,21 @@ Key characteristics:
   fails the browser build with `CS0103`. The same applies to anything else the browser head adds to
   its `Compile` group.
 
+- **Browser asset preview.** `index.html?hash=<sha256>` boots one archive radpack instead of the game:
+  `preview=stage|model` picks the view (an unknown value falls back to the radpack's own kind) and
+  `archive=<url>` names another host. `main.js` parses the query and hands it to `[JSExport] SetPreview`,
+  since wasm `Main` is parameterless; `Program.Main` then runs `BackendGameSparker.LoadForPreview` — content
+  roots and `error_mesh` only, no model directories, no plugins, no Sentry — and
+  `WorldGame.LoadContentPreview`, which is `LoadContent` with `GameSparker.LoadPreview` setting the root to
+  `ArchivePreviewPhase` instead of `MainMenuPhase`. The phase downloads the radpack through
+  `ArchiveContentClient` and loads it from those bytes, because a preview may name a host other than the
+  baked `ArchiveEndpoint`; that means a stage enters through an explicit `StageLoader` (`stageData:` skips
+  the download branch) and a model through `EditorObject(rad, showCollision: false)` in a `Scene` under an
+  orbit camera (right-drag, wheel). `WorldGame.Initialize` still runs: it creates the Apos renderer and the
+  `UiRenderer` that pumps `LoadingWork`, which every `await LoadingWork.NextFrame` in the phase needs.
+  Failures land in the phase's own dialog; the browser build has no ICU, so it formats exception text
+  itself rather than showing a framework resource key.
+
 ---
 
 ## UI (Sx + Yoga)
@@ -812,6 +827,15 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
   `HttpContext.PurgeAssetsAsync(...)` (`Cache/CloudflareCache.cs`): the asset endpoints, the edit/delete pages,
   `AssetModeration` and the bulk `unlist`/`relist`. The hook is opt-in (`Archive__CloudflareZoneId` /
   `Archive__CloudflareApiToken`) and never fails the action on a Cloudflare error.
+- **CORS is per route, and only for the public reads.** `GET /assets/{hash}` and `/assets/meta/{hash}` carry the
+  `asset-download` policy (`AssetEndpoints.CorsPolicy`), which is what lets the browser preview page
+  (`index.html?hash=…`) fetch a radpack from another origin — normally `nfmw.net`. `Archive:CorsOrigins`
+  (`Archive__CorsOrigins`, default `*`) is a comma-separated allowlist; an empty value or `*` allows any origin.
+  Methods are `GET`/`HEAD`, request headers `Range`/`If-Range`, and `Content-Length`, `Content-Range`,
+  `Accept-Ranges` and `Content-Disposition` are exposed, because the download is read as a ranged stream. Nothing
+  else in the app is CORS-enabled, so the account and upload endpoints stay same-origin. A deployed archive older
+  than this policy answers no `Access-Control-Allow-Origin`, which is why a local preview against production needs
+  a same-origin proxy; the shipped page does not carry one.
 - **Two upload surfaces, one rule set.** `POST /assets/upload` (the game client) and `Pages/Upload.cshtml`
   (the website) both publish data assets, and they must refuse the same inputs: signed in, `Archive:ReadOnly`,
   `AssetKinds.IsPublishable`, the `.radpack`/`.rad` extension allowlist, `AssetKinds.IsUploadExtensionAllowed`

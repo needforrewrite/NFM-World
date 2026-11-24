@@ -325,6 +325,19 @@ public static partial class GameSparker
         Phases.SetRoot(MainMenuPhase);
     }
 
+    /// <summary>
+    /// Boots one archive radpack on its own instead of the game: no menus, no model directories,
+    /// no plugins. The browser's preview page is the only caller.
+    /// </summary>
+    public static void LoadPreview(IGameHost game, ArchivePreviewRequest request)
+    {
+        Game = game;
+
+        SfxLibrary.LoadSounds();
+        SettingsMenu = new SettingsMenu();
+        Phases.SetRoot(new ArchivePreviewPhase(request));
+    }
+
     public static void StartModelViewer()
     {
         PushPhase(new ModelEditorPhase(GraphicsDevice));
