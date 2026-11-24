@@ -39,6 +39,7 @@ public static class AccountErasure
         target.UsernameNormalized = UsernamePolicy.Normalize(target.Username);
         target.PasswordHash = null;
         target.Role = NFMWorldLibrary.Multiplayer.UserRole.User;
+        target.IsVerifiedUploader = false;
         target.BannedUntil = null;
         target.BanReason = null;
         target.KickedUntil = null;

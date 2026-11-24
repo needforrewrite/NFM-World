@@ -1,3 +1,16 @@
+@{
+    var viewer = ViewData["Viewer"] as NFMWorld.Archive.Pages.ViewerState;
+    var page = ViewContext.RouteData.Values["page"] as string ?? "";
+    var currentTab = page switch
+    {
+        "/AssetDetail" or "/AssetEdit" => "/Browse",
+        "/Profile" => "/Profiles",
+        _ when page.StartsWith("/Account/") => "/Index",
+        _ when page.StartsWith("/Moderation/") => "/Moderation/Users",
+        _ => page
+    };
+    string? Current(string tab) => page == tab ? "page" : currentTab == tab ? "true" : null;
+}
 <!DOCTYPE html>
 <html lang="en" data-theme="dark" data-compact>
 <head>
@@ -8,43 +21,47 @@
     <link rel="stylesheet" href="~/css/archive.css" asp-append-version="true" />
 </head>
 <body>
-<header class="container site-header">
-    <nav aria-label="Main navigation">
-        <ul>
-            <li><strong>NFM WORLD ARCHIVE</strong></li>
-        </ul>
-        <ul>
-            <li><a href="/">Account</a></li>
-            <li><a href="/browse">Browse</a></li>
-            <li><a href="/leaderboards">Time trials</a></li>
-            <li><a href="/clans">Clans</a></li>
-            <li><a href="/upload">Upload</a></li>
-            @{
-                var viewer = ViewData["Viewer"] as NFMWorld.Archive.Pages.ViewerState;
-            }
-            @if (viewer?.IsStaff == true)
-            {
-                <li><a href="/moderation">Moderation</a></li>
-            }
-        </ul>
-        <ul class="account-menu">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<header class="archive-shell site-header">
+    <div class="site-masthead">
+        <a class="archive-brand" asp-page="/Browse">
+            <img src="~/branding/logo.svg" asp-append-version="true" alt="NFM World" width="100" height="56" />
+            <span>Archive</span>
+        </a>
+        <div class="account-menu">
             @if (viewer?.Username is { } username)
             {
-                <li class="muted"><a href="/account/security">@username</a></li>
-                <li>
-                    <form method="post" action="/logout">
-                        <button type="submit" class="secondary outline">Sign out</button>
-                    </form>
-                </li>
+                <a href="/account/security">@username</a>
+                <form method="post" action="/logout">
+                    <button type="submit" class="secondary outline">Sign out</button>
+                </form>
             }
             else
             {
-                <li><a href="/account/login">Sign in</a></li>
+                <a href="/account/login" role="button" class="secondary outline">Sign in</a>
+            }
+        </div>
+    </div>
+    <nav aria-label="Main navigation">
+        <ul class="archive-tabs">
+            <li><a href="/" aria-current="@Current("/Index")">Account</a></li>
+            <li><a href="/browse" aria-current="@Current("/Browse")">Browse</a></li>
+            <li><a asp-page="/Profiles" aria-current="@Current("/Profiles")">Profiles</a></li>
+            <li><a href="/leaderboards" aria-current="@Current("/Leaderboards")">Time trials</a></li>
+            <li><a href="/clans" aria-current="@Current("/Clans")">Clans</a></li>
+            <li><a href="/upload" aria-current="@Current("/Upload")">Upload</a></li>
+            @if (viewer?.IsStaff == true)
+            {
+                <li><a href="/moderation" aria-current="@Current("/Moderation/Users")">Moderation</a></li>
+            }
+            @if (viewer?.IsAdmin == true)
+            {
+                <li><a href="/administration" aria-current="@Current("/Administration")">Administration</a></li>
             }
         </ul>
     </nav>
 </header>
-<main class="container" id="main-content">
+<main class="archive-shell" id="main-content" tabindex="-1">
     @if (ViewData["Viewer"] is NFMWorld.Archive.Pages.ViewerState { DeletionEraseAt: { } eraseAt })
     {
         <div class="error" role="alert" style="margin-bottom: 1rem;">

@@ -1,30 +1,326 @@
-.site-header {
-    border-bottom: 1px solid var(--pico-muted-border-color);
+@font-face {
+    font-family: Adventure;
+    src: url("../branding/Adventure.otf") format("opentype");
+    font-display: swap;
 }
 
-.site-header nav,
-.site-header nav ul {
+[data-theme="dark"] {
+    --archive-title: #7da8ff;
+    --archive-line: #3b527f;
+    --archive-panel: #101a2e;
+    --archive-surface: #16243e;
+    --archive-hover: #213858;
+    --archive-gutter: clamp(1rem, 3vw, 2rem);
+    --archive-display: Adventure, Impact, "Arial Black", sans-serif;
+    --pico-font-family: "Segoe UI", system-ui, sans-serif;
+    --pico-background-color: #0a111f;
+    --pico-color: #bed0ed;
+    --pico-muted-color: #93abd0;
+    --pico-muted-border-color: #293c5d;
+    --pico-h1-color: var(--archive-title);
+    --pico-h2-color: var(--archive-title);
+    --pico-h3-color: #d6e5fb;
+    --pico-primary: #9bc1ff;
+    --pico-primary-hover: #d4e5ff;
+    --pico-primary-focus: #81b4ff55;
+    --pico-primary-background: #284670;
+    --pico-primary-border: #719de8;
+    --pico-primary-hover-background: #35598a;
+    --pico-primary-hover-border: #a8caff;
+    --pico-primary-inverse: #f1f6ff;
+    --pico-secondary: #b4c9eb;
+    --pico-secondary-border: var(--archive-line);
+    --pico-secondary-hover: #eff5ff;
+    --pico-secondary-hover-border: #89ace7;
+    --pico-secondary-background: var(--archive-surface);
+    --pico-secondary-hover-background: var(--archive-hover);
+    --pico-border-radius: 0.3rem;
+    --pico-form-element-background-color: #0d182c;
+    --pico-form-element-active-background-color: #14243d;
+    --pico-form-element-border-color: var(--archive-line);
+    --pico-form-element-active-border-color: #88adf6;
+    --pico-form-element-placeholder-color: var(--pico-muted-color);
+    --pico-table-border-color: var(--pico-muted-border-color);
+    --pico-card-background-color: var(--archive-panel);
+    --pico-card-sectioning-background-color: var(--archive-surface);
+    --pico-card-box-shadow: none;
+    --pico-del-color: #ffb1a9;
+}
+
+body {
+    display: flow-root;
+    min-height: 100vh;
+    background:
+        linear-gradient(153deg, transparent 69%, #7194c412 69% 69.2%, transparent 69.2%) fixed,
+        linear-gradient(167deg, transparent 75%, #080f1d70 75%) fixed,
+        radial-gradient(ellipse at 96% 0%, #493548, transparent 54%) fixed,
+        linear-gradient(145deg, #203559, #0a111f 70%) fixed;
+}
+
+.archive-shell {
+    width: min(82rem, calc(100% - 2 * var(--archive-gutter)));
+    min-width: 0;
+    margin-inline: auto;
+    background: rgb(16 26 46 / 96%);
+    border: 1px solid var(--archive-line);
+    border-radius: 0.45rem;
+    box-shadow: 0 0.8rem 2rem #060a143d;
+}
+
+.site-header {
+    margin-block: clamp(0.75rem, 3vh, 2rem) 1rem;
+}
+
+.site-masthead,
+.account-menu,
+.section-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
     flex-wrap: wrap;
 }
 
-.site-header nav {
-    column-gap: var(--pico-spacing);
+.site-masthead {
+    padding: 0.65rem var(--archive-gutter);
 }
 
-.site-header form,
-.site-header button,
+.archive-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--archive-title);
+    font: 2rem/1 var(--archive-display);
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.archive-brand img {
+    width: 6.25rem;
+    height: auto;
+}
+
+.account-menu a {
+    overflow-wrap: anywhere;
+}
+
+.account-menu form,
+.account-menu button,
 td form,
 td button {
     margin-bottom: 0;
 }
 
-.account-menu {
+.site-header nav {
+    display: block;
+    background: #0a1325;
+    border-top: 1px solid var(--archive-line);
+    border-radius: 0 0 0.4rem 0.4rem;
+}
+
+.site-header .archive-tabs {
+    flex-wrap: wrap;
+    margin: 0;
+    padding-inline: var(--archive-gutter);
+    gap: 0.125rem;
+}
+
+.archive-tabs li {
+    padding: 0;
+}
+
+.archive-tabs a {
+    display: block;
+    margin: 0;
+    padding: 0.7rem 0.85rem;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    color: var(--pico-color);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.archive-tabs a:hover,
+.archive-tabs a[aria-current] {
+    background: var(--archive-hover);
+    color: #e5efff;
+}
+
+.archive-tabs a[aria-current] {
+    border-bottom-color: var(--archive-title);
+}
+
+.skip-link {
+    position: fixed;
+    z-index: 2;
+    inset: 0.75rem auto auto 0.75rem;
+    padding: 0.6rem 0.9rem;
+    background: var(--archive-panel);
+    transform: translateY(-200%);
+}
+
+.skip-link:focus {
+    transform: none;
+}
+
+#main-content {
+    padding: var(--archive-gutter);
+    margin-bottom: 2rem;
+    overflow-wrap: anywhere;
+}
+
+#main-content h1,
+#main-content h2 {
+    font-family: var(--archive-display);
+    font-weight: 400;
+}
+
+#main-content h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    line-height: 1.12;
+}
+
+#main-content h1.username {
+    font-family: var(--pico-font-family);
+    font-weight: 750;
+}
+
+#main-content h2 {
+    margin-block: 1.65rem 0.8rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--archive-line);
+    font-size: clamp(1.3rem, 2vw, 1.65rem);
+}
+
+#main-content > :last-child {
+    margin-bottom: 0;
+}
+
+.section-toolbar {
+    margin-block: 1.65rem 0.8rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--archive-line);
+}
+
+#main-content .section-toolbar h2 {
+    border: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.section-toolbar p {
+    margin: 0.3rem 0 0;
+}
+
+.header-action {
     margin-left: auto;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid #a9caff;
+    outline-offset: 2px;
+}
+
+:is(.account-menu, td, .section-toolbar) :is(button, [role="button"]) {
+    width: auto;
+    margin: 0;
+    padding: 0.38rem 0.7rem;
+    white-space: nowrap;
+}
+
+.overflow-auto:has(> table) {
+    margin-bottom: var(--pico-spacing);
+    border: 1px solid var(--archive-line);
+    border-radius: var(--pico-border-radius);
+    scrollbar-color: #597299 #0d182c;
+}
+
+.overflow-auto > table {
+    margin-bottom: 0;
+    overflow-wrap: normal;
+}
+
+thead th {
+    background: #1b2d4d;
+    color: #d6e5fb;
+    white-space: nowrap;
+}
+
+tbody td,
+tbody th {
+    background: var(--archive-surface);
+}
+
+tbody tr:nth-child(even) :is(td, th) {
+    background: #121f37;
+}
+
+tbody tr:hover :is(td, th) {
+    background: var(--archive-hover);
+}
+
+tbody tr:last-child :is(td, th) {
+    border-bottom: 0;
+}
+
+.table-actions {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.table-actions form {
+    margin-left: 0.25rem;
+}
+
+.table-actions button {
+    --pico-secondary: #ffc2bb;
+    --pico-secondary-border: #814e57;
+    --pico-secondary-hover: #ffdfda;
+    --pico-secondary-hover-border: #e39997;
+}
+
+@media (max-width: 600px) {
+    .archive-shell {
+        width: calc(100% - 1rem);
+    }
+
+    .archive-brand {
+        gap: 0.45rem;
+        font-size: 1.4rem;
+    }
+
+    .archive-brand img {
+        width: 4rem;
+    }
+
+    .site-header .archive-tabs {
+        padding-inline: 0.35rem;
+    }
+
+    .archive-tabs a {
+        padding-inline: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    th,
+    td {
+        padding-inline: 0.65rem;
+    }
+
+    .header-action {
+        margin-left: 0;
+    }
 }
 
 .account-form {
     max-width: 32rem;
     margin-inline: auto;
+    border: 1px solid var(--archive-line);
 }
 
 .account-options {
@@ -52,6 +348,23 @@ td button {
 
 .asset-header h1 {
     margin-bottom: 0;
+}
+
+.verification-label {
+    color: var(--pico-color);
+    font-size: 0.9rem;
+}
+
+.verified-uploader {
+    display: inline-grid;
+    place-items: center;
+    width: 1.2em;
+    height: 1.2em;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    color: #83d8fb;
+    font-size: 0.85em;
+    vertical-align: 0.05em;
 }
 
 .asset-kind {

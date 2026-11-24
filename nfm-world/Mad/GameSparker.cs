@@ -389,10 +389,9 @@ public static partial class GameSparker
     {
         if (devConsole.IsOpen()) return;
         var messageOpen = MessageWindow.IsOpen;
-        if (!wantCaptureMouse)
-        {
-            UiRenderer?.HandleMousePressed(mouseX, mouseY, nfmButton, buttons, ctrlKey, shiftKey, altKey);
-        }
+        if (!wantCaptureMouse && UiRenderer?.HandleMousePressed(mouseX, mouseY, nfmButton, buttons, ctrlKey, shiftKey, altKey)
+            == true)
+            return;
 
         if (!messageOpen)
             CurrentPhase.MousePressed(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
@@ -410,10 +409,17 @@ public static partial class GameSparker
     )
     {
         if (devConsole.IsOpen()) return;
-        if (!wantCaptureMouse)
-        {
-            UiRenderer?.HandleMouseReleased(mouseX, mouseY, nfmButton, buttons, ctrlKey, shiftKey, altKey);
-        }
+        if (UiRenderer?.HandleMouseReleased(
+            mouseX,
+            mouseY,
+            nfmButton,
+            buttons,
+            ctrlKey,
+            shiftKey,
+            altKey,
+                dispatchToUi: !wantCaptureMouse
+        ) == true)
+            return;
 
         if (!MessageWindow.IsOpen)
             CurrentPhase.MouseReleased(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);

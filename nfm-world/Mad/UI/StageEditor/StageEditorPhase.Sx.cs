@@ -1,6 +1,7 @@
 using System.Globalization;
 using Maxine.Extensions;
 using Maxine.Extensions.Collections;
+using NFMWorld.Accounts;
 using NFMWorld.ClayDom.Events;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
@@ -20,6 +21,8 @@ namespace NFMWorld.UI;
 
 public partial class StageEditorPhase
 {
+    private readonly ArchivePublishDialog _publish = new();
+
     // Chrome metrics. Kept compact so the viewport, not the panels, owns the window.
     private const float MenuBarHeight = 32;
     private const float TabStripHeight = 30;
@@ -74,7 +77,7 @@ public partial class StageEditorPhase
     private void Touch() => _uiRevision.Value = _uiRevision.Value + 1;
 
     private bool EditorDialogOpen() => _showNewStageDialog || _showLoadStageDialog || _showExportDialog
-                                       || _showPublishDialog || _showExitWarningDialog
+                                       || _publish.IsOpen || _showExitWarningDialog
                                        || _showCloseTabWarningDialog || _showRenameGroupDialog
                                        || _showTestDriveSaveDialog;
 
@@ -367,10 +370,7 @@ public partial class StageEditorPhase
                             MenuAction("Save", "Ctrl+S", () => { if (ActiveTab?.Stage != null) SaveStage(); }),
                             MenuAction("Publish / export pack…", "", () =>
                                 {
-                                    if (ActiveTab is null) return;
-                                    _publishName = ActiveTab.TabName;
-                                    _publishStatus = "";
-                                    _showPublishDialog = true;
+                                    OpenStagePublishing();
                                 }
                             ),
                             MenuAction(
@@ -2027,7 +2027,7 @@ public partial class StageEditorPhase
                 ExitDialog(),
                 CloseTabDialog(),
                 RenameGroupDialog(),
-                PublishDialog(),
+                _publish.Build(),
                 TestDriveSaveDialog()
             ]
         );
@@ -2132,84 +2132,35 @@ public partial class StageEditorPhase
             ]
         );
 
-    private Node PublishDialog()
-        => Dialog(
-            () => _showPublishDialog,
-            "PUBLISH TO ARCHIVE",
-            () => [
-                EditorText(
-                    style: () => Sx.TextStyles(fontSize: 11, foregroundColor: new Color(255, 200, 120)),
-                    text: () => "Publication is public. Unsaved edits are included."
-                ),
-                EditorField(() => _publishName, value => { _publishName = value; Touch(); }, () => "Name"),
-                EditorField(
-                    () => _publishDescription,
-                    value => { _publishDescription = value; Touch(); },
-                    () => "Description"
-                ),
-                EditorText(
-                    style: () => Sx.TextStyles(fontSize: 11, foregroundColor: new Color(255, 255, 255, 120)),
-                    text: () => _publishStatus
-                ),
-                Sx.View(
-                    style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 8),
-                    children:
-                    [
-                        SmallButton("PUBLISH", PublishActiveStage),
-                        SmallButton("EXPORT PACK", ExportActiveStagePack),
-                        SmallButton("CANCEL", () => { _showPublishDialog = false; Touch(); })
-                    ]
-                )
-            ]
+    private void OpenStagePublishing()
+    {
+        if (ActiveTab is not { } tab)
+            return;
+
+        if (SnapshotActiveStage(tab.TabName) is not { } stage)
+        {
+            GameSparker.MessageWindow.ShowMessage("Publish unavailable", "The stage could not be prepared.");
+            return;
+        }
+
+        _publish.Open(
+            AssetKind.Stage,
+            tab.TabName,
+            publication => ArchivePublisher.PublishStageAsync(stage, publication),
+            name => ArchivePublisher.ExportLocalStage(stage, name)
         );
-
-    private void PublishActiveStage()
-    {
-        if (SnapshotActiveStage() is not { } stage)
-        {
-            _publishStatus = "The stage could not be snapshotted.";
-            Touch();
-            return;
-        }
-
-        var name = string.IsNullOrWhiteSpace(_publishName) ? (ActiveTab?.TabName ?? "stage") : _publishName;
-        _publishStatus = "Publishing...";
-        Touch();
-        _ = PublishAsync(stage, name);
-    }
-
-    private async Task PublishAsync(NFMWorldLibrary.StageLoader stage, string name)
-    {
-        var result = await NFMWorld.Accounts.ArchivePublisher.PublishStageAsync(stage, name, _publishDescription);
-        _publishStatus = result.Message;
-        Touch();
-    }
-
-    private void ExportActiveStagePack()
-    {
-        if (SnapshotActiveStage() is not { } stage)
-        {
-            _publishStatus = "The stage could not be snapshotted.";
-            Touch();
-            return;
-        }
-
-        var name = string.IsNullOrWhiteSpace(_publishName) ? (ActiveTab?.TabName ?? "stage") : _publishName;
-        var path = NFMWorld.Accounts.ArchivePublisher.ExportLocalStage(stage, name);
-        _publishStatus = path is null ? "The stage could not be exported." : $"Exported to {path}.";
-        Touch();
     }
 
     /// <summary>
     /// Serializes the live document (unsaved edits included) and resolves it into a detached
     /// stage. Neither step touches the tab, its dirty flag or its undo history.
     /// </summary>
-    private NFMWorldLibrary.StageLoader? SnapshotActiveStage()
+    private NFMWorldLibrary.StageLoader? SnapshotActiveStage(string name)
     {
         if (BuildStageText() is not { } text)
             return null;
 
-        var id = "user/" + ConvertStageNameToFilename(_publishName.Length > 0 ? _publishName : ActiveTab!.TabName);
+        var id = "user/" + ConvertStageNameToFilename(name);
         try
         {
             var stage = NFMWorldLibrary.StageLoader.FromLines(id, text.Split('\n'));

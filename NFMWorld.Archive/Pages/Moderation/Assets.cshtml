@@ -1,10 +1,22 @@
 @page "/moderation/assets"
 @model NFMWorld.Archive.Pages.Moderation.AssetsModel
+@using NFMWorld.Archive.Data
 @{
     ViewData["Title"] = "Moderation · Assets";
 }
 
-<h1>All assets</h1>
+<h1>@(Model.PendingOnly ? "Pending asset verification" : "All assets")</h1>
+<p><a href="/moderation/assets?pending=true">Pending verification</a> · <a href="/moderation/assets">All assets</a></p>
+
+@if (Model.ReviewMessage is { } message)
+{
+    <p role="status">@message</p>
+}
+
+@if (Model.PendingOnly && Model.Rows.Count == 0)
+{
+    <p>No assets are awaiting verification.</p>
+}
 
 <div class="overflow-auto">
     <table>
@@ -14,6 +26,7 @@
                 <th scope="col">Name</th>
                 <th scope="col">Type</th>
                 <th scope="col">Owner</th>
+                <th scope="col">Verification</th>
                 <th scope="col">Takedown</th>
                 <th scope="col"></th>
             </tr>
@@ -26,6 +39,24 @@
                     <td><a href="/asset/@asset.Id/edit">@asset.Name</a></td>
                     <td>@asset.Type</td>
                     <td>@(asset.Owner?.Username ?? "—")</td>
+                    <td>
+                        @asset.ReviewStatus.ReviewLabel()
+                        <a asp-page-handler="ReviewFile" asp-route-id="@asset.Id" asp-route-hash="@asset.ContentHash">Download for review</a>
+                        @if (asset.ReviewStatus != AssetReviewStatus.Verified)
+                        {
+                            <form method="post" asp-page-handler="Verify" asp-route-id="@asset.Id" asp-route-pending="@Model.PendingOnly">
+                                <input name="hash" type="hidden" value="@asset.ContentHash" />
+                                <button type="submit" class="secondary outline">Verify</button>
+                            </form>
+                        }
+                        @if (asset.ReviewStatus != AssetReviewStatus.Rejected)
+                        {
+                            <form method="post" asp-page-handler="Reject" asp-route-id="@asset.Id" asp-route-pending="@Model.PendingOnly">
+                                <input name="hash" type="hidden" value="@asset.ContentHash" />
+                                <button type="submit" class="secondary outline">Reject</button>
+                            </form>
+                        }
+                    </td>
                     <td>@(asset.IsTakedown ? "yes" : "no")</td>
                     <td>
                         @if (asset.IsTakedown)
@@ -49,5 +80,5 @@
 
 @if (Model.NextCursor is { } next)
 {
-    <p><a href="/moderation/assets?after=@next">Next page</a></p>
+    <p><a asp-page="/Moderation/Assets" asp-route-after="@next" asp-route-pending="@Model.PendingOnly">Next page</a></p>
 }

@@ -16,12 +16,21 @@ namespace NFMWorld.Archive.Migrations
         // If you encounter a merge conflict in the line below, it means you need to
         // discard one of the migration branches and recreate its migrations on top of
         // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-        public override string LastMigrationId => "20261118045058_ModerationRoles";
+        public override string LastMigrationId => "20261123235000_AssetVerification";
 
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "11.0.0-preview.3.26207.106");
+
+            modelBuilder.Entity("NFMWorld.Archive.Data.ArchiveSettings", b =>
+                {
+                    b.Property<int>("Id").HasColumnType("INTEGER");
+                    b.Property<int>("UploadLimitMiB").HasColumnType("INTEGER");
+                    b.HasKey("Id");
+                    b.ToTable("Settings");
+                }
+            );
 
             modelBuilder.Entity("NFMWorld.Archive.Data.Asset", b =>
                 {
@@ -58,6 +67,9 @@ namespace NFMWorld.Archive.Migrations
                     b.Property<int?>("OwnerId")
                     .HasColumnType("INTEGER");
 
+                    b.Property<int>("ReviewStatus")
+                    .HasColumnType("INTEGER");
+
                     b.Property<long>("SizeBytes")
                     .HasColumnType("INTEGER");
 
@@ -73,6 +85,8 @@ namespace NFMWorld.Archive.Migrations
                     b.HasIndex("ContentHash");
 
                     b.HasIndex("OwnerId");
+
+                    b.HasIndex("ReviewStatus", "Id");
 
                     b.HasIndex("Type", "OwnerId");
 
@@ -511,6 +525,9 @@ namespace NFMWorld.Archive.Migrations
 
                     b.Property<string>("PasswordHash")
                     .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsVerifiedUploader")
+                    .HasColumnType("INTEGER");
 
                     b.Property<byte>("Role")
                     .HasColumnType("INTEGER");

@@ -14,6 +14,7 @@
 
 <dl class="asset-meta">
     <dt>Role</dt><dd>@target.Role</dd>
+    <dt>Verified uploader</dt><dd>@(target.IsVerifiedUploader ? "Yes" : "No")</dd>
     <dt>Banned</dt><dd>@(target.IsBanned(DateTimeOffset.UtcNow) ? $"until {target.BannedUntil}" : "no")</dd>
     <dt>Muted</dt><dd>@(target.IsMuted(DateTimeOffset.UtcNow) ? $"until {target.MutedUntil}" : "no")</dd>
     <dt>Deletion requested</dt><dd>@(target.DeletionRequestedAt?.UtcDateTime.ToString("yyyy-MM-dd") ?? "—")</dd>
@@ -61,6 +62,18 @@
 
 <section>
     <h2>Content</h2>
+    @if (Model.IsAdmin && !target.IsDeleted)
+    {
+        <p class="muted">Verified uploaders automatically pass review for future uploads and replacements.</p>
+        @if (target.IsVerifiedUploader)
+        {
+            await Form("RevokeUploaderVerification", "Revoke uploader verification", admin: true);
+        }
+        else
+        {
+            await Form("VerifyUploader", "Verify uploader", admin: true);
+        }
+    }
     @{ await Form("Unlist", "Unlist all content"); }
     @{ await Form("Relist", "Relist all content"); }
 </section>

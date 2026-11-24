@@ -21,5 +21,9 @@ public enum ModerationActionKind : byte
     SetRole = 12,
     DeleteRequest = 13,
     DeleteCancel = 14,
-    DeleteErase = 15
+    DeleteErase = 15,
+    VerifyUploader = 16,
+    RevokeUploaderVerification = 17,
+    VerifyAsset = 18,
+    RejectAsset = 19
 }

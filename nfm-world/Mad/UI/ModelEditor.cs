@@ -1858,9 +1858,8 @@ public class ModelEditorPhase : BasePhase
     };
 
     /// <summary>
-    /// Replaces the base stats with one contiguous block so repeated edits do not
-    /// scatter directives across the file. Recharged stats after a second
-    /// <c>stats()</c> marker are left alone.
+    /// Replaces the stats shown in the editor with one contiguous block.
+    /// The RAD parser uses the final block for normal driving.
     /// </summary>
     internal string? SetStats(IReadOnlyList<string> definitions)
     {
@@ -1882,25 +1881,9 @@ public class ModelEditorPhase : BasePhase
         var carriageReturn = newline == "\r\n" ? "\r" : "";
         var lines = text.Split('\n');
 
-        var firstStats = -1;
-        var secondStats = -1;
-        for (var i = 0; i < lines.Length; i++)
-        {
-            if (!HasDirective(lines[i], "stats"))
-                continue;
-
-            if (firstStats < 0)
-                firstStats = i;
-            else
-            {
-                secondStats = i;
-                break;
-            }
-        }
-
-        var baseEnd = secondStats >= 0 ? secondStats : lines.Length;
-        var kept = new List<string>(lines.Length);
-        for (var i = 0; i < baseEnd; i++)
+        var blockStart = Array.FindLastIndex(lines, line => HasDirective(line, "stats")) + 1;
+        var kept = new List<string>(lines.Length - blockStart);
+        for (var i = blockStart; i < lines.Length; i++)
         {
             if (IsManagedStatLine(lines[i]))
                 continue;
@@ -1909,15 +1892,9 @@ public class ModelEditorPhase : BasePhase
 
         CollapseBlankLines(kept);
 
-        int insertion;
-        if (firstStats >= 0)
+        var insertion = 0;
+        if (blockStart == 0)
         {
-            var statsLine = kept.FindIndex(line => HasDirective(line, "stats"));
-            insertion = statsLine >= 0 ? statsLine + 1 : 0;
-        }
-        else
-        {
-            insertion = 0;
             while (insertion < kept.Count
                    && (IsScaleDefinitionLine(kept[insertion]) || IsBlankLine(kept[insertion])))
                 insertion++;
@@ -1932,8 +1909,7 @@ public class ModelEditorPhase : BasePhase
 
         CollapseBlankLines(kept);
 
-        var tail = lines.Skip(baseEnd);
-        return string.Join("\n", kept.Concat(tail));
+        return string.Join("\n", lines.Take(blockStart).Concat(kept));
     }
 
     private static void CollapseBlankLines(List<string> lines)

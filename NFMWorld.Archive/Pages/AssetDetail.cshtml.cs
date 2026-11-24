@@ -22,10 +22,9 @@ public sealed class AssetDetailModel(ArchiveDbContext db) : ArchivePageModel(db)
     {
         await ResolveAccountAsync();
 
-        // Same visibility rule as the download endpoint: a hidden or taken-down row does not exist.
-        Asset = await Db.Assets
+        Asset = await Db.Assets.Listed()
             .Include(a => a.Owner)
-            .FirstOrDefaultAsync(a => a.Id == id && a.IsPublic && !a.IsTakedown);
+            .FirstOrDefaultAsync(a => a.Id == id);
         if (Asset is null)
             return NotFound();
 
@@ -33,11 +32,11 @@ public sealed class AssetDetailModel(ArchiveDbContext db) : ArchivePageModel(db)
 
         ViewData["Title"] = Asset.Name;
 
-        if (Asset.OwnerId is { } ownerId)
+        if (Asset.Owner is { IsDeleted: false } owner)
         {
             // Newest first by id: SQLite cannot ORDER BY a DateTimeOffset, and ids follow creation order.
-            var rows = await Db.Assets
-                .Where(a => a.OwnerId == ownerId && a.Id != Asset.Id && a.IsPublic && !a.IsTakedown)
+            var rows = await Db.Assets.Listed()
+                .Where(a => a.OwnerId == owner.Id && a.Id != Asset.Id)
                 .OrderByDescending(a => a.Id)
                 .Take(6)
                 .Select(a => new { a.Id, a.Name, a.Type })

@@ -1,0 +1,43 @@
+@page "/profile/{id:int}"
+@model NFMWorld.Archive.Pages.ProfileModel
+@{
+    ViewData["Title"] = Model.Profile.Username;
+}
+
+<header class="asset-header">
+    <h1 class="username">@Model.Profile.Username</h1>
+    @if (Model.Profile.IsVerifiedUploader)
+    {
+        <span class="verification-label"><partial name="_VerifiedUploader" /> <span aria-hidden="true">Verified uploader</span></span>
+    }
+</header>
+
+<h2>Published assets</h2>
+@if (Model.Assets.Count == 0)
+{
+    <p class="muted">No public uploads.</p>
+}
+else
+{
+    <div class="overflow-auto">
+        <table>
+            <thead>
+                <tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Downloads</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var asset in Model.Assets)
+                {
+                    <tr>
+                        <td><a asp-page="/AssetDetail" asp-route-id="@asset.Id">@asset.Name</a></td>
+                        <td>@asset.Type</td>
+                        <td>@asset.DownloadCount</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (Model.NextCursor is { } next)
+    {
+        <p><a asp-page="/Profile" asp-route-id="@Model.Profile.Id" asp-route-after="@next">Older uploads</a></p>
+    }
+}

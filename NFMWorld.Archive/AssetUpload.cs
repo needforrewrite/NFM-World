@@ -1,4 +1,6 @@
 ﻿using NFMWorld.Archive.Data;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.EntityFrameworkCore;
 using NFMWorld.Archive.Validation;
 using NFMWorldLibrary.Radpack;
 
@@ -19,13 +21,52 @@ public static class AssetUpload
 
     public const int MaxNameLength = 200;
     public const int MaxDescriptionLength = 4000;
+    public const int MultipartOverheadBytes = 64 * 1024;
+    public const int MaxRequestBytes = RadpackLimits.MaxCompressedBytes + MultipartOverheadBytes;
+
+    public static string SizeLimitMessage(int maxBytes)
+        => $"The file exceeds this Archive's {maxBytes / ArchiveSettings.BytesPerMiB} MiB upload limit.";
+
+    public static async Task<AssetReviewStatus> ReviewStatusForUploadAsync(
+        ArchiveDbContext db,
+        int uploaderId,
+        CancellationToken ct
+    )
+        => await db.Users.AnyAsync(user => user.Id == uploaderId && user.IsVerifiedUploader && user.DeletedAt == null, ct)
+            ? AssetReviewStatus.Verified
+            : AssetReviewStatus.Pending;
+
+    public static void SetReplacementReview(ArchiveDbContext db, Asset asset, AssetReviewStatus status)
+    {
+        asset.ReviewStatus = status;
+        // A moderator may have reviewed the previous file while the replacement was validating.
+        db.Entry(asset).Property(row => row.ReviewStatus).IsModified = true;
+    }
+
+    public static async Task<IFormCollection?> ReadFormWithinLimitAsync(HttpRequest request, int maxBytes, CancellationToken ct)
+    {
+        var requestLimit = maxBytes + MultipartOverheadBytes;
+        if (request.ContentLength > requestLimit) return null;
+
+        if (request.HttpContext.Features.Get<IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } feature)
+            feature.MaxRequestBodySize = requestLimit;
+
+        try
+        {
+            return await request.ReadFormAsync(ct);
+        }
+        catch (BadHttpRequestException ex) when (ex.StatusCode == StatusCodes.Status413PayloadTooLarge)
+        {
+            return null;
+        }
+    }
 
     /// <summary>
     /// Checks the claim before a byte is stored: the kind may be published, the extension is one
-    /// this archive accepts, that extension may claim that kind, and the file fits the limit.
+    /// this archive accepts, and that extension may claim that kind.
     /// Returns the message to show, or null when the upload may proceed.
     /// </summary>
-    public static string? CheckClaim(byte kind, string? fileName, long length)
+    public static string? CheckClaim(byte kind, string? fileName)
     {
         if (!AssetKinds.IsPublishable(kind))
             return $"{AssetKinds.Name(kind)} cannot be published as an asset.";
@@ -36,9 +77,6 @@ public static class AssetUpload
 
         if (!AssetKinds.IsUploadExtensionAllowed(kind, extension))
             return "A legacy .rad file can only be a Car, StagePiece or Wheel.";
-
-        if (length > RadpackLimits.MaxCompressedBytes)
-            return "Asset exceeds the size limit.";
 
         return null;
     }
@@ -72,10 +110,11 @@ public static class AssetUpload
         Stream source,
         string? fileName,
         byte kind,
+        int maxBytes,
         CancellationToken ct
     )
     {
-        var (hash, relative, size) = await storage.PutAsync(source, RadpackLimits.MaxCompressedBytes, ct);
+        var (hash, relative, size) = await storage.PutAsync(source, maxBytes, ct);
         var extension = Path.GetExtension(fileName ?? "");
         var path = Path.Combine(storage.Root, relative);
 
@@ -98,10 +137,11 @@ public static class AssetUpload
         ArchiveDbContext db,
         Stream source,
         byte kind,
+        int maxBytes,
         CancellationToken ct
     )
     {
-        var (hash, relative, size) = await storage.PutAsync(source, RadpackLimits.MaxCompressedBytes, ct);
+        var (hash, relative, size) = await storage.PutAsync(source, maxBytes, ct);
         var path = Path.Combine(storage.Root, relative);
 
         // The format is decided by the bytes, not by the name: a radpack that fails as a radpack

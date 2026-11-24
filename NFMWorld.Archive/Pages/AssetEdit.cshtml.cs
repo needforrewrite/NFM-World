@@ -14,6 +14,7 @@ namespace NFMWorld.Archive.Pages;
 /// the same rows through <c>PATCH /assets/{id}</c> and <c>PUT /assets/{id}/content</c>; a rule that
 /// lives on only one of the two surfaces is a rule that can be bypassed from the other.
 /// </summary>
+[RequestSizeLimit(AssetUpload.MaxRequestBytes)]
 public sealed class AssetEditModel(
     ArchiveDbContext db,
     FileStorage storage,
@@ -31,6 +32,7 @@ public sealed class AssetEditModel(
     public Asset? Asset { get; private set; }
     public string? Error { get; private set; }
     public string? Message { get; private set; }
+    public int MaxUploadBytes { get; private set; }
 
     /// <summary>True for the owner and for an administrator; anyone else never sees the page.</summary>
     public bool IsOwner { get; private set; }
@@ -103,8 +105,14 @@ public sealed class AssetEditModel(
         if (Replacement is null)
             return Refuse("Choose a file.");
 
+        if (Replacement.Length > MaxUploadBytes)
+        {
+            Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
+            return Refuse(AssetUpload.SizeLimitMessage(MaxUploadBytes));
+        }
+
         var kind = (byte)Asset!.Type;
-        if (AssetUpload.CheckClaim(kind, Replacement.FileName, Replacement.Length) is { } claimError)
+        if (AssetUpload.CheckClaim(kind, Replacement.FileName) is { } claimError)
             return Refuse(claimError);
 
         await using var source = Replacement.OpenReadStream();
@@ -114,6 +122,7 @@ public sealed class AssetEditModel(
             Db,
             source,
             kind,
+            MaxUploadBytes,
             HttpContext.RequestAborted
         );
         if (stored.Error is { } validationError)
@@ -130,7 +139,9 @@ public sealed class AssetEditModel(
             HttpContext.RequestAborted
         );
         if (other is not null)
-            return Refuse($"Those bytes are already published as \"{other.Name}\".");
+            return Refuse(other.IsListed || other.OwnerId == Account!.Id
+                ? $"Those bytes are already uploaded as \"{other.Name}\"."
+                : "These bytes are already in the Archive.");
 
         var previousPath = Asset.StoragePath;
         var previousHash = Asset.ContentHash;
@@ -138,13 +149,17 @@ public sealed class AssetEditModel(
         Asset.StoragePath = stored.RelativePath;
         Asset.SizeBytes = stored.SizeBytes;
         Asset.IsValidated = true;
+        var review = await AssetUpload.ReviewStatusForUploadAsync(Db, Account!.Id, HttpContext.RequestAborted);
+        AssetUpload.SetReplacementReview(Db, Asset, review);
         await Db.SaveChangesAsync();
 
         await storage.DeleteIfUnreferencedAsync(previousPath, Db, HttpContext.RequestAborted);
         await TimeTrialInvalidation.InvalidateForAssetAsync(Db, previousHash, HttpContext.RequestAborted);
         await HttpContext.PurgeAssetsAsync([previousHash]);
 
-        Message = "The file was replaced. Time trials recorded against the old file no longer rank.";
+        Message = review == AssetReviewStatus.Pending
+            ? "The replacement is awaiting verification. Time trials recorded against the old file no longer rank."
+            : "The file was replaced. Time trials recorded against the old file no longer rank.";
         return Page();
     }
 
@@ -185,6 +200,7 @@ public sealed class AssetEditModel(
         if (!IsOwner && !Account.IsModerator)
             return NotFound();
 
+        MaxUploadBytes = await ArchiveSettings.ReadUploadLimitBytesAsync(Db, HttpContext.RequestAborted);
         ViewData["Title"] = "Edit " + Asset.Name;
         return null;
     }

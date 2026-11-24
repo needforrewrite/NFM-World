@@ -38,7 +38,7 @@ internal static class LobbyStageSelection
             .Select(item => new StageOption(
                     RadpackReader.ArchivePrefix + item.ContentHash.ToLowerInvariant(),
                     string.IsNullOrWhiteSpace(item.Name) ? ShortHash(item.ContentHash) : item.Name,
-                    string.IsNullOrWhiteSpace(item.Author) ? null : item.Author
+                    item.AuthorByline
                 )
             )
             .ToArray();

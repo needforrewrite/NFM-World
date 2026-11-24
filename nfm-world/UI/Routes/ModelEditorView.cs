@@ -32,12 +32,8 @@ public sealed class ModelEditorView
     private readonly Signal<BottomTab> _bottomTab = new(BottomTab.Controls);
     private readonly Signal<bool> _newModelOpen = new(false);
     private readonly Signal<bool> _loadOpen = new(false);
-    private readonly Signal<bool> _publishOpen = new(false);
-    private readonly Signal<AssetKind> _publishKind = new(AssetKind.Car);
-    private readonly Signal<string> _publishName = new("");
-    private readonly Signal<string> _publishDescription = new("");
-    private readonly Signal<string> _publishStatus = new("");
-    private readonly Signal<bool> _publishBusy = new(false);
+    private readonly Signal<bool> _copyStatsOpen = new(false);
+    private readonly ArchivePublishDialog _publish = new();
     private readonly Signal<bool> _newIsCar = new(true);
     private readonly Signal<string> _newName = new("");
     private readonly Signal<bool> _newOpenInTab = new(true);
@@ -208,7 +204,8 @@ public sealed class ModelEditorView
     /// <summary>Any modal or the polygon editor has the screen, so the viewport must not.</summary>
     public bool ModalOpen => _newModelOpen.Value
                              || _loadOpen.Value
-                             || _publishOpen.Value
+                             || _copyStatsOpen.Value
+                             || _publish.IsOpen
                              || _confirm.Value is not null
                              || _error.Value is not null;
 
@@ -374,6 +371,7 @@ public sealed class ModelEditorView
     public void OnActiveTabChanged()
     {
         ClearHistory();
+        _copyStatsOpen.Value = false;
         _activeTab.Value = _phase.ActiveTab;
         _contentVersion.Value++;
         _polygonVersion.Value++;
@@ -422,6 +420,18 @@ public sealed class ModelEditorView
             return true;
         }
 
+        if (_copyStatsOpen.Value)
+        {
+            _copyStatsOpen.Value = false;
+            return true;
+        }
+
+        if (_publish.IsOpen)
+        {
+            _publish.Close();
+            return true;
+        }
+
         if (_phase.ActiveTab is { ShowPolygonEditor: true })
         {
             RequestClosePolygonEditor();
@@ -451,7 +461,8 @@ public sealed class ModelEditorView
                 EmptyState(),
                 NewModelDialog(),
                 LoadModelDialog(),
-                PublishModelDialog(),
+                CopyStatsDialog(),
+                _publish.Build(),
                 PolygonEditorDialog(),
                 ConfirmDialog(),
                 ErrorDialog(),
@@ -2520,6 +2531,7 @@ public sealed class ModelEditorView
         ),
         children:
         [
+            SmallButton("COPY FROM NFMM", () => _copyStatsOpen.Value = true),
             SmallButton("APPLY", ApplyStatsNow, minWidth: 72),
             SmallButton("REVERT", RevertStats, minWidth: 72),
             Sx.Text(
@@ -2534,6 +2546,84 @@ public sealed class ModelEditorView
             )
         ]
     );
+
+    private Node CopyStatsDialog() => Sx.Show(
+        when: () => _copyStatsOpen.Value,
+        then: () =>
+        {
+            var cars = BackendGameSparker.cars[Collection.NFMM]
+                .OrderBy(car => car.Stats.Name, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            return Modal(
+                () => _copyStatsOpen.Value = false,
+                Sx.View(
+                    style: () => Sx.Styles(
+                        width: 420,
+                        maxWidth: "94%",
+                        height: "76%",
+                        maxHeight: 640,
+                        flexDirection: FlexDirection.Column,
+                        gapRow: 10,
+                        paddingTop: 18,
+                        paddingBottom: 18,
+                        paddingLeft: 18,
+                        paddingRight: 18,
+                        backgroundColor: Panel,
+                        borderTop: 1,
+                        borderBottom: 1,
+                        borderLeft: 1,
+                        borderRight: 1,
+                        borderColor: Border,
+                        borderRadius: 12
+                    ),
+                    onmousedown: e => e.StopPropagation(),
+                    children:
+                    [
+                        DialogTitle("COPY NFMM STATS", "Choose a car to replace this model's stats and physics settings."),
+                        Sx.View(
+                            style: () => Sx.Styles(
+                                flexGrow: 1,
+                                height: 0,
+                                minHeight: 0,
+                                overflow: Overflow.Scroll,
+                                flexDirection: FlexDirection.Column,
+                                gapRow: 4,
+                                paddingRight: 8
+                            ),
+                            children: cars.Select(car => Button.Create(
+                                () => car.Stats.Name,
+                                () => CopyStats(car.Stats),
+                                size: ButtonSize.Sm,
+                                style: () => Sx.Styles(flexShrink: 0, justifyContent: Justify.FlexStart)
+                            )).ToArray()
+                        ),
+                        Button.Create(
+                            () => "CANCEL",
+                            () => _copyStatsOpen.Value = false,
+                            variant: ButtonVariant.Ghost,
+                            style: () => Sx.Styles(flexShrink: 0, alignSelf: Align.FlexEnd)
+                        )
+                    ]
+                )
+            );
+        }
+    );
+
+    private void CopyStats(CarStats source)
+    {
+        _copyStatsOpen.Value = false;
+        if (_phase.ActiveTab is not { ModelType: ModelEditorTab.ModelTypeEnum.Car, Object: not null } tab)
+            return;
+
+        var name = _statFields["name"].Value.Trim();
+        if (name.Length == 0 || name == RadParser.DefaultName)
+            name = System.IO.Path.GetFileNameWithoutExtension(tab.ModelPath) ?? name;
+
+        SetStatFields(source with { Name = name });
+        ApplyStatsNow();
+        _statsStateVersion.Value++;
+    }
 
     private void ScheduleStatsApply()
     {
@@ -2738,7 +2828,12 @@ public sealed class ModelEditorView
         if (tab.Object?.Rad.Stats is not { } stats)
             return;
 
-        SetStat("class", ReadDirectiveValue(tab.TextContent, "class"));
+        SetStatFields(stats);
+    }
+
+    private void SetStatFields(CarStats stats)
+    {
+        SetStat("class", stats.Class ?? "");
         SetStat("name", stats.Name);
         SetStat("enginesignature", stats.Enginsignature.ToString(CultureInfo.InvariantCulture));
         SetStat("switsX", FormatStatInt(stats.Swits.X));
@@ -2788,21 +2883,6 @@ public sealed class ModelEditorView
 
     private static string FormatStatNullableFixed(fix64? value)
         => value is { } fixedValue ? FormatStatFixed(fixedValue) : "";
-
-    private static string ReadDirectiveValue(string text, string key)
-    {
-        foreach (var raw in text.Split('\n'))
-        {
-            var line = raw.Trim();
-            if (!line.StartsWith(key + "(", StringComparison.Ordinal))
-                continue;
-
-            var close = line.LastIndexOf(')');
-            return close > key.Length + 1 ? line[(key.Length + 1)..close].Trim() : "";
-        }
-
-        return "";
-    }
 
     // ── Wheels ─────────────────────────────────────────────────────────
 
@@ -3752,16 +3832,6 @@ public sealed class ModelEditorView
         );
     }
 
-    private Node PublishKindButton(string label, AssetKind kind)
-        => Button.Create(
-            () => label,
-            () => _publishKind.Value = kind,
-            active: () => _publishKind.Value == kind,
-            size: ButtonSize.Sm,
-            style: () => Sx.Styles(minWidth: 100),
-            name: () => "Publish kind " + kind
-        );
-
     private void CreateModel()
     {
         if (_phase.CreateNewModel(
@@ -4394,8 +4464,18 @@ public sealed class ModelEditorView
             return;
         }
 
-        // Parse before asking for a name: a document that cannot be packaged should fail here,
-        // not once the upload has been prepared.
+        if (_statsApplyPending && ReferenceEquals(tab, _statsApplyTab))
+        {
+            _statsApplyPending = false;
+            ApplyStats(reportErrors: false, coalesce: true);
+        }
+
+        if (_rimApplyPending && ReferenceEquals(tab, _rimApplyTab))
+        {
+            _rimApplyPending = false;
+            ApplyRims(live: true);
+        }
+
         Rad3d parsed;
         try
         {
@@ -4407,146 +4487,17 @@ public sealed class ModelEditorView
             return;
         }
 
-        // Prefer the car's stats name; the tab label is a file name, and the parser's fallback
-        // name says nothing about this model.
-        var fallbackName = tab.GetDisplayName().TrimEnd('*');
+        var kind = tab.ModelType == ModelEditorTab.ModelTypeEnum.Car ? AssetKind.Car : AssetKind.StagePiece;
         var statsName = parsed.Stats.Name?.Trim();
-        _publishKind.Value = tab.ModelType == ModelEditorTab.ModelTypeEnum.Car ? AssetKind.Car : AssetKind.StagePiece;
-        _publishName.Value = statsName is { Length: > 0 } && statsName != RadParser.DefaultName
+        var name = kind == AssetKind.Car && statsName is { Length: > 0 } && statsName != RadParser.DefaultName
             ? statsName
-            : fallbackName;
-        _publishDescription.Value = "";
-        _publishStatus.Value = "";
-        _publishBusy.Value = false;
-        _publishOpen.Value = true;
-    }
-
-    private Node PublishModelDialog() => Sx.Show(
-        when: () => _publishOpen.Value,
-        then: () => Modal(
-            () =>
-            {
-                if (!_publishBusy.Value)
-                    _publishOpen.Value = false;
-            },
-            Sx.View(
-                style: () => Sx.Styles(
-                    width: 470,
-                    flexDirection: FlexDirection.Column,
-                    gapRow: 12,
-                    paddingTop: 22,
-                    paddingBottom: 22,
-                    paddingLeft: 24,
-                    paddingRight: 24,
-                    backgroundColor: Panel,
-                    borderTop: 1,
-                    borderBottom: 1,
-                    borderLeft: 1,
-                    borderRight: 1,
-                    borderColor: Border,
-                    borderRadius: 12
-                ),
-                onmousedown: e => e.StopPropagation(),
-                children:
-                [
-                    DialogTitle("PUBLISH TO ARCHIVE", "Publication is public and includes unsaved edits."),
-                    Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: TextBlue), text: () => "KIND"),
-                    Sx.View(
-                        style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 8),
-                        children:
-                        [
-                            PublishKindButton("CAR", AssetKind.Car),
-                            PublishKindButton("STAGE PART", AssetKind.StagePiece)
-                        ]
-                    ),
-                    Sx.Text(style: () => Sx.TextStyles(fontSize: 11, foregroundColor: TextBlue), text: () => "NAME"),
-                    Controls.TextField(
-                        () => _publishName.Value,
-                        value => _publishName.Value = value,
-                        () => "model_name"
-                    ),
-                    Sx.Text(
-                        style: () => Sx.TextStyles(fontSize: 11, foregroundColor: TextBlue),
-                        text: () => "DESCRIPTION"
-                    ),
-                    Controls.TextField(
-                        () => _publishDescription.Value,
-                        value => _publishDescription.Value = value,
-                        () => "optional"
-                    ),
-                    Sx.Show(
-                        when: () => _publishStatus.Value.Length > 0,
-                        then: () => Sx.Text(
-                            style: () => Sx.TextStyles(fontSize: 11, foregroundColor: TextBlue),
-                            text: () => _publishStatus.Value
-                        )
-                    ),
-                    Sx.View(
-                        style: () => Sx.Styles(
-                            flexDirection: FlexDirection.Row,
-                            justifyContent: Justify.FlexEnd,
-                            gapColumn: 10,
-                            gapRow: 10,
-                            marginTop: 4
-                        ),
-                        children:
-                        [
-                            Button.Create(
-                                () => "CANCEL",
-                                () => _publishOpen.Value = false,
-                                variant: ButtonVariant.Ghost,
-                                style: () => Sx.Styles(minWidth: 100)
-                            ),
-                            Button.Create(
-                                () => _publishBusy.Value ? "PUBLISHING..." : "PUBLISH",
-                                PublishActiveModelNow,
-                                ButtonVariant.Primary,
-                                style: () => Sx.Styles(minWidth: 130)
-                            )
-                        ]
-                    )
-                ]
-            )
-        )
-    );
-
-    private void PublishActiveModelNow()
-    {
-        if (_publishBusy.Value || _phase.ActiveTab is not { } tab)
-            return;
-
-        Rad3d rad;
-        try
-        {
-            rad = RadParser.ParseRad(tab.TextContent, tab.ModelPath ?? "editing");
-        }
-        catch (Exception ex)
-        {
-            _publishStatus.Value = $"The model could not be read: {ex.Message}";
-            return;
-        }
-
-        var kind = _publishKind.Value;
-        _publishBusy.Value = true;
-        _publishStatus.Value = "Publishing...";
-        _ = PublishAsync(rad, kind, _publishName.Value.Trim(), _publishDescription.Value.Trim());
-    }
-
-    private async Task PublishAsync(Rad3d rad, AssetKind kind, string name, string description)
-    {
-        var result = await ArchivePublisher.PublishModelAsync(
-            rad,
+            : System.IO.Path.GetFileNameWithoutExtension(tab.ModelPath) ?? tab.GetDisplayName();
+        _publish.Open(
             kind,
-            string.IsNullOrWhiteSpace(name) ? "model" : name,
-            description
+            name,
+            publication => ArchivePublisher.PublishModelAsync(parsed, kind, publication),
+            exportName => ArchivePublisher.ExportLocalModel(parsed, kind, exportName)
         );
-
-        _publishBusy.Value = false;
-        _publishStatus.Value = result.Message;
-
-        // Kept open on failure: the name and description are what the author retries with.
-        if (result.Success)
-            _publishOpen.Value = false;
     }
 
     private void ShowError(string title, string message) => _error.Value = new ErrorRequest(title, message);

@@ -43,6 +43,7 @@ public class AssetEndpointTests
     private static Asset NewAsset(string name, AssetType type, string hash, bool isPublic = true, bool takedown = false)
         => new()
         {
+            ReviewStatus = AssetReviewStatus.Legacy,
             Type = type,
             Name = name,
             ContentHash = hash,
@@ -67,6 +68,7 @@ public class AssetEndpointTests
             stockHash = stored.Hash;
             db.Assets.Add(new Asset
             {
+                ReviewStatus = AssetReviewStatus.Legacy,
                 Name = "nfm2/1_introductory", Type = AssetType.Stage, OwnerId = null,
                 Description = StockAssetCleanup.LegacyDescription, ContentHash = stockHash,
                 StoragePath = stored.RelativePath, SizeBytes = 3, IsPublic = true, IsValidated = true
@@ -395,10 +397,11 @@ public class AssetEndpointTests
         var asset = body.GetProperty("asset");
         Assert.AreEqual(expectedHash, asset.GetProperty("contentHash").GetString());
         Assert.AreEqual("Stage", asset.GetProperty("type").GetString());
-        Assert.IsTrue(asset.GetProperty("eligible").GetBoolean());
+        Assert.IsFalse(asset.GetProperty("eligible").GetBoolean());
+        Assert.AreEqual("Pending", asset.GetProperty("reviewStatus").GetString());
 
-        var meta = await client.GetFromJsonAsync<JsonElement>($"/assets/meta/{expectedHash}");
-        Assert.AreEqual("Stage", meta.GetProperty("type").GetString());
+        Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync($"/assets/meta/{expectedHash}")).StatusCode);
+        Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync($"/assets/{expectedHash}")).StatusCode);
     }
 
     [TestMethod]

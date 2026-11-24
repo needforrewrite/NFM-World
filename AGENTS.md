@@ -822,9 +822,9 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
   `AccountManager.ListOwnedAssetsAsync` and renames, hides/re-lists and deletes through the same endpoints. The
   controller owns the list, the rename modal and the delete prompt (always `MessageWindow.ShowYesNo`), and
   `MainMenuPhase` only pushes it and routes keys — the same shape as `ReplayBrowserController`. It is deliberately
-  *not* in the garage: the garage's INVENTORY row is a separate, still-disabled feature. Re-publishing a document
-  under a name the account already used replaces that upload (`ArchivePublisher.UploadAsync` →
-  `FindOwnedAssetAsync` + `ReplaceAssetAsync`) rather than creating a duplicate.
+  *not* in the garage: the garage's INVENTORY row is a separate, still-disabled feature. The editors use
+  `ArchivePublishDialog` to publish a new upload or replace an owned upload explicitly selected by ID.
+  `/assets/publish` supports initial visibility, and `/assets/{id}/publication` saves replacement bytes and metadata together.
 - **Validation is out of process** (`NFMWorld.Archive.Validator`). `TimeTrialSimulator` is synchronous and cannot be
   cancelled, so the archive runs it as a child process with a wall clock and kills it. A time trial is ranked only by
   that simulation's tick count, never by a number the client sends. `Archive:ValidatorPath` must point at the built
@@ -1278,8 +1278,8 @@ Added with the archive/content work; read this before touching content loading, 
   the racers.
 - **Publishing** — `ArchivePublisher` packages a snapshot of the live editor document (never a
   reread of the file) and uploads it with `AccountManager`'s bearer session, or writes a local
-  radpack with `ExportLocal*`. Both editors show name, description and that the publication is
-  public; a failure leaves the document, its dirty flag and its history alone. Packaging failures
+  radpack with `ExportLocal*`. Both editors show the account's matching uploads and let the author set
+  name, description and visibility. A failure leaves the document, its dirty flag and its history alone. Packaging failures
   are returned as messages rather than thrown, because the callers are fire-and-forget UI actions.
 - **A published car is checked as a car** — `CarModelValidator` (`NFMWorld.Library/Mad/Rad/`) is the
   one rule, run by `ArchivePublisher.PublishModelAsync` before packaging and by the validator's
@@ -1381,8 +1381,7 @@ Added with the archive/content work; read this before touching content loading, 
   the package itself carries the author's local path — and `StageLoader.ReferencedArchiveModels`
   lets the editor and `ClientStage` prepare a stage's referenced parts before parsing, because a
   part is resolved synchronously. A published stage is self-contained either way: `StageLoader.pieces`
-  serializes the resolved `Rad3d`s. The model editor's PUBLISH dialog chooses CAR or STAGE PART
-  instead of inferring it from the file's folder.
+  serializes the resolved `Rad3d`s. The model editor publishes CAR or STAGE PART according to the tab's model type.
 - **phy/ds stage-format parity** — the remaining phy-addons directives are parsed by `StageLoader`:
   - **Spawn overrides** — `xstart`/`zstart`/`ystart`/`xzstart`/`xystart`/`zystart`, plus ds-addons'
     `angle` (yaw), are kept in `Starts` with the player count they were written for; phy applies a

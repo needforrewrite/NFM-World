@@ -1,5 +1,6 @@
 @page "/asset/{id:int}/edit"
 @model NFMWorld.Archive.Pages.AssetEditModel
+@using NFMWorld.Archive.Data
 @{
     var asset = Model.Asset!;
 }
@@ -52,6 +53,9 @@
 <section class="asset-edit">
     <h2>File</h2>
     <dl class="asset-meta">
+        <dt>Verification</dt>
+        <dd>@asset.ReviewStatus.ReviewLabel()</dd>
+
         <dt>Size</dt>
         <dd>@AssetEditModel.FormatSize(asset.SizeBytes)</dd>
 
@@ -69,6 +73,7 @@
             trial recorded against the old file stops ranking.
         </p>
         <form method="post" enctype="multipart/form-data" asp-page-handler="Replace" asp-route-id="@asset.Id">
+            <p class="muted">Maximum replacement size: @(Model.MaxUploadBytes / NFMWorld.Archive.Data.ArchiveSettings.BytesPerMiB) MiB.</p>
             <label>Replacement file<input type="file" asp-for="Replacement" accept=".radpack,.rad" /></label>
             <button type="submit">Replace file</button>
         </form>

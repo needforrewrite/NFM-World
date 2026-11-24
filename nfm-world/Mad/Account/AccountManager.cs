@@ -136,16 +136,30 @@ public sealed partial class AccountManager : IDisposable
         SetActive(null);
     }
 
-    private static async Task<string> ReadErrorAsync(HttpResponseMessage response)
+    private static async Task<string> ReadErrorAsync(HttpResponseMessage response, bool assetRequest = false)
     {
         try
         {
             var body = await response.Content.ReadFromJsonAsync<JsonElement>();
-            if (body.TryGetProperty("error", out var error) && error.GetString() is { Length: > 0 } message)
+            if (body.ValueKind == JsonValueKind.Object && body.TryGetProperty("error", out var error)
+                && error.ValueKind == JsonValueKind.String && error.GetString() is { Length: > 0 } message)
                 return message;
         }
         catch (JsonException)
         {
+        }
+
+        if (assetRequest)
+        {
+            return response.StatusCode switch
+            {
+                System.Net.HttpStatusCode.Unauthorized => "Your Archive session has expired. Sign in again from the main menu.",
+                System.Net.HttpStatusCode.Forbidden => "The Archive account does not have permission for this action (HTTP 403).",
+                System.Net.HttpStatusCode.RequestEntityTooLarge => "The Archive's upload size limit rejected the package (HTTP 413).",
+                System.Net.HttpStatusCode.TooManyRequests => "The Archive is receiving too many requests. Try again later (HTTP 429).",
+                System.Net.HttpStatusCode.ServiceUnavailable => "The Archive is temporarily unavailable or read-only (HTTP 503).",
+                _ => $"The Archive returned HTTP {(int)response.StatusCode} ({response.StatusCode})."
+            };
         }
 
         return response.StatusCode switch

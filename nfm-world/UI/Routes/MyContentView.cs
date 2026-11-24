@@ -275,8 +275,9 @@ public static class MyContentView
 
     private static string StateLabel(OwnedAsset item)
         => item.IsTakedown ? "Removed by moderation"
+            : item.ReviewStatus is "Pending" or "Rejected" ? item.ReviewLabel!
             : !item.IsPublic ? "Hidden"
-            : "Listed";
+            : item.ReviewLabel ?? "Listed";
 
     private static Node Selection(Actions actions)
         => Sx.Show(

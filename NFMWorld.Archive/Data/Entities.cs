@@ -18,6 +18,8 @@ public sealed class User
     /// <summary>Staff level; <see cref="UserRole.User"/> for everyone else.</summary>
     public UserRole Role { get; set; }
 
+    public bool IsVerifiedUploader { get; set; }
+
     [NotMapped] public bool IsAdmin => Role == UserRole.Admin;
 
     [NotMapped] public bool IsModerator => Role >= UserRole.Moderator;
@@ -192,7 +194,7 @@ public sealed class Asset
 
     public long SizeBytes { get; set; }
 
-    /// <summary>False while an upload is being validated; only public rows are listed.</summary>
+    /// <summary>Whether the owner wants the asset listed publicly.</summary>
     public bool IsPublic { get; set; }
 
     /// <summary>
@@ -202,11 +204,41 @@ public sealed class Asset
     /// </summary>
     public bool IsValidated { get; set; }
 
+    public AssetReviewStatus ReviewStatus { get; set; } = AssetReviewStatus.Pending;
+
+    [NotMapped]
+    public bool IsListed => IsPublic && !IsTakedown && ReviewStatus is AssetReviewStatus.Verified or AssetReviewStatus
+        .Legacy;
+
     /// <summary>Set by moderation; a taken-down asset is never served.</summary>
     public bool IsTakedown { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public int DownloadCount { get; set; }
+}
+
+public enum AssetReviewStatus
+{
+    Legacy = 0,
+    Pending = 1,
+    Verified = 2,
+    Rejected = 3
+}
+
+public static class AssetCatalog
+{
+    public static IQueryable<Asset> Listed(this IQueryable<Asset> assets) => assets.Where(asset =>
+        asset.IsPublic && !asset.IsTakedown &&
+        (asset.ReviewStatus == AssetReviewStatus.Verified || asset.ReviewStatus == AssetReviewStatus.Legacy));
+
+    public static string ReviewLabel(this AssetReviewStatus status) => status switch
+    {
+        AssetReviewStatus.Legacy => "Previously published",
+        AssetReviewStatus.Pending => "Pending verification",
+        AssetReviewStatus.Verified => "Verified",
+        AssetReviewStatus.Rejected => "Rejected",
+        _ => throw new ArgumentOutOfRangeException(nameof(status))
+    };
 }
 
 public sealed class Clan

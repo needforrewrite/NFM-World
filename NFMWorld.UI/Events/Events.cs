@@ -80,9 +80,16 @@ public readonly partial record struct MouseDragEvent(
 public sealed class MouseEventDispatch
 {
     public bool Stopped { get; private set; }
+    public bool GestureConsumed { get; private set; }
 
     /// <summary>Stops the event from reaching any further ancestor.</summary>
     public void StopPropagation() => Stopped = true;
+
+    public void ConsumeGesture()
+    {
+        GestureConsumed = true;
+        StopPropagation();
+    }
 }
 
 [PluginVisible]
@@ -103,6 +110,9 @@ public readonly partial record struct MouseEvent(
     /// click does not also reach an ancestor with its own press handler.
     /// </summary>
     public void StopPropagation() => Dispatch?.StopPropagation();
+
+    /// <summary>Consumes a press and its remaining drag and release events.</summary>
+    public void ConsumeGesture() => Dispatch?.ConsumeGesture();
 }
 
 [PluginVisible]

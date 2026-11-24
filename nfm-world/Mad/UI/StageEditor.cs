@@ -364,10 +364,6 @@ public partial class StageEditorPhase : BasePhase
     private bool _showExportDialog = false;
 
     // Stage publication; the snapshot is serialized from the live document, never reread
-    private bool _showPublishDialog = false;
-    private string _publishName = "";
-    private string _publishDescription = "";
-    private string _publishStatus = "";
 
     // Export asked for from the export dialog, performed at the top of the next Render(cb, ...)
     // - binding a render target needs the frame's command buffer.

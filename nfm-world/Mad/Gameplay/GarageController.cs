@@ -1079,7 +1079,7 @@ internal sealed class GarageController
                         0
                     )
                     {
-                        Author = string.IsNullOrWhiteSpace(item.Author) ? null : item.Author
+                        Author = item.AuthorByline
                     }
                 )
                 .ToArray();

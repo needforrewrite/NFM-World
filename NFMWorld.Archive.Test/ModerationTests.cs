@@ -139,6 +139,7 @@ public class ModerationTests
 
             db.Assets.Add(new Asset
             {
+                ReviewStatus = AssetReviewStatus.Legacy,
                 OwnerId = UserId(factory, "artist"),
                 Type = AssetType.Stage,
                 Name = "My stage",

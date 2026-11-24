@@ -29,13 +29,14 @@ else
     <div class="overflow-auto">
         <table>
             <thead>
-                <tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Size</th><th scope="col">Downloads</th></tr>
+                <tr><th scope="col">Name</th><th scope="col">Creator</th><th scope="col">Type</th><th scope="col">Size</th><th scope="col">Downloads</th></tr>
             </thead>
             <tbody>
                 @foreach (var asset in Model.Assets)
                 {
                     <tr>
                         <td><a href="/asset/@asset.Id">@asset.Name</a></td>
+                        <td><partial name="_AssetCreator" model="@asset.Owner" /></td>
                         <td>@asset.Type</td>
                         <td>@((asset.SizeBytes / 1024) + " KB")</td>
                         <td>@asset.DownloadCount</td>

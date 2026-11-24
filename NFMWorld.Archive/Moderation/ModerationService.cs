@@ -75,7 +75,11 @@ public sealed class ModerationService(ArchiveDbContext db, FileStorage storage, 
         // standing, and DeleteErase additionally the admin gate in the switch below.
         var selfDeletion = request.Action is ModerationActionKind.DeleteRequest or ModerationActionKind.DeleteCancel
                            && actor.Id == target.Id;
-        if (!selfDeletion && !Roles.CanModerate(actor, target))
+        var uploaderVerification = request.Action is ModerationActionKind.VerifyUploader or ModerationActionKind
+            .RevokeUploaderVerification;
+        if (uploaderVerification && !actor.IsAdmin)
+            return new ModerationOutcome(false, "This needs an administrator.", target);
+        if (!selfDeletion && !uploaderVerification && !Roles.CanModerate(actor, target))
             return new ModerationOutcome(false, "You may not moderate that account.", target);
 
         switch (request.Action)
@@ -104,6 +108,8 @@ public sealed class ModerationService(ArchiveDbContext db, FileStorage storage, 
 
             case ModerationActionKind.DeleteRequest:
             case ModerationActionKind.DeleteCancel:
+            case ModerationActionKind.VerifyUploader:
+            case ModerationActionKind.RevokeUploaderVerification:
                 break;
 
             default:
@@ -197,6 +203,13 @@ public sealed class ModerationService(ArchiveDbContext db, FileStorage storage, 
                     );
                 target.Role = role;
                 Bump(target);
+                break;
+
+            case ModerationActionKind.VerifyUploader:
+            case ModerationActionKind.RevokeUploaderVerification:
+                if (target.IsDeleted)
+                    return new ModerationOutcome(false, "That account is already erased.", target);
+                target.IsVerifiedUploader = request.Action == ModerationActionKind.VerifyUploader;
                 break;
 
             case ModerationActionKind.DeleteRequest:

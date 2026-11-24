@@ -6,6 +6,7 @@ using NFMWorldLibrary.Radpack;
 
 namespace NFMWorld.Archive.Pages;
 
+[RequestSizeLimit(AssetUpload.MaxRequestBytes)]
 public sealed class UploadModel(
     ArchiveDbContext db,
     FileStorage storage,
@@ -20,19 +21,27 @@ public sealed class UploadModel(
     [BindProperty] public string? Type { get; set; }
     public string? Error { get; private set; }
     public string? Message { get; private set; }
+    public int MaxUploadBytes { get; private set; }
 
     /// <summary>The kinds the publish form offers. Code and replays are not published here.</summary>
     public IReadOnlyList<string> PublishableTypes { get; } =
         ["Car", "Stage", "StagePiece", "Wheel", "Texture"];
 
     public async Task<IActionResult> OnGetAsync()
-        => await ResolveAccountAsync() is null ? RedirectToLogin() : Page();
+    {
+        if (await ResolveAccountAsync() is null)
+            return RedirectToLogin();
+
+        MaxUploadBytes = await ArchiveSettings.ReadUploadLimitBytesAsync(Db, HttpContext.RequestAborted);
+        return Page();
+    }
 
     public async Task<IActionResult> OnPostAsync()
     {
         if (await ResolveAccountAsync() is null)
             return RedirectToLogin();
 
+        MaxUploadBytes = await ArchiveSettings.ReadUploadLimitBytesAsync(Db, HttpContext.RequestAborted);
         if (options.ReadOnly)
         {
             Error = "This archive is not accepting uploads.";
@@ -60,7 +69,14 @@ public sealed class UploadModel(
             return Page();
         }
 
-        if (AssetUpload.CheckClaim(kind, File.FileName, File.Length) is { } claimError)
+        if (File.Length > MaxUploadBytes)
+        {
+            Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
+            Error = AssetUpload.SizeLimitMessage(MaxUploadBytes);
+            return Page();
+        }
+
+        if (AssetUpload.CheckClaim(kind, File.FileName) is { } claimError)
         {
             Error = claimError;
             return Page();
@@ -74,6 +90,7 @@ public sealed class UploadModel(
             source,
             File.FileName,
             kind,
+            MaxUploadBytes,
             HttpContext.RequestAborted
         );
         if (stored.Error is { } validationError)
@@ -85,6 +102,12 @@ public sealed class UploadModel(
         var existing = await Db.Assets.FirstOrDefaultAsync(a => a.ContentHash == stored.Hash);
         if (existing is not null)
         {
+            if (!existing.IsListed && existing.OwnerId != Account!.Id)
+            {
+                Error = "These bytes are already in the Archive.";
+                return Page();
+            }
+
             if ((byte)existing.Type != kind)
             {
                 Error = $"Those bytes are already catalogued as a {AssetKinds.Name((byte)existing.Type)}.";
@@ -101,6 +124,7 @@ public sealed class UploadModel(
             return Page();
         }
 
+        var review = await AssetUpload.ReviewStatusForUploadAsync(Db, Account!.Id, HttpContext.RequestAborted);
         Db.Assets.Add(
             new Asset
             {
@@ -112,12 +136,15 @@ public sealed class UploadModel(
                 StoragePath = stored.RelativePath,
                 SizeBytes = stored.SizeBytes,
                 IsPublic = true,
-                IsValidated = true
+                IsValidated = true,
+                ReviewStatus = review
             }
         );
         await Db.SaveChangesAsync();
 
-        Message = $"Uploaded. Content hash: {stored.Hash}";
+        Message = review == AssetReviewStatus.Pending
+            ? "Uploaded and awaiting verification. The file will be listed after staff approve it."
+            : $"Uploaded and verified. Content hash: {stored.Hash}";
         return Page();
     }
 }

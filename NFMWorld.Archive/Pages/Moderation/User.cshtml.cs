@@ -102,6 +102,12 @@ public sealed class UserModel(
     );
 
     public Task<IActionResult> OnPostSetRoleAsync(int id) => ApplyAsync(id, ModerationActionKind.SetRole, argument: Argument);
+    public Task<IActionResult> OnPostVerifyUploaderAsync(int id) => ApplyAsync(id, ModerationActionKind.VerifyUploader);
+    public Task<IActionResult> OnPostRevokeUploaderVerificationAsync(int id) => ApplyAsync(
+        id,
+        ModerationActionKind.RevokeUploaderVerification
+    );
+
     public Task<IActionResult> OnPostDeleteRequestAsync(int id) => ApplyAsync(id, ModerationActionKind.DeleteRequest);
     public Task<IActionResult> OnPostDeleteCancelAsync(int id) => ApplyAsync(id, ModerationActionKind.DeleteCancel);
 
