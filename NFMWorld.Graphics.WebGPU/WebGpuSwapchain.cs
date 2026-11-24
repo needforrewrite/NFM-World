@@ -215,6 +215,9 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
         _frameAcquired = false;
     }
 
+    /// <summary>Drops an acquired frame the device abandoned after a mid-frame failure.</summary>
+    internal void AbandonFrame() => DiscardFrame();
+
     public void Present()
     {
         if (_surface is null || !_frameAcquired)

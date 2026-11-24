@@ -239,6 +239,9 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
 
     public bool SupportsBaseVertexDraw => true;
 
+    /// <summary>False on the browser: emdawnwebgpu has no <c>wgpuBufferMapAsync</c>.</summary>
+    public bool SupportsTextureReadback => !_browser;
+
     /// <summary>Human-readable adapter identity, for the boot log and the smoke harness.</summary>
     public string AdapterDescription { get; } = "";
 
@@ -715,6 +718,26 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         // Every write this frame was recorded against a chunk; the next frame starts filling them
         // again. The GPU may still be reading them, which is safe: wgpu keeps a reference on the
         // submitted command buffer, and a later write only ever lands behind it in queue order.
+        Uniforms.Reset();
+        Staging.Reset();
+    }
+
+    /// <summary>
+    /// Drops the frame's recording instead of submitting half a frame, and hands the acquired
+    /// surface texture back so the next frame starts from a clean acquisition.
+    /// </summary>
+    public void AbandonCommandBuffer(ICommandBuffer commandBuffer)
+    {
+        if (commandBuffer is not WebGpuCommandBuffer webGpuCommandBuffer
+            || !ReferenceEquals(webGpuCommandBuffer, _activeCommandBuffer))
+        {
+            return;
+        }
+
+        _activeCommandBuffer = null;
+        webGpuCommandBuffer.Dispose();
+        _swapchain.AbandonFrame();
+        FlushPendingDestroys();
         Uniforms.Reset();
         Staging.Reset();
     }

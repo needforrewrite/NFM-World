@@ -695,9 +695,12 @@ public partial class ClientStageRenderer : GameObject, IDisposable
 
     public void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish)
     {
-        var checkpointStageObject = backendStage.Checkpoints[currentCheckpoint];
-
         ResetCheckpointGlow();
+
+        // A stage can declare laps and no checkpoint gates at all (football/stadium does), and the
+        // array hands back default past its end - a null key is not a dictionary lookup here.
+        if (currentCheckpoint >= backendStage.Checkpoints.Count) return;
+        if (backendStage.Checkpoints[currentCheckpoint] is not { } checkpointStageObject) return;
 
         if (_cachedObjects.TryGetValue(checkpointStageObject, out var gameObject))
         {

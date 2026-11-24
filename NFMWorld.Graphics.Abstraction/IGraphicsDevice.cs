@@ -46,6 +46,14 @@ public interface IGraphicsDevice : IDisposable
     bool SupportsBaseVertexDraw { get; }
 
     /// <summary>
+    /// Whether <see cref="ReadTexture"/> can return anything. False on the browser's WebGPU backend,
+    /// which needs <c>wgpuBufferMapAsync</c> and gets none from emdawnwebgpu. Callers deciding
+    /// whether to attempt a readback have to ask this first: on a backend that cannot, the read
+    /// throws, and a throw from inside a phase's render pass is not recoverable mid-frame.
+    /// </summary>
+    bool SupportsTextureReadback => true;
+
+    /// <summary>
     /// Only one command buffer may be live at a time; implementations must guard against a
     /// second acquisition before the previous one is submitted.
     /// </summary>
@@ -53,6 +61,19 @@ public interface IGraphicsDevice : IDisposable
 
     /// <summary>Executes the command buffer's recorded work (immediately, for an immediate-mode backend).</summary>
     void Submit(ICommandBuffer commandBuffer);
+
+    /// <summary>
+    /// Releases a command buffer that will not be presented, for a frame that threw between
+    /// <see cref="AcquireCommandBuffer"/> and <see cref="Submit"/>. Until the buffer is released,
+    /// every later <see cref="AcquireCommandBuffer"/> fails, so one bad frame would otherwise take
+    /// the renderer with it and hide the exception that actually broke it.
+    /// </summary>
+    /// <remarks>
+    /// The default submits, which is the whole teardown on an immediate-mode backend: its commands
+    /// ran as they were recorded, so all that is left is per-frame state and the live-buffer slot. A
+    /// recording backend overrides this to drop the recording rather than execute half a frame.
+    /// </remarks>
+    void AbandonCommandBuffer(ICommandBuffer commandBuffer) => Submit(commandBuffer);
 
     IBuffer CreateBuffer(BufferDesc desc, ReadOnlySpan<byte> initialData = default);
     ITexture CreateTexture(TextureDesc desc, ReadOnlySpan<byte> initialData = default);

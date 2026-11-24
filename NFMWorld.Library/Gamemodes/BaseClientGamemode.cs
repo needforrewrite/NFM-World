@@ -446,7 +446,9 @@ public abstract class BaseClientGamemode : IGamemode
             if (!GamemodeContext.IsSpectating) SfxLibrary.checkpoint?.Play();
         }
 
-        if (CurrentStage.Nlaps > 0)
+        // A stage can declare laps and no checkpoint gates at all (football/stadium does), and
+        // there is then nothing to highlight.
+        if (CurrentStage.Nlaps > 0 && CurrentStage.Checkpoints.Count > 0)
             GamemodeContext.ClientCallbacks.UpdateCheckpointGlow(
                 car.CurrentCheckpoint,
                 car.CurrentCheckpoint == CurrentStage.Checkpoints.Count - 1 && car.CurrentLap == CurrentStage.Nlaps - 1

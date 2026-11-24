@@ -40,6 +40,9 @@ internal static class ShadowMapDebugView
     /// </summary>
     public static void Capture(ICommandBuffer cb)
     {
+        // Before the counters, so a backend that cannot read back does not consume a capture slot.
+        if (!GameSparker.GraphicsDevice.SupportsTextureReadback) return;
+
         var targets = GameSparker.ShadowRenderTargets;
         if (targets.Count == 0) return;
 
@@ -91,6 +94,19 @@ internal static class ShadowMapDebugView
 
     public static void DrawImgui()
     {
+        if (!GameSparker.GraphicsDevice.SupportsTextureReadback)
+        {
+            if (ImGui.Begin("Shadow cascades"))
+            {
+                ImGui.TextDisabled(
+                    "This backend cannot read a texture back, so the cascade preview is unavailable here."
+                );
+            }
+
+            ImGui.End();
+            return;
+        }
+
         if (!_bound) return;
 
         var windowSize = new Vector2(PreviewSize + 24, PreviewSize + 64);

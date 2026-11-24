@@ -1306,60 +1306,90 @@ public partial class WorldGame : IDisposable, IGameHost
         SyncBackendVSync();
 
         var cb = _device.AcquireCommandBuffer();
-        cb.Clear(
-            ClearOptions.Color | ClearOptions.Depth | ClearOptions.Stencil,
-            new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f)
-        );
-        cb.SetViewport(new Graphics.Viewport(0, 0, Window.Width, Window.Height));
-        SetFullScreenScissor(cb);
-
-        // Started before the phases render, not after: phases draw their HUD text through
-        // TheGraphics (the same NvgContext), and rasterizing a glyph uploads its atlas rectangle
-        // through this renderer straight away. Deferred updates still work (the renderer queues
-        // them), but starting the frame here means the common case uploads immediately.
-        _nvg!.BeginFrame(cb);
-
-        // The frame's render phases, in order: the 3D scene, its overlays, the UI, then NanoVG's
-        // flush. Deferred NVG updates still work (the renderer queues them), but BeginFrame above
-        // means the common case - a phase drawing HUD text through TheGraphics, which uploads a
-        // glyph atlas rectangle straight away - happens immediately.
-        GameSparker.Render(cb, alpha);
-        GameSparker.Render3DOverlays(cb);
-
-        _uiRenderer?.Render();
-        if (_yogaDebugPage >= 0) YogaDebugger.Render(_yogaDebugPage);
-
-        if (BaseStageRenderingPhase.DebugDisplay)
+        var submitted = false;
+        try
         {
-            FPSCounter.Render();
+            cb.Clear(
+                ClearOptions.Color | ClearOptions.Depth | ClearOptions.Stencil,
+                new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f)
+            );
+            cb.SetViewport(new Graphics.Viewport(0, 0, Window.Width, Window.Height));
+            SetFullScreenScissor(cb);
 
-            if (FrameTrace.IsEnabled)
+            // Started before the phases render, not after: phases draw their HUD text through
+            // TheGraphics (the same NvgContext), and rasterizing a glyph uploads its atlas rectangle
+            // through this renderer straight away. Deferred updates still work (the renderer queues
+            // them), but starting the frame here means the common case uploads immediately.
+            _nvg!.BeginFrame(cb);
+
+            // The frame's render phases, in order: the 3D scene, its overlays, the UI, then NanoVG's
+            // flush. Deferred NVG updates still work (the renderer queues them), but BeginFrame above
+            // means the common case - a phase drawing HUD text through TheGraphics, which uploads a
+            // glyph atlas rectangle straight away - happens immediately.
+            GameSparker.Render(cb, alpha);
+            GameSparker.Render3DOverlays(cb);
+
+            _uiRenderer?.Render();
+            if (_yogaDebugPage >= 0) YogaDebugger.Render(_yogaDebugPage);
+
+            if (BaseStageRenderingPhase.DebugDisplay)
             {
-                const int x = 250;
+                FPSCounter.Render();
 
-                var messageString = FrameTrace.GetMessageString();
+                if (FrameTrace.IsEnabled)
+                {
+                    const int x = 250;
 
-                G.SetFont(new Font(FontFamily.NotoSans, FontStyle.Plain, 16));
-                G.SetColor(Color.White);
-                G.DrawStringOutlined(messageString, 10, x, Color.Black, 1f);
+                    var messageString = FrameTrace.GetMessageString();
+
+                    G.SetFont(new Font(FontFamily.NotoSans, FontStyle.Plain, 16));
+                    G.SetColor(Color.White);
+                    G.DrawStringOutlined(messageString, 10, x, Color.Black, 1f);
+                }
             }
+
+            _nvg.Render();
+
+            ImguiRenderer?.BeginLayout(gameTime);
+            if (ImguiRenderer is not null)
+            {
+                GameSparker.RenderImgui();
+                ImguiRenderer.EndLayout(cb);
+            }
+
+            _device.Submit(cb);
+            submitted = true;
         }
-
-        _nvg.Render();
-
-        ImguiRenderer?.BeginLayout(gameTime);
-        if (ImguiRenderer is not null)
+        finally
         {
-            GameSparker.RenderImgui();
-            ImguiRenderer.EndLayout(cb);
+            // A throw between the acquire and the submit leaves the backend holding its one live
+            // command buffer, so every later frame fails in AcquireCommandBuffer and that error
+            // hides whatever actually broke this one.
+            if (!submitted)
+                AbandonFrame(cb);
         }
 
-        _device.Submit(cb);
         _device.Swapchain.Present();
 
         LastFrameTime = t.ElapsedMilliseconds;
 
         transaction.Finish();
+    }
+
+    /// <summary>
+    /// Hands a command buffer back after a frame that threw, logging whatever refuses to be
+    /// released: a failure here must not replace the exception that abandoned the frame.
+    /// </summary>
+    private void AbandonFrame(ICommandBuffer cb)
+    {
+        try
+        {
+            _device.AbandonCommandBuffer(cb);
+        }
+        catch (Exception ex)
+        {
+            Logging.Warning($"Could not release the failed frame's command buffer: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -1414,31 +1444,42 @@ public partial class WorldGame : IDisposable, IGameHost
         EnsureSwapchainMatchesWindow();
 
         var cb = _device.AcquireCommandBuffer();
-        cb.Clear(
-            ClearOptions.Color | ClearOptions.Depth | ClearOptions.Stencil,
-            new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f)
-        );
-        cb.SetViewport(new Viewport(0, 0, Window.Width, Window.Height));
-        SetFullScreenScissor(cb);
-
-        ImguiRenderer!.BeginLayout(new GameTime(TimeSpan.Zero, TimeSpan.Zero));
-        if (ImGui.Begin(
-                "##boot",
-                ImGuiWindowFlags.NoTitleBar
-                | ImGuiWindowFlags.NoResize
-                | ImGuiWindowFlags.NoMove
-                | ImGuiWindowFlags.NoSavedSettings
-                | ImGuiWindowFlags.NoInputs
-                | ImGuiWindowFlags.AlwaysAutoResize
-            ))
+        var submitted = false;
+        try
         {
-            ImGui.TextUnformatted(message);
+            cb.Clear(
+                ClearOptions.Color | ClearOptions.Depth | ClearOptions.Stencil,
+                new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f)
+            );
+            cb.SetViewport(new Viewport(0, 0, Window.Width, Window.Height));
+            SetFullScreenScissor(cb);
+
+            ImguiRenderer!.BeginLayout(new GameTime(TimeSpan.Zero, TimeSpan.Zero));
+            if (ImGui.Begin(
+                    "##boot",
+                    ImGuiWindowFlags.NoTitleBar
+                    | ImGuiWindowFlags.NoResize
+                    | ImGuiWindowFlags.NoMove
+                    | ImGuiWindowFlags.NoSavedSettings
+                    | ImGuiWindowFlags.NoInputs
+                    | ImGuiWindowFlags.AlwaysAutoResize
+                ))
+            {
+                ImGui.TextUnformatted(message);
+            }
+
+            ImGui.End();
+            ImguiRenderer.EndLayout(cb);
+
+            _device.Submit(cb);
+            submitted = true;
+        }
+        finally
+        {
+            if (!submitted)
+                AbandonFrame(cb);
         }
 
-        ImGui.End();
-        ImguiRenderer.EndLayout(cb);
-
-        _device.Submit(cb);
         _device.Swapchain.Present();
 
         return ImGui.GetDrawData().TotalVtxCount;

@@ -380,6 +380,14 @@ public partial class StageEditorPhase
             return;
         }
 
+        // Checked before the target is created and the scene drawn: the read below is the export's
+        // only output, and it throws on a backend with no readback.
+        if (!_graphicsDevice.SupportsTextureReadback)
+        {
+            _exportResultMessage = "Top-down export needs texture readback, which this backend does not support.";
+            return;
+        }
+
         // Calculate bounding box from all pieces
         float minX = float.MaxValue, maxX = float.MinValue;
         float minZ = float.MaxValue, maxZ = float.MinValue;

@@ -199,6 +199,35 @@ internal static unsafe class Program
         }
 
         Report("COMMAND", "a command buffer cannot be submitted twice", reused);
+
+        // The frame that threw between acquire and submit abandons its buffer. It must release the
+        // recording without queueing it and leave the device able to record the next frame, or one
+        // exception fails every later AcquireCommandBuffer instead.
+        var abandoned = device.AcquireCommandBuffer();
+        device.AbandonCommandBuffer(abandoned);
+
+        var recovered = true;
+        string? abandonError = null;
+        try
+        {
+            var afterAbandon = device.AcquireCommandBuffer();
+            afterAbandon.Clear(ClearOptions.Color, new ColorRgba(0f, 1f, 0f, 1f));
+            device.Submit(afterAbandon);
+            device.Poll(true);
+        }
+        catch (InvalidOperationException ex)
+        {
+            recovered = false;
+            abandonError = ex.Message;
+        }
+
+        abandonError ??= device.TakeError();
+        Report(
+            "COMMAND",
+            "an abandoned command buffer is released and the device records the next frame"
+            + (abandonError is null ? "" : $": {abandonError}"),
+            recovered && abandonError is null
+        );
     }
 
     private static void CheckRenderTarget(WebGpuGraphicsDevice device)

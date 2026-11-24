@@ -542,6 +542,44 @@ public class RaceAnnouncerTests
         Assert.IsNull(announcer.Status);
     }
 
+    /// <summary>
+    /// A stage with laps but no checkpoint gates still runs, so the HUD update must not ask for a
+    /// glow: the checkpoint array hands back null past its end, and the renderer cannot key a
+    /// dictionary on that. football/stadium is the shipped case ("nlaps(15)", no chk lines).
+    /// </summary>
+    [TestMethod]
+    public void UpdateHudAndSounds_StageWithoutCheckpoints_DoesNotAskForAGlow()
+    {
+        var players = new List<ClientSidePlayerInfo>
+        {
+            new() { PlayerName = "Human", CarName = CarName, Color = default, IsBot = false, IsClientPlayer = true }
+        };
+        var gamemode = new TestGamemode(players.ToArray(), laps: 15, checkpoints: false);
+        gamemode.Begin();
+        var car = gamemode.Players[0].Car!;
+
+        gamemode.TickHud(car);
+
+        Assert.AreEqual(0, gamemode.Callbacks.GlowRequests.Count, "there is no gate to highlight");
+    }
+
+    /// <summary>The guard must not swallow the ordinary case.</summary>
+    [TestMethod]
+    public void UpdateHudAndSounds_StageWithCheckpoints_AsksForTheGoalGate()
+    {
+        var players = new List<ClientSidePlayerInfo>
+        {
+            new() { PlayerName = "Human", CarName = CarName, Color = default, IsBot = false, IsClientPlayer = true }
+        };
+        var gamemode = new TestGamemode(players.ToArray(), laps: 3, checkpoints: true);
+        gamemode.Begin();
+        var car = gamemode.Players[0].Car!;
+
+        gamemode.TickHud(car);
+
+        CollectionAssert.AreEqual(new ushort[] { 0 }, gamemode.Callbacks.GlowRequests.ToArray());
+    }
+
     private static (RaceAnnouncer Announcer, TestGamemode Gamemode, BackendCar Car) Create(
         int opponents,
         int laps = 3,
@@ -576,6 +614,11 @@ public class RaceAnnouncerTests
     {
         public override string GamemodeId => "test/announcer";
 
+        public StubCallbacks Callbacks => ((TestGamemodeContext)GamemodeContext).Callbacks;
+
+        /// <summary>The per-tick HUD work, which is what must not ask for a glow that cannot exist.</summary>
+        public void TickHud(BackendCar car) => UpdateHudAndSounds(car);
+
         public override void Begin()
         {
             base.Begin();
@@ -591,6 +634,8 @@ public class RaceAnnouncerTests
     {
         public BackendStage CurrentStage { get; } = BuildStage(laps, checkpoints);
 
+        public StubCallbacks Callbacks { get; } = new();
+
         private static BackendStage BuildStage(int laps, bool checkpoints)
         {
             var stage = new AnnouncerStage { Nlaps = (ushort)laps };
@@ -604,7 +649,7 @@ public class RaceAnnouncerTests
         }
 
         public RaceState RaceState => RaceState.InProgress;
-        public IClientCallbacks ClientCallbacks => new StubCallbacks();
+        public IClientCallbacks ClientCallbacks => Callbacks;
 
         public void SendServerEvent(ReadOnlySpan<byte> payload)
         {
@@ -617,13 +662,14 @@ public class RaceAnnouncerTests
 
     private sealed class StubCallbacks : IClientCallbacks
     {
+        public List<ushort> GlowRequests { get; } = [];
+
         public void ResetCheckpointGlow()
         {
         }
 
         public void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish)
-        {
-        }
+            => GlowRequests.Add(currentCheckpoint);
 
         public IClientCarCallbacks GetClientCarCallbacks(BackendCar car) => new StubCarCallbacks();
 

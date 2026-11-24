@@ -267,6 +267,30 @@ internal static unsafe class Program
         var second = device.AcquireCommandBuffer();
         device.Submit(second);
         Report("LIFETIME", "the device is usable again after a Submit", true);
+
+        // A frame that threw between acquire and submit abandons its buffer instead. Without that
+        // one exception turns into a failed acquire every frame, and the loop reports the wrong fault.
+        var abandonedRecovered = true;
+        string? abandonedError = null;
+        try
+        {
+            NFMWorld.Graphics.IGraphicsDevice abstraction = device;
+            var abandoned = abstraction.AcquireCommandBuffer();
+            abstraction.AbandonCommandBuffer(abandoned);
+            abstraction.Submit(abstraction.AcquireCommandBuffer());
+        }
+        catch (InvalidOperationException ex)
+        {
+            abandonedRecovered = false;
+            abandonedError = ex.Message;
+        }
+
+        Report(
+            "LIFETIME",
+            "the device is usable again after an abandoned command buffer"
+            + (abandonedError is null ? "" : $": {abandonedError}"),
+            abandonedRecovered
+        );
     }
 
     // ── render targets ──────────────────────────────────────────────────────────────────────────
