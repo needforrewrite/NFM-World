@@ -15,7 +15,7 @@ public sealed class ArchiveOptions
     public string PublicBaseUrl { get; set; } = "http://localhost:5288";
 
     /// <summary>
-    /// Root the browser build is deployed at, e.g. <c>https://game.nfmw.net</c>. Empty disables the
+    /// Root the browser build is deployed at, e.g. <c>https://play.nfmw.net</c>. Empty disables the
     /// per-upload 3D preview, which would otherwise link into a host that is not there.
     /// </summary>
     public string GamePreviewUrl { get; set; } = "";

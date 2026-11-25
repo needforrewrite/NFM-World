@@ -15,7 +15,7 @@ ENV Archive__StorageRoot="/data/storage"
 ENV Archive__ValidatorPath="/validator/NFMWorld.Archive.Validator"
 ENV Archive__ValidatorWorkingDirectory="/validator"
 # Root of the browser build; the asset pages link into its standalone preview.
-ENV Archive__GamePreviewUrl="https://game.nfmw.net"
+ENV Archive__GamePreviewUrl="https://play.nfmw.net"
 VOLUME /data
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "NFMWorld.Archive.dll"]
