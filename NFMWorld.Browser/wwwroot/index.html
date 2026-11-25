@@ -16,6 +16,10 @@
 <body>
   <canvas id="canvas" width="1280" height="720"></canvas>
   <div id="boot">loading…</div>
+  <!-- The boot archive is the largest single download after the runtime, and main.js only
+       consumes it once the assembly exports exist. Preloading it here starts the request during
+       HTML parse, so it runs alongside the runtime's wasm fetches instead of after them. -->
+  <link rel="preload" href="./data.boot.zip" as="fetch" crossorigin>
   <script type="module" src="./main.js"></script>
 </body>
 </html>

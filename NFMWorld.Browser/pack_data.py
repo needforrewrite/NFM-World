@@ -5,9 +5,16 @@ Music is ~90% of the data tree (148 MB against ~11 MB for everything else), so i
 fetched per track at run time instead of being part of the boot payload. The split is by directory:
 `data/music/**` goes to one archive, everything else to the other.
 
-Both archives are stored, not deflated. The art (models, fonts) is already compressed and the music
-is Opus, MP3 or tracker modules, so deflate buys almost nothing, and stored entries let the browser's
-fetch read a whole entry without re-inflating it.
+The boot archive is deflated. Its bulk is baked font atlases (float MSDF data, which compresses
+about as well as text) and it is mounted whole into MEMFS, where the C# ZipArchive inflates each
+entry on read - measured 15.3 MB -> 9.9 MB, a third of the boot payload. Deflating it costs a few
+milliseconds of inflate against ~200 ms of transfer at the reference connection, and more on a slow
+one.
+
+The music archive stays stored. It is read by range request, one track at a time, and a deflated
+entry cannot be seeked into: the fetch layer would have to download and inflate the whole 126 MB to
+play one track. Its contents are Opus/MP3/tracker modules and already compressed, so deflate would
+buy nothing anyway.
 
 Excluded: preact-luau (41 MB of upstream JS plus checked-in lua*.exe tooling the runtime never
 loads - router.luau only requires library/sx), node_modules, and the old CEF frontend's build
@@ -59,7 +66,8 @@ def main() -> int:
     counts = {"boot": 0, "music": 0}
     sizes = {"boot": 0, "music": 0}
 
-    with zipfile.ZipFile(boot_path, "w", zipfile.ZIP_STORED) as boot, \
+    # Boot is deflated, music is stored: see the module docstring for why the split is not both.
+    with zipfile.ZipFile(boot_path, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as boot, \
          zipfile.ZipFile(music_path, "w", zipfile.ZIP_STORED) as music:
         seen = set()
         for path, name in iter_files(roots):

@@ -133,6 +133,16 @@ Key characteristics:
   Failures land in the phase's own dialog; the browser build has no ICU, so it formats exception text
   itself rather than showing a framework resource key. The archive's own pages link into it: see **Preview in 3D**
   under [Archive server](#archive-server).
+- **Boot payload.** `pack_data.py` builds `data.boot.zip` (everything but music) and `data.music.zip`; the head
+  fetches the boot archive and mounts it into MEMFS, and music is range-read per track. **Boot is deflated and music
+  is stored** — 15.3 MB → 9.9 MB for the boot half falls out of MSDF atlases compressing like text, and the C#
+  `ZipArchive` inflates entries on read anyway; a deflated *music* entry could not be seeked into, so one track would
+  mean downloading all 126 MB. Don't "simplify" that to one compression setting. `main.js` starts the boot fetch
+  before `dotnet.create()` and `index.html` preloads it, because the runtime pulls ~145 wasm modules first and the
+  fetch used to start only after they settled (measured: 665 ms → 33 ms). The transfer that dominates a cold boot is
+  the runtime, not the archive: prod sends the R2R composite wasm at ~17.6 MB / ~2.1 s, so measure any boot change
+  against `https://play.nfmw.net`, never a local `serve.py` — that server negotiates no compression and reports wasm
+  ~112 MB instead of the ~40 MB the deployed site's gzip actually costs.
 
 ---
 

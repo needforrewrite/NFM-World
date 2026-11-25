@@ -6,6 +6,12 @@ import { dotnet } from './_framework/dotnet.js';
 const canvas = document.getElementById('canvas');
 const boot = document.getElementById('boot');
 
+// Started before the runtime rather than after it: the archive is ~15 MB and the runtime's
+// hundreds of wasm modules take longer, so fetching it here makes the download overlap the
+// runtime's own startup instead of adding to it. The response is only consumed once the
+// assembly exports exist.
+const bootAssets = fetch('./data.boot.zip');
+
 boot.textContent = 'loading runtime…';
 
 // The WebGPU device is requested here, before the game boots, because a request answers through a
@@ -66,7 +72,8 @@ boot.textContent = 'loading assets…';
 
 // The browser has no install directory, so the game's data comes from this archive. Music is
 // deliberately not in it - it is most of the tree and is fetched per track instead.
-const assets = await fetch('./data.boot.zip');
+// Already in flight from the top of the file.
+const assets = await bootAssets;
 if (!assets.ok) {
     boot.textContent = `could not load data.boot.zip (${assets.status})`;
     throw new Error(`data.boot.zip: ${assets.status}`);
