@@ -814,7 +814,7 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
   preview (`AssetPreview.Url`), for the kinds that have a view: `Stage` opens `preview=stage`, `Car`/`StagePiece`/`Wheel`
   open `preview=model`, everything else gets no link. The link is gated on `Archive__GamePreviewUrl` (a deployment
   setting; empty hides it) and names this archive as `archive=`, which the game fetches cross-origin through the
-  `asset-download` CORS policy. Don't build the URL anywhere else — a second copy drifts from the game's parsing.
+  `CorsPolicies.CrossOrigin` policy. Don't build the URL anywhere else — a second copy drifts from the game's parsing.
 - **Website styling.** Razor pages use self-hosted Blades CSS 3.1.1 (`wwwroot/lib/blades/`, MIT license included).
   Keep local layout tweaks in `wwwroot/css/archive.css`; use Blades semantic HTML, `.container`, `.grid`, and
   `.overflow-auto` rather than rebuilding its controls. No npm or frontend build step is needed.
@@ -833,15 +833,17 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
   `HttpContext.PurgeAssetsAsync(...)` (`Cache/CloudflareCache.cs`): the asset endpoints, the edit/delete pages,
   `AssetModeration` and the bulk `unlist`/`relist`. The hook is opt-in (`Archive__CloudflareZoneId` /
   `Archive__CloudflareApiToken`) and never fails the action on a Cloudflare error.
-- **CORS is per route, and only for the public reads.** `GET /assets/{hash}` and `/assets/meta/{hash}` carry the
-  `asset-download` policy (`AssetEndpoints.CorsPolicy`), which is what lets the browser preview page
-  (`index.html?hash=…`) fetch a radpack from another origin — normally `nfmw.net`. `Archive:CorsOrigins`
-  (`Archive__CorsOrigins`, default `*`) is a comma-separated allowlist; an empty value or `*` allows any origin.
-  Methods are `GET`/`HEAD`, request headers `Range`/`If-Range`, and `Content-Length`, `Content-Range`,
-  `Accept-Ranges` and `Content-Disposition` are exposed, because the download is read as a ranged stream. Nothing
-  else in the app is CORS-enabled, so the account and upload endpoints stay same-origin. A deployed archive older
-  than this policy answers no `Access-Control-Allow-Origin`, which is why a local preview against production needs
-  a same-origin proxy; the shipped page does not carry one.
+- **CORS is per route group, and it covers the game client.** One policy, `CorsPolicies.CrossOrigin`
+  (`NFMWorld.Archive/CorsPolicies.cs`), is applied with `.RequireCors(...)` to the `/auth`, `/assets` and `/tt`
+  groups in `Program.cs` and the endpoint mappers. It admits `GET`/`HEAD`/`POST`/`PUT`/`PATCH`/`DELETE` with
+  `Content-Type`, `Authorization`, `Range` and `If-Range`, and exposes `Content-Length`, `Content-Range`,
+  `Accept-Ranges` and `Content-Disposition` for the ranged download. Two callers need it: the browser preview page
+  (`index.html?hash=…` on `play.nfmw.net`) fetching a radpack, and the whole browser build of the game, which is
+  served from a different origin than the archive so its sign-in, asset search and uploads are cross-origin.
+  `Archive:CorsOrigins` (`Archive__CorsOrigins`, default `*`) is a comma-separated allowlist. Credentials stay off:
+  the client sends its session as a bearer header, so `AllowAnyOrigin` reveals nothing, and Razor pages are outside
+  these groups so the cookie-authenticated site stays unreadable from another origin. A deployed archive older than
+  this policy answers no `Access-Control-Allow-Origin` on `/auth/*`, which makes web sign-in fail at the preflight.
 - **Two upload surfaces, one rule set.** `POST /assets/upload` (the game client) and `Pages/Upload.cshtml`
   (the website) both publish data assets, and they must refuse the same inputs: signed in, `Archive:ReadOnly`,
   `AssetKinds.IsPublishable`, the `.radpack`/`.rad` extension allowlist, `AssetKinds.IsUploadExtensionAllowed`
