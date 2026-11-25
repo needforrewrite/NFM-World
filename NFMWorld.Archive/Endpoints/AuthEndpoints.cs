@@ -41,6 +41,9 @@ public static class AuthEndpoints
     public static void MapAuthEndpoints(this WebApplication app)
     {
         var auth = app.MapGroup("/auth");
+        // Reached from the browser build's own origin, so the game client can sign in and confirm
+        // its session without a page reload.
+        var auth = app.MapGroup("/auth").RequireCors(CorsPolicies.CrossOrigin);
 
         auth.MapPost(
             "/register",
