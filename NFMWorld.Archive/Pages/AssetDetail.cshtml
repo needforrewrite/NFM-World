@@ -40,7 +40,13 @@ else
     <dd><code class="asset-hash">@Model.Asset.ContentHash</code></dd>
 </dl>
 
-<p><a href="/assets/@Model.Asset.ContentHash" role="button">Download @Model.Asset.Type</a></p>
+<p class="asset-actions">
+    <a href="/assets/@Model.Asset.ContentHash" role="button">Download @Model.Asset.Type</a>
+    @if (Model.PreviewUrl is { } preview)
+    {
+        <a href="@preview" role="button" class="secondary" target="_blank" rel="noopener">Preview in 3D</a>
+    }
+</p>
 
 @if (Model.CanEdit)
 {

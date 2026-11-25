@@ -17,6 +17,12 @@ public class ArchiveAppFactory : WebApplicationFactory<Program>
     public FakeSiteverifyHandler Siteverify { get; } = new();
 
     /// <summary>
+    /// Root the browser build is deployed at. Empty (the default) hides the preview links, so a
+    /// test that expects one sets it before the first request.
+    /// </summary>
+    public string GamePreviewUrl { get; set; } = "";
+
+    /// <summary>
     /// The real validator executable, so upload tests exercise the process boundary instead of a
     /// mocked success. Located from the environment first, then from the sibling project's output.
     /// </summary>
@@ -78,6 +84,7 @@ public class ArchiveAppFactory : WebApplicationFactory<Program>
         // build time, before a later configuration source would be layered on.
         builder.UseSetting("Archive:Database", $"Data Source={Path.Combine(_root, "test.db")}");
         builder.UseSetting("Archive:StorageRoot", Path.Combine(_root, "storage"));
+        builder.UseSetting("Archive:GamePreviewUrl", GamePreviewUrl);
         if (ValidatorPath is { } validator)
         {
             builder.UseSetting("Archive:ValidatorPath", validator);

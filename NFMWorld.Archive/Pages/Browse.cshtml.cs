@@ -4,7 +4,7 @@ using NFMWorld.Archive.Data;
 
 namespace NFMWorld.Archive.Pages;
 
-public sealed class BrowseModel(ArchiveDbContext db) : ArchivePageModel(db)
+public sealed class BrowseModel(ArchiveDbContext db, ArchiveOptions options) : ArchivePageModel(db)
 {
     [BindProperty(SupportsGet = true)] public string? Query { get; set; }
     [BindProperty(SupportsGet = true)] public string? Type { get; set; }
@@ -12,6 +12,9 @@ public sealed class BrowseModel(ArchiveDbContext db) : ArchivePageModel(db)
 
     public IReadOnlyList<Asset> Assets { get; private set; } = [];
     public int? NextCursor { get; private set; }
+
+    /// <summary>Where the browser build shows an upload, or null when it has no 3D view.</summary>
+    public string? PreviewUrl(Asset asset) => AssetPreview.Url(options, asset.Type, asset.ContentHash);
 
     public async Task<IActionResult> OnGetAsync()
     {

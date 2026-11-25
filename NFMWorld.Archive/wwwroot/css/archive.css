@@ -400,6 +400,37 @@ tbody tr:last-child :is(td, th) {
     margin-block: var(--pico-spacing);
 }
 
+.asset-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--pico-spacing);
+}
+
+.asset-actions > a {
+    margin: 0;
+    width: auto;
+}
+
+.asset-preview {
+    display: inline-block;
+    margin-left: 0.35rem;
+    padding: 0 0.3rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    color: var(--pico-muted-color);
+    font-size: 0.7rem;
+    line-height: 1.4;
+    text-decoration: none;
+    text-transform: uppercase;
+    vertical-align: 0.1em;
+}
+
+.asset-preview:hover {
+    border-color: var(--pico-primary-border);
+    color: var(--pico-primary-hover);
+}
+
 .asset-edit h2 {
     font-size: 1.1rem;
 }

@@ -8,9 +8,12 @@ namespace NFMWorld.Archive.Pages;
 /// The public page for one uploaded asset. The bytes are still served by
 /// <c>/assets/{hash}</c>, which is what the game fetches; this page is the human-readable half.
 /// </summary>
-public sealed class AssetDetailModel(ArchiveDbContext db) : ArchivePageModel(db)
+public sealed class AssetDetailModel(ArchiveDbContext db, ArchiveOptions options) : ArchivePageModel(db)
 {
     public Asset? Asset { get; private set; }
+
+    /// <summary>Where the browser build shows this upload, or null when it has no 3D view.</summary>
+    public string? PreviewUrl { get; private set; }
 
     /// <summary>True for the uploader and for an administrator; the page shows the edit link then.</summary>
     public bool CanEdit { get; private set; }
@@ -29,6 +32,7 @@ public sealed class AssetDetailModel(ArchiveDbContext db) : ArchivePageModel(db)
             return NotFound();
 
         CanEdit = Account is not null && (Asset.OwnerId == Account.Id || Account.IsModerator);
+        PreviewUrl = AssetPreview.Url(options, Asset.Type, Asset.ContentHash);
 
         ViewData["Title"] = Asset.Name;
 

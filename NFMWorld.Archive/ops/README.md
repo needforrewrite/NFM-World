@@ -19,6 +19,7 @@ Set through the `Archive__*` environment variables (double underscore nests).
 | `Archive__Database`                                                       | SQLite connection string, e.g. `Data Source=/data/archive.db`                     |
 | `Archive__StorageRoot`                                                    | Directory for uploaded files                                                      |
 | `Archive__PublicBaseUrl`                                                  | Origin clients use; must be a **separate origin** from the website                |
+| `Archive__GamePreviewUrl`                                                 | Root the browser build is deployed at, e.g. `https://game.nfmw.net`; the asset and browse pages link each upload into its `index.html?hash=…` preview. Empty hides the preview links |
 | `Archive__TrustedServerKeys`                                              | `id=base64secret` list the lobby signs results with                               |
 | `Archive__ValidatorPath`                                                  | Path to `NFMWorld.Archive.Validator`; uploads and time-trial validation are refused without it |
 | `Archive__ValidatorWorkingDirectory`                                      | Directory holding the game `data/` tree the validator needs (defaults to the executable's folder) |

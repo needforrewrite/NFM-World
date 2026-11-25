@@ -125,7 +125,8 @@ Key characteristics:
   orbit camera (right-drag, wheel). `WorldGame.Initialize` still runs: it creates the Apos renderer and the
   `UiRenderer` that pumps `LoadingWork`, which every `await LoadingWork.NextFrame` in the phase needs.
   Failures land in the phase's own dialog; the browser build has no ICU, so it formats exception text
-  itself rather than showing a framework resource key.
+  itself rather than showing a framework resource key. The archive's own pages link into it: see **Preview in 3D**
+  under [Archive server](#archive-server).
 
 ---
 
@@ -809,6 +810,11 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
   public uploads). `/browse` and the account page link there; `/assets/{hash}` stays the download endpoint the game
   fetches, so the page renders only rows that endpoint would serve (`IsPublic && !IsTakedown`, otherwise 404). No
   schema change: it reads the existing `Assets` row.
+- **Preview in 3D.** `/asset/{id}` and each `/browse` row link the upload into the deployed browser build's standalone
+  preview (`AssetPreview.Url`), for the kinds that have a view: `Stage` opens `preview=stage`, `Car`/`StagePiece`/`Wheel`
+  open `preview=model`, everything else gets no link. The link is gated on `Archive__GamePreviewUrl` (a deployment
+  setting; empty hides it) and names this archive as `archive=`, which the game fetches cross-origin through the
+  `asset-download` CORS policy. Don't build the URL anywhere else — a second copy drifts from the game's parsing.
 - **Website styling.** Razor pages use self-hosted Blades CSS 3.1.1 (`wwwroot/lib/blades/`, MIT license included).
   Keep local layout tweaks in `wwwroot/css/archive.css`; use Blades semantic HTML, `.container`, `.grid`, and
   `.overflow-auto` rather than rebuilding its controls. No npm or frontend build step is needed.
