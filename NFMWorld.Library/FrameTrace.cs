@@ -11,17 +11,23 @@ public static partial class FrameTrace
 {
     internal static readonly StringBuilder stringBuilder = new();
 
-    public static bool IsEnabled = true;
+    public static bool IsEnabled =
+#if DEBUG
+            true
+#else
+            false
+#endif
+        ;
 
     [PluginVisible]
     public static void AddMessage(string message)
     {
-        stringBuilder.AppendLine(message);
+        if (IsEnabled) stringBuilder.AppendLine(message);
     }
 
     public static void AddMessage(ref AppendInterpolatedStringHandler message)
     {
-        stringBuilder.AppendLine();
+        if (IsEnabled) stringBuilder.AppendLine();
     }
 
     public static string GetMessageString()
@@ -38,28 +44,56 @@ public static partial class FrameTrace
 [InterpolatedStringHandler]
 public ref struct AppendInterpolatedStringHandler(int literalLength, int formattedCount)
 {
+    private readonly bool _enabled = FrameTrace.IsEnabled;
     public StringBuilder.AppendInterpolatedStringHandler handler = new(literalLength, formattedCount, FrameTrace.stringBuilder);
 
-    public void AppendLiteral(string value) => handler.AppendLiteral(value);
+    public void AppendLiteral(string value)
+    {
+        if (_enabled) handler.AppendLiteral(value);
+    }
 
-    public void AppendFormatted<T>(T value) => handler.AppendFormatted(value);
+    public void AppendFormatted<T>(T value)
+    {
+        if (_enabled) handler.AppendFormatted(value);
+    }
 
-    public void AppendFormatted<T>(T value, string? format) => handler.AppendFormatted(value, format);
+    public void AppendFormatted<T>(T value, string? format)
+    {
+        if (_enabled) handler.AppendFormatted(value, format);
+    }
 
-    public void AppendFormatted<T>(T value, int alignment) => handler.AppendFormatted(value, alignment);
+    public void AppendFormatted<T>(T value, int alignment)
+    {
+        if (_enabled) handler.AppendFormatted(value, alignment);
+    }
 
-    public void AppendFormatted<T>(T value, int alignment, string? format) => handler.AppendFormatted(value, alignment, format);
+    public void AppendFormatted<T>(T value, int alignment, string? format)
+    {
+        if (_enabled) handler.AppendFormatted(value, alignment, format);
+    }
 
-    public void AppendFormatted(ReadOnlySpan<char> value) => handler.AppendFormatted(value);
+    public void AppendFormatted(ReadOnlySpan<char> value)
+    {
+        if (_enabled) handler.AppendFormatted(value);
+    }
 
     public void AppendFormatted(ReadOnlySpan<char> value, int alignment = 0, string? format = null)
-        => handler.AppendFormatted(value, alignment, format);
+    {
+        if (_enabled) handler.AppendFormatted(value, alignment, format);
+    }
 
-    public void AppendFormatted(string? value) => handler.AppendFormatted(value);
+    public void AppendFormatted(string? value)
+    {
+        if (_enabled) handler.AppendFormatted(value);
+    }
 
     public void AppendFormatted(string? value, int alignment = 0, string? format = null)
-        => handler.AppendFormatted(value, alignment, format);
+    {
+        if (_enabled) handler.AppendFormatted(value, alignment, format);
+    }
 
     public void AppendFormatted(object? value, int alignment = 0, string? format = null)
-        => handler.AppendFormatted(value, alignment, format);
+    {
+        if (_enabled) handler.AppendFormatted(value, alignment, format);
+    }
 }
