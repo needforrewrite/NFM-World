@@ -128,7 +128,7 @@ Key characteristics:
   `ArchiveContentClient` and loads it from those bytes, because a preview may name a host other than the
   baked `ArchiveEndpoint`; that means a stage enters through an explicit `StageLoader` (`stageData:` skips
   the download branch) and a model through `EditorObject(rad, showCollision: false)` in a `Scene` under an
-  orbit camera (right-drag, wheel). `WorldGame.Initialize` still runs: it creates the Apos renderer and the
+  orbit camera (left-drag, wheel). `WorldGame.Initialize` still runs: it creates the Apos renderer and the
   `UiRenderer` that pumps `LoadingWork`, which every `await LoadingWork.NextFrame` in the phase needs.
   Failures land in the phase's own dialog; the browser build has no ICU, so it formats exception text
   itself rather than showing a framework resource key. The archive's own pages link into it: see **Preview in 3D**

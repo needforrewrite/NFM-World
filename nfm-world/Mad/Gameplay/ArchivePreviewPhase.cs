@@ -256,7 +256,7 @@ public sealed class ArchivePreviewPhase : BaseStageRenderingPhase
     )
     {
         base.MousePressed(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
-        if (_model is null || imguiWantsMouse || button != MouseButton.Secondary) return;
+        if (_model is null || imguiWantsMouse || button != MouseButton.Primary) return;
 
         _orbiting = true;
         _dragX = x;
@@ -295,7 +295,7 @@ public sealed class ArchivePreviewPhase : BaseStageRenderingPhase
     )
     {
         base.MouseReleased(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
-        if (button == MouseButton.Secondary)
+        if (button == MouseButton.Primary)
             _orbiting = false;
     }
 
