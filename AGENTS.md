@@ -81,6 +81,12 @@ Key characteristics:
     -Workloads wasm-tools -NoGlobalJson`, then invoke `scratch/dotnet12/dotnet.exe`. `-NoGlobalJson`
     matters or every `dotnet` command in the repo starts resolving the nightly. CI pins the exact
     version instead (`web.yml`). See `.facts/dotnet12-nightly-local-sdk.md`.
+  - The head sets `WasmRunWasmOpt=true`, so a release publish runs Binaryen `-O2` over the composite
+    R2R image. It is on the composite only — `PublishReadyToRunComposite=true` puts all app code in
+    one image, so **1 `wasm-opt.stamp` of 144 is correct**, not a failure. It buys -4.7% image size
+    and roughly -5% tick time (icache, not a compiler win) and cannot touch the ~1.2-1.45 ms
+    per-frame floor, which is main-thread UI/layout. Pass `-p:WasmRunWasmOpt=false` for fast local
+    iteration. Timing methodology and the cross-tab trap: `.facts/wasm-opt-and-browser-tick-timing.md`.
   - The head runs on **CoreCLR**, not Mono: `UseMonoRuntime=false` plus
     `PublishReadyToRun(+Composite)`. That is what gives it a collectible `AssemblyLoadContext`
     (Mono wasm has none, so a gamemode plugin never unloaded) and real AOT. `RunAOTCompilation`,

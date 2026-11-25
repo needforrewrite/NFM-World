@@ -39,6 +39,15 @@
         <PublishReadyToRun>true</PublishReadyToRun>
         <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
 
+        <!-- Binaryen -O2 over the composite R2R image after crossgen2, in place, before it is
+             fingerprinted and staged. Measured on a 7-car race: the composite shrinks 58.93 MB to
+             56.18 MB (-4.7%), and preemption-free tick percentiles drop 4.6-5.8% (min 2.60 to
+             2.45 ms), i.e. it buys what the code-size reduction predicts and nothing more. It
+             cannot move the ~1.2-1.45 ms per-frame floor, which is main-thread UI/layout rather
+             than compiled game code. Costs real publish time (~10 minutes over 144 images), so
+             pass -p:WasmRunWasmOpt=false for a fast local iteration. -->
+        <WasmRunWasmOpt>true</WasmRunWasmOpt>
+
         <!-- The workload's Cache pack, not a directory of our own: emscripten resolves system
              libraries with os.path.relpath against the SDK tree, which throws "path is on mount
              W:, start on mount C:" when the cache lives on another drive, and the pack's copy is
