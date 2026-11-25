@@ -165,8 +165,15 @@ app.Use(async (context, next) =>
         headers.XContentTypeOptions = "nosniff";
         headers.XFrameOptions = "DENY";
         headers["Referrer-Policy"] = "no-referrer";
+        // The asset page frames the browser build's standalone preview, so its origin has to be
+        // listed; everything else stays denied.
+        var frameSources = "frame-src https://challenges.cloudflare.com";
+        if (AssetPreview.FrameOrigin(options) is { } previewOrigin)
+            frameSources += " " + previewOrigin;
         headers["Content-Security-Policy"] =
-            "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'";
+            "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; "
+            + frameSources
+            + "; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'";
         await next();
     }
 );

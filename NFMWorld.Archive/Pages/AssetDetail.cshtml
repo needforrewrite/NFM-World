@@ -3,50 +3,57 @@
 
 <p><a href="/browse">← Back to browse</a></p>
 
-<header class="asset-header">
-    <h1>@Model.Asset!.Name</h1>
-    <span class="asset-kind">@Model.Asset.Type</span>
-    @if (Model.Asset.ReviewStatus == NFMWorld.Archive.Data.AssetReviewStatus.Verified)
-    {
-        <span class="asset-kind">Verified</span>
-    }
-</header>
+<div class="asset-layout">
+    <div class="asset-body">
+        <header class="asset-header">
+            <h1>@Model.Asset!.Name</h1>
+            <span class="asset-kind">@Model.Asset.Type</span>
+            @if (Model.Asset.ReviewStatus == NFMWorld.Archive.Data.AssetReviewStatus.Verified)
+            {
+                <span class="asset-kind">Verified</span>
+            }
+        </header>
 
-@if (!string.IsNullOrWhiteSpace(Model.Asset.Description))
-{
-    <p class="asset-description">@Model.Asset.Description</p>
-}
-else
-{
-    <p class="muted">No description.</p>
-}
+        @if (!string.IsNullOrWhiteSpace(Model.Asset.Description))
+        {
+            <p class="asset-description">@Model.Asset.Description</p>
+        }
+        else
+        {
+            <p class="muted">No description.</p>
+        }
 
-<dl class="asset-meta">
-    <dt>Creator</dt>
-    <dd>
-        <partial name="_AssetCreator" model="@Model.Asset.Owner" />
-    </dd>
+        <dl class="asset-meta">
+            <dt>Creator</dt>
+            <dd>
+                <partial name="_AssetCreator" model="@Model.Asset.Owner" />
+            </dd>
 
-    <dt>Uploaded</dt>
-    <dd>@Model.Asset.CreatedAt.UtcDateTime.ToString("yyyy-MM-dd HH:mm") UTC</dd>
+            <dt>Uploaded</dt>
+            <dd>@Model.Asset.CreatedAt.UtcDateTime.ToString("yyyy-MM-dd HH:mm") UTC</dd>
 
-    <dt>Size</dt>
-    <dd>@AssetDetailModel.FormatSize(Model.Asset.SizeBytes)</dd>
+            <dt>Size</dt>
+            <dd>@AssetDetailModel.FormatSize(Model.Asset.SizeBytes)</dd>
 
-    <dt>Downloads</dt>
-    <dd>@Model.Asset.DownloadCount</dd>
+            <dt>Downloads</dt>
+            <dd>@Model.Asset.DownloadCount</dd>
 
-    <dt>SHA-256</dt>
-    <dd><code class="asset-hash">@Model.Asset.ContentHash</code></dd>
-</dl>
+            <dt>SHA-256</dt>
+            <dd><code class="asset-hash">@Model.Asset.ContentHash</code></dd>
+        </dl>
 
-<p class="asset-actions">
-    <a href="/assets/@Model.Asset.ContentHash" role="button">Download @Model.Asset.Type</a>
+        <p class="asset-actions">
+            <a href="/assets/@Model.Asset.ContentHash" role="button">Download @Model.Asset.Type</a>
+        </p>
+    </div>
+
     @if (Model.PreviewUrl is { } preview)
     {
-        <a href="@preview" role="button" class="secondary" target="_blank" rel="noopener">Preview in 3D</a>
+        <aside class="asset-viewer" aria-label="3D preview">
+            <iframe src="@preview" title="3D preview of @Model.Asset.Name" allowfullscreen></iframe>
+        </aside>
     }
-</p>
+</div>
 
 @if (Model.CanEdit)
 {

@@ -52,7 +52,7 @@ public class AssetPreviewTests
     }
 
     [TestMethod]
-    public async Task AssetPage_LinksThePreviewForAStage()
+    public async Task AssetPage_EmbedsThePreviewForAStage()
     {
         using var factory = new ArchiveAppFactory { GamePreviewUrl = GameHost };
         using var client = factory.CreateClient();
@@ -62,9 +62,24 @@ public class AssetPreviewTests
 
         StringAssert.Contains(
             html,
-            $"{GameHost}/index.html?hash={Hash('a')}&amp;preview=stage&amp;archive="
+            $"""<iframe src="{GameHost}/index.html?hash={Hash('a')}&amp;preview=stage&amp;archive="""
         );
-        StringAssert.Contains(html, "Preview in 3D");
+    }
+
+    [TestMethod]
+    public async Task AssetPage_FramesTheGameOrigin()
+    {
+        using var factory = new ArchiveAppFactory { GamePreviewUrl = GameHost };
+        using var client = factory.CreateClient();
+        var ids = await SeedAsync(factory, NewAsset("course", AssetType.Stage, Hash('a')));
+
+        var response = await client.GetAsync($"/asset/{ids["course"]}");
+        response.EnsureSuccessStatusCode();
+
+        // Without this the browser refuses the frame and the page shows an empty box.
+        var csp = response.Headers.GetValues("Content-Security-Policy").Single();
+        StringAssert.Contains(csp, $"frame-src https://challenges.cloudflare.com {GameHost}");
+        StringAssert.Contains(csp, "frame-ancestors 'none'");
     }
 
     [TestMethod]
@@ -88,7 +103,7 @@ public class AssetPreviewTests
 
         var html = await PageAsync(client, $"/asset/{ids["course"]}");
 
-        Assert.IsFalse(html.Contains("Preview in 3D"), html);
+        Assert.IsFalse(html.Contains("<iframe"), html);
     }
 
     [TestMethod]
@@ -105,7 +120,7 @@ public class AssetPreviewTests
         foreach (var name in new[] { "road", "run" })
         {
             var html = await PageAsync(client, $"/asset/{ids[name]}");
-            Assert.IsFalse(html.Contains("Preview in 3D"), html);
+            Assert.IsFalse(html.Contains("<iframe"), html);
         }
     }
 
@@ -146,5 +161,24 @@ public class AssetPreviewTests
         );
         Assert.IsNull(AssetPreview.Url(options, AssetType.Texture, Hash('a')));
         Assert.IsNull(AssetPreview.Url(new ArchiveOptions(), AssetType.Stage, Hash('a')));
+    }
+
+    [TestMethod]
+    public void FrameOrigin_IsTheConfiguredHostsSchemeAndAuthority()
+    {
+        Assert.AreEqual(
+            "https://play.example",
+            AssetPreview.FrameOrigin(new ArchiveOptions { GamePreviewUrl = "https://play.example/build/" })
+        );
+        Assert.AreEqual(
+            "http://127.0.0.1:8080",
+            AssetPreview.FrameOrigin(new ArchiveOptions { GamePreviewUrl = "http://127.0.0.1:8080" })
+        );
+        // A bare host would otherwise parse as a relative path and frame nothing useful.
+        Assert.AreEqual(
+            "https://play.example",
+            AssetPreview.FrameOrigin(new ArchiveOptions { GamePreviewUrl = "play.example" })
+        );
+        Assert.IsNull(AssetPreview.FrameOrigin(new ArchiveOptions()));
     }
 }

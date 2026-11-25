@@ -811,11 +811,15 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
   public uploads). `/browse` and the account page link there; `/assets/{hash}` stays the download endpoint the game
   fetches, so the page renders only rows that endpoint would serve (`IsPublic && !IsTakedown`, otherwise 404). No
   schema change: it reads the existing `Assets` row.
-- **Preview in 3D.** `/asset/{id}` and each `/browse` row link the upload into the deployed browser build's standalone
-  preview (`AssetPreview.Url`), for the kinds that have a view: `Stage` opens `preview=stage`, `Car`/`StagePiece`/`Wheel`
-  open `preview=model`, everything else gets no link. The link is gated on `Archive__GamePreviewUrl` (a deployment
-  setting; empty hides it) and names this archive as `archive=`, which the game fetches cross-origin through the
-  `CorsPolicies.CrossOrigin` policy. Don't build the URL anywhere else — a second copy drifts from the game's parsing.
+- **Preview in 3D.** `/asset/{id}` frames the upload's preview in an `<iframe>` at the top right of the page, and each
+  `/browse` row keeps a small `3D` link (`AssetPreview.Url`), for the kinds that have a view: `Stage` opens
+  `preview=stage`, `Car`/`StagePiece`/`Wheel` open `preview=model`, everything else gets no frame. Both are gated on
+  `Archive__GamePreviewUrl` (a deployment setting; empty hides them) and name this archive as `archive=`, which the game
+  fetches cross-origin through the `CorsPolicies.CrossOrigin` policy. **The frame needs `AssetPreview.FrameOrigin` in the
+  page's CSP `frame-src`** — without it the browser refuses the frame and the page shows an empty box with no error the
+  server can see. `frame-ancestors 'none'` and `X-Frame-Options: DENY` stay: they stop others framing the archive, not
+  it framing the game. The preview is https, so a local archive serving `http://` fails the game's own asset fetch as
+  mixed content — test it over https. Don't build the URL anywhere else — a second copy drifts from the game's parsing.
 - **Website styling.** Razor pages use self-hosted Blades CSS 3.1.1 (`wwwroot/lib/blades/`, MIT license included).
   Keep local layout tweaks in `wwwroot/css/archive.css`; use Blades semantic HTML, `.container`, `.grid`, and
   `.overflow-auto` rather than rebuilding its controls. No npm or frontend build step is needed.

@@ -412,6 +412,39 @@ tbody tr:last-child :is(td, th) {
     width: auto;
 }
 
+/* The preview sits in the page's top-right corner, beside the details rather than above them.
+   It is a frame, so it needs an explicit aspect ratio; the game fills whatever it is given. */
+.asset-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--archive-gutter);
+    align-items: start;
+}
+
+.asset-viewer {
+    order: -1;
+    min-width: 0;
+}
+
+.asset-viewer iframe {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--archive-line);
+    border-radius: var(--pico-border-radius);
+    background: #101014;
+}
+
+@media (min-width: 900px) {
+    .asset-layout {
+        grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
+    }
+
+    .asset-viewer {
+        order: 0;
+    }
+}
+
 .asset-preview {
     display: inline-block;
     margin-left: 0.35rem;

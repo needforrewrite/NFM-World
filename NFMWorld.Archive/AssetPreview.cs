@@ -31,4 +31,23 @@ public static class AssetPreview
         return $"{root}/index.html?hash={Uri.EscapeDataString(contentHash)}"
                + $"&preview={mode}&archive={Uri.EscapeDataString(options.PublicBaseUrl)}";
     }
+
+    /// <summary>
+    /// The scheme and host the preview is served from, for the page's <c>frame-src</c>. Null when no
+    /// preview host is configured, in which case nothing is framed either.
+    /// </summary>
+    public static string? FrameOrigin(ArchiveOptions options)
+    {
+        if (string.IsNullOrWhiteSpace(options.GamePreviewUrl))
+            return null;
+
+        // A bare "game.example" would otherwise be parsed as a path and read as a same-origin frame.
+        var url = options.GamePreviewUrl.Trim();
+        if (!url.Contains("://", StringComparison.Ordinal))
+            url = "https://" + url;
+
+        return Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            ? $"{uri.Scheme}://{uri.Authority}"
+            : null;
+    }
 }
