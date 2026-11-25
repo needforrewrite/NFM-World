@@ -3,56 +3,47 @@
 
 <p><a href="/browse">← Back to browse</a></p>
 
-<div class="asset-layout">
-    <div class="asset-body">
-        <header class="asset-header">
-            <h1>@Model.Asset!.Name</h1>
-            <span class="asset-kind">@Model.Asset.Type</span>
-            @if (Model.Asset.ReviewStatus == NFMWorld.Archive.Data.AssetReviewStatus.Verified)
-            {
-                <span class="asset-kind">Verified</span>
-            }
-        </header>
-
-        @if (!string.IsNullOrWhiteSpace(Model.Asset.Description))
+<div class="asset-body">
+    <header class="asset-header">
+        <h1>@Model.Asset!.Name</h1>
+        <span class="asset-kind">@Model.Asset.Type</span>
+        @if (Model.Asset.ReviewStatus == NFMWorld.Archive.Data.AssetReviewStatus.Verified)
         {
-            <p class="asset-description">@Model.Asset.Description</p>
+            <span class="asset-kind">Verified</span>
         }
-        else
-        {
-            <p class="muted">No description.</p>
-        }
+    </header>
 
-        <dl class="asset-meta">
-            <dt>Creator</dt>
-            <dd>
-                <partial name="_AssetCreator" model="@Model.Asset.Owner" />
-            </dd>
-
-            <dt>Uploaded</dt>
-            <dd>@Model.Asset.CreatedAt.UtcDateTime.ToString("yyyy-MM-dd HH:mm") UTC</dd>
-
-            <dt>Size</dt>
-            <dd>@AssetDetailModel.FormatSize(Model.Asset.SizeBytes)</dd>
-
-            <dt>Downloads</dt>
-            <dd>@Model.Asset.DownloadCount</dd>
-
-            <dt>SHA-256</dt>
-            <dd><code class="asset-hash">@Model.Asset.ContentHash</code></dd>
-        </dl>
-
-        <p class="asset-actions">
-            <a href="/assets/@Model.Asset.ContentHash" role="button">Download @Model.Asset.Type</a>
-        </p>
-    </div>
-
-    @if (Model.PreviewUrl is { } preview)
+    @if (!string.IsNullOrWhiteSpace(Model.Asset.Description))
     {
-        <aside class="asset-viewer" aria-label="3D preview">
-            <iframe src="@preview" title="3D preview of @Model.Asset.Name" allowfullscreen></iframe>
-        </aside>
+        <p class="asset-description">@Model.Asset.Description</p>
     }
+    else
+    {
+        <p class="muted">No description.</p>
+    }
+
+    <dl class="asset-meta">
+        <dt>Creator</dt>
+        <dd>
+            <partial name="_AssetCreator" model="@Model.Asset.Owner" />
+        </dd>
+
+        <dt>Uploaded</dt>
+        <dd>@Model.Asset.CreatedAt.UtcDateTime.ToString("yyyy-MM-dd HH:mm") UTC</dd>
+
+        <dt>Size</dt>
+        <dd>@AssetDetailModel.FormatSize(Model.Asset.SizeBytes)</dd>
+
+        <dt>Downloads</dt>
+        <dd>@Model.Asset.DownloadCount</dd>
+
+        <dt>SHA-256</dt>
+        <dd><code class="asset-hash">@Model.Asset.ContentHash</code></dd>
+    </dl>
+
+    <p class="asset-actions">
+        <a href="/assets/@Model.Asset.ContentHash" role="button" data-spa="off">Download @Model.Asset.Type</a>
+    </p>
 </div>
 
 @if (Model.CanEdit)

@@ -119,6 +119,26 @@ public static partial class Program
     }
 
     /// <summary>
+    /// Points a running preview at another upload. The archive hands each new asset over this way
+    /// instead of reloading the frame, which is what keeps the runtime, the device and the compiled
+    /// shaders: only the radpack is loaded again. Ignored before the game exists and when this page
+    /// booted the full game rather than a preview, in both cases because there is nothing to swap.
+    /// </summary>
+    [JSExport]
+    public static void SetPreviewAsset(string? mode, string? hash, string? archiveUrl)
+    {
+        if (_game is null || _preview is null) return;
+        if (NFMWorld.Gameplay.ArchivePreviewRequest.Parse(mode, hash, archiveUrl) is { } request)
+            _nextPreview = request;
+    }
+
+    /// <summary>
+    /// The asset to swap to, applied at the start of a frame rather than from the message handler:
+    /// the swap disposes the phase stack, which must not happen between a Tick's own begin and end.
+    /// </summary>
+    private static NFMWorld.Gameplay.ArchivePreviewRequest? _nextPreview;
+
+    /// <summary>
     /// TEMP: names the boot step that is about to run. A trap in native code kills the module
     /// before any managed catch can report it, so the last line of the log is the only record of
     /// how far the boot got.
@@ -271,6 +291,13 @@ public static partial class Program
     {
         try
         {
+            if (_nextPreview is { } next)
+            {
+                _nextPreview = null;
+                _preview = next;
+                GameSparker.ShowPreview(next);
+            }
+
             _game?.Tick(_clock!);
         }
         catch (Exception ex)

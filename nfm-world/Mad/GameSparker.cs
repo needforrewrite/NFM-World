@@ -335,6 +335,18 @@ public static partial class GameSparker
 
         SfxLibrary.LoadSounds();
         SettingsMenu = new SettingsMenu();
+        ShowPreview(request);
+    }
+
+    /// <summary>
+    /// Swaps the asset a running preview shows. The archive page keeps one frame alive across its
+    /// own navigations and asks for this rather than reloading: the runtime, the device and the
+    /// compiled shaders all survive, and only the radpack is loaded again.
+    /// </summary>
+    public static void ShowPreview(ArchivePreviewRequest request)
+    {
+        // A failure dialog belongs to the asset that is going away.
+        MessageWindow.Close();
         Phases.SetRoot(new ArchivePreviewPhase(request));
     }
 

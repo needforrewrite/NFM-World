@@ -164,9 +164,23 @@ td button {
     transform: none;
 }
 
-#main-content {
+.page-shell {
     padding: var(--archive-gutter);
     margin-bottom: 2rem;
+}
+
+/* The preview frame is a sibling of the swap target, never a child of it: a frame is destroyed the
+   moment it leaves the document, and the whole point of this shell is to keep one alive across
+   navigations. */
+.page-columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--archive-gutter);
+    align-items: start;
+}
+
+#main-content {
+    min-width: 0;
     overflow-wrap: anywhere;
 }
 
@@ -413,17 +427,16 @@ tbody tr:last-child :is(td, th) {
 }
 
 /* The preview sits in the page's top-right corner, beside the details rather than above them.
-   It is a frame, so it needs an explicit aspect ratio; the game fills whatever it is given. */
-.asset-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--archive-gutter);
-    align-items: start;
-}
-
+   It is a frame, so it needs an explicit aspect ratio; the game fills whatever it is given.
+   The aside is a sibling of the swap target and is never rebuilt, so moving it between the two
+   arrangements is a grid change and nothing else. */
 .asset-viewer {
     order: -1;
     min-width: 0;
+}
+
+.asset-viewer[hidden] {
+    display: none;
 }
 
 .asset-viewer iframe {
@@ -436,7 +449,7 @@ tbody tr:last-child :is(td, th) {
 }
 
 @media (min-width: 900px) {
-    .asset-layout {
+    .page-columns.preview-on {
         grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
     }
 

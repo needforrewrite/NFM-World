@@ -831,18 +831,51 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
   public uploads). `/browse` and the account page link there; `/assets/{hash}` stays the download endpoint the game
   fetches, so the page renders only rows that endpoint would serve (`IsPublic && !IsTakedown`, otherwise 404). No
   schema change: it reads the existing `Assets` row.
-- **Preview in 3D.** `/asset/{id}` frames the upload's preview in an `<iframe>` at the top right of the page, and each
-  `/browse` row keeps a small `3D` link (`AssetPreview.Url`), for the kinds that have a view: `Stage` opens
-  `preview=stage`, `Car`/`StagePiece`/`Wheel` open `preview=model`, everything else gets no frame. Both are gated on
+- **Preview in 3D.** `/asset/{id}` frames the upload's preview in an `<iframe>` and each `/browse` row keeps a small
+  `3D` link (`AssetPreview.Url`), for the kinds that have a view: `Stage` opens `preview=stage`,
+  `Car`/`StagePiece`/`Wheel` open `preview=model`, everything else gets no frame. Both are gated on
   `Archive__GamePreviewUrl` (a deployment setting; empty hides them) and name this archive as `archive=`, which the game
   fetches cross-origin through the `CorsPolicies.CrossOrigin` policy. **The frame needs `AssetPreview.FrameOrigin` in the
   page's CSP `frame-src`** — without it the browser refuses the frame and the page shows an empty box with no error the
   server can see. `frame-ancestors 'none'` and `X-Frame-Options: DENY` stay: they stop others framing the archive, not
   it framing the game. The preview is https, so a local archive serving `http://` fails the game's own asset fetch as
   mixed content — test it over https. Don't build the URL anywhere else — a second copy drifts from the game's parsing.
+
+  **The frame is booted once per visit, not per page.** It is a whole .NET runtime — ~970 ms of CPU here, of which
+  `dotnet.create()` alone is ~737 ms and the shader link ~375 ms — so every navigation that reloads it pays that again
+  while the next *asset* costs only a radpack fetch. Measured on the local build, a swap re-renders ~100 ms after the
+  click, with the radpack request leaving ~10 ms after it. `Pages/Shared/_Layout.cshtml` therefore renders the site shell:
+  `.page-columns#page-columns` holds `#main-content` (the swap target, and where the page body renders) **beside** a
+  single `aside#preview-host`. `wwwroot/js/shell.js` intercepts same-origin `<a>` clicks, fetches the next document and
+  replaces `#main-content`'s innerHTML, so the frame is never in the replaced subtree. **Never move, re-parent, remove
+  or re-src that frame** — any of the three destroys its browsing context and re-pays the boot; that is the one rule the
+  whole file exists for. A page with no preview only hides the aside (`hidden` plus the grid's `preview-on` class); the
+  runtime keeps running, so coming back is instant.
+
+  `<iframe>` is in the layout, not the page: `AssetDetailModel` publishes `AssetPreview.PreviewRequest` through
+  `ViewData["Preview"]` and the layout frames it, which is what gives a cold load (or a script-less visit) a working
+  preview with no JS. `shell.js` reads a page's preview state out of the *fetched* document — its `#preview-host`
+  hidden-ness and its iframe's query string — and never attaches that document's own frame.
+
+  Switching assets is `postMessage`, not navigation: `{type:'preview', hash, mode, archive, title}` posted to the frame
+  at the game origin, deduped on the hash already delivered. The frame answers `{type:'ready'}` when its runtime is up,
+  and the shell holds the last request until it does. On the game side `main.js` accepts a message **only from
+  `window.parent`**, and `Program.SetPreviewAsset` hands it to `GameSparker.ShowPreview`, which does
+  `Phases.SetRoot(new ArchivePreviewPhase(request))` — the old phase disposes, the device, the runtime and the compiled
+  shaders survive. The swap is applied at the start of a frame, never inside the message handler, because it rewrites
+  the phase stack.
+
+  Partial navigation is conservative by design: only same-origin `GET` `<a>` clicks, and any non-`text/html` or
+  non-`ok` response, missing shell element, thrown fetch, cross-origin link, `[download]`, `target` other than `_self`
+  or `data-spa="off"` falls back to the browser's own navigation. A page whose body brings its own `<script>` (the
+  sign-in page's Turnstile widget) is detected in the fetched document and navigated to in full, since `innerHTML`
+  does not run scripts. Form `POST`s are never intercepted. The header is not rebuilt either — only its `aria-current`
+  is copied across, because replacing it would destroy the sign-out form on every click.
 - **Website styling.** Razor pages use self-hosted Blades CSS 3.1.1 (`wwwroot/lib/blades/`, MIT license included).
   Keep local layout tweaks in `wwwroot/css/archive.css`; use Blades semantic HTML, `.container`, `.grid`, and
-  `.overflow-auto` rather than rebuilding its controls. No npm or frontend build step is needed.
+  `.overflow-auto` rather than rebuilding its controls. No npm or frontend build step is needed. Layout is
+  `.page-shell` > `.page-columns` (one column; two at ≥900px when it carries `preview-on`) so the preview sits beside the
+  content without either element moving in the DOM.
 - **Trust boundaries.** Accounts are the archive's; ratings are only written by a request signed with a trusted
   server key, and only the lobby holds one. A game master is run by anyone, so it reports a finished race to the
   lobby (`LOBBY_RESULTS_URL`) and the lobby forwards it to `/results/match`.

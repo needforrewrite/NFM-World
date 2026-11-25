@@ -1,5 +1,6 @@
 @{
     var viewer = ViewData["Viewer"] as NFMWorld.Archive.Pages.ViewerState;
+    var preview = ViewData["Preview"] as NFMWorld.Archive.AssetPreview.PreviewRequest;
     var page = ViewContext.RouteData.Values["page"] as string ?? "";
     var currentTab = page switch
     {
@@ -10,13 +11,16 @@
         _ => page
     };
     string? Current(string tab) => page == tab ? "page" : currentTab == tab ? "true" : null;
+
+    // The page this shell is showing, in the form the navigation script needs to rebuild it.
+    var title = ViewData["Title"] as string ?? "Archive";
 }
 <!DOCTYPE html>
 <html lang="en" data-theme="dark" data-compact>
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@ViewData["Title"] · NFM World Archive</title>
+    <title>@title · NFM World Archive</title>
     <link rel="stylesheet" href="~/lib/blades/blades.min.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/archive.css" asp-append-version="true" />
 </head>
@@ -61,17 +65,35 @@
         </ul>
     </nav>
 </header>
-<main class="archive-shell" id="main-content" tabindex="-1">
-    @if (ViewData["Viewer"] is NFMWorld.Archive.Pages.ViewerState { DeletionEraseAt: { } eraseAt })
-    {
-        <div class="error" role="alert" style="margin-bottom: 1rem;">
-            Account deletion scheduled for @eraseAt.UtcDateTime.ToString("yyyy-MM-dd").
-            <form method="post" action="/account/deletion?handler=Cancel" style="display:inline;">
-                <button type="submit" class="secondary outline">Cancel deletion</button>
-            </form>
+<main class="archive-shell page-shell">
+    <div class="page-columns@(preview is null ? "" : " preview-on")" id="page-columns">
+        @* The swap target. js/shell.js replaces this element's contents, never the preview beside
+           it: a frame is destroyed the moment it leaves the document, which is the whole cost this
+           shell exists to avoid. *@
+        <div id="main-content" tabindex="-1">
+            @if (ViewData["Viewer"] is NFMWorld.Archive.Pages.ViewerState { DeletionEraseAt: { } eraseAt })
+            {
+                <div class="error" role="alert" style="margin-bottom: 1rem;">
+                    Account deletion scheduled for @eraseAt.UtcDateTime.ToString("yyyy-MM-dd").
+                    <form method="post" action="/account/deletion?handler=Cancel" style="display:inline;">
+                        <button type="submit" class="secondary outline">Cancel deletion</button>
+                    </form>
+                </div>
+            }
+            @RenderBody()
         </div>
-    }
-    @RenderBody()
+        @if (preview is null)
+        {
+            <aside class="asset-viewer" id="preview-host" aria-label="3D preview" hidden></aside>
+        }
+        else
+        {
+            <aside class="asset-viewer" id="preview-host" aria-label="3D preview">
+                <iframe id="preview-frame" src="@preview.Url" title="3D preview of @title" allowfullscreen></iframe>
+            </aside>
+        }
+    </div>
 </main>
+<script src="~/js/shell.js" asp-append-version="true" defer></script>
 </body>
 </html>

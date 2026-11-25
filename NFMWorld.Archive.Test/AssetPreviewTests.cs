@@ -62,8 +62,12 @@ public class AssetPreviewTests
 
         StringAssert.Contains(
             html,
-            $"""<iframe src="{GameHost}/index.html?hash={Hash('a')}&amp;preview=stage&amp;archive="""
+            $"""<iframe id="preview-frame" src="{GameHost}/index.html?hash={Hash('a')}&amp;preview=stage&amp;archive="""
         );
+
+        // Beside the swap target, not inside it: the frame outlives every navigation, so it cannot
+        // be part of the content that gets replaced.
+        StringAssert.Contains(html, """<div class="page-columns preview-on" id="page-columns">""");
     }
 
     [TestMethod]

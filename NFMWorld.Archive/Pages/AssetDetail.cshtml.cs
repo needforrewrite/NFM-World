@@ -12,8 +12,11 @@ public sealed class AssetDetailModel(ArchiveDbContext db, ArchiveOptions options
 {
     public Asset? Asset { get; private set; }
 
-    /// <summary>Where the browser build shows this upload, or null when it has no 3D view.</summary>
-    public string? PreviewUrl { get; private set; }
+    /// <summary>
+    /// The browser build's view of this upload, or null when it has no 3D view. The layout frames
+    /// it; the page itself only describes the asset.
+    /// </summary>
+    public AssetPreview.PreviewRequest? Preview { get; private set; }
 
     /// <summary>True for the uploader and for an administrator; the page shows the edit link then.</summary>
     public bool CanEdit { get; private set; }
@@ -32,9 +35,10 @@ public sealed class AssetDetailModel(ArchiveDbContext db, ArchiveOptions options
             return NotFound();
 
         CanEdit = Account is not null && (Asset.OwnerId == Account.Id || Account.IsModerator);
-        PreviewUrl = AssetPreview.Url(options, Asset.Type, Asset.ContentHash);
+        Preview = AssetPreview.Request(options, Asset.Type, Asset.ContentHash);
 
         ViewData["Title"] = Asset.Name;
+        ViewData["Preview"] = Preview;
 
         if (Asset.Owner is { IsDeleted: false } owner)
         {

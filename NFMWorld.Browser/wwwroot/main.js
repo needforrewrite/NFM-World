@@ -111,6 +111,27 @@ try {
 // asset is still downloading.
 boot.remove();
 
+// A preview frame can be kept alive by the page that embeds it: the archive swaps assets in place
+// instead of navigating the frame, which is what saves this whole boot. Only the parent may ask,
+// and only with a well-formed request - the payload names an asset the src could have named anyway,
+// so a hostile embedder gains nothing it did not already have.
+addEventListener('message', event => {
+    if (event.source === window || event.source !== window.parent) return;
+    const data = event.data;
+    if (!data || data.type !== 'preview' || typeof data.hash !== 'string') return;
+    if (!/^[0-9a-f]{64}$/i.test(data.hash)) return;
+
+    exports.NFMWorld.Browser.Program.SetPreviewAsset(
+        typeof data.mode === 'string' ? data.mode : null,
+        data.hash,
+        typeof data.archive === 'string' ? data.archive : null
+    );
+});
+
+// The parent waits for this before sending anything: a message posted earlier would have arrived
+// before the listener above existed.
+if (previewHash) window.parent.postMessage({ type: 'ready' }, '*');
+
 // The canvas is laid out by CSS but its backing store is not, so the game has to be told the page
 // size. SDL's emscripten backend does the actual resizing from here - it sets the canvas to the
 // window size scaled by the device pixel ratio - so this only forwards the size. Nothing else

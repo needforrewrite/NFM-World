@@ -13,6 +13,12 @@ namespace NFMWorld.Archive;
 /// </remarks>
 public static class AssetPreview
 {
+    /// <summary>
+    /// One upload as the shell needs it: the frame URL for a cold load, and the parts the running
+    /// frame is told to switch to when the page navigates without reloading.
+    /// </summary>
+    public sealed record PreviewRequest(string Url, string Hash, string Mode, string ArchiveUrl);
+
     /// <summary>The <c>preview=</c> value for a stored kind, or null when it has no 3D view.</summary>
     public static string? Mode(AssetType type) => type switch
     {
@@ -21,16 +27,26 @@ public static class AssetPreview
         _ => null
     };
 
-    /// <summary>Where an upload opens in the browser build, or null when it cannot be previewed.</summary>
-    public static string? Url(ArchiveOptions options, AssetType type, string contentHash)
+    /// <summary>The preview for an upload, or null when it cannot be previewed.</summary>
+    public static PreviewRequest? Request(ArchiveOptions options, AssetType type, string contentHash)
     {
         if (Mode(type) is not { } mode || string.IsNullOrWhiteSpace(options.GamePreviewUrl))
             return null;
 
         var root = options.GamePreviewUrl.TrimEnd('/');
-        return $"{root}/index.html?hash={Uri.EscapeDataString(contentHash)}"
-               + $"&preview={mode}&archive={Uri.EscapeDataString(options.PublicBaseUrl)}";
+        var archive = options.PublicBaseUrl;
+        return new PreviewRequest(
+            $"{root}/index.html?hash={Uri.EscapeDataString(contentHash)}"
+            + $"&preview={mode}&archive={Uri.EscapeDataString(archive)}",
+            contentHash,
+            mode,
+            archive
+        );
     }
+
+    /// <summary>Where an upload opens in the browser build, or null when it cannot be previewed.</summary>
+    public static string? Url(ArchiveOptions options, AssetType type, string contentHash)
+        => Request(options, type, contentHash)?.Url;
 
     /// <summary>
     /// The scheme and host the preview is served from, for the page's <c>frame-src</c>. Null when no
