@@ -52,18 +52,27 @@ internal sealed unsafe class WebGpuDynamicBuffer : IDisposable
     /// Reserves an aligned region and returns where it starts. Grows the buffer rather than wrapping,
     /// because the region handed out earlier in the frame is still referenced by recorded commands.
     /// </summary>
-    internal ulong Allocate(int size)
+    /// <param name="alignment">
+    /// A stricter alignment than the ring's own, for a region only some copies can use. A texture
+    /// copy's buffer offset must be a multiple of that format's texel block size - 16 for
+    /// <c>Rgba32f</c> - while the ring itself only guarantees WebGPU's 4-byte copy unit.
+    /// </param>
+    internal ulong Allocate(int size, int alignment = 0)
     {
-        var aligned = WebGpuInterop.Align((ulong)Math.Max(size, 1), _alignment);
-        if (_cursor + aligned > _capacity)
+        var align = Math.Max(_alignment, (ulong)Math.Max(alignment, 1));
+        var length = WebGpuInterop.Align((ulong)Math.Max(size, 1), _alignment);
+
+        // The cursor is only kept a multiple of the ring's own alignment, so a stricter request has
+        // to move the start; advancing by a ring-aligned length keeps that invariant for later calls.
+        var offset = WebGpuInterop.Align(_cursor, align);
+        if (offset + length > _capacity)
         {
-            var capacity = Math.Max(_capacity * 2, _cursor + aligned);
+            var capacity = Math.Max(_capacity * 2, offset + length);
             Create(capacity);
-            _cursor = 0;
+            offset = 0;
         }
 
-        var offset = _cursor;
-        _cursor += aligned;
+        _cursor = offset + length;
         return offset;
     }
 

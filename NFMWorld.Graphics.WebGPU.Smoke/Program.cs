@@ -43,6 +43,7 @@ internal static unsafe class Program
         CheckTextureRoundTrip(device);
         CheckBuffers(device);
         CheckUnalignedCopies(device);
+        CheckTextureUploadAlignment(device);
         CheckCommandBufferLifetime(device);
         CheckRenderTarget(device);
         CheckBundlePipelines(device);
@@ -169,6 +170,55 @@ internal static unsafe class Program
             "BUFFER",
             $"{oddSize} bytes into an {oddSize}-byte buffer is accepted at creation and as an update",
             buffer.SizeInBytes == oddSize && device.TakeError() is null
+        );
+    }
+
+    /// <summary>
+    /// A recorded texture upload's staging offset must be a multiple of the destination format's
+    /// texel block size, not just WebGPU's 4-byte copy unit. wgpu checks
+    /// <c>validate_texture_buffer_copy</c> against <c>block_copy_size</c>, so an <c>Rgba32f</c>
+    /// texture - the glyph and MSDF atlases, at 16 bytes per texel - rejects a 4-byte-aligned region
+    /// with "Buffer offset N is not aligned to block size or COPY_BUFFER_ALIGNMENT". The symptom is
+    /// the runtime itself: the offset depends on what earlier uploads left in the ring, so it only
+    /// breaks once a frame happens to hand out one of the three-in-four bad positions.
+    /// </summary>
+    private static void CheckTextureUploadAlignment(WebGpuGraphicsDevice device)
+    {
+        const int width = 8;
+        const int rows = 4;
+        var texels = new byte[width * rows * 16];
+
+        using var texture = device.CreateTexture(new TextureDesc(width, rows, TextureFormat.Rgba32f));
+        using var scratch = device.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, 64),
+            new byte[64]
+        );
+
+        // The ring is reset on submit, so the offset has to be walked inside one command buffer:
+        // each 4-byte buffer update moves the cursor 4 bytes, and the texture upload then follows at
+        // 4, 8, 12, ... - three quarters of which are not multiples of the 16-byte block.
+        var failed = 0;
+        var cursors = new List<int>();
+        for (var probes = 0; probes <= 4; probes++)
+        {
+            var commandBuffer = device.AcquireCommandBuffer();
+            for (var i = 0; i < probes; i++)
+                commandBuffer.UpdateBuffer(scratch, new byte[4], i * 4);
+
+            cursors.Add(probes * 4);
+            commandBuffer.UpdateTexture(texture, 0, 0, width, rows, texels);
+            device.Submit(commandBuffer);
+            device.Poll(true);
+
+            if (device.TakeError() is not null)
+                failed++;
+        }
+
+        Report(
+            "TEXTURE",
+            $"an {width}x{rows} Rgba32f upload is accepted with the staging ring at "
+            + $"{string.Join(", ", cursors)} ({failed} rejected)",
+            failed == 0
         );
     }
 

@@ -284,7 +284,10 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
         var size = pitch * rows;
 
         var staging = _device.Staging;
-        var offset = staging.Allocate(size);
+
+        // The copy's buffer offset is validated against the format's texel block size, not the
+        // 4-byte copy unit: an Rgba32f upload at offset 4 is refused outright.
+        var offset = staging.Allocate(size, webGpu.Format.TexelBlockBytes());
         if (pitch == rowBytes)
         {
             staging.Write(offset, data[..required]);

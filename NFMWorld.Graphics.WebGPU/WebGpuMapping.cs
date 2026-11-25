@@ -53,6 +53,13 @@ internal static class WebGpuMapping
     /// <summary>Texel rows one 4x4 block covers, i.e. how many image rows a block-compressed row is.</summary>
     public static int TexelBlockHeight(this TextureFormat format) => format.IsBlockCompressed() ? 4 : 1;
 
+    /// <summary>
+    /// The bytes one texel block occupies - wgpu's <c>block_copy_size</c>, i.e. one block row at
+    /// block width.
+    /// </summary>
+    public static int TexelBlockBytes(this TextureFormat format) =>
+        format.RowBytes(format.IsBlockCompressed() ? 4 : 1);
+
     /// <summary>The bytes one *row* of the format occupies at the given width.</summary>
     public static int RowBytes(this TextureFormat format, int width) => format switch
     {
