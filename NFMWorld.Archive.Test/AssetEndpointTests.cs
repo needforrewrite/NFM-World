@@ -351,6 +351,45 @@ public class AssetEndpointTests
     }
 
     [TestMethod]
+    public async Task Cors_Preflight_AllowsSignInFromTheBrowserBuild()
+    {
+        // The browser build is served from its own origin, so its sign-in is a cross-origin POST
+        // with a JSON body: an unauthorised preflight makes the archive unreachable from the web.
+        using var factory = new ArchiveAppFactory();
+        using var client = factory.CreateClient();
+
+        using var request = new HttpRequestMessage(HttpMethod.Options, "/auth/login");
+        request.Headers.Add("Origin", "https://play.nfmw.net");
+        request.Headers.Add("Access-Control-Request-Method", "POST");
+        request.Headers.Add("Access-Control-Request-Headers", "content-type");
+        var response = await client.SendAsync(request);
+
+        Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.AreEqual("*", response.Headers.GetValues("Access-Control-Allow-Origin").Single());
+        StringAssert.Contains(response.Headers.GetValues("Access-Control-Allow-Methods").Single(), "POST");
+        StringAssert.Contains(response.Headers.GetValues("Access-Control-Allow-Headers").Single(), "Content-Type");
+    }
+
+    [TestMethod]
+    public async Task Cors_AuthenticatedRequest_IsReadableCrossOrigin()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = factory.CreateClient();
+
+        await client.PostAsJsonAsync("/auth/register", ArchiveAppFactory.Registration("alice"));
+        var login = await client.PostAsJsonAsync("/auth/login", new { Username = "alice", Password = "password123" });
+        var token = (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString()!;
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/auth/me");
+        request.Headers.Add("Origin", "https://play.nfmw.net");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.SendAsync(request);
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.AreEqual("*", response.Headers.GetValues("Access-Control-Allow-Origin").Single());
+    }
+
+    [TestMethod]
     public async Task Download_OfATakenDownAsset_IsNotFound()
     {
         using var factory = new ArchiveAppFactory();

@@ -42,7 +42,7 @@ public static class TimeTrialEndpoints
 {
     public static void MapTimeTrialEndpoints(this WebApplication app)
     {
-        var tt = app.MapGroup("/tt");
+        var tt = app.MapGroup("/tt").RequireCors(CorsPolicies.CrossOrigin);
 
         tt.MapPost(
             "/upload",

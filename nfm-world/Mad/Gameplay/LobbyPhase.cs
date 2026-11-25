@@ -1260,7 +1260,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                 ? "No public stages matched."
                 : $"{stages.Count} public stage(s). Pick one to use it.";
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        catch (Exception ex)
         {
             if (generation != _stageSearchGeneration)
                 return;

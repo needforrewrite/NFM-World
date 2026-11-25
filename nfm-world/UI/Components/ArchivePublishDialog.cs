@@ -286,7 +286,7 @@ internal sealed class ArchivePublishDialog
         {
             uploads = await GameSparker.AccountManager.ListOwnedAssetsAsync(AssetKinds.Name((byte)document.Kind));
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        catch (Exception ex)
         {
             error = $"Could not load your uploads: {ex.Message}";
         }
@@ -340,7 +340,7 @@ internal sealed class ArchivePublishDialog
         {
             result = await document.Publish(publication);
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        catch (Exception ex)
         {
             result = new(false, $"Could not finish publishing: {ex.Message}", null);
         }

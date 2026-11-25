@@ -57,14 +57,16 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.ConfigureFilter(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute())
 );
 
-// Cross-origin reads of the public asset routes, for pages on another origin (the standalone
-// radpack preview). Applying the policy is opt-in per endpoint rather than global, so the site's
-// own pages and the signed-in endpoints are not readable from a third-party origin.
+// One policy, two kinds of caller: the standalone preview page, which fetches one asset by hash,
+// and the browser build of the game, which is served from play.nfmw.net while the archive is
+// nfmw.net, so its sign-in, asset search, uploads and time-trial submission are all cross-origin.
+// Applied to route groups rather than globally, so the cookie-authenticated website pages stay
+// unreadable from another origin.
 builder.Services.AddCors(cors =>
-    cors.AddPolicy(AssetEndpoints.CorsPolicy, policy => ApplyAssetCors(policy, options.CorsOrigins))
+    cors.AddPolicy(CorsPolicies.CrossOrigin, policy => ApplyCrossOrigin(policy, options.CorsOrigins))
 );
 
-static void ApplyAssetCors(CorsPolicyBuilder policy, string? configured)
+static void ApplyCrossOrigin(CorsPolicyBuilder policy, string? configured)
 {
     var origins = (configured ?? "")
         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -73,8 +75,8 @@ static void ApplyAssetCors(CorsPolicyBuilder policy, string? configured)
     else
         policy.WithOrigins(origins);
 
-    policy.WithMethods("GET", "HEAD")
-        .WithHeaders("Range", "If-Range")
+    policy.WithMethods("GET", "HEAD", "POST", "PUT", "PATCH", "DELETE")
+        .WithHeaders("Content-Type", "Authorization", "Range", "If-Range")
         .WithExposedHeaders("Content-Length", "Content-Range", "Accept-Ranges", "Content-Disposition");
 }
 

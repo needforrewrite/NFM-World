@@ -135,8 +135,10 @@ internal sealed class MyContentController : IDisposable
             state.Cursor.Value = Math.Clamp(state.Cursor.Value, 0, Math.Max(0, items.Count - 1));
             state.Status.Value = items.Count == 0 ? "" : $"{items.Count} upload(s).";
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        catch (Exception ex)
         {
+            // Fired and forgotten by the controller, so nothing may escape: an unobserved fault
+            // reaches the web build's crash reporter.
             await LoadingWork.NextFrame;
             if (!_disposed && generation == _generation)
                 state.Status.Value = $"Could not reach the archive: {ex.Message}";

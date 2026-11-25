@@ -77,7 +77,7 @@ public sealed partial class AccountManager
                 : $"Published \"{name}\".";
             return new AssetUploadResult(true, message, hash);
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        catch (Exception ex)
         {
             return new AssetUploadResult(false, $"Could not reach the archive: {ex.Message}", null);
         }
@@ -134,7 +134,7 @@ public sealed partial class AccountManager
 
             return new RequestResult("Submitted.", true);
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        catch (Exception ex)
         {
             return new RequestResult($"Could not reach the archive: {ex.Message}", false);
         }

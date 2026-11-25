@@ -120,8 +120,9 @@ public sealed partial class AccountManager
                 ? new RequestResult("Changes saved.", true)
                 : new RequestResult(await ReadErrorAsync(response), false);
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        catch (Exception ex)
         {
+            // Called fire-and-forget from the menu; nothing may escape as an unobserved fault.
             return new RequestResult($"Could not reach the archive: {ex.Message}", false);
         }
     }
@@ -180,7 +181,7 @@ public sealed partial class AccountManager
                 : $"Updated \"{name}\".";
             return new AssetUploadResult(true, message, hash);
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        catch (Exception ex)
         {
             return new AssetUploadResult(false, $"Could not reach the archive: {ex.Message}", null);
         }
@@ -204,7 +205,7 @@ public sealed partial class AccountManager
                 ? new RequestResult("Upload deleted.", true)
                 : new RequestResult(await ReadErrorAsync(response), false);
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        catch (Exception ex)
         {
             return new RequestResult($"Could not reach the archive: {ex.Message}", false);
         }

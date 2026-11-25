@@ -66,8 +66,10 @@ public sealed partial class AccountManager : IDisposable
                 SetActive(new Account(ActiveAccount.Token, account.Username, account.Role, account.DeletionPendingUntil));
             return true;
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        catch (Exception ex)
         {
+            // A refresh is fired and forgotten at the menu, so anything escaping here is an
+            // unobserved fault: on the web build that reaches the crash reporter.
             Logging.Warning($"Could not reach the archive: {ex.Message}");
             return false;
         }
@@ -124,9 +126,12 @@ public sealed partial class AccountManager : IDisposable
             SetActive(new Account(body.Token, body.Account.Username, body.Account.Role, body.Account.DeletionPendingUntil));
             return new RequestResult("Success", true);
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        catch (Exception ex)
         {
-            return new RequestResult($"Could not reach the archive: {ex.Message}", false);
+            // Never let a sign-in failure escape: the caller is fire-and-forget, so an exception
+            // here becomes an unobserved task fault rather than a message on the form.
+            Logging.Warning($"Sign-in failed: {ex}");
+            return new RequestResult($"Could not sign in: {ex.Message}", false);
         }
     }
 
