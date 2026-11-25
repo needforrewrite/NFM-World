@@ -57,11 +57,13 @@
              deferred to the end. -->
         <PublishTrimmed>true</PublishTrimmed>
 
-        <!-- Trimming switches System.Text.Json's reflection resolver off by default, and that is
-             the path AccountManager's PostAsJsonAsync/ReadFromJsonAsync calls take: the archive's
-             login and asset DTOs have no JsonSerializerContext. Off, the first call throws
-             InvalidOperationException - which is what signing in to the web build does. Same
-             switch as NFMWorld/NFMWorld.csproj; keep the two in step. -->
+        <!-- Trimming switches System.Text.Json's reflection resolver off by default. The archive's
+             account surface does not depend on it: AccountJsonContext source-generates the metadata
+             for every request and response, because trimming also strips the constructor parameter
+             names the reflection resolver reads, so a reflection-made JsonTypeInfo for those DTOs
+             throws ConstructorContainsNullParameterNames. The switch stays on for the reflection-based
+             callers that remain (HUD skins, menu history, the Sx harness). Same switch as
+             NFMWorld/NFMWorld.csproj; keep the two in step. -->
         <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
 
         <!-- HoleyDiver and NFMWorld.CrashReporter are OutputType=Exe (they double as tools), and a

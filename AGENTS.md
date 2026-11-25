@@ -892,7 +892,10 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
   The login page renders one widget for the selected `flow` (`signin`, `register`, or `discord`); switching flows
   reloads the page with a fresh widget. The game opens `/account/login?flow=register` for registration.
 - **Client.** `AccountManager` (`nfm-world/Mad/Account/`) talks to `/auth/*` directly and persists the token through
-  the VFS write root; the menu's ACCOUNT item opens `AccountView`. `ArchiveMount` mounts the asset store as a read-only
+  the VFS write root; the menu's ACCOUNT item opens `AccountView`. Every account request and response goes through
+  `AccountJsonContext` (`NFMWorld.Library/Accounts/AccountJson.cs`), the source-generated metadata for those DTOs —
+  never `new { ... }` with `PostAsJsonAsync`/`JsonContent.Create`, and never a bare `ReadFromJsonAsync<T>()`.
+  `ArchiveMount` mounts the asset store as a read-only
   VFS layer after local content. It reads `archive/<sha256>` directly from `/assets/<hash>` without a remote listing
   or name-to-hash manifest; existence/enumeration only know assets already fetched. Online search/listing needs
   explicit endpoints, not a VFS-wide asset index.
@@ -903,6 +906,7 @@ uploaded files on disk. `NFMWorld.Archive/ops/README.md` covers deployment confi
 | `_ViewImports` | must sit at `Pages/_ViewImports.cshtml`, not `Pages/Shared/`, or the layout and tag helpers do not apply to subpages |
 | Untrusted decompression | `Deflate.Decompress(source, maxOutputBytes)` and `RadpackSerializer.Deserialize(data, maxDecompressedBytes)` are the bounded overloads; the unbounded ones are for data this build produced |
 | Login enumeration | a missing user still pays for a password hash (`PasswordHasher.DummyHash`) and returns the same error as a wrong password |
+| Reflection JSON in a trimmed build | does not work at all, with the switch *on*: the trimmer drops what `DefaultJsonTypeInfoResolver` needs, so an anonymous type throws `ConstructorContainsNullParameterNames` and a positional record throws "no parameterless constructor ... is not supported". Both were measured on a `PublishTrimmed` net11 build. Anything the browser head serializes must go through a `[JsonSourceGenerationOptions]` `JsonSerializerContext` and pass its `JsonTypeInfo` explicitly |
 | Uploaded files | are served with a download disposition and `nosniff` and belong on a separate origin; the in-app endpoint is a development convenience |
 | `DateTimeOffset` ordering | SQLite refuses to `ORDER BY` a `DateTimeOffset` (stored as TEXT), throwing `NotSupportedException` at query time. Order by `Id` instead — it follows creation order — or sort in LINQ to Objects when the result set is already bounded. Both `/browse` and `/assets/search` hit this |
 

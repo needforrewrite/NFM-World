@@ -2,6 +2,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using NFMWorldLibrary.Accounts;
 using NFMWorldLibrary.Radpack;
 
 namespace NFMWorld.Accounts;
@@ -48,7 +49,7 @@ public sealed partial class AccountManager
             using var response = await _http.GetAsync(new Uri(_baseUri, "assets/limits"));
             if (!response.IsSuccessStatusCode) return null;
 
-            var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+            var body = await response.Content.ReadFromJsonAsync(AccountJsonContext.Default.JsonElement);
             return body.ValueKind == JsonValueKind.Object && body.TryGetProperty("maxUploadBytes", out var limit)
                    && limit.ValueKind == JsonValueKind.Number && limit.TryGetInt32(out var bytes)
                    && bytes is > 0 and <= RadpackLimits.MaxCompressedBytes
@@ -84,7 +85,7 @@ public sealed partial class AccountManager
             if (!response.IsSuccessStatusCode)
                 throw new HttpRequestException(await ReadErrorAsync(response, assetRequest: true), null, response.StatusCode);
 
-            var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+            var body = await response.Content.ReadFromJsonAsync(AccountJsonContext.Default.JsonElement);
             foreach (var item in body.GetProperty("items").EnumerateArray())
                 items.Add(ReadOwned(item));
 
@@ -111,7 +112,10 @@ public sealed partial class AccountManager
         {
             using var request = new HttpRequestMessage(HttpMethod.Patch, new Uri(_baseUri, $"assets/{id}"))
             {
-                Content = JsonContent.Create(new { Name = name, Description = description, IsPublic = isPublic })
+                Content = JsonContent.Create(
+                    new AssetUpdateRequest(name, description, isPublic),
+                    AccountJsonContext.Default.AssetUpdateRequest
+                )
             };
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", account.Token);
 
@@ -171,7 +175,7 @@ public sealed partial class AccountManager
             if (!response.IsSuccessStatusCode)
                 return new AssetUploadResult(false, await ReadErrorAsync(response, assetRequest: true), null);
 
-            var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+            var body = await response.Content.ReadFromJsonAsync(AccountJsonContext.Default.JsonElement);
             var hash = body.TryGetProperty("asset", out var asset)
                        && asset.TryGetProperty("contentHash", out var contentHash)
                 ? contentHash.GetString()

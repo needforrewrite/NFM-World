@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using NFMWorld.Gameplay;
 using NFMWorldLibrary;
+using NFMWorldLibrary.Accounts;
 using NFMWorldLibrary.Multiplayer;
 
 namespace NFMWorld.Accounts;
@@ -61,7 +62,7 @@ public sealed partial class AccountManager : IDisposable
                 return false;
             }
 
-            var account = await response.Content.ReadFromJsonAsync<AccountResponse>();
+            var account = await response.Content.ReadFromJsonAsync(AccountJsonContext.Default.AccountResponse);
             if (account is { Username.Length: > 0 })
                 SetActive(new Account(ActiveAccount.Token, account.Username, account.Role, account.DeletionPendingUntil));
             return true;
@@ -113,12 +114,13 @@ public sealed partial class AccountManager : IDisposable
         {
             using var response = await _http.PostAsJsonAsync(
                 new Uri(_baseUri, "auth/login"),
-                new { Username = username, Password = password }
+                new LoginRequest(username, password),
+                AccountJsonContext.Default.LoginRequest
             );
             if (!response.IsSuccessStatusCode)
                 return new RequestResult(await ReadErrorAsync(response), false);
 
-            var body = await response.Content.ReadFromJsonAsync<LoginResponse>();
+            var body = await response.Content.ReadFromJsonAsync(AccountJsonContext.Default.LoginResponse);
             if (body?.Token is not { Length: > 0 })
                 return new RequestResult("The archive returned no session token.", false);
 
@@ -145,7 +147,7 @@ public sealed partial class AccountManager : IDisposable
     {
         try
         {
-            var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+            var body = await response.Content.ReadFromJsonAsync(AccountJsonContext.Default.JsonElement);
             if (body.ValueKind == JsonValueKind.Object && body.TryGetProperty("error", out var error)
                 && error.ValueKind == JsonValueKind.String && error.GetString() is { Length: > 0 } message)
                 return message;
@@ -177,16 +179,4 @@ public sealed partial class AccountManager : IDisposable
     }
 
     public void Dispose() => _http.Dispose();
-
-    private sealed record AccountResponse(
-        string Username,
-        bool IsAdmin,
-        UserRole Role,
-        DateTimeOffset? DeletionPendingUntil,
-        double Elo,
-        int Wins,
-        int Losses,
-        int Matches);
-
-    private sealed record LoginResponse(string Token, AccountResponse Account);
 }

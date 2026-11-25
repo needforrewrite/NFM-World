@@ -2,6 +2,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using NFMWorldLibrary.Accounts;
 using NFMWorldLibrary.Radpack;
 using NFMWorldLibrary.Util;
 
@@ -59,7 +60,7 @@ public sealed partial class AccountManager
             if (!response.IsSuccessStatusCode)
                 return new AssetUploadResult(false, await ReadErrorAsync(response, assetRequest: true), null);
 
-            var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+            var body = await response.Content.ReadFromJsonAsync(AccountJsonContext.Default.JsonElement);
             var hash = body.TryGetProperty("asset", out var asset)
                        && asset.TryGetProperty("contentHash", out var contentHash)
                 ? contentHash.GetString()

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using NFMWorldLibrary;
 using NFMWorld.Gameplay;
+using NFMWorldLibrary.Accounts;
 using NFMWorldLibrary.Multiplayer;
 
 namespace NFMWorld.Accounts;
@@ -19,8 +20,6 @@ public static class AccountStore
         ? $"data/cfg/account-{environment}.json"
         : "data/cfg/account.json";
 
-    private sealed record Stored(string Token, string Username, UserRole Role, DateTimeOffset? DeletionPendingUntil);
-
     public static (string Token, string Username, UserRole Role, DateTimeOffset? DeletionPendingUntil)? Load()
     {
         try
@@ -28,7 +27,7 @@ public static class AccountStore
             if (!TheVFS.VFS.FileExists(Path))
                 return null;
 
-            var stored = JsonSerializer.Deserialize<Stored>(TheVFS.VFS.ReadAllText(Path));
+            var stored = JsonSerializer.Deserialize(TheVFS.VFS.ReadAllText(Path), AccountJsonContext.Default.StoredAccount);
             return stored is { Token.Length: > 0 }
                 ? (stored.Token, stored.Username, stored.Role, stored.DeletionPendingUntil)
                 : null;
@@ -45,7 +44,11 @@ public static class AccountStore
         try
         {
             using var stream = TheVFS.VFS.OpenWrite(Path);
-            JsonSerializer.Serialize(stream, new Stored(token, username, role, deletionPendingUntil));
+            JsonSerializer.Serialize(
+                stream,
+                new StoredAccount(token, username, role, deletionPendingUntil),
+                AccountJsonContext.Default.StoredAccount
+            );
         }
         catch (Exception ex)
         {
@@ -62,7 +65,11 @@ public static class AccountStore
         try
         {
             using var stream = TheVFS.VFS.OpenWrite(Path);
-            JsonSerializer.Serialize(stream, new Stored("", "", UserRole.User, null));
+            JsonSerializer.Serialize(
+                stream,
+                new StoredAccount("", "", UserRole.User, null),
+                AccountJsonContext.Default.StoredAccount
+            );
         }
         catch (Exception ex)
         {

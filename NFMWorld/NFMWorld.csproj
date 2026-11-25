@@ -16,9 +16,9 @@
              analysis floods every local build with IL warnings. -->
         <PublishTrimmed Condition="'$(Configuration)' == 'Release'">true</PublishTrimmed>
         <!-- Trimming switches System.Text.Json's reflection resolver off by default, which breaks
-             every JsonSerializer call the game already makes (archive responses, HUD skins, the Sx
-             harness' layout dumps) with "Reflection-based serialization has been disabled". None of
-             them has a JsonSerializerContext, so the switch has to stay on. -->
+             reflection-based JsonSerializer calls (HUD skins, menu history, the Sx harness' layout
+             dumps) with "Reflection-based serialization has been disabled". The account surface is
+             not among them: AccountJsonContext source-generates that metadata. -->
         <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
     </PropertyGroup>
 
