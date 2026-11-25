@@ -137,12 +137,16 @@ Key characteristics:
   fetches the boot archive and mounts it into MEMFS, and music is range-read per track. **Boot is deflated and music
   is stored** — 15.3 MB → 9.9 MB for the boot half falls out of MSDF atlases compressing like text, and the C#
   `ZipArchive` inflates entries on read anyway; a deflated *music* entry could not be seeked into, so one track would
-  mean downloading all 126 MB. Don't "simplify" that to one compression setting. `main.js` starts the boot fetch
-  before `dotnet.create()` and `index.html` preloads it, because the runtime pulls ~145 wasm modules first and the
-  fetch used to start only after they settled (measured: 665 ms → 33 ms). The transfer that dominates a cold boot is
-  the runtime, not the archive: prod sends the R2R composite wasm at ~17.6 MB / ~2.1 s, so measure any boot change
-  against `https://play.nfmw.net`, never a local `serve.py` — that server negotiates no compression and reports wasm
-  ~112 MB instead of the ~40 MB the deployed site's gzip actually costs.
+  mean downloading all 126 MB. Don't "simplify" that to one compression setting. `index.html` preloads the archive
+  and **modulepreload**s `main.js`'s whole import graph — `_framework/dotnet.js`, `audio.js`, `http.js`. Without the
+  modulepreloads the graph is discovered a hop at a time (`dotnet.js` only once `main.js` has parsed), and
+  `audio.js`/`http.js` are `await import()`ed *after* `getAssemblyExports`, so they landed at ~9 s under a 150 ms RTT
+  instead of parse time. A modulepreload is reused by the later `import`, so nothing is fetched twice; `rel="prefetch"`
+  would not be reused and must not be substituted. The runtime's own `dotnet.native.<hash>.js` / `dotnet.runtime.js`
+  are still discovered inside `dotnet.create()` and cannot be named statically (content-hashed). The transfer that
+  dominates a cold boot is the runtime, not the archive: prod sends the R2R composite wasm at ~17.6 MB / ~2.1 s, so
+  measure any boot change against `https://play.nfmw.net`, never a local `serve.py` — that server negotiates no
+  compression and reports wasm ~112 MB instead of the ~40 MB the deployed site's gzip actually costs.
 
 ---
 

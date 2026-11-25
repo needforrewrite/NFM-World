@@ -20,6 +20,15 @@
        consumes it once the assembly exports exist. Preloading it here starts the request during
        HTML parse, so it runs alongside the runtime's wasm fetches instead of after them. -->
   <link rel="preload" href="./data.boot.zip" as="fetch" crossorigin>
+  <!-- Modules main.js imports. Without these the graph is discovered one hop at a time - main.js
+       only after index.html parses, dotnet.js only after main.js parses - and the round trips
+       stack up before the first wasm request. audio.js and http.js are `await import()`ed after
+       `getAssemblyExports`, which puts them behind the whole runtime load; preloading them here
+       moves them to parse time. A modulepreload is reused by the later import, so nothing is
+       fetched twice. -->
+  <link rel="modulepreload" href="./_framework/dotnet.js">
+  <link rel="modulepreload" href="./audio.js">
+  <link rel="modulepreload" href="./http.js">
   <script type="module" src="./main.js"></script>
 </body>
 </html>
