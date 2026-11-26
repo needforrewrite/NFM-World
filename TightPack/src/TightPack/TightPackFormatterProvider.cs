@@ -76,6 +76,12 @@ public static class TightPackFormatterProvider
     /// so a collectible plugin load context is not pinned by this table. Constructed types count:
     /// <c>List&lt;PluginEvent&gt;</c> lives in the core library but is only ever used for one plugin.
     /// </summary>
+    /// <remarks>
+    /// Every entry in this table was registered by <see cref="Register{T}"/>, which keys on the
+    /// serialized type, so the key is what reaches the formatter. A plugin-owned formatter under a
+    /// host key would defeat that, and cannot exist: the sandbox refuses to construct one, so a
+    /// plugin cannot put a type of its own into this table at all.
+    /// </remarks>
     public static int UnregisterAssembly(Assembly assembly)
     {
         ArgumentNullException.ThrowIfNull(assembly);

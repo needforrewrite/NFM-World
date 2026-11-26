@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Security;
+using TightPack;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorldLibrary.Gamemodes.DotNet;
 using NFMWorldLibrary.Backend;
@@ -87,6 +88,61 @@ public class PluginSandboxTests
 
     [TestMethod]
     public void ReinterpretingMemory_IsBlocked() => AssertBlocked("Reinterpret", 0);
+
+    /// <summary>
+    /// A subscription stores the plugin's delegate in a host object that outlives the gamemode,
+    /// so nothing on the plugin side can release it. Denied by the event's own policy entry,
+    /// whether or not its declaration was ever marked.
+    /// </summary>
+    [TestMethod]
+    public void SubscribingToAPhysicsStep_IsBlocked()
+        => AssertBlocked("SubscribeToAPhysicsStep", new CarPhysics(CarStats.Default, 0, false));
+
+    /// <summary>
+    /// The same reach on a type exposed with all of its public members: the accessor would be
+    /// admitted by the type's marker alone, which is why events are denied as a class.
+    /// </summary>
+    [TestMethod]
+    public void SubscribingToAHostCollection_IsBlocked()
+        => AssertBlocked("SubscribeToAHostCollection", new NFMWorldLibrary.Util.ObservableUnlimitedArray<int>());
+
+    [TestMethod]
+    public void StartingAThread_IsBlocked() => AssertBlocked("StartAThread");
+
+    [TestMethod]
+    public void StartingATimer_IsBlocked() => AssertBlocked("StartATimer");
+
+    [TestMethod]
+    public void StartingAnElapsedTimer_IsBlocked() => AssertBlocked("StartAnElapsedTimer");
+
+    [TestMethod]
+    public void QueueingWorkOnThePool_IsBlocked() => AssertBlocked("QueueWorkOnThePool");
+
+    [TestMethod]
+    public void SchedulingATask_IsBlocked() => AssertBlocked("ScheduleATask");
+
+    [TestMethod]
+    public void StartingAFactoryTask_IsBlocked() => AssertBlocked("StartAFactoryTask");
+
+    [TestMethod]
+    public void HandlingCancelKeyPress_IsBlocked() => AssertBlocked("HandleCancelKeyPress");
+
+    [TestMethod]
+    public void WatchingUnobservedTaskExceptions_IsBlocked() => AssertBlocked("WatchUnobservedTaskExceptions");
+
+    [TestMethod]
+    public void ListeningToDiagnostics_IsBlocked() => AssertBlocked("ListenToDiagnostics");
+
+    [TestMethod]
+    public void InstallingASynchronizationContext_IsBlocked() => AssertBlocked("InstallASynchronizationContext");
+
+    /// <summary>
+    /// The other half of the provider's exposure: a plugin cannot declare a formatter of its own,
+    /// so it cannot put an entry of its own type into the host's static table under a host key.
+    /// The base formatter's constructor is what refuses it.
+    /// </summary>
+    [TestMethod]
+    public void DeclaringAFormatter_IsBlocked() => AssertBlocked("DeclareAFormatterForAHostType");
 
     /// <summary>
     /// The counterpart: the plugin's own serializer has to keep working, or the sandbox

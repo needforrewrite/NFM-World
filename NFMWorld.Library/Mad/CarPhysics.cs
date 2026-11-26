@@ -423,17 +423,15 @@ public partial class CarPhysics
         }
     }
 
-    /// <summary>
-    /// Raised at the top of <see cref="Drive"/>, before any physics is applied, so a gamemode
-    /// can arm per-tick state (an impulse, a thrust) from inside the same step that consumes it.
-    /// </summary>
-    [PluginVisible] public event Action<CarPhysics>? PreStep;
+    // Host-only, deliberately not [PluginVisible]: a subscriber's delegate is stored in this
+    // car, which outlives the gamemode that subscribed, so nothing could release it. Gamemodes
+    // act from their tick; the host arms and observes steps from here.
 
-    /// <summary>
-    /// Raised at the end of <see cref="Drive"/>, once contact and position are resolved, so a
-    /// gamemode can observe the outcome of the step (landing, wasted, laps) without polling.
-    /// </summary>
-    [PluginVisible] public event Action<CarPhysics>? PostStep;
+    /// <summary>Raised at the top of <see cref="Drive"/>, before any physics is applied.</summary>
+    public event Action<CarPhysics>? PreStep;
+
+    /// <summary>Raised at the end of <see cref="Drive"/>, once contact and position are resolved.</summary>
+    public event Action<CarPhysics>? PostStep;
 
     private void RecordStageImpact(CollisionShapeRef shape, f64Vector3 impulse, f64Vector3 velocity)
     {
@@ -924,7 +922,8 @@ public partial class CarPhysics
 
     [PluginVisible] public bool IsHyperglidingEnabled { get; set; } = true;
 
-    [PluginVisible] public event EventHandler? Distruct;
+    // Host-only, as PreStep: a plugin's handler here would outlive its own teardown.
+    public event EventHandler? Distruct;
 
     public void bounceRebound(
         int wi,

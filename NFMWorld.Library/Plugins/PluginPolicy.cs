@@ -191,8 +191,92 @@ internal static class PluginPolicy
                 builder.Deny(method);
         }
 
+        DenyHostEvents(builder, policy);
+        DenyProcessLifetimeRoots(builder, policy);
+
         return builder.Build();
     }
+
+    /// <summary>
+    /// Makes every host event unreachable from a plugin, whatever marker its type carries.
+    /// </summary>
+    /// <remarks>
+    /// A subscription stores the plugin's delegate inside a host object - a car, a stage, a
+    /// player, a collection - and that object outlives the gamemode that subscribed. Nothing on
+    /// the plugin's side of the teardown can reach into it to let go, so the load context stays
+    /// resident for the life of the process. A plugin observes the host from its tick instead.
+    ///
+    /// Denied wholesale rather than per declaration: <c>Visible.IncludingAllMembersOfType</c>
+    /// hands back every public member of a type, accessors included, so the event's own marker
+    /// would not decide it.
+    /// </remarks>
+    [RequiresUnreferencedCode("Walks the host assemblies' attributes and types.")]
+    private static void DenyHostEvents(CasPolicyBuilder builder, CasPolicy policy)
+    {
+        foreach (var assembly in Hosts)
+        foreach (var type in Types(assembly))
+        foreach (var @event in type.GetEvents(AllMembers))
+        {
+            if (@event.AddMethod is { } add && policy.CanAccess(add))
+                builder.Deny(add);
+            if (@event.RemoveMethod is { } remove && policy.CanAccess(remove))
+                builder.Deny(remove);
+        }
+    }
+
+    /// <summary>
+    /// Members that hand a delegate to something outside the sandbox's reach: a thread, a
+    /// timer, the thread pool, a task's factory, a process-wide event.
+    /// </summary>
+    /// <remarks>
+    /// The runtime keeps such a delegate until the thread, timer or registration ends, and the
+    /// host has no handle on it to take it back - so the plugin's load context can never be
+    /// collected, whatever the teardown does. A plugin's work belongs in its tick, which the
+    /// host calls and stops calling.
+    ///
+    /// Denied after the policy is built, like <c>Unsafe</c>, because the default sandbox admits
+    /// whole assemblies and whole types: <c>System.Threading.Tasks.Task</c> has to keep
+    /// <c>FromResult</c>, and <c>System.Threading.Timer</c> cannot lose only its constructors.
+    /// </remarks>
+    private static void DenyProcessLifetimeRoots(CasPolicyBuilder builder, CasPolicy policy)
+    {
+        foreach (var (type, names) in RootedMembers)
+        {
+            IEnumerable<MethodBase> members = type.GetMethods(AllMembers)
+                .Cast<MethodBase>()
+                .Concat(type.GetConstructors(AllMembers));
+
+            foreach (var member in members)
+            {
+                if (names.Contains(member.Name, StringComparer.Ordinal) && policy.CanAccess(member))
+                    builder.Deny(member);
+            }
+        }
+    }
+
+    private static readonly (Type Type, string[] Members)[] RootedMembers =
+    [
+        // A running thread owns its entry point for as long as it runs, and a plugin's never
+        // ends. Sleep/Yield/CurrentThread are not in the list: they root nothing.
+        (typeof(System.Threading.Thread), [".ctor", "Start"]),
+        (typeof(System.Threading.Timer), [".ctor", "Change"]),
+        (typeof(System.Threading.PeriodicTimer), [".ctor"]),
+        (typeof(System.Timers.Timer), [".ctor", "Start", "set_Enabled", "add_Elapsed"]),
+        (typeof(System.Threading.ThreadPool), [
+            "QueueUserWorkItem", "UnsafeQueueUserWorkItem",
+            "RegisterWaitForSingleObject", "UnsafeRegisterWaitForSingleObject", "BindHandle",
+        ]),
+        // Task.Run and its factory siblings queue the delegate on the pool the same way.
+        (typeof(Task), ["Run", "Delay", "get_Factory"]),
+        (typeof(TaskFactory), ["StartNew"]),
+        (typeof(TaskFactory<>), ["StartNew"]),
+        // Static, and nothing in the process ever unsubscribes it.
+        (typeof(TaskScheduler), ["add_UnobservedTaskException", "remove_UnobservedTaskException"]),
+        (typeof(Console), ["add_CancelKeyPress", "remove_CancelKeyPress"]),
+        // Flows with the thread once installed, and a plugin's context would be on the host's
+        // main thread for the life of the process.
+        (typeof(System.Threading.SynchronizationContext), ["SetSynchronizationContext"]),
+    ];
 
     /// <summary>
     /// A visible contract member admits whatever implements it.
@@ -459,7 +543,8 @@ internal static class PluginPolicy
     }
 
     /// <summary>
-    /// CasCore's default sandbox, minus its System.Text.Json group.
+    /// CasCore's default sandbox, minus its System.Text.Json and System.Diagnostics.DiagnosticSource
+    /// groups.
     /// </summary>
     /// <remarks>
     /// <see cref="CasPolicyBuilderExtensions.WithDefaultSandbox"/> throws on this
@@ -467,6 +552,9 @@ internal static class PluginPolicy
     /// longer has, and the binding is eager. Plugins serialize their own events with
     /// TightPack, so JSON is dropped rather than re-listed; restore it here if a plugin
     /// ever needs System.Text.Json.
+    ///
+    /// DiagnosticSource is dropped because <c>DiagnosticListener.AllListeners</c> is a static
+    /// observer list: a subscriber's delegate outlives its own teardown and pins the plugin.
     /// </remarks>
     private static CasPolicyBuilder DefaultSandbox()
     {
@@ -478,7 +566,6 @@ internal static class PluginPolicy
         builder.WithSandboxedSystemCollectionsSpecialized();
         builder.WithSandboxedSystemComponentModelTypeConverter();
         builder.WithSandboxedSystemConsole();
-        builder.WithSandboxedSystemDiagnosticsDiagnosticSource();
         builder.WithSandboxedSystemLinq();
         builder.WithSandboxedSystemLinqParallel();
         builder.WithSandboxedSystemLinqQueryable();

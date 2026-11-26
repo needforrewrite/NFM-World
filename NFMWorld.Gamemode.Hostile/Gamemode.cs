@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
+using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Files;
 using NFMWorldLibrary.Backend.Gamemodes;
@@ -140,6 +141,67 @@ public class HostileGamemode : PluginGamemode
         spatial.Stop();
         spatial.Dispose();
         clip.Dispose();
+    }
+
+    // Everything below hands this plugin's delegate to something that outlives the gamemode. The
+    // host has no handle on any of them, so a successful reach pins the load context for the life
+    // of the process whatever the teardown does.
+
+    /// <summary>Subscribes to a physics step of a car the host owns.</summary>
+    public static void SubscribeToAPhysicsStep(CarPhysics physics) => physics.PreStep += _ => { };
+
+    /// <summary>
+    /// Subscribes to a host collection's change notification. The collection's type is exposed
+    /// with all of its public members, so without the blanket event deny this accessor would be
+    /// admitted and the array would hold the handler.
+    /// </summary>
+    public static void SubscribeToAHostCollection(NFMWorldLibrary.Util.ObservableUnlimitedArray<int> array)
+        => array.CollectionChanged += (_, _) => { };
+
+    public static void StartAThread() => new System.Threading.Thread(() => { }).Start();
+
+    public static void StartATimer() => new System.Threading.Timer(_ => { });
+
+    public static void StartAnElapsedTimer() => new System.Timers.Timer().Start();
+
+    public static void QueueWorkOnThePool() => System.Threading.ThreadPool.QueueUserWorkItem(_ => { });
+
+    public static void ScheduleATask() => System.Threading.Tasks.Task.Run(() => { });
+
+    public static void StartAFactoryTask()
+        => System.Threading.Tasks.Task.Factory.StartNew(() => { });
+
+    public static void HandleCancelKeyPress() => Console.CancelKeyPress += (_, _) => { };
+
+    public static void WatchUnobservedTaskExceptions()
+        => System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (_, _) => { };
+
+    public static void ListenToDiagnostics()
+        => System.Diagnostics.DiagnosticListener.AllListeners.Subscribe(null!);
+
+    public static void InstallASynchronizationContext()
+        => System.Threading.SynchronizationContext.SetSynchronizationContext(null);
+
+    /// <summary>
+    /// Declares a formatter of its own, which is what a plugin would need to register an entry
+    /// under a host type's key. The base formatter's constructor is not admitted, so the reach
+    /// fails before the provider is consulted.
+    /// </summary>
+    public static void DeclareAFormatterForAHostType()
+        => TightPackFormatterProvider.Register(new HostileFormatter());
+
+    private sealed class HostileFormatter : TightPackFormatter<System.Diagnostics.Stopwatch>
+    {
+        public override void Serialize<TBufferWriter>(
+            ref TightPackWriter<TBufferWriter> writer,
+            in System.Diagnostics.Stopwatch value
+        )
+        {
+        }
+
+        public override void Deserialize(ref TightPackReader reader, ref System.Diagnostics.Stopwatch value)
+        {
+        }
     }
 }
 

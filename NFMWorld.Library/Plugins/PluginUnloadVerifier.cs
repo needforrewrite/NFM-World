@@ -1,9 +1,7 @@
-using System.Diagnostics;
-
 namespace NFMWorldLibrary.Plugins;
 
 /// <summary>
-/// Debug-only check that a released plugin's assembly really is collected.
+/// Check that a released plugin's assembly really is collected.
 /// <see cref="System.Runtime.Loader.AssemblyLoadContext.Unload"/> is silent - a context
 /// that something still references simply never collects - so a plugin that leaks looks
 /// exactly like one that does not.
@@ -16,6 +14,10 @@ namespace NFMWorldLibrary.Plugins;
 /// later, once every frame that touched the plugin has returned. Hosts therefore have to
 /// call <see cref="Verify"/> once per frame (game) and per tick (server), or nothing is
 /// ever checked.
+///
+/// A leak throws in a DEBUG build, where it can still be attributed to the code that caused
+/// it, and is logged otherwise: the collection it forces is a stutter at the end of a race,
+/// which is a far better trade than an undiagnosable plugin that never unloads.
 /// </remarks>
 public static class PluginUnloadVerifier
 {
@@ -26,7 +28,6 @@ public static class PluginUnloadVerifier
     private static int _frame;
 
     /// <summary>Queues a released plugin to check once the current frame has unwound.</summary>
-    [Conditional("DEBUG")]
     public static void Arm(string pluginId, WeakReference assembly)
     {
         lock (Gate)
@@ -36,7 +37,6 @@ public static class PluginUnloadVerifier
     }
 
     /// <summary>Drops every queued check, so tests do not inherit each other's.</summary>
-    [Conditional("DEBUG")]
     public static void Reset()
     {
         lock (Gate)
@@ -49,7 +49,6 @@ public static class PluginUnloadVerifier
     /// Reports any armed plugin whose assembly is still resident. Call once per frame or
     /// tick, after that frame's teardown has run.
     /// </summary>
-    [Conditional("DEBUG")]
     public static void Verify()
     {
         List<Pending> ready;
@@ -75,13 +74,18 @@ public static class PluginUnloadVerifier
         // frame that follows - the server's tick loop would otherwise log it endlessly.
         foreach (var pending in ready)
         {
-            if (pending.Assembly.IsAlive)
-            {
-                throw new InvalidOperationException(
-                    $"Plugin '{pending.PluginId}' was released but its assembly is still resident: "
-                    + "something the run left behind still references it, so its load context can never unload."
-                );
-            }
+            if (!pending.Assembly.IsAlive)
+                continue;
+
+            const string message =
+                "was released but its assembly is still resident: "
+                + "something the run left behind still references it, so its load context can never unload.";
+
+#if DEBUG
+            throw new InvalidOperationException($"Plugin '{pending.PluginId}' {message}");
+#else
+            Logging.Error($"Plugin '{pending.PluginId}' {message}");
+#endif
         }
     }
 
