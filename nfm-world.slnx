@@ -59,6 +59,7 @@
   <Project Path="Maxine.Silk.EGL/src/Extensions/Maxine.EGL.Extensions.ANGLE/Maxine.EGL.Extensions.ANGLE.csproj" />
   <Project Path="Maxine.Silk.EGL/src/Extensions/Maxine.EGL.Extensions.EXT/Maxine.EGL.Extensions.EXT.csproj" />
   <Project Path="Maxine.Silk.EGL/src/Maxine.EGL/Maxine.EGL.csproj" />
+  <Project Path="Maxine.Silk.WebGPU/src/Maxine.WebGPU/Maxine.WebGPU.csproj" />
   <Project Path="Microsoft.UI.Reactor.Yoga/Microsoft.UI.Reactor.Yoga.csproj" />
   <Project Path="NAudio.Flac/NAudio.Flac/NAudio.Flac.csproj" />
   <Project Path="nfm-world/NFMWorld.Game.csproj" />
