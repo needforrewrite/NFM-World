@@ -345,6 +345,25 @@ public static class WgslCompiler
         }
     }
 
+    /// <summary>
+    /// Ends the translator and forgets it, so a later build in this process starts a fresh one.
+    ///
+    /// A batch must not restart a translator that died - that is what makes a failure stick - but the
+    /// end of a batch is the other case: MSBuild keeps its task host nodes alive between builds, and
+    /// the child only exits when its stdin is closed, so without this one translator process per node
+    /// would sit idle for as long as the node lives.
+    /// </summary>
+    public static void Shutdown()
+    {
+        lock (TranslatorGate)
+        {
+            Translator?.Dispose();
+            Translator = null;
+            TranslatorStarted = false;
+            TranslatorFailure = null;
+        }
+    }
+
     private static string? ProbeCore()
     {
         var name = OperatingSystem.IsWindows()
@@ -355,10 +374,14 @@ public static class WgslCompiler
 
         var path = FindNative(name);
         if (path is null)
+        {
+            WgslTranslatorServer.Trace($"probe: {name} not found");
             return $"the taint native library ({name}) was not found beside the shader compiler";
+        }
 
         try
         {
+            WgslTranslatorServer.Trace($"probe: loading {path}");
             // The DllImport is a bare "taint", which .NET resolves against the app's own directory
             // rather than this assembly's. The resolver is per assembly and can only be installed
             // once, which is fine: one translator process probes once.
@@ -366,6 +389,7 @@ public static class WgslCompiler
                 libraryName == "taint" ? NativeLibrary.Load(path) : IntPtr.Zero
             );
             _ = Taint.LibraryVersion;
+            WgslTranslatorServer.Trace("probe: taint loaded");
             return null;
         }
         catch (Exception e) when (IsNativeLoadFailure(e))

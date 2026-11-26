@@ -15,6 +15,7 @@
 using System.Buffers.Binary;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace NFMWorld.ShaderCompiler;
@@ -108,10 +109,29 @@ internal static class WgslTranslatorServer
 {
     public const string Argument = "--wgsl-server";
 
+    /// <summary>
+    /// One line on stderr per step, before the step runs.
+    ///
+    /// The parent reads this process's stderr and only ever reports it when the child stopped
+    /// answering, so this stays invisible on a working host and becomes the only record of how far a
+    /// host got before a native abort. Judging from an exit status alone cost a CI round trip: an
+    /// abort inside the load and one inside the first translation are both "exited with code 134".
+    /// </summary>
+    public static void Trace(string message)
+    {
+        Console.Error.WriteLine(message);
+        Console.Error.Flush();
+    }
+
     public static int Run()
     {
         using var input = Console.OpenStandardInput();
         using var output = Console.OpenStandardOutput();
+
+        Trace(
+            $"wgsl-server: pid={Environment.ProcessId} arch={RuntimeInformation.ProcessArchitecture} "
+            + $"runtime={Environment.Version} os={RuntimeInformation.OSDescription}"
+        );
 
         while (WgslFrames.Read(input) is { } request)
         {
@@ -128,6 +148,7 @@ internal static class WgslTranslatorServer
             WgslFrames.Write(output, body.ToArray());
         }
 
+        Trace("wgsl-server: stdin closed, exiting");
         return 0;
     }
 
@@ -136,9 +157,14 @@ internal static class WgslTranslatorServer
         using var reader = new BinaryReader(new MemoryStream(request));
 
         if (reader.ReadByte() == WgslProtocol.RequestProbe)
-            return WgslCompiler.LocalUnavailableReason is { } reason
-                ? (WgslProtocol.StatusUnavailable, reason, "")
+        {
+            Trace("probe: start");
+            var reason = WgslCompiler.LocalUnavailableReason;
+            Trace(reason is null ? "probe: ok" : $"probe: {reason}");
+            return reason is { } probeFailure
+                ? (WgslProtocol.StatusUnavailable, probeFailure, "")
                 : (WgslProtocol.StatusOk, "", "");
+        }
 
         var spirv = reader.ReadBytes(reader.ReadInt32());
         var entryPoint = WgslFrames.ReadString(reader);
@@ -155,13 +181,16 @@ internal static class WgslTranslatorServer
         if (WgslCompiler.LocalUnavailableReason is { } noTranslator)
             return (WgslProtocol.StatusUnavailable, noTranslator, "");
 
+        Trace($"translate: {entryPoint}, {spirv.Length} B SPIR-V, {bindings.Count} binding(s)");
         try
         {
             var (desktop, browser) = WgslCompiler.Translate(spirv, bindings, entryPoint);
+            Trace($"translate: {entryPoint} ok, {desktop.Length} + {browser.Length} chars WGSL");
             return (WgslProtocol.StatusOk, desktop, browser);
         }
         catch (Exception e)
         {
+            Trace($"translate: {entryPoint} failed: {e.GetType().Name}");
             return (WgslProtocol.StatusFailed, e.ToString(), "");
         }
     }
@@ -261,12 +290,20 @@ internal sealed class WgslTranslatorHost : IDisposable
                 WgslFrames.Write(_input, body);
 
                 var pending = Task.Run(() => WgslFrames.Read(_output));
-                if (!pending.Wait(timeout) || pending.Result is not { } frame)
+                if (!pending.Wait(timeout))
                 {
                     // The read is still parked on a stream this side is about to close; its failure
                     // is this method's already, and letting it reach the finalizer would report it
                     // as an unobserved task exception instead.
                     pending.ContinueWith(t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted);
+                    Dispose();
+                    return null;
+                }
+
+                // GetResult, not Result: a read that failed - which a dead child makes it - must
+                // arrive as its own exception for the filter above, not wrapped in AggregateException.
+                if (pending.GetAwaiter().GetResult() is not { } frame)
+                {
                     Dispose();
                     return null;
                 }

@@ -761,8 +761,7 @@ One child serves the whole task, started on first use and never restarted: a tra
 die on the next, and each retry costs a launch plus a timeout. Closing its stdin ends it, so a killed build leaves no
 translator behind.
 
-Four things about the path are not obvious and each was found by a validation failure, not by reading docs — see
-`WgslCompiler.cs`:
+Each rule below was found by a validation failure, not by reading docs — see `WgslCompiler.cs`:
 
 | Gotcha | Rule |
 |---|---|

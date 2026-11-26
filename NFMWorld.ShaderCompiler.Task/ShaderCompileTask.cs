@@ -67,6 +67,20 @@ public sealed class ShaderCompileTask : Microsoft.Build.Utilities.Task
     {
         NativeLibraries.EnsureLoaded();
 
+        try
+        {
+            return ExecuteBatch();
+        }
+        finally
+        {
+            // MSBuild keeps task host nodes alive between builds and the child lives until its stdin
+            // closes, so this is the only thing that stops one idle translator per node.
+            WgslCompiler.Shutdown();
+        }
+    }
+
+    private bool ExecuteBatch()
+    {
         // A warning, not a message: the bundles this writes cannot start the WebGPU backend, and the
         // failure otherwise appears at pipeline creation in a built game with nothing pointing here.
         var hadTranslator = WgslCompiler.Available;
