@@ -317,8 +317,9 @@ internal sealed unsafe class WebGpuShaderModule : IShaderModule
             throw new NotSupportedException(
                 $"This build's shader bundles carry no WGSL for the {stage} stage"
                 + (device.IsBrowser ? " in the browser's flavour" : "")
-                + ", so the WebGPU backend cannot create the pipeline. Rebuild with the tint package "
-                + "restored (see NFMWorld.ShaderCompiler/WgslCompiler.cs)."
+                + ", so the WebGPU backend cannot create the pipeline. The bundles were compiled "
+                + "without the translator; build again once NFMWorld.ShaderCompiler reports it is "
+                + "available (see NFMWorld.ShaderCompiler/WgslCompiler.cs), which recompiles them."
             );
         }
 

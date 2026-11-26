@@ -211,10 +211,40 @@ public static class WgslCompiler
             _ = Taint.LibraryVersion;
             return null;
         }
-        catch (Exception e) when (e is DllNotFoundException or BadImageFormatException or EntryPointNotFoundException)
+        catch (Exception e) when (IsNativeLoadFailure(e))
         {
-            return $"the taint native library could not be loaded: {e.Message}";
+            return $"the taint native library could not be loaded: {RootCause(e).Message}";
         }
+    }
+
+    /// <summary>
+    /// Whether a probe failure is this host's binding rather than the translator being broken.
+    ///
+    /// <see cref="Taint"/> loads the native from its own static constructor, so a bad file arrives
+    /// as <see cref="TypeInitializationException"/> around the real error. Both shapes have to be
+    /// recognised: a binding that cannot load must leave WGSL off with a warning, never take the
+    /// whole shader build down - which is what it did when only the three bare types were listed.
+    /// A genuine translation failure is not covered here, because it happens later: the probe reads
+    /// one exported symbol and nothing else.
+    /// </summary>
+    private static bool IsNativeLoadFailure(Exception e)
+    {
+        for (var cause = e; cause is not null; cause = cause.InnerException)
+        {
+            if (cause is DllNotFoundException or BadImageFormatException or EntryPointNotFoundException
+                or TypeLoadException or FileNotFoundException)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static Exception RootCause(Exception e)
+    {
+        var cause = e;
+        while (cause.InnerException is { } inner)
+            cause = inner;
+        return cause;
     }
 
     /// <summary>

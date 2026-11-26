@@ -128,6 +128,44 @@
     </ItemGroup>
 
     <!--
+      Which bundles this tree can produce, as part of the stamp's *name*.
+
+      A stamp means "the bundles in obj/ are what this tree would write", and a tree that compiled
+      while the WGSL translator was absent or unloadable produced bundles a WebGPU pipeline cannot
+      be created from - so that stamp must not be honoured once the translator is there. Naming the
+      stamp after the flavour is what makes that self-healing: the target then looks for a stamp
+      that does not exist and compiles once, with WGSL, and no one has to know to delete obj/.
+
+      `NFMWorldShadersStampFile` is the flavour this target *expects*, decided by whether the native
+      sits beside the task. The task is what knows which flavour it *achieved*, and it writes that
+      stamp instead - see ShaderCompileTask.NoWgslStampFile. A native that is present but refuses to
+      load passes the file test and still produces no WGSL, so the expectation has to be correctable
+      or the tree stamps itself healthy with bundles WebGPU cannot use. That is not hypothetical:
+      it is exactly the bug report, one layer down.
+
+      Resolved after BuildShaderCompilerTask, which is what puts the native there on a clean tree -
+      evaluated in ResolveShaderPaths it would read the directory before the nested build has created
+      it and call every first build WGSL-less.
+
+      Joined with Path.Combine rather than concatenated with a backslash: a literal separator in an
+      Exists() test silently fails on Linux and macOS, which would stamp every build there as
+      WGSL-less and recompile the shaders each time.
+    -->
+    <Target Name="ResolveShaderWgslFlavour" DependsOnTargets="BuildShaderCompilerTask;ResolveShaderPaths"
+            Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(DesignTimeBuild)' != 'true'">
+        <PropertyGroup>
+            <_NfmwShaderTaintNativePath>$([System.IO.Path]::Combine($(NFMWorldShaderTaskDirectory), 'taint.dll'))</_NfmwShaderTaintNativePath>
+            <_NfmwShaderTaintNativePath Condition="!Exists('$(_NfmwShaderTaintNativePath)')">$([System.IO.Path]::Combine($(NFMWorldShaderTaskDirectory), 'libtaint.so'))</_NfmwShaderTaintNativePath>
+            <_NfmwShaderTaintNativePath Condition="!Exists('$(_NfmwShaderTaintNativePath)')">$([System.IO.Path]::Combine($(NFMWorldShaderTaskDirectory), 'libtaint.dylib'))</_NfmwShaderTaintNativePath>
+            <_NfmwShaderTaintNative Condition="Exists('$(_NfmwShaderTaintNativePath)')">true</_NfmwShaderTaintNative>
+            <NFMWorldShadersWgslStampFile>$([System.IO.Path]::Combine($(NFMWorldShadersOutputDirectory), 'shaders.wgsl.stamp'))</NFMWorldShadersWgslStampFile>
+            <NFMWorldShadersNoWgslStampFile>$([System.IO.Path]::Combine($(NFMWorldShadersOutputDirectory), 'shaders.nowgsl.stamp'))</NFMWorldShadersNoWgslStampFile>
+            <NFMWorldShadersStampFile>$(NFMWorldShadersNoWgslStampFile)</NFMWorldShadersStampFile>
+            <NFMWorldShadersStampFile Condition="'$(_NfmwShaderTaintNative)' == 'true'">$(NFMWorldShadersWgslStampFile)</NFMWorldShadersStampFile>
+        </PropertyGroup>
+    </Target>
+
+    <!--
       Compiles every shader, unless nothing it depends on has changed.
 
       Before CoreCompile because the generated types are what the app's renderer code is written
@@ -139,6 +177,11 @@
       files that do not exist and the target would recompile the shaders on every build. The stamp
       is written by the task once the whole batch has succeeded, which is also the only correct
       moment - a partial run must not look up to date.
+
+      Which stamp is a question for ResolveShaderWgslFlavour: a tree that compiled without the WGSL
+      translator wrote bundles no WebGPU pipeline can be created from, and a stamp named only for
+      "these inputs are unchanged" would keep them. The flavour is in the name so that tree heals by
+      compiling once when the translator appears, instead of staying broken until obj/ is deleted.
 
       The inputs include the compiler and its tools, not just the shaders and the task. A change to
       what a bundle *contains* - a new target form, a renumbered binding, a corrected emitter - is a
@@ -154,10 +197,10 @@
     -->
     <Target Name="CompileShaders"
             BeforeTargets="CoreCompile"
-            DependsOnTargets="ResolveShaderPaths;BuildShaderCompilerTask"
+            DependsOnTargets="ResolveShaderWgslFlavour"
             Condition="'$(MSBuildRuntimeType)' == 'Core' AND '$(DesignTimeBuild)' != 'true'"
             Inputs="@(NFMWorldShaderSource);@(NFMWorldShaderHeader);@(NFMWorldShaderTool);$(NFMWorldShaderTaskAssembly);$(MSBuildThisFileFullPath)"
-            Outputs="$(NFMWorldShadersOutputDirectory)shaders.stamp">
+            Outputs="$(NFMWorldShadersStampFile)">
 
         <!-- No <Output> here on purpose. The bundles are picked up by IncludeShaders' glob, which
              runs every build and is the single place the item is populated - emitting them here as
@@ -167,15 +210,20 @@
              up to date, which is exactly the kind of bug that survives a naive re-run.) -->
         <ShaderCompileTask Shaders="@(NFMWorldShaderSource)"
                            OutputDirectory="$(NFMWorldShadersOutputDirectory)"
-                           StampFile="$(NFMWorldShadersOutputDirectory)shaders.stamp"/>
+                           StampFile="$(NFMWorldShadersStampFile)"
+                           NoWgslStampFile="$(NFMWorldShadersNoWgslStampFile)"/>
 
         <!-- The stamp is registered here and only here - it is written by this target alone, so this
              is the only place that knows it exists. The bundles are *not* registered here: they are
              registered in IncludeShaders, which runs every build, because a registration that only
              happens when this target runs is what makes IncrementalClean delete them on the next
-             build. See the comment there. -->
+             build. See the comment there.
+
+             Both names are registered because the task picks between them: it writes the one the
+             batch actually carries, and the other one is the one this target looked for. -->
         <ItemGroup>
-            <FileWrites Include="$(NFMWorldShadersOutputDirectory)shaders.stamp"/>
+            <FileWrites Include="$(NFMWorldShadersStampFile)"/>
+            <FileWrites Include="$(NFMWorldShadersNoWgslStampFile)"/>
         </ItemGroup>
     </Target>
 

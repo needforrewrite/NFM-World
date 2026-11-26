@@ -36,8 +36,23 @@ public sealed class ShaderCompileTask : Microsoft.Build.Utilities.Task
     /// them (Nvg.fx yields four techniques, Poly.fx two), so no <c>%(Filename)</c> expression names
     /// the real set. A stamp is written last rather than first so a failed batch leaves the previous
     /// one in place and the next build retries instead of treating the failure as up to date.
+    ///
+    /// The name encodes the flavour: see <see cref="NoWgslStampFile"/>. The target names this one
+    /// after what it <em>expects</em> beside the task, and the task writes whichever it actually
+    /// produced - a native that is present but cannot be loaded is indistinguishable from a file
+    /// test's point of view, and stamping the expected name there would keep bundles no WebGPU
+    /// pipeline can be created from.
     /// </summary>
     public string StampFile { get; set; } = "";
+
+    /// <summary>
+    /// The stamp for a batch that carries no WGSL, and so the one <see cref="StampFile"/>'s tree
+    /// must not have. Written instead of <see cref="StampFile"/> when
+    /// <see cref="WgslCompiler.Available"/> is false, with <see cref="StampFile"/> deleted, so the
+    /// target finds no stamp for its expected flavour and compiles again - each build, until the
+    /// translator works, which is what a host that cannot load it deserves.
+    /// </summary>
+    public string NoWgslStampFile { get; set; } = "";
 
     /// <summary>
     /// The paths written, one item per bundle. An output rather than something the target globs for
@@ -52,8 +67,10 @@ public sealed class ShaderCompileTask : Microsoft.Build.Utilities.Task
     {
         NativeLibraries.EnsureLoaded();
 
+        // A warning, not a message: the bundles this writes cannot start the WebGPU backend, and the
+        // failure otherwise appears at pipeline creation in a built game with nothing pointing here.
         if (WgslCompiler.UnavailableReason is { } noWgsl)
-            Log.LogMessage(MessageImportance.Normal, $"{noWgsl}; bundles carry no WGSL.");
+            Log.LogWarning($"{noWgsl}; the bundles this build writes carry no WGSL, so the WebGPU backend cannot start.");
 
         if (Shaders.Length == 0)
         {
@@ -127,8 +144,41 @@ public sealed class ShaderCompileTask : Microsoft.Build.Utilities.Task
 
         if (StampFile.Length > 0)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(StampFile))!);
-            File.WriteAllText(StampFile, $"{DateTime.UtcNow:O}\n");
+            // The stamp that matches what this batch actually carries, not the one the target
+            // expected: a native that is present but cannot be loaded passes a file test and then
+            // produces no WGSL, and stamping the expected name there keeps bundles no WebGPU
+            // pipeline can be created from. The other stamp is removed so a tree can never hold
+            // both and be decided by whichever one MSBuild happened to compare.
+            var carriesWgsl = WgslCompiler.Available;
+            var achieved = carriesWgsl || NoWgslStampFile.Length == 0 ? StampFile : NoWgslStampFile;
+            var superseded = carriesWgsl ? NoWgslStampFile : StampFile;
+
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(achieved))!);
+            File.WriteAllText(achieved, $"{DateTime.UtcNow:O}\n");
+
+            if (superseded.Length > 0
+                && !string.Equals(superseded, achieved, StringComparison.Ordinal)
+                && File.Exists(superseded))
+            {
+                try
+                {
+                    File.Delete(superseded);
+                }
+                catch (IOException e)
+                {
+                    Log.LogWarning(
+                        null,
+                        null,
+                        null,
+                        superseded,
+                        0,
+                        0,
+                        0,
+                        0,
+                        $"Could not remove the superseded shader stamp: {e.Message}"
+                    );
+                }
+            }
         }
 
         Log.LogMessage(
