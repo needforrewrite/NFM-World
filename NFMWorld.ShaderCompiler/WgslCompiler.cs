@@ -280,24 +280,22 @@ public static class WgslCompiler
 
     private static WgslTranslatorHost? StartTranslator()
     {
-        var host = WgslTranslatorHost.Start(out var error);
+        // One round trip before any shader is handed over, so a host with no translator says so once
+        // instead of paying a dead process on the first module and reporting it mid-batch.
+        var host = WgslTranslatorHost.Open(
+            [WgslProtocol.RequestProbe],
+            RequestTimeout,
+            out var probe,
+            out var error
+        );
+
         if (host is null)
         {
             TranslatorFailure = error ?? "the WGSL translator process could not be started";
             return null;
         }
 
-        // One round trip before any shader is handed over, so a host with no translator says so once
-        // instead of paying a dead process on the first module and reporting it mid-batch.
-        var probe = host.Request([WgslProtocol.RequestProbe], RequestTimeout);
-        if (probe is null)
-        {
-            TranslatorFailure = $"the WGSL translator {host.DescribeFailure()}".TrimEnd();
-            host.Dispose();
-            return null;
-        }
-
-        if (probe.Value.Status == WgslProtocol.StatusOk)
+        if (probe!.Value.Status == WgslProtocol.StatusOk)
             return host;
 
         TranslatorFailure = probe.Value.First;

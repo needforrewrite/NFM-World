@@ -231,15 +231,25 @@ internal sealed class WgslTranslatorHost : IDisposable
     }
 
     /// <summary>
-    /// Starts the translator that sits beside this assembly, as its own process.
+    /// Starts the translator that sits beside this assembly, as its own process, and returns the one
+    /// that answered <paramref name="probeRequest"/>.
     ///
     /// Which executable is host-specific and not something this side can assume: the apphost exists
     /// wherever the SDK produced one beside the assembly, and the same assembly run through the MSBuild
     /// host's own <c>dotnet</c> covers the rest - including a copied apphost that lost its executable
-    /// bit. Both are tried, and both failures are reported.
+    /// bit. Each candidate is asked before it is accepted, because a process that starts and dies is
+    /// indistinguishable from one that never started until it is asked something, and the point of
+    /// trying the second is the first one not working.
     /// </summary>
-    public static WgslTranslatorHost? Start(out string error)
+    public static WgslTranslatorHost? Open(
+        byte[] probeRequest,
+        TimeSpan timeout,
+        out Reply? probe,
+        out string error
+    )
     {
+        probe = null;
+
         var directory = Path.GetDirectoryName(typeof(WgslCompiler).Assembly.Location);
         if (string.IsNullOrEmpty(directory))
         {
@@ -250,6 +260,7 @@ internal sealed class WgslTranslatorHost : IDisposable
         var failures = new List<string>();
         foreach (var info in StartInfos(directory))
         {
+            WgslTranslatorHost host;
             try
             {
                 var process = Process.Start(info);
@@ -259,16 +270,28 @@ internal sealed class WgslTranslatorHost : IDisposable
                     continue;
                 }
 
-                error = "";
-                return new WgslTranslatorHost(process);
+                host = new WgslTranslatorHost(process);
             }
             catch (Exception e) when (e is Win32Exception or IOException or PlatformNotSupportedException)
             {
                 failures.Add($"{info.FileName}: {e.Message}");
+                continue;
             }
+
+            if (host.Request(probeRequest, timeout) is { } answered)
+            {
+                probe = answered;
+                error = "";
+                return host;
+            }
+
+            failures.Add($"{info.FileName}: {host.DescribeFailure()}");
+            host.Dispose();
         }
 
-        error = $"the WGSL translator process could not be started ({string.Join("; ", failures)})";
+        error = failures.Count == 0
+            ? "no WGSL translator executable sits beside the shader compiler"
+            : $"the WGSL translator could not be started ({string.Join("; ", failures)})";
         return null;
     }
 
@@ -367,7 +390,12 @@ internal sealed class WgslTranslatorHost : IDisposable
                 {
                     _process.StandardInput.BaseStream.Close();
                     if (!_process.WaitForExit(2000))
+                    {
                         _process.Kill(entireProcessTree: true);
+                        // The exit status is what a killed child is reported by, and it is only
+                        // there once the process is actually gone.
+                        _process.WaitForExit(2000);
+                    }
                 }
             }
             catch (Exception e) when (e is InvalidOperationException or Win32Exception or NotSupportedException
