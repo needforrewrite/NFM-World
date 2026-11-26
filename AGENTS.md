@@ -748,12 +748,27 @@ no managed binding, the native is looked up beside the task assembly, then `AppC
 `NFMW_TAINT`, then `PATH` — and the bundles then carry empty
 `Wgsl`/`WgslBrowser` strings. `WgslCompiler.UnavailableReason` carries the reason the build log prints. WGSL feeds the
 WebGPU backend on both the desktop (wgpu-native) and the browser (Dawn). It is emitted as **two flavours** — see the
-`diagnostic` row below; `WebGpuResources.WgslFor` picks by `IsBrowser`. Three things about the path are not obvious
-and each was found by a validation failure, not by reading docs — see `WgslCompiler.cs`:
+`diagnostic` row below; `WebGpuResources.WgslFor` picks by `IsBrowser`.
+
+**taint runs in a child process, never in the build's own** (`WgslTranslator.cs`). Native code fails by aborting the
+process it lives in, and an abort inside the `TaskHostFactory` node is `MSB4217 "Task host node exited prematurely"`
+with no library named and no managed code on the way out — which is exactly how macOS failed while the same dylib
+loaded and translated on Windows and Linux. So `NFMWorld.ShaderCompiler.dll --wgsl-server` is the translator (one
+length-prefixed request/reply per stdin/stdout frame, `WgslTranslatorServer`), and `WgslCompiler` only ever talks to it
+over pipes. A dead child costs the tree its WGSL and prints its exit status plus stderr — the only place a native abort
+says anything — instead of failing the build; a module that cannot be translated still fails it (`StatusFailed`).
+One child serves the whole task, started on first use and never restarted: a translator that died on one module would
+die on the next, and each retry costs a launch plus a timeout. Closing its stdin ends it, so a killed build leaves no
+translator behind.
+
+Four things about the path are not obvious and each was found by a validation failure, not by reading docs — see
+`WgslCompiler.cs`:
 
 | Gotcha | Rule |
 |---|---|
-| Native lookup | `Taint` binds the name `"taint"` (not `libtaint`), and under `TaskHostFactory` `AppContext.BaseDirectory` is the SDK folder, so NuGet's `runtimes/<rid>/native/` layout is never probed. The project copies that one file flat beside the task and `WgslCompiler` installs a `NativeLibrary.SetDllImportResolver` for the assembly, in that order |
+| Native lookup | `Taint` binds the name `"taint"` (not `libtaint`), and under `TaskHostFactory` `AppContext.BaseDirectory` is the SDK folder, so NuGet's `runtimes/<rid>/native/` layout is never probed. The project copies that one file flat beside the task and the child installs a `NativeLibrary.SetDllImportResolver` for the assembly, in that order |
+| Probing cannot be made safe | a load failure that is catchable and one that aborts are the same call from the outside, so "probe cheaper" does not exist; the child boundary is the only thing that turns the second into a message |
+| Child selection | the apphost beside the compiler assembly first (`NFMWorld.ShaderCompiler[.exe]`), then the same DLL through `DOTNET_HOST_PATH`, because a copied apphost may have lost its executable bit. Both failures are reported together |
 | Non-uniform derivatives | translation sets `TaintOption.AllowNonUniformDerivatives`; six fragment stages sample under divergent control flow |
 | tint's `diagnostic(off, derivative_uniformity);` | the naga inside the shipped `wgpu_native` rejects `diagnostic` directives outright, while Chrome's Tint *requires* it (`select` evaluates both arms, so the dither sample sits under non-uniform control flow and every one of the 16 `Shapes` pixel modules is refused without it). Hence two members: `Wgsl` has the line stripped, `WgslBrowser` keeps it. `NFMWorld.Graphics.WebGPU.Smoke` only runs naga, so it cannot see the browser flavour break |
 | `return;` after `discard;` | tint emits it and naga rejects an instruction after `return`, so it is stripped too |

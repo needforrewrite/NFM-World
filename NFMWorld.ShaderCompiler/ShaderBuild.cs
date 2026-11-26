@@ -172,28 +172,50 @@ public static class ShaderBuild
 
             if (emitsWgsl)
             {
-                foreach (var (stage, value) in compiled)
+                try
                 {
-                    var reflection = stages.First(s => s.Stage == stage);
-                    var wgsl = WgslCompiler.Compile(value.Spirv, BindingsFor(reflection, textures, samplers), value.Entry);
-                    sourcesByStage[stage] = sourcesByStage[stage] with
+                    // Translated before being applied, so a translator that dies mid-way cannot leave
+                    // one stage of a technique with WGSL and its sibling without.
+                    var translations = new Dictionary<ShaderStage, (string Desktop, string Browser)>(compiled.Count);
+                    foreach (var (stage, value) in compiled)
                     {
-                        Wgsl = wgsl.Desktop,
-                        WgslBrowser = wgsl.Browser,
-                        EntryPoint = value.Entry,
+                        var reflection = stages.First(s => s.Stage == stage);
+                        translations[stage] = WgslCompiler.Compile(
+                            value.Spirv,
+                            BindingsFor(reflection, textures, samplers),
+                            value.Entry
+                        );
+                    }
+
+                    foreach (var (stage, (desktop, browser)) in translations)
+                    {
+                        sourcesByStage[stage] = sourcesByStage[stage] with
+                        {
+                            Wgsl = desktop,
+                            WgslBrowser = browser,
+                            EntryPoint = compiled[stage].Entry,
+                        };
+                    }
+
+                    // WebGPU validates the whole interface, so a vertex output the pixel stage does not
+                    // read has to be declared there - see WgslStageInterface. Both flavours are paired
+                    // with the vertex stage of their own flavour.
+                    var vertex = sourcesByStage[ShaderStage.Vertex];
+                    var pixel = sourcesByStage[ShaderStage.Fragment];
+                    sourcesByStage[ShaderStage.Fragment] = pixel with
+                    {
+                        Wgsl = WgslStageInterface.Reconcile(vertex.Wgsl, pixel.Wgsl),
+                        WgslBrowser = WgslStageInterface.Reconcile(vertex.WgslBrowser, pixel.WgslBrowser),
                     };
                 }
-
-                // WebGPU validates the whole interface, so a vertex output the pixel stage does not
-                // read has to be declared there - see WgslStageInterface. Both flavours are paired
-                // with the vertex stage of their own flavour.
-                var vertex = sourcesByStage[ShaderStage.Vertex];
-                var pixel = sourcesByStage[ShaderStage.Fragment];
-                sourcesByStage[ShaderStage.Fragment] = pixel with
+                catch (WgslUnavailableException e)
                 {
-                    Wgsl = WgslStageInterface.Reconcile(vertex.Wgsl, pixel.Wgsl),
-                    WgslBrowser = WgslStageInterface.Reconcile(vertex.WgslBrowser, pixel.WgslBrowser),
-                };
+                    // The translator is a child process precisely so this is reachable: a native
+                    // abort in it costs this tree its WGSL, not the build. Everything logged after
+                    // this point is still produced, and the target stamps the tree WGSL-less.
+                    emitsWgsl = false;
+                    log?.Invoke($"    {e.Message}");
+                }
             }
 
             // Uniform naming - `{Shader}{Technique}` - rather than a `{Shader}` special case for the

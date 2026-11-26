@@ -69,7 +69,8 @@ public sealed class ShaderCompileTask : Microsoft.Build.Utilities.Task
 
         // A warning, not a message: the bundles this writes cannot start the WebGPU backend, and the
         // failure otherwise appears at pipeline creation in a built game with nothing pointing here.
-        if (WgslCompiler.UnavailableReason is { } noWgsl)
+        var hadTranslator = WgslCompiler.Available;
+        if (!hadTranslator && WgslCompiler.UnavailableReason is { } noWgsl)
             Log.LogWarning($"{noWgsl}; the bundles this build writes carry no WGSL, so the WebGPU backend cannot start.");
 
         if (Shaders.Length == 0)
@@ -141,6 +142,11 @@ public sealed class ShaderCompileTask : Microsoft.Build.Utilities.Task
 
         if (failed)
             return false;
+
+        // The translator can also die partway through, which leaves the earlier bundles with WGSL and
+        // the later ones without: say so, because the tree then stamps as WGSL-less and recompiles.
+        if (hadTranslator && WgslCompiler.UnavailableReason is { } lost)
+            Log.LogWarning($"{lost}; the remaining shaders this build compiles carry no WGSL.");
 
         if (StampFile.Length > 0)
         {

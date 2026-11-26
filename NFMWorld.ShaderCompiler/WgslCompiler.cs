@@ -1,7 +1,6 @@
 // LLM maintained.
 //
-// HLSL -> SPIR-V -> WGSL, the last step being taint - a packaged build of Dawn's Tint, bound
-// in-process through TaintSharp.
+// HLSL -> SPIR-V -> WGSL, the last step being taint - a packaged build of Dawn's Tint.
 //
 // The SPIR-V is already there - it is the same module the other backends are cross-compiled from -
 // so only two things happen here, and both exist because of rules WebGPU has and the other targets
@@ -15,9 +14,13 @@
 //
 // Neither is a workaround for a bad shader; both are properties of the tool chain this tree pins,
 // which is why they live here rather than in the `.fx` sources.
+//
+// taint is only ever loaded by a child process (see WgslTranslator). It aborts on failure rather
+// than returning, and under TaskHostFactory the abort takes the shader build with it - macOS did
+// exactly that, with no message and no library named.
 
-using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using TaintSharp;
 
@@ -33,23 +36,58 @@ public static class WgslCompiler
     private const int DecorationDescriptorSet = 34;
 
     /// <summary>
-    /// Whether the taint library is present and loadable, i.e. whether <see cref="Compile"/> can
-    /// run; when it is false, <see cref="UnavailableReason"/> says why and the caller omits WGSL.
+    /// How long the translator may take for one stage before it is treated as dead.
+    ///
+    /// Generous on purpose: this is a liveness bound on a native abort or a wedged process, not a
+    /// performance budget. Sixteen stages of a shader tree take a few seconds on the slowest host
+    /// measured, so anything near this is a hang.
+    /// </summary>
+    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(120);
+
+    private static readonly object TranslatorGate = new();
+    private static WgslTranslatorHost? Translator;
+    private static bool TranslatorStarted;
+    private static string? TranslatorFailure;
+
+    /// <summary>
+    /// Whether WGSL can be produced on this host, i.e. whether <see cref="Compile"/> can run; when
+    /// it is false, <see cref="UnavailableReason"/> says why and the caller omits WGSL.
     /// </summary>
     public static bool Available => UnavailableReason is null;
 
     /// <summary>
     /// Why WGSL cannot be produced on this host, or null when it can.
     ///
-    /// Probed rather than assumed from the runtime identifier. TaintSharp packages win-x64,
-    /// linux-x64 and osx-arm64 only, and an architecture with no native is not a reason to fail
-    /// every shader build - WGSL is consumed only by the WebGPU backend, which is opt-in on the
-    /// desktop. A library that is present but refuses to load (a glibc too old for the linux
-    /// build's 2.34 floor, a broken install) reports the loader's own message.
+    /// Asked of a child process, because the answer on this one is not obtainable: TaintSharp
+    /// packages win-x64, linux-x64 and osx-arm64 only, and a translator that is absent, unloadable or
+    /// aborting has to leave WGSL off with a warning rather than fail a build - WGSL is consumed only
+    /// by the WebGPU backend, which is opt-in on the desktop.
+    ///
+    /// The answer can change mid-batch: the process that passed the probe can still abort on a
+    /// module, and from then on this reports that instead. What it cannot do is go back to null -
+    /// a translator that died is not restarted, so a tree that lost it stamps as WGSL-less.
     /// </summary>
-    public static string? UnavailableReason => Probe.Value;
+    public static string? UnavailableReason
+    {
+        get
+        {
+            lock (TranslatorGate)
+            {
+                if (TranslatorFailure is not null)
+                    return TranslatorFailure;
 
-    private static readonly Lazy<string?> Probe = new(ProbeCore, LazyThreadSafetyMode.ExecutionAndPublication);
+                if (!TranslatorStarted)
+                {
+                    TranslatorStarted = true;
+                    Translator = StartTranslator();
+                }
+
+                return Translator is null
+                    ? TranslatorFailure ?? "the WGSL translator is not available"
+                    : null;
+            }
+        }
+    }
 
     /// <summary>
     /// Translates one stage, producing both WGSL flavours.
@@ -60,7 +98,7 @@ public static class WgslCompiler
     /// binding decoration has to appear - a resource left out would keep a number that collides with
     /// another, which WebGPU reports at pipeline creation with nothing to say which shader.
     /// </param>
-    /// <param name="entryPoint">The stage's entry point, used in the error message only: taint
+    /// <param name="entryPoint">The stage's entry point, used in error messages only: taint
     /// translates the whole module, and the module this is handed has that one entry point.</param>
     /// <returns>
     /// <c>Desktop</c> is what naga (wgpu-native) reads; <c>Browser</c> keeps the
@@ -75,6 +113,59 @@ public static class WgslCompiler
     )
     {
         if (UnavailableReason is { } reason)
+            throw new WgslUnavailableException($"WGSL cannot be produced on this host: {reason}");
+
+        // Per-module failures are the shader's, so they throw; a translator that stopped answering
+        // is the host's, and it rethrows as "unavailable" so the rest of the batch skips WGSL
+        // instead of failing every shader.
+        var reply = Request(WgslProtocol.RequestTranslate, writer =>
+            {
+                writer.Write(spirv.Length);
+                writer.Write(spirv);
+                WgslFrames.WriteString(writer, entryPoint);
+                writer.Write(bindings.Count);
+                foreach (var (variable, slot) in bindings)
+                {
+                    writer.Write(variable);
+                    writer.Write(slot);
+                }
+            }
+        );
+
+        switch (reply?.Status)
+        {
+            case WgslProtocol.StatusOk:
+                return (reply.Value.First, reply.Value.Second);
+            case WgslProtocol.StatusFailed:
+                throw new InvalidOperationException(
+                    $"SPIR-V -> WGSL failed for entry point '{entryPoint}':\n{reply.Value.First.Trim()}"
+                );
+            case WgslProtocol.StatusUnavailable:
+                throw new WgslUnavailableException($"WGSL cannot be produced on this host: {Stop(reply.Value.First)}");
+            default:
+                // No reply at all: the process died, which is the case this whole file exists for.
+                throw new WgslUnavailableException($"WGSL cannot be produced on this host: {Stop(null)}");
+        }
+    }
+
+    /// <summary>
+    /// The probe and one translation, in this process - the child's whole job.
+    ///
+    /// Reached only through <see cref="WgslTranslatorServer"/>, so an abort here ends a process that
+    /// holds nothing but the translator, and the failure comes back to the build as an exit status
+    /// plus stderr.
+    /// </summary>
+    internal static string? LocalUnavailableReason => LocalProbe.Value;
+
+    private static readonly Lazy<string?> LocalProbe = new(ProbeCore, LazyThreadSafetyMode.ExecutionAndPublication);
+
+    internal static (string Desktop, string Browser) Translate(
+        byte[] spirv,
+        IReadOnlyDictionary<int, int> bindings,
+        string entryPoint
+    )
+    {
+        if (LocalUnavailableReason is { } reason)
             throw new InvalidOperationException($"WGSL cannot be produced on this host: {reason}");
 
         // One option matters: the derivative-uniformity rule is a WGSL restriction that predates the
@@ -187,6 +278,73 @@ public static class WgslCompiler
         return result;
     }
 
+    private static WgslTranslatorHost? StartTranslator()
+    {
+        var host = WgslTranslatorHost.Start(out var error);
+        if (host is null)
+        {
+            TranslatorFailure = error ?? "the WGSL translator process could not be started";
+            return null;
+        }
+
+        // One round trip before any shader is handed over, so a host with no translator says so once
+        // instead of paying a dead process on the first module and reporting it mid-batch.
+        var probe = host.Request([WgslProtocol.RequestProbe], RequestTimeout);
+        if (probe is null)
+        {
+            TranslatorFailure = $"the WGSL translator {host.DescribeFailure()}".TrimEnd();
+            host.Dispose();
+            return null;
+        }
+
+        if (probe.Value.Status == WgslProtocol.StatusOk)
+            return host;
+
+        TranslatorFailure = probe.Value.First;
+        host.Dispose();
+        return null;
+    }
+
+    private static WgslTranslatorHost.Reply? Request(byte request, Action<BinaryWriter> body)
+    {
+        var host = Translator;
+        if (host is null)
+            return null;
+
+        using var buffer = new MemoryStream();
+        using (var writer = new BinaryWriter(buffer, Encoding.UTF8, leaveOpen: true))
+        {
+            writer.Write(request);
+            body(writer);
+        }
+
+        return host.Request(buffer.ToArray(), RequestTimeout);
+    }
+
+    /// <summary>
+    /// Records that the translator is gone, and how it went, so the rest of the batch skips WGSL.
+    ///
+    /// A reply the child gave before it gave up is used as-is; null means it never answered, and then
+    /// only its exit status and stderr describe the cause - an abort writes nothing else.
+    /// </summary>
+    private static string Stop(string? said)
+    {
+        lock (TranslatorGate)
+        {
+            if (TranslatorFailure is not null)
+                return TranslatorFailure;
+
+            TranslatorFailure = said
+                                ?? (Translator is { } host
+                    ? $"the WGSL translator stopped answering: {host.DescribeFailure()}"
+                    : "the WGSL translator process could not be started");
+
+            Translator?.Dispose();
+            Translator = null;
+            return TranslatorFailure;
+        }
+    }
+
     private static string? ProbeCore()
     {
         var name = OperatingSystem.IsWindows()
@@ -202,9 +360,8 @@ public static class WgslCompiler
         try
         {
             // The DllImport is a bare "taint", which .NET resolves against the app's own directory
-            // - under TaskHostFactory that is the SDK folder, not this assembly's. The resolver is
-            // per assembly and only installed once, so a second WgslCompiler instance in the same
-            // process (the task host reuses one) is a no-op.
+            // rather than this assembly's. The resolver is per assembly and can only be installed
+            // once, which is fine: one translator process probes once.
             NativeLibrary.SetDllImportResolver(typeof(Taint).Assembly, (libraryName, _, _) =>
                 libraryName == "taint" ? NativeLibrary.Load(path) : IntPtr.Zero
             );
@@ -221,11 +378,10 @@ public static class WgslCompiler
     /// Whether a probe failure is this host's binding rather than the translator being broken.
     ///
     /// <see cref="Taint"/> loads the native from its own static constructor, so a bad file arrives
-    /// as <see cref="TypeInitializationException"/> around the real error. Both shapes have to be
-    /// recognised: a binding that cannot load must leave WGSL off with a warning, never take the
-    /// whole shader build down - which is what it did when only the three bare types were listed.
-    /// A genuine translation failure is not covered here, because it happens later: the probe reads
-    /// one exported symbol and nothing else.
+    /// as <see cref="TypeInitializationException"/> around the real error. Both shapes are
+    /// recognised so a binding that cannot load leaves WGSL off with a warning instead of failing a
+    /// build. A genuine translation failure is not covered here, because it happens later: the probe
+    /// reads one exported symbol and nothing else.
     /// </summary>
     private static bool IsNativeLoadFailure(Exception e)
     {
@@ -285,3 +441,12 @@ public static class WgslCompiler
         return null;
     }
 }
+
+/// <summary>
+/// WGSL is not obtainable on this host, as opposed to a module that cannot be translated.
+///
+/// Separate from the plain <see cref="InvalidOperationException"/> a bad module throws because the
+/// two want opposite handling: a broken shader fails the build, while a host without a working
+/// translator only costs the tree its WGSL.
+/// </summary>
+public sealed class WgslUnavailableException(string message) : InvalidOperationException(message);
