@@ -762,9 +762,11 @@ die on the next, and each retry costs a launch plus a timeout. Closing its stdin
 translator behind.
 
 With the boundary in place the macOS runner (`macos-26-arm64`) translates the whole tree — a 53 s shader target against
-the 0.35 s it took to abort — so whatever killed it was a property of MSBuild's task host process, not of the dylib or
-of the translation. That is also why the failure never reproduced anywhere else, and why nothing may move the
-translator back in process to "simplify" the startup.
+the 0.35 s it took to abort — so the dylib and the translation were never the problem. What differs is the process: the
+task host also has shaderc and spirv-cross loaded, and the child has only taint. Those two link libc++ **statically**
+(their only dylib dependencies are themselves and libSystem), while taint links `/libc++.1.dylib`, so the task host is
+the one process holding both a private libc++ and the system one. That is consistent with the abort and would explain
+why it never reproduced anywhere but that host, though the crash named no library and this has not been proven.
 
 Each rule below was found by a validation failure, not by reading docs — see `WgslCompiler.cs`:
 
@@ -772,6 +774,7 @@ Each rule below was found by a validation failure, not by reading docs — see `
 |---|---|
 | Native lookup | `Taint` binds the name `"taint"` (not `libtaint`), and under `TaskHostFactory` `AppContext.BaseDirectory` is the SDK folder, so NuGet's `runtimes/<rid>/native/` layout is never probed. The project copies that one file flat beside the task and the child installs a `NativeLibrary.SetDllImportResolver` for the assembly, in that order |
 | Probing cannot be made safe | a load failure that is catchable and one that aborts are the same call from the outside, so "probe cheaper" does not exist; the child boundary is the only thing that turns the second into a message |
+| The child loads taint and nothing else | shaderc and spirv-cross link libc++ statically while taint loads `/libc++.1.dylib`, so a process holding both carries two C++ runtimes; the child exists partly so it never does. Do not compile or reflect over a shader in `WgslTranslatorServer`'s path — that is the whole reason its entry returns before the CLI does |
 | Child selection | the apphost beside the compiler assembly first (`NFMWorld.ShaderCompiler[.exe]`), then the same DLL through `DOTNET_HOST_PATH`, because a copied apphost may have lost its executable bit. A candidate is accepted only once it **answers a probe**: one that starts and dies is indistinguishable from a live translator until it is asked something, and accepting it on `Process.Start` returning would mask the fallback it exists for. Both failures are reported together |
 | Non-uniform derivatives | translation sets `TaintOption.AllowNonUniformDerivatives`; six fragment stages sample under divergent control flow |
 | tint's `diagnostic(off, derivative_uniformity);` | the naga inside the shipped `wgpu_native` rejects `diagnostic` directives outright, while Chrome's Tint *requires* it (`select` evaluates both arms, so the dither sample sits under non-uniform control flow and every one of the 16 `Shapes` pixel modules is refused without it). Hence two members: `Wgsl` has the line stripped, `WgslBrowser` keeps it. `NFMWorld.Graphics.WebGPU.Smoke` only runs naga, so it cannot see the browser flavour break |
