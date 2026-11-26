@@ -27,15 +27,17 @@
         <NFMWorldShaderCompilerAssembly Condition="'$(NFMWorldShaderCompilerAssembly)' == ''">$(NFMWorldShaderTaskDirectory)\NFMWorld.ShaderCompiler.dll</NFMWorldShaderCompilerAssembly>
     </PropertyGroup>
 
-    <!-- The external translator the compiler shells out to. Listed as inputs because restoring the
-         package is what turns WGSL on: without this, a tree whose bundles were built while tint was
-         absent keeps them, and the WebGPU backend reports the missing WGSL at pipeline creation.
-         A wildcard, not two named files: MSBuild treats a named input that does not exist as
-         "cannot compare", which makes the target run every build. The glob yields the files that
-         are there (tint.exe on Windows, tint elsewhere) and nothing where tint is not shipped. -->
+    <!-- The WGSL translator, listed as inputs as well as being a runtime dependency: restoring the
+         package is what turns WGSL on, and up to a year of builds here were stamped by a tree without
+         it. A change to taint is a change to the WGSL half of every bundle, so the task host's copy
+         of it has to invalidate the stamp the way the compiler assembly does.
+         Wildcards, not named files: MSBuild treats a named input that does not exist as "cannot
+         compare", which makes the target run every build. `*taint*` covers taint.dll, libtaint.so and
+         libtaint.dylib, which are the three names the package ships. -->
     <ItemGroup>
         <NFMWorldShaderTool Include="$(NFMWorldShaderCompilerAssembly)"/>
-        <NFMWorldShaderTool Include="$(NFMWorldShaderTaskDirectory)\tint*"/>
+        <NFMWorldShaderTool Include="$(NFMWorldShaderTaskDirectory)\TaintSharp.dll"/>
+        <NFMWorldShaderTool Include="$(NFMWorldShaderTaskDirectory)\*taint*"/>
     </ItemGroup>
 
     <!-- Loaded out-of-process, which is what makes rebuilding it possible at all.

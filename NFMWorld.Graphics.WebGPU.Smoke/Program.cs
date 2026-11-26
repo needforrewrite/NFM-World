@@ -32,7 +32,9 @@ internal static unsafe class Program
     {
         using var device = WebGpuGraphicsDevice.Create(
             new WebGpuDeviceDescription(
-                WindowHandle: 0,
+                // Headless: the smoke renders into an offscreen colour attachment, so it needs no
+                // window and cannot depend on one being present in CI.
+                Window: WebGpuWindow.None,
                 Width: Width,
                 Height: Height,
                 MultiSampleCount: 0

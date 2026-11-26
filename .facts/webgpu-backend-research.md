@@ -17,13 +17,20 @@ library for Dawn's `emdawnwebgpu` and differs where noted.
 |---|---|
 |`Silk.NET.WebGPU`|binding only|
 |`Silk.NET.WebGPU.Native.WGPU`|`wgpu_native` for win-x64/x86/arm64, linux-{arm,arm64,x64}, osx-{x64,arm64}. **No wasm build** — the browser links Dawn's `emdawnwebgpu` port instead (see [[webgpu-binding-regeneration-and-wasm-linkage]])|
-|`Stride.Dependencies.Tint`|the `tint` **CLI**, no .NET API; runtimes only for win-x64, linux-x64, osx-arm64|
+|`TaintSharp`|in-process bindings to **taint**, a packaged Dawn Tint built *with* its SPIR-V reader. Runtimes for win-x64, linux-x64, osx-arm64; **osx-x64 has no managed binding**. Replaced `Stride.Dependencies.Tint`, whose only macOS binary was osx-arm64 and was built without the reader — every translation failed `invalid value 'spirv' for option '--input-format'`, which is what made WebGPU macOS-only-on-paper|
 
 ## Shader path — HLSL → SPIR-V (existing) → tint → WGSL
 
+`Taint.Translate` is called in-process. The binding resolves the native as `"taint"` (not `libtaint`), and
+under `TaskHostFactory` `AppContext.BaseDirectory` is the SDK directory, so NuGet's `runtimes/<rid>/native/`
+layout is never probed: the shader projects copy that single file flat beside the task and `WgslCompiler`
+installs a `NativeLibrary.SetDllImportResolver` for the assembly (probe order: assembly directory →
+`AppContext.BaseDirectory` → `NFMW_TAINT` → `PATH`). Capability is a `Lazy` probe, so a RID with no native
+produces WGSL-less bundles plus a printed reason instead of failing the build.
+
 Three build-time fixes, each found by a failing validation rather than by reading docs:
 
-1. `--allow-non-uniform-derivatives` — 6 fragment stages sample under divergent control flow.
+1. `TaintOption.AllowNonUniformDerivatives` — 6 fragment stages sample under divergent control flow.
 2. Strip tint's `diagnostic(off, derivative_uniformity);` — the naga inside this wgpu-native rejects
    `diagnostic` directives outright. That is a desktop-only concession: Chrome's Tint instead
    *requires* it here, and without it every one of the 16 pixel modules is refused with
@@ -65,6 +72,31 @@ linear), `Depth24Stencil8` → `Depth24PlusStencil8` (attachment only), `Rgba32f
 `float32-filterable` for its linear sampler, `Dxt1/3/5` → BC1/2/3 needs `texture-compression-bc`.
 `BlendOperation.Min/Max` and wireframe have no WebGPU equivalent (no callers). `HasBottomLeftFramebufferOrigin
 = false`, same as D3D11, so the `Mad.fxh` shadow flip stays correct.
+
+## Desktop surfaces — Win32, X11, Wayland, Metal
+
+`WebGpuDeviceDescription` names the window as a `WebGpuWindow` (`Kind` + handle + display/layer `nint`s),
+and the backend builds the matching `Wg.SurfaceSource*`: `WindowsHwnd`, `XlibWindow` (display **and**
+window number), `WaylandSurface` (display and surface), `MetalLayer`. `Kind.None` means offscreen, which is
+what the browser and the smoke harness pass. Nothing in the backend references SDL; `SdlWindow.NativeHandles`
+answers from SDL's own window properties (`SDL_PROP_WINDOW_{WIN32,X11,WAYLAND,COCOA}_*`) and owns the
+`CAMetalLayer` — created lazily on the first read, because `SDL_Metal_CreateView` adds a subview SDL never
+destroys and clears `SDL_WINDOW_OPENGL`/`SDL_WINDOW_VULKAN` on the window the GL arms share, and destroyed
+before `SDL_DestroyWindow`.
+
+Only the Win32 path is runtime-verified (this host). The X11, Wayland and Metal paths are compiled against
+the real SURFACE_SOURCE_* struct layouts but have never run — an X11/Wayland/Cocoa host is required to
+confirm them.
+
+The native library has its own packaging constraint: the native csprojs read `$(WgpuNativeRid)` /
+`$(AngleNativeRid)` → `$(RuntimeIdentifier)` → `$(NETCoreSdkRuntimeIdentifier)`, and the SDK strips
+`RuntimeIdentifier` when it collects a referenced project's copy items (`AdditionalProperties` is honoured
+only by the build pass). A *head* build therefore copies the **build host's** native: `dotnet publish
+NFMWorld -r linux-x64` on Windows yields `libEGL.dll`/`libGLESv2.dll`/`vulkan-1.dll` and no `.so`. The
+command-line `-p:WgpuNativeRid=<rid> -p:AngleNativeRid=<rid>` adds the target's files beside the host's
+(useful for staging, not a fix). `release.yml` publishes each RID on its own OS runner, where the two agree —
+except that `osx-x64` and `osx-arm64` share the `libwgpu_native.dylib` name, so an Intel publish on an arm64
+runner would ship arm64 bytes.
 
 ## Verification
 

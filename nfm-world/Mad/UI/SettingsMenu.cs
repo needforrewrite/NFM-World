@@ -131,15 +131,15 @@ public class SettingsMenu()
         // has only WebGL2. Listing both regardless would offer a choice that can only fall back.
         _ when OperatingSystem.IsBrowser() && BrowserWebGpuAvailable => ["WebGPU", "OpenGL ES"],
         _ when OperatingSystem.IsBrowser() => ["OpenGL ES"],
-        // windows doesn't do metal or gles, linux doesn't do metal. WebGPU is offered on Windows
-        // only: the backend builds its surface from the window's Win32 HWND, and no other
-        // platform's handle is exposed yet, so offering it elsewhere would be a pick that cannot
-        // start.
+        // Windows has no Metal and no GLES; Linux has no Metal. WebGPU is on offer on all three,
+        // because wgpu-native builds its surface from whichever handle the windowing system
+        // exposes - an HWND, an X11 Display and XID, a Wayland display and surface, or the
+        // CAMetalLayer SDL creates over a Cocoa window.
         _ when RuntimeInformation.IsOSPlatform(OSPlatform.OSX) =>
-            ["Auto", "Metal via ANGLE", "OpenGL", "Vulkan via ANGLE", "OpenGL via ANGLE", "OpenGL ES via ANGLE"],
+            ["Auto", "Metal via ANGLE", "WebGPU", "OpenGL", "Vulkan via ANGLE", "OpenGL via ANGLE", "OpenGL ES via ANGLE"],
         _ when RuntimeInformation.IsOSPlatform(OSPlatform.Windows) =>
             ["Auto", "DirectX 11", "WebGPU", "OpenGL", "Vulkan via ANGLE", "DirectX 11 via ANGLE", "OpenGL via ANGLE"],
-        _ => ["Auto", "OpenGL", "Vulkan via ANGLE", "OpenGL via ANGLE", "OpenGL ES via ANGLE"]
+        _ => ["Auto", "WebGPU", "OpenGL", "Vulkan via ANGLE", "OpenGL via ANGLE", "OpenGL ES via ANGLE"]
     };
 
     private static int _selectedRenderer = 0;

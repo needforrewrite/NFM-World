@@ -27,14 +27,53 @@ using WgpuTexture = Maxine.WebGPU.Texture;
 
 namespace NFMWorld.Graphics.WebGPU;
 
+/// <summary>The windowing system a WebGPU surface is created over.</summary>
+public enum WebGpuWindowKind
+{
+    /// <summary>No window: the device renders into an offscreen colour attachment.</summary>
+    None,
+
+    /// <summary>Win32. <see cref="WebGpuWindow.Handle"/> is an <c>HWND</c>.</summary>
+    Win32,
+
+    /// <summary>X11. <see cref="WebGpuWindow.Display"/> is a <c>Display*</c> and
+    /// <see cref="WebGpuWindow.Handle"/> the window's XID.</summary>
+    X11,
+
+    /// <summary>Wayland. <see cref="WebGpuWindow.Display"/> is a <c>wl_display*</c> and
+    /// <see cref="WebGpuWindow.Handle"/> a <c>wl_surface*</c>.</summary>
+    Wayland,
+
+    /// <summary>macOS. <see cref="WebGpuWindow.Handle"/> is a <c>CAMetalLayer*</c>.</summary>
+    Metal,
+}
+
+/// <summary>
+/// The native window a WebGPU surface presents into, tagged with the system that produced it.
+/// </summary>
+/// <remarks>
+/// A record struct of untyped pointers rather than one handle, because each desktop platform wants a
+/// different pair and this assembly references no windowing stack to ask. The caller is
+/// <c>SdlWindow.NativeHandles</c> through <c>WorldGame</c>, which is the only place that knows both.
+/// Fields that do not apply to <see cref="WebGpuWindow.Kind"/> are zero.
+/// </remarks>
+/// <param name="Kind">Which system the handles belong to.</param>
+/// <param name="Handle">The <c>HWND</c>, X11 XID, <c>wl_surface*</c> or <c>CAMetalLayer*</c>.</param>
+/// <param name="Display">The X11 <c>Display*</c> or Wayland <c>wl_display*</c> the window belongs to.</param>
+public readonly record struct WebGpuWindow(WebGpuWindowKind Kind, nint Handle, nint Display = default)
+{
+    /// <summary>A device with no presentation surface, which is what a headless run wants.</summary>
+    public static WebGpuWindow None => default;
+}
+
 /// <summary>
 /// How to bring up the WebGPU device and the surface over a native window.
 /// </summary>
-/// <param name="WindowHandle">
-/// The window's native handle - <c>SDL_PROP_WINDOW_WIN32_HWND_POINTER</c> through
-/// <c>NFMWorld.Platform.SDL3.SdlWindow.NativeWindowHandle</c>. Zero means no presentation surface
-/// at all: the device still renders, into an offscreen colour attachment, which is what the smoke
-/// harness runs against on a machine with no window.
+/// <param name="Window">
+/// The window to present into, as <c>NFMWorld.Platform.SDL3.SdlWindow.NativeHandles</c> reports it.
+/// <see cref="WebGpuWindowKind.None"/> means no presentation surface at all: the device still
+/// renders, into an offscreen colour attachment, which is what the smoke harness runs against on a
+/// machine with no window.
 /// </param>
 /// <param name="Width">Back buffer width in pixels.</param>
 /// <param name="Height">Back buffer height in pixels.</param>
@@ -51,7 +90,7 @@ namespace NFMWorld.Graphics.WebGPU;
 /// </param>
 /// <param name="DepthStencilFormat">The depth-stencil format the swapchain's automatic depth buffer takes.</param>
 public readonly record struct WebGpuDeviceDescription(
-    nint WindowHandle,
+    WebGpuWindow Window,
     int Width,
     int Height,
     int MultiSampleCount = 0,
@@ -606,7 +645,14 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
             errorRouter: null,
             errorCallback: default,
             browser: true,
-            new WebGpuDeviceDescription(0, width, height, multiSampleCount, EnableValidation: false, depthStencilFormat)
+            new WebGpuDeviceDescription(
+                WebGpuWindow.None,
+                width,
+                height,
+                multiSampleCount,
+                EnableValidation: false,
+                depthStencilFormat
+            )
         );
     }
 
@@ -633,35 +679,95 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
 
     private static WgpuSurface* CreateSurface(Wg.WebGPU api, Wg.Instance* instance, in WebGpuDeviceDescription description)
     {
-        if (description.WindowHandle == 0)
+        var window = description.Window;
+        if (window.Kind == WebGpuWindowKind.None)
             return null;
 
-        if (!OperatingSystem.IsWindows())
+        if (window.Handle == 0)
         {
-            throw new PlatformNotSupportedException(
-                "The WebGPU backend creates its surface from a Win32 HWND. The SDL window only exposes "
-                + "that pointer today, so on another platform render headless (pass WindowHandle: 0) or "
-                + "add the platform's handle accessor first."
+            throw new ArgumentException(
+                $"A {window.Kind} surface needs a window handle, and this one is zero. Either the "
+                + "window was destroyed before the device was created, or the layer SDL was asked for "
+                + "did not exist.",
+                nameof(description)
             );
         }
 
+        var surface = window.Kind switch
+        {
+            WebGpuWindowKind.Win32 => CreateHwndSurface(api, instance, window.Handle),
+            WebGpuWindowKind.X11 => CreateXlibSurface(api, instance, window.Display, window.Handle),
+            WebGpuWindowKind.Wayland => CreateWaylandSurface(api, instance, window.Display, window.Handle),
+            WebGpuWindowKind.Metal => CreateMetalLayerSurface(api, instance, window.Handle),
+            _ => throw new PlatformNotSupportedException($"No WebGPU surface source is defined for {window.Kind}."),
+        };
+
+        if (surface is null)
+        {
+            throw new InvalidOperationException(
+                $"wgpu-native could not create a surface over the {window.Kind} window. A surface source "
+                + "needs an instance built with that backend (wgpu-native exposes all of them) and "
+                + "handles that are still valid - a destroyed window or a released layer fails here "
+                + "rather than at present time."
+            );
+        }
+
+        return surface;
+    }
+
+    private static WgpuSurface* CreateHwndSurface(Wg.WebGPU api, Wg.Instance* instance, nint hwnd)
+    {
+        // DXGI asks for the instance the window belongs to; every window this app creates lives in
+        // the process image, which is what a null module name resolves to.
         var fromHwnd = new Wg.SurfaceSourceWindowsHWND
         {
             Chain = new Wg.ChainedStruct { SType = Wg.SType.SurfaceSourceWindowsHwnd },
             Hinstance = (void*)GetModuleHandleW(null),
-            Hwnd = (void*)description.WindowHandle,
+            Hwnd = (void*)hwnd,
         };
 
-        var descriptor = new Wg.SurfaceDescriptor
+        var descriptor = new Wg.SurfaceDescriptor { NextInChain = (Wg.ChainedStruct*)&fromHwnd };
+        return api.InstanceCreateSurface(instance, &descriptor);
+    }
+
+    private static WgpuSurface* CreateXlibSurface(Wg.WebGPU api, Wg.Instance* instance, nint display, nint window)
+    {
+        var fromXlib = new Wg.SurfaceSourceXlibWindow
         {
-            NextInChain = (Wg.ChainedStruct*)&fromHwnd,
+            Chain = new Wg.ChainedStruct { SType = Wg.SType.SurfaceSourceXlibWindow },
+            Display = (void*)display,
+            Window = (ulong)window,
         };
 
-        var surface = api.InstanceCreateSurface(instance, &descriptor);
-        if (surface is null)
-            throw new InvalidOperationException("wgpu-native could not create a surface over the window handle.");
+        var descriptor = new Wg.SurfaceDescriptor { NextInChain = (Wg.ChainedStruct*)&fromXlib };
+        return api.InstanceCreateSurface(instance, &descriptor);
+    }
 
-        return surface;
+    private static WgpuSurface* CreateWaylandSurface(Wg.WebGPU api, Wg.Instance* instance, nint display, nint surface)
+    {
+        var fromWayland = new Wg.SurfaceSourceWaylandSurface
+        {
+            Chain = new Wg.ChainedStruct { SType = Wg.SType.SurfaceSourceWaylandSurface },
+            Display = (void*)display,
+            Surface = (void*)surface,
+        };
+
+        var descriptor = new Wg.SurfaceDescriptor { NextInChain = (Wg.ChainedStruct*)&fromWayland };
+        return api.InstanceCreateSurface(instance, &descriptor);
+    }
+
+    private static WgpuSurface* CreateMetalLayerSurface(Wg.WebGPU api, Wg.Instance* instance, nint layer)
+    {
+        // The layer's drawable size is SDL's to maintain (it resizes the Metal view with the window),
+        // so nothing here has to track the client area - the swapchain reads the texture's size.
+        var fromLayer = new Wg.SurfaceSourceMetalLayer
+        {
+            Chain = new Wg.ChainedStruct { SType = Wg.SType.SurfaceSourceMetalLayer },
+            Layer = (void*)layer,
+        };
+
+        var descriptor = new Wg.SurfaceDescriptor { NextInChain = (Wg.ChainedStruct*)&fromLayer };
+        return api.InstanceCreateSurface(instance, &descriptor);
     }
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]

@@ -6,8 +6,14 @@
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RootNamespace>NFMWorld.Graphics.WebGPU</RootNamespace>
-        <!-- wgpu-native is a native library, so the host must match it. -->
-        <PlatformTarget>x64</PlatformTarget>
+        <!-- wgpu-native is a native library, so a RID build must not produce a host whose platform
+             disagrees with the package it copies. The pin follows the RID rather than being fixed at
+             x64: wgpu-native ships arm64 for Linux and macOS too, and a fixed x64 pin is NETSDK1032
+             the moment the project is built with -r osx-arm64 or -r linux-arm64. With no RID named
+             the SDK and every other native in this tree are x64, which is what the fallback keeps.
+             The assemblies stay IL-only either way, so the PE machine field is cosmetic. -->
+        <PlatformTarget Condition="'$(PlatformTarget)' == '' And $(RuntimeIdentifier.Contains('arm64'))">arm64</PlatformTarget>
+        <PlatformTarget Condition="'$(PlatformTarget)' == ''">x64</PlatformTarget>
     </PropertyGroup>
 
     <ItemGroup>
@@ -20,7 +26,8 @@
          companion package with the same shape, so the call sites read the same; see its README.
 
          The native package carries wgpu_native for the desktop RIDs; a browser build cannot reach
-         it, which is why this backend is desktop-only. The RID cannot be read off this project's
+         it, because there the bindings come from Dawn's emdawnwebgpu through
+         NFMWorld.Platform.WebGPU. The RID cannot be read off this project's
          $(RuntimeIdentifier) inside the referenced project, whose properties are stripped when the
          SDK collects copy-to-output items, so the target platform is passed explicitly. -->
     <ItemGroup>

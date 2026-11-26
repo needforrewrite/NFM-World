@@ -47,13 +47,14 @@
     <ItemGroup>
         <PackageReference Include="Silk.NET.Shaderc.Native" Version="2.23.0" GeneratePathProperty="true" ExcludeAssets="all" PrivateAssets="all"/>
         <PackageReference Include="Silk.NET.SPIRV.Cross.Native" Version="2.23.0" GeneratePathProperty="true" ExcludeAssets="all" PrivateAssets="all"/>
-        <!-- Dawn's tint, the WGSL side of the pipeline. It is a tool rather than a library, so it is
-             extracted and copied flat like the two natives above - its own .targets copies beside
-             $(OutDir), which is not where this task looks. Only win-x64, linux-x64 and osx-arm64
-             are in the package, and the osx-arm64 binary is built without Dawn's SPIR-V reader
-             (its input format accepts only wgsl), so WgslCompiler omits WGSL on macOS. A build on
-             another RID omits it for want of the binary. -->
-        <PackageReference Include="Stride.Dependencies.Tint" Version="2026.9.27" GeneratePathProperty="true" ExcludeAssets="all" PrivateAssets="all"/>
+        <!-- The WGSL side of the pipeline: taint, a packaged build of Dawn's Tint, bound through
+             TaintSharp. Only its native half is listed here; the managed binding arrives through
+             the project reference above, with CopyLocalLockFileAssemblies putting it beside this
+             assembly. The natives are copied flat like the two above, for the same reason - the
+             DllImport resolver in WgslCompiler looks beside this assembly, not at AppContext's
+             base directory. Only win-x64, linux-x64 and osx-arm64 are in the package, so a build on
+             another RID omits WGSL and says so. -->
+        <PackageReference Include="TaintSharp" Version="1.0.0" GeneratePathProperty="true" ExcludeAssets="native" PrivateAssets="all"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -63,7 +64,7 @@
               Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/>
         <None Include="$(PkgSilk_NET_SPIRV_Cross_Native)\runtimes\$(NETCoreSdkRuntimeIdentifier)\native\*"
               Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/>
-        <None Include="$(PkgStride_Dependencies_Tint)\runtimes\$(NETCoreSdkRuntimeIdentifier)\native\*"
+        <None Include="$(PkgTaintSharp)\runtimes\$(NETCoreSdkRuntimeIdentifier)\native\*"
               Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/>
     </ItemGroup>
 

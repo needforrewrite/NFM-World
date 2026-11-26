@@ -97,10 +97,10 @@ public static class ShaderBuild
         var defines = new Dictionary<string, string> { [DialectDefine] = "1" };
         var bundles = new List<CompiledBundle>(techniques.Count);
 
-        // Probed once per file: a build host whose tint cannot read SPIR-V (no package asset for the
-        // RID, or the macOS binary built without the reader) still produces every other form, and
-        // the WebGPU backend reports the missing WGSL itself rather than the shader build failing
-        // for everyone. The caller reports why, once, rather than this loop repeating it per shader.
+        // Probed once per file: a build host without the taint native (no package asset for the RID)
+        // still produces every other form, and the WebGPU backend reports the missing WGSL itself
+        // rather than the shader build failing for everyone. The caller reports why, once, rather than
+        // this loop repeating it per shader.
         var emitsWgsl = WgslCompiler.Available;
 
         foreach (var technique in techniques)

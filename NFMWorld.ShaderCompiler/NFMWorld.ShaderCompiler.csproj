@@ -26,13 +26,18 @@
     <ItemGroup>
         <PackageReference Include="Silk.NET.Shaderc" Version="2.23.0"/>
         <PackageReference Include="Silk.NET.SPIRV.Cross" Version="2.23.0"/>
-        <!-- Tint is a CLI, not a library, so it is copied flat beside this assembly where
-             WgslCompiler looks for it. The build task does the same for its own copy. -->
-        <PackageReference Include="Stride.Dependencies.Tint" Version="2026.9.27" GeneratePathProperty="true" ExcludeAssets="all" PrivateAssets="all"/>
+        <!-- The SPIR-V -> WGSL translator: taint, a packaged build of Dawn's Tint, bound through
+             TaintSharp. A library rather than the tint CLI it replaced, which is what makes macOS
+             work - the CLI package's osx-arm64 binary was built without Tint's SPIR-V reader. The
+             natives are a plain `DllImport("taint")` asset, so they are copied flat beside this
+             assembly for WgslCompiler's resolver instead of through NuGet's runtimes/ layout,
+             which under TaskHostFactory is not probed. Only win-x64, linux-x64 and osx-arm64 are
+             packaged; WgslCompiler.Available reports that rather than failing the build. -->
+        <PackageReference Include="TaintSharp" Version="1.0.0" GeneratePathProperty="true" ExcludeAssets="native" PrivateAssets="all"/>
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="$(PkgStride_Dependencies_Tint)\runtimes\$(NETCoreSdkRuntimeIdentifier)\native\*"
+        <None Include="$(PkgTaintSharp)\runtimes\$(NETCoreSdkRuntimeIdentifier)\native\*"
               Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/>
     </ItemGroup>
 

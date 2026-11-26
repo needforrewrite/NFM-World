@@ -28,6 +28,10 @@ public sealed class SdlWindow : IDisposable
 
     private int _logicalHeight;
 
+    // The Metal view SDL_Metal_CreateView added over the window, or zero until a backend asks for
+    // its layer. Nothing destroys it with the window, so Dispose does.
+    private IntPtr _metalView;
+
     // SDL input uses window coordinates; the game uses drawable pixels.
     private static float _mouseScaleX = 1;
     private static float _mouseScaleY = 1;
@@ -575,12 +579,114 @@ public sealed class SdlWindow : IDisposable
         IntPtr.Zero
     );
 
+    /// <summary>
+    /// Every native handle this window has, tagged with the video driver that created it, for a
+    /// backend that builds its own device against the window.
+    /// </summary>
+    /// <remarks>
+    /// Which handles a window has, and which ones a device needs, depends entirely on the driver:
+    /// Win32 wants the <c>HWND</c>, X11 a <c>Display*</c> and an XID, Wayland a <c>wl_display*</c> and
+    /// a <c>wl_surface*</c>, macOS a <c>CAMetalLayer</c> and nothing else. A driver sets only its own
+    /// properties, so their presence identifies the system - <c>SDL_GetCurrentVideoDriver</c> would
+    /// answer the same question as a name, but this needs the handles anyway.
+    ///
+    /// The macOS branch creates the window's Metal view on first use (see <see cref="MetalLayer"/>);
+    /// every other branch only reads what SDL already set.
+    /// </remarks>
+    public NativeWindowHandles NativeHandles
+    {
+        get
+        {
+            var properties = SDL.SDL_GetWindowProperties(_window);
+
+            var hwnd = NativeWindowHandle;
+            if (hwnd != IntPtr.Zero) return new NativeWindowHandles(NativeWindowSystem.Win32, hwnd);
+
+            var x11Display = SDL.SDL_GetPointerProperty(
+                properties,
+                SDL.SDL_PROP_WINDOW_X11_DISPLAY_POINTER,
+                IntPtr.Zero
+            );
+            if (x11Display != IntPtr.Zero)
+            {
+                return new NativeWindowHandles(
+                    NativeWindowSystem.X11,
+                    new IntPtr(SDL.SDL_GetNumberProperty(properties, SDL.SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0)),
+                    x11Display
+                );
+            }
+
+            var waylandDisplay = SDL.SDL_GetPointerProperty(
+                properties,
+                SDL.SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER,
+                IntPtr.Zero
+            );
+            if (waylandDisplay != IntPtr.Zero)
+            {
+                return new NativeWindowHandles(
+                    NativeWindowSystem.Wayland,
+                    SDL.SDL_GetPointerProperty(
+                        properties,
+                        SDL.SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER,
+                        IntPtr.Zero
+                    ),
+                    waylandDisplay
+                );
+            }
+
+            var cocoaWindow = SDL.SDL_GetPointerProperty(
+                properties,
+                SDL.SDL_PROP_WINDOW_COCOA_WINDOW_POINTER,
+                IntPtr.Zero
+            );
+            if (cocoaWindow != IntPtr.Zero)
+            {
+                return new NativeWindowHandles(NativeWindowSystem.Cocoa, cocoaWindow, default, MetalLayer);
+            }
+
+            return default;
+        }
+    }
+
+    /// <summary>
+    /// The <c>CAMetalLayer*</c> of the Metal view SDL places over this window, created on first use.
+    /// </summary>
+    /// <remarks>
+    /// <c>SDL_Metal_CreateView</c> adds the view as a subview of the window and returns a retained
+    /// handle; SDL never destroys it with the window, so this class keeps it and releases it in
+    /// <see cref="Dispose"/>. Creating it also converts the window to <c>SDL_WINDOW_METAL</c> and drops
+    /// whichever GL context it had, which is why it happens only when a caller asks for the layer and
+    /// not at window creation - the GL arms share this class.
+    ///
+    /// The layer is empty-handed on a driver that does not implement Metal (anything but Cocoa), and
+    /// that is reported by returning zero rather than by throwing.
+    /// </remarks>
+    private IntPtr MetalLayer
+    {
+        get
+        {
+            if (_metalView == IntPtr.Zero)
+            {
+                _metalView = SDL.SDL_Metal_CreateView(_window);
+                if (_metalView == IntPtr.Zero) return IntPtr.Zero;
+            }
+
+            return SDL.SDL_Metal_GetLayer(_metalView);
+        }
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
         SetRelativeMouseMode(false);
         CursorVisible = true;
+        if (_metalView != IntPtr.Zero)
+        {
+            SDL.SDL_Metal_DestroyView(_metalView);
+            _metalView = IntPtr.Zero;
+        }
+
         SDL.SDL_DestroyWindow(_window);
         SDL.SDL_Quit();
     }

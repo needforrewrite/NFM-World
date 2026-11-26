@@ -28,7 +28,7 @@ directory. Remove outdated facts when they become irrelevant.
 | `NFMWorld.UI/` | The UI framework itself: Yoga-backed `Component`/`Node`, `Styles`, Sx (`Sx/`), focus/keyboard/mouse, `NodeDebugger`. |
 | `NFMWorld.DriverInterface/` | `IGraphics`, `IGraphics3D`, keys, `TheGraphics`, `DummyBackend`. The platform-neutral surface the game draws against. |
 | `NFMWorld.Graphics.Abstraction` | Backend-neutral GPU API (`IGraphicsDevice`, `ICommandBuffer`, pipelines, buffers). |
-| `NFMWorld.Graphics.OpenGL` | ANGLE/GLES backend (the non-Windows default). `NFMWorld.Graphics.DesktopGL` — desktop core GL. `NFMWorld.Graphics.D3D11` — the Windows default. `NFMWorld.Graphics.WebGPU` — wgpu-native v29 through `Maxine.Silk.WebGPU` on desktop, Dawn's `emdawnwebgpu` in the browser (default there when the page has a device). Each has a `.Smoke` harness. |
+| `NFMWorld.Graphics.OpenGL` | ANGLE/GLES backend (the non-Windows default). `NFMWorld.Graphics.DesktopGL` — desktop core GL. `NFMWorld.Graphics.D3D11` — the Windows default. `NFMWorld.Graphics.WebGPU` — wgpu-native v29 through `Maxine.Silk.WebGPU` on Windows/macOS/Linux, Dawn's `emdawnwebgpu` in the browser (default there when the page has a device). Each has a `.Smoke` harness. |
 | `NFMWorld.Platform.SDL3`, `NFMWorld.Platform.WebGL`, `NFMWorld.Platform.WebGPU` | Window/input layer, plus the browser's WebGL2 shim and the browser's WebGPU shim (`net12.0`: Emscripten port library + `nfmw_*` C forwarders). |
 | `NFMWorld.ShaderCompiler*` | HLSL → SPIR-V → cross-compiled bundles, at build time. |
 | `NFMWorld.Gamemode.Pvp`, `.TimeTrial`, `.Hostile` | Gamemode **plugins** (see below). |
@@ -643,13 +643,29 @@ from `PhysicsController.GameTick`. Two ship:
   `.facts/browser-shader-link-blows-the-gpu-watchdog.md`.
 - **WebGPU** — wgpu-native **v29** on the desktop, Dawn's **`emdawnwebgpu`** in the browser, both through
   **`Maxine.Silk.WebGPU`** (the `Maxine.Silk.WebGPU/` submodule). Opt-in on the desktop (`--backend=webgpu`, or the
-  "WebGPU" video setting); **the browser defaults to it whenever the page can hand over a device**, with WebGL2 as
-  the other entry in the same renderer list. Shaders are the bundles' WGSL, translated at build time from the same
-  SPIR-V the other backends cross-compile (`tint`, see the shader pipeline below). On desktop shader cost it wins
+  "WebGPU" video setting) on Windows, macOS and Linux; **the browser defaults to it whenever the page can hand over a
+  device**, with WebGL2 as the other entry in the same renderer list. Shaders are the bundles' WGSL, translated at
+  build time from the same SPIR-V the other backends cross-compile (Taint, see the shader pipeline below). On desktop
+  shader cost it wins
   only on a cold cache: an RTX 4070 SUPER builds its boot/dash/all-features pipelines in 107/426/819 ms against
   2.9 s / 64 s / 127 s of ANGLE link, but warm both are single-digit ms and `requestAdapter`+`requestDevice`
   (71–167 ms) makes it the slower option; in the browser the link time it saves is what the WebGL2 path spends
   against a ~100 s GPU watchdog (see `.facts/browser-shader-link-blows-the-gpu-watchdog.md`).
+
+  **The window is the caller's to describe.** `WebGpuDeviceDescription` takes a `WebGpuWindow`
+  (`WebGpuWindowKind` + handle + optional display/`CAMetalLayer`), and the backend picks the matching
+  `Wg.SurfaceSource*`: `SurfaceSourceWindowsHwnd`, `SurfaceSourceXlibWindow` (display **and** window number),
+  `SurfaceSourceWaylandSurface` (display and surface), `SurfaceSourceMetalLayer`. Nothing in
+  `NFMWorld.Graphics.WebGPU` references SDL, and `NFMWorld.Platform.SDL3` knows no
+  graphics API: `SdlWindow.NativeHandles` (`NativeWindowHandles`, system + window + display + layer) answers from SDL's
+  own window properties, and `WorldGame.ToWebGpuWindow` is the single translation point. A `Kind` of `None` means
+  offscreen, which is what the smoke harness and the browser use.
+
+  |Gotcha|Rule|
+  |---|---|
+  |The Metal view is SDL's|`SDL_Metal_CreateView` adds a subview SDL owns and clears `SDL_WINDOW_OPENGL`/`SDL_WINDOW_VULKAN` on the window, so `SdlWindow` creates it lazily — on the first `NativeHandles` read, never at window creation, where the GL arms share the class — and destroys it before `SDL_DestroyWindow`|
+  |`PlatformTarget` follows the RID|wgpu-native ships arm64 for Linux and macOS as well as Windows, so the backend's pin is `arm64` when `$(RuntimeIdentifier)` names arm64 and `x64` otherwise (a fixed `x64` is NETSDK1032 for `-r osx-arm64`). The pinned projects' assemblies stay IL-only, so the machine field does not gate loading either way|
+  |The native copy falls back to the build host|`WgpuNativeLayout` (in the submodule) and `AngleNativeLayout` resolve `$(WgpuNativeRid)`/`$(AngleNativeRid)` → `$(RuntimeIdentifier)` → `$(NETCoreSdkRuntimeIdentifier)`, but a head build leaves only the last: the SDK strips `RuntimeIdentifier` from the invocation that collects a referenced project's copy-to-output items (`GetCopyToPublishDirectoryItems` depends on it too), and `AdditionalProperties` is honoured only by the reference's *build* pass. So `dotnet publish NFMWorld -r linux-x64` on Windows produces `libEGL.dll`/`libGLESv2.dll`/`vulkan-1.dll` and no `.so` at all — a cross-RID publish from a foreign host is not a runnable artifact. Passing `-p:WgpuNativeRid=linux-x64 -p:AngleNativeRid=linux-x64` adds the target's files *beside* the host's, which is enough to inspect or stage them but leaves both sets in the bundle, so it is a diagnostic, not a fix. `release.yml` publishes each RID on its own OS runner, where host and target agree — with one exception worth knowing: `osx-x64` and `osx-arm64` ship the **same** `libwgpu_native.dylib` name, so building Intel on an arm64 runner would put arm64 bytes in that artifact|
 
   **The bindings are ours.** `Silk.NET.WebGPU` 2.23.0 is gone: its structs predate `WGPUStringView` labels (which
   shift every descriptor by 8 bytes) and its native package ships 250 exports against the header's 206 declared
@@ -720,14 +736,14 @@ before `CoreCompile` and:
 
 1. compiles HLSL with **shaderc** (`Silk.NET.Shaderc`), targeting Vulkan 1.1 SPIR-V,
 2. reflects and cross-compiles with **spirv-cross** (`Silk.NET.SPIRV.Cross`) to the per-backend sources (HLSL for
-   D3D11, GLSL for GL), and, when the `tint` CLI is present (`Stride.Dependencies.Tint`), runs the same SPIR-V through
-   **tint** to WGSL for WebGPU,
+   D3D11, GLSL for GL), and runs the same SPIR-V through **Taint** to WGSL for WebGPU, in-process through
+   `TaintSharp` (bindings to a packaged Dawn Tint built with its SPIR-V reader),
 3. emits **one C# bundle class per technique** under `obj/…/ShaderCompiler/`, and `IncludeShaders` globs those into
    the compile.
 
-WGSL is optional per build: `WgslCompiler.Available` is false where the tint native is missing (a RID the package
-does not ship) **or on macOS at all** — the package's osx-arm64 `tint` is built without Dawn's SPIR-V reader, so every
-translation would fail with `invalid value 'spirv' for option '--input-format'` — and the bundles then carry empty
+WGSL is optional per build: `WgslCompiler.Available` is false where no `taint` native can be loaded — `osx-x64` has
+no managed binding, the native is looked up beside the task assembly, then `AppContext.BaseDirectory`, then
+`NFMW_TAINT`, then `PATH` — and the bundles then carry empty
 `Wgsl`/`WgslBrowser` strings. `WgslCompiler.UnavailableReason` carries the reason the build log prints. WGSL feeds the
 WebGPU backend on both the desktop (wgpu-native) and the browser (Dawn). It is emitted as **two flavours** — see the
 `diagnostic` row below; `WebGpuResources.WgslFor` picks by `IsBrowser`. Three things about the path are not obvious
@@ -735,7 +751,8 @@ and each was found by a validation failure, not by reading docs — see `WgslCom
 
 | Gotcha | Rule |
 |---|---|
-| Non-uniform derivatives | the tint invocation passes `--allow-non-uniform-derivatives`; six fragment stages sample under divergent control flow |
+| Native lookup | `Taint` binds the name `"taint"` (not `libtaint`), and under `TaskHostFactory` `AppContext.BaseDirectory` is the SDK folder, so NuGet's `runtimes/<rid>/native/` layout is never probed. The project copies that one file flat beside the task and `WgslCompiler` installs a `NativeLibrary.SetDllImportResolver` for the assembly, in that order |
+| Non-uniform derivatives | translation sets `TaintOption.AllowNonUniformDerivatives`; six fragment stages sample under divergent control flow |
 | tint's `diagnostic(off, derivative_uniformity);` | the naga inside the shipped `wgpu_native` rejects `diagnostic` directives outright, while Chrome's Tint *requires* it (`select` evaluates both arms, so the dither sample sits under non-uniform control flow and every one of the 16 `Shapes` pixel modules is refused without it). Hence two members: `Wgsl` has the line stripped, `WgslBrowser` keeps it. `NFMWorld.Graphics.WebGPU.Smoke` only runs naga, so it cannot see the browser flavour break |
 | `return;` after `discard;` | tint emits it and naga rejects an instruction after `return`, so it is stripped too |
 | Bindings | SPIR-V decorations are renumbered before tint (uniform 0, textures 1..T, samplers T+1..), because HLSL's `b0`/`t0`/`s0` all land on set 0 binding 0 and WebGPU refuses that. `WebGpuInterop.TextureBinding`/`SamplerBinding` restate the same numbering for the backend |
@@ -750,7 +767,7 @@ item group to update. Two things that bite:
 |---|---|
 | Task host | the task is `net11.0` and loads out-of-process (`TaskHostFactory`); that is what lets its own project be rebuilt. It will not load under .NET Framework `msbuild.exe` |
 | One-to-many | a `.fx` file can produce several techniques (`Nvg.fx` yields four, `Poly.fx` two), so nothing may name a bundle by `%(Filename)` |
-| Incremental inputs | `CompileShaders` is skipped on a stamp, so anything that can change a bundle's *contents* must be an `Inputs` entry: the shaders, the headers, the task assembly, **`NFMWorld.ShaderCompiler.dll`**, `tint*` beside it, and the targets file itself. Naming only the task assembly meant a compiler change (the whole WGSL stage was one) never invalidated existing bundles — the DebugDevServer tree kept WGSL-less bundles and failed at WebGPU pipeline creation. Point them at genuine files, or wildcards that can match none: a named input that does not exist makes MSBuild run the target on every build |
+| Incremental inputs | `CompileShaders` is skipped on a stamp, so anything that can change a bundle's *contents* must be an `Inputs` entry: the shaders, the headers, the task assembly, **`NFMWorld.ShaderCompiler.dll`**, `TaintSharp.dll` and `*taint*` beside it, and the targets file itself. Naming only the task assembly meant a compiler change (the whole WGSL stage was one) never invalidated existing bundles — the DebugDevServer tree kept WGSL-less bundles and failed at WebGPU pipeline creation. Point them at genuine files, or wildcards that can match none: a named input that does not exist makes MSBuild run the target on every build |
 
 `NFMWorld.ShaderSourceGen` still exists in the solution for the old FNA-style effect wrappers, but the game does not
 reference it; new shader work goes through `NFMWorld.ShaderCompiler`.

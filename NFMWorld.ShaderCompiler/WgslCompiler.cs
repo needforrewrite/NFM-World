@@ -1,6 +1,7 @@
 // LLM maintained.
 //
-// HLSL -> SPIR-V -> WGSL, the last step being Dawn's `tint` CLI.
+// HLSL -> SPIR-V -> WGSL, the last step being taint - a packaged build of Dawn's Tint, bound
+// in-process through TaintSharp.
 //
 // The SPIR-V is already there - it is the same module the other backends are cross-compiled from -
 // so only two things happen here, and both exist because of rules WebGPU has and the other targets
@@ -10,17 +11,19 @@
 //    WebGPU can bind: b0, t0 and s0 all land on set 0 binding 0, and two resources on one binding is
 //    a validation error. The one block, then every texture, then every sampler, in that order, is
 //    also the layout the backend's bind group is created from.
-// 2. tint's output needs two repairs before naga will read it (see PostProcess).
+// 2. taint's output needs two repairs before naga will read it (see PostProcess).
 //
 // Neither is a workaround for a bad shader; both are properties of the tool chain this tree pins,
 // which is why they live here rather than in the `.fx` sources.
 
-using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using TaintSharp;
 
 namespace NFMWorld.ShaderCompiler;
 
-/// <summary>Runs tint over one stage's SPIR-V and returns WGSL.</summary>
+/// <summary>Runs taint over one stage's SPIR-V and returns WGSL.</summary>
 public static class WgslCompiler
 {
     // SPIR-V opcodes and decorations this file reads. Only decorations are rewritten, so the rest of
@@ -30,27 +33,23 @@ public static class WgslCompiler
     private const int DecorationDescriptorSet = 34;
 
     /// <summary>
-    /// Whether tint is present and usable, i.e. whether <see cref="Compile"/> can run; when it is
-    /// false, <see cref="UnavailableReason"/> says why and the caller omits WGSL.
+    /// Whether the taint library is present and loadable, i.e. whether <see cref="Compile"/> can
+    /// run; when it is false, <see cref="UnavailableReason"/> says why and the caller omits WGSL.
     /// </summary>
     public static bool Available => UnavailableReason is null;
 
     /// <summary>
     /// Why WGSL cannot be produced on this host, or null when it can.
     ///
-    /// macOS is refused outright rather than probed: the <c>Stride.Dependencies.Tint</c> osx-arm64
-    /// binary is built without Dawn's SPIR-V reader, so its <c>--input-format</c> accepts only
-    /// <c>wgsl</c> and every translation fails with <c>invalid value 'spirv'</c>. WGSL is only
-    /// consumed by the WebGPU backend, which refuses to run off Windows, so a macOS build loses
-    /// nothing by omitting it. Replace this with a capability probe once a macOS tint that carries
-    /// the reader is available.
+    /// Probed rather than assumed from the runtime identifier. TaintSharp packages win-x64,
+    /// linux-x64 and osx-arm64 only, and an architecture with no native is not a reason to fail
+    /// every shader build - WGSL is consumed only by the WebGPU backend, which is opt-in on the
+    /// desktop. A library that is present but refuses to load (a glibc too old for the linux
+    /// build's 2.34 floor, a broken install) reports the loader's own message.
     /// </summary>
-    public static string? UnavailableReason =>
-        OperatingSystem.IsMacOS()
-            ? "the macOS tint build has no SPIR-V reader (it reads WGSL only)"
-            : FindTint() is null
-                ? "tint was not found beside the shader compiler"
-                : null;
+    public static string? UnavailableReason => Probe.Value;
+
+    private static readonly Lazy<string?> Probe = new(ProbeCore, LazyThreadSafetyMode.ExecutionAndPublication);
 
     /// <summary>
     /// Translates one stage, producing both WGSL flavours.
@@ -61,7 +60,8 @@ public static class WgslCompiler
     /// binding decoration has to appear - a resource left out would keep a number that collides with
     /// another, which WebGPU reports at pipeline creation with nothing to say which shader.
     /// </param>
-    /// <param name="entryPoint">The SPIR-V entry point to translate.</param>
+    /// <param name="entryPoint">The stage's entry point, used in the error message only: taint
+    /// translates the whole module, and the module this is handed has that one entry point.</param>
     /// <returns>
     /// <c>Desktop</c> is what naga (wgpu-native) reads; <c>Browser</c> keeps the
     /// <c>diagnostic(off, derivative_uniformity);</c> directive the browser's Tint requires. Only that
@@ -74,74 +74,40 @@ public static class WgslCompiler
         string entryPoint
     )
     {
-        var tint = FindTint()
-                   ?? throw new InvalidOperationException(
-                       "tint was not found. It ships from the Stride.Dependencies.Tint package and is "
-                       + "copied beside the shader compiler's assembly by the build; if this is a "
-                       + "hand-built tree, run the compiler through its project or put tint on PATH."
-                   );
+        if (UnavailableReason is { } reason)
+            throw new InvalidOperationException($"WGSL cannot be produced on this host: {reason}");
 
-        var directory = Directory.CreateTempSubdirectory("nfmw-wgsl-");
-        try
+        // One option matters: the derivative-uniformity rule is a WGSL restriction that predates the
+        // shaders in this tree, and six fragment stages sample under divergent control flow. Without
+        // it those stages fail to translate at all; with it the output carries a directive that is
+        // stripped for the desktop flavour below.
+        using var options = new TaintOptions();
+        options.SetOption(TaintOption.AllowNonUniformDerivatives, true);
+
+        var retargeted = RetargetBindings(spirv, bindings);
+
+        using var module = Taint.Translate(retargeted, options);
+        var wgsl = module.GetWgsl();
+        if (wgsl is null)
         {
-            var input = Path.Combine(directory.FullName, "stage.spv");
-            File.WriteAllBytes(input, RetargetBindings(spirv, bindings));
-
-            var start = new ProcessStartInfo(tint)
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-            };
-            start.ArgumentList.Add("--input-format");
-            start.ArgumentList.Add("spirv");
-            start.ArgumentList.Add("--format");
-            start.ArgumentList.Add("wgsl");
-            // The derivative-uniformity rule is a WGSL 1.1 restriction that predates the shaders in
-            // this tree; the directive that silences it is rejected by desktop naga and required by
-            // the browser's Tint, so it is stripped for one flavour and kept for the other.
-            start.ArgumentList.Add("--allow-non-uniform-derivatives");
-            start.ArgumentList.Add("--entry-point");
-            start.ArgumentList.Add(entryPoint);
-            start.ArgumentList.Add(input);
-
-            using var process = Process.Start(start)
-                                ?? throw new InvalidOperationException("tint could not be started.");
-            var stdout = process.StandardOutput.ReadToEnd();
-            var stderr = process.StandardError.ReadToEnd();
-            process.WaitForExit();
-
-            if (process.ExitCode != 0)
-            {
-                throw new InvalidOperationException(
-                    $"SPIR-V -> WGSL failed for entry point '{entryPoint}' (tint exit {process.ExitCode}):\n"
-                    + (stderr.Length > 0 ? stderr : stdout).Trim()
-                );
-            }
-
-            return (PostProcess(stdout, keepDiagnostic: false), PostProcess(stdout, keepDiagnostic: true));
+            throw new InvalidOperationException(
+                $"SPIR-V -> WGSL failed for entry point '{entryPoint}'"
+                + (module.GetDiagnostics() is { } diagnostics ? $":\n{diagnostics.Trim()}" : ".")
+            );
         }
-        finally
-        {
-            try
-            {
-                directory.Delete(recursive: true);
-            }
-            catch (IOException)
-            {
-                // A temp directory that outlives the build is not worth failing one over.
-            }
-        }
+
+        return (PostProcess(wgsl, keepDiagnostic: false), PostProcess(wgsl, keepDiagnostic: true));
     }
 
     /// <summary>
     /// Removes the two constructs desktop naga will not read.
     ///
-    /// <c>diagnostic(off, derivative_uniformity);</c> is what <c>--allow-non-uniform-derivatives</c>
-    /// emits instead of failing, and it is a directive the naga inside the pinned wgpu-native does not
-    /// know at all - but the Tint inside the browser's emdawnwebgpu does, and without it every pixel
-    /// stage with divergent sampling fails to translate there. So the two flavours differ only in
-    /// this line, and <paramref name="keepDiagnostic"/> picks which one is being produced.
+    /// <c>diagnostic(off, derivative_uniformity);</c> is what
+    /// <see cref="TaintOption.AllowNonUniformDerivatives"/> emits instead of failing, and it is a
+    /// directive the naga inside the pinned wgpu-native does not know at all - but the Tint inside the
+    /// browser's emdawnwebgpu does, and without it every pixel stage with divergent sampling fails to
+    /// translate there. So the two flavours differ only in this line, and
+    /// <paramref name="keepDiagnostic"/> picks which one is being produced.
     /// The <c>return;</c> after a <c>discard;</c> is tint's demote-to-helper expansion
     /// leaving the rest of the helper body unreachable, which is valid WGSL and rejected by both
     /// compilers as "instruction after return". Dropping it only ever lets a discarded invocation run
@@ -221,18 +187,46 @@ public static class WgslCompiler
         return result;
     }
 
+    private static string? ProbeCore()
+    {
+        var name = OperatingSystem.IsWindows()
+            ? "taint.dll"
+            : OperatingSystem.IsMacOS()
+                ? "libtaint.dylib"
+                : "libtaint.so";
+
+        var path = FindNative(name);
+        if (path is null)
+            return $"the taint native library ({name}) was not found beside the shader compiler";
+
+        try
+        {
+            // The DllImport is a bare "taint", which .NET resolves against the app's own directory
+            // - under TaskHostFactory that is the SDK folder, not this assembly's. The resolver is
+            // per assembly and only installed once, so a second WgslCompiler instance in the same
+            // process (the task host reuses one) is a no-op.
+            NativeLibrary.SetDllImportResolver(typeof(Taint).Assembly, (libraryName, _, _) =>
+                libraryName == "taint" ? NativeLibrary.Load(path) : IntPtr.Zero
+            );
+            _ = Taint.LibraryVersion;
+            return null;
+        }
+        catch (Exception e) when (e is DllNotFoundException or BadImageFormatException or EntryPointNotFoundException)
+        {
+            return $"the taint native library could not be loaded: {e.Message}";
+        }
+    }
+
     /// <summary>
-    /// The tint executable, from beside this assembly first.
+    /// The native library, from beside this assembly first.
     ///
     /// Beside the assembly rather than <see cref="AppContext.BaseDirectory"/> first because the shader
     /// build runs as an MSBuild task under <c>TaskHostFactory</c>, where the base directory is the
     /// SDK's own folder rather than the task's.
     /// </summary>
-    private static string? FindTint()
+    private static string? FindNative(string fileName)
     {
-        var fileName = OperatingSystem.IsWindows() ? "tint.exe" : "tint";
-
-        var overridePath = Environment.GetEnvironmentVariable("NFMW_TINT");
+        var overridePath = Environment.GetEnvironmentVariable("NFMW_TAINT");
         if (!string.IsNullOrEmpty(overridePath) && File.Exists(overridePath))
             return overridePath;
 

@@ -220,17 +220,18 @@ public partial class WorldGame : IDisposable, IGameHost
 
             if (value.Equals("webgpu", StringComparison.OrdinalIgnoreCase))
             {
-                // Both platforms that can present it need naming here, because the surface is
-                // built from a window handle and each exposes a different one: a Win32 HWND from
-                // SDL, or the page's canvas by selector (the browser's own emdawnwebgpu path).
-                // Reported here rather than at device creation so the window is never brought up
-                // for a run that cannot present.
-                if (!OperatingSystem.IsWindows() && !OperatingSystem.IsBrowser())
+                // One surface source per system: a Win32 HWND, an X11 Display and XID, a Wayland
+                // display and surface, the CAMetalLayer SDL creates over a Cocoa window, or the
+                // page's canvas by selector on the browser's own emdawnwebgpu path. Reported here
+                // rather than at device creation so the window is never brought up for a run that
+                // cannot present.
+                if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux()
+                    && !OperatingSystem.IsBrowser())
                 {
                     throw new ArgumentException(
-                        $"{RendererArgumentPrefix}webgpu needs Windows or the browser: the backend builds "
-                        + "its surface from the window's Win32 handle, or from the page's canvas, and SDL "
-                        + "exposes no other platform's handle."
+                        $"{RendererArgumentPrefix}webgpu needs Windows, macOS, Linux or the browser: the "
+                        + "backend builds its surface from the window's native handle, and SDL exposes "
+                        + "none of them on this platform."
                     );
                 }
 
@@ -692,12 +693,14 @@ public partial class WorldGame : IDisposable, IGameHost
             case Renderer.WebGpu:
             {
                 // Like D3D11, nothing here asks SDL for a graphics API: SDL owns the window and the
-                // input, and wgpu-native builds its surface on the HWND.
+                // input, and wgpu-native builds its surface on whatever the windowing system
+                // exposes - the HWND, an X11 Display and XID, a Wayland display and surface, or the
+                // CAMetalLayer SDL places over a Cocoa window.
                 Window = SdlWindow.Create("NFM World", 1280, 720);
 
                 _device = WebGpuGraphicsDevice.Create(
                     new WebGpuDeviceDescription(
-                        WindowHandle: Window.NativeWindowHandle,
+                        Window: ToWebGpuWindow(Window.NativeHandles),
                         Width: Window.Width,
                         Height: Window.Height,
                         MultiSampleCount: SettingsMenu.RequestedMultiSampleCount
@@ -775,6 +778,24 @@ public partial class WorldGame : IDisposable, IGameHost
             GameSparker.CurrentPhase.KeyTyped(character, imguiWantsKeyboard);
         };
     }
+
+    /// <summary>
+    /// The SDL window's native handles as the WebGPU backend wants them.
+    ///
+    /// Kept here rather than in either project because neither can see the other: the graphics
+    /// backend references no windowing stack, and the platform layer knows nothing about graphics
+    /// APIs. A driver SDL does not implement a surface source for reports
+    /// <see cref="WebGpuWindowKind.None"/>, which makes the device render offscreen instead of
+    /// failing to start - the backend's message names whatever was wrong.
+    /// </summary>
+    private static WebGpuWindow ToWebGpuWindow(NativeWindowHandles handles) => handles.System switch
+    {
+        NativeWindowSystem.Win32 => new WebGpuWindow(WebGpuWindowKind.Win32, handles.Window),
+        NativeWindowSystem.X11 => new WebGpuWindow(WebGpuWindowKind.X11, handles.Window, handles.Display),
+        NativeWindowSystem.Wayland => new WebGpuWindow(WebGpuWindowKind.Wayland, handles.Window, handles.Display),
+        NativeWindowSystem.Cocoa => new WebGpuWindow(WebGpuWindowKind.Metal, handles.MetalLayer),
+        _ => WebGpuWindow.None,
+    };
 
     /// <summary>
     /// Creates the SDL window and the GL context the two GL renderers run on, and returns both.
